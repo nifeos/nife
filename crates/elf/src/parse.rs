@@ -205,10 +205,7 @@ impl<'a> Elf<'a> {
         let filesz = u64le(ph, 32) as usize;
         let memsz = u64le(ph, 40);
 
-        // All the arithmetic a hostile program header can weaponize (offset + filesz within the
-        // file, vaddr + memsz without overflow) lives in `check_segment_bounds`, factored out as a
-        // pure, loopless function so it can be proved panic-free on its own. See the verification
-        // module and notes/verification.md.
+        // Every check on the hostile fields; the slice below relies on its `end`.
         let end = check_segment_bounds(self.bytes.len(), p_offset, filesz, vaddr, memsz)?;
 
         Ok(Some(Segment {
@@ -231,16 +228,13 @@ impl<'a> Elf<'a> {
     }
 }
 
-/// The per-segment bounds and overflow checks, factored out of [`Elf::segment_at`] as pure
-/// arithmetic over a program header's raw fields and the file length. No slicing and no loop, which
-/// is what lets the verification module prove it panic-free, and its result in-bounds, for *every*
-/// field combination. The whole-parse proof cannot reach this (the header loop and symbolic slice
-/// offsets defeat bounded model checking); this is the decomposition that can. See
-/// notes/verification.md.
+/// The per-segment bounds and overflow checks, as pure loopless arithmetic over a program header's
+/// raw fields and the file length, so Kani proves it panic-free and in bounds for every input.
 ///
 /// Returns the exclusive end offset of the segment's file data, so `[p_offset, end)` lies within a
-/// `file_len`-byte file, or the error the fields earn. Checks run in the same order as before the
-/// extraction, so the errors are identical and the tests are unchanged.
+/// `file_len`-byte file, or the error the fields earn: `SegmentTruncated`, `SegmentOutOfBounds`,
+/// then `AddressOverflow`, in that order. See notes/elf/parser.md and
+/// notes/verification/elf-parser-wall.md.
 pub(crate) fn check_segment_bounds(
     file_len: usize,
     p_offset: usize,

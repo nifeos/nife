@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil info -plist on the development Mac, 2026-09-19; trimmed to the keys stick_maker reads, volume names scrubbed. A WD My Book USB hard disk holding backups: the disk that must never be offered. -->
+<!-- Shaped from a diskutil info -plist capture, 2026-09-19; trimmed to the keys stick_maker reads, with identifiers, names and sizes replaced by neutral values. Every flag, bus, content type and filesystem is as captured. A second USB hard disk, of the kind that holds backups: the disk that must never be offered. -->
 <plist version="1.0">
 <dict>
 	<key>BusProtocol</key>
 	<string>USB</string>
 	<key>DeviceIdentifier</key>
-	<string>disk6</string>
+	<string>disk4</string>
 	<key>Ejectable</key>
 	<true/>
 	<key>IORegistryEntryName</key>
-	<string>WD My Book 1140 Media</string>
+	<string>Generic Desktop USB Disk Media</string>
 	<key>Internal</key>
 	<false/>
 	<key>MediaName</key>
-	<string>My Book 1140</string>
+	<string>Desktop USB Disk</string>
 	<key>OSInternalMedia</key>
 	<false/>
 	<key>Removable</key>
@@ -24,9 +24,9 @@
 	<key>RemovableMediaOrExternalDevice</key>
 	<true/>
 	<key>Size</key>
-	<integer>3000558944256</integer>
+	<integer>2000000000000</integer>
 	<key>TotalSize</key>
-	<integer>3000558944256</integer>
+	<integer>2000000000000</integer>
 	<key>VirtualOrPhysical</key>
 	<string>Physical</string>
 	<key>WholeDisk</key>

@@ -1,17 +1,19 @@
 //! `filesystem_tests`: the storage path from a userspace driver up: the virtio disk, `std::fs`
 //! through a granted directory, the redoxfs server, and per-file grants under attack.
 //!
+//! A test with a RISC-V twin in `riscv_virtio_tests` is gated to aarch64 here rather than run
+//! twice. The twin drives the same property through the same `block_driver` and `net_stack`
+//! binaries, so the two legs differ only by ISA, and a second copy would double the suite's
+//! slowest tests to prove nothing new.
+//!
 //! Name: provisional, minted 2026-10-12 (UTC) by the lane for milestone 873 (the catch-all
 //! userspace test file is split by topic).
 
 #[cfg(target_arch = "aarch64")]
 use core::sync::atomic::Ordering;
 
-// The std-transcript and FS-readiness assertions live with the std tests so both ISAs share one
-// copy; see `std_tests`. Most of them are used only by the device/FS tests below, which have
-// RISC-V twins in `riscv_virtio_tests` and are gated to aarch64 here. The three the `std::fs` test
-// needs are wider, because that test runs on `x86_64` too since milestone 303 gave that
-// architecture a disk; its own comment says why it is the one member of the family that had to.
+// The std-transcript and FS-readiness assertions live in `std_tests` so both ISAs share one copy.
+// The three the `std::fs` test needs are wider because that test also runs on `x86_64`.
 #[cfg(target_arch = "aarch64")]
 use super::std_tests::{assert_a_kill_mid_transaction_recovers, assert_attrs};
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
@@ -23,23 +25,14 @@ use super::*;
 #[cfg(target_arch = "aarch64")]
 use crate::sched;
 
-/// **A userspace driver reads a file off a real virtio disk.** Milestone 9, end to end.
+/// A userspace driver reads a file off a real virtio disk (milestone 9 (a virtio-blk driver at
+/// EL0, and an interrupt becomes a message), end to end).
 ///
-/// The kernel enumerates the bus and hands a driver at EL0 the device registers, a DMA page,
-/// and an interrupt. The driver sets up a virtqueue, reads the superblock by DMA, parses the
-/// nifefs directory, reads the `motd` file, and reports its first bytes. We check them
-/// against the known contents, which proves real disk data crossed DMA and the EL0 boundary.
-///
-/// It also proves the interrupt path (9a) carried the completion: `ROUTED_IRQS` counts device
-/// interrupts turned into messages, and it must rise. And it proves the idle thread works: the
-/// driver blocks waiting for that interrupt with nothing else to run, and the scheduler idles
-/// rather than declaring a deadlock.
-// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// The driver at EL0 gets the device registers, a DMA page and an interrupt, reads `motd` off
+/// the nifefs image, and reports its first bytes: real disk data crossed DMA and the EL0 boundary.
+/// `ROUTED_IRQS` must rise, so the interrupt path (9a) carried the completion, and the scheduler
+/// idles rather than declaring a deadlock while the driver waits with nothing else to run.
+// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
@@ -71,35 +64,18 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
     );
 }
 
-/// **`std::fs` end to end over the FS-service contract** (milestone 27 phase two, the FS half).
+/// `std::fs` end to end over the FS-service contract (milestone 27 phase two, the FS half).
 ///
-/// An ordinary Rust program, granted **one directory capability** and nothing else that names a
-/// filesystem, opens the file the host-made RedoxFS image ships, reads it with `Read` and
-/// `read_to_string`, stats it, and gets refused when it tries to name anything outside that
-/// directory. The bytes it prints are the file's own, so the assertion covers the whole path:
-/// disk, DMA-confined block server, FS server running an engine we did not write, the file
-/// contract, std's PAL, and the stdout rendezvous.
-///
-/// What it proves that the hand-written client's test does not: `std::fs::File::open` has no
-/// global namespace to resolve against, and the mapping to a granted directory holds from inside
-/// std, including the refusal of `..`, of an absolute path, and of a nested path. And the same
-/// binary run without slot 4 gets `Unsupported`, which the offline std test asserts.
-// RISC-V twin: `riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
-//
-// **`x86_64` joined this one at milestone 303**, when that architecture got a RedoxFS disk its FS
-// service can find, and it is the one test in this family that had to rather than merely could.
-// Two reasons, and the second is the load-bearing one. It is the `std::fs` half the milestone was
-// for: the proposal's own sentence was that `std_exerciser`'s `std::fs` half is compiled and never
-// run there. And **it is the only thing on that leg that writes `scratch`**, which
-// `xtask::redoxfs_check_after_run` reopens with the host tool after the run; the x86_64 leg runs
-// last and regenerates the fixture, so without this the end-of-run check would open an image whose
-// write never happened and report a true statement about a placeholder. The rest of this family
-// (the per-file grant attacks) stays on two architectures, for the "nothing new" reason above.
+/// A Rust program granted one directory capability opens, reads and stats the RedoxFS image's
+/// file and prints its bytes, so the assertion covers disk, block server, FS server, file
+/// contract, std's PAL and stdout. Unlike the hand-written client's test, it shows the mapping to
+/// a granted directory holds inside std, refusing `..`, an absolute path and a nested path.
+/// Without slot 4 the same binary gets `Unsupported` (the offline std test).
+// RISC-V twin: `riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability`.
+// It also runs on `x86_64` (milestone 303 (x86_64's FS service has a server and no disk it can
+// find)), where it is the only test that writes `scratch`:
+// `xtask::redoxfs_check_after_run` reopens that image after the last leg, and without this write
+// it would check a regenerated placeholder.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[test_case]
 fn std_fs_reads_a_file_through_a_granted_directory_capability() {
@@ -123,19 +99,14 @@ fn std_fs_reads_a_file_through_a_granted_directory_capability() {
     assert_std_transcript(report, &want[..n], "std fs");
 }
 
-/// **The RedoxFS filesystem service, end to end** (milestone 32 phase 2, the flagship
-/// userspace-reuse story). Three confined processes: a block server drives the RedoxFS disk over
-/// DMA, an FS server mounts it over blk IPC and serves files from its own heap, and a client
-/// opens `motd` through a granted directory capability, reads it, writes a pattern to `scratch`
-/// and reads it back, then reports. The client names nothing but its directory rendezvous, so a
-/// success here is the whole capability contract holding: designation is authorization, the
-/// handle is a server-minted token, and a real CoW filesystem we did not write runs confined.
-// RISC-V twin: `riscv_virtio_tests::the_redoxfs_server_serves_redoxfs_over_a_capability_contract`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// The RedoxFS filesystem service, end to end (milestone 32 (a real filesystem: RedoxFS behind a
+/// capability FS server) phase 2). See notes/fs-server.md.
+///
+/// A block server, an FS server and a client, all confined; the client opens `motd` through a
+/// granted directory capability and round-trips a pattern through `scratch`. It names nothing but
+/// its directory rendezvous, so success is the capability contract holding: designation is
+/// authorization, the handle is a server-minted token, and an engine we did not write runs confined.
+// RISC-V twin: `riscv_virtio_tests::the_redoxfs_server_serves_redoxfs_over_a_capability_contract`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
@@ -173,26 +144,15 @@ fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
     assert_attrs(attrs);
 }
 
-/// **A read-only per-file grant, attacked** (milestone 31 phase 2, notes/grant-expression.md).
+/// A read-only per-file grant survives an attacker (milestone 31 (a capability shell: designation
+/// is authorization) phase 2, notes/grant-expression.md).
 ///
-/// `run wc report.txt` must hand over one file, not the directory it lives in. This wires
-/// exactly that: an `fs_file_caretaker` holding the directory capability, a confined program
-/// holding only the caretaker's rendezvous, and a grant of `motd`, read-only. The program is the
-/// attacker role of `fs_test_client`, and it spends its life trying to make that sentence false.
-///
-/// **What makes it a witness and not a formality.** Every attempt is against something that
-/// really exists and that the process one hop up the chain can really reach: `scratch` is on
-/// the image, one directory entry away, and the caretaker could open it on any request.
-/// Milestone 33's attacker was handed a real neighbour's address rather than a fictional one
-/// for the same reason. And this test alone would still be weak, because a caretaker that
-/// refused *everything* would pass it; that is what the writable twin below is for, and why the
-/// verdict is a bitmap rather than a boolean.
-// RISC-V twin: `riscv_virtio_tests::a_read_only_per_file_grant_survives_an_attacker`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// `run wc report.txt` must hand over one file, not its directory. An `fs_file_caretaker` holds
+/// the directory; `fs_test_client`'s attacker role holds a read-only grant of `motd` and attacks
+/// `scratch`, a real file one entry away that the caretaker could open. A caretaker refusing
+/// everything would pass alone, which is why the writable twin below exists and why the verdict is
+/// a bitmap rather than a boolean.
+// RISC-V twin: `riscv_virtio_tests::a_read_only_per_file_grant_survives_an_attacker`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_read_only_per_file_grant_survives_an_attacker() {
@@ -213,15 +173,11 @@ fn a_read_only_per_file_grant_survives_an_attacker() {
 /// **A read-only per-file grant carries its file's attributes, and cannot write them**
 /// (milestone 61).
 ///
-/// It is the same run as the test above, read a second way, which is why it costs nothing: a
-/// clean verdict of zero already says both halves. `GRANTED_ATTRS_FAILED` clear means the
-/// listing and the get went **through** the caretaker to the store, which they could not do
-/// before this milestone (all four attribute verbs answered `EOPNOTSUPP`); `WROTE_ATTR` clear
-/// means the set did not, because a read-only grant must not forward one.
-///
-/// Stated as its own assertion rather than left inside the zero, because "the verdict was zero"
-/// does not tell a reader which properties were in it, and the whole point of a bitmap is that
-/// each bit is a sentence. The writable twin below is what stops this passing vacuously.
+/// The same run as the test above, read a second way. `GRANTED_ATTRS_FAILED` clear means the
+/// listing and the get went through the caretaker to the store; `WROTE_ATTR` clear means the set
+/// did not, because a read-only grant must not forward one. Its own assertion, because "the
+/// verdict was zero" does not say which properties were in it. The writable twin below keeps it
+/// from passing vacuously.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_read_only_per_file_grant_reads_its_files_attributes_and_writes_none() {
@@ -245,23 +201,14 @@ fn a_read_only_per_file_grant_reads_its_files_attributes_and_writes_none() {
     );
 }
 
-/// **A writable per-file grant, attacked** (the second witness, and the first one's control).
+/// A writable per-file grant writes that file and still only that file (the read-only test's
+/// control).
 ///
-/// Same caretaker, same attacker, same neighbouring file; only the granted direction changes.
-/// Two things fall out of it, and the second is why it exists:
-///
-/// - A writable file capability really does write, and still reaches **only** its one file. The
-///   widening is exactly one axis wide.
-/// - The read-only test above is now meaningful. Its refusals are a narrowed capability rather
-///   than a caretaker that says no to everything, because here the same requests, through the
-///   same code, succeed. A confinement test with no witness that the thing being confined
-///   *works* is a test that passes when the feature is missing entirely.
-// RISC-V twin: `riscv_virtio_tests::a_writable_per_file_grant_writes_that_file_and_still_only_that_file`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// Same caretaker, attacker and neighbouring file; only the direction changes. A writable file
+/// capability writes and still reaches only its one file. Because the same requests through the
+/// same code succeed here, the read-only test's refusals are a narrowed capability, not a
+/// caretaker that refuses everything.
+// RISC-V twin: `riscv_virtio_tests::a_writable_per_file_grant_writes_that_file_and_still_only_that_file`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_writable_per_file_grant_writes_that_file_and_still_only_that_file() {
@@ -275,9 +222,8 @@ fn a_writable_per_file_grant_writes_that_file_and_still_only_that_file() {
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
-    // `WROTE_ATTR` joined the expected set in milestone 61, and it is the third way to change a
-    // file: bytes, length, and what is attached to it. A direction check that covered only the
-    // first two would have left one open.
+    // `WROTE_ATTR` is the third way to change a file, after bytes and length; a direction check
+    // that covered only the first two would leave one open.
     let expected = escape::WROTE | escape::TRUNCATED | escape::WROTE_ATTR;
     assert_eq!(
         verdict,
@@ -352,31 +298,12 @@ fn describe_escape(v: u64) -> &'static str {
     }
 }
 
-/// **The FS server's stack is sized by measurement, and this is the measurement.**
-///
-/// Runs after both FS clients, so the poison in the server's stack pages has been overwritten to
-/// exactly the depth RedoxFS reached across a mount, reads, writes, a create and two truncates.
-/// It prints the number and fails if less than a quarter of the grant is left.
-///
-/// This exists because the previous size was a guess, and the guess was **528 bytes short**.
-/// Milestone 31 phase 2's `CREATE` and `TRUNCATE` added one more level of tree recursion, the FS
-/// server ran off the bottom of its stack mid-request, and the kernel killed it, correctly and
-/// legibly. What was not legible was anything downstream: the std client sat blocked on a `CALL`
-/// nobody would ever answer, and since other tests had left processes spinning on other cores,
-/// the no-progress heartbeat saw a healthy system. The only instrument that fired was the
-/// per-test wall-clock ceiling, so a 368-byte overflow presented as "`std_fs` takes 914 seconds".
-/// A number nobody can defend is a number that will be wrong again; this one now has a witness.
-/// **A kill mid-transaction, on the real device** (milestone 37, DECISIONS §34 condition 1).
+/// A kill mid-transaction, on the real device (milestone 37, DECISIONS §34 condition 1).
 /// The host sweep proves the property over every fault point against a reconstructed platter;
 /// this proves it once through the whole stack, with a real virtio write torn in half, a real
 /// FS-server process killed inside its own transaction, and a real second process recovering the
 /// disk it left behind. See `std_tests::assert_a_kill_mid_transaction_recovers`.
-// RISC-V twin: `riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_kill_mid_transaction_leaves_the_filesystem_consistent() {
@@ -393,12 +320,14 @@ fn a_kill_mid_transaction_leaves_the_filesystem_consistent() {
     );
 }
 
-// RISC-V twin: `riscv_virtio_tests::the_redoxfs_servers_stack_still_has_headroom`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// The FS server's stack is sized by measurement, and this is the measurement.
+///
+/// It runs after both FS clients, so the poison in the server's stack pages has been overwritten
+/// to the depth RedoxFS reached across a mount, reads, writes, a create and two truncates. It
+/// prints the number and fails if less than a quarter of the grant is left. An overflow kills the
+/// server mid-request and leaves its client blocked, which only the per-test wall-clock ceiling
+/// notices. See notes/fs-server.md and notes/fs-server/stack-sizing.md.
+// RISC-V twin: `riscv_virtio_tests::the_redoxfs_servers_stack_still_has_headroom`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_redoxfs_servers_stack_still_has_headroom() {

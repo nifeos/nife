@@ -74,12 +74,12 @@ use tcp_close::close_tcp;
 #[path = "nic_wait.rs"]
 mod nic_wait;
 use nic_wait::wait_for_nic;
-// The socket-contract client rides in this same binary (dispatched by the entry role), because the
-// initial ramdisk directory holds at most 15 files; see components/src/socket_test_client.rs.
+// The socket-contract client rides in this same binary, dispatched by the entry role; notes/net.md,
+// "One binary, one archive entry", says why.
 #[path = "socket_test_client.rs"]
 mod socket_test_client;
 // The hostile second client milestone 649's confinement test runs (role 8), here for the same
-// 15-file reason; its header records why that is an exception.
+// reason; its header records why that is an exception.
 #[path = "socket_squatter.rs"]
 mod socket_squatter;
 use socket_contract::*;

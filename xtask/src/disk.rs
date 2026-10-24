@@ -28,15 +28,10 @@ fn disk_pci_path() -> String {
 
 /// Build the nifefs disk images the virtio-blk driver will read and write.
 ///
-/// **The disk is generated, not checked in**, the same way the flat kernel image is: a binary
-/// blob in git is a blob nobody can review. The contents are a couple of tiny files, written
-/// through the same `nifefs::write_image` the userspace filesystem server reads back, so the
-/// format has exactly one definition.
-///
-/// `scratch` is the write-path tests' one-block playground: the driver writes a pattern into its
-/// block and reads it back, so nothing else on the disk is ever a write target. Regenerating the
-/// images here is also what makes test runs independent: whatever a previous run wrote to
-/// scratch is rebuilt to zeros.
+/// Generated, never checked in, through the same `nifefs::write_image` the userspace filesystem
+/// server reads back, so the format has one definition. `scratch` is the write-path tests' one
+/// block: the driver writes a pattern there and reads it back, so nothing else on the disk is a
+/// write target. Regenerating per run rebuilds scratch to zeros, keeping runs independent.
 pub(crate) fn mkdisk() -> bool {
     let files: [(&str, &[u8]); 3] = [
         (
@@ -248,13 +243,10 @@ pub(crate) const DOWNLOADED_NOTELESS: &str = "downloads/noteless.nifepkg";
 /// digest differs from 0.1.0's and the table can hold both. Provisional name (the constant's and
 /// the path's).
 ///
-/// The version is a directory, not part of the file's name, because the shell can only type a
-/// component of at most sixteen bytes (`grant_plan`'s `MAX_NAME`, the width the grant wire
-/// packs): `greeting-0.2.0.nifepkg` is twenty-two, and CI's first run of the line answered `that
-/// is not a name: one component, at most 16 bytes`. This is the same wall the 614 block's BUGS
-/// records for a remove operand, met by a fixture rather than a package, and answered the same
-/// way: the name stays inside the sixteen bytes rather than the wire growing. The shape mirrors
-/// the install path (`packages/greeting/0.2.0/greeting`), where the version is a directory too.
+/// The version is a directory because the shell types a component of at most sixteen bytes
+/// (`grant_plan`'s `MAX_NAME`, the grant wire's width), and `greeting-0.2.0.nifepkg` is twenty-two.
+/// The name stays inside the wire rather than the wire growing, as the install path
+/// (`packages/greeting/0.2.0/greeting`) and the 614 block's BUGS already do.
 pub(crate) const DOWNLOADED_GREETING_0_2_0: &str = "downloads/0.2.0/greeting.nifepkg";
 
 /// **`duet`'s package, on the disk for every leg** (milestone 919 (a package carries several
@@ -884,14 +876,10 @@ pub(crate) const INDEXED_ONLY_VERSION: &str = "0.3.0";
 /// Stage milestone 47's subtree as a host directory and return its path, for `import` to copy into
 /// the image root.
 ///
-/// **`import` rather than a new `mkdir` verb on the host tool**, deliberately: `import` is upstream
-/// RedoxFS's own archiver (`redoxfs::archive`), so the directories the confinement tests attack are
-/// written by the people who defined the format rather than by us. notes/host-recovery.md already
-/// makes that argument for `extract`; this is the same one on the write side.
-///
-/// The staging directory is rebuilt from scratch each time, because a name left behind by an older
-/// fixture would end up in the image and fail the post-run `ls /` check for a reason that has
-/// nothing to do with the run.
+/// `import` is upstream RedoxFS's own archiver (`redoxfs::archive`), so the directories the
+/// confinement tests attack are written by the people who defined the format, the write-side twin
+/// of notes/host-recovery.md's argument for `extract`. The staging directory is rebuilt each time:
+/// a name left by an older fixture would fail the post-run `ls /` check for an unrelated reason.
 fn stage_subtree() -> Option<String> {
     use filesystem_fixture::tree;
     let root = workspace_root().join("target/redoxfs-tree");
@@ -1004,19 +992,12 @@ fn gpt_disk_path() -> String {
 
 /// Build the milestone-57 test disk: a 64 MiB image whose partition table **`sgdisk` wrote**.
 ///
-/// The point of this image is its provenance. `crates/globally_unique_identifier_partition_table`
-/// can lay out a table, and a disk it laid out would test the reader against the writer, which is
-/// the weakest test available: every mistake made on the way out is made symmetrically on the way
-/// in. So the bytes come from the committed fixture in
-/// `crates/globally_unique_identifier_partition_table/tests/fixtures/`, produced by `sgdisk` 1.0.10
-/// (gptfdisk, C++), and the guest reads a table this project did not write. The regeneration
-/// commands are at the top of
-/// `crates/globally_unique_identifier_partition_table/tests/real_disks.rs`.
-///
-/// The fixture is the first 34 and last 33 blocks of a 64 MiB disk, which is exactly the primary
-/// table and the backup table with the 64 MiB of nothing between them left out. Reconstituting it is
-/// therefore the head, a run of zeros, and the tail. Nothing is put in the partitions: what is under
-/// test is finding them.
+/// A disk `crates/globally_unique_identifier_partition_table` laid out would test the reader
+/// against its own writer, making every mistake symmetrically. So the bytes come from the committed
+/// fixture in that crate's `tests/fixtures/`, produced by `sgdisk` 1.0.10 (gptfdisk, C++);
+/// `tests/real_disks.rs` has the regeneration commands. The fixture is the first 34 and last 33
+/// blocks (the primary and backup tables), so the image is the head, zeros, and the tail. Nothing
+/// is put in the partitions: what is under test is finding them.
 pub(crate) fn mkgptdisk() -> bool {
     const BLOCK: usize = 512;
     const BLOCKS: usize = 131_072; // 64 MiB

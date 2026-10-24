@@ -1,5 +1,7 @@
 # Watching a job-mix sweep: an example
 
+*Name: provisional, for the parent's job-mix EXAMPLES.*
+
 An appendix to [`notes/board-console.md`](../board-console.md), holding its job-mix example.
 
 Watching a job-mix sweep, which is the same recognizer under QEMU and is where it was proved

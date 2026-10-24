@@ -1,5 +1,7 @@
 # The check inventory: the five findings in full
 
+*Name: provisional. Named after the parent's own heading.*
+
 An appendix to [`notes/check-inventory.md`](../check-inventory.md), measured on 2026-09-03 (UTC)
 against `a0059022`. The parent carries each finding in a sentence or two. This is the evidence for
 each, and what fatal risk 3 should be read with. Later corrections are in the parent's BUGS.

@@ -1,26 +1,22 @@
-//! **A thread reading its own CPU from user mode**, with no syscall at all.
+//! A thread reading its own CPU from user mode, with no syscall at all.
 //!
-//! calef ruled on 2026-09-21 that a thread observing *itself* reads a page rather than making a
-//! crossing, because the consumer is a memory allocator asking on every allocation. (That ruling's
-//! `design/decisions/` section is on another branch and is named here rather than cited.) This
-//! program is the shortest thing that proves the whole chain works from the side that matters:
-//! `crates/current_cpu_contract` lays the page out, the kernel maps it read-only and writes it at
-//! every switch-in, and `user_mode_runtime::current_cpu` reads it with an ordinary load.
+//! calef ruled on 2026-09-21 that a thread observing itself reads a page rather than making a
+//! crossing, because the consumer is a memory allocator asking on every allocation. This proves the
+//! chain from the side that matters: `crates/current_cpu_contract` lays the page out, the kernel
+//! maps it read-only and writes it at every switch-in, and `user_mode_runtime::current_cpu` reads
+//! it with an ordinary load. It reads twice across a `yield_now`, as `cycle_counter_reader` does:
+//! the first read proves a thread learns its core before its first instruction, and the second that
+//! the switch keeps writing. A yield does not guarantee a switch, so the second read is evidence;
+//! the kernel-side test's direct read of a space's page is the proof.
+
+//! # Report
 //!
-//! Reads twice across a `yield_now`, `cycle_counter_reader`'s shape and for the same reason: the
-//! first read proves a thread learns its core before its first instruction, and the second proves
-//! the context switch keeps writing rather than writing once at load time. A yield is not a
-//! guarantee that a switch happened, so the second read is evidence and the kernel-side test's
-//! direct read of a space's page is the proof.
-//!
-//! Reports both, plus [`current_cpu_contract::CPU_ID_BOUND`], which is the one number in this
-//! contract that two binaries have to agree on: the kernel's `cpu::MAX_CPUS` **is** that constant,
-//! and a message carrying it back across the boundary is what would catch them drifting.
-//!
-//! **A CPU this program could not learn is reported as `u64::MAX`**, the protocol's own
-//! `UNSCHEDULED`, rather than as any small number: zero is a real core and a wrong number is worse
-//! than no number.
-//!
+//! Both reads, plus [`current_cpu_contract::CPU_ID_BOUND`], the one number in this contract two
+//! binaries must agree on: the kernel's `cpu::MAX_CPUS` is that constant, and carrying it back
+//! across the boundary would catch them drifting. A CPU it could not learn is reported as
+//! `u64::MAX`, the protocol's `UNSCHEDULED`, never a small number: zero is a real core, and a wrong
+//! number is worse than no number.
+
 //! # Bugs
 //!
 //! **Nothing here asserts the two reads agree or differ**, and neither would be right. A thread

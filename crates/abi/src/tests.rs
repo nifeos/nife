@@ -91,12 +91,8 @@ fn non_errors_decode_to_none() {
 /// and userspace builds masks with `|`, so each must be a distinct single bit, and the exact
 /// values are load-bearing on both sides of the syscall boundary. Milestone 85's mutation run
 /// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and WRITE would
-/// silently mean nothing).
-///
-/// `ENUMERATE` was added to this assertion by the 2026-08-17 documentation sweep. It landed on
-/// 2026-08-17 and this test kept pinning three bits while its own comment said *each* must be a
-/// distinct single bit, so the newest right was the one nothing held down. **A test that
-/// enumerates is a claim about a set, and it rots exactly like prose does.**
+/// silently mean nothing). A test that enumerates is a claim about a set, so a new right joins
+/// this list in the change that defines it.
 #[test]
 fn rights_are_distinct_single_bits() {
     use super::rights::{BIND, ENUMERATE, GRANT, READ, WRITE};

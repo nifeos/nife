@@ -1,5 +1,7 @@
 # The second scaffold: reclamation, a kernel thread, and a riscv64 cliff, 2026-09-13
 
+*Name: provisional. For the 2026-09-13 scaffold. calef names files.*
+
 An appendix of [can a userspace process hold a timer?](../timer-capability.md). The parent keeps
 each conclusion and its figure. This file keeps the reasoning, the four builds, the error bar and
 the symbol-level working behind the `IpcTables` finding that the block of milestone 263 (can a

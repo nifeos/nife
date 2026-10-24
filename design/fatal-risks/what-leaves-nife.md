@@ -5,6 +5,10 @@ updated: 2026-10-18
 ---
 # Appendix to risk 8: Nobody else builds on nife's mechanisms
 
+*Name: provisional, minted 2026-10-18 (UTC) by lane maintainer/risk-8-restatement for risk 8's
+appendix, with the risk file's stem `8-nobody-else-builds-on-nife`, which is provisional too. The
+risk stem states the claim in the claim form; the appendix stem names what risk 8 counts.*
+
 *An appendix to [`8-nobody-else-builds-on-nife.md`](8-nobody-else-builds-on-nife.md) (risk 8). That
 entry is the claim of record, and it is written so that a reader can decide what to work on next
 without opening this file. This one exists to be verified or challenged: it holds the evidence, the

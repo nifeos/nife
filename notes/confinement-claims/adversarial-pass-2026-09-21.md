@@ -25,7 +25,7 @@ including the sender's own. `revoke::unmap_under_object` unmaps every page the l
 hand-off slot is read by neither. The next `RECEIVE_CAP` files the surviving capability in the
 receiver's table, and the receiver may `MAP` a page the revoker believes it took back. This was
 measured, not argued.
-`kernel::user::revocation_in_flight_tests::a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver`
+`system_tests::user::revocation_in_flight_tests::a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver`
 went red on the tree as it stood, on aarch64, with its vacuity guard and its premise check both green
 first.
 
@@ -86,7 +86,7 @@ kernel that never had to answer, because it never recorded. Every kernel-wiring 
 `NoCapability`, truthfully. So the page stands as its own object, and a single-page revoke of it
 finds the record. `user_address_space_map` was the one caller that remembered to record, and is now
 the one caller with nothing extra to remember. Nothing about the syscall surface moves.
-`kernel::user::spawn_mapping_revocation_tests::a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked`
+`system_tests::user::spawn_mapping_revocation_tests::a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked`
 is the falsification, replayed red on aarch64 with its vacuity guard and premise check green first.
 
 What it costs, since a record is not free and these are boot paths. It is one `LogEntry` per
@@ -132,3 +132,20 @@ capability would let it) answers. |
   shape `design/fatal-risks/README.md` says wants outside eyes anyway.
 - Anything needing hardware this project does not own. MSI confinement stays exactly where milestone
   317 (the interrupt-remapping flags, and where MSI confinement actually lives) left it.
+
+## The in-flight test, and what it leaves untested
+
+`system_tests::user::revocation_in_flight_tests` holds the first finding. The claim it guards is row 4 of
+[notes/confinement-claims.md](../confinement-claims.md), "a consumed capability cannot be used
+again" from DECISIONS §12 (call/reply IPC: a one-shot reply capability). It also guards the region
+sweep's promise that no capability names a page the allocator is about to hand out.
+
+The `PortRange` sweep has a second limb that no test reaches. `ipc_receive_cap` files a delivered
+capability with `CapabilityTable::insert` directly, not through
+`sched::thread_control_block_insert_cap`. A receiver handed a `PortRange` capability that way holds
+it with `Thread::port_range_grant` never set. That direction fails closed.
+
+`system_tests::user::spawn_mapping_revocation_tests` holds the second finding, and proves the mapping is
+gone, not that the process faults on it. Walking the page tables is what `crate::revoke`'s own suite
+asserts and what the sweep controls. Demonstrating the fault needs a live process, which
+`user::live_swap_tests` does for the device case, at a whole boot's cost.

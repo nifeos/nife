@@ -1,16 +1,13 @@
-//! **Timers**: one-shot deadlines that signal a notification, armed and cancelled by their holder
-//! and expired from the tick.
-//!
-//! Cut out of `sched.rs` unchanged by milestone 840 (the scheduler file is split along its seams).
+//! Timers: one-shot deadlines that signal a notification, armed and cancelled by their holder and
+//! expired from the tick. See notes/timer-capability.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
 //! submodules of `sched`)).
 
 use super::*;
 
-/// The most timers that can exist at once, whole machine: the notification registry's bound, for
-/// its reason. A timer is per-waiter (a sleeping thread, a retransmit window), so §147's consumers
-/// want about one each. The expiry walk is O(this) at worst, and runs only on a due tick.
+/// The most timers that can exist at once, whole machine: the notification registry's bound, since
+/// a timer is per waiter. The expiry walk is O(this) at worst, and runs only on a due tick.
 pub(super) const MAX_TIMERS: usize = 256;
 
 /// A timer's name: a generational name over the timer registry, what an `Object::Timer`
@@ -23,16 +20,13 @@ pub(super) struct TimerPage {
     state: inter_process_communication::timer::Timer<(NotificationId, u64)>,
 }
 
-/// **The cached earliest deadline, in counter ticks**: never later than any armed timer's deadline
+/// The cached earliest deadline, in counter ticks: never later than any armed timer's deadline
 /// (the invariant `inter_process_communication::timer` proves), `NEVER` when nothing is armed.
 ///
-/// An atomic beside `IPC_TABLES` rather than a field in it, because the tick reads it **without**
-/// the lock, which is the whole point: the idle tick is one load and one compare. Every write happens
-/// under `IPC_TABLES`, so writers never race each other; a tick on another core may read a value one
-/// write stale, and both directions are safe. Stale-high (an arm not yet visible) delays that expiry
-/// to a later tick, bounded by the lock release that publishes it; stale-low costs one walk that
-/// finds nothing. `Relaxed` is enough for that reason, and the walk itself re-reads everything
-/// under the lock.
+/// An atomic beside `IPC_TABLES` so the idle tick reads it without the lock. Every write is under
+/// `IPC_TABLES`; a tick may read it one write stale, and either way is safe: stale-high delays an
+/// expiry to the tick after the lock release that publishes it, stale-low costs one walk that finds
+/// nothing. So `Relaxed`, and the walk re-reads everything under the lock.
 pub(super) static EARLIEST_DEADLINE: AtomicU64 =
     AtomicU64::new(inter_process_communication::timer::NEVER);
 
@@ -93,26 +87,22 @@ pub fn timer_arm(
     }
 }
 
-/// **`Timer::CANCEL`**: disarm `id`. `true` if a deadline was pending and now never fires. The cache
-/// is deliberately left where it is: lowering is all an arm does, a walk is what raises it, and a
-/// stale-low cache costs one walk that fires nothing. `Gone` if the name is stale.
+/// `Timer::CANCEL`: disarm `id`. `true` if a deadline was pending and now never fires. The cache is
+/// left alone: only a walk raises it, and stale-low is safe. `Gone` if the name is stale.
 pub fn timer_cancel(id: TimerId) -> Result<bool, abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     Ok(timer_of(sched, id).ok_or(abi::Error::Gone)?.state.cancel())
 }
 
-/// **The expiry walk**, from the tick, in interrupt context, on the interrupt stack: fire every due
-/// timer, then recompute the cache exactly. Legal here for [`signal_notification_from_interrupt`]'s
-/// reason (a wake is an enqueue, `IPC_TABLES` masks interrupts, nothing allocates), and it goes
-/// through the same [`signal_locked`] with the same load-aware placement.
+/// The expiry walk: fire every due timer, then recompute the cache exactly, through
+/// [`signal_locked`] with load-aware placement.
 ///
-/// **Rescan rather than list**, the region sweeps' shape: each step finds the first due timer,
-/// disarms it and signals, so no buffer bounds how many may fire in one tick. The cost is O(timers)
-/// per firing, paid only on a due tick.
+/// Rescans rather than lists, so no buffer bounds how many fire in one tick; O(timers) per firing,
+/// paid only on a due tick. `#[cold]` and out of line, so its bytes stay out of `on_tick`'s.
 ///
-/// `#[cold]` and out of line so its bytes stay in its own symbol rather than in `on_tick`'s, for
-/// `on_tick`'s own reason (riscv64 counts the trap path flat).
+/// Context: the tick, in interrupt context on the interrupt stack; takes `IPC_TABLES`. Legal for
+/// [`signal_notification_from_interrupt`]'s reason.
 #[cold]
 #[inline(never)]
 pub(super) fn expire_timers() {

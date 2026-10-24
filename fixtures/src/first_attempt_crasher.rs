@@ -8,6 +8,7 @@
 //! §26) against a real supervisor: a crash that must be restarted, and a clean exit that must not be.
 //! A program that only crashed would prove the restart but not the policy.
 //!
+
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `flaky`.
 //! Introduced 2026-07-29 as a supervision fixture: attempt 0 crashes on purpose and any later
 //! attempt exits cleanly, which exercises both halves of DECISIONS §26 (the fault

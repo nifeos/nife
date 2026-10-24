@@ -56,7 +56,7 @@ Two honest costs, and the first is the one to design against:
 
 `swapper`'s operator bounds one thing, its `OPERATION_QUIESCE`, and in time: `QUIESCE_BOUND_MS`, 250
 ms, chosen as about forty times the slowest healthy answer measured on three ISAs under a loaded
-host (the measurements are beside the constant). It reads no progress counter. Two things make the
+host (the measurements are under "How the quiesce bound was measured" below). It reads no progress counter. Two things make the
 duration acceptable for this one question where the argument above rejects it in general. The
 quiesce is owed work of known size. It waits in the endpoint's FIFO behind at most the requests
 already queued, one per client here, so the bound covers one answer plus that queue rather than a
@@ -75,3 +75,29 @@ A citation to fix while passing through, because it is the exact failure `script
 (wall)'s roadmap block (`design/roadmap/0051-wall-clock-time.md`, its rejected-alternatives list).
 §N and milestone N are colliding schemes, the gate proves only that a cited §N resolves to *some*
 section, and a well-formed wrong citation is invisible to it. Corrected in 106's block by this lane.
+
+## How the quiesce bound was measured
+
+A healthy incumbent's answer to `OPERATION_QUIESCE` was timed the way `quiesce_within` in
+`components/src/swapper.rs` times it: from starting the stand-in to receiving its forwarded answer.
+That includes the one client request the quiesce can queue behind. Ten runs per leg, on 2026-10-18
+(UTC), under `script/test`, on a 16 GB Apple Silicon host with a load average of 25 to 34 from other
+lanes' builds:
+
+| ISA | counter | fastest | slowest |
+|---|---|---|---|
+| aarch64 (4 cores) | 62.5 MHz | 1.2 ms | 3.4 ms |
+| riscv64 (4 cores) | 10 MHz | 1.2 ms | 2.4 ms |
+| `x86_64` (2 cores, and the 1-core leg) | TSC, about 1 GHz | 1.1 ms | 6.5 ms |
+
+`QUIESCE_BOUND_MS` is 250 ms, about 38 times the slowest of the forty, and 25 scheduler ticks. The
+deadline fires at the first 10 ms tick at or after it (milestone 106's `BUGS`), so the real wait is
+250 to 260 ms, and the hung test prints what it was.
+
+This is wall time under QEMU, not instructions. `script/test` runs TCG without `-icount` (only
+`script/bench` and `script/icount` pass it), so the guest counter follows the host clock and a
+loaded host stretches a healthy answer. The margin is for that. The bound is also this fixture's
+alone: its incumbent answers a request with eight multiplications, and a component whose requests
+take longer needs a bound measured against it. A bound that convicts a healthy component destroys
+it mid-work, and the caller it was serving is answered `Gone` and asks again, which is safe only for
+a request that may be repeated. A bound that is too long costs only a longer down window.

@@ -3,38 +3,31 @@
 //! state from the GPT (`crates/boot_slot`, which carries the policy and the layout), picks a slot,
 //! **spends one of its tries and writes that to disk**, and chain-loads the image in it. It has to
 //! be ours: UEFI reserves GPT attribute bits 48 to 63 to the owner of the partition type, so
-//! ordinary firmware never reads them. See notes/boot-slots.md for the failure table.
-//!
-//! The chooser and the image it starts are the same binary, so there is no second program to keep
-//! in step, and a machine whose slots are all bad still boots the image doing the choosing.
-//! [`STARTED_BY_CHOOSER`] in the child's `LoadOptions` is what stops it chain-loading itself.
+//! ordinary firmware never reads them. The chooser and the image are the same binary, so a machine
+//! whose slots are all bad still boots the chooser's own image; [`STARTED_BY_CHOOSER`] in the
+//! child's `LoadOptions` stops it chain-loading itself. notes/boot-slots.md has the failure table.
+
+//! # The steps
 //!
 //! 1. Find the disk this file is on (a device-path prefix, `uefi_loader::device_path`) and read its
-//!    slots. Slots on any other disk are another system's: a stick booted on an installed machine
-//!    boots the stick.
+//!    slots. Another disk's slots are another system's, so a booted stick boots the stick.
 //! 2. Pick the bootable slot of highest priority ([`boot_slot::select_excluding`]).
 //! 3. **Spend a try and write the table back, flushed, before anything else**: an image that hangs
 //!    is caught only by a try already on the disk, on the next boot.
 //! 4. Read the slot header and image, and check the image against the header's checksum.
-//! 5. `LoadImage` from that buffer, `StartImage`, and never come back.
+//! 5. `LoadImage` from that buffer, `StartImage`, and never come back. A slot failing a check,
+//!    `LoadImage` or `StartImage` is given up ([`boot_slot::State::unreadable`]), the next tried.
+
+//! # BUGS (the full accounts are in notes/boot-slots.md)
 //!
-//! A slot that fails a check, `LoadImage` or `StartImage` is given up
-//! ([`boot_slot::State::unreadable`]) and the next is tried in the same boot.
-//!
-//! # BUGS
-//!
-//! - It sees only the disks the firmware connected, which is why `install-boot` names the disk as
-//!   a second boot option.
+//! - Only disks the firmware connected are seen; `install-boot` names the disk as a second option.
 //! - The logical block size is assumed to be 512; other disks are skipped.
-//! - A power cut during step 3's four block writes can leave the copies disagreeing; `parse` then
-//!   refuses and the chooser's own image boots. Untested.
-//! - The writes go primary-first, so for a moment neither copy parses; `ROLE_CONFIRM` writes
-//!   backup-first, which leaves a consistent copy throughout. Reordering is untested either way.
+//! - A power cut during step 3's four block writes can leave the copies disagreeing. Untested.
+//! - The writes go primary-first, so for a moment neither copy parses (`ROLE_CONFIRM`'s do not).
 //! - Nothing reads the backup table when the primary fails to parse.
-//! - An image started from a slot has no boot file (its `DeviceHandle` is null), so it cannot
-//!   install onto a second disk, and [`booted_from_nvme`] assumes NVMe without looking.
-//! - x86_64 only: device-tree architectures have nowhere for a boot file
-//!   (`design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md`).
+//! - An image started from a slot has no boot file, so it cannot install onto a second disk, and
+//!   [`booted_from_nvme`] assumes NVMe without looking.
+//! - x86_64 only: milestone 568 (the boot file has nowhere to go on a device-tree machine).
 
 use core::ffi::c_void;
 use core::ptr::{self, NonNull};
@@ -649,12 +642,10 @@ struct Medium {
 
 /// What the firmware says the medium behind a `BlockIo` is, or `None` for a null description.
 ///
-/// **Read field by field, never as a `&block_io::Media`**, for two reasons that are both `r-efi`'s
-/// declaration meeting a real firmware. It declares revision 3's fields after `last_block`, which a
-/// revision-1 firmware does not allocate, so a reference to the whole structure would claim bytes
-/// that may not be there. And it declares the five `BOOLEAN`s as Rust `bool`, which is undefined
-/// behavior to read for any byte but 0 or 1, where UEFI's `BOOLEAN` is a byte the firmware writes.
-/// So the flags are read as the bytes they are, and anything nonzero is true.
+/// **Read field by field, never as a `&block_io::Media`**: `r-efi` declares revision 3's fields
+/// after `last_block`, which a revision-1 firmware does not allocate, and declares the five
+/// `BOOLEAN`s as Rust `bool`, which is undefined behavior to read for any byte but 0 or 1. So the
+/// flags are read as the bytes the firmware writes, and anything nonzero is true.
 ///
 /// # Safety
 /// `block_io` must be a firmware-owned `EFI_BLOCK_IO_PROTOCOL` whose `media` pointer is the

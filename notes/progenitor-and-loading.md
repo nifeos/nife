@@ -243,3 +243,49 @@ I/O)). That is the kernel's and `system_initializer`'s to know, not a slot numbe
 `shell_service` as a boot path and milestone 41 (dead code) deleted it and `input_service` outright,
 because they had no caller in any configuration. Every interactive build now reaches userspace through `boot_via_progenitor`, so the
 kernel has one way in rather than two.
+
+## What `supervision_protocol`'s loader holds to
+
+`crates/supervision_protocol` is the tree's only userspace ELF loader. These are the choices its
+doc comments link here.
+
+The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages, at
+the bottom of `address_space_map::RUNTIME_WINDOWS` and well under the progenitor's initial ramdisk
+window. `std_runtime_contract`'s three pages sit inside it, but only in a `std` program's space, and
+no `std` program builds children. A window rather than a cursor that only climbs, because the kernel
+takes scratch pages back for the builder. A scratch page maps a frame retyped from the child's
+region, and destroying that region revokes every mapping of its pages (§13 (capability revocation
+and untyped reclamation)). So `map_scratch` wraps at the window's end and asks the kernel, page by
+page, which addresses are free. The size holds every page one builder can have built and not yet
+reaped, and its page tables are a budget a builder can state. The progenitor checks both at compile
+time.
+
+The kernel's page table is the free list. `PageFrame::MAP` refuses a mapped address whole, with
+`BadPointer`, so a refusal means the page is taken and the next is tried. The kernel gives the same
+error for a misaligned or kernel-half address, and neither can occur for a page of the window. Any
+other refusal returns at once with the cursor unmoved. A page that stays mapped for good costs one
+refused probe per lap. Wrapping limits how much address space this costs, not what the builder can
+reach: a builder without a capability to its own space keeps live children's pages mapped. Only the
+progenitor is given one and names it with `give_up_scratch_through`, because §249 (a running address
+space stays nameable) leaves that grant to whoever builds the builder.
+`design/roadmap/0604-the-builders-scratch-cursor-is-bounded.md` has the progenitor's arithmetic.
+
+A child at the interactive prompt gets three times the default stack
+(`system_initializer::CHILD_STACK_PAGES`), because the shell's redirection path runs in those
+children and its frames grew twice under measurement. The stack is a field so each caller states it.
+
+`CHILDS_OWN_SPACE`, `CHILDS_OWN_PROCESS` and `CHILDS_OWN_THREAD` are sentinel slot values rather
+than typed fields, and that is a marked exception. A typed `Option<u64>` field cost the progenitor
+352 bytes of stack: debug `boot` keeps about twenty-two endowments in its frame, each 16 bytes
+larger, which pushed the install path below `kernel/src/progenitor_stack.rs`'s floor. No capability
+slot is that high, so a sentinel cannot name a real slot by accident.
+
+On x86_64 and riscv64 every child gets a timebase page, and the loader writes it from the builder's
+own. A child needs the number, not the kernel's frame, and the builder already has the number mapped
+read-only. A builder that does not know the rate writes a zeroed page, and the child then refuses
+rather than inherit a number nobody measured (calef, 2026-09-21: only accurate numbers, never
+hardcoded ones).
+
+A failed build gives back every capability slot it took: the address space on the way out of
+`lay_out_child`, the TCB on the way out of `endow_child`, and a frame by whoever retyped it. The
+memory is the caller's to give back by destroying the region it built from.

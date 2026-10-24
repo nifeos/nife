@@ -10,11 +10,10 @@ has no room for.
 - [`pricing-the-glue-path.md`](pricing-the-glue-path.md): the graph measured the same way for both
   paths, quality per primitive, the `rsa` argument and the `deny.toml` suppression, and the test
   of §46 (thin primitives or whole subsystems).
+- [`the-exerciser-test.md`](the-exerciser-test.md): why the kernel test runs the vectors on every
+  architecture, and what its transcript check pins.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `the-getrandom-gap` Name: provisional.
-- `pricing-the-glue-path` Name: provisional. After the parent's own heading.
+Each stem here is named for its content, and calef names files.

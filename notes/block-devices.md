@@ -184,6 +184,25 @@ mount's 352 KiB high-water, and `start_maker` destroys the previous run's region
 another. When reservations pile up, the symptom is an unrelated test failing to get its budget
 several tests later.
 
+## The disk tests
+
+`system_tests/src/user/disk_tests.rs` states each claim. Two reasons behind them live here.
+
+The write half's entropy refusal is not a policy. A GPT partition and a RedoxFS volume each carry
+an identifier that must be globally unique. `crates/globally_unique_identifier_partition_table`
+refuses to invent a GUID (notes/globally-unique-identifier-partition-table.md). The engine's
+`Header::new` is std-gated because it calls `getrandom` (vendor/README.md, divergence 4). So a
+program without the entropy rendezvous genuinely cannot make an identifier, and the test checks
+that it says so rather than making one up. A working `mkfs` proves nothing about authority, since
+every Unix has one and it reaches every disk. The test withholds each capability from the same
+binary, budget and stack, then reads the disk.
+
+On the PVH x86_64 leg the roster must name exactly five virtio disks (nifefs 0, RedoxFS 1, crash
+2, GPT 3, blank 4), plus one NVMe controller when `NIFE_NVME` is set. The runner attaches three of
+them only if their images exist, and the rest of the assertions hold for any count. Without the
+exact count, a runner that lost a fixture would read as a skip, or as a protective-MBR panic that
+names neither disk.
+
 ## What this lane deliberately did not do
 
 - No hot plug. The roster is written once and never again. A hot-plug story would change
@@ -219,6 +238,20 @@ comment records that it was told not to and why it did anyway: the unregister ha
 handed to a second driver after the first programmed the device. That is a lifetime decision about a
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.
+
+## What a survey reports
+
+`ROLE_SURVEY` on the test disk of milestone 57 (partitioning and formatting a real drive), a 64 MiB
+image `sgdisk` partitioned:
+
+```text
+roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
+table  : 3 partitions, disk GUID 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506
+         1  EFI system    2048..10239
+         2  linux root   10240..30719
+         3  nife data 30720..131038
+backup : agrees with the primary
+```
 
 ## See also
 

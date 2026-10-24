@@ -148,6 +148,68 @@ to account for the residue. There is no gate: as with `sched::MAX_THREADS`, a cl
 usually a boot doing more, and a gate needs a held list like the frame ledger's
 ([frames.md](frames.md)), which regions do not have yet.
 
+## The `memory_regions` crate
+
+The kernel's allocator (`kernel/src/memory_region.rs`) is a bump watermark per region, with a
+parent and child tree from `SPLIT` and a LIFO return of pages on `DESTROY`. The property that
+matters is no double free: a physical page reaches the frame allocator at most once across any
+sequence of create, split and destroy. `crates/memory_regions` holds the decisions that property
+rests on, extracted so Kani can prove them and the kernel calls the proved code rather than
+keeping a parallel copy (the discipline in notes/verification.md).
+
+- `split_new_watermark` carves a child off a parent's budget by advancing the parent's watermark.
+  A successful carve stays within budget, does not overflow, and strictly progresses, so
+  consecutive carves are disjoint runs within the parent.
+- `destroy_outcome` decides a reclaim. A region with a live object (`pinned`) or a live child
+  refuses, and a root frees its run to the allocator. A child never frees to the allocator: its
+  pages go back to the parent (a LIFO un-bump, or a hole). That last rule is the crux. A page
+  reaches the allocator only when the root that owns it is destroyed, and each root owns one
+  contiguous run from one allocation.
+
+### The claim
+
+The gap "How a region is reclaimed" describes is not hypothetical: riscv64 showed it on two cores as
+`double free of frame 0x82a3e000`. `claim_for_destroy` takes `&mut self`, so the gap cannot be
+written. That is rung one of the ladder in `AGENTS.md`: the caller holds either the table or a
+claim, never a decision about a table it no longer holds. Removing the slot before the caller's I/O
+also protects everything else that resolves the name, since a retype on a region whose pages are on
+their way back to the allocator fails.
+
+`DestroyClaim` is the exclusive right to reclaim one region's pages. Only `claim_for_destroy` mints
+one, it has no public constructor, and it is neither `Copy` nor `Clone`, so the kernel's free loop
+runs against a value nothing else can hold. Its fields are what the caller needs for the I/O the
+table cannot do: revoke the mappings, then free the run to the frame allocator (a root) or give it
+back to the parent (a child, through `return_to_parent`). Loom checks the claim
+(`script/interleaving-check`). Kani does not model two callers.
+
+### Returning a child
+
+`return_to_parent` runs the LIFO test against the parent's current watermark in the same borrow
+as the un-bump, so nothing can carve from the parent in between. A child at the top of the
+parent's run gives its pages back and the run can be split again.
+
+A child returned out of order leaves a hole only until nothing above it is live. Without that, a
+bump-only pool (the progenitor's job pool) leaks a job's pages every time two jobs end in the order
+they started (notes/swish-check-flake.md). So after the un-bump the watermark drops further, to the
+highest page anything still holds: a live child's end, or the region's own retypes
+(`retyped_to`). `coalesced_watermark` is that rule, proved.
+
+The drop happens only when no sibling is in flight. A sibling that has been claimed but not yet
+returned has left the table while its pages are still being revoked, so the scan cannot see where it
+sits. Dropping the watermark under it would let the parent carve pages a peer may still map, the
+use-after-free of §13 (capability revocation and untyped reclamation). The parent's child count
+tells, because it drops at the return and not at the claim. A count above the live children the scan
+found means a sibling in flight (or the phantom child below), and then only the LIFO un-bump
+happens. The next return with nothing in flight reclaims the holes, because the scan starts from the
+live set each time. The count dropping at the return is also what keeps the parent from being
+reclaimed while this child's pages are in flight. Decrementing at the claim would reopen the claim's
+window one level up the tree.
+
+`spent` counts `Frames` and each `Object` kind over the whole subtree. A job budget's own pages are
+almost all carved into job regions, and the objects live in those, so a count of the budget alone
+would say its threads cost nothing. `Children` is the region's alone, since it is exactly the pages
+the subtree counts are drawn from.
+
 ## BUGS
 
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
@@ -159,5 +221,11 @@ usually a boot doing more, and a gate needs a held list like the frame ledger's
   records non-binding guidance for whoever has a customer: cause-specific `Error` variants, the
   shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's `EMFILE`/`ENFILE`.
 - **A split refused for a full table still bumps the parent**, which can then never be reclaimed.
-  `RegionTable::split`'s `# BUGS` has the reproduction, and
+  The phantom child also stops `return_to_parent` coalescing, so the parent keeps only the LIFO
+  rule. `RegionTable::split`'s `# BUGS` has the reproduction, and
   [region-split-on-a-full-table.md](region-split-on-a-full-table.md) the proposal.
+- A hole under a live child is not reused while that child lives, because `split` only bumps. A
+  parent whose children always overlap (each carved before the one below it returns) never drains,
+  so its holes never close. With every reap held back 150 ms, the riscv64 swish-check pool fills. A
+  carve that searched the holes first would close it, at the price of the same scan on every split.
+  It is not built, because no real workload has shown the overlap.

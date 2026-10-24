@@ -232,6 +232,23 @@ Linux)). A client maps only its own window, and the server answers one request a
 clients staging at once touch different pages. A badge no client was given is refused before
 anything is staged.
 
+## The DMA escape test
+
+`a_confined_el0_server_cannot_dma_outside_its_region` is the storage twin of
+`display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu` and of `block_driver`'s two
+virtio attacker roles. The headline test asserts `confined_by_iommu`, which is a claim the boot
+made rather than one it attacked: the decorative assertion milestone 202 (every confinement test is
+a ritual until somebody breaks the confinement and watches it fail) was minted against. Here an EL0
+server points the controller at a frame outside its region, in both directions. Milestone 202's
+convention holds: a claim, a test and a replayable falsification, whose patch widens the
+controller's IOMMU domain over the victim so the escape lands.
+
+The proof is the IOMMU fault and an untouched canary, not the controller's completion status.
+QEMU's NVMe model may answer a DMA it could not perform with an error or by dropping it, and the
+GPU and virtio escape tests anchor on the fault for the same reason. A CPU read of the victim
+bypasses the IOMMU, so the kernel can read the canary while the device's view of that frame is
+unmapped. The canary is the assertion the patch flips.
+
 ## BUGS
 
 - What the driver does not withhold ("What it does not withhold", above): the IOMMU bounds the *controller* to a
