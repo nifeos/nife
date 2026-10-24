@@ -1,5 +1,7 @@
 # How extended attributes are proven
 
+*Name: provisional, after the parent's own heading. calef names files.*
+
 An appendix to [`notes/xattr.md`](../xattr.md). It holds the host tests, the crash-consistency
 sweep, the on-device witness, and the three caretaker witnesses of milestone 61 (the caretakers),
 each with the control that must fail.

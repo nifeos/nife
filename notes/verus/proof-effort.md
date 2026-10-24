@@ -1,5 +1,7 @@
 # The number that decides it: proof effort
 
+*Name: provisional, after the parent's "The number that decides it: proof effort".*
+
 An appendix to [`notes/verus.md`](../verus.md). It holds the proof-effort figures from both
 Atmosphere papers, their comparison table and its inconsistency, the OOPSLA examples, seL4's cost,
 Atmosphere's syscall figures second-hand, and the extrapolation to this kernel.

@@ -1,5 +1,7 @@
 # Merge methods and holds: no squash at the repository, and `Blocked-by:`
 
+*Name: provisional.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md), which keeps the rules. This file holds
 why squash and rebase merging were disabled at the repository, and why a hold names its own release
 condition.

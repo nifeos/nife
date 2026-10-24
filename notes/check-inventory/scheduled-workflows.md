@@ -1,5 +1,7 @@
 # The check inventory: the scheduled workflows on 2026-09-03
 
+*Name: provisional.*
+
 An appendix to [`notes/check-inventory.md`](../check-inventory.md). Nothing blocks a scheduled
 workflow by construction. `script/cadence-check` (milestone 238 (two scheduled checks have never
 once succeeded)) now derives the last-result column, so read that column as the 2026-09-03 snapshot.

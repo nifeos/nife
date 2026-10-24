@@ -1,5 +1,8 @@
 # The first sweep, 2026-09-03: every finished block read
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the parent's "The
+sweep, 2026-09-03". calef names files.*
+
 The evidence behind [`notes/follow-on-work.md`](../follow-on-work.md)'s sections "The sweep,
 2026-09-03" and "What the sweep found, and which of it to promote first". The parent keeps the
 conclusions and the five items worth promoting; this file keeps the table, the side findings and

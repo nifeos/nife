@@ -1,5 +1,7 @@
 # The instruction clock: why it is opt-in
 
+*Name: provisional. Named after the parent's own heading.*
+
 An appendix to [`notes/instruction-clock.md`](../instruction-clock.md). It records what `-icount`
 costs, measured on 2026-08-17 (UTC), and why the instrument is its own boot mode and feature rather
 than part of `script/test`.

@@ -1,34 +1,23 @@
 //! The builders: the thin shapes over the ABI that make one child each (a grant, a caretaker, the
-//! network stack, a graphical terminal session, the terminal), and `reclaim`. Moved out of `lib.rs`
-//! unchanged but for visibility by milestone 843 (the system-initializer crate root is split along
-//! its seams), under §279 (the system-initializer crate root splits into private modules).
+//! network stack, a graphical terminal session, the terminal), and `reclaim`. Why caretakers and
+//! sessions are built and reclaimed the way they are is in notes/system-initializer/children.md.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
 use super::*;
 
 // -------------------------------------------------------------------------------------------
-// The thin shapes over the ABI. The loader itself is `supervision_protocol`'s, which is the tree's
-// only one since milestone 96.
+// The thin shapes over the ABI. The loader itself is `supervision_protocol`'s.
 // -------------------------------------------------------------------------------------------
 
 /// **Build the caretaker a directory grant is delivered by**, and hand back its endpoint.
 ///
-/// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` with its name set on a page
-/// from the job's region when the shell sent one (milestone 205 (how a foreign program is told what
-/// to do)'s designation half, `spawnproto::NAMESET_BIT`). A set that arrives for a program that does
-/// not hear words is refused with the grant.
-///
-/// **A program that hears words gets the rights its endowed manifest allows, and no more** (§170
-/// clause 4): the shell asked with the rights of the note it read, and this clamps them to the
-/// manifest decided here, which for bytes nobody vouched for is read-only
-/// (`grant_plan::UNVOUCHED_STD_MANIFEST`).
-///
-/// **Out of line on purpose.** `spawn_service`'s frame is on the stack under every activation, and
-/// an install of `uptime` runs `package_archive`'s parser beneath it; in a debug build that path
-/// sat within about 400 bytes of the progenitor's 32 KiB stack (kernel `PROGENITOR_STACK_PAGES`) until
-/// these locals were moved here. CI found it on 2026-09-27 as a data abort one word below the
-/// stack's lowest page.
+/// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` with its name set
+/// (`set_seen`, `spawnproto::NAMESET_BIT`) on a page from the job's `region`. A set that arrives
+/// for a program that does not hear words is refused with the grant, as `None`. For a program that
+/// hears words, the rights the shell asked for are clamped to what `manifest` allows (§170 (how a
+/// foreign program is told what to do) clause 4), which for unvouched bytes is read-only. Out of
+/// line so its locals stay off the spawn service's frame.
 #[inline(never)]
 pub(super) fn build_grant(
     own_ut: u64,
@@ -70,36 +59,15 @@ pub(super) fn build_grant(
     }
 }
 
-/// **Build a `fs_subtree_caretaker` for one directory grant and hand back the narrowed endpoint**
-/// (milestone 31 phase 3, DECISIONS §92).
-///
-/// This is the whole of what "the command line is a grant expression" needed and did not have. The
-/// FS service's unit of authority is a *directory* (§27) and `rm rmtree/rm-keep` says less than that,
-/// so the narrowing is a **caretaker**: a process that holds the file service, descends once into the
-/// granted directory asking for exactly the granted rights, and serves the same contract on an
-/// endpoint of its own. The program then holds that endpoint and **nothing that names the FS
-/// server**, so "it cannot reach a sibling directory" is a property of its capability table rather than of a
-/// branch it is trusted to take.
-///
-/// `region` is the client's region, and everything here comes out of it; see
-/// [`DIR_JOB_REGION_PAGES`] for why that is the lifetime rule rather than a convenience.
-/// `care_words` are the caretaker's three `START` words exactly as the shell packed them.
-///
-/// # The handshake is what makes this safe to call from the progenitor
-///
-/// The progenitor has no second thread: it is this loop, and a `RECEIVE` that never completes is a machine that
-/// never takes another command. So the readiness endpoint is not an optimization, it is the thing
-/// that bounds this call, and `fs_subtree_caretaker` answers `DESCENT_REFUSED` rather than trapping
-/// precisely so that `rm nosuchdir/x` costs a refusal instead of the prompt.
+/// **Build a caretaker for one directory grant and hand back its endpoint**, which the program
+/// holds instead of anything naming the file server (DECISIONS §92 (a caretaker is supervised by
+/// the client it serves)). Everything comes from the client's `region`; `care_words` are the
+/// `START` words as the shell packed them. `None` when the descent is refused or the build fails.
+/// See notes/system-initializer/children.md.
 ///
 /// # BUGS
 ///
-/// **A caretaker that dies before it answers still parks the progenitor.** The handshake covers the refusal a
-/// person can cause by typing a name that is not there; it does not cover an image whose caretaker
-/// faults on its own stack, because a corpse sends nothing. Nothing in the ABI offers a receive with
-/// a deadline, and giving the progenitor one would mean a second thread inside the process this system's whole
-/// design keeps small. The exposure is a build defect rather than an input, and it is the same one
-/// `kernel::user::fs_service::wait_for_caretaker` has carried since milestone 47.
+/// - A caretaker that dies before answering parks the progenitor: no receive has a deadline.
 pub(super) fn build_caretaker(
     own_ut: u64,
     region: u64,
@@ -110,8 +78,6 @@ pub(super) fn build_caretaker(
 ) -> Option<u64> {
     let narrow_ep = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
     let ready = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
-    // The shared page, and the name set read-only where `fs_nameset_caretaker` reads it (milestone
-    // 205), when there is one.
     let maps = [
         (FS_CLIENT_PAGE_VA, fs.page, abi::address_space::MAP_RW),
         (
@@ -120,9 +86,7 @@ pub(super) fn build_caretaker(
             abi::address_space::MAP_RO,
         ),
     ];
-    // Its whole authority, and reading these three lines is reading it: the file service to
-    // attenuate, the endpoint it will serve, and one place to say it is ready. No untyped, no clock,
-    // no terminal, and nothing that could name another process.
+    // Its whole authority: no untyped, no clock, no terminal, nothing that names another process.
     let built = build_child(
         own_ut,
         region,
@@ -138,11 +102,8 @@ pub(super) fn build_caretaker(
             ..ChildEndowment::new(Retention::Nothing)
         },
     );
-    // **Deliberately unsupervised** (`fault: None`). A caretaker built into the client's region is
-    // already collected by the client's reap, and giving it a fault slot on `deaths` would put a
-    // second death message on that endpoint for a thread whose region the first reap had already
-    // taken away: `job_undertaker` would then be asked to collect a tid the scheduler no longer
-    // knows, which it reads as the kernel contradicting itself and traps on.
+    // No fault slot: the client's reap collects it, and a second death message would make
+    // `job_undertaker` trap on a tid the scheduler no longer knows.
     let child = built.ok()?;
     let started = start_child(child, care_words.0, care_words.1, care_words.2);
     if !started {
@@ -150,15 +111,13 @@ pub(super) fn build_caretaker(
         cap_delete(narrow_ep);
         return None;
     }
-    // The one bounded wait. `READY` means the descent succeeded and everything the client can reach
-    // it will reach through the handle that one request minted.
+    // The one bounded wait: the caretaker answers `READY` or `DESCENT_REFUSED`, never nothing.
     let (verdict, _, _) = receive(ready);
     cap_delete(ready);
     if verdict == filesystem_contract::READY {
         Some(narrow_ep)
     } else {
-        // A refused descent. The caretaker has already exited; the endpoint goes back, and the
-        // caller answers the prompt without building the program.
+        // A refused descent; the caretaker has already exited.
         cap_delete(narrow_ep);
         None
     }
@@ -166,19 +125,11 @@ pub(super) fn build_caretaker(
 
 /// **Give a failed job's region back, retrying while something in it can still run.**
 ///
-/// A `DESTROY` of a region holding a live thread is refused with §16's kill armed, and one
-/// preemption later the retry succeeds; that is `sched::reclaim_region`'s documented contract and it
-/// is why the shell's `^C` escalation is a loop. It reaches this path when a directory grant's
-/// caretaker was built and the program behind it was not: the caretaker is parked in `RECEIVE`, the
-/// endpoint sweep wakes it, and a single attempt would leave [`DIR_JOB_REGION_PAGES`] spoken for
-/// until the machine stops. That is the *out of memory* path, which is exactly where a leak hurts
-/// most.
-///
-/// Bounded and silent on failure, which is not the same call `job_undertaker` makes and the
-/// difference is who is running: that program's whole job is collecting, so giving up there means a
-/// leak nobody will see and trapping is the loud answer. This is the spawn service, and a trap here
-/// takes the prompt down over one command's memory. The pool is bounded and renewable, so a region
-/// this could not reclaim costs later commands and does not end them.
+/// A destroy of a region holding a live thread is refused with the kill of §16 (object revocation:
+/// reclaim the objects a process built) armed, and one preemption later succeeds
+/// (`sched::reclaim_region`). The path is reached when a directory grant's caretaker was built and
+/// its program was not. Bounded and silent on failure, unlike `job_undertaker`: a trap here would
+/// take the prompt down over one command's memory. See notes/system-initializer/children.md.
 pub(super) fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
         if supervision_protocol::memory_region_destroy(region) {
@@ -193,35 +144,17 @@ pub(super) fn reclaim(region: u64) {
 ///
 /// # BUGS
 ///
-/// **One preemption is enough and sixty-four attempts do not reliably buy one**, which is a
-/// different claim from the one above and the measurement is not this crate's. `login_test_client`
-/// carried this exact loop, over the same refusal, and it was measured on 2026-08-27 (see that
-/// program's `destroy_with_retry` and notes/load-sensitive-assertions.md): a `yield_now` that finds
-/// work on this core returns in about 130 us, so sixty-four of them can elapse in 8 ms, where the
-/// preemption being waited for is a whole tick period (10 ms) away. Whether the count covers the
-/// tick is a scheduling outcome the host decides, and at roughly 2x oversubscription it stopped
-/// covering it in about one run in three. That client now waits on the property with a clock; this
-/// loop was left as it is, deliberately, because the two failures are not the same size: a test
-/// client that gives up early fails a run, and this gives up quietly and strands
-/// [`DIR_JOB_REGION_PAGES`] until the machine stops. **The failure has never been observed here**,
-/// and it would be invisible if it happened, which is the argument for a lane rather than for a
-/// number: this wants the same clock-bounded wait and a way to notice when it expires.
+/// - Under load the count may miss the preemption and silently strand a region (the note's
+///   "How many times `reclaim` retries", notes/system-initializer/children.md).
 const RECLAIM_ATTEMPTS: usize = 64;
 
-/// **Build `net_stack` from the NIC trio and wait for its DHCP lease** (milestone 590
-/// (provisional)). Returns `(stack, lease, name server)`: the full-rights endpoint its clients
-/// `CALL`, which this process keeps, the IPv4 address `net_stack` reported, big-endian in the low
-/// 32 bits, and the lease's name server in `socket_contract::lease`'s encoding.
-///
-/// The endowment is `kernel::user::virtio_service::wire_net_server`'s, slot for slot, because that
-/// is the one every network test proves: report `WRITE` (0), interrupt `READ` (1), transport
-/// `WRITE` (2), heap budget `WRITE` (3), client endpoint `READ` (4), the DMA page at
-/// [`NET_DMA_VA`], and `socket_contract::NO_LISTEN_GRANT` as its third argument. The caller
-/// deletes the trio; this deletes everything else it made except the endpoint it returns.
-///
-/// Failures trap, as the entropy build's do: every step here is a retype or a build out of this
-/// process's own budget, and one failing means the boot's arithmetic is wrong, which is a defect to
-/// see rather than a feature to go without.
+/// **Build `net_stack` from the NIC trio and wait for its DHCP lease.** Returns `(stack, lease,
+/// name server)`: the full-rights endpoint its clients `CALL`, which this process keeps, the IPv4
+/// address `net_stack` reported, big-endian in the low 32 bits, and the lease's name server in
+/// `socket_contract::lease`'s encoding. The endowment is
+/// `kernel::user::virtio_service::wire_net_server`'s, slot for slot, with
+/// `socket_contract::NO_LISTEN_GRANT`. The caller deletes the trio; this deletes everything else it
+/// made but the endpoint. Failures trap: one means the boot's arithmetic is wrong.
 pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) -> (u64, u64, u64) {
     let mapped = map_page_frame(g.virtio_net_dma, NET_DMA_PEEK_VA, true, ut);
     must_ok(mapped);
@@ -251,9 +184,8 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
                 (budget, abi::rights::SPEND_ONLY),
                 (stack, abi::rights::READ),
             ],
-            // §255 (each socket is its own capability): slot 7, our endpoint again with `WRITE |
-            // GRANT`, which each socket's capability is minted from; slot 8, its own address
-            // space, so `CLOSE` can take a socket's page back. `socket_contract::stack_slots`.
+            // §255 (each socket is its own capability): the endpoint sockets are minted from, and
+            // its own address space, so `CLOSE` can take a socket's page back.
             placed: &[
                 (
                     socket_contract::stack_slots::MINT,
@@ -278,8 +210,7 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
         socket_contract::NO_LISTEN_GRANT,
     ));
     cap_delete(budget);
-    // `net_stack`'s first and only message on this endpoint: the lease, sent with a blocking
-    // `send`, so it enters its serve loop only once this receive has taken it.
+    // Its only message here, sent blocking: it serves nobody until this receive takes it.
     let (lease, name_server, _) = receive(report);
     cap_delete(report);
     (stack, lease, name_server)
@@ -305,11 +236,9 @@ pub(super) fn start_domain_name_resolver(
     ))
 }
 
-/// **What the boot says about its network** (milestones 590 (the booted system starts its network
-/// stack) and 892): the lease `net_stack` reported, so the line is evidence rather than an
-/// intention, and the server the resolver asks, which is where every name a program at this prompt
-/// asks will go. Silent on a boot with no network. Split out of [`boot`](crate::boot) to keep it
-/// under its length ratchet.
+/// **What the boot says about its network**: the lease `net_stack` reported, so the line is
+/// evidence rather than an intention, and the name server the resolver asks, or why there is no
+/// resolver. Silent on a boot with no network.
 pub(super) fn announce_network(term_ep: u64, network: Option<(u64, u64, u64)>, resolver: bool) {
     let Some((_, lease, name_server)) = network else {
         return;
@@ -338,18 +267,12 @@ pub(super) fn announce_network(term_ep: u64, network: Option<(u64, u64, u64)>, r
     }
 }
 
-/// **Build `domain_name_resolver` on the booted system's stack** (milestone 892 (a std program at the
-/// prompt holds the network and a resolver)), told to ask `server`, the name server the DHCP
-/// lease named, on port 53 over UDP (and over TCP when a reply is truncated). Returns its unbadged
-/// endpoint, which this process keeps for the life of the boot: it mints each resolving job's
-/// badged copy from it, and sends the grant and the forget through it.
-///
-/// The endowment is the kernel harness's (`name_resolver_tests::start_resolver`), slot for slot:
-/// its endpoint `READ` (0), the stack `WRITE` (1), a budget with every right (2), the entropy
-/// service `WRITE` (3), and its own address space `WRITE` (4) for a forget's `UNMAP`. What differs
-/// is the server: the harness names the runners' peer, and this names whatever the lease said.
-///
-/// Failures trap, [`build_net_stack`]'s reason.
+/// **Build `domain_name_resolver` on the booted system's stack**, told to ask `server`, the
+/// lease's name server, on port 53 over UDP (TCP when a reply is truncated). Returns its unbadged
+/// endpoint, which this process keeps: each resolving job's badged copy is minted from it, and the
+/// grant and the forget are sent through it. The endowment is the kernel harness's
+/// (`name_resolver_tests::start_resolver`), slot for slot, but for the server. Failures trap, for
+/// [`build_net_stack`]'s reason.
 pub(super) fn build_domain_name_resolver(
     ut: u64,
     program: &elf::Elf,
@@ -368,10 +291,7 @@ pub(super) fn build_domain_name_resolver(
             placed: &[
                 (0, service, abi::rights::READ),
                 (1, stack, abi::rights::WRITE),
-                // Every right, as the harness's `memory_region_lending_capability`: the resolver
-                // lends each socket it opens a page retyped from this budget, and since milestone
-                // 824 (a retype mints no right its budget lacks) that `SEND_CAP` needs `GRANT`
-                // here. `SPEND_ONLY` answered every resolve "the resolver had no socket page".
+                // Every right: lending a socket a page retyped from this budget needs `GRANT`.
                 (2, budget, abi::rights::ALL),
                 (3, entropy, abi::rights::WRITE),
                 (
@@ -394,17 +314,11 @@ pub(super) fn build_domain_name_resolver(
     service
 }
 
-/// **What a `graphical_terminal` session is made of, measured, and whether this boot can launch one**:
-/// [`boot`]'s verdict (milestone 632 (provisional)). `held` means the kernel granted a gpu and
-/// the table vouches for both `gpu_driver` and `display_terminal`, so the spawn service keeps the
-/// gpu's four (and the keyboard's three when `keyboard` is also true, which additionally needs its
-/// grant and a vouched `keyboard_driver`) for every session it builds (milestone 715
-/// (provisional): until then the shell held them). A grant no session can be built from is
-/// released at once, rather than carried, which is the posture every kernel grant here already
-/// takes.
-///
-/// Never inlined, so the verdict's temporaries stay out of [`boot`]'s frame (see the comment where
-/// `boot` calls this).
+/// **What a `graphical_terminal` session is made of, measured, and whether this boot can launch
+/// one.** `held` means the kernel granted a gpu and the table vouches for `gpu_driver` and
+/// `display_terminal`; `keyboard` also needs the keyboard's grant and a vouched `keyboard_driver`.
+/// The spawn service keeps what is held for every session it builds, and a grant no session can be
+/// built from is deleted here. Never inlined, so the measured images stay out of [`boot`]'s frame.
 #[inline(never)]
 pub(super) fn graphical_terminal_grants(
     fs: &nifefs::Fs<'static>,
@@ -445,7 +359,7 @@ pub(super) struct GraphicalTerminalCaps {
     pub(super) held: bool,
     pub(super) keyboard: bool,
     /// The gpu's four, in the boot endowment's slots, held by the spawn service for the life of
-    /// the boot (milestone 715 (provisional)). Meaningful only when `held`.
+    /// the boot. Meaningful only when `held`.
     pub(super) gpu: [u64; 4],
     /// The keyboard's three, likewise. Meaningful only when `keyboard`.
     pub(super) kbd: [u64; 3],
@@ -455,9 +369,8 @@ pub(super) struct GraphicalTerminalCaps {
 }
 
 /// The session's line discipline, which is the boot's own pair of programs: the supervisor that
-/// builds `line_editor`, and the measured `line_editor` bytes it is handed as a blob (the
-/// 2026-09-27 ruling that made `terminal_supervisor` what builds `line_editor`). A session's
-/// discipline is therefore the boot's discipline, built twice from one measurement.
+/// builds `line_editor`, and the measured `line_editor` bytes it is handed as a blob. A session's
+/// discipline is the boot's discipline, built twice from one measurement.
 pub(super) struct SessionDiscipline {
     pub(super) supervisor: elf::Elf<'static>,
     pub(super) discipline: &'static [u8],
@@ -483,60 +396,26 @@ const KBD_MODE_DIRECT: u64 = 1;
 const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
 const SCREEN_IN_VA: u64 = address_space_map::pair_page(0x0000_0000_00a1_0000);
 
-/// **One `graphical_terminal` session's region, in pages** (milestone 632 (provisional)): everything the
-/// session is made of, so the session job's one reap ends the drivers with it, DECISIONS §92's
-/// shape. Bounded from the constants rather than measured, which is the BUGS entry this comment
-/// owes:
+/// **One `graphical_terminal` session's region, in pages**: everything the session is made of, so
+/// the session job's one reap ends the drivers with it. Measured on aarch64 and riscv64 under
+/// `script/swish-check`'s graphical launch, not counted; it comes out of [`JOBS_BUDGET_PAGES`] for
+/// the life of the session. How it was measured is in notes/system-initializer/budgets.md.
 ///
-/// - four program-shaped children (`gpu_driver`, `display_terminal`, `keyboard_driver` on the arm
-///   that builds it, and the `graphical_terminal` program itself): [`JOB_REGION_PAGES`] bounds each, being
-///   sized for exactly one archived program's image, twelve stack pages, TCB, address space and
-///   tables;
-/// - the discipline: the supervisor, bounded by [`JOB_REGION_PAGES`] as above, plus the
-///   discipline's own image it is handed as a blob (one more [`JOB_REGION_PAGES`]' worth) and
-///   `line_editor::component::supervisor::BUDGET_PAGES` (112, sized for the two instances a live
-///   swap needs, which a session's control-less wiring never asks for but the constant does not
-///   know that);
-/// - two [`GRAPHICAL_MAP_BUDGET_PAGES`] map budgets, the driver's and the terminal's;
-/// - the endpoints and pair pages this wiring retypes: nine at the most.
+/// # BUGS
 ///
-/// That sums to four hundred fifty-seven, and the count was wrong. **Measured 2026-10-03 (UTC)**
-/// by bisecting this constant under `script/swish-check`'s graphical launch (then `--graphical`), keyboard arm: aarch64
-/// needs 490 to 493 pages and riscv64 494 to 495. At the counted 464 the session's last child
-/// (`keyboard_driver`, or at 481-489 the session program itself) could not be built, the launch
-/// answered `could not spawn`, and CI's graphical leg failed. Five hundred twenty-eight is the
-/// riscv64 measurement plus about seven percent. Bisected on those two ISAs only: x86_64 has no
-/// graphical leg (milestone 192 (a keyboard on real silicon)'s x86_64 half is unbuilt), so its need
-/// is unmeasured and ungated, and that leg's arrival must re-bisect this.
-///
-/// **Plus sixteen for the atlas's faces** (milestone 142 (a text display good enough that people
-/// use it instead of a GUI) increment 5): `display_terminal` draws bold, italic and bold italic
-/// from `glyph_atlas`, 105 KB of tables, against a grid 45 KB smaller, so its riscv64 image loads
-/// 209 pages where it loaded 193, and every other program in the session is unchanged. At 528
-/// CI's riscv64 keyboard-arm launch answered `could not spawn` (run 39378568861). Added rather
-/// than re-bisected: this machine's riscv64 `swish-check` stops at its package boot before the
-/// graphical one, so CI's riscv64 leg is the measurement.
-///
-/// It comes out of the job pool ([`JOBS_BUDGET_PAGES`], six hundred seventy-two), once, for the
-/// life of the session: while a session runs, plain native jobs still spawn from the 128 left (two
-/// [`JOB_REGION_PAGES`] regions at once), and a `std` job or a second session is refused, which
-/// the shell reports as `could not spawn`.
+/// - On `x86_64` this is unmeasured and ungated: there is no graphical leg.
 pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 544;
 
-/// Drop every capability named, freeing the slots. A builder's means, spent once the children
-/// hold their own narrowed copies: on the success path after the last build, and on every
-/// failure path after the thing they wired was built or failed, for the ordinary spawn path's
-/// own reason (a failed spawn does not cost this capability table a slot for the rest of the
-/// boot).
+/// Drop every capability named, freeing the slots: a builder's means, spent once the children hold
+/// their own copies or the build failed, so a failed spawn costs no slot for the rest of the boot.
 fn drop_caps(caps: &[u64]) {
     for c in caps {
         cap_delete(*c);
     }
 }
 
-/// One `graphical_terminal` launch's everything: the resources the session is built from and with. A record
-/// rather than a parameter list, because [`build_graphical_terminal_session`] and its builder take the same
-/// ten facts twice, and a reader holding either call site should not have to count positions.
+/// The resources one `graphical_terminal` launch is built from and with, as a record because
+/// [`build_graphical_terminal_session`] and its builders all take them.
 pub(super) struct GraphicalTerminalLaunch<'a> {
     /// The spawn service's own untyped: the loader's scratch tables for every build come from
     /// here, everything the children are made of from [`Self::region`].
@@ -546,12 +425,12 @@ pub(super) struct GraphicalTerminalLaunch<'a> {
     /// The supervision endpoint every job is born under. The session program's fault slot, so its
     /// one reap sweeps the drivers with it.
     pub(super) deaths: u64,
-    /// The boot discipline's endpoint: the UART arm's keystroke source (milestone 632
-    /// (provisional)), the spawn service's only copy.
+    /// The boot discipline's endpoint: the UART arm's keystroke source, the spawn service's only
+    /// copy.
     pub(super) boot_terminal: u64,
     /// The shell's result endpoint, the session program's slot 0.
     pub(super) result_ep: u64,
-    /// The gpu's four, the spawn service's own (milestone 715 (provisional)): lent, never consumed.
+    /// The gpu's four, the spawn service's own: lent, never consumed.
     pub(super) gpu: &'a [u64; 4],
     /// The keyboard's three, when this boot has one; lent likewise.
     pub(super) kbd: Option<&'a [u64; 3]>,
@@ -559,42 +438,14 @@ pub(super) struct GraphicalTerminalLaunch<'a> {
     pub(super) program: &'a elf::Elf<'a>,
 }
 
-/// **Build a whole `graphical_terminal` session and start it** (milestone 632 (provisional)): `gpu_driver`
-/// and `display_terminal` on the gpu's four capabilities (lent from this process's own), then either the session's own
-/// line discipline with `keyboard_driver` behind it (the device arm, `kbd` is `Some`) or nothing
-/// but the screen, with the boot line discipline's endpoint handed to the program for raw reads
-/// (the UART arm, milestone 192 (a keyboard on real silicon)'s option A at launch). Everything
-/// the kernel's own wiring gave the driver and terminal pair
-/// (`kernel::user::display_service::start_terminal`'s slot-for-slot shape, which
-/// milestone 600 (provisional) already moved into userspace for the boot) and nothing else, so
-/// neither program can tell who built it or when.
-///
-/// **Every one-time report is taken here, and in the order the drivers send it**:
-/// `UP`, `TERM_UP`, the driver's one `FLUSHED`, and `KEYBOARD_UP`. The middle two of those are
-/// the three-week hang of milestone 177's whole second flush: a report nobody receives parks its
-/// sender for ever and the failure is total silence, which is exactly the property
-/// `script/swish-check`'s graphical launches exist to catch, now at launch rather than at boot.
-///
-/// Everything is carved from `region` (the session's job region) except the loader's own scratch
-/// tables (`own_ut`). **The session program is born supervised on `deaths`, exactly as any job
-/// is**, and the drivers and the discipline are deliberately unsupervised for the reason
-/// `build_caretaker`'s own comment records: they share the session's region, the program's reap
-/// sweeps that region, and a death message for a thread the sweep already collected would have
-/// `job_undertaker` trap on a tid the scheduler no longer knows. One reap, of the one job, ends
-/// the session's drivers with it. The device capabilities are the spawn service's own and are
-/// **not** deleted here (milestone 715 (provisional)): each driver gets a narrowed copy, and the
-/// originals stay for the next session. This process's capability to the region goes back with the
-/// build's other means: since §32 the reap is a method on the supervision endpoint, so nothing
-/// holds a capability to a live session's memory.
-///
-/// `Err(())` rather than a trap, all the way down: a session that cannot come up is a refused
-/// spawn (the shell says "could not spawn" and the prompt continues), where a boot that cannot
-/// come up is a dead machine. The failure path reclaims the region, bounded and silent as a
-/// failed ordinary spawn's is; children the sweep woke but would not collect are recorded in
-/// this module's BUGS.
-///
-/// Never inlined, so neither its locals nor the parsed images sit in [`boot`]'s frame, which
-/// lives as long as the spawn service does.
+/// **Build a whole `graphical_terminal` session and start it**: `gpu_driver` and
+/// `display_terminal` on the gpu's four (lent, never deleted), then the session's own line
+/// discipline with `keyboard_driver` when `kbd` is `Some`, or a raw view of the boot line
+/// discipline when it is not. Everything comes from the session's `region` but the loader's
+/// tables, and only the session program is supervised, so its one reap ends the drivers too.
+/// `Err(())` is a refused spawn, never a trap, and the region is reclaimed; our capability to it is
+/// deleted either way (§32 (a supervisor may collect a corpse without being able to build one)).
+/// See notes/system-initializer/children.md.
 #[inline(never)]
 pub(super) fn build_graphical_terminal_session(
     l: &GraphicalTerminalLaunch,
@@ -602,11 +453,7 @@ pub(super) fn build_graphical_terminal_session(
     d: &SessionDiscipline,
 ) -> Result<(), ()> {
     let built = graphical_terminal_session_children(l, s, d);
-    // The region cap was only ever the means of building. A session that came up is collected
-    // by its job's reap; one that did not is reclaimed here rather than left for a death that
-    // will never come, the same disposal the ordinary path gives a failed spawn. Bounded and
-    // silent, for that path's own reason: a region this could not take back costs later
-    // commands and does not end them.
+    // A session that came up is collected by its job's reap; one that did not gets no death.
     if built.is_err() {
         reclaim(l.region);
     }
@@ -628,34 +475,18 @@ fn graphical_terminal_session_children(
     let (Some(gpu_program), Some(disp_program)) = (&s.driver, &s.terminal) else {
         return Err(());
     };
-    // The keyboard's driver is checked before anything is retyped: the request announced a
-    // keyboard, so a verdict without its program is a refusal, not a session built half-endowed.
+    // Before anything is retyped: a keyboard with no driver refuses the session.
     if kbd.is_some() && s.kbd_driver.is_none() {
         return Err(());
     }
-    // --- the driver: the confined transport, the interrupt, the display endpoint's serving half,
-    // a map budget and the whole DMA run. `components/src/gpu_driver.rs`'s slots 0-5. ---
     let (display, driver_report) = start_gpu_driver(l, gpu_program)?;
 
-    // --- the terminal: `painter`'s authority plus the endpoint it serves and the page an
-    // application writes into. `components/src/display_terminal.rs`'s slots 0-5. ---
     let (term, out) = start_display_terminal(l, disp_program, display, driver_report)?;
 
-    // --- the keystroke source, and it decides the program's arm. With a keyboard (its three
-    // caps came with the gpu's four): the session's own discipline, `terminal_supervisor`
-    // building `line_editor` in `MODE_DISPLAY`, with `keyboard_driver`
-    // `CALL`ing it in `MODE_DIRECT`. Without one: no discipline and no driver, and the program
-    // reads the boot's own discipline raw, over the UART, echoing to the screen itself.
-    // `components/src/graphical_terminal.rs`'s slots 0-2 and its `x0` are the contract. ---
     let arm = match kbd {
         Some(k) => start_keyboard_arm(l, &s.kbd_driver, d, k, (term, out))?,
-        // **Arm 1 gets the raw half of the boot discipline, not the discipline** (milestone 709
-        // (a graphical terminal session on the no-keyboard arm holds only the raw half of the boot
-        // discipline)). A copy of `boot_terminal` badged `proto::RAW_ONLY_BADGE`, which the
-        // discipline answers `OPERATION_RAWMODE` and `OPERATION_READRAW` on and refuses everything else, so the
-        // session cannot `OPERATION_BYTES` a line the boot shell then runs with the shell's authority.
-        // Minted per launch and deleted below once the session holds its narrowed copy; one slot
-        // for the length of the build, under arm 0's peak (its discipline, pages and report).
+        // Only the raw half: a copy badged `proto::RAW_ONLY_BADGE`, so the session cannot send a
+        // line the boot shell would run with its own authority.
         None => {
             let raw = user_mode_runtime::badge(boot_terminal, proto::RAW_ONLY_BADGE);
             let Ok(raw) = u64::try_from(raw) else {
@@ -672,8 +503,9 @@ fn graphical_terminal_session_children(
 /// in_page, write_ep)`, where `arm` is the program's `x0` and `in_page` exists only on arm 0.
 type SessionArm = (u64, u64, u64, Option<u64>, u64);
 
-/// Build and start `gpu_driver` from the session's region and wait for its `UP`. On success the
-/// display endpoint and the driver's report endpoint, which the terminal phase needs next.
+/// Build and start `gpu_driver` from the session's region, on `components/src/gpu_driver.rs`'s
+/// slots 0 to 5, and wait for its `UP`. On success the display endpoint and the driver's report
+/// endpoint, which the terminal phase needs next.
 fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Result<(u64, u64), ()> {
     let GraphicalTerminalLaunch {
         own_ut,
@@ -727,8 +559,9 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
     Ok((display, driver_report))
 }
 
-/// Build and start `display_terminal`, wait for its `TERM_UP` and then the driver's `FLUSHED`.
-/// Consumes the display and report endpoints; on success the terminal's endpoint and write page.
+/// Build and start `display_terminal` on `components/src/display_terminal.rs`'s slots 0 to 5,
+/// then wait for its `TERM_UP` and the driver's `FLUSHED`. Consumes the display and report
+/// endpoints; on success the terminal's endpoint and write page.
 fn start_display_terminal(
     l: &GraphicalTerminalLaunch,
     disp_program: &elf::Elf,
@@ -798,8 +631,9 @@ fn start_display_terminal(
     Ok((term, out))
 }
 
-/// Arm 0: build the session's own line discipline and start `keyboard_driver` behind it, waiting
-/// for its `KEYBOARD_UP`. On failure `term` and `out` are dropped with everything made here.
+/// Arm 0: build the session's own line discipline (`line_editor` in `MODE_DISPLAY`) and start
+/// `keyboard_driver` behind it in `MODE_DIRECT`, waiting for its `KEYBOARD_UP`. On failure `term`
+/// and `out` are dropped with everything made here.
 fn start_keyboard_arm(
     l: &GraphicalTerminalLaunch,
     kbd_driver: &Option<elf::Elf<'static>>,
@@ -841,8 +675,7 @@ fn start_keyboard_arm(
         drop_caps(&[term, out, session_term, session_out, session_in]);
         return Err(());
     };
-    // `s.kbd_driver` was checked before anything was retyped, so this is the
-    // same `Some` the guard saw.
+    // The guard in `graphical_terminal_session_children` saw this `Some`.
     let kbd_program = kbd_driver.as_ref().unwrap();
     let Some(driver) = build_child(
         own_ut,
@@ -891,12 +724,7 @@ fn start_session_program(
         program: screen_elf,
         ..
     } = *l;
-    // --- the session program itself, born supervised exactly as any job is (`deaths` in the
-    // reserved fault slot, where `START` reads it and clears it), so its one reap, by
-    // `job_undertaker`, sweeps the drivers with it. Slot 0 is its answer word; slot 1 prints to
-    // the screen; slot 2 owns the keystrokes. The maps are one or two pages: the write page
-    // always, the line-delivery page only on the discipline arm, where there is a discipline to
-    // deliver lines. ---
+    // `components/src/graphical_terminal.rs`'s slots 0 to 2; the line page only on arm 0.
     let mut maps = [
         (SCREEN_OUT_VA, out_page, abi::address_space::MAP_RW),
         (0, 0, 0),
@@ -930,10 +758,7 @@ fn start_session_program(
         }
         return Err(());
     };
-    // The wiring's means are spent: the children hold their own narrowed copies, ours were only
-    // the way the wires got strung. `keys_ep` is one of them on both arms (arm 0's session
-    // discipline, arm 1's badged copy). `boot_terminal` itself is *not*: it is this process's only
-    // copy, held for the next session this boot launches.
+    // Never `boot_terminal`: it is our only copy, kept for the next session.
     drop_caps(&[term, out, keys_ep]);
     if let Some(p) = in_page {
         drop_caps(&[out_page, p]);
@@ -966,24 +791,14 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
     n
 }
 
-/// **Build the terminal: `terminal_supervisor`, which builds `line_editor`** (milestone 23 (a
-/// capability-routed component OS with live replacement), calef's ruling of 2026-09-27). `caps` is
-/// in `line_editor::component::supervisor`'s slot order after its budget: the terminal endpoint
-/// with every right (it delegates `READ`, and mints the `proto::SUPERVISOR_BADGE` copy it sends
-/// `OPERATION_QUIESCE` through), the output sink, the three pages, and the console's reply
-/// endpoint in console mode. Copies, not moves: this process frees its own as it always did.
-///
-/// No swap endpoint is passed: the trigger (milestone 198 (a package manager, and the trivial
-/// install)'s installer activating a new build) is ruled by §308 (the installer asks the terminal
-/// to swap) and not built, so nothing on this boot asks the supervisor to swap. Milestone 694 (the
-/// installer asks the terminal to swap) builds it; `terminal_supervisor`'s `BUGS`. So neither is
-/// what a swap endpoint brings with it (`line_editor::component::supervisor::OWN_IMAGE_ADDRESS`):
-/// no copy of the supervisor's own image, and `BUDGET_PAGES` rather than the swapping budget.
-/// `ut` is where the loader's own scratch tables come from; `budget` is the region the
-/// supervisor's map budget is split from. The same region at boot (the root, before the giveaway),
-/// two different ones inside a `graphical_terminal` session (milestone 632 (provisional): `own_ut` for the
-/// tables, the session's job region for everything the supervisor is made of, so its reclaim
-/// returns it).
+/// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
+/// `caps` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
+/// endpoint with every right, the output sink, the three pages, and the console's reply endpoint in
+/// console mode), and is copied, not moved. `ut` is where the loader's tables come from and
+/// `budget` is the region the supervisor is made of: the same root at boot, `own_ut` and the job
+/// region in a session. No swap endpoint is passed, because nothing yet asks the supervisor to swap
+/// (§308 (the installer asks the terminal to swap) is ruled, milestone 694 (the installer asks the
+/// terminal to swap) builds it), so it gets `BUDGET_PAGES` and no copy of its own image.
 pub(super) fn build_terminal(
     ut: u64,
     budget: u64,

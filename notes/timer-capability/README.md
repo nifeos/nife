@@ -16,11 +16,3 @@ room for.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
-
-- `specifications` Name: provisional. After the parent's "What each specification actually says".
-  calef names files.
-- `mmio-timers` Name: provisional. For the parent's "The other route: an MMIO timer the kernel
-  already knows how to delegate". calef names files.
-- `first-scaffold` Name: provisional. For the 2026-09-05 scaffold the parent's "What the fourth
-  shape costs" measured. calef names files.
-- `second-scaffold` Name: provisional. For the 2026-09-13 scaffold. calef names files.

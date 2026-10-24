@@ -1,5 +1,7 @@
 # A hole found while counting: three harnesses that nothing ran
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes.*
+
 The count in [`notes/proof-retrospective.md`](../proof-retrospective.md) found 145 harnesses in the
 tree and 140 that `script/verify` ran. This is the account of that gap as it stood on 2026-08-30,
 and how it closed the same day.

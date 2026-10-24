@@ -1,5 +1,8 @@
 # The defect corpus, row by row
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, after the parent's own
+heading.*
+
 Six rows of [the corpus table](../proof-retrospective.md#the-defect-corpus) in
 [`notes/proof-retrospective.md`](../proof-retrospective.md) deserve more than a cell. This is the
 long form of each. Every counterfactual here is a judgment, as it is in the parent.

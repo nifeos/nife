@@ -1,5 +1,7 @@
 # The comments that bound nobody, decided (milestone 112)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/unsafe-obligations.md](../unsafe-obligations.md), which summarizes it. Its
 BUGS item 1 is the finding this page decides. Milestone 112 (the SAFETY comments that bind nobody)
 decided it.

@@ -1,5 +1,8 @@
 # Splitting hello into the system's binaries: milestones 19f.2 to 19f.6
 
+*Name: provisional. For the 19f steps that split `hello` into the system's binaries. calef names
+files.*
+
 The record behind [`notes/progenitor-and-loading.md`](../progenitor-and-loading.md)'s section "The
 programs leave hello". The parent keeps the loader, the archive, the stripped ELFs and where the
 claim lives now. This file keeps how each program left the multi-role `hello` binary, what proved
