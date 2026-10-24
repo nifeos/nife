@@ -24,7 +24,7 @@ pub(super) const STD_TARGETS: [&str; 3] = [
 /// [`std_exerciser_elf`], [`std_echo_elf`], [`std_grep_elf`], and the dep-info [`std_aborts`]
 /// reads. An inherited `CARGO_TARGET_DIR` (AGENTS.md tells every lane to export one) would move the
 /// build away from all of them, so the sweep would judge stale evidence and the archive pack stale
-/// ELFs. `inherited` is the exported value; the note is empty when it already names the pin.
+/// ELFs. `inherited` is the exported value, if any; the notes are empty unless it named elsewhere.
 /// See notes/std.md, "Each worktree has its own toolchain name".
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates. Refused

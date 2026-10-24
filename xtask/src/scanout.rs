@@ -399,16 +399,16 @@ fn parse_load_average(uptime_output: &str) -> Option<f64> {
     None
 }
 
-/// **Run the kernel test suite for `arch` and prove every scanout picture while it runs.**
-/// `test_args` is the cargo invocation the caller would otherwise have handed to
-/// [`crate::host::run`]; returns whether the suite and every host-side check passed.
+/// **Run the kernel test suite for `arch` (`test_args`, the cargo invocation) and prove every
+/// scanout picture while it runs.** Returns whether the suite and, unless `--test` filtered it,
+/// every host-side check passed.
 ///
 /// Three pictures, in the order the suite runs them (tests sort by name, so `compositor_tests`
 /// precede `display_tests`, and there `a_backing...` < `a_bitmap...` < `a_confined...`): rung two's
 /// composed screen (milestone 33) and the display terminal's text (milestone 29's remaining
 /// increment), each held a few seconds so the poll cannot miss it, then rung one's test pattern
 /// (milestone 29), which stays until QEMU exits. Each is looked for only once the one before is
-/// found, so a reordered suite or a missing picture fails loudly. Stdio passes through.
+/// found, so a reordered suite or missing picture fails loudly.
 pub(crate) fn cargo_test_with_scanout_check(arch: &str, test_args: &[&str]) -> bool {
     scanout_check(arch, test_args, true)
 }
