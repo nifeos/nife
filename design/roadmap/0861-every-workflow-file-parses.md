@@ -30,10 +30,11 @@ never reports.
   fixture, a tab in the indentation, an ordinary file, and the empty directory that must fail
   loud (milestone 401 (a gate that selects the set it judges)). Text-only, in `--no-cargo`, one
   process for the directory, milliseconds.
-- The parser is `ruby -ryaml` (Ruby's stdlib YAML, Psych). Both machines the check runs on carry
-  it. This macOS's `/usr/bin/ruby` parses the tree's 25 workflow files clean, and the
-  ubuntu-24.04 runner images list Ruby 3.2.3 (the amd64 and arm64 readmes in
-  actions/runner-images, read 2026-10-15; arm64 is what ci.yml's jobs run on). No structural or
+- The parser is `ruby -ryaml` (Ruby's stdlib YAML, Psych). `script/bootstrap` installs ruby where
+  `ruby -ryaml` fails, and the `lint` job in `ci.yml` installs it explicitly. macOS ships
+  `/usr/bin/ruby`, which parses the tree's 25 workflow files clean, and the ubuntu-24.04 runner
+  images list Ruby 3.2.3 (the amd64 and arm64 readmes in actions/runner-images, read 2026-10-15;
+  arm64 is what ci.yml's jobs run on). No structural or
   regex parse of workflow files exists in the tree beside it.
 
 Reuse: the check's shape is `helpers/workflow_swallows.py`'s section in `script/lint` (selftest
@@ -56,7 +57,8 @@ check that never reports. Text-only, in `--no-cargo`, milliseconds.
   either direction in principle. The incident shape is rejected by both; a file this passes and
   GitHub rejects is the residue.
 - A machine without `ruby` on PATH fails the check naming that rather than degrading to a
-  weaker parse, so the gate is down there until ruby is installed. That is deliberate: a quiet
+  weaker parse, so the gate is down there until `script/bootstrap` (or a hand install) puts ruby
+  there. That is deliberate: a quiet
   degradation is the failure this check exists to end.
 - A lost `#` inside a `run: |` block edits the script's text and stays valid YAML. Nothing that
   reads structure can see it.
