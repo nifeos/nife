@@ -1,6 +1,7 @@
 # The riscv64 IOMMU driver
 
-*Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.*
+*Name: provisional, minted 2026-10-23 (UTC) by the riscv64 lane of milestone 929 (comments in the
+Linux style across first-party Rust).*
 
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/iommu.rs`. The portable seam, the domain builder and the confinement test
