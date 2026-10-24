@@ -8,6 +8,11 @@
 //! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
 //! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
+//!
+//! # BUGS
+//!
+//! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`, so a
+//!   lying device stops the keyboard. It could do that anyway by staying silent.
 
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
@@ -110,6 +115,8 @@ const E_DEVICE_ID: u64 = 0x02;
 const E_FEATURES: u64 = 0x03;
 const E_QUEUE: u64 = 0x04;
 const E_MODE: u64 = 0x05;
+/// The device completed a buffer this driver never posted.
+const E_COMPLETION: u64 = 0x06;
 
 fn event_buf(i: usize) -> u64 {
     EVENT_BASE + i as u64 * EVENT_LEN
@@ -192,8 +199,9 @@ fn direct_send(buf: &[u8], n: &mut usize) {
     *n = 0;
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     if mode != MODE_RING && mode != MODE_DIRECT {
         die(E_MODE);
     }
@@ -336,11 +344,11 @@ impl Events {
             let id = r32(EQ_USED + 4 + slot * 8) as usize;
             // `id` is a 32-bit value the device wrote (notes/shared-page-audit.md, finding 6): the
             // IOMMU confines where the device may touch, not what it may say, and unchecked
-            // `event_buf(id)` leaves the page at `id = 462`. A completion naming a buffer never
-            // posted is dropped, not re-posted: a bogus `id` does not say which buffer it was.
+            // `event_buf(id)` leaves the page at `id = 462`. Every buffer below `EVENTS` is always
+            // posted, so anything else names a buffer this driver never posted: the device is lying
+            // about the ring, and nothing it says after that can be trusted, so the driver stops.
             if id >= EVENTS {
-                self.seen = self.seen.wrapping_add(1);
-                continue;
+                die(E_COMPLETION);
             }
             let at = event_buf(id);
             let (kind, code, value) = (r16(at), r16(at + 2), r32(at + 4));
