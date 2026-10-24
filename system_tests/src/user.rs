@@ -112,7 +112,8 @@ macro_rules! wired_or_skip {
 #[cfg(all(test, initial_ramdisk))]
 mod disk_tests;
 
-/// **Wall-clock time** (milestone 51 lane A, DECISIONS §43 (reading the clock is a page)).
+/// **Wall-clock time** (milestone 51 (wall-clock time, the `date` command, and an NTP service)
+/// lane A, DECISIONS §43 (reading the clock is a page)).
 ///
 /// Arch-neutral on purpose: one portable binary carrying both RTC drivers, one host-tested
 /// contract, and the machine's own device tree choosing between them, so **both ISAs run literally
@@ -529,8 +530,8 @@ mod authority_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod job_undertaker_tests;
 
-/// **A memory-unsafe C component, confined** (milestone 36, DECISIONS §31 (the foreign-language
-/// seam)).
+/// **A memory-unsafe C component, confined** (milestone 36 (a foreign-language component, seam
+/// first), DECISIONS §31 (the foreign-language seam)).
 ///
 /// C is the sharpest test of a verified core that confines unverified workloads (§14 (the project's
 /// direction)): a C bug that corrupts a monolith's kernel is here a page fault in an unprivileged
