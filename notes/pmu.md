@@ -88,6 +88,34 @@ Choosing it plus long loops, back at milestone 19e, is what makes our cross-OS n
 laptop instead of only on hardware. See notes/benchmarks.md for how the two instruments are used, and
 notes/abi.md for how EL0 got read access to the generic timer.
 
+## What the userspace counter tests assert
+
+Two kernel tests check what a userspace program learns about time. Both live in
+`system_tests/src/user/`, and both compare against the kernel's own statement rather than a
+constant.
+
+`counter_frequency_tests` checks the counter frequency. Under QEMU `virt` a hardcoded 10 MHz is
+the right answer on riscv64, so a check like `freq > 0` passes it. On a board whose timebase is
+4 MHz, the VisionFive 2's, the same constant makes every userspace duration 2.5 times too long. So
+the test compares the number a program reports with the one the kernel read from the machine.
+The vehicle is `coremark`, the one program that reports its own `cntfrq` over IPC. The kernel
+spawns `coremark_builder` with `spawn_elf_child_builder`, which maps the timebase page on the
+architectures that need one. `coremark_builder` then builds `coremark` through
+`supervision_protocol::build_child_space`, the tree's one userspace ELF loader. The number the test
+asserts on has crossed both hops. The second test checks that this machine's rate is inside
+`counter_frequency_contract`'s plausibility band, the half its host tests cannot reach.
+
+`cycle_counter_tests` checks the cycle-counter grant of milestone 229. The grant goes through a
+`#[cfg(test)]` back door because no syscall method sets it. A method number is irreversible, and
+milestone 147 (a profiler that holds exactly the counters it was granted) may subsume this one.
+`sched`'s own test `a_running_thread_cannot_be_granted_the_cycle_counter` covers the rule that only
+an embryo may be granted. The program reports the `CycleMeaning` its runtime handed it, and the test
+states the expected meaning per architecture itself. A runtime that labeled aarch64's count without
+the kernel's filter policy behind it fails there. The difference of two reads is asserted only
+where the kernel has said the counter runs, and the helper beside the test gives each
+architecture's reason. The same file runs CoreMark through `coremark_builder` and pins its CRC. The
+`n*n` of `least_authority_demo` proves only the mechanism, and CoreMark is a substantial program.
+
 ## How this kernel starts it, and what it prints (milestone 74's aarch64 half)
 
 The cycle counter does not run until the kernel starts it. Without `PMCR_EL0.E` and
