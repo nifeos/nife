@@ -3,9 +3,6 @@
 //! packages basalt publishes install and run. `FROM_BASALT` lists the lines skipped
 //! without a repository.
 //!
-//! Cut from `script.rs` by milestone 900 (the swish-check script splits by topic before it
-//! crosses the ceiling).
-//!
 //! Name: provisional (milestone 900's lane, 2026-10-15 UTC).
 
 use super::*;
@@ -21,32 +18,18 @@ pub(in crate::swish_check) const RESOLVING_LINE: &str = "jig install uptime";
 /// program still runs after a reboot, a removal takes its vouch away without deleting it, and a
 /// rollback vouches for it again. The disk is the only thing the first boot hands this one.
 ///
-/// A removed program is refused only at a prompt that does not hold the run-unvouched capability
-/// (DECISIONS §219 gate D2). The boot prompt holds it, provisionally, so here the removal shows in
-/// `caps` and the bytes still run; before D2 this script typed the refusal.
-///
-/// `greeting` rides along (milestone 198 rung 3a's fetch): it was installed as generation 2, it
-/// runs after the reboot, and removing `noteless` leaves it running, because a generation drops
-/// one program and not its neighbors. Its 0.2.0 rides beside it (milestone 614): generation 3,
-/// which lists both versions of `greeting` and `noteless`. `noteless` took `uptime`'s place here
-/// when DECISIONS §229 (calef, 2026-09-27) refused installing a package named after an image
-/// program.
-///
-/// **The numbers skip one** because the first boot vouched for a build as generation 4 and rolled
-/// it back (DECISIONS §221). A generation is never rewritten, so the removal is generation 5, and
-/// a rollback is by number (`notes/packages.md`'s BUGS), so it lands on 4: the vouch's generation,
-/// which lists `noteless` too. The extra generation ahead of it is milestone 614 (two installed
-/// versions of one program, each runnable, and a caller granted the one it needs)'s second
-/// version, installed before the vouch.
+/// The boot prompt holds the run-unvouched capability (DECISIONS §219 gate D2), so the removal
+/// shows in `caps` and the bytes still run. `greeting` (generation 2, and its 0.2.0 as generation
+/// 3) keeps running when `noteless` is removed, since a generation drops one program and not its
+/// neighbors. The numbers skip one: the first boot vouched for generation 4 and rolled it back
+/// (DECISIONS §221), so the removal is 5 and the rollback, by number (`notes/packages.md`'s BUGS),
+/// lands on 4. See notes/swish-check-harness.md.
 pub(in crate::swish_check) const SWISH_CHECK_AFTER_REBOOT: &[Line] = &[
-    // **The shell holds no display device** (milestone 715 (provisional), the 2026-10-03 security
-    // audit's follow-up; row 32 of notes/confinement-claims.md). On aarch64 and riscv64 this boot
-    // has a gpu, and until 715 the progenitor placed its four capabilities in the shell at
-    // `spawnproto::SHELL_GPU_SLOT` (22) onward for the life of the boot: measured on aarch64,
-    // `slots held: 0 1 2 3 4 5 20 21 22 23 24 25 30` (slot 30 then, 62 since milestone 754 (the capability table grows to 64 slots)). Now the spawn service keeps them, so the
-    // census runs straight from the configuration page (21) to the run-unvouched slot (62; 30 before milestone 754 (the capability table grows to 64 slots)), and
-    // " 21 62" is the assertion that nothing sits between them. On x86_64 this boot has no gpu and
-    // the line holds trivially; that leg's gap is milestone 632's (no virtio-gpu in its runner).
+    // **The shell holds no display device** (milestone 715 (provisional); row 32 of
+    // notes/confinement-claims.md). The spawn service keeps the gpu's four capabilities, which
+    // would otherwise sit from `spawnproto::SHELL_GPU_SLOT` (22), so " 21 62" asserts nothing sits
+    // between the configuration page (21) and the run-unvouched slot (62). On x86_64 this boot has
+    // no gpu and the line holds trivially; that leg's gap is milestone 632's.
     line(0, "caps", &["slots held: 0 1 2", " 21 62\n"]),
     line(
         1,

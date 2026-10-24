@@ -68,18 +68,13 @@ pub(super) const LINES: &[Line] = &[
         "/installed/std-grep needle",
         &["std_grep: .: no directory was granted to search"],
     ),
-    // **Unmodified `ripgrep` searches what its words name, from the prompt** (milestone 595 (the
-    // shell runs a `std` program), fatal risk 1). The same lines `std_grep` answered, typed to
-    // somebody else's program: crates.io's `rg` 14.1.1 as basalt packaged it, unvouched, carrying only the note `cargo
-    // xtask foreign-note` linked in. `docs` is granted read-only because a word named it, and the
-    // match is found there. `../hay/secret.txt` names the same directory's other file by a path
-    // whose first component is not an entry here, so nothing is granted for it and `rg` cannot
-    // open it, though the needle is in it: the caretaker refuses the `..` by name, in the parallel
-    // walker's words when milestone 812 (`std::thread::spawn` runs real threads in one address
-    // space) gives `rg` more than one core. With no word naming anything `rg` holds no directory and asks for its working
-    // directory, which the PAL refuses by design (its `sys/paths/nife.rs`),
-    // so `rg` says so with a wrong guess ("did your CWD get deleted?"). Typed only when
-    // `cargo xtask basalt-fetch` has run, as CI's rows do.
+    // **Unmodified `ripgrep` searches what its words name** (milestone 595 (the shell runs a `std`
+    // program), fatal risk 1): crates.io's `rg` 14.1.1 as basalt packaged it, unvouched, carrying
+    // only the `cargo xtask foreign-note` note. `docs` is granted read-only because a word named
+    // it. `../hay/secret.txt` grants nothing, so the caretaker refuses the `..` by name (in the
+    // parallel walker's words under milestone 812's threads). With no word, the PAL refuses the
+    // working directory (`sys/paths/nife.rs`) and `rg` guesses "did your CWD get deleted?". Typed
+    // only after `cargo xtask basalt-fetch`, as in CI.
     line(0, "echo the needle outside the grant > secret.txt", &[]),
     line(
         0,
