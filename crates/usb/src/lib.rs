@@ -15,7 +15,8 @@
 //! - Boot protocol only: a keyboard is found by its interface triple (3, 1, 1), no HID report
 //!   descriptor is parsed, and one with no boot interface is [`Refusal::NoBootKeyboard`].
 //! - The first boot keyboard interface wins; a second keyboard is not looked for.
-//! - No key repeat: holding a key types it once, and typematic repeat is the host's job.
+//! - No key repeat: a boot keyboard reports state, not events, and typematic repeat is the
+//!   host's job.
 //! - Caps Lock, Num Lock and the LEDs do nothing: `video_terminal::keymap` maps no lock key.
 //!
 

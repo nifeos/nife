@@ -19,8 +19,8 @@
 /// stride bug, a transposition or an x/y swap shows as a size or content mismatch. See
 /// notes/framebuffer-contract/surface-geometry.md.
 pub const WIDTH: u32 = 1120;
-/// The surface's height in pixels. See [`WIDTH`] for why this is not equal to it, and for why this
-/// particular value.
+/// The surface's height in pixels: 24 rows of `glyph_atlas`'s 26-pixel cell. Not equal to
+/// [`WIDTH`], for the reason given there. See notes/framebuffer-contract/surface-geometry.md.
 pub const HEIGHT: u32 = 624;
 
 /// Bytes per pixel. One 32-bit word, in the format [`FORMAT`] names.

@@ -1,11 +1,11 @@
 #![cfg_attr(not(test), no_std)]
 //! **The C seam's shared half** (milestone 36 (a foreign-language component, seam first), DECISIONS
 //! §31). `c_shim` links the C and calls it; `c_confiner` builds and supervises `c_shim` and holds
-//! the witness pages that prove what the C could not reach. This crate is what they agree on, reachable by host tests and Kani: the
-//! address-space layout below, the report protocol, and the constants also written in
-//! `fixtures/c/c_seam.c`. `WITNESS_RO` is the same frame, mapped read-only into the C;
-//! `WITNESS_FAR` is a different frame at an address the C has not mapped; both patterns are
-//! position-derived. See notes/c-seam/the-confinement-test.md.
+//! the witness pages that prove what the C could not reach. This crate is what they agree on,
+//! reachable by host tests and Kani: the address-space layout below, the report protocol, and the
+//! constants also written in `fixtures/c/c_seam.c`. `WITNESS_RO` is the same frame, mapped
+//! read-only into the C; `WITNESS_FAR` is a different frame at an address the C has not mapped;
+//! both patterns are position-derived. See notes/c-seam/the-confinement-test.md.
 
 //! # The layout
 //!
