@@ -1,5 +1,7 @@
 # The kernel test harness: watchdogs, the frame ledger, skips, filters and repeats
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+
 `kernel/src/testing.rs` is the runner every `#[test_case]` in the kernel and in `system_tests` runs
 under. `cargo test` builds the kernel with `cfg(test)`, the runner in `.cargo/config.toml` boots it
 under QEMU, and the kernel reports pass or fail by asking QEMU to exit with a status through

@@ -1,5 +1,7 @@
 # The surface's geometry
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.*
+
 An appendix to [the framebuffer contract](../framebuffer-contract.md): why
 `graphics_contract::WIDTH` and `HEIGHT` are 1120 by 624, and what the frames around it cost.
 

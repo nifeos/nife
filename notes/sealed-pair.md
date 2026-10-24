@@ -1,5 +1,7 @@
 # The sealed pair: checking a kernel against its archive on the host
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.*
+
 A kernel image and the userspace archive beside it are one sealed set. The build compiles the
 digests of the archive entries the kernel may enter into its `.rodata` (`kernel/build.rs`), and the
 kernel refuses userspace whose bytes do not match (`kernel::trust::require`). A mismatched pair
