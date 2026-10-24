@@ -1,20 +1,13 @@
 //! The two Kani attribute macros, as pass-throughs, so `script/lint` can compile the proof
-//! harnesses without Kani installed (milestone 113). Half of the shim; the other half is `kani.rs`
-//! beside it, which re-exports these and supplies `any`, `assume` and `cover!`.
+//! harnesses without Kani installed (milestone 113). Half of the shim; `kani.rs` beside it
+//! re-exports these and supplies `any`, `assume` and `cover!`. An attribute macro can only come
+//! from a proc-macro crate, hence two crates (notes/unsafe-obligations/kani-gate.md). It is built
+//! by a plain `rustc` and is deliberately not a workspace package: a dependency named `kani` in a
+//! harness crate's manifest would collide with the real library `cargo kani` injects.
 //!
-//! **Names are provisional** (CLAUDE.md: calef names crates, programs and modules). The `kani` crate
-//! next door has no choice about its name, since `#[kani::proof]` is what the harnesses write; this
-//! one is internal to the shim and could be called anything.
-//!
-//! An attribute macro can only come from a proc-macro crate, which is the whole reason the shim is
-//! two crates rather than one. Registering `kani` as a tool namespace instead
-//! (`-Zcrate-attr=register_tool(kani)`) does not work: the tool name loses to the extern crate the
-//! harnesses also need for `kani::any`, and rustc then reports `cannot find proof in kani`. Measured,
-//! not assumed.
-//!
-//! Compiled by `script/lint` with a plain `rustc` invocation, not by cargo. It is deliberately not a
-//! workspace package: nothing should be able to depend on it, and a dependency named `kani` in a
-//! harness crate's manifest would collide with the real library that `cargo kani` injects.
+//! **Names are provisional** (CLAUDE.md: calef names crates, programs and modules). The `kani`
+//! crate next door has no choice about its name; this one is internal to the shim and could be
+//! called anything.
 
 extern crate proc_macro;
 
