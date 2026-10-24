@@ -5,35 +5,14 @@ use crate::sched;
 
 /// **A confined userspace driver puts a known pattern in a scanout framebuffer.**
 ///
-/// # What this proves, precisely
-///
-/// The pattern is a per-coordinate function ([`graphics_contract::pixel`]), not a fill, and the digest is
-/// position sensitive, so a blank, stale, shifted, transposed, or truncated surface cannot pass
-/// (`crates/graphics_contract`'s host tests assert exactly those properties of the pattern itself). Two
-/// independent witnesses report it, from two different address spaces: the **client** digests the
-/// surface after the flush through its own mapping, and the **driver** digests it through a
-/// different mapping after the device reported the transfer complete. The kernel compares both
-/// against a value it computed itself from the contract, so neither process is grading its own
-/// homework.
-///
-/// It also proves the device could reach those exact frames and no others: the surface lives
-/// inside the driver's registered DMA region, the IOMMU domain maps exactly that region, and
-/// `RESOURCE_ATTACH_BACKING` naming it succeeded, which under translation only happens if the
-/// address translated.
-///
-/// # What this test does NOT prove, and what does
-///
-/// **This test proves the framebuffer, not the scanout.** The suite runs `-display none`, and
-/// nothing inside the guest can read back QEMU's host-side surface, so "the bytes we handed the
-/// device are the bytes it read out of our frames" is as far as an *in-guest* test reaches. A
-/// wrong pixel *format* or a wrong scanout rectangle would pass this while showing garbage on a
-/// real screen.
-///
-/// The scanout is proven **from the host instead**, because only the host can see it:
-/// `cargo xtask`'s scanout check drives QEMU's monitor beside this suite, dumps the scanout with
-/// `screendump` (which works headlessly), and compares the PPM against `graphics_contract::pixel` pixel
-/// for pixel, on both ISAs. Together the two halves cover the whole path. See
-/// notes/framebuffer-contract.md, "Proving the scanout, from the host".
+/// The pattern is a per-coordinate function ([`graphics_contract::pixel`]) under a
+/// position-sensitive digest, so a blank, stale, shifted, transposed or truncated surface fails.
+/// Two witnesses in two address spaces digest it, the client after the flush and the driver after
+/// the device reported the transfer, and the kernel checks both against its own value. The backing
+/// attach succeeded under translation, so the device reached exactly the driver's DMA region. This
+/// proves the framebuffer, not the scanout (`-display none`); `cargo xtask`'s scanout check proves
+/// that from the host (notes/framebuffer-contract.md, "What the test proves, and the one thing it
+/// does not" and "Proving the scanout, from the host").
 #[test_case]
 fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -132,16 +111,10 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
         "the driver and the client disagree about the surface's contents",
     );
 
-    // **Wait for the one-shot client to be reaped before returning.** Two reasons, and the second
-    // is why this is not optional. It proves a client that finished is reaped rather than leaked,
-    // the discipline every one-shot program here follows. And a process's frames come back
-    // asynchronously at reap, so a client still unreaped when this test returns drops ~20 frames
-    // into whatever the *next* test measures; `destroy_force_kills_a_runaway_and_reclaims_its_
-    // region` asserts an exact free-frame count and failed on precisely that. The driver is a
-    // long-lived server and never exits, so the target is one thread above the baseline.
-    //
-    // Clock-based, not a yield count: with work spread across cores a yield on an idle core
-    // returns instantly and a fixed count elapses in almost no real time (DECISIONS §28).
+    // Wait for the one-shot client's reap, which also proves a finished client is not leaked. Its
+    // ~20 frames come back asynchronously at reap and would land in the next test's exact
+    // free-frame count. The driver never exits, so the target is one thread above the baseline.
+    // Clock-based, not a yield count: on an idle core a yield returns instantly (DECISIONS §28).
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline && sched::thread_count() > threads_before + 1 {
         sched::yield_now();
@@ -156,37 +129,14 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
 
 /// **The device is refused a framebuffer it was not granted.**
 ///
-/// The GPU raises a confinement question a disk and a NIC do not, and this is the test that
-/// answers it. Everywhere else, every address a device will touch arrives in a virtqueue
-/// descriptor, so the kernel validates it and copies it into a shadow ring the driver cannot
-/// reach (notes/dma.md). A virtio-gpu's *backing* addresses arrive inside a device-level command
-/// payload instead. The kernel bounds the descriptor that carries the command, but the addresses
-/// within it are bytes it does not parse, and it deliberately does not start parsing them:
-/// teaching the transport to read virtio-gpu commands would put device knowledge in the one place
-/// §18 keeps device-neutral.
-///
-/// So the IOMMU is the barrier, and this proves it holds **in hardware**, the same way and with
-/// the same evidence milestone 16b's confinement test does: the fault the IOMMU recorded. A driver
-/// with exactly the honest driver's authority asks the device to read pixels out of a frame the
-/// kernel deliberately left out of its domain, and then to transfer from it. The IOMMU must fault
-/// at that frame.
-///
-/// **The device's response code is deliberately not the assertion, and that is a finding.** The
-/// first version of this test asserted the command came back refused, and it did not: QEMU's DMA
-/// layer answers a translation failure by handing the device a *bounce buffer* instead of failing
-/// the mapping, so `RESOURCE_ATTACH_BACKING` returns OK while the bytes the device actually gets
-/// are not the victim frame's. The confinement held; only the error reporting did not survive the
-/// trip. So the fault queue is the fact, the response code is printed for the record, and the
-/// nuance is written down rather than smoothed over (notes/framebuffer-contract.md).
-///
-/// **Runs BEFORE the happy-path test, and the name is what makes that true.** This test resets
-/// and re-registers the same physical GPU (each driver programs the device from scratch, and a
-/// virtio reset destroys every resource and scanout), the same way the disk's attacker tests share
-/// one device with the honest driver. If it ran second it would wipe the pattern the pixel test
-/// put on the scanout, and the host-side scanout check (`cargo xtask`'s `gpu_shot`, which dumps
-/// the scanout while the suite runs) would find nothing to match. Sorting first is why this is
-/// named `a_backing...` rather than `the_iommu...`. A reordering does not corrupt anything; it
-/// fails the scanout check loudly, which is the right way to be wrong.
+/// A virtio-gpu's backing addresses ride inside a command payload, not a descriptor, so no shadow
+/// ring checks them, and §18 keeps the transport from parsing them: the IOMMU is the barrier. A
+/// driver with the honest driver's authority points the device at a frame the kernel left out of
+/// its domain, and the IOMMU must record a fault at that frame. The fault queue is the assertion,
+/// not the response code: QEMU answers a translation failure with a bounce buffer and an OK
+/// (notes/framebuffer-contract/iommu-escape-test.md). The name sorts this first because it resets
+/// the GPU, which would wipe the pictures the host-side scanout check looks for; a reorder fails
+/// that check loudly (notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
 #[test_case]
 fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -252,43 +202,14 @@ fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
 
 /// **A bitmap font and a VT engine put readable text on the scanout.**
 ///
-/// Milestone 29's remaining increment, end to end: a terminal component that is a *client* of
-/// the framebuffer contract, drawing glyphs into a surface and flushing a damage rectangle.
-///
-/// # What makes this a proof rather than a screenshot
-///
-/// Text is the case where "it looked right" is most tempting and least sufficient, so the
-/// picture is a **value three parties compute independently**:
-///
-/// - the **terminal** runs the `video_terminal` engine over the bytes it was sent and paints what it says;
-/// - the **kernel** runs the same engine over the same script (`video_terminal::script`) and compares the
-///   scanout frames pixel for pixel through the direct map. It never asks the terminal anything;
-/// - the **host** runs it again and compares QEMU's `screendump` against the same definition
-///   (`cargo xtask`, beside this suite). That one is not optional: `-display none` means nothing
-///   in the guest can see the device's own surface, so a wrong pixel format or scanout rectangle
-///   would satisfy the first two and show garbage on a screen.
-///
-/// And the host checker has a **negative control**: it must reject the same screen with one
-/// letter changed (`video_terminal::script::GREETING_TYPO`). A checker that only asked "is there ink?" would
-/// pass every run including the ones that drew the wrong thing.
-///
-/// # What the script exercises, and why each part is there
-///
-/// Four rows of text (a one-row picture would hide a stride error), three renditions (a terminal
-/// that ignored SGR would draw every glyph correctly and still fail), a `\r\n` pair (what
-/// `line_editor::expand_output` puts on the wire for a Unix `\n`), descenders and an underscore (the
-/// glyph rows a font table truncated to seven would lose), and then **keystrokes**, delivered as
-/// `OPERATION_BYTES`: the terminal contract's driver half, byte for byte what `components/src/input.rs` sends
-/// and what the compositor forwards to a focused client.
-///
-/// # And the picture the driver reports is the *blank* terminal, on purpose
-///
-/// `gpu_driver`'s one status report covers its first flush, the terminal's blank grid, so it checks
-/// that an empty terminal is a *defined* picture rather than whatever the frames held at boot.
-///
-/// **Runs after the confinement test and before the pattern test**, which the name arranges: the
-/// confinement test resets the device and would wipe this, and the pattern test's picture is the
-/// one that stays up until QEMU exits. See notes/glyphs.md for the ordering and what breaks it.
+/// Milestone 29's remaining increment end to end: a terminal that is a client of the framebuffer
+/// contract. The terminal paints what `video_terminal` says, the kernel reruns the engine over
+/// `video_terminal::script` and compares the scanout frames pixel for pixel, and the host compares
+/// QEMU's `screendump`, the only witness of pixel format and scanout rectangle. The host checker
+/// must reject `video_terminal::script::GREETING_TYPO`. Each part of the script catches a named
+/// failure, and the driver's one report checks that a blank terminal is a defined picture. The name
+/// sorts this between the confinement and pattern tests (notes/glyphs/terminal-and-proof.md,
+/// notes/framebuffer-contract/the-display-tests.md).
 #[test_case]
 fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -390,25 +311,16 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
         "the one-letter typo produces an identical picture: the negative control is inert",
     );
 
-    // **Scroll the screen** (the paint path, 2026-09-30). Until this, no pixel check ever pushed
-    // the picture past the grid's own height, so the terminal's scroll path, the path the x86_64
-    // swish leg spends most of its wall clock in (`notes/benchmarks/icount-tick-scales.md`), had
-    // no end-to-end witness: a scroll that painted garbage would have passed every check in this
-    // file. The fast path moves pixel rows instead of re-rendering them, so this comparison,
-    // against the same engine run here, is the witness that a moved picture is the right picture.
-    //
-    // One `OPERATION_WRITE` per line, so every present scrolls once; then the tail, several lines in one
-    // write, so one present carries several scrolls. Both shapes reach `assert_screen_is` below
-    // through the same pixels.
+    // Scroll past the grid's height (the paint path, 2026-09-30). The fast path moves pixel rows
+    // rather than re-rendering them, and this comparison is the witness that a moved picture is the
+    // right one. One `OPERATION_WRITE` per line scrolls once per present; then the tail, several
+    // lines in one write, scrolls several times in one present.
     video_terminal::script::write_scroller(|bytes| w.print(bytes));
     video_terminal::script::feed_scroller(expect, None);
     w.assert_screen_is(expect, "after the scroller");
 
-    // The scrolled comparison needs its own teeth: one digit of one scroller line off must fail
-    // it, or it proves nothing about scrolls specifically (a checker keyed on "the bottom rows
-    // hold text" would pass a picture scrolled by the wrong number of rows).
-    // A tail line, which is still on the screen once the scroller is done; line 20 was, on the
-    // 43-row grid, and has scrolled off the 24-row one.
+    // The scrolled comparison's own teeth: one digit off in one tail line, still on screen at the
+    // end, must fail it, or a picture scrolled by the wrong number of rows could pass.
     video_terminal::script::feed_scroller(typo, Some(video_terminal::script::SCROLL_LINES + 1));
     assert!(
         (0..gfx::HEIGHT).any(|y| (0..gfx::WIDTH).any(|x| typo.pixel(x, y) != expect.pixel(x, y))),
@@ -429,40 +341,13 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
 /// **A key pressed on a real device becomes the byte a terminal receives** (milestone 29's
 /// input).
 ///
-/// A confined userspace virtio-input driver, behind the same PCIe transport and the same IOMMU
-/// domain as the GPU, brings up the event queue, takes a real key event off it, and publishes
-/// the byte in the compositor's input ring.
-///
-/// # Why the host has to press the key, and how
-///
-/// Nothing in the guest can press a key: that is the point of a device test. So the **host**
-/// does it, over the same QEMU monitor connection the scanout check already holds open.
-/// `cargo xtask` sends `sendkey` beside this suite, exactly as it dumps the scanout beside it,
-/// and `video_terminal::script::HOST_KEY` is the one definition of which key so the pressing side and the
-/// asserting side cannot drift. The keys go out from the start of the run and QEMU drops them
-/// until a driver sets `DRIVER_OK`, so there is nothing to synchronize.
-///
-/// # What this proves, and where it hands off
-///
-/// The path from **a physical key event to a terminal byte**: the device is enumerated and
-/// checked (`DeviceID` is virtio-input, not whatever the transport felt like saying), the event
-/// queue is programmed through the confined transport with every buffer device-**writable**,
-/// an event arrives by interrupt, `video_terminal::keymap` turns an evdev code into a character, and the
-/// byte lands in the input ring.
-///
-/// The rest of the path (ring to focused client to pixels) is
-/// `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`,
-/// and the seam between the two halves is the ring itself, which is exactly where DECISIONS §33
-/// put the boundary: the driver's authority to type is the ring's mapping, and the compositor's
-/// authority to deliver is the client endpoints it holds. Naming the seam is better than one
-/// test that hides it.
-///
-/// # The authority this driver does not have
-///
-/// It holds no client's endpoint, so it cannot choose who receives a keystroke; it cannot even
-/// name a client. And it rings the same **content-free** doorbell every client holds, so nothing
-/// it says carries the keystroke: a client that rang that endpoint forever could not type a
-/// character, because typing is a page it does not map.
+/// A confined virtio-input driver, behind the GPU's PCIe transport and IOMMU domain, checks the
+/// device ID, posts device-writable event buffers, takes a real key event by interrupt, maps it with
+/// `video_terminal::keymap` and publishes the byte in the compositor's input ring. The host presses
+/// `video_terminal::script::HOST_KEY` with `sendkey`. The driver holds no client endpoint and rings
+/// a content-free doorbell, so it cannot choose who receives a key. From the ring onward is
+/// `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`, at the
+/// seam DECISIONS §33 drew (notes/glyphs/terminal-and-proof.md).
 #[test_case]
 fn a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte() {
     let keyboard_driver =
@@ -532,29 +417,13 @@ fn a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte() {
 /// **A screen the firmware set up shows the terminal, through `framebuffer_driver`** (the shell
 /// on the firmware screen, milestone 198's rung 1b).
 ///
-/// The OVMF gate (`cargo xtask uefi-boot`) proves the whole chain on one geometry: 1280x800, bgrx,
-/// an unpadded stride, a page-aligned aperture. This proves the driver's arithmetic on the
-/// geometry that gate cannot produce, on **all three architectures**, because it needs no device:
-/// the "screen" is RAM the kernel poisons, describes to the driver as a firmware framebuffer, and
-/// reads back through its own direct map. Every property is one a real machine could present and
-/// OVMF does not:
-///
-/// - **an odd shape**, 42 pixels wide and 650 tall, which the terminal covers whole (the surface
-///   is the screen's size at its scale, not the virtio contract's 1120x624): the driver answers
-///   `INFO` with exactly that and the terminal lays out 3 columns by 25 rows. The clipping that used to be proved here by a screen taller than the surface is
-///   `screen_console::Aperture`'s own host tests now, along with the scale-two coverage this
-///   suite cannot afford the frames for;
-/// - **a padded stride**, whose padding must survive;
-/// - **rgbx**, so red and blue must be exchanged on the way in, checked on a red and a blue cell
-///   because every grey in the default picture reads the same in both orders;
-/// - **not page-aligned**, so the driver's sub-page offset is what lands pixel (0, 0).
-///
-/// # What it does not prove
-///
-/// That a real screen scans this out: the OVMF gate and the bench step in the milestone's block do.
-/// And the RAM here is mapped device-typed into the driver and cacheable in the kernel's direct
-/// map, an attribute alias QEMU does not model and silicon would; this is a test of arithmetic
-/// and wiring, not of memory types.
+/// The OVMF gate (`cargo xtask uefi-boot`) proves one geometry. This proves the driver's arithmetic
+/// on all three architectures, over RAM the kernel poisons and describes as a firmware framebuffer:
+/// an odd 42x650 shape the terminal covers whole (3 columns by 25 rows), a padded stride whose
+/// padding must survive, rgbx (checked on a red and a blue cell) and an aperture that is not
+/// page-aligned. It proves arithmetic and wiring, not the scanout or memory types: the RAM is
+/// device-typed in the driver and cacheable in the direct map, an alias QEMU does not model
+/// (notes/framebuffer-contract/the-display-tests.md).
 #[test_case]
 fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
     use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
@@ -671,11 +540,8 @@ fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
         "the red cell is channel-symmetric: the byte-order check above is inert",
     );
 
-    // **Hand everything back**, because this suite runs one boot's frames and region slots through
-    // every test and the next one to allocate pays for whatever this one kept. The first version
-    // kept two parked services, their four regions and 776 frames, and `timetable_tests` later in
-    // the same boot hung on aarch64 three runs out of three, its timetable blocked on a line nobody
-    // was reading; shrinking the frames alone did not help. The two programs die by their endpoint
+    // Hand everything back: the next test to allocate pays for whatever this one keeps
+    // (notes/framebuffer-contract/the-display-tests.md). The two programs die by their endpoint
     // region being reclaimed (`TerminalWiring::held`); the surface, the output page and the pretend
     // screen are frames rather than regions, and are freed only after both are gone.
     w.held
