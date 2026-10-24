@@ -48,8 +48,8 @@ identity rather than of the model:
 - OptiPlex 7050, BIOS revision 1.27.0.
 - Boot mode UEFI, Secure Boot OFF, which is what the bench's steps 1 and 2 ask for, and confirms they
   were reachable as written.
-- The stick enumerates as `UEFI: SanDisk Ultra 1.26`, so the removable-media fallback at
-  `\EFI\BOOT\BOOTX64.EFI` is found with no boot entry created.
+- The stick enumerates as `UEFI:` and its vendor and model, so the removable-media fallback
+  at `\EFI\BOOT\BOOTX64.EFI` is found with no boot entry created.
 - A `Windows Boot Manager` entry, so this machine dual-boots and its internal disk holds somebody's
   installation. Worth knowing before anything here writes to a disk.
 - `UEFI: Micron 2450 NVMe 256GB`.

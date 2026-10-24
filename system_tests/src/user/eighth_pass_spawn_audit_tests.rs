@@ -1,26 +1,13 @@
-//! **What a spawned child actually holds, and what a child with nothing can still build: nothing**
-//! (an eighth outsider pass at the confinement claim, claims 23, 31 and 32).
+//! What a spawned child holds, and what a child with nothing can still build: nothing (the
+//! eighth outsider pass at the confinement claim, claims 23, 31 and 32).
 //!
-//! The cited proofs are `script/swish-check`'s unvouched census (typed at the prompt, on the
-//! interactive boot) and `authority_tests`' drop-and-retry (a supervisor that deletes its untyped
-//! and cannot build again). This module attacks both from the kernel side, where the census can be
-//! exact rather than printed:
-//!
-//! - **Claim 31**: a real spawned program, granted exactly one endpoint and two read-only pages
-//!   (the unvouched shape), has its whole capability table read back slot for slot. It must hold
-//!   those three and nothing else: no budget, no device, no endpoint the caller never named.
-//! - **Claim 32**: the same census asserts no device capability of any kind appears: a display
-//!   device is a `DeviceFrame` (or, on `x86_64`, a port range), and a spawned program, the boot
-//!   shell included, holds one only if its caller granted it. The boot half of the claim (that the
-//!   interactive boot's spawn service delegates the gpu's four rather than parking them in the
-//!   shell) is `swish-check`'s census, cited.
-//! - **Claim 23**: the `kernel_test_subject`, in its `BUILD_WITH_NOTHING` role, holds one report
-//!   endpoint and nothing else, and tries to mint a page, send a message and mint a kernel object
-//!   through the real `SYS_INVOKE`. Every answer must be `NoSuchSlot`: there is nothing there,
-//!   which is what authority being a capability means from the inside.
-//!
-//! Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS §19
-//! (architectural parity is a tenet)).
+//! It attacks `script/swish-check`'s unvouched census and `authority_tests`' drop-and-retry from
+//! the kernel side, where the census is exact rather than printed. Claim 31: a child granted the
+//! unvouched shape holds those three capabilities and nothing else. Claim 32: no device capability
+//! appears in it; the boot half (the spawn service delegates the gpu's four rather than parking
+//! them in the shell) is `swish-check`'s census, cited. Claim 23: a child born with one report
+//! endpoint gets `NoSuchSlot` for every mint. Portable, per DECISIONS §19 (architectural parity is
+//! a tenet). See notes/confinement-outsider-pass-8.md.
 
 use super::test_programs::kernel_test_subject_image;
 use crate::cap::{
@@ -59,15 +46,12 @@ fn census(tid: u64) -> ([(u64, Object, Rights); 8], usize) {
     (out, n)
 }
 
-/// **A child granted one endpoint and two read-only pages holds exactly those, and no device.**
+/// A child granted one endpoint and two read-only pages holds exactly those, and no device.
 ///
-/// The child is the interrupt ignorer, a real program that spins forever, so the census reads a
-/// live table. Its grants are the unvouched shape: a report endpoint and two read-only page
-/// frames. Every one of the table's sixty-four slots is inspected: the three granted entries must
-/// be the only ones, with exactly the rights handed in, and nothing may appear that the caller
-/// never named: no untyped budget (the difference between unvouched and endowed), no second
-/// endpoint, and no device capability of any kind, which is claim 32's half: a display device is
-/// a capability, and it does not exist in a table nobody granted it into.
+/// The interrupt ignorer spins forever, so the census reads a live table. All sixty-four slots are
+/// read: the three grants must be the only entries, with exactly the rights handed in. No untyped
+/// budget (what separates unvouched from endowed), no second endpoint, and no device capability
+/// (`DeviceFrame`, or a port range on `x86_64`), which is claim 32's half.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -164,15 +148,12 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
     sched::reclaim_region(region).expect("the region did not come back");
 }
 
-/// **A program with no construction authority cannot build, from inside, through the real
-/// syscall.**
+/// A program with no construction authority cannot build, from inside, through the real syscall.
 ///
-/// The `kernel_test_subject`'s `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a `SEND`
-/// and a `RETYPE_OBJ` on slots it was never granted. Each must be `NoSuchSlot`: the refusal that
-/// means "there is nothing there", not "there is something there and you may not use it", because
-/// authority in this kernel is a capability in a slot and no slot was ever filled. A program born
-/// with nothing cannot mint its way to anything, which is claim 23's zero-authority corner beside
-/// the cited drop-and-retry.
+/// The `kernel_test_subject`'s `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a
+/// `SEND` and a `RETYPE_OBJ` on ungranted slots. Each must be `NoSuchSlot` ("nothing there"), not
+/// "you may not use it": authority is a capability in a slot, and no slot was filled. That is claim
+/// 23's zero-authority corner beside the cited drop-and-retry.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

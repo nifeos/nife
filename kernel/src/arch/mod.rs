@@ -1,31 +1,13 @@
 //! The hardware abstraction boundary.
 //!
-//! Everything below this module is architecture-specific. Everything above it
-//! should be portable. The rest of the kernel talks to the hardware only through
-//! what is re-exported here.
-//!
-//! This is the single most important structural rule in the codebase, and the one
-//! that is easiest to erode by accident. If you find yourself writing `asm!` or
-//! touching a system register outside `arch/`, that's the bug. See
-//! notes/portability.md.
-//!
-//! # The contract
-//!
-//! Every architecture module provides one shared surface that the portable kernel calls,
-//! about a hundred items across `init`, `isa`, per-CPU state, the context switch, `fp`,
-//! `exceptions`, `interrupts`, `irq`, `timer`, `pmu`, `mmu`, `iommu` and `semihosting`. The
-//! list, one line per item on what it promises, is notes/portability.md's "The arch contract".
-//! It lives there because a comment block here is capped at 40 lines by §267 (a comment states
-//! the constraint as it is now). It is a list, not a trait, so it names the seam without
-//! shaping an abstraction across it.
-//!
-//! Anything else an architecture exports is its own, and its callers reach it under a `cfg`.
+//! The rest of the kernel reaches the hardware only through what is re-exported here; `asm!` or a
+//! system register outside `arch/` is the bug. The surface is listed in notes/portability.md, "The
+//! arch contract"; anything else an architecture exports is reached under a `cfg`.
 //!
 //! # BUGS
 //!
-//! Nothing checks this list against the tree. The compiler checks the surface itself (an
-//! architecture missing an item the portable kernel calls fails to build), but an item added
-//! without a line in that list, or a line left after its last caller goes, is caught by nobody.
+//! Nothing checks that list against the tree: an item added without a line, or a line left after
+//! its last caller goes, is caught by nobody.
 
 #[cfg(target_arch = "aarch64")]
 mod aarch64;
@@ -33,43 +15,28 @@ mod aarch64;
 #[cfg(target_arch = "aarch64")]
 pub use aarch64::*;
 
-// The second architecture (milestone 20, notes/riscv-port.md). Its presence here, dispatched by
-// the same `cfg` and re-exported flat through the same surface, is the proof that rule #1 holds: a
-// new ISA is a new directory, not a diff across the kernel.
+// The second architecture (notes/riscv-port.md): a new ISA is a new directory.
 #[cfg(target_arch = "riscv64")]
 mod riscv64;
 
 #[cfg(target_arch = "riscv64")]
 pub use riscv64::*;
 
-// **riscv64's IOMMU driver, compiled for the prover on an aarch64 host.** This is milestone 432
-// (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs), built as option 1 of
-// design/roadmap/0650-riscv64-code-the-prover-can-already-compile.md. Kani compiles for
-// the host, so the `cfg` above hides every riscv64 file from it; this reaches one of them by path.
-// The inline module is named `riscv64` and holds `iommu`, so the harnesses keep the module path
-// they would have natively (`arch::riscv64::iommu::proofs::...`) and `script/falsifications` finds
-// their patches under the name it derives from the file. No `#[path]` is needed: an inline module
-// in `arch/mod.rs` resolves `mod iommu;` to `arch/riscv64/iommu.rs` on its own.
+// riscv64's IOMMU driver, compiled for the prover on an aarch64 host, under its native module path
+// so `script/falsifications` finds its patches. See notes/kernel-proofs.md, and for why only an
+// aarch64 host, design/roadmap/0650-riscv64-code-the-prover-can-already-compile.md.
 //
-// **A foot gun, deliberately taken, and read notes/kernel-proofs.md before extending it.** Inside
-// this module `crate::arch` is the HOST's architecture, not riscv64's: `iommu.rs`'s
-// `crate::arch::mmu::phys_to_virt` resolves to aarch64's here. Only code that never calls through
-// `crate::arch` is proved by a harness in this module, and `script/lint` fails if a file listed
-// below gains a `crate::arch` reference it has not recorded. Why only aarch64: exactly one verify
-// host should run it, and whether x86_64 resolves the same names is unmeasured. Not riscv64
-// either, where the real `mod riscv64` above already exists and nothing proves it.
-//
-// `dead_code` is allowed because nothing on the host calls `init` or `attach`; only the pure
-// functions the harnesses reach are live here.
+// A foot gun, deliberately taken: inside this module `crate::arch` is the host's architecture, not
+// riscv64's. Only code that never calls through `crate::arch` is proved here, and `script/lint`
+// fails if a listed file gains an unrecorded `crate::arch` reference. `dead_code` is allowed
+// because only the pure functions the harnesses reach are live.
 #[cfg(all(kani, target_arch = "aarch64"))]
 #[allow(dead_code)]
 mod riscv64 {
     mod iommu;
 }
 
-// The third architecture (milestone 161, notes/x86-port.md), and the one that tests whether the
-// split above is real or an accident of two similar RISC machines. Same `cfg`, same flat
-// re-export, no change anywhere else in this file: a new ISA is a new directory.
+// The third architecture (notes/x86-port.md).
 #[cfg(target_arch = "x86_64")]
 mod x86_64;
 

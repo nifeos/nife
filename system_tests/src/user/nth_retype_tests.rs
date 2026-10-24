@@ -3,41 +3,22 @@
 //! no test reaches) and approved by calef on 2026-10-04 UTC).
 //!
 //! `crate::retype_fault` makes the kernel refuse one thread's Nth retype as though the region were
-//! empty. This sweeps N over one whole login against `login` (the `CONNECT` on the front door, the
-//! credential relay, `mint`'s caretaker build, the client's budget), from 1 until a run makes fewer
-//! than N retypes, which is a login that ran to the end. After every run it compares `login`'s
-//! capability table and the usage of every region `login` holds against what they were before the
-//! sweep. A cleanup path that forgets a `cap_delete` or leaves a split child behind crashes nothing;
-//! the slot or the pages it kept are the only evidence, and these two counters are where the kernel
-//! keeps them. `notes/untested-error-paths.md` counted 17 such paths in `login` that no test had
-//! reached.
-//!
-//! **Kernel internals it observes, and why no syscall shows them** (`notes/scripts.md`, a new
-//! service test is a userspace program unless it cannot be): another process's capability table,
-//! and which retype the kernel is on. A program can read neither about `login`.
-//!
-//! It shares `login_tests`' one `login` instance rather than building its own, because a `login`
-//! cannot be torn down (it parks on a front door its own budget did not pay for; `holding.rs`'s
-//! BUGS), so a second instance would be a permanent charge on the suite's frame ledger. Every run
-//! here either is refused or logs back out ([`ls::LOGOUT`]), so it leaves that instance as it found
-//! it, which is the property under test.
-//!
-//! Cross-ISA: one portable body over portable kernel code, DECISIONS §19 (architectural parity is a
-//! tenet).
-//!
+//! empty. This sweeps N over one whole login against `login` and after each run compares its
+//! capability table and region usage with their values before the sweep: a forgotten `cap_delete`
+//! or split child crashes nothing, and those two counters keep the evidence. It shares
+//! `login_tests`' one `login` and leaves it as it found it; one portable body (§19 (architectural
+//! parity is a tenet)). See notes/untested-error-paths.md, "The retype-fault sweep of `login`".
+
 //! # BUGS
 //!
-//! - **One program, one exchange.** `login`'s own start-up (the three splits in `_start`) and a
-//!   login that opens a schedule (`Durable::open`) are not swept; each needs a fresh `login` per N,
-//!   which is the teardown `holding.rs` cannot do. `system_initializer`, `swish` and the rest of
-//!   the 75 cleanup paths are not swept either. All of it is
+//! - **One program, one exchange.** `login`'s start-up, a login that opens a schedule, and the
+//!   other services' cleanup paths are not swept: each needs a fresh `login` per N, a teardown
+//!   `holding.rs` cannot do. All of it is
 //!   `design/roadmap/0786-sweep-the-other-long-lived-services-under-the-retype-fault.md`.
-//! - **x86_64 skips the `login` sweep**, as it skips every `login_tests` test: its test boot
-//!   attaches no RedoxFS disk. The hook is portable kernel code, and
-//!   [`the_nth_retype_fails_as_an_empty_region_would_and_no_other`] runs on x86_64 too.
-//! - **It sees leaks, not wrong answers past the first.** After a refused run `login` must answer
-//!   `DENIED` and the next exchange must work; anything subtler than that and the two counters is
-//!   not checked.
+//! - **x86_64 skips the `login` sweep** (its test boot attaches no RedoxFS disk);
+//!   [`the_nth_retype_fails_as_an_empty_region_would_and_no_other`] runs there too.
+//! - **It sees leaks, not wrong answers past the first**: beyond `DENIED`, a working next exchange
+//!   and the two counters, nothing is checked.
 
 use credential_contract::fixture::BOB;
 use login_service as ls;

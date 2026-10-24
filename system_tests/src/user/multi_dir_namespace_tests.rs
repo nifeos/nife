@@ -127,12 +127,11 @@ fn two_tree_shell() -> Option<u64> {
 }
 
 /// **The live half of milestone 154 (a process that holds two directory capabilities): the shell
-/// itself holds two trees**, presented as one tree with the second mounted in it, as calef ruled
-/// on 2026-09-26. The real `swish` builtins start at `/` and list the mount point there, move into
-/// it and list and open inside it, reach the first tree by an absolute path from inside it, climb
-/// out of it with `..` to its parent, refuse `..` past the one root without moving, carry a `<`
-/// planned under the mount through to an open in the second tree, refuse an `rm` under the mount
-/// at delivery, bind a name into it, and come home to `/`.
+/// itself holds two trees**, presented as one tree with the second mounted in it (calef,
+/// 2026-09-26). The real `swish` builtins list the mount point from `/`, move into it and list and
+/// open there, reach the first tree by an absolute path, climb out with `..`, refuse `..` past the
+/// one root without moving, carry a `<` planned under the mount to an open in the second tree,
+/// refuse an `rm` under the mount at delivery, bind a name into it, and come home to `/`.
 ///
 /// An exact set, [`a_process_holding_two_directory_capabilities_reaches_both_and_crosses_neither`]'s
 /// shape: the reaching bits are the controls without which every refusal would be equally

@@ -61,19 +61,14 @@ fn wait_for(mut done: impl FnMut() -> bool) -> bool {
     done()
 }
 
-/// **A faulting riscv user thread dies, and the kernel does not.** DECISIONS §10's promise
-/// ("a driver bug is a crashed process, not a dead machine"), proven on the second ISA for
-/// the first time.
+/// A faulting riscv user thread dies, and the kernel does not: the promise of DECISIONS §10
+/// (process model: capability-based, microkernel), "a driver bug is a crashed process".
 ///
-/// This test exists because the promise was NOT kept here: the riscv trap dispatcher stepped
-/// over a U-mode `ebreak` (so a panicking driver resumed its own panic loop, alive forever)
-/// and panicked the kernel on any other U-mode fault, behind a comment claiming user threads
-/// could not run on RISC-V yet. Every riscv userspace binary's panic handler ends in `ebreak`
-/// expecting to die, and no test had ever made one fault. The kill-mid-write test (below)
-/// needs a driver to genuinely die, which is what flushed this out.
-///
-/// The blk binary's `_start` panics on an unknown role, so spawning it with one is the
-/// smallest honest fault: panic, `ebreak`, killed, reaped.
+/// Every riscv userspace panic handler ends in `ebreak` expecting to die, so the trap dispatcher
+/// must kill on a U-mode `ebreak` rather than step over it (a stepped-over panic loops forever),
+/// and kill rather than panic on any other U-mode fault. The blk binary's `_start` panics on an
+/// unknown role, so spawning it with one is the smallest honest fault: panic, `ebreak`, killed,
+/// reaped. The kill-mid-write test below needs a driver to genuinely die.
 #[test_case]
 fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
     use crate::arch::exceptions::USER_FAULTS;
@@ -105,24 +100,14 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
     );
 }
 
-/// **The confused-deputy question, asked on the ISA where the answer is harder** (the RISC-V
-/// twin of `the_hardware_says_el0_cannot_read_the_kernels_memory`, milestone 41).
+/// The confused-deputy question on RISC-V: the twin of
+/// `the_hardware_says_el0_cannot_read_the_kernels_memory`, added by milestone 41 (dead code: triage
+/// the suppressions) when `user_can_read` turned out to have no caller on riscv64.
 ///
-/// aarch64 has `AT S1E0R`, one instruction that makes the silicon answer "could EL0 read
-/// this". RISC-V has no such instruction, so `mmu::user_can_read` walks the installed tables
-/// in software and reads the `U` bit. That software answer is the thing under test, and it
-/// matters more here than on aarch64: RISC-V has one root register, so the **same** page
-/// tables that translate a user address also translate the kernel's, and the `U` bit is the
-/// only thing between U-mode and the kernel's own memory. On aarch64 the split TTBR0/TTBR1
-/// gives a second, structural line of defence. Here there is one line, and this is it.
-///
-/// The precondition assertion is the same one the aarch64 test carries, for the same reason:
-/// "U-mode cannot read the kernel" proves nothing if the kernel is not mapped here at all.
-/// On RISC-V it also proves the kernel-half share actually happened.
-///
-/// This test exists because milestone 41 removed the crate-wide `allow(dead_code)` that riscv64
-/// builds carried, and `user_can_read`/`user_can_write` fell out of it as dead on this ISA
-/// only: the aarch64 test module proved them, and nothing on RISC-V ever called them.
+/// With no `AT S1E0R`, `mmu::user_can_read` walks the installed tables in software and reads the
+/// `U` bit. One root register translates user and kernel addresses alike, so that bit is the only
+/// line between U-mode and kernel memory (aarch64 also splits TTBR0/TTBR1). The precondition checks
+/// the kernel is mapped here at all, which also proves the kernel-half share happened.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.riscv_virtio_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
 #[test_case]
@@ -649,8 +634,7 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
     // (`net_stack` and the echo client), and neither spawns another kernel
     // thread per connection or per request (each is a single-threaded event loop over its own
     // endpoint), so this count is already the peak. Reported as a delta against
-    // `e2_baseline_threads`, not as the absolute reading. See the aarch64 twin, including its note
-    // on the wider topology this census covered until 2026-08-30 (notes/smb.md).
+    // `e2_baseline_threads`, not as the absolute reading. See the aarch64 twin and notes/smb.md.
     crate::println!(
         "    (E2 thread census: {} threads created by wiring this customer-path topology \
          ({} live now, {e2_baseline_threads} live before this test wired anything): main + \

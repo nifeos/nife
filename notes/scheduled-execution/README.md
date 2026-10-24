@@ -29,6 +29,8 @@ work that page points at but does not need to carry whole.
 - [the-crate.md](the-crate.md): the detail behind `crates/timetable`'s doc comments: the four
   answers by example, why registration's control word lives in the page, and how the phase is
   sampled.
+- [the-guest-tests.md](the-guest-tests.md): how each kernel test in
+  `system_tests/src/user/timetable_tests.rs` proves its claim, and why each is shaped that way.
 
 *Name: provisional, minted 2026-09-26 (UTC) by the lane for milestone 129 (scheduled execution), for the directory and every
 stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/129-calendar-grammar`. Naming is calef's; `script/names --unratified` lists each stem.*
@@ -42,3 +44,5 @@ stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/
   files.
 - `the-crate` Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-10, for the
   detail behind `crates/timetable`'s doc comments. calef names files.
+- `the-guest-tests` Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06,
+  for the detail behind `timetable_tests`' doc comments. calef names files.

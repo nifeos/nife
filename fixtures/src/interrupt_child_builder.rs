@@ -1,15 +1,14 @@
-//! **Builds a driver out of an ELF and delegates it an interrupt** (step 19d.2b of milestone 19d
-//! (run a real workload)), the third delegatable device authority after endpoints and device
-//! memory. `kernel::user::spawn_elf_child_builder` enters this program holding a building budget
-//! (slot 0), a report endpoint (slot 1) and an interrupt capability for the test interrupt the
-//! kernel routed (slot 3). It reads `interrupt_child` out of the archive by name, builds it, and
-//! grants it the report endpoint and the interrupt. The child blocks in the interrupt's `WAIT` and
-//! reports once the kernel's test raises it, which proves an interrupt reaches a driver through a
-//! capability a userspace program delegated: the mechanism the input and virtio drivers'
-//! completions rest on.
+//! Builds a driver out of an ELF and delegates it an interrupt (step 19d.2b of milestone 19d (run
+//! a real workload)), the third delegatable device authority after endpoints and device memory.
+//! `kernel::user::spawn_elf_child_builder` enters it holding a building budget (slot 0), a report
+//! endpoint (slot 1) and the routed test interrupt's capability (slot 3). It builds
+//! `interrupt_child` from the archive and grants it both; the child blocks in the interrupt's
+//! `WAIT` and reports once the kernel's test raises it. That proves an interrupt reaches a driver
+//! through a capability a userspace program delegated, the mechanism the input and virtio
+//! drivers' completions rest on.
 //!
 //! A failed lookup, parse or build reports word 0.
-//!
+
 //! # BUGS
 //!
 //! The child is loaded unmeasured (notes/trusted-init.md). Only aarch64's kernel test runs this

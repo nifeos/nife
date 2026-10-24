@@ -22,10 +22,8 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     const CODE_VA: u64 = address_space_map::IMAGE_BASE;
     const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
     // The child's program: SEND(slot 0, rendezvous::SEND, REPORT_WORD) then EXIT, nine
-    // instructions, with the child's first granted cap in slot 0. This file used to carry three
-    // separate aarch64 copies of it; `supervision_tests` already keeps one pair (aarch64 and
-    // RISC-V) for its own children, so all three now share that pair. Same shape, one definition,
-    // and the tests below run on either machine.
+    // instructions, with the child's first granted cap in slot 0: `supervision_tests`' pair
+    // (aarch64 and RISC-V), so the tests below run on either machine.
     let code = super::supervision_tests::REPORT_STUB;
     let expect_word = super::supervision_tests::REPORT_WORD;
 
@@ -103,33 +101,15 @@ fn a_process_can_build_start_and_run_a_child_thread() {
 }
 
 /// **Object revocation, piece 3: a started thread and its bound address space are reclaimed
-/// after it exits.** Build and start a child as above, but carve its code and stack from the
-/// *same* region as its address space, so one region holds the child's whole world (root,
-/// tables, code, stack) and its TCB is in another. Once the child has run, exited, and been
-/// reaped, both regions reclaim and the free-frame count returns *exactly* to baseline. The bound
-/// address space died with the thread (the `Drop` chain), leaving its region object-free for
-/// `reclaim_region` to unpin and free.
+/// after it exits.** The child's code and stack come from the *same* region as its address space,
+/// so one region holds its whole world (root, tables, code, stack) and its TCB is in another. Once
+/// it has run, exited and been reaped, both regions reclaim *exactly*: the bound space died with
+/// the thread (the `Drop` chain), leaving its region object-free for `reclaim_region`.
 ///
-/// # This test used to probe the refusal first, and that probe was killing its own child
-///
-/// Milestone 72. It opened by asserting `reclaim_region(thread_control_block_region).is_err()` while the child was
-/// still runnable, over a comment reading "the refusal leaves the region untouched". That comment
-/// went stale when DECISIONS §16 was amended: a refused reclaim is **not** passive, it *arms the
-/// kill* on every live thread in the region so the owner's retry can tear a runaway down (§24's
-/// `^C` escalation depends on it). So the probe marked this child `killed`, and `schedule()`
-/// converts a killed thread to a corpse at its next preemption. Win the race and the child reaches
-/// its `SEND` first and the test passes; lose it and the child is reaped without ever sending, the
-/// `ipc_receive` below never returns, and the machine goes fully idle: the intermittent lost-wakeup
-/// hang that kept `cpu-matrix` red on branches that could not have caused it.
-///
-/// Proved by widening the window rather than by waiting for the race: a call-free delay loop in
-/// front of `REPORT_STUB` guarantees a preemption before the `SEND`, and with the probe present
-/// that hangs the watchdog on **both** ISAs, first run, every run. It is not a RISC-V defect; the
-/// riscv64 leg simply lost the race more often. With the probe gone the same widened child passes.
-///
-/// The refusal itself is not lost coverage: `force_kill_tests` proves refuse-then-arm-then-reclaim
-/// directly, on a runaway that is *meant* to die, which is the only subject a destructive probe can
-/// honestly be pointed at.
+/// Never try to reclaim the TCB region while the child is live: a refused reclaim arms §16 (object
+/// revocation)'s kill on its threads (§24 (interrupting the foreground process)), which can reap
+/// the child before its `SEND`. `force_kill_tests` covers the refusal; see
+/// notes/system-test-modules.md.
 #[test_case]
 fn reclaim_frees_a_started_then_exited_childs_regions() {
     const CODE_VA: u64 = address_space_map::IMAGE_BASE;
@@ -200,22 +180,10 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     let got = crate::sched::ipc_receive(report)[0];
     assert_eq!(got, expect_word, "the child never reported");
 
-    // Let the reaper collect the now-Finished child. A Finished thread is removed when its own
-    // core switches away from it, and DECISIONS §28's placement can have put this child on
-    // ANOTHER core, so yielding on THIS core cannot make that happen: a hundred cheap yields
-    // complete long before the remote core's next timer tick. So wait on the clock, not on a
-    // yield count. Still a leak trap rather than a masked failure: a child that is never reaped
-    // times out and fails; only cross-core reap lag is tolerated.
-    //
-    // **And wait on this child, not on a headcount.** This asked whether `thread_count()` had
-    // returned to a baseline sampled at the top of the test, which is the size of the WHOLE
-    // thread table: the previous test's processes are still tearing down at that instant, so the
-    // baseline was a number the system would move on its own, and the wait was really waiting
-    // for everything else to hold still. It failed exactly that way once on RISC-V, where the
-    // slower machine leaves more teardown in flight. `is_thread_present` asks the question the test
-    // means. The whole history here is a wait that keeps being written against something wider
-    // than the property: it was a yield count until §28's scattering broke it, then a
-    // clock-bounded headcount until this. A sibling wait below had the same defect.
+    // Wait on the clock for this child's ThreadId to go. A Finished thread is removed when its
+    // own core switches away from it, and DECISIONS §28's placement can put it on ANOTHER core,
+    // so yields on THIS core cannot hurry it. A child never reaped still times out and fails. A
+    // thread-table headcount would also wait on every other test's teardown in flight.
     assert!(
         wait_for(|| !crate::sched::is_thread_present(tid)),
         "the exited child was never reaped",
@@ -276,10 +244,9 @@ fn spawn_to_reap_repeats_without_leaking() {
             crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
         );
         let thread_control_block_region = crate::memory_region::create(2).expect("tcb region");
-        // This round's own ten frames, by name. The leak this test hunts is a per-cycle one, so
-        // asking per round about the pages that round allocated is the question; the machine's
-        // free total was the question the assertion used to ask, and it could be moved by any
-        // other core in a window that contains a child running, a remote reap and two reclaims.
+        // This round's own ten frames, by name. The leak this test hunts is a per-cycle one, so the
+        // question is per round; the machine's free total can be moved by any other core in a
+        // window that holds a child running, a remote reap and two reclaims.
         let as_run = crate::testing::RegionRun::of(as_region);
         let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
         let tid =
@@ -324,16 +291,10 @@ fn spawn_to_reap_repeats_without_leaking() {
 /// (run a real workload), extended by §185 (what carries the claim that userspace composes a process
 /// from an authority you can count on one hand)).
 ///
-/// The witness holds a memory region and a report line, and nothing else. It reads a child out of
-/// the archive by name, mints a rendezvous, builds the child's space through the shared loader, maps
-/// a frame of its own into that space and is refused the same address twice, then configures and
-/// starts the thread and receives its answer. Every bit set is one verb the kernel allowed a
-/// two-capability process; `CHILD_ANSWERED` is the one nothing else in the suite asserts from
-/// userspace, that a thread a process built ran in the space it built.
-///
-/// **The wait has a deadline**, for `c_seam_tests::wait_for_report`'s reason: a child that never
-/// runs leaves the witness parked in its receive, and a bare receive here would surface that as a
-/// watchdog dump rather than as this sentence.
+/// The witness holds a memory region and a report line. It reads a child out of the archive, mints
+/// a rendezvous, builds the child's space, maps a frame into it (refused twice at one address) and
+/// starts it. Each bit is one verb the kernel allowed; `CHILD_ANSWERED` says a thread a process
+/// built ran in the space it built. The wait has a deadline, for `c_seam_tests::wait_for_report`'s.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.child_thread_tests.a_process_composed_from_two_capabilities_runs_in_the_space_it_built.patch`
 #[cfg(initial_ramdisk)]

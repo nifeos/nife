@@ -6,6 +6,8 @@ them, at a length the main page's prose budget cannot hold.
 
 - [`font-design.md`](font-design.md): where the drawn font departs from the Kaypro II's ROM, and where
   the grid will not let it.
+- [`bitmap-font.md`](bitmap-font.md): how `crates/bitmap_font` is built and tested, and how its
+  specimen sheet reads candidate fonts.
 - [`font-survey-2026-08-19.md`](font-survey-2026-08-19.md): every candidate font, its license, its
   measurements, and the screen constraint.
 - [`kaypro-ii-rom.md`](kaypro-ii-rom.md): the Kaypro II character ROM, found, rendered and excluded.

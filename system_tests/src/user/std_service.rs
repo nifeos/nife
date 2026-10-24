@@ -6,18 +6,14 @@ use crate::cap::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
-/// **The `std` demo's binary, or `None` because this target has no `std` for it** (milestone 161).
+/// The `std` demo's binary, or `None` because this target has no `std` for it (milestone 161).
 ///
-/// `std_exerciser` is not built with the rest of `user/`: it is its own workspace, compiled with
-/// `-Zbuild-std` for a **custom target** (`aarch64-unknown-nife`, `riscv64-unknown-nife`,
-/// `x86_64-unknown-nife` since milestone 184) against the patched `std` in the `nife-dev`
-/// toolchain. It is absent from an archive packed by something that never built it (a bare
-/// `cargo xtask initial-ramdisk-x86`, an interactive `run`), and every std test skips rather than
-/// fails.
-///
-/// A named accessor rather than an `.expect` at nine call sites, for [`super::fs_service::
-/// fs_server_image`]'s reason: a fixture missing because of the *toolchain* rather than because of
-/// the *machine* deserves to say so once, where a reader will find it.
+/// `std_exerciser` is its own workspace, compiled with `-Zbuild-std` for a custom target
+/// (`aarch64-unknown-nife`, `riscv64-unknown-nife`, `x86_64-unknown-nife`) against the patched
+/// `std` in the `nife-dev` toolchain. An archive packed by something that never built it (a bare
+/// `cargo xtask initial-ramdisk-x86`, an interactive `run`) lacks it, and every std test skips. A
+/// named accessor rather than nine `.expect`s, for [`super::fs_service::fs_server_image`]'s
+/// reason: a fixture missing for the toolchain rather than the machine says so once.
 pub fn std_exerciser_image() -> Option<&'static [u8]> {
     program("std_exerciser")
 }

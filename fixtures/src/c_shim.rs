@@ -1,19 +1,13 @@
-//! **The Rust shell around a C component** (milestone 36, DECISIONS §31).
+//! The Rust shell around a C component (milestone 36 (a foreign-language component, seam first),
+//! DECISIONS §31 (the foreign-language seam)): it holds every capability, makes every syscall, and
+//! hands the C nothing but a pointer and a length.
 //!
-//! This is the load-bearing piece of the seam, and what it does *not* do is the design. It holds
-//! every capability, it makes every syscall, and it hands the C nothing but a pointer and a length.
-//!
-//! ```text
-//!   kernel  <--- svc/ecall --->  c_shim (Rust)  <--- C ABI: (u8*, usize) --->  c_seam.c
-//!                                ^^^^^^^^^^^^
-//!                                every capability and every syscall stops here
-//! ```
-//!
-//! So the foreign component cannot widen the kernel's syscall surface (rule 3 / DECISIONS §4): not
-//! because we asked it not to, but because a syscall needs a capability slot and it has never seen
-//! one. And the confinement claim is exactly as narrow as it should be: **the C can corrupt memory
-//! inside a grant this shell already had, and nothing else.**
-//!
+//! The C has never seen a capability slot, so it cannot widen the kernel's syscall surface (rule 3,
+//! DECISIONS §4 (kernel shape)), and it can corrupt memory inside its grant and nothing else. Its
+//! `malloc` is the [`MemoryRegionHeap`] of milestone 27 (Rust `std` on the native ABI) on slot 1,
+//! the region this instance was built in, so a C leak exhausts only this instance and the
+//! `MemoryRegion::DESTROY` that reaps the corpse reclaims the heap too. See notes/c-seam.md.
+
 //! # What this shell is endowed with
 //!
 //! | slot | capability | why |
@@ -24,14 +18,7 @@
 //!
 //! plus two mappings the confiner made: the grant at [`c_seam::GRANT_VA`], read/write, and the
 //! read-only witness page immediately after it. The C is told about the first and not the second.
-//!
-//! # Where `malloc` comes from
-//!
-//! Milestone 27's untyped-backed [`MemoryRegionHeap`], wired to slot 1: the
-//! region this instance was built in. So the C heap is the process's own budget, a C leak exhausts
-//! this instance and touches no other process's memory, and the single `MemoryRegion::DESTROY` that reaps
-//! the corpse reclaims the heap along with everything else.
-//!
+
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `cshim`. The `c_` prefix means
 //! "written in C" (DECISIONS §31), spelled with the separator the tenet requires; the run-together
 //! form was the same defect `cseam` had.
@@ -43,10 +30,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-// This is its own binary. What it shares with `c_confiner` comes from the `c_seam` crate.
-// Shared code was a `#[path]` module compiled into each binary until rule 7 (2026-08-01) made it
-// a crate, so this file needs no dead-code allow under §38 (a suppression is scoped to an item
-// and carries a reason).
+// What this binary shares with `c_confiner` comes from the `c_seam` crate (rule 7), so this file
+// needs no dead-code allow under §38 (a suppression is scoped to an item and carries a reason).
 
 use core::alloc::{GlobalAlloc, Layout};
 
@@ -111,37 +96,9 @@ pub extern "C" fn _start(_a0: u64, attempt: u64, _a2: u64) -> ! {
     user_mode_runtime::exit()
 }
 
-// ===========================================================================================
-// The libc, in full: TWO symbols.
-//
-// Tier two of the three tiers in design/roadmap/0036-foreign-component.md (freestanding / a handful of
-// symbols / full POSIX).
-// The C references five symbols; this file defines two of them. Both halves of that sentence were
-// discovered by letting the build fail and reading the error, which is the only honest way to learn
-// what a foreign object file actually demands.
-//
-// **What the object demands.** `llvm-nm --undefined-only` on the compiled `c_seam.o`, identically
-// on both ISAs and at every optimization level: `malloc`, `free`, `memcpy`, `memset`, `strlen`.
-// Nothing else. No compiler-rt helper, no `memmove` conjured out of a struct copy, and no
-// `__stack_chk_fail` (this component has no stack arrays, but `-fno-stack-protector` in build.rs
-// makes that a decision rather than luck).
-//
-// **What the linker demands, which is less.** Delete all five and `rust-lld` reports exactly two
-// undefined symbols: `malloc` and `free`. `memcpy`, `memset`, and `strlen` are already there, weakly,
-// from Rust's own `compiler_builtins` (that is what makes a `no_std` Rust binary link at all). The C
-// component's needs and the Rust runtime's overlap almost exactly, which is a real and reusable
-// finding: the "handful of symbols" tier is smaller than it looks.
-//
-// **And why we do not define them anyway, which cost a debugging session.** The obvious Rust `memcpy`
-// shim is `core::ptr::copy_nonoverlapping`, and `copy_nonoverlapping` *lowers to a call to `memcpy`*.
-// So the shim calls itself, forever, and the symptom is not a stack overflow at a plausible depth but
-// a store fault exactly at `sp` sixteen bytes below whatever stack you gave the process. (Found here
-// with a 16 KiB stack, reproduced with 64 KiB, then understood.) `compiler_builtins` avoids the trap
-// by compiling with `#[no_builtins]`; a program crate cannot. So the right answer is the one that is
-// also the smaller one: let the runtime keep the three symbols it already owns, and shim only the two
-// it does not. Recorded in notes/c-seam.md, because the next person to shim a libc symbol in Rust
-// will reach for `copy_nonoverlapping` too.
-// ===========================================================================================
+// The libc, in full: `malloc` and `free`. The C object also references `memcpy`, `memset` and
+// `strlen`, which `compiler_builtins` already defines weakly, and a Rust shim of them would lower to
+// a call to itself. notes/c-seam.md ("The libc question, answered by tier") has the measurement.
 
 /// `malloc`'s header size. **This is the one place the C ABI costs us something real.** `free(p)`
 /// carries no size, but `GlobalAlloc::dealloc` requires the original `Layout`, so every allocation

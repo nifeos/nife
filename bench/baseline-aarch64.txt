@@ -1,7 +1,8 @@
-# toolchain: nightly-2026-10-22
+# toolchain: nightly-2026-10-23
 # qemu: 11.1.2
 # date: 2026-10-22
 # why: 2026-10-22: milestone 939 (the icount bench runs without a preemption tick in its windows): the bench tick is 1 Hz and every row's window opens just after a tick, failing the run if one lands. ipc_rtt -3.04% is its receiver-first mode, which the opening tick selects (calef, 2026-10-22 20:05 UTC, #2578). ipc_rtt_el0 -0.59% is the tick's phase removed. sink_throughput +0.09% is the bench build's blocked-send counter. Every other row within 0.17%.
+# why: 2026-10-24: restamped from nightly-2026-10-22 to nightly-2026-10-23 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check warns when the QEMU on

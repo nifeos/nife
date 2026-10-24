@@ -1,15 +1,12 @@
-//! **What the kernel and the EL0 block server agree on**: where the server's two windows sit, the
-//! part of the card it may serve, and the three spawn words that say so.
-//!
-//! The server (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::blk`,
-//! the four verbs the virtio and NVMe block servers answer, so the FS server cannot tell which
-//! disk it has. Its blocks are 4096 bytes; the card's are 512. A request names blocks **inside a
-//! window** the kernel chose at spawn, never a card address, and [`Window::translate`] is the one
-//! place a block becomes a sector: a Kani harness proves no request reaches outside the window.
-//!
-//! Which window radon's filesystem gets is not this module's decision. See the crate root's BUGS
-//! and the 53 block: it is a fact two programs (whatever writes the card and the kernel that reads
-//! it) must agree on, which makes it an architect's call.
+//! What the kernel and the EL0 block server agree on: where the server's two windows sit, the part
+//! of the card it may serve, and the three spawn words that say so. The server
+//! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::blk`, the four
+//! verbs the virtio and NVMe block servers answer, so the FS server cannot tell which disk it has.
+//! Its blocks are 4096 bytes; the card's are 512. A request names blocks inside a window the kernel
+//! chose at spawn, never a card address, and [`Window::translate`] is the one place a block becomes
+//! a sector; a Kani harness proves no request reaches outside it. Which window radon's filesystem
+//! gets is a fact two programs must agree on, so an architect's call (the crate root's BUGS and
+//! the block of milestone 53 (the board's own peripherals)).
 
 use filesystem_contract::blk;
 
