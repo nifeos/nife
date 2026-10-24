@@ -212,6 +212,7 @@ impl<D: Disk> Disk for CachedDisk<D> {
             return Ok(n);
         }
         // A record body or larger: already batched by step 4, and not this cache's target.
+        // SAFETY: forwarded from this method's own caller, on a buffer of the same shape.
         unsafe { self.inner.read_at(block, buffer) }
     }
 

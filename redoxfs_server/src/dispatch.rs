@@ -19,6 +19,12 @@
 //! rows 19 and 24 are the claims it holds. The attribute-name arms take bytes in a separate
 //! namespace, checked by `xattr::is_valid_name`; `get_xattr_request` copies its name too.
 
+//! # BUGS
+//!
+//! - `SETXATTR` and `REMOVEXATTR` hand the core their attribute name as a slice of the shared
+//!   window, uncopied, so a client's second thread can rewrite it between `xattr::is_valid_name`
+//!   and the store's use of it. Only `GETXATTR` copies first.
+
 use filesystem_contract::{blk, fs, operation, reply_err, xattr};
 use redoxfs::Disk;
 use syscall::error::{EINVAL, EPERM, Error, Result};
