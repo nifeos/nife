@@ -12,6 +12,8 @@ the pieces are. These files carry the evidence its prose budget has no room for.
   display terminal (milestone 29 (a display terminal)'s text increment) did with this contract.
 - [`flushed-hang.md`](flushed-hang.md): the second `FLUSH` that never returned, and the boot
   evidence that resolved it.
+- [`surface-geometry.md`](surface-geometry.md): why the surface is 1120 by 624, and the last
+  frame's padding.
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, which split the parent
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
@@ -25,3 +27,4 @@ names files.
   after the parent's own word for the check.
 - `later-rungs` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
 - `flushed-hang` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
+- `surface-geometry` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
