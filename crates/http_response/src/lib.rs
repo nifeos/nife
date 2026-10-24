@@ -31,19 +31,21 @@
 pub const HEAD_MAX: usize = 2048;
 
 /// The most header lines a head may hold. `httparse` fills a caller-supplied array and this crate
-/// has no allocator, so the array is a bound. 128 is enough for the tests' 5,291-byte redirect head,
-/// which is built of 123 short lines; each slot is 32 bytes of stack.
+/// has no allocator, so the array is a bound. 128 is enough for GitHub's redirect head, which had 16
+/// lines on 2026-10-24 (UTC); each slot is 32 bytes of stack.
 const MAX_HEADERS: usize = 128;
 
 /// **A head big enough for `github.com`'s redirect**, for a reader made with
-/// [`Response::with_room`]. A GitHub Release download answers `302` with a head of 5,291 bytes
-/// (measured 2026-10-13 UTC with an HTTP/1.0 `GET`), about 970 of them the `Location` URL and most
-/// of the rest security headers. `pinned_tls_client` reads with this bound, so a package client can
-/// follow the one redirect calef ruled on 2026-10-12 (UTC) on #2048; the plain LAN reader keeps
-/// [`HEAD_MAX`], because its consumers include a `no_std` test component with a small stack.
+/// [`Response::with_room`]. A GitHub Release download answers `302` with a head of 10,806 bytes
+/// (measured 2026-10-24 UTC with an HTTP/1.0 `GET`): 9,243 of them one `content-security-policy`
+/// line, about 940 the `Location` URL. It was 5,291 on 2026-10-13, so the bound is three times
+/// today's head rather than a fit to it; GitHub sets the size, not nife. `pinned_tls_client` reads
+/// with this bound, boxed, so a package client can follow the one redirect calef ruled on
+/// 2026-10-12 (UTC) on #2048; the plain LAN reader keeps [`HEAD_MAX`], because its consumers
+/// include a `no_std` test component with a small stack.
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
-pub const REDIRECT_HEAD_MAX: usize = 8192;
+pub const REDIRECT_HEAD_MAX: usize = 32 * 1024;
 
 /// Why a response was refused. Every variant is a peer that is not speaking the HTTP this reader
 /// accepts; none of them is recoverable by reading more.
@@ -518,12 +520,15 @@ mod tests {
         assert!(r.is_complete());
     }
 
-    /// A head of GitHub's measured size (5,291 bytes) is refused by the default reader and read by
-    /// one made with [`REDIRECT_HEAD_MAX`] of room.
+    /// A head of GitHub's measured size (10,806 bytes on 2026-10-24 UTC, most of it one line) is
+    /// refused by the default reader and read by one made with [`REDIRECT_HEAD_MAX`] of room.
     #[test]
     fn a_long_head_needs_a_reader_made_with_room() {
         let mut head = Vec::from(&b"HTTP/1.1 302 Found\r\nContent-Length: 0\r\n"[..]);
-        while head.len() < 5291 - 4 {
+        head.extend_from_slice(b"Content-Security-Policy: ");
+        head.extend(core::iter::repeat_n(b'a', 9243 - 25));
+        head.extend_from_slice(b"\r\n");
+        while head.len() < 10806 - 4 {
             head.extend_from_slice(b"X-Filler: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\r\n");
         }
         head.extend_from_slice(b"\r\n");

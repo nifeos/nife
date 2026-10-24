@@ -141,7 +141,45 @@ region one package larger, from the progenitor's image pool (`grant_plan::named_
 - Into the progenitor's stack: two pages, to fourteen (`kernel::user::PROGENITOR_STACK_PAGES` has the
   measurements).
 
+## A rehearsal with basalt's sources
+
+No check boots the production sources, so the bench evening's step 3 (`notes/xenon-bench-2026-10-18.md`)
+is rehearsed by hand under QEMU's x86_64 UEFI machine, from an installed disk, against the live
+`basalt.nifeos.org`. Under slirp the lease's name server forwards to the host's, so here the
+index host is resolved by name.
+
+```sh
+cargo xtask std-exerciser
+NIFE_INDEX_SOURCES=basalt cargo xtask install-boot     # install-boot: PASS
+# then boot target/nife-install.img with the stick detached, and type at `$`:
+#   jig update; jig install ioping; cd packages; ioping -v
+```
+
+On 2026-10-24 (UTC), against `rolling-2026-10-24-87a3b29`:
+
+```text
+$ jig update
+    index updated: 6 packages for x86_64, from basalt.nifeos.org over TLS
+$ jig install ioping
+    fetched ioping-1.3-x86_64 from release-assets.githubusercontent.com via github.com over TLS
+  fetched and installed; generation 1 is live
+$ cd packages
+$ ioping -v
+  ioping 1.3
+```
+
+The Release hop works only while GitHub's `302` head fits `http_response::REDIRECT_HEAD_MAX`,
+32 KiB. It measured 10,806 bytes on 2026-10-24, most of it one `content-security-policy` line.
+When it does not fit, `jig` prints `passed over https://github.com:443/...: Http(HeadTooLong)` and
+installs from the Pages copy. The ignored test `a_release_download_is_e46_then_one_redirect_to_x1`
+(`pinned_tls_client/tests/peer.rs`) checks the same hop from the host.
+
 ## BUGS
+
+- GitHub sets the size of its redirect's head, and no gate sees it grow, because a check may not
+  depend on a host outside the runner. If it passes 32 KiB, `jig` passes over the Release with
+  `Http(HeadTooLong)` and installs from the Pages copy, uncounted. Running
+  `cargo test --test peer -- --ignored` in `pinned_tls_client` by hand is the check.
 
 - **`jig` is inside the trusted base for installs** until the index carries a signature the
   progenitor checks (option I3 in milestone 809's block). The progenitor installs whatever the index
