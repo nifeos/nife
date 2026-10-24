@@ -279,6 +279,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 | [swish-check-x86-leg](benchmarks/swish-check-x86-leg.md) | the x86_64 shell leg was paced by ticks | 2026-10-03 |
 | [rfence-self-row](benchmarks/rfence-self-row.md) | the open `rfence_self` row | 2026-09-21; 2026-09-23 |
 | [preemption-in-the-window](benchmarks/preemption-in-the-window.md) | the masked `map_new` window | 2026-09-21 (three) |
+| [host-reordering-under-tcg](benchmarks/host-reordering-under-tcg.md) | what an aarch64 CI host shows a guest | 2026-10-24 |
 | [drift-since-the-2026-09-26-floors](benchmarks/drift-since-the-2026-09-26-floors.md) | drift on `main` on all three ISAs | 2026-10-02 |
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
