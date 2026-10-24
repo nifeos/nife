@@ -18,7 +18,7 @@ not the moment to improve it. Found by milestone 227 (a GICv3 driver, because GI
 lane (a GICv3 driver), on the first two full `script/test --hvf` runs this machine could make since
 milestone 222 (the one command a person runs before).
 
-It needs patagonia, or any Apple Silicon Mac with HVF, and nothing else.
+It needs an Apple Silicon Mac with HVF, and nothing else.
 
 ## In brief
 

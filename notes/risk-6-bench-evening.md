@@ -95,7 +95,7 @@ replaces the hand-over that would.
 ## Rehearsing it, which needs no machine
 
 ```sh
-cargo xtask disk-throughput                  # all four cases, about a minute on patagonia once built
+cargo xtask disk-throughput                  # all four cases, about a minute on an Apple M3 once built
 cargo xtask disk-throughput --case bypass    # one of them
 ```
 
@@ -123,7 +123,7 @@ went on that disk since, stop here.
 
 ### 0. Before power
 
-- `pgrep -l qemu` on patagonia: nothing should be running while the stick is built.
+- `pgrep -l qemu` on the build machine: nothing should be running while the stick is built.
 - xenon's firmware needs no change: `VT for Direct I/O` is enabled (`notes/xenon-firmware.md`).
 
 ### 1. Build the image once, and note the commit
