@@ -1,26 +1,20 @@
-//! **The DMA-confinement validator, as pure logic.** A userspace virtio driver programs the
-//! descriptors a device does DMA against, and the device has no MMU in front of it (or an IOMMU,
-//! and this is defence in depth), so something trusted must check that every address the device
-//! will touch lies in the driver's granted DMA region. That is [`validate_and_shadow`], lifted out
-//! of `kernel/src/virtio.rs` so Kani proves it and the kernel calls the proved code
-//! (notes/verification.md).
-//!
-//! The property, proved for every input: **no descriptor the device can read out of the shadow ring
-//! references memory outside `[base, base + size)`**, in either direction, with indirect
-//! descriptors refused, over any newly published batch. The device reads a kernel-private shadow
-//! copy, so a driver mutating its descriptor after validation changes only a copy nothing reads.
-//! Everything is address arithmetic over caller-supplied memory closures (the direct map, arrays,
-//! or Kani's symbolic memory), so it is `no_std` and host-testable.
-//!
+//! The DMA-confinement validator, as pure logic: [`validate_and_shadow`], lifted out of
+//! `kernel/src/virtio.rs` so Kani proves the code the kernel calls (notes/verification.md). A
+//! userspace virtio driver programs the descriptors a device does DMA against, and the device has
+//! no MMU in front of it (or an IOMMU, and this is defense in depth), so something trusted checks
+//! every address the device will touch. Proved for every input: no descriptor the device can read
+//! out of the shadow ring references memory outside `[base, base + size)`, in either direction,
+//! with indirect descriptors refused, over any newly published batch. The device reads a
+//! kernel-private shadow copy, so a driver mutating a descriptor after validation changes only a
+//! copy nothing reads. See notes/dma.md.
+
 //! # BUGS
-//!
-//! **The shadow descriptor is published in two stores, and nothing keeps the device from reading
-//! between them.** [`shadow_one_head`] writes `addr` then `word` with no barrier and no check that
-//! the shadow slot is idle, before checking the next descriptor in the chain. A driver that
-//! republishes a head the device still holds can have it observe the new `addr` with the old `len`,
-//! a span never admitted. The proof models no concurrent reader, and on virtio-mmio this walk is
-//! the only boundary (`notes/confinement-claims.md` row 17;
-//! design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md).
+//! - The shadow descriptor is published in two stores. [`shadow_one_head`] writes `addr` then
+//!   `word` with no barrier and no check that the slot is idle, so a driver that republishes a head
+//!   the device still holds can have it see the new `addr` with the old `len`, a span never
+//!   admitted. The proof models no concurrent reader, and on virtio-mmio this walk is the only
+//!   boundary (`notes/confinement-claims.md` row 17;
+//!   design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md).
 //!
 //! Name: ratified 2026-09-24 (calef, #1229), replacing `dma_validator`, under §154 (the acronym test
 //! is whether the phrase is spoken). Refused `dma_validator` (an unexpanded acronym),
@@ -38,17 +32,12 @@ pub const F_NEXT: u16 = 1;
 /// feature that enables it is negotiated off in the kernel), so the confinement fails closed.
 pub const F_INDIRECT: u16 = 4;
 
-/// **Is `[addr, addr + len)` wholly inside `[base, base + size)`?** The whole confinement, as one
-/// predicate. It is direction-agnostic on purpose: whether the device *reads* the buffer (transmit)
-/// or *writes* it (receive), the address it touches must be in-region, so one check closes both
-/// hazards (a receive buffer aimed at the kernel would let the device overwrite it; a transmit
-/// buffer aimed there would let it exfiltrate the kernel to the wire).
-///
-/// Total: both additions are checked, so a length that overflows `addr`, or a region whose own
-/// `base + size` wraps `u64`, returns `false` (refuse) rather than panicking. A wrapping region can
-/// only ever over-reject (the run's end is a huge in-region address, above any wrapped limit), which
-/// is the safe direction; real DMA regions are bounded by RAM and never wrap, so this hardening
-/// changes nothing the kernel actually sees. See the `in_region_is_sound` proof.
+/// Is `[addr, addr + len)` wholly inside `[base, base + size)`? The whole confinement, as one
+/// predicate, and direction-agnostic on purpose: whether the device reads the buffer (transmit) or
+/// writes it (receive), the address must be in-region, so one check closes both hazards. Total: a
+/// length that overflows `addr`, or a region whose own `base + size` wraps `u64`, returns `false`
+/// (refuse) rather than panicking, and a wrapping region can only over-reject, the safe direction.
+/// See the `in_region_is_sound` proof and notes/dma/validator.md.
 pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
     match (addr.checked_add(len), base.checked_add(size)) {
         (Some(end), Some(limit)) => addr >= base && end <= limit,
@@ -172,22 +161,16 @@ pub fn is_descriptor_allowed(base: u64, size: u64, qsize: u16, d: Desc) -> bool 
     true
 }
 
-/// **Validate the driver's newly-published descriptors AND copy the validated ones into the shadow
-/// ring the device reads.** This is the security-critical function, moved verbatim out of the kernel.
-///
-/// For each newly-available head in `from_idx .. to_idx`, walk the chain in the *driver's* descriptor
-/// table, check every descriptor with [`is_descriptor_allowed`], and copy the validated bytes into the
-/// *shadow* table at the same index. Then mirror the head into the shadow available ring, and finally
-/// publish the shadow's `avail.idx`. The device is programmed to read the shadow (which the driver
-/// cannot write), so the bytes the device acts on are exactly the bytes validated here: mutating a
-/// descriptor after this returns changes only the driver's own copy, which nothing reads. That is
-/// what closes the time-of-check/time-of-use race an in-place check leaves open. Returns `false`,
-/// leaving the shadow's published index untouched, if any descriptor escapes the region, is indirect,
-/// or the batch claims more entries than the ring can hold.
-///
-/// Takes the driver and shadow ring *physical addresses* plus read/write word pairs, so the kernel
-/// passes direct-map closures, a test passes array-backed closures, and Kani passes a symbolic memory
-/// model. `qsize` is the negotiated queue size (the kernel's `QSIZE`); the walks are bounded by it.
+/// Validate the driver's newly published descriptors and copy the validated ones into the shadow
+/// ring the device reads: the security-critical function. For each head in `from_idx .. to_idx` it
+/// walks the chain in the driver's table, checks every descriptor with [`is_descriptor_allowed`],
+/// copies it into the shadow table at the same index, mirrors the head into the shadow available
+/// ring, and publishes the shadow's `avail.idx` last. The device reads only the shadow, which the
+/// driver cannot write, so it acts on exactly the bytes validated here; that closes the
+/// time-of-check/time-of-use race. Returns `false`, leaving the published index untouched, if any
+/// descriptor escapes the region or is indirect, or the batch claims more entries than the ring
+/// holds. Memory is reached through the caller's read and write closures (the direct map, arrays,
+/// or Kani's symbolic memory), and the walks are bounded by `qsize`, the negotiated queue size.
 #[allow(clippy::too_many_arguments)]
 pub fn validate_and_shadow(
     direct_memory_access_base: u64,
@@ -249,23 +232,16 @@ pub fn validate_and_shadow(
     true
 }
 
-/// **Validate and shadow one head's descriptor chain: the core of the confinement.** Walk the chain
-/// starting at `head` in the driver's descriptor table, check every descriptor with
-/// [`is_descriptor_allowed`], and copy each validated descriptor into the shadow table at the same index.
-/// Returns `false` (having possibly copied earlier, validated descriptors, which is harmless because
-/// the caller does not publish the head on failure) if any descriptor escapes the region, is
-/// indirect, or names a `next` link out of range.
+/// Validate and shadow one head's descriptor chain: the core of the confinement. Every descriptor
+/// from `head` is checked with [`is_descriptor_allowed`] before it is copied verbatim into the
+/// shadow table at the same index, so no descriptor the device can read out of the shadow is
+/// out-of-region or indirect (the `validate_and_shadow_confines_every_chain` proof). The walk is
+/// bounded by `qsize`, so a `next` cycle cannot loop forever. Returns `false` on a refusal, perhaps
+/// after copying earlier validated descriptors, which is harmless: the caller does not publish the
+/// head.
 ///
-/// This is the walk the [`validate_and_shadow_confines_every_chain`](self) proof quantifies over:
-/// because every descriptor is checked before it is copied, no descriptor the device can read out of
-/// the shadow is ever out-of-region or indirect. The chain is bounded by `qsize`, so a `next` cycle
-/// cannot loop forever. `desc[d] = { u64 addr @0; u32 len @8; u16 flags @12; u16 next @14 }`; the
-/// len/flags/next share one 64-bit word read and copied verbatim.
-///
-/// **BUGS: the two `write64`s below are not one publish.** A device reading shadow slot `d`
-/// between them sees the new address with the old length (the crate's BUGS says what that costs and
-/// where the fix is priced). The walk also overwrites a slot the device may still own, because
-/// nothing here knows which shadow slots are idle.
+/// BUGS: the two `write64`s below are not one publish (the crate's BUGS), and the walk overwrites
+/// a slot the device may still own, because nothing here knows which shadow slots are idle.
 #[allow(clippy::too_many_arguments)]
 fn shadow_one_head(
     direct_memory_access_base: u64,
@@ -309,13 +285,10 @@ fn shadow_one_head(
 }
 
 // ---------------------------------------------------------------------------------------------
-// The queue ring layout. **Owned here, and used by the kernel** (kernel/src/virtio.rs defines its
-// `QSIZE`, `RING_BLOCK`, `MAX_QUEUES`, and the three ring offsets as aliases of these), because a
-// proof about a *copy* of the layout proves nothing about the layout that runs. The first cut of
-// milestone 35 duplicated them and said so; that left `distinct_queues_occupy_disjoint_blocks`
-// quantifying over constants the kernel could drift away from silently. The kernel keeps its own
-// compile-time asserts as well, so drift would now be a compile error in two places rather than a
-// proof that quietly stopped applying.
+// The queue ring layout, owned here and used by the kernel (kernel/src/virtio.rs defines its
+// `QSIZE`, `RING_BLOCK`, `MAX_QUEUES` and the three ring offsets as aliases of these), because a
+// proof about a copy of the layout proves nothing about the layout that runs. The kernel keeps its
+// own compile-time asserts as well, so drift is a compile error in two places.
 // ---------------------------------------------------------------------------------------------
 
 /// The negotiated queue size the kernel drives (`QSIZE` in kernel/src/virtio.rs).
