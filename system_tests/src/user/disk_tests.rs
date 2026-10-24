@@ -139,34 +139,21 @@ fn roster_message_names_every_disk(w: &disk_service::Wiring) {
 
 /// **The machine finds a partition table on a disk it did not write, and says what is on it.**
 ///
-/// This is the half of milestone 57 that is not optional. A block device hands a kernel an
-/// undifferentiated run of blocks, and which of them is a filesystem is written in the partition
-/// table and nowhere else, so an OS that cannot read a GPT cannot find a filesystem on a disk it did
-/// not create. `crates/globally_unique_identifier_partition_table` has been able to parse one since
-/// 2026-07-30 and was wired to nothing; this is the wire.
-///
-/// What makes the assertion worth something is where the bytes came from: the image is built from
-/// the committed `sgdisk` fixture, so the table under test was written by gptfdisk, in C++, by
-/// people who have never heard of this project. A parser that only reads its own output proves
-/// nothing, and neither does a driver that only reads a disk its own `mkfs` laid out.
-///
-/// The backup check is the one that would have been easy to skip and is the reason this reads a
-/// second, differently-aligned run of blocks at the far end of the disk: 33 logical blocks ending on
-/// the last block, which begins partway into a filesystem block at an offset that depends on the
-/// disk's size (`globally_unique_identifier_partition_table::span`).
-///
-/// The roster half also holds milestone 421 (the block roster names an NVMe disk): when the runner
-/// attached an NVMe controller, the surveyor must list it.
+/// Milestone 57's non-optional half: an OS that cannot read a GPT cannot find a filesystem on a
+/// disk it did not create. The image is built from the committed `sgdisk` fixture, so the table was
+/// written by gptfdisk, not by this project. The backup check reads a second, differently aligned
+/// run: the 33 logical blocks ending on the last block, which begin partway into a filesystem block
+/// (`globally_unique_identifier_partition_table::span`). The roster half holds milestone 421 (the
+/// block roster names an NVMe disk): an attached NVMe controller must be listed.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.disk_tests.the_disk_surveyor_reads_a_table_gptfdisk_wrote.patch`
 #[test_case]
 fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
     let Some(w) = disk_service::start(fs_service::blk_server_image(), surveyor_image()) else {
         // No fourth mmio block device: this boot did not build the GPT image. A fact about the
-        // machine, not a failure, and a fact the final line has to carry: this used to return
-        // silently and be counted as a pass (milestone 214,
-        // design/roadmap/0214-print-and-return-skips.md); the silent form is the same defect with
-        // the line left out.
+        // machine, which the final line must carry as a skip (milestone 214 (a test that prints
+        // "skipping" and returns is counted as passed),
+        // design/roadmap/0214-print-and-return-skips.md).
         skip_unless_required!(
             X86_FIXTURES_REQUIRED,
             "no GPT disk attached (this boot did not build the GPT image)"
@@ -174,11 +161,8 @@ fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
     };
     // **On the PVH x86_64 leg the roster is exactly the five fixtures, no more and no fewer**
     // (milestone 420 (x86_64 has one fixture of five and no NIC, GPU, keyboard or RNG)). The runner
-    // attaches the crash, GPT and blank disks softly (`[ -f img ]`), and the assertions below hold
-    // for any count from zero to five, so a runner that lost those lines used to pass this test
-    // with a skip (measured 2026-10-16: GPT and blank removed, "0 passed, 1 skipped", exit 0).
-    // Removing only the GPT disk slid the blank one into ordinal 3 and went red by accident, on a
-    // protective-MBR panic that names neither disk. This names them.
+    // attaches the crash, GPT and blank disks softly (`[ -f img ]`) and the assertions below hold
+    // for any count, so this names them: a lost fixture slides every ordinal above it down.
     if X86_FIXTURES_REQUIRED {
         assert_eq!(
             w.devices,
@@ -221,17 +205,12 @@ fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
 
 /// **A listing is not a lever.**
 ///
-/// The roster answers "what drives are attached" and answers nothing else. The same binary, the
-/// same mapping, the exact address the surveyor reads its roster from, and no disk at all: it
-/// announces the address and writes there, and the write is refused because the mapping is
-/// read-only. There is no address at which it succeeds, because the boundary is a page permission
-/// rather than a check this program could be argued out of.
-///
-/// This is the claim `lsblk` plus `parted` cannot make. On Linux the listing is world-readable and
-/// naming a device to a destructive tool is a matter of typing the right path; the warning in
-/// calef's own router instructions ("confirm the target device path before proceeding") exists
-/// because nothing enforces it. Here the enumeration is a read-only mapping and the disk is an
-/// rendezvous somebody else was handed.
+/// The roster answers "what drives are attached" and nothing else. The same binary, mapping and
+/// roster address, with no disk: it writes there, and the write is refused because the mapping is
+/// read-only. The boundary is a page permission, not a check the program could be argued out of.
+/// This is the claim `lsblk` plus `parted` cannot make: there the listing is world-readable and
+/// naming a device to a destructive tool is a matter of typing its path. Here the enumeration is a
+/// read-only mapping and the disk is a rendezvous somebody else was handed (notes/block-devices.md).
 #[test_case]
 fn the_roster_is_a_listing_and_not_a_lever() {
     let faults = USER_FAULTS.load(Ordering::Relaxed);
@@ -264,20 +243,14 @@ fn the_roster_is_a_listing_and_not_a_lever() {
 
 /// **A page a driver holds can be taken back; a page it was handed at birth cannot.**
 ///
-/// This is milestone 108's claim, and it is the one assertion in the disk suite that fails on the
-/// code as it stood the day before. The surveyor's roster used to arrive through `Spawn::maps`: the
-/// kernel wrote it into the new address space before the first instruction, and recorded nothing.
-/// `revoke::revoke_page_frame` works off the mapping database, so it walked straight past that page.
-/// There was no `PageFrame` capability to delete either. **A spawn-time mapping is permanent by
-/// construction**, and "the driver's buffer is revocable" was a property the system could not have.
-///
-/// So: the program maps the frame it holds, reads the first word and reports it, and parks. The
-/// kernel checks that word against its own read of the same physical page through the direct map,
-/// which is what says the mapping was real and was of *this* page. Then it revokes the frame and
-/// lets the program go. The second read faults, at the address it faults at, and the program's
-/// "the read landed" message never arrives.
-///
-/// Run it against the old wiring and the second read returns the same word as the first.
+/// The claim of milestone 108 (the drivers move onto frame capabilities). A spawn-time mapping
+/// (`Spawn::maps`) is recorded nowhere, so `revoke::revoke_page_frame`, which works off the mapping
+/// database, cannot reach it; the roster is a held `PageFrame` instead. The program maps the frame,
+/// reads and reports the first word, and parks. The kernel checks that word against its own
+/// direct-map read of the same page, which says the mapping was real and of this page. Then it
+/// revokes the frame and resumes the program: the second read faults at that address and "the read
+/// landed" never arrives. Against a spawn-time mapping the second read would return the same word
+/// as the first.
 #[test_case]
 fn the_roster_can_be_revoked_out_from_under_its_holder() {
     let faults = USER_FAULTS.load(Ordering::Relaxed);
@@ -369,10 +342,6 @@ fn entropy_rendezvous() -> Option<crate::sched::RendezvousId> {
 /// **The machine partitions a disk and puts a filesystem on it, and can do neither without the
 /// capability that makes an identifier unique.**
 ///
-/// Milestone 57's write half in one narrative, on one disk, in order, because the claims are about
-/// *sequence*: "the refused run left the disk as it found it" is a statement about what is on the
-/// platter afterwards, and only a later read can make it.
-///
 /// ```text
 ///   1  partition, no entropy   -> refused          5  mkfs, no disk       -> refused
 ///   2  read the table          -> nothing there    6  read the partition  -> still no filesystem
@@ -380,19 +349,9 @@ fn entropy_rendezvous() -> Option<crate::sched::RendezvousId> {
 ///   4  mkfs, no entropy        -> refused          8  read the partition  -> the file is in it
 /// ```
 ///
-/// **The pair is the claim, not the success.** A working `mkfs` proves nothing about authority;
-/// every Unix has one and it reaches every disk in the machine. What is claimed here is that two
-/// capabilities are jointly sufficient and separately necessary, and the way to claim it is to
-/// withhold each one from the same binary, on the same disk, with the same budget and the same
-/// stack, and then read the disk.
-///
-/// The entropy half is the one worth reading twice. A GPT partition and a RedoxFS volume each carry
-/// an identifier that must be globally unique, and neither
-/// `crates/globally_unique_identifier_partition_table` nor a `no_std` RedoxFS has any randomness:
-/// the crate refuses to invent a GUID (notes/globally-unique-identifier-partition-table.md) and the
-/// engine's `Header::new` is std-gated because it calls `getrandom` (vendor/README.md divergence
-/// 4). So "no entropy rendezvous" is not a policy this code enforces. It is something the programs
-/// genuinely cannot do, and what is under test is that they say so rather than making a value up.
+/// Milestone 57's write half, on one disk and in order, because only a later read shows that a
+/// refused run left the disk as it found it. The two capabilities are jointly sufficient and
+/// separately necessary; why entropy is a real need is in notes/block-devices.md, "The disk tests".
 #[test_case]
 fn the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else() {
     if fs_service::mkfs_image().is_none() {

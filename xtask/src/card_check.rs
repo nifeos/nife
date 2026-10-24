@@ -5,16 +5,15 @@
 //! stick directory, or a single UEFI boot file.
 //!
 //! The comparison is `sealed_pair`'s and is documented there: the SHA-256 of each archive entry the
-//! kernel may enter, looked for in the kernel image's compiled-in trust root. This file is the part
-//! that finds the two files and says what to do about the answer, which is the whole point of the
-//! milestone. The refusal already existed; what did not exist was somewhere for it to arrive before
-//! a person walked to the board.
+//! kernel may enter, looked for in the kernel image's compiled-in trust root. This file finds the
+//! two files and says what to do about the answer before a person walks to the board.
+
+//! # Which half is stale
 //!
-//! **Which half is stale** is a question `sealed_pair` cannot answer on its own, because a digest
-//! the kernel does not carry is not a digest anything can find in it. This file answers it the only
-//! way a host can: by comparing both files against what the tree last built, in `target/board`. When
-//! that build is absent or itself stale the answer is "one of these two", and it says so rather than
-//! guessing.
+//! `sealed_pair` cannot say on its own, because a digest the kernel does not carry is not a digest
+//! anything can find in it. This file compares both files against what the tree last built, in
+//! `target/board`. When that build is absent or itself stale the answer is "one of these two", and
+//! it says so rather than guessing.
 
 use std::path::{Path, PathBuf};
 

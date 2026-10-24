@@ -1,15 +1,11 @@
-//! **A 7x8 bitmap font, and the arithmetic that turns a character into pixels**: a constant table
-//! of monochrome glyphs and a pure function from `(character, x, y)` to a colour.
-//!
-//! Not a scalable font, which wants an allocator, floating point, a hinting rasteriser and a file
-//! to load, none of which a `no_std` component has. Here the glyphs are a `static`, drawing one is
-//! a bit test, and the expected picture is a function three parties evaluate independently: the
-//! terminal that draws ([`cell_pixel`]), the kernel test that checks, and the host that reads the
-//! scanout back out of QEMU. That is what makes on-screen text provable rather than plausible. The
-//! classic bug, a mirrored font, hides in symmetric letters; [`is_ink`]'s example prints an `F`.
-//!
-//! Not here: kerning, proportional widths, anti-aliasing, anything past basic latin ([`glyph`]
-//! draws a box for it) and font loading. The limits are in notes/glyphs.md.
+//! A 7x8 bitmap font and the arithmetic that turns a character into pixels: a constant table of
+//! monochrome glyphs and a pure function from `(character, x, y)` to a color. The expected picture
+//! is a function three parties evaluate independently (the terminal that draws with
+//! [`cell_pixel`], the kernel test that checks, and the host that reads the scanout back out of
+//! QEMU), which makes on-screen text provable. A mirrored font hides in symmetric letters, so
+//! [`is_ink`]'s example prints an `F`. Not here: scalable outlines, kerning, proportional widths,
+//! anti-aliasing, anything past basic latin ([`glyph`] draws a box for it) and font loading. See
+//! notes/glyphs.md and notes/glyphs/bitmap-font.md.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `bitfont` to spell out the contraction.
 
@@ -21,19 +17,13 @@ mod render;
 
 pub use render::{cell_pixel, glyph, is_ink};
 
-/// A glyph cell's width in pixels.
-///
-/// The font is a **fixed-pitch** 7x8, which is what lets a terminal grid be `x / GLYPH_W` and
-/// nothing more.
-///
-/// Seven, not eight, and the reason is the Kaypro II's video board: it shifted out a zero, five
-/// bits of character generator, and a zero, so the cell is five ink columns with a one-pixel gutter
-/// on each side. Every glyph here keeps that gutter (asserted below), which is where the
-/// inter-character gap comes from, so the advance is 7 and there is no tracking to add.
-///
-/// The narrower cell is also what makes the terminal usable: 128 / 7 is **18 columns** where 128 / 8
-/// was 16. The scanout is not a whole multiple of 7, so the two rightmost pixels of a full-width
-/// surface are outside the grid and stay background; see `components/src/display_terminal.rs`.
+/// A glyph cell's width in pixels. The font is fixed-pitch, so a terminal grid column is
+/// `x / GLYPH_W` and nothing more. Seven is the Kaypro II's cell: its video board shifted out a
+/// zero, five bits of character generator and a zero, so five ink columns sit between one-pixel
+/// gutters (asserted in the tests). The gutter is the inter-character gap, so there is no tracking
+/// to add. 128 / 7 is 18 columns where 128 / 8 was 16; the scanout is not a whole multiple of 7, so
+/// the two rightmost pixels of a full-width surface stay background (see
+/// `components/src/display_terminal.rs`).
 pub const GLYPH_W: u32 = 7;
 
 /// A glyph cell's height in pixels. Eight rows, of which the last carries only the descenders

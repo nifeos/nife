@@ -1,9 +1,6 @@
 //! **Raw-mode byte delivery**: [`RawQueue`] and its bound.
 //!
-//! Cut out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to their
-//! own files), which left the crate root an index (§282 (when a file is split, the parent becomes
-//! an index)). Its fields are `pub(super)` because `handoff` saves and restores them; as private
-//! fields of the crate root they were visible to the same modules.
+//! Its fields are `pub(super)` because `handoff` saves and restores them.
 //!
 //! Name: provisional (milestone 878's lane, 2026-10-12 UTC; §295 (the line editor's crate root
 //! splits into module files)), for the module and the file.

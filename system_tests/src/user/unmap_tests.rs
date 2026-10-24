@@ -7,7 +7,7 @@
 //!
 //! Cross-ISA, because the whole of the method is portable kernel code over `mmu::unmap_user_at`,
 //! and a divergence here means something under `arch/` disagrees about what unmapping a page is.
-//!
+
 //! # BUGS
 //!
 //! - **No test here watches a TLB on another core.** These four build spaces no thread runs in.

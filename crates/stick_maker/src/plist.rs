@@ -336,9 +336,9 @@ mod tests {
         assert!(parse("not xml").is_err());
     }
 
-    /// The real documents, captured from this project's development Mac on 2026-09-19. The
-    /// fixtures are trimmed to the keys the offer rule reads and scrubbed of volume names and
-    /// UUIDs, but every key and value that remains is verbatim.
+    /// The documents `diskutil` wrote, captured on 2026-09-19. The fixtures are trimmed to the
+    /// keys the offer rule reads, with UUIDs removed and identifiers, names and sizes made
+    /// neutral; every key, and every value the offer rule decides on, is as captured.
     #[test]
     fn reads_the_captured_fixtures() {
         for fixture in [

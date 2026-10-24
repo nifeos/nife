@@ -1,30 +1,10 @@
-//! Machine-checked properties of the wiring. The host tests in `lib.rs` pin the cases a reader cares
-//! about; these rule out shapes a case-by-case test cannot, and the symbolism is in the **routing
-//! table** rather than in the declaration.
-//!
-//! That split is forced by the type and is worth understanding rather than working around.
-//! [`Requirements`] holds `&'static` slices, so a declaration is a compile-time constant by
-//! construction: it is what makes [`Requirements::problem`] and [`slot_of`] evaluable in a `const`
-//! item, and it means **no manifest can be synthesised at run time out of bytes**, which is exactly
-//! the property the wire-format entry in this crate's `BUGS` section would have to give up. So the
-//! declarations below are a bounded enumeration of `const` values (both directions, all four
-//! arrangements of the two page kinds), walked by a **concrete** loop, and what is symbolic is what a
-//! supervisor actually varies: slot numbers, and which role names are routed at all.
-//!
-//! The concrete loop is not a stylistic choice. Selecting a declaration with `SHAPES[kani::any()]`
-//! makes the slice CBMC reads a symbolic pointer, and every slice access downstream of it becomes
-//! symbolic too: that formulation put the solver past **seventy thousand** verification conditions
-//! for a fact about copying integers, and did not finish in ninety seconds of symbolic execution.
-//! Walking the universe concretely and leaving the *routing* symbolic proves the same statement
-//! (both are "for every declaration of this width") and is a viable gate. Recorded because the
-//! difference is invisible from the assertion.
-//!
-//! See notes/component-manifest.md and notes/verification.md.
-//!
-//! Moved out of `lib.rs` unchanged by milestone 882 (the component-plan crate root moves its proofs
-//! out), which took the file under the ceiling of §266 (a Rust source file stays under 2,000
-//! lines). The harness paths did not change: `script/falsifications` reads `proofs::<harness>` from
-//! this file's name.
+//! Machine-checked properties of the wiring. The host tests in `lib.rs` pin the cases a reader
+//! cares about; these rule out shapes a case-by-case test cannot. A declaration holds `&'static`
+//! slices, so the declarations are a bounded enumeration of `const` values walked by a concrete
+//! loop, and what is symbolic is the routing table: slot numbers, and which roles are routed.
+//! Selecting a declaration with `SHAPES[kani::any()]` instead does not finish. The harness paths
+//! are `proofs::<harness>`, which `script/falsifications` reads from this file's name. See
+//! notes/component-manifest/capability-plan.md and notes/verification.md.
 //!
 //! Name: provisional (milestone 882's lane, 2026-10-12 UTC).
 
@@ -99,19 +79,12 @@ fn any_slot() -> u64 {
     s
 }
 
-/// **No routing table ever gives a component a right its declaration did not ask for.**
-///
-/// The security property this crate exists to make unrepresentable. For every declaration of two
-/// needs and **every pair of slot numbers a supervisor could route**, the rights word at slot `i`
-/// is exactly `caps[i].direction.rights()`. So nothing a supervisor does can turn a `Use` into a
-/// `READ` and let a client park itself in `RECEIVE_CAP` on the rendezvous it is a client of (§41), and
-/// nothing ever carries `GRANT`: a component that could pass its own authority on is not
-/// confined, and no declaration can ask for one.
-/// **The unwind bound is a termination proof, not a convenience.** Ten, against loops whose real
-/// bounds are two capability needs, two page needs, two routed names and a one-byte role name.
-/// It is needed at all because `SHAPES[i]` with a symbolic `i` makes the slice CBMC reads a
-/// symbolic pointer, so the lengths it walks are symbolic to the solver even though only four
-/// concrete declarations exist. Without a bound `str_eq` unwinds forever.
+/// No routing table ever gives a component a right its declaration did not ask for. For every
+/// declaration of two needs and every pair of slot numbers a supervisor could route, the rights
+/// word at slot `i` is exactly `caps[i].direction.rights()`: no `Use` becomes a `READ` (§41 (the
+/// endpoint is the broker)), and nothing carries `GRANT`, which no declaration can ask for.
+/// The unwind bound is a termination proof: ten, against real bounds of two capability needs, two
+/// page needs, two routed names and a one-byte role name.
 /// Falsification: replayable `crates/capability_plan/falsifications/proofs.a_plan_never_grants_a_right_the_declaration_did_not_ask_for.patch`
 #[kani::proof]
 #[kani::unwind(10)]

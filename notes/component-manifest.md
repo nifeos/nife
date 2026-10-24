@@ -302,6 +302,8 @@ not that another component is what supplies it.
 
 ## See also
 
+- [component-manifest/capability-plan.md](component-manifest/capability-plan.md) for the reason
+  behind each item of the crate
 - DECISIONS §41 (the endpoint is the broker, and a device is revoked by taking it back), §32 (a
   supervisor may collect a corpse without being able to build one)
 - DECISIONS §31 (the foreign-language seam: C holds no capabilities and makes no syscalls), §12

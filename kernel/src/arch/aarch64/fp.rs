@@ -1,40 +1,12 @@
-//! **A thread's floating-point and SIMD registers, aarch64.** The register file itself, the two
-//! control-register writes that decide who may touch it, and nothing else: the policy that says
-//! *when* to move it lives in the portable [`crate::fp`], which is the only caller.
-//!
-//! # What this architecture gives you, and what it does not
-//!
-//! `CPACR_EL1.FPEN` is a two-bit field that decides whether FP and Advanced SIMD instructions
-//! execute or trap, per exception level. `0b00` traps at EL0 **and** EL1; `0b11` traps at neither.
-//! Those are the only two values this kernel uses, and [`enable`] and [`disable`] are the whole of
-//! the mechanism.
-//!
-//! What aarch64 does **not** give you is a dirty bit. RISC-V has `sstatus.FS`, a four-state machine
-//! that says in hardware whether the registers have been written since they were last loaded, which
-//! is exactly the question a context switch wants to ask. Here there is no such bit, so the
-//! question has to be asked a step earlier and coarser: *has this thread ever executed an FP
-//! instruction at all?* The answer is recorded in [`FpState::live`], it is set by the trap `FPEN =
-//! 0b00` produces on the first such instruction, and it never goes back to false. That is a weaker
-//! approximation than RISC-V's and it is the best the ISA offers.
+//! **A thread's floating-point and SIMD registers, aarch64**, for the portable [`crate::fp`]. With
+//! no dirty bit, [`FpState::live`] records whether a thread has ever used the unit. See
+//! notes/aarch64-port.md, "Floating point and SIMD".
 //!
 //! # BUGS
 //!
-//! - **`live` is a ratchet: a thread that touches FP once pays the save on every switch for the
-//!   rest of its life**, even if it never touches FP again. Clearing it would mean knowing the
-//!   registers are dead, which nothing here can know. RISC-V's `FS` could do better and this
-//!   implementation does not exploit that either; see [`crate::fp`] for why the policy is uniform.
-//! - **SVE and SME are not saved, and [`init`] now closes them rather than trusting reset**
-//!   (2026-09-24 security audit). `CPACR_EL1.ZEN` and `CPACR_EL1.SMEN` were left at their reset
-//!   values, which on every machine this kernel has run on (QEMU's `cortex-a72` and HVF's Apple
-//!   core; until 2026-10-06 this also listed "argon's A78AE", but argon is a TX1, an A57, and has
-//!   not run this kernel) means trapped, and none of those parts has SVE at all. The architecture says the
-//!   reset value is UNKNOWN, so a part that reset them open would let a thread keep `Z`/`P`/`ZA`
-//!   state that [`crate::fp::hand_over`] neither saves nor scrubs. `init` writes both fields to
-//!   trap alongside `FPEN`; on a part without SVE the bits are RES0 and the write is a no-op. A
-//!   thread that then executes an SVE instruction takes the same trap FP does, and `crate::fp`
-//!   treats it as a fault, because nothing here can save what it would enable. Nothing in this tree
-//!   emits SVE. No test can see this on the emulator's default CPU; it is a one-instruction closure
-//!   of a window the emulator cannot open.
+//! - **`live` never clears**: a thread that touches FP once pays the save on every switch after.
+//! - **SVE and SME are not saved.** [`init`] closes them, and `crate::fp` treats their trap as a
+//!   fault; the emulator's default CPU cannot show it.
 
 use super::instructions;
 
@@ -123,18 +95,9 @@ const ZEN_AND_SMEN: u64 = (0b11 << 16) | (0b11 << 24);
 /// **Put this core into the state the rest of this module assumes**: FP and SIMD trapped, for EL1
 /// as well as EL0.
 ///
-/// Called from `sched::init` and `sched::adopt_secondary_idle`, per core rather than once per
-/// machine: `CPACR_EL1` is banked, and a secondary that skipped this would run its threads with
-/// whatever its reset left behind. The reason it is there rather than in `arch::init` is at the
-/// call site, and it is RISC-V's boot path rather than this one's.
-///
-/// **Written rather than assumed, and that is the point.** QEMU resets `CPACR_EL1` to zero, which
-/// is already the value this wants, so on the emulator this line changes nothing and could be
-/// deleted without a test noticing. The architecture says the reset value is UNKNOWN. A part that
-/// reset it to `0b11` would run every thread with FP open, [`crate::fp`] would never see a trap,
-/// `live` would stay false on every thread, and two threads would quietly share a register file:
-/// the exact failure this milestone exists to prevent, on hardware, silently, with the emulator
-/// green.
+/// Called per core from `sched::init` and `sched::adopt_secondary_idle`: `CPACR_EL1` is banked and
+/// resets to an UNKNOWN value. QEMU resets it to the value this writes, so no test sees a part that
+/// reset it open; see notes/aarch64-port.md, "Floating point and SIMD".
 pub fn init() {
     instructions::write_cpacr_synchronized(instructions::read_cpacr() & !(FPEN | ZEN_AND_SMEN));
 }
@@ -249,18 +212,11 @@ impl FpState {
     }
 }
 
-/// Proofs of the `CPACR_EL1` edits, reachable since 2026-09-25 because the `mrs` and `msr` they make
-/// are functions in [`instructions`] that a harness can stub. Until then each edit was its arithmetic
-/// and its two instructions in one `asm!` block, and the arithmetic was unprovable.
+/// Proofs of the `CPACR_EL1` edits, through stubs of the [`instructions`] functions.
 ///
-/// # What the stub assumes
-///
-/// `CPACR_EL1` is modelled as a plain 64-bit register: a write is visible to the next read, exactly,
-/// every bit. On real parts some fields are RES0 (`ZEN` without SVE, `SMEN` without SME) and read as
-/// zero whatever was written; the model does not do that, so these proofs say nothing about which
-/// fields exist, only that the code never writes one it did not mean to. The `isb` inside
-/// [`instructions::write_cpacr_synchronized`] is assumed to do its job; the model has no pipeline.
-/// See notes/kernel-proofs/stubbing-an-instruction.md.
+/// The stub models `CPACR_EL1` as a plain 64-bit register with no RES0 fields and no pipeline, so
+/// these proofs say only that the code never writes a field it did not mean to, not which fields
+/// exist. See notes/kernel-proofs/stubbing-an-instruction.md.
 #[cfg(kani)]
 mod proofs {
     use core::sync::atomic::AtomicU64;
@@ -284,12 +240,7 @@ mod proofs {
     /// **Every `CPACR_EL1` edit changes exactly the field it names, and [`is_enabled`] reads back
     /// what the last one did.**
     ///
-    /// The register holds three independent enables (FP/SIMD, SVE, SME) and a trace bit, and the
-    /// module's whole guarantee rests on them moving separately: [`init`] closes all three, while
-    /// [`enable`] and [`disable`] run on every first-use trap and hand-over and must touch `FPEN`
-    /// alone. A mask with one bit wrong would either leave SVE open (a thread keeps vector state
-    /// nobody saves) or trap FP in a thread that owns the unit, and QEMU resets the register to zero,
-    /// where most wrong masks are invisible. Checked for every starting value of the register.
+    /// [`init`] closes FP, SVE and SME; [`enable`] and [`disable`] touch `FPEN` alone.
     ///
     /// Falsification: attested 2026-09-25. On patagonia (aarch64 host), three times and one edit at
     /// a time: `init`'s mask without `ZEN_AND_SMEN`, `enable` writing `FPEN >> 1` (half the field),

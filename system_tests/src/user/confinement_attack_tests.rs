@@ -2,26 +2,12 @@
 //! (milestone 633 (an outside agent attacks the confinement claim), fatal risk 7's confinement
 //! claim, third outsider pass).
 //!
-//! The two properties here are the kernel half of DECISIONS §41 (the endpoint is the broker)'s "a client of a rendezvous cannot
-//! become its server" (confinement claim 26) and §14 (the project's direction)'s "userspace cannot forge a right out of a
-//! syscall register" (claim 2). Both are driven through the real dispatcher (`syscall::invoke`), the
-//! way a program's `svc`/`ecall` reaches it, so what is under test is the rights gate in
-//! `invoke`'s `Object::Rendezvous` arm and nothing re-implemented beside it. `irq_send_refusal_tests`
-//! is the pattern: grant a capability into this thread's own table and invoke a method it must be
-//! refused.
-//!
-//! **Why this exists next to `live_swap_tests`.** That test (claim 26's cited one) drives a single
-//! READ-gated method, `RECEIVE_CAP`, from one fixture, and only on the two architectures with a
-//! console device page; a break of the gate surfaces there as a watchdog hang rather than a failed
-//! assertion, because a `RECEIVE_CAP` let through simply blocks with nothing to receive. These tests
-//! cover the other READ-gated methods a would-be server would reach for (`RECEIVE`, `REAP`) and the
-//! `ENUMERATE`-gated `SURVEY`, on every architecture, and each is shaped so that a gate let open
-//! returns promptly (a sender is already queued, or the method does not block) rather than hanging:
-//! a regression is red at an assertion, not at the watchdog.
-//!
-//! Cross-ISA: `invoke`, the rights check and the rendezvous are portable kernel code, so the parity
-//! gate (DECISIONS §19 (architectural parity is a tenet)) is met by the same test on each
-//! architecture.
+//! The kernel half of claim 26, DECISIONS §41 (the endpoint is the broker)'s "a client of a
+//! rendezvous cannot become its server", and claim 2, §14 (the project's direction)'s "userspace
+//! cannot forge a right out of a syscall register", both driven through `syscall::invoke`. Each
+//! refused path returns promptly, so a regression is red at an assertion and not at the watchdog.
+//! The same test runs on each architecture (DECISIONS §19 (architectural parity is a tenet)). See
+//! notes/confinement-claims/the-rights-gate-tests.md.
 
 use abi::Error;
 
@@ -50,20 +36,11 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 
 /// **A holder of `WRITE` alone on a rendezvous is refused every operation the *other* rights gate.**
 ///
-/// `WRITE` lets a holder `SEND` and `CALL`; it is the right a client of a server holds. Becoming the
-/// server means `RECEIVE`, `RECEIVE_CAP` or `REAP` (all `READ`), or `SURVEY` (`ENUMERATE`). Each must
-/// answer `NotPermitted`, because the right lives on the capability and no method or argument
-/// register can add one.
-///
-/// The two blocking methods (`RECEIVE`, `RECEIVE_CAP`) are tried with a sender already parked on the
-/// endpoint, so a gate let open would *return that sender's message* and drop the waiting-sender
-/// count rather than block: the break is observable here, not a sixty-second hang. The assertion on
-/// the sender count after each is the other half of the claim: a refused receive consumes nothing.
-/// `REAP` and `SURVEY` do not block, so they need no queued peer.
-///
-/// The positive control is the last step: the same endpoint, received on with a `READ` capability
-/// through the same dispatcher, does deliver the queued message. Without it a `RECEIVE` that was
-/// refused for some unrelated reason would read as the property holding.
+/// `WRITE` (`SEND`, `CALL`) is a client's right. `RECEIVE`, `RECEIVE_CAP`, `REAP` (`READ`) and
+/// `SURVEY` (`ENUMERATE`) must each answer `NotPermitted`. The two blocking methods are tried with a
+/// sender parked, so a gate let open returns its message instead of hanging, and the unchanged
+/// sender count proves a refused receive consumes nothing. A `READ` receive on the same endpoint is
+/// the positive control.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.confinement_attack_tests.a_write_only_rendezvous_holder_cannot_receive_reap_or_survey.patch`
 #[test_case]
@@ -155,14 +132,10 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
 /// **A right cannot be forged out of a syscall register, and an ungranted slot names nothing**
 /// (claim 2, §14).
 ///
-/// A holder of `READ` alone invokes `SEND`, which takes `WRITE`: the right is not in the method
-/// number or the argument words, it is on the capability, so the answer is `NotPermitted`. A receiver
-/// is parked first, so a gate let open would *deliver* to it and drop the waiting-receiver count
-/// rather than block.
-///
-/// Then a slot this thread was never granted is invoked, and the answer is `NoSuchSlot`: not
-/// "permission denied" but "there is nothing there", which is what no-ambient-authority means from
-/// the inside. A program cannot reach an object by naming a slot number it was not handed.
+/// A `READ`-only holder's `SEND`, a `WRITE` method, answers `NotPermitted`; a receiver is parked
+/// first, so a gate let open would deliver rather than block. An ungranted slot answers
+/// `NoSuchSlot`, not "permission denied": a program cannot reach an object by naming a slot number
+/// it was not handed, which is no ambient authority seen from the inside.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.confinement_attack_tests.a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing.patch`
 #[test_case]
@@ -227,23 +200,10 @@ fn a_read_only_holder_cannot_send_and_an_ungranted_slot_names_nothing() {
 /// **A retype mints no right its budget lacks** (claim 3's retype side; milestone 824 (a retype
 /// mints no right its budget lacks), calef's ruling (a) of 2026-10-07 UTC). Held, booted.
 ///
-/// A leaf child is handed a budget without `GRANT` so it may spend memory but not lend it. `SPLIT`
-/// always honored that (`split_never_widens_rights`). Until milestone 824, `RETYPE` and `RETYPE_OBJ`
-/// did not: they minted `Rights::ALL`, so a holder of a non-delegating budget could carve a page or
-/// an object and lend it. Milestone 633's passes characterized the frame case here, and milestone
-/// 903's pass showed every kernel object kind minted the same way.
-///
-/// Through the real dispatcher, for two `GRANT`-less budgets, `WRITE` alone and the spend-only
-/// budget `memory_region_cap` hands a leaf (every right but `GRANT`): the frame and every object
-/// kind come back with exactly the budget's rights, and the frame cannot be passed on, since
-/// `PageFrame::SLICE`, the one delegating method that does not block, is refused `NotPermitted` for
-/// want of `GRANT`. The process is retyped around the address space just made. Then two controls
-/// that the mint is the budget's rights and not a fixed narrow set: a `READ | WRITE` budget's frame
-/// carries exactly that, and the root budget's (`Rights::ALL`) carries every right, so the
-/// progenitor loses nothing.
-///
-/// Nothing blocks, so a regression is red at an assertion. Each capability is deleted and each region
-/// reclaimed, so the frame and region ledgers are flat across the test.
+/// For two `GRANT`-less budgets, `WRITE` and a leaf's `SPEND_ONLY`, the `RETYPE` frame and every
+/// `RETYPE_OBJ` kind carry exactly the budget's rights, and `PageFrame::SLICE` on the frame is
+/// refused. `READ | WRITE` and `Rights::ALL` budgets are the controls that the mint is the budget's
+/// rights, not a fixed narrow set. Nothing blocks; the ledgers end flat.
 ///
 /// Name: provisional (milestone 824's lane, 2026-10-12 UTC), renamed from
 /// `a_grant_less_budget_mints_a_grant_bearing_frame`, the characterization it replaces.
