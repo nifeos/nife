@@ -664,9 +664,9 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
 
 /// The INTx swizzle on QEMU's `virt` boards: the function at device `d` using legacy pin `p`
 /// (1=INTA..4=INTD) lands on PLIC/GIC input `base + ((d + p - 1) % 4)`, the bridge swizzle the PCI
-/// spec prescribes for a flat bus. `tests/qemu_virt_dtb.rs` holds it against the machine's own
-/// `interrupt-map`, so a board that routes differently fails a host test. See notes/pcie.md,
-/// "INTx".
+/// spec prescribes for a flat bus, which QEMU's generic ECAM bridge implements.
+/// `tests/qemu_virt_dtb.rs` holds it against the machine's own `interrupt-map`, so a board that
+/// routes differently fails a host test. See notes/pcie.md, "INTx".
 ///
 /// # Examples
 ///

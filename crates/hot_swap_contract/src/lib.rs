@@ -487,8 +487,9 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // §41's sentence is that any program which **speaks the protocol** and **holds the right
 // capabilities** is the component; above is the first half, and this is the second. The
 // declarations live next to the wire format because a manifest belongs to the contract, not to
-// the build, and the operator wires from them. A role name is the component's and the object is
-// the supervisor's. The role names are **provisional**. See notes/component-manifest.md.
+// the build, and the operator wires from them: `rust_swappable` and `c_swappable` share one
+// declaration. A role name is the component's and the object is the supervisor's. The role names
+// are **provisional**. See notes/component-manifest.md.
 // ===========================================================================================
 
 use capability_plan::Direction::{Serve, Use};
@@ -766,9 +767,10 @@ pub fn probe_device() -> u64 {
 /// `user::UART_PHYS` is **zero**, the marker for
 /// DECISIONS §121 (what a device capability is when the device has no page: x86 port I/O),
 /// PROPOSED, in `design/decisions/0121-port-io-capability.md`. The
-/// live-swap fixture `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an
-/// IVT byte and still fault on revoke, a green test about nothing. The value is never observed, and
-/// is not `0` because a quiet line status register could return that.
+/// live-swap fixture `skip!()`s here (`system_tests/src/user/live_swap_tests.rs`): reading `DEV_VA`
+/// anyway would map physical page zero, read an IVT byte and still fault on revoke, a green test
+/// about nothing. The value is never observed, and is not `0` because a quiet line status register
+/// could return that.
 #[cfg(target_arch = "x86_64")]
 pub fn probe_device() -> u64 {
     u64::MAX

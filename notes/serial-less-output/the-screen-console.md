@@ -39,7 +39,8 @@ stays a small `Copy` value that holds no pointer to device memory, so a caller c
 firmware set up. It lives in this crate rather than in the driver because it is a pure function of
 five numbers, and a stride bug is only catchable on the host. Clipping is in surface pixels, against
 the screen divided by the scale. A screen that is not a whole multiple of its scale leaves fewer
-than `scale` pixels uncovered at its right and bottom edges.
+than `scale` pixels uncovered at its right and bottom edges. The scale is the kernel console's
+rule, so the shell after the handover has at most the boot tour's columns.
 
 `Aperture::copy_wide` pairs two pixels into one `u64` store where the alignment permits. The
 aperture is mapped uncacheable (on x86 there is no PAT programming yet). Under QEMU's TCG,
