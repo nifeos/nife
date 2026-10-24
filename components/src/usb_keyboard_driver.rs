@@ -1,55 +1,33 @@
 //! **The USB keyboard driver** (milestone 242 (USB host and HID, because on commodity hardware the
 //! keyboard is not a UART); notes/usb.md): a confined userspace xHCI driver that finds a boot
 //! keyboard on a root port and turns its reports into the bytes a terminal understands.
-//!
 //! ```text
 //!   a USB keyboard ──xHCI (PCIe, behind the IOMMU)──► usb_keyboard_driver ──OPERATION_BYTES, CALL──► line_editor
 //! ```
-//!
-//! It is milestone 192 (a keyboard on real silicon)'s option B, and it is the third keystroke
-//! source beside `input` (the UART) and `keyboard_driver` (virtio-input), speaking byte for byte
-//! the same `OPERATION_BYTES` framing to the same terminal endpoint. Nothing downstream can tell
-//! which source a key came from, which is the property option A was built to leave behind.
-//!
+//! It is milestone 192 (a keyboard on real silicon)'s option B: a third keystroke source beside
+//! `input` (the UART) and `keyboard_driver` (virtio-input), in the same `OPERATION_BYTES` framing
+//! to the same terminal endpoint, so nothing downstream can tell which source a key came from.
+//! What it does, in order, is notes/usb.md, "What the driver does, in order".
+
 //! # Its whole authority
 //!
 //! - slot 0, the controller's **interrupt** (`Irq`);
-//! - slot 1, an **attach** endpoint (READ): one message ever arrives there, carrying `WRITE` on
-//!   the terminal endpoint, delegated by the progenitor; that delegated capability is the only
-//!   destination this program can name;
+//! - slot 1, an **attach** endpoint (READ): one message ever arrives, carrying `WRITE` on the
+//!   terminal endpoint from the progenitor, the only destination this program can name;
 //! - slot 2, a **report** endpoint (WRITE): one bring-up report to the kernel;
 //! - mapped: the xHCI register file **less the MSI-X pages**, and the eleven work pages of its DMA
-//!   region. The IOMMU confines the controller to the region and to any firmware-reserved region
-//!   (an RMRR) VT-d requires mapped, so a physical address this program writes into a ring
-//!   reaches nothing else.
-//!
-//! `kernel/src/user/usb_keyboard_service.rs` has the matching list of what is denied.
-//!
-//! # What it does
-//!
-//! Halt and reset the controller, lay out the slot array, command ring and event ring in its
-//! region, run it. Then, for each connected root port: reset the port, enable a slot, address the
-//! device, read its device and configuration descriptors (`crates/usb` walks them, because they
-//! are what the device chose to send), and if it is a boot keyboard, configure it, ask for the
-//! boot protocol, and queue reads on its interrupt endpoint. Report to the kernel, take the
-//! terminal endpoint, and serve: each report is diffed against the last, the differences go
-//! through `video_terminal::keymap` (the virtio keyboard's layout table, so the tree has one), and
-//! the bytes go to the line discipline. A keyboard unplugged gives its slot back; one plugged in
-//! later is found.
-//!
+//!   region. The IOMMU confines the controller to the region and any firmware-reserved region (an
+//!   RMRR) VT-d requires mapped, so an address written into a ring reaches nothing else.
+//! - denied: the matching list is in `kernel/src/user/usb_keyboard_service.rs`.
 
 //! # BUGS
 //!
-//! - **Root ports only.** A keyboard behind a hub, including one inside a keyboard that has a
-//!   hub of its own, is not found; the device it is behind is refused as not a keyboard.
-//! - **One keyboard.** The first boot keyboard found is served; a second is ignored until the
-//!   first is unplugged.
+//! - **Root ports only.** A keyboard behind a hub, or with one inside it, is not found; the hub
+//!   is refused as not a keyboard.
+//! - **One keyboard.** The first found is served; a second is ignored until it is unplugged.
 //! - **No key repeat, no lock keys, no LEDs** (`crates/usb`'s BUGS): holding a key types it once.
-//! - **Every wait is a bounded poll of the event ring through bring-up**, the interrupt is used
-//!   only afterwards. The bounds are a second per command and per transfer, and half a second per
-//!   port reset, chosen from the specification's own limits rather than measured on xenon.
-//! - **Events that arrive while a command is waited for are dropped** unless they are port
-//!   changes, which are remembered. A key pressed during a stall recovery is lost.
+//! - **Bring-up polls the event ring**, with bounds from the specification (notes/usb.md).
+//! - **Only port changes survive a command wait**; a key pressed meanwhile is lost (notes/usb.md).
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept, with the acronym, because
 //! "USB" is the everyday word and the expansion adds nothing a newcomer can use. He weighed

@@ -34,6 +34,25 @@ The kernel starts the driver before the progenitor and waits for its one bring-u
 prints as the boot's `usb       :` line. The progenitor is granted the driver's attach endpoint at
 slot 27 and sends `WRITE` on the terminal endpoint through it once the line discipline exists.
 
+## What the driver does, in order
+
+The driver halts and resets the controller, lays out the slot array, command ring and event ring in
+its region, and sets it running. Then it takes each connected root port in turn. It resets the port,
+enables a slot, addresses the device, and reads its device and configuration descriptors.
+`crates/usb` walks those, because they are what the device chose to send. A boot keyboard is then
+configured, asked for the boot protocol, and given reads queued on its interrupt endpoint.
+
+Next the driver sends its report to the kernel, takes the terminal endpoint, and serves. Each report
+is diffed against the last, the differences go through `video_terminal::keymap`, and the bytes go to
+the line discipline. A keyboard that is unplugged gives its slot back, and one plugged in later is
+found.
+
+Until bring-up ends, every wait is a bounded poll of the event ring, and the interrupt is used only
+afterwards. A command and a transfer each get a second, and a port reset half a second. Those come
+from the specification's own limits rather than from a measurement on xenon. While a command is
+waited for, port change events are remembered and every other event is dropped, so a key pressed
+during a stall recovery is lost.
+
 ## The confinement, in one sentence
 
 The driver holds every register page of its controller except the page its interrupt message is
