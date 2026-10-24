@@ -1,26 +1,15 @@
-//! **What the milestone-29 tests put on the screen**, in one place so every party agrees.
+//! **What milestone 29 (a display terminal: framebuffer, virtio-gpu, and a foreign component)'s
+//! tests put on the screen**, in one place so every party agrees.
 //!
-//! Text on a screen can only be *proved* if the picture is a value more than one independent
-//! witness can compute. These constants are that value's input. The kernel-side test sends these
-//! bytes to the terminal and then predicts the framebuffer by running the engine itself; the
-//! host-side scanout check runs the same engine over the same bytes and grades what QEMU is
-//! actually displaying. Neither reads the other's answer, and the terminal component that draws
-//! holds none of this: it renders whatever arrives.
-//!
-//! This is the same move `graphics_contract::pixel` makes for rung one's test pattern and `compositor::SCENE`
-//! for rung two's scene: the test's content lives in the contract crate, not in the test.
+//! The kernel-side test sends these bytes and predicts the framebuffer by running the engine; the
+//! host-side scanout check runs the same engine and grades what QEMU displays. Neither reads the
+//! other's answer. See notes/video-terminal/palette-keymap-and-script.md, "The test script".
 
 /// The columns of a terminal that owns the whole scanout: `graphics_contract::WIDTH / `[`CELL_W`].
 ///
-/// Spelled as a literal here rather than computed, because this crate deliberately does not depend
-/// on the framebuffer contract (a VT engine that knew about a scanout would be the wrong shape).
-/// `components/src/display_terminal.rs` and the kernel wiring both assert the two agree at **compile
-/// time**, so a screen that changed size is a build error rather than a terminal quietly missing its
-/// last column.
-///
-/// **80 by 24**, the floor milestone 142 sets for a terminal anyone would live in, at the atlas's
-/// 14x26 cell: the scanout is 1120x624, exactly 80 * 14 by 24 * 26, so no strip of it is outside
-/// the grid.
+/// A literal, because this crate does not depend on the framebuffer contract;
+/// `components/src/display_terminal.rs` and the kernel wiring assert the two agree at compile time.
+/// 80 by 24 at the 14x26 cell is exactly the 1120x624 scanout.
 ///
 /// [`CELL_W`]: crate::CELL_W
 pub const COLS: u32 = 80;
@@ -30,23 +19,10 @@ pub const ROWS: u32 = 24;
 /// **What the application prints.** Delivered as `OPERATION_WRITE`, the terminal contract's application
 /// half (notes/terminal-contract.md), exactly as a program printing to a serial console would.
 ///
-/// Chosen so the picture is hard to produce by accident:
-///
-/// - **four rows of text**, so a stride error or a one-row shift is visible (one row would not be);
-/// - **five renditions**: a 24-bit foreground, default, a green foreground, an underline, and a
-///   reversed block. A terminal that ignored SGR would draw every glyph correctly and still fail,
-///   and since milestone 142 (a text display good enough that people use it instead of a GUI)'s
-///   truecolour pass (2026-09-26) so would one that dropped `38;2` or drew underlined text without
-///   its line. The 24-bit value is Solarized's yellow (`#b58900`), from §104 (the palette is
-///   Solarized), and it is in neither the sixteen-colour palette nor the 256-colour table, so a
-///   terminal that rounded it to the nearest indexed colour fails too;
-/// - **a `\r\n` pair**, which is what `line_editor::expand_output` puts on the wire for a Unix `\n`, so
-///   this is the byte stream a real program's output actually becomes;
-/// - **the faces and a styled underline** (milestone 142 increment five): a bold italic word,
-///   drawn in `glyph_atlas::BOLD_OBLIQUE`, and a curly underline in SGR 58's red, so a terminal
-///   that drew the regular face, a straight line, or the line in the text's color fails;
-/// - **descenders and an underscore** (`y`, `_`), which are the glyph rows a font table truncated to
-///   seven rows would lose.
+/// Chosen so the picture is hard to produce by accident: four rows, five renditions (a 24-bit
+/// Solarized yellow that no indexed colour matches among them), a `\r\n` pair as
+/// `line_editor::expand_output` writes it, a bold italic word and a curly underline in SGR 58's
+/// red, and descenders. Each one's reason is in notes/video-terminal/palette-keymap-and-script.md.
 pub const GREETING: &[u8] =
     b"\x1b[38;2;181;137;0mnife\x1b[0m\r\n\x1b[32mglyphs_ok\x1b[0m\r\nby a \x1b[4mvt\x1b[24m \x1b[1;3mbold italic\x1b[22;23m \x1b[4:3;58;5;1mcurly\x1b[0m\r\n\x1b[7mFOCUS\x1b[0m";
 
@@ -95,16 +71,11 @@ pub const HOST_KEY_BYTE: u8 = b'a';
 /// **How many scroller lines the full-scanout script feeds after the greeting and the typing**
 /// (the paint path, 2026-09-30).
 ///
-/// Until the paint lane, no check that verified the terminal's *pixels* ever pushed a picture
-/// past its own height: every pixel-exact witness compared a screen that never scrolled, so the
-/// scroll path, the exact path the `x86_64` swish leg spends most of its time in, had no
-/// end-to-end witness at all. This is the content that fixes that. Five rows are in use when the
-/// scroller starts, so 48 lines plus the 5-line tail below scroll a 24-row grid 34 times.
-///
-/// The driver side feeds them **one `OPERATION_WRITE` per line**, so every present moves the surface one
-/// row: the per-scroll path. The oracle does not care about write boundaries (the engine is a
-/// byte stream), which is what lets the tail below exercise several scrolls arriving in one
-/// present without a second oracle.
+/// Five rows are in use when the scroller starts, so 48 lines plus the 5-line tail below scroll a
+/// 24-row grid 34 times. The driver side feeds them one `OPERATION_WRITE` per line, so every
+/// present moves the surface one row; the oracle ignores write boundaries, so the tail tests
+/// several scrolls in one present without a second oracle.
+/// See notes/video-terminal/palette-keymap-and-script.md.
 pub const SCROLL_LINES: usize = 48;
 
 /// **How many more lines arrive in one write**, after the per-line ones: five scrolls inside a

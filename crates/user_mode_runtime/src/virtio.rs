@@ -1,19 +1,11 @@
-//! **Thin safe wrappers over the four `Virtio` capability methods** (milestone 139 round 7).
+//! **Thin safe wrappers over the four `Virtio` capability methods**, and the barrier that orders
+//! a virtqueue against the device.
 //!
-//! Four drivers (`gpu_driver.rs`, `entropy.rs`, `keyboard_driver.rs`, `virtio_net_transport.rs`) each called
-//! `invoke(VIRTIO, abi::virtio::READ_REG/WRITE_REG/SETUP_QUEUE/NOTIFY, ...)` directly, eighteen
-//! call sites in all, every one carrying the identical `// SAFETY:` comment: "the kernel validates
-//! the capability and the method before acting." That comment is `invoke`'s own contract, not a
-//! per-call obligation any of these four methods add: `abi::virtio`'s own doc already states what
-//! the kernel checks (`WRITE_REGISTER` refuses the queue-address and notify registers;
-//! `SETUP_QUEUE` and `NOTIFY` are bounds-checked against the DMA region and its high-water mark),
-//! so the raw `invoke` site could not add anything a wrapper cannot add just as well.
-//!
-//! Scoped to a module, not lifted into the crate root, because unlike [`super::send`] or
-//! [`super::reply`] these four methods are meaningful to exactly the programs that own a `Virtio`
-//! capability: the same "opt in by importing the module" shape
-//! [`super::initial_ramdisk`] and [`super::mapped_window`] already use for functionality most programs
-//! never touch.
+//! Each wrapper's only obligation is `invoke`'s own; `abi::virtio` states what the kernel checks
+//! (`WRITE_REGISTER` refuses the queue-address and notify registers; `SETUP_QUEUE` and `NOTIFY` are
+//! bounds-checked against the DMA region and its high-water mark). A module rather than crate-root
+//! items, because only a program that owns a `Virtio` capability needs them. See
+//! notes/user-mode-runtime.md.
 
 /// `READ_REGISTER` at `off` on the `Virtio` capability in `virtio_slot`. Reads are DMA-safe, so any
 /// aligned register in the device's own slot. Returns the register value, or a negative
@@ -70,37 +62,15 @@ pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
     unsafe { super::invoke(virtio_slot, abi::virtio::NOTIFY, queue, 0, 0) }
 }
 
-/// **Order this driver's normal-memory accesses to a virtqueue against the device's.** Call it
-/// between publishing a descriptor and bumping the available index that advertises it, between
-/// that index and the notify, and between reading a used index and the payload that index gates.
+/// **Order this driver's normal-memory accesses to a virtqueue against the device's**: a descriptor
+/// before its available index, that index before the notify, a used index before its payload.
 ///
-/// Name is **provisional** (a lane's, not ratified): it sits in this module beside the four
-/// capability wrappers and took the `virtio_` prefix they then carried. calef's ruling of
-/// 2026-10-08 (UTC), #1842, dropped that prefix from those four ([`read_register`] and its
-/// siblings); whether this one follows is not yet ruled.
+/// `dmb ish` on aarch64, `fence` on riscv64; on `x86_64`, TSO and a serializing syscall leave only a
+/// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
+/// and notes/architecture-list-sweep.md, finding 9.
 ///
-/// **Why one function rather than five.** This body was copied into `crates/virtio` and four
-/// programs under `components/src/`, and every copy had an `aarch64` arm, a `riscv64` arm, and no
-/// third arm, so on `x86_64-unknown-none` the whole function compiled to nothing: not the machine
-/// barrier that `TSO` makes unnecessary, and not the compiler barrier that nothing makes
-/// unnecessary. An empty function is not a warning, so `script/lint`'s `x86_64` user pass, written
-/// to catch exactly this, could not. Five copies meant five places to be wrong and five places to
-/// fix; the `compile_error!` below now exists once, and a sixth driver gets it by calling this
-/// rather than by remembering. See notes/architecture-list-sweep.md, finding 9.
-///
-/// **What each architecture needs, and why they differ.** aarch64 and riscv64 are weakly ordered,
-/// so both halves (machine and compiler) need a real instruction: `dmb ish` orders the inner
-/// shareable domain, which is where a coherent DMA agent observes, and RISC-V takes one full
-/// `fence`, the same conservative choice `kernel::arch::direct_memory_access_write_barrier` makes.
-/// `x86_64` is TSO, and the only orderings this function is ever asked for are store-store
-/// (descriptor before index, index before notify) and load-load (used index before payload), both
-/// of which the machine already guarantees for the write-back memory a coherent device shares. The
-/// store-load case TSO does
-/// *not* give is not reachable here: every notify and every register access in these drivers
-/// leaves the process through a syscall instruction, which is serializing. So on `x86_64` the
-/// compiler is the entire exposure and [`core::sync::atomic::compiler_fence`] is the whole answer.
-/// `components/src/non_volatile_memory_express.rs` keeps its own stronger barrier because its
-/// doorbell is a direct store to a device-typed page in this address space rather than a syscall.
+/// Name is **provisional**: calef's 2026-10-08 (UTC) ruling on #1842 dropped the `virtio_` prefix
+/// from [`read_register`] and its siblings, and whether this one follows is not yet ruled.
 ///
 /// Name: provisional, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11
@@ -127,10 +97,8 @@ pub fn virtio_ring_barrier() {
     // notes/memory-ordering.md.
     core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
 
-    // A fourth architecture fails to build here rather than failing to order, which is the whole
-    // point of this arm: the bug this function was lifted to fix was a `cfg` chain with no `else`
-    // compiling to an empty body. `entropy_backend`'s backend ladder is the in-tree precedent for
-    // ending in `compile_error!` rather than a fallback.
+    // A `cfg` chain with no `else` compiles to an empty body, so a fourth architecture fails to
+    // build here rather than failing to order.
     #[cfg(not(any(
         target_arch = "aarch64",
         target_arch = "riscv64",
