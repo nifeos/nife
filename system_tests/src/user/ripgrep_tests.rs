@@ -1,28 +1,13 @@
-//! **`ripgrep`, unmodified, from crates.io** (milestone 121; `design/fatal-risks/README.md` risk 1).
+//! `ripgrep`, unmodified, from crates.io: milestone 121's test of fatal risk 1, *"only software
+//! written for nife runs on nife"* (`design/fatal-risks/README.md`).
 //!
-//! Risk 1 is *"only software written for nife runs on nife"*, and it is the most dangerous of the
-//! nine because it is structural: optimization cannot fix "nothing runs here". `ripgrep` is the
-//! decisive experiment because it is not a toy. It has forty transitive crates, it walks a
-//! filesystem, and it is written for a world with threads, a command line, and `mmap`.
-//!
-//! **The program here is not ours, and its own source is not patched.** basalt builds the
-//! published `ripgrep` crate with a target spec and three link arguments (its
-//! `recipes/ripgrep.toml`), and `cargo xtask basalt-fetch` takes its published package by digest;
-//! there is no overlay, no vendored copy and no fork. One dependency, `ignore`, carries basalt's
-//! `patches/ripgrep-ignore-walk.patch` for its parallel walker (calef, #1892), which the
-//! `--threads 1` lines here never reach. Everything this test observes is otherwise a fact about the platform
-//! rather than about our port of a program.
-//!
-//! **It skips when the archive has no `rg`**, which is every ordinary build. CI's `rg-threads` rows
-//! fetch it and run this module with `ripgrep_threads_tests`, which walks in parallel. `rg` is never part of the base image either: calef ruled on 2026-10-07 (UTC) that
-//! it is installed with `jig` from its own package. See notes/ripgrep-on-nife.md.
-//!
-//! **All three ISAs run it**, which is DECISIONS §19 rather than thoroughness: a capability ships on
-//! every supported architecture or a scope note records the gap and the plan. basalt publishes a
-//! package for `aarch64-unknown-nife`, `riscv64-unknown-nife` and `x86_64-unknown-nife`, and one test body serves all three because nothing it asserts
-//! is architecture-specific. **It runs on all three since milestone 303**, which gave `q35` a RedoxFS
-//! image the FS service can find (the block lookup spans virtio-mmio and virtio-pci now), and the
-//! x86_64 transcript is byte-identical to the other two.
+//! basalt builds the published crate with a target spec and three link arguments (its
+//! `recipes/ripgrep.toml`), with no overlay, vendored copy or fork. Only `ignore` carries a patch,
+//! basalt's `patches/ripgrep-ignore-walk.patch` for its parallel walker (calef, #1892), which the
+//! `--threads 1` lines here never reach. The tests skip when the archive has no `rg`, as in every
+//! ordinary build: `rg` is installed with `jig`, never in the base image (calef, 2026-10-07 UTC),
+//! and CI's `rg-threads` rows fetch it by digest with `cargo xtask basalt-fetch`. One body serves
+//! all three ISAs, as DECISIONS §19 requires. See notes/ripgrep-on-nife.md.
 
 use super::*;
 
@@ -38,17 +23,13 @@ fn block_server_image() -> &'static [u8] {
     program("block_driver").expect("no block_driver program in the initial ramdisk")
 }
 
-/// **Somebody else's forty-crate application loads, runs, reaches a real filesystem through a
-/// capability it was handed, and, granted no argument page, hears no arguments.**
+/// Somebody else's forty-crate application loads, runs, reaches a filesystem through a capability
+/// it was handed, and, granted no argument page, hears no arguments.
 ///
-/// Every layer below the search works, and none of it was written for `ripgrep`: the loader maps a
-/// multi-megabyte ELF, std grows a heap one page at a time, `std::env::current_dir` answers `/`
-/// because this process holds a directory, and output reaches the one endpoint it was granted.
-///
-/// This was the whole result until milestone 205 (how a foreign program is told what to do) gave a
-/// program an argv. It stays as the honest-absence case: slot 8 empty is no arguments at all, not
-/// even `argv[0]`, so `ripgrep` prints its own "requires at least one pattern" and leaves. The
-/// searches below give it the page.
+/// The loader maps a multi-megabyte ELF, std grows a heap a page at a time, `current_dir` answers
+/// `/` because the process holds a directory, and output reaches its one endpoint. Slot 8 empty is
+/// no arguments at all, not even `argv[0]`, so `ripgrep` prints its own "requires at least one
+/// pattern" and leaves; the searches below give it the page.
 #[test_case]
 fn unmodified_ripgrep_runs_and_has_no_arguments_to_run_on() {
     if program("rg").is_none() {
@@ -170,11 +151,9 @@ fn run_confined(
     );
     // Pages the heap's region retyped, which only grows: the program's high-water mark.
     let spent = crate::memory_region::usage(spawned.heap).map_or(0, |(spent, _)| spent);
-    // **Give everything back: the heap, the stack, the argument page and the caretaker.** The
-    // suite's frame ledger has always carried exactly one `std_exerciser` (`fs_service::start_std`'s
-    // reasoning). These are more, and the first version of the walk test kept its caretakers: the
-    // aarch64 suite then ran out of page frames three tests later, in
-    // `std_net_runs_over_the_socket_contract`.
+    // Give everything back: the heap, the stack, the argument page and the caretaker. The suite's
+    // frame ledger carries exactly one `std_exerciser` (`fs_service::start_std`'s reasoning); kept
+    // caretakers run the aarch64 suite out of page frames in `std_net_runs_over_the_socket_contract`.
     assert!(
         spawned.release(),
         "{who}'s caretaker outlived its holding: a service this test cannot give back",
@@ -194,19 +173,14 @@ macro_rules! skip_without_the_walk {
     };
 }
 
-/// **A walk through a grant lacking `ENUMERATE` is refused, and never comes back empty.**
+/// A walk through a grant lacking `ENUMERATE` is refused, and never comes back empty.
 ///
-/// The negative half milestone 121 calls load-bearing: the same tree, the same walker, and one right
-/// withheld. A search that silently finds no matches because it could not look is the worst
-/// failure a search tool can have, and `filesystem_contract` chose `EPERM` over an empty listing
-/// for exactly this reason, in §47 (a directory capability carries six rights). This proves that
-/// choice survives every layer above it: the caretaker, `std`'s `read_dir`, and a stranger-shaped
-/// recursive walker that
-/// propagates the error rather than skipping the directory.
-///
-/// The transcript's last line is the control. A capability that reached nothing would refuse
-/// every listing too, so the program also opens a file it can name, two levels down, and the
-/// refusals are about enumeration alone.
+/// The negative half milestone 121 calls load-bearing: the same tree and walker, one right
+/// withheld. A search that finds nothing because it could not look is the worst failure a search
+/// tool has, which is why §47 (a directory capability carries six rights) chose `EPERM` over an
+/// empty listing. The choice survives the caretaker, `std`'s `read_dir` and a stranger-shaped
+/// walker that propagates the error. The transcript's last line is the control: the program also
+/// opens a file it can name two levels down, so the refusals are about enumeration alone.
 #[test_case]
 fn a_walk_without_enumerate_is_refused_rather_than_empty() {
     use filesystem_contract::dir;
@@ -507,15 +481,12 @@ impl Line {
     }
 }
 
-/// **Unmodified `ripgrep` searches a tree it was granted, and finds exactly what is there.**
+/// Unmodified `ripgrep` searches a tree it was granted, and finds exactly what is there.
 ///
-/// The first half of the point of milestone 121: a stranger's forty-crate search tool, told a
-/// pattern, walks a directory capability carrying `ENUMERATE | READ | DESCEND` and searches every
-/// file in it. The counts come from `rg --stats` and are asserted against the fixture's own
-/// constants, so a walk that skipped a directory, a read that came back short, or a grant that
-/// leaked a sibling into the listing fails on a number: every file searched, every byte of every
-/// file searched, and one match in each file that holds the walk's small body. One match line is
-/// asserted whole, to prove `rg` printed matches and not only a summary.
+/// `rg` walks a capability carrying `ENUMERATE | READ | DESCEND`. Its `--stats` counts are
+/// asserted against the fixture's constants (files, bytes, one match per file holding the walk's
+/// small body), so a skipped directory, a short read or a leaked sibling fails on a number. One
+/// match line is asserted whole, to prove `rg` printed matches and not only a summary.
 ///
 /// Falsification: unfalsified. A replay needs `rg` in the archive, which takes it only after
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
@@ -553,17 +524,13 @@ fn ripgrep_searches_the_tree_it_was_granted() {
     assert!(text.ends_with(" seconds\n"), "rg did not finish its stats");
 }
 
-/// **`rg` through a grant lacking `ENUMERATE` is refused, and says so, rather than finding nothing.**
+/// `rg` through a grant lacking `ENUMERATE` is refused, and says so, rather than finding nothing.
 ///
-/// The second half, and the one milestone 121 calls load-bearing: the same `rg`, the same words,
-/// the same tree, and one right withheld. A search that silently reports zero matches because it
-/// could not look is the worst failure a search tool can have. Here `rg` names the refusal (the
-/// `EPERM` §47 chose over an empty listing, carried through the caretaker, std's `read_dir` and
-/// `ignore`'s walker, and worded by the PAL as "this directory capability does not carry the right
-/// that verb needs"), says it searched nothing, and prints no match.
-///
-/// The control is [`ripgrep_reaches_a_named_file_without_enumerate`]: under the same grant, a
-/// search naming a file still finds its line, so this refusal is about enumeration alone.
+/// The half milestone 121 calls load-bearing: the same `rg`, words and tree, one right withheld.
+/// `rg` names the refusal (§47's `EPERM`, through the caretaker, std's `read_dir` and `ignore`'s
+/// walker, worded by the PAL), says it searched nothing, and prints no match. The control is
+/// [`ripgrep_reaches_a_named_file_without_enumerate`]. See notes/ripgrep-on-nife.md, "The refusal,
+/// through `rg`".
 ///
 /// Falsification: unfalsified. A replay needs `rg` in the archive, which takes it only after
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
@@ -591,14 +558,11 @@ fn ripgrep_without_enumerate_is_refused_rather_than_empty() {
     );
 }
 
-/// **The refusal's control: a named file needs no `ENUMERATE`.** `READ | DESCEND`, the grant the
-/// refusal above holds, and `rg` told a path two components down. It finds the one line, so the
-/// grant reaches the tree and only listing is withheld.
+/// The refusal's control: a named file needs no `ENUMERATE`.
 ///
-/// The line is the one a person would type, without `--no-mmap` or `--threads 1`, and that is a
-/// second finding. A single named file is exactly where `ripgrep` reaches for a memory map, and
-/// nife has none: `memmap2` compiles its stub, the map fails, and `ripgrep` reads instead. So
-/// `--no-mmap` is a measurement pin and never a requirement.
+/// Under the refusal's `READ | DESCEND` grant, `rg` told a path two components down finds its one
+/// line. The line omits `--no-mmap` and `--threads 1`: a named file is where `ripgrep` tries a
+/// memory map, `memmap2`'s stub fails and it reads instead, so `--no-mmap` is a measurement pin.
 ///
 /// Falsification: unfalsified. A replay needs `rg` in the archive, which takes it only after
 /// `cargo xtask basalt-fetch`, so a replay that does not run that first would skip here.
