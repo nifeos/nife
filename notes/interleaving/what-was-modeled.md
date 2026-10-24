@@ -125,6 +125,21 @@ A fourth, scratch-only harness encoded the OLD two-flag spelling against the exc
 loom falsified it on the first run. That is the falsification discipline the
 `thread_wake_handshake` section above describes, applied to a protocol that was actually broken.
 
+The state word's transitions, as the crate's guards make them:
+
+```text
+           arm()                    drop(ArmGuard)
+DISARMED ─────────► ARMING ──────────────────────► ARMED ◄──┐
+   ▲                  ▲                              │      │ drop(CheckGuard)
+   │ disarm()         │ arm()                        │      │
+   │                  │              try_check()     ▼      │
+   └───────────────── ARMED ◄──────────────────── CHECKING ─┘
+```
+
+`try_check` answers `None` when it cannot take the gate, and the caller knows which it got: the
+timer tick shrugs, and a caller that needs a completed pass loops. What a divergence means is the
+kernel's business, not the gate's.
+
 ## `crates/memory_regions`, the untyped region claim (2026-08-18)
 
 The fifth extraction, milestone 135 (the region claim), and the first on the memory-reclamation
