@@ -1,8 +1,6 @@
 //! **Reading a transcript two writers share**: the kernel's fault tokens, the job pool's
-//! `free` row, markers found through a shuffle, and the boot claim.
-//!
-//! Cut out of `swish_check.rs` unchanged by milestone 847 (the swish-check harness is split
-//! along its seams).
+//! `free` row, markers found through a shuffle, and the boot claim. See
+//! notes/swish-check-harness.md, "Two writers share one UART".
 //!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
 //! splits into submodules, with its script in one)).
@@ -15,19 +13,12 @@
 pub(super) const SWISH_CHECK_MARKER_SLACK: usize = 400;
 
 /// Text the **kernel** prints only in a user-fault report, which is the only thing it writes after
-/// the userspace console has started.
+/// the userspace console has started: the test for a second writer while the progenitor printed.
 ///
-/// Six of them, deliberately, and short ones. This is the test for "was a second writer active
-/// while the progenitor was printing", and the honest thing to say about it is that any single string can
-/// itself be shuffled apart: milestone 230's second CI failure destroyed `the kernel is fine.` into
-/// `the kernel iis fnit: constiner.`. Six independent chances is not a proof, it is a much better
-/// bet than one, and what happens when they all lose is a loud failure rather than a silent pass.
-///
-/// **The first two are a pair and are used as one**, by the killed-thread check below as well as by
-/// [`kernel_wrote_during_boot`]: `user thread ` alone appears in ordinary prose and ` killed: ` is
-/// the half that says a fault report. Both, in order, are the aarch64 and riscv64 fault printer's
-/// own first line (`kernel/src/arch/*/exceptions.rs`). One array rather than two so the two uses
-/// cannot drift apart, which is what milestone 231's own comment asked for when it had its own copy.
+/// Six short tokens, because any single string can itself be shuffled apart. The first two are a
+/// pair, used as one by the killed-thread check and by [`kernel_wrote_during_boot`]: in order they
+/// are the aarch64 and riscv64 fault printer's first line (`kernel/src/arch/*/exceptions.rs`), and
+/// `user thread ` alone appears in ordinary prose. One array, so the two uses cannot drift apart.
 pub(super) const KERNEL_FAULT_TOKENS: [&str; 6] = [
     "user thread ",
     " killed: ",
@@ -45,9 +36,8 @@ pub(super) const SLOT_GAUGE: &str = "capability slots:";
 /// **The most of the job pool `free`'s `Yours:` line may report in use**, in KiB: two job regions
 /// (`system_initializer`'s `JOB_REGION_PAGES`, 48 pages of 4 KiB). One is `free`'s own, which its
 /// BUGS says it counts. The other is one predecessor the reaper may not have reached when `free`
-/// was carved, which is a race the gate does not control and so must allow. Before the fix of
-/// 2026-10-03 (UTC) this line read 576 on every run: `free` plus two regions the pipelines above it
-/// had stranded. Name: provisional.
+/// was carved, a race the gate does not control and so must allow. A reading of 576 is `free` plus
+/// two stranded regions. Name: provisional.
 pub(super) const YOURS_CEILING_KIB: u64 = 2 * 48 * 4;
 
 /// The used figure of the first `Yours:` row in `transcript`, in KiB, or `None` when there is none
@@ -74,13 +64,9 @@ pub(super) enum Marker<'a> {
 /// Find `needle` in `haystack`, tolerating another writer's bytes wedged into the middle of it.
 ///
 /// **This is not a safety mechanism and must not be used as one.** It answers "could these
-/// characters be this marker, shuffled?", which is a question with false positives by construction:
-/// a transcript containing `budget NOT dropped` answers yes for `budget dropped` at a cost of four
-/// skipped characters. [`boot_claim`] is what makes it safe, by asking the un-shuffle-able question
-/// first. Two earlier versions of this tried to carry the safety themselves, by a character budget
-/// and then by requiring the kernel's own signature inside the skipped text, and a shuffle worse
-/// than the fixture defeated each in turn. The third attempt is not this function; it is not asking
-/// this function to decide.
+/// characters be this marker, shuffled?", which has false positives by construction: `budget NOT
+/// dropped` answers yes for `budget dropped`. [`boot_claim`] makes it safe by asking the
+/// un-shuffle-able question first.
 pub(super) fn find_marker<'a>(haystack: &str, needle: &'a str) -> Marker<'a> {
     if haystack.contains(needle) {
         return Marker::Exact;
@@ -157,41 +143,13 @@ enum BootClaim {
 
 /// Read one of the progenitor's claims about itself out of a transcript that **two processes wrote at once**.
 ///
-/// # Why this is shaped the way it is
-///
-/// The kernel prints fault reports with its own UART driver and the userspace `console` server
-/// drives the same device from another address space, with nothing arbitrating between them. The
-/// result is a nondeterministic **byte-level shuffle** (`the kernel is fine.` came out as `the
-/// kernel iis fnit: constiner.`), and **no matcher can be made reliable against that**.
-///
-/// So the safety does not live in the matching. It lives in **which question is asked first**, and
-/// in one asymmetry that a shuffle cannot break:
-///
-/// > Interleaving can **destroy** a string. It cannot **create** one.
-///
-/// Therefore an exact search for the sentence the progenitor prints when the answer is *no* has no false
-/// positives: if `construction budget NOT dropped` is in the transcript, the progenitor printed it. That is
-/// the check with the teeth, it runs first, and it is exact rather than tolerant precisely so that
-/// nothing shuffled can be mistaken for it.
-///
-/// Everything after it only decides between passing and saying why:
-///
-/// 1. `negative` present, **exactly** -> [`BootClaim::Denied`]. The progenitor reported the failing answer.
-/// 2. `positive` present, exactly or shuffled -> [`BootClaim::Affirmed`].
-/// 3. Neither, and the kernel was writing during the boot -> [`BootClaim::Unreadable`]. A pass, and
-///    the caller says so out loud.
-/// 4. Neither, and nothing else was writing -> [`BootClaim::Silent`]. A failure: with one writer
-///    there is nothing to shuffle, so the progenitor really did not say it.
-///
-/// # What this trades, said plainly
-///
-/// It moves the residual error from **false red to false green**, on purpose: the failure it
-/// guards is persistent, printed on *every* boot on both legs, so hiding it requires the shuffle to
-/// land on that sentence every time, while a false red taxes every lane.
-///
-/// The residual hole is case 4's converse and is named in `script/swish-check`'s own BUGS: if the progenitor's
-/// report were deleted **and** a thread faulted in the same boot, this passes. Both halves have to
-/// happen together, and the second is itself a defect the transcript shows.
+/// Interleaving can destroy a string but not create one, so `negative` is searched exactly and
+/// first: present means [`BootClaim::Denied`]. Then `positive`, exact or shuffled, is
+/// [`BootClaim::Affirmed`]. Neither, while the kernel wrote during the boot, is
+/// [`BootClaim::Unreadable`], a pass the caller reports; neither with one writer is
+/// [`BootClaim::Silent`], a failure. This trades false red for false green on purpose; the
+/// residual hole is in `script/swish-check`'s BUGS. See notes/swish-check-harness.md, "Two writers
+/// share one UART".
 fn boot_claim(transcript: &str, positive: &str, negative: &str) -> BootClaim {
     if transcript.contains(negative) {
         return BootClaim::Denied;
@@ -226,11 +184,9 @@ pub(super) fn transcript_now(seen: &std::sync::Arc<std::sync::Mutex<String>>) ->
 /// that needed un-shuffling is evidence of the UART defect and swallowing it would hide the thing
 /// this whole mechanism exists because of.
 ///
-/// `subject` is what the progenitor reports on, in words a reader can act on. It describes the **program's**
-/// behavior, which this function can honestly assert. It never describes the machine's state,
-/// which it cannot: the diagnostic this replaced said a missing string meant the progenitor "still holds the
-/// kernel's root untyped, or the delete did not take", about a boot where the progenitor had dropped the
-/// budget and said so, and sent a maintainer hunting a capability bug that does not exist.
+/// `subject` is what the progenitor reports on, in words a reader can act on. It describes the
+/// **program's** behavior, which this function can honestly assert, and never the machine's state,
+/// which it cannot see.
 pub(super) fn boot_claim_complaint(
     transcript: &str,
     subject: &str,

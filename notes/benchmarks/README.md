@@ -12,3 +12,6 @@ rather than by what they hold, and "4 and 2" reads as a typo), now
 `read-path-record-and-request-size.md` and `read-path-block-contract-and-metadata-cache.md`. Refused
 `the-fixed-term` (it does not say what the file is, where its own H1 subtitle does), now
 `five-blocks-per-request.md`. The three H1 titles were kept.*
+
+[`host-programs.md`](host-programs.md) carries why each program in `bench/host/` is shaped the way
+it is, not a dated measurement. `host-programs` Name: provisional.

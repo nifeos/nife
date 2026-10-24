@@ -1,31 +1,24 @@
 //! **Turning a position-independent ELF into the PE/COFF image UEFI firmware loads.**
 //!
-//! UEFI loads applications in Microsoft's PE/COFF format. rustc builds PE directly for the three
-//! UEFI targets it has (`aarch64-`, `i686-`, `x86_64-unknown-uefi`) and has **no riscv64 UEFI
-//! target**. So the riscv64 boot file is built as an ordinary static-PIE ELF for
-//! `riscv64imac-unknown-none-elf` and converted here, as systemd's `elf2efi` does, rather than
-//! hand-writing a PE header in assembly (U-Boot, gnu-efi).
-//!
-//! **`object` reads the ELF and writes the PE; the conversion is ours** (milestone 784 (reuse what
-//! the tree wrote), item (g), ruled by calef on 2026-10-21 (UTC): "B"). `object::read::elf` parses
-//! the file header, program headers, dynamic section and `Elf64_Rela` with every offset checked, and
-//! `object::write::pe::Writer` lays out the headers, the section table and `.reloc`. What this file
-//! decides is what no library knows: which ELFs it will convert, where each segment goes, and what a
-//! relocation becomes.
-//!
+//! rustc builds PE directly for its three UEFI targets (`aarch64-`, `i686-`, `x86_64-unknown-uefi`)
+//! and has **no riscv64 UEFI target**, so the riscv64 boot file is built as a static-PIE ELF for
+//! `riscv64imac-unknown-none-elf` and converted here, as systemd's `elf2efi` does, rather than by
+//! hand-writing a PE header in assembly (U-Boot, gnu-efi). **`object` reads the ELF and writes the
+//! PE, with every offset checked; the conversion is ours** (milestone 784 (reuse what the tree
+//! wrote), item (g), ruled by calef on 2026-10-21 (UTC): "B"). This file decides what no library
+//! knows: which ELFs it will convert, where each segment goes, and what a relocation becomes.
+
 //! # What goes in and what comes out
-//!
-//! In: a 64-bit little-endian ELF of type `ET_DYN` (a PIE), linked with its segments page-aligned
-//! (`-z separate-loadable-segments`) and its first segment at or above `0x1000`, whose only dynamic
-//! relocations are the architecture's `RELATIVE` kind. That is what this file's caller links, and
-//! anything else is refused by name rather than converted wrongly.
+//! In: a 64-bit little-endian `ET_DYN` ELF (a PIE), its segments page-aligned
+//! (`-z separate-loadable-segments`) and its first at or above `0x1000`, whose only dynamic
+//! relocations are the architecture's `RELATIVE` kind. Anything else is refused by name rather
+//! than converted wrongly.
 //!
 //! Out: a PE32+ image whose section RVAs **are** the ELF's virtual addresses (image base 0), one
-//! section per `PT_LOAD`, and a `.reloc` section holding one `IMAGE_REL_BASED_DIR64` fixup per ELF
-//! relocation. The firmware loads the image at some base `B` and adds `B` to each fixed-up word;
-//! this has already written each relocation's addend into its word, so the result is `B + addend`,
-//! which is exactly what `R_*_RELATIVE` means.
-//!
+//! section per `PT_LOAD`, and a `.reloc` holding one `IMAGE_REL_BASED_DIR64` fixup per relocation,
+//! whose word already holds the addend. The firmware adds its load base `B`, giving `B + addend`,
+//! which is what `R_*_RELATIVE` means.
+
 //! # BUGS
 //!
 //! - **Only `RELATIVE` relocations are converted.** A static PIE with no dynamic symbols produces

@@ -1,17 +1,12 @@
 //! **The atlas generator**: DejaVu Sans Mono's outlines in, `crates/glyph_atlas`'s coverage tables
 //! out (milestone 142 (a text display good enough that people use it instead of a GUI) increment
-//! 3).
-//!
-//! The rasteriser runs here, on the host, once, and its output is checked in. That split is what
-//! keeps the three-party proof of on-screen text (the terminal draws, the kernel predicts, the host
-//! grades) a set of table lookups rather than three copies of a font engine. This tool is not on
-//! the verification path; the table is, and `tests/regenerate.rs` holds the table to exactly what
-//! this tool makes from the vendored fonts, byte for byte.
-//!
-//! Three choices are §166 (the rasteriser dependency, and whether the glyph atlas ships one face or
-//! four)'s and the determinism appendix's, not this file's, and are not to be re-litigated here:
-//! `skrifa` plus `ab_glyph_rasterizer` 0.1.10; grayscale coverage, never subpixel; and coverage
-//! quantized to `u8` at the boundary ([`quantize`]), never stored as `f32`.
+//! 3). It runs on the host, once, and its output is checked in, so the three-party proof of
+//! on-screen text (the terminal draws, the kernel predicts, the host grades) is table lookups. The
+//! table is on the verification path and this tool is not; `tests/regenerate.rs` holds the table
+//! to this tool's output byte for byte. §166 (the rasteriser dependency, and whether the glyph
+//! atlas ships one face or four) and the determinism appendix fix three choices, not to be
+//! re-litigated here: `skrifa` plus `ab_glyph_rasterizer` 0.1.10; grayscale coverage, never
+//! subpixel; and `u8` coverage at the boundary ([`quantize`]), never `f32`. See notes/glyphs.md.
 //!
 //! Name: provisional, for the crate and every item in it. calef names things.
 

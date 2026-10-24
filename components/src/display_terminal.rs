@@ -7,7 +7,8 @@
 //! Its whole world is a report endpoint, one to present through, the one it serves (slot 2), an
 //! application's output page and its own pixels: no device, interrupt, DMA authority, physical
 //! address, or way to name another client's anything. With a control endpoint it can be replaced
-//! live, by `video_terminal::component`'s `OPERATION_QUIESCE`/`START_ABSORB` exchange.
+//! live, by `video_terminal::component`'s `OPERATION_QUIESCE`/`START_ABSORB` exchange, and it takes
+//! the quiesce only on its supervisor's `line_editor::proto::SUPERVISOR_BADGE` copy.
 
 //! # One endpoint, and why input does not ring the doorbell
 //!
@@ -559,6 +560,17 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
         let (w0, w1) = (req.w0, req.w1);
         let reply_slot = req.delivered.into_reply();
         let mut r0: u64 = 0;
+        // The supervisor's badge carries a quiesce and nothing else, and nothing else carries a
+        // quiesce (`proto::SUPERVISOR_BADGE`): a quiesce from an application would stop this
+        // terminal until a supervisor that never asked said `CTL_RESUME`. Other badges are
+        // served as unbadged.
+        let from_supervisor = req.badge == proto::SUPERVISOR_BADGE;
+        if from_supervisor != (proto::operation(w0) == proto::OPERATION_QUIESCE) {
+            if let Some(to) = reply_slot {
+                reply(to, proto::BAD_REQUEST, 0);
+            }
+            continue;
+        }
         match proto::operation(w0) {
             // The application half: print `len` bytes from the shared output page. The terminal
             // performs no newline translation, deliberately: `line_editor::expand_output` already put

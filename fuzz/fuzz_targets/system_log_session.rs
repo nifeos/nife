@@ -1,27 +1,22 @@
 //! Fuzz the system log's **request handler** with whole sessions of writers, the spawner and
 //! readers, and check what every read returns (proposal #1592 part a, rank 3).
 //!
-//! **What runs.** `system_log::Log::handle` and `Log::fill`, the two calls
-//! `components/src/system_log.rs` makes for every message it receives, with no syscalls between.
-//! A session interleaves byte-sink chunks from several writer badges (hostile bytes included:
-//! quotes, backslashes, control bytes, broken UTF-8, and text shaped like the record's own fields),
-//! end-of-stream, the spawner's registrations, and reads at chosen cursors.
+//! It runs `system_log::Log::handle` and `Log::fill`, the two calls `components/src/system_log.rs`
+//! makes per message, with no syscalls between. A session interleaves byte-sink chunks from several
+//! writer badges (hostile bytes included), end-of-stream, the spawner's registrations, and reads at
+//! chosen cursors. The registry model is this file's own, kept from the control messages sent. The
+//! spawner's words are always well formed (`control::name_messages`, `control::word`), because a
+//! raw word from badge 0 is the spawner's own authority; writers' words may be raw.
+
+//! # The rules it checks on every read, beyond "no panic"
 //!
-//! **The rules it checks on every read**, beyond "no panic":
-//!
-//! 1. *Framing.* The data is whole lines, and every line is a record or a dropped-count line of
-//!    exactly the shape `json::render` documents, with every string properly escaped. A writer's
-//!    bytes can never end a string, add a field or start a line.
+//! 1. *Framing.* The data is whole lines, each a record or dropped-count line of exactly
+//!    `json::render`'s shape, escaped; a writer's bytes never end a string, add a field or a line.
 //! 2. *Stamping.* A record's `program` and `user` are names the spawner registered for its `source`
-//!    badge at some point in the session, or `null`. A writer never chooses either.
+//!    badge in the session, or `null`. A writer never chooses either.
 //! 3. *Scope.* A per-user reader is shown only records stamped with its own registered user.
 //! 4. *Order.* Sequence numbers rise strictly within a read, start at or after the cursor, and stay
 //!    below the next cursor the read hands back.
-//!
-//! The model of the registry is this file's own, kept from the control messages the session sends.
-//! The spawner's words are always well formed here (built by `control::name_messages` and
-//! `control::word`), because a raw word from badge 0 is the spawner's own authority and could
-//! register anything; writers' words may be raw.
 //!
 //! Name: provisional (`lane/fuzz-service-handlers`, 2026-10-04 UTC); an architect names things.
 //! Falsification: replayable `fuzz/falsifications/system_log_session.every_reader_is_a_system_reader.patch`

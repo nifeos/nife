@@ -1,17 +1,11 @@
 //! **The client against a TLS implementation that is not ours**, on the host, in milliseconds.
 //!
-//! Each test starts `helpers/tls-peer` (Python's `ssl`, which is OpenSSL) as a child process and
-//! speaks TLS over its stdin and stdout, which is exactly how QEMU's slirp runs the same script per
-//! connection for the in-guest test. So the peer a guest meets and the peer these tests meet are
-//! one program, and a refusal here is a refusal there.
-//!
-//! What each test proves that nothing else would:
-//!
-//! - the handshake completes against a real server, through this tree's provider, and a body
-//!   arrives intact (the provider had never completed a handshake before this milestone);
-//! - a well-formed chain from another root is refused, which is the pin;
-//! - a valid chain from the pinned root for another name is refused, which is the name check;
-//! - the production pin is the real ISRG Root X1 and not a substituted file.
+//! Each test runs `helpers/tls-peer` (Python's `ssl`, which is OpenSSL) as a child over its stdin
+//! and stdout, as QEMU's slirp runs it per connection for the in-guest test, so a refusal here is
+//! a refusal there. Together they prove: a handshake completes through this tree's provider and a
+//! body arrives intact; a well-formed chain from another root is refused (the pin); the pinned
+//! root's chain for another name is refused (the name check); and the production pin is the real
+//! ISRG Root X1, not a substituted file.
 
 use std::io::{self, Read, Write};
 use std::path::PathBuf;

@@ -116,8 +116,8 @@ About ten minutes, and nothing on the card changes: radon's card was written onc
 (milestone 257 (boot radon over the network)). This boot halts when it is done, so the last step
 puts the ordinary image back.
 
-On patagonia, in this branch's worktree, with `P` set to patagonia's address on the bench LAN
-(`P=$(ipconfig getifaddr en0)`). In a second terminal, the peer, which serves 100 MiB per
+On the Mac radon's UART goes into, in this branch's worktree, with `P` set to its address on the
+bench LAN (`P=$(ipconfig getifaddr en0)`). In a second terminal, the peer, which serves 100 MiB per
 connection (allow `nc` if macOS asks):
 
 ```sh
@@ -142,12 +142,12 @@ The U-Boot banner does not say which jack that is; on a boot where U-Boot report
 wrong jack and this boot will end `FAILED: no link`. `nife: payload came from net` near the top
 says the new image was served.
 
-radon's card carries a boot script written 2026-09-16 that asks for a server address that is not
-patagonia's, and for the archive under the name `nife-initrd.img`, where `script/board-image`
+radon's card carries a boot script written 2026-09-16 that asks for a server address that is not the
+serving Mac's, and for the archive under the name `nife-initrd.img`, where `script/board-image`
 writes `nife-initial-ramdisk.img`. Until the card is rewritten, press a key at the autoboot
-countdown, type `setenv nife_boot_server <patagonia's address>` and `boot`, and serve a copy of
-the archive under the old name beside the new one in `target/board`. Then put the ordinary
-image back for everyone else's bench work: `script/board-image --tftp` and one more power cycle.
+countdown, type `setenv nife_boot_server <the serving Mac's address>` and `boot`, and serve a copy
+of the archive under the old name beside the new one in `target/board`. Then put the ordinary image
+back for everyone else's bench work: `script/board-image --tftp` and one more power cycle.
 
 Success looks like this (values vary; the shape does not):
 

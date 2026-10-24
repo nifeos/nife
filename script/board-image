@@ -277,7 +277,7 @@ if [ "$MAGIC" != "05435352" ]; then
 fi
 
 # The RV1's payload stops here: a FIT source naming the kernel and the archive, which `mkimage`
-# turns into `boot.itb` on the RV1 itself (patagonia has no `mkimage`; the RV1's Debian does).
+# turns into `boot.itb` on the RV1 itself (a stock macOS host has no `mkimage`; the RV1's Debian does).
 # The device tree and OpenSBI come out of Scaleway's own `boot.itb` on that machine, so this tree
 # guesses neither. The runbook is milestone 89's block, "Rented, hour one".
 if [ "$TH1520" = yes ]; then

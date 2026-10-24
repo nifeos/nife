@@ -151,6 +151,26 @@ What stage 1 must decide in its own block: where the crate lives, its name (an a
 how clang finds the generated headers, and whether cbindgen is taken or the headers are written by
 hand (a §46 question).
 
+## The platform layer's own constraints
+
+[`c_library/README.md`](../c_library/README.md) is the guide to the built crate. A few constraints
+its source relies on are recorded here rather than in its comments.
+
+- One client per protocol. Because the platform layer is built on `std`, a protocol change lands in
+  one place. A C program and a Rust program granted the same directory cannot see different things
+  in it. The cost is a few hundred KiB of `std` in every C program.
+- The futex is built from `thread::park` and `Thread::unpark` because `std` does not export its own
+  and the crate makes no system call. On nife each of those is one kernel wait or one kernel wake on
+  a word of the parked thread's own. The table's shape is WebKit's parking lot, which Rust's
+  `parking_lot` crate also takes.
+- `pthread_exit` `longjmp`s back to the `setjmp` that `c/thread_start.c` records on the thread's own
+  stack. The frames it skips are the C program's and `pthread_exit`'s own, which holds nothing with
+  a destructor when it jumps. From the main thread, `pthread_exit` waits for every other thread
+  `pthread_create` made to finish and then ends the process with status 0, as a process whose last thread exits does.
+- A pipe or socket pair needs no kernel object while both ends are in one process. A pipe between
+  two processes would need a kernel or server object, which this is not. `poll`'s wake is a
+  broadcast where a kernel would wake only the interested, which is cheap only while pipes are few.
+
 ## What stage 1 found (2026-10-10, UTC)
 
 Milestone 835 (a C library, stage 1: files, clock and memory) built the shape recommended above.

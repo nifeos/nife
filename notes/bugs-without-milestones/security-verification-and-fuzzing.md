@@ -10,6 +10,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  components/src/login.rs | user_timetable_keeper failing half way leaves splits in the user's budget; measured-boot verdict spelled locally, not via measured_boot::verdict | login: give back splits on keeper failure; use measured_boot::verdict | S  |
 |  components/src/login_audit_receiver.rs | audit trail drained and discarded; no recorder (login_audit_recorder rename promised); roadmap 0480 (log channel per request) is REFUSED, so nothing carries it | login_audit_recorder: keep and surface the login audit | M  |
 |  components/src/user_timetable_keeper.rs | durable timetable holds no clock, so every calendar line in a durable schedule never fires | Durable schedules get a clock | M  |
+|  crates/hot_swap_contract/src/lib.rs | the demonstrator honors `OPERATION_QUIESCE` from any client on `SVC` (both serve loops) | Badge the operator's quiesce | S  |
 |  crates/login_contract/src/lib.rs | a terminal holder that exits without logging out wedges login until it restarts | login: recover when the terminal holder dies | S  |
 |  cryptography_exerciser/src/main.rs (coverage bullet) | No ECDSA or RSA signature vector, so certificate verification is unexercised. | Signature vectors in the cryptography exerciser | S  |
 |  cryptography_exerciser/src/main.rs (feature-detection bullet) | A crate that picks an implementation by asking the CPU dies in ring 3 on x86_64 (chacha20 AVX2); nothing warns. | A gate that finds run-time CPU feature detection in userspace crates | M  |
@@ -29,7 +30,6 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/fuzzing.md | GPT target fixes 512-byte blocks and barely reaches `check_backup` (head/tail split "worth doing; not done") | GPT fuzz: 4K blocks and a real backup header | S  |
 |  notes/fuzzing.md | `device_tree_blob_walk`, `elf_parse`, GPT target assert nothing beyond "returned"; wrong answers invisible | Give the asserting-nothing fuzz targets a property | M  |
 |  notes/fuzzing.md | Mutational fuzzing cannot reach deep DTB nesting; needs a grammar-based generator and a fuzzer-chosen needle | Grammar-based fuzz input for `device_tree_blob_walk` | M  |
-|  notes/interactive-stack-swap.md | `OPERATION_QUIESCE` is served to any holder of the terminal endpoint; an app can freeze its terminal | Restrict `OPERATION_QUIESCE` to the supervisor | M  |
 |  notes/kernel-proofs.md | `user/` parsers of untrusted input and `xtask` are out of the prover's reach | Bring `user/` parsers under Kani | L  |
 |  notes/kernel-proofs.md | `kernel/src/arch/` is almost wholly unproved; the asm boundary is untouched | Kani harnesses across the arch asm seam | L  |
 |  notes/kernel-proofs.md | `x86_64/machine.rs` ACPI parsing and `crates/machine_discovery` have no harnesses and no verify row (0423 covers the pointer reader only) | Prove machine_discovery and the x86_64 ACPI parse | M  |

@@ -1,16 +1,11 @@
 //! Key exchange: X25519 and NIST P-256, behind `rustls`' `SupportedKxGroup`.
 //!
-//! Two groups rather than one, because TLS 1.3 lets the server choose and a client that offers
-//! only X25519 will fail against a peer configured for P-256 and the other way round. Both are in
-//! the path for a reason that was measured rather than assumed: `github.com`'s certificate chain
-//! is ECDSA P-256 throughout (notes/cryptography-provider.md), and X25519 is what almost every
-//! modern server prefers for the exchange itself.
-//!
-//! **The ephemeral secret comes from the primitive crate, not from `rustls`' `SecureRandom`**, and
-//! that is `rustls`' own design: its `SecureRandom` documentation says key exchange material "is
-//! not included in the interface with rustls: it is assumed that the cryptography library provides
-//! for this itself." Here both crates draw through `rand_core`'s `OsRng`, which on nife is
-//! `entropy_backend` and the entropy service, so the two paths end in the same place anyway.
+//! Two groups, because TLS 1.3 lets the server choose and a client offering only one fails against
+//! a peer configured for the other. `github.com`'s chain is ECDSA P-256 throughout
+//! (notes/cryptography-provider.md), and X25519 is what almost every modern server prefers for the
+//! exchange. The ephemeral secret comes from the primitive crate, not `rustls`' `SecureRandom`, as
+//! `rustls` documents ("it is assumed that the cryptography library provides for this itself"). Both
+//! draw through `rand_core`'s `OsRng`, which on nife is `entropy_backend` and the entropy service.
 
 use alloc::{boxed::Box, vec::Vec};
 

@@ -1,10 +1,15 @@
 //! **The rollback gate**: a deliberately doomed upgrade is installed, tried, and abandoned, and the
-//! machine comes back on the image it had before, with nobody typing anything (rung 2b of
-//! milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
-//!
+//! machine comes back on the image it had before, with nobody typing anything (rung 2b of milestone
+//! 198 (a package manager, and the trivial install that makes a second customer possible)).
 //! `crates/boot_slot`, `components/src/system_installer.rs` and `uefi_loader/src/chooser.rs` are
-//! only as good as the three boots below.
+//! only as good as the three boots below. See notes/boot-slots.md.
 //!
+//! **Killing the machine at the handoff is the test.** A kernel that wedges, a driver that spins
+//! and a power cut are, to the disk, one event: the try was spent and nothing came back. The
+//! upgrade is a **byte-for-byte copy of the working image**, so the header checksum cannot catch it
+//! and only the spent try decides.
+
+//! # The three boots
 //! | | |
 //! |---|---|
 //! | 1 | the stick installs itself, exactly as `cargo xtask install-boot`'s first boot does |
@@ -12,12 +17,8 @@
 //! | 2 | the machine picks slot 1, spends its one try, hands off, **and is killed at that instant** |
 //! | 3 | the machine picks slot 0 and comes up, and slot 1 is never tried again |
 //!
-//! **Killing the machine at the handoff is the test.** A kernel that wedges, a driver that spins
-//! and a power cut are, to the disk, one event: the try was spent and nothing came back. QEMU dying
-//! one instruction after `StartImage` produces exactly that, and it is the failure the chooser
-//! cannot observe for itself. The upgrade is a **byte-for-byte copy of the working image**, so the
-//! header checksum cannot catch it and only the spent try decides.
-//!
+//! QEMU dying one instruction after `StartImage` is the hang and the power cut alike, and the
+//! chooser cannot observe it for itself.
 
 //! # What it asserts
 //!
@@ -27,7 +28,7 @@
 //! - Boot 3 reaches a shell and reads the file `mkfs` wrote: the fallback is a working machine.
 //! - The disk, read afterwards by this gate, shows slot 1 at `tries=0, successful=0` with its
 //!   **priority untouched**.
-//!
+
 //! # EXAMPLES
 //!
 //! ```console
@@ -47,19 +48,14 @@
 //! rollback-boot: slot 1 is priority 3, 0 tries, not successful
 //! rollback-boot: PASS
 //! ```
-//!
 
 //! # BUGS
 //!
-//! - **The upgrade is written by this gate and not by nife**, because nothing in this tree writes
-//!   an upgrade to a running machine yet. The bytes and attribute bits go through the same
-//!   `crates/boot_slot` and `globally_unique_identifier_partition_table` code the installer uses.
-//! - **One try, not three.** The policy is the same at any count, and `cargo test -p boot_slot`
-//!   covers the counting.
-//! - **It proves nothing about a real firmware**, the same caveat `install-boot` carries.
-//! - **The power cut is at the handoff, not during the table write.** A machine interrupted between
-//!   the chooser's four block writes is not covered; `uefi_loader/src/chooser.rs`'s `BUGS` says so.
-//! - **It takes several minutes under TCG**, so it is not in `script/test`'s default legs.
+//! - The upgrade is written by this gate, not by nife, through the installer's own crates.
+//! - One try, not three; `cargo test -p boot_slot` covers the counting.
+//! - It proves nothing about a real firmware, the same caveat `install-boot` carries.
+//! - The power cut is at the handoff, not during the table write (`uefi_loader/src/chooser.rs`).
+//! - It takes several minutes under TCG, so it is not in `script/test`'s default legs.
 
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;

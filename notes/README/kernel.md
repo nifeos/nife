@@ -7,8 +7,10 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Userspace](../userspace.md): the three hardware walls that make userspace.
 - [The console driver leaves the kernel](../userspace-drivers.md): the console as a userspace process reached by IPC.
 - [The native ABI](../abi.md): the syscall convention, object surface and entry contract.
+- [The syscall boundary](../syscall-boundary.md): the five calls, where each method's code sits for the footprint gate, the rights each asks for, and how a run is mapped.
 - [Threads, the context switch, and preemption](../threads.md): threads, the fifteen-instruction switch, and preemption.
 - [The scheduler: placement, stealing, wakes](../scheduler.md): per-core run queues, placement, stealing and wakes.
+- [The scheduler's diagnostic instruments](../scheduler-instruments.md): the per-core event rings and the corruption canary, what each costs and why the canary is kept unarmed. Name provisional.
 - [Bringing up the other cores](../smp.md): the core roster seated by hardware id, secondary start and stacks, and how the SMP tests wait.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
 - [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.

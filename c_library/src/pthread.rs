@@ -1,43 +1,23 @@
 //! POSIX threads on `std`'s threads (milestone 836 (a C library, stage 2: threads)).
 //!
-//! relibc's `pthread` module is built on its own dynamic linker's thread control block and a
-//! `clone` system call, neither of which is seeded. nife's C library is built on nife's Rust `std`
-//! (`c_library/README.md`), and `std::thread::spawn` already runs real threads in one address space
-//! (milestone 812 (`std::thread::spawn` runs real threads in one address space)). So a
-//! `pthread_create` is a `std` spawn, and this module is the bookkeeping POSIX asks for on top:
-//! a joinable or detached thread, its return value, `pthread_exit`, `pthread_self` and a thread
-//! number. relibc's `header/pthread` (the `pthread_*` functions themselves, attributes, mutexes,
-//! condition variables, read-write locks, barriers, spin locks, keys) is seeded and calls the
-//! functions here by the names relibc's own module gives them.
-//!
-//! # Who frees a thread's record
-//!
-//! A [`Pthread`] is an `Arc`, and a `pthread_t` is one strong count of it turned into a pointer.
-//! The thread's own closure holds a second. `pthread_join` and `pthread_detach` each give back the
-//! `pthread_t`'s count, and the thread drops its own as it ends, so whichever comes last frees the
-//! record and no state machine has to decide who that is.
-//!
-//! # `pthread_exit`
-//!
-//! A thread made here starts in `thread_start.c`, which records a `setjmp` in a buffer on the
-//! thread's own stack before calling the program's start routine. `pthread_exit` runs the cleanup
-//! handlers and `longjmp`s back to it, so the thread returns through `std`'s spawn closure like any
-//! other, and `std` ends it and frees its stack. The frames skipped are the C program's and
-//! `pthread_exit`'s own, which holds nothing with a destructor when it jumps. A `pthread_exit` from the main thread waits for every other
-//! thread made here to finish and then ends the process with status 0, which is what a process
-//! whose last thread has exited does.
-//!
+//! A `pthread_create` is a `std` spawn (milestone 812 (`std::thread::spawn` runs real threads in
+//! one address space)), and this module is the bookkeeping POSIX asks for on top: joinable or
+//! detached, the return value, `pthread_exit`, `pthread_self` and a thread number. relibc's seeded
+//! `header/pthread` calls these functions by the names relibc's own module gives them. A thread's
+//! record is an `Arc` freed by whichever of the thread and its `pthread_t` ends last, and
+//! `pthread_exit` `longjmp`s back to `c/thread_start.c`; `c_library/README.md` ("How a thread
+//! starts and ends") and notes/c-library.md ("The platform layer's own constraints") have both.
+
 //! # BUGS
 //!
 //! - **Cancellation is deferred and checked only at `pthread_testcancel`.** nife has no signals to
-//!   interrupt a thread, so the cancellation points POSIX lists (a blocking `read`, a condition
-//!   wait) do not act on a pending cancel.
+//!   interrupt a thread, so POSIX's cancellation points (a blocking `read`, a condition wait) do
+//!   not act on a pending cancel.
 //! - **A caller-supplied stack (`pthread_attr_setstack`) is refused** with `EINVAL`, and
 //!   `pthread_getattr_np` reports no stack address: `std` makes the stack.
-//! - **16 threads a process**, the main thread included: `std`'s limit (milestone 812's `BUGS`).
-//!   One more `pthread_create` answers `EAGAIN`.
-//! - **Scheduling parameters are accepted and ignored**, since nife's scheduler has one class
-//!   (`header/sched`).
+//! - **16 threads a process**, the main thread included (milestone 812's `BUGS`); one more
+//!   `pthread_create` answers `EAGAIN`.
+//! - **Scheduling parameters are accepted and ignored**: one scheduler class (`header/sched`).
 
 //! Name: provisional, lane milestone/836-a-c-library-stage-two-threads (#2009), 2026-10-12 (UTC),
 //! for the module and the file. The pull request records no other name considered.

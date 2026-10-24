@@ -74,7 +74,7 @@ Full rows: [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md).
 | `script/board-image` | Build the VisionFive 2 microSD payload. |
 | `script/card-check` | Does this card's kernel vouch for its archive? |
 | `script/board-netboot` | Serve `target/board` over TFTP so radon boots without a card. |
-| `script/netboot-rehearsal` | Boot nife the way xenon will, on patagonia, with nothing plugged in. |
+| `script/netboot-rehearsal` | Boot nife the way xenon will, on your machine, with nothing plugged in. |
 | `script/swish-check` | `console`'s gating twin: type at the prompt and check what came back. On aarch64 and riscv64 it also launches `graphical_terminal` with a virtio-gpu and reads the screen (the old `--graphical` flags, folded in 2026-10-03). |
 | `script/boot-check` | Boot the default kernel on all three architectures to a green verdict. |
 

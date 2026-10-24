@@ -68,6 +68,42 @@ x86_64   PASS, 129s in: attempt 1 of 3: FADT reset register, I/O port 0xcf9 <- 0
 riscv64  PASS, 128s in: attempt 1 of 1: SBI SRST system_reset, reset type 1 (cold reboot)
 ```
 
+## The `reboot` program
+
+`components/src/reboot.rs` syncs the writable filesystem, says what the sync answered, then
+invokes the reboot object. Its capability table is in its module doc.
+
+**Why a sync-only capability.** §251 (restarting the machine is a kernel object the progenitor
+hands out), clause 3, puts the sync before the reset, and the kernel does
+none of it. `SYNC` needs `dir::WRITE` on a handle for an ordinary client, which is also the right to
+open and truncate files by name. So the file server binds this program's badge sync-only
+(`filesystem_contract::fs::BIND_SYNC`): it answers `SYNC`, refuses every other verb, and nothing in
+the program can reach a file. calef ruled against the progenitor syncing on its behalf (2026-10-06
+UTC, #1783), so the sync is the program's own act.
+
+**Why the report is sent twice.** The report goes to the shell, which forwards it to the terminal,
+and the reset that follows stops everything. A `SEND` on a rendezvous returns when the receiver has
+taken the message, not when it has printed it. So the end-of-stream after the report is the
+barrier: the shell takes it only once it has finished with the report. Without it the report raced
+the reset and lost.
+
+Its limits, which its `BUGS` lists one line each:
+
+- A firmware that accepts the reset and hangs cannot be told from a slow one, from inside the
+  machine. radon's OpenSBI hangs that way when U-Boot has left the PMIC's I2C bus held in reset.
+  The kernel releases the bus before the reset (milestone 592 (radon's cold reboot dies in
+  OpenSBI's PMIC write)), and `reboot` typed at radon's prompt resets the board through the
+  AXP15060 (`bench/radon-2026-10-21/README-890.md`, #2516).
+- A refusal does not exit non-zero, because no program in this system reports an exit status
+  (`crates/swish`'s `Status` says so). The refusal is a sentence on the second stream, naming which
+  of the kernel's four reasons it was.
+- The sync is not fenced against background jobs. A write another job makes after `SYNC` is
+  answered and before the reset lands is not covered. The window is the report's two sends and the
+  invoke. The shell runs `reboot` in the foreground, so this is a job somebody started earlier and
+  left writing. Milestone 853 (orderly shutdown closes the sync window) owns closing it.
+- Devices are not quiesced. A DMA transfer in flight is cut off. After `SYNC` the block servers are
+  idle and nothing else writes to persistent storage.
+
 ## BUGS
 
 - The proof is in no CI gate. Each leg takes over two minutes, because the window is the board's

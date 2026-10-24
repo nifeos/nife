@@ -83,6 +83,19 @@ typed it, and the mask is what the program is handed. That is the same move `rm 
 recursion flag becomes *rights* on the granted capability rather than text in an argument. It is
 the shape this system keeps arriving at: the boundary carries authority, not strings.
 
+## The zero on the wire
+
+`Selector::from_wire` is the one place zero is generous, and the asymmetry with `Selector::of` is
+deliberate. A program is started with its registers zeroed by whoever did not think about them:
+`system_initializer` starts every child `start_child(child, 0, arg, 0)`, and the shell leaves `arg`
+at zero for a program whose `ProgramArgumentDeclaration` is `Forbidden`. So "nobody said" has to
+mean "no filter", or `pgrep` would print nothing at the prompt and look broken.
+
+A pattern that matched no state must not collapse into the same value. That would turn a selector
+naming nothing into a selector naming everything, the one direction to be wrong in that a monitor
+cannot recover from. So `Selector::from_pattern` goes through `Selector::of` and can return
+`Selector::NONE`, which `Selection::write_diagnostics` reports as its own sentence.
+
 ## The limitation that shaped it, which is a property of the boundary
 
 Nothing in this system delivers bytes from a command line to a program. `Endowment::program_argument` is one
@@ -100,3 +113,25 @@ selectors over a real domain, which is the only place in the tree that can.
 Worth noticing rather than fixing: this is a capability system's shape showing through a Unix
 program's interface, not a missing feature. A command line here is a list of designations, and a
 regular expression is not a designation of anything.
+
+## At the prompt
+
+What `components/src/pgrep.rs` prints, and the two answers Unix's `pgrep` cannot tell apart (both
+print nothing and exit 1 there):
+
+```text
+$ pgrep
+5
+9
+$ pgrep | wc            the domain, counted, and no /proc was read to make it
+$ pgrep > names.txt     the names land in the file
+$ caps pgrep            the scope, printed before anything is spawned
+$ pgrep                 pgrep: none of the 2 processes in this domain are dead
+$ pgrep                 pgrep: this process holds no process-domain capability
+```
+
+The program walks first, filters second, complains third and prints fourth. DECISIONS §67 (a
+program's second stream is a declaration) says its reader
+drains diagnostics to end-of-stream before it reads a byte of output. A survey cannot know its
+complaints up front, since the domain may be refused on the first call or vanish on the tenth. And
+"nothing matched" needs the count, so the filter runs before the second stream too.

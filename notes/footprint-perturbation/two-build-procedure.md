@@ -18,7 +18,7 @@ nothing more:
 - The USB TTL adapter on the 40-pin header, TX/RX crossed, 3.3 V, `/dev/cu.usbmodem*` (`cu.`, never
   `tty.`).
 - A microSD card already formatted and mounted, and its mount path.
-- patagonia, this checkout, and about ten minutes of building per card.
+- The build machine, this checkout, and about ten minutes of building per card.
 
 Two cards, or one card written six times; this page said something looser until 2026-09-04. E3 is a
 comparison of two builds differing in exactly one Cargo feature. The page said "writes the card twice
@@ -47,7 +47,7 @@ than merely slow. `design/roadmap/0367-a-boot-banner-that-names-the-build.md` is
 
 ## The procedure, in order
 
-### 1. Take the static numbers first, on patagonia, with no board
+### 1. Take the static numbers first, on the build machine, with no board
 
 ```sh
 script/fastpath-footprint --arch riscv64
@@ -132,7 +132,7 @@ and dropping it would break the comparison with 2026-08-22.
 ### The whole session, as a shell transcript
 
 ```sh
-# on patagonia, no board
+# on the build machine, no board
 script/fastpath-footprint --arch riscv64
 script/fastpath-footprint --arch riscv64 --features fastpath_pad
 

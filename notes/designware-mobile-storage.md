@@ -103,9 +103,9 @@ the board boots from QSPI flash, which is how radon is set up (DIP switches both
 
 About fifteen minutes, three boots, and the card is never removed. radon's card was written once
 with `--tftp` (milestone 257 (boot radon over the network)), so each boot is a build and a power
-cycle. Do these on patagonia, in this branch's worktree.
+cycle. Do these on the Mac radon's UART goes into, in this branch's worktree.
 
-Before you start. radon's DIP switches on QSPI (both low), the UART on patagonia, the Ethernet
+Before you start. radon's DIP switches on QSPI (both low), the UART on that Mac, the Ethernet
 cable in the port U-Boot netboots over. radon's card asks for a stale server address and an old
 archive name; notes/designware-ethernet.md's bench step says what to type at U-Boot and what to
 serve until the card is rewritten. In a second terminal, leave the TFTP server running:
