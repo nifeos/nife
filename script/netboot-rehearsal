@@ -476,7 +476,6 @@ class Network:
 
 def ovmf_paths():
     """Where this machine keeps OVMF, by the same search helpers/qemu-uefi-x86_64.sh makes."""
-    qemu = subprocess.run(["command", "-v", "qemu-system-x86_64"], capture_output=True)
     binary = subprocess.run(
         ["sh", "-c", "command -v qemu-system-x86_64"], capture_output=True, text=True
     ).stdout.strip()
@@ -497,12 +496,12 @@ def ovmf_paths():
             f"{prefix}/share/edk2-i386-vars.fd",
             "/opt/homebrew/share/qemu/edk2-i386-vars.fd",
             "/usr/local/share/qemu/edk2-i386-vars.fd",
+            "/usr/share/OVMF/OVMF_VARS_4M.fd",
             "/usr/share/OVMF/OVMF_VARS.fd",
         ] if os.path.isfile(c)), "",
     )
     if not code or not template:
         die("no OVMF firmware found; set NIFE_OVMF_CODE and NIFE_OVMF_VARS")
-    del qemu
     return code, template
 
 
