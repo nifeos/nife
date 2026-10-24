@@ -15,6 +15,3 @@ miss](../delegated-review.md), that milestone's run.
 
 The two appendices hold what the study's budget under §212 (a prose budget: 3,000 words of main
 body) has no room for. Their stems are named for their content.
-
-- `the-method` Name: provisional. calef names files.
-- `the-findings` Name: provisional. calef names files.

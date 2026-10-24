@@ -1,5 +1,7 @@
 # Fuzzing: the three bugs
 
+*Name: provisional. Named after the main page's own heading.*
+
 An appendix to [`notes/fuzzing.md`](../fuzzing.md), which states the conclusion.
 
 The first two were found in the crate when it was named `dtb` and its type `Dtb`, and the headings

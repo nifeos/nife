@@ -13,7 +13,4 @@ These files carry the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `the-five-findings` Name: provisional. Named after the parent's own heading.
-- `scheduled-workflows` Name: provisional.
+Each stem here is named for its content, and calef names files.

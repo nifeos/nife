@@ -33,20 +33,19 @@ pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_SPACE;
 
 /// The heap smoltcp allocates against, capped under the granted budget.
 ///
-/// **96 pages, down from 128** (milestone 107), and the two numbers are a pair: the spawn service
-/// grants `NET_SERVER_BUDGET_PAGES = 128`, and the difference is what pays for the heap's page
-/// tables and for mapping clients' shared frames. The budget came down because ten `net_stack`
-/// regions are held for the whole boot and never reclaimed, and the aarch64 suite ran out of memory
-/// when an eleventh net test arrived; see `kernel/src/user/virtio_service.rs` for the measurement.
-/// If either number moves, both must.
+/// Paired with the spawn service's `NET_SERVER_BUDGET_PAGES = 128`: the 32 pages between them pay
+/// for the heap's page tables and for mapping clients' shared frames, and the budget is small
+/// because no `net_stack` region is ever reclaimed (`kernel/src/user/virtio_service.rs` has the
+/// measurement). If either number moves, both must.
 pub(crate) const HEAP_MAX: u64 = 96 * 4096;
 
 #[global_allocator]
 pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =
     memory_region_heap::MemoryRegionHeap::new();
 
-/// Entry role 0 is the net server; any other role runs the socket-contract client (the same
-/// binary, so the initial ramdisk stays under its 15-file directory limit).
+/// Entry role 0 is the net server; the NIC handoff roles are servers on other cards, and any other
+/// role runs a socket-contract client in the same binary (notes/net.md, "One binary, one archive
+/// entry").
 ///
 /// `a2` is the server's **grant word**, both port authorities in one spawn argument: the TCP
 /// listen range in the low half (milestone 107 (the socket contract learns to accept), `socket_contract::listen_grant`) and the fixed-UDP
@@ -103,11 +102,9 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
     // --- DHCP: bring the interface up, then report the lease (the phase-A test asserts it). ---
     dhcp_lease(&mut iface, &mut dev, &mut sockets);
 
-    // No multicast group is joined here. Milestone 55 joined mDNS's 224.0.0.251 at this point, after
-    // DHCP so the IGMP report carried a real source address, and milestone 298 removed the join on
-    // 2026-09-15 with the responder that was its only reason (notes/mdns.md). A group is interface
-    // state rather than socket state, so a future multicast client puts a join back here and
-    // smoltcp's `multicast` feature back in components/Cargo.toml.
+    // No multicast group is joined. A group is interface state rather than socket state, so a
+    // multicast client puts its join here, after DHCP so the IGMP report carries a real source
+    // address, and smoltcp's `multicast` feature back in components/Cargo.toml (notes/mdns.md).
 
     // --- Serve the socket contract. One synchronous exchange per request. ---
     let mut table = Table::new();
@@ -118,11 +115,9 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
         let req = receive_request(STACK);
         let (operation, arg, badge) = (req.w0, req.w1, req.badge);
 
-        // **The one operation that takes a delegation, and every other operation takes a Reply**
-        // (milestone 706 (a CALL server can tell a Reply from a delegation), DECISIONS §245 (a
-        // `CALL` server tells a Reply from a delegation)). `ATTACH` is a SEND_CAP whose capability
-        // is the socket's frame, on that socket's own capability; anything else is a CALL, and a
-        // delegation sent with it is deleted here rather than answered into.
+        // `ATTACH` is the one operation that takes a delegation, the socket's frame sent on that
+        // socket's own capability; every other is a CALL, and a delegation sent with one is deleted
+        // here rather than answered into (§245 (a `CALL` server tells a Reply from a delegation)).
         let to = match req.delivered {
             Delivered::Delegation(frame) if operation == OPERATION_ATTACH_PAGE_FRAME => {
                 table.attach(badge, frame);

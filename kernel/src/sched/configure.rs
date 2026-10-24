@@ -1,31 +1,20 @@
-//! **Configuring an embryo**: binding its address space and entry, its thread pointer, and its
+//! Configuring an embryo: binding its address space and entry, its thread pointer, and its
 //! cycle-counter grant, everything fixed on a thread before `START` runs it, plus a thread changing
-//! its own thread pointer later. Cut out of `sched.rs` along this seam by milestone 812
-//! (`std::thread::spawn` runs real threads in one address space), whose thread pointer (§269 (how
-//! threads share a process) fork 4) is the new part, because that file is at its §266 (a Rust
-//! source file stays under 2,000 lines) ceiling. Nothing moved here changed. The register halves
-//! are `arch::thread_pointer` and the scope note is `notes/thread-pointer.md`.
+//! its own thread pointer later. The register halves are `arch::thread_pointer` and the scope note
+//! is `notes/thread-pointer.md`.
 //!
 //! Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 
 use super::{IPC_TABLES, State, ThreadId, current_thread_id};
 
-/// **Configure an embryo** (milestone 19c (run a real workload), step 19c.3; §249 (a running address
-/// space stays nameable)): bind
-/// the address space named by `aspace_name` and set the EL0 entry and user stack. Refuses anything
-/// but an `Embryo`, so a running thread cannot be reconfigured under itself. `Ok(())` or a reason.
+/// Configure the embryo `tid` (§249 (a running address space stays nameable)): bind the address
+/// space named by `aspace_name` and set the user `entry` and stack pointer `user_sp`.
 ///
-/// **The space stays in the registry and keeps its name** (§249's option A). Until 2026-10-05 this
-/// moved the space out of the registry into the thread, which retired the name, so no capability
-/// could name a running space and `UNMAP` could not reach the window milestone 95 (an unmap
-/// primitive) exists to close. Now the thread keeps a copy of what the context switch reads, and the
-/// registry records what holds the space, which is also what refuses a second holder (§249's
-/// amendment (b), `WrongObject`). Threads share a space by joining its process instead (milestone
-/// 812 (`std::thread::spawn` runs real threads in one address space)).
-///
-/// The embryo check runs first, alone, so a TCB that is not an embryo answers `WrongObject` before
-/// a stale space name answers `NoSuchSlot`, the order this function has always refused in. It runs
-/// again inside the bind, under both locks, because the first answer can be stale by then.
+/// The space stays in the registry and keeps its name; the thread keeps a copy of what the context
+/// switch reads, and the registry records the holder, which refuses a second one (`WrongObject`).
+/// Threads share a space by joining its process instead. Refuses anything but an `Embryo` with
+/// `WrongObject`, so a running thread is never reconfigured under itself; checked before a stale
+/// space name answers `NoSuchSlot`, and again under both locks.
 pub fn configure_thread_control_block(
     tid: ThreadId,
     entry: u64,
@@ -36,31 +25,14 @@ pub fn configure_thread_control_block(
         .map(|_| ())
 }
 
-/// **Grant an embryo the cycle counter** (milestone 229, DECISIONS 139 option 4): the thread this
-/// TCB names may read `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) from user mode once it
-/// runs. `x86_64` already lets every thread read the TSC and this changes nothing there, which is
-/// DECISIONS 139 part 3 and a stated exception to §19 rather than a gap.
+/// Grant the embryo `tid` the cycle counter (§139 (who may read the cycle counter, and by what
+/// authority), option 4): once it runs it may read `PMCCNTR_EL0` (aarch64) or the `cycle` CSR
+/// (riscv64) from user mode. `x86_64` lets every thread read the TSC, a stated exception to §19.
 ///
-/// **Refuses a non-embryo**, exactly as [`configure_thread_control_block`] and
-/// [`thread_control_block_insert_cap`] do, and that refusal is the security property rather than
-/// housekeeping: it is what makes this a field in the thread's spawn manifest instead of something
-/// a running program can ask for. A timing instrument acquired at will is a timing instrument
-/// nobody declared.
-///
-/// One-way: there is no ungrant, because an embryo starts closed and nothing but this opens it.
-///
-/// **Nothing calls this today, and that is milestone 229's decision rather than an oversight.**
-/// The syscall method that would let a loader call it was deliberately not minted: see
-/// `abi::thread_control_block`'s standing note, whose short form is that a method number is
-/// irreversible and `seL4_TCB_SetAffinity` is the worked example of one that had to be retired.
-/// This is the kernel half of the mechanism, complete and tested, waiting for whoever mints the
-/// surface with a requirement in hand.
-///
-/// `#[inline(never)]` for the reason milestone 156 gives `memory_region_map` and the other
-/// spawn-path bodies: this is administration a loader runs once per child, never a step of the IPC
-/// round trip, so it does not belong in the bytes `script/fastpath-footprint` bounds. It is not a
-/// style choice here, it is a measurement: without it the riscv64 `syscall_entry` set grew 12%
-/// against a 5% bound, because the callee folded into `invoke`.
+/// Refuses a non-embryo with `WrongObject`, which keeps the grant a field of the spawn manifest
+/// rather than something a running program can ask for. One-way. No syscall method reaches it yet
+/// (`abi::thread_control_block` says why none is minted). `#[inline(never)]` keeps it out of the
+/// bytes `script/fastpath-footprint` bounds.
 #[inline(never)]
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
@@ -75,19 +47,11 @@ pub fn grant_cycle_counter(tid: ThreadId) -> Result<(), abi::Error> {
     Ok(())
 }
 
-/// **Grant the *running* thread the cycle counter, for tests only** (milestone 229).
+/// Grant the running thread the cycle counter, in system tests only, which breaks the embryo rule
+/// [`grant_cycle_counter`] enforces so the EL0 half can be exercised without a syscall method.
 ///
-/// This deliberately breaks the rule [`grant_cycle_counter`] enforces, which is why it is
-/// `#[cfg(test)]` and cannot exist in a shipped kernel. It is here because milestone 229 shipped
-/// the mechanism without the syscall method that would set it, so there is no honest userspace
-/// route to a granted thread and the alternative was to leave the EL0 half of the mechanism
-/// unexercised. Same spirit as the `soak` and `fastpath_pad` affordances: a door that exists only
-/// in a build nobody runs.
-///
-/// It writes the register itself as well as the field, because the calling thread is already
-/// running and will not pass through `schedule`'s switch again before it drops to EL0. Every later
-/// switch back into this thread re-applies the same value from the field, which is the ordinary
-/// path.
+/// It writes the register as well as the field, because the caller will not pass through
+/// `schedule`'s switch again before it drops to EL0; later switches reapply the field.
 #[cfg(feature = "system_tests")]
 pub fn grant_cycle_counter_to_current() {
     {
@@ -103,14 +67,13 @@ pub fn grant_cycle_counter_to_current() {
     crate::arch::timer::set_cycle_counter_grant(true);
 }
 
-/// [`configure_thread_control_block`], and the thread's first thread pointer with it (milestone
-/// 812, §269 (how threads share a process) fork 4; Linux's `CLONE_SETTLS`). `CONFIGURE` reads it
-/// from the sixth argument register, which every caller built before 812 sends as zero, and zero is
-/// what a thread had before there was a field to hold it.
+/// [`configure_thread_control_block`], and the thread's first thread pointer with it (§269 (how
+/// threads share a process) fork 4; Linux's `CLONE_SETTLS`). Returns the address of the thread's
+/// current-CPU page, or zero if the space has none.
 ///
-/// Refused with `BadPointer` before anything is bound if it is neither zero nor a user address, so
-/// a refusal leaves the embryo exactly as it was. Set in the same critical section as the space and
-/// the entry, so a `START` racing this `CONFIGURE` sees all three or none.
+/// `thread_pointer` comes from `CONFIGURE`'s sixth argument register, zero for none. Refused with
+/// `BadPointer` before anything is bound if it is neither zero nor a user address. The space, the
+/// entry and the pointer are set in one critical section, so a racing `START` sees all or none.
 ///
 /// Name: provisional (milestone 812 (`std::thread::spawn` runs real threads in one address space)'s
 /// lane, 2026-10-10 UTC).
@@ -133,14 +96,9 @@ pub fn configure_thread_control_block_with_thread_pointer(
         }
     }
 
-    // **This is the moment a bare address space becomes a thread's**, so it is the moment the
-    // current-CPU page belongs in it (calef's 2026-09-21 ruling on a thread observing itself), and
-    // `bind_user_address_space` attaches it before handing over the copy. The closure runs under the
-    // registry's lock (`ADDRESS_SPACES`, 61) and takes `IPC_TABLES` (60) beneath it, so the
-    // registry's bound mark and the thread's copy are written in one critical section.
-    // The thread's current-CPU page is its space's slot 0, and its address is `CONFIGURE`'s result
-    // (milestone 812, §269 fork 6 and calef's answer to question 2 on #1892); zero if the space
-    // could not be given one, which a reader sees as an unmapped page.
+    // The current-CPU page is attached when a bare space becomes a thread's. The closure runs
+    // under the registry's lock (`ADDRESS_SPACES`, 61) and takes `IPC_TABLES` (60) beneath it, so
+    // the bound mark and the thread's copy are written in one critical section.
     let mut page = 0;
     crate::user::bind_user_address_space(aspace_name, |bound| {
         if bound.has_current_cpu_page() {
@@ -160,13 +118,13 @@ pub fn configure_thread_control_block_with_thread_pointer(
     Ok(page)
 }
 
-/// **`CONFIGURE` given a process capability with `BIND`** (milestone 812 (`std::thread::spawn` runs
-/// real threads in one address space), §269 (how threads share a process) fork 1 as ruled on pull
-/// request #1892): join the embryo `tid` to `pid` and set its entry, stack and thread pointer. The
-/// thread runs in the process's space with the process's capability table. `Gone` for a process
-/// that has ended; `WrongObject` for a thread that is not an embryo or that carries a slot the
-/// process's table already holds
-/// (`process::join`). Nothing changes on a refusal.
+/// `CONFIGURE` given a process capability with `BIND` (§269 fork 1): join the embryo `tid` to the
+/// process `pid` and set its entry, stack and thread pointer, so it runs in the process's space
+/// with the process's capability table. Returns the thread's current-CPU page address.
+///
+/// `Gone` for a process that has ended; `OutOfMemory` when the process has no thread page left;
+/// `WrongObject` for a thread that is not an unconfigured embryo or that carries a slot the
+/// process's table already holds (`process::join`). Nothing changes on a refusal.
 ///
 /// Name: provisional (milestone 812's lane, 2026-10-10 UTC).
 pub fn configure_thread_control_block_joining(
@@ -179,9 +137,7 @@ pub fn configure_thread_control_block_joining(
     if !is_thread_pointer(thread_pointer) {
         return Err(abi::Error::BadPointer);
     }
-    // The thread's own current-CPU page first (milestone 812, §269 fork 6), because the registry's
-    // lock ranks above `IPC_TABLES`. Every slot taken is the per-process thread limit:
-    // `OutOfMemory`, the answer for a resource the caller cannot have more of.
+    // The thread page first, because the registry's lock ranks above `IPC_TABLES`.
     let space = super::process::space_name_of(pid).ok_or(abi::Error::Gone)?;
     let (slot, page, kernel_va) =
         crate::user::take_thread_page(space).ok_or(abi::Error::OutOfMemory)?;
@@ -206,14 +162,11 @@ pub fn configure_thread_control_block_joining(
     joined
 }
 
-/// **Is this a value a thread pointer may hold**: zero (none), or an address in the user half.
+/// Whether `value` may be a thread pointer: zero (none), or an address in the user half.
 ///
-/// Not alignment, and not whether anything is mapped there: the register is a pointer the program
-/// dereferences itself, and a bad one faults the program that chose it. The half matters because
-/// `x86_64`'s `wrmsr` to `IA32_FS_BASE` raises `#GP` in the kernel on a non-canonical value, and a
-/// kernel-half value is a pointer no user access through it could use. The same rule on all three
-/// architectures, so a program refused on one is refused on every one (§19 (architectural parity is
-/// a tenet)).
+/// Not alignment or mapping: a bad pointer faults the program that chose it. The half matters
+/// because `x86_64`'s `wrmsr` to `IA32_FS_BASE` raises `#GP` in the kernel on a non-canonical
+/// value. The same rule on every architecture (§19 (architectural parity is a tenet)).
 fn is_thread_pointer(value: u64) -> bool {
     use paging::PageFormat;
     value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
@@ -232,17 +185,13 @@ pub fn current_thread_pointer() -> u64 {
         .map_or(0, |t| t.thread_pointer)
 }
 
-/// **`ThreadControlBlock::SET_THREAD_POINTER`**: change the thread pointer of the thread `tid`
-/// names (milestone 812, §269 fork 4; seL4's `SetTLSBase`).
+/// `ThreadControlBlock::SET_THREAD_POINTER`: set the thread pointer of the thread `tid` to `value`
+/// (§269 fork 4; seL4's `SetTLSBase`).
 ///
-/// Two targets are allowed, and the refusal of the third is what keeps this simple. An **embryo**
-/// (not started) takes the value at its first switch in. **The caller itself** takes it now: the
-/// field and the register (`arch::thread_pointer::set_live`, given `frame`, the frame the caller
-/// returns through) change under one hold of `IPC_TABLES`. One hold, because on aarch64 a switch
-/// between the two writes would save the old register over the new field. **Any other started thread is refused with
-/// `WrongObject`**: its register lives on whatever core it runs on, or in a saved context or trap
-/// frame whose location differs per architecture, and nothing `std` does needs to reach it. seL4
-/// allows it; the refusal can be lifted additively if a debugger ever wants it.
+/// An embryo takes it at its first switch in. The caller takes it now, the field and the register
+/// (through `frame`, the frame it returns through) under one hold of `IPC_TABLES`, since on aarch64
+/// a switch between the two writes would save the old register over the new field. Any other
+/// started thread is refused with `WrongObject` (notes/thread-pointer.md).
 ///
 /// `BadPointer` for a value [`is_thread_pointer`] refuses, before anything changes.
 ///

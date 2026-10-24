@@ -4,59 +4,10 @@
 //! archive file)'s option M2, ruled by calef on 2026-09-26 (UTC). Every public name here is
 //! provisional; calef names public items.
 //!
-//! **Why program headers and not section headers.** A linker gathers allocated `SHT_NOTE` sections
-//! into a `PT_NOTE` segment, and the loader already walks the program-header table to find
-//! `PT_LOAD`. So a note is one more `p_type` in a table this crate already bounds and trusts, and
-//! the crate keeps its "program headers only" property. Section headers are the other way in, and
-//! they cost more than a second table: `strip --strip-section-headers` and `sstrip` delete them from
-//! a working binary, so a reader that needed them would lose the manifest to a tool that leaves the
-//! program runnable.
-//!
-//! **Nothing here runs inside [`Elf::parse`].** The loader's path is unchanged, byte for byte, and
-//! the kernel never calls [`Elf::note`]: only a program that reads manifests (the shell, the
-//! progenitor) does, and only on the bytes it was handed to spawn.
-//!
-
-//! # Two ways in, one rule
-//!
-//! The progenitor holds a whole image and asks [`Elf::note`]. The shell does not: it streams a
-//! file into frames one page at a time and never holds all of it, so it reads the first page,
-//! finds the `PT_NOTE` headers there with [`NoteSegments::from_head`], and reads each segment's
-//! bytes on its own. Both paths walk the same headers with the same iterator and judge every
-//! segment with the same [`NoteSearch`], so "the first copy or the last?" and "is this note
-//! malformed?" have one answer however the bytes arrived. The only thing the streaming path adds is
-//! a limit on how much it will hold, which is the caller's and fails closed.
-//!
-//! # The format, and where the specification and practice disagree
-//!
-//! Each note is three little-endian `u32`s, `namesz`, `descsz`, `type`, then `namesz` bytes of owner
-//! name (NUL included), padded, then `descsz` bytes of descriptor, padded. The gABI says an ELF64
-//! note's words and padding are 8 bytes. **Nobody ships that.** Every toolchain writes 4-byte
-//! words on ELF64 and 4-byte padding, except `.note.gnu.property`, which is 8-byte padded and sits
-//! in its own `PT_NOTE` with `p_align` 8. So the padding is read from the segment's `p_align`: 0, 1
-//! and 4 mean 4, 8 means 8, and anything else is refused. That is LLVM's `Elf_Note_Iterator` rule,
-//! which is what `llvm-readelf` uses.
-//!
-
-//! # What a hostile file can try, and what happens
-//!
-//! - A `namesz` or `descsz` near `u32::MAX`: the extent arithmetic is checked, proved total by
-//!   `verification::note_extent_never_panics`.
-//! - A note whose padded end runs past its segment: refused ([`NoteError::Truncated`]), as LLVM
-//!   refuses "ELF note overflows container". A lenient reader here would be a second opinion about
-//!   where the last note ends.
-//! - A `PT_NOTE` that points outside the file: refused ([`NoteError::SegmentOutOfBounds`]).
-//! - **The same owner and type twice**: refused ([`NoteError::Duplicate`]). This is the one that is
-//!   not about memory safety. The shell and the progenitor both read the manifest, and if one took
-//!   the first copy and the other the last, the person at the prompt would approve one manifest and
-//!   the progenitor would endow another. Refusing ambiguity makes "which one?" unaskable.
-//! - An owner name with no terminating NUL where it must have one: the note is not a match, since
-//!   the comparison includes the NUL.
-//! - Up to 64 `PT_NOTE` headers (the crate's existing `MAX_PHNUM` bound), each walked once; each
-//!   note advances the cursor by at least 12 bytes (proved), so the walk ends.
-//! - A header table that is not inside the bytes the reader was given: refused
-//!   ([`NoteError::NotReadable`]), proved panic-free by
-//!   `verification::note_segments_from_a_head_never_panic`.
+//! Nothing here runs inside [`Elf::parse`], and the kernel never calls [`Elf::note`]. A whole-image
+//! reader uses [`Elf::note`]; a streaming reader uses [`NoteSegments::from_head`] and feeds each
+//! segment to one [`NoteSearch`]. Both refuse a malformed note and a duplicate the same way. See
+//! notes/elf/parser.md ("Finding a note") for the format, the padding rule and the hostile cases.
 
 use super::{
     EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAX_PHNUM, PHDR_SIZE, u16le, u32le, u64le,
@@ -230,7 +181,8 @@ fn align_up(x: usize, align: usize) -> Option<usize> {
     Some(x.checked_add(mask)? & !mask)
 }
 
-/// `p_align` to note padding, by LLVM's rule.
+/// `p_align` to note padding, by LLVM's `Elf_Note_Iterator` rule: the gABI says 8-byte padding for
+/// ELF64, toolchains write 4 except under `p_align` 8. See notes/elf/parser.md.
 fn padding(p_align: u64) -> Result<usize, NoteError> {
     match p_align {
         0 | 1 | 4 => Ok(4),
@@ -318,7 +270,7 @@ impl<'a> Elf<'a> {
     ///
     /// `owner` is the name without its NUL (`b"nife"`). Every `PT_NOTE` segment is walked in full,
     /// so a malformed note anywhere refuses the lookup, and so does a second copy of the one asked
-    /// for; see the module documentation for why both are refusals rather than tolerances.
+    /// for; notes/elf/parser.md says why both are refusals rather than tolerances.
     pub fn note(&self, owner: &[u8], kind: u32) -> Result<Option<&'a [u8]>, NoteError> {
         let bytes: &'a [u8] = self.bytes;
         let mut search = NoteSearch::new(owner, kind);
