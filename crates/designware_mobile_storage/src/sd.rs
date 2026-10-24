@@ -1,23 +1,12 @@
-//! **Bringing a card up, and reading and writing its blocks.**
-//!
-//! The identification sequence is the SD Physical Layer Simplified Specification's figure 4-2
-//! (version 9.10), with JEDEC JESD84's eMMC sequence beside it, in the order OpenBSD's
-//! `sdmmc_mem_enable` and `sdmmc_mem_init` take them (`sys/dev/sdmmc/sdmmc_mem.c`, ISC; the crate
-//! root carries the notice). Which kind of card is in the slot is decided by what answers:
-//!
-//! 1. `CMD0`, everything to idle, at 400 kHz.
-//! 2. `CMD8` with the check pattern. An SD 2.0 card echoes it; an older SD card and an eMMC do
-//!    not answer.
-//! 3. `ACMD41` (`CMD55`, then `CMD41`) until the card reports power-up complete. An eMMC does not
-//!    answer `CMD55`, which is how it is told from an SD 1.x card; it is then brought up with
-//!    `CMD1` instead.
-//! 4. `CMD2` for the CID, `CMD3` for the relative address (the card picks it on SD; the host
-//!    assigns it on eMMC), `CMD9` for the CSD, `CMD7` to select.
-//! 5. SD: `ACMD6` to 4-bit if the slot is wired for it, and `CMD16` to 512 bytes. eMMC: `CMD8`
-//!    reads the 512-byte `EXT_CSD` for the true sector count; the bus stays 1-bit (BUGS).
-//! 6. The clock goes up to 25 MHz, default speed. High speed and UHS modes are not attempted.
-//!
-//! Every step's failure names the step, so a bench transcript that stops says where.
+//! Bringing a card up, and reading and writing its blocks. Identification is the SD Physical Layer
+//! Simplified Specification's figure 4-2 (version 9.10), with JEDEC JESD84's eMMC sequence beside
+//! it, in the order OpenBSD's `sdmmc_mem_enable` and `sdmmc_mem_init` take them
+//! (`sys/dev/sdmmc/sdmmc_mem.c`, ISC; the crate root carries the notice). What answers decides the
+//! card: an SD 2.0 card echoes `CMD8`'s check pattern, and an eMMC does not answer `CMD55`, which
+//! tells it from an SD 1.x card and brings it up with `CMD1`. The clock then goes from 400 kHz to
+//! 25 MHz, default speed; high speed and UHS are not attempted, and an eMMC's bus stays 1-bit.
+//! Every step's failure names the step, so a bench transcript that stops says where. The steps,
+//! `CMD0` to `CMD16` and `EXT_CSD`, are in notes/designware-mobile-storage/driver.md.
 
 use crate::card::{
     self, Cid, Csd, IF_COND_ARG, MMC_OP_COND_ARG, OCR_BUSY_DONE, OCR_HIGH_CAPACITY, R1_ERRORS,

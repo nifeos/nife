@@ -11,10 +11,9 @@ lane, so the wall-clock a CI round costs is free and the memory it saves is not.
 
     git push -u origin HEAD
     gh pr ready <N>
+    gh pr merge <N> --auto --merge     # Step 4: armed while CI runs
     gh run list --branch "$(git branch --show-current)" --limit 5
     # WAITING <ci-run-id> <verify-run-id> on ci.yml + verify.yml for <branch>
-    # ... green ...
-    gh pr merge <N> --auto --merge
 
 ## Step 1: run the cheap gates locally, because a 25-minute run must not die on a typo
 
@@ -83,18 +82,46 @@ A red result is addressed the same way it arrived. Read it with
 about half an hour of wall-clock and nothing else, which is the trade this brief is making:
 rounds are cheap because no person is waiting, and the laptop's memory is not spent at all.
 
-## Step 4: once green, arm
+## Step 4: arm after the last push, without waiting for green
 
     gh pr merge <N> --auto --merge
 
 The merge strategy is the merge queue's; `--auto` hands the pull request to it and the group
-build arbitrates. Arm it only once no run is in flight, and push nothing afterward. A push to a
-queued branch removes the pull request from the queue, throws away its group build and cancels
-its auto-merge. The pre-push hook refuses it; see `notes/merge-queue.md`, "A push to a queued
-branch". A ready pull request left unarmed for 30 minutes is labelled `needs-maintainer` for a
-maintainer session to pick up. The 30 minutes count only while no `CI` or `verify` run is queued or
-in progress on its head. They restart when the last one finishes, so the 25 to 47 minutes of CI
-between marking ready and arming do not spend them.
+build arbitrates. Arm as soon as the pull request is ready and its last push is made, while CI is
+still running (calef, 2026-10-24 UTC). An early arm cannot land anything red. Auto-merge enqueues
+the pull request only once its required checks pass, and the merge queue then runs every required
+check again on the merge group. Waiting for green first only adds a polling round per pull request.
+`briefs/run-a-milestone-wide.md` arms the same way.
+
+Arming still waits in three cases:
+
+- The pull request is a draft. Mark it ready first, as Step 2 or the dispatch path below does.
+- It carries `needs-architect`. That hold is an architect's to release, not the queue's.
+- A check has already failed through the pull request's own fault. Fix it and push first (Step 3's
+  red path), then arm. A flake, or a tree-wide red that the diff cannot have caused, is no reason
+  to wait.
+
+Arming means you have stopped editing. If a check goes red after arming, the pull request never
+reaches the queue; fix it the same way, then confirm that auto-merge survived the push with `gh pr
+view <N> --json autoMergeRequest`, and arm again if it is null. Once the pull request is queued,
+push nothing. A push to a queued branch removes it from the queue, throws away its group build and
+cancels its auto-merge. The pre-push hook refuses it; see `notes/merge-queue.md`, "A push to a
+queued branch".
+
+An armed pull request whose checks are green can still sit outside the queue with GitHub reporting
+its merge state `BLOCKED`. The usual cause is a cancelled run left over from its draft days (the
+first BUGS entry below). Turn auto-merge off and on, which enqueues it again:
+
+    gh pr merge <N> --disable-auto && gh pr merge <N> --auto --merge
+
+If it stays `BLOCKED`, look for a cancelled run that is the newest of its workflow on the head
+commit. That is the duplicate `synchronize` in `notes/merge-queue/limitations.md`, and the merge
+drain reruns it.
+
+A ready pull request left unarmed for 30 minutes is labeled `needs-maintainer` for a maintainer
+session to pick up. The 30 minutes count only while no `CI` or `verify` run is queued or in
+progress on its head. They restart when the last one finishes, so a pull request is never labeled
+while its CI runs.
 
 ## Gating while the pull request stays draft
 
@@ -158,7 +185,8 @@ never machine-readable.
 - The claim raises suites before anyone flips anything. `opened` and `labeled` both fire the
   `pull_request` workflows on a fresh draft, and a ready flip while that wave is running cancels
   it. The flip's own wave re-proves the same head sha, so the cancellation is noise in the check
-  list, not lost proof. It still reads as a failure to anything summing conclusions, so wait out a
+  list, not lost proof. It still reads as a failure to anything summing conclusions, and it can
+  leave an armed, green pull request `BLOCKED` (Step 4 has the toggle that clears it). Wait out a
   running wave before flipping ready on a lane's first day.
 - A dispatched run and a push-triggered run share a concurrency group, so pushing immediately
   after dispatching cancels your own run. Push first, then dispatch, in that order.

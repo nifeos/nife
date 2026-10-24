@@ -180,7 +180,7 @@ benchmarks.md), LIFO return-of-pages-to-parent, and error-return for a blocked w
 What is left is the general, non-LIFO case of return-to-parent, which a full CDT buys, and we
 still have no reason to build one.
 
-## DESTROY force-kills a runaway (milestone 22, DECISIONS §16 amendment)
+## DESTROY force-kills a runaway (milestone 28 (a solid terminal: the line discipline as a component), DECISIONS §16 (object revocation) amendment)
 
 `DESTROY` used to refuse outright while a live thread occupied the region, which is correct for a
 cooperative child but leaves the shell's `^C` escalation (§24) nothing to escalate to: a thread

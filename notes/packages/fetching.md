@@ -74,6 +74,48 @@ milestone 494's bench boot proves the part. A link with no DHCP server behind it
 prompt back, as on the virtio path (milestone 590 (the booted system starts its network stack)'s
 `BUGS`).
 
+## The HTTP client's rules
+
+`crates/http_response` is the pure-logic half of the client: the request line, and a reader for the
+response that never holds the body. Plain HTTP is enough on a LAN. §196 (nife carries TLS) rules
+HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a package) a package's
+digest, not its transport, decides whether its bytes may run.
+
+The reader is incremental and holds only the head. A response arrives one socket read at a time,
+at most `socket_contract::DATA_MAX` bytes each, and the body is a package that may be a megabyte.
+That is the borrowing shape `package_archive` uses, for the same reason: the first consumer has no
+allocator.
+
+The head is parsed by `httparse`, the parser under `hyper`. It is `no_std`, has no dependencies and
+no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status tells the reader the head has
+not ended yet. The policy around it stays this crate's, because a general HTTP parser is
+deliberately more lenient than a package client should be:
+
+- `Content-Length` is required. HTTP/1.0 lets a server end a body by closing the connection, but a
+  client that accepts that cannot tell a complete package from a truncated one. The net server also
+  reports a peer's close as a failed receive after a bounded wait, not as an end. A digest would
+  still catch the truncation; refusing it says why.
+- `Transfer-Encoding` is refused, chunked included. A `GET` sent as HTTP/1.0 is never owed a
+  chunked reply, so a server sending one is not speaking to us.
+- Lines end in CRLF. `httparse` also accepts a bare LF, and a client that does can be made to
+  disagree with a proxy about where a line stops. A duplicated `Content-Length` must agree with
+  itself.
+
+The limits it carries, in full:
+
+- The head parse is not proved here. Upstream's fuzzing and its use under `hyper` vouch for it, and
+  `fuzz/fuzz_targets/http_response_feed.rs` checks that how the reads fall never changes the answer.
+  No Kani harness covers the head: the reader is not on the verification path, so
+  design/decisions/0046-dependency-rule.md takes the parser rather than proving one, and the harness
+  the hand-written parser had never finished in a CI shard's minutes.
+- `httparse` parses into a caller-supplied array and this crate has no allocator, so a head with
+  more than `MAX_HEADERS` lines is refused even under the byte cap. The array lives on the stack for
+  one parse (4 KiB).
+- `httparse` does not resume, so the head is parsed again on every read until it ends. That is
+  bounded by the head cap, quadratic in it for a peer that sends one byte per read, and not measured.
+- Header values other than the two it reads are skipped, so a malformed `Date` costs nothing; a
+  malformed line with no colon is refused.
+
 ## What proves it
 
 Green on aarch64, riscv64 and x86_64 (OVMF) on 2026-09-26. Each change below was made once on

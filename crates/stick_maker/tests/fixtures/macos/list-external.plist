@@ -1,23 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil list -plist external on the development Mac, 2026-09-19, with the disk image attached; UUIDs removed, volume names scrubbed. -->
+<!-- Shaped from a diskutil list -plist external capture, 2026-09-19, with a disk image attached; UUIDs removed, identifiers, names and sizes replaced by neutral values. Every partition scheme, content type and the layout of each disk are as captured. -->
 <plist version="1.0">
 <dict>
 	<key>AllDisks</key>
 	<array>
+		<string>disk2</string>
+		<string>disk2s1</string>
+		<string>disk2s2</string>
+		<string>disk3</string>
+		<string>disk3s1</string>
 		<string>disk4</string>
 		<string>disk4s1</string>
 		<string>disk4s2</string>
 		<string>disk5</string>
 		<string>disk5s1</string>
-		<string>disk6</string>
-		<string>disk6s1</string>
-		<string>disk6s2</string>
-		<string>disk7</string>
-		<string>disk7s1</string>
 	</array>
 	<key>AllDisksAndPartitions</key>
 	<array>
+		<dict>
+			<key>Content</key>
+			<string>GUID_partition_scheme</string>
+			<key>DeviceIdentifier</key>
+			<string>disk2</string>
+			<key>OSInternal</key>
+			<false/>
+			<key>Partitions</key>
+			<array>
+				<dict>
+					<key>Content</key>
+					<string>EFI</string>
+					<key>DeviceIdentifier</key>
+					<string>disk2s1</string>
+					<key>Size</key>
+					<integer>209715200</integer>
+					<key>VolumeName</key>
+					<string>EFI</string>
+				</dict>
+				<dict>
+					<key>Content</key>
+					<string>Apple_APFS</string>
+					<key>DeviceIdentifier</key>
+					<string>disk2s2</string>
+					<key>Size</key>
+					<integer>999790284800</integer>
+				</dict>
+			</array>
+			<key>Size</key>
+			<integer>1000000000000</integer>
+		</dict>
+		<dict>
+			<key>APFSPhysicalStores</key>
+			<array>
+				<dict>
+					<key>DeviceIdentifier</key>
+					<string>disk2s2</string>
+				</dict>
+			</array>
+			<key>APFSVolumes</key>
+			<array>
+				<dict>
+					<key>CapacityInUse</key>
+					<integer>400000000000</integer>
+					<key>DeviceIdentifier</key>
+					<string>disk3s1</string>
+					<key>MountPoint</key>
+					<string>/Volumes/Data</string>
+					<key>MountedSnapshots</key>
+					<array/>
+					<key>OSInternal</key>
+					<false/>
+					<key>Size</key>
+					<integer>999790284800</integer>
+					<key>VolumeName</key>
+					<string>Data</string>
+				</dict>
+			</array>
+			<key>Content</key>
+			<string>Apple_APFS_Container</string>
+			<key>DeviceIdentifier</key>
+			<string>disk3</string>
+			<key>OSInternal</key>
+			<false/>
+			<key>Partitions</key>
+			<array/>
+			<key>Size</key>
+			<integer>999790284800</integer>
+		</dict>
 		<dict>
 			<key>Content</key>
 			<string>GUID_partition_scheme</string>
@@ -33,75 +102,6 @@
 					<key>DeviceIdentifier</key>
 					<string>disk4s1</string>
 					<key>Size</key>
-					<integer>209715200</integer>
-					<key>VolumeName</key>
-					<string>EFI</string>
-				</dict>
-				<dict>
-					<key>Content</key>
-					<string>Apple_APFS</string>
-					<key>DeviceIdentifier</key>
-					<string>disk4s2</string>
-					<key>Size</key>
-					<integer>2000189177856</integer>
-				</dict>
-			</array>
-			<key>Size</key>
-			<integer>2000398933504</integer>
-		</dict>
-		<dict>
-			<key>APFSPhysicalStores</key>
-			<array>
-				<dict>
-					<key>DeviceIdentifier</key>
-					<string>disk4s2</string>
-				</dict>
-			</array>
-			<key>APFSVolumes</key>
-			<array>
-				<dict>
-					<key>CapacityInUse</key>
-					<integer>823344488448</integer>
-					<key>DeviceIdentifier</key>
-					<string>disk5s1</string>
-					<key>MountPoint</key>
-					<string>/Volumes/Storage</string>
-					<key>MountedSnapshots</key>
-					<array/>
-					<key>OSInternal</key>
-					<false/>
-					<key>Size</key>
-					<integer>2000189177856</integer>
-					<key>VolumeName</key>
-					<string>Storage</string>
-				</dict>
-			</array>
-			<key>Content</key>
-			<string>Apple_APFS_Container</string>
-			<key>DeviceIdentifier</key>
-			<string>disk5</string>
-			<key>OSInternal</key>
-			<false/>
-			<key>Partitions</key>
-			<array/>
-			<key>Size</key>
-			<integer>2000189177856</integer>
-		</dict>
-		<dict>
-			<key>Content</key>
-			<string>GUID_partition_scheme</string>
-			<key>DeviceIdentifier</key>
-			<string>disk6</string>
-			<key>OSInternal</key>
-			<false/>
-			<key>Partitions</key>
-			<array>
-				<dict>
-					<key>Content</key>
-					<string>EFI</string>
-					<key>DeviceIdentifier</key>
-					<string>disk6s1</string>
-					<key>Size</key>
 					<integer>314572800</integer>
 					<key>VolumeName</key>
 					<string>EFI</string>
@@ -110,23 +110,23 @@
 					<key>Content</key>
 					<string>Apple_HFS</string>
 					<key>DeviceIdentifier</key>
-					<string>disk6s2</string>
+					<string>disk4s2</string>
 					<key>MountPoint</key>
-					<string>/Volumes/Backups</string>
+					<string>/Volumes/Archive</string>
 					<key>Size</key>
-					<integer>3000110108672</integer>
+					<integer>1999685427200</integer>
 					<key>VolumeName</key>
-					<string>Backups</string>
+					<string>Archive</string>
 				</dict>
 			</array>
 			<key>Size</key>
-			<integer>3000558944256</integer>
+			<integer>2000000000000</integer>
 		</dict>
 		<dict>
 			<key>Content</key>
 			<string>FDisk_partition_scheme</string>
 			<key>DeviceIdentifier</key>
-			<string>disk7</string>
+			<string>disk5</string>
 			<key>OSInternal</key>
 			<false/>
 			<key>Partitions</key>
@@ -135,7 +135,7 @@
 					<key>Content</key>
 					<string>DOS_FAT_32</string>
 					<key>DeviceIdentifier</key>
-					<string>disk7s1</string>
+					<string>disk5s1</string>
 					<key>MountPoint</key>
 					<string>/Volumes/NIFE</string>
 					<key>Size</key>
@@ -150,16 +150,16 @@
 	</array>
 	<key>VolumesFromDisks</key>
 	<array>
-		<string>Storage</string>
-		<string>Backups</string>
+		<string>Data</string>
+		<string>Archive</string>
 		<string>NIFE</string>
 	</array>
 	<key>WholeDisks</key>
 	<array>
+		<string>disk2</string>
+		<string>disk3</string>
 		<string>disk4</string>
 		<string>disk5</string>
-		<string>disk6</string>
-		<string>disk7</string>
 	</array>
 </dict>
 </plist>

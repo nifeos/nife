@@ -1,8 +1,7 @@
 use super::*;
 
-/// **The boot-program entry every architecture's kernel loads itself**, which since milestone 266
-/// is one name for one program rather than an alias over three. Before that this constant had to
-/// pick the entry both ISAs happened to share and say so in a parenthesis.
+/// **The boot-program entry every architecture's kernel loads itself**: one name for one program
+/// (milestone 266 (one progenitor, on all three architectures)), not an alias over three.
 const BOOT_PROGRAM: &str = super::PROGENITOR_ENTRY;
 
 /// **The initial ramdisk in RAM is the initial ramdisk this kernel was built against.** The
@@ -54,17 +53,19 @@ fn a_tampered_boot_program_and_an_unmeasured_name_are_both_refused() {
 // ===========================================================================================
 // The second link (milestone 104): the progenitor measures what the progenitor loads.
 //
-// The kernel's part is one digest, checked above's way. The progenitor's part is a table in the archive it
-// looks every program up in before loading it. These prove the link composes without booting the progenitor:
-// the digests come out of the archive the running kernel was handed, the trust root comes out of
-// this image's own `.rodata`, and the names come from the same places the progenitor reads them from.
+// The kernel's part is one digest, checked above's way. The progenitor's part is a table in the
+// archive it looks every program up in before loading it. These prove the link composes without
+// booting the progenitor: the digests come out of the archive the running kernel was handed, the
+// trust root comes out of this image's own `.rodata`, and the names come from the same places the
+// progenitor reads them from.
 // ===========================================================================================
 
 /// **The six components the progenitor builds the interactive system out of**, mirroring
 /// `system_initializer::boot`. Written out here rather than imported because the kernel cannot
-/// depend on that crate (it would drag `user_mode_runtime`'s EL0 syscall stubs into the kernel), which is the
-/// same seam `CHILD_STACK_PAGES` / `SHELL_EXTRA_STACK` already lives on. If a component is added
-/// there and not here, this test simply proves less; if one is added here and not packed, it fails.
+/// depend on that crate (it would drag `user_mode_runtime`'s EL0 syscall stubs into the kernel),
+/// which is the same seam `CHILD_STACK_PAGES` / `SHELL_EXTRA_STACK` already lives on. If a
+/// component is added there and not here, this test simply proves less; if one is added here and
+/// not packed, it fails.
 const BOOT_COMPONENTS: [&str; 6] = [
     "console",
     "input",
@@ -74,9 +75,10 @@ const BOOT_COMPONENTS: [&str; 6] = [
     "job_undertaker",
 ];
 
-/// **The table in RAM is the table this kernel was built against.** [`the_boot_program_measures_to_the_compiled_in_trust_root`]
-/// one link down, and the reason the progenitor's refusals are worth anything: a table an attacker could
-/// substitute would let them vouch for whatever they liked.
+/// **The table in RAM is the table this kernel was built against.**
+/// [`the_boot_program_measures_to_the_compiled_in_trust_root`] one link down, and the reason the
+/// progenitor's refusals are worth anything: a table an attacker could substitute would let them
+/// vouch for whatever they liked.
 #[test_case]
 fn the_measurement_table_measures_to_the_compiled_in_trust_root() {
     let name = measured_boot::PROGRAM_MEASUREMENTS;
@@ -93,11 +95,12 @@ fn the_measurement_table_measures_to_the_compiled_in_trust_root() {
     );
 }
 
-/// **Every program the progenitor loads is named in the table, and the bytes agree.** The end-to-end proof of
-/// the chain's second link, and the one that would catch the failure that actually threatens it:
-/// a program packed into the archive and left out of the table boots fine and is silently
-/// unloadable, because `Unmeasured` is a refusal. Nothing here is hard-coded; the expected digests
-/// come out of the archive's own table and the bytes out of the archive's own entries.
+/// **Every program the progenitor loads is named in the table, and the bytes agree.** The
+/// end-to-end proof of the chain's second link, and the one that would catch the failure that
+/// actually threatens it: a program packed into the archive and left out of the table boots fine
+/// and is silently unloadable, because `Unmeasured` is a refusal. Nothing here is hard-coded; the
+/// expected digests come out of the archive's own table and the bytes out of the archive's own
+/// entries.
 ///
 /// Falsification: unfalsified. Renamed by milestone 405 (the nine `INIT` roles), which ran it green
 /// on all three architectures but did not break the code it guards to watch it go red.
@@ -117,8 +120,8 @@ fn every_program_the_progenitor_loads_is_vouched_for_by_the_measurement_table() 
         );
         checked += 1;
     }
-    // The spawnable half, taken from the same enum the progenitor indexes (`grant_plan::Program`), so a program
-    // added to the prompt is covered here without anyone remembering to add it.
+    // The spawnable half, taken from the same enum the progenitor indexes (`grant_plan::Program`),
+    // so a program added to the prompt is covered here without anyone remembering to add it.
     for id in 0..grant_plan::PROGRAM_COUNT {
         let Some(name) = grant_plan::Program::from_id(id as u64).map(|p| p.name()) else {
             continue;

@@ -1,22 +1,16 @@
 //! **A user address space**: its page table, the frames it owns, its address-space identifier, and
-//! what its `Drop` gives back.
-//!
-//! Cut out of `user.rs` unchanged by milestone 872 (the kernel's user-mode file is split along its
-//! seams), which left the parent an index.
+//! what its `Drop` gives back. See notes/user-address-spaces.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
 
 use super::*;
 
-/// A user address space: an L0 table for `TTBR0`, and every frame that hangs off it.
+/// A user address space: a root table for `TTBR0`, the region every page hanging off it comes
+/// from, its TLB tag and its current-CPU pages.
 ///
-/// The `frames` vec holds **both** the pages we mapped and the intermediate page tables the
-/// mapper allocated to reach them, because the allocator we hand the `Mapper` records
-/// everything it hands out. That is the fix for the leak milestone 6 found the hard way
-/// (`unmap_page` frees a leaf and leaves its L1/L2/L3 standing), applied *before* it bites:
-/// an address space dies all at once, so we do not need `unmap` at all. We free the frames and
-/// throw the whole table away.
+/// An address space dies all at once: `Drop` destroys its region, tables and leaves alike, rather
+/// than unmapping page by page. See notes/user-address-spaces.md.
 pub struct AddressSpace {
     pub(super) root: PageFrame,
     /// **This address space's TLB tag, for life** (milestone 15; `crates/address_space_identifier`). Every user
@@ -35,29 +29,14 @@ pub struct AddressSpace {
     /// address space and only one of them owns its memory**. See [`Backing`].
     pub(super) backing: Backing,
 
-    /// **The frame this space's thread reads its own CPU out of**, or `None` if it has none.
+    /// **The frame this space's thread reads its own CPU out of, and its direct-map address**, or
+    /// `None` if it has none: slot 0 of the space's thread pages (milestone 812), for a thread that
+    /// is a process of its own or a process's first member.
     ///
-    /// calef ruled on 2026-09-21 that a thread observing *itself* is a per-thread page rather than
-    /// a crossing, because the consumer is a memory allocator asking on every allocation. (That
-    /// ruling's `design/decisions/` section is on another branch and not on `main` yet, so it is
-    /// named here rather than cited.) `crates/current_cpu_contract` holds the layout and the
-    /// argument; this field is the kernel's end of it.
-    ///
-    /// **This is slot 0 of the space's thread pages** (milestone 812 (`std::thread::spawn` runs real
-    /// threads in one address space)): the page of a thread that is a process of its own, or of a
-    /// process's first member. Every other member of a process has its own, in [`Self::thread_pages`].
-    ///
-    /// Allocated from the global frame allocator rather than retyped from `backing`'s region, which
-    /// is the one place this differs from every other page a space owns. A lent region is sized by
-    /// whoever lent it, and spending one more page of it unconditionally is exactly what cost two
-    /// regressions when the timebase page tried it in `user_address_space_create`; the comment
-    /// recording that is still beside that function. So `Drop` frees this frame by hand, the one
-    /// thing in this struct that `memory_region::destroy` does not cover.
-    ///
-    /// **The frame and its direct-map address**, the second worked out once by
-    /// `attach_current_cpu_page` rather than on every switch: release builds check overflow
-    /// (notes/overflow-checks.md), so recomputing `phys_to_virt` in `publish_current_cpu` put a
-    /// check on the hottest path that the attach had already passed for the same frame.
+    /// `crates/current_cpu_contract` holds the layout and calef's ruling of 2026-09-21 (a thread
+    /// observing itself is a per-thread page). The frame comes from the global frame allocator, not
+    /// `backing`'s region, so `Drop` frees it by hand. The address is worked out once at attach, to
+    /// keep an overflow check off the context switch (notes/overflow-checks.md).
     pub(super) current_cpu_page: Option<(PageFrame, u64)>,
 
     /// **The other threads' current-CPU pages** (milestone 812 (`std::thread::spawn` runs real
@@ -76,30 +55,13 @@ pub struct AddressSpace {
     pub(crate) thread_pages_in_use: u16,
 }
 
-/// **Who returns the region an [`AddressSpace`] spends, and the reason this is a type rather
-/// than a comment.**
+/// **Who returns the region an [`AddressSpace`] spends.**
 ///
-/// A space is built two ways, and they differ in exactly this. [`AddressSpace::new`] carves its
-/// own region out of the frame allocator, so nobody else has a name for it and its `Drop` is the
-/// only thing that can ever free it. [`user_address_space_create`] is handed a region that the caller
-/// already holds a `MemoryRegion` capability to (the `RETYPE_OBJ(ADDRESS_SPACE)` engine, milestone 19b), and
-/// that caller reclaims it with `MemoryRegion::DESTROY`. **A lent region has two names for one run of
-/// memory, and only one of them may free it.**
-///
-/// Until 2026-08-18 both cases stored a bare `u64` and `Drop` called `memory_region::destroy`
-/// unconditionally, on the theory that a lent region is still pinned (`retype_object_page` pins,
-/// `sched::reclaim_region` unpins) so the borrower's `destroy` is refused. That reasoning holds
-/// only while the pin is still set, and `reclaim_region` clears it **before** the reaper's
-/// deferred drop can land: `sched::finish_switch` hoists a dead thread's space out from under
-/// `IPC_TABLES`, releases the lock, and only then drops it. Two `memory_region::destroy` calls for one
-/// region then overlap, both pass the refusal check, and both free every page of the run. That is
-/// the intermittent `double free of frame 0x82a3e000` in
-/// `force_kill_tests::destroy_reclaims_a_region_whose_resident_is_blocked_in_receive`
-/// (notes/object-revocation.md BUGS, one sighting in 45 runs on riscv64).
-///
-/// Making it a two-variant enum with the name inside is rung one of AGENTS.md's ladder: a space
-/// cannot be constructed without saying who frees its region, so the borrower's `Drop` cannot
-/// free memory it does not own even if the pin is gone.
+/// [`AddressSpace::new`] carves its own region, which nobody else can name, so its `Drop` frees it.
+/// [`user_address_space_create`] is lent a region its caller holds a `MemoryRegion` capability to
+/// and reclaims with `MemoryRegion::DESTROY` (milestone 19b (run a real workload)). Two names for
+/// one run of memory, and only one may free it: a type, so no space can be built without saying
+/// which. See notes/user-address-spaces.md.
 #[derive(Clone, Copy)]
 pub(super) enum Backing {
     /// The space carved this region itself and holds the only name for it. `Drop` frees it.
@@ -125,19 +87,9 @@ impl Backing {
 const AS_OVERHEAD: u64 = 16;
 
 /// **The window cost [`AS_OVERHEAD`]'s margin already carries**, which [`load`] subtracts rather
-/// than charging a second time.
-///
-/// One log page ([`crate::revoke::log_pages_for`]), which is 170 recorded mappings, and no table
-/// pages, because a window of that size touches at most one 2 MiB L3 that the "handful of L3s"
-/// above is already for. Every caller in this tree but one maps a handful of pages and lands
-/// inside it.
-///
-/// **It is subtracted because charging it again is measurable and was measured.** The first
-/// version of this accounting charged the full window and the aarch64 suite's frame ledger went
-/// from 22249 kept frames to 22317: one frame per long-lived process, permanently, reserved into a
-/// region that never used it, to fix a window that one caller has. A budget that is right for the
-/// exceptional caller and wasteful for all sixty-eight ordinary ones is the wrong shape; what a
-/// caller owes is the cost **above** what the overhead was always providing.
+/// than charging a second time: one log page ([`crate::revoke::log_pages_for`], 170 recorded
+/// mappings) and no table pages, since such a window touches at most one 2 MiB L3. Charging it
+/// again costs a frame per long-lived process; see notes/user-address-spaces.md.
 pub(super) const WINDOW_IN_OVERHEAD: u64 = 1;
 
 impl AddressSpace {
@@ -180,11 +132,8 @@ impl AddressSpace {
             thread_pages_in_use: 0,
         };
 
-        // Unconditional, here rather than at the six places that build a process by hand, for the
-        // reason `map_timebase_page` learned empirically: `load`'s own coverage misses every
-        // kernel-built spawn, and each one found that out as a page fault. Every space this
-        // function returns is a space a thread will run in, so this is the one place that covers
-        // all of them and cannot be forgotten by a seventh.
+        // Here rather than at each hand-built spawn: every space this returns is one a thread will
+        // run in, so no seventh builder can forget it.
         space.attach_current_cpu_page();
 
         Some(space)
@@ -192,16 +141,10 @@ impl AddressSpace {
 
     /// **Give this space the page its thread reads its own CPU from**, if it has not got one.
     ///
-    /// Idempotent, because two paths reach it: `new` for the spaces the kernel builds, and
-    /// `sched::configure_thread_control_block` for the ones userspace builds and hands over. A
-    /// space that goes through both gets one page.
-    ///
-    /// **Every failure is silent and leaves the space without a page**, which is deliberate and is
-    /// the honest shape rather than the convenient one: a thread with no page reads an unmapped
-    /// address, and a thread with a page reads the truth, but a `load` that failed outright because
-    /// one frame was unavailable would turn a diagnostic convenience into a reason a program will
-    /// not start. The states are told apart at the reader (`current_cpu_contract::CurrentCpuPage`
-    /// answers `None`), which is where somebody can act on it.
+    /// Idempotent: `new` reaches it for the spaces the kernel builds, and
+    /// `sched::configure_thread_control_block` for the ones userspace hands over. Every failure is
+    /// silent and leaves the space without a page, so a missing frame cannot stop a program
+    /// starting; the reader (`current_cpu_contract::CurrentCpuPage`) answers `None`.
     pub fn attach_current_cpu_page(&mut self) {
         if self.current_cpu_page.is_some() {
             return;
@@ -210,12 +153,9 @@ impl AddressSpace {
             return;
         };
 
-        // Zeroed above, then stamped: the magic makes a prepared page tell itself from a frame
-        // nobody wrote, and the sentinel makes "this thread has never run" a state rather than
-        // CPU 0. `alloc_zeroed` rather than `alloc` because the *rest* of this frame is mapped
-        // into the process too, and whatever the last owner left in it would go with it.
-        // The allowance (milestone 812, §269 fork 7): the cores this process may use, which is the
-        // online count until something grants fewer.
+        // Zeroed, because the whole frame is mapped into the process; stamped, so a prepared page
+        // tells itself from a stray frame and "never run" is not CPU 0. The allowance is the online
+        // core count until something grants fewer (§269 fork 7).
         let bytes = current_cpu_contract::build_page_allowing(
             u64::from(crate::smp::online_harts_mask().count_ones()),
             crate::arch::timer::TICK_HZ,
@@ -249,14 +189,11 @@ impl AddressSpace {
     /// **Publish the core this space's thread is about to run on.** Called from the context
     /// switch, on the core doing the switching, which is the core the thread will execute on.
     ///
-    /// One branch and one relaxed store when the space has a page, one branch when it has not. The
-    /// ordering argument is `current_cpu_contract`'s and is not repeated here; its short form is
-    /// that writer and reader are the same hardware thread, and that two successive writers are
-    /// ordered by the scheduler's own release/acquire handoff rather than by anything this adds.
-    ///
-    /// The context switch reads [`BoundSpace::publish_current_cpu`] instead since §249, because the
-    /// space lives in the registry and the thread keeps a copy; this form is the tests' way to make
-    /// the same write by hand.
+    /// One relaxed store: writer and reader are the same hardware thread, and two successive
+    /// writers are ordered by the scheduler's own release/acquire handoff (`current_cpu_contract`
+    /// has the argument). The context switch
+    /// reads [`BoundSpace::publish_current_cpu`] instead (§249 (a running address space stays
+    /// nameable)); this form is the tests' way to make the same write by hand.
     #[cfg(any(test, feature = "system_tests"))]
     #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
     #[inline]
@@ -305,43 +242,16 @@ impl AddressSpace {
         Ok(page)
     }
 
-    /// Map an **existing** physical page into this address space, at `va`, with `flags`.
+    /// Map an **existing** physical page at `va` with `flags`, recording the mapping under `under`.
     ///
-    /// The frame is **not** recorded for freeing, because we do not own it: it is either a
-    /// device's MMIO (the PL011, for a console server) or a page **shared** with another address
-    /// space (a message buffer). Freeing MMIO is meaningless, and freeing a shared page when one
-    /// of its two holders dies would hand live memory to the allocator. So `Drop` leaves it
-    /// alone. The intermediate page tables reaching it *are* recorded, exactly as in `map_new`,
-    /// because those genuinely belong to this address space.
-    ///
-    /// This one function is what lets a driver leave the kernel: it is how the UART's registers
-    /// get into a userspace server's address space, and how a shared buffer gets into both a
-    /// client's and a server's.
-    ///
-    /// **The mapping is recorded** (`under`), because a mapping revocation cannot see is the
-    /// DECISIONS §13 (capability revocation and untyped reclamation) use-after-free. Not freeing a
-    /// frame (the paragraph above) and not being able to unmap it are unrelated. An unrecordable
-    /// mapping is unmapped and refused as `OutOfPageFrames`, as at the `PageFrame::MAP` syscall.
-    ///
-    /// `under` says which capability's authority made this mapping, and it is a required argument
-    /// with no default for [`crate::revoke::PageMapSource`]'s own reason (AGENTS.md's ladder, rung
-    /// one). Every kernel-wiring caller passes `NoCapability`, truthfully: a [`Spawn`]`::maps`
-    /// entry, a [`DeviceRun`], the initial ramdisk and the `x86_64` timebase page are all
-    /// endowments the process holds no capability for, so the page stands as its own object and a
-    /// single-page revoke of it finds the record. [`user_address_space_map`] is the one caller that
-    /// passes a capability through, because the `MAP_INTO` syscall has one to pass.
-    ///
-    /// Every unmap sweep in `crate::revoke` is driven by the mapping log, so an unrecorded page
-    /// here would survive `PageFrame::REVOKE` of a frame shared through `Spawn::maps` (the FS
-    /// server's file channel, which [`boot_progenitor`] also grants the progenitor).
-    /// `user::spawn_mapping_revocation_tests` is the falsification.
+    /// The page is not this space's to free (device registers, or a page shared with another
+    /// space), but the mapping is recorded, because one revocation cannot see is the DECISIONS §13
+    /// (capability revocation and untyped reclamation) use-after-free; an unrecordable mapping is
+    /// unmapped and refused as `OutOfPageFrames`. See notes/user-address-spaces.md.
     ///
     /// # BUGS
-    ///
-    /// **[`Self::map_new`] still does not record**, and is deliberately left alone: its frames are
-    /// retyped from this space's own backing region and freed with it, so no capability names them
-    /// and no sweep can be asked about them. If that ever stops being true, this is the second half
-    /// of the same hole.
+    /// [`Self::map_new`] does not record: its frames die with this space's region and no capability
+    /// names them. If that changes, it is the second half of the same hole.
     pub fn map_physical(
         &mut self,
         va: u64,
@@ -356,9 +266,7 @@ impl AddressSpace {
     /// has, so a capability read under that hold and the mapping made from it are one critical
     /// section (`AddressSpace::MAP_INTO`; the hold's own docs have why).
     ///
-    /// The plain form above takes the hold for itself and therefore holds it across `map_at` too,
-    /// which it did not before 2026-10-04: one shape for both rather than a second body that maps
-    /// outside the registry and records inside it.
+    /// The plain form takes the hold itself, across `map_at` as well.
     pub fn map_physical_held(
         &mut self,
         hold: &mut crate::revoke::MappingHold,
@@ -410,30 +318,12 @@ impl AddressSpace {
     }
 
     /// **Run `body` with this space installed as the current user half, then uninstall it**, so a
-    /// kernel thread can ask the hardware's own tables a question about this space
-    /// (`mmu::translate_user`, `mmu::map_current_user_page_frame`) rather than reading back the
-    /// kernel's record of them.
+    /// kernel thread can ask the hardware's own tables about this space (`mmu::translate_user`).
     ///
-    /// The safe form of `mmu::activate_user` for every caller that wants exactly this (milestone 139
-    /// (drive the unsafe count down), 2026-10-07 UTC; name provisional). Five call sites, all system
-    /// tests, each restated that function's contract by hand; it is a fact
-    /// about this type, so it is asserted once, here. A closure rather than a guard whose `Drop`
-    /// uninstalls, because `mem::forget` is safe: a forgotten guard would end the borrow with the
-    /// space still installed, and the space could then be dropped under a live root register.
-    ///
-    /// Not for a test that reads through the user translation itself or installs a space on
-    /// another core: those carry their own arguments (`system_tests::user::tests` keeps both).
-    ///
-    /// **Interrupts are masked from the install to the uninstall, so `body` must be short and must
-    /// not block or yield.** The scheduler does not know about this install: the calling kernel
-    /// thread has no space of its own, so a switch back to it puts the reserved root in place of
-    /// this one. A timer tick inside `body` that switched away and back therefore uninstalled the
-    /// space under the question being asked, and `translate_user` answered for the kernel's empty
-    /// low half instead. That was the x86_64 OVMF flake of 2026-10-13 (UTC), merge-group run
-    /// 38345573542 ("shared page not mapped"), and it was the same race on all three
-    /// architectures. Masking also keeps the thread on this core, which a migration would break the
-    /// same way. `address_space_tests::an_installed_space_stays_installed_across_a_timer_tick` is
-    /// the witness. A body that has to block would need the space bound to the thread
+    /// A closure rather than a guard, because a guard could be `mem::forget`ten with the space still
+    /// installed. **Interrupts are masked throughout, so `body` must be short and must not block or
+    /// yield**: the scheduler does not know about this install, and a switch away and back would
+    /// uninstall it under the question. A body that blocks needs the space bound to its thread
     /// (`sched::adopt_address_space`), so the switch puts it back.
     #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests are the callers
     pub fn while_installed<R>(&self, body: impl FnOnce() -> R) -> R {
@@ -461,38 +351,23 @@ pub(super) static ASIDS: crate::sync::IrqSafeMutex<address_space_identifier::All
 
 impl Drop for AddressSpace {
     fn drop(&mut self) {
-        // Drop this address space's entries from the revocation database (§13) before its page
-        // tables are freed and reused: a stale (root, va) would send a later revoke to walk tables
-        // that now belong to someone else.
+        // Forget this space's revocation records before its tables are freed and reused: a stale
+        // (root, va) would send a later revoke into someone else's tables.
         crate::revoke::forget_root(self.root.addr());
 
-        // If we are the live address space, stop being it BEFORE the frames go back on the free
-        // list. Otherwise the TTBR0 the CPU is walking points at memory the allocator has
-        // already handed to somebody else, and the next low-half access reads whatever they put
-        // there. This is about the *walker*, not the TLB: since milestone 58 neither ISA flushes
-        // anything on a root switch, and the cached translations are dealt with by the `flush_asid`
-        // at the bottom of this function, which is the half that has to reach the other cores.
+        // Stop being the live space before the frames go back, or the walker reads freed memory.
+        // Cached translations are the `flush_asid` below, which reaches the other cores.
         if mmu::current_user_root() == self.root.addr() {
             mmu::deactivate_user();
         }
 
-        // One call: revoke anything delegated out of this region (nothing can be: the region
-        // has no capability, so userspace could never retype from it), then return the whole
-        // run, root and tables and leaves alike, to the allocator. This is the
-        // "reclaim-on-process-death" wiring §13 deferred; the frame list it replaced is gone.
-        //
-        // **Only for a region we own.** A lent one (`user_address_space_create`) belongs to whoever
-        // holds its `MemoryRegion` capability, and freeing it here is a double free of the whole run
-        // the moment `sched::reclaim_region` has already unpinned it. `Backing` carries the
-        // whole argument.
+        // Only a region this space owns: a lent one is its capability holder's (`Backing`).
         if let Backing::Owned(region) = self.backing {
             crate::memory_region::destroy(region);
         }
 
-        // The current-CPU page is the one frame this space owns that did NOT come out of its
-        // region, so `destroy` above does not cover it and ownership has to do the work by hand.
-        // Safe to do here, after the root is no longer live: nothing can read the mapping any
-        // more, and the only writer was the context switch of a thread that is gone.
+        // The current-CPU and thread pages did not come from the region, so they are freed by
+        // hand, now that the root is no longer live.
         if let Some((frame, _)) = self.current_cpu_page.take() {
             crate::memory::free(frame);
         }
@@ -503,9 +378,8 @@ impl Drop for AddressSpace {
         }
         self.thread_pages_made = 0;
 
-        // The ASID contract (crates/address_space_identifier): invalidate every TLB entry wearing our tag, THEN
-        // hand the number back. In the other order, the next owner of this ASID could hit our
-        // stale translations, which is exactly the bug tagging exists to prevent.
+        // Invalidate every TLB entry wearing our tag, THEN free the tag: in the other order its next
+        // owner could hit our stale translations.
         mmu::flush_asid(self.asid);
         ASIDS.lock().free(self.asid);
     }
