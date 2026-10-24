@@ -392,8 +392,7 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 /// initial ramdisk keep revocation-log pages sized by it, so a larger archive moves this number
 /// too. A change that grows a program can therefore move it by a few frames with no leak behind
 /// it; the `[that test kept N frames]` lines and the programs' segment pages tell the two apart. A
-/// compiler can do the same: a toolchain whose `core` or `derive` output grows a debug image moves
-/// this number with no change in the tree, so a nightly bump re-measures it.
+/// nightly that grows debug images moves it with no change in the tree, so a bump re-measures it.
 ///
 /// # BUGS
 ///
