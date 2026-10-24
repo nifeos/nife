@@ -1,29 +1,9 @@
-//! **The APFS side of milestone 38's filesystem-throughput comparison**, on this laptop's own
-//! filesystem, natively.
-//!
-//! # This one is NOT at a matched tier, and that is the first thing to know about it
-//!
-//! `bench/host/linux_fs.rs` boots under QEMU-HVF on the same machine model, the same `-cpu host`,
-//! the same `virtio-blk-device` and the same raw host image file that nife's bench boot uses, so
-//! nife and ext4 differ in the filesystem and in nothing below it. This program has none of that.
-//! It runs on macOS directly, on APFS, on the real NVMe device, with no virtio and no host image
-//! file in the way. It is therefore **a reference point, not a competitor**: it says what the
-//! hardware and a production filesystem can do when nothing is virtualized, which is the ceiling
-//! the other two are working under, and any ratio taken against it is measuring the tier as much as
-//! the filesystem. milestone 25 made the same call for the primitive suite and said so the same
-//! way.
-//!
-//! # Three variants, for the reason `linux_fs.rs` gives
-//!
-//! - **buffered**: ordinary reads and writes, served by the unified buffer cache.
-//! - **nocache**: `fcntl(F_NOCACHE)`, macOS's nearest thing to `O_DIRECT`. The bytes still go to
-//!   the device's own cache; nothing is flushed.
-//! - **fullsync**: `nocache` plus `fcntl(F_FULLFSYNC)` after every write, which is macOS's real
-//!   barrier (`fsync` on macOS does *not* flush the drive cache, which is the whole reason
-//!   `F_FULLFSYNC` exists). Strictly stronger than what nife's FS server does per write, and
-//!   printed so the strongest and weakest readings are both on the page.
-//!
-//! Native numbers are statistical (a shared desktop underneath), so take a median of a few runs.
+//! **The APFS side of milestone 38's filesystem-throughput comparison**, run natively on this
+//! laptop's APFS and real NVMe device, with no QEMU, virtio or host image file. It is a reference
+//! ceiling, not at a matched tier, so a ratio against it measures the tier as much as the
+//! filesystem. It prints buffered, `F_NOCACHE` (macOS's nearest `O_DIRECT`; nothing is flushed),
+//! and `F_NOCACHE` plus `F_FULLFSYNC` per write (macOS's real barrier, stronger than nife's
+//! per-write commit). notes/benchmarks/host-programs.md has why, and why to take a median.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O --edition 2021 bench/host/macos_fs.rs -o /tmp/macos_fs && /tmp/macos_fs
