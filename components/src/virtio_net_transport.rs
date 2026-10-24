@@ -6,7 +6,7 @@
 //! smoltcp's `phy::Device` over this NIC and the `e1000e` one. smoltcp does the TCP/IP. Everything
 //! the device DMAs stays inside the one page the spawn service maps, which the kernel's validator
 //! confines as it does the disk's; so the MTU is small (`MTU`), and full 1514-byte buffers cannot
-//! be posted. See notes/net.md and notes/net/the-driver-and-dhcp.md.
+//! be posted: a recorded caveat, not a bug (notes/net.md, notes/net/the-driver-and-dhcp.md).
 //!
 //! Name: ratified 2026-10-06 (calef, "Yes", in conversation), replacing `net_transport`, itself
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network

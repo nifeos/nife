@@ -23,7 +23,11 @@
 //! ```text
 //! $ echo the quick brown fox | wc
 //!   1 4 20
+//! $ date | wc
+//!   1 5 29
 //! $ wc < report.txt
+//!   12 84 511
+//! $ wc report.txt
 //!   12 84 511
 //! $ wc
 //!   wc: reads an input stream: name a file, redirect with '<', or pipe into it
