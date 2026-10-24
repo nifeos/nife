@@ -11,237 +11,228 @@ needs_person: yes
 
 *(Title and slug provisional.)*
 
-Reuse: GitHub's hosted runners and its plan tiers, unchanged. For the staged self-hosted option,
-GitHub's just-in-time runner API, and the refusal-by-selftest pattern of milestone 920 (an outsider
-pass is launched pinned and floor-checked). This proposal builds nothing and changes no workflow.
+Reuse: GitHub's hosted runners, plan tiers and repository settings, unchanged. For the staged
+self-hosted option, GitHub's just-in-time runner API, and the refusal-by-selftest pattern of
+milestone 920 (an outsider pass is launched pinned and floor-checked). This proposal builds nothing
+and changes no workflow or setting.
 
 Raised 2026-10-24 (UTC) by lane `maintainer/proposal-self-hosted-gating-runners`, at calef's
 request, during the run of milestone 929 (comments in the Linux style across first-party Rust).
-About 40 pull requests were in flight, and hosted CI was the only thing they waited on. The
-measurements and their method are in the appendix,
-[measurement.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/measurement.md).
+About 40 pull requests were in flight, and hosted CI was the only thing they waited on. Two
+appendices sit beside this file:
+[measurement.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/measurement.md) and
+[security.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md).
 
 ## The claim and the decision asked
 
 The claim: on 2026-10-24 the gate waited on GitHub's 60-job concurrency cap, not on the work. The
 next rented tier raises that cap eightfold for $17 a month more. An owned runner adds capacity only
-for x86_64 jobs, and only at a security cost this tree has refused twice.
+for x86_64 jobs. For a project with one maintainer, its security cost is small if forks never reach
+it.
 
 The decision: may jobs that gate a merge run on hardware the project owns, and if so, which jobs?
 [§299 (the build machine is bought)](../../decisions/0299-the-build-machine-is-bought.md) leaves
-exactly this open: "Whether anything that gates a merge runs on" the build machine. The options:
+exactly this open: "Whether anything that gates a merge runs on" the build machine.
 
-- (a) Hosted runners only. Raise the cap by renting: the Enterprise tier, as
+- (a) Hosted runners only, with the cap raised by renting the Enterprise tier, as
   [§214 (the Team plan buys runner concurrency)](../../decisions/0214-the-team-plan-buys-runner-concurrency.md)
   did with Team.
-- (b) Self-hosted runners for merge-group runs only.
-- (c) Self-hosted runners for every required check on pull requests from members, hosted runners
-  for forks.
+- (b) Self-hosted runners for merge-group runs and pushes to `main` only.
+- (c) Self-hosted runners for pull-request runs too.
 - (d) A hybrid by job type, such as the QEMU-heavy shards self-hosted.
+- (e) Limit who may open a pull request on nife to collaborators, which pairs with any of the
+  others.
 
-Recommendation: (a), by moving the organization to the Enterprise tier, measured for a week. Keep
-(b) as the staged fallback, with the preconditions under Security met before it runs a single
-gating job. Refuse (c). Treat (d) as a variant of (b), because the QEMU-heavy shards are the ones an
-owned x86_64 host cannot take.
+Recommendation: (a) now, with (e), and (b) as the staged next step under the preconditions below.
+Refuse (c). Treat (d) as a variant of (b), because the QEMU-heavy shards are the jobs an owned
+x86_64 host cannot take.
 
-Why: the hosted tier is the far larger lever, adds no failure mode, and keeps the posture
-milestone 488 (a self-hosted CI runner) protects. At equal effort (a) would still win, on security and moving
-parts.
+Why: the hosted tier is the far larger lever and adds no failure mode. (b) is cheap to make safe
+under calef's fork ruling, but it buys little until the arm64 question below is answered. At equal
+effort the order would be the same.
 
 ## The evidence, from the milestone-929 run
 
 All times UTC. Maintainer snapshots of the Actions API counted 124 runs queued and 4 in progress
 at 01:25, 151 and 6 at 03:15, and 249 and 3 at 03:32. A run is queued while any job waits, so jobs
-are the sharper reading. At 03:36:13, across every active run, 60 jobs were in progress, 20 on `ubuntu-24.04` and 40 on
-`ubuntu-24.04-arm`. Another 430 jobs waited, 257 and 173. Sixty is exactly the Team cap.
+are the sharper reading. At 03:36:13, 60 jobs were in progress, 20 on `ubuntu-24.04` and 40 on
+`ubuntu-24.04-arm`. Another 430 waited. Sixty is exactly the Team cap.
 
-- Saturation. From 00:00 to 03:30, sampled each minute, the heavy workflows (`CI`, `verify`,
-  `codeql`, `mutation gate`) ran a median of 59 jobs at once. They used 12,335 job-minutes of the
-  12,600 that 60 slots give in that time, 98%. The label bots ran in the same slots on top of that.
+- Saturation. From 00:00 to 03:30 the heavy workflows (`CI`, `verify`, `codeql`, `mutation gate`)
+  ran a median of 59 jobs at once. They used 12,335 of the 12,600 job-minutes that 60 slots give,
+  98%, with the label bots on top.
 - Waiting. On 10-24 from 00:00 to 03:36, a job's median wait for a runner was 5 to 13 minutes per
-  hour, p90 14 to 23, worst 35. On the afternoon of 10-23 it was under 0.1 minutes. The oldest
-  queued `CI` run, 40054840698, waited 11 minutes for its draft gate, a job of seconds.
+  hour, p90 14 to 23. On the afternoon of 10-23 it was under 0.1 minutes.
 - Wall clock. A full `CI` run is 26 jobs and about 128 job-minutes. Uncontended, a merge-group run
-  took a median 14 minutes (n=6, 10-23 13:00 to 23:59). Under load it took 38 minutes (n=12), and
-  a pull request's full run took 46 (n=47, worst 69).
-- Merges. `git log --first-parent` on `main` shows 14 merges from 00:00 to 03:36 on 10-24, one per
-  15 minutes. They came in a cluster of 12 between 01:06 and 01:55, then none for 101 minutes. At
-  03:36 the queue held 13 entries, and its head, #2643, had been awaiting checks since 01:59:29.
-- Repeat cost. Each pull request pays a full run and a merge-group run. Since 10-23 00:00, 53
-  branches spent 149 full `CI` runs, a median 3 each: 53 were cancelled by a later push and 31
-  failed. Thirty pull requests needed 46 merge-group runs, and nine needed more than one.
+  took a median 14 minutes. Under load it took 38, and a pull request's full run took 46.
+- Merges. `main` took 14 merges from 00:00 to 03:36 on 10-24, one per 15 minutes: 12 between 01:06
+  and 01:55, then none for 101 minutes. The queue head, #2643, had awaited checks since 01:59:29.
+- Repeat cost. Since 10-23 00:00, 53 branches spent 149 full `CI` runs, a median 3 each; 53 were
+  cancelled by a later push. Thirty pull requests needed 46 merge-group runs.
 
 The owned host doing the lane work was not the limit:
 [`briefs/run-a-milestone-wide.md`](../../../briefs/run-a-milestone-wide.md) records its CPUs about
 85% idle, because "CI runs off the host".
 
 §214 set the condition for this question: "Reconsider a self-hosted runner only if 60 concurrent
-jobs still binds." It binds, so the question is due.
+jobs still binds." It binds.
 
 ## The options
 
 ### (a) Hosted only, with the cap raised
 
 GitHub's limits reference (read 2026-10-24) gives standard hosted runners 60 concurrent jobs on
-Team and 500 on Enterprise. Public repositories pay nothing for standard runner minutes on either,
-as §214 recorded. GitHub's pricing page lists Enterprise at $21 per user per month for the first 12
-months, against Team's $4. With one seat that is $17 a month more, and the page does not state the
-price after a year.
+Team and 500 on Enterprise. Public repositories pay nothing for standard minutes on either (§214).
+The pricing page lists Enterprise at $21 per user per month for the first 12 months, against Team's
+$4: $17 a month more for one seat, with the later price unstated.
 
-At 03:36 the demand was 60 running and 430 waiting, about 490 jobs. A 500-job cap would have run
-nearly all of it at once, putting each full run back near its uncontended 14 minutes. The merge
-queue's own bound, five entries built at a time, would then decide throughput.
+At 03:36 demand was about 490 jobs. A 500-job cap would have run nearly all of it at once, putting
+each full run back near 14 minutes; the queue's five-entry build bound would then decide
+throughput. Unsettled: whether GitHub's arm64 pool supplies hundreds of public-repository jobs on
+demand. Milestone 587 (most CI jobs do not need an arm64 host) found the queue waited there, so the
+week of measurement watches that label first. Larger hosted runners lose for now: billed per minute
+(recalled), against Actions budgets capped at $0 (§214).
 
-What it does not settle: whether GitHub's arm64 pool supplies hundreds of concurrent public-repo
-jobs on demand. Milestone 587 (most CI jobs do not need an arm64 host) found arm64 was where the
-queue waited, so the week of measurement watches that label first.
+### (b) Self-hosted, merge groups and pushes to `main`
 
-Larger hosted runners lose for now: billed per minute even on a public repository (recalled), against
-Actions budgets capped at $0 (§214).
+The merge group is the critical path, so an owned runner helps most there per job. Its reach is
+small, though. Of a full run's 128 job-minutes, 84 are on `ubuntu-24.04-arm` (9 jobs) and 44 on
+`ubuntu-24.04` (17 jobs). The owned host is x86_64 (§299), where aarch64 and riscv64 run fully
+emulated.
 
-### (b) Self-hosted, merge-group runs only
+Milestone 587 kept the build-and-test shards, the CPU matrix and re-falsify on arm64, on the claim
+that an arm64 host lets the SMP guest legs exhibit weak-ordering reorderings. That claim was never
+measured. #2668 measures it now: whether an arm64 CI host catches a missing Release that an x86_64
+host misses. If it does not, those jobs can move to x86_64, and up to the whole 128 job-minutes
+becomes owned-runner work. Until #2668 reports, (b) takes only x86_64 jobs, about 7% of the
+window's demand, and frees hosted slots for arm64.
 
-The merge group is the critical path, so this is where an owned runner would help most per job.
-Its reach is small, though. Of a full run's 128 job-minutes, 84 are on `ubuntu-24.04-arm` (9 jobs)
-and 44 on `ubuntu-24.04` (17 jobs). The owned host is x86_64 (§299), where aarch64 and riscv64 run
-fully emulated.
+### (c) Self-hosted for pull requests
 
-Milestone 587 kept the build-and-test shards, the CPU matrix and re-falsify on arm64 on purpose:
-the host's weak ordering is what the SMP guest legs exercise. Moving them to an x86_64 host loses
-that coverage. Those arm64 jobs are also the longest, at 12 to 14 minutes. So (b) takes the x86_64
-jobs off the hosted pool and leaves arm64 more of the 60 slots. Merge-group x86_64 work was about
-7% of the window's demand.
-
-### (c) Self-hosted for members' pull requests, hosted for forks
-
-This is the largest win an owned host can give: pull-request runs were 7,358 of the window's
-12,335 job-minutes. It is also the widest exposure, since it runs every pushed commit on owned
-hardware before anyone has looked at it. Refused, for the reasons under Security.
+The largest win an owned host could give: pull-request runs were 7,358 of the window's 12,335
+job-minutes. Refused. calef's fork ruling is enforced most simply when no job reachable from
+`pull_request` may use an owned label at all, and (c) would replace that rule with one about whose
+branch a run came from.
 
 ### (d) Hybrid by job type
 
-The QEMU-heavy shards are the arm64 jobs above, which cannot move. What remains is x86_64 work:
-`verify`'s prove shards (49 of its 52 job-minutes), `lint`, `fuzz`, `bench` and
-`swish-check-x86_64`. Sending those for merge groups is (b); for pull requests too, (c).
+The QEMU-heavy shards are the arm64 jobs above. What remains is x86_64 work: `verify`'s prove
+shards (49 of its 52 job-minutes), `lint`, `fuzz`, `bench` and `swish-check-x86_64`. Sending those
+for merge groups is (b).
+
+### (e) Pull requests from collaborators only
+
+`gh api repos/nifeos/nife` returns `pull_request_creation_policy: all`. GitHub's documented values
+are `all` and `collaborators_only`, per repository, so other nifeos repositories keep pull requests
+open. Turning pull requests off (`has_pull_requests: false`) would end nife's own workflow, since
+every lane lands through a pull request and the merge queue.
+
+`collaborators_only` stops a stranger from opening a pull request, so no stranger's code reaches a
+workflow. It does not stop forks, issues or comments, and none of those triggers a workflow here.
+It does nothing about a stolen token. One thing is unverified: whether `nife-smelter[bot]` counts as
+a collaborator, and seven workflows open pull requests as it. The other candidates are weaker:
+interaction limits expire, fork-workflow disabling exists only for private repositories, and
+approval for every external contributor is already set. [security.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md)
+has each, read live.
 
 ## Security
 
-### What GitHub says
+### calef's ruling on forks
 
-From GitHub's secure-use reference, read 2026-10-24: self-hosted runners "should almost never be
-used for public repositories on GitHub", because "any user can open pull requests against the
-repository and compromise the environment." They "can be persistently compromised by untrusted code
-in a workflow." Just-in-time runners "perform at most one job", yet "there is no way to guarantee
-that a self-hosted runner only runs one job." A runner group admits only private repositories until
-an owner overrides it.
+calef, 2026-10-24: "we shouldn't allow forked repos to build on our infrastructure", refined the
+same day: "I could see us approving a PR into our repos to be run locally after we've done a
+review." The rule, fixed for this proposal: unreviewed fork code never runs on owned
+infrastructure. No job triggered by a fork's pull request, and no `pull_request_target` path that
+checks out fork code, ever runs on an owned runner, whatever happens to (e).
 
-### What this repository already does
+A reviewed outside change may. After review, a member pushes the exact reviewed commits to a branch
+in nifeos/nife and opens or retargets the pull request from it. From then on it is a member's pull
+request, and it reaches owned runners only through the merge queue.
 
-Every external contributor's fork run waits for approval, the default token is read-only, and
-actions are pinned by SHA (the appendix has the reads). No workflow triggers on
-`pull_request_target`, and three label bots say why in their headers. No gating workflow reads a
-secret. None of the last 1,000 pull requests came from a fork.
+This proposal does not use a label-gated `pull_request_target` that runs the fork's code. The label
+approves a pull request, not a commit. A push to the fork after approval would run unreviewed code
+with the repository's token. Re-pushing pins the reviewed commit SHAs.
 
-### Who the attacker actually is
+### The threat model
 
-Not a stranger's fork. Lanes arm their own pull requests, so the queue admits code no person has
-read. The threat is an agent steered by text it read, a dependency's build script, or a stolen
-token. So (b) and (c) differ in volume, not kind, and isolation must hold against arbitrary code.
+calef is the only contributor. Everything else is agent lanes acting for him. So the risks are:
 
-### What an attacker in a job could reach
+1. A stranger's fork pull request, since the repository is public. The ruling, the routing below
+   and (e) close it.
+2. The Actions surface: the job token, secrets and third-party actions. The default token is
+   read-only, no gating workflow reads a secret, and the two third-party actions are SHA-pinned.
+3. Reach from a job into the maintainer's LAN, including the bench's power and serial controls.
+4. Supply chain. A dependency's build script runs in the job, but lanes already run the same code
+   on the build host.
+5. A misled agent or a stolen token pushing code. Lanes arm their own pull requests, so the queue
+   admits code no person has read.
 
-Inside a job: its disk and memory, a read-only token, the Actions cache for its own ref, and
-whatever egress allows. A malicious commit can make its own checks green on hosted runners too,
-since it carries the workflow file.
+Lanes already build and run every tree commit on the build host as the maintainer. For code
+already in the tree, an owned runner adds little new exposure. What it adds is a job that runs
+unattended, as something other than the maintainer, which is a chance to run it with less.
 
-What owning adds is reach beyond the job:
+### The routing that enforces the ruling
 
-- Persistence. A reused runner lets one job falsify later jobs' results for other pull requests.
-  That is the gate's integrity, and only a fresh machine per job prevents it.
-- A shared local cache. A writable cache that pull-request and merge-group jobs both read crosses
-  the ref scoping GitHub's cache enforces.
-- The host. A hypervisor escape lands on whatever the host holds. The owned build host holds lane
-  worktrees and the maintainer credential that pushes and merges. That is worth more than anything
-  in a job.
-- The network. A home connection behind the runner can reach the maintainer's LAN, including the
-  bench's power and serial controls, and its address is the maintainer's.
+- An owned label appears only on jobs that run for `merge_group`, or for `push` to `refs/heads/main`.
+  `runs-on` takes one canonical expression: the repository variable that names the owned label
+  when the event is one of those two, and the hosted label otherwise. Unsetting the variable sends
+  everything to hosted runners.
+- A `script/lint` check parses every workflow and fails if any job reachable from `pull_request` or
+  `pull_request_target` could resolve to a self-hosted label. Reusable workflows count. So does any
+  `runs-on` that is not the canonical expression or a hosted label literal. Its fixtures include
+  each way to get this wrong.
+- The job's first step on an owned runner fails unless the event is `merge_group` or a push to
+  `main` in nifeos/nife. That covers a workflow that dodges the lint.
 
-### The shape (b) would have to take
+### The preconditions for (b)
 
-Each is a precondition, not a refinement:
+1. Only the routing above, never `pull_request`.
+2. A dedicated unprivileged account or rootless container, with no access to the maintainer's `gh`
+   token, SSH keys or home directory.
+3. Ephemeral or just-in-time registration, one job each, with no writable cache shared between
+   jobs.
+4. Egress to the LAN blocked; outbound allowed to GitHub and the crate registry only.
+5. A runner group restricted to nifeos/nife, with GitHub's public-repository override set on purpose.
 
-1. A fresh virtual machine per job, from a pinned image, registered as a just-in-time runner and
-   destroyed after one job. A container shares the host kernel, and gating jobs need `/dev/kvm` for
-   `swish-check-x86_64`. Rootless podman with KVM passed through is the weaker shape. A microVM
-   (Firecracker or Cloud Hypervisor, recalled) or a plain KVM guest with nested virtualization
-   is the stronger one.
-2. No maintainer credential on the hypervisor host. Either a host of its own, or the lane work moves
-   into its own VM so the host operating system holds nothing worth escaping to.
-3. Its own network segment, with no route to the LAN and outbound traffic denied by default. Allow
-   GitHub's endpoints, crates.io, static.rust-lang.org and, until the image bakes its packages, the
-   Ubuntu archive. Rate-limit egress.
-4. No writable cache shared between jobs. The image carries the pinned QEMU and toolchains, and
-   anything else comes through GitHub's ref-scoped cache.
-5. A runner group restricted to nifeos/nife, with the public-repository override set on purpose.
-6. A launcher selftest that refuses a VM configuration with a host mount, a LAN route or a reused
-   disk. That is rung two of `AGENTS.md`'s ladder, and the outsider-pass launcher already shows the
-   pattern.
-
-### How the outsider pass already confines untrusted code
-
-`helpers/launch_pass.py` runs an outside reviewer in rootless podman inside a Linux VM. The
-container gets the clone, a results directory and one volume, and "nothing else of the host: no
-home directory, SSH key, `gh` token or MCP configuration." Its selftest fails if a `podman run`
-carries `--privileged`, `--network`, `--volume`, `--cap-add` or seven other flags.
-
-A runner should copy that refusal, but not the rest. The pass allows open egress, keeps its volume
-across runs and runs no KVM job; a gate needs per-job disposal and an egress allowlist.
-
-### Forks
-
-Only (a) keeps forks off owned hardware by construction. Options (b) to (d) keep them off only with
-two rules. A job for a pull request whose head is another repository runs on hosted labels. And a
-fork's pull request is never enqueued directly: a member re-pushes the reviewed commits to a branch
-in nifeos/nife, keeping authorship, so no merge group holds fork code. Without the second rule, (b)
-runs fork code the moment it is enqueued.
+A fresh VM per job is the stronger shape, and the appendix describes it. It becomes necessary the
+day a real outside contributor appears, because then the queue holds code from someone other than
+the maintainer. (e) shrinks nothing further in (b), whose routing already keeps fork code out. What
+(e) buys is the end of stranger pull requests at their source, and a mechanical guarantee in place
+of one review step.
 
 ### The supply-chain angle
 
-basalt's workflow builds the image strangers would run. Whatever runs gating jobs must never build
-release images: release builds stay on hosted runners, or on a runner group no pull request can
-reach. nife's `build-is-reproducible` job helps here. A reproducible build lets a hosted rebuild
-check an owned one bit for bit, so trust in an owned build can be earned rather than assumed.
+basalt's workflow builds the image strangers would run. Release builds stay on hosted runners, or
+on a runner group no gating job shares. nife's `build-is-reproducible` job lets a hosted rebuild
+check an owned build bit for bit.
 
 ## Capacity and cost
 
 | | hosted, Team | hosted, Enterprise | owned, option (b) |
 |---|---|---|---|
 | concurrent jobs | 60, both labels | 500, both labels | the host's slot count, x86_64 only |
-| arm64 jobs | yes | yes | no (x86_64 host) |
+| arm64 jobs | yes | yes | no, unless #2668 moves them |
 | cash | $4 a month | $21 a month | power, and the owner's time |
 | new failure modes | none | none | runner outage, host compromise |
 
 Each owned slot of hosted shape (4 vCPU, 16 GB) adds 1/60 of the Team pool; doubling it takes 60
 slots, matching Enterprise 440. A larger slot would speed `verify`, whose `VERIFY_JOBS=2` is a
-16 GB bound, but would change what the job measures (below).
+16 GB bound, but would change what the job measures.
 
 Power is unmeasured; at a few hundred watts around the clock (an assumption) it costs the same
 order as the seat, and [the ledger](../../../notes/project-metrics/ledger.md) would record it.
-The larger cost is maintenance: an image to rebuild, runner releases to take before old ones stop
-receiving jobs (recalled), a hypervisor to patch, and somebody who answers when it stops.
+The larger cost is maintenance: runner releases to take before old ones stop receiving jobs
+(recalled), an image to rebuild, and somebody who answers when it stops.
 
-### Availability, and what an outage does to the queue
+### Availability
 
 A power loss struck during this run. Under (a) it would have touched lane work only. Under (b) it
-would also stall the merge queue. A job on a lost runner fails, so the group fails and is rebuilt,
-onto the same dead label. A job aimed at a label with no runner waits up to 24 hours. The queue's
-240-minute check timeout evicts entries long before that.
-
-So (b) needs a fallback that is a setting, not a pull request. Each merge-group job's `runs-on`
-reads a repository variable that defaults to the hosted label, and one `gh variable delete` flips
-it. `helpers/trunk-health.sh` could do that when no runner has been online for ten minutes; runs
-already stuck still need a re-run. Milestone 81 (an HVF leg) refused a runner on a laptop that
-sleeps for this reason.
+would also stall the merge queue: a job on a lost runner fails, the group is rebuilt onto the same
+dead label, and a job aimed at a label with no runner waits up to 24 hours. The queue's 240-minute
+check timeout evicts entries long before that. So the fallback is the variable: one
+`gh variable delete`, with no pull request and no queue. `helpers/trunk-health.sh` could unset it
+when no runner has been online for ten minutes. Milestone 81 (an HVF leg) refused a runner on a
+laptop that sleeps for this reason.
 
 ## Reproducibility and trust in results
 
@@ -249,54 +240,50 @@ A required check is a name, the same on any runner, so a mixed fleet is invisibl
 Each job on an owned runner writes its runner kind and image digest into its summary.
 
 - `bench`'s instruction counts are guest instructions under the pinned QEMU, so host noise does not
-  move them. An owned image must build the same `.qemu-version` with `script/ci-qemu`, never a
-  packaged QEMU.
+  move them. An owned image builds the same `.qemu-version` with `script/ci-qemu`.
 - Wall-clock bounds do move: the 20-minute job budget, every `timeout-minutes`, and the timing-bound
   failures. The riscv64 inbound check fails about one boot in six on CI and never locally, per the
-  runner container's header. A new host class is a new flake rate. So owned slots match the hosted
-  shape, carry their own label, and are compared job by job before they gate.
-- The image is pinned by digest and built from the same Ubuntu release as the hosted label. When
+  runner container's header. So owned slots match the hosted shape, carry their own label, and are
+  compared job by job before they gate.
+- The image is pinned by digest and built from the hosted label's Ubuntu release. When
   [the Ubuntu 26.04 proposal](ci-runners-move-to-ubuntu-26-04.md) flips a label, the owned image
-  flips in the same pull request. Its cache-key step, which adds the release, would add the runner
-  kind too, since an owned build and a hosted one may link different libraries.
+  flips in the same pull request, and its cache keys carry the runner kind as well as the release.
 
 ## Rollout and rollback
 
-1. Move the organization to Enterprise, through a trial if GitHub offers one (recalled, not read).
-   Measure for a week: created-to-started wait by label in busy hours, peak concurrency, merges per
-   hour, and full-run wall clock. Done when a busy hour's median job wait is under a minute. Rollback
-   is a plan downgrade, which no tree state depends on.
-2. Only if the cap still binds, or calef refuses the plan: build (b)'s six preconditions and run a
-   canary that gates nothing. Run `workflow_dispatch` runs of `main` on owned VMs for a week and
-   compare each job with its hosted twin. Measure the slot count, per-job boot overhead, failures
-   and power.
-3. Then the merge group's x86_64 jobs, behind the repository variable. Measure the same numbers as
-   step 1. Rollback is unsetting the variable.
+1. Move the organization to Enterprise, through a trial if GitHub offers one (recalled). Measure
+   for a week: wait by label in busy hours, peak concurrency, merges per hour, full-run wall clock.
+   Done when a busy hour's median job wait is under a minute. Rollback is a plan downgrade.
+2. If calef rules for (e), flip the policy, then open one App pull request to prove the bots still
+   can. Rollback is one setting.
+3. If the cap still binds, or after #2668 reports: land the lint and the first-step guard, then run
+   a canary that gates nothing, dispatched runs of `main` on the owned runner compared with their
+   hosted twins for a week.
+4. Then the merge-group and `main` jobs, behind the variable. Rollback is unsetting it.
 
 The irreversible part is not the code. A compromised host is a fact that has left the machine: its
-credentials are spent, and the host is reinstalled, not cleaned.
+credentials are spent, and it is reinstalled, not cleaned.
 
 ## What calef must rule
 
-1. Move the organization from Team to Enterprise, $17 a month more for the first year with the later
-   price unstated, to raise the cap from 60 jobs to 500? Recommended. If no, the queue stays bound
-   as measured, and question 2 becomes the only lever.
-2. If the cap still binds after a week, may (b) proceed under its six preconditions? This would
-   settle milestone 488's condition, "the security posture changing", in the way
-   [§203 (capacity is rented rather than bought)](../../decisions/0203-capacity-is-rented-not-bought.md)
-   already allows.
-3. Can runner VMs share the build host with lane work, if the lane work moves into a VM of its own?
-   Or does a gating runner need a host that holds no maintainer credential at all?
-4. Under (b) to (d), is the fork rule acceptable: a fork's pull request is re-pushed by a member,
-   never enqueued directly?
-5. Is a green from owned hardware the gate of record? Or must the push to `main` re-test on hosted
-   runners for those groups, giving up the merge-group citation's saving for them?
-6. Who answers when an owned runner stops, and does the fallback flip automatically?
+1. Move the organization from Team to Enterprise, $17 a month more for the first year, to raise
+   the cap from 60 jobs to 500? Recommended. If no, (b) is the only lever.
+2. Set nife's pull-request creation policy to `collaborators_only`? Recommended, after confirming
+   the App can still open pull requests. If no, the routing and the re-push mechanism still keep
+   forks off owned runners.
+3. May (b) proceed under the five preconditions, with the VM shape held for the day an outside
+   contributor appears? This would settle milestone 488 (a self-hosted CI runner)'s condition, in
+   the way [§203 (capacity is rented rather than bought)](../../decisions/0203-capacity-is-rented-not-bought.md)
+   allows.
+4. Is a green from owned hardware the gate of record, or must the push to `main` re-test those
+   groups on hosted runners?
+5. Who answers when an owned runner stops, and does the fallback flip automatically?
 
-Not decided here: cutting demand (runs a later push cancels, the label bots' slots), each a lane of its own.
+Not decided here: cutting demand, such as runs a later push cancels and the label bots' slots.
 
 ## Index row
 
 On 2026-10-24 the merge queue waited on GitHub's 60-job Team cap, with 430 jobs waiting. Enterprise
-raises the cap to 500 for $17 a month. An owned runner adds only x86_64 capacity, and only behind a
-fresh VM per job, an isolated network and a fork rule. Rent first; stage merge-group runners behind it.
+raises it to 500 for $17 a month. An owned runner takes merge-group and `main` jobs only, under
+calef's ruling that unreviewed fork code never runs on owned infrastructure, enforced by a lint.
+It adds x86_64 capacity unless #2668 frees the arm64 jobs.
