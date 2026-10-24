@@ -21,58 +21,26 @@ fn cycle_counter_image() -> &'static [u8] {
 /// **Milestone 229: a granted thread reads the cycle counter, and an ungranted one is killed for
 /// trying.** Both halves, in one test, because each is the other's control.
 ///
-/// A thread runs `hello`'s cycle-counter role at EL0 and reads `PMCCNTR_EL0` (aarch64) or the
-/// `cycle` CSR (riscv64). Granted, it reports. Ungranted, the read is an access milestone 228's
-/// closed default does not permit, so it traps, the kernel kills the thread, and `USER_FAULTS`
-/// counts it.
-///
-/// **The grant is applied through a `#[cfg(test)]` back door**,
-/// `sched::grant_cycle_counter_to_current`: there is no syscall method a loader could set it with
-/// yet (a method number is irreversible, and milestone 147 (a profiler that holds exactly the
-/// counters it was granted) may subsume it). `sched`'s
-/// `a_running_thread_cannot_be_granted_the_cycle_counter` covers the embryo-only rule.
-///
-/// **What the reads count is checked on every architecture** (milestone 353 (the aarch64 half of 74), calef's ruling B4 of
-/// 2026-10-07 UTC). The program reads through `user_mode_runtime::cycle_reading`, which pairs each
-/// count with an `abi::cycle_counter::CycleMeaning`, and reports the meaning it was handed. This test
-/// states the expected meaning per architecture itself rather than asking the runtime, so a runtime
-/// that labeled the TSC as core cycles, or labeled aarch64's count without the kernel's filter
-/// policy behind it, fails here: aarch64 must say core cycles at EL0 and EL1 (the `PMCCFILTR_EL0` of
-/// zero that `arch::pmu` writes and its own test reads back from the register), riscv64 core cycles
-/// in every mode, and `x86_64` constant-rate reference cycles.
-///
-/// **The difference of two reads is checked where the kernel has said the counter runs, and only
-/// there** (milestone 74 (cycle counters)):
-///
-/// - **aarch64**: when `arch::pmu` reports `Running` on every online core, the second read must be
-///   past the first. The thread may be placed on any core and the `yield` between the reads is a
-///   trip through EL1, so the claim holds under the `PMCCFILTR_EL0` of zero (EL0 and EL1 counted),
-///   and would under any filter that counted either. Where a core refused its counter (`Stuck`) nothing is asserted,
-///   because a stopped counter is the honest answer there and not a failure of the grant.
-/// - **`x86_64`**: the TSC is always running and constant-rate, so the second read must be past the
-///   first, always.
-/// - **riscv64**: not checked. The program reads the `cycle` CSR, and `arch::riscv64::pmu` may have
-///   been handed a different counter (`hpmcounter3` on `rva23s64`), so the kernel has no statement
-///   about the CSR the program reads that a check could lean on.
-///
-/// None of this is a measurement: under QEMU the delta is emulator time.
+/// The program reads `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) at EL0. Granted through
+/// the test-only `sched::grant_cycle_counter_to_current` (no syscall sets it yet), it reports;
+/// ungranted, the closed default of milestone 228 (the cycle counters are closed by assumption)
+/// traps the read and `USER_FAULTS` counts the kill. The reported meaning is checked against
+/// `expected_cycle_meaning` (milestone 353 (the aarch64 half of 74), calef's ruling B4 of
+/// 2026-10-07 UTC), and the delta of the two reads only where `el0_cycle_counter_is_known_to_run`
+/// (milestone 74 (cycle counters)). Under QEMU the delta is emulator time. See notes/pmu.md.
 #[test_case]
 fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
     if !crate::arch::timer::is_cycle_counter_grantable() {
         crate::testing::skip!("this core has no user-readable cycle counter to grant");
     }
 
-    // **The negative half, and it does not run on x86_64**, where `rdtsc` is ambient by DECISIONS
-    // 139 part 3 and an ungranted read is not an error. Skipping it there is the stated exception
-    // to DECISIONS §19 showing up in a test rather than a gap in one.
-    //
-    // **And it does not run on an Apple core**, which this kernel can only ever meet under a
-    // hypervisor (an Apple core's own interrupt controller is AIC, which it does not drive). There
-    // the negative half was measured failing on 2026-09-19 (milestone 227's first HVF run): with
-    // `PMUSERENR_EL0` at zero an EL0 read of `PMCCNTR_EL0` was answered rather than refused, so the
-    // hypervisor, not this kernel, decides the outcome and the assertion would be about QEMU's
-    // HVF. `arch::timer::set_cycle_counter_grant`'s BUGS carries the measurement. The positive half
-    // below still runs.
+    // The negative half does not run on x86_64, where `rdtsc` is ambient by DECISIONS 139 part 3
+    // (the stated exception to DECISIONS §19 (architectural parity is a tenet)). Nor on an Apple
+    // core, which this kernel meets only under a hypervisor (it does not drive AIC): there an EL0
+    // read of `PMCCNTR_EL0` with `PMUSERENR_EL0` at zero was answered rather than refused (measured
+    // 2026-09-19, the first HVF run of milestone 227 (a GICv3 driver)), so the outcome is the
+    // hypervisor's. `arch::timer::set_cycle_counter_grant`'s BUGS carries the measurement. The
+    // positive half below still runs.
     #[cfg(target_arch = "aarch64")]
     let under_apple_hypervisor = crate::arch::isa::get().implementer == 0x61;
     #[cfg(target_arch = "riscv64")]
@@ -140,11 +108,13 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
 }
 
 /// **What a granted read must say it counts on this architecture**, stated here and not taken from
-/// `user_mode_runtime`, so the test is an independent statement of the kernel's promise.
+/// `user_mode_runtime`, so the test is an independent statement of the kernel's promise and a
+/// runtime that labeled the TSC as core cycles fails: aarch64 counts core cycles at EL0 and EL1,
+/// riscv64 core cycles in every mode, and `x86_64` constant-rate reference cycles.
 ///
 /// On aarch64 the promise rests on the filter: the meaning is only true while `arch::pmu` writes
-/// zero, so that is asserted at compile time here, and a change of policy fails the build until the
-/// meaning changes with it.
+/// zero to `PMCCFILTR_EL0` (its own test reads the register back), so that is asserted at compile
+/// time here, and a change of policy fails the build until the meaning changes with it.
 fn expected_cycle_meaning() -> abi::cycle_counter::CycleMeaning {
     use abi::cycle_counter::CycleMeaning;
     #[cfg(target_arch = "aarch64")]
@@ -167,7 +137,12 @@ fn expected_cycle_meaning() -> abi::cycle_counter::CycleMeaning {
 }
 
 /// **Does the kernel have a statement that the counter `cycle_counter_reader` reads is running?**
-/// See the test above for why each architecture answers as it does.
+///
+/// aarch64: when `arch::pmu` reports `Running` on every online core. The thread may sit on any core,
+/// and the `yield` between its reads passes through EL1, which the zero `PMCCFILTR_EL0` counts. A
+/// `Stuck` core's stopped counter is the honest answer there, not a failed grant. `x86_64`: always,
+/// since the TSC is constant-rate and always running. riscv64: never, because `arch::riscv64::pmu`
+/// may hold a different counter (`hpmcounter3` on `rva23s64`) from the `cycle` CSR the program reads.
 fn el0_cycle_counter_is_known_to_run() -> bool {
     #[cfg(target_arch = "aarch64")]
     {
@@ -185,13 +160,11 @@ fn el0_cycle_counter_is_known_to_run() -> bool {
 }
 
 /// **Milestone 19e (run a real workload): a userspace builder runs a real compute workload and it
-/// comes out right.** The `least_authority_demo`'s `n*n` proved the mechanism; this proves a
-/// *substantial* program. `coremark_builder` builds the `"coremark"` binary (a CoreMark-derived
-/// run: list sort, matrix multiply, state machine, folded into a CRC), starts it, and the workload
-/// SENDs the run's checksum home. Receiving `coremark::PINNED_CRC_64` (`0x7954`, the value the host
-/// `coremark` test also pins) proves a real workload ran correctly against the native ABI, and that
-/// the same computation gives the same answer on the kernel's target as on the host, which is the
-/// property a cross-OS comparison will rest on.
+/// comes out right.** `coremark_builder` builds the `"coremark"` binary (a CoreMark-derived run:
+/// list sort, matrix multiply, state machine, folded into a CRC), starts it, and the workload SENDs
+/// the checksum home. Receiving `coremark::PINNED_CRC_64` (`0x7954`, which the host `coremark` test
+/// also pins) proves a real workload ran correctly against the native ABI, with the same answer on
+/// the kernel's target as on the host: the property a cross-OS comparison rests on.
 ///
 /// Name: provisional (milestone 405 (the nine `INIT` roles)), named for the builder it drives.
 ///

@@ -151,17 +151,19 @@ worked had three steps:
 2. Let the fix land alone.
 3. Have each branch merge `origin/main` and requeue.
 
-## Arm as soon as the last fix is pushed
-
-A wide run arms a pull request (`gh pr merge <N> --auto --merge`) as soon as its review's fixes are
-pushed, not after CI goes green. Auto-merge waits for the required checks itself, so a maintainer
-who waits on green before arming adds a delay of their own to every pull request. This departs from
-`briefs/gate-in-ci.md`'s Step 4 for a wide run, and its other half still binds: push nothing after
-arming, because a push to a queued branch cancels its auto-merge.
-
 How a run notices the second kind early is not built. `helpers/trunk-health.sh` watches `main`,
 not the open pull requests, and a pipeline that sees the same red check on three lanes at once
 should raise it as one exception rather than three.
+
+## Arm as soon as the last fix is pushed
+
+A wide run arms a pull request (`gh pr merge <N> --auto --merge`) as soon as its review passes and
+its fixes are pushed, while CI is still running. That is `briefs/gate-in-ci.md`'s Step 4, which
+every lane follows (calef, 2026-10-24 UTC). Auto-merge waits for the required checks itself, and the
+merge queue runs them again on the merge group. Waiting on green only adds a polling round to every
+pull request. Step 4 also holds the exceptions (a draft, `needs-architect`, a red check the
+diff caused) and the toggle for an armed pull request stuck `BLOCKED`. One rule binds after
+arming: push nothing to a queued branch.
 
 ## BUGS
 

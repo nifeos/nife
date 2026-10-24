@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil info -plist on the development Mac, 2026-09-19; trimmed to the keys stick_maker reads, volume names scrubbed. The FAT32 volume diskutil eraseDisk made on it. -->
+<!-- Shaped from a diskutil info -plist capture, 2026-09-19; trimmed to the keys stick_maker reads, with identifiers, names and sizes replaced by neutral values. Every flag, bus, content type and filesystem is as captured. The FAT32 volume diskutil eraseDisk made on the disk image. -->
 <plist version="1.0">
 <dict>
 	<key>BusProtocol</key>
@@ -8,7 +8,7 @@
 	<key>Content</key>
 	<string>DOS_FAT_32</string>
 	<key>DeviceIdentifier</key>
-	<string>disk7s1</string>
+	<string>disk5s1</string>
 	<key>FilesystemName</key>
 	<string>MS-DOS FAT32</string>
 	<key>FilesystemType</key>
@@ -20,7 +20,7 @@
 	<key>MountPoint</key>
 	<string>/Volumes/NIFE</string>
 	<key>ParentWholeDisk</key>
-	<string>disk7</string>
+	<string>disk5</string>
 	<key>RemovableMedia</key>
 	<true/>
 	<key>Size</key>

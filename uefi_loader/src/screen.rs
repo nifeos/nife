@@ -1,24 +1,20 @@
 //! **The last word anything says before the kernel exists**, the early-boot half of
 //! milestone 243 (a machine with no serial port).
 //!
-//! From `ExitBootServices` to the kernel's own `console::attach_screen` there is no console on a
-//! machine with no serial port. The firmware's is gone by specification, the kernel's is not up, and
-//! everything in between (this loader's mode-switch trampoline, `boot.s`'s 32-bit half, the page
-//! tables, the long-mode jump) runs 32-bit with no IDT, so a fault there is a triple fault and a
-//! silent reset. **That window cannot be narrated**, because no code inside it knows where the
-//! screen is.
-//!
-//! It can be **bounded**, and this is the bounding: the screen is cleared and given one sentence, so
-//! a person at a monitor can tell "the kernel never reached its first statement" from "the kernel
-//! armed its console and died after", which before this were the same black rectangle.
-//!
+//! From `ExitBootServices` to the kernel's own `console::attach_screen` a machine with no serial
+//! port has no console, and everything in between (the mode-switch trampoline, `boot.s`'s 32-bit
+//! half, the page tables, the long-mode jump) runs with no IDT, so a fault is a silent reset. That
+//! window cannot be narrated, but it can be **bounded**: the screen is cleared and given one
+//! sentence, so a person at a monitor can tell "the kernel never reached its first statement" from
+//! "the kernel armed its console and died after", which would otherwise be one black rectangle.
+
 //! # Why it lives here rather than in `main.rs`
 //!
 //! Because it can be proved on the host. The painting is `screen_console`'s, the same crate and the
 //! same font the kernel uses, so the loader's last word and the kernel's first are literally the
 //! same letters; what this module adds is the text and the one call, and the test below reads it
 //! back out of a RAM framebuffer rather than trusting that it was written.
-//!
+
 //! # EXAMPLES
 //!
 //! ```
@@ -33,7 +29,6 @@
 //! assert!(pixels.chunks(4).any(|p| u32::from_le_bytes(p.try_into().unwrap())
 //!     == screen_console::ScreenConsole::FOREGROUND));
 //! ```
-//!
 
 //! # BUGS
 //!
@@ -42,10 +37,9 @@
 //!   halted-loader experiment in `notes/serial-less-output.md`.
 //! - **Only ASCII**, like everything else `screen_console` draws.
 //! - **It puts a 36,000-byte `screen_console::Cells` on the firmware's stack** for two lines that
-//!   never scroll (2026-10-04, when the console started keeping its text in RAM so a scroll never
-//!   reads the screen back). The UEFI specification promises an x64 application at least 128 KiB
-//!   of stack (recalled from the specification's calling-convention section, not re-read). A
-//!   `static` would avoid it at the price of `unsafe` shared state in a single-threaded loader.
+//!   never scroll. UEFI promises an x64 application at least 128 KiB of stack (recalled from the
+//!   specification's calling-convention section, not re-read); a `static` would avoid it at the
+//!   price of `unsafe` shared state.
 
 use machine_discovery::framebuffer::Framebuffer;
 use screen_console::{Cells, PixelSink, ScreenConsole};

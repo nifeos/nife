@@ -21,8 +21,9 @@ fn net_stack_image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
 }
 
-/// The net client's test selectors and its success word, matching `components/src/socket_test_client.rs`. The
-/// client is a nonzero entry role of the `net_stack` binary, so it needs no image of its own.
+/// The net client's test selectors and its success word, matching
+/// `components/src/socket_test_client.rs`. The client is a nonzero entry role of the `net_stack`
+/// binary, so it needs no image of its own.
 #[cfg(target_arch = "aarch64")]
 const NET_TEST_NAME_RESOLUTION: u64 = 1;
 #[cfg(target_arch = "aarch64")]
@@ -44,10 +45,11 @@ const NET_CLIENT_DIGEST_REFUSED: u64 = 3;
 /// exactly this one, and the client asks for `fixture::DENIED_PORT` as well to prove the grant
 /// refuses. Named here because the *spawn service* is what grants it, which is the point.
 ///
-/// Taken from `socket_contract::fixture` rather than spelled again (milestone 64 (enough `std` to run somebody else's crate)): three binaries and
-/// this test have to agree on the number, and a literal repeated per call site is the shape rule 7
-/// exists to retire. The runners' `hostfwd` spells it a second time because a shell script cannot
-/// read a Rust crate, and that drift is loud (the prober reports the guest served none).
+/// Taken from `socket_contract::fixture` rather than spelled again (milestone 64 (enough `std` to
+/// run somebody else's crate)): three binaries and this test have to agree on the number, and a
+/// literal repeated per call site is the shape rule 7 exists to retire. The runners' `hostfwd`
+/// spells it a second time because a shell script cannot read a Rust crate, and that drift is loud
+/// (the prober reports the guest served none).
 #[cfg(target_arch = "aarch64")]
 const NET_LISTEN_PORT: u16 = socket_contract::fixture::LISTEN_PORT;
 /// The fixed UDP port range the accept test's stack is granted (milestone 55's UDP bind grant).
@@ -55,9 +57,8 @@ const NET_LISTEN_PORT: u16 = socket_contract::fixture::LISTEN_PORT;
 /// cannot ask for what it was not given. `socket_test_client` binds 5354 inside it to prove a
 /// granted port binds and is exclusive, and asks for 4444 outside it to prove the refusal.
 ///
-/// The range starts at 5353 because the multicast DNS responder held that port beside the socket
-/// client until milestone 298 retired it on 2026-09-15 (notes/mdns.md). The numbers carry no
-/// meaning of their own now; they are kept so the client and this grant still agree.
+/// The numbers carry no meaning of their own (5353 is multicast DNS's port, which nothing here uses
+/// any more; notes/mdns.md); they are kept so the client and this grant agree.
 #[cfg(target_arch = "aarch64")]
 const NET_UDP_GRANT_BOTTOM: u16 = 5353;
 #[cfg(target_arch = "aarch64")]
@@ -80,12 +81,11 @@ const NET_CLIENT_NO_ANSWER: u64 = 2;
 /// Because a valid OFFER for our transaction is the only path to that report, a match proves the
 /// DISCOVER left (TX) and the OFFER returned (RX), across both queues and both directions of the
 /// confinement, with no TCP/IP stack in the loop.
-// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin:
+// `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net`. Gated here
+// rather than run twice: that module drives the same property on the other instruction set through
+// the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
+// slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
@@ -102,25 +102,21 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
         "the DHCP OFFER's yiaddr {yiaddr:#010x} is not in QEMU slirp's 10.0.2.0/24: the round \
          trip did not complete correctly",
     );
-    // We do NOT assert a fresh routed interrupt here, unlike the disk read test. The net
-    // driver's completion is the used ring advancing, not one interrupt per operation (the same
-    // discipline the disk driver's complete loop follows, notes/dma.md), and the net test suite
-    // shares one NIC across many drivers and servers (piece 3): a leftover completion from a
-    // prior operator can be counted before this test's baseline and then consumed as a stale
-    // wakeup, so a strict interrupt-delta is unreliable. The OFFER round trip above is the proof
-    // that the interrupt path carried the completion.
+    // No fresh routed interrupt is asserted, unlike the disk read test: the net driver's completion
+    // is the used ring advancing, not one interrupt per operation (notes/dma.md), and the suite
+    // shares one NIC across many drivers, so a prior operator's leftover completion can be consumed
+    // as a stale wakeup. The OFFER round trip is the proof the interrupt path carried it.
 }
 
 /// The same DHCP round trip over the PCIe transport, behind the IOMMU (milestone 30, §20): the
 /// NIC is confined in hardware to its DMA region, and the driver binary is byte-identical to the
 /// mmio one. Proves the multi-queue confinement and the net driver work over the bus real
 /// hardware uses.
-// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin:
+// `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci`. Gated
+// here rather than run twice: that module drives the same property on the other instruction set
+// through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
@@ -143,12 +139,10 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
 /// knows nothing about DHCP; it owns only the DMA confinement. The server reports the acquired
 /// address, which must land in slirp's 10.0.2.0/24, so only a real DHCP round trip driven by
 /// smoltcp over the confined NIC can produce it.
-// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here
+// rather than run twice: that module drives the same property on the other instruction set through
+// the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
+// slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
@@ -175,12 +169,10 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
 
 /// The net server over the PCIe transport, behind the IOMMU (milestone 30, §20): smoltcp drives
 /// a NIC confined in hardware and still gets its lease.
-// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated
+// here rather than run twice: that module drives the same property on the other instruction set
+// through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
@@ -196,24 +188,21 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
     net.release_or_fail("a net test's net_stack");
 }
 
-/// **The socket contract, UDP end to end** (milestone 30, piece 3 phase B; DECISIONS §25). A
-/// client process holds a `Stack` rendezvous and its own untyped, mints a shared frame, delegates
-/// it, opens a UDP socket by id, sends a datagram, and reads the reply back through the same
-/// frame. No ambient network: the client acts only through the capability it was granted, and the
-/// bytes cross in the shared frame, never in a message. Proves the whole path, client to `net_stack` to
-/// smoltcp to the confined NIC, over the mmio transport.
+/// **The socket contract, UDP end to end** (milestone 30 (the network stack as a confined
+/// component), piece 3 phase B; DECISIONS §25 (socket identity)). A client process holds a `Stack`
+/// rendezvous and its own untyped, mints a shared frame, delegates it, opens a UDP socket by id,
+/// sends a datagram, and reads the reply back through the same frame. No ambient network: it acts
+/// only through its granted capability, and the bytes cross in the frame, never in a message. The
+/// whole path, client to `net_stack` to smoltcp to the confined NIC, over the mmio transport.
 ///
-/// The peer is **slirp's own TFTP server** (10.0.2.2:69), served inside libslirp, so the exchange
-/// is deterministic and never leaves the emulator. This test used to query 10.0.2.3:53, which
-/// reads like a local resolver but is not one: libslirp NATs that address to the *host's*
-/// nameserver, so the gate depended on the developer's DNS answering at that instant and flaked
-/// (~2.5% per query, measured). The real-resolution case still runs, non-gating, below.
-// RISC-V twin: `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// The peer is slirp's own TFTP server (10.0.2.2:69), served inside libslirp, so the exchange is
+/// deterministic and never leaves the emulator. 10.0.2.3:53 is not a local resolver: libslirp NATs
+/// it to the host's nameserver, which fails about 2.5% of queries (measured), so it cannot gate.
+// RISC-V twin:
+// `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here
+// rather than run twice: that module drives the same property on the other instruction set through
+// the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
+// slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
@@ -234,12 +223,11 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
 }
 
 /// The same UDP round trip over the PCIe transport, behind the IOMMU.
-// RISC-V twin: `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin:
+// `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated
+// here rather than run twice: that module drives the same property on the other instruction set
+// through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
@@ -260,13 +248,11 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
 }
 
 /// **An accept nobody answers ends at `net_stack`'s bound** (the riscv-cpu-net-flake lane,
-/// 2026-10-13 UTC). One `ACCEPT` on the PCI NIC, which no `hostfwd` reaches, so no SYN ever
-/// arrives and smoltcp holds no timer. The stack's wait has to end by its own 15 s bound and refuse.
-/// Before `nic_wait` took the caller's deadline it blocked for a frame forever: the listener
-/// retries built on that bound never ran, and on 2026-10-12 a prober connection held to nobody
-/// turned the CPU matrix's std listener test into a 60 s watchdog. Without the fix this test is
-/// that watchdog. x86_64 has no twin: its NIC is the polled `e1000e`, whose wait is a 1 ms sleep,
-/// so the bound held there all along.
+/// 2026-10-13 UTC). One `ACCEPT` on the PCI NIC, which no `hostfwd` reaches, so no SYN arrives and
+/// smoltcp holds no timer. The stack's wait must end by its own 15 s bound and refuse, because
+/// `nic_wait` takes the caller's deadline; a wait that blocked for a frame would make this a 60 s
+/// watchdog, and the listener retries built on the bound would never run. x86_64 has no twin: its
+/// NIC is the polled `e1000e`, whose wait is a 1 ms sleep, so the bound holds there.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.network_tests.an_accept_nobody_answers_ends_at_the_stacks_bound.patch`
 #[cfg(target_arch = "aarch64")]
@@ -298,25 +284,17 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 /// capability system the resolver is a grant)). Two halves in one client, because a second
 /// `net_stack` would need a virtio slot past `MAX_DEVICES`.
 ///
-/// **The first half gates.** The client asks the runners' name server peer
-/// (`helpers/name-server-peer`, a `guestfwd` at 10.0.2.9:53, DNS over TCP) about six names through
-/// `domain_name_system`. Two resolve, one through a compressed CNAME, and four must be refused,
-/// each by its own check: a name that does not exist, the right answer under the wrong transaction
-/// id, an address for a name nobody asked about, and a compression pointer to itself. Then it
-/// connects to the address it resolved and gets an echo back. Nothing else in the tree turns a
-/// name into an address.
-///
-/// **The second half is the real-DNS check this test used to be, and it does not gate.** It asks
-/// 10.0.2.3, which libslirp NATs to the host's configured nameserver (`get_dns_addr_libresolv`),
-/// so an answer is a fact about the developer's machine. No answer skips, with a reason that says
-/// the first half passed (milestone 214's partial shape). A reply that arrives and is not a valid
-/// answer to our query still fails, because that would be ours.
-// RISC-V twin: `riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// The first half gates: the client asks `helpers/name-server-peer` (a `guestfwd` at 10.0.2.9:53,
+/// DNS over TCP) about six names through `domain_name_system`. Two resolve, one via a compressed
+/// CNAME; four fail their own checks (no such name, a wrong transaction id, an unasked-for address,
+/// a self-pointing compression pointer); then it connects to the resolved address for an echo. The
+/// second half, real DNS via 10.0.2.3 (forwarded to the host's nameserver), does not gate: no answer
+/// skips (milestone 214's partial shape), and only a reply that is not a valid answer fails.
+// RISC-V twin:
+// `riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
+// Gated here rather than run twice: that module drives the same property on the other instruction
+// set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 /// Falsification: replayable `system_tests/falsifications/user.network_tests.a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers.patch`
 #[cfg(target_arch = "aarch64")]
 #[test_case]
@@ -357,12 +335,10 @@ fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
 /// sends a payload, receives the echo, and closes. The full round trip, handshake through
 /// bidirectional data to teardown, deterministic and zero-host-setup (nothing outlives QEMU),
 /// through the client, `net_stack`, smoltcp, and the confined NIC.
-// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated
+// here rather than run twice: that module drives the same property on the other instruction set
+// through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract() {
@@ -383,16 +359,17 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 }
 
 /// **A package fetched over plain HTTP is accepted only by the digest the image vouches for**
-/// (milestone 198 (a package manager) rung 3a). The client `GET`s `uptime 0.1.0` from a host process
-/// on the same network (`helpers/package-http-peer`, a `guestfwd` peer), hashes it as it arrives
-/// through `http_response` and the net stack, and compares against the image's package catalogue,
-/// which the archive build packed above the measurement table. **Then it fetches the peer's copy with
-/// one byte flipped, which must be refused**: that half is what gives the first its meaning, because
-/// the tampered response is a complete, correct HTTP exchange and only the digest can tell. Both
-/// fetches share one `net_stack`, because every stack a test starts holds a virtio slot for the rest
-/// of the boot (`MAX_DEVICES`). Nothing else in the tree fetches a file over TCP or checks a
-/// package's digest on a target.
-// RISC-V twin: `riscv_virtio_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
+/// (milestone 198 (a package manager) rung 3a). The client `GET`s `uptime 0.1.0` from a host
+/// process on the same network (`helpers/package-http-peer`, a `guestfwd` peer), hashes it as it
+/// arrives through `http_response` and the net stack, and compares against the image's package
+/// catalogue, which the archive build packed above the measurement table. **Then it fetches the
+/// peer's copy with one byte flipped, which must be refused**: that half is what gives the first
+/// its meaning, because the tampered response is a complete, correct HTTP exchange and only the
+/// digest can tell. Both fetches share one `net_stack`, because every stack a test starts holds a
+/// virtio slot for the rest of the boot (`MAX_DEVICES`). Nothing else in the tree fetches a file
+/// over TCP or checks a package's digest on a target.
+// RISC-V twin:
+// `riscv_virtio_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
@@ -421,12 +398,10 @@ fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
 }
 
 /// The same TCP echo round trip over the PCIe transport, behind the IOMMU.
-// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`.
+// Gated here rather than run twice: that module drives the same property on the other instruction
+// set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
+// suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
@@ -448,15 +423,13 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
 
 /// **Regression: reusing a socket id is safe** (the ephemeral-port fix). A client opens a TCP
 /// socket on id 0, connects to the echo peer, closes it, then reopens the same id and connects
-/// again. `net_stack` derived the local port from the socket id, so the reopen reused the exact port and
-/// the second connect stalled on a slirp flow that had not cleared; the rotating allocator hands
-/// the reopen a fresh port, so both connects complete. The client reports OK only if they do.
-// RISC-V twin: `riscv_virtio_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// again. `net_stack` derived the local port from the socket id, so the reopen reused the exact
+/// port and the second connect stalled on a slirp flow that had not cleared; the rotating allocator
+/// hands the reopen a fresh port, so both connects complete. The client reports OK only if they do.
+// RISC-V twin: `riscv_virtio_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here
+// rather than run twice: that module drives the same property on the other instruction set through
+// the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
+// slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_reopened_socket_id_connects_again_over_tcp() {
@@ -477,56 +450,22 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
     net.release_or_fail("a net test's net_stack");
 }
 
-/// **The guest is connected TO, on a port it was granted** (milestone 107). Every network exchange
-/// this project had proved was outbound: the TCP gate connects to a slirp `guestfwd` peer, the UDP
-/// gate is a request, the DHCP bring-up is a client. nife could reach the network and could
-/// not be reached.
+/// **The guest is connected TO, on a port it was granted** (milestone 107 (the socket contract
+/// learns to accept)). The TCP gate, the UDP gate and the DHCP bring-up are all outbound; this is
+/// the one where nife is reached.
 ///
-/// Here a **host process** opens a TCP connection to a port QEMU forwards into the guest
-/// (`hostfwd`, the mirror of the `guestfwd` the outbound gate uses), sends a payload, and reads
-/// back an answer the guest *composed*. The guest holds only a `Stack` rendezvous and a shared frame,
-/// listens on the one port its spawn granted, accepts, reads, answers, and does the whole thing
-/// again on the same listener, which is what proves the listener re-arms rather than serving one
-/// connection and going deaf. The host side is xtask's inbound prober, running beside the suite the
-/// way the scanout referee does.
-///
-/// **The grant half rides in the same exchange**, before the first connection: 8080 must be refused
-/// as a matter of *authority* (`LISTEN_DENIED`, a distinct answer from "in use", because the two
-/// call for opposite responses from a client), 7778 must bind, and asking for 7778 again on a second
-/// socket id must collide. That is who-binds-the-port answered concretely: a port is an exclusive
-/// name in a shared namespace, so it is authority, and the **spawn service** decides the range.
-/// Note that no frame is attached until after all of it, because a listener carries no bytes.
-///
-/// It is one test rather than two because, when it was written, two net servers did not fit: the
-/// second cost an untyped region nothing reclaimed, and the boot had no such run left (see
-/// `virtio::MAX_DEVICES`). **That constraint was lifted on 2026-08-16**, when a net service became
-/// reclaimable (notes/frames.md); the tests stay merged because splitting them is its own change
-/// with its own argument. The stage codes stand in for the names the second test would have had.
-///
-/// **The UDP bind grant rides in this same spawn too** (milestone 55's stack half), for the same
-/// memory reason, re-measured by the lane that built it: a twelfth net server died as
-/// `Unmappable(OutOfPageFrames)` in an unrelated later test. After the accept rounds, the client
-/// proves that binding a fixed UDP port is an authority: a port outside the spawn's
-/// `udp_bind_grant` is refused, the granted one binds and is exclusive, and since this spawn's
-/// word carries both grants, the composed packing is what the machine exercises.
-///
-/// **Two more clients rode this spawn once, and both are gone.** Milestone 54's SMB adapter, with
-/// an authenticated fs-backed share and the credential service beside it, until 2026-08-30
-/// (notes/smb.md). And milestone 55's multicast DNS responder, whose group-addressed answers xtask's
-/// multicast prober decoded off a frame-level hub, until milestone 298 retired it on 2026-09-15
-/// (notes/mdns.md). With it went the only check that a datagram addressed to a joined group is
-/// accepted and that a multicast `SENDTO` reaches the wire. The source endpoint on a UDP `RECEIVE` did
-/// not go with it: the TFTP exchange proves that (stage codes 0xE046 and 0xE047).
+/// A host process (xtask's inbound prober) connects to a port QEMU forwards into the guest
+/// (`hostfwd`), sends a payload and reads back an answer the guest composed. The guest holds only a
+/// `Stack` rendezvous and a shared frame, listens on the one port its spawn granted, and serves two
+/// connections on one listener, which proves it re-arms. The listen and UDP bind grants are
+/// refused, bound and collided in the same spawn; notes/net/the-inbound-half.md has both halves.
 // RISC-V twin: `riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_host_process_connects_to_the_guest_and_is_answered() {
-    // E2's baseline (milestone 134): `sched::thread_count()` counts every live thread in the
-    // WHOLE boot, and the full suite runs 279 `#[test_case]`s in one continuous boot rather than
-    // one per test, so an absolute reading taken here would include whatever earlier tests left
-    // allocated (a first attempt read 95, most of which turned out to be exactly that). Taking the
-    // delta against this baseline is what isolates "how many threads did wiring THIS topology
-    // create" from "how many threads exist in the boot at this point in the suite".
+    // E2's baseline (milestone 134 (the register of measures)): `thread_count()` counts every live
+    // thread in the whole boot, and the suite runs in one boot, so only a delta against this
+    // isolates this topology.
     let e2_baseline_threads = sched::thread_count();
     let Some((report, net)) = virtio_service::start_net_stack(
         net_stack_image(),
@@ -538,20 +477,10 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
         crate::testing::skip!("no virtio-net device attached");
     };
     // E2 (milestone 134, design/roadmap/0134-the-measurements-that-decide.md): the thread census on
-    // the customer path. Every process this topology needs is already spawned by this point
-    // (`net_stack` and the echo client), and neither spawns another kernel
-    // thread per connection or per request (each is a single-threaded event loop over its own
-    // rendezvous), so this count is already the peak: it does not grow further as the host prober's
-    // connections arrive. See notes/benchmarks.md and this milestone's register entry for what this
-    // settles. Reported as a delta against `e2_baseline_threads` (see this function's top), not as
-    // the absolute reading: the absolute count includes whatever earlier tests in this suite's one
-    // continuous boot left allocated, which is not this measure's subject.
-    //
-    // The census covered a wider topology until 2026-08-30: it also held the block server, the FS
-    // server, the SMB adapter and the credential service, all wired for the SMB gate. notes/smb.md
-    // records what that boot was and why it is gone, and the number here is not comparable to the
-    // one milestone 134 recorded against it. It lost the multicast DNS responder on 2026-09-15
-    // (milestone 298, notes/mdns.md), one thread fewer again.
+    // the customer path. Every process this topology needs is spawned by now, and each is a
+    // single-threaded event loop that spawns nothing per connection, so this is the peak. Its
+    // topology is narrower than the one milestone 134 recorded, so the numbers are not comparable.
+    // See notes/benchmarks.md.
     crate::println!(
         "    (E2 thread census: {} threads created by wiring this customer-path topology \
          ({} live now, {e2_baseline_threads} live before this test wired anything): main + \
@@ -599,12 +528,10 @@ const STD_LISTEN_EXPECTED: &[u8] =
 /// `net honestly unsupported` gap from phase one: std's networking runs on the native ABI,
 /// reaching the same path the hand-written client does through std's blocking API. Its stdout
 /// is reassembled off the rendezvous and compared byte for byte, the `std_exerciser` discipline.
-// RISC-V twin: `riscv_virtio_tests::std_net_runs_over_the_socket_contract`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// RISC-V twin: `riscv_virtio_tests::std_net_runs_over_the_socket_contract`. Gated here rather than
+// run twice: that module drives the same property on the other instruction set through the same
+// `block_driver` and `net_stack` binaries, and a second copy would double the suite's slowest tests
+// to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn std_net_runs_over_the_socket_contract() {
@@ -626,27 +553,12 @@ fn std_net_runs_over_the_socket_contract() {
 /// **A `std::net::TcpListener` serves a port it was granted, and refuses one it was not**
 /// (milestone 64's inbound half, on milestone 107's contract).
 ///
-/// The ordinary `std_exerciser` binary, spawned over a stack whose listen grant is exactly
-/// `NET_LISTEN_PORT`, binds that port through `std::net`, accepts connections a **host** process
-/// opens through QEMU's `hostfwd`, reads each request and composes an answer. The program names no
-/// capability and no socket id; it calls `bind`, `accept`, `read_exact` and `write_all`, which is
-/// what a Rust server is written out of. This is the difference between "a crate compiles" and "a
-/// server runs", and it is what milestone 55's Samba-shaped workload stands on.
-///
-/// **Two connections, and the second is the load-bearing one.** A listener that accepts once and
-/// goes deaf would pass a one-round gate and is precisely what a file server cannot use; the re-arm
-/// happens inside `ACCEPT` (notes/net/the-inbound-half.md) and nothing but a second `accept()` proves it.
-///
-/// **The refusals ride in this same spawn rather than in a test of their own**, which is the
-/// machine's call and not a preference: a net test spends minutes in `net_stack`'s userspace
-/// smoltcp poll, so a boot is the expensive unit. `denied refused` is
-/// `socket_contract::fixture::DENIED_PORT`, outside the grant this stack carries, answered
-/// `PermissionDenied`; `in use refused` is the granted port asked for twice, answered `AddrInUse`.
-/// The **whole-stack** refusal is the sibling test above, whose stack carries no grant at all.
-///
-/// The host's half is `xtask`'s inbound prober, which requires its own bytes back from the guest
-/// and fails the leg if nobody answered. The guest's half covers "the connection was served"; the
-/// host's covers "and what came back was the guest's own answer", which the guest cannot know.
+/// The ordinary `std_exerciser`, over a stack granted exactly `NET_LISTEN_PORT`, binds it through
+/// `std::net` and serves two connections a host opens through `hostfwd`; the second proves the
+/// listener re-arms. `denied refused` (`fixture::DENIED_PORT`, `PermissionDenied`) and `in use
+/// refused` (`AddrInUse`) ride the same spawn, because a boot is the expensive unit; the sibling
+/// test above is the stack with no grant. xtask's inbound prober checks the answer was the guest's
+/// own, which the guest cannot know. See notes/net/std-tcp-listener.md.
 // RISC-V twin: `riscv_virtio_tests::a_std_program_serves_a_granted_listening_port`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]

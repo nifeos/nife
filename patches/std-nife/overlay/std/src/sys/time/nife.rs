@@ -1,37 +1,28 @@
-//! Time on nife: the monotonic counter for `Instant`, and a granted clock for `SystemTime`.
+//! Time on nife: the monotonic counter for `Instant`, and a granted clock for `SystemTime`. See
+//! notes/std.md.
 //!
 //! # `Instant` is the counter, and nothing may perturb it
 //!
 //! Exactly what the hardware gives: monotonic ticks since boot, converted with the counter
 //! frequency, read with one instruction and no syscall (the one ambient readable the ABI grants,
 //! notes/abi.md). Nothing in this file, and nothing in the clock service, ever touches it.
-//!
+
 //! # `SystemTime` is the counter plus a granted offset (milestone 51, DECISIONS §43)
 //!
 //! Wall-clock time is **counter + offset**, and the offset lives in a page the clock service
 //! publishes and a reader holds **read-only**. So `SystemTime::now()` is two loads and an add, with
-//! no server round trip, and adjusting the wall clock cannot move `Instant` **by construction**:
-//! the counter is not in the write path.
+//! no server round trip, and adjusting the wall clock cannot move `Instant` **by construction**.
+//! Reading the clock is an authority: slot [`rt::CLOCK_SLOT`] holds a `PageFrame` capability naming
+//! the clock page, which the loader maps read-only at [`rt::CLOCK_PAGE`]. A program given neither
+//! **does not know what time it is**, and this file says so rather than guessing.
+
+//! # An unknown clock panics
 //!
-//! Reading the clock is therefore an authority a program either was granted or was not:
-//!
-//! - **Slot [`rt::CLOCK_SLOT`]** holds a `PageFrame` capability naming the clock page, and the loader
-//!   maps that page read-only at [`rt::CLOCK_PAGE`]. A program given both has a real wall clock.
-//! - A program given neither **does not know what time it is**, and this file says so rather than
-//!   guessing.
-//!
-//! # What replaced the lie, and why the replacement panics
-//!
-//! Until this milestone `SystemTime` was the monotonic counter offset from `UNIX_EPOCH`, so the
-//! machine reported **January 1970 plus uptime**. That is the exact failure mode DECISIONS §42
-//! forbids: not that the platform lacked a clock, but that the interface lied about it, and a
-//! caller could not tell a wrong answer from a right one.
-//!
-//! `SystemTime::now()` has no error channel, so the only loud refusal available is a **panic**, and
-//! that is what an unknown clock gets. A program that never asks the time is unaffected; a program
-//! that asks gets told, with the reason, instead of quietly stamping a log with 1970. The readable
-//! form of the same state lives one level down in `clock_contract::state`, for anything that wants to
-//! check before asking. See notes/std.md.
+//! `SystemTime::now()` has no error channel, so a program granted no clock gets a **panic** with
+//! the reason, never the counter offset from `UNIX_EPOCH` (January 1970 plus uptime): that is the
+//! lie DECISIONS §42 forbids, where a caller cannot tell a wrong answer from a right one. A program
+//! that never asks the time is unaffected. `clock_contract::state` is the readable form of the same
+//! state, for anything that wants to check before asking.
 
 use crate::sync::atomic::{AtomicU8, Ordering};
 use crate::sys::pal::nife::clockproto::{self, ClockPage};
@@ -57,19 +48,13 @@ fn monotonic_nanos() -> u64 {
     d.as_secs() * clockproto::NANOS_PER_SEC + d.subsec_nanos() as u64
 }
 
-// --- Is a clock reachable at all? -------------------------------------------------------------
-//
-// This has to be answerable WITHOUT touching the clock page, because a program that was not granted
-// one has no page mapped and a probe that read it would fault instead of returning an answer. So
-// the probe is an invocation of the capability in the slot, with a method number no object defines:
-//
-//   - no capability in the slot: the kernel answers `NoSuchSlot` (-1).
-//   - the clock page's PageFrame capability: the kernel answers `BadMethod` (-5), which is a refusal
-//     from a real object and therefore proof that one is there.
-//
-// Cached, because the answer cannot change: a capability table slot's contents are fixed at spawn on this
-// ABI (0 = not yet asked, 1 = granted, 2 = not granted). Same shape as the fs PAL's probe.
-
+/// Whether a clock page was granted: 0 = not yet asked, 1 = granted, 2 = not granted.
+///
+/// The probe must not touch the page, because a program granted none has no page mapped and a read
+/// would fault. It invokes the slot with a method no object defines: an empty slot answers
+/// `NoSuchSlot` (-1), and the clock page's PageFrame answers `BadMethod` (-5), a refusal from a
+/// real object. Cached, because a slot's contents are fixed at spawn on this ABI. Same shape as the
+/// fs PAL's probe.
 static GRANTED: AtomicU8 = AtomicU8::new(0);
 
 /// A method number no object type defines, so the invocation can only ever be refused.

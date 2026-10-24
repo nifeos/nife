@@ -4,34 +4,25 @@
 //! is what makes an attack a fair test rather than a different program failing for its own reasons
 //! (the same reason `gpu_driver` carries its own escape role).
 //!
-//! What an honest window holds:
+//! An honest window cannot name another client, another surface, or the screen. No request takes a
+//! window id (the protocol has none), so there is nothing to forge, and its neighbours' pixels are
+//! not in its address space, so there is nothing to reach. See notes/compositor.md.
+
+//! # What an honest window holds
 //!
 //! - slot 0, a **report** endpoint: its verdict goes to whoever spawned it;
 //! - slot 1, the **doorbell** (WRITE): where it rings the compositor;
-//! - slot 2, an **input** endpoint (READ), *only if it was granted one*. Holding this is what makes a
-//!   client eligible for focus; a client without it cannot be sent a keystroke by anyone, and its
-//!   attempt to receive on that slot is refused by the kernel with `NoSuchSlot`;
-//! - a **control page** and a **surface**: its own geometry, its own damage rectangle, its own pixels.
-//!
-//! And that is all. It cannot name another client, another surface, or the screen. There is no window
-//! id in any request it can make (the protocol takes none), so there is nothing to forge; and the
-//! pixels of its neighbours are not in its address space, so there is nothing to reach.
-//!
+//! - slot 2, an **input** endpoint (READ), *only if it was granted one*. Holding it makes a client
+//!   eligible for focus; without it nobody can send it a keystroke, and the kernel refuses its
+//!   receive there with `NoSuchSlot`;
+//! - a **control page** and a **surface**: its own geometry, its own damage rectangle, its own
+//!   pixels.
+
 //! # What the roles prove
 //!
-//! - [`ROLE_PROBE_INPUT`]: asks the kernel to receive on the input slot it was **not** granted. The
-//!   refusal is `abi::Error::NoSuchSlot` (-1), "there is nothing there", which is what
-//!   no-ambient-authority reads like from the inside: not a permission error from a server that
-//!   consulted a list.
-//! - [`ROLE_PROBE_NEIGHBOUR`]: writes at the address where its neighbour's pixels really do live, one
-//!   page past its own grant. The kernel hands it that address, so it is a perfectly informed
-//!   attacker; it faults anyway, because the boundary is the mapping and not the layout.
-//! - [`ROLE_PROBE_SCREEN`]: reads the composed screen. It drew into that screen, and it cannot see it:
-//!   there is no ambient display here, and a screenshot is a capability.
-//! - [`ROLE_CAPTURE`]: was granted a read-only mapping of the screen and of the window list, so it
-//!   *can* enumerate and screenshot, and it reports a digest the kernel checks against the picture it
-//!   computed itself. Then it tries to write the screen and dies, which is the other half of the
-//!   grant: a screenshot tool cannot deface what it can read.
+//! The probes ([`ROLE_PROBE_INPUT`], [`ROLE_PROBE_NEIGHBOUR`], [`ROLE_PROBE_SCREEN`]) each reach
+//! for what an honest window was not granted and are refused or killed; [`ROLE_CAPTURE`] is granted
+//! the screen read-only and cannot deface it. Each role's constant says what it proves.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -70,23 +61,31 @@ const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
 /// The screen and the window list, read-only, and **only** for a client granted them.
 ///
-/// **`SCREEN_VA` moved and is 2 MiB-aligned** (milestone 142, DECISIONS §102): the screen grew
-/// from 8 page frames to 900 at the scanout's first size (up to 4 MiB from `SCREEN_VA`), so the
-/// old `WLIST_VA` (`0x78_0000`, inside that span's old 32 KiB neighbourhood) would now be inside
-/// the *middle* of the screen's own mapping and `PageFrame::MAP` would refuse it as
-/// already-mapped. `WLIST_VA` moved clear, with room to spare: the scanout was retargeted
-/// 2026-08-27 to 924x344 (311 page frames, up to 1.25 MiB from `SCREEN_VA`, one 2 MiB window
-/// rather than the two the 900-frame size spanned), so `SCREEN_VA`'s alignment now keeps the run
-/// inside even fewer page-table windows than it was chosen for
-/// (`compositor_service::MAP_BUDGET_PAGES`'s own comment has the arithmetic).
+/// `SCREEN_VA` is 2 MiB-aligned (milestone 142 (a text display good enough that people use it
+/// instead of a GUI), DECISIONS §102 (a Frame names a run of pages)), and `WLIST_VA` sits clear of
+/// the 4 MiB the screen spans at 900 page frames, the scanout's first size: inside that span,
+/// `PageFrame::MAP` would refuse the window list as already mapped. At 924x344 (311 page frames,
+/// 1.25 MiB, the scanout since 2026-08-27) the screen fits one 2 MiB page-table window;
+/// `compositor_service::MAP_BUDGET_PAGES`'s comment has the arithmetic.
 const SCREEN_VA: u64 = address_space_map::pair_page(0x0000_0000_0080_0000);
 const WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
 
 /// Roles, as a bitmask in `arg0`. A plain window is 0.
 const ROLE_INPUT: u64 = 1 << 0;
+/// Receive on the input slot it was **not** granted. The refusal is `abi::Error::NoSuchSlot` (-1),
+/// "there is nothing there", which is what no-ambient-authority reads like from the inside: not a
+/// permission error from a server that consulted a list.
 const ROLE_PROBE_INPUT: u64 = 1 << 1;
+/// Write at the address where its neighbour's pixels really do live, one page past its own grant.
+/// The kernel hands it that address, so it is a perfectly informed attacker; it faults anyway,
+/// because the boundary is the mapping and not the layout.
 const ROLE_PROBE_NEIGHBOUR: u64 = 1 << 2;
+/// Read the composed screen. It drew into that screen and cannot see it: there is no ambient
+/// display, and a screenshot is a capability.
 const ROLE_PROBE_SCREEN: u64 = 1 << 3;
+/// Granted a read-only mapping of the screen and the window list, so it *can* enumerate and
+/// screenshot, and it reports a digest the kernel checks against the picture it computed itself.
+/// Then it tries to write the screen and dies: a screenshot tool cannot deface what it can read.
 const ROLE_CAPTURE: u64 = 1 << 4;
 const ROLE_VICTIM: u64 = 1 << 5;
 const ROLE_SMALL_DAMAGE: u64 = 1 << 6;
@@ -396,17 +395,12 @@ fn read_validated_geometry() -> (u32, u32, u32, u32) {
     let id = rd32(CTL_VA + ctl::ID);
     let w = rd32(CTL_VA + ctl::WIDTH);
     let h = rd32(CTL_VA + ctl::HEIGHT);
-    // We are *told* our geometry rather than assuming it: at rung two the compositor really does
-    // choose the size, and a client that assumed the constants would paint the wrong shape the first
-    // time a scene changed. It is still checked against the largest surface the contract allows,
-    // because a control page claiming more than that describes memory we were not granted, and the
-    // first thing that would happen is a fault while painting our own window.
-    // **Checked arithmetic, because `w * h * 4` in `u32` wraps and the check is against values
-    // from a shared page** (milestone 43, notes/shared-page-audit.md finding 4). `w = h = 0x10000`
-    // multiplied out to exactly 0, sailed through the bound it was written to fail, and the paint
-    // loop below would then write 2^32 pixels past a two-frame surface. `display_terminal.rs`
-    // validates the same geometry by division for the same reason; this is the multiplication
-    // spelled so it cannot lie.
+    // Told rather than assumed, because the compositor chooses the size; still bounded by the
+    // largest surface the contract allows, since a larger claim describes memory we were not
+    // granted. Checked arithmetic: `w * h * 4` in `u32` wraps, and `w = h = 0x10000` multiplies to
+    // exactly 0, which would pass the bound and let the paint loop write 2^32 pixels past a
+    // two-frame surface (milestone 43 (a second security audit), notes/shared-page-audit.md finding
+    // 4). `display_terminal.rs` validates the same geometry by division.
     let bytes = w
         .checked_mul(h)
         .and_then(|px| px.checked_mul(4))

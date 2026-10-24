@@ -2,17 +2,13 @@
 //!
 //! The kernel's entry contract is the one OpenSBI's jump and U-Boot's `booti` meet
 //! (`kernel/src/arch/riscv64/boot.s`): S-mode, **paging off**, `a0` = this hart's id, `a1` = the
-//! physical address of the device tree. UEFI runs this loader in S-mode too, possibly with paging
-//! on (an identity map), and it is the only one of the three architectures where the kernel needs
-//! a number the firmware must be asked for: which hart it is running on. UEFI answers that with
-//! `RISCV_EFI_BOOT_PROTOCOL` (read from EDK2's header, [`RiscvBootProtocol`]); a firmware
-//! without it is asked through the device tree's `/chosen/boot-hartid`, which U-Boot writes.
-//!
-//! **There is no `riscv64` UEFI target in rustc** (`rustc --print target-list`, 2026-09-19, lists
-//! `aarch64-`, `i686-` and `x86_64-unknown-uefi` only). This module is therefore compiled for
-//! `riscv64imac-unknown-none-elf` as a position-independent executable, and `cargo xtask` turns
-//! the ELF into a PE/COFF image (`xtask/src/portable_executable.rs`); see notes/boot-stick.md.
-//!
+//! device tree's physical address. The hart id is the one number the firmware must be asked for:
+//! `RISCV_EFI_BOOT_PROTOCOL` (read from EDK2's header, [`RiscvBootProtocol`]), or else the device
+//! tree's `/chosen/boot-hartid`, which U-Boot writes. rustc has no `riscv64` UEFI target, so this
+//! is built for `riscv64imac-unknown-none-elf` as a position-independent executable and `cargo
+//! xtask` turns the ELF into a PE/COFF image (`xtask/src/portable_executable.rs`); see
+//! notes/boot-stick.md and notes/x86-uefi-boot/loader-design.md.
+
 //! # BUGS
 //!
 //! - **The kernel is linked for `0x8020_0000`** (`kernel/link-riscv64.ld`), which is QEMU `virt`'s

@@ -9,6 +9,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The RISC-V arch tests](../riscv-arch-tests.md): RISC-V twins of the aarch64 arch unit tests.
 - [RISC-V Summit Europe 2026, read for what it changes here](../riscv-summit-2026.md).
 - [Porting to x86_64](../x86-port.md): the third-architecture port, and what did not fit `arch/`.
+- [The hand-assembled x86_64 user programs](../x86-user-programs.md): the byte-listing fixtures and why a blocking escape must exit.
 - [Booting x86_64 from real firmware](../x86-uefi-boot.md): the UEFI loader, and the bench procedure for xenon.
 - [xenon's firmware, page by page](../xenon-firmware.md): the OptiPlex 7050 setup UI, transcribed setting by setting. Name provisional.
 - [Where nife could actually run, and what the three bench machines are named](../target-hardware.md).

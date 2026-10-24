@@ -1,36 +1,12 @@
-//! **The wall-clock contract** (§43 (reading the clock is a page, setting it is a page you may
-//! write, proposing is an endpoint), notes/clock.md): the shared clock page's layout, the propose
-//! protocol, and the policy the service applies, defined once for the clock service, its readers,
-//! the std PAL and the kernel-side tests.
+//! The wall-clock contract (§43 (reading the clock is a page, setting it is a page you may write,
+//! proposing is an endpoint)): the clock page's layout, the propose protocol and the policy the
+//! service applies, defined once for the clock service, its readers, the std PAL and the tests.
 //!
-//! ```text
-//!                              the RTC's registers (a DeviceFrame, one holder)
-//!                                        │
-//!                              ┌─────────▼────────┐
-//!    propose ──an endpoint────►│  clock service   │
-//!   (bounded, policy applies)  └─────────┬────────┘
-//!                                        │ writes
-//!                              ┌─────────▼────────┐
-//!                              │  the clock page  │◄── set: the SAME page, mapped read/WRITE
-//!                              └─────────┬────────┘
-//!                                        │ mapped read-only
-//!                                    readers
-//! ```
-//!
-//! - **Read** is a read-only mapping of the page plus the ambient monotonic counter: two loads and
-//!   an add, no syscall. A process with no mapping does not know the time, and can say so.
-//! - **Set** is a read/write mapping of the same page: writing the offset is setting the clock.
-//! - **Propose** is an endpoint; a proposer holds no writable page, so [`policy::decide`] answers.
-//!   Its bounds are asymmetric: forward skips instants nobody observed, backward repeats them.
-//!
-//! So the rights ladder is the kernel's own (no capability, `PageFrame` `READ`, `PageFrame`
-//! `WRITE`, `Rendezvous` `WRITE`), visible to `caps`, with nothing new in the syscall surface.
-//! Wall-clock time is [`wall_nanos`], the monotonic counter in nanoseconds plus an offset, and only
-//! the offset is ever written, so a clock step cannot perturb `Instant` by construction.
-//! A step is an offset write, and the counter never sees it.
-//!
-//! Everything is nanoseconds since the Unix epoch in a `u64`, one unit everywhere so no conversion
-//! sits at a boundary. It runs out in 2554, past every horizon here.
+//! Reading is a read-only mapping of [`ClockPage`] plus the monotonic counter, setting is a
+//! read/write mapping of the same page, and proposing is an endpoint [`policy::decide`] answers.
+//! Wall-clock time is [`wall_nanos`]: the counter plus an offset, and only the offset is ever
+//! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
+//! epoch in a `u64`, which runs out in 2554. See notes/clock.md.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -168,44 +144,15 @@ pub struct Reading {
     pub generation: u64,
 }
 
-/// **The clock page**, as seen through one process's mapping of it.
-///
-/// A seqlock, because the readers are many, the writers are few, and a reader must never block a
-/// writer or vice versa: there is no lock a process could hold across an address-space boundary
-/// anyway, and a torn read of a 128-bit-wide state is a wrong time rather than a crash, which is
-/// the worst kind of bug to leave possible.
-///
-/// **The memory ordering is the point, not decoration** (the project's rule 4: assume weak
-/// ordering, because we are on ARM and RISC-V and that is a gift). The writer's data stores must
-/// not be visible before it has claimed the sequence, and must all be visible before it releases
-/// it; the reader's data loads must not be hoisted above the first sequence read nor sunk below
-/// the second. On x86 a sloppy version of this would pass every test forever and then fail on the
-/// hardware we actually run.
-///
-/// **That last sentence was true of this code, and it took a model checker to find out** (milestone
-/// 80, 2026-08-04). The writer claimed the sequence and then wrote the data with nothing ordering
-/// the claim ahead of them, so a reader could observe the new offset while the sequence still read
-/// even and unchanged, revalidate successfully, and return a state from one publish beside an
-/// offset from another. A wrong wall clock, silently. It is not reachable on x86, QEMU's TCG
-/// explores almost none of the orderings that produce it, and every host test and every emulated
-/// boot passed throughout. The fix is a `fence(Release)` in [`publish`](Self::publish), commented
-/// where it sits. See notes/interleaving.md.
-///
-/// Writers are **multiple** (the service, and whoever holds the page read/write), so claiming the
-/// sequence is a compare-exchange rather than a plain store. Two writers racing is not a design we
-/// encourage, but it is a design the capability layout permits, and a seqlock that assumed a single
-/// writer would corrupt silently rather than serialise.
+/// **The clock page**, as seen through one process's mapping of it: a seqlock, because readers
+/// are many, writers are several (so the claim is a compare-exchange), and no lock can be held
+/// across an address-space boundary. Its memory ordering is load-bearing on ARM and RISC-V; see
+/// notes/clock.md ("The seqlock, and why the memory ordering is load-bearing").
 ///
 /// # BUGS
 ///
-/// - **The orderings are checked against C11, not against ARM's model or RISC-V's.**
-///   `script/interleaving-check` runs loom, which searches the C11 model: a tear it finds is real,
-///   and a clean run is not a proof about either ISA. Litmus-level confidence would need herd7-style
-///   tooling, and nothing in this tree yet reads this page from two physical cores under load.
-/// - **A reader spins while a writer holds the sequence, and the spin has no bound.** A writer that
-///   faults between its claim and its release leaves the page permanently odd and every reader
-///   spinning in [`read`](Self::read). The window is four stores wide and the writer holds no lock,
-///   so nothing can be preempted into a deadlock; a *killed* writer is simply not recovered from.
+/// - The orderings are checked against C11 by loom, not against ARM's or RISC-V's model.
+/// - A writer killed between its claim and its release leaves every reader spinning forever.
 #[derive(Debug, Clone, Copy)]
 pub struct ClockPage {
     base: *const AtomicU64,
@@ -278,7 +225,7 @@ impl ClockPage {
             // it fails the same three loom harnesses the writer's release fence does, so both
             // halves of the pair are checked rather than argued (notes/interleaving.md).
             //
-            // PAIR: the writer's `W_SEQ.store(claimed + 2, Ordering::Release)` at the end of
+            // PAIR: the writer's `fence(Ordering::Release)` after its claim of the sequence in
             // `publish`, below in this file. **The only protocol in the tree where both halves must
             // be here**, because a reader is in a different address space and reaches this page with
             // no syscall at all: there is no IPC rendezvous underneath to supply the edge the way
@@ -315,25 +262,15 @@ impl ClockPage {
                 break s;
             }
         };
-        // **The odd sequence must be visible BEFORE the data it protects.** This is the half of a
-        // seqlock that a total-store-order machine gives you for free and a weakly ordered one does
-        // not, and it was missing here until milestone 80's loom run found it (2026-08-04; see
-        // notes/interleaving.md). Without it a reader can observe the new offset while the sequence
-        // still reads even and unchanged, so its revalidation passes and it returns a state from
-        // one publish beside an offset from another: a wrong wall clock, silently.
+        // **The odd sequence must be visible BEFORE the data it protects**, or a reader can see
+        // the new offset under an even, unchanged sequence and pass revalidation with a torn
+        // reading. A store-store barrier, Linux's `smp_wmb()` in `write_seqcount_begin`: `AcqRel`
+        // or `SeqCst` on the compare-exchange still tears, because an RMW orders accesses around
+        // itself, not its own store ahead of the plain stores after it (notes/clock.md).
         //
-        // A `fence(Release)` and not a stronger ordering on the claim, which is the part worth
-        // knowing. `AcqRel` and even `SeqCst` on the compare-exchange were both tried and both
-        // still tear: an acquire or release RMW orders accesses around *itself*, and what this
-        // needs is its own store ordered ahead of the plain stores that follow. That is a
-        // store-store barrier between the two, which is exactly the `smp_wmb()` Linux puts in
-        // `write_seqcount_begin` for the same reason.
-        //
-        // PAIR: the reader's `fence(Ordering::Acquire)` in `read`, above in this file. That one is
-        // the load-load half of the same barrier: this fence keeps the odd sequence ahead of the
-        // data, and the reader's keeps its revalidating load of `W_SEQ` behind the data it is
-        // revalidating. Neither one is sufficient alone, and milestone 80's loom run failed with
-        // either removed (notes/interleaving.md, notes/memory-ordering.md).
+        // PAIR: the reader's `fence(Ordering::Acquire)` in `read`, the load-load half: it keeps
+        // the revalidating load of `W_SEQ` behind the data. Loom fails with either one removed
+        // (notes/interleaving.md, notes/memory-ordering.md).
         fence(Ordering::Release);
         self.word(W_STATE).store(new_state, Ordering::Relaxed);
         self.word(W_OFFSET).store(offset_nanos, Ordering::Relaxed);
