@@ -144,7 +144,7 @@ here as unattributed rather than as a model
 ([the correction](coes/2026-10-03-the-merge-rate.md)). `script/effort` has the same gap and its
 charts show that week's z.ai work as nothing at all.
 
-"Other models" is a trailer the script does not recognize.
+“Other models” is a trailer the script does not recognize.
 
 ## Lines touched, by the model that signed them
 
