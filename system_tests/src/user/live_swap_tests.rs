@@ -85,8 +85,8 @@ const DEV_VA: u64 = address_space_map::pair_page(0x0310_0000);
 /// The console UART's physical address, matching `crate::console`: the device the operator lends,
 /// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161 (the x86_64 kernel
 /// port)), whose `x86_64` arm is zero: COM1 is in the I/O port space, so there is no page for a
-/// device capability to map ([DECISIONS
-/// §121](../../../design/decisions/0121-port-io-capability.md), PROPOSED). That zero is what
+/// device capability to map ([DECISIONS §121](../../../design/decisions/0121-port-io-capability.md)
+/// (what a device capability is when the device has no page), PROPOSED). That zero is what
 /// [`NO_DEVICE_PAGE`] tests for.
 use crate::user::UART_PHYS;
 /// This file needs a device that is a page, and `x86_64` has none.
