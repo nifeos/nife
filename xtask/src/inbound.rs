@@ -24,36 +24,15 @@ const INBOUND_OUT: &[u8] = b"nife-out!";
 /// stopping early would hang the guest's own test rather than the host's.
 const INBOUND_OFFERED: usize = 4;
 
-/// How many of those the prober must actually **collect** for the leg to pass, which is not the
-/// same number, and the gap is deliberate.
+/// How many of those the prober must actually **collect** for the leg to pass.
 ///
-/// **Three of four is a provable claim, not a fudge.** Neither program can supply more than two, so
-/// a host that collected three collected at least one from *each* of them. That is exactly the half
-/// no in-guest assertion can make: the bytes reached a process outside the machine, for both
-/// listeners.
-///
-/// **What the fourth round would have added, and why it is not worth what it costs.** Requiring all
-/// four would also confirm the *re-arm* host-side, which is what milestone 107's `2` did when there
-/// was one listening window. But the re-arm is asserted where it is actually checkable, inside each
-/// guest test: `serve_one_inbound` fails the run if a second `accept` does not return with the right
-/// payload, and a guest cannot fake that. Paying for a duplicate of it with a flaky leg is a bad
-/// trade.
-///
-/// **And it was measured rather than assumed.** With four required, run 32195227733's riscv64 leg
-/// reported "the guest served 3 of 4" while **all 279 guest tests passed**, on a runner this
-/// script's own load instrument called not oversubscribed. So the guest served four and the host
-/// collected three: one answer went somewhere the prober was not reading. Five local riscv boots did
-/// not reproduce it, which puts it around one in six on that runner class, and it is exactly the
-/// kind of intermittent red that notes/net.md records misleading three separate milestones.
-///
-/// **The mechanism is still not identified**, and a second lane went looking on 2026-08-19 without
-/// finding it. What that lane did establish is worth having before you start: the failure is
-/// host-side by elimination (every guest path that serves fewer than two rounds is loud), the
-/// teardown race is ruled out by timing, and it does not reproduce on macOS because CI is
-/// `ubuntu-24.04-arm` and this is an emulator-timing failure. It also left the prober's transcript
-/// printing on green runs, so the next red one has a known-good shape to be read against. The whole
-/// finding is in notes/net/the-inbound-check.md; read it before touching this number. This constant makes the gate
-/// robust to losing one round without letting it claim less than it proves.
+/// Neither program can supply more than two, so three collected means at least one from *each*
+/// listener reached a process outside the machine, the half no in-guest assertion can make. The
+/// fourth would only re-confirm the re-arm, which each guest test asserts itself
+/// (`serve_one_inbound` fails the run if a second `accept` does not answer). Run 32195227733's
+/// riscv64 leg collected three of four with all 279 guest tests passing, and the mechanism of that
+/// lost round is not identified. Read notes/net/the-inbound-check.md before touching this number:
+/// at two it proves nothing one listener could not fake.
 const INBOUND_REQUIRED: usize = 3;
 
 /// Ask the OS for a free TCP port on the loopback and let it go again.
@@ -69,18 +48,15 @@ fn free_loopback_port() -> Option<u16> {
     Some(port)
 }
 
-/// **The host side of the inbound gate** (milestone 107): a host process that connects TO the guest.
+/// **The host side of the inbound gate** (milestone 107): a host process that connects TO the
+/// guest.
 ///
-/// Everything else the suite proves about the network is the guest as a client. This is the mirror,
-/// and it needs a host actor for the same reason the scanout check does: nothing inside the guest
-/// can open a connection to the guest from outside it. QEMU's `hostfwd` forwards a loopback port
-/// into the guest's listening port, and this thread connects to it, sends a payload, and requires
-/// the guest's own answer back.
-///
-/// It **retries for the whole run** rather than being timed to the accept test, because nothing here
-/// knows when that test starts. A connection that arrives while some other net test holds the NIC
-/// finds no listener and is reset by smoltcp, which costs nothing and is indistinguishable from any
-/// other closed port. It stops the moment both rounds have completed.
+/// Nothing inside the guest can open a connection to it from outside, so QEMU's `hostfwd` forwards
+/// a loopback port into the guest's listening port, and this thread connects, sends a payload, and
+/// requires the guest's own answer back. It **retries for the whole run**, because nothing here
+/// knows when the accept test starts: a connection that arrives while another net test holds the
+/// NIC is reset by smoltcp at no cost. It stops once both rounds have completed. See
+/// notes/net/the-inbound-half.md.
 pub(crate) struct InboundProber {
     arch: String,
     port: Option<u16>,
@@ -143,16 +119,13 @@ impl InboundProber {
 
     /// **Stamp a guest line on the prober's clock, if it is about a listener** (milestone 514).
     ///
-    /// The prober knows when it opened each connection and the guest knows when it listened and
-    /// accepted, and until this the two were never on one clock, so a lost round could only be
-    /// argued about. A leg that relays the guest's transcript line by line (the HVF leg) hands
-    /// each line here; the ones kept are the two listener tests' own lines and their verdicts:
-    /// the hand-written test's start (its thread-census line prints once `net_stack` is up and
-    /// before it listens), the std test's start, and each line the std program prints, which its
-    /// test echoes as it arrives (`std listen| listen ok` is the bind; `in use refused` is the
-    /// last thing before its first `accept`). The stamp is when the relay read the line, which
-    /// trails the guest by the serial path's latency, a few milliseconds against rounds seconds
-    /// apart.
+    /// A leg that relays the guest's transcript line by line (the HVF leg) hands each `line` here,
+    /// so a lost round can be read against when the guest listened and accepted. Kept: each
+    /// listener test's start (the hand-written test's thread-census line, printed once `net_stack`
+    /// is up and before it listens, and the std test's start line), each `std listen| ` echo
+    /// (`listen ok` is the bind; `in use refused` is the last thing before the first `accept`), and
+    /// their verdicts. The stamp trails the guest by the serial path's few milliseconds, against
+    /// rounds seconds apart.
     ///
     /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). A verb for stamping a line;
     /// `stamp` was considered.
@@ -232,24 +205,16 @@ impl InboundProber {
     }
 }
 
-/// One prober thread: connect, speak, and require the guest's answer, up to `INBOUND_OFFERED`
-/// times, passing at `INBOUND_REQUIRED`.
+/// One prober thread on `port`: connect, speak, and require the guest's answer, up to
+/// `INBOUND_OFFERED` times, passing at `INBOUND_REQUIRED`, until `stop`; events are timed from
+/// `started`. Returns the verdict and the trace.
 ///
-/// **Never abandon a connection because it is slow, and this is the whole subtlety** (found by the
-/// first green run, where the guest passed and the prober reported nothing). A `connect` here
-/// succeeds the moment QEMU accepts the host side; slirp only then starts the guest side, and if the
-/// guest is not *polling* nothing answers the SYN. Dropping such a connection does not take back the
-/// payload already written: slirp keeps the guest-side connection, completes the handshake whenever
-/// the guest next polls, and delivers those bytes to a socket whose host end has gone. The guest then
-/// serves a round nobody is listening for, and its answer is discarded.
-///
-/// One retry every 100 ms for a whole boot makes that a queue of them, which is exactly what
-/// happened: the guest served both its rounds from abandoned connections and passed, while the
-/// prober timed out on its own live one and reported zero.
-///
-/// So a timeout is **not** a reason to give up: keep reading the same connection until it answers,
-/// dies, or the run ends. A hard error (the RST a guest with no listener sends, which is the common
-/// case for most of a boot) *is* a reason, and a cheap one, because nothing was consumed.
+/// **Never abandon a connection because it is slow.** `connect` succeeds when QEMU accepts the host
+/// side; slirp then holds the payload and completes the guest side whenever the guest next polls,
+/// so a dropped connection becomes a round the guest serves to nobody. A timeout keeps reading the
+/// same connection until it answers, dies or the run ends; a hard error (the RST of a guest with no
+/// listener, most of a boot) gives up cheaply, since nothing was consumed. See
+/// notes/net/the-inbound-half.md.
 fn probe_inbound(
     port: u16,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -421,16 +386,11 @@ fn read_error_is_not_yet(kind: std::io::ErrorKind) -> bool {
 
 /// **What every prober connection did, kept so a failure can name a mechanism instead of a count.**
 ///
-/// The check has failed twice with nothing to go on but "the guest served 3 of 4", which does not
-/// distinguish an abandoned connection from a lost answer from a teardown race, and each of those
-/// wants a different fix. The read loop in `probe_inbound` has five exits; this records which one
-/// each connection took, how long it was held, and how many bytes it had collected when it ended.
-///
-/// **Deliberately cheap and unconditional.** A boot makes a few hundred attempts at most, the
-/// counters are increments, and the per-connection lines are kept only for the ones that carried
-/// bytes or were held long enough to be interesting. The summary prints on a **passing** run too,
-/// which is the half that was missing: a red run is only readable against a known-good shape, and
-/// the two failures on record had none to compare with.
+/// "The guest served 3 of 4" cannot tell an abandoned connection from a lost answer from a teardown
+/// race, and each wants a different fix. This records which of `probe_inbound`'s five read-loop
+/// exits each connection took, how long it was held, and how many bytes it had collected. It is
+/// cheap (a few hundred attempts a boot, counters, lines only for connections worth one), and its
+/// summary prints on a passing run too, so a red run can be read against a known-good shape.
 #[derive(Default)]
 struct InboundTrace {
     attempts: usize,
