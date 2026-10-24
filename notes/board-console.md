@@ -82,8 +82,8 @@ this is a choice inside a contract that is already fixed rather than anything tw
 on. Carriage return because the kernel's own instruction is *"press any key on this console"* and
 Enter is what a person presses when told that: a tool whose byte is the one the documented manual
 procedure produces is running the same experiment the procedure runs. `NUL` was the other
-candidate, refused narrowly, and the reasoning is in `crates/serial_console/src/stop.rs` beside the
-constant.
+candidate, refused narrowly, and the reasoning is in
+[board-console/modules.md](board-console/modules.md).
 
 It will not send anything else. There is no mode that types a line, no mode that drives U-Boot,
 and no keyboard. **The hazard is not writing; it is an open keyboard beside a countdown a stray
