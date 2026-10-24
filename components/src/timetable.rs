@@ -1,42 +1,24 @@
 //! **The timetable: scheduled execution where every entry is a grant.** A cron whose entries are
-//! grant expressions, checked at registration by `grant_plan::plan` as the shell checks a prompt
-//! line, so a scheduled child's endowment is planned, printed and fixed before the first tick.
-//! Compromising this process yields the entries' summed endowments, not the system.
+//! grant expressions, planned at registration by `grant_plan::plan` and printed before the first
+//! tick. Compromising this process yields the entries' summed endowments, not the system.
 //!
-//! What it holds is `timetable::contract`'s table and nothing else: the plan page, an untyped
-//! budget (every instance's region, the loader's scratch, and the well a `--mem` grant nests in),
-//! and the supervision and reaping endpoints. `a2` is the registration page, per §222 (who holds a
-//! user's schedule); without one the document is the compiled-in `timetable.conf`. `a1` is an
-//! archive of exactly the programs the plan builds, and `timetable::Audit` prints how wide it was.
-//! No clock page unless granted, and no directory, console, network or device, which is why a
-//! scheduled `date` is refused at registration. A plan holds a kilobyte-sized
-//! `grant_plan::Endowment` per entry, so it needs a big stack; overflow reads like a wild pointer.
-//!
-//! In store mode (milestone 152's Fork 8 D) it holds read-only views of the store's `activation/`
-//! and `packages/` instead of an archive, resolves each entry as the prompt resolves a bare name,
-//! and re-plans at every fire (`Registry::plan_at_fire`), so upgrades and uninstalls take effect
-//! at the next beat. A replacement document is polled from the page once per pass, registered in
-//! full before anything changes, and an empty one ends the process. Granted the clock page, it
-//! keeps calendar lines through `Registry::observe`; without it every calendar line is
-//! `Unbacked::WallClock`. With a page, [`OUT`] is silent and the exit code goes in [`PAGE`].
-//!
+//! It holds `timetable::contract`'s table and nothing else: the plan page, an untyped budget, the
+//! supervision and reaping endpoints, in `a1` an archive of exactly the programs the plan builds,
+//! and in `a2` the registration page of §222 (who holds a user's schedule). No directory, console,
+//! network or device, and no clock page unless granted. In store mode (milestone 152's Fork 8 D)
+//! it holds read-only `activation/` and `packages/` instead, and re-plans at every fire. See
+//! `notes/scheduled-execution/the-program.md`; a plan needs a big stack, and it says why.
+
 //! # BUGS
 //!
-//! - There is no timed wait, milestone 106 (a wait that ends on either the interrupt or the
-//!   deadline), so it spins between fires, polls for registrations and reaps lazily.
-//! - A hung child stops the whole timetable once the budget runs out: the loop then blocks on the
-//!   supervision endpoint, and nothing kills a livelocked child.
-//! - The archive holds every image the plan builds: code, not authority, because a job holds only
-//!   what `fire` endows (`notes/scheduled-execution/one-image-per-entry.md`).
-//! - `--mem` entries run one at a time, alone, and interval entries due meanwhile run late, once
-//!   (`notes/scheduled-execution/mem-entries.md`).
+//! - It has not adopted milestone 106's timer (milestone 674), so it spins and polls between fires.
+//! - A hung child stops the whole timetable once the budget runs out; nothing kills it.
+//! - The archive holds every image the plan builds: code, not authority (see the note).
+//! - `--mem` entries run alone, and others due meanwhile run late, once (see the note).
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
-//! - A replacement's printed plan is cut at `registration::BODY_MAX`; the verdict word survives.
-//!   The archive audit is printed only for the compiled-in document.
-//! - In store mode a skipped beat is recorded nowhere, a job has nowhere to write output, programs
-//!   over `contract::STAGING_BYTES` are refused without saying which refusal it was, and a fire
-//!   failure is only the page's exit word (`contract::E_BUDGET`).
-//!
+//! - A replacement's plan is cut at `registration::BODY_MAX`; only the compiled-in one is audited.
+//! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
+
 //! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
 
 #![no_std]
@@ -133,19 +115,11 @@ enum Programs {
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) -> ! {
     PAGE.store(registration_page, core::sync::atomic::Ordering::Relaxed);
-    // **A scheduled job never holds the run-unvouched capability**, which is how §220 (signed builds, and trusting a key is scoped) keeps its reach: dropping trust in a key has to reach every
-    // program that could run an unvouched image, and a job firing on a schedule long after its
-    // session's key was dropped is exactly the one it would miss. The capability is gate D2 of §219 (how the shell names an installed program to the spawner).
-    //
-    // Enforced here, once, rather than at each fire, and the argument is why once suffices. A job's
-    // authority is built in `fire` and `fire_with_grant` from two sources only: [`CHILD_REPORT`],
-    // and a region split for it from [`BUDGET`]. Neither can be the capability unless this process
-    // holds it. It can only hold it if a spawn site put it there, because this program never
-    // receives a capability after `_start` (it makes no `RECEIVE_CAP`). So a timetable that does not
-    // hold it at `_start` can never endow a job with it. The probe is sound only now, before
-    // anything is allocated: a region split later could land in the slot and read as held.
-    // Store mode is a timetable holding `activation/` (`timetable::contract`), probed here with the
-    // report slot below, before anything is allocated, for the reason the next probe gives.
+    // A scheduled job never holds the run-unvouched capability, gate D2 of §219 (how the shell
+    // names an installed program to the spawner), so §220 (signed builds, and trusting a key is
+    // scoped) reaches it. Checked once: this program makes no `RECEIVE_CAP` after `_start`.
+    // Every probe here runs before anything is allocated, because a region split later could land
+    // in the slot and read as held. See `notes/scheduled-execution/the-program.md`.
     let store = user_mode_runtime::is_granted(ACTIVATION);
     if user_mode_runtime::is_granted(spawnproto::RUN_UNVOUCHED_SLOT) {
         say(
@@ -163,8 +137,7 @@ pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registrati
     // until milestone 295 retired that program; the contract is unchanged, only the sibling is.
     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
 
-    // With a registrar, the timetable starts with nothing and waits to be told; without one, the
-    // compiled-in document is the whole story, exactly as it was before §222.
+    // With a registrar, the timetable starts with nothing and waits to be told.
     let text = if registration_page == 0 { CONFIG } else { "" };
     let doc = match timetable::parse(text) {
         Ok(d) => d,
@@ -178,17 +151,9 @@ pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registrati
         }
     };
 
-    // **What this process holds, stated once, in the vocabulary registration checks against.**
-    // Every field but `mem_pages` is false, and every one of them is a fact a reader can check
-    // against the slot list in this module's header. `timetable::SHIPPED_HELD` is the one number
-    // that has widened since milestone 129's first stratum, and this crate's own host test uses the
-    // same constant so the two cannot drift apart. Widening it further is an edit here and a
-    // visible change in the printed plan, which is the property worth having.
-    //
-    // Less the report endpoint when the spawn site placed none, which a durable session never does
-    // (Fork 6 C of milestone 152 (durable delegation), ruled 2026-09-27 on #1377): a durable job
-    // writes through what its entry grants. Probed here, before anything is allocated, for the
-    // reason the run-unvouched probe above gives.
+    // What this process holds, in the vocabulary registration checks against. The host test uses
+    // the same `timetable::SHIPPED_HELD`, so the two cannot drift. A durable session places no
+    // report endpoint (Fork 6 C of milestone 152 (durable delegation), ruled 2026-09-27 on #1377).
     let held = timetable::Held {
         report: user_mode_runtime::is_granted(CHILD_REPORT),
         clock: holds_clock,
@@ -197,18 +162,14 @@ pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registrati
 
     let mut reg = Registry::register(&doc, held);
 
-    // **The plan, before anything fires.** This is the milestone's claim in the form a person meets
-    // it: what every scheduled child will hold, or why it will never run, printed while nothing has
-    // happened yet. A crontab has nothing to print here.
+    // The plan, printed before anything fires.
     timetable::write_plan(&reg, &mut say);
 
     let programs = open_programs(store, registration_page, archive, &reg);
     let mut images = resolve_or_fail(&reg, &programs);
 
-    // The end of the plan, and the start of the running. One line, because the plan and everything
-    // after it travel down one endpoint and a reader has to know where one stops: `kernel/src/user/
-    // timetable_tests.rs` reads to exactly this line, which is also how a person reading a console
-    // knows nothing had fired before it.
+    // The plan and the running share one endpoint, and `system_tests/src/user/timetable_tests.rs`
+    // reads to exactly this line.
     say(b"timetable: armed\n");
 
     reg.arm(monotonic_nanos());
@@ -229,8 +190,7 @@ pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registrati
         &programs,
     );
 
-    // Drain: every child this timetable started is collected before it reports, so the counts it
-    // prints are complete rather than whatever had happened to arrive.
+    // Every child is collected before the report, so its counts are complete.
     tally.drain();
     tally.report()
 }
@@ -256,15 +216,8 @@ fn open_programs(
         }
     };
 
-    // **What the archive it was handed reaches, next to what the plan will build.** The plan above
-    // says what each scheduled child holds; this says what *this* process holds, and the two are
-    // different questions. A scheduler handed the whole initial ramdisk has a one-program plan and
-    // a capability that reaches every program in the tree, and nothing in the plan would say so.
-    //
-    // It measures rather than enforces, because a process cannot narrow its own endowment: the
-    // width is the spawn site's decision (`system_tests/src/user/timetable_tests.rs` builds a sub-archive
-    // from exactly `Registry::programs`), and saying it out loud is what makes the decision
-    // checkable from in here rather than only from out there. Not with a registrar: see `BUGS`.
+    // What the archive reaches, beside what the plan builds. It measures and cannot enforce: a
+    // process cannot narrow its own endowment. Not with a registrar: see `BUGS`.
     if let (0, Programs::Archive(fs)) = (registration_page, &programs) {
         let mut audit = timetable::Audit::of(reg);
         for entry in fs.entries() {
@@ -279,10 +232,7 @@ fn open_programs(
 
 /// [`resolve`], or the verdict for the first program the archive does not carry.
 fn resolve_or_fail(reg: &Registry<'_>, programs: &Programs) -> Images {
-    // Resolve every admitted entry's program **now**, so a plan that names a program the archive
-    // does not carry fails loudly at startup rather than as a fire that quietly does not happen.
-    // This is also the moment `Registry::programs`' claim becomes checkable: nothing after this
-    // point looks anything else up.
+    // Resolved now, so a missing program fails at start-up; nothing after this looks anything up.
     match resolve(reg, programs) {
         Ok(images) => images,
         Err(i) => {
@@ -348,18 +298,17 @@ impl Tally {
             let mut any = false;
             while let Some(i) = reg.due(now) {
                 any = true;
-                // Several entries can come due in one pass, so the count has to be checked **inside**
-                // the pass and not only around it. Without this a run asked for four fires can perform
-                // five, and the fifth child blocks forever on a report nobody is left to take, which
-                // shows up as a hang rather than as an off-by-one.
+                // Checked inside the pass: several entries can come due at once, and one fire too
+                // many blocks its child forever on a report nobody is left to take.
                 if fires_wanted != 0 && self.fired >= fires_wanted {
                     break;
                 }
                 self.fire_row(reg, images, i);
             }
             if !any {
-                // Nothing is due. There is no timed wait in this kernel, so this is a yield and not a
-                // sleep; see `BUGS`.
+                // A yield, not a sleep, until milestone 674 (the last yield-spinners sleep on a
+                // timer) adopts the `Timer` of milestone 106 (a wait that ends on either the
+                // interrupt or the deadline); see `BUGS`.
                 yield_now();
             }
         }
@@ -370,9 +319,8 @@ impl Tally {
         let Some(registered) = reg.rows()[i].endowment() else {
             return;
         };
-        // An installed program is resolved and its line planned again now, against what the
-        // live generation names today. When the name no longer resolves, or the plan no longer
-        // fires, the beat is missed (skipped, never retried); `BUGS` says who hears of it.
+        // An installed program is resolved and planned again now; when either fails the beat is
+        // skipped, never retried (`BUGS`).
         let loaded;
         // `declared` is the manifest the job's bytes carry: an installed row's endowment is filed
         // under `grant_plan::IMAGE_ROW`, so nothing may be read off its `prog`.
@@ -397,14 +345,11 @@ impl Tally {
             return;
         }
 
-        // Fire. If the budget cannot back another instance, block until a corpse comes back and
-        // its region with it, then try once more. A second failure is a budget too small for
-        // even one instance, which is a wiring error rather than congestion.
+        // A full budget waits for one corpse and tries once more; a second failure is wiring.
         let clock = self.holds_clock && declared.clock;
         if !fire(elf, e.program_argument, self.held.report, clock) {
             if self.outstanding == 0 {
-                // Nothing is out, so there is nothing to wait for: the budget is too small for
-                // even one instance, which is a wiring error rather than congestion.
+                // Nothing is out to wait for.
                 say(b"timetable: the budget cannot back one instance\n");
                 done(E_BUDGET)
             }
@@ -421,11 +366,8 @@ impl Tally {
 
     /// Fire a row with a `--mem` grant alone, and collect it before returning.
     fn fire_exclusive(&mut self, elf: &elf::Elf, e: grant_plan::Endowment, clock: bool) {
-        // **Exclusive.** See `BUGS`: a `--mem` grant is nested inside its own instance's
-        // region, and the only signal that ties a death to a grant is a refused reap, which
-        // is unambiguous only when nothing else is outstanding to blame it on. So drain
-        // whatever is already running, fire this one alone, and wait for it to die and its
-        // grant to be reclaimed before anything else in this document fires again.
+        // Alone: the next death on `DEATHS` must be this instance's, or it cannot be paired
+        // with its grant (`notes/scheduled-execution/mem-entries.md`).
         self.drain();
         let Some(mem_slot) = fire_with_grant(
             elf,
@@ -660,11 +602,9 @@ mod store {
 
 /// **The two buffers a replacement's document is copied into**, alternately.
 ///
-/// A [`Registry`] borrows its document's bytes, and the page cannot be what it borrows: the reply
-/// overwrites the page with the plan, and a registrar may start staging the next document the
-/// moment it has read the reply. So the document is copied out first. Two buffers because the
-/// replacement must be registered and resolved in full while the registry in force still borrows
-/// the other one, and only then may it replace it (§222's all-or-nothing sub-ruling).
+/// A [`Registry`] borrows its document, and the page cannot be it: the reply overwrites the page.
+/// The replacement is registered in one buffer while the registry in force borrows the other
+/// (§222's all-or-nothing sub-ruling). See `notes/scheduled-execution/the-program.md`.
 static mut DOCUMENTS: [[u8; registration::BODY_MAX]; 2] = [[0; registration::BODY_MAX]; 2];
 
 /// **Answer a replacement, if the registrar has asked for one since the last answer.**
@@ -803,22 +743,15 @@ fn replace_if_asked(
     false
 }
 
-/// Build one instance in its own region and start it with `arg`.
+/// Build one instance in its own region and start it with `arg`; `false` if the budget or the
+/// build refuses.
 ///
-/// It is endowed at most two things and both are in the plan the timetable already printed: the
-/// child report endpoint as its slot 0 when `report` says this timetable hands one out
-/// ([`timetable::Held::report`], false with a registrar), and its supervision endpoint in the
-/// reserved fault slot, which `START` reads and then clears so the child holds no authority on its
-/// own death channel.
-///
-/// Nothing is kept afterwards and there is nothing left worth keeping: the TCB capability is not the
-/// thread, and since DECISIONS §32 the region capability is not the reap either. The pages come back
-/// to this budget when the corpse is collected.
-///
-/// With `report`, the spawn site placed a report endpoint and the job gets it at slot 0; a durable
-/// session places none (Fork 6 C). With `clock`, the job's manifest declared one and this timetable
-/// holds one: the page goes in the job's slot 1, `READ` only, and is mapped read-only at
-/// `contract::CLOCK_VA`, which is how the progenitor endows `date`.
+/// It is endowed only what the printed plan shows: with `report`, the report endpoint at slot 0
+/// ([`timetable::Held::report`], false with a registrar); with `clock`, the clock page at slot 1,
+/// `READ` only and mapped read-only at `contract::CLOCK_VA`, as the progenitor endows `date`. Its
+/// supervision endpoint goes in the reserved fault slot, which `START` reads and clears. Nothing is
+/// kept: since §32 (a supervisor may collect a corpse without being able to build one) the region
+/// capability is not the reap. See `notes/scheduled-execution/the-program.md`.
 fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
     let Ok(region) = supervision_protocol::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;
@@ -835,8 +768,7 @@ fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
             ..supervision_protocol::ChildEndowment::new(supervision_protocol::Retention::Nothing)
         },
     ) else {
-        // The region is ours and the child does not exist, so hand the pages straight back rather
-        // than leaking them into a budget that will refuse the next fire.
+        // The child does not exist, so the pages go straight back to the budget.
         supervision_protocol::memory_region_destroy(region);
         return false;
     };

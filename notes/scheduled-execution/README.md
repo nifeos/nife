@@ -24,6 +24,8 @@ work that page points at but does not need to carry whole.
 - [next-after-proofs.md](next-after-proofs.md): why `next_after` snaps onto the beat rather than
   counting periods, and why phase preservation is tested rather than proved. Moved from the parent
   under §212, 2026-10-11 (UTC).
+- [the-program.md](the-program.md): what `components/src/timetable.rs` holds, its start-up probes,
+  store mode, registration while running, and how a fire is built and collected.
 
 *Name: provisional, minted 2026-09-26 (UTC) by the lane for milestone 129 (scheduled execution), for the directory and every
 stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/129-calendar-grammar`. Naming is calef's; `script/names --unratified` lists each stem.*
@@ -35,3 +37,5 @@ stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/
 - `calendar-grammar-g5-sources` Name: provisional, minted 2026-10-13 (UTC) by
   lane/prose-cap-notes-c, for G5's "The premise, checked against primary sources". calef names
   files.
+- `the-program` Name: provisional, minted 2026-10-24 (UTC) by the lane for milestone 929, for the
+  design `components/src/timetable.rs`'s comments link. calef names files.
