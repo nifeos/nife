@@ -189,17 +189,11 @@ fn a_faulting_child_reports_to_its_supervisor_and_is_reaped_then_respawned() {
         "the corpse did not retain its fault message: it was reaped too early, or lost its state",
     );
 
-    // Reap it with §16 revocation, the supervisor's explicit act. The corpse is Dead, not live,
-    // so the region reclaims without a force-kill.
-    //
-    // **Retried rather than asserted once, and the retry is the point.** The death message that
-    // woke this test is delivered by `depart` *before* the corpse leaves its own kernel stack, so
-    // for the few hundred instructions between there and its `switch_to` the reap is refused: a
-    // stack must not be unmapped under a core standing on it. This test is the only place in the
-    // suite that reaps a corpse the instant it is told about one, which is why it is the only
-    // place that ever hit the window, and why it panicked with a guard-page fault in CI four times
-    // over five days instead of failing here. See
-    // notes/stack/kernel-stack-freed-under-its-owner.md, and the `on_cpu` refusal in
+    // Reap it with §16 revocation, the supervisor's explicit act. The corpse is Dead, not live, so
+    // the region reclaims without a force-kill. Retried, not asserted once: `depart` delivers the
+    // death message before the corpse leaves its own kernel stack, and until its `switch_to` the
+    // reap is refused, since a stack must not be unmapped under a core standing on it. See
+    // notes/stack/kernel-stack-freed-under-its-owner.md and the `on_cpu` refusal in
     // `reap_region_objects`.
     assert!(
         super::wait_for(|| sched::reclaim_region(region).is_ok()),
@@ -361,27 +355,8 @@ const fn label_reporter_riscv64() -> [u32; 32] {
     out
 }
 
-/// The `x86_64` twin. One round, 48 bytes:
-///
-/// ```text
-///   bf 01 00 00 00    mov edi, 1          (slot 1: the supervision endpoint)
-///   be xx xx xx xx    mov esi, RECEIVE
-///   31 d2             xor edx, edx
-///   45 31 d2          xor r10d, r10d
-///   45 31 c0          xor r8d, r8d
-///   45 31 c9          xor r9d, r9d        (the label register)
-///   b8 xx xx xx xx    mov eax, SYS_INVOKE
-///   0f 05             syscall             (RECEIVE: rdi = event, rsi = tid, r9 = label)
-///   48 89 f2          mov rdx, rsi        (tid)
-///   4d 89 ca          mov r10, r9         (label)
-///   49 89 f8          mov r8, rdi         (event)
-///   31 ff             xor edi, edi        (slot 0: the report endpoint)
-///   31 f6             xor esi, esi        (SEND, which is 0)
-///   b8 xx xx xx xx    mov eax, SYS_INVOKE
-///   0f 05             syscall             (SEND [tid, label, event])
-/// ```
-///
-/// Two rounds, then `mov eax, SYS_EXIT; syscall` and one `nop` to fill the last word.
+/// The `x86_64` twin: one 48-byte round, its register roles beside its bytes. Two rounds, then
+/// `mov eax, SYS_EXIT; syscall` and one `nop` to fill the last word.
 #[cfg(target_arch = "x86_64")]
 const fn label_reporter_x86_64() -> [u32; 26] {
     const {
@@ -394,21 +369,21 @@ const fn label_reporter_x86_64() -> [u32; 26] {
     let inv = (abi::SYS_INVOKE as u32).to_le_bytes();
     let ext = (abi::SYS_EXIT as u32).to_le_bytes();
     let round: [u8; 48] = [
-        0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1
+        0xBF, 0x01, 0x00, 0x00, 0x00, // mov edi, 1 (slot 1: the supervision endpoint)
         0xBE, rcv[0], rcv[1], rcv[2], rcv[3], // mov esi, RECEIVE
         0x31, 0xD2, // xor edx, edx
         0x45, 0x31, 0xD2, // xor r10d, r10d
         0x45, 0x31, 0xC0, // xor r8d, r8d
-        0x45, 0x31, 0xC9, // xor r9d, r9d
+        0x45, 0x31, 0xC9, // xor r9d, r9d (the label register)
         0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
-        0x0F, 0x05, // syscall (RECEIVE)
-        0x48, 0x89, 0xF2, // mov rdx, rsi
-        0x4D, 0x89, 0xCA, // mov r10, r9
-        0x49, 0x89, 0xF8, // mov r8, rdi
-        0x31, 0xFF, // xor edi, edi
-        0x31, 0xF6, // xor esi, esi
+        0x0F, 0x05, // syscall (RECEIVE: rdi = event, rsi = tid, r9 = label)
+        0x48, 0x89, 0xF2, // mov rdx, rsi (tid)
+        0x4D, 0x89, 0xCA, // mov r10, r9 (label)
+        0x49, 0x89, 0xF8, // mov r8, rdi (event)
+        0x31, 0xFF, // xor edi, edi (slot 0: the report endpoint)
+        0x31, 0xF6, // xor esi, esi (SEND, which is 0)
         0xB8, inv[0], inv[1], inv[2], inv[3], // mov eax, SYS_INVOKE
-        0x0F, 0x05, // syscall (SEND)
+        0x0F, 0x05, // syscall (SEND [tid, label, event])
     ];
     let mut b = [0x90u8; 104];
     let mut i = 0;
@@ -485,18 +460,13 @@ fn reclaim_all(regions: &[u64]) {
     }
 }
 
-/// **A supervisor tells two dead children apart by the label the kernel delivers** (milestone 105,
+/// A supervisor tells two dead children apart by the label the kernel delivers (milestone 105,
 /// DECISIONS §148 as amended 2026-10-04, ruling R3).
 ///
-/// Two children die on one supervision endpoint, each with its builder's label on its supervision
-/// capability. A supervisor running in user mode receives both deaths and reports the tid and the
-/// label it read. Each tid must arrive with its own child's label.
-///
-/// **Both delivery paths, because the label reaches the supervisor by two routes.** First the
-/// corpses park before the supervisor exists, so it collects each from the sender queue
-/// (`collected_without_serving`). Then a supervisor is already blocked in `RECEIVE` when each
-/// child dies, so the kernel hands the label over at the rendezvous (`deliver_death`). Either half
-/// passing alone would leave the other route unproven.
+/// Two children die on one supervision endpoint, each labeled by its builder, and a user-mode
+/// supervisor reports each death's tid and label. Both routes are driven: corpses parked first are
+/// collected from the sender queue (`collected_without_serving`), and a supervisor already blocked
+/// in `RECEIVE` is handed the label at the rendezvous (`deliver_death`).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.supervision_tests.a_supervisor_tells_two_dead_children_apart_by_label.patch`
 ///
@@ -547,16 +517,13 @@ fn a_supervisor_tells_two_dead_children_apart_by_label() {
     reclaim_all(&regions);
 }
 
-/// **A child can neither learn its label nor forge one** (milestone 105, DECISIONS §148 as amended).
+/// A child can neither learn its label nor forge one (milestone 105, DECISIONS §148 as amended).
 ///
-/// *Learn.* After `START`, no capability the child holds carries its label: the kernel consumed the
-/// fault slot and kept the badge itself. The child is started with zeroed argument registers, so
-/// there is nowhere else it could read it from.
-///
-/// *Forge.* A second child holds a `WRITE` capability to the same supervision endpoint, badged with
-/// the very label the first child has, and `SEND`s on it. That is the strongest forgery a holder
-/// can attempt, and its message must reach the supervisor with label `0`: a sender's badge arrives
-/// in word 3, and only the kernel's death path writes the label register.
+/// Learn: after `START` no capability the child holds carries its label (the kernel consumed the
+/// fault slot and kept the badge), and it starts with zeroed argument registers. Forge: a second
+/// child `SEND`s on a `WRITE` capability to the same endpoint badged with that very label, and its
+/// message must reach the supervisor with label `0`: a sender's badge arrives in word 3, and only
+/// the kernel's death path writes the label register.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.supervision_tests.a_child_can_neither_learn_nor_forge_its_label.patch`
 ///
