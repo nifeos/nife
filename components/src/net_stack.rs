@@ -3,7 +3,7 @@
 //!
 //! The kernel confines the NIC's DMA and knows nothing about TCP, UDP or DHCP; a reused stack runs
 //! the network entirely at EL0. `net_stack` brings the NIC up, runs DHCP to completion (reporting
-//! the lease), then serves the socket contract (DECISIONS §25, `crates/socket_contract`) on its
+//! the lease), then serves the socket contract (DECISIONS §25 (socket identity), `crates/socket_contract`) on its
 //! `Stack` endpoint: a socket is a capability this server mints and names by its badge (§255 (each
 //! socket is its own capability)), a connection's bytes cross in a frame the client delegates, and
 //! every operation is one message. Single-threaded and synchronous: it blocks on `Stack` between
@@ -15,8 +15,9 @@
 //! `Virtio` transport; 3 an untyped budget, for the heap and clients' frames; 4 `Stack` (`READ`),
 //! where requests arrive; 5 and 6 a notification bound to this thread and its retransmit timer (not
 //! in the progenitor's spawn); 7 `Stack` (`WRITE | GRANT`) to mint sockets from; 8 this address
-//! space (`WRITE`), to unmap a closed socket's page. `arg1` is the DMA page's physical address, and
-//! `arg2` the TCP listen (milestone 107) and UDP bind (milestone 55) ranges; zero opens neither.
+//! space (`WRITE`), to unmap a closed socket's page. `arg1` is the DMA page's physical address;
+//! `arg2` the TCP listen and UDP bind ranges (milestone 107 (the socket contract learns to
+//! accept), milestone 55 (Time Machine)), and zero opens neither.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `netd`, and
 //! respelled from `netstack` on 2026-08-01 (milestone 63) because `net` is already this tree's word

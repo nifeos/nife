@@ -1,10 +1,10 @@
-//! **Drains `login`'s audit trail so the service never blocks on it** (milestone 49).
+//! **Drains `login`'s audit trail so the service never blocks on it** (milestone 49 (users,
+//! login, and attribution)).
 //!
-//! `components/src/login.rs` sends one [`login_contract::ATTRIBUTED`] message per successful login
-//! on its `AUDIT` endpoint, a plain blocking rendezvous: with no receiver, `login`'s first
-//! successful login would park its whole thread inside that `send` forever. This process is the
-//! receiver, on `job_undertaker`'s pattern, and it **discards** each message: printing the record
-//! would need a `WRITE` view of the terminal, which `login` holds single-session.
+//! `components/src/login.rs` sends one [`login_contract::ATTRIBUTED`] per successful login on its
+//! `AUDIT` endpoint, a blocking rendezvous: with no receiver, its first successful login would park
+//! its thread in that `send` forever. This receiver **discards** each message (`job_undertaker`'s
+//! pattern): printing it would need a `WRITE` view of the terminal, which `login` holds alone.
 //!
 //! - slot [`AUDIT`]: `READ` on `login`'s own `AUDIT` endpoint. Nothing else: this process cannot
 //!   build anything, allocate a page, or reach any other component's memory.

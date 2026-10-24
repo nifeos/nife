@@ -313,7 +313,7 @@ fn serve(mut plane: Plane) -> ! {
             blk::FLUSH => {
                 let cid = plane.next_cid();
                 match plane.transact(Command::flush(cid, NSID)) {
-                    // Never EOPNOTSUPP, unlike the virtio server: NVMe 1.4 §6.8 makes Flush
+                    // Never EOPNOTSUPP, unlike the virtio server: NVMe 1.4 section 6.8 makes Flush
                     // mandatory. The rising count is the contract's: two syncs returning one
                     // number would mean the second never reached the device.
                     Ok(()) => {
@@ -330,7 +330,8 @@ fn serve(mut plane: Plane) -> ! {
 }
 
 /// **Aim DMA outside this server's region, both directions, and report what the controller did**
-/// (milestone 261's Outstanding item; milestone 202). It goes around
+/// (milestone 261 (the NVMe driver leaves the kernel)'s Outstanding item; milestone 202 (every
+/// confinement test is a ritual until somebody breaks the confinement)). It goes around
 /// [`Handoff::transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
 /// its own, `victim`, a physical address outside this process's DMA window: a `READ` would
 /// overwrite a frame this server was never granted, a `WRITE` would leak `victim` onto the disk.

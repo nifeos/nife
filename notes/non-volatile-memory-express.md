@@ -217,7 +217,8 @@ it.
 The confinement test needs a driver that tries to escape, and the attacker is this exact server
 differing by one field: the physical address it puts in a PRP. So the attack tests the IOMMU rather
 than a straw man. It is the NVMe twin of `block_driver`'s two virtio attacker roles (milestone 261
-(the NVMe driver leaves the kernel), milestone 202). `start_dma_escape` in the kernel's wiring
+(the NVMe driver leaves the kernel), milestone 202 (every confinement test is a ritual until
+somebody breaks the confinement and watches it fail)). `start_dma_escape` in the kernel's wiring
 writes a magic word and a victim's physical address into the transfer buffer before the server
 runs. The server reads them before its readiness transfer, which reuses that page. The victim is a
 raw number read out of shared memory, exactly the authority an escaping driver would fabricate from

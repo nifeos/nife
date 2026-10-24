@@ -117,7 +117,8 @@ $ pgrep                 pgrep: none of the 2 processes in this domain are dead
 $ pgrep                 pgrep: this process holds no process-domain capability
 ```
 
-The program walks first, filters second, complains third and prints fourth. DECISIONS §67's reader
+The program walks first, filters second, complains third and prints fourth. DECISIONS §67 (a
+program's second stream is a declaration) says its reader
 drains diagnostics to end-of-stream before it reads a byte of output. A survey cannot know its
 complaints up front, since the domain may be refused on the first call or vanish on the tenth. And
 "nothing matched" needs the count, so the filter runs before the second stream too.
