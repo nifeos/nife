@@ -1,5 +1,7 @@
 # The 2026-09-14 regressions: `capability` to `dtb`
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `regressions-capability-to-dtb`.*
+
 The first half of milestone 326 (nobody has been assigned to turn a mutation score upward)'s
 triage of the crates that regressed at the 2026-09-14 census. It verifies the per-crate figures
 that [notes/mutation-testing.md](../mutation-testing.md) summarizes. The second half is

@@ -16,12 +16,5 @@ detail its prose budget has no room for.
 parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
+The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-
-- `the-era-pivot` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  after the parent's "the pivot we chose".
-- `what-is-proved` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  after the parent's own heading.
-- `the-client-tests` Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes,
-  for the tests of the client half.

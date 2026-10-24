@@ -18,5 +18,3 @@ Name: provisional, minted 2026-10-11 (UTC) by `lane/ten-longest-notes`, which sp
 §212 (a prose budget), for the directory and every stem in it. The directory follows the
 `notes/<stem>/` appendix convention §212 set, so its name is the parent's stem. Each file is named
 for its content. calef names directories and files, and `script/names --unratified` lists each stem.
-
-- `apple-extensions` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `apple-half`.

@@ -1,5 +1,7 @@
 # What the gate found on its first runs
 
+*Name: provisional. Named after the parent's own heading.*
+
 Two findings from the first days of the gate [`notes/counted-claims.md`](../counted-claims.md)
 describes. The second one caught the gate's own author.
 

@@ -1,5 +1,7 @@
 # Boolean predicates: the worklist
 
+*Name: ratified 2026-10-18 (calef, "Yes"). Refused `boolean-predicates-worklist`.*
+
 *An appendix to [`design/naming.md`](../naming.md), which is the rule, and a companion to
 [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md), which argues it. This file is the census the pass
 took on 2026-09-24 and what became of each name. It is a dated record: the counts are from that

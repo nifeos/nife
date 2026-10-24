@@ -1,5 +1,7 @@
 # Why the roadmap is markdown in the tree and not GitHub Issues
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/roadmap.md](../roadmap.md), which summarizes it.
 
 Decided 2026-07-30 by calef. Issues would buy PR linkage, a home for discussion, and a board view.

@@ -1,5 +1,8 @@
 # `xargs`: batching at the bound (milestone 109)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes, after the prefix word
+it is about, whose own name is provisional.*
+
 An appendix to [`notes/glob-grant.md`](../glob-grant.md), which states the conclusion. Milestone 109
 (`xargs`) built it.
 

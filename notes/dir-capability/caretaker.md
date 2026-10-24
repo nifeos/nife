@@ -1,5 +1,7 @@
 # The subtree caretaker: why it checks nothing, the verb table, and one frame
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/dir-capability.md](../dir-capability.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the detail of `fs_subtree_caretaker` behind the main page's
 structural finding.
