@@ -41,25 +41,14 @@ pub(crate) const PSCI_NOT_DISCOVERED: i64 = i64::MIN;
 
 /// PSCI `CPU_ON`: start a secondary core. Returns 0 on success, a negative error otherwise.
 ///
-/// PSCI (Power State Coordination Interface) is the firmware call standard for turning ARM cores on
-/// and off. Arguments follow the SMC calling convention: the function id in x0, then the target
-/// core's `MPIDR_EL1[39:0]` affinity value, the PHYSICAL entry address it begins at (MMU off), and a
-/// context word that arrives in the new core's x0.
-///
-/// **The conduit and the function id are read from the machine** (milestone 100). They used to be
-/// `hvc #0` and `0xC400_0003`, compiled in, which was QEMU `virt`'s answer and nothing else's. The
-/// `/psci` node states both: `method` says whether the firmware listens at EL2 (`hvc`) or EL3
-/// (`smc`), and `cpu_on` publishes the id, which PSCI 0.1 machines had to because the standard id
-/// space did not exist yet. `isa::init` parses the node; this reads what it recorded.
+/// `target_mpidr` is the core's `MPIDR_EL1[39:0]`, `entry` the physical address it starts at with
+/// the MMU off, and `context` arrives in its x0. The conduit and the function id are the ones
+/// `isa::init` read from `/psci`. See notes/aarch64-port.md, "PSCI and the entry exception level".
 ///
 /// # BUGS
 ///
-/// - **The `smc` path has never executed.** `crates/machine_discovery`'s host tests decode a real QEMU dump that
-///   states `smc` (`virt,virtualization=on`), so the *reading* is exercised on a genuine tree; that
-///   configuration enters the kernel at EL2 and this kernel expects EL1, so nothing here boots it.
-///   The `hvc` path is exercised on every test run. Choosing the wrong one of the two is an
-///   undefined-instruction trap rather than an error code, which is why it is read rather than
-///   defaulted, and why this note is here rather than in a tracker.
+/// - **The `smc` path has never executed.** `crates/machine_discovery`'s host tests decode a real
+///   QEMU dump that states `smc` (`virt,virtualization=on`); the `hvc` path runs on every test run.
 pub(crate) fn cpu_start(target_mpidr: u64, entry: u64, context: u64) -> i64 {
     let Some((conduit, func)) = isa::psci() else {
         return PSCI_NOT_DISCOVERED;
@@ -84,30 +73,15 @@ pub(super) const PSCI_VERSION: u64 = 0x8400_0000;
 /// 0.1 had no system functions at all, so a 0.1 firmware answers `NOT_SUPPORTED` (-1).
 pub(super) const PSCI_SYSTEM_RESET: u64 = 0x8400_0009;
 
-/// **Ask the firmware for a cold reboot through PSCI `SYSTEM_RESET`**, and return only if it
-/// refuses (milestone 249 (the boot lottery is sampled by a person walking to the board)'s aarch64 half).
+/// **Ask the firmware for a cold reboot through PSCI `SYSTEM_RESET`**, returning only on refusal.
 ///
-/// The arch contract `soak::draw_again` and, since milestone 805 (`reboot` at the prompt),
-/// `kernel::reboot::restart` call on all three architectures: print one line per attempt, prefixed
-/// with `marker`, *before* making it (a reset stops the UART draining), and return only when every
-/// route was refused. `console::drain` runs between print and call, because milestone 592 (radon's
-/// cold reboot dies in OpenSBI's PMIC write) found that printing first is not sending first.
-/// aarch64 has one route, because PSCI is the firmware interface that owns the
-/// machine's power here: the same `/psci` node [`cpu_start`] reads names the conduit, so this
-/// cannot be on the wrong one of `hvc` and `smc` unless `CPU_ON` is too.
-///
-/// **Only the conduit is required, not a `CPU_ON` id.** A uniprocessor board may publish `/psci`
-/// with a method and no `cpu_on`; it can still reset. A board with no `/psci` at all is refused
-/// here, out loud, rather than guessed at.
+/// The arch contract `soak::draw_again` and `kernel::reboot::restart` call: one line per attempt,
+/// prefixed with `marker`, drained before the call. One route here, needing only `/psci`'s conduit.
 ///
 /// # BUGS
 ///
-/// - **Proven under QEMU `virt` only, over `hvc`**, where QEMU itself is the PSCI implementation.
-///   argon's is NVIDIA's TF-A build, reached over `smc`, and whether its `SYSTEM_RESET` comes back
-///   through the bootloader to a netboot is the bench's first question (milestone 249's block).
-/// - **The ACPI half is not wired.** A machine booted with ACPI and no device tree states PSCI in the
-///   FADT's Arm boot flags (`machine_discovery::acpi::parse_arm_boot`); this kernel boots aarch64
-///   from a device tree only, so there is nothing to read that from yet.
+/// - **Proven under QEMU `virt` only, over `hvc`.** argon's `smc` is milestone 249 (the boot lottery).
+/// - **The ACPI half (`machine_discovery::acpi::parse_arm_boot`) is not wired**: device tree only.
 ///
 /// Name: provisional (milestone 249): calef names public items.
 pub fn reboot(marker: &str) -> abi::Error {
@@ -136,10 +110,7 @@ pub fn reboot(marker: &str) -> abi::Error {
         version & 0xffff,
     );
     let error = {
-        // PSCI SYSTEM_RESET is the aarch64 twin of the reset that lost its own transcript on radon
-        // (milestone 592, radon's cold reboot dies in OpenSBI's PMIC write; 2026-10-09): print,
-        // drain, then call, or the marker line above is still in the FIFO when firmware kills the
-        // machine.
+        // Drain before the call, or the marker line is still in the FIFO when firmware resets.
         crate::console::drain();
         call(PSCI_SYSTEM_RESET)
     };
