@@ -11,6 +11,13 @@
 //! `filesystem_contract`. See notes/virtio.md ("The driver crate") and notes/dma.md.
 
 //!
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
+//! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
+//! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
+//! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
+//! `direct_memory_access_validator`, so no driver can aim device DMA. See
+//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), as a proper name rather than
 //! on the acronym test: `virtio` is the specification's own name (virtio 1.x, OASIS), the string in
 //! every QEMU flag and device tree node, so expanding it would rename a standard. That is the `elf`

@@ -9,6 +9,13 @@
 //! VT state, scrollback and input arrive as clients of the contract, never as code in here. See
 //! notes/framebuffer-contract.md and notes/frames.md.
 
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
+//! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
+//! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
+//! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
+//! `direct_memory_access_validator`, so no driver can aim device DMA. See
+//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//!
 //! Name: ratified 2026-08-27 (calef). Renamed from `display` to `gpu_driver`, matching the
 //! `<device>_driver` shape given to `block_driver` and `keyboard_driver` in the same pass. This
 //! module's own doc already said it above: it is specifically and only the GPU device driver, and

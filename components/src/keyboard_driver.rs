@@ -9,6 +9,13 @@
 //! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
 
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
+//! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
+//! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
+//! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
+//! `direct_memory_access_validator`, so no driver can aim device DMA. See
+//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//!
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
 
