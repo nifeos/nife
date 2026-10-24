@@ -93,8 +93,8 @@ On every run:
   read from the same counter, so the wall clock advancing does not mean the monotonic one jumped.
 - The entropy endpoint names no device; only the entropy service reads the virtio-rng. Comparing
   two draws is what says the bytes came off a device.
-- `std_service::start` maps the inert-configuration page unconditionally, as it maps a clock. A
-  process granted no page gets the same honest absence `PATH` shows.
+- `std_service::start_on_full` maps the inert-configuration page unconditionally, as it maps a
+  clock. A process granted no page gets the same honest absence `PATH` shows.
 - `std::env::vars()` is counted, because a count proves the call returned. More than the three
   seeded keys would be ambient authority. `set_var` must take, because a library configured through
   the environment is ordinary.
