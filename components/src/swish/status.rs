@@ -7,14 +7,9 @@ use super::*;
 
 /// **What the command now running has done so far** (milestone 67), as a [`Status`] code.
 ///
-/// A global for the reason [`DIAG_EP`] is one: the refusal and outcome printers are free functions
-/// reached from every command path, and threading a `&mut Nav` through all of them to carry one
-/// small fact would be a wide diff. Single-threaded EL0, so `Relaxed` is the whole ordering story.
-///
-/// This was an `AtomicBool` called `TROUBLE` until milestone 67, set by whichever printer had bad
-/// news, and read by `xargs` to stop a sweep. Widening it from a bit to a status is the whole of
-/// what `$?` needed: the shell already knew that something had gone wrong, and what it did not
-/// record was **which kind**.
+/// A global for the reason [`DIAG_EP`] is one: the printers that set it are free functions reached
+/// from every command path. `xargs` reads it to stop a sweep. Single-threaded EL0, so `Relaxed` is
+/// the whole ordering story.
 pub(super) static CURRENT: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
 /// **What the command before this one did**, which is what `$?` reports and what `&&` reads.

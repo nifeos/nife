@@ -5,13 +5,8 @@
 
 use super::*;
 
-// Pages shared with the terminal (must match the wiring in the progenitor).
-//
-// `OUT_VA` used to be 0x0060_0000, which is also [`FS_VA`]. That was sound while a shell wired to a
-// terminal could not also hold a filesystem, and milestone 50's `>` is exactly the wiring where it
-// holds both, so the terminal page moved rather than the FS one: `FS_VA` is `fs_service`'s
-// `FILE_VA_CLIENT`, which six other programs map, and this is the one address only the shell and its
-// the progenitor know.
+// Pages shared with the terminal (must match the wiring in the progenitor). Distinct from
+// [`FS_VA`], because a shell with a `>` holds both; `wiring.rs` asserts the windows disjoint.
 pub(super) const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000); // we write; the terminal reads
 
 pub(super) const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000); // the terminal writes; we read
@@ -53,10 +48,8 @@ pub(super) fn print_num(v: u64) {
 /// about a policy, and the wording is [`swish::write_say`]'s so a host test can hold it: this shell
 /// does not get to invent a friendlier word for a refusal.
 pub(super) fn say(s: Say) {
-    // **Which kind of no it was** (milestone 67). The filesystem answering with an errno is
-    // something that was attempted and did not work; everything else here is this shell declining
-    // from what it holds, with nothing sent and nothing spawned. Under `xargs` either ends the
-    // sweep, which is what the old single bit recorded.
+    // Which kind of no (milestone 67 (`swish` the language)): an errno is a failure; everything
+    // else is this shell declining from what it holds.
     match s {
         Say::Nothing => {}
         Say::Failed(_) => failed(),

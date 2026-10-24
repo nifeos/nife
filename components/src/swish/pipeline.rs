@@ -1,9 +1,7 @@
 //! **The operators `>`, `<` and `|`** (milestone 50 (pipes and redirection),
 //! notes/pipes.md), and the file behind a
-//! `>` and a `<`, which this shell serves itself.
-//!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
+//! `>` and a `<`, which this shell serves itself. One of the modules §273 (the shell program
+//! becomes a directory of modules) lays out. See notes/pipes/the-shell-side.md.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -14,20 +12,14 @@ use super::*;
 
 /// Pages the untyped region behind one pipeline holds. The endpoints themselves are page-resident
 /// objects retyped out of it (one page each), and the region exists so the shell can **destroy** it
-/// when the pipeline is over.
-///
-/// That is not tidiness. Deleting every capability naming an rendezvous does not destroy the rendezvous,
-/// because the object lives in a page of this region; only reclaiming the region does. So a producer
-/// still blocked in a `SEND` after its reader has gone would stay blocked forever, and `yes | head`
-/// would hang instead of ending. Destroying the region is what turns that into `abi::Error::Gone`.
+/// when the pipeline is over: only that frees the rendezvous, which turns a blocked producer's
+/// `SEND` into `abi::Error::Gone` (notes/pipes.md, "SIGPIPE").
 const PIPE_REGION_PAGES: u64 = 8;
 
 /// **Run a line that has operators on it.**
 ///
-/// The shape is: designate the redirection targets, plan every stage, and only then move anything.
-/// Nothing is spawned until the whole line is known to be runnable, which matters more here than for
-/// a single command: a pipeline that half-starts leaves a process blocked on a channel nobody will
-/// ever write to, and this shell has no way to reach it.
+/// Designates the redirection targets and plans every stage before anything moves, so a line that
+/// cannot run spawns nothing. Refusals are said, not returned. See notes/pipes/the-shell-side.md.
 pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     // The names on the ends, resolved against where we stand now, exactly as an operand is.
     let out = match l.output {
@@ -44,8 +36,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         },
         None => None,
     };
-    // `2>` names one destination for the **line**, because this shell mints one diagnostic rendezvous
-    // and hands it to every stage that declares a second stream. See notes/pipes.md.
+    // `2>` names one destination for the line: one diagnostic rendezvous serves every declarer.
     let diag_file = match l.diagnostics {
         Some(t) => match grant_plan::redirect_target(t, holdings(nav), true) {
             Ok(g) => Some((g, l.diagnostics_mode())),
@@ -54,14 +45,8 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         None => None,
     };
 
-    // Plan every stage. `head` is the one shape a stage may have that is not a program: a builtin
-    // that produces text, at the head of the pipeline, whose bytes **the shell writes into the pipe
-    // itself**. That costs no process and no new mechanism, and it is what makes `ls | wc` a thing a
-    // person can type in a shell that holds a directory.
-    // **On the heap, not on the stack** (milestone 47, calef's allocator ruling). This array of
-    // endowments, each carrying a whole name set, is what the four stack overflows in
-    // notes/pipes/the-boot.md had in common, and this function's frame was the deepest in the
-    // program. Sized to the line's own stages rather than to `MAX_STAGES`.
+    // On the heap, not the stack (milestone 47, calef's allocator ruling): this array is what
+    // the four stack overflows in notes/pipes/the-boot.md had in common.
     let mut plans = match heap::filled::<Option<Endowment>>(l.stage_count(), None) {
         Ok(v) => v,
         Err(s) => return say(s),
@@ -91,14 +76,11 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                     Err(r) => return refuse(spec, r),
                 }
             }
-            // `echo`, `ls` and `pwd` render text and grant nothing, so the shell can be their sink's
-            // client. Only at the head, and only when nothing is feeding them: a builtin with an
-            // input is a builtin that reads, and none of them do.
+            // A producing builtin, only at the head and only with nothing feeding it: none reads.
             Command::Echo(_) | Command::Ls(_) | Command::Pwd
                 if i == 0 && matches!(l.source_for(0, inp), Source::None) =>
             {
-                // A builtin has no manifest, so it declares no second stream, so a `2>` on it names
-                // nothing. Same sentence a program that declares none gets, for the same reason.
+                // No manifest, so no second stream for a `2>` to name.
                 if diag_file.is_some() {
                     print(b"  ");
                     print(Refusal::NoDiagnosticStream.message().as_bytes());
@@ -116,16 +98,8 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         }
     }
 
-    // **The head stage's input file comes off the plan, not off the line**, and not reading it here
-    // was the bug milestone 40's viewer found: `doc page.md | wc` planned correctly, spawned the
-    // head with an empty input slot, where a `receive` answers `NoSuchSlot` rather than blocking, so
-    // the stage counted an empty stream and reported it. A wrong answer, not a hang.
-    //
-    // An input operand is a trailing positional at a program that declares an input
-    // (`grant_plan::plan_against_with`), which is the same rule that makes `wc report.txt` mean
-    // `wc < report.txt`. Only the planner knows it, because it needs the manifest; reading it off
-    // `Line` would be the shell classifying tokens the planner has already classified. `plans[0]`
-    // is `None` only for a producing builtin at the head, and a builtin has no operand.
+    // The head's input file comes off the plan, not the line: only the planner knows an input
+    // operand. `plans[0]` is `None` only for a producing builtin, which has no operand.
     let inp = match plans[0] {
         Some(e) => match e.source {
             Source::File(g) => Some(g),
@@ -140,15 +114,9 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
 /// Mint the pipes, open the files, spawn the stages, feed the head if the shell is the producer, and
 /// deliver what comes out of the tail. Everything above this decided; this moves capabilities.
 ///
-/// **The shell is the process behind a `>` and a `<`**, and that is milestone 50's one wiring
-/// decision that is not the obvious one. See notes/pipes.md: `filesystem_contract` shares a single page between
-/// the FS server and its client, so two client processes racing to stage bytes in it is not sound,
-/// and `ls > out.txt` is precisely a line where the shell must read the filesystem *while* the
-/// redirection is being written. The shell already holds the directory capability, so it is the one
-/// process that can back both ends without a second session.
-///
-/// What the child holds is unchanged by that, which is why it costs the milestone nothing: a
-/// redirected program holds an rendezvous with `WRITE` and no way to ask what is behind it.
+/// The shell itself backs a `>` and a `<`, because `filesystem_contract`'s one shared page cannot
+/// serve two clients (§55 (the file behind a `>` is the shell itself)); a redirected child still
+/// holds only a rendezvous with `WRITE`. See notes/pipes.md and notes/pipes/the-shell-side.md.
 #[allow(clippy::too_many_arguments)] // one parameter per operator, and there are four of them now
 pub(super) fn run_pipeline(
     nav: &mut Nav,
@@ -161,61 +129,36 @@ pub(super) fn run_pipeline(
 ) {
     let n = l.stage_count();
 
-    // **This shell can be at one end of a chain, never both** (`grant_plan::check_chain`,
-    // notes/pipes.md). It is the producer whenever the bytes going into the head come from here: a
-    // `<`, an input operand, or a producing builtin. It is always the consumer, because the tail's
-    // sink is this shell's result rendezvous or a file this shell backs. With one wait point per
-    // process and no select, that only works if some stage reads to the end before it writes.
-    //
-    // **Before the files are opened**, which is the whole reason this is the first thing in the
-    // function: a `>` truncates, and a line that is not going to run must not have emptied a file.
+    // This shell can be at one end of a chain, never both. Checked before the files are opened:
+    // a `>` truncates, and a line that will not run must not have emptied a file.
     if let Err(r) = grant_plan::check_chain(inp.is_some() || head_builtin, &plans[..n]) {
         say_chain_refused(&plans[..n], r);
         return;
     }
 
-    // The files first, before any process exists. A line whose file cannot be opened must not
-    // half-run, and `>` truncates here, which is where a person expects it: `date > f` empties `f`
-    // even if `date` then says nothing. `>>` is the same call with the emptying left out.
+    // The files before any process exists, so a line whose file cannot open never half-runs.
     let Some((mut sink, mut source, mut diag_sink)) = open_line_files(nav, l, out, inp, diag_file)
     else {
         return;
     };
-    // How many stages were handed the diagnostic rendezvous, which is what [`drain_diagnostics`]
-    // counts end-of-stream messages against. It comes from the manifests rather than from the line:
-    // a declared stream exists whether or not a `2>` named a destination for it.
-    // Only the stages whose second stream this shell is backing, which is the ones a `2>` named a
-    // file for. A `Diagnostics::Printed` stage writes to the terminal's sink adapter and this shell
-    // never sees those bytes, which is the whole point of that component existing.
+    // What [`drain_diagnostics`] counts end-of-stream messages against: only the stages whose
+    // second stream this shell backs. A `Diagnostics::Printed` stage's bytes never reach it.
     let declarers = plans
         .iter()
         .take(n)
         .filter(|p| p.is_some_and(|e| matches!(e.diagnostics, line::Diagnostics::File(..))))
         .count();
 
-    // **DECISIONS §106's narrowing rule, decided here before anything spawns.** An unredirected
-    // tail (no `>` at the end of the line: `sink.is_none()`, this function's own `sink` being the
-    // file this shell opened for one, not to be confused with `Endowment::sink`) whose program both
-    // writes and reads is screen-narrowed: `terminal_sink_caretaker` takes its primary output
-    // instead of this shell's own result rendezvous. `check_chain` above already used the identical
-    // condition (the tail's `Sink` and its `writes_while_reading`) to let a chain with no absorbing
-    // barrier through, so this has to agree with it exactly.
-    //
-    // **`check_chain` cannot itself confirm the rendezvous mints**, because it is host-testable, pure
-    // logic with no capability to retype anything, so this is the one place that can. A line
-    // `check_chain` allowed on the assumption of narrowing must not fall back to spawning the child
-    // unnarrowed on a failed mint: that would reintroduce the exact deadlock `check_chain` exists to
-    // refuse (the shell already mid-feed and the child's output routed back to `result_ep` with
-    // nobody there to read it), so a mint failure is a loud refusal here, not a silent fallback.
+    // §106 (the `terminal_sink_caretaker` narrowing), before anything spawns. `sink` is the `>`
+    // file, not `Endowment::sink`. This condition must equal the one `check_chain` allowed the
+    // line on, and a failed mint refuses rather than spawning unnarrowed, which would deadlock.
     let tail_writes_while_reading = plans[n - 1].is_some_and(|e| e.writes_while_reading);
     let needs_screen = sink.is_none() && tail_writes_while_reading;
     let Ok(screen_ep) = screen_for_tail(needs_screen) else {
         return;
     };
 
-    // **A builtin with a file on its output spawns nothing at all.** `ls > out.txt` is one process:
-    // the shell reads the directory and the shell writes the file. There is no pipe to mint, no
-    // stage to start, and no capability to move, because both ends are already this shell's.
+    // A builtin with a file on its output spawns nothing: both ends are this shell's.
     if head_builtin && n == 1 {
         if let Some(f) = &mut sink {
             feed(nav, l.stages()[0], f);
@@ -229,11 +172,9 @@ pub(super) fn run_pipeline(
     };
     let feed_pipe = source.is_some().then(|| pipes[n - 1]);
 
-    // **Every stage that hears words gets its argv written before any stage is spawned**
-    // (milestone 205, DECISIONS §170), one window each, so running out of budget partway spawns
-    // nothing. The regions are kept until the line is drained: the progenitor copies each frame
-    // while it serves that stage's request, and a region given back sooner would unmap the page
-    // under it.
+    // Every argv is written before any stage spawns (§170 (how a foreign program is told what to
+    // do)), so running out of budget partway spawns nothing. The regions are kept until the line
+    // is drained: the progenitor copies each frame while serving that stage's request.
     let mut argvs = [None::<Argv>; line::MAX_STAGES];
     // **And every stage's words grant, the same way** (milestone 205's designation half): a stage
     // that hears words is granted what they designated, on window `i`.
@@ -259,9 +200,8 @@ pub(super) fn run_pipeline(
         return;
     }
 
-    // **Diagnostics before anything else**, because in `date | wc` this shell is not the reader of
-    // `date`'s output and draining the output first would wait on `wc`, which waits on `date`, which
-    // is blocked in a rendezvous send on the diagnostic rendezvous. See [`drain_diagnostics`].
+    // Diagnostics first: in `date | wc`, draining the output first waits on `wc`, which waits on
+    // `date`, which is blocked sending on the diagnostic rendezvous.
     if let Some(f) = &mut diag_sink {
         finish_diagnostics(f, declarers);
     }
@@ -276,11 +216,8 @@ pub(super) fn run_pipeline(
         f.stream_into(p);
     }
 
-    // And the tail's answer. `>` is the shell putting those bytes somewhere else, not the child
-    // being handed something different, so a redirected tail is unchanged: it still arrives on the
-    // shell's own result rendezvous. **A screen-narrowed tail's bytes never arrive here at all**
-    // (DECISIONS §106): they went straight to `terminal_sink_caretaker`, and what this shell waits
-    // for instead is the child's exit.
+    // A redirected tail still answers on the result rendezvous. A screen-narrowed tail's bytes
+    // went to `terminal_sink_caretaker` (§106), so this waits for its exit instead.
     match &mut sink {
         Some(f) => {
             drain_into(f);
@@ -333,8 +270,7 @@ fn finish_diagnostics(f: &mut FileOut, declarers: usize) {
         drain_diagnostics(f, declarers);
         f.report();
     } else {
-        // A `2>` on a line where nothing was spawned to write to it. Close the file rather than
-        // leaving a handle open on a name the line created.
+        // Nothing writes to it; close the handle on the name the line created.
         f.finish();
     }
 }
@@ -372,8 +308,8 @@ fn open_line_files(
         None => None,
     };
 
-    // **The second stream's file, opened on the same terms as the output's** (DECISIONS §67). Held
-    // as an `Option` beside the sink, because a line may name both and they are two files.
+    // The second stream's file (§67 (a program's second stream is a declaration)), on the
+    // output's terms; a line may name both.
     let diag_sink = match diag_file {
         Some((g, mode)) => match open_sink(nav, g, mode) {
             Ok(f) => Some(f),
@@ -403,9 +339,7 @@ fn mint_pipes(n: usize, feeds_head: bool) -> Option<(u64, [u64; line::MAX_STAGES
     };
     let mut pipes = [0u64; line::MAX_STAGES];
     let mut minted = 0usize;
-    // A `<` needs one more rendezvous than a bare pipeline does: the head stage reads a pipe like any
-    // other stage, and the shell is what writes into it. That is the input side of "the same
-    // contract, read from the other end" made concrete: nothing about the head stage knows.
+    // A `<` needs one more: the head reads a pipe like any stage, and the shell writes into it.
     let mut want = n - 1;
     if feeds_head {
         want += 1;
@@ -528,9 +462,7 @@ fn spawn_stages(
             line::Diagnostics::File(..) => diag_rendezvous(),
             _ => None,
         };
-        // Only the tail stage is ever eligible (`screen_ep` is `None` unless the tail's own sink is
-        // unset), and `sink_for` never puts `Sink::Report` anywhere but the last stage, so this
-        // could equally read `i == n - 1` without the `Some` check; both say the same thing.
+        // Only the tail is ever screen-narrowed.
         let stage_screen = ends.screen_ep.filter(|_| i + 1 == n);
         if !spawn_stage(
             e,
@@ -558,9 +490,8 @@ fn spawn_stages(
 
 /// **Somewhere this shell puts bytes it produced itself.**
 ///
-/// Two implementations, and the whole of what `>` cost: an rendezvous (the next stage of a pipeline)
-/// and a file. A builtin cannot tell them apart, exactly as a spawned program cannot tell what is in
-/// its output slot, and for the same reason: it is handed a place to push bytes and nothing else.
+/// Two implementations: a rendezvous (the next stage) and a file. A builtin cannot tell them apart,
+/// as a spawned program cannot tell what is in its output slot.
 pub(super) trait ByteOut {
     fn push(&mut self, bytes: &[u8]);
     /// Say the stream is over. On a pipe that is `OPERATION_EOF`; on a file it is the last write.
@@ -569,9 +500,7 @@ pub(super) trait ByteOut {
 
 /// **Run a producing builtin with the given destination as its output**, one message at a time.
 ///
-/// The builtins already write through a callback rather than through `print`, because the witness
-/// roles have no terminal. That was done for testability and it pays off twice here: the same `echo`
-/// and the same `ls` feed a pipe *and* a file with no branch in either of them.
+/// The builtins write through a callback, so the same `echo` and `ls` feed a pipe and a file.
 fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
     let said = match grant_plan::parse(stage) {
         Command::Echo(text) => {
@@ -601,9 +530,8 @@ fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
         }
         _ => Say::Nothing,
     };
-    // End of stream whatever happened, including a refusal: the reader downstream is a process that
-    // is blocked on a receive, and leaving it there because the shell had nothing to say would turn
-    // a refused line into a hung prompt.
+    // End of stream whatever happened, a refusal included: the reader downstream is blocked on a
+    // receive, and leaving it there hangs the prompt.
     w.finish();
     if !matches!(said, Say::Nothing) {
         say(said);
@@ -672,20 +600,15 @@ impl ByteOut for SinkWriter {
 // ---- the file behind a `>` and a `<`, which this shell serves itself (milestone 50) ----
 
 /// How many bytes of a file this shell stages in the page it shares with the FS server before it
-/// makes a request. Small on purpose: the shell runs on the four stack pages the progenitor maps it, and the
-/// page itself is sixteen times this. A larger buffer would buy fewer FS round trips and cost the
-/// one resource this program is actually short of.
+/// makes a request. Small because the shell runs on four stack pages; see
+/// notes/pipes/the-shell-side.md.
 const FILE_CHUNK: usize = 256;
 
 /// **Walk to the directory a resolved grant records**, from the root of what this shell holds.
 ///
-/// The grant carries a position rather than a token (`grant_plan::designate` resolved the name once, at
-/// plan time), so this re-opens that position rather than re-reading the line. Nothing here consults
-/// where the shell is standing *now*, which is what makes a `cd` between planning and running unable
-/// to change what a redirection means.
-///
-/// The walk is from the root of the tree the grant names (`t`, milestone 154), so a grant planned
-/// into a two-grant shell's second tree is opened there and nowhere else.
+/// The walk starts at the root of tree `t` (milestone 154 (a process that holds two directory
+/// capabilities)) and follows the position `at` that `grant_plan::designate` resolved at plan time,
+/// never the current directory, so a `cd` cannot change what a redirection means.
 ///
 /// Returns the handle plus the capabilities opened to reach it, which the caller closes.
 fn open_at(
@@ -713,18 +636,11 @@ fn open_at(
 
 /// **Open the file behind a `>` or a `>>`**, creating it if it is not there.
 ///
-/// `CREATE` is create, not create-or-open (DECISIONS §27), so the fallback is explicit and is the
-/// same one `fixtures/src/file_sink.rs` makes: on any refusal, open the existing name. What happens next is
-/// the whole of `>` versus `>>`, and it happens **here, in the shell**, because the shell is what
-/// backs the file (DECISIONS §55). The child is wired identically either way and has no message it
-/// could send to find out which.
-///
-/// - `>` ([`line::Mode::Truncate`]) truncates, and does it **before the command runs**, which is
-///   why `ls > out.txt` reports one more name than the `ls` before it did.
-/// - `>>` ([`line::Mode::Append`]) asks the file how big it is and starts writing there. `FSTAT`
-///   rather than a seek flag, because [`FileOut`] already carries its own running offset: every
-///   write it makes names an absolute position, so "append" is an initial value and not a mode the
-///   filesystem has to hold.
+/// `CREATE` is create, not create-or-open (§27 (the filesystem service)), so on any refusal this
+/// opens the existing name, as `fixtures/src/file_sink.rs` does. `mode` is decided here because the
+/// shell backs the file (§55); the child is wired identically either way. [`line::Mode::Truncate`]
+/// truncates before the command runs; [`line::Mode::Append`] starts the offset at `FSTAT`'s size.
+/// See notes/pipes/the-file-end.md.
 fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Result<FileOut, Say> {
     let t = nav.tree(g.which);
     let mut tmp = [0u64; nav::MAX_DEPTH];
@@ -795,9 +711,8 @@ pub(super) fn open_source(nav: &mut Nav, g: grant_plan::FileGrant) -> Result<Fil
 
 /// A file this shell is appending into, on behalf of a `>`.
 ///
-/// It holds an open handle and a running offset, and buffers into [`FILE_CHUNK`] before each write,
-/// because the FS contract's unit is a page and the sink contract's is sixteen bytes: writing every
-/// message straight through would cost a filesystem round trip per sixteen bytes.
+/// It holds an open handle and a running offset, and buffers into [`FILE_CHUNK`] before each write
+/// rather than paying a filesystem round trip per sixteen-byte sink message.
 struct FileOut {
     /// The slot the directory capability lives in. A `u64` rather than a borrow of [`Nav`], so a
     /// builtin that borrows the shell's navigator can still write through this.
@@ -806,13 +721,9 @@ struct FileOut {
     off: u64,
     buf: [u8; FILE_CHUNK],
     n: usize,
-    /// The errno of the first refused write, or 0. Kept rather than printed at once: a producer
-    /// mid-listing has nothing to do with a failure, and reporting once at the end is what a person
-    /// can read.
+    /// The errno of the first refused write, or 0, reported once at the end.
     failed: i32,
-    /// A write the server accepted and did not finish. Its own field rather than an errno, because
-    /// there is no errno for it: the request did not fail, it was answered with a smaller number
-    /// than it asked for, and saying `EIO` would be inventing a fact.
+    /// A write the server answered with a smaller count. Not an errno: the request did not fail.
     short: bool,
 }
 
@@ -840,9 +751,7 @@ impl FileOut {
         self.n = 0;
     }
 
-    /// Say what happened, once, after the whole stream is through. Silence on success, because that
-    /// is what `>` says everywhere else and because the bytes went into a file rather than onto the
-    /// screen precisely so they would not be printed.
+    /// Say what happened, once, after the whole stream is through. Silence on success.
     fn report(&self) {
         if self.failed != 0 {
             say(Say::Failed(self.failed));
@@ -877,9 +786,8 @@ pub(super) struct FileIn {
 }
 
 impl FileIn {
-    /// **Stream the file over the sink contract**, which is the whole of `<`: the head stage holds
-    /// the read end of an rendezvous and receives `OPERATION_BYTES` until `OPERATION_EOF`, exactly as it would from
-    /// a program on the left of a `|`. Nothing about the file reaches it.
+    /// **Stream the file over the sink contract**, which is the whole of `<`: the head stage
+    /// receives `OPERATION_BYTES` until `OPERATION_EOF` on a rendezvous, as from a `|`.
     fn stream_into(&mut self, pipe: u64) {
         let mut w = SinkWriter::new(pipe);
         let mut off = 0u64;
@@ -911,9 +819,8 @@ impl FileIn {
 
 /// **Drain a byte stream off the result rendezvous into a file**, which is what `>` is.
 ///
-/// [`drain_text`] with a different destination, and deliberately not a parameterised version of it:
-/// the printing one puts a two-space prefix on the answer and this one must put nothing at all in
-/// the file that the program did not write.
+/// Not a parameterised [`drain_text`]: that one prefixes two spaces, and the file gets only what
+/// the program wrote.
 fn drain_into(f: &mut FileOut) {
     for _ in 0..MAX_OUTPUT_CHUNKS {
         let (w0, w1, w2) = receive(RESULT);
@@ -922,9 +829,8 @@ fn drain_into(f: &mut FileOut) {
             print(swish::spawn_failure_sentence(w0));
             return;
         }
-        // **The writer died mid-stream** (milestone 235). The file keeps what arrived before the
-        // fault and is closed rather than left open, for `finish`'s own reason one arm down: a
-        // half-written file a reader can open beats a handle nobody closed.
+        // The writer died mid-stream (milestone 235 (a command that faults hangs the prompt)):
+        // the file keeps what arrived and is closed.
         if w0 == spawnproto::JOB_FAULTED {
             failed();
             f.finish();
@@ -951,9 +857,8 @@ fn drain_into(f: &mut FileOut) {
 
 /// **Direct the progenitor to build one stage**, delegating whatever the operators put in its slots.
 ///
-/// The two delegations are the entire difference between a piped stage and an ordinary spawn, and
-/// they are why `>` and `|` are one mechanism: the progenitor receives an rendezvous and puts it where the
-/// result rendezvous would have gone. Nothing here knows or can find out what is on the other end.
+/// The progenitor puts the delegated rendezvous where the result rendezvous would have gone, which
+/// is why `>` and `|` are one mechanism. The wiring rules are in notes/pipes/the-shell-side.md.
 ///
 /// Returns whether the stage started; a failure has already been printed.
 fn spawn_stage(
@@ -991,11 +896,8 @@ fn spawn_stage(
         sink: sink.is_some(),
         source: source.is_some(),
         diagnostics: diagnostics.is_some(),
-        // **A stage is directory-granted only for words** (milestone 205): a program that hears
-        // words is granted what they designated, here as on a plain line. `rm`'s grant is still
-        // met only in `spawn`: the one program with `DirectoryGrantDeclaration::Required` writes a byte stream and
-        // takes no input, so `rm x | wc` puts it at the head, and delivering it here would be a
-        // second copy of `dir_grant`'s refusals. See notes/dir-capability.md's BUGS.
+        // Directory-granted only for words (milestone 205); `rm`'s required grant is met only in
+        // `spawn`. See notes/dir-capability.md's BUGS.
         directory_grant: words.is_some(),
         second_directory_grant: false,
         screen: screen.is_some(),
@@ -1006,10 +908,8 @@ fn spawn_stage(
         program_arguments: argv.is_some(),
         nameset: words.is_some_and(|w| w.set.is_some()),
         machine: machine_wiring(&e),
-        // **A stage never promises devices** (milestone 632 (provisional)): `graphical_terminal`'s manifest
-        // refuses every operator that builds a stage (`Words` output refuses `>` and a pipe's
-        // left, `InputDeclaration::Forbidden` its right), so this is false by construction rather than
-        // by decision, and says so for the reader checking the wire.
+        // A stage never promises devices (milestone 632 (graphics on demand)):
+        // `graphical_terminal`'s manifest refuses every operator that builds a stage.
         graphics: false,
         keyboard: false,
     };
@@ -1046,11 +946,8 @@ fn spawn_stage(
         delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
     }
     if let Some(slot) = screen {
-        // READ (not WRITE): the progenitor installs this as the *child's* fault target, and what this shell
-        // needs back from its own copy is the right to `RECEIVE`/`REAP` on it, exactly
-        // `job_undertaker`'s DEATHS. The progenitor narrows its own copy no further than that when it inserts
-        // the child's (`abi::rights::READ`, `supervision_protocol::build_child_space`), so delegating
-        // less than READ here would leave the progenitor unable to hand the child anything at all.
+        // READ, not WRITE: this is the child's fault target, and this shell needs `RECEIVE` and
+        // `REAP` on it. `supervision_protocol::build_child_space` inserts the child's copy at READ.
         delegate(slot, abi::rights::READ | abi::rights::GRANT);
     }
     if let Some(slot) = mem_slot {
@@ -1061,14 +958,8 @@ fn spawn_stage(
     }
     delegate_machine_page(wiring.machine);
 
-    // A stage whose output was substituted owes this shell no answer, so the progenitor acks instead. Without
-    // it a failed spawn would be invisible and the pipeline would wait on a producer that does not
-    // exist. A screen-narrowed stage is the same shape: its completion signal is the fault rendezvous
-    // above, not this one, so a build failure has to reach the shell here too (DECISIONS §106).
-    //
-    // **A fault word can arrive here too** (milestone 235), and it is never this stage's: it is an
-    // earlier stage of the same line that died between its own ack and this one. Either way the
-    // line is over, so both arms return false and only the sentence differs.
+    // A substituted or screen-narrowed stage owes no answer, so the progenitor acks; without it a
+    // failed spawn is invisible. A fault word here is an earlier stage's (milestone 235).
     if wiring.sink || wiring.screen {
         match receive(RESULT).0 {
             w if w == spawnproto::SPAWN_OK => {}
@@ -1089,10 +980,8 @@ fn spawn_stage(
 
 /// Give the pipeline's memory back.
 ///
-/// **The `DESTROY` is what makes a dead reader visible to a live writer.** An rendezvous is an object
-/// in a page of this region, so deleting the capabilities that name it leaves it alive; reclaiming
-/// the region is what turns a producer's next `SEND` into `abi::Error::Gone`. A pipeline that ended
-/// with a stage still writing (the `yes | head` shape) ends here.
+/// The `DESTROY` is what turns a still-writing producer's next `SEND` into `abi::Error::Gone`
+/// (the `yes | head` shape); see [`PIPE_REGION_PAGES`].
 fn release_pipeline(region: u64, pipes: &[u64]) {
     for &p in pipes {
         cap_delete(p);
