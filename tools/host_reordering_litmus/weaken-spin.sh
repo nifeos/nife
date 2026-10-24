@@ -21,12 +21,21 @@ chmod -R u+w "$dst"
 f="$dst/src/mutex/spin.rs"
 grep -q 'self.inner.lock.store(false, Ordering::Release);' "$f"
 sed -i.bak 's/self.inner.lock.store(false, Ordering::Release);/self.inner.lock.store(false, Ordering::Relaxed);/' "$f"
+grep -q 'self.inner.lock.store(false, Ordering::Relaxed);' "$f"
 if [ "$variant" = both ]; then
+    grep -q 'Ordering::Acquire, Ordering::Relaxed' "$f"
     sed -i.bak 's/compare_exchange\(_weak\)\{0,1\}(false, true, Ordering::Acquire, Ordering::Relaxed)/compare_exchange\1(false, true, Ordering::Relaxed, Ordering::Relaxed)/' "$f"
+    grep -q 'Ordering::Relaxed, Ordering::Relaxed' "$f"
+    if grep -q 'Ordering::Acquire, Ordering::Relaxed' "$f"; then
+        echo "weaken-spin: an Acquire compare-exchange survived the edit" >&2
+        exit 1
+    fi
 fi
 rm -f "$f.bak"
-sed -i.bak 's|^\[patch.crates-io\]$|[patch.crates-io]\nspin = { path = "target/weakened-spin" }|' Cargo.toml
-rm -f Cargo.toml.bak
+awk '{ print } /^\[patch\.crates-io\]$/ { print "spin = { path = \"target/weakened-spin\" }" }' \
+    Cargo.toml > Cargo.toml.weakened
+mv Cargo.toml.weakened Cargo.toml
+grep -q '^spin = { path = "target/weakened-spin" }$' Cargo.toml
 echo "weaken-spin: $variant; the orderings left in the lock are:"
 grep -n 'Ordering::' "$f" | grep -v '^.*//' | grep -v SeqCst
 cargo update --quiet -p spin@0.12.3 2>/dev/null || true

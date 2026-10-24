@@ -14,7 +14,8 @@
 # It needs the project's QEMU on PATH and the toolchain script/bootstrap installs. Logs land in
 # target/host-reordering/. See notes/benchmarks/host-reordering-under-tcg.md.
 set -u
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../.." || exit 1
+# shellcheck source=helpers/qemu-path.sh
 . helpers/qemu-path.sh
 start=$(date +%s)
 scale="${1:?usage: measure.sh <litmus-scale> <release|both|none> <suite-deadline-seconds>}"
@@ -56,6 +57,7 @@ while :; do
     i=$((i + 1))
     t0=$now
     log="$out/suite-$i.log"
+    # shellcheck disable=SC2065 # script/test is the suite, not test(1)
     script/test --arch aarch64,riscv64 --no-host > "$log" 2>&1
     status=$?
     secs=$(($(date +%s) - t0))

@@ -17,7 +17,8 @@ struct Table([u64; 512]);
 #[unsafe(link_section = ".data.pagetable")]
 static LITMUS_L1: Table = {
     let mut t = [0u64; 512];
-    t[0] = 0x0000_0000 | 0x401;
+    // Output address | AF (bit 10) | SH (bits 9:8) | AttrIndx (bits 4:2) | block (0b01).
+    t[0] = 0x401;
     t[1] = 0x4000_0000 | 0x705;
     Table(t)
 };
