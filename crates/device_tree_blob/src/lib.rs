@@ -1,22 +1,11 @@
-//! A minimal flattened device tree (FDT) parser.
+//! A minimal flattened device tree (FDT) parser: bytes in, regions and property values out.
 //!
-//! The device tree is the machine describing itself: where RAM is, where the UART is,
-//! where the interrupt controller lives, how many CPUs exist. QEMU hands us a pointer
-//! to one in `x0` (see notes/boot-protocol.md), and this is how we read it.
-//!
-//! # Everything here is big-endian
-//!
-//! The FDT format predates the little-endian consensus and never changed. Every
-//! integer in the blob is stored big-endian, on a machine that is little-endian. So
-//! every read goes through `be32` or `be64`, and forgetting one gives you a
-//! plausible-looking number that is wrong by a factor of 16 million.
-//!
-//! # Why this is a separate crate
-//!
-//! It is **pure logic**: bytes in, structs out. No hardware, no `unsafe` beyond one
-//! entry point, no kernel. So it compiles for the host and its tests run in
-//! milliseconds against a real device tree dumped from QEMU, instead of booting an
-//! emulator. See DECISIONS §7.
+//! The blob is the machine describing itself (where RAM, the UART and the interrupt controller
+//! are, how many CPUs exist), handed over by firmware (notes/boot-protocol.md). Every integer in
+//! it is big-endian, so every read goes through `be32` or `be64`. The blob is untrusted input:
+//! every offset is checked, every walk is bounded, and a malformed blob is an [`Error`] rather
+//! than a panic. The crate is pure logic, so its tests run on the host against trees dumped from
+//! QEMU (§7 (testing: QEMU harness + host-testable crates)). See notes/device-tree.md.
 //!
 
 //! Name: ratified 2026-09-18 (calef, `design/decisions/` §154), **deratifying the 2026-08-01
@@ -56,20 +45,12 @@ pub struct Region {
 impl Region {
     /// One past the last byte, **saturating**.
     ///
-    /// Saturating rather than plain, because this is a `pub fn` on a `pub` struct with `pub` fields
-    /// whose values came out of a blob the firmware wrote. `start + size` on a hostile pair wraps,
-    /// and under the dev profile's overflow checks that is a panic on the boot path:
-    /// `kernel/src/memory.rs`'s `place_bitmap` calls this on every RAM region the device tree
-    /// declares, before there is any way to report a failure. Found by
-    /// `fuzz/fuzz_targets/device_tree_blob_walk` on 2026-08-02; see the regression test in
-    /// `tests/hostile.rs`.
-    ///
-    /// The same argument `elf::Segment::page_range` records: a type anyone can construct has to hold
-    /// on its own, whatever the parser that usually builds it has already checked.
-    ///
-    /// **A saturated end is still a lie**, which is why [`DeviceTreeBlob::memory_regions`] and its
-    /// siblings refuse a wrapping region outright ([`Error::RegionOverflow`]) rather than passing
-    /// one out and relying on this. This is the backstop, not the check.
+    /// Saturating because the type is `pub` with `pub` fields, so its values may come from a
+    /// hostile blob, and `kernel/src/memory.rs`'s `place_bitmap` calls this on every RAM region
+    /// before a boot can report a failure; a plain add would panic there under overflow checks
+    /// (regression in `tests/hostile.rs`). A saturated end is still wrong, so the parser refuses a
+    /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check. See
+    /// notes/device-tree.md ("The parser's bounds").
     pub fn end(&self) -> u64 {
         self.start.saturating_add(self.size)
     }
@@ -96,10 +77,9 @@ pub enum Error {
     /// A `reg` pair whose `start + size` does not fit in 64 bits, so the region names memory that
     /// cannot exist.
     ///
-    /// Refused rather than clamped, and refused *here* rather than left to [`Region::end`]. A
-    /// clamped region is a lie the caller cannot detect, and the caller is `kernel/src/memory.rs`
-    /// deciding where RAM is; "the firmware's memory map is impossible" is something a boot path
-    /// should be told rather than something it should quietly work around.
+    /// Refused rather than clamped, and here rather than left to [`Region::end`]: the caller is
+    /// `kernel/src/memory.rs` deciding where RAM is, and a boot path should be told the firmware's
+    /// memory map is impossible rather than quietly work around it.
     RegionOverflow,
 }
 
@@ -115,17 +95,12 @@ const HEADER_LEN: usize = 40;
 
 /// The largest `totalsize` [`DeviceTreeBlob::from_ptr`] will believe, 2 MiB.
 ///
-/// `from_ptr` has to trust the header's own length field before anything is validated, and the
-/// magic check only says the pointer is *at* a blob, not that the blob is as long as it claims.
-/// Without a ceiling, a header whose `totalsize` reads `0xffff_ffff` becomes a 4 GiB slice that
-/// the walkers then read through the direct map past the end of RAM, and the first the kernel
-/// hears of it is a data abort in `memory::init` before any handler can say why (2026-09-24
-/// security audit). Firmware is the trust boundary here, so this is boot robustness rather than
-/// confinement; the ceiling costs one comparison and turns that abort into [`Error::TooLarge`].
-///
-/// 2 MiB is Linux's own figure for the same slot (`MAX_FDT_SIZE` is `SZ_2M` in
-/// `arch/arm64/include/asm/boot.h`), and the largest blob this tree has met is QEMU's `virt` at
-/// under 64 KiB, with radon's U-Boot tree under 32 KiB.
+/// `from_ptr` trusts the header's length before anything is validated, and the magic says only
+/// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
+/// 4 GiB slice read past the end of RAM, a data abort in `memory::init` before any handler can say
+/// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
+/// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
+/// 64 KiB. See notes/device-tree.md ("The parser's bounds").
 pub const MAX_TOTALSIZE: usize = 2 * 1024 * 1024;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
@@ -247,12 +222,10 @@ impl<'a> DeviceTreeBlob<'a> {
         }
     }
 
-    /// Every `/memory` node's `reg` property: the actual RAM.
+    /// Every `/memory` node's `reg` property: the actual RAM, written into `out`.
     ///
-    /// This is the whole reason we bothered with the boot protocol. Milestone 1
-    /// hardcoded `0x4000_0000` because we'd read it off a `dtc` dump by hand. Now the
-    /// machine tells us, which means the same kernel binary works on a board with a
-    /// different memory map.
+    /// Returns how many regions it wrote; refuses a full `out` with [`Error::TooManyRegions`] and a
+    /// wrapping pair with [`Error::RegionOverflow`].
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of
         // those takes is not fixed. It's declared by #address-cells and #size-cells on
@@ -342,22 +315,12 @@ impl<'a> DeviceTreeBlob<'a> {
 
     /// The `reg` regions of the first node whose name starts with `prefix`, searched at any depth.
     ///
-    /// Used to find the interrupt controller without hardcoding its address: `intc@8000000` on the
-    /// aarch64 `virt` board (a direct child of the root), and `plic@c000000` on the RISC-V `virt`
-    /// board (nested under `/soc`). The GIC has **two** register blocks (a distributor and a per-CPU
-    /// interface), so its `reg` decodes to two regions, and the order is part of the binding:
-    /// distributor first. The PLIC has one.
-    ///
-    /// A node's `reg` is decoded with the `#address-cells`/`#size-cells` its **parent** declares, so
-    /// we carry those down a small per-depth stack rather than assuming the root's counts. That is
-    /// what lets the same function read a device nested under `/soc` (whose parent is `/soc`, not the
-    /// root) as well as one at the top level. QEMU happens to use 2/2 at both levels, but relying on
-    /// that would be a latent bug the moment a board differs.
-    ///
-    /// Matching on a name prefix rather than the `compatible` string is a deliberate simplification.
-    /// `compatible` is the *correct* way to identify a device (`intc@...` is just a conventional
-    /// name), and a real driver would match `"arm,cortex-a15-gic"` or `"riscv,plic0"`. We look at
-    /// names because it is short and we have exactly two boards. Written down for the Pi port.
+    /// Decodes with the `#address-cells`/`#size-cells` of the node's **parent**, carried down a
+    /// per-depth stack, so a device nested under `/soc` reads as well as one under the root. A GIC
+    /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
+    /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
+    /// is the correct lookup. A node deeper than the stack is not matched. See notes/device-tree.md
+    /// ("The parser's bounds").
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // #address-cells/#size-cells declared by the node at each depth, applying to its children.
         // Depth 0 is the pre-root sentinel; the root is depth 1. Spec defaults are 2 and 1.
@@ -385,18 +348,11 @@ impl<'a> DeviceTreeBlob<'a> {
                         scells[depth] = scells[depth - 1];
                     }
 
-                    // `(2..MAX_DEPTH)`, not `>= 2`, and the upper bound is a fix rather than
-                    // symmetry (2026-08-02). A node deeper than the cell stack was still matched
-                    // here, and the `reg` arm below then read `acells[depth - 1]`, which is an
-                    // out-of-bounds index the moment `depth` reaches 17. A device tree nested that
-                    // deep is not exotic to write, and this parser reads bytes the firmware wrote,
-                    // so it was a boot-time panic on a hostile blob. See tests/hostile.rs.
-                    //
-                    // Refusing to match is the right answer rather than clamping the index: past
-                    // `MAX_DEPTH` this walk has stopped tracking cell counts at all, so the region
-                    // it decoded would be arithmetic on the wrong widths. Not finding the node is
-                    // honest; finding it and reporting the wrong address is not. It is also exactly
-                    // what `node_reg_compatible` already does at its own END_NODE.
+                    // `(2..MAX_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth - 1]`,
+                    // which is out of bounds once `depth` reaches 17, a boot-time panic on a hostile
+                    // blob (tests/hostile.rs). Past `MAX_DEPTH` the cell counts are no longer
+                    // tracked, so refusing to match is honest where a clamped index would decode the
+                    // wrong widths. `node_reg_compatible` refuses the same way at its END_NODE.
                     if (2..MAX_DEPTH).contains(&depth)
                         && name.starts_with(prefix)
                         && target_at.is_none()
@@ -454,23 +410,11 @@ impl<'a> DeviceTreeBlob<'a> {
     /// The `reg` regions of the first node whose `compatible` list contains `compat`, searched at
     /// any depth.
     ///
-    /// The correct way to identify a device, and the one [`node_reg`](Self::node_reg)'s comment
-    /// says a real driver would use. Milestone 51 is where it stopped being theoretical: the RTC
-    /// is `pl031@9010000` on the aarch64 `virt` board and `rtc@101000` on the RISC-V one, so a
-    /// name prefix that finds one finds nothing on the other, while `arm,pl031` and
-    /// `google,goldfish-rtc` name exactly the thing a driver knows how to drive. Matching the
-    /// binding rather than the label is also what makes the answer survive a board that spells its
-    /// node differently, which is the whole point of `compatible`.
-    ///
-    /// `compatible` is a list of NUL-separated strings, most specific first, and a match on **any**
-    /// entry counts: a board whose RTC says `"starfive,jh7110-rtc\0arm,pl031"` is claiming the
-    /// PL031 register layout, and taking it at its word is the binding working as designed.
-    ///
-    /// Unlike `node_reg`, this cannot decide at the `reg` property itself, because `compatible` may
-    /// appear after it in the same node. So every open node's `reg` is remembered and decoded when
-    /// that node closes, by which point both properties have been seen. The bookkeeping is a
-    /// per-depth stack rather than a single slot, so a *parent* that matched is still answered
-    /// correctly after its children have opened and closed.
+    /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
+    /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. `compatible` may follow
+    /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
+    /// decoded when the matched node closes. Returns zero regions for a match with no `reg`. See
+    /// notes/device-tree.md ("The parser's bounds").
     pub fn node_reg_compatible(&self, compat: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         const MAX_DEPTH: usize = 16;
         let mut acells = [2u32; MAX_DEPTH];
@@ -555,16 +499,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// `compat`, searched at any depth. `Ok(None)` when no such node exists, or the node has no
     /// such property.
     ///
-    /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), and needed for the
-    /// same reason that method exists: a binding names what a node *is* while the node's label names
-    /// whatever its author typed. The motivating case is the PLIC's `interrupts-extended`, whose
-    /// node QEMU `virt` spells `plic@c000000` and the JH7110 spells `interrupt-controller@c000000`,
-    /// so a name-prefix read that works on one machine finds nothing on the other and reports it
-    /// as an absent property rather than as a wrong question.
-    ///
-    /// Like `node_reg_compatible`, this cannot decide at the property itself, because `compatible`
-    /// may appear after it in the same node; every open node's candidate value is remembered and
-    /// the answer is returned when a matched node closes.
+    /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), deciding when the
+    /// matched node closes for the same reason. It exists because labels differ between machines:
+    /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
     pub fn node_prop_compatible(
         &self,
         compat: &[u8],
@@ -577,13 +514,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// list contains `compat`. `Ok(None)` when no such node exists, or its parent has no such
     /// property.
     ///
-    /// Milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write), provisional, is the motivating case: a PMIC is described as a child of the
-    /// I2C bus it sits on, and the bus's `clocks` and `resets` are what a kernel must turn on before
-    /// firmware can reach the PMIC. The child is the node with a binding worth matching (the bus
-    /// is one of seven identical `snps,designware-i2c` controllers); the answer lives one level
-    /// up. The same walk as [`node_prop_compatible`](Self::node_prop_compatible), answering from
-    /// the parent's slot, which is already filled when the child closes because the DTB format
-    /// puts every property of a node before its first subnode.
+    /// For a device described as a child of its bus, such as a PMIC under one of seven identical
+    /// `snps,designware-i2c` controllers, whose `clocks` and `resets` sit on the bus (milestone 592
+    /// (radon's cold reboot dies in OpenSBI's PMIC write), provisional). The parent's slot is filled
+    /// when the child closes, because a node's properties precede its first subnode.
     ///
     /// Name: provisional (milestone 592), 2026-09-25. calef names public functions.
     pub fn parent_prop_compatible(
@@ -733,17 +667,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// nearest ancestor** that carries it. `Ok(None)` when no such node, or neither the node nor
     /// any ancestor has the property.
     ///
-    /// [`node_prop`](Self::node_prop) answers only from the node itself, which is right for most
-    /// properties and wrong for the handful the spec defines as *inheritable*.
-    /// `interrupt-parent` is the motivating case: QEMU's riscv64 `virt` writes it on the serial
-    /// node itself, QEMU's aarch64 `virt` writes it once on the **root**, and the mainline JH7110
-    /// dtsi writes it on `/soc`, so a read that looks only at the device's own node works on
-    /// exactly one of the three machines this kernel reads trees from. The nearest enclosing value
-    /// wins, per the spec, which is what "the value of each open ancestor, closest first" encodes.
-    ///
-    /// Properties precede child nodes in the structure block, so by the time the target node
-    /// closes, every open ancestor's value has already been seen; deciding at the target's
-    /// `END_NODE` is what makes one walk suffice.
+    /// For the properties the spec defines as inheritable, such as `interrupt-parent`, which QEMU's
+    /// two `virt` boards and the JH7110 dtsi each write at a different level. The nearest enclosing
+    /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
+    /// the answer is taken at the target's `END_NODE`. See notes/device-tree.md.
     pub fn node_prop_inherited(
         &self,
         prefix: &[u8],
@@ -821,15 +748,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// The raw bytes of property `name` on the node whose `phandle` is `phandle`. `Ok(None)` when
     /// no node carries that phandle, or the node has no such property.
     ///
-    /// This is how a property that *refers* to another node gets followed. `interrupt-parent` is
-    /// the motivating case: its value is a phandle naming the interrupt controller, and the only
-    /// way to decode the referring node's `interrupts` is to ask that controller for its
-    /// `#interrupt-cells`. Both spellings of the phandle property are honored (`phandle` and the
-    /// legacy `linux,phandle`), because old dtc wrote the latter and real vendor trees carry both.
-    ///
-    /// Like [`node_prop_compatible`](Self::node_prop_compatible), this cannot decide at the
-    /// property itself (`phandle` may appear after `name` in the same node), so every open node's
-    /// candidate value is remembered and the answer returned when a matching node closes.
+    /// How a property that refers to another node is followed, such as `interrupt-parent` to the
+    /// controller's `#interrupt-cells`. Both `phandle` and the legacy `linux,phandle` are honored,
+    /// because old dtc wrote the latter. As in [`node_prop_compatible`](Self::node_prop_compatible),
+    /// the answer is taken when the matching node closes.
     pub fn phandle_prop(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         const MAX_DEPTH: usize = 16;
         // Per open node: where `name`'s value sits, and whether its phandle matched.
@@ -899,19 +821,11 @@ impl<'a> DeviceTreeBlob<'a> {
 
     /// Property `name` on **every** node whose name starts with `prefix`, in tree order.
     ///
-    /// [`node_prop`](Self::node_prop) answers for the first matching node and stops, which is right
-    /// for a device that appears once. It is wrong for `cpu@`, and milestone 60 is where that
-    /// mattered: a heterogeneous RISC-V machine describes each hart as its own `cpu@` node with its
-    /// own `riscv,isa`, so a kernel that reads the first one and then schedules onto any hart has
-    /// read the wrong node. The JH7110 on a VisionFive 2 is exactly that machine.
-    ///
-    /// `out[i]` is `None` when the *i*th matching node exists but has no such property, which is a
-    /// different answer from "there is no *i*th node" and one the caller needs: it is how "this hart
-    /// does not describe itself" is told apart from "there is no such hart".
-    ///
-    /// Returns the number of matching **nodes**, which may exceed `out.len()`; entries past the end
-    /// are counted and not written, so a caller can see that it under-provisioned instead of
-    /// silently reading half a machine.
+    /// For a node that repeats, such as each hart's `cpu@` on a heterogeneous RISC-V machine like
+    /// the JH7110 (milestone 60). `out[i]` is `None` when the *i*th match has no such property,
+    /// which differs from there being no *i*th match. Returns the number of matching **nodes**,
+    /// which may exceed `out.len()`; the excess is counted and not written, so a caller can tell
+    /// it under-provisioned. See notes/device-tree.md.
     ///
     /// # Examples
     ///
@@ -990,15 +904,10 @@ impl<'a> DeviceTreeBlob<'a> {
 
     /// The regions carved out by the `/reserved-memory` node's children.
     ///
-    /// This is the *other* place firmware advertises memory the OS must not touch, distinct from the
-    /// legacy memory-reservation block that [`reserved_regions`](Self::reserved_regions) reads. On
-    /// RISC-V it is where OpenSBI reserves its own firmware region (with a PMP around it), so missing
-    /// it means the frame allocator hands out OpenSBI's memory and the first write faults on a PMP
-    /// violation. Each child node under `/reserved-memory` carries a `reg`, decoded with that node's
-    /// cell counts (which default to the root's).
-    ///
-    /// The `/reserved-memory` node sits at depth 2 (a child of the root, which is depth 1), and its
-    /// reserved regions are the `reg`s of its depth-3 children.
+    /// The other place firmware names memory the OS must not touch, beside the block
+    /// [`reserved_regions`](Self::reserved_regions) reads; on RISC-V, OpenSBI reserves its PMP-guarded
+    /// region here, and missing it faults the first write into it. Each depth-3 child's `reg` is
+    /// decoded with `/reserved-memory`'s own cell counts, which default to the root's.
     pub fn reserved_memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         let mut address_cells = 2u32;
         let mut size_cells = 2u32;

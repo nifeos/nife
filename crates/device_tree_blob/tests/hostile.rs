@@ -1,26 +1,11 @@
 //! Device trees no firmware would write, and what the parser must do with them.
 //!
-//! **Every test here is a regression for a bug that was real.** The other two test files parse the
-//! device trees QEMU actually hands us; this one is the inverse, and it exists because the blob is
-//! the first thing this kernel reads and the last thing it can validate against anything else. The
-//! pointer comes from firmware. There is no second opinion.
-//!
-//! Both bugs below came out of milestone 42's fuzzing leg
-//! (`fuzz/fuzz_targets/device_tree_blob_walk`, 2026-08-02), and it is worth recording *how*,
-//! because they came out differently:
-//!
-//!   * The deep-nesting index was found by **reading the code** while writing the fuzz target, and
-//!     ten minutes of fuzzing did **not** rediscover it. Seventeen levels of nesting with a matching
-//!     name at the bottom is structure a mutational fuzzer will not synthesize from a corpus of real
-//!     device trees, which are three deep.
-//!   * The `Region::end` overflow was found by **the fuzzer**, in about ten minutes, from a mutated
-//!     copy of the committed `qemu-aarch64-virt.dtb`. Nobody had thought to look at it.
-//!
-//! That is the argument for having both, stated as evidence rather than as a slogan. See
-//! notes/fuzzing.md.
-//!
-//! These run on the host in milliseconds, so the inputs that cost real time to find cost nothing to
-//! keep.
+//! Every test here is a regression for a bug that was real. The other two test files parse the
+//! trees QEMU hands us; this one holds the parser to blobs a hostile or broken firmware could
+//! write, because the blob is the first thing the kernel reads and nothing can check it. Two of
+//! the bugs came out of milestone 42's fuzzing leg (`fuzz/fuzz_targets/device_tree_blob_walk`),
+//! one found by the fuzzer and one by reading the code; notes/fuzzing.md tells how. They run on
+//! the host in milliseconds, so inputs that cost real time to find cost nothing to keep.
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -815,17 +800,14 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
     assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
 }
 
-/// **Each walker's own per-depth arrays have their own edge, and until 2026-09-19 only
-/// `node_reg`'s was tested.** `a_declaration_at_the_stacks_edge_is_ignored_not_indexed` above
-/// covers the cell stack; the four walkers below keep their own 16-entry arrays with the same
-/// `depth < MAX_DEPTH` guard, and milestone 326's mutation run found `<=` alive in every one of
-/// them. At depth exactly 16 that guard is an out-of-bounds index in a parser the kernel runs on
-/// firmware bytes, before there is any way to report a failure, which is the bug the original test
-/// exists for wearing three more hats.
+/// **Each walker's own per-depth arrays have their own edge.** The four walkers beside
+/// `node_reg` keep 16-entry arrays behind the same `depth < MAX_DEPTH` guard, and milestone 326's
+/// mutation run found `<=` alive in every one; at depth exactly 16 that is an out-of-bounds index
+/// on firmware bytes, before a boot can report a failure.
 ///
 /// The tree is nested to exactly the edge and carries the property, the `compatible` and the
-/// `phandle` down there, so each arm of each walker is asked to record something at the depth where
-/// recording it would index past the array.
+/// `phandle` there, so each arm of each walker is asked to record something where recording it
+/// would index past the array.
 #[test]
 fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
     let mut b = Blob::new();
