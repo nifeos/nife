@@ -6,6 +6,7 @@
 //! on small inputs; `accept` is too large for the solver. The input is the raw reply, so the
 //! captures in `crates/domain_name_system/tests/fixtures` seed it unmodified, and the query is
 //! built from the reply's own id and question so a mutation reaches the answer section.
+//! notes/fuzzing/targets.md has more.
 
 //! # What is asserted, beyond "it returned"
 //!
