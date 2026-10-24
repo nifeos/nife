@@ -1,19 +1,12 @@
-//! **Text on a screen, for a machine with no serial port.** Given a linear
-//! framebuffer the previous boot stage found ([`machine_discovery::framebuffer`]) and the tree's 7x8
-//! font ([`bitmap_font`]), put bytes on the screen. See notes/serial-less-output.md.
-//!
-//! It is not `video_terminal`, which is a several-hundred-kilobyte value with an escape-sequence
-//! parser: too big for a kernel static and the wrong thing to put in the TCB. What it reports is
-//! often why the machine is broken, so it holds the least state that could work: a cursor, a
-//! geometry and a scale, plus a caller-kept [`Cells`] that a scroll redraws from. No colour
-//! changes, escapes, cursor, scrollback or reflow, so it cannot be put in a surprising state. The
-//! font is shared, so early-boot letters match the graphical terminal's.
-//!
-//! Each font pixel is drawn as a square block at the largest integer scale that leaves
-//! [`MIN_COLUMNS`] columns (120, calef's choice on 2026-10-04): 1920x1080 gets two, anything under
-//! 1680 wide gets one. Scrolling redraws only the cells that changed, through a [`PixelSink`] that
-//! cannot be read, because reading the aperture back is very slow on real silicon.
-//!
+//! **Text on a screen, for a machine with no serial port.** Given a linear framebuffer the
+//! previous boot stage found ([`machine_discovery::framebuffer`]) and the tree's 7x8 font
+//! ([`bitmap_font`]), put bytes on the screen. It holds a cursor, a geometry and a scale, plus a
+//! caller-kept [`Cells`] a scroll redraws from, and has no colour changes, escapes, scrollback or
+//! reflow, so it cannot be put in a surprising state. Each font pixel is a square block at the
+//! largest integer scale that leaves [`MIN_COLUMNS`] columns. Scrolling writes only the cells that
+//! changed, through a [`PixelSink`] that cannot read. See notes/serial-less-output.md and
+//! notes/serial-less-output/the-screen-console.md.
+
 //! # BUGS
 //!
 //! - A screen taller than [`Cells::CAPACITY`] holds is drawn on its top rows only: the grid is a
@@ -21,9 +14,7 @@
 //! - A width or height that is not a whole number of cells, or of the scale, leaves an unpainted
 //!   sliver at the right and bottom edges ([`Aperture`] covers whole surface pixels).
 //! - Only 32-bit pixels: [`machine_discovery::framebuffer::PixelOrder`] has UEFI's two orders.
-//! - On xenon, the one real machine that has run it, the screen shows a grid instead of text; the
-//!   finding and the experiment that would measure it are in
-//!   `notes/serial-less-output/the-xenon-grid.md`.
+//! - On xenon the screen shows a grid, not text: notes/serial-less-output/the-xenon-grid.md.
 //! - Nothing here is proved on real silicon, only on the host and under OVMF.
 //!
 //! Name: ratified 2026-09-13 (calef), half of a pair with `serial_console`: two consoles named for
@@ -47,16 +38,11 @@ use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
 pub const MIN_COLUMNS: u32 = 120;
 
 /// **Where a surface lands on a firmware screen**: the arithmetic a driver needs to copy a
-/// rectangle of pixels it was handed onto a screen the firmware set up (the shell on the firmware
-/// screen, rung 1b of milestone 198; `components/src/framebuffer_driver.rs` is its one caller).
-///
-/// It lives here rather than in the driver because a stride bug is only catchable on the host: this
-/// is a pure function of five numbers. It holds the surface's size clipped to the screen's, placed
-/// top-left, the screen's stride and byte order, and **the scale every surface pixel is drawn at**:
-/// [`ScreenConsole::scale_for_cell`] of the screen's width for the surface's cell, the kernel
-/// console's rule, so the shell after the handover has at most the boot tour's columns. Clipping is in surface pixels against the
-/// screen divided by the scale; a screen not a whole multiple of its scale leaves fewer than
-/// `scale` pixels uncovered at its right and bottom edges (see BUGS).
+/// rectangle of pixels onto a screen the firmware set up (the shell on the firmware screen, rung
+/// 1b of milestone 198; `components/src/framebuffer_driver.rs` is its one caller). It holds the
+/// surface's size clipped to the screen's, placed top-left, the screen's stride and byte order, and
+/// **the scale every surface pixel is drawn at**: [`ScreenConsole::scale_for_cell`] of the screen's
+/// width, the kernel console's rule. See notes/serial-less-output/the-screen-console.md.
 ///
 /// Name: provisional (the shell on the firmware screen's lane). "Aperture" is the tree's word for
 /// the firmware's framebuffer as a device window (`kernel/src/arch/x86_64/machine.rs`).
@@ -252,30 +238,15 @@ impl Aperture {
         fits(x, w, self.width) && fits(y, h, self.height)
     }
 
-    /// **[`Self::copy`] with qword stores where the path permits them** (the paint lane,
-    /// 2026-09-30). `write64(offset, pair)` receives two already-staged pixels in one `u64` and is
-    /// called only at offsets where `(misalign + offset) % 8 == 0`; `write32` receives the head and
-    /// tail pixels a row's alignment leaves over, exactly as [`Self::copy`] would. Every other
-    /// word, including the byte order and the refusal stance, is [`Self::copy`]'s own.
-    ///
-    /// **Why the store width is the point.** The aperture a driver copies into is mapped
-    /// uncacheable (x86: no PAT programming yet), and under QEMU's TCG store-heavy guest code runs
-    /// ~3.8x slower per instruction than arithmetic
-    /// (`notes/benchmarks/icount-tick-scales.md`), which made the one-word-per-pixel copy most of
-    /// the `x86_64` swish leg's 321 s. Pairing the pixels halves the store count and nothing else
-    /// changes. A `u64` is also the widest store this tree's `x86_64` target can legalise: the
-    /// kernel and initial ramdisk build for `x86_64-unknown-none`, whose spec is
-    /// `-mmx,-sse,+soft-float`, so there is no vector store to reach for (`xtask/src/archive.rs`
-    /// records the target).
-    ///
-    /// `misalign` is the aperture's own base misalignment in bytes: the offset of pixel (0, 0)
-    /// from an 8-aligned address, which only the driver that holds the mapping can know. With it,
-    /// every geometry still takes its widest path: a padded or odd stride merely earns head and
-    /// tail words on some rows.
-    ///
-    /// **The pair is byte-identical to two word stores on a little-endian machine**, which all
-    /// three of this tree's targets are, and the host test that proves `copy_wide` equals `copy`
-    /// pixel for pixel runs on one. `lo` is the earlier pixel.
+    /// **[`Self::copy`] with qword stores where the path permits them.** `write64(offset, pair)`
+    /// receives two already-staged pixels in one `u64` (`lo` is the earlier pixel) and is called
+    /// only at offsets where `(misalign + offset) % 8 == 0`; `write32` receives the head and tail
+    /// pixels a row's alignment leaves over, exactly as [`Self::copy`] would. Everything else, byte
+    /// order and refusals included, is [`Self::copy`]'s. `misalign` is the offset of pixel (0, 0)
+    /// from an 8-aligned address, which only the driver holding the mapping knows. **The pair is
+    /// byte-identical to two word stores only on a little-endian machine**, which all three targets
+    /// are. Halving the store count is the point: see
+    /// notes/serial-less-output/the-screen-console.md.
     #[allow(clippy::too_many_arguments)] // the argument list is the copy contract: a rectangle,
     // the base's misalignment, a read, and the two store widths the caller's hardware offers
     pub fn copy_wide(
@@ -373,16 +344,9 @@ impl Aperture {
     }
 }
 
-/// **The framebuffer, as something this crate can only write.**
-///
-/// A framebuffer aperture on real hardware is mapped uncacheable or write-combining, and reading
-/// either is slow by orders of magnitude: a read has to cross to the device and back, one word at a
-/// time, where a write is posted and forgotten. Until 2026-10-04 the scroll moved the picture up
-/// with `copy_within` over the aperture, reading most of 8 MB back for every new line on xenon,
-/// whose console calef saw redraw in sections. **So the console's only handle on the screen is this
-/// type, and it has no way to read.** The slice is private to this module and the one method is a
-/// store, so a painter that reads the screen back does not compile (rung 1: the wrong state is
-/// unrepresentable, and no test has to remember to look for it).
+/// **The framebuffer, as something this crate can only write**, because reading an uncacheable or
+/// write-combining aperture back is orders of magnitude slower than a posted write: a painter that
+/// reads the screen does not compile. See notes/serial-less-output/the-screen-console.md.
 ///
 /// ```compile_fail
 /// let mut bytes = [0u8; 8];
@@ -447,15 +411,11 @@ impl<'a> PixelSink<'a> {
 
 /// **What the screen says, kept in RAM, one byte per character cell.**
 ///
-/// The console redraws from this rather than from the screen, which is what makes a scroll cost
-/// writes and no reads. A byte is the glyph's ASCII code, a space where nothing was drawn. One
-/// colour pair and no attributes, so a byte is the whole cell.
-///
-/// **A separate value from [`ScreenConsole`] rather than a field of it**, because of its size:
-/// [`Cells::CAPACITY`] bytes, about 35 KiB, and the kernel's boot stack is 64 KiB with a recorded
-/// incident from a 16 KiB array on it (`notes/stack.md`). The kernel keeps this in its console's
-/// `static`, initialised at compile time, so it is never built on a stack; [`ScreenConsole`] stays
-/// the small `Copy` value it always was.
+/// The console redraws from this rather than from the screen, so a scroll costs writes and no
+/// reads. A byte is the glyph's ASCII code, a space where nothing was drawn; one colour pair and no
+/// attributes. It is separate from [`ScreenConsole`] because of its size: [`Cells::CAPACITY`]
+/// bytes, about 35 KiB, against a 64 KiB kernel boot stack (`notes/stack.md`). The kernel keeps it
+/// in its console's `static`, initialised at compile time, so it is never built on a stack.
 ///
 /// Name: provisional (the console-scroll lane, 2026-10-04).
 pub struct Cells {
@@ -496,8 +456,7 @@ impl Default for Cells {
 ///
 /// # Examples
 ///
-/// A whole console, painted into ordinary memory, which is what the host tests in `tests.rs` do and
-/// what makes this crate provable without a screen:
+/// A whole console, painted into ordinary memory, as the host tests in `tests.rs` do:
 ///
 /// ```
 /// use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
