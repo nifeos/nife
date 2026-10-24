@@ -157,3 +157,67 @@ agrees with the stride in both context formats, including the 32-byte one that h
 the `IODIR.INVAL_DDT` that follows an attach names exactly that device. Both were falsified; the
 patches are in `kernel/falsifications/`. The same limit on constants applies, against the RISC-V
 IOMMU specification instead of Arm's.
+
+## The VT-d driver on x86_64
+
+`kernel/src/arch/x86_64/iommu.rs` drives Intel's VT-d. Unlike the SMMUv3 and the RISC-V IOMMU, the
+legacy interface every unit supports is driven through registers. Invalidation is a register write
+and a poll, and faults land in Fault Recording Registers, with no command or fault queue. The root
+table (one entry per bus) points at per-bus context tables (one entry per device and function).
+Each context entry names a domain and the second-level root that `crate::iommu::confine` built.
+Both tables are allocated lazily and default absent. `init` points `RTADDR_REG` at an all-absent
+root before setting `GCMD.TE`, so no device is ever unconstrained by omission.
+
+Every DRHD the DMAR names gets its own root table. `attach` goes to the unit the DMAR says owns the
+device (`machine_discovery::acpi::DmarUnits::owner_index`, VT-d 4.1 section 8.3). `GCMD` is written
+per section 11.4.4: read `GSTS`, clear the one-shot bits, change one bit. RMRRs are identity-mapped
+for their devices before any unit translates, and they stay in every domain those devices join
+(section 3.16). So a USB controller's legacy buffers and the GPU's stolen memory are mapped before
+anything could fault them. `init` prints one `vt-d` line per unit.
+
+A device no unit owns gets no context entry, and `scope_of` answers `Elsewhere { owner: None, .. }`.
+Linux leaves such a device untranslated too. Refusing its bus mastering would confine nothing and
+would silence the preflight that reports the gap.
+
+The file is also x86_64's IOMMU front door. Every public entry point first hands the call to
+`amd_vi` if an AMD-Vi unit is up. It stays one file because the tree cites this path as where
+x86_64's IOMMU lives, §163 (where a confined device's IOMMU fault is delivered) among the citations.
+
+### Cache maintenance on a non-coherent unit
+
+When `ECAP.C` is clear, VT-d 4.1 section 6.1 leaves cache maintenance of the remapping structures to
+software (read from the field's definition). QEMU cannot show the difference, because it reads guest
+memory directly whatever `C` says. xenon's catch-all unit reports `ecap 0xf050da`, with `C` clear.
+Its first fault without the flush was reason 0x01, root entry not present, on the NVMe's admin
+queue, while the CPU's view held the root entry: the unit read DRAM the cache had not reached yet.
+
+`Unit::publish` flushes with `clflush` per 64-byte line. The other choice, `wbinvd`, writes back and
+invalidates every cache in the package, uninterruptibly, for a few bytes of table. Linux does the
+same (`__iommu_flush_cache`, from memory). The caller fences once with `mfence` after its last
+flush and before the register write that makes the unit read, because `sfence` does not order
+`clflush`.
+
+### One fault register, and its overflow
+
+`take_fault` reads the first Fault Recording Register only; every unit this driver has met reports
+one (`CAP.NFR`). An overflow (`FSTS.PFO`) blinds the unit until it is cleared. It was seen when a
+device still running a queue from an earlier registration filled the one record. QEMU then set
+`PFO` and dropped every later fault, including the one the confinement test provoked, so the test
+read a stale record. `take_fault` clears `PFO` first, so the next fault lands.
+
+### BUGS of the VT-d driver
+
+- Only PCI segment 0 is brought up; a unit elsewhere is reported and refused.
+- A unit whose scope names only absent devices is still brought up, and `init` panics on its first
+  status poll if its register file is not really there. Linux ignores such a unit.
+- An RMRR naming a bridge is mapped only once the device below it is confined; until then that
+  device's firmware DMA faults.
+- The graphics unit translates with only its RMRR mapped, so scanout survives only if the RMRR
+  covers it. This is unread on xenon (notes/risk-6-bench-evening.md).
+- There is no interrupt remapping. `ECAP.IR` is only reported (`interrupt_remapping_available`), and
+  no `IRTE` is ever written (`design/roadmap/0317-interrupt-remapping-flags.md`).
+- Invalidation is always global, which is correct and expensive with many devices.
+- `RWBF` and protected-memory disabling have never run, because QEMU sets neither.
+- One Fault Recording Register per unit is read, shared by every requester. A repeating fault from
+  one device can hide another's, and a burst past it is lost (`FSTS.PFO`). A caller reading one
+  device's faults must first quiesce every other device on the bus.

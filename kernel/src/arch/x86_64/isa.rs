@@ -1,52 +1,13 @@
-//! **What CPU is this, and can it run us**, `x86_64`. The third implementation of the arch contract
-//! aarch64 answers from `MIDR_EL1` and RISC-V from the device tree plus `mvendorid`.
-//!
-//! x86 answers with `CPUID`, which returns structured data about the part, including the vendor's
-//! 48-character brand string. The decoding is in [`machine_discovery::x86_64`], host-tested; what
-//! can only happen on the machine is here: the `cpuid` instructions, the record, and the refusal.
-//!
-//! # Where each gate sits in the boot
-//!
-//! Three features this kernel is built on (milestone 524 (the three `x86_64` boot gates)). **A
-//! check belongs at the last moment before the thing it protects**, unless that moment is before
-//! there is any way to say what went wrong.
-//!
-//! | Feature | Checked | Why there |
-//! |---|---|---|
-//! | NX | `boot.s`, before `EFER.NXE` is written | that write is itself the hazard: setting a reserved `EFER` bit on a part without NX is `#GP`, with no IDT, which QEMU shows as a silent reset |
-//! | `syscall` | [`init`], six lines before `arch::init` programs the four MSRs | the console is up, so the refusal can be read |
-//! | invariant TSC | [`init`], before `timer::init_frequency` measures a rate | same, and see below; under a hypervisor this one warns rather than refuses, and the table row in [`machine_discovery::x86_64`] says why |
-//!
-//! [`init`] re-checks NX because the assembly gate can only halt, and this one can say what is
-//! wrong.
-//!
-
-//! # The invariant TSC is a different kind of check
-//!
-//! NX and `syscall` announce their own absence the moment the kernel uses them. The invariant TSC
-//! does not: `arch::timer::init_frequency` measures the TSC's rate once, against the PIT, and on a
-//! part without `CPUID.80000007H:EDX[8]` the rate moves with the core's frequency and idle state,
-//! so **there is no single rate for that measurement to be the answer to**. The error appears later,
-//! as time itself being wrong. A wrong assumption cannot be caught by measuring harder.
-//!
-//! **On bare metal it refuses; under a hypervisor it warns** (`Gate::RefuseUnlessHypervisor` in
-//! [`machine_discovery::x86_64`]). A guest's clock is the hypervisor's to keep, and QEMU's TCG
-//! reports the bit as zero and will not be persuaded (`-cpu max,invtsc=on` clears it; it is
-//! KVM-only), so a refusal there would refuse every boot the x86_64 suite runs. The warning prints
-//! on its own line each boot and names the hypervisor bit as the reason it is not a refusal.
+//! **What CPU is this, and can it run us**, `x86_64`: the `cpuid` instructions, the record and
+//! the refusal; the decoding is host-tested in [`machine_discovery::x86_64`]. Three features are
+//! gated (milestone 524 (the three `x86_64` boot gates)): NX in `boot.s`, and `syscall` and the
+//! invariant TSC in [`init`], where a hypervisor turns the TSC's refusal into a warning. See
+//! notes/x86-port/cpu-state.md.
 //!
 //! # BUGS
 //!
-//! - **Under a hypervisor, the invariant-TSC gate warns and does not refuse**: a guest whose
-//!   hypervisor does not promise a constant TSC rate boots and is trusted for timekeeping anyway.
-//!   The gate believes the hypervisor bit, so a hypervisor that hides itself is treated as silicon
-//!   and refused.
-//! - **The gates are checked on the boot CPU only.** Secondaries replay the `EFER` write and the
-//!   `syscall` MSRs without re-reading `CPUID`. On a hybrid part (Intel's P-cores and E-cores differ
-//!   in leaf 7) a per-core check would earn its cost; [`machine_discovery::riscv64`] already solves
-//!   the RISC-V twin (the intersection over every hart).
-//! - **`RDSEED` is reported and never gated**: it is an entropy source, and a machine without it
-//!   boots with a different backend (`kernel/src/user/entropy_service.rs`).
+//! - The gates are checked on the boot CPU only; secondaries do not re-read `CPUID`.
+//! - Under a hypervisor a missing invariant TSC only warns; a hidden hypervisor is refused.
 
 use core::arch::x86_64::CpuidResult;
 
@@ -55,21 +16,13 @@ use machine_discovery::x86_64::{CpuidWords, Gate, HYPERVISOR_CITE, Isa, TABLE};
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
 
-/// **`CPUID`, spelled so that two toolchains a year apart both accept it**
-/// (milestone 304 (`cargo kani -p kernel` only ever compiled one architecture)).
+/// **`CPUID`, spelled so that two toolchains a year apart both accept it** (milestone 304
+/// (`cargo kani -p kernel` only ever compiled one architecture)).
 ///
-/// `core::arch::x86_64::__cpuid` is a *safe* function on the toolchain this tree pins, because the
-/// instruction has no precondition on a 64-bit part; every call site here used to read it bare and
-/// say so in a comment. It was an `unsafe fn` until upstream made it safe, and **Kani bundles its
-/// own rustc**, ten months behind ours (`kani-0.67.0` pins `nightly-2025-11-21`, rustc 1.93.0). So
-/// the bare calls were four `E0133`s under the prover, and `arch/x86_64/` did not compile there at
-/// all: the whole subtree was out of reach of the model checker for four missing keywords.
-///
-/// The `unsafe` block satisfies the old toolchain; `allow(unused_unsafe)` satisfies the new one,
-/// where the block is redundant and `script/lint`'s `-D warnings` would otherwise reject it. That
-/// allow is the **exception this file owes a reader** (AGENTS.md's ladder): it is load-bearing for
-/// the prover and a foot gun for anyone who reads it as "this call needs auditing". Delete it when
-/// Kani's pinned rustc passes 2026-02-ish, and the bare call comes back.
+/// `__cpuid` is safe on the pinned toolchain and `unsafe` on the older rustc Kani bundles, so the
+/// `unsafe` block satisfies the prover and `allow(unused_unsafe)` satisfies `-D warnings`. The
+/// allow is load-bearing for the prover, not a sign the call needs auditing; it goes when Kani's
+/// rustc passes 2026-02. See notes/x86-port/cpu-state.md.
 ///
 /// Name: provisional (milestone 304 (`cargo kani -p kernel` only ever compiled one architecture)):
 /// `cpuid` is the instruction's own mnemonic, which AGENTS.md's naming section keeps rather than
@@ -105,23 +58,15 @@ fn words(r: CpuidResult) -> [u32; 4] {
     [r.eax, r.ebx, r.ecx, r.edx]
 }
 
-/// **Read what this machine is, and refuse to run on one we cannot.**
-///
-/// `boot_info_pointer` is ignored: the argument is the portable arch contract's (both other
-/// architectures are handed a device tree), and x86 answers from the instruction set itself. Named
-/// rather than dropped so the seam stays one shape across three architectures.
-///
-/// Every leaf is read unconditionally and believed selectively, by
-/// [`Isa::decode`](machine_discovery::x86_64::Isa::decode): `CPUID` has no way to report "I do not
-/// implement that leaf" other than answering with a different leaf's bits, so the rule for telling
-/// those apart is the thing that can be wrong, and it lives where a host test can reach it.
+/// **Read what this machine is, and refuse to run on one we cannot.** `boot_info_pointer` is
+/// ignored; it keeps the arch contract one shape across three architectures. Every leaf is read
+/// and [`Isa::decode`](machine_discovery::x86_64::Isa::decode) decides which to believe, since
+/// `CPUID` answers an unimplemented leaf with another leaf's bits.
 ///
 /// # Panics
 ///
-/// Deliberately, when the part is missing something the kernel is built on. The same discipline
-/// RISC-V's refusal keeps: a kernel that ran without `syscall` would fault on the first system
-/// call with nothing to say, and one that ran on a varying TSC would report a time that is simply
-/// wrong. The panic prints what is missing, what the kernel uses it for, and where `CPUID` says so.
+/// When the part lacks something the kernel is built on, printing what is missing, what it is
+/// used for and where `CPUID` says so.
 pub fn init(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
 
@@ -166,10 +111,8 @@ pub fn init(boot_info_pointer: usize) {
         panic!("required CPU feature is absent");
     }
 
-    // And the third kind of answer, which is neither a refusal nor a clean boot: something the
-    // kernel is built on that this guest's hypervisor does not promise. It gets its own line rather
-    // than a `no-invariant-tsc` token in the feature list below, because a missing word in a list
-    // of present ones is not something a reader notices. See `Gate::RefuseUnlessHypervisor`.
+    // Unpromised by this hypervisor: its own line, not a `no-` token in the feature list, because a
+    // missing word in a list is not something a reader notices. See `Gate::RefuseUnlessHypervisor`.
     let unpromised = cpu.unpromised();
     for row in &TABLE {
         if unpromised.contains(row.bit) {
@@ -194,18 +137,10 @@ pub fn get() -> Isa {
 
 /// **Draw eight bytes with `RDSEED`, retrying a transient "no data this cycle" result.**
 ///
-/// `None` if [`get`]`().has_random_seed_instruction()` is false (never execute the instruction
-/// without checking first: on a part that lacks it, `RDSEED` is `#UD`, and this kernel has no
-/// exception recovery path for a probe that was told the answer already) or if the source stayed
-/// dry across every attempt.
-///
-/// The retry count and the `pause` between attempts are Intel's own guidance for `RDSEED`
-/// specifically (DRNG Software Implementation Guide rev. 2.2, §5.3.1.2): an "asynchronous
-/// application" should give up after "somewhere between 1 and 100" retries. This is a one-shot
-/// boot-tour probe rather than a service under load, so the high end costs nothing; see
-/// `components/src/entropy.rs::instr` for the identical constant and reasoning on the userspace side,
-/// which this kernel-side copy exists only because ring 3 does not exist yet
-/// (milestone 161 (the `x86_64` kernel port)).
+/// `None` if the part lacks `RDSEED` (where it is `#UD`, so [`get`] is asked first) or if the
+/// source stayed dry on every attempt. The 100 retries with a `pause` between are Intel's guidance
+/// for `RDSEED` (DRNG Software Implementation Guide rev. 2.2, section 5.3.1.2), as in
+/// `components/src/entropy.rs` on the userspace side.
 ///
 /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `draw_rdseed` (the mnemonic is a
 /// decoder, not a word).
@@ -239,28 +174,14 @@ pub fn draw_random_seed() -> Option<u64> {
     None
 }
 
-/// `CPUID` leaf `0x15`'s TSC/core-crystal-clock ratio, converted to a TSC rate in Hz, on the
-/// parts that report one directly (the "ask the CPU first" half of
-/// `arch::x86_64::timer::init_frequency`, whose docs explain why the fallback - calibrating
-/// against the PIT - exists at all).
+/// `CPUID` leaf `0x15`'s TSC rate in Hz, on parts that report one directly: the "ask the CPU
+/// first" half of `timer::init_frequency`, which otherwise calibrates against the PIT.
 ///
-/// `None` in two cases, and both are real "this part does not say" answers rather than errors:
-/// the part's own maximum leaf (from [`init`]'s leaf 0 read) is below `0x15`, so reading it would
-/// misattribute a lower leaf's bits; or the part implements the leaf but leaves `ECX` (the crystal
-/// clock's own frequency) at zero, which the SDM defines as "not enumerated" and which would
-/// otherwise need a vendor-specific model-to-crystal table this crate does not carry (Linux's
-/// `native_calibrate_tsc` has one; this port does not, and falls back to calibration instead).
-///
-/// Measured empirically under this project's own QEMU invocation (`-cpu max`, TCG): `max_leaf` is
-/// `0xd`, so this returns `None` on every boot this kernel currently runs, and
-/// `init_frequency`'s PIT-calibration fallback is what every test and every boot print's number
-/// actually comes from today. The leaf is read anyway, for real hardware
-/// (milestone 87 (the `x86_64` bare-metal machine)) where it may be populated.
-///
-/// **Whatever answer this gives, the rate it describes is a constant only because [`init`]
-/// refused to boot on bare metal without the invariant TSC** (under a hypervisor it warned
-/// instead). That gate is what makes "the TSC's rate" a quantity at all, here and in the
-/// calibration path both.
+/// `None` when the part's maximum leaf is below `0x15` (reading it would return a lower leaf's
+/// bits), or when `ECX`, the crystal frequency, is zero ("not enumerated"; this port keeps no
+/// model-to-crystal table). Under QEMU TCG with `-cpu max` the maximum leaf is `0xd`, so every boot
+/// today calibrates. The rate is a constant only because [`init`] refuses bare metal without the
+/// invariant TSC. See notes/x86-port/cpu-state.md.
 pub(crate) fn tsc_crystal_hz() -> Option<u64> {
     if get().max_leaf < 0x15 {
         return None;

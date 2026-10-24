@@ -13,16 +13,16 @@ client's input slot must be empty ...")`. Measured 2026-10-03 (UTC): red, report
 The original test also asserts this and would also go red here, but it carried no record of it.
 
 diff --git a/kernel/src/user/compositor_service.rs b/kernel/src/user/compositor_service.rs
-index 60fa5b67a..4ee1d847d 100644
+index 611a21980..a612c5de7 100644
 --- a/kernel/src/user/compositor_service.rs
 +++ b/kernel/src/user/compositor_service.rs
-@@ -273,7 +273,8 @@ impl Wiring {
-             // **Two grants, and the emptiness of slot 2 is load-bearing**: this client cannot
-             // receive input, and its attempt to try is `NoSuchSlot` rather than a refusal from
-             // anyone. See ROLE_PROBE_INPUT.
+@@ -261,7 +261,8 @@ impl Wiring {
+         } else {
+             // Slot 2 must stay empty: this client's attempt to receive input is `NoSuchSlot`, not
+             // anyone's refusal. See ROLE_PROBE_INPUT.
 -            2
 +            grants[2] = rendezvous_cap(self.client_report[i], Rights::WRITE);
 +            3
          };
  
-         // `SCREEN_FRAME`/`BUDGET` (slots 3/4, matching `fixtures/src/window.rs`): granted **only** for
+         // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by

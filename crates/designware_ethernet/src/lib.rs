@@ -1,17 +1,15 @@
 #![cfg_attr(not(test), no_std)]
-//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports
-//! (notes/designware-ethernet.md). Everything the driver's two halves compute and nothing either
-//! touches: the kernel (`kernel/src/designware_ethernet.rs`) brings the controller and PHY up,
-//! measures DMA coherence and starts the DMA, and `net_stack`
-//! (`components/src/designware_ethernet_transport.rs`) fills descriptors and moves the tail
-//! pointers, both as thin volatile layers over this crate. Modules: [`regs`], [`mdio`],
-//! [`motorcomm`] (the YT8531 PHY), [`controller`], [`coherence`], [`jh7110`]; the root holds the
-//! descriptors, the DMA region's layout, the spawn handoff and the data plane.
+//! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports.
 //!
-//! Adapted from OpenBSD's `dwqe` driver (`sys/dev/ic/dwqe.c`, `dwqereg.h`,
-//! `sys/dev/fdt/if_dwqe_fdt.c`, and `sys/dev/mii/ytphy.c`), which has a JH7110 path reading
-//! `starfive,tx-use-rgmii-clk`, the transmit clock radon's board uses; FreeBSD's `eqos` was a
-//! cross-check. GPL sources gave hardware facts only, no code. The ISC license requires this notice:
+//! Everything the driver's two halves compute and nothing either touches. The kernel
+//! (`kernel/src/designware_ethernet.rs`) brings the controller and PHY up, measures DMA coherence
+//! and starts the DMA; `net_stack` (`components/src/designware_ethernet_transport.rs`) fills
+//! descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
+//! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`) and `ytphy` (`sys/dev/mii/ytphy.c`), whose JH7110 path
+//! reads `starfive,tx-use-rgmii-clk`; FreeBSD's `eqos` was a cross-check, and GPL sources gave
+//! hardware facts only, no code. See notes/designware-ethernet.md.
+
+//! The ISC license requires this notice:
 //!
 //! ```text
 //! Copyright (c) 2008, 2019 Mark Kettenis <kettenis@openbsd.org>
@@ -31,7 +29,7 @@
 //! ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //! OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - Nothing here has touched the device; every test runs against `sim`. One receive and one
@@ -39,7 +37,6 @@
 //! - Only `gmac0` (`16030000`) is wired; `gmac1`'s SYS-domain clocks have no plan.
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): Synopsys's name, spelled out per §154 (the acronym test).
-
 #[cfg(test)]
 extern crate std;
 

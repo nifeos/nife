@@ -17,10 +17,10 @@ the digests behind it only change if a write lands. That is the hole this test c
 confidentiality half had no probe that could see a read-only exposure.
 
 diff --git a/kernel/src/user/compositor_service.rs b/kernel/src/user/compositor_service.rs
-index 90e60959c..27945b799 100644
+index 611a21980..a438c3510 100644
 --- a/kernel/src/user/compositor_service.rs
 +++ b/kernel/src/user/compositor_service.rs
-@@ -253,2 +253,8 @@ impl Wiring {
+@@ -246,2 +246,8 @@ impl Wiring {
          }
 +        maps[m] = Mapping {
 +            va: SURFACE_VA + (frames + 1) * FRAME_SIZE,
@@ -28,4 +28,4 @@ index 90e60959c..27945b799 100644
 +            flags: Flags::user_rodata(),
 +        };
 +        m += 1;
-         // The window-list mapping stays a `Spawn::maps` entry (one page, unaffected by the
+         if role & ROLE_CAPTURE != 0 {
