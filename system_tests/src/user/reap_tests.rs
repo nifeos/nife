@@ -301,12 +301,12 @@ fn reap_refuses_a_live_child_with_a_distinct_error() {
 
 /// **Another supervisor's child is refused, even to a holder of both rendezvous points.**
 ///
-/// The sharpest form of §32's authorization rule: one process holds two supervision rendezvous
-/// points, and learns a tid legitimately, through the rendezvous that supervises it. Naming that
-/// tid on the *other* rendezvous is refused, because authorization is the `(tid, rendezvous)`
-/// relationship and not "am I a supervisor". So a tid is a name inside a relationship, never a
-/// global handle, which is what lets §26's kernel-stamped tid be reused for this with no new
-/// bookkeeping.
+/// The sharpest form of the authorization rule of §32 (a supervisor may collect a corpse without
+/// being able to build one): one process holds two supervision rendezvous points, and learns a tid
+/// legitimately, through the rendezvous that supervises it. Naming that tid on the *other*
+/// rendezvous is refused, because authorization is the `(tid, rendezvous)` relationship and not "am
+/// I a supervisor". So a tid is a name inside a relationship, never a global handle, which is what
+/// lets §26's kernel-stamped tid be reused for this with no new bookkeeping.
 #[test_case]
 fn reap_refuses_another_supervisors_child() {
     let (budget, rendezvous_region) = arena();
