@@ -1,35 +1,18 @@
 //! **The one page the soak workload and the kernel share**, and the arithmetic they both do to it
 //! (milestone 219).
 //!
-//! The soak is a user program and the detection is in the kernel, which is the division milestone
-//! 219 was briefed with and the reason this crate exists at all: the workload's own progress is a
-//! fact only the workload knows, and the kernel has to read it every heartbeat without asking. A
-//! shared page is the cheapest way for it to, and it costs the workload one store per round trip
-//! rather than a syscall.
-//!
-//! Rule 7 of `AGENTS.md` ("anything two binaries must agree on is a crate") is why this is a crate
-//! and not two copies of a `const`. The kernel's `soak` module writes nothing here; it only reads,
-//! and the workload only writes its own slot. That asymmetry is what makes the page safe without a
-//! lock: each `u64` has exactly one writer, and a `u64` store does not tear on any of the three
-//! architectures.
-//!
-//! Milestone 221 added the third array. A waiter blocks on the tick route the soak build signals
-//! from `sched::on_tick` and counts its wakes here, apart from the round-trip total, because the
-//! two are not the same quantity and a reader comparing runs must not have to guess which they are
-//! holding.
-//!
-//! # What is NOT in here
-//!
-//! The anomaly counters (refused wakes, deferred wakes, remote placements, steals) are the
-//! *kernel's* numbers and stay in the kernel, in `sched`'s per-core trace counters. A user program
-//! that could write them could also lie about them, and a soak whose tripwire the subject can
-//! reach is not a tripwire.
-//!
+//! The workload's progress is a fact only the workload knows, and the kernel reads it every
+//! heartbeat without asking, at the cost of one store per round trip. The kernel's `soak` module
+//! only reads and each worker writes only its own slots, so each `u64` has one writer, and an
+//! aligned `u64` store does not tear on any of the three architectures: no lock is needed. The
+//! wakes array (milestone 221) is kept apart from the round-trip total because the two are
+//! different quantities. The anomaly counters are the kernel's and stay in `sched`'s per-core trace
+//! counters, out of the subject's reach. See notes/soak.md, "The shape".
+
 //! # BUGS
 //!
-//! - **A worker that dies stops writing and looks exactly like a worker that wedged.** Both are
-//!   failures, both are caught by the same stall check, and the kernel's report cannot tell them
-//!   apart from this page alone; the thread dump it prints on failure can.
+//! - A worker that dies stops writing and looks exactly like one that wedged: both fail the same
+//!   stall check, and only the thread dump the kernel prints on failure tells them apart.
 //!
 
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist). Coined by milestone 219's
@@ -150,20 +133,12 @@ mod tests {
     /// **Every one of the 192 slots is its own aligned word**, which is the contract the two
     /// binaries actually rely on and the one the two tests above only approximate.
     ///
-    /// They check the ends of each array against the ends of the next, so an offset function that
-    /// collapses (`rounds` returning a constant), strides by the wrong amount, or counts backwards
-    /// through its array still passes them while giving two workers the same eight bytes. That is
-    /// not a slow workload, it is a silent one: the counters are single-writer *because* each has
-    /// exactly one owner, and two owners on one word makes the page's whole lock-free argument
-    /// false. Alignment is in the same test because a `u64` store is only the untearable thing the
-    /// module documentation claims when it lands on a `u64` boundary.
-    ///
-    /// The assertion is deliberately about distinctness rather than about values: the kernel and
-    /// the workload both reach the page through these functions, so any injective, aligned,
-    /// in-page assignment is a correct one and pinning the arithmetic would test the code against
-    /// itself. Milestone 326 (nobody has been assigned to turn a mutation score upward): five of
-    /// this crate's seven mutation survivors were offsets that
-    /// collide.
+    /// An offset function that collapses (`rounds` returning a constant), strides wrong or counts
+    /// backwards passes them while giving two workers one word, which breaks the single-writer
+    /// argument, and a `u64` store is untearable only on a `u64` boundary. The assertion is about
+    /// distinctness rather than values, so it does not test the arithmetic against itself.
+    /// Milestone 326 (nobody has been assigned to turn a mutation score upward): five of this
+    /// crate's seven mutation survivors were offsets that collide.
     #[test]
     fn every_slot_is_its_own_aligned_word() {
         let mut offset = [0u64; 3 * MAX_WORKERS];
