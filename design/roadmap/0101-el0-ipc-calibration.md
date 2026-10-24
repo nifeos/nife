@@ -14,13 +14,56 @@ benchmark nobody owns", and that is not what the tree says. The benchmark exists
 published for days. The milestone survived because the comparison built on it did not follow, and
 the corrected comparison is considerably worse for us than the one that was on the page.
 
-What remains is one step, reading cycles from a PMU instead of
-deriving them from nanoseconds and an assumed clock. That is milestone 74's deliverable by name, and
-it rides the silicon of milestone 16 (real hardware and IOMMU-backed driver isolation). This line
-read `NONE` until 2026-08-16. That was true while a
-paragraph was still waiting to be rewritten, and stopped being true when it was. Nothing in this
-milestone is startable today, and a gate of `NONE` was advertising the opposite to
-`script/roadmap --ready`.
+Everything that can be built without a board is built. The `ipc_rtt_el0` client reads the cycle
+counter across its own timed loop when the bench boot is built with `cycle_counter_grant`, and
+prints the round trip in cycles, read rather than converted (below). What remains is a person at
+a board running it, and an architect's answer to which board closes this block.
+
+Outstanding: three things. A radon bench boot built with `cycle_counter_grant` reads the round
+trip directly on riscv64 silicon. The same probe on argon, the TX1 milestone 127 (the seL4
+machine) is still waiting for, reads it on the only machine whose cycles are the unit of seL4's
+413 and 426. And calef chooses, under "Needs calef", which of those two closes this block. Checked 2026-10-24 (UTC)
+against the tree: no transcript under `bench/` carries an `ipc_rtt_el0_cycles` line, and 127 is
+`NOT-STARTED`.
+
+## Needs calef
+
+Which reading closes milestone 101? Both are a person at a board; the question is which one.
+
+- (B, recommended) radon's direct read. The block's own `machine_requirements` names riscv64
+  silicon, and the step this block was waiting for, cycles read from a PMU instead of an assumed
+  clock, is exactly what the probe gives there. The same-silicon comparison against seL4's TX1
+  figures belongs to milestone 25 (cross-OS performance comparison) and already gated on argon, so nothing is lost.
+  It closes on one evening at a board that already boots the bench.
+- (A) argon's direct read. The calibration's referent is seL4's TX1 pair, so only a TX1 cycle
+  count makes the ratio a measurement. Honest, but it ties this block to a delivery with no date.
+- (C) both. B now as a datum, A to close. It keeps the block open for the same reason as A.
+
+## Cycles on silicon: what the tree reads today
+
+radon measured `cycles_per_tick 250.00` on 2026-09-16, and `ipc_rtt_el0` in the same boot was
+124,433 ticks over 5,000 iterations (`bench/radon-2026-09-16/bench-134300.log`). That is about
+6,222 cycles per EL0 round trip on a U74 at a measured 1.0 GHz, single hart, release build,
+and milestone 74's [`riscv64-half.md`](0074-cycle-counters/riscv64-half.md) tabulates it beside
+the other rows. The clock there is measured, not assumed, which removes this block's 1.5x
+uncertainty for that machine. It is still two windows multiplied together: it assumes the core did
+not change frequency between the probe and the row.
+
+It is not an L4 calibration. A U74 is an in-order RISC-V core and seL4's 413 and 426 are A57
+cycles, so the two counts are of different machines doing different instruction streams. Quote it
+as a riscv64 figure and nothing more.
+
+### The direct read
+
+With `cycle_counter_grant` beside `bench`, `ipc_rtt_el0` grants its client the counter (DECISIONS
+§139's per-thread grant, via `sched::grant_cycle_counter_to_current`). The client reads
+`user_mode_runtime::cycle_reading()` inside its tick window. The bench boot then prints
+`bench-probe: ipc_rtt_el0_cycles` with cycles per round trip and cycles per tick across the same
+window, and a second line with what the client said it counted. The row is unchanged, so no baseline moves.
+`notes/benchmarks/kernel-bench-harness.md` has the lines, the refusals and the commands. Under
+aarch64 TCG on 2026-10-24 (UTC) it printed 15.99 cycles per tick against the probe's 16.00, which
+proves the plumbing and measures nothing. No riscv64 or x86_64 run exists: this machine has no
+`qemu-system-riscv64`, and the x86_64 bench boot runs no EL0 rows.
 
 ## What has landed, and what it cost us to say
 
@@ -135,9 +178,10 @@ regression tripwires run against them, and notes/benchmarks.md explains why a ke
 length is the right thing for a gate and the wrong thing for a comparison. Both planes stay; only
 the comparison moved.
 
-**Cycles are still arithmetic here, and no cycle ratio in this file should be quoted tighter than "same
-order".** Every cycle figure inherits a ~1.5x uncertainty from not knowing which core type the vCPU
-thread ran on. That is milestone 74's job, and it is why this milestone is not BUILT.
+**Cycles against seL4 are still arithmetic here, and no cycle ratio in this file should be quoted
+tighter than "same order".** Every cycle figure from HVF inherits a ~1.5x uncertainty from not
+knowing which core type the vCPU thread ran on. radon's figure has no such uncertainty and no seL4
+counterpart. That is why this milestone is not BUILT.
 
 **The remaining step is milestone 74's, not a second lane on this one.** Folding it into
 milestone 25 was the alternative this block named, and the reason for keeping it separate is now on
@@ -145,13 +189,26 @@ the record rather than open. The paragraph correction is what should not have wa
 and it did not.
 ## Follow-on
 
-- **Milestone 74.** The one remaining step, reading cycles from a PMU rather than deriving them
-  from nanoseconds and an assumed clock, is that block, PARTIAL (both ISA halves built, neither run on its board). No bench row in
-  `kernel/src/bench/` reads a cycle counter today. Only the `cycles_per_tick` probe in
-  `bench/cycle_probe.rs` does, and it converts ticks rather than timing a path.
-- **Milestone 16.** The silicon that makes a PMU readable at all is 16a, which has booted the full
-  tour on three harts and has not yet run the benches. HVF on the development machine passes
-  through no PMU.
+- **Outstanding.** A radon bench boot with `script/board-image --bench --extra-features
+  cycle_counter_grant`, read for its `ipc_rtt_el0_cycles` lines. Checked 2026-10-24 (UTC): no
+  transcript under `bench/` has one, and the probe in `kernel/src/bench/el0.rs` is new.
+- **Outstanding.** The same read on argon, the TX1. Checked 2026-10-24 (UTC): milestone 127 is
+  `NOT-STARTED` and the TX1 has not arrived, and `script/board-image` builds riscv64 only.
+- **Outstanding.** calef's answer under "Needs calef" (A, B or C), which decides whether the radon
+  read alone closes this block. Checked 2026-10-24 (UTC): no ruling in this block or in
+  `design/decisions/`.
+- **Done.** The direct read is built: `ipc_rtt_el0`'s client reads the granted cycle counter across
+  its timed loop under `cycle_counter_grant`, in `kernel/src/bench/el0.rs` and
+  `fixtures/src/os_primitives_benchmarker.rs`, and `script/lint` compiles the pair on two ISAs.
+- **Milestone 74.** Cycles from a PMU on each ISA, PARTIAL (both halves built; radon has run the
+  riscv64 half, argon has run nothing). Its `cycles_per_tick` probe gave this block radon's
+  converted figure.
+- **Milestone 374.** Milestone 374 (cycles per IPC on the bench card) is a cycle column on every
+  bench row. This block added one probe line for one row and left the row format, which 374 calls
+  a decision about a recorded artifact, alone.
+- **Milestone 16.** radon is the board of milestone 16 (real hardware and IOMMU-backed driver
+  isolation), as 16a. It ran the bench suite on 2026-09-16
+  (`bench/radon-2026-09-16/bench-134300.log`). HVF on the development machine passes no PMU.
 - **Recorded.** The kernel-side numbers stay. The IPC round trip is the gating instrument the
   icount tripwires run against, and `notes/benchmarks.md` explains why a kernel-internal path
   length is right for a gate and wrong for a comparison.
@@ -176,7 +233,7 @@ and it did not.
   A granted thread reads the counter at EL0 in
   `system_tests::user::cycle_counter_tests::a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults`.
   This block's own gate names only milestone 74, so it does not overstate the authority half.
-  What remains is pointing the benches at the grant on hardware.
+  The benches now use the grant; what remains is running them on hardware.
   Correcting milestone 75 (who may read the cycle counter, and by what authority)'s `NOT-STARTED`
   row and milestone 74's dependency line is the architect's, and this block touches neither.
 
@@ -186,5 +243,6 @@ On one Apple core under HVF, `ipc_rtt_el0` costs 442 ns against seL4's 96 ns for
 `ReplyRecv`, about 4.6x (2026-10-21), not the 12-24x this block predicted. The 1.1x to 1.7x
 from seL4's published cycles crosses silicon on an assumed clock. Three errors found
 where one was expected, and the prediction is left standing as the record rather than quietly
-fixed. Cycles are still arithmetic on an assumed clock; the PMU reading waits on milestone 16's
-silicon
+fixed. radon's measured clock makes `ipc_rtt_el0` about 6,222 cycles on a U74, a riscv64 figure
+with no seL4 counterpart. The bench boot now reads the round trip in cycles directly under
+`cycle_counter_grant`; no board has run it, and which board closes the block is calef's call
