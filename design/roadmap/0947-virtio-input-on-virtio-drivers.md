@@ -1,5 +1,5 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-10-24
 milestone_dependencies: 784
 decision_dependencies: 46
@@ -62,16 +62,48 @@ lines, and the driver has its own.
 ## The measurement
 
 784's exit criterion is a `script/bench` number before and after on all three architectures. No
-existing row touches a virtio device, so this milestone adds two, reported only by
-`script/bench --keyboard` and never gated:
+existing row touches a virtio device, so this milestone adds two, printed only by
+`script/bench --keyboard` and never gated
+([the keyboard rows](../../notes/benchmarks/kernel-bench-harness.md)):
 
-- `keyboard_up`: ticks from spawning the driver to its `KEYBOARD_UP` report. Feature negotiation,
-  queue setup and the first eight buffers, with no host involvement.
-- `keyboard_event`: ticks from the keyboard's interrupt reaching the kernel to the driver's
-  `COMMIT` arriving at the kernel standing in for the compositor, summed over 16 key presses the
-  host sends over the QEMU monitor, one at a time.
+- `keyboard_up`: from the driver's spawn being queued, after the kernel has wired the device, to its
+  `KEYBOARD_UP` report. Loading the image, feature negotiation, queue setup and the first eight
+  buffers, with no host involvement.
+- `keyboard_event`: from the keyboard's interrupt reaching `irq_notify` to the driver's `COMMIT`
+  arriving at the kernel standing in for the compositor, summed over 16 key presses the host makes
+  one cue at a time.
 
-Results are recorded in the status section below.
+Measured 2026-10-24 (UTC) on Linux x86_64 under the pinned QEMU 11.1.2 and nightly-2026-10-24, TCG
+with `-icount shift=0,sleep=off`, one hart, the debug userspace every image ships. "Before" is the
+hand-written driver at this branch's bench commit, with the same kernel and wiring as "after".
+Ticks are each architecture's own counter (62.5 MHz on aarch64, 10 MHz on riscv64, the calibrated
+TSC on x86_64), so compare a row across its own line only.
+
+| | before | after | change |
+|---|---|---|---|
+| aarch64 `keyboard_up` | 45,998 | 57,616 | +25.3% |
+| aarch64 `keyboard_event`, per press | 2,107 | 2,345 | +11.3% |
+| riscv64 `keyboard_up` | 2,803 | 4,374 | +56.0% |
+| riscv64 `keyboard_event`, per press | 341 | 380 | +11.4% |
+| x86_64 `keyboard_up` | 544,406 | 656,956 | +20.7% |
+| x86_64 `keyboard_event`, per press | 32,978 | 36,751 | +11.4% |
+
+What the numbers mean:
+
+- A key press costs about 11% more on every architecture, about 240 aarch64 ticks or 3,800
+  instructions. The path is the same in syscalls: one `NOTIFY` per re-posted buffer and one
+  interrupt acknowledgment per drain, as before. The difference is the crate's own work in an
+  unoptimized build: the free list, the `Result` plumbing, the bounds checks and its atomics on
+  the rings. An optimized build would narrow it, and no image ships one today.
+- Bring-up costs more. The image is bigger (the crate, `bitflags`' formatting and `log`'s call
+  sites come along) and loading it is inside the row; how much of the difference that is was not
+  separated. Bring-up happens once per boot.
+- Both rows were identical across two aarch64 runs of the hand-written driver. riscv64 moved by
+  one tick between runs. x86_64's `keyboard_event` moved by 0.4% between two runs of the same
+  driver, so read its row to about half a percent.
+- Code lines (blank and comment lines removed): `keyboard_driver.rs` went from 252 to 207, and
+  `user_mode_runtime::confined_virtio`, which 948 to 950 can share, is 257. The ring walking the
+  driver no longer holds is the crate's, under its upstream tests and users.
 
 ## Done when
 
@@ -81,7 +113,16 @@ Results are recorded in the status section below.
 
 ## Status
 
-PARTIAL: in progress on the lane.
+BUILT, 2026-10-24 (UTC). Each item under "Done when" holds: the driver drives the queue only through
+`VirtQueue`; `a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte` passes on aarch64,
+riscv64 and x86_64 (PVH and OVMF), behind SMMUv3, the RISC-V IOMMU and VT-d; the table above is
+the bench.
+
+Building it surfaced a latent `x86_64` entry bug: the kernel enters `_start` with the stack
+16-byte aligned, and the psABI expects eight bytes off. `user_mode_runtime::program_entry!` is the
+one-`call` shim std's entry already has, and `keyboard_driver` uses it. The other `no_std` programs
+still enter misaligned, recorded in that macro's `BUGS` and in notes/user-mode-runtime.md,
+"Entering a process".
 
 ## BUGS
 

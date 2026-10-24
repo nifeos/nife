@@ -26,6 +26,8 @@
 //!   them; writes are refused.
 //! - The window lives in globals, because the crate's `Hal` methods take no `self`. One window per
 //!   process: a program driving two devices cannot use this pair for both.
+//! - Built without its `alloc` feature, the crate warns of an unused `indirect` parameter in
+//!   `queue.rs`. The warning is upstream's and harmless; the vendored tree carries no patch for it.
 //!
 //! Name: provisional (milestone 947, 2026-10-24 UTC), for the module, both types, [`Refusal`],
 //! [`install_window`] and [`QUEUE_SIZE`].
