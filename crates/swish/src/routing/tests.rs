@@ -36,8 +36,7 @@ fn operators_make_a_pipeline_of_the_stages_typed() {
 #[test]
 fn a_redirection_with_nothing_after_it_runs_nothing() {
     // A refusal at routing time is a line that never reaches a planner, so nothing is spawned
-    // and nothing is opened. That it is reachable here at all is the lift: it used to need a
-    // booted shell to provoke.
+    // and nothing is opened.
     match route(b"date >") {
         Route::Cannot(r) => assert_eq!(r, Refusal::NoRedirectTarget),
         other => panic!("expected a refusal, got {other:?}"),

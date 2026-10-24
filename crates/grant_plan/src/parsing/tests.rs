@@ -152,8 +152,7 @@ fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
 
 #[test]
 fn help_is_a_builtin_and_everything_else_is_a_program() {
-    // The whole of milestone 47's `run` removal, in three lines: three reserved words, and any
-    // other first token is a program name. Nobody has to know which class a command is in.
+    // Three reserved words, and any other first token is a program name.
     assert_eq!(parse(b"help"), Command::Help);
     assert_eq!(parse(b"  help  "), Command::Help);
     let Command::Run(r) = parse(b"frobnicate") else {
@@ -161,9 +160,8 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     };
     assert_eq!(r.program, b"frobnicate");
 
-    // Milestone 47's navigation builtins. They parse to themselves, and, because builtins win
-    // over programs, **the program namespace must never learn one of these names**: it would be
-    // unreachable, and the reader would have no way to tell why.
+    // The navigation builtins parse to themselves. Builtins win over programs, so the program
+    // namespace must never learn one of these names: it would be unreachable.
     assert_eq!(parse(b"pwd"), Command::Pwd);
     assert_eq!(parse(b"cd deeper"), Command::Cd(b"deeper"));
     assert_eq!(parse(b"cd"), Command::Cd(b""), "bare `cd` is your root");
@@ -303,9 +301,8 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
         panic!("`package` is no longer a builtin");
     };
     assert_eq!(Program::from_name(r.program), None);
-    // **And `rm` is a program**, which is the whole of milestone 47's rmdir lane at this level.
-    // A builtin would have shadowed the name, so this line is also the check that it no longer
-    // does; the manifest is what decides what the operand grants.
+    // `rm` is a program, not a builtin that would shadow the name; its manifest decides what the
+    // operand grants.
     let Command::Run(r) = parse(b"rm old.txt") else {
         panic!("`rm` must parse as a program invocation, not a builtin")
     };
@@ -363,8 +360,7 @@ fn mem_flag_must_have_a_numeric_value() {
 
 #[test]
 fn caps_previews_the_command_you_would_have_typed() {
-    // The new spelling, and the reason for it: the tail is the line itself, so what you inspect
-    // and what you run cannot drift apart. With `run` gone there is no verb left to echo.
+    // The tail is the line itself, so what you inspect and what you run cannot drift apart.
     assert_eq!(parse(b"caps"), Command::Caps(b""));
     assert_eq!(
         parse(b"caps memory_grant_depleter --mem 16"),
@@ -413,10 +409,8 @@ fn time_runs_the_command_you_would_have_typed() {
         "timing a command must not change what it is granted",
     );
 
-    // **The operators survive the prefix**, which is the reason the tail is a whole line rather
-    // than a token list. `time date | wc` is a timed *pipeline*; a `time` that took the first
-    // word would time `date` and silently drop the rest, which is the bug `caps` already has a
-    // test for one layer up (`swish::route`).
+    // The operators survive the prefix: `time date | wc` times the pipeline, not `date` alone
+    // (`caps` has the same test one layer up, in `swish::route`).
     assert_eq!(parse(b"time date | wc"), Command::Time(b"date | wc"));
 }
 

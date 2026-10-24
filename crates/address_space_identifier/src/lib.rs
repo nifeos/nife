@@ -1,41 +1,13 @@
 //! The ASID allocator: **which number tags this address space's TLB entries.**
 //!
-//! Milestone 15 (design/roadmap/0015-asids.md). An ASID (Address Space IDentifier) is a small number the
-//! hardware attaches to every TLB entry created from a non-global (`nG`) mapping, and compares
-//! on every lookup against the ASID in `TTBR0_EL1`'s top bits. With every user mapping tagged,
-//! a context switch stops flushing anything: entries from other address spaces simply stop
-//! matching.
-//!
-//! # Why a bitmap and not Linux's generation scheme
-//!
-//! Linux allocates ASIDs by *generation*: processes outnumber ASIDs (256 or 65536), so on
-//! exhaustion it bumps a generation counter, flushes everything once, and lazily re-assigns.
-//! That machinery guards one case: more live address spaces than ASID numbers. **Our own bounds
-//! make that case unreachable**: milestone 14 fixed concurrent address spaces at `MAX_SPACES`
-//! (160), below even the smallest hardware ASID space (8-bit, 256). So each address space keeps
-//! one ASID for its whole life, allocation is a bitmap scan, and the rollover path that could
-//! never be honestly exercised was never built. If `MAX_SPACES` ever outgrows 255, the fix is one
-//! TCR bit (16-bit ASIDs) before it is ever a new algorithm.
-//!
-//! # The invariant the caller keeps
-//!
-//! Reusing a number is only safe once the TLB holds no entries tagged with it, **on every core**.
-//! The kernel invalidates by ASID in `AddressSpace::drop`, *before* calling
-//! [`free`](Allocator::free). This crate proves the numbers are managed soundly; the flush is
-//! the kernel's half of the contract, stated at the call site.
-//!
-//! **How much work that half is depends entirely on the ISA**, which milestone 58 made plain.
-//! aarch64's `tlbi aside1is` broadcasts across the inner-shareable domain in hardware, so the
-//! contract is one instruction. RISC-V's `sfence.vma` affects only the hart that runs it, so the
-//! same sentence becomes a distributed protocol: a local fence, an SBI RFENCE IPI to every other
-//! online hart, and an acknowledgement before the number may be handed on. See
-//! notes/riscv-tlb-shootdown.md.
-//!
-//! The other half of the assumption below is also an aarch64 fact and not a universal one: the
-//! architecture *mandates* at least 8 ASID bits there, and RISC-V permits **zero**. So the RISC-V
-//! kernel probes `satp.ASID`'s implemented width at boot and keeps flushing on every switch if it
-//! is narrower than the numbers this crate hands out.
-//!
+//! Milestone 15 (design/roadmap/0015-asids.md). The hardware tags every TLB entry from a
+//! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
+//! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan, because
+//! `MAX_SPACES` (160) is below the smallest ASID space (256); past 255 the fix is 16-bit ASIDs. A
+//! number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
+//! `AddressSpace::drop` before [`free`](Allocator::free), one `tlbi aside1is` on aarch64 and an
+//! SBI RFENCE shootdown on RISC-V, whose `satp.ASID` may be narrower than these numbers. See
+//! notes/address-space-identifiers.md and notes/riscv-tlb-shootdown.md.
 
 //! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
 //! phrase is spoken)): "address space identifier" is a phrase people say, so the expansion is the

@@ -14,6 +14,8 @@ the pieces are. These files carry the evidence its prose budget has no room for.
   evidence that resolved it.
 - [`surface-geometry.md`](surface-geometry.md): why the surface is 1120 by 624, and the last
   frame's padding.
+- [`kernel-wiring.md`](kernel-wiring.md): how `kernel/src/user/display_service.rs` wires the GPU
+  driver, its clients and the firmware-screen terminal, and why each holds what it holds.
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes, which split the parent
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
@@ -28,3 +30,4 @@ names files.
 - `later-rungs` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
 - `flushed-hang` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
 - `surface-geometry` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
+- `kernel-wiring` Name: provisional, named for its content.

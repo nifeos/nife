@@ -1,39 +1,18 @@
-//! **Which cores does this machine have?** The `/cpus` node, decoded.
+//! Which cores does this machine have? The `/cpus` node, decoded: a `cpu@` node per core with its
+//! hardware id in `reg`, in the address cells `/cpus` declares (one or two; the Arm CPU binding
+//! requires two once any `MPIDR_EL1.Aff3` is nonzero).
 //!
-//! Milestone 100. Until this existed the kernel started cores `0..cpu::MAX_CPUS` and called that
-//! the machine's core list. On QEMU `virt` the two happen to agree; on anything else they do not,
-//! and the way they disagreed was the worst available: a `CPU_ON` for a core that is not there
-//! returns an error nobody has to look at, and a core that *is* there past the fourth was never
-//! named at all, so it stayed parked with nothing to report.
-//!
-//! Both architectures describe their cores the same way, which is why this is not under
-//! [`crate::aarch64`] or [`crate::riscv64`]: a `cpu@` node per core, under `/cpus`, with the
-//! hardware id in `reg`. What the id *means* is arch-specific (an `MPIDR_EL1` affinity value on
-//! aarch64, a hart id on RISC-V) and neither this module nor its caller needs to care, because the
-//! only thing done with it is handing it back to the firmware call that starts that core.
-//!
-//! # The `#address-cells` of `/cpus` is the whole decode
-//!
-//! A `cpu@` node's `reg` is one address in its parent's cells, and `/cpus` declares them. One cell
-//! is the usual case and the only one QEMU produces. **Two is not exotic**: the ARM CPU binding
-//! requires `#address-cells = <2>` the moment any core's `MPIDR_EL1.Aff3` is nonzero, which is
-//! every machine with more than 256 cores' worth of affinity space, so a decoder that assumes one
-//! cell reads a 64-bit id as its high half and starts nothing.
-//!
+//! What the id means is the architecture's, and the only thing done with it is handing it back to
+//! the firmware call that starts the core. See `notes/machine-discovery.md` ("The core list").
+
 //! # BUGS
 //!
-//! - **A core past [`MAX_CPU_NODES`] is counted and not recorded.** [`CpuList::described`] is the
-//!   honest total and [`CpuList::cpus`] is the prefix that fit, so a caller can see it read part of
-//!   a machine. It cannot see *which* part it missed.
-//! - **`status`, `enable-method` and `supervisor` are recorded, not obeyed.** This module reports
-//!   what the tree said; *acting* on it is the caller's call, because the caller is the one that
-//!   knows what it can speak and where it runs. [`Cpu::is_startable`] is that caller's decision as
-//!   a predicate, kept here (one copy, host-testable against the board fixtures) and applied by
-//!   `smp::read_cpu_list`, which is still the only place it has any effect.
-//! - **The `/cpus` node is found by name, not by binding.** There is no `compatible` on it to match;
-//!   the device tree specification names the node itself. Same simplification
-//!   [`device_tree_blob::DeviceTreeBlob::node_reg`] records, and here it is not a simplification at
-//!   all.
+//! - A core past [`MAX_CPU_NODES`] is counted in [`CpuList::described`] and not recorded, and a
+//!   caller cannot see which part it missed.
+//! - `status`, `enable-method` and `supervisor` are recorded, not obeyed. [`Cpu::is_startable`] is
+//!   the caller's decision as a predicate, applied by `smp::read_cpu_list`.
+//! - `/cpus` is found by name, not by binding: the specification names the node, and it has no
+//!   `compatible`.
 
 use device_tree_blob::{DeviceTreeBlob, Error};
 
@@ -109,18 +88,11 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    /// **Would this kernel start this core?** Firmware calls it usable, its own ISA string does not
-    /// disclaim supervisor mode, and it is started by a mechanism this kernel speaks (PSCI, or SBI
-    /// HSM behind an unstated method, which is the RISC-V binding's shape).
+    /// Would this kernel start this core? Firmware calls it usable, its own ISA string does not
+    /// disclaim supervisor mode, and its `enable-method` is PSCI or unstated (the RISC-V binding
+    /// has none; SBI HSM is the only mechanism).
     ///
-    /// This is `smp::read_cpu_list`'s decision, lifted here so the board fixtures can hold it: the
-    /// VisionFive 2 tests assert which harts this predicate admits (the four U74s) and which it
-    /// refuses (the S7, through either tree's lie), and a kernel-side copy would put the exact
-    /// expression the bench crash taught us out of the host suite's reach. `Unstated` counts as
-    /// startable on purpose: the RISC-V CPU binding has no `enable-method` at all (SBI HSM is the
-    /// only mechanism), so demanding the property would refuse every RISC-V machine including the
-    /// ones this kernel already runs on. `supervisor` is required because `status` can lie where a
-    /// hart's own `riscv,isa` does not (bench, 2026-08-14; notes/visionfive2.md, the second stop).
+    /// `smp::read_cpu_list` applies this; it lives here so the board fixtures can hold it.
     pub fn is_startable(&self) -> bool {
         self.usable
             && self.supervisor
@@ -250,17 +222,11 @@ fn hwid_from_reg(bytes: &[u8], cells: u32) -> Option<u64> {
     }
 }
 
-/// Is a `status` property one of the two spellings that mean "use this"?
+/// Is a `status` property one of the two spellings that mean "use this", `"okay"` or the deprecated
+/// `"ok"`? Every other value, recognized or not, reads as unusable: a core not started is a smaller
+/// machine, and a reserved core started is one running in someone else's memory.
 ///
-/// The specification defines `"okay"`, `"disabled"`, `"reserved"`, `"fail"` and `"fail-sss"`. Only
-/// the first means the device is operational; `"ok"` is a deprecated spelling still emitted by older
-/// firmware, and accepting it costs nothing. Everything else, including a value we do not recognise,
-/// reads as unusable, which is the safe direction: not starting a core we could have started is a
-/// smaller machine, while starting one firmware reserved is a core running in someone else's memory.
-///
-/// `pub(crate)` because [`crate::riscv64::Isa::from_device_tree`] applies the same reading when it
-/// decides which harts' `riscv,isa` and `mmu-type` may narrow the machine record: one decoder for
-/// `status`, so the two walks cannot disagree about what "disabled" means.
+/// Shared with [`crate::riscv64::Isa::from_device_tree`], so the two walks agree on "disabled".
 pub(crate) fn is_okay(value: &[u8]) -> bool {
     matches!(
         value.split(|&b| b == 0).next().unwrap_or(b""),

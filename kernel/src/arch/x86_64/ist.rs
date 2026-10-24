@@ -1,38 +1,20 @@
 //! **The three stacks the CPU switches to on its own**: one per core for the NMI (vector 2), the
 //! double fault (8) and the machine check (18), named by the TSS's Interrupt Stack Table (IST).
 //!
-//! None of the three can trust the `rsp` it interrupted. An NMI ignores `cli`, arrives on every TLB
-//! shootdown, and can land in the two instructions `x86_syscall_entry` runs on the user's `rsp`. A
-//! double fault usually means a stack could not be pushed to. A machine check promises nothing. A
-//! gate with a nonzero IST field makes the CPU load `rsp` from `TSS.ist[n - 1]` before it pushes
-//! anything, from either ring, and this module owns the stacks it loads.
-//!
-//! Each stack is 16 KiB over a 4 KiB guard page the fine kernel map leaves unmapped
-//! (`mmu::fine_map` maps each stack and its `verify` refuses a mapped guard), three per core, in
-//! their own `(NOLOAD)` region `.ist_stacks`. `TSS.ist` points [`TOP_RESERVE`] bytes below the top,
-//! and the top word holds the core's per-CPU pointer, so `isr_paranoid` (trap.s) finds the kernel's
-//! GS base at a fixed offset from its own `rsp` without trusting `gs` or the saved `CS`.
-//!
-//! # Nesting
-//!
-//! Each vector has its own stack, so one interrupting another corrupts nothing. A double fault
-//! inside a double fault is a triple fault and a machine check inside a machine check is a
-//! shutdown; neither handler returns anyway. A second NMI is held off until an `iretq`, and any
-//! `iretq` counts, including one from an exception taken inside the NMI handler. So the rule is
-//! that **the NMI handler takes no exception that returns**: it serves the shootdown (an `invlpg` or
-//! a `CR3` reload, and atomics) and touches nothing else. Linux's nested-NMI frame copy exists
-//! because its NMI handlers can fault; this kernel's cannot, so it is not built.
-//! `exceptions::x86_paranoid_dispatch` checks the rule on every NMI and panics if the interrupted
-//! `rsp` is on an NMI stack. notes/x86-port/ring-3.md has the windows this closes.
-//!
-//! # BUGS
-//!
-//! - `script/stack-depth-check` does not measure these stacks; they are the size of the per-CPU
-//!   interrupt stack, which carries the same panic path and is measured.
-//! - They cost 3 x 20 KiB x `MAX_CPUS` (480 KiB) of address space whether or not the cores exist.
+//! None of the three can trust the `rsp` it interrupted. Each stack is 16 KiB over an unmapped
+//! 4 KiB guard page, in the `(NOLOAD)` region `.ist_stacks`; the word above each frame holds the
+//! core's per-CPU pointer, so `isr_paranoid` finds the kernel's GS base from its own `rsp`. The
+//! NMI handler must take no exception that returns, since any `iretq` reopens NMIs;
+//! `exceptions::x86_paranoid_dispatch` panics if an NMI lands on an NMI stack. See
+//! notes/x86-port/cpu-state.md, which holds the detail of each BUGS entry.
 //!
 //! Name: provisional: milestone 915 (NMI, double fault and machine check run on their own stacks),
 //! 2026-10-13 UTC. `ist` is the architecture's own term for the table these stacks hang from.
+
+//! # BUGS
+//!
+//! - `script/stack-depth-check` does not measure these stacks.
+//! - They cost 3 x 20 KiB x `MAX_CPUS` (480 KiB) of address space whether or not the cores exist.
 
 use core::cell::SyncUnsafeCell;
 
@@ -109,10 +91,8 @@ fn region() -> (u64, u64) {
 /// **Point this core's three IST entries at its own stacks**, and write this core's per-CPU pointer
 /// into the word above each one's frame.
 ///
-/// Called from `segments::init`, once per core, after `cpu::init_this_cpu` and the GDT reload, and
-/// before `exceptions::init` loads the IDT whose gates select these entries. On the boot core this
-/// runs on the coarse boot map, which covers the region writable; on a secondary it runs on the
-/// fine map, which maps every stack above its guard.
+/// Called from `segments::init`, once per core, after `cpu::init_this_cpu` and the GDT reload and
+/// before `exceptions::init` loads the IDT whose gates select these entries.
 ///
 /// # Safety
 /// Once per core, on that core, before any IST vector can be delivered to it, with `percpu` this

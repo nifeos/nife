@@ -91,7 +91,8 @@ where
         if failed.is_some() {
             return;
         }
-        // Blocks for memory, pages for devices: see this module's BUGS on the MTRRs.
+        // Blocks for memory, pages for devices: the MTRRs are not read (the BUGS of
+        // notes/x86-port/kernel-page-tables.md).
         let result = if c.guarded {
             guarded_direct_map(m, c.lo, c.hi, c.flags)
         } else if c.flags.is_device() {

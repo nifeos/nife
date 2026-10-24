@@ -55,3 +55,19 @@ pages go on it, the next spawn takes them back, page for page. This is a *budget
 not an allocator: one size (a page), one owner, no headers, no coalescing, nothing to verify
 beyond a bounded stack. The difference between this and the heap milestone 14 deleted is the
 difference between a budget and a market.
+
+## What the carve holds, and its size
+
+The carve is `KERNEL_OBJ_PAGES`, 2048 pages (8 MiB). It holds every kernel-owned object: kernel
+endpoints, kernel thread stacks, and the TCB pages of threads the kernel creates. A thread
+created by the progenitor has its TCB page retyped from the progenitor's own region instead,
+because the progenitor is its creator: one principle, two payers.
+
+The size is a sum, not a ratio. A thread costs 7 pages here, six of stack and one of TCB, so
+`sched::MAX_THREADS` (256) takes 1792; endpoints take about 60 across a full test run; that leaves
+196 of slack. A carve sized by doubling an older number would be a guess. One left too small moves
+the thread ceiling from the thread table down to here, one level lower and no easier to diagnose.
+Exhaustion surfaces as `kmem::page()` returning `None` and an unrelated test's spawn
+failing with "no memory to wire one". It fails cleanly, the same contract as every budget, and
+raising the constant is the fix when the image legitimately needs more. The carve's region is
+pinned as `ObjectKind::KernelPool` on its first page, so nothing can ever destroy it.

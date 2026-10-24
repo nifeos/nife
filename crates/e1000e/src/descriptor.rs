@@ -62,15 +62,10 @@ pub enum RxVerdict {
 
 /// **Judge a receive descriptor's status word**, where `word` is the descriptor's second
 /// little-endian `u64` (length, checksum, status, errors, special) and `room` is how many bytes the
-/// caller can take.
-///
-/// Every field is the device's statement and none is trusted (notes/shared-page-audit.md's finding
-/// 6, applied to a second NIC): a `Frame(n)` always has `n <= room` and `n <= BUFFER_SIZE`, which is
-/// the property the Kani harness below proves for every word.
+/// caller can take. No field is trusted (notes/shared-page-audit.md's finding 6): a `Frame(n)`
+/// always has `n <= room` and `n <= BUFFER_SIZE`, which the Kani harness below proves for every word.
 ///
 /// # Examples
-///
-/// A length the device could not have meant is a dropped frame rather than a read past the buffer:
 ///
 /// ```
 /// use e1000e::{RxVerdict, rx_verdict, RX_STATUS_DD, RX_STATUS_EOP};

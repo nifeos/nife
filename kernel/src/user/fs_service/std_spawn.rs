@@ -1,23 +1,18 @@
 //! The `std` program spawn every `start_std*` in [`super`] shares: the heap, the stack, the shared
-//! file page, and the argument and clock pages when the caller gives them. Split out of
-//! `fs_service.rs` along this seam by milestone 835 (a C library, stage 1: files, clock and memory)
-//! to keep that file under its §266 (a Rust source file stays under 2,000 lines) ceiling.
+//! file page, and the argument and clock pages when the caller gives them.
 
 use super::*;
 
-/// The spawn both of the above share: a std program whose directory is whatever `file_ep` serves,
-/// with the file page it shares mapped where the PAL expects it, writing to `report`. Returns the
-/// heap's region, the thread, the stack frames, and the argument page if `line` gave one; the
-/// process owns none of the frames.
+/// The spawn every `start_std*` shares: a std program whose directory is whatever `file_ep`
+/// serves (badged with `badge` if nonzero), its file page mapped where the PAL expects it, writing
+/// to `report`. Returns the heap's region, the thread, the stack frames and the argument page.
 ///
-/// `line` is assembled onto a fresh page by `grant_plan::argv` and handed over the way the
-/// progenitor hands it (`crates/system_initializer`'s spawn): a `READ` page frame capability at
-/// `ARGS_SLOT`, the page mapped read-only at `ARGS_PAGE`. `None` leaves the slot empty, which the
-/// PAL reads as no arguments at all.
+/// `line` goes onto a fresh page through `grant_plan::argv`, handed over as the progenitor does: a
+/// `READ` page frame capability at `ARGS_SLOT`, mapped read-only at `ARGS_PAGE`. `None` leaves the
+/// slot empty: no arguments.
 ///
 /// BUGS: [`super::start_std_full`] drops the stack frames, so every program it spawns keeps its 32
-/// for the boot. That was true before this function was split out of it and is left as it was: its
-/// `std_exerciser` is spawned once and the ledger already carries it.
+/// for the boot; its `std_exerciser` is spawned once and the frame ledger carries it.
 pub(super) fn spawn_std(
     file_ep: RendezvousId,
     badge: u64,
@@ -43,9 +38,8 @@ pub(super) fn spawn_std(
         phys
     });
 
-    // The shared file page, then the deep stack std needs. `run` maps one stack page; std's
-    // startup and formatting overflow it immediately, the same reason the other std spawns map
-    // extra pages below it.
+    // The shared file page, then the deep stack std needs: its startup and formatting overflow
+    // the one page `run` maps.
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
@@ -75,9 +69,7 @@ pub(super) fn spawn_std(
         };
         maps_used += 1;
     }
-    // The wall clock, when the caller has one to give: the clock service's page, read-only, where
-    // the std PAL reads it (milestone 835, for a C program that times itself). A READER, and the
-    // mapping is what says so, as `std_service::spawn_std` grants it.
+    // The clock service's page, read-only: this program is a reader, and the mapping says so.
     if let Some(phys) = clock_page {
         maps[maps_used] = Mapping {
             va: std_runtime_contract::CLOCK_PAGE,
@@ -88,17 +80,14 @@ pub(super) fn spawn_std(
     }
 
     let tid = crate::sched::spawn(move || {
-        // The directory capability goes in at its named slot BEFORE `run` grants in order, so
-        // `run`'s two grants land at 0 and 1 and slots 2 and 3 stay empty. See `grant_at`.
-        // A bound grant (milestone 606, ruling D) is the FS server's own endpoint carrying the
-        // badge the grant was bound to; every other spawn holds an unbadged one.
+        // The directory goes in at its named slot before `run` grants in order, so `run`'s two
+        // grants land at 0 and 1 and slots 2 and 3 stay empty. A bound grant carries its badge.
         let dir = if badge == 0 {
             rendezvous_cap(file_ep, Rights::WRITE)
         } else {
             rendezvous_cap_badged(file_ep, Rights::WRITE, badge)
         };
         crate::sched::grant_at(FS_DIR_SLOT, dir).expect("the std fs slot was already occupied");
-        // The argument page and the clock page, each a READ page at its named slot when given.
         let pages = [
             (std_runtime_contract::ARGS_SLOT, args),
             (std_runtime_contract::CLOCK_SLOT, clock_page),

@@ -1,36 +1,20 @@
 //! **Two boot slots, and the rule that stops a bad upgrade bricking the machine.** An upgrade
 //! writes the slot that is not running and puts it on trial; if the trial image never comes up,
-//! the machine goes back to the previous one by itself. This crate is that state and the policy,
-//! touching no disk, so `components/src/system_installer.rs` (which writes the state) and
-//! `uefi_loader`'s chooser (which acts on it) share one implementation; see notes/boot-slots.md.
+//! the machine goes back to the previous one by itself. This crate touches no disk; see
+//! notes/boot-slots.md. `system_installer` writes the state and `uefi_loader`'s chooser acts on it.
 //!
-//! The state lives in the slot partitions' GPT attribute bits, per UEFI 2.11: its
-//! section 5.3.3's attribute table says of bits 48 to 63 that only the owner of the type may
-//! modify them; [`globally_unique_identifier_partition_table::guid::types::NIFE_BOOT`] is ours.
-//! Generic UEFI firmware, OVMF included, reads bits 48 to 63 of a type it does not own for no
-//! purpose, so the selector has to be ours. The layout is ChromeOS's (`cgpt show` reads a nife
-//! disk), ratified by calef on 2026-09-21: changing it is a decision about disks that exist.
-//! Bits 0 to 47 are the specification's and are preserved untouched, as the owner's must be
-//! preserved if Bits 0-47 are modified.
-//!
-//! | bits | field | meaning |
-//! |---|---|---|
-//! | 48-51 | [`PRIORITY_SHIFT`] | 0 to 15. **0 means never select this slot.** Higher wins |
-//! | 52-55 | [`TRIES_SHIFT`] | 0 to 15. Boot attempts left before the slot is given up on |
-//! | 56 | [`SUCCESSFUL_BIT`] | this image has booted and been confirmed; [`State::tries`] stops mattering |
-//! | 57-63 | | reserved, written zero, and [`State::into_attributes`] preserves whatever is there |
-//!
-//! **The chooser decrements `tries` before it hands off**, not after: a machine that hangs before
-//! userspace would otherwise retry the same bad image forever. It costs a disk write per trial boot.
-//!
+//! The state is bits 48 to 56 ([`PRIORITY_SHIFT`], [`TRIES_SHIFT`], [`SUCCESSFUL_BIT`]) of a slot
+//! partition's GPT attributes, which UEFI 2.11 section 5.3.3 gives to the owner of the type,
+//! `NIFE_BOOT`; every other bit is preserved. The layout is ChromeOS's (ratified by calef on
+//! 2026-09-21). **The chooser decrements `tries` before it hands off**, at a disk write per trial
+//! boot, or a machine that hangs before userspace would retry the same bad image forever.
+
 //! # BUGS
 //!
-//! - The layout and [`SlotHeader`] are ratified, so changing them costs disks; use the header's
-//!   version field rather than redefining the bits.
-//! - Confirmation (`system_installer`'s `ROLE_CONFIRM`, once the filesystem server reports ready)
-//!   has not exercised anything off the boot path, has not reached a shell, and says nothing about
-//!   the seconds after; `kernel/src/user/install_service.rs`'s `confirm` argues the criterion. A
-//!   machine that never confirms rolls back a working upgrade, which fails safe.
+//! - The layout and [`SlotHeader`] are ratified; change them through the header's version field.
+//! - Confirmation proves nothing off the boot path, and a machine that never confirms rolls back a
+//!   working upgrade, which fails safe. See notes/boot-slots.md, "What marks a trial boot
+//!   successful".
 //! - [`select`] takes any number of slots; two is `system_installer`'s choice, not this crate's.
 //! - An exhausted slot's priority is not zeroed, unlike ChromeOS: [`select`] already skips it.
 //! - A slot is 64 MiB of disk that is usually a duplicate.
@@ -294,12 +278,9 @@ pub const SLOT_IMAGE_OFFSET: u64 = 4096;
 pub const SLOT_HEADER_BYTES: usize = 32;
 
 /// **What is in a boot slot**, written at the very start of the partition and read by the chooser
-/// before it spends a page of memory on the image.
-///
-/// A partition has no length field of its own that means "how much of me is in use", so this is
-/// where the image's length lives. The checksum is the other half and is what turns "the installer
-/// died halfway through the copy" from a machine that starts a truncated image into a machine that
-/// refuses the slot and boots the other one.
+/// before it spends a page of memory on the image. A partition has no length of its own, so the
+/// image's length lives here, and its checksum makes an install that died mid-copy a refused slot
+/// rather than a truncated image started.
 ///
 /// | offset | size | |
 /// |---|---|---|
@@ -310,8 +291,7 @@ pub const SLOT_HEADER_BYTES: usize = 32;
 /// | 24 | 4 | [`Self::image_crc32`], little-endian |
 /// | 28 | 4 | CRC-32 of bytes 0 to 27, little-endian |
 ///
-/// CRC-32 is the GPT's own (`globally_unique_identifier_partition_table::crc`), reused rather than
-/// written again: this crate already depends on that one for the attribute bits it lives in.
+/// CRC-32 is the GPT's own, `globally_unique_identifier_partition_table::crc`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct SlotHeader {
     /// How many bytes of image follow, starting [`SLOT_IMAGE_OFFSET`] into the partition.
@@ -378,44 +358,21 @@ impl SlotHeader {
 /// **The token that tells a booted kernel which slot it came from**, and the only thing that
 /// crosses from the chooser into the running system.
 ///
-/// # Why there is a token at all
-///
-/// A running system cannot work out which slot started it. *"Whatever [`select`] would pick now"*
-/// is wrong on the boot a confirmation exists for: the chooser spends a try before handing off, so
-/// a slot started with its last try is no longer [`State::is_bootable`] and [`select`] names the
-/// other one. A machine would then confirm the copy it did not boot.
-///
-/// # Why it is a word on the command line
-///
-/// `uefi_loader`'s `hvm_start_info` already carries a NUL-terminated command line, already holds
-/// more than one word on it (the screen, and `machine_discovery::framebuffer::SCREEN_HOLD` under
-/// the gate's feature), and the kernel already reads it before `mmu::init`. So this is a third word
-/// on a line that exists rather than a new agreement.
-///
-/// The three shapes it was weighed against, priced rather than asserted:
-///
-/// | | cost |
-/// |---|---|
-/// | a field in `machine_discovery`'s handoff | a new field in a structure the PVH specification fixes, or a nife-private one beside it, and a second thing for a loader on each of three architectures to fill in |
-/// | a module in the `hvm_start_info` module list | the list has two entries and a third would be a page of memory and an entry format, to carry one nibble |
-/// | a fixed physical page | a number two programs agree on with nothing checking it, and the one shape this tree has no precedent for |
-/// | **a word on the command line** | **one token, one parser, and a host test that round-trips it against the kernel's own reader** |
-///
-/// **This is a value two programs agree on**, and **the spelling was ratified by calef on
-/// 2026-09-22**.
-///
-/// The command line's tokens are owned by two crates (the screen's by
-/// `machine_discovery::framebuffer`, this one here), so no single place enumerates its vocabulary;
-/// `uefi_loader::handoff::cmdline` writes all of it, and its `CMDLINE_LEN` adds up the lengths.
+/// A running system cannot work out its own slot: the chooser spends a try before handing off, so
+/// a slot started on its last try is no longer [`State::is_bootable`], [`select`] names the other
+/// one, and the machine would confirm the copy it did not boot. **This is a value two programs
+/// agree on**, and the spelling was ratified by calef on 2026-09-22. The screen's token belongs to
+/// `machine_discovery::framebuffer`, so no one place lists the line's vocabulary;
+/// `uefi_loader::handoff::cmdline` writes all of it, and its `CMDLINE_LEN` adds up the lengths. See
+/// notes/boot-slots/the-command-line.md.
 pub mod cmdline {
     /// The token's key, including the `=`. Provisional: names are an architect's.
     pub const KEY: &str = "boot-slot=";
 
     /// The longest this token can be: the key and one decimal digit.
     ///
-    /// One digit, not two, because [`super::select_excluding`] already cannot exclude past slot 63
-    /// and `system_installer` lays out two. A slot number that did not fit a digit would be a different
-    /// disk layout, and [`encode`] refuses rather than truncating.
+    /// One digit, because [`super::select_excluding`] cannot exclude past slot 63 and
+    /// `system_installer` lays out two; [`encode`] refuses a wider number rather than truncating.
     pub const MAX_LEN: usize = KEY.len() + 1;
 
     /// Write `boot-slot=N` into `out`, returning its length, or **0 when it does not fit or `slot`
@@ -435,15 +392,10 @@ pub mod cmdline {
     }
 
     /// **Which slot started this boot**, from the whole command line, or `None` when no word on it
-    /// is this token.
-    ///
-    /// `None` is the ordinary answer and not an error: a stick, a `-kernel` boot, and an installed
-    /// machine whose chooser fell back to the image in its own file all reach a running kernel with
-    /// nothing to confirm.
-    ///
-    /// A token whose value is not a single digit is `None` too, for the reason [`encode`] refuses
-    /// to write one: a malformed slot number that parsed as *some* slot would be a confirmation
-    /// written to the wrong partition entry, which is the one outcome worse than not confirming.
+    /// is this token: a stick, a `-kernel` boot and a chooser's fallback to its own image all reach
+    /// a running kernel with nothing to confirm. A value that is not a single digit is `None` too,
+    /// since a malformed number parsed as *some* slot would confirm the wrong partition entry,
+    /// the one outcome worse than not confirming.
     ///
     /// # Examples
     ///
@@ -476,18 +428,12 @@ pub mod cmdline {
 }
 
 /// **Which medium this boot came from, on the kernel's command line** (the live stick proposal's
-/// G2; calef ruled the token on PR #1652, 2026-10-04 UTC). One word, `boot-medium=nvme`, written by
-/// `uefi_loader` when the file it was started from is on an NVMe disk, and read by the kernel, which
-/// mounts the internal NVMe filesystem only when it is there.
-///
-/// It exists because RedoxFS writes on mount, so a stick that mounted the installed disk changed it
-/// with nobody asking (`cargo xtask install-boot`, boot 3, measured 3 blocks). **Absence is the safe
-/// answer**: a stick, a `-kernel` boot and any loader that predates this token all leave the
-/// internal disk alone.
-///
-/// Here beside [`cmdline`] because it is the same shape (a loader-to-kernel token two programs agree
-/// on, rule 7) and the kernel and loader already depend on this crate. Key and value are
-/// provisional: names are an architect's.
+/// G2; calef ruled the token on PR #1652, 2026-10-04 UTC). `uefi_loader` writes `boot-medium=nvme`
+/// when the file it was started from is on an NVMe disk, and the kernel mounts the internal NVMe
+/// filesystem only then, because RedoxFS writes on mount. **Absence is the safe answer**: a stick,
+/// a `-kernel` boot and an older loader all leave the internal disk alone. It sits beside
+/// [`cmdline`] as the same kind of token two programs agree on (rule 7). Key and value are
+/// provisional. See notes/boot-slots/the-command-line.md.
 ///
 /// # EXAMPLES
 ///

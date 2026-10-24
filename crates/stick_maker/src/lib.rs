@@ -9,47 +9,11 @@
 //! program). calef names programs; expect this to change. (That program was ratified as
 //! `system_installer` on 2026-10-06; the refusal above keeps the word it refused.)
 //!
-//! One file per host operating system, downloaded and run, with every architecture's boot file
-//! inside it. Run, it finds the USB sticks and SD cards on the machine, asks which, and writes the
-//! boot files to it. The common case is a copy onto a stick that is already FAT32, which needs no
-//! administrator rights and erases nothing; erasing is the fallback for a stick that is not.
-//!
-//! The halves:
-//!
-//! - [`disk`] is the host-independent model and **the one rule for what may be written**
-//!   ([`disk::refusal`]), plus the choice between copying and erasing ([`disk::plan`]).
-//! - `macos`, `linux` and `windows` each turn their host's description of its disks into
-//!   [`disk::Disk`]s (each compiled only where it runs, and in tests), and hold the few commands that change a disk.
-//! - [`payload`] is what is carried; [`mod@write`] puts it on a mounted volume safely.
-//! - [`cli`] is the whole conversation with the person, tested against a fake host, and [`host`]
-//!   is the thin half that runs each OS's own tools, proved on each OS instead.
-//!
-//! See notes/boot-stick.md for how it is built, tested, and what it has and has not run on.
-//!
-
-//! # No stick shares a GUID with another, because no stick has a GPT
-//!
-//! Measured 2026-10-06 (UTC) by lane/fresh-stick-guids, because a prebuilt image written to every
-//! stick would give them all one disk GUID and one set of partition GUIDs. That would make firmware
-//! boot entries, `PARTUUID` lookups and installs ambiguous when two copies meet one machine. It
-//! does not happen here, for a structural reason:
-//!
-//! - There is no image. `cargo xtask stick` stages a directory of three `.EFI` files
-//!   (`target/stick/EFI/BOOT/`), and this program copies files onto a FAT volume. Nothing in the
-//!   build writes a partition table, so there is nothing to be reproducible or to share.
-//! - The copy path leaves the stick's own table alone, whatever its maker wrote.
-//! - The erase path writes **MBR**, never GPT (`host/macos.rs`'s `erase` says why), with the host's
-//!   own tool. So a stick has no disk GUID and no partition unique GUID at all.
-//! - A disk installed from a stick is a GPT that `components/src/system_installer.rs` writes with a
-//!   fresh version-4 GUID for the disk and for each partition, drawn from the entropy service.
-//!
-//! The evidence: this program's erase path, run twice on two 64 MiB file-backed disks
-//! (`hdiutil attach`, dummy payloads, `--include-disk-images --erase`). Both came out MBR with LBA 1
-//! all zeroes (no `EFI PART` header), one type `0x0b` partition at sector 63, and FAT32 volume ids
-//! `0x89f41902` and `0x3d471902`. They differ, and that id is what Linux's `/dev/disk/by-uuid` and
-//! macOS name a FAT volume by. Both MBR disk signatures were `0x00000000`, which is in `macos.rs`'s
-//! BUGS. Nothing in nife looks a disk up by GUID or MBR signature: `uefi_loader`'s chooser finds its
-//! own disk by device-path prefix (`uefi_loader/src/device_path.rs`) and reads a table by type GUID.
+//! One file per host operating system, carrying every architecture's boot file. It copies them onto
+//! a removable disk's FAT32 volume without administrator rights, and erases only a stick that is
+//! not FAT32. [`disk::refusal`] is the one rule for what may be written. No stick shares a GUID
+//! with another, because none has a GPT. See notes/boot-stick.md, and
+//! notes/boot-stick/the-program.md for each module's part and the GUID measurement.
 
 pub mod cli;
 pub mod disk;

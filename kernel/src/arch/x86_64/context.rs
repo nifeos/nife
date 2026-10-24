@@ -10,17 +10,13 @@
 
 /// The callee-saved registers, as `switch_to` pushes them.
 ///
-/// **This layout is a contract with `context.s`.** Seven `u64` slots, 56 bytes, in exactly this
-/// order; the first six are read back by the `pop` sequence and the seventh is what `ret` jumps to.
-/// Reorder a field and the assembly restores the wrong register.
+/// **This layout is a contract with `context.s`**: seven `u64` slots, 56 bytes, in this order. The
+/// first six are read back by the `pop` sequence and the seventh is what `ret` jumps to.
 ///
-/// # The size is 56 and that is deliberate
-///
-/// A thread's context is placed at `stack_top - size_of::<Context>()` with a 16-byte-aligned
-/// `stack_top`, so 56 puts the context at 8 mod 16 and leaves `rsp` **16-byte aligned** the instant
-/// `ret` lands in a trampoline. That is what the trampolines' own `call` requires, and it is the
-/// only reason the number matters. Padding this to 64 for tidiness would misalign every thread's
-/// first call, which shows up much later as a fault inside code that uses SSE.
+/// The size must stay 56. A context sits at `stack_top - size_of::<Context>()` below a 16-byte
+/// aligned `stack_top`, so 56 leaves `rsp` 16-byte aligned when `ret` lands in a trampoline, as the
+/// trampoline's own `call` requires. Padded to 64, every thread's first call would be misaligned,
+/// which surfaces much later as a fault in code that uses SSE.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Context {

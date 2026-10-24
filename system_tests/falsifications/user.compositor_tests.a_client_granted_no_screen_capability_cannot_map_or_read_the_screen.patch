@@ -14,13 +14,13 @@ mapped and read the composed screen at ...")`. Measured 2026-10-03 (UTC): red.
 a screen capability leaked to every client left its fault wait satisfied.
 
 diff --git a/kernel/src/user/compositor_service.rs b/kernel/src/user/compositor_service.rs
-index 60fa5b67a..451f66b38 100644
+index 611a21980..f180134d2 100644
 --- a/kernel/src/user/compositor_service.rs
 +++ b/kernel/src/user/compositor_service.rs
-@@ -291,7 +291,7 @@ impl Wiring {
-         // screen may not draw on it. `Rights::READ` alone (no `WRITE`) is the difference between a
-         // screenshot tool and a second compositor; `fixtures/src/window.rs`'s own `ROLE_CAPTURE` block
-         // proves the write half faults.
+@@ -267,7 +267,7 @@ impl Wiring {
+         // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by
+         // `grant_at`, since a sequential fill cannot leave slot 2 empty. See
+         // notes/compositor/kernel-wiring.md.
 -        let capture_budget = if role & ROLE_CAPTURE != 0 {
 +        let capture_budget = if role & (ROLE_CAPTURE | ROLE_PROBE_SCREEN) != 0 {
              Some(

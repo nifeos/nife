@@ -1,8 +1,6 @@
 //! **`apropos`: what a search of the documentation store says** (milestone 40 (documentation as
 //! a system service), phase 2): [`write_found`] and [`write_apropos`].
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
