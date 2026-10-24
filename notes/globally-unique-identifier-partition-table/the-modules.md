@@ -10,8 +10,8 @@ Each section names the module it serves.
 mutation tests run it a hundred thousand times over a 16 KiB entry array. Eight shifts per byte
 would turn a two-second test into a twenty-second one. The table is derived at compile time from the
 polynomial, so the derivation is a second place a bug can hide. The bitwise form stays beside it
-for that reason, with a Kani harness holding the two equal: the optimisation and its definition side
-by side, rather than the optimisation alone and a comment claiming it is right.
+for that reason, with a Kani harness holding the two equal: the optimization and its definition side
+by side, rather than the optimization alone and a comment claiming it is right.
 
 There is no room to be creative about which CRC-32 it is. If it is wrong by one bit, no real disk
 parses.
