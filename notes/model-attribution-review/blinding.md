@@ -1,5 +1,8 @@
 # Blinding the review, and the three leaks it cannot close
 
+*Name: provisional. After the parent's "Blinding, and the honest statement that it leaks". calef
+names files.*
+
 An appendix of [reviewing the work of one model](../model-attribution-review.md). The parent keeps
 the conclusion: blinding is partial, and only the same-window control makes it hold. This file keeps
 the mechanism, the five-step scheme and the leaks.

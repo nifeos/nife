@@ -1,49 +1,24 @@
-//! **A userspace builder keeps building past its scratch window** (milestone 604 (provisional), the
+//! A userspace builder keeps building past its scratch window (milestone 604 (provisional), the
 //! builder's scratch cursor is bounded).
 //!
-//! `supervision_protocol`'s loader maps every page it fills for a child into its own address space,
-//! and nothing in the ABI unmaps it (DECISIONS §162 (whether a holder can give up a mapping) is
-//! open). Until 2026-09-26 its cursor only climbed, so a long-lived builder ran out: in the
-//! progenitor, first of page tables for the cursor and then of address space below the initial
-//! ramdisk window, after about seventy-five `ripgrep`-sized spawns. Every build after that failed.
-//!
-//! The loader now wraps inside a fixed window and asks the kernel which pages are free, and this
-//! proves the kernel half of that bargain as well as the loader's: that destroying a child's region
-//! takes the builder's scratch mappings of its frames back (DECISIONS §13 (frame revocation)), and
-//! that `PageFrame::MAP` refuses a taken page whole, so a probe is safe. The builder is
-//! `fixtures/src/scratch_window_exerciser.rs`, whose header has the numbers and the negative control.
-//!
-//! Cross-ISA: the loader is portable userspace code and the revocation is portable kernel code, so
-//! the parity gate (DECISIONS §19 (architectural parity is a tenet)) is met by this one test running
-//! on each architecture. `x86_64` and `riscv64` build one more scratch page per child (the timebase
-//! page), which the fixture counts.
-//!
+//! `supervision_protocol`'s loader maps every page it fills for a child into the builder's own
+//! space, inside a fixed window it wraps around, probing for free pages. This proves the kernel's
+//! half: destroying a child's region takes the builder's scratch mappings of its frames back
+//! (DECISIONS §13 (frame revocation)), and `PageFrame::MAP` refuses a taken page whole, so a probe
+//! is safe. The builder is `fixtures/src/scratch_window_exerciser.rs`, whose header has the numbers
+//! and the negative control. One body serves every ISA (DECISIONS §19 (architectural parity is a
+//! tenet)); `x86_64` and `riscv64` build one more scratch page per child, the timebase page.
 
 //! # BUGS
 //!
-//! - **CI does not run it.** The whole suite skips it; it runs only when named
-//!   (`script/test --test scratch_window`). It was run that way on all three architectures on
-//!   2026-09-26 (milestone 604's block has the times). A gate that only runs by hand is weaker than
-//!   one CI runs, and this is an exception recorded as one: the cost below is the kernel's, and
-//!   making the default suite pay it on every leg is what it would take otherwise.
-//! - **It is slow in the suite and fast alone, and the kernel's reap is why.** Five seconds on
-//!   aarch64 run by itself; 104 s in CI's whole aarch64 suite (run 36279440107), and on `x86_64` it
-//!   ran past the leg's own timeout.
-//!   `crate::revoke::revoke_region` finds each page to unmap by scanning every live address space's
-//!   mapping log from the start, once per page, so destroying a region costs its mapped pages times
-//!   every record on the machine. Forty 668-page reaps behind a suite's worth of live spaces pay
-//!   that forty times. The progenitor reaping a job pays it too. Proposed as its own milestone:
-//!   `design/roadmap/0658-a-region-reap-scans-every-mapping-on-the-machine-per-page.md`.
-//! - **The test keeps 32 frames, unexplained.** Measured by the suite's frame ledger on aarch64,
-//!   run alone, 2026-09-26: both regions reclaim without error and the exerciser exits, yet 32
-//!   frames do not come back. 32 is also the scratch window's last-level table count
-//!   (`supervision_protocol::SCRATCH_TABLE_PAGES`), which points at the tables the builder's own
-//!   region paid for, but that is a guess from one number, not a trace.
+//! - CI does not run it: the whole suite skips it, and it runs only when named
+//!   (`script/test --test scratch_window`).
+//! - It is slow in the suite (104 s on aarch64, past `x86_64`'s leg timeout): milestone 658 (a
+//!   region reap scans every mapping on the machine per page).
+//! - The test keeps 32 frames, unexplained.
+//! - It proves the loader, not the progenitor.
 //!
-//! - **It proves the loader, not the progenitor.** The progenitor's own numbers (its 128-page table
-//!   budget, its job pool against the window) are compile-time assertions in
-//!   `crates/system_initializer`, not a boot that spawns `rg` a hundred times; `rg` is not in any
-//!   CI archive, for the reasons of milestone 121 (`ripgrep` on nife).
+//! notes/unmap.md, "The scratch window test", has each in full.
 
 use super::*;
 use crate::cap::{Rights, memory_region_cap, memory_region_lending_capability, rendezvous_cap};

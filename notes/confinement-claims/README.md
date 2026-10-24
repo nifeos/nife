@@ -13,6 +13,8 @@ files here hold each pass in full.
   fires when a confinement claim is broken) over every row.
 - [`adversarial-pass-2026-09-21.md`](adversarial-pass-2026-09-21.md): risk 7's adversarial pass.
 - [`limitations.md`](limitations.md): the BUGS list in full.
+- [`the-rights-gate-tests.md`](the-rights-gate-tests.md): how the rendezvous rights-gate and retype tests are shaped.
+- [`the-eighth-pass-tests.md`](the-eighth-pass-tests.md): how the eighth outsider pass's kernel tests are shaped.
 
 Name: provisional, for the directory and every stem in it. The directory follows the
 `notes/<stem>/` appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named

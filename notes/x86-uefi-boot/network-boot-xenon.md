@@ -1,5 +1,8 @@
 # The bench: booting xenon over the network, with no stick at all
 
+*Name: ratified 2026-10-18 (calef, "Yes"). Kept: the directory names a boot path, not a machine, so
+the stem keeps its machine.*
+
 An appendix to [notes/x86-uefi-boot.md](../x86-uefi-boot.md), which keeps the summary. This is the
 procedure milestone 260 (boot xenon over the network) built, for the machine of milestone 87 (the
 x86_64 bare-metal machine), written to be followed rather than interpreted.

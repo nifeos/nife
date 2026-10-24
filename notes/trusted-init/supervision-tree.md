@@ -103,3 +103,36 @@ Both are answered. Fork one by §32 (a supervisor may collect a corpse without b
 one) and §148 (a supervisor restarts by asking)'s spawner pattern. Fork two by §148 as amended
 2026-10-04: the death message carries the builder's label, and `sub_server_supervisor` tells two
 children apart by it. See milestone 105 (the two forks).
+
+## The spawner and the supervisor as they stand
+
+`components/src/spawner.rs` builds; `components/src/sub_server_supervisor.rs` decides. What each
+holds, and what it gives up, follows from §32 (a supervisor may collect a corpse without being able
+to build one) and §148 as amended 2026-10-04.
+
+- The spawner does not keep an instance's region capability. Reaping is a method on the supervision
+  endpoint (§32), so the capability had no remaining purpose, and the spawner deletes it as soon as
+  the child starts. Nothing in the tree holds a capability to a live instance's memory, and the pages
+  still return to the spawner's budget when the supervisor collects the corpse.
+- That costs nothing today. A hung instance, one that livelocks and never dies, is unreclaimable
+  either way, because a reap only follows a death message. §32 records that case as the watchdog
+  case and leaves it open.
+- The supervisor reaps its own children on the endpoint it already holds, and the pages go to the
+  spawner's budget, because the spawner owns the region (§13 (capability revocation and untyped
+  reclamation)). It can free its children's memory and cannot spend it. The kernel stamps the dead
+  thread's tid on the death message, and §32 authorizes that tid relative to the endpoint it arrived
+  on, so the spawner issues no instance handle.
+- The supervisor tells its two children apart by label. A tid says which thread died, not which of
+  its children it was. The spawner stamps each child's supervision capability with a label the
+  supervisor chose (`SUB_SERVER_LABELS`), and the kernel hands the label back beside the death
+  message. The restart policy is per label, and the label comes from the kernel, never from the
+  child it names.
+- The supervisor reaps before it decides anything, because a corpse is dead until reaped and its
+  region stays pinned until then. A finished child is reaped as surely as a crashed one.
+- A `StillAlive` refusal of that reap cannot happen, since the tid came on a death message. It is
+  reported as a failure anyway, because it would mean the kernel said a thread was dead and then
+  said otherwise.
+- When every child is done the supervisor parks instead of exiting. Exiting would make it a death
+  its own supervisor has to handle.
+- The progenitor takes no part. By the time the first death arrives, `root_supervisor` has deleted
+  the construction budget it would need.

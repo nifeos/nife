@@ -240,6 +240,64 @@ aarch64 and **not** on RISC-V. `sstatus` is one register holding both the staged
 carried `SIE = 1`. It never does, and now the compiler enforces that rather than a comment asking for
 it.
 
+## The dispatcher's arms, and what each relies on
+
+`kernel/src/arch/aarch64/exceptions.rs` dispatches an IRQ by vector slot and everything else by
+`ESR_EL1`'s class. Slots 8 to 11 are "Lower EL, AArch64": the same class is a kernel bug that halts
+the machine at slot 4 and a user bug that kills one thread at slot 8.
+
+- `brk` from EL1 is stepped over by advancing `ELR_EL1` by 4. From EL0 it is a fault: stepping
+  over a user's `brk` would let a program loop on one and burn kernel time forever.
+- The FP first-use trap (`CPACR_EL1.FPEN` at `0b00`) opens the unit and returns without
+  advancing `ELR_EL1`, so the instruction re-executes with the unit open. It serves EL1 as well as
+  EL0, for the reason in [aarch64-port.md](aarch64-port.md), "Floating point and SIMD". When there
+  is no thread to record against, the arm falls through, because returning would retake the trap
+  forever.
+- `svc` from EL0 is the syscall. The dispatcher writes its result into `frame.x[0]`, and
+  `RESTORE_CONTEXT` puts it in the register the program is waiting on: writing the trap frame is
+  writing the user's registers.
+- Anything else from EL0 kills the thread and leaves the kernel running. Anything else from
+  EL1 is `fatal`, which prints `FAR_EL1` only for the classes where it holds an address.
+
+### A user fault is published, then counted
+
+`user_fault` writes the fault record (its kind and address) with two relaxed stores, then bumps
+`USER_FAULTS` with `Release`. `last_user_fault` issues an `Acquire` fence before reading the record.
+Every reader finds the record by watching the counter rise, so the counter is the publication flag
+and must be written last. Written first, a reader gets the record of an earlier fault, or, for the
+first fault of a boot, a zero that reads as "no user thread has faulted"; ARM permits exactly that
+reordering.
+
+`user_fault` can simply hand the thread to `sched::fault`, which does not return: the thread is
+not resumed, `exception_restore` is never reached, and the kernel stack it stands on is freed by
+the next thread, for the reason in [threads.md](threads.md).
+
+### Entering EL0 for the first time
+
+`enter_user` is `#[inline(always)]` because the trap frame it loads sits at the top of the caller's
+own kernel stack, overlapping live call frames. It survives only until `enter_userspace` does `mov
+sp, x0`, and only if nothing is pushed in between; a real call would push a return address over it
+(seen as a child thread with `sp_el0 = 0`). It also refuses a frame with `elr == 0`, which would
+fetch from address 0 and end far from the cause in the lost-wakeup watchdog. The check is a load and
+a branch on the frame, and its panic path is out of line and reads its argument first, so nothing is
+pushed over the frame before it is read.
+
+### The split around the interrupt stack
+
+`exception_dispatch` chooses the stack the handler runs on and, after it returns, runs any deferred
+`schedule()`. `exception_body` is the handler proper and may run on the per-core interrupt stack.
+`schedule()` parks the running `sp` in the outgoing thread, so it may run only on a stack the thread
+owns; `kernel/src/interrupt_stack.rs` holds the rule. The IRQ handler writes end-of-interrupt before
+returning, so the GIC is not left refusing interrupts to the thread switched to.
+
+### Costs the debug build pays
+
+The icount gate measures an opt-level 0 kernel, where nothing inlines. So the branch for "no stack
+switch", which every syscall takes, is made in Rust rather than in the trampoline (routing it
+through anyway cost 8.6 instructions per `null_syscall`). And `is_from_lower_el` is two comparisons
+written out under `#[inline(always)]`, because `(8..=11).contains(&index)` is a real call into
+`RangeInclusive` on every trap at opt-level 0.
+
 ## What moves out of `fatal()` next
 
 Every case currently falls into `fatal()`. As the kernel grows, they migrate into real

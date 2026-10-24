@@ -27,7 +27,8 @@ is SDHCI-compatible and has a different register map. Which release this one is 
 wide its FIFO is (`HCON`) are the first two things the bench step reads. On radon both slots read
 `VERID 0x5342290a` (release 2.90a) and `HCON 0x00c43cc1`: a 32-bit FIFO, 32 words deep, the kind
 this driver moves (Results, below).
-`crates/designware_mobile_storage/src/jh7110.rs` carries the node-by-node evidence.
+[`designware-mobile-storage/driver.md`](designware-mobile-storage/driver.md) carries the
+node-by-node evidence.
 
 ## What was reused, and what was not
 

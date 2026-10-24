@@ -1,5 +1,7 @@
 # The four proposals in full
 
+*Name: provisional.*
+
 [`notes/blocked-thread-teardown.md`](../blocked-thread-teardown.md) lays the four proposals side by side
 in one table and says which were built. This is each one in full, as it was written before calef chose proposal A on 2026-09-03, with proposal C's block
 updated for what milestone 254 (a caller stranded by a server that died)

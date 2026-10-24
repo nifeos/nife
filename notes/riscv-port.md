@@ -53,7 +53,9 @@ Where the user-entry frame goes was wrong on RISC-V for a year (milestone 71 (th
 2026-08-03). The port placed it below the live `sp`, where a trap frame could overwrite it, and the
 thread then returned to a garbage PC and hung silently. The fix is a reservation:
 `user_entry_trampoline` drops `sp` by a frame before any Rust frame exists, and `enter_frame` asserts
-the slot sits at or above the live `sp`. The lost-wakeup hang once blamed on it was a test bug, not a
+the slot sits at or above the live `sp`. `thread_trampoline` does not reserve. Only the TCB
+entry path can be shallow; the exec path reaches `enter_frame` through `run` and the ELF loader, far
+below the stack top, and a reservation there would spend a frame on every kernel thread. The lost-wakeup hang once blamed on it was a test bug, not a
 RISC-V one (milestone 72 (lost wakeup)).
 
 Finding these is the point; each gets pushed under `arch/`.

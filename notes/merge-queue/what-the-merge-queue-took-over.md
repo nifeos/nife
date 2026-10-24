@@ -1,5 +1,7 @@
 # Before the merge queue: four shapes of the drain, and the prevention half
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `before-the-queue`.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md). It holds what the platform's merge queue
 took over from `helpers/merge-drain.sh`, the four shapes the drain's loop took before it, and why
 the prevention half was never these scripts.

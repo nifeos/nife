@@ -1,8 +1,8 @@
 # CI job warnings, classified
 
-*Name: `notes/ci.md` is **provisional**. Naming is an architect's (AGENTS.md); a lane ships a
-provisional name and says so. The name is short for a note that starts with one job's warnings and
-may later hold the next job's.*
+*Name: provisional. Naming is an architect's (AGENTS.md); a lane ships a provisional name and says
+so. The name is short for a note that starts with one job's warnings and may later hold the next
+job's.*
 
 Every CI job carries warnings that no gate denies. They scroll past green, so nobody has to read
 them, and then somebody does. This note is the first such reading: the `swish-check` job, taken

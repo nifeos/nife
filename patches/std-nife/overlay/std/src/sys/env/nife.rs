@@ -1,21 +1,13 @@
 //! `std::env`'s variables on nife (milestone 64, rank 4 of the measured gap list).
 //!
-//! # There is no ambient environment, and that is the design
+//! A nife process starts with an **empty** environment, seeded only from its own grants
+//! ([`seed`]): an environment variable is not a capability, so nothing is inherited from the
+//! spawner. `env::var("HOME")` is `None` because nobody gave this program a home, the same `None` a
+//! Unix program gets for an unset variable. `env::vars()` is an empty iterator, never a panic:
+//! std's `unsupported` backend panics there, and `Command::envs`, `dotenvy` and loggers call it.
 //!
-//! A Unix process inherits `environ` from whoever spawned it. Here what a process holds is what it
-//! was granted, and an environment variable is not a capability, so a nife process starts with an
-//! **empty** environment, seeded only from its own grants (see [`seed`]). `env::var("HOME")` is
-//! `None` because nobody gave this program a home; a crate reading `RUST_LOG` or `NO_COLOR` gets
-//! the `None` of a Unix box where the variable is unset.
-//!
-//! Without this backend, `sys::env::unsupported`'s `env()` panics, so `std::env::vars()` (and
-//! `Command::envs`, `dotenvy`, a logger dumping its configuration) aborted the process while
-//! compiling fine. An empty iterator is the truthful answer.
-//!
-//! `set_var` and `remove_var` operate on a process-local table, and `var` reads it back: that is
-//! what `set_var` means on every platform. Nothing leaves the process, because nife has no
-//! `execve` carrying an environment, and spawn is by capability.
-//!
+//! `set_var` and `remove_var` operate on a process-local table that `var` reads back. Nothing
+//! leaves the process: nife has no `execve` carrying an environment, and spawn is by capability.
 
 //! # `TZ`, `LANG` and `TERM` are seeded from a grant (milestone 47, DECISIONS §111)
 //!
@@ -25,7 +17,7 @@
 //! so `env::var("TZ")` answers `Err` for a program nobody handed a timezone to. See
 //! `environment_contract` for why this needs no seqlock and for the closed domains the keys are
 //! validated against.
-//!
+
 //! # BUGS
 //!
 //! - **Only the inert-configuration third is seeded.** `PATH` and `HOME` are **names** (directory
@@ -74,8 +66,8 @@ impl Iterator for Env {
     }
 }
 
-/// Every variable this process holds. **Empty until the program sets one**, and never a panic; see
-/// the module docs for why that distinction is the whole reason this file exists.
+/// Every variable this process holds: empty until the program or [`seed`] sets one, and never a
+/// panic (see the module docs).
 pub fn env() -> Env {
     let snapshot = ENV.lock().unwrap_or_else(|e| e.into_inner()).clone();
     Env { iter: snapshot.into_iter() }
@@ -89,9 +81,7 @@ pub fn getenv(k: &OsStr) -> Option<OsString> {
 /// # Safety
 ///
 /// Same contract as every other platform's: the caller must not be racing another thread that is
-/// reading the environment. Trivially satisfied today (nife programs are single-threaded, see
-/// `sys/thread/nife.rs`) and stated anyway, because the day `thread::spawn` lands is the day a
-/// silent assumption here would become a data race.
+/// reading the environment.
 pub unsafe fn setenv(k: &OsStr, v: &OsStr) -> io::Result<()> {
     let mut guard = ENV.lock().unwrap_or_else(|e| e.into_inner());
     match guard.iter_mut().find(|(name, _)| name == k) {
@@ -110,20 +100,13 @@ pub unsafe fn unsetenv(k: &OsStr) -> io::Result<()> {
     Ok(())
 }
 
-// --- Is an inert-configuration page reachable at all? -----------------------------------------
-//
-// The same probe `sys/time/nife.rs` runs for the clock, and for the same reason: this has to be
-// answerable WITHOUT touching the config page, because a program not granted one has no page
-// mapped and a read would fault instead of returning an answer. The probe is an invocation of the
-// capability in the slot, with a method number no object defines:
-//
-//   - no capability in the slot: the kernel answers `NoSuchSlot` (-1).
-//   - the config page's PageFrame capability: the kernel answers `BadMethod` (-5), a refusal from a
-//     real object and therefore proof one is there.
-//
-// Cached, because the answer cannot change: a capability table slot's contents are fixed at spawn on this
-// ABI (0 = not yet asked, 1 = granted, 2 = not granted).
-
+/// Whether an inert-configuration page was granted: 0 = not yet asked, 1 = granted, 2 = not.
+///
+/// The probe must not touch the page, because a program granted none has no page mapped and a read
+/// would fault. It invokes the slot with a method no object defines: an empty slot answers
+/// `NoSuchSlot` (-1), and the config page's PageFrame answers `BadMethod` (-5), a refusal from a
+/// real object. Cached, because a slot's contents are fixed at spawn on this ABI. The same probe as
+/// `sys/time/nife.rs`'s for the clock.
 static CONFIG_GRANTED: AtomicU8 = AtomicU8::new(0);
 
 /// A method number no object type defines, so the invocation can only ever be refused. Same
@@ -150,8 +133,7 @@ fn is_config_granted() -> bool {
 /// `main` runs; see the module docs.
 ///
 /// A process granted no config page calls [`is_config_granted`] once, gets `false`, and returns
-/// having touched nothing: [`ENV`] stays exactly as empty as it was before this milestone
-/// existed, which is what makes this addition safe to call unconditionally at startup.
+/// having touched nothing, so this is safe to call unconditionally at startup.
 pub fn seed() {
     if !is_config_granted() {
         return;

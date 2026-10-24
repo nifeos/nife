@@ -1,16 +1,14 @@
 //! **The frame demo, the half that shares**, milestone 19.
 //!
-//! Retypes a page out of its own memory region into a `PageFrame` capability, maps it read/write,
-//! writes [`capability_witness_contract::PAGE_FRAME_SENTINEL`], and hands the consumer a READ-only view
-//! of the *same physical page*. The kernel never copies the data and was never told these two
-//! processes would share memory: they composed the sharing themselves out of a capability.
+//! Retypes a page of its own memory region into a `PageFrame` capability, maps it read/write,
+//! writes [`capability_witness_contract::PAGE_FRAME_SENTINEL`], and hands the consumer a READ-only
+//! view of the *same physical page*. The kernel never copies the data and was never told these two
+//! processes would share memory. The sentinel is written before the `SEND_CAP` because the
+//! rendezvous carrying the delegation is the synchronization edge that makes the write visible. The
+//! other half is `page_frame_consumer`; the wiring is
+//! `system_tests/src/user/page_frame_service.rs`.
 //!
-//! The rendezvous that carries the delegation is also the synchronization edge that makes the
-//! write visible to the consumer, which is why the sentinel is written before the `SEND_CAP` and
-//! not after.
-//!
-//! The other half is `page_frame_consumer`; the wiring is `system_tests/src/user/page_frame_service.rs`.
-//!
+
 //! Name: provisional (milestone 291). This was `hello`'s `PAGE_FRAME_PRODUCER` role, number 11,
 //! and the lowercase of the role constant is the name. Refused `frame_sharer`: `PageFrame` is the
 //! kernel object's own name, and shortening it here would make the program harder to connect to

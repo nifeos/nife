@@ -1,17 +1,13 @@
-//! **A confined EL0 process drives the machine's NVMe disk** (milestone 261 (the NVMe driver leaves the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel)'s
-//! option 2a, notes/non-volatile-memory-express.md).
+//! **A confined EL0 process drives the machine's NVMe disk** (milestone 261 (the NVMe driver leaves
+//! the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel)'s option 2a,
+//! notes/non-volatile-memory-express.md).
 //!
-//! This is the test the kernel-resident driver's own end-to-end test became. The sequence is the
-//! same one milestone 53 proved (find the controller over the §18 PCIe transport, confine it
-//! behind the machine's IOMMU, bring it from reset through identify to an I/O queue pair, then
-//! serve the blk verbs), and exactly one thing about it has changed: **the half that touches the
-//! queue runs at EL0 now**, in a process holding two endpoints, one page of BAR0 and a run of DMA
-//! pages, with no capability naming any of it.
-//!
-//! **This is not fatal risk 6's experiment.** Milestone 16b already proved IOMMU-backed isolation
-//! against emulated silicon; risk 6's open clause is a *real* device at *real* speed, on xenon,
-//! photographed. What runs here is that experiment's prerequisite, and any number measured under
-//! QEMU is a number about QEMU.
+//! The sequence milestone 53 (the board's own peripherals) proved: find the controller over §18
+//! (the PCIe transport), confine it behind the IOMMU, bring it from reset through identify to an
+//! I/O queue pair, and serve the blk verbs. Here the queue half runs at EL0, in a process holding
+//! two endpoints, a page of BAR0 and DMA pages, and no capability naming any of it. It is fatal
+//! risk 6's prerequisite, not its experiment, and a number measured under QEMU is about QEMU; see
+//! the note's "What the test proves, and where".
 
 use super::*;
 
@@ -22,9 +18,8 @@ use super::*;
 fn start() -> Option<non_volatile_memory_express_service::Wiring> {
     let image = program("non_volatile_memory_express")
         .expect("no non_volatile_memory_express program in the initial ramdisk");
-    // **A controller that is there and refused is a failure, never a skip** (milestone 261's
-    // bench rehearsal). Both used to arrive here as `None`, so xenon's second attempt on
-    // 2026-09-17 reported "skipped: no NVMe controller came up" about a disk that was on the bus.
+    // A controller that is there and refused is a failure, never a skip (milestone 261's bench
+    // rehearsal): only `NoController` may skip.
     let w = match non_volatile_memory_express_service::ensure_or_why(image) {
         Ok(w) => w,
         Err(crate::non_volatile_memory_express::Absent::NoController) => return None,
@@ -53,8 +48,8 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
         );
     }
     // A namespace of no blocks would make every assertion below vacuously true, and
-    // `kernel/src/non_volatile_memory_express.rs::bring_up` already refuses one; say so here rather than let a silent
-    // zero pass for a pass.
+    // `kernel/src/non_volatile_memory_express.rs::bring_up` already refuses one; say so here rather
+    // than let a silent zero pass for a pass.
     assert!(
         w.size_bytes >= 2 * crate::non_volatile_memory_express::BLOCK_SIZE as u64,
         "the namespace is {} bytes, too small for this test's two blocks",
@@ -64,20 +59,13 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
 }
 
 /// **The headline.** An unprivileged process drives a real NVMe controller: it answers the disk's
-/// size, persists two blocks, brings each back byte for byte, and does not let either write reach
-/// the other's block. Every one of those answers crossed a rendezvous from a client that holds no
-/// device, no doorbell and no DMA page.
+/// size, persists two blocks, brings each back byte for byte, and keeps each write off the other's
+/// block, every answer crossing a rendezvous from a client with no device, doorbell or DMA page.
 ///
-/// **Every assertion here is written against the geometry this boot was handed**, never against a
-/// constant, so the same test proves the same things on QEMU's 8 MiB image and on the 256 GB
-/// namespace in xenon (milestone 318). Nothing here assumes what the disk held beforehand either:
-/// a disk that has ever been used is not a disk of zeros, and a test that only passes on a freshly
-/// wiped one is a test nobody can re-run.
-///
-/// One test on purpose, for the reason its kernel-resident ancestor gave: bring-up is not
-/// idempotent state to share between cases (a second wiring would reset the controller and
-/// recreate the queues under the first), so the sequence lives in one place with the ordering
-/// visible.
+/// Every assertion is written against the geometry this boot was handed, never a constant, so it
+/// holds on QEMU's 8 MiB image and xenon's 256 GB namespace (milestone 318), and none assumes the
+/// disk's prior contents, so it re-runs on a used disk. One test on purpose: bring-up is not
+/// idempotent (a second wiring would reset the controller and recreate the queues under the first).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_confined_el0_process_serves_the_block_interface_end_to_end.patch`
 #[test_case]
@@ -86,13 +74,11 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
         crate::testing::skip!("no NVMe controller came up (NIFE_NVME not set on this leg?)");
     };
 
-    // On every test boot an IOMMU fronts the PCIe bus on all three ISAs, so what this run proved
-    // is the confined configuration; say so if that ever silently stops being true. It matters
-    // more here than it did for the kernel-resident driver: with the driver at EL0 the IOMMU is
-    // the *whole* of what stops a compromised server reaching memory it was not given, where
-    // before it was a second line behind the kernel's own arithmetic.
-    // Since milestone 261's bench rehearsal this asks whether the unit that is up *owns* the
-    // controller, not whether any unit is up: on a machine with two VT-d units those differ.
+    // Every test boot fronts the PCIe bus with an IOMMU on all three ISAs, so this run proved the
+    // confined configuration; say so if that stops being true. With the driver at EL0 the IOMMU is
+    // the whole of what stops a compromised server reaching memory it was not given. This asks
+    // whether the unit that is up owns the controller, not whether any is: with two VT-d units
+    // those differ.
     assert!(
         disk.confined_by_iommu,
         "the NVMe server was wired without an IOMMU that owns it ({}); the confinement claim is \
@@ -109,13 +95,11 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
         "the server answered the wrong size"
     );
 
-    // **Two blocks, two patterns, and each one reads back its own.** The property is that a write
-    // lands where it said and not everywhere; establishing it by reading a neighbour and expecting
-    // zeros would be a claim about the *disk's prior contents*, true only of a freshly-made image,
-    // so the second pattern establishes it instead and assumes nothing (milestone 318). Block 37
-    // is far enough in that a server confusing block and LBA units (the classic factor-of-8) would
-    // land visibly elsewhere, and 38 is its neighbour so a smear of one block's write onto the
-    // next is the nearest thing this can catch.
+    // Two blocks, two patterns, each reading back its own: the second pattern, not zeros expected
+    // from a neighbour, shows a write lands where it said, so nothing assumes the disk's prior
+    // contents (milestone 318 (the NVMe boot test on real geometry)). Block 37 is far enough in
+    // that a server confusing block and LBA units (the classic factor of 8) lands visibly
+    // elsewhere; 38, its neighbour, catches a smear.
     const BLOCK: u64 = 37;
     // Both functions of the byte's offset, so a server that returns a constant, a shifted copy, or
     // the other block fails. 251 and 241 are prime to 4096, so neither aliases a page period.
@@ -152,12 +136,10 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
         }
     }
 
-    // **A block outside the namespace is refused rather than asked for.** `non_volatile_memory_express::Handoff`'s range
-    // check is what does it (`crates/non_volatile_memory_express`, Kani-proved), and the point is that the refusal
-    // happens in the driver's own arithmetic rather than arriving as a controller status nobody
-    // can attribute. The first block past the end is `size / BLOCK_SIZE` for any size: when the
-    // namespace divides evenly that block starts at the end, and when it does not that block's
-    // transfer runs off it, and `holds_block` refuses both.
+    // A block outside the namespace is refused by the driver's own arithmetic
+    // (`non_volatile_memory_express::Handoff`'s Kani-proved range check), not left to a controller
+    // status nobody can attribute. `size / BLOCK_SIZE` is the first block past the end for any
+    // size: it starts at the end or its transfer runs off it, and `holds_block` refuses both.
     let past_end = disk.size_bytes / crate::non_volatile_memory_express::BLOCK_SIZE as u64;
     assert!(
         disk.blk(filesystem_contract::blk::READ, past_end) < 0,
@@ -182,17 +164,12 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
 }
 
 /// **Each client stages in the window its badge names, and the disk tree's cannot write**
-/// (milestone 834 (ioping on nife and Linux); calef, 2026-10-18 23:06 UTC, "Per-client window"). The NVMe server keeps one
-/// transfer window per client so the filesystem server, the installer and the disk tree can
-/// each have a request in flight without overwriting another's staging. What would go wrong without
-/// it is a write that carries another client's bytes, so that is what this checks: a write through
-/// the installer's window lands the installer's bytes and leaves window 0's staging untouched, and
-/// a read through the disk tree's window comes back in that window and nowhere else.
-///
-/// **Named to run before `a_confined_el0_server_cannot_dma_outside_its_region`**, which the suite
-/// runs in name order: that test's attacker leaves the controller answering nothing, and a request
-/// after it times out and comes back `EIO` (CI, 2026-10-19 UTC). `ensure` wires the server once per
-/// boot, so this needs no other case to have run first.
+/// (milestone 834 (ioping on nife and Linux); calef, 2026-10-18 23:06 UTC, "Per-client window").
+/// One transfer window per client lets the filesystem server, the installer and the disk tree each
+/// keep a request in flight; what it prevents is a write carrying another client's bytes. The
+/// installer's write leaves window 0 untouched, and the disk tree's read lands only in its window.
+/// Named to run before `a_confined_el0_server_cannot_dma_outside_its_region` (name order), whose
+/// attacker leaves the controller silent so later requests time out `EIO`; `ensure` wires once.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_client_stages_in_the_window_its_badge_names.patch`
 #[test_case]
@@ -272,23 +249,12 @@ fn a_client_stages_in_the_window_its_badge_names() {
 }
 
 /// **A confined EL0 NVMe server cannot DMA outside its region** (milestone 261's Outstanding item;
-/// milestone 202 (every confinement test is a ritual until somebody breaks the confinement and watches it fail)'s convention: a claim, a test, a replayable falsification). The storage twin of
-/// `display_tests::a_backing_outside_the_grant_is_refused_by_the_iommu` and of `block_driver`'s two
-/// virtio attacker roles: an unprivileged server aims a PRP at a physical frame it was never given,
-/// in both directions, and the IOMMU, not the server's own arithmetic, is all that refuses it.
+/// milestone 202 (every confinement test is a ritual until somebody breaks the confinement and
+/// watches it fail)'s convention). An unprivileged server aims a PRP at a frame it was never given,
+/// in both directions, and the IOMMU, not the server's arithmetic, is all that refuses it.
 ///
-/// Why this is the test the honest end-to-end case above was not. That one asserts
-/// `confined_by_iommu` was true, which is a claim the boot *made*, not one it *attacked*: it is the
-/// "decorative assertion" milestone 202 was minted against. Here an EL0 server actually points the
-/// controller at a frame outside its region and the proof is a hardware fault plus an untouched
-/// canary, so the assertion can be shown to fail: the replayable patch widens the controller's
-/// IOMMU domain to cover the victim and the escape lands.
-///
-/// The proof is the IOMMU fault and the canary, not the controller's completion status: QEMU's NVMe
-/// model may answer a DMA it could not perform with an error or by dropping it, and the gpu and
-/// virtio escape tests both anchor on the fault for the same reason. A CPU read of the victim
-/// bypasses the IOMMU, so the canary is readable from the kernel even while the device's view of
-/// that frame is unmapped, which is the whole point.
+/// The proof is the IOMMU fault and an untouched canary, not the completion status; the patch
+/// widens the domain over the victim and the escape lands. See the note's "The DMA escape test".
 ///
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_confined_el0_server_cannot_dma_outside_its_region.patch`
 #[test_case]
@@ -331,7 +297,8 @@ fn a_confined_el0_server_cannot_dma_outside_its_region() {
     // **The evidence the controller actually tried the out-of-region DMA.** QEMU records the fault
     // as it processes the doorbell under TCG, so a bounded spin is plenty; the bound turns "no
     // fault ever" into a failure rather than a hang. Without this a pass would be consistent with
-    // the controller never reaching the address at all, which is the hollow pass milestone 202 forbids.
+    // the controller never reaching the address at all, which is the hollow pass milestone 202
+    // forbids.
     let mut fault = None;
     for _ in 0..2_000_000 {
         if let Some(f) = crate::iommu::take_fault() {
