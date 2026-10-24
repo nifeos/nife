@@ -37,5 +37,6 @@ stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/
 - `calendar-grammar-g5-sources` Name: provisional, minted 2026-10-13 (UTC) by
   lane/prose-cap-notes-c, for G5's "The premise, checked against primary sources". calef names
   files.
-- `the-program` Name: provisional, minted 2026-10-24 (UTC) by the lane for milestone 929, for the
-  design `components/src/timetable.rs`'s comments link. calef names files.
+- `the-program` Name: provisional, minted 2026-10-24 (UTC) by the lane for milestone 929 (comments
+  in the Linux style across first-party Rust), for the design `components/src/timetable.rs`'s
+  comments link. calef names files.

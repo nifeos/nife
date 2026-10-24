@@ -1,6 +1,6 @@
 //! **The terminal, as a sink** (milestone 50 (pipes and redirection: one sink protocol, and `|`
-//! turns out to be an endpoint)'s last remainder; DECISIONS §67). A caretaker: it holds the
-//! terminal endpoint and hands out a sink, speaking the sink contract to its clients and
+//! turns out to be an endpoint)'s last remainder; DECISIONS §67 (a program's second stream is a
+//! declaration)). A caretaker: it holds the terminal endpoint and hands out a sink, speaking the sink contract to its clients and
 //! `OPERATION_PRINT` `CALL`s to `line_editor`, so a program whose output slot holds this process
 //! writes to the screen and cannot tell. It keeps the endpoint back because it also carries
 //! `OPERATION_READLINE`, and a sink capability that can read the keyboard is not a sink capability.

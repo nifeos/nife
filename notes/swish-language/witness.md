@@ -39,7 +39,7 @@ write to a file called `"my`.
 
 ### One witness, not a seventh
 
-Milestone 67's grammar lines (quoting, sequencing and exit status) run on this same shell rather than
+The grammar lines of milestone 67 (`swish` the language) run on this same shell rather than
 a new role. That is a memory decision, not a filing one. Every scripted shell in the suite is a live
 process whose frames are never reclaimed. One more put `time_tests` over the frame pool
 intermittently, failing with `refused to load a user program: Unmappable(OutOfPageFrames)`. The lines

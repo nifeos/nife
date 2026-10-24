@@ -45,8 +45,8 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
         None => None,
     };
 
-    // On the heap, not the stack (milestone 47, calef's allocator ruling): this array is what
-    // the four stack overflows in notes/pipes/the-boot.md had in common.
+    // On the heap, not the stack (milestone 47 (navigation and naming), calef's allocator
+    // ruling): this array is what the four stack overflows in notes/pipes/the-boot.md shared.
     let mut plans = match heap::filled::<Option<Endowment>>(l.stage_count(), None) {
         Ok(v) => v,
         Err(s) => return say(s),
@@ -896,8 +896,8 @@ fn spawn_stage(
         sink: sink.is_some(),
         source: source.is_some(),
         diagnostics: diagnostics.is_some(),
-        // Directory-granted only for words (milestone 205); `rm`'s required grant is met only in
-        // `spawn`. See notes/dir-capability.md's BUGS.
+        // Directory-granted only for words (milestone 205 (how a foreign program is told what to
+        // do)); `rm`'s required grant is met only in `spawn`. See notes/dir-capability.md's BUGS.
         directory_grant: words.is_some(),
         second_directory_grant: false,
         screen: screen.is_some(),
