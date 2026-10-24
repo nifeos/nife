@@ -18,7 +18,7 @@
 //!   0..4     ordinal: which device of this transport, 0-based
 //!   4..8     transport: one of the TRANSPORT_ kinds below
 //! ```
-//!
+
 //! Name: ratified 2026-08-03 (calef): a read-only page, deliberately not a `_protocol`.
 
 #![no_std]
