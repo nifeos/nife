@@ -4,9 +4,9 @@ Authentication that produces capabilities instead of mutating an identity. Miles
 half; the attribution half is [DECISIONS §109 (attribution is a property of a channel, not of a capability)](../design/decisions/0109-attribution-is-a-channel-property.md).
 
 The contract is `crates/login_contract`, the service is `components/src/login.rs`, and its test
-client is `fixtures/src/login_test_client.rs`. The reasons its contract crate's comments link are in
-[login/contract.md](login/contract.md). The names were ratified 2026-09-15 (calef, the
-whole `login` family).
+client is `fixtures/src/login_test_client.rs`. The contract crate's comments link
+[login/contract.md](login/contract.md). The names were ratified 2026-09-15 (calef, the whole `login`
+family).
 
 ## The problem this exists to solve
 
