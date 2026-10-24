@@ -4,7 +4,7 @@
 
 An appendix to [notes/merge-queue.md](../merge-queue.md), which keeps the table of workflows. This
 file holds the move of 2026-09-24 in full: what it bought, the premise tested before anything was
-written, what a person must run on patagonia, and what was lost.
+written, what the maintainer must run on his Mac, and what was lost.
 
 ## Why the mechanism lives here
 
@@ -54,7 +54,7 @@ and is why it was run. A permission denial and an eligibility refusal read diffe
 answer "permitted" in the only form the API gives. `gh pr list --json` read, and `gh pr comment`
 posted, rendering as `nife-smelter[bot]`.
 
-## What a person must run on patagonia to retire the old jobs
+## What the maintainer must run on his Mac to retire the old jobs
 
 This is not optional, and it is not automatic. Until it is done there are two drains, one in Actions
 and one on a laptop, both arming the same pull requests. Nothing in this repository can do it:

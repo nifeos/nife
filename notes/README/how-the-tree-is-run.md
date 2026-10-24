@@ -16,7 +16,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A merge-queue ejection, caught before the queue and recovered after it](../queue-ejection.md): the ready check, the text checks of lint in the pre-push hook, the `needs-maintainer` label on an ejected pull request, and the drain's hold on an ejected head. Names provisional.
 - [Which pull requests pay down debt](../debt-paydown.md): what the `debt-paydown` label means, the calls that set precedent, and how a lane gets it. Name provisional.
 - [A paused draft names its blocker, and the drain reads it back](../blocked-by-drafts.md): `Blocked-by:` on a draft pull request, and the `unblocked` label. Name provisional.
-- [Working from a cloud session](../working-from-a-cloud-session.md): what past cloud sessions hit, how to set up, claim and gate in CI, and what needs patagonia. Name provisional.
+- [Working from a cloud session](../working-from-a-cloud-session.md): what past cloud sessions hit, how to set up, claim and gate in CI, and what needs a local Mac. Name provisional.
 - [Build output on its own volume](../dev-machine-disk.md): why deleted `target/` directories fill a Mac's disk through local snapshots, and the runbook that moves lane worktrees to an unsnapshotted APFS volume. Names provisional.
 - [The automation's own identity](../automation-identity.md): the `smelter` GitHub App that replaces a personal token. Name provisional.
 - [Agent sessions act as the App](../session-identity.md): `helpers/smelter-token`, so a lane runs as nife-smelter rather than as calef. Name provisional.
