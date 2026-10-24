@@ -35,7 +35,7 @@ authority.
 | offset | size | field | values |
 |---|---|---|---|
 | 0 | 4 | version | `1` |
-| 4 | 1 | `arg` | 0 forbidden, 1 required; hears words (milestone 205): 2 read-only, 3 read-write, 4 create |
+| 4 | 1 | `arg` | 0 forbidden, 1 required; hears words (milestone 205 (how a foreign program is told what to do)): 2 read-only, 3 read-write, 4 create |
 | 5 | 1 | `mem` | 0 forbidden, 1 required |
 | 6 | 1 | `file` | 0 forbidden, 1 read-only, 2 read-write |
 | 7 | 1 | `dir` | 0 forbidden, 1 required |
@@ -55,7 +55,7 @@ authority.
 | 35 | 1 | `startup` | 0 native, 1 std |
 | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_SHORT_OPTIONS` (16) |
 | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
-| 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
+| 53 | 1 | `machine` | 0 or 1 (milestone 126 (the `procps` package, now `process-tools`), the machine statistics page) |
 | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
 | 55 | 1 | zero | |
 
