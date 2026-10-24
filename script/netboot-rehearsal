@@ -665,6 +665,14 @@ def main():
             booted = any(BOOT_MARKER in line for line in guest_output.lines)
             if booted and not keep_going:
                 break
+            # A refused client is done once EDK2 says it got no valid offer: with no disk attached
+            # and no IPv6 answered, no later boot entry can reach a kernel. Waiting out the timeout
+            # proved nothing more and cost three minutes per run.
+            refused = network.decided is not None and network.decided[0] is None
+            if refused and not keep_going and any(
+                "PXE-E16" in line for line in guest_output.lines
+            ):
+                break
     finally:
         for process in (qemu, server):
             if process.poll() is None:
