@@ -109,11 +109,12 @@ asserts on has crossed both hops. The second test checks that this machine's rat
 `#[cfg(test)]` back door because no syscall method sets it. A method number is irreversible, and
 milestone 147 (a profiler that holds exactly the counters it was granted) may subsume this one.
 `sched`'s own test `a_running_thread_cannot_be_granted_the_cycle_counter` covers the rule that only
-an embryo may be granted. The program reports the `CycleMeaning` that `user_mode_runtime::cycle_reading` handed it, and the test
-states the expected meaning per architecture itself. A runtime that labeled aarch64's count without
-the kernel's filter policy behind it fails there. The difference of two reads is asserted only
-where the kernel has said the counter runs, and the helper beside the test gives each
-architecture's reason. The same file runs CoreMark through `coremark_builder` and pins its CRC. The
+an embryo may be granted. The program reports the `CycleMeaning` that
+`user_mode_runtime::cycle_reading` handed it, and the test states the expected meaning per
+architecture itself. A runtime that labeled aarch64's count without the kernel's filter policy
+behind it fails there. The difference of two reads is asserted only where the kernel has said the
+counter runs, and the helper beside the test gives each architecture's reason. The same file runs
+CoreMark through `coremark_builder` and pins its CRC. The
 `n*n` of `least_authority_demo` proves only the mechanism, and CoreMark is a substantial program.
 
 ## How this kernel starts it, and what it prints (milestone 74's aarch64 half)

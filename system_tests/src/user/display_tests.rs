@@ -203,14 +203,14 @@ fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
 
 /// **A bitmap font and a VT engine put readable text on the scanout.**
 ///
-/// The remaining increment of milestone 29 (a display terminal: framebuffer, virtio-gpu, and a
-/// foreign component) end to end: a terminal that is a framebuffer-contract client. The terminal
-/// paints what `video_terminal` says, the kernel reruns the engine over `video_terminal::script`
-/// and compares the scanout frames pixel for pixel, and the host compares QEMU's `screendump`, the
-/// only witness of pixel format and scanout rectangle. The host checker must reject
-/// `video_terminal::script::GREETING_TYPO`. Each part of the script catches a named failure, and
-/// the driver's one report checks that a blank terminal is a defined picture. It sorts between
-/// the confinement and pattern tests (see notes/framebuffer-contract/the-display-tests.md).
+/// The last increment of milestone 29 (a display terminal: framebuffer, virtio-gpu, and a foreign
+/// component) end to end: a terminal, a framebuffer-contract client, paints what `video_terminal`
+/// says, the kernel reruns the engine over `video_terminal::script` and compares scanout frames
+/// pixel for pixel, and the host compares QEMU's `screendump`, the only witness of pixel format and
+/// scanout rectangle. The host checker must reject `video_terminal::script::GREETING_TYPO`; each
+/// script part catches a named failure, and the driver's one report checks that a blank terminal is
+/// a defined picture. It sorts between the confinement and pattern tests
+/// (notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
 #[test_case]
 fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");

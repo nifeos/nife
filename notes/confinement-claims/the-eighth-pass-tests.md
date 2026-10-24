@@ -1,8 +1,10 @@
 # The eighth outsider pass's tests
 
-An appendix to [notes/confinement-claims.md](../confinement-claims.md). It holds the design of the
-eight `system_tests/src/user/eighth_pass_*_tests.rs` modules. Their doc comments state what each
-test proves; the pass itself is [notes/confinement-outsider-pass-8.md](../confinement-outsider-pass-8.md).
+An appendix to [notes/confinement-claims.md](../confinement-claims.md). It holds the design of eight
+of the nine `system_tests/src/user/eighth_pass_*_tests.rs` modules;
+`eighth_pass_spawn_audit_tests.rs` is not covered here. Their doc comments state what each test
+proves; the pass itself is
+[notes/confinement-outsider-pass-8.md](../confinement-outsider-pass-8.md).
 
 *Name: provisional, for the stem `the-eighth-pass-tests`, named for the pass whose tests it
 describes. calef names files.*
@@ -164,8 +166,9 @@ not disturb the others. The host crate proves both on pure logic
 (`capability::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
 drives the live kernel paths instead: `SYS_CAP_DELETE`'s kernel half, `delete_current_cap`, followed
 by invokes through `syscall::invoke`. It tries three angles a host crate cannot reach. One is a
-stale slot number, held by a program that watched its capability be deleted. One is an
-out-of-range index forged in a register. One is a deleted slot whose number the table later hands
-out again. The control is a `READ` capability on the same object, granted after the deletion. It
-still receives a message the deleted capability sent, so deletion consumed the one capability, not
-the object or its neighbors' access to it. Every capability is deleted and every region reclaimed, so the ledgers end flat.
+stale slot number, held by a program that watched its capability be deleted. One is an out-of-range
+index forged in a register. One is a deleted slot whose number the table later hands out again. The
+control is a `READ` capability on the same object, granted after the deletion. It still receives a
+message the deleted capability sent, so deletion consumed the one capability, not the object or its
+neighbors' access to it. Every capability is deleted and every region reclaimed, so the ledgers end
+flat.

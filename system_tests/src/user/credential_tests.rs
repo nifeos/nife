@@ -219,8 +219,9 @@ fn the_same_endowment_cannot_write_the_store() {
          answer must be MISMATCH; codes {codes:#018x}",
     );
     // `SEAL` is opcode 2, which the verify endpoint does not serve, so MALFORMED. Its answer moves
-    // whenever the verify space grows or shrinks, and nothing breaks, because a word arriving at a
-    // serve loop never carried authority (notes/credentials/what-is-proven.md).
+    // only when opcode 2 is added to or removed from the verify endpoint, and nothing breaks,
+    // because a word arriving at a serve loop never carried authority
+    // (notes/credentials/what-is-proven.md).
     assert_eq!(
         cs::nth(codes, 1),
         credential_contract::MALFORMED,
