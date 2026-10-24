@@ -233,6 +233,13 @@ sweep passed, and a `PageFrame` has no generation to make it inert.
 `system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAP`,
 `CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
 
+The tests drive the frame because it has the most to lose: under `MemoryRegion::DESTROY` a
+surviving copy names pages the allocator is about to hand to somebody else. `DeviceFrame::REVOKE`
+and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAP` and `CAP_INSERT` path, so
+the one fix covers them. Two cores could produce the interleaving by timing, but the window is a few
+hundred instructions wide. So `delegation_pause` holds an armed thread at the start of its
+delegation with no lock held. The test runs the whole sweep, then lets the thread go.
+
 Objects with generational names do not need this. `Rendezvous::BADGE` and `MemoryRegion::SPLIT`
 still read, then grant, and a copy minted after its object died names a dead generation and fails
 on use (§16 (object revocation)).
