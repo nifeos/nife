@@ -12,6 +12,3 @@ progenitor's user stack, measured by a kernel gauge, gated in `script/swish-chec
 pages to 12. Its `BUGS` says why the row waits.
 [reading-a-guard-page-report.md](reading-a-guard-page-report.md) is not an incident. It says how
 `kernel/src/stack.rs` builds the report a guard-page fault prints, and how to read it.
-
-- `kernel-stack-overflow-2026-08-15` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `overflow-2026-08-15`.
-- `kernel-stack-overflows-2026-08-14` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `overflows-2026-08-14`.
