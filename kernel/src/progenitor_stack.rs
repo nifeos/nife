@@ -1,43 +1,13 @@
-//! **The progenitor's stack gauge**: how deep the first process's stack has ever been, said out
-//! loud, and a floor that fails `script/swish-check` before the stack runs out.
+//! The progenitor's stack gauge: how deep the first process's stack has ever been.
 //!
-//! The progenitor runs on [`crate::user::PROGENITOR_STACK_PAGES`] pages, and its stack lives for the
-//! whole boot because the spawn service runs inside `system_initializer::boot`. Until this existed
-//! nothing measured it: #1360 and #1374 each found the limit by overflowing it, and milestone 205
-//! (how a foreign program is told what to do), in #1402, found it a third time, in a debug build at
-//! `package install uptime`. Every one of those
-//! was a data abort at a prompt, with the size of the miss inferred from a fault address.
-//!
-//! # The instrument
-//!
-//! The same watermark milestone 84 (stack high-water: measure kernel stack depth) put on kernel
-//! stacks: `crate::stack::paint` and `crate::stack::high_water`, and notes/stack-high-water.md for
-//! why a paint outlives the frame that destroyed it. [`paint_page`] fills each stack page with the
-//! paint word as
-//! `boot_progenitor` maps it, before the progenitor has run an instruction, and remembers the
-//! page's kernel view. [`report_peak`] scans from the lowest page up for the first word that is no
-//! longer paint. The pages are not contiguous in the direct map, so the scan goes a page at a time.
-//!
-//! The kernel does the reading rather than the progenitor, which is what keeps this out of
-//! `crates/system_initializer`'s way: the progenitor needs no code, no shared constant, and no
-//! channel to report on, and a progenitor that is about to overflow is the one program that should
-//! not be asked to measure itself.
-//!
-//! # When it speaks
-//!
-//! From the scheduler's idle loop, beside the
-//! capability-slot gauge of milestone 231 (nothing counts how many capability slots a boot actually
-//! uses), and coalesced the same way: it waits until the mark has not moved for [`STABLE_PASSES_NEEDED`] idle passes,
-//! and it never prints the same number twice. So a boot prints one line after the progenitor
-//! settles, and another each time a later command drives it deeper. That second property is what
-//! makes the transcript a per-path measurement: the line after `package install uptime` is that
-//! path's peak.
+//! [`paint_page`] paints each stack page as `boot_progenitor` maps it, and [`report_peak`], from
+//! the idle loop, prints the settled high-water, which `script/swish-check` fails below
+//! [`HEADROOM_FLOOR`]. See notes/stack/progenitor-stack.md.
 //!
 //! # BUGS
 //!
-//! - **A watermark sees exercised paths only.** A spawn of a program `swish-check` never types
-//!   goes as deep as it goes, unmeasured. Milestone 84's BUGS has the general form.
-//! - **Name provisional**: the module and its two functions (this lane, not ratified).
+//! - A watermark sees exercised paths only; a spawn `swish-check` never types goes unmeasured.
+//! - Name provisional: the module and its two functions.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -48,16 +18,12 @@ const PAGE: u64 = page_frames::FRAME_SIZE;
 /// The whole stack, in bytes: what the gauge's numbers are out of.
 pub(crate) const STACK_BYTES: u64 = PROGENITOR_STACK_PAGES * PAGE;
 
-/// **The least headroom a boot may leave**, in bytes. Below this, the gauge says `BELOW` and
+/// The least headroom a boot may leave, in bytes; below it the gauge says `BELOW` and
 /// `script/swish-check` fails.
 ///
-/// Two pages, and each half is a measured fact rather than a feeling. The install path's two
-/// biggest frames are each mostly one page buffer (`system_initializer::edit`'s `new` and
-/// `activate`'s `old`, `[u8; PAGE_BYTES]` apiece), and one more such buffer is the step size this
-/// stack has actually grown by. The second page covers what the gauge cannot see: paths
-/// `swish-check` never types, and indirect calls, which put the measured peak about a kilobyte
-/// above the deepest chain a static walk of direct calls finds (32,440 against 31,424, aarch64
-/// debug). notes/stack/progenitor-stack.md has both measurements.
+/// Two pages: one is the step this stack has grown by (a page buffer in the install path's biggest
+/// frames), the other covers paths the gauge cannot see. notes/stack/progenitor-stack.md, "The
+/// gate", has the measurements.
 pub(crate) const HEADROOM_FLOOR: u64 = 2 * PAGE;
 
 /// The kernel view (direct-map address) of each stack page, by `k`, the page's distance below
@@ -68,9 +34,8 @@ static PAGES: [AtomicU64; PROGENITOR_STACK_PAGES as usize] =
 
 /// Paint one of the progenitor's fresh stack pages and remember where it is.
 ///
-/// Called by `boot_progenitor` for each page `map_new` hands back, before the progenitor exists,
-/// so nothing is using the page. `k` is the page's distance below the top, as the map loop counts
-/// it.
+/// `k` is the page's distance below the top and `page` its kernel view, unused yet. Called by
+/// `boot_progenitor` for each page `map_new` returns, before the progenitor exists.
 pub(crate) fn paint_page(k: u64, page: &mut [u8]) {
     let bottom = page.as_mut_ptr() as u64;
     // SAFETY: `page` is a whole, page-aligned, writable frame the caller just mapped and nothing
@@ -79,10 +44,10 @@ pub(crate) fn paint_page(k: u64, page: &mut [u8]) {
     PAGES[k as usize].store(bottom, Ordering::Release);
 }
 
-/// **The most bytes the progenitor's stack has ever used**, or `None` before it has been painted.
+/// Return the most bytes the progenitor's stack has ever used, or `None` before it is painted.
 ///
-/// Scans the lowest page first and stops at the first page with anything used, so its cost is the
-/// headroom rather than the stack: a few hundred words on a healthy boot.
+/// Scans from the lowest page and stops at the first used one, so it costs the headroom, not the
+/// stack.
 pub(crate) fn high_water() -> Option<u64> {
     for k in (0..PROGENITOR_STACK_PAGES).rev() {
         let bottom = PAGES[k as usize].load(Ordering::Acquire);
@@ -104,13 +69,13 @@ static LAST_PASS: AtomicU64 = AtomicU64::new(0);
 static STABLE_PASSES: AtomicU64 = AtomicU64::new(0);
 static REPORTED: AtomicU64 = AtomicU64::new(0);
 
-/// How still the mark has to be before [`report_peak`] believes a climb is over. The
-/// capability-slot gauge's window (`kernel::cap`'s `PEAK_STABLE_PASSES_NEEDED`), for its reason:
-/// the progenitor blocks on IPC several times mid-build, and each pause is an idle pass.
+/// Idle passes the mark must hold still before [`report_peak`] prints it: the capability-slot
+/// gauge's window, because the progenitor blocks on IPC mid-build and each pause is an idle pass.
 const STABLE_PASSES_NEEDED: u64 = 16;
 
-/// Say the progenitor's stack high-water mark once it has stopped moving. Called from the
-/// scheduler's idle loop; see this module's doc.
+/// Print the progenitor's stack high-water once it has stopped moving, once per new peak.
+///
+/// Called from the scheduler's idle loop.
 pub(crate) fn report_peak() {
     let Some(used) = high_water() else {
         return;

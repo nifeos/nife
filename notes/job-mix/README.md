@@ -9,6 +9,8 @@ the parent's Results row points to it.
 - [`null-syscall-under-load.md`](null-syscall-under-load.md): why that evening's `null_syscall`
   nearly doubled from one busy core to four (the reaper freed kernel stacks under `IPC_TABLES`),
   the fix, and the radon procedure that will size it.
+- [`lock-wait-instrument.md`](lock-wait-instrument.md): what `--features lock_wait` counts, what it
+  costs and what it cannot see.
 - [`null-syscall-first-radon-run.md`](null-syscall-first-radon-run.md): what TCG could not say about
   that fix, and the procedure radon sized it by.
 - [`null-syscall-off-radon.md`](null-syscall-off-radon.md): the rest was the global lock on every
