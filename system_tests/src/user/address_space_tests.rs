@@ -487,9 +487,9 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
 
     // Sample the baseline only once `used()` has STOPPED MOVING. The warm-up's space is freed by
     // `finish_switch` on whatever core ran it (§28 (SMP placement)), a beat after its ThreadId
-    // stops resolving; a baseline sampled in that window settles high and reads as a negative leak.
-    // Two agreeing samples a yield apart mean nothing is in flight; `wait_for`'s deadline bounds
-    // it.
+    // stops resolving; a baseline sampled in that window is too high: `used()` settles below it,
+    // which reads as a negative leak. Two agreeing samples a yield apart mean nothing is in flight;
+    // `wait_for`'s deadline bounds it.
     let mut last = used();
     let settled = wait_for(|| {
         sched::yield_now();

@@ -556,8 +556,9 @@ mod c_seam_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod live_swap_tests;
 
-/// **Measured boot: the kernel refuses to enter a first process it was not built for** (milestone 22 phase
-/// B.1, DECISIONS §22).
+/// **Measured boot: the kernel refuses to enter a first process it was not built for**
+/// (milestone 22 (trusted init) phase B.1; DECISIONS §26 (the fault endpoint), its milestone 22
+/// phase B.1 section).
 ///
 /// Cross-ISA: one hash implementation (`crates/measured_boot`) and one trust root `build.rs`
 /// generates into the kernel, checked from the boot path on every architecture (`boot_progenitor`,
@@ -855,8 +856,8 @@ mod redirection_tests;
 /// **the timed command needs no authority to be timed**, so the timing is the shell's own reading
 /// and the child gets exactly the endowment its command line names. The three clock states are
 /// three capability tables, the shape [`redirection_tests`] uses for the directory: a published
-/// page, a page nobody published to (one of `date`'s refusals), and no capability at all. One
-/// module for both ISAs (DECISIONS §19).
+/// page, a page nobody published to, and no capability at all; the last two are `date`'s refusals.
+/// One module for both ISAs (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
 mod time_tests;
 
@@ -941,7 +942,7 @@ mod thread_leak_police;
 /// Every revocation sweep in this kernel walks capability tables. A capability handed to a
 /// rendezvous nobody is receiving on yet sits in `Thread::outgoing_cap` instead, which no sweep but
 /// `sched::delete_reply_caps_naming` reads. The module's own header has the reasoning and the
-/// `BUGS`; a module of its own for `tests.rs`' merge-hotspot reason.
+/// `BUGS`; it is not in `tests.rs` because that file was this tree's worst merge hotspot.
 ///
 /// Cross-ISA: `outgoing_cap`, the sweeps and the rendezvous are portable scheduler code, so the
 /// parity gate (DECISIONS §19, architectural parity is a tenet) is met by the same test running on

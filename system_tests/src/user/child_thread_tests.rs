@@ -107,8 +107,9 @@ fn a_process_can_build_start_and_run_a_child_thread() {
 /// the thread (the `Drop` chain), leaving its region object-free for `reclaim_region`.
 ///
 /// Never try to reclaim the TCB region while the child is live: a refused reclaim arms §16 (object
-/// revocation)'s kill on its threads (§24 (interrupting the foreground process)), dooming the child
-/// before its `SEND`. `force_kill_tests` covers the refusal; see notes/system-test-modules.md.
+/// revocation)'s kill on its threads (§24 (interrupting the foreground process)), which can reap
+/// the child before its `SEND`. `force_kill_tests` covers the refusal; see
+/// notes/system-test-modules.md.
 #[test_case]
 fn reclaim_frees_a_started_then_exited_childs_regions() {
     const CODE_VA: u64 = address_space_map::IMAGE_BASE;
