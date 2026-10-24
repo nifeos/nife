@@ -9,7 +9,7 @@ for, §219 (how the shell names an installed program to the spawner)'s gate D2, 
 of users who may run new code (§221 (the boot prompt is the owner's console)), is
 [vouching.md](vouching.md). Packages over the internet are
 [over-the-internet.md](over-the-internet.md). The index format survey is
-[the-index-format.md](the-index-format.md). A package with several programs is [several-programs.md](several-programs.md).
+[the-index-format.md](the-index-format.md). The design behind `crates/package_index` is [the-index-crate.md](the-index-crate.md). A package with several programs is [several-programs.md](several-programs.md).
 Four candidate containers for a package (NIFEPKG2, tar, and each compressed with zstd), measured
 for size, reader code, tooling and what each forces, are in
 [container-format-measurements.md](container-format-measurements.md).
