@@ -175,20 +175,21 @@ macro_rules! program_entry {
         ///
         /// Name: recorded (crates/user_mode_runtime/link.ld, its `ENTRY` line). The ELF entry
         /// symbol every toolchain uses.
-        #[cfg(not(target_arch = "x86_64"))]
+        #[cfg(any(not(target_arch = "x86_64"), kani))]
         #[unsafe(no_mangle)]
         pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
             $entry(arg0, arg1, arg2)
         }
 
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
         extern "C" fn __program_entry(arg0: u64, arg1: u64, arg2: u64) -> ! {
             $entry(arg0, arg1, arg2)
         }
 
         // The `call` pushes the return address the psABI expects at entry; the argument registers
-        // pass through untouched. The `ud2` is unreachable, because the entry diverges.
-        #[cfg(target_arch = "x86_64")]
+        // pass through untouched. The `ud2` is unreachable, because the entry diverges. Kani
+        // cannot compile `global_asm!`, so under it the plain `_start` above stands in.
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
         ::core::arch::global_asm!(
             ".pushsection .text._start, \"ax\", @progbits",
             ".globl _start",
