@@ -26,6 +26,35 @@ endpoints (print), and three shared pages (the console's, the client's output, t
 input). It touches no UART and no interrupt, which is exactly why the component could not exist
 until the drivers did: it is the layer *between* drivers, not a driver.
 
+## What the engine does and leaves out
+
+The engine's bindings, as `crates/line_editor/src/lib.rs` implements them:
+
+- Insertion and deletion at a cursor. Typing at the end echoes only the byte; an edit mid-line
+  redraws the tail.
+- Cursor movement as control characters (`^B` `^F` `^A` `^E`) and as ANSI sequences: CSI D, C, H
+  and F, their SS3 forms, and the vt220 `~` forms.
+- Kill and yank: `^K` kills to the end, `^U` to the start, `^W` a word back, and `^Y` inserts the
+  kill buffer.
+- History: the last `HIST` non-empty lines on up and down, with the line in progress stashed.
+- CR or LF ends a line, and an LF straight after a CR is swallowed. Interactive input (CR) and
+  piped input (LF, CRLF) both work without the caller knowing which it has.
+- `^C` discards the line. `^D` is end of input on an empty line and a delete otherwise, Unix's
+  double duty. `^L` repaints.
+
+Three things it leaves out on purpose:
+
+- It tracks no terminal size. The redraw math assumes one row, so a wrapped long line redraws
+  wrongly past the margin. Probing the terminal would block the discipline on a terminal that may
+  never answer, such as a piped boot script, and `LINE_MAX` keeps the wrap rare.
+- It does no tab completion, because that needs the command namespace. Tab comes back as
+  `Event::Tab` and the terminal ignores it. The shell runs this engine itself in raw mode and
+  answers Tab with `LineDisc::pending` and `LineDisc::insert_text` (§227 (how Tab reaches the
+  shell)).
+- It keeps no output-side state. Newline translation is the free function `expand_output`,
+  because output shares no state with input editing (notes/thread-control-block.md has the tty
+  layer).
+
 ## The build-vs-reuse call: built, against the rule's default
 
 The prior-art rule (DECISIONS §14) says for userspace, outside the trusted computing base,
@@ -92,6 +121,33 @@ holds a name for `line_editor`. This is milestone 23's "the console hot-swap is 
 concrete form: a terminal with real behavior is a far better first swap target than a raw echo
 loop. `line_editor` faults into a clean kill on any bug (it `brk`s / `ebreak`s in its panic handler),
 which is honest rather than reckless precisely because the hot-swap story is what recovers it.
+
+## The component's slots
+
+`line_editor::component` declares what a supervisor routes to a `line_editor` it can replace.
+Both declarations put the terminal in slot 0 and the output sink in slot 1. The console's reply
+endpoint takes slot 2 when there is one, then come the control endpoint and the supervisor's
+notification endpoint. `line_editor` learns the control slot from its second start argument and
+finds the notification endpoint in the slot after it, so one binary serves both sink shapes.
+
+`terminal_supervisor` holds every object a `line_editor` is built from, with `GRANT`, so it can
+build a second one. It holds the terminal endpoint with `WRITE` too, so it can send
+`OPERATION_QUIESCE`. Its start arguments are the sink's mode (`MODE_CONSOLE` = 0 or `MODE_DISPLAY`
+= 1), the two image lengths `supervisor::image_lengths` packs, and the slot of a swap-request
+endpoint. That slot is 0 on every boot today: the trigger is milestone 198 (a package manager,
+and the trivial install)'s installer, ruled by §308 (the installer asks the terminal to swap) and
+not built.
+
+The machine's swap reserve, `supervisor::SWAP_RESERVE_PAGES`, is one per machine and apart from
+every job pool (calef's ruling "D", 2026-10-19 UTC). It is sized to the largest swappable
+instance plus its handoff, which today is `display_terminal`'s: that budget holds one instance and
+so cannot hold its replacement. `terminal_supervisor` holds the size to
+`video_terminal::component::SWAP_PAGES` at compile time. Whoever drives a swap splits the reserve
+whole and lends it with the request; the supervisor gives it back before it answers, and the
+lender's `DESTROY` revokes what was made from it. A second swap while one holds the reserve finds
+nothing to split and is refused, so the reserve itself serializes swaps. The holder is the swap
+trigger, milestone 694 (the installer asks the terminal to swap); until that is built, the
+kernel's test `system_tests::user::terminal_display_swap_tests` holds it.
 
 ## Where it runs
 
