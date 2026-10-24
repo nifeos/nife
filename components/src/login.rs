@@ -778,10 +778,10 @@ impl Durables {
 /// are kept, open its session ([`Durable::open`]) and put its stored schedule (§122) in force
 /// ([`Durable::restore`]). No credential is needed: the session goes to nobody until its user logs
 /// in and the credential service says yes, the ordinary reattachment path in [`serve_login`].
-///
 /// Skipped, and counted per reason in `skips` for `REDERIVE_SKIPS`: no stored schedule or an empty
 /// one, a name too long to keep, one already kept, a budget or session that cannot be built. A
-/// document the timetable refuses ends its session and keeps the manifest line, for its user.
+/// refused document ends its session and keeps the manifest line, so its user sees the refusal at
+/// their next login, where the same document is restored with a client there to read the verdict.
 fn rederive(
     own_ut: u64,
     images: ScheduleImages<'_>,

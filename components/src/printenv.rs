@@ -9,9 +9,11 @@
 //! answers `None` both for a key never set and for a page nobody assembled.
 
 //! # EXAMPLES
-//!
 //! ```text
 //! printenv                  TZ=UTC
+//!                            LANG=C
+//!                            TERM=dumb
+//! printenv  (a key unset)   TZ=UTC
 //!                            LANG (unset)
 //!                            TERM=dumb
 //! printenv  (no grant)      printenv: no configuration was granted
