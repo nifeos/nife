@@ -90,13 +90,17 @@ than a failed boot, because a single-core boot on a machine whose firmware wants
 more than no boot at all.
 
 Two cores come up under OVMF, and `uefi-boot` gates it on every boot with `smp: 2 core(s) online`
-(zero misses across the dedicated measurement, [uefi-boot-two-core-rate.md](../uefi-boot-two-core-rate.md)).
-The second local APIC also answers a question milestone 215 (a PCI function's interrupt reaches nothing on x86_64)'s BUGS left for xenon: whether device
-interrupts still reach the boot core's id. The tour's `device irq` line is that answer. The suite
-under OVMF keeps the runner's one-core default. The defects that made two cores flake are fixed
-(milestone 316 (which core booted)'s `boot_cpu_id`, and `cpu_start` re-reading its count after the STARTUP IPIs), and
-the PVH runner defaults to two per §153 (how a two-core x86_64 test earns its place). The whole
-suite at two cores under OVMF is not measured, so the default stands until it is.
+(zero misses across the dedicated measurement,
+[uefi-boot-two-core-rate.md](../uefi-boot-two-core-rate.md)). The second local APIC also answers a
+question for xenon from the BUGS of milestone 215 (a PCI function's interrupt reaches nothing on
+x86_64). It asks whether device interrupts still reach the boot core's id, and the tour's `device
+irq` line is that answer.
+
+The suite under OVMF keeps the runner's one-core default. Two defects made two cores flake, and both
+are fixed: `boot_cpu_id`, by milestone 316 (which core booted), and `cpu_start` re-reading its count
+after the STARTUP IPIs. The PVH runner defaults to two per §153 (how a two-core x86_64 test earns
+its place). The whole suite at two cores under OVMF is not measured, so the default stands until it
+is.
 
 `NIFE_OVMF_CODE` and `NIFE_OVMF_VARS` name the firmware images on a machine that keeps them somewhere
 other than Homebrew's QEMU share; `NIFE_UEFI_TIMEOUT` moves the bound.
