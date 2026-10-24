@@ -1,52 +1,33 @@
 //! **`user_timetable_keeper`: what keeps a user's schedule running after they disconnect**
 //! (milestone 152 (durable delegation), §222 (who holds a user's schedule)).
 //!
-//! `login` builds one of these when an authenticated identity asks for its schedule
-//! (`login_contract::SCHEDULE`). It is built out of a region split from that user's own session
-//! budget, and so is the timetable it builds. Both are live descendants of the budget, which is
-//! what keeps the session alive once the client leaves: DECISIONS §16 (object revocation) refuses
-//! `MemoryRegion::DESTROY` on a parent with a live child.
+//! `login` builds one when an authenticated identity asks for its schedule
+//! (`login_contract::SCHEDULE`), out of a region split from that user's session budget, and the
+//! timetable it builds comes from the same budget. Both are live descendants of the budget, which
+//! keeps the session alive once the client leaves: DECISIONS §16 (object revocation) refuses
+//! `MemoryRegion::DESTROY` on a parent with a live child, as
 //! `kernel::user::login_tests::a_login_session_with_pending_work_refuses_logout_until_the_work_is_gone`
-//! proves that rule on a login budget.
-//!
-//! # What it does
-//!
-//! 1. Builds `timetable` from the image `login` copied in, out of [`BUDGET`]. It is handed no
-//!    programs: a scheduled job runs what the live activation generation names, so the timetable
-//!    gets the two read-only store caretakers ([`ACTIVATION`], [`PACKAGES`]) and their page
-//!    ([`STORE_PAGE`]), a store-mode timetable (`timetable::contract`). The registration page
-//!    ([`PAGE`]) is mapped at [`TIMETABLE_PAGE_VA`], so the timetable starts empty and silent and
-//!    waits for a `REPLACE`.
-//! 2. Says it is ready on [`READY`], once. `login` is blocked waiting for exactly that word.
-//! 3. Blocks on `e`, the timetable's supervision endpoint, for the rest of its life. Only the
-//!    timetable's death arrives there; a scheduled job holds no report endpoint.
-//! 4. When the timetable is gone, gives [`BUDGET`]'s contents back and exits. The page stays, in
-//!    `login`'s region, so `login` can read why the timetable stopped.
-//!
+//! proves on a login budget. Its steps: notes/durable-delegation/user-timetable-keeper.md.
 
 //! # Capability contract (`login_contract::user_timetable_keeper`)
 //!
-//! - slot [`READY`]: `WRITE`. One readiness word or a failure word, and, at the end,
-//!   `login_contract::user_timetable_keeper::STOPPED`.
-//! - slot [`BUDGET`]: `WRITE | GRANT`. The timetable, its jobs, and both endpoints are built from
-//!   it; `GRANT` because the timetable is handed a split of it.
-//! - slot [`PAGE`]: `WRITE`. The registration page, retyped by `login` from this process's own
+//! - [`READY`], `WRITE`: one readiness or failure word, and at the end [`contract::STOPPED`].
+//! - [`BUDGET`], `WRITE | GRANT`: the timetable, its jobs and both endpoints are built from it;
+//!   `GRANT` because the timetable is handed a split of it.
+//! - [`PAGE`], `WRITE`: the registration page, retyped by `login` from this process's own
 //!   construction region.
-//! - slots [`ACTIVATION`] and [`PACKAGES`]: `WRITE`. Endpoints to the caretakers serving the
-//!   store's `activation/` and `packages/` read-only, handed on to the timetable.
-//! - slot [`STORE_PAGE`]: `WRITE`. The page the caretakers stage through, mapped into the timetable
-//!   and never here.
-//! - `a0`: the length of `timetable`'s image, copied in at
-//!   `login_contract::user_timetable_keeper::TIMETABLE_VA`.
-//!
+//! - [`ACTIVATION`], [`PACKAGES`], `WRITE`: the caretakers serving the store's `activation/` and
+//!   `packages/` read-only, handed on to the timetable.
+//! - [`STORE_PAGE`], `WRITE`: the caretakers' staging page, mapped into the timetable, never here.
+
 //! # BUGS
 //!
 //! - **Nothing restarts a timetable that faults.** This process exits, and the schedule stays on
 //!   disk for the next `SCHEDULE` or the boot-time re-deriver.
-//! - **The timetable's image is copied twice**, because `supervision_protocol::build_child` hands a
-//!   child data only by copying a blob or mapping a frame, and `login` hands this process bytes.
-//! - **A durable timetable holds no clock**: `login` holds none to pass down, so every calendar
-//!   line in a durable schedule is `timetable::Unbacked::WallClock` and never fires.
+//! - **The timetable's image is copied twice**: `supervision_protocol::build_child` takes a child's
+//!   data only as a copied blob or a mapped frame, and `login` hands this process bytes.
+//! - **A durable timetable holds no clock** (`login` has none to pass down), so every calendar line
+//!   in a durable schedule is `timetable::Unbacked::WallClock` and never fires.
 //!
 //! Name: ratified 2026-10-06 (calef, in conversation), replacing the provisional `session`, which
 //! collided with every other OS's login session. A keeper holds something alive and does not
@@ -86,17 +67,11 @@ const STORE_PAGE: u64 = contract::STORE_PAGE_SLOT;
 /// the one `kernel/src/user/timetable_tests.rs` already uses for the same job.
 const TIMETABLE_PAGE_VA: u64 = 0x0600_0000;
 
-/// The timetable's own construction: its segments (which since Fork 8 D include a
-/// `timetable::contract::STAGING_BYTES` buffer, 32 pages), its `timetable::contract::STACK_PAGES`
-/// stack and its tables. Measured against the aarch64 debug build on 2026-09-26 at 224 with room to
-/// spare, before the buffer; see this program's own test for what fails if it is short.
-///
-/// **Raised 240 -> 256 on 2026-09-30** for the stack's 32 -> 48 (see `timetable::contract`), whose
-/// halves are both here: the region carries the stack it grew and the buffer beside it. The
-/// constraint below still holds. (It said "with 128 to spare"; the arithmetic was always 16.)
-///
-/// **Raised 256 -> 272 on 2026-10-02 (UTC)** for the staging buffer's 64 -> 128 KiB (see
-/// `timetable::contract::STAGING_BYTES` for the program that did not fit), 16 pages of `.bss`.
+/// The timetable's own construction: its segments, which include the
+/// `timetable::contract::STAGING_BYTES` buffer (128 KiB, 32 pages of `.bss`, Fork 8 D), its
+/// `timetable::contract::STACK_PAGES` stack (48 pages) and its tables. 272 is the 224 measured on
+/// the aarch64 debug build on 2026-09-26, before the buffer, plus the buffer's 32 pages and the
+/// stack's growth from 32 to 48. This program's own test fails if it is short.
 const TIMETABLE_REGION_PAGES: u64 = 272;
 /// The budget the timetable fires jobs from: two 48-page instances and the loader's scratch.
 const JOB_BUDGET_PAGES: u64 = 128;
@@ -110,6 +85,10 @@ const _: () = assert!(
 /// The same net `components/src/timetable.rs` keeps, for the same reason.
 const ATTEMPTS: usize = 1024;
 
+/// Build and start the timetable, then hold it until it dies.
+///
+/// `image_len` (`a0`) is the length of `timetable`'s image, which `login` copies in at
+/// `login_contract::user_timetable_keeper::TIMETABLE_VA`.
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     // SAFETY: `login` copies `image_len` bytes to `TIMETABLE_VA` before this process runs
