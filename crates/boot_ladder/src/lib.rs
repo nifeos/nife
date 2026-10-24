@@ -15,7 +15,7 @@
 //!   whether the prompt came out is `cargo xtask swish-check`'s question.
 //! - The wordings are provisional (milestone 268 (every architecture boots the same way)): they
 //!   are contracts, so they are an architect's.
-
+//!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist). A noun for the ladder a boot
 //! climbs, coined rather than standard. `AGENTS.md` spends *ladder* on its mechanism-strength
 //! metaphor; the two are unambiguous in context, and *rungs of a boot* is legible on sight.

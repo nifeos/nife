@@ -11,7 +11,7 @@
 //! - The markers are `#[unsafe(no_mangle)]` statics, so exactly one copy of this crate may be linked.
 //! - It cannot check the executable segment; the `W^X` assertions of DECISIONS §10 (process model:
 //!   capability-based, microkernel) in `system_tests/src/user/elf_loader_tests.rs` catch that.
-
+//!
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist). Coined, not standard: the
 //! published prior art verifies ELF sections loader-side, and `kselftest` and `POST` name a system
 //! testing itself, where this program audits someone else's work on it. A crate because two

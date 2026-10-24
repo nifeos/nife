@@ -49,7 +49,7 @@ fn mainlines_node_names_the_same_lines_through_syscrg() {
     );
 }
 
-/// No constant fallback: the soak must say NOT ARMED here rather than store to 0x1307_0000.
+/// No constant fallback: the soak must say NOT ARMED here rather than store to `0x1307_0000`.
 #[test]
 fn qemus_virt_board_has_no_watchdog_and_nothing_is_invented() {
     let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
