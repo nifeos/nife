@@ -764,8 +764,8 @@ pub fn probe_device() -> u64 {
 ///
 /// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
 /// `user::UART_PHYS` is **zero**, the marker for
-/// [DECISIONS §121](../../../design/decisions/0121-port-io-capability.md) (what a device capability
-/// is when the device has no page: x86 port I/O; PROPOSED). The
+/// DECISIONS §121 (what a device capability is when the device has no page: x86 port I/O),
+/// PROPOSED, in `design/decisions/0121-port-io-capability.md`. The
 /// live-swap fixture `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an
 /// IVT byte and still fault on revoke, a green test about nothing. The value is never observed, and
 /// is not `0` because a quiet line status register could return that.
