@@ -320,11 +320,9 @@ pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
 /// `NIFE_INDEX_SOURCES` unset or `test` names the test peer ([`test_index_sources`]), which every
 /// check boots (no check may reach outside the runner). `basalt` names
 /// `package_index::BASALT_SOURCES`, `basalt.nifeos.org` then `basalt.crickertech.com`, pinned to
-/// ISRG Root X1 (§250 (an image names its distribution's package index)), for milestone 909 (basalt
-/// composes the bootable image from its packages). One text, as `Sources` holds one root; anything
-/// else is refused, so a typo cannot ship a test image as a real one.
-///
-/// Name: `NIFE_INDEX_SOURCES` and its two values are provisional, minted 2026-10-13 (UTC) by lane
+/// ISRG Root X1 (§250 (an image names its distribution's package index)). One text, as `Sources`
+/// holds one root; anything else is refused, so a typo cannot ship a test image as a real one. The
+/// variable and its two values are provisional names, minted 2026-10-13 (UTC) by lane
 /// `lane/basalt-on-pages-and-releases`.
 pub(crate) fn image_index_sources() -> Result<String, String> {
     match std::env::var("NIFE_INDEX_SOURCES").as_deref() {
