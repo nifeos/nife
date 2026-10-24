@@ -9,6 +9,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The user address-space map](../address-space-map.md): which band of a process holds what, and where a new page goes.
 - [Tearing down an address space](../teardown.md): how the kernel reclaims a dead address space's frames.
 - [Memory regions: the kernel stops allocating](../memory-regions.md): processes spend pages from their own memory capability.
+- [Region reaping](../region-reaping.md): what destroying a region does to the threads, rendezvous and other objects in it.
 - [A split refused for a full region table](../region-split-on-a-full-table.md): PROPOSED; why a refused split holds its parent forever, and the options.
 - [PageFrame capabilities](../frames.md): shared memory a process owns, maps and delegates.
 - [Giving up a mapping](../unmap.md): `AddressSpace::UNMAP`, its two provisional semantics, and why it cannot yet reach a running space.
