@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 16. Object revocation: reclaim the objects a process built (extends §13)
 
-(four amendment blocks below: milestones 31 and 22, the job pool's holes on 2026-10-03, and a running
+(four amendment blocks below: milestones 31 and 28, the job pool's holes on 2026-10-03, and a running
 root on 2026-10-05.)
 
 <!-- writing-standards: exception. Marked 2026-10-03 (UTC) by the maintainer session. Reason: this change
@@ -106,7 +106,7 @@ This is a bug fix to this section's intent (untyped is delegable in seL4, the mo
 guarantees from), recorded here rather than as a new section. See `kernel/src/syscall.rs`'s `SPLIT`
 handler, `cap::untyped_root_cap`, and notes/grant-expression.md.
 
-## Amendment (milestone 22): DESTROY force-kills a live resident thread, it no longer only refuses
+## Amendment (milestone 28): DESTROY force-kills a live resident thread, it no longer only refuses
 
 `DESTROY` refused (NotPermitted) while a live thread occupied the region, on the reasoning that "its
 owner must let it finish first." That is right for a cooperative child, and wrong for the exact case
@@ -189,7 +189,7 @@ it does not own; it already owns the memory the thread translates through, so th
 have kept running whatever the answer.
 
 Refused: refusing without killing, because a borrower that never finishes would pin R forever, the
-shape the amendment for milestone 22 (trusted init) removed. Refused: making `CONFIGURE` reject a space rooted outside
+shape the amendment for milestone 28 (a solid terminal: the line discipline as a component) removed. Refused: making `CONFIGURE` reject a space rooted outside
 the TCB's region, because it adds a refusal to the syscall surface and forbids a split a loader may
 want. Refused: both together, because once the kill exists the `CONFIGURE` refusal buys no safety.
 
