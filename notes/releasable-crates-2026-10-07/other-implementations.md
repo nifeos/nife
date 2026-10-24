@@ -1,5 +1,7 @@
 # The other implementations, 2026-10-07
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `survey`.*
+
 Appendix to [the note](../releasable-crates-2026-10-07.md). Looked up, not measured, on 2026-10-07
 (UTC) from the crates.io API and the GitHub API. Three read-only survey agents under
 lane/releasable-crates did the lookups, and no project was contacted. Downloads are all-time and "rev" is crates.io's

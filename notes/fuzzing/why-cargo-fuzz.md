@@ -1,5 +1,7 @@
 # Why cargo-fuzz
 
+*Name: provisional. Named after the main page's own heading.*
+
 An appendix to [`notes/fuzzing.md`](../fuzzing.md), which states the conclusion.
 
 DECISIONS §46 (thin primitives or whole subsystems) says taking a dependency is a decision, and that

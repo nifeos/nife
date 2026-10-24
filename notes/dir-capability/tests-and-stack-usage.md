@@ -1,5 +1,7 @@
 # What the tests prove, from inside and outside the guest, and the stack measured
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `tests-and-stack`.*
+
 An appendix to [notes/dir-capability.md](../dir-capability.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the attacker runs, the host-side check of the image, and the
 FS server's stack before and after `RENAME`.

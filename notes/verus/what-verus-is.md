@@ -1,5 +1,7 @@
 # What Verus is
 
+*Name: provisional, after the parent's own heading.*
+
 An appendix to [`notes/verus.md`](../verus.md). It holds what the tool is and how it is released,
 why deductive verification differs from Kani's bounded checking, what a human writes, its
 sequentially consistent concurrency model, and which of this tree's Rust it would not parse.

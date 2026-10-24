@@ -1,5 +1,7 @@
 # What the reconnaissance found
 
+*Name: provisional. After the parent's "What the reconnaissance found". calef names files.*
+
 An appendix of [reviewing the work of one model](../model-attribution-review.md). The parent keeps
 one paragraph per finding, and the plan built on them. This file keeps the seven findings whole,
 with their tables, in the order they were run. Everything here was measured on `origin/main` at
