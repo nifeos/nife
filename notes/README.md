@@ -66,3 +66,5 @@ area directories), ruled B). Appendices under
 `user-address-spaces.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
 
 `x86-user-programs.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
