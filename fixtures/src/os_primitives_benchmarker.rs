@@ -234,7 +234,8 @@ fn ipc_server() -> ! {
 /// With `reads_cycles` (the caller holds the cycle-counter grant) the cycle counter is read just
 /// inside the tick reads, and a second report follows the first: `[cycles, meaning, 0]`, the
 /// meaning as [`user_mode_runtime::CycleMeaning::to_word`]. Without the grant those reads would
-/// trap, so the flag is the bench boot's statement that it granted. See milestone 101.
+/// trap, so the flag is the bench boot's statement that it granted. See milestone 101 (the L4
+/// calibration).
 fn ipc_client(reads_cycles: bool) -> ! {
     // Warm up: pay the first rendezvous and any cold paths outside the timed loop.
     for _ in 0..64 {

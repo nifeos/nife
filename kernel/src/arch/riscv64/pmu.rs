@@ -206,7 +206,7 @@ pub(crate) fn cycles() -> Option<u64> {
 /// The bench boot's `ipc_rtt_el0_cycles` probe asks before it grants, because a granted read that
 /// traps kills the client and leaves the bench boot waiting forever for its report.
 ///
-/// Name: provisional (milestone 101's lane, 2026-10-24 UTC).
+/// Name: provisional (milestone 101's lane, the L4 calibration, 2026-10-24 UTC).
 #[cfg(all(feature = "bench", feature = "cycle_counter_grant"))]
 pub(crate) fn counts_through_the_cycle_csr() -> bool {
     outcome() == CycleCounter::Running && CYCLE_CSR.load(Ordering::Relaxed) == 0xc00

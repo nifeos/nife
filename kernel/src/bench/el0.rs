@@ -101,7 +101,7 @@ pub(super) fn ctx_switch_el0() {
 ///
 /// Under `cycle_counter_grant` the client is also granted the cycle counter and reads it across the
 /// same loop, and a `bench-probe: ipc_rtt_el0_cycles` line follows the row: the round trip in the
-/// counter's own units, read rather than converted (milestone 101). The row itself does not change.
+/// counter's own units, read rather than converted (milestone 101, the L4 calibration). The row itself does not change.
 pub(super) fn ipc_rtt_el0() {
     let Some(image) = crate::trust::require_program("os_primitives_benchmarker") else {
         println!("bench: ipc_rtt skipped (no os_primitives_benchmarker in the initial ramdisk)");
