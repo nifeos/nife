@@ -79,8 +79,8 @@ const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
 /// [`Program`](crate::Program) id: an installed package's member, or a binary somebody just built.
 ///
 /// Word 0 is then the image's length in bytes ([`image_len`]), and [`image_pages`] `SEND_CAP`s
-/// follow, one `READ` frame each in page order, after the directory grant's data and before every
-/// other capability. The progenitor hashes its own copy, never the caller's frames. A miss runs
+/// follow, one `READ` frame each in page order, tagged with its index, after the directory grant's
+/// data and before every other capability. The progenitor hashes its own copy. A miss runs
 /// only with [`RUN_UNVOUCHED_BIT`] and [`crate::UNVOUCHED_MANIFEST`], and is otherwise refused with
 /// [`SPAWN_UNVOUCHED`]. See notes/grant-expression/spawn-protocol.md.
 ///

@@ -1,35 +1,14 @@
-//! **A provisioning tool: create an identity and its home subtree together** (§117 (a principal's
-//! subtree is named by its identity string)). Unix's `useradd`, one level down: spawned once per
-//! identity by whoever holds the two administrative capabilities, it `PUT`s the identity and secret
-//! into the credential store ([`credential_contract::provision::PUT`]) and `MKDIR`s the home subtree
-//! named by the identity string.
+//! A provisioning tool: create an identity and its home subtree together (§117 (a principal's
+//! subtree is named by its identity string)).
 //!
-//! It authenticates no caller and needs not to: whoever is handed [`PROV`] and [`FS_EP`] may run it,
-//! the same shape as the credential service's provision endpoint. How an operator comes to hold
-//! them is the boot-wiring question `login.rs`'s BUGS name.
-//!
-//! **The subtree first.** The two calls go to two servers with no cross-server commit. If `MKDIR`
-//! fails, nothing was stored and the caller retries. If `PUT` then fails
-//! ([`credential_contract::FULL`], [`credential_contract::NO_ENTROPY`], a duplicate), the result is
-//! an orphaned, empty subtree with no identity: inert, and recovered by re-running. The other order
-//! risks a credential that verifies for an identity with no home. `MKDIR`'s [`EEXIST`] is therefore
-//! "already created, proceed", exactly the state a failed run leaves; any other `MKDIR` failure
-//! stops before the store is touched.
-//!
-//! - slot [`PROV`]: `WRITE` on the credential service's provision endpoint, before its seal; never
-//!   the verify endpoint, so this cannot authenticate anybody even by mistake.
-//! - slot [`FS_EP`]: `WRITE` on the directory holding the principal tree, unnarrowed in this slice.
-//! - slot [`REPORT`]: `WRITE`; one report, then exit.
-//! - mapped [`REQ_VA`]: the caller's staged identity and secret, in [`credential_contract::place`]'s
-//!   layout, relayed and never chosen here.
-//! - mapped [`PROV_VA`]: the frame shared with the credential service (its own `PROV_VA`).
-//! - mapped [`FS_VA`]: the page shared with the file service, for the one `MKDIR`.
-//! - `a0`, `a1`: the identity's and secret's lengths, refused if [`credential_contract::read`]
-//!   would refuse them.
-//!
-//! No [`credential_contract::provision::SEAL`]: sealing ends provisioning for the whole store, the
-//! caller's decision once every identity is in. No deprovisioning.
-//!
+//! Unix's `useradd`, one level down. Spawned once per identity by whoever holds [`PROV`] and
+//! [`FS_EP`], it `MKDIR`s the home subtree named by the identity string, then `PUT`s the identity
+//! and secret ([`credential_contract::provision::PUT`]); `a0` and `a1` are their lengths. It
+//! authenticates no caller and needs not to: holding the two capabilities is the authority. The
+//! subtree comes first, so a partial failure leaves an inert, empty subtree rather than a credential
+//! with no home, and `MKDIR`'s [`EEXIST`] means proceed. It never seals the store
+//! ([`credential_contract::provision::SEAL`]) and never deprovisions. See notes/login.md.
+
 //! Name: ratified 2026-09-13 (calef). `identity` is the word the capability model manipulates, where
 //! `user` is overloaded in this tree. Refused `useradd` (imports `user` and promises a typed
 //! command), `provisioner` (spent and generic), `identity_creator` (omits the subtree) and
@@ -46,14 +25,16 @@ use filesystem_contract::fs;
 use user_mode_runtime::call;
 use user_mode_runtime::mapped_window::MappedWindow;
 
-/// The credential service's provision endpoint (slot 0), `WRITE`, before its seal.
+/// The credential service's provision endpoint (slot 0), `WRITE`, before its seal. Never the verify
+/// endpoint, so this process cannot authenticate anybody, even by mistake.
 const PROV: u64 = 0;
-/// The directory capability holding the principal tree (slot 1), `WRITE`.
+/// The directory capability holding the principal tree (slot 1), `WRITE`, unnarrowed in this slice.
 const FS_EP: u64 = 1;
-/// The report endpoint (slot 2), `WRITE`.
+/// The report endpoint (slot 2), `WRITE`: one report, then exit.
 const REPORT: u64 = 2;
 
-/// Where the caller stages the identity and secret, in [`credential_contract::place`]'s layout. Numbered in
+/// Where the caller stages the identity and secret, in [`credential_contract::place`]'s layout,
+/// relayed and never chosen here. Numbered in
 /// the `0x...00eN_0000` family `credentialer.rs` and `login.rs` already use, one past `login.rs`'s
 /// highest (`CRED_VA`, `0xe3_0000`).
 const REQ_VA: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
@@ -108,12 +89,9 @@ pub extern "C" fn _start(id_len: u64, secret_len: u64, _a2: u64) -> ! {
         report(RPT_MALFORMED, 0);
     };
 
-    // **The subtree first.** See the module docs: this ordering is what keeps a partial failure
-    // inert (an unreachable subtree) rather than dangerous (a live identity with no home).
-    //
-    // A `None` here, or `Some(EEXIST)`, both fall through to the credential half: `EEXIST` means
-    // the subtree is already there, from this run or a previous attempt, which is recovery rather
-    // than a reason to refuse provisioning the identity that owns it.
+    // The subtree first, so a partial failure is inert rather than a live identity with no home.
+    // `Some(EEXIST)` falls through like `None`: the subtree is already there, from this run or an
+    // earlier attempt, which is recovery rather than a reason to refuse.
     if let Some(errno) = mkdir_home(identity)
         && errno != EEXIST
     {
@@ -167,10 +145,8 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
     match filesystem_contract::reply_errno(r0 as i64) {
         Some(errno) => Some(errno),
         None => {
-            // A directory handle, minted and immediately released: this process confirms the
-            // subtree exists and has no further use for a handle to it. Best-effort; a close that
-            // failed would leak a handle-table slot in the file service, not corrupt anything a
-            // caller of this tool could observe.
+            // Best-effort: a failed close leaks a handle-table slot in the file service and
+            // corrupts nothing a caller of this tool could observe.
             let _ = call(FS_EP, fs::req(fs::CLOSE, r0, 0), 0);
             None
         }

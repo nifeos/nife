@@ -1,19 +1,11 @@
-//! The GPT header: 92 bytes at LBA 1, and the same 92 bytes again at the last LBA.
+//! The GPT header: 92 bytes at LBA 1, and the same 92 bytes again at the disk's last LBA.
 //!
-//! Everything about where the table lives is in here, which is why there are two copies. Lose the
-//! header and the entry array is 16 KiB of unlabelled structs.
-//!
-//! # The layering this module commits to
-//!
-//! [`Header::decode`] answers **"are these bytes a GPT header?"** and nothing else: signature,
-//! revision, header size, the reserved word, the CRC over the header's own bytes, and the reserved
-//! tail of the block. It has no idea how big the disk is, where the partitions are, or whether it
-//! is looking at the primary or the backup, so it cannot judge any of that.
-//!
-//! Every judgement that needs the *disk* is in [`crate::GloballyUniqueIdentifierPartitionTable`].
-//! The split matters because the backup header has to be decodable on its own terms before anything
-//! can compare it against the primary, and because it puts every geometry rule in one function
-//! instead of scattering them.
+//! [`Header::decode`] answers only "are these bytes a GPT header?". It knows neither the disk's
+//! size nor which copy it holds, so every judgement that needs the disk is in
+//! [`crate::GloballyUniqueIdentifierPartitionTable`], and the backup decodes on its own terms
+//! before anything compares it with the primary. See
+//! notes/globally-unique-identifier-partition-table.md, "The crate does no I/O, and that is the
+//! whole design".
 
 use crate::crc::crc32_pieces;
 use crate::guid::{self, Uuid};
@@ -27,9 +19,9 @@ pub const SIGNATURE: [u8; 8] = *b"EFI PART";
 /// whose fields might not be where we think they are.
 pub(crate) const REVISION: u32 = 0x0001_0000;
 
-/// The size of the defined part of the header, in bytes, and the number of bytes the header CRC
-/// covers. A header may declare a *larger* size (the spec reserves the right to grow it), and this
-/// crate rejects that rather than guessing at fields it does not know: see [`Header::decode`].
+/// The size of the defined part of the header in bytes, and the size this crate writes. A header
+/// may declare more, up to its block (the spec reserves room to grow); [`Header::decode`] accepts
+/// that, covers the extra bytes with the CRC and otherwise ignores them.
 pub(crate) const HEADER_SIZE: u32 = 92;
 
 /// Field offsets within the header, in the order UEFI 2.10 Table 5.5 lists them. Written out
@@ -88,21 +80,13 @@ impl Header {
     /// Decode one block into a header, checking everything that can be checked without knowing what
     /// disk it came from.
     ///
-    /// `block` must be exactly one block (512 to 4096 bytes, a power of two); its length **is** the
-    /// block size, which is why no separate parameter is needed. Rejects:
-    ///
-    /// - a bad block size, a wrong signature, or a revision other than [`REVISION`];
-    /// - a declared header size outside `92 ..= block_size`, which is the spec's own bound. A
-    ///   header that declares *more* than 92 is accepted and the extra bytes are covered by the CRC
-    ///   and otherwise ignored, which is what the spec asks of a reader that does not know a later
-    ///   revision's fields. In practice nothing writes anything but 92, and a revision that grew
-    ///   the header would have to change [`REVISION`] too, which this crate refuses outright;
-    /// - a non-zero reserved word at offset 20, or a non-zero byte anywhere after the header in the
-    ///   block. UEFI 2.10 §5.3.2 requires both to be zero. This is the strictest check in the crate
-    ///   and the one most likely to need relaxing if a real disk ever trips it; see
-    ///   notes/globally-unique-identifier-partition-table.md;
-    /// - a header CRC that does not match. Computed the way the spec defines it, over `header_size`
-    ///   bytes with the CRC field itself taken as zero.
+    /// `block` is one block, 512 to 4096 bytes and a power of two; its length is the block size.
+    /// Refuses a bad block size, a wrong signature, a revision other than [`REVISION`], a declared
+    /// header size outside `92 ..= block_size` (the spec's bound), a non-zero reserved word at
+    /// offset 20 or non-zero byte after the header (UEFI 2.10 section 5.3.2 requires both zero; the
+    /// strictest check here), and a header CRC that does not match over `header_size` bytes with
+    /// the CRC field taken as zero. A size over 92 is accepted, as the spec asks of a reader that
+    /// does not know a later revision; see notes/globally-unique-identifier-partition-table.md.
     pub fn decode(block: &[u8]) -> Result<Header, Error> {
         if !is_block_size_ok(block.len()) {
             return Err(Error::BlockSize(block.len()));

@@ -165,6 +165,32 @@ The blank disk is regenerated every run and shared with nothing, for milestone 3
 NIC, an RNG). That is worth knowing before anything wires an eighth: QEMU drops a virtio-mmio device
 past the last transport silently, and the symptom is a test *skipping*.
 
+## The kernel's wiring
+
+`kernel/src/user/disk_service.rs` hands every program on this path its pages as `PageFrame`
+capabilities, which the program maps itself with `PageFrame::MAP` out of a budget it also holds.
+Four properties follow. The rights are attenuable: a roster held `READ` is refused a writable
+mapping before any page table is touched. The frame can be delegated onward. The mapping is
+recorded, so `PageFrame::REVOKE` can pull it back, and
+`disk_tests::the_roster_can_be_revoked_out_from_under_its_holder` is that claim. And the
+authority is legible: the `grant_at` calls are the whole of what a program can reach.
+
+So the negative control has two rungs. It cannot obtain a writable window at all, and the fault on
+the read-only one is the second line of defense. Only the stack is still wired at spawn, because a
+program needs a stack before it can make the syscall that would map one.
+
+Every role of one binary shares one slot layout, and a role that lacks a capability leaves its slot
+empty. A shorter grant list would renumber the slots above the gap, and that would be a different
+program.
+
+The write half's numbers are reservations, and on a 128 MiB test boot they add up. `mkfs` gets 48
+stack pages: a full file-server workload peaks at 135,824 bytes (34 pages) on the deeper ISA, and
+creating one filesystem walks less of the tree. The server's own 96 would cost 1.5 MiB more across
+the five `mkfs` runs, whose stacks are never freed. Each run's 384-page heap is four times a real
+mount's 352 KiB high-water, and `start_maker` destroys the previous run's region before taking
+another. When reservations pile up, the symptom is an unrelated test failing to get its budget
+several tests later.
+
 ## What this lane deliberately did not do
 
 - No hot plug. The roster is written once and never again. A hot-plug story would change

@@ -1,43 +1,12 @@
 //! Parse partition tables written by other people's tools.
 //!
-//! A parser that only round-trips its own output proves almost nothing: every mistake it makes on
-//! the way in it makes symmetrically on the way out, and the test still passes. So these run
-//! against **bytes this crate did not produce**, from two implementations that share no code:
-//!
-//! - `sgdisk` 1.0.10 (gptfdisk), the Linux-world tool, C++;
-//! - macOS `diskutil` / `hdiutil`, Apple's, closed source.
-//!
-//! Both write a GPT that this crate must accept exactly as it is, or the crate is wrong. They
-//! disagree on three things (partition names, CHS fields, and which type GUIDs they use), and the
-//! disagreements are as valuable as the agreements: each one is a place where a check written from
-//! only one tool's output would have been too strict.
-//!
-//! # Regenerating the fixtures
-//!
-//! Each is the **first 34 and last 33 blocks** of a 64 MiB, 512-byte-block disk image: the whole
-//! primary table and the whole backup table, with the 64 MiB of nothing in between left out.
-//!
-//! ```sh
-//! # sgdisk (brew install gptfdisk)
-//! dd if=/dev/zero of=gpt64.img bs=1m count=64
-//! sgdisk -n 1:2048:+4M  -t 1:EF00 -c 1:"EFI system"   gpt64.img
-//! sgdisk -n 2:0:+10M    -t 2:8300 -c 2:"linux root"   gpt64.img
-//! sgdisk -n 3:0:0 -t 3:EC5CC08B-D749-4434-AC38-A274C50385BA -c 3:"cricker data" gpt64.img
-//! sgdisk -U 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506 gpt64.img
-//! sgdisk -u 1:11111111-2222-4333-8444-555555555501 \
-//!        -u 2:11111111-2222-4333-8444-555555555502 \
-//!        -u 3:11111111-2222-4333-8444-555555555503 gpt64.img
-//! dd if=gpt64.img of=sgdisk-64m.head bs=512 count=34
-//! dd if=gpt64.img of=sgdisk-64m.tail bs=512 skip=131039 count=33
-//!
-//! # macOS, no root needed for a disk image
-//! dd if=/dev/zero of=apple64.img bs=1m count=64
-//! hdiutil attach -nomount -imagekey diskimage-class=CRawDiskImage apple64.img   # prints /dev/diskN
-//! diskutil partitionDisk /dev/diskN GPT MS-DOS ESP 16M HFS+ MACDATA 0b
-//! hdiutil detach /dev/diskN
-//! dd if=apple64.img of=apple-64m.head bs=512 count=34
-//! dd if=apple64.img of=apple-64m.tail bs=512 skip=131039 count=33
-//! ```
+//! A parser that only round-trips its own output proves almost nothing, so these run against bytes
+//! from two implementations that share no code: `sgdisk` 1.0.10 (gptfdisk, C++) and macOS
+//! `diskutil` / `hdiutil`. They disagree on partition names, CHS fields and type GUIDs, and each
+//! disagreement is a check one tool's output alone would have made too strict. Each fixture is the
+//! first 34 and last 33 blocks of a 64 MiB, 512-byte-block image: both tables, and none of the
+//! space between. The commands that regenerate them are in
+//! notes/globally-unique-identifier-partition-table/the-modules.md, "Regenerating the fixtures".
 
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
@@ -114,9 +83,9 @@ fn sgdisk_writes_a_table_we_accept_whole() {
     // that has never heard of it. This is the recovery story in one assertion.
     assert_eq!(parts[2].1.type_guid, types::NIFE_DATA);
     assert_eq!(types::name(parts[2].1.type_guid), Some("nife data"));
-    // The label embedded in the fixture is "cricker data": the image was written before the
-    // milestone 120 rename, and it stays that way on purpose. A pre-rename disk is exactly the
-    // recovery case, and the line above proves the GUID, not the label, is what we recognise.
+    // The fixture's label is "cricker data", from before milestone 120 (the rename: the OS becomes
+    // `nife`), on purpose: a pre-rename disk is the recovery case, and the GUID, not the label, is
+    // what is recognised.
     assert_eq!(name_of(&parts[2].1), "cricker data");
     assert_eq!(parts[2].1.last_lba, table.last_usable_lba());
 }
@@ -155,14 +124,10 @@ fn macos_writes_a_table_we_accept_whole() {
 /// **macOS does not write GPT partition names**, and finding that out is why the Apple fixture is
 /// here at all.
 ///
-/// The image was made with `diskutil partitionDisk ... MS-DOS ESP 16M HFS+ MACDATA 0b`, so both
-/// volumes have names, and both GPT entries have 72 bytes of zero where the name goes. On a Mac the
-/// volume name lives in the filesystem; the partition table is not asked. `sgdisk` writes the name
-/// and Linux tools read it.
-///
-/// The consequence for anything built on this crate: **a partition browser cannot key off the GPT
-/// name**, because on any disk a Mac touched there is not one. Identify partitions by type GUID, or
-/// by unique GUID if you mean a particular one.
+/// Both volumes of `diskutil partitionDisk ... MS-DOS ESP 16M HFS+ MACDATA 0b` are named, and both
+/// GPT entries hold 72 zero bytes where the name goes; `sgdisk` writes the name. So nothing built
+/// on this crate may key off the GPT name. See notes/globally-unique-identifier-partition-table.md,
+/// "What the fixtures taught us".
 #[test]
 fn macos_leaves_the_partition_names_empty_and_sgdisk_does_not() {
     let (header, array) = primary(APPLE_HEAD);
@@ -271,23 +236,11 @@ fn creating_the_same_table_from_scratch_matches_sgdisk_byte_for_byte() {
 
 /// **Every single-byte corruption of a real header block is rejected.** All 130,560 of them.
 ///
-/// Not a sample and not a bounded proof: 512 positions times the 255 values each byte could have
-/// held instead, every one of them run through the real validator against a real disk. The domain
-/// is small enough to enumerate, so enumerating it is a *complete* verification for this table, and
-/// stronger than any solver result about it (`network_time_protocol`'s note on when a model checker is the
-/// wrong tool; the symbolic version, over tables this crate never saw, is the Kani harness
-/// `a_single_byte_change_always_changes_the_crc`).
-///
-/// What makes it non-trivial is that a byte's rejection can come from four different places
-/// depending on where it is: the signature, the revision, the reserved fields, or the CRC. The
-/// point of doing all of them is that no byte falls through every check.
-///
-/// Skipped under Miri, and the reason is arithmetic: each of the 130,560 parses re-CRCs the 16 KiB
-/// entry array, and an interpreter runs that polynomial around a thousand times slower than the
-/// silicon does, so the sweep that takes four seconds native would take most of a day. Miri checks
-/// memory rules, not CRC completeness, and every code path this sweep walks is walked by the
-/// clean-fixture tests above, which Miri does run. "Miri-clean" for this crate means those paths.
-/// See notes/undefined-behavior.md.
+/// 512 positions times the 255 other values of each byte: complete for this table, where the Kani
+/// harness `a_single_byte_change_always_changes_the_crc` is the symbolic form. A byte may be caught
+/// by the signature, the revision, the reserved fields or the CRC, and none falls through all four.
+/// Skipped under Miri: each parse re-CRCs the 16 KiB array, a day's work interpreted, and the
+/// clean-fixture tests walk the same paths (notes/undefined-behavior.md).
 #[test]
 #[cfg_attr(
     miri,
@@ -320,21 +273,11 @@ fn every_single_byte_corruption_of_the_header_is_caught() {
 /// **Every single-bit corruption of a real 16 KiB entry array is rejected.** All 131,072 of them,
 /// plus the complement of every byte.
 ///
-/// The entry array is where a partition's *bounds* live, so this is the sweep that matters most: a
-/// corrupted `last_lba` that slipped through means a filesystem writing over the next partition,
-/// which is the failure this crate exists to prevent.
-///
-/// **Why bits and not every value here, when the header sweep does every value.** The full
-/// (position, value) sweep over this array is 4,177,920 cases, each recomputing a CRC-32 over 16
-/// KiB: 68 GB of polynomial. It was run, it passes, and it takes **163 seconds**, because a
-/// byte-at-a-time CRC runs at about 400 MB/s (the table load is a serial dependency, roughly eight
-/// cycles per byte). That is too slow for a suite that runs on every change, so the complete
-/// version is kept below as `#[ignore]` and this is what the gate runs.
-///
-/// The header sweep can afford every value because its CRC covers 92 bytes rather than 16,384.
-///
-/// Skipped under Miri for the same reason as the header sweep above: 131,072 more 16 KiB CRCs,
-/// with no code path the clean-fixture tests do not already put under the interpreter.
+/// The array holds every partition's bounds, so a corrupt `last_lba` let through is a filesystem
+/// writing over the next partition. Bits, not every value: the full sweep below is 163 seconds,
+/// and the header's can afford every value because its CRC covers 92 bytes, not 16,384. Skipped
+/// under Miri, as the header sweep is. See notes/globally-unique-identifier-partition-table.md,
+/// "Counted, exhaustively".
 #[test]
 #[cfg_attr(
     miri,

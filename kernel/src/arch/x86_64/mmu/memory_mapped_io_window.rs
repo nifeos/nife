@@ -12,28 +12,15 @@
 
 use super::*;
 
-/// **How high the cacheable direct map may follow the loader's map**, given every span the map
-/// describes (RAM and reserved alike, in whatever order the firmware wrote them).
+/// **How high the cacheable direct map may follow the loader's map**, given every span it
+/// describes (RAM and reserved alike, in any order).
 ///
-/// The chain, and it is the whole rule: start at [`LOW_MEGABYTE`] and keep extending upward for as
-/// long as some entry in the map begins at or below the current top and ends above it. **DRAM and
-/// the carve-outs firmware takes out of it are contiguous** (ACPI tables, NVS, the SMM and graphics
-/// reservations at the top of low memory), so the chain covers them. **The 32-bit MMIO hole above
-/// them is a gap the map does not describe at all**, so the chain stops at its floor and the local
-/// APIC, the IO APIC, the ECAM window, the SPI flash and the framebuffer aperture stay out of it.
-/// Those are device windows, they must be device-typed rather than cacheable, and
-/// [`map_everything`]'s step 5 maps each by name.
-///
-/// **This replaced a bound of "the top of RAM", which was the same rule for a machine whose RAM
-/// ends below the hole and no rule at all for one whose RAM does not.** That is what killed the
-/// first boot on real hardware: xenon has 16.7 GiB, so the top of its RAM is `0x42e000000`, every
-/// MMIO window on the machine is below that, and the fill claimed the local APIC's page cacheably
-/// a few lines before step 5 asked for it device-typed. `AlreadyMapped`, in
-/// `mmu.rs:325`, on 2026-09-05. See notes/x86-uefi-boot.md.
-///
-/// Nothing here is a 4 GiB constant on purpose. The hole is where it is because 32-bit BARs have to
-/// be addressable, but its floor moves with how much memory the firmware stole, and asking the map
-/// where it stops describing memory needs no such number.
+/// Start at [`LOW_MEGABYTE`] and extend upward while some entry begins at or below the current top
+/// and ends above it. DRAM and the carve-outs firmware takes from it are contiguous, so the chain
+/// covers them; the 32-bit MMIO hole above is a gap the map does not describe, so the chain stops
+/// at its floor and the device windows stay out, for [`map_everything`]'s step 5 to map
+/// device-typed. No 4 GiB constant: the hole's floor moves with how much memory firmware stole.
+/// See notes/x86-port/kernel-page-tables.md.
 pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> u64 {
     let mut ceiling = LOW_MEGABYTE;
     loop {
@@ -56,25 +43,14 @@ pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u6
 /// **The floor and the ceiling of the 32-bit MMIO hole, from the firmware's memory map alone**
 /// (milestone 256).
 ///
-/// The floor is [`firmware_fill_ceiling`]: the point where the map stops describing memory
-/// contiguously upward from the low megabyte, which is where DRAM and the carve-outs taken out of
-/// it end. The ceiling is the next thing the map does describe above that, because whatever it is
-/// (a reserved window, the ECAM aperture, the flash at the top of the address space) it is not
-/// space for this kernel to place a BAR in. A map that describes nothing at all above the floor
-/// gives 4 GiB, which is where a 32-bit BAR stops being addressable anyway.
-///
-/// Pure in its argument, like [`firmware_fill_ceiling`] and for the same reason: the machine that
-/// makes this interesting has 16 GiB and cannot be booted under QEMU, so the map goes into the
-/// tests as a value (see `map_tests`).
+/// The floor is [`firmware_fill_ceiling`]; the ceiling is the next span the map describes, or
+/// 4 GiB. Pure in its argument, so the 16 GiB machine's map is a test value (`map_tests`).
 ///
 /// # BUGS
 ///
-/// **A gap in the firmware's map is not a promise that nothing decodes there.** It is only a
-/// promise that firmware did not call it RAM, which is the property that matters for not writing
-/// device registers over memory the allocator owns, and is strictly weaker than knowing what the
-/// host bridge routes. The MMIO hole on a real machine holds things no table this kernel reads
-/// will name; [`memory_mapped_io_window()`] takes the windows it *does* know about out of the answer, and the
-/// ones it does not know about are the residual risk this note exists to name.
+/// A gap in the map means only that firmware did not call it RAM; unnamed windows are a risk.
+///
+/// Name: provisional (minted beside [`memory_mapped_io_window`]).
 pub(super) fn firmware_mmio_hole(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> (u64, u64) {
     let floor = firmware_fill_ceiling(&mut spans);
     let mut ceiling = FOUR_GIB;
@@ -92,15 +68,12 @@ const FOUR_GIB: u64 = 0x1_0000_0000;
 /// **The lowest `size`-aligned span of `size` bytes inside `lo..hi` that overlaps nothing in
 /// `avoid`**, or `None` when the hole has no such room.
 ///
-/// Alignment is `size` rather than a page, because that is what a BAR register can express: the
-/// writable bits of a BAR encode its size, so its address has to be a multiple of it, and a window
-/// that begins at an address the BARs inside it cannot be aligned to wastes its own first bytes.
+/// Aligned to `size` because a BAR's writable bits encode its size, so its address must be a
+/// multiple of it. `avoid` is scanned once per candidate, quadratic in a list of at most five
+/// entries; each step moves the candidate past something it collided with, so the loop runs at
+/// most once per entry plus one.
 ///
-/// `avoid` is enumerated once per candidate rather than sorted, which is quadratic in a list that
-/// has never had more than five entries in it (the framebuffer, the ECAM aperture, both APICs and
-/// VT-d's register file). The bound on the outer loop is what keeps that honest: each step moves
-/// the candidate strictly past the end of something it collided with, so it runs at most once per
-/// entry in `avoid` plus one.
+/// Name: provisional (minted beside [`memory_mapped_io_window`]).
 pub(super) fn window_in_hole(
     lo: u64,
     hi: u64,
@@ -171,42 +144,23 @@ impl core::fmt::Display for MemoryMappedIoWindowError {
 /// **Where this machine's PCI BARs may go, asked of the machine rather than assumed** (milestone
 /// 256).
 ///
-/// This replaced `PCI_BAR_PHYS`, a hardcoded `0xc000_0000` that was q35's conventional 32-bit PCI
-/// hole and was checked once, against QEMU's own `info mtree` at `-m 256M`. On xenon (a Dell
-/// `OptiPlex` 7050, 16 GiB) low DRAM runs to `0xc894_0000`, straight through it, and the kernel
-/// panicked mapping a device window on top of memory it had already claimed. The panic was the
-/// lucky half: a machine whose RAM ended just below the constant would have had thirteen of
-/// fifteen functions relocated on top of memory the allocator believes it owns, and the failure
-/// would have arrived as corruption somewhere unrelated.
+/// [`firmware_mmio_hole`] and the host bridge's `TOLUD` must agree, or this returns
+/// [`MemoryMappedIoWindowError::Disagreement`]. See notes/x86-port/kernel-page-tables.md.
 ///
-/// **Two sources, and they must agree.** The firmware's memory map names the gap
-/// ([`firmware_mmio_hole`]), and Intel's host bridge names the same boundary in `TOLUD`
-/// (`super::machine::top_of_low_dram`). When both answer and they differ, this returns
-/// [`MemoryMappedIoWindowError::Disagreement`] and the boot stops; there is no arm that quietly picks one.
+/// Name: ratified 2026-09-05 (calef). Refused `bar_window`, which the lane shipped on the grounds
+/// that it was the vocabulary the retired `PCI_BAR_PHYS` used for the thing in its own first line;
+/// calef asked what BAR stood for, which settled it: an argument from this project's own history
+/// is not an argument that a reader knows the word. BAR is base address register, a PCI term, and
+/// the window is where the blocks those registers point at appear in the physical address space.
+/// Refused `device_register_window`, for accuracy: a base address register can map a framebuffer
+/// or a memory aperture as well as a register block, so the plainer name would have been slightly
+/// narrower than the truth. Refused `mmio_window`, under the naming rule calef set the same day: an
+/// acronym is spelled out unless its expansion teaches nothing, and a reader who knows the term
+/// recognizes the expansion instantly, so spelling it out costs the expert nothing. `io` stays,
+/// because nobody bounces off it.
 ///
-/// **A `TOLUD` that is absent is not a `TOLUD` that disagrees**, and the distinction is what lets
-/// this run under emulation at all: QEMU's `q35` does not model the register (measured
-/// 2026-09-04, zero on both the PVH and the OVMF path), so on that machine the firmware map is the
-/// only source and is used alone. That is not a fallback to the constant, which no arm of this
-/// function can reach: it is one of the machine's two answers rather than both.
-///
-/// `ecam` is passed in rather than read from `memory::pci_regions`, because the boot tour calls
-/// this in order to *fill* that static and it is empty until this answers.
-///
-/// **Name ratified 2026-09-05 (calef).** The lane shipped `bar_window`, on the grounds that it was
-/// the vocabulary the retired `PCI_BAR_PHYS` used for the thing in its own first line. calef asked
-/// what BAR stood for, which settled it: an argument from this project's own history is not an
-/// argument that a reader knows the word. **BAR is base address register**, a PCI term, and the
-/// window is where the blocks those registers point at appear in the physical address space.
-///
-/// `memory_mapped_io_window` was chosen over `device_register_window` **for accuracy**: a base
-/// address register can map a framebuffer or a memory aperture as well as a register block, so the
-/// plainer name would have been slightly narrower than the truth. `mmio_window` was refused under
-/// the naming rule calef set the same day: an acronym is spelled out unless its expansion teaches
-/// nothing, and a reader who knows the term recognises the expansion instantly, so spelling it out
-/// costs the expert nothing. `io` stays, because nobody bounces off it.
-///
-/// [`firmware_mmio_hole`], [`window_in_hole`] and [`top_of_low_dram`] are still provisional.
+/// [`top_of_low_dram`] is still provisional; [`firmware_mmio_hole`] and [`window_in_hole`] carry
+/// their own `Name:` lines.
 pub fn memory_mapped_io_window(ecam: (u64, u64)) -> Result<(u64, u64), MemoryMappedIoWindowError> {
     let Some(info) = super::machine::boot_info(crate::DTB.load(Ordering::Relaxed)) else {
         return Err(MemoryMappedIoWindowError::NoMemoryMap);

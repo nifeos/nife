@@ -4,29 +4,19 @@ use super::*;
 use crate::cap::{Rights, memory_region_cap, page_frame_run_cap, rendezvous_cap};
 use crate::sched::RendezvousId;
 
-/// **The budget the compositor, and a capture client, draw their own screen mapping's page tables
-/// from** (DECISIONS §102 (a Frame names a run of pages), milestone 142 (a text display good enough
-/// that people use it instead of a GUI)). Same reasoning as `display_service::MAP_BUDGET_PAGES`: at
-/// 1120x624 ([`SCREEN_PAGE_FRAMES`], 683 pages) the screen alone spans two 2 MiB windows, and this
-/// budget also carried the 900-page 1280x720 screen the path once booted with.
+/// The budget the compositor and a capture client draw their screen mapping's page tables from,
+/// sized as `display_service::MAP_BUDGET_PAGES` is: the 683-page screen spans two 2 MiB windows.
 const MAP_BUDGET_PAGES: u64 = 24;
 
-// The compositor's address space. Must match components/src/compositor.rs. `SCREEN_VA` is not here: the
-// screen is a `PageFrame` capability now (§102), and the compositor picks its own VA for it (like
-// `painter`/`display_terminal` already do for rung one's surface), so the kernel wiring has no
-// reason to know the address. `WLIST_VA`/`RING_VA`/`CLIENT_BASE` moved clear of the address range
-// the grown screen ([`SCREEN_PAGE_FRAMES`] page frames, up to 4 MiB from `SCREEN_VA`, sized for the
-// largest scanout this milestone has used rather than today's 924x344/311-frame one) now claims in
-// the compositor's own space; see `components/src/compositor.rs`'s matching comment for the arithmetic.
+// The compositor's address space. Must match components/src/compositor.rs. The compositor maps the
+// screen capability where it chooses, up to 4 MiB from its `SCREEN_VA`, and these sit clear of it.
 const WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
 const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0c01_0000);
 const CLIENT_BASE: u64 = address_space_map::pair_page(0x0000_0000_0e00_0000);
 const CLIENT_STRIDE: u64 = 0x0000_0000_0010_0000;
 
-// A client's address space. Must match fixtures/src/window.rs. The same in every client, on purpose.
-// `C_SCREEN_VA` is likewise not here, for `SCREEN_VA`'s own reason above. `C_WLIST_VA` moved for
-// the same reason `compositor.rs`'s own `WLIST_VA` did: it used to sit just past the screen's old,
-// tiny span and is now well clear of the grown one (`window.rs`'s own comment has the arithmetic).
+// A client's address space, the same in every client. Must match fixtures/src/window.rs, which
+// maps the screen itself and keeps `C_WLIST_VA` clear of it.
 const CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0061_0000);
 const C_WLIST_VA: u64 = address_space_map::pair_page(0x0000_0000_0c00_0000);
@@ -49,12 +39,8 @@ const SCREEN_PAGE_FRAMES: core::num::NonZeroU64 =
     crate::cap::page_frame_run_len(graphics_contract::SURFACE_PAGE_FRAMES as u64);
 
 /// What the kernel keeps after wiring a scene: the endpoints it can ring or listen on, and the
-/// physical addresses it needs to be an independent witness of what the processes did.
-///
-/// The physical addresses are the point of this struct. The kernel allocated these frames, so it
-/// can read them through the direct map without asking any process anything, which is what lets a
-/// test check a client's surface against a value it computed itself rather than against a number
-/// the client reported.
+/// physical addresses of the frames it allocated, which it reads through the direct map as a
+/// witness no process controls.
 pub struct Wiring {
     /// Where clients (and the input source) ring. The kernel holds WRITE so a test can play the
     /// input driver.
@@ -78,20 +64,18 @@ pub struct Wiring {
     pub n: usize,
     pub focusable: usize,
     image: &'static [u8],
-    /// The display terminal's image (milestone 29's text increment), so a scene can be built out
-    /// of window clients, terminals, or both. A terminal is a window client with a different
-    /// program inside it and exactly the same authority.
+    /// The display terminal's image, so a scene can hold window clients, terminals, or both.
     term_image: &'static [u8],
     ring_tail: u32,
 }
 
-/// **Wire the scene and start the compositor.** `display` is an endpoint speaking the rung-one
-/// display contract (`gpu_driver`, or a kernel stand-in for the tests that do not need a device), and
-/// `screen` the frames it scans out.
+/// Wire a scene of `n` windows, the first `focusable` of them taking input, and start the
+/// compositor. `display` speaks the display contract (`gpu_driver`, or a kernel stand-in), and
+/// `screen` is the frames it scans out.
 ///
-/// Returns once the compositor is spawned; the caller should wait for `status::COMP_UP` on
-/// [`Wiring::report`] before spawning clients, which is also the reason a client's first act is a
-/// content-free `HELLO`: either order works.
+/// Returns once the compositor is spawned. A caller may spawn clients before `status::COMP_UP`
+/// arrives on [`Wiring::report`], since a client's first act is a content-free `HELLO`. See
+/// notes/compositor/kernel-wiring.md.
 pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> Wiring {
     assert!(n <= SCENE.len() && n <= compositor::MAX_WINDOWS && focusable <= n);
     let image = program("compositor").expect("no compositor program in the initial ramdisk");
@@ -104,10 +88,8 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let doorbell = crate::sched::create_rendezvous();
     let report = crate::sched::create_rendezvous();
 
-    // **One contiguous run for every client's frames.** Not a convenience: it is what makes the
-    // neighbour attack real, because it puts a client's neighbour's pixels in the frame physically
-    // after its own grant. A test that attacked a scattered allocation would prove only that it
-    // could not find the neighbour.
+    // One contiguous run for every client's frames, so a client's neighbour's pixels are the frames
+    // physically after its own grant and the neighbour attack is a real one.
     let mut per_client = [0u64; compositor::MAX_WINDOWS];
     let mut total = 0u64;
     for (i, win) in SCENE.iter().take(n).enumerate() {
@@ -140,7 +122,6 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let mut grants = [rendezvous_cap(report, Rights::WRITE); MAX_COMP_GRANTS];
     grants[1] = rendezvous_cap(display, Rights::WRITE);
     grants[2] = rendezvous_cap(doorbell, Rights::READ);
-    // The whole screen, one capability (§102): `Object::PageFrame(screen, SCREEN_PAGE_FRAMES)`.
     grants[3] = page_frame_run_cap(
         screen,
         SCREEN_PAGE_FRAMES,
@@ -185,6 +166,9 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
 
 /// The compositor's `Spawn::maps`: the window list, the input ring, and each client's control page
 /// and surface. Returns the table and how many entries are used.
+///
+/// The screen is not here: as one-page mappings it would overflow the 1 KiB a spawn closure may
+/// capture (`kernel/src/thread.rs`), so it is one `PageFrame` grant the compositor maps itself.
 fn compositor_maps(
     wlist: u64,
     ring: u64,
@@ -192,13 +176,6 @@ fn compositor_maps(
     per_client: &[u64; compositor::MAX_WINDOWS],
     client: &[u64; compositor::MAX_WINDOWS],
 ) -> ([Mapping; MAX_COMP_MAPS], usize) {
-    // The compositor's world: the list it publishes, the ring it reads, and every client's control
-    // page and surface, all still `Spawn::maps` entries (small, fixed in number). **Not the screen**
-    // (milestone 142, DECISIONS §102): at the grown scanout, `SCREEN_PAGE_FRAMES` (900) one-page
-    // `Mapping` entries would no longer fit in the 1 KiB a spawn closure may capture
-    // (`kernel/src/thread.rs`'s own limit), the same reason the display driver's DMA region moved
-    // to a single run capability. The screen is granted below as one `PageFrame` instead, and the
-    // compositor maps it itself. No device, no interrupt, no physical address.
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
@@ -231,11 +208,11 @@ fn compositor_maps(
 }
 
 impl Wiring {
-    /// **Spawn window client `i` in `role`.** Its whole authority: a report endpoint, the doorbell,
-    /// its own control page and surface, an input endpoint if it is focusable, and (only for
-    /// [`ROLE_CAPTURE`]) a read-only mapping of the screen and the window list.
+    /// Spawn window client `i` in `role`. Its whole authority: a report endpoint, the doorbell, its
+    /// own control page and surface, an input endpoint if it is focusable, and (only for
+    /// [`ROLE_CAPTURE`]) a read-only grant of the screen and a mapping of the window list.
     ///
-    /// **BUGS:** the slot's frames are mapped as they are, not scrubbed, so a client spawned into a
+    /// BUGS: the slot's frames are mapped as they are, not scrubbed, so a client spawned into a
     /// slot an earlier client used would see that client's last pixels until it painted. Nothing
     /// respawns a client today. Read from this code, not run. See notes/compositor-claim-25.md.
     pub fn spawn_client(&self, i: usize, role: u64) {
@@ -243,8 +220,8 @@ impl Wiring {
     }
 
     /// [`spawn_client`](Self::spawn_client) with the address a probing role reaches for chosen by the
-    /// caller rather than fixed at its neighbour's first pixel frame (milestone 719 (compositor confinement claim 25)), so one test can
-    /// aim the same attacker at the neighbour's control page and at each of its pixel frames.
+    /// caller rather than fixed at its neighbour's first pixel frame, so one test can aim the same
+    /// attacker at the neighbour's control page and at each of its pixel frames.
     pub fn spawn_client_probing(&self, i: usize, role: u64, probe: u64) {
         let frames = SCENE[i].page_frames() as u64;
         let mut maps = [Mapping {
@@ -267,10 +244,6 @@ impl Wiring {
             };
             m += 1;
         }
-        // The window-list mapping stays a `Spawn::maps` entry (one page, unaffected by the
-        // scanout's size). The screen itself does not (milestone 142, DECISIONS §102): see this
-        // `impl`'s own note on `SCREEN_FRAME`/`BUDGET` below for why, and `fixtures/src/window.rs`'s
-        // matching constants for the client side.
         if role & ROLE_CAPTURE != 0 {
             maps[m] = Mapping {
                 va: C_WLIST_VA,
@@ -286,27 +259,14 @@ impl Wiring {
             grants[2] = rendezvous_cap(self.input[i], Rights::READ);
             3
         } else {
-            // **Two grants, and the emptiness of slot 2 is load-bearing**: this client cannot
-            // receive input, and its attempt to try is `NoSuchSlot` rather than a refusal from
-            // anyone. See ROLE_PROBE_INPUT.
+            // Slot 2 must stay empty: this client's attempt to receive input is `NoSuchSlot`, not
+            // anyone's refusal. See ROLE_PROBE_INPUT.
             2
         };
 
-        // `SCREEN_FRAME`/`BUDGET` (slots 3/4, matching `fixtures/src/window.rs`): granted **only** for
-        // `ROLE_CAPTURE`, at explicit slots via `grant_at` rather than through `Spawn.grants`'
-        // sequential first-free fill, because slot 2 must stay genuinely empty for a non-focusable
-        // client (the `ROLE_PROBE_INPUT` property above) and a sequential fill cannot skip it.
-        // **This is still the kernel's decision, not the client's**: the capability is granted
-        // here, by the spawner, based on `role`, exactly as the old `Spawn::maps` entry was. A
-        // hostile `window` binary that ignored its own `role` argument still could not read the
-        // screen unless *this* code decided to grant it, which is the same guarantee
-        // `ROLE_PROBE_SCREEN`'s neighbouring test checks: nothing here lets a process's own code
-        // grant itself authority the spawner withheld.
-        //
-        // The screenshot and enumeration grant is **read-only**: a thing that may look at the
-        // screen may not draw on it. `Rights::READ` alone (no `WRITE`) is the difference between a
-        // screenshot tool and a second compositor; `fixtures/src/window.rs`'s own `ROLE_CAPTURE` block
-        // proves the write half faults.
+        // The screen (slot 3, `READ` only) and its map budget (slot 4) go only to `ROLE_CAPTURE`, by
+        // `grant_at`, since a sequential fill cannot leave slot 2 empty. See
+        // notes/compositor/kernel-wiring.md.
         let capture_budget = if role & ROLE_CAPTURE != 0 {
             Some(
                 crate::memory_region::create(MAP_BUDGET_PAGES)
@@ -342,11 +302,9 @@ impl Wiring {
         .expect("could not spawn a window client");
     }
 
-    /// **The address at which client `i`'s neighbour's pixels really are**, in `i`'s own virtual
-    /// address space: one page past the last frame of its surface, which the contiguous allocation
-    /// above makes the neighbour's control page, and one further is the neighbour's first pixel
-    /// page. The attacker is handed this so the test can assert on the exact faulting address, the
-    /// same way milestone 29's escape test is handed its victim frame.
+    /// The address, in client `i`'s own address space, where its neighbour's first pixel page
+    /// would be: two pages past the end of `i`'s surface, after the neighbour's control page. The
+    /// attacker is handed it so the test can assert on the exact faulting address.
     pub fn neighbour_probe_va(&self, i: usize) -> u64 {
         SURFACE_VA + (SCENE[i].page_frames() as u64 + 1) * FRAME_SIZE
     }
@@ -357,7 +315,7 @@ impl Wiring {
         self.client[i] + (SCENE[i].page_frames() as u64 + 2) * FRAME_SIZE
     }
 
-    /// Client `i`'s surface, digested by the **kernel** through the direct map: a witness that
+    /// Client `i`'s surface, digested by the kernel through the direct map: a witness that
     /// belongs to nobody in userspace.
     pub fn client_surface_digest(&self, i: usize) -> u64 {
         let base = mmu::phys_to_virt(self.client[i] + FRAME_SIZE);
@@ -405,11 +363,10 @@ impl Wiring {
         unsafe { core::ptr::read_volatile(at as *const u32) }
     }
 
-    /// **Play the input driver**: put `bytes` in the ring and ring the doorbell.
+    /// Play the input driver: put `bytes` in the ring and ring the doorbell.
     ///
-    /// This is what a virtio-keyboard driver would do, and the authority it exercises is the ring
-    /// mapping, not the doorbell: any client can ring, and none of them can write here. The CALL
-    /// returns once the compositor has processed the frame, so a test needs no polling.
+    /// The authority exercised is the ring mapping, not the doorbell, which any client can ring.
+    /// The CALL returns once the compositor has processed the frame, so a test needs no polling.
     pub fn type_bytes(&mut self, bytes: &[u8]) {
         let base = mmu::phys_to_virt(self.ring);
         for &b in bytes {
@@ -422,13 +379,10 @@ impl Wiring {
         }
         // The bytes must be visible before the tail that advertises them.
         //
-        // PAIR: `drain_input` in components/src/compositor.rs, which reads `TAIL` and then the bytes. This
-        // is the **fourth** writer into pages that reader consumes, and milestone 43's audit counted
-        // three: it named `window.rs`, `display_terminal.rs` and `keyboard_driver.rs` and missed the kernel
-        // playing the same input-driver role here. Its fix covers all four, because `drain_input` is
-        // the single reader. The `ipc_call` below also orders this one on its own (the compositor is
-        // blocked in `receive_cap` on the doorbell), so the reader's fence is not what makes *this*
-        // producer safe; see notes/memory-ordering.md for which producer it is.
+        // PAIR: `drain_input` in components/src/compositor.rs, which reads `TAIL` and then the
+        // bytes, the single reader of every writer of the ring. The `ipc_call` below also orders
+        // this producer on its own (the compositor is blocked in `receive_cap` on the doorbell);
+        // see notes/memory-ordering.md.
         core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
         // SAFETY: inside the ring frame.
         unsafe {
@@ -449,34 +403,21 @@ impl Wiring {
         crate::sched::ipc_call(self.doorbell, [compositor::proto::req(operation, 0), 0])[0]
     }
 
-    /// **Spawn a display terminal as window `i`** (milestone 29's text increment).
+    /// Spawn a display terminal as window `i`, with exactly a window client's authority plus an
+    /// output page an application writes `OPERATION_WRITE` bytes into (§10 (process model:
+    /// capability-based, microkernel)).
     ///
-    /// It takes a `window` client's place with **exactly a window client's authority**: a report
-    /// endpoint, the doorbell, an input endpoint, and its own control page and surface. The
-    /// compositor cannot tell it from the client that painted a coordinate pattern, which is the
-    /// same claim rung two made about `gpu_driver` one seam down, now made about a client.
-    ///
-    /// The one addition is an **output page**, and it belongs to the terminal contract rather
-    /// than to the compositor's: it is where an application puts the bytes of an `OPERATION_WRITE`
-    /// (DECISIONS §10). The kernel holds the other end of that, playing the application.
-    ///
-    /// **Its input endpoint and its terminal endpoint are the same endpoint**, deliberately.
-    /// This process has one wait point (DECISIONS §33), so an application printing and the
-    /// compositor typing must arrive on one endpoint and be told apart by opcode, exactly as
-    /// `line_editor` does for the serial terminal. The compositor holds WRITE on it because window `i`
-    /// is focusable; the kernel holds it too, as the spawner.
-    ///
-    /// Returns the output page's physical address. `i` must be below `focusable`, or the
-    /// terminal would hold no endpoint to serve and would park forever on its first receive.
+    /// Its input endpoint is also the endpoint it serves, since it has one wait point (§33 (the
+    /// compositor's authority is memory, not messages)). Returns the output page and that endpoint.
+    /// Panics unless `i` is below `focusable`, since otherwise the terminal would hold no endpoint
+    /// to serve. See notes/compositor/kernel-wiring.md.
     pub fn spawn_terminal(&self, i: usize) -> TermClient {
         assert!(
             i < self.focusable,
             "a display terminal must be focusable: its input endpoint is the endpoint it serves",
         );
-        // The window must hold at least one character cell. It need not be a whole number of
-        // them: no window here is a whole number of cells wide, so each leaves a strip on the
-        // right that its terminal paints as background on the first frame rather than leaving as
-        // whatever the frame held.
+        // At least one character cell, not a whole number of them: the terminal paints the strip
+        // no cell covers as background on its first frame.
         assert!(
             SCENE[i].w >= video_terminal::CELL_W && SCENE[i].h >= video_terminal::CELL_H,
             "window {i} is too small for one character cell",
@@ -541,12 +482,8 @@ impl Wiring {
     }
 }
 
-// A display terminal's address space. Must match components/src/display_terminal.rs. Different numbers from a
-// `window` client's, because they are different programs; the kernel picks each binary's.
-// `T_OUT_VA`/`T_CTL_VA` match `display_terminal.rs`'s own moved constants (milestone 142): that
-// binary uses the same three addresses in both `MODE_DISPLAY` and `MODE_WINDOW`, so moving them
-// for `MODE_DISPLAY`'s grown surface moves them here too, even though `MODE_WINDOW`'s own surface
-// (this function's `frames`, window-sized) never grew and never collided on its own.
+// A display terminal's address space. Must match components/src/display_terminal.rs, which uses
+// these addresses in both `MODE_DISPLAY` and `MODE_WINDOW`, so they sit clear of the full scanout.
 const T_SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 const T_OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_0a00_0000);
 const T_CTL_VA: u64 = address_space_map::pair_page(0x0000_0000_0a01_0000);
@@ -566,8 +503,7 @@ impl TermClient {
 }
 
 /// The most mappings a compositor can need: the list, the ring, and every client's control page
-/// and surface. The screen is **not** here since milestone 142 (§102): it is a `PageFrame` grant,
-/// not a `Spawn::maps` entry (see `start`'s own comment).
+/// and surface. The screen is a `PageFrame` grant instead.
 const MAX_COMP_MAPS: usize = 2 + compositor::MAX_WINDOWS * (1 + MAX_SURFACE_PAGES);
 /// The most page frames a client's surface may take: one `Mapping` each, beside its control page.
 /// The tables are sized from it, and they must fit the 1 KiB a spawn closure may capture
@@ -585,8 +521,7 @@ const _: () = {
     }
 };
 /// The most a client can need: its control page, its surface, and (capture only) the window list.
-/// The screen is **not** here for the same reason as `MAX_COMP_MAPS`: a capture client maps it
-/// itself, out of the `SCREEN_FRAME`/`BUDGET` grants `fixtures/src/window.rs` holds.
+/// A capture client maps the screen itself, out of its `SCREEN_FRAME` and `BUDGET` grants.
 const MAX_CLIENT_MAPS: usize = 1 + MAX_SURFACE_PAGES + 1;
 /// Report, display, doorbell, the screen `PageFrame`, its map budget, then one input endpoint per
 /// focusable client starting at [`COMP_INPUT_BASE`].

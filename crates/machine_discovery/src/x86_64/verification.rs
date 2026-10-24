@@ -3,17 +3,10 @@ use super::*;
 /// One byte past the version-1 structure, so a symbolic length can straddle both size checks.
 const N: usize = V1_LEN + 1;
 
-/// **No length of handoff bytes makes the decode read past its end.**
-///
-/// The structure has two sizes, and which one applies is decided by a field *inside* it: a
-/// version-0 handoff stops at offset 40, and only a version of 1 or more puts anything at
-/// offsets 40 and 48. So the length check for the larger structure is gated on a `u32` the
-/// loader wrote, and the offsets it guards are read four lines below it. Every byte here is the
-/// loader's, version included.
-///
-/// Could plausibly have been false: reading `memmap` and `memmap_entries` unconditionally and
-/// zeroing them afterwards is the obvious tidy-up, and it panics on any 40-to-55-byte handoff.
-/// The module's own tests supply 40 bytes and 56 bytes and nothing between.
+/// **No length of handoff bytes makes the decode read past its end.** Which of the two sizes
+/// applies is decided by the version field inside the structure, a `u32` the loader wrote, so the
+/// larger length check is gated on it. Reading the memory-map fields unconditionally panics on any
+/// 40-to-55-byte handoff, and the tests supply only 40 and 56.
 /// Falsification: replayable `crates/machine_discovery/falsifications/x86_64.verification.no_length_of_handoff_bytes_makes_the_decode_read_past_its_end.patch`
 #[kani::proof]
 fn no_length_of_handoff_bytes_makes_the_decode_read_past_its_end() {
@@ -30,17 +23,10 @@ fn no_length_of_handoff_bytes_makes_the_decode_read_past_its_end() {
     }
 }
 
-/// **A range read out of the memory map never wraps to look empty.**
-///
-/// [`MemoryEntry::end`] is what a frame allocator subtracts to size a region, and both `addr`
-/// and `size` are `u64`s straight out of the map. A plain `+` on a firmware-supplied size near
-/// `u64::MAX` wraps to an end *below* the start, which reads as a zero-length or negative range
-/// and quietly hands the allocator nothing where the map described everything. The
-/// `saturating_add` is the defence; this proves it holds for every pair, and that the index
-/// arithmetic that reaches the entry is total at every index.
-///
-/// Could plausibly have been false: `end` is a two-line `const fn` whose doc is the only thing
-/// saying why it saturates, and `Module::end` beside it is a second copy of the same two lines.
+/// **A range read out of the memory map never wraps to look empty.** [`MemoryEntry::end`] is what
+/// a frame allocator subtracts to size a region, and a plain `+` on a firmware size near
+/// `u64::MAX` wraps below the start. Proves the `saturating_add` holds for every pair, and that the
+/// index arithmetic reaching an entry is total. `Module::end` is a second copy of the same lines.
 /// Falsification: replayable `crates/machine_discovery/falsifications/x86_64.verification.a_range_read_out_of_the_memory_map_never_wraps_to_look_empty.patch`
 #[kani::proof]
 fn a_range_read_out_of_the_memory_map_never_wraps_to_look_empty() {
@@ -62,23 +48,11 @@ fn a_range_read_out_of_the_memory_map_never_wraps_to_look_empty() {
     }
 }
 
-/// **A feature is never reported from a leaf the part does not answer.**
-///
-/// `CPUID` has no fault for a leaf a part does not implement. A read above the maximum answers
-/// with some *other* leaf's data, so "this bit is clear" and "this leaf is not there" arrive as
-/// the same bits on the wire and only the maximum tells them apart. That rule is the whole of
-/// what [`Isa::decode`] decides, and it is stated four separate times, once per leaf, with two
-/// different maxima: the standard one in `leaf0[0]` and the extended one in `extended_max_leaf`,
-/// which are different numbers in different spaces and read the same way in a diff.
-///
-/// What makes a proof worth more than the host tests beside it is that the consequence is a
-/// *refusal path nothing here can take*: milestone 524 (the three `x86_64` boot gates) gates the
-/// boot on NX and SYSCALL, and every machine this project runs on reports both, so a decode that
-/// invented them from a part's leaf-0 data would be silent on every machine in the building.
-///
-/// Could plausibly have been false: gating an *extended* leaf on the *standard* maximum is one
-/// character of difference and reads as correct, and on any modern part `leaf0[0] >= 7` holds, so
-/// the wrong gate and the right one agree everywhere a test is likely to look.
+/// **A feature is never reported from a leaf the part does not answer.** A `CPUID` read above
+/// the maximum answers with another leaf's data, so only the maximum tells "clear" from "absent",
+/// and [`Isa::decode`] states that four times against two maxima. Milestone 524 (the three
+/// `x86_64` boot gates) refuses the boot on NX and SYSCALL, which every machine here reports, so a
+/// wrong gate would be silent; gating an extended leaf on the standard maximum is one character.
 /// Falsification: replayable `crates/machine_discovery/falsifications/x86_64.verification.a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer.patch`
 #[kani::proof]
 fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {

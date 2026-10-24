@@ -1,42 +1,29 @@
 //! **Replacing a running timetable's document, over one shared page** (milestone 129 (scheduled execution), DECISIONS
 //! §222 (who holds a user's schedule)).
 //!
-//! §222 ruled that each durable session holds its own timetable and changes it by replacing the
-//! whole document. There is one operation, [`REPLACE`]. This module is the whole of what the
-//! registrar and the timetable agree on, which is why it is a crate module rather than two copies
-//! (AGENTS.md rule 7). The five sub-rulings, and where each lives:
+//! Each durable session holds its own timetable and changes it by replacing the whole document,
+//! with the one operation [`REPLACE`]. This module is all the registrar and the timetable agree on,
+//! so it is one crate module rather than two copies (AGENTS.md rule 7).
+
+//! # §222's five sub-rulings, and where each lives
 //!
 //! 1. One shared 4096-byte page carries the document in and the plan out ([`PAGE_BYTES`]).
 //! 2. All or nothing: a replacement that does not parse, or names a program the timetable cannot
 //!    load, leaves the schedule in force untouched ([`STATUS_PARSE`], [`STATUS_NO_IMAGE`]).
 //! 3. An entry whose text is byte-identical keeps its beat ([`crate::Registry::arm_after`]).
-//! 4. A job from a removed entry runs to completion. Nothing here can stop it, by construction:
-//!    the timetable holds no capability to a running child.
-//! 5. The session writes the store and then stages the replace. The timetable holds no directory,
-//!    and nothing in this module names one.
-//!
-//! # Control is a sequence word, not a message
-//!
-//! §10 (the capability-based microkernel process model) puts control in messages and bulk in shared
-//! pages. This protocol puts control in the page too, and that is forced rather than chosen: a
-//! timetable yield-polls its clock, because this kernel has no timed wait (milestone 106 (a wait
-//! that ends on either the interrupt or the deadline)), and a process has exactly one blocking wait
-//! point. A `RECEIVE` on a registration endpoint would stop it watching the clock. So the registrar
-//! bumps [`REQUEST`] and the timetable notices on its next pass, which costs it one load per pass.
-//! The compositor's per-client control page (`components/src/compositor.rs`, `ctl::SEQ`) is the
-//! same shape in this tree. When a deadline wait exists, the sequence word can become a
-//! notification and nothing else here changes.
-//!
+//! 4. A job from a removed entry runs to completion: the timetable holds no capability to it.
+//! 5. The session writes the store and then stages the replace; the timetable holds no directory.
+
 //! # The page
 //!
-//! Eight words of header, then bytes. The registrar writes the document at [`BODY`], its length at
-//! [`LEN`], and then, **last** and with release ordering, a new [`REQUEST`] word. The timetable
-//! answers in the same page: [`STATUS`], [`DETAIL`], [`VERDICTS`], the printed plan at [`BODY`]
-//! with its length at [`PLAN_LEN`], and then, last, [`REPLY`] set to the request's sequence number.
-//! A registrar reads nothing but [`REPLY`] until that matches. The page is the registrar's whole
-//! view: a timetable with a page says nothing down its output endpoint ([`crate::contract`]), and
-//! when it stops it leaves its exit code at [`EXIT`].
-//!
+//! Control is a sequence word here, not a message as §10 (the capability-based microkernel
+//! process model) has it: a timetable yield-polls its clock from its one blocking wait point.
+//! Eight header words, then bytes. The registrar writes the document at [`BODY`], its length at
+//! [`LEN`], then, **last** with release ordering, a new [`REQUEST`]; it reads only [`REPLY`] until
+//! that matches. The timetable answers [`STATUS`], [`DETAIL`], [`VERDICTS`] and the plan at
+//! [`BODY`] ([`PLAN_LEN`]), then, last, [`REPLY`] set to the request's sequence number. With a page
+//! it is silent on its output endpoint ([`crate::contract`]) and leaves its exit code at [`EXIT`].
+//! See notes/scheduled-execution/the-crate.md, "The page".
 
 //! Name: provisional, minted 2026-09-26 (UTC) by milestone 129's lane, for this module,
 //! [`REPLACE`] and every constant here. Naming is calef's.

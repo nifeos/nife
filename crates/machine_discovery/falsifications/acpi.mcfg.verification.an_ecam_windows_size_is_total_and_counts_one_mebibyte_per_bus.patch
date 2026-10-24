@@ -17,9 +17,9 @@ it.
 diff --git a/crates/machine_discovery/src/acpi/mcfg.rs b/crates/machine_discovery/src/acpi/mcfg.rs
 --- a/crates/machine_discovery/src/acpi/mcfg.rs
 +++ b/crates/machine_discovery/src/acpi/mcfg.rs
-@@ -29,9 +29,6 @@ impl McfgEntry {
-     /// Zero is the honest answer: there is no bus in the range, so there is no configuration space
-     /// to map.
+@@ -22,9 +22,6 @@ impl McfgEntry {
+     /// Nothing in the MCFG's encoding stops firmware writing `start_bus = 255, end_bus = 0`. Zero
+     /// is the honest answer: there is no bus in the range, so no configuration space to map.
      pub const fn size(&self) -> u64 {
 -        if self.end_bus < self.start_bus {
 -            return 0;

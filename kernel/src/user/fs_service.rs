@@ -5,13 +5,10 @@ use crate::cap::{
 };
 use crate::sched::RendezvousId;
 
-// **Every type and function of `fs_service` lives in a child named for it**, and this file is the
-// index (§282 (when a file is split, the parent becomes an index)). Each child takes
-// `use super::*` and is re-exported whole, so every `fs_service::` path a caller names still
-// resolves and siblings reach each other as they did when they shared this file. Cut by lane
-// `maintainer/last-three-over-2000` (2026-10-12 UTC), which brought this file under §266 (a Rust
-// source file stays under 2,000 lines). A child whose only callers are the system tests has its
-// re-export allowed to go unused without them, for the reason `user` allows this module dead code.
+// Every type and function of `fs_service` lives in a child named for it, and this file is the
+// index (§282 (when a file is split, the parent becomes an index)). Each child takes `use super::*`
+// and is re-exported whole, so every `fs_service::` path resolves and siblings reach each other.
+// A child whose only callers are the system tests may leave its re-export unused without them.
 mod channel;
 pub use channel::*;
 mod stack_watermark;
@@ -50,8 +47,7 @@ pub use two_dirs::*;
 mod std_spawn;
 use std_spawn::spawn_std;
 
-// **`install_for_test`**, the test harness's stand-in for an installer, is in
-// `fs_service/test_install.rs` (moved by milestone 809 (the package client becomes a program)).
+// `install_for_test`, the test harness's stand-in for an installer.
 #[cfg(feature = "system_tests")]
 mod test_install;
 #[cfg(feature = "system_tests")]
