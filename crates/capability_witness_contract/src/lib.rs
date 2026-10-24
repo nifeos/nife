@@ -1,8 +1,7 @@
-//! **The words the capability demonstrations agree on**, and nothing else. Each of milestones 7 to
-//! 19 proved one property of the capability model with a pair of user programs and an assertion in
-//! `kernel/src/user`; what two of those programs share is a crate (AGENTS.md rule 7). Everything
-//! here but [`process_composition`]'s verdict bits is a **sentinel**, a value chosen only to be
-//! recognised: none is a wire format, and changing one costs a rebuild, not a migration.
+//! **The words the capability demonstrations agree on**: each is a pair of user programs and a
+//! `kernel/src/user` assertion, and what two programs share is a crate (AGENTS.md rule 7). All but
+//! [`process_composition`]'s verdict bits are **sentinels**, values chosen only to be recognised:
+//! none is a wire format, and changing one costs a rebuild, not a migration.
 //!
 //! # Bugs
 //!
@@ -17,17 +16,10 @@
 
 #![no_std]
 
-/// The word the frame producer writes into a page it owns, and the consumer reads back through its
-/// own mapping of the same physical page.
-///
-/// The two are separate processes with separate address spaces, so reading this value is the whole
-/// evidence that one physical page is under both mappings: nothing else would put this bit pattern
-/// in a freshly retyped frame.
+/// The word the frame producer writes into a page it owns, and the consumer, a separate process,
+/// reads back through its own mapping: the whole evidence that one physical page is under both.
 ///
 /// # Examples
-///
-/// The producer writes the sentinel into a page it owns and delegates a read-only view; reading it
-/// back is how the consumer knows the memory is shared, not a second zeroed frame:
 ///
 /// ```
 /// use capability_witness_contract::PAGE_FRAME_SENTINEL;
@@ -50,8 +42,7 @@ pub const PAGE_FRAME_SENTINEL: u64 = 0xF00D_CAFE_D00D_1234;
 /// whoever holds the other end can confirm a capability minted by one process carries real
 /// authority when a different process invokes it.
 ///
-/// `system_tests/src/user/delegation_service.rs` re-exports this; it kept its own copy with a "must
-/// match" comment beside it until milestone 291, which is the duplicate this crate removes.
+/// `system_tests/src/user/delegation_service.rs` re-exports this.
 pub const USED_WORD: u64 = 0x5A;
 
 /// The word the cycle-counter reader reports when it read the counter without being killed for it.
@@ -101,8 +92,7 @@ pub const LEAST_AUTHORITY_DEMO_INPUT: u64 = 7;
 /// authority you can count on one hand)).
 ///
 /// Not a sentinel like the words above: a bit layout the fixture writes and the kernel's test reads,
-/// which is the same rule 7 reason to live here. It was the literal `0b111` on both sides while the
-/// fixture stopped at milestone 19b (run a real workload)'s three steps.
+/// which is the same rule 7 reason to live here.
 ///
 /// Name: provisional (the §185 build lane, 2026-10-05), with every constant in it.
 pub mod process_composition {

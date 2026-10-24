@@ -1,5 +1,8 @@
 # Three ratchets' debt
 
+*Name: provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics, with the files and charts it
+defines. Naming is an architect's.*
+
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
 (UTC) by lane/ratchet-metrics, as are the files `writing-standards.csv` and `comment-blocks.csv`,
 their columns and their charts. `line-citations.csv`, its columns, its chart and

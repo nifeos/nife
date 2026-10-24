@@ -102,9 +102,8 @@ pub(crate) fn sock_receive(
         match sockets.get_mut::<udp::Socket>(handle).recv_slice(&mut buf) {
             Ok((n, meta)) => {
                 // The datagram's source endpoint rides back in the frame's dst fields, which are
-                // dead space on a reply (socket_contract's layout note). A responder needs it to answer
-                // whoever asked (TFTP's transfer ids use it today, and mDNS's legacy-unicast rule
-                // did until milestone 298), and this used to be discarded with `.map(|(n, _)| n)`.
+                // dead space on a reply (socket_contract's layout note): a responder needs it to
+                // answer whoever asked, as TFTP's transfer ids do.
                 let IpAddress::Ipv4(src) = meta.endpoint.addr;
                 for (i, &b) in src.octets().iter().enumerate() {
                     window.w8(OFF_DST_IP + i as u64, b);
@@ -219,22 +218,14 @@ pub(crate) fn tcp_listen(
 
 /// **`ACCEPT`: block until a peer connects, then hand the connection over as its own socket.**
 ///
-/// The listener keeps its badge and its port; what moves is the smoltcp socket that just completed
-/// a handshake, which becomes a *connection* in a free entry with a badge of its own, and the
-/// listener is immediately re-armed with a fresh socket parked on the same port. That re-arm is the
-/// difference between a server that accepts a connection and a server that accepts **one**
-/// connection, and it happens before this function returns, so the client can be busy serving the
-/// first exchange while the second handshake completes underneath it in the poll loop.
+/// The handshaken smoltcp socket becomes a connection in a free entry with a new badge, never the
+/// listener in place; the listener keeps its badge and port and is re-armed on a fresh socket
+/// before this returns. Returns the connection's entry, or `REP_ERR` for a full table, a socket
+/// that is not a listener, or no peer within `service_until`'s 15 s. See
+/// notes/net/the-inbound-half.md.
 ///
-/// The connection is a new capability rather than the listener's own, which is the contract
-/// enforcing itself: POSIX would let a listening descriptor become the connection in place, and
-/// that conflation is exactly what makes "give this program port 80" and "give this program this
-/// connection" the same kind of grant there.
-///
-/// **BUGS.** The backlog is one connection deep, because smoltcp has no accept queue: a second peer
-/// arriving in the window between a handshake completing and this call re-arming gets a RST rather
-/// than a wait. Bounded by `service_until`'s 15 s, so an `ACCEPT` nobody ever connects to returns
-/// `REP_ERR` instead of holding the server forever.
+/// BUGS: the backlog is one connection deep (smoltcp has no accept queue), so a peer arriving
+/// between a handshake completing and the re-arm gets a RST rather than a wait.
 pub(crate) fn tcp_accept(
     iface: &mut Interface,
     dev: &mut Nic,
@@ -304,8 +295,7 @@ pub(crate) fn udp_bind(
     port_word: u64,
     grant: u64,
 ) -> Result<(usize, u64), u64> {
-    // Not truncated to 16 bits, tcp_listen's reasoning: a request for 65536 is a request for a
-    // port no grant can name, and silently taking it as port 0 answers a question nobody asked.
+    // Not truncated to 16 bits, for tcp_listen's reason.
     if port_word > u16::MAX as u64 {
         return Err(LISTEN_DENIED);
     }

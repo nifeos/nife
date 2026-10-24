@@ -1,5 +1,7 @@
 # The layout control, in detail
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.*
+
 An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md), whose "The next radon
 evening" keeps the images and the procedure. This file holds how the knob works, why it is two
 build-time variables rather than features, and why the eight images have the sizes they do. It is

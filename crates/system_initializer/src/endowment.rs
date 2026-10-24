@@ -1,8 +1,5 @@
 //! The progenitor's endowment: `BootEndowment`, the capabilities the kernel granted it by slot, and
-//! `MountedTreeGrant`, the optional second directory grant. `lib.rs` re-exports both by name. Moved
-//! out of `lib.rs` unchanged but for visibility by milestone 843 (the system-initializer crate root
-//! is split along its seams), under §279 (the system-initializer crate root splits into private
-//! modules).
+//! `MountedTreeGrant`, the optional second directory grant. `lib.rs` re-exports both by name.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -10,11 +7,9 @@
 /// rather than code this crate repeats, so a board that grants a different layout says so in one
 /// place instead of in this crate's logic.
 ///
-/// The order comes from `kernel::user::boot_progenitor`, which has been one function on all three
-/// architectures since milestone 166, and that is why `components/src/progenitor.rs` states it
-/// once with no `cfg`. Until then aarch64's loader was shared with milestone 19d's test roles and
-/// granted a report endpoint and a test interrupt this system has no use for, which displaced
-/// every slot after the first; see [`for_test_roles`](BootEndowment::for_test_roles).
+/// The order comes from `kernel::user::boot_progenitor`, one function on all three
+/// architectures, so `components/src/progenitor.rs` states it once with no `cfg`. A slot the
+/// kernel did not grant holds nothing, and [`boot`](crate::boot) probes it.
 pub struct BootEndowment {
     /// The construction budget, held `WRITE | GRANT`: everything this system is made of.
     pub untyped: u64,
@@ -22,34 +17,20 @@ pub struct BootEndowment {
     pub uart_dev: u64,
     /// The UART receive interrupt, an `Irq` capability to delegate into the input driver.
     pub uart_irq: u64,
-    /// **The wall clock** (milestone 51's wiring): a `PageFrame` capability with `READ` and nothing
-    /// else, granted ahead of the filesystem pair so its slot is the same on every boot, whether or
-    /// not a disk was attached, and granted **unconditionally**: a boot with no clock service hands
-    /// us a zeroed page, which reads as `clock_contract::state::UNKNOWN` and is the honest answer for a
-    /// machine that does not know the time. The progenitor hands it on only to a child whose manifest declares
-    /// a clock, and hands on `READ`, so nothing spawned from this prompt can set the time
-    /// (DECISIONS §43).
-    ///
-    /// **The shell holds a narrowed view of this same frame** (milestone 86), mapped at
-    /// `SH_CLOCK_VA`, which is what `time <command>` measures with. There is deliberately no
-    /// second field for it: the shell's clock is not a separate kernel grant but this one handed on,
-    /// so a field would ask each board to state the same slot number twice with nothing checking
-    /// that the two agree. `READ` and no `GRANT` there too, so the shell can read the wall clock and
-    /// can hand one to nothing it spawns.
+    /// **The wall clock**: a `PageFrame` capability with `READ` alone, granted on every boot ahead
+    /// of the filesystem pair so its slot never moves. With no clock service it is a zeroed page,
+    /// which reads as `clock_contract::state::UNKNOWN`. Handed on, `READ` alone, to a child whose
+    /// manifest declares a clock and to the shell for `time`, so nothing spawned can set the time
+    /// (DECISIONS §43 (reading the clock is a page, setting it is a page you may write)). The
+    /// shell's view is this frame handed on, not a second grant, so no board states the slot twice.
     pub clock_page: u64,
-    /// **The inert-configuration page** (milestone 47's environment-variable fork, DECISIONS §111):
-    /// a `PageFrame` capability with `READ` and nothing else, granted ahead of the filesystem pair
-    /// for [`clock_page`](BootEndowment::clock_page)'s own reason (so its slot is the same whether
-    /// or not a disk was attached), and granted **unconditionally** for the same reason too: this
-    /// boot's fixed defaults (`TZ=UTC`, `LANG=C`, `TERM=dumb`) are assembled once, before the progenitor
-    /// exists, so every boot hands the progenitor a real, validated page rather than making the slot's
-    /// presence depend on some other component having started (`kernel::user::boot_config_page`,
-    /// the same shape as `boot_clock_page`, minus the service: nothing here runs, so there is no
-    /// readiness handshake to wait on, only a page to assemble and write once).
-    ///
-    /// The progenitor hands it on only to a child whose manifest declares [`grant_plan::Manifest::configuration`],
-    /// and hands on `READ`, so nothing spawned from this prompt can change what a shell hands its
-    /// own children.
+    /// **The inert-configuration page** (DECISIONS §111 (inert configuration is a validated page)):
+    /// a `PageFrame` capability with `READ` alone, granted on every boot ahead of the filesystem
+    /// pair, like [`clock_page`](BootEndowment::clock_page). The kernel assembles the boot's fixed
+    /// defaults (`TZ=UTC`, `LANG=C`, `TERM=dumb`) into it before the progenitor exists
+    /// (`kernel::user::boot_config_page`). Handed on,
+    /// `READ` alone, only to a child whose manifest declares
+    /// [`grant_plan::Manifest::configuration`].
     pub config_page: u64,
     /// **The filesystem, when this boot has one** (milestone 50). The kernel wires the block server
     /// and the FS server before it starts us and grants the service endpoint plus the page its
@@ -58,14 +39,11 @@ pub struct BootEndowment {
     pub fs_ep: u64,
     /// The page the file service's clients share with it; see [`fs_ep`](BootEndowment::fs_ep).
     pub fs_page: u64,
-    /// **A virtio-rng device, when this boot has one** (DECISIONS §120's 2026-08-26 amendment:
-    /// "grant the QEMU-only virtio-rng stopgap"). The confined transport; `WRITE | GRANT`, so this
-    /// process can delegate it to an entropy service it builds. **Absent** on real hardware
-    /// (milestone 55's actual target has none) or a run with `NIFE_RNG` unset, in which case this
-    /// slot holds nothing at all, the same "0/empty means absent" shape [`fs_ep`](BootEndowment::fs_ep)
-    /// already carries; [`boot`](crate::boot) probes for it (`invoke`'s own `NoSuchSlot` on an ungranted slot)
-    /// rather than being told, because there is no fourth `START` argument word left to tell it
-    /// with (`role`, `initial_ramdisk_len`, `fs_rights` already spend all three).
+    /// **A virtio-rng device, when this boot has one** (DECISIONS §120 (a QEMU-only virtio-rng
+    /// stopgap for the interactive boot)). The confined transport; `WRITE | GRANT`, so this process
+    /// can delegate it to an entropy service it builds. **Absent** on real hardware or a run with
+    /// `NIFE_RNG` unset. [`boot`](crate::boot) probes for it, because all three `START` words are
+    /// spent (`role`, `initial_ramdisk_len`, `fs_rights`).
     pub virtio_rng: u64,
     /// The device's completion interrupt; see [`virtio_rng`](BootEndowment::virtio_rng). `READ |
     /// GRANT`, routed by the kernel but left unenabled on riscv64 (`kernel::user::VirtioBootGrant`'s
@@ -78,39 +56,29 @@ pub struct BootEndowment {
     /// value; no capability exposes one), then delegates the same frame to the entropy service it
     /// builds, unread by anything else in between.
     pub virtio_rng_dma: u64,
-    /// **`display_terminal`'s own served endpoint, on a boot whose terminal is a screen beside the
-    /// serial console** (the shell on the firmware screen, milestone 198's rung 1b). The kernel put
-    /// `display_terminal` on the firmware's framebuffer through `framebuffer_driver`
+    /// **`display_terminal`'s served endpoint, on a boot whose terminal is a screen beside the
+    /// serial console**: the kernel put `display_terminal` on the firmware's framebuffer
     /// (`kernel::user::boot_screen_terminal`), and the UART is still the console and the keystroke
-    /// source. [`boot`](crate::boot) hands this to the console server, which writes every byte to both. `WRITE |
-    /// GRANT`. **Absent** (holds nothing) on every other boot, and [`boot`](crate::boot) probes for it.
-    ///
-    /// It was the virtio-gpu stack's endpoint too until milestone 600 (provisional): that stack is
-    /// not built at boot at all any more (milestone 632 (provisional) keeps the boot the minimal
-    /// UART system and launches graphics from the prompt), so this endpoint names a firmware
-    /// screen's terminal and nothing else.
+    /// source. [`boot`](crate::boot) hands this to the console server, which writes every byte to
+    /// both. `WRITE | GRANT`. **Absent** on every other boot, and never beside a virtio-gpu.
     pub disp_term_ep: u64,
     /// The physical page shared with that `display_terminal`, written before an `OPERATION_WRITE` on
     /// [`disp_term_ep`](BootEndowment::disp_term_ep), and absent exactly when that is. `READ |
     /// WRITE | GRANT`.
     pub disp_term_page: u64,
-    /// **The gpu's scanout, when this boot has a virtio-gpu** (milestone 600 (provisional)): one
-    /// `PageFrame` capability naming the surface run, `READ | WRITE | GRANT`, which [`boot`](crate::boot)
-    /// places in the shell (with the gpu's other three) for the user at the prompt to delegate
-    /// into a `graphical_terminal` session (milestone 632 (provisional)); the session's `display_terminal` is
-    /// built on it. It is the tail of [`gpu_dma`](BootEndowment::gpu_dma)'s run, minted separately
-    /// by the kernel because nothing lets a holder narrow a run, and the terminal must not reach
-    /// the driver's rings in the first page. Absent with no GPU, like the rest of the gpu's four.
+    /// **The gpu's scanout, when this boot has a virtio-gpu**: one `PageFrame` capability naming
+    /// the surface run, `READ | WRITE | GRANT`, which a `graphical_terminal` session's
+    /// `display_terminal` is built on. It is the tail of [`gpu_dma`](BootEndowment::gpu_dma)'s run,
+    /// minted separately because nothing lets a holder narrow a run, and the terminal must not
+    /// reach the driver's rings in the first page. Absent with no GPU, like the rest of the gpu's
+    /// four.
     pub gpu_surface: u64,
-    /// **A virtio-gpu, when this boot has one** (milestone 600 (provisional); milestone 177 (wire the graphical terminal stack into the real interactive boot) built
-    /// the stack in the kernel until then): the confined transport, `WRITE | GRANT`, the
+    /// **A virtio-gpu, when this boot has one**: the confined transport, `WRITE | GRANT`, the
     /// [`virtio_rng`](BootEndowment::virtio_rng) trio's shape plus
-    /// [`gpu_surface`](BootEndowment::gpu_surface). Nothing is built from it at boot (milestone
-    /// 632 (provisional), calef's 2026-09-30 ruling: the boot stays the minimal UART system);
-    /// [`boot`](crate::boot) places it and its three siblings in the shell, which holds them until a `graphical_terminal`
-    /// session's spawn hands them back for the drivers to be built from. **Absent** with no GPU
-    /// on the bus, or no `gpu_driver` or `display_terminal` in the archive; [`boot`](crate::boot) probes for
-    /// it. `kernel::user::boot_progenitor` says why these are granted rather than built.
+    /// [`gpu_surface`](BootEndowment::gpu_surface). Nothing is built from it at boot; the spawn
+    /// service keeps it and its three siblings and builds each `graphical_terminal` session's
+    /// drivers from them, and the shell holds none. **Absent** with no GPU on the bus; deleted at
+    /// boot when no session can be built. `kernel::user::boot_progenitor` says why it is granted.
     pub gpu: u64,
     /// The gpu's completion interrupt, `READ | GRANT`, routed and enabled by the kernel.
     pub gpu_irq: u64,
@@ -119,26 +87,22 @@ pub struct BootEndowment {
     /// region carries its own physical base at `abi::virtio::DMA_PHYS_OFFSET`, which `gpu_driver`
     /// reads itself, so this process never maps it.
     pub gpu_dma: u64,
-    /// **A virtio keyboard, when this boot has a gpu too** (milestone 600 (provisional)): the
-    /// confined transport, `WRITE | GRANT`, the [`virtio_rng`](BootEndowment::virtio_rng) trio's
-    /// shape. Not built from at boot; placed in the shell beside the gpu's four (milestone 632
-    /// (provisional)), and a `graphical_terminal` session's `keyboard_driver` is built from it when the user
-    /// delegates it at spawn. **Absent** on a boot with no keyboard, which is milestone 192's
-    /// option A and every real board: a session then takes its keystrokes from the boot's own line
-    /// discipline over the UART. Only ever granted beside [`gpu`](BootEndowment::gpu).
+    /// **A virtio keyboard, when this boot has a gpu too**: the confined transport, `WRITE |
+    /// GRANT`, the [`virtio_rng`](BootEndowment::virtio_rng) trio's shape. The spawn service keeps
+    /// it beside the gpu's four and builds a session's `keyboard_driver` from it. **Absent** on
+    /// every real board, and then a session reads keystrokes from the boot's line discipline over
+    /// the UART. Only ever granted beside [`gpu`](BootEndowment::gpu).
     pub keyboard: u64,
     /// The keyboard's event interrupt, `READ | GRANT`.
     pub keyboard_irq: u64,
     /// The keyboard's one DMA page, `READ | WRITE | GRANT`, carrying its own physical base at
     /// `abi::virtio::DMA_PHYS_OFFSET` as [`gpu_dma`](BootEndowment::gpu_dma) does.
     pub keyboard_dma: u64,
-    /// **A virtio-net device, when this boot has one** (milestone 590 (provisional), the booted
-    /// system starts its network stack; promoted from the proposal
-    /// `the-booted-system-has-no-network`). The confined transport, `WRITE | GRANT`, the
-    /// [`virtio_rng`](BootEndowment::virtio_rng) trio's shape exactly: this process delegates it
-    /// into the `net_stack` it builds and keeps nothing. **Absent** on every real board today and
-    /// on any QEMU run with `NIFE_NET` unset, and [`boot`](crate::boot) probes for it the way it probes for the
-    /// rng.
+    /// **A virtio-net device, when this boot has one.** The confined transport, `WRITE | GRANT`,
+    /// the [`virtio_rng`](BootEndowment::virtio_rng) trio's shape exactly: this process delegates
+    /// it into the `net_stack` it builds and keeps nothing. **Absent** on every real board today
+    /// and on any QEMU run with `NIFE_NET` unset, and [`boot`](crate::boot) probes for it the way
+    /// it probes for the rng.
     pub virtio_net: u64,
     /// The network card's interrupt, `READ | GRANT`; see [`virtio_net`](BootEndowment::virtio_net)
     /// and, for why it arrives unenabled on riscv64, [`virtio_rng_irq`](BootEndowment::virtio_rng_irq).
@@ -146,24 +110,18 @@ pub struct BootEndowment {
     /// The network card's DMA page, with its own physical base written at its last eight bytes;
     /// [`virtio_rng_dma`](BootEndowment::virtio_rng_dma)'s shape and reason. `READ | WRITE | GRANT`.
     pub virtio_net_dma: u64,
-    /// **An entropy service the kernel already built on the CPU's own seed instruction**
-    /// (`RDSEED` on `x86_64`, `RNDRRS` on aarch64), when this boot has no virtio-rng (milestone 595
-    /// (provisional), the `x86_64` half; promoted from the proposal
-    /// `the-x86-64-progenitor-serves-entropy-from-rdseed`). The request endpoint, `WRITE | GRANT`,
-    /// which is what [`boot`](crate::boot) would otherwise have made itself from the
-    /// [`virtio_rng`](BootEndowment::virtio_rng) trio, already proven: the kernel waited for the
-    /// service's readiness report and grants nothing on a refusal
-    /// (`kernel::user::boot_instruction_entropy`, which also says why the kernel builds this one).
-    ///
-    /// **Never both.** The kernel grants this only when it granted no virtio-rng, so a boot has
-    /// one entropy source or none. **Absent** on every riscv64 boot (neither instruction exists
-    /// there), on a CPU without the instruction, and on any QEMU run with `NIFE_RNG` set; [`boot`](crate::boot)
-    /// probes it the way it probes [`fs_ep`](BootEndowment::fs_ep).
+    /// **An entropy service the kernel already built on the CPU's seed instruction** (`RDSEED` on
+    /// `x86_64`, `RNDRRS` on aarch64), when this boot has no virtio-rng. The request endpoint,
+    /// `WRITE | GRANT`, already proven: the kernel waited for the service's readiness report and
+    /// grants nothing on a refusal (`kernel::user::boot_instruction_entropy`). **Never both** this
+    /// and the virtio-rng trio. **Absent** on riscv64, on a CPU without the instruction, and with
+    /// `NIFE_RNG` set; [`boot`](crate::boot) probes it.
     ///
     /// Name: provisional, lane `milestone/595-x86-std`, 2026-09-26. `fs_ep`'s shape, one service over.
     pub entropy_ep: u64,
-    /// **The machine statistics page** (milestone 126, DECISIONS §225 (`free` sees the machine and your share) part 2): a `PageFrame`
-    /// capability with `READ | GRANT` to the frame the kernel keeps its machine-wide counters in
+    /// **The machine statistics page** (DECISIONS §225 (`free` sees the machine and your share)
+    /// part 2): a `PageFrame` capability with `READ | GRANT` to the frame the kernel keeps its
+    /// machine-wide counters in
     /// (`crates/machine_statistics_contract`). Granted unconditionally, like
     /// [`config_page`](BootEndowment::config_page), so its slot never moves. [`boot`](crate::boot) hands it to
     /// the boot prompt's shell when [`GRANT_MACHINE_PAGE`](crate::GRANT_MACHINE_PAGE) says the owner allows it, and keeps no
@@ -204,16 +162,13 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 95's §249 lane, 2026-10-05 (UTC).
     pub own_space: u64,
-    /// **A network stack the kernel already built on an `e1000e` NIC** (milestone 198 (a package
-    /// manager), rung 3a on `x86_64`): its `Stack` endpoint with every right, which is what
-    /// [`boot`](crate::boot)'s own retype of that endpoint carries on the virtio path, so from here on the two
-    /// are the same endpoint to everything downstream. The kernel builds this server rather than
-    /// granting its raw materials for `kernel::user::boot_usb_keyboard`'s reason: twenty pages of
-    /// spawn-time mappings, which no capability names. **Never both** this and
-    /// [`virtio_net`](BootEndowment::virtio_net): the kernel grants this only on a boot with no
-    /// virtio-net. **Absent** on every `virt` boot, on a NIC with no link, and on a part no gate
-    /// has driven: xenon's I219, until the bench boot of milestone 494 (a driver for the network
-    /// card a PC actually has). [`boot`](crate::boot) probes.
+    /// **A network stack the kernel already built on an `e1000e` NIC**: its `Stack` endpoint with
+    /// every right, the same endpoint to everything downstream as the virtio path's. The kernel
+    /// builds this server for `kernel::user::boot_usb_keyboard`'s reason (spawn-time mappings no
+    /// capability names). **Never both** this and [`virtio_net`](BootEndowment::virtio_net).
+    /// **Absent** on every `virt` boot, on a NIC with no link, and on a part no gate has driven,
+    /// such as the I219 that milestone 494 (a driver for the network card a PC actually has) is
+    /// for. [`boot`](crate::boot) probes.
     ///
     /// Name: provisional, milestone 198's lane, 2026-10-05 (UTC).
     pub net_stack_ep: u64,
@@ -223,8 +178,8 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 198's lane, 2026-10-05 (UTC).
     pub net_stack_report: u64,
-    /// **The reboot object** (milestone 805 (`reboot` at the prompt), DECISIONS §251 (restarting
-    /// the machine is a kernel object the progenitor hands out)), `WRITE | GRANT`: the one capability
+    /// **The reboot object** (DECISIONS §251 (restarting the machine is a kernel object the
+    /// progenitor hands out)), `WRITE | GRANT`: the one capability
     /// on the machine that may restart it, granted on every boot. [`boot`](crate::boot) never invokes it. The
     /// spawn service keeps it and places `WRITE` in a child whose manifest declares
     /// [`grant_plan::Manifest::reboot`], which syncs for itself through its sync-only
@@ -232,23 +187,17 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     pub reboot: u64,
-    /// **Capabilities the kernel granted that the interactive system never uses**, deleted with the
-    /// device authority once the drivers exist.
-    ///
-    /// Empty on riscv64. On aarch64 it is the kernel's report endpoint and the milestone-19d.2b test
-    /// SGI, both of which exist because that boot path is shared with the test roles: nothing
-    /// receives on the report here, and no interactive component waits on that interrupt. A progenitor
-    /// that kept them would be keeping delegable authority for no reason, which is the same kind of
-    /// thing the construction budget is.
+    /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
+    /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,
+    /// which exist because that boot path is shared with the test roles.
     pub for_test_roles: &'static [u64],
 }
 
-/// **The shell's second mounted tree** (milestone 154 (a process that holds two directory capabilities)'s mechanism; milestone 834 (ioping on nife
-/// and Linux) gave it a server): a second file service the kernel granted, which the boot shell
-/// holds at `grant_plan::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
+/// **The shell's second mounted tree**: a second file service the kernel granted, which the boot
+/// shell holds at `grant_plan::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
 /// (`grant_plan::spawnproto::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
-/// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole
-/// description and a boot without one passes `None`.
+/// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole description
+/// and a boot without one passes `None`.
 ///
 /// On the real boot it is the disk tree, the whole NVMe namespace as one read-only file served with
 /// no cache (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"), and both slots are empty on a

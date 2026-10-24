@@ -47,8 +47,10 @@
 #   module     any `.rs` file that is not a crate root or program: its `//! Name: ...` block
 #   directory  a directory of `.md` under design/, notes/ or briefs/: a paragraph of its README.md
 #              opening `Name:` (emphasis allowed, bold not), which §75 already required
-#   document   each `.md` stem in such a directory: a README paragraph opening `` `stem` Name: ``,
-#              or the directory's block when it has none
+#   document   each `.md` stem in such a directory: a paragraph of the document itself opening
+#              `Name:`, written under its title (calef, 2026-10-24 UTC), or the directory's block
+#              when it has none. A README paragraph opening `` `stem` Name: `` is still read until
+#              helpers/document_name_migrate.py has moved the last one; `--check` counts them
 #
 # An item or module WITHOUT a marker is not tracked and never fails: thousands exist and nothing
 # says why they are named so. A lane minting one writes the marker, which is how it reaches the
@@ -300,8 +302,8 @@ if mode == "--check":
               file=sys.stderr)
         print("An item marks its name with a `/// Name: provisional, <who, when>.` paragraph, a "
               "documentation directory with a", file=sys.stderr)
-        print("README paragraph opening `Name:`; see the `item` and `directory` kinds in this "
-              "script's header.", file=sys.stderr)
+        print("README paragraph opening `Name:`, a document with a paragraph opening `Name:` "
+              "under its title; see the kinds in this script's header.", file=sys.stderr)
         sys.exit(1)
     print(f"names: {len(records)} names carry provenance "
           f"({', '.join(f'{len(by_kind.get(k, []))} {PLURAL.get(k, k + chr(115))}' for k in KINDS)})")
@@ -313,6 +315,11 @@ if mode == "--check":
           f"(script/names --unratified), which is a worklist and not a failure")
     print(f"names: {len(unblocked)} modules, documents and pub items carry no block, held to a list that only shrinks "
           f"(helpers/module_block_ratchet.py)")
+    legacy = [r for r in records if r.get("legacy")]
+    if legacy:
+        print(f"names: NOTE {len(legacy)} document blocks are still read from a README paragraph; "
+              f"helpers/document_name_migrate.py --apply moves them into their documents",
+              file=sys.stderr)
     for bad in contradictions:
         print(f"names: NOTE {bad!r} is recorded as refused and is also a live name", file=sys.stderr)
     sys.exit(0)

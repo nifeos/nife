@@ -23,12 +23,4 @@ a summary of every sweep. These files carry the evidence its prose budget has no
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `inductive-validity-cores` Name: provisional. Named after the main page's own heading.
-- `record-limit` Name: provisional.
-- `milestone-212-scope` Name: provisional.
-- `six-real-records` Name: provisional. Named after the main page's own heading.
-- `self-referential-sweep` Name: provisional.
-- `duplicated-implementation-sweep` Name: provisional.
-- `machine-discovery-sweep` Name: provisional.
+Each stem here is named for its content, and calef names files.

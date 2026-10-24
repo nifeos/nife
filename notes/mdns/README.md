@@ -15,8 +15,4 @@ tense.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `router-capture` Name: provisional.
-- `smoltcp-multicast` Name: provisional.
-- `qemu-gate` Name: provisional. After the main page's own heading.
+Each stem here is named for its content, and calef names files.

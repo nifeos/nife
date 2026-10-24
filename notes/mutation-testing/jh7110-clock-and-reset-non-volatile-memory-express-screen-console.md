@@ -1,5 +1,7 @@
 # `jh7110_clock_and_reset`, `non_volatile_memory_express`, `screen_console`
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `clock-and-reset-nvme-screen-console`.*
+
 The last lane of milestone 326 (nobody has been assigned to turn a mutation score upward) part 3,
 on 2026-09-21, and its re-derivation of what the part left. It verifies these three crates' rows in
 [notes/mutation-testing.md](../mutation-testing.md).

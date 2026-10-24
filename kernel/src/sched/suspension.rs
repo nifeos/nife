@@ -1,18 +1,11 @@
-//! **`ThreadControlBlock::SUSPEND` and `RESUME`** (DECISIONS §300 (the paused state, a TCB verb,
-//! silent)): stopping a started thread so that it runs on later from where it stood.
+//! `ThreadControlBlock::SUSPEND` and `RESUME` (§300 (the paused state, a TCB verb, silent)):
+//! stopping a started thread so that it runs on later from where it stood.
 //!
-//! A suspended thread is `Blocked` on [`Wait::Resume`], on no queue, with its token at home. That
-//! is the shape a `CALL` caller already has while it waits for its reply, so every teardown that
-//! finishes a blocked thread in place (a region's `DESTROY`, a process's end, a killed current)
-//! finishes a suspended one with no new case, and the handshake's undelivered-wake gate refuses
-//! every wake but `RESUME`'s. `notes/suspend-and-resume.md` has the three hard cases: a thread
-//! blocked in IPC, one running on another core, and one that has already died.
-//!
-//! The order and its effect are two steps. `SUSPEND` records
-//! [`suspend_requested`](crate::thread::Thread::suspend_requested); the thread parks where it next
-//! meets the scheduler, which is [`park_suspended_current`] for a thread leaving a core and
-//! [`park_popped_and_pop_again`] for one about to be switched onto one. Both are reached from
-//! `schedule`, the one path onto a CPU, so no thread carrying the order runs another instruction.
+//! A suspended thread is `Blocked` on [`Wait::Resume`], on no queue, with its token at home, so
+//! every teardown that finishes a blocked thread finishes a suspended one. `SUSPEND` records
+//! [`suspend_requested`](crate::thread::Thread::suspend_requested), and the thread parks where it
+//! next meets `schedule`: [`park_suspended_current`] leaving a core, [`park_popped_and_pop_again`]
+//! about to be switched onto one. See `notes/suspend-and-resume.md`.
 //!
 //! Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC). The module and its four
 //! functions are provisional names.

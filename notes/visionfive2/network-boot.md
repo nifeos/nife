@@ -1,5 +1,7 @@
 # Booting over the network, in detail
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), which keeps the two commands. This file
 holds the design of the TFTP path from milestone 257 (boot radon over the network) and the measurements behind it.
 

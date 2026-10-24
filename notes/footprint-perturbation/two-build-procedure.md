@@ -1,5 +1,7 @@
 # The two-build procedure of 2026-09-04
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.*
+
 An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md). This is the procedure
 the 2026-09-04 session followed: two builds, unpadded and padded, interleaved on one card. It is kept
 because it produced the session's numbers and because E1 and E4 still run this way. The next E3

@@ -1,33 +1,12 @@
 //! **The sub-server's supervisor: restart policy, in userspace, holding nothing** (milestone 22
 //! phase B.2).
 //!
-//! The kernel turns a death into a message (DECISIONS §26) and stops there. This is the other half:
-//! what to *do* about it. Bounded retries, a clean exit treated as "finished" rather than "crashed",
-//! and a give-up. All of it ordinary code in an unprivileged process, and none of it in the kernel.
-//!
-//! **What it holds is the point.** A request channel to the spawner, the death channel for its children,
-//! and a WRITE view of a report endpoint. **No untyped at all**, so it cannot build a process, cannot
-//! make an endpoint, cannot allocate a page. Its entire power is to ask the spawner for a rebuild of
-//! the one program the spawner can build. A compromised supervisor is a restart loop, not a foothold.
-//!
-//! **It reaps its own children now** (DECISIONS §32). It used to ask the spawner to, because reaping
-//! meant `MemoryRegion::DESTROY` and only the spawner held the region capability; the reap is a method on
-//! the supervision endpoint this program already holds, so the proxy hop is gone. Nothing about what
-//! it holds has grown: still no memory, still nothing it can build with. The reclaimed pages go back
-//! to the *spawner's* budget, because that is who owns the region (§13). The instance handle the
-//! spawner used to issue is gone too: the kernel stamps a tid on the death message, and §32
-//! authorizes that tid relative to the endpoint it arrived on.
-//!
-//! **It supervises two children on one endpoint, and tells them apart by label** (milestone 105 (the two
-//! forks), DECISIONS §148 (resolves by asking the kernel) as amended 2026-10-04, ruling R3). A tid says which thread died, not which of
-//! *our* children it was, and until §148 the tree got away with that by running one sub-server at a
-//! time. Now the spawner stamps each child's supervision capability with a label we chose
-//! ([`SUB_SERVER_LABELS`]), and the kernel hands that label back beside the death message. The
-//! restart policy is per label. Nobody reports anything to us that we have to believe: the label
-//! arrives from the kernel, and the child it names never held it.
-//!
-//! The progenitor is not involved in any of this, and cannot be: by the time the first death arrives, `root_supervisor`
-//! has deleted the construction budget it would need. See notes/trusted-init.md.
+//! The kernel turns a death into a message (DECISIONS §26); this decides what to do about it:
+//! bounded retries, a clean exit read as finished, and a give-up. It holds a request channel to the
+//! spawner, its children's death channel, a WRITE view of a report endpoint and no untyped, so a
+//! compromised supervisor is a restart loop, not a foothold. It reaps its own children (`reap`)
+//! and tells its two children apart by the label the kernel returns with each death (§148 (resolves
+//! by asking the kernel) as amended 2026-10-04). See notes/trusted-init/supervision-tree.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `subsup`. Refused `subsup` and
 //! `sub_supervisor`, which is ambiguous in the way that matters: this supervises **a sub-server**,
@@ -103,8 +82,7 @@ pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         child.running = false;
 
         if event != abi::fault::EVENT_FAULT {
-            // A clean exit is not a reason to restart. This distinction is exactly why §26 delivers
-            // both events instead of only faults, and it lives here, in userspace, where it belongs.
+            // A clean exit is not a reason to restart, which is why §26 delivers both events.
             continue;
         }
 

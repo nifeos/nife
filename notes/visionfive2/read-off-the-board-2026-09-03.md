@@ -1,5 +1,7 @@
 # Read off the board, 2026-09-03
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md). Three of the facts here were guesses
 until this session, the first bench session that drove radon from a script rather than by hand.
 

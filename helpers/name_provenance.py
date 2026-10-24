@@ -436,13 +436,60 @@ def rust_items(text):
 # §75 (directories under `design/` and `notes/` carry provenance in their own README) already said
 # a directory under `design/` or `notes/` records its name in its own README, and nothing read it.
 # A README block is a markdown PARAGRAPH (or list item) that opens `Name:`, once emphasis is
-# stripped, because that is how every existing README already wrote it (`*Name: ...*`). A paragraph
-# opening with a backticked file stem and then `Name:` is that stem's own block, and a stem with
-# none inherits the directory's: an appendix directory is minted in one piece, so one block usually
-# speaks for every file in it.
+# stripped, because that is how every existing README already wrote it (`*Name: ...*`). A document
+# under `design/`, `notes/` or `briefs/` carries its own block the same way, as a paragraph of the
+# document opening `Name:` (`document_block`), and one with none inherits its directory's: an
+# appendix directory is minted in one piece, so one block usually speaks for every file in it. A
+# README paragraph opening with a backticked file stem and then `Name:` is the older home of that
+# stem's block, still read while helpers/document_name_migrate.py moves them into their documents.
 
 _MD_WRAP = re.compile(r"^(?:[-+]\s+|\d+\.\s+)?[*_]*")
 _MD_STEM = re.compile(r"^`([^`]+)`\s*[:.,]?\s*Name:\s*(.*)$", re.S)
+
+
+def markdown_paragraphs(text):
+    """`(first line, last line, paragraph)` for each markdown paragraph or list item, 1-based.
+
+    A paragraph ends at a blank line, a heading, a table row, a code fence or the next list item,
+    and its lines are joined with single spaces. Fenced code is skipped.
+    """
+    paragraphs, cur, first, last, fence = [], [], None, None, False
+    for number, line in enumerate(text.split("\n"), 1):
+        if line.strip().startswith("```"):
+            fence = not fence
+        if fence or not line.strip() or line.lstrip().startswith(("|", "#")):
+            if cur:
+                paragraphs.append((first, last, " ".join(cur)))
+                cur = []
+            continue
+        if re.match(r"^\s*(?:[-+]|\d+\.)\s", line) and cur:
+            paragraphs.append((first, last, " ".join(cur)))
+            cur = []
+        if not cur:
+            first = number
+        last = number
+        cur.append(line.strip())
+    if cur:
+        paragraphs.append((first, last, " ".join(cur)))
+    return paragraphs
+
+
+def stem_paragraph(para):
+    """`(stem, block)` when a README paragraph opens `` `stem` Name: ``, else None. Bold is not one."""
+    body = para[re.match(r"^(?:[-+]\s+|\d+\.\s+)?", para).end():]
+    m = _MD_STEM.match(body.lstrip("*_"))
+    if m is None or body.startswith("**"):
+        return None
+    return re.sub(r"(\.md|/)$", "", m.group(1).strip()), m.group(2).strip().rstrip("*_").strip()
+
+
+def document_block(text):
+    """A document's own block: its first paragraph opening `Name:`, emphasis allowed, or None.
+
+    The same parse as a README's directory block, because a document's block is written the same
+    way (`*Name: provisional, minted <date> (UTC) by <lane>.*` under its title, design/naming.md).
+    """
+    return markdown_blocks(text)[0]
 
 
 def markdown_blocks(text):
@@ -451,23 +498,7 @@ def markdown_blocks(text):
     A stray is a paragraph that reads as a header and is not one this parse takes: bold `**Name:`,
     a second directory block, or a bold `**Provisional name**` opener.
     """
-    paragraphs, cur, first, fence = [], [], None, False
-    for number, line in enumerate(text.split("\n"), 1):
-        if line.strip().startswith("```"):
-            fence = not fence
-        if fence or not line.strip() or line.lstrip().startswith(("|", "#")):
-            if cur:
-                paragraphs.append((first, " ".join(cur)))
-                cur = []
-            continue
-        if re.match(r"^\s*(?:[-+]|\d+\.)\s", line) and cur:
-            paragraphs.append((first, " ".join(cur)))
-            cur = []
-        if not cur:
-            first = number
-        cur.append(line.strip())
-    if cur:
-        paragraphs.append((first, " ".join(cur)))
+    paragraphs = [(first, para) for first, _last, para in markdown_paragraphs(text)]
 
     directory, stems, loose = None, {}, []
     for number, para in paragraphs:
@@ -482,10 +513,9 @@ def markdown_blocks(text):
             else:
                 loose.append((number, para))
             continue
-        m = _MD_STEM.match(plain)
-        if m and not bold:
-            stem = re.sub(r"(\.md|/)$", "", m.group(1).strip())
-            stems[stem] = m.group(2).strip().rstrip("*_").strip()
+        hit = stem_paragraph(para)
+        if hit:
+            stems[hit[0]] = hit[1]
             continue
         if (plain.startswith("Name:") and bold) or AD_HOC.match(body):
             loose.append((number, para))

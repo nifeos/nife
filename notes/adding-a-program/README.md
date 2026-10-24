@@ -12,7 +12,6 @@ directory carries the reasoning its prose budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
 - `why-it-works-this-way` Name: provisional. After the parent's "Why it works this way". calef names
   files.
 - `the-archives` Name: provisional. After what the page describes. calef names files.
