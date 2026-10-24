@@ -29,47 +29,26 @@ pub(crate) fn esp_dir() -> std::path::PathBuf {
     workspace_root().join("target/esp")
 }
 
-/// **Build the bootable UEFI image** (milestone 87): the kernel, the userspace archive, and the
-/// loader that carries both, staged where firmware looks for them.
-///
+/// **Build the bootable UEFI image** (milestone 87) at [`esp_dir`], with no kernel features: the
+/// kernel, the archive, and the loader that embeds both. Only [`uefi_image_command`] reads the
+/// command line; other callers' arguments are theirs. See
+/// notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
 /// ```text
 /// cargo xtask uefi-image
-/// # then, under QEMU with real firmware:
-/// helpers/qemu-uefi-x86_64.sh target/esp
-/// # or, on the Dell OptiPlex: copy target/esp/EFI/BOOT/BOOTX64.EFI to a FAT32 stick, same path.
+/// helpers/qemu-uefi-x86_64.sh target/esp    # boot it under QEMU with real firmware
 /// ```
-///
-/// **The order is a dependency, not a preference.** `uefi_loader` embeds the kernel ELF and the
-/// archive with `include_bytes!`, so both have to exist and be current before it is compiled; its
-/// build script takes their paths from the environment and refuses to build without them, rather
-/// than guessing at `target/`. That refusal is the mechanism keeping a stale `.efi` from being
-/// possible to produce by hand.
-///
 /// # BUGS
-///
-/// - **`BOOTX64.EFI` is the removable-media fallback path**, which is what a USB stick uses and
-///   what OVMF finds with no configuration. Installing to the machine's own ESP with a boot entry
-///   of its own (`efibootmgr`'s job on Linux) is not done here, and is what a machine that boots
-///   nife by default would need.
-///
-/// `--features <list>` builds the kernel with those cargo features, the one way to put a
-/// non-default kernel on xenon's stick. Written by the watchdog soak's lane (pull request #1301, a
-/// wedged kernel resets itself) for `--features watchdog_soak_test`, and landed by milestone 563 (a
-/// seal check that reads bytes cannot see a check that was dropped), the change that made a soak
-/// kernel seal at all. Any kernel feature works the same way; one whose boot enters no archive
-/// program through `trust::require_program` or the hand-over will still be refused as `NOT SEALED`.
-///
-/// **Only the `uefi-image` subcommand reads the command line** ([`uefi_image_command`]). The other
-/// callers (`swish-check`'s `x86_64` leg, the stick) call this with no features, because the
-/// arguments on *their* command line are theirs: `script/swish-check --arch x86_64` handed
-/// `--arch x86_64` to this parser and failed with its usage line from 915a60c3d until 2026-09-26,
-/// found by milestone 198 (a package manager) rung 3a's image lane.
+/// - `BOOTX64.EFI` is the removable-media path; no boot entry of its own is installed (the note).
 pub(crate) fn uefi_image() -> bool {
     uefi_image_with(None)
 }
 
-/// `cargo xtask uefi-image [--features <list>]`: the one caller whose arguments are this
-/// function's.
+/// `cargo xtask uefi-image [--release] [--features <list>]`: the one caller whose arguments are
+/// [`uefi_image`]'s.
+///
+/// `--features` builds the kernel with those cargo features, the one way to put a non-default
+/// kernel (`watchdog_soak_test`) on xenon's stick. A kernel whose boot enters no archive program
+/// through `trust::require_program` or the hand-over is still refused as `NOT SEALED`.
 pub(crate) fn uefi_image_command() -> bool {
     let args: Vec<String> = std::env::args().skip(2).collect();
     // `--release` is `script/boot-file-size-check`'s: the image it budgets is the one an install
@@ -117,29 +96,14 @@ pub(crate) fn uefi_image_with(features: Option<&str>) -> bool {
 }
 
 /// **The shipping kernel and the archive it is measured against**, built in the order the comment
-/// inside requires, returning the kernel's path. Split out of [`uefi_image`] by milestone 445 so
-/// that the screen gate can stage the same kernel behind a differently-built loader without
-/// duplicating that order, which is the one thing here nobody may get wrong.
+/// inside requires, returning the kernel's path (stripped of DWARF for a release image). Shared so
+/// the screen gate stages the same kernel without duplicating that order.
 pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
-    // **The archive FIRST, then the kernel, and the order is load-bearing.** Packing the archive
-    // regenerates `target/init-measure-x86_64.txt`, the manifest `kernel/build.rs` compiles in as
-    // the measured-boot trust root. Kernel-first builds a kernel vouching for the PREVIOUS archive,
-    // and the gate then refuses the pair at the point of handover:
-    //
-    //     MEASURED BOOT REFUSED: no measurement for the archive entry 'progenitor'
-    //
-    // **This is the second time this defect has reached a bench**, which is why the comment is here
-    // rather than in a note. `script/board-image` had it for riscv64 and the VisionFive 2 refused
-    // the pair on 2026-08-15 (boot 12); the fix there carries a comment saying "QEMU never hit it
-    // because xtask orders these correctly", which was true of the riscv64 path and false of this
-    // one. xenon refused the pair the same way on 2026-09-17, after its self-test passed.
-    //
-    // QEMU does not catch it because a developer who runs the kernel and the archive from one
-    // working tree usually has both fresh; it bites when the kernel is already built, which is
-    // every time a lane has compiled it earlier in the session.
-    //
-    // `initial_ramdisk_x86` builds `components`, never the kernel, so the dependency runs one way
-    // only and this order is the safe one as well as the correct one.
+    // **The archive FIRST, then the kernel.** Packing the archive regenerates
+    // `target/init-measure-x86_64.txt`, which `kernel/build.rs` compiles in as the measured-boot
+    // trust root, so a kernel built first vouches for the previous archive and the handover refuses
+    // ("MEASURED BOOT REFUSED"). QEMU rarely shows it; two benches did
+    // (notes/x86-uefi-boot/running-under-firmware.md). `initial_ramdisk_x86` never builds the kernel, so this order is safe.
     let mut build = vec!["build", "-p", "kernel", "--target", X86_TARGET];
     if let Some(list) = features {
         build.extend(["--features", list]);
@@ -151,13 +115,10 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
     if !RELEASE.load(Ordering::Relaxed) {
         return Some(built.display().to_string());
     }
-    // **A release image embeds a kernel with its DWARF removed**, calef's ruling of 2026-10-03 UTC
-    // on the install boot slots. The release kernel ELF is about 7.5 MB, 5.8 MB of it `.debug_*`
-    // that nothing in the loader or the kernel reads (symbolisation is offline, against the
-    // unstripped file that stays in `target/`). Stripping happens HERE, before the loader embeds
-    // the file, so the seal (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`, which looks for the
-    // archive's digests in the kernel's `.rodata`) is taken over the bytes that ship; `--strip-debug`
-    // never touches `.rodata`. Same tool and flag the archive's packer uses.
+    // **A release image embeds a kernel with its DWARF removed** (calef, 2026-10-03 UTC): about
+    // 5.8 MB of a 7.5 MB ELF that nothing on the machine reads. Stripped before the loader embeds
+    // it, so the seal (`refuse_an_unsealed_pair`, digests in `.rodata`, which `--strip-debug`
+    // leaves alone) covers the bytes that ship.
     let stripped = built.with_file_name("kernel.stripped");
     let bytes = match crate::inspect::read_stripped(&built.display().to_string()) {
         Ok(b) => b,
@@ -176,16 +137,10 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
 /// **Where the screen gate's EFI system partition is staged**
 /// (milestone 445 (the screen check stops sampling and starts asking)).
 ///
-/// A third directory, for the reason [`uefi_test_esp_dir`] is a second one, and the entry in
-/// `uefi_loader`'s `Cargo.toml` says what it costs to get this wrong. The loader here is built with
-/// `screen_hold`, so the kernel it hands over to stops at the screen handover and waits up to ten
-/// seconds for a byte on the serial line. That is exactly right for a gate holding a camera and
-/// exactly wrong for a stick in somebody's pocket, and `esp_dir()` is the one the bench procedure
-/// copies from.
-///
-/// **The kernel is byte-identical to `esp_dir()`'s.** Only the loader differs, and only by one word
-/// on the command line it writes, which is the whole reason the knob is a boot-time token rather
-/// than a build of the kernel: the binary under test is the binary that ships.
+/// A third directory, for the reason [`uefi_test_esp_dir`] is a second one: its loader is built
+/// with `screen_hold`, so the kernel waits up to ten seconds at the screen handover for a serial
+/// byte, which is wrong for a stick. The kernel is byte-identical to [`esp_dir`]'s; only one word
+/// on the loader's command line differs, so the binary under test is the binary that ships.
 fn uefi_screen_esp_dir() -> std::path::PathBuf {
     workspace_root().join("target/esp-screen")
 }
@@ -236,10 +191,8 @@ pub(crate) fn uefi_stage(
     if RELEASE.load(Ordering::Relaxed) {
         args.push("--release");
     }
-    // Not `cargo()`: that helper exports the aarch64 runner's
-    // `NIFE_INITIAL_RAMDISK`/`NIFE_DISK`/`NIFE_NET`, none of which means anything to a UEFI build,
-    // and the two archive variables would then differ by one character in a way nothing would
-    // catch.
+    // Not `cargo()`: it exports the aarch64 runner's `NIFE_INITIAL_RAMDISK`, which differs from
+    // `NIFE_UEFI_INITIAL_RAMDISK` by one word in a way nothing would catch.
     let built = Command::new("cargo")
         .args(&args)
         .env("NIFE_UEFI_KERNEL", kernel)
@@ -305,31 +258,12 @@ pub(crate) fn uefi_stage(
 
 /// **Boot the UEFI image under OVMF and check the firmware path actually ran** (milestone 87).
 ///
-/// This is the gate, and what it asserts is chosen so that it cannot pass for the wrong reason:
-///
-/// - **`(xsdt)` in the ACPI line.** Under QEMU's PVH loader the RSDP is found by *scanning* the
-///   BIOS area, and what turns up is an ACPI 1.0 pointer with an RSDT root. Real firmware hands
-///   over a revision-2 RSDP with an XSDT. So this string is only printable if the loader read the
-///   UEFI configuration table and the kernel walked the 64-bit root, which is a path that had never
-///   executed before this milestone.
-/// - **no `rsdp 0x0`.** The PVH handoff's own tell, and the thing this loader exists to fix.
-/// - **the tour's completion line.** Everything between the two: the fine page tables, the APIC,
-///   the timer, the scheduler and two ring-3 processes, on a memory map from firmware rather than
-///   from a hypervisor.
-/// - **the ECAM window enabled from the MCFG** (milestone 165). The runner boots at 2 GiB rather
-///   than the PVH runner's 256 MiB, which is what puts firmware's tables above 1 GiB, where a real
-///   machine keeps them. On 2026-09-02 that boot found no ACPI at all, because the walk's reach
-///   bound disagreed with `boot.s` by 4x; asserting the *end* of the chain (a PCIe window whose
-///   base came from a table read at a high physical address) is what makes the whole chain a gate
-///   rather than the three separate facts it is made of.
-///
-/// - **the shell on the screen, answering a serial keystroke** (the shell on the firmware screen,
-///   milestone 198's rung 1b). The screen is read three times: the kernel's tour (milestone 243),
-///   the prompt once the userspace terminal has taken the screen over, and the answer to a command
-///   typed on COM1. See [`screen_watch`].
-///
-/// The boot is bounded by the runner script; a kernel that hangs fails this by producing none of
-/// the three rather than by hanging the gate. It is stopped as soon as the screen has answered.
+/// Each assertion is one only the firmware path can satisfy: `(xsdt)` in the ACPI line and no
+/// `rsdp 0x0` (PVH's tell), the tour's completion, the ECAM window from the MCFG read above 1 GiB
+/// (milestone 165), and the shell on the screen answering a serial keystroke ([`screen_watch`]).
+/// The runner bounds the boot, so a hang fails rather than hangs; it is stopped once the screen
+/// has answered. Returns whether everything held. See
+/// notes/x86-uefi-boot/running-under-firmware.md, "What `uefi-boot` asserts".
 pub(crate) fn uefi_boot() -> bool {
     uefi_boot_staged()
 }
@@ -375,21 +309,9 @@ fn uefi_boot_staged() -> bool {
     eprintln!();
     eprintln!("--- boot under real firmware, x86_64 (QEMU q35 + OVMF) ---");
 
-    // **The screen half** (milestone 243). A QEMU monitor on a unix socket, a poller that asks it
-    // for a screendump until the tour's last line is *on the screen*, and `serial_console::screen`
-    // to turn the picture back into text. Everything the framebuffer path can get wrong shows up
-    // here and nowhere else: the loader's `LocateProtocol`, the byte order, the stride, the mapping
-    // surviving `mmu::init`, and the glyphs. The serial transcript below would be identical if the
-    // screen were black.
-    //
-    // **And then the shell on it** (the shell on the firmware screen, milestone 198's rung 1b): the
-    // same poller keeps reading until the prompt is on the screen, types one command on the SERIAL
-    // line, and reads its answer back off the SCREEN. That is the whole rung in one exchange: the
-    // console server writes both surfaces, the keystrokes still arrive over COM1, and what reaches
-    // the monitor is the shell and not the kernel. So it needs the runner's stdin, which is COM1.
-    //
-    // In /tmp rather than under target/, because a unix socket path is capped at 104 bytes by the
-    // OS and a worktree checkout plus `target/` gets close. Same reason `gpu_shot` does it.
+    // The screen half reads the monitor's screendumps; the serial transcript would be identical
+    // if the screen were black. It types on the runner's stdin, which is COM1. In /tmp because a
+    // unix socket path is capped at 104 bytes and a worktree's `target/` gets close.
     let sock = format!("/tmp/nife-uefi-screen-{}.sock", std::process::id());
     let shot =
         std::path::PathBuf::from(format!("/tmp/nife-uefi-screen-{}.ppm", std::process::id()));
@@ -407,10 +329,8 @@ fn uefi_boot_staged() -> bool {
         std::thread::spawn(move || screen_watch(&sock, &shot, serial, &wire))
     };
     let screen = watcher.join().unwrap_or_default();
-    // **Stop the machine once the screen has answered**, rather than waiting out the runner's
-    // bound: the kernel never exits, and everything asserted below has been printed by the time the
-    // prompt answered a command. SIGTERM to the wrapper, which is the signal `qemu-bounded.sh`
-    // forwards to QEMU; its own killer is the backstop if this is lost.
+    // Stopped once the screen has answered: the kernel never exits, and everything asserted below
+    // is printed by then. SIGTERM is what `qemu-bounded.sh` forwards to QEMU; its killer backs it.
     let _ = Command::new("kill")
         .args(["-TERM", &child.id().to_string()])
         .status();
@@ -441,28 +361,13 @@ fn start_uefi_screen_boot(sock: &str) -> Option<std::process::Child> {
         .arg(uefi_screen_esp_dir())
         .current_dir(workspace_root())
         .env("NIFE_SCREEN_MON", sock)
-        // **Two cores** (milestone 195), where every other x86_64 boot in this tree takes one.
-        // `arch::x86_64::ap_boot` copies its real-mode trampoline to physical 0x8000, a page no
-        // loader had ever asked the firmware for, so secondary cores under firmware worked or did
-        // not by luck. `uefi_loader` asks for it by name now and this is what checks that the
-        // asking worked. It also puts a second local APIC on the machine, which is the third thing
-        // milestone 215's BUGS listed as answerable only on xenon: whether a machine with more than
-        // one still delivers device interrupts to the boot core's id. The tour's `device irq` line
-        // is that answer.
-        //
-        // The suite leg (`uefi-test`) keeps the runner's one-core default, and the split is a
-        // measured boundary rather than a dodge: the two defects that once made two cores flake
-        // are fixed (milestone 316's `boot_cpu_id` record, and `cpu_start`'s count re-read after
-        // the STARTUP IPIs, fixed 2026-09-19), the tour above gates the second core on every
-        // boot (`smp: 2 core(s) online` below; zero misses across the dedicated measurement,
-        // notes/uefi-boot-two-core-rate.md), and the whole suite at two cores under OVMF has not
-        // been measured since those fixes, so that default stands until it is.
+        // Two cores (milestone 195): this checks that the loader's request for the trampoline
+        // page at 0x8000 worked, and that device interrupts still reach the boot core with a
+        // second local APIC. The suite keeps one core until it is measured at two under OVMF;
+        // see notes/x86-uefi-boot/running-under-firmware.md, "SMP under firmware".
         .env("NIFE_SMP", "2")
-        // **The bare firmware machine, whether or not a suite leg ran first.** `test()` sets
-        // `NIFE_DISK` and `NIFE_NVME` in this process for the PVH leg, and a child inherits them,
-        // so without this the tour would attach two devices inside `script/test` and none from a
-        // bare `cargo xtask uefi-boot`. One boot with two machines is one boot nobody can compare.
-        // The suite below is where the devices belong.
+        // The bare firmware machine whether or not a suite leg ran first: `test()` sets these in
+        // this process for the PVH leg, and the tour must be one machine either way.
         .env_remove("NIFE_DISK")
         .env_remove("NIFE_NVME")
         // The suite's display devices too: with `NIFE_GPU` the runner drops q35's VGA, whose
@@ -493,13 +398,8 @@ pub(crate) type CollectedStreams = (
 /// **Collect the runner's stdout and stderr on threads of their own**, each into its own string
 /// for the join and both into one shared transcript as they arrive.
 pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> CollectedStreams {
-    // Both streams collected on threads of their own, because the watcher below decides when the
-    // boot has said enough and a blocking read here would decide it instead.
-    //
-    // **Into a shared buffer rather than only into a return value** (milestone 445). The watcher
-    // now waits for a line the kernel prints on the SERIAL wire (`boot_ladder::SCREEN_HELD`), so it
-    // has to see the transcript as it arrives; a `read_to_end` that only yields at the join is a
-    // transcript nobody can read until the boot is over. The join still returns the whole of it.
+    // On threads, so the watcher and not a blocking read decides when the boot has said enough;
+    // and into a shared buffer, because the watcher waits for `boot_ladder::SCREEN_HELD` live.
     let transcript_so_far = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let collect = |mut from: Box<dyn std::io::Read + Send>,
                    into: std::sync::Arc<std::sync::Mutex<String>>| {
@@ -535,10 +435,7 @@ pub(crate) fn collect_uefi_streams(child: &mut std::process::Child) -> Collected
 fn uefi_serial_transcript_holds(transcript: &str) -> bool {
     let mut ok = true;
     for wanted in [
-        // The self-test verdict and the hand-over, rather than the halt line this used to want:
-        // milestone 182 made x86_64 hand the machine to the progenitor instead of halting, and
-        // this boot carries the archive (`uefi_stage`'s `NIFE_UEFI_INITIAL_RAMDISK`), so under real
-        // firmware it reaches both.
+        // This boot carries the archive, so it reaches the self-test verdict and the hand-over.
         boot_ladder::SELF_TEST,
         "nife: handing the system to the userspace progenitor.",
         "(xsdt)",
@@ -548,11 +445,8 @@ fn uefi_serial_transcript_holds(transcript: &str) -> bool {
         "smp: 2 core(s) online",
         // And a device interrupt still landing on the boot core with two local APICs present.
         "device irq  : pit irq 0 -> gsi 2",
-        // The kernel handed the screen to a userspace terminal and both halves came up (the shell
-        // on the firmware screen). Said on the UART because the screen has been handed away by
-        // the time it is printed.
-        // The terminal fills the screen at the boot console's rule for its 14x26 cell: OVMF's
-        // 1280x800 is scale one, 91 columns by 30 rows.
+        // The screen went to a userspace terminal and both halves came up; said on the UART, since
+        // the screen is handed away by then. OVMF's 1280x800 at the 14x26 cell is scale one, 91x30.
         "1280x800 pixels of it at scale 1 served by framebuffer_driver, a 91x30 terminal on it",
     ] {
         if !transcript.contains(wanted) {
@@ -585,10 +479,8 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
     match (&screen.tour, screen.held) {
         (Some(text), _) => {
             let rows = text.lines().filter(|l| !l.is_empty()).count();
-            // How deep the dump caught the tour is reported and not required. It was a race against
-            // the handover's clear until milestone 445; now the kernel is stopped while this is
-            // read, so a shallow catch means the tour genuinely had not finished painting. See
-            // `UEFI_SCREEN_MARKER`.
+            // Reported, not required: the kernel is stopped while this is read, so a shallow catch
+            // means the tour had not finished painting. See `UEFI_SCREEN_MARKER`.
             let depth = if text.contains(UEFI_SCREEN_DEEP_MARKER) {
                 "the whole tour, banner included: it never scrolled"
             } else {
@@ -603,10 +495,8 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
                 eprintln!("uefi-boot:   | {line}");
             }
         }
-        // **Held, and the screen still did not show it: the framebuffer path is what broke.** This
-        // is the verdict milestone 445 bought. The kernel was stopped between painting its tour and
-        // clearing it, with the marker on the wire, and a dump taken in that window decoded to
-        // something that is not the tour. Nothing about timing is left to blame.
+        // Held, and the screen still did not show it: the boot was stopped between painting and
+        // clearing, so the framebuffer path broke and nothing about timing is left to blame.
         (None, true) => {
             eprintln!(
                 "uefi-boot: the kernel HELD the screen for this gate and the tour still was not on \
@@ -623,11 +513,8 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
             }
             ok = false;
         }
-        // **Never held: the handshake did not reach the kernel, which is a different afternoon.**
-        // Either the boot never got that far (the serial transcript above says), or the loader was
-        // built without `screen_hold`, or the kernel did not read the token. Saying "the tour was
-        // never on the screen" here is what cost a reader an afternoon on 2026-09-20, chasing five
-        // things in the framebuffer path that were all working.
+        // Never held: the boot never got that far, the loader lacks `screen_hold`, or the kernel
+        // did not read the token. Blaming the framebuffer here sends a reader after working code.
         (None, false) => {
             eprintln!(
                 "uefi-boot: the kernel never said it was holding the screen ({:?} is absent from \
@@ -684,49 +571,20 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
 }
 
 /// The line the screen has to be showing for milestone 243 (a machine with no serial port) to have
-/// worked.
+/// worked: the self-test verdict, about twenty lines above the handover, at the tour's tail.
 ///
-/// **It is the self-test verdict, the TAIL of the tour, and putting it back there is a correction
-/// of a correction** (milestone 445, 2026-09-20, hours after the change it reverses).
-///
-/// The marker was the self-test verdict originally. Milestone 243's second lane moved it to
-/// [`boot_ladder::BANNER`], the tour's first line, on a measurement that said the tour "tops out at
-/// 98 non-blank rows" against a screen of 100, so nothing scrolls and the banner stays up until the
-/// handover clears it. **That premise is false, and this lane watched it be false.** With the
-/// kernel stopped at the handover and the framebuffer photographed while it was held, the screen
-/// read 95 rows whose FIRST line was
-///
-/// ```text
-///                 0x00007ea8a000..0x00007eab4000  ram
-/// ```
-///
-/// which is the middle of the firmware memory map. The tour is longer than the screen on this
-/// machine, so it scrolls, and by the handover the banner is gone. What the old sampler was
-/// actually catching was the banner **early in the boot**, before the scroll, which is a window at
-/// the other end of the tour from the one its own comment described. That is why a loaded machine
-/// read zero rows: the first dump landed after the scroll rather than after the clear.
-///
-/// So the marker goes back to the tail, where the handshake makes it deterministic: with
-/// `console::hold_screen_for_host` stopping the boot, whatever the tour's last page is, is on the
-/// screen, and the self-test verdict is about twenty lines above the handover.
-///
-/// **The total claim is unchanged**, which is the part worth checking before believing any of this.
-/// The screen's job is to prove the *pixels*: the loader's `LocateProtocol`, the byte order, the
-/// stride, the mapping surviving `mmu::init`, and the glyphs. Any decoded row proves all five. That
-/// the boot got as far as the self-test is asserted separately and unconditionally, on the SERIAL
-/// transcript, a few dozen lines above this one.
-///
-/// It was the halt line, `nife x86_64: boot complete, halting.`, until milestone 182 removed the
-/// halt.
+/// The tour is taller than OVMF's 1280x800 screen and scrolls, so the banner is gone by the
+/// handover; held by `console::hold_screen_for_host`, the tour's last page is deterministic. The
+/// screen proves the pixels (`LocateProtocol`, byte order, stride, the mapping surviving
+/// `mmu::init`, the glyphs), and any decoded row proves all five; the self-test itself is asserted
+/// on the serial transcript. See notes/x86-uefi-boot/running-under-firmware.md.
 const UEFI_SCREEN_MARKER: &str = boot_ladder::SELF_TEST;
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**
 ///
-/// Not required, and on QEMU's 1280x800 OVMF console it is never there: the tour is longer than the
-/// hundred rows that screen holds. It is worth reporting because it is the one thing that separates
-/// "the whole boot is on this screen" from "the last page of it is", and because a machine whose
-/// tour stops scrolling (a taller screen, a shorter tour) should say so rather than have somebody
-/// rediscover it. See [`UEFI_SCREEN_MARKER`] for the measurement.
+/// Not required, and never there on QEMU's 1280x800 OVMF console, where the tour scrolls. Reported
+/// because it separates "the whole boot is on this screen" from "its last page is", so a machine
+/// whose tour stops scrolling says so.
 const UEFI_SCREEN_DEEP_MARKER: &str = boot_ladder::BANNER;
 
 /// The command `uefi-boot` types on the serial line once the prompt is on the screen, and
@@ -757,34 +615,6 @@ struct ScreenReadings {
     answer: Option<String>,
 }
 
-/// **Ask the kernel to hold still, then read three stages of what the screen shows**
-/// (milestone 243, then the shell on the firmware screen, then milestone 445).
-///
-/// Runs on its own thread beside the boot, because the kernel never exits and the runner therefore
-/// does not return until its own timeout fires: by then QEMU is gone and there is nothing left to
-/// photograph. The stages, in the order they must happen:
-///
-/// 1. **The tour, while the kernel is holding it there.** This used to be a race and is now a
-///    handshake, which is milestone 445 and calef's choice among three options on 2026-09-20. The
-///    kernel prints [`boot_ladder::SCREEN_HELD`] on the serial wire and waits for a byte before it
-///    clears the framebuffer and hands it to the userspace terminal, so the dump taken between
-///    those two events cannot miss the tour: the state is no longer transient. This watcher waits
-///    for that line in `wire`, dumps, decodes, and writes one byte back to release the boot.
-///
-///    **Nothing falls back to sampling if the line never comes.** A boot that does not print it was
-///    not asked to hold, which is a wiring failure (the `screen_hold` loader feature, the token, the
-///    kernel's reader) and not a framebuffer one; saying so is the whole of item 5 of this
-///    milestone, because "the tour was never on the screen" sent the last reader after five things
-///    that were all working.
-/// 2. **The prompt.** A row starting `$ `, which the kernel's tour never prints. Sampled, and that
-///    is fine: a prompt sits on the screen until somebody types, so it is a state and not an event.
-/// 3. **The answer.** [`UEFI_SCREEN_COMMAND`] is written to `serial` (COM1), and a row equal to
-///    [`UEFI_SCREEN_ANSWER`] must appear. The command's own echo is `$ echo ...`, a different row,
-///    so this row is only there if the shell ran the command and its output reached the screen.
-///
-/// Stops early when the monitor stops answering after having answered once (QEMU is gone and no
-/// later dump can be better), and at a deadline that bounds the whole watch. A dump that fails to
-/// decode is never fatal, and the retry is the answer.
 /// **The firmware screen read as the shell's terminal draws it**: `glyph_atlas` cells in
 /// `video_terminal`'s default colors, at the scale `display_service::start_screen_terminal` chose
 /// for the screen's width, one string per row with its trailing blanks trimmed. The tour before
@@ -810,6 +640,16 @@ fn terminal_text(ppm: &[u8]) -> Option<String> {
     Some(rows.join("\n"))
 }
 
+/// **Ask the kernel to hold still, then read three stages of what the screen shows**, from the
+/// monitor at `sock` into `shot`, typing on `serial` (COM1) and watching `wire`.
+///
+/// 1. The tour, held: on [`boot_ladder::SCREEN_HELD`] in `wire` it dumps and decodes, then writes
+///    a byte to release the boot (milestone 445). Nothing falls back to sampling.
+/// 2. The prompt, a row starting `$ `, sampled because it is a state and not an event.
+/// 3. The answer: [`UEFI_SCREEN_COMMAND`] typed, and a row equal to [`UEFI_SCREEN_ANSWER`].
+///
+/// On its own thread, because the runner returns only after QEMU is gone. Stops when the monitor
+/// stops answering, or at a deadline. See notes/x86-uefi-boot/running-under-firmware.md.
 fn screen_watch(
     sock: &str,
     shot: &Path,
@@ -823,23 +663,14 @@ fn screen_watch(
     let mut typed = false;
     let mut released = false;
     /// How many dumps taken while the kernel is holding the screen may fail to show the tour
-    /// before the boot is released anyway. Each costs `screendump`'s own settle plus the poll
-    /// interval below, about 650 ms measured, so four is under three seconds and comfortably inside
-    /// the kernel's ten-second bound. Three retries is already more than an asynchronous
-    /// `screendump` write has ever needed once the guest stopped spinning; see
-    /// `console::hold_screen_for_host`, which is where that turned out to matter.
-    ///
-    /// Corrected 2026-10-12 (lane/scanout-referee-flake): `screendump` now waits for QEMU's answer,
-    /// and QEMU answers only once the file is written, so a read can no longer land mid-write. The
-    /// retries and the pause below were sized for that and are now margin; they are kept, not
-    /// re-measured.
+    /// before the boot is released anyway. Each costs about 650 ms measured, so four is well inside
+    /// the kernel's ten-second bound. `screendump` waits for QEMU to finish writing the file, so the
+    /// retries are margin, kept and not re-measured.
     const HELD_DUMPS: u32 = 4;
     let mut dumps_while_held = 0u32;
     while std::time::Instant::now() < deadline {
-        // **The wire is read before the picture is taken, not after**, and getting that backwards
-        // cost this lane its first green run. A dump taken before the hold line arrived is a dump
-        // of whatever the screen showed *earlier*, so believing it because the line has since
-        // appeared is the original race wearing the handshake's clothes.
+        // The wire is read before the picture is taken: a dump taken before the hold line arrived
+        // shows the earlier screen, and believing it would be the original race again.
         if !seen.held {
             seen.held = wire
                 .lock()
@@ -857,9 +688,8 @@ fn screen_watch(
         if seen.held {
             dumps_while_held += 1;
         }
-        // A screen that decodes but does not hold what the stage wants is deliberately NOT stored:
-        // an incomplete picture must not read as a pass. The dump file itself is the artefact,
-        // and the caller prints its path on failure.
+        // A screen that lacks what the stage wants is not stored, so it cannot read as a pass;
+        // the dump file is the artifact the caller names on failure.
         let bytes = std::fs::read(shot).ok();
         let text = bytes
             .as_ref()
@@ -884,16 +714,9 @@ fn screen_watch(
                     seen.last_held = Some(text.clone());
                 }
             }
-            // **Release the kernel once the tour has been read off the screen, or once enough
-            // dumps taken during the hold have failed to show it.** Any byte does; the kernel
-            // drains whatever arrives so the line editor that comes up on this same wire a moment
-            // later does not find a keystroke nobody typed.
-            //
-            // The second condition is what keeps the verdict honest in both directions. The state
-            // is stable while the kernel is held, so a dump that does not show the tour is a real
-            // answer rather than bad luck; `HELD_DUMPS` retries are margin (see its note). And the boot must be released
-            // either way: a held kernel is a stopped boot, and the verdict below can say more about
-            // a boot that finished than about one this watcher wedged.
+            // Released once the tour is read or `HELD_DUMPS` held dumps missed it: the held state
+            // is stable, so a miss is a real answer, and a wedged boot says less than a finished
+            // one. Any byte does; the kernel drains it so the line editor finds no stray keystroke.
             if seen.held && !released && (seen.tour.is_some() || dumps_while_held >= HELD_DUMPS) {
                 let _ = writeln!(serial);
                 released = serial.flush().is_ok();
@@ -906,11 +729,7 @@ fn screen_watch(
                     .is_ok();
             }
         }
-        // Before the release, the poll is fast because the kernel is stopped and every millisecond
-        // is a millisecond of a bounded hold being spent. After it, the stages wait on a
-        // person-speed shell.
-        // The kernel is parked while it holds the screen, so there is no hurry and no window to
-        // race: the pause is short enough to spend few of the hold's ten seconds.
+        // Short enough to spend few of the hold's ten seconds.
         let pause = 250;
         std::thread::sleep(std::time::Duration::from_millis(pause));
     }
@@ -958,50 +777,30 @@ pub(crate) fn uefi_test_command() -> bool {
     true
 }
 
-/// **Run the kernel suite under real firmware** (milestone 195), rather than the tour
-/// `uefi_boot` boots.
+/// **Run both kernel test images under real firmware** (milestone 195), rather than the tour
+/// `uefi_boot` boots: the tests pass when the memory map, ACPI root and PCIe window came from
+/// firmware. Returns whether both passed.
 ///
-/// The difference between the two is one ELF. A test build runs `test_main()` right after the
-/// shared bring-up, so this boot prints the bring-up lines it shares with `uefi-boot` (the ACPI
-/// walk, the PCIe window, the device interrupt) *and then* runs the suite, and the verdict it adds is the one thing the tour cannot say: that
-/// the tests pass when the memory map, the ACPI root and the PCIe window came from firmware
-/// instead of from a hypervisor. Until this existed, "it boots under real firmware" and "it passes
-/// under real firmware" were different claims and only the first was made.
-///
-/// **The exit status is half the verdict and is checked as such.** The suite reports through
-/// `isa-debug-exit`, which terminates QEMU with `(value << 1) | 1`, so a passing run is process
-/// status 3 (`arch::x86_64::semihosting::EXIT_SUCCESS`) and a failing one is 1. A transcript scan
-/// alone would pass a run whose harness printed its verdict and then faulted on the way out; the
-/// status alone would pass a QEMU that never started the guest. Both, and neither is redundant.
+/// Both the transcript and the exit status are checked: a passing run is status 3
+/// ([`X86_DEBUG_EXIT_SUCCESS`]). The scan alone would pass a harness that faulted after its
+/// verdict, and the status alone a QEMU that never started the guest.
 ///
 /// # BUGS
-///
-/// - **It is a second firmware boot, not a replacement for the first.** `uefi-boot` still boots the
-///   tour build, because the tour build is what `uefi-image` stages for the USB stick and what
-///   calef carries to the bench; a regression that only the shipping image has would otherwise be
-///   gated by nothing.
+/// - A second firmware boot, not a replacement: `uefi-boot` still boots the shipping image.
 pub(crate) fn uefi_test() -> bool {
     if !prepare_uefi_test() || !mkdisk() || !mknvmedisk() {
         return false;
     }
-    // Both test images (milestone 609 (the system tests leave the kernel crate)): the kernel's own
-    // unit tests and the whole-system suite are separate boots now, and "passes under real
-    // firmware" is a claim about both.
+    // The kernel's unit tests and the whole-system suite are separate images (milestone 609).
     uefi_test_image("kernel") && uefi_test_image("system_tests")
 }
 
 /// What every test image under firmware is built with, booted here or staged for a stick.
 fn prepare_uefi_test() -> bool {
-    // **A test boot is a test boot however it is reached.** The system_tests image's confinement
-    // suite asserts the DMA-escape role in the archive's NVMe server, and fails by name without
-    // it (that is 857654808's guard speaking: the attacker stays out of every boot that is not
-    // `cargo xtask test`). But this boot is never a shipped image; it stages a test kernel and a
-    // test archive under `target/esp-test`. Setting the switch here gives a bare
-    // `cargo xtask uefi-test` the same archive `test`'s tail packs, which it has not had since
-    // 857654808 (2026-10-04) and which every bare run between then and 2026-10-15 failed on.
-    // When `test` is the caller the switch is already on and this is a no-op. The cost is the one
-    // 857654808 already recorded: switching between a test and any other boot recompiles
-    // `components`, because cargo fingerprints features. See `CONFINEMENT_ATTACKERS`.
+    // A test boot gets the confinement attackers however it is reached: the system_tests image
+    // asserts the DMA-escape role in the archive's NVMe server, and a bare `uefi-test` needs the
+    // archive `test` packs. Switching to and from any other boot recompiles `components`, since
+    // cargo fingerprints features. See `CONFINEMENT_ATTACKERS`.
     crate::CONFINEMENT_ATTACKERS.store(true, std::sync::atomic::Ordering::Relaxed);
     // **The OVMF runner attaches one block fixture, not the PVH runner's five**
     // (helpers/qemu-uefi-x86_64.sh, BUGS), so the test image built for this boot must not grade
@@ -1035,30 +834,13 @@ fn uefi_test_image(package: &str) -> bool {
     command
         .arg(uefi_test_esp_dir())
         .current_dir(workspace_root())
-        // **The devices the PVH runner attaches** (milestone 195), which the tour above needs none
-        // of. They close the second of the three things milestone 215's BUGS listed as answerable
-        // only on xenon: a PCI function whose BARs were placed by FIRMWARE rather than by this
-        // kernel's own bus walk. Under `-kernel` the kernel assigns them itself, so "the driver can
-        // reach an MSI-X table a bus walk found" and "the driver can reach one it put there" were
-        // the same sentence.
-        //
-        // **One core here, two in the tour above.** The defect this split used to name is gone:
-        // `every_secondary_runs_scheduled_work`'s half-the-time failure at two cores was
-        // `boot_cpu_id` answering "which core am I" where every caller wanted "which core
-        // booted", fixed by milestone 316 (which core booted), and the PVH runner has defaulted
-        // to two since 2026-09-23, per DECISIONS §153 (how a two-core x86_64 test earns its
-        // place), closed by milestone 315 (a port revoke that reaches every core). This leg
-        // keeps the runner's one-core default because the whole suite at two cores under OVMF is
-        // unmeasured since those fixes; the tour is where the second core is gated.
-        //
-        // `NIFE_DISK` and `NIFE_NVME` are already set by `test()` for the PVH leg that ran just
-        // above, so this inherits them; they are named here only for a bare `cargo xtask uefi-test`.
+        // The PVH runner's devices (milestone 195), so a driver reaches BARs firmware placed
+        // rather than this kernel's bus walk. One core, the runner's default, until the suite is
+        // measured at two under OVMF. Named here for a bare `uefi-test`; `test()` already sets them.
         .env("NIFE_DISK", disk_path())
         .env("NIFE_NVME", nvme_disk_path());
-    // **The GPU and keyboard ride the system image's boot, with the PVH leg's referee beside it**
-    // (milestone 420 (x86_64 has one fixture of five and no NIC, GPU, keyboard or RNG)). The
-    // display, compositor and keyboard tests live in that image; the kernel's own unit tests use
-    // neither device, so its boot leaves them off rather than inherit `test()`'s `NIFE_GPU`. Constructed before the child, because it is what sets `NIFE_GPU_MON`.
+    // The GPU and keyboard ride only the system image, whose tests use them (milestone 420). The
+    // referee is constructed before the child, because it sets `NIFE_GPU_MON`.
     let mut referee = None;
     if package == "system_tests" {
         command.env("NIFE_GPU", "1").env("NIFE_KEYBOARD", "1");
@@ -1069,19 +851,14 @@ fn uefi_test_image(package: &str) -> bool {
             .env_remove("NIFE_GPU_MON")
             .env_remove("NIFE_KEYBOARD");
     }
-    // **The bound is a hang detector, so it sits well above an honest run.** A passing boot exits
-    // through `isa-debug-exit` as soon as the suite ends, so a higher bound costs nothing until
-    // something hangs. In CI the `system_tests` boot takes about 156 s on main and about 190 s on
-    // the 1120x624 scanout (milestone 142 (a text display good enough that people use it instead
-    // of a GUI)), whose display and compositor tests compare 2.2 times the pixels; 300 s is the
-    // bound `disk_throughput`'s boot already uses. A caller's own `NIFE_UEFI_TIMEOUT` still wins.
+    // A hang detector, well above an honest run: the `system_tests` boot takes about 190 s in CI
+    // on the 1120x624 scanout. A caller's own `NIFE_UEFI_TIMEOUT` wins. See
+    // notes/x86-uefi-boot/running-under-firmware.md, "Inside the two gates".
     if std::env::var_os("NIFE_UEFI_TIMEOUT").is_none() {
         command.env("NIFE_UEFI_TIMEOUT", "300");
     }
-    // Timed and recorded (milestone 807 (the kernel suite reports what each test cost)). The
-    // transcript used to be collected whole and printed at the end; it now streams as the other
-    // legs' do, and stderr (QEMU's own, never the guest console) goes straight to ours rather
-    // than being appended to what the checks below read.
+    // Timed and recorded (milestone 807); stderr is QEMU's own, never the guest console, so it
+    // goes straight to ours and not into what the checks below read.
     let (mut child, watch) = match crate::time_record::Watch::spawn(&mut command) {
         Ok(pair) => pair,
         Err(e) => {
@@ -1161,26 +938,19 @@ fn uefi_test_image(package: &str) -> bool {
     ok
 }
 
-/// **At a failed boot, say which exit path produced the status, and retire the VT-d theory.**
+/// **At a failed boot, say which exit path produced `code`, and retire the VT-d theory.** Returns
+/// the lines to print; `exited` and `transcript` separate the readings.
 ///
-/// The number alone cannot: `1` is both the guest's failure write and QEMU's own error exit, and
-/// neither the transcript nor QEMU's stderr rides on the line that prints the number. The shapes
-/// below are the whole protocol. The guest writes `code >> 1` to the exit device's port and QEMU
-/// reports `(written << 1) | 1`, so every status the device can produce is odd and 0 is not one of
-/// them. What backs the readings: the summary print and the success write are adjacent statements
-/// in `kernel/src/testing.rs`, and past that point the one in-tree writer of the failure code is
-/// the panic arm, which prints `[PANIC]` first (`kernel/src/panic.rs`); QEMU exits 0 on a SIGTERM,
-/// which is how both the `NIFE_UEFI_TIMEOUT` bound and the host watchdog end a boot (measured on
-/// Homebrew QEMU 11.1.2, 2026-10-15); a QEMU that fails before or during the boot exits 1 with its
-/// reason on stderr, which this boot streams to ours. Name provisional (this lane; calef names the
-/// interfaces).
+/// `1` is both the guest's failure write and QEMU's own error exit. The device reports
+/// `(written << 1) | 1`, so its statuses are odd. Past the summary the one writer of the failure
+/// code is the panic arm, which prints `[PANIC]` first (`kernel/src/panic.rs`). QEMU exits 0 on
+/// the SIGTERM that the `NIFE_UEFI_TIMEOUT` bound and the host watchdog send (Homebrew QEMU 11.1.2,
+/// 2026-10-15), and 1 with its reason on stderr when it fails itself. Name provisional.
 fn exit_verdict_lines(code: Option<i32>, exited: Duration, transcript: &str) -> Vec<String> {
     let mut lines = vec![
-        // Milestone 215 (a PCI function's interrupt reaches nothing on x86_64) named this family of
-        // QEMU lines the escape test's own expected faults: the masked fault-event interrupt (this
-        // kernel polls, it does not take the interrupt) and the escape's translation failure. They are what a passing confinement test looks like from
-        // outside, and they are the only thing in a red run's output that invites a wrong theory
-        // about QEMU versions or firmware.
+        // The escape test's expected faults (milestone 215): the masked fault-event interrupt
+        // (this kernel polls) and the escape's translation failure. They invite a wrong theory
+        // about QEMU versions or firmware in a red run's output.
         "the qemu-system-x86_64 VT-d lines in this run's output (`Interrupt Mask set, irq is not \
          generated`, `vtd_iommu_translate: detected translation failure`) are the escape test's \
          own expected faults (milestone 215), not a cause"
