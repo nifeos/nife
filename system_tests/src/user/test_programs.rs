@@ -132,13 +132,13 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
 
 /// **One progenitor-shaped spawn for the system tests** (milestone 794 (one progenitor-shaped spawn
 /// for the system tests)): start `name` as the kernel starts the progenitor, so a harness proves
-/// the program's choices rather than a privileged shortcut. Lays out the ELF, a stack and the
-/// timebase page ([`lay_out_program`]), maps the initial ramdisk read-only at
-/// [`INITIAL_RAMDISK_VA`], puts the budget in slot 0, `report` in slot 1 and `further_caps` after
-/// in order (each named for its failure message), binds `bound_notification` between configure
-/// and start (the only order without a race), and starts with the archive's length in `x1`.
-/// Returns once the program is running. The design is milestone 794's roadmap block; the bind's
-/// reason is in notes/system-tests-and-the-kernel-crate.md.
+/// the program's choices rather than a privileged shortcut. Lays out the ELF, a stack and, on
+/// x86_64 and riscv64, the timebase page ([`lay_out_program`]), maps the initial ramdisk read-only
+/// at [`INITIAL_RAMDISK_VA`], puts the budget in slot 0, `report` in slot 1 and `further_caps`
+/// after in order (each named for its failure message), binds `bound_notification` between
+/// configure and start (the only order without a race), and starts with the archive's length in
+/// `x1`. Returns once the program is running. The design is milestone 794's roadmap block; the
+/// bind's reason is in notes/system-tests-and-the-kernel-crate.md.
 ///
 /// Name: provisional (milestone 794's lane, 2026-10-16 UTC).
 #[allow(clippy::too_many_arguments)] // the endowment's rights and the two beyond-the-floor extensions are each a real part of the shape
