@@ -2,26 +2,12 @@
 //! sender-chosen word** (milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver
 //! a sender-chosen slot), fatal risk 7's confinement claim).
 //!
-//! **The defect these tests were written to demonstrate was live on `main` and is fixed here.**
-//! `RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP` when the
-//! message carried none. A `CALL` server reads it as the slot of the one-shot `Reply` capability.
-//! On `main`, a plain `SEND` (three data words, no capability) received by `RECEIVE_CAP` left the
-//! sender's second word in `x1` when the receiver had parked first, because `ipc_send` drops its
-//! three words straight into the receiver's mailbox and the old `ipc_receive_cap` returned that word
-//! unchanged. So a client could hand a server a slot number of its own choosing. The sender-first
-//! order already returned `NO_CAP`; the fix makes the receiver-first order match it, by having the
-//! receive side write `NO_CAP` unless a capability was actually installed for the delivery
-//! (`Thread::cap_delivered`, `kernel/src/sched.rs`).
-//!
-//! **Why this is a confinement claim.** The audit by milestone 613 (a system log service: the
-//! in-memory half), PR #1494, found no `RECEIVE_CAP`
-//! consumer anywhere that checks the kind of object in the received slot, and no ABI call that
-//! would let one. The only guard in the tree is `x1 == NO_CAP`, which did nothing on the
-//! receiver-first order. The worst live case is `net_stack` (`components/src/net_stack.rs:227`),
-//! reachable by any program that declares network, whose `OPERATION_ATTACH_PAGE_FRAME` does
-//! `cap_delete(x1)` with no guard: a chosen slot deletes one of the server's own capabilities. The
-//! throwaway attack programs that drove the two escapes under QEMU on 2026-10-03 UTC are described
-//! in `design/roadmap/0634-*.md`; these are the property they reduce to.
+//! `RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP`, and a
+//! `CALL` server reads it as its `Reply`'s slot. The receive side writes `NO_CAP` unless a
+//! capability was installed for this delivery (`Thread::cap_delivered`, `kernel/src/sched.rs`), so
+//! the receiver-first order, where `ipc_send` drops its words into the parked receiver's mailbox,
+//! matches the sender-first one. A chosen word would aim a server's `cap_delete` at its own
+//! capabilities. See notes/confinement-claims.md, "What `RECEIVE_CAP` hands back".
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -235,18 +221,9 @@ fn a_send_cap_aborted_by_teardown_stages_nothing_for_a_later_plain_send() {
 /// 2026-10-03 UTC). The non-abort sibling of
 /// `a_send_cap_aborted_by_teardown_stages_nothing_for_a_later_plain_send`.
 ///
-/// There, teardown wakes the parked `SEND_CAP` sender *aborted*, and `set_ipc_aborted` clears its
-/// staged delegation. Here the sender is woken by a plain `RECEIVE` that *successfully* collects it
-/// (`ipc_receive`'s `!leave_blocked` branch). That path does not go through `set_ipc_aborted`, so
-/// before this lane's fix the delegation stayed in `Thread::outgoing_cap`, and the sender's next
-/// plain `SEND`, parked on an unrelated rendezvous, handed it to whoever `RECEIVE_CAP`ed there: a
-/// delegation made to one endpoint, delivered to another.
-///
-/// **Milestone 634's `cap_delivered` guard does not catch this.** That guard covers the order where
-/// the *receiver* parks first (`ipc_receive_cap`'s blocked path reads `cap_delivered`); this escape
-/// takes `outgoing_cap` on the order where the *sender* parks first (`ipc_receive_cap`'s immediate
-/// `FromSender` path, which calls `outgoing_cap.take()` unconditionally). A plain `SEND` cannot set
-/// `cap_delivered`, so the leak is the stale `outgoing_cap`, not the mailbox slot 634 fixed.
+/// Woken by a plain `RECEIVE` that collects it (`ipc_receive`'s `!leave_blocked` branch skips
+/// `set_ipc_aborted`), the sender must not keep its delegation in `outgoing_cap` for its next plain
+/// `SEND`. Milestone 634's `cap_delivered` covers only receiver-first, not this `FromSender` path.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.a_send_cap_collected_by_a_plain_receive_stages_nothing_for_a_later_plain_send.patch`
 #[test_case]
@@ -363,21 +340,10 @@ impl CallServerRound {
 /// (milestone 706 (a `CALL` server can tell a Reply from a delegation), DECISIONS §245 (a `CALL`
 /// server tells a Reply from a delegation), fatal risk 7's confinement claim).
 ///
-/// The attack: a client `SEND_CAP`s a rendezvous nobody receives on to a `CALL` server. Before 706
-/// `x1` was a real slot either way, so a server that answered it ran `SEND` on that rendezvous and
-/// parked for the life of the machine, and a server that did not answer kept the slot. The server
-/// here is written the way `user_mode_runtime::receive_request` reads a receive: `x4 ==
-/// REPLY_DELIVERED` is a Reply to answer, and any other real slot is a delegation to delete. It
-/// takes the delegation and then a real `CALL`, on both arrival orders, and must answer the caller
-/// and end holding exactly what it held before.
-///
-/// **What this tests is the tag, not the hang.** A server that invokes `REPLY` on the delegation
-/// does park for good, but a test that demonstrated it would need to end a thread blocked in
-/// `SEND`, which needs the timed receive milestone 417 (a usurper that reports instead of hanging)
-/// waits on; and the hang was never in doubt, since it is method `0` on a rendezvous. What 706 adds
-/// is that the kernel says which slot is the Reply, so that is what is asserted: without the tag
-/// the server cannot tell the two apart, deletes the Reply as a delegation, and its caller is never
-/// answered.
+/// A client `SEND_CAP`s an unreceived rendezvous to a `CALL` server that reads a receive as
+/// `user_mode_runtime::receive_request` does (`x4 == REPLY_DELIVERED` is a Reply, any other slot a
+/// delegation to delete); on both orders it must answer its caller and keep nothing. The tag is
+/// asserted, not the hang, which would need milestone 417's timed receive to end.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders.patch`
 #[test_case]
@@ -526,14 +492,10 @@ const QUIET_INTID: u32 = 250;
 /// first** (milestone 714 (the sibling `RECEIVE_CAP` paths get a receiver-first test), fatal risk 7's
 /// confinement claim; the sibling of milestone 634's plain-`SEND` test above).
 ///
-/// Before 634 `irq_notify` dropped `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so a
-/// receiver-first `RECEIVE_CAP` returned `x1 = 0`, a real-looking slot, where the pending-signal order
-/// returned `NO_CAP`. No program chooses that word (the kernel writes it), so this is an
-/// order-dependence and a fail-open default rather than an attacker-chosen value; a driver that
-/// treated `x1 != NO_CAP` as a delegation to delete would have deleted its own slot 0. 634's
-/// `cap_delivered` default now makes the receive side answer `NO_CAP`, and this is the only test
-/// that drives an interrupt through that order. Signal-pending is asserted too, as the control that
-/// shows the two orders agree.
+/// `irq_notify` drops `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so without 634's
+/// `cap_delivered` default a receiver-first `RECEIVE_CAP` sees `x1 = 0`: a kernel word, not a
+/// chosen one, but a driver deleting `x1` as a delegation would lose its slot 0. The only test
+/// driving an interrupt through that order; the signal-pending order is the control.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_parks_first.patch`
 #[test_case]
@@ -594,13 +556,10 @@ fn an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_pa
 /// **A death message received by `RECEIVE_CAP` delivers `NO_CAP` in `x1` whichever side arrives
 /// first** (milestone 714, fatal risk 7's confinement claim).
 ///
-/// The kernel's five-word death message is `[event, tid, pc, addr, 0]` (`sched::depart`). Before
-/// milestone 634 a supervisor parked in `RECEIVE_CAP` when the child died got that mailbox back
-/// unchanged, so `x1` was the dead thread's id, a small integer a supervisor that treats `x1` as a
-/// slot would act on; a supervisor that received after the corpse parked got `NO_CAP`. The thread id
-/// is the kernel's, not a sender's, so as with the interrupt this is an order-dependence rather
-/// than an attacker-chosen word. The test also asserts `x2` carries the tid on both orders (after the `x1` check, so a revert is red at `x1`), so a
-/// "fix" that blanked the whole message instead of `x1` would fail it.
+/// The kernel's death message is `[event, tid, pc, addr, 0]` (`sched::depart`); a supervisor parked
+/// in `RECEIVE_CAP` must not read the tid in `x1` as a slot. The word is the kernel's, so this is
+/// order-dependence, not a chosen word. `x2` carries the tid on both orders (checked after `x1`, so
+/// a revert is red at `x1`), so a fix that blanked the whole message would fail.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.a_death_message_received_by_receive_cap_delivers_no_cap_whichever_side_parks_first.patch`
 #[test_case]
@@ -758,12 +717,9 @@ fn plain_receive_against(
 /// side parks first** (§246 (a plain `RECEIVE` never takes a capability), PROVISIONAL number;
 /// calef's ruling A of 2026-10-04 UTC, fatal risk 7).
 ///
-/// Before the ruling the answer depended on arrival order. Sender-first, `ipc_receive` dropped the
-/// staged delegation (milestone 633 (an outside agent attacks the confinement claim)). Receiver-first, `ipc_send_cap` installed it in the receiver's
-/// table and put the slot in `x1`, so a server that drains a child's output with plain `RECEIVE`
-/// and never reads `x1` (swish, `wc`, `mdr`, the terminal sink) lost one of its 32 slots per
-/// delegation, for good. The two orders must now return the same five words, and the receiver must
-/// end holding exactly what it held.
+/// Both orders must return the same five words, and the receiver must end holding exactly what it
+/// held: a server that drains output with plain `RECEIVE` and never reads `x1` (swish, `wc`, `mdr`,
+/// the terminal sink) would otherwise lose one of its 32 slots per delegation, for good.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.receive_cap_attack_tests.a_send_cap_to_a_plain_receive_installs_nothing_whichever_side_parks_first.patch`
 #[test_case]

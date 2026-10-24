@@ -351,15 +351,11 @@ fn operation_write_ignores_raw_mode_and_operation_readline_survives_a_round_trip
 /// reaches the shell) option D, milestone 47 (navigation and naming)): a measurement, printed as a
 /// `measure:` line, beside the one fact it asserts.
 ///
-/// Cooked, a keystroke is one `OPERATION_BYTES` from the input driver, and the terminal echoes it to the
-/// console itself. Raw, the same `OPERATION_BYTES` is followed by the shell's `OPERATION_READRAW` and an
-/// `OPERATION_WRITE` of the echo, so the shell pays two more round trips per burst. Both loops run here
-/// from kernel threads against the real `line_editor` process, so the difference is the added
-/// round trips and the terminal's work on them, not the cost of an EL0 trap. Under TCG the
-/// absolute numbers are the emulator's; the ratio is the reading.
-///
-/// The assertion is the raw path's echo landing on the console: a client that edits its own line
-/// must still be seen typing.
+/// Cooked, a keystroke is one `OPERATION_BYTES` from the input driver, and the terminal echoes it
+/// itself. Raw adds the shell's `OPERATION_READRAW` and an `OPERATION_WRITE` of the echo, two more
+/// round trips per burst. Both loops run from kernel threads against the real `line_editor`, so the
+/// difference excludes an EL0 trap; under TCG the absolute numbers are the emulator's and the ratio
+/// is the reading. The assertion: a client that edits its own line must still be seen typing.
 #[test_case]
 fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
     const N: u64 = 200;
@@ -410,30 +406,18 @@ fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
 /// (a graphical terminal session on the no-keyboard arm holds only the raw half of the boot
 /// discipline), fatal risk 7's confinement claim).
 ///
-/// A `graphical_terminal` session with no keyboard reads the boot discipline raw, so the spawn
-/// service hands it a copy of the discipline's endpoint. Before 709 that copy was the unbadged
-/// endpoint with `WRITE`, which the discipline served whole: its holder could `OPERATION_BYTES` a command
-/// line into the queue the boot shell's next `OPERATION_READLINE` reads, and the shell would run it with
-/// the shell's authority, none of which the session holds. The session now holds a copy badged
-/// with [`line_editor::proto::RAW_ONLY_BADGE`], and the discipline answers only `OPERATION_RAWMODE` and
-/// `OPERATION_READRAW` on a badged copy.
-///
-/// The attack is driven as the session would drive it: the badged holder types `ls\r` in cooked
-/// mode. The headline is that it is refused; the witness that refused means "nothing queued" is the
-/// unbadged reader (the shell's role) getting back exactly the line the unbadged input driver
-/// typed afterwards, not the injected one. Then every other request off the raw half is refused,
-/// and the raw half itself works through the same badged copy, which is what keeps this from being
-/// a test that a terminal refusing everything would also pass.
-///
-/// `ipc_call_badged` is the kernel's own delivery of a badged capability's `CALL` (the badge lands
-/// in `x3` of the server's `RECEIVE_CAP`), so this drives the discipline exactly as a user program
-/// holding the badged capability would.
+/// A keyboardless `graphical_terminal` session reads the boot discipline raw through a copy badged
+/// [`line_editor::proto::RAW_ONLY_BADGE`], served only `OPERATION_RAWMODE` and `OPERATION_READRAW`,
+/// so it cannot queue a line the boot shell runs. Its cooked `ls\r` is refused, the unbadged reader
+/// gets exactly the driver's later line, other requests are refused, and the raw half still works.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.raw_mode_tests.a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them.patch`
 #[test_case]
 fn a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them() {
     use line_editor::proto::{self, BAD_REQUEST, RAW_ONLY_BADGE};
     let (w, held) = svc::start();
+    // The kernel's own delivery of a badged `CALL`: the badge lands in `x3` of the server's
+    // `RECEIVE_CAP`, as it would for a user program holding the copy.
     let badged = |operation: u64, len: u64, w1: u64| {
         sched::ipc_call_badged(w.term, [proto::req(operation, len), w1], RAW_ONLY_BADGE)
     };
@@ -510,7 +494,6 @@ fn a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them() {
 /// #2405: "a"). `jig install` reads the owner's yes through such a copy, so it must not be able to
 /// type a line the shell runs, print, or switch modes, and the unbadged surface must not serve its
 /// read, or the shell's next command could be taken through it.
-///
 /// The line is typed by the input driver as the owner types it, longer than eight bytes, so the
 /// reads drain it in two replies and the `\n` that ends it. Then the attacks: every other request
 /// on the copy is refused, and an unbadged `OPERATION_READ_LINE_BYTES` is refused too.
