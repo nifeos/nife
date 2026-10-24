@@ -1,7 +1,7 @@
 //! **A generation, read and edited**: the rows and default pointers of an installed-programs table,
 //! the lookups the progenitor and the shell make, and the edits that write the next generation.
-//! The format is the crate's documentation's; this module is its code, split from the crate root
-//! under §282 (when a file is split, the parent becomes an index).
+//! The format is in notes/packages/installed-programs.md; this module is its code, split from the
+//! crate root under §282 (when a file is split, the parent becomes an index).
 //!
 //! # Examples: install, remove, vouch
 //!
@@ -237,8 +237,7 @@ pub(super) fn classify(line: &str) -> Line<'_> {
 /// answer, and a pointer to nothing vouches for nothing.
 ///
 /// The whole table is checked first, so a malformed line anywhere is a refusal even when the name
-/// asked for is on a good line. Was `lookup_name` until milestone 614 folded the pointer into
-/// [`lookup`], which used to answer with any row of the name.
+/// asked for is on a good line.
 ///
 /// Name: provisional, minted 2026-09-24 (UTC) by milestone/198-rung-3a-consumer.
 pub fn lookup<'a>(table: &'a str, program: &str) -> Result<Option<Entry<'a>>, Error> {
@@ -317,18 +316,14 @@ pub fn versions_of<'a>(
 }
 
 /// The next generation: `table` with `entry` installed, its length written to `out`. **Upsert by
-/// digest, then move the pointer**:
-///
-/// - the same program **and digest replaces its row in place**, relabelling it;
-/// - the same package at a **new digest is a second row**: two versions of one program;
-/// - another package's claim on the name is still [`Error::Taken`], and nothing is written;
-/// - an owner's vouch and a package's row **sit side by side**, since a vouch is found by digest
-///   and never by name ([`lookup`]); a later vouch of a name replaces the earlier one.
-///
-/// A package install also **writes the program's default pointer** (the bare word means the newest
-/// install); a vouch writes none. `image_carries`, whether the running image has a program of that
-/// name, makes a package's row [`Error::ImageName`] (§229), before [`Error::Taken`]; it is a
-/// required argument so an installer cannot forget to ask. [`with_entries`] takes several rows.
+/// digest, then move the pointer**: the same program and digest replaces its row in place; the same
+/// package at a new digest is a second row (two versions); another package's claim on the name is
+/// [`Error::Taken`]; a vouch and a package's row sit side by side, since a vouch is found by digest
+/// and never by name ([`lookup`]), and a later vouch of a name replaces the earlier one. A package
+/// install also writes the program's default pointer (the bare word runs the newest install); a
+/// vouch writes none. `image_carries` (the image has a program of that name, required so an
+/// installer cannot forget to ask) makes a package's row [`Error::ImageName`] (§229), before
+/// [`Error::Taken`]. Nothing is written on a refusal. [`with_entries`] takes several rows.
 ///
 /// Name: provisional, minted 2026-09-24 (UTC) by milestone/198-rung-3a-consumer.
 pub fn with_entry(
@@ -573,13 +568,11 @@ fn replaces(existing: &Entry<'_>, entry: &Entry<'_>) -> bool {
 /// package wrote goes, whatever its programs are called, and the pointers with them, so no bare
 /// word the package gave reaches anything.
 ///
-/// With a version, only that version's rows go. A program whose pointer named a removed row
-/// points at the package's one version still live for it, and the removal is
-/// [`Error::SeveralVersions`] when several remain, because no ordering among live versions exists
-/// to pick with; the caller names them with [`versions_of`]. An owner's vouch is not a package and
-/// stays; a rollback is what undoes a vouch. The bytes stay where they are, which is what lets a
-/// rollback bring the package back. Removing what is not installed is [`Error::NotInstalled`]
-/// rather than an identical generation. Nothing is written on a refusal.
+/// With a version, only that version's rows go, and a pointer that named one moves to the
+/// package's one live version; several live is [`Error::SeveralVersions`], since live versions
+/// have no order to pick with ([`versions_of`] names them). A vouch is not a package and stays;
+/// a rollback undoes a vouch, and brings a removed package back, since its bytes stay. Removing
+/// what is not installed is [`Error::NotInstalled`]. Nothing is written on a refusal.
 ///
 /// Name: provisional, milestone 919's lane, 2026-10-14 (UTC).
 pub fn without_package(

@@ -9,6 +9,8 @@ the parent's Results row points to it.
 - [`null-syscall-under-load.md`](null-syscall-under-load.md): why that evening's `null_syscall`
   nearly doubled from one busy core to four (the reaper freed kernel stacks under `IPC_TABLES`),
   the fix, and the radon procedure that will size it.
+- [`lock-wait-instrument.md`](lock-wait-instrument.md): what `--features lock_wait` counts, what it
+  costs and what it cannot see.
 - [`null-syscall-first-radon-run.md`](null-syscall-first-radon-run.md): what TCG could not say about
   that fix, and the procedure radon sized it by.
 - [`null-syscall-off-radon.md`](null-syscall-off-radon.md): the rest was the global lock on every
@@ -23,6 +25,8 @@ the parent's Results row points to it.
   that changed that day, and how to tell an old transcript from a new one.
 - [`hvf-cross-check-2026-09-19.md`](hvf-cross-check-2026-09-19.md): the HVF cross-check that did
   not run.
+- [`instrument.md`](instrument.md): the job table and the reasons behind `crates/job_mix`'s
+  constants, which its doc comments link.
 - [`limitations.md`](limitations.md): the parent's BUGS list in full.
 
 *Name: provisional, for the directory and every stem in it. Naming is an architect's;

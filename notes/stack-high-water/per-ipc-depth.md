@@ -37,8 +37,11 @@ to exactly the floor.
 
 On the physical core (the HVF leg) the 256 samples usually finish before that happens. There the
 median reads the true reach, 120 bytes shallower than the floor in the debug build, so an equality
-check fails on every HVF run. `kernel/src/ipc_stack_depth.rs` has the
-measurement at the check.
+check fails on every HVF run. Measured on 2026-09-24 (UTC): median 856 against a floor of 976. The
+instrument's own callees stop 392 bytes into the 512-byte margin, and the words above them keep the
+paint `KernelStack::new` laid down. Over three TCG runs the first 29 to 76 samples read the true
+reach (920 against a floor of 1040 on that build), and every sample after one trap frame read the
+floor. Whether that moment comes before sample 128 is timing, so equality was a timing assertion.
 
 That check found both of this lane's own mistakes. A single 512-byte margin put every release series
 exactly on its floor: the release IPC path is shallower than 512 bytes below the measuring frame.
@@ -73,6 +76,9 @@ paint and are never counted; the null line is the proof.
   of frame; "radon against QEMU at one commit" below has it.
 - Which bytes are hot. A depth is how far the path *can* reach on this stack; it is not a count of
   lines touched, and it is not a miss count. That is milestone 134's M7.
+- Placement. Under `script/test` the machine has four cores, and the two ends of a pair may land on
+  different ones, so a sample can come from the cross-core wake path or the same-core one. Both ends
+  are spawned on the caller's core, and the report's spread says whether it mattered.
 
 ## The numbers
 

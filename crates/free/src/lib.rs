@@ -2,20 +2,12 @@
 //! (`free` sees the machine and your share)).
 //!
 //! The program's logic, lifted out so it runs on the host; `components/src/free.rs` is the two
-//! reads and the two sinks. Two lines, and they are §225's two answers:
-//!
-//! - `Mem:` is the machine, from the machine statistics page (`crates/machine_statistics_contract`),
-//!   which the owner grants every login by default and can withhold.
-//! - `Yours:` is the job pool this prompt's jobs are carved from, read through
-//!   `MemoryRegion::USAGE` on a view narrowed to `ENUMERATE`. It is the limit that binds a program
-//!   started here, which the machine line is not. The pool is the progenitor's one `jobs_ut`
-//!   (`crates/system_initializer`), shared by every prompt and every graphical terminal session on
-//!   the machine; see BUGS.
-//!
-//! Upstream `free` prints only the first line, and inside a container that line describes memory
-//! the caller can never have; LXCFS exists to patch that (§225's prior art). Printing both, labelled,
-//! answers the two readers at once.
-//!
+//! reads and the two sinks. `Mem:` is the machine, from the machine statistics page
+//! (`crates/machine_statistics_contract`), which the owner can withhold. `Yours:` is the job pool
+//! this prompt's jobs are carved from, read through `MemoryRegion::USAGE` on a view narrowed to
+//! `ENUMERATE`: the limit that binds a program started here. Why both:
+//! notes/process-view/the-machine-and-your-share.md.
+
 //! # EXAMPLES
 //!
 //! ```text
@@ -25,31 +17,17 @@
 //! Yours:         2048         320        1728
 //! ```
 //!
-//! Figures are KiB, upstream's default unit. A prompt whose owner withheld the machine page prints
-//! the `Yours:` line alone and says why on its second stream:
-//!
-//! ```text
-//! $ free       free: the machine's owner has not granted the machine statistics page
-//! ```
-//!
+//! Figures are KiB. Without the machine page `Yours:` prints alone, and the second stream says why.
 
 //! # BUGS
 //!
-//! - No `shared`, `buff/cache` or `available` columns: the kernel has no page cache and no shared
-//!   memory accounting to report, so `available` would only repeat `free`.
-//! - No `Swap:` line, and not a line of zeroes. nife refuses paging out for now (calef,
-//!   2026-09-26, the refusal in pull request #1356), and a zero would say swap exists and is
-//!   empty. If the refusal is ever lifted, §225 says the line takes the same two-row shape.
-//! - `Yours:` counts `free` itself, since it is one of the jobs carved from the budget, the way `ps`
-//!   lists itself.
+//! - No `shared`, `buff/cache` or `available` columns: there is no page cache to report.
+//! - No `Swap:` line: nife refuses paging out (calef, 2026-09-26, #1356), and a zero would say swap
+//!   exists and is empty.
+//! - `Yours:` counts `free` itself, the way `ps` lists itself.
 //! - The two lines are read at slightly different moments, and neither is a snapshot of the other.
-//! - **`Yours:` is the machine's whole job pool, not one prompt's.** The share view the progenitor
-//!   places at `grant_plan::SHARE_SLOT` is `jobs_ut`, the single region every job and every
-//!   graphical terminal session is split from, and `USAGE`'s subtree records sum all of them. So
-//!   `free` (and `slabtop`) in one session sees pages another session spent, a counting channel of
-//!   the kind the 2026-08-17 security audit accepted for `SURVEY`: a number, never a name, and
-//!   nothing a holder can act on. Found and the line above corrected by the 2026-10-03 security
-//!   audit; a per-prompt budget would be a split the progenitor does not make today.
+//! - **`Yours:` is the machine's whole job pool (`jobs_ut`), not one prompt's**: one session sees
+//!   pages another spent, an accepted counting channel (a number, never a name).
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table): upstream `procps`'s name for the
 //! program a reader types to ask this.

@@ -1,19 +1,12 @@
-//! **The check that is worth more than every other test in this crate**, and it is `#[ignore]`d
-//! because it needs a host filesystem driver and attaches a disk image.
+//! **Somebody else's FAT driver reads what this crate wrote**: the host's, on an image holding
+//! `\EFI\BOOT\BOOTRISCV64.EFI`, the name that needs long-name entries. `#[ignore]`d, because it
+//! needs a host filesystem driver and attaches a disk image.
 //!
-//! A writer tested against its own reader proves almost nothing, and this crate has no reader at
-//! all (see its `BUGS`). What proves it is somebody else's FAT driver reading what it wrote. Three
-//! do: OVMF in `cargo xtask install-boot`, EDK2 on riscv64 in `cargo xtask stick-boot`, and the
-//! host's own, which is this file and the one a person can run in seconds while changing the
-//! layout.
-//!
-//! The volume holds `\EFI\BOOT\BOOTRISCV64.EFI`, the name that needs long-name entries, because a
-//! wrong checksum or a malformed run fails silently: a driver that rejects the run shows the alias
-//! `BOOTRI~1.EFI` instead, and only a reader that lists the directory can tell. On macOS this test
-//! runs `fsck_msdos -n` on the image, which must exit 0, then attaches it read-only, requires the
-//! directory listing to hold `BOOTRISCV64.EFI` and not the alias, and compares every byte. Elsewhere
-//! it writes the image and stops.
-//!
+//! On macOS it runs `fsck_msdos -n` on the image, which must exit 0, then attaches it read-only,
+//! requires the listing to hold `BOOTRISCV64.EFI` and not the alias `BOOTRI~1.EFI`, and compares
+//! every byte. Elsewhere it writes the image and stops. notes/file-allocation-table.md, "Who reads
+//! it back", has why this is the check that counts.
+
 //! # EXAMPLES
 //!
 //! ```console

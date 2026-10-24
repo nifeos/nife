@@ -15,6 +15,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
 - [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.
 - [Intrusive queues](../intrusive-queues.md): run queues whose link lives inside the thread.
+- [The per-CPU block](../per-cpu.md): each core's private state, and what holds its size and alignment. Name provisional.
 - [Locking](../locking.md): spinlocks with interrupts, and the orderings that avoid deadlock.
 - [Deadlock](../deadlock.md): the four Coffman conditions and how to break one.
 - [Memory ordering, and the fences with no partner](../memory-ordering.md): every fence and ordered atomic, adjudicated.

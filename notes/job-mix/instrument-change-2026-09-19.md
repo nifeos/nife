@@ -10,7 +10,7 @@ Two things changed at once, and each on its own would make old and new numbers i
    of 2026-09-16. At `tasks=4` the best of three moved 29% between boots of one image, because the
    spread *within* a boot was 37%. A minimum drawn from a wide distribution is the statistic that
    moves most. Resampling those boots' own repeats, the median of 21 puts `tasks=4`'s boot-to-boot
-   spread at about 4%, inside the band the stable points already had. `job_mix::REPEATS` carries
+   spread at about 4%, inside the band the stable points already had. [instrument.md](instrument.md) carries
    the table and milestone 168's block the method. Board time was the argument for varying the
    count by point, and it does not survive arithmetic: at 21 repeats the timed windows total
    seconds on radon.
