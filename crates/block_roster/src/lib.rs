@@ -2,34 +2,22 @@
 //! ambient `/sys/block`; here the kernel writes this page once at wiring time and maps it read-only
 //! into exactly the programs granted it, so a program without it has nowhere to look.
 //!
-//! **Listing the drives and holding one are different authorities.** The roster says a device
-//! exists, its bus and its ordinal; a block-service endpoint lets you use one device's blocks. So
-//! the roster carries **no capacity**: size is learned by asking the device
-//! (`filesystem_contract::blk::SIZE`), which takes the endpoint, and finding it would mean bringing
-//! a PCI function up on behalf of a listing. Like the compositor's window list (§33 (the
-//! compositor's authority is memory, not messages)), it is a read-only mapping, not a verb: nothing
-//! to forge or confuse, because the authorization happened when the mapping was made. Hence no
-//! `_protocol` suffix and no seqlock: there is no server, and the page never changes after mapping.
-//!
+//! The roster says a device exists, its bus and its ordinal, and carries no capacity: size is
+//! learned by asking the device (`filesystem_contract::blk::SIZE`), which takes the endpoint. Like
+//! the compositor's window list (§33 (the compositor's authority is memory, not messages)), it is a
+//! read-only mapping, not a verb, so it has no server and needs no seqlock. See
+//! notes/block-devices.md, "2. Listing the drives and holding one are different authorities".
+
+//! The page, little-endian, fixed width and without pointers:
 //! ```text
 //!   0..8     MAGIC
 //!   8..12    count: how many entries follow
 //!   12..16   capacity: how many entries this page has room for
 //!   16..     entries, ENTRY_BYTES each
-//!
 //!   an entry:
 //!   0..4     ordinal: which device of this transport, 0-based
 //!   4..8     transport: one of the TRANSPORT_ kinds below
 //! ```
-//!
-//! An NVMe entry carries exactly what a virtio one does (§193 (what a block-roster entry calls an
-//! NVMe disk)). Its ordinal counts NVMe controllers, and that identifies a disk only while each
-//! controller has one namespace, which is every controller this tree drives. A controller with two
-//! namespaces is the measurement that would make an entry need to say which.
-//!
-//! Little-endian, fixed width, no pointers, between a `no_std` reader and the kernel. A zeroed frame
-//! has the wrong magic and [`Roster::read`] refuses it, so a page nobody wrote never reads as a
-//! machine with no disks.
 //!
 //! Name: ratified 2026-08-03 (calef): a read-only page, deliberately not a `_protocol`.
 

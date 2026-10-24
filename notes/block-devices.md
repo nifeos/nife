@@ -96,6 +96,13 @@ The ordinals are the same numbers `virtio::find_block_device_n` counts by, which
 than a coincidence. The roster and the wiring walk the bus the same way, so a listing and a wiring
 cannot disagree about which disk is which.
 
+### What an NVMe entry says
+
+An NVMe entry carries exactly what a virtio one does, an ordinal and a transport (§193 (what a
+block-roster entry calls an NVMe disk)). Its ordinal counts NVMe controllers. That identifies a disk
+only while each controller has one namespace, which is every controller this tree drives. A
+controller with two namespaces is the measurement that would make an entry need to say which.
+
 ### The negative control
 
 `disk_surveyor`'s second role announces the roster's address and writes to it. The mapping is
