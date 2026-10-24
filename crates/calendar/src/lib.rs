@@ -708,8 +708,8 @@ impl DateTime {
     /// YYYY-MM-DDTHH:MM:SS[.fraction](Z | ±HH:MM)
     /// ```
     ///
-    /// Accepts lowercase `t` and `z` and a space for `T` (RFC 3339 §5.6 and its NOTE), and discards
-    /// fractional seconds; otherwise strict, and `:60` is [`Error::LeapSecond`]. See
+    /// Accepts lowercase `t` and `z` and a space for `T` (RFC 3339 section 5.6 and its NOTE), and
+    /// discards fractional seconds; otherwise strict, and `:60` is [`Error::LeapSecond`]. See
     /// notes/calendar.md ("Parsing: RFC 3339, strictly").
     pub fn parse_rfc3339(s: &str) -> Result<DateTime, Error> {
         DateTime::parse_rfc3339_bytes(s.as_bytes())

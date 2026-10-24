@@ -506,8 +506,8 @@ fn read_block(direct_memory_access_phys: u64, sector: u64) {
     complete_block(used_before);
 }
 
-/// Write the DMA data buffer to `sector`, start to finish (milestone 32 phase 1): the read's chain
-/// with the data descriptor's direction flipped.
+/// Write the DMA data buffer to `sector`, start to finish (milestone 32 (a real filesystem:
+/// RedoxFS behind a capability FS server) phase 1): the read's chain, data direction flipped.
 fn write_block(direct_memory_access_phys: u64, sector: u64) {
     let used_before = submit_block(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT);
     complete_block(used_before);
@@ -532,7 +532,8 @@ fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
 }
 
 // =================================================================================================
-// A virtio-net driver, at EL0, behind the multi-queue DMA confinement (milestone 30).
+// A virtio-net driver, at EL0, behind the multi-queue DMA confinement (milestone 30 (the network
+// stack as a confined component)).
 //
 // Receive is queue 0 (the device writes a frame) and transmit is queue 1 (it reads one), both
 // through the one `Virtio` capability. `run_net` proves both with a DHCP exchange against slirp.
@@ -972,7 +973,8 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
 /// ("A completion is the used ring advancing").
 fn complete_blk(used_before: u16) {
     // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
-    // pending-signal count (DECISIONS §9a) returns this WAIT at once.
+    // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
+    // message)) returns this WAIT at once.
     loop {
         interrupt_wait(IRQ);
         let istatus = mr(INTERRUPT_STATUS);
@@ -991,7 +993,8 @@ fn complete_blk(used_before: u16) {
 
 /// Read `count` contiguous filesystem blocks starting at `block` in a single virtio request,
 /// straight into the data pages, which are the FS server's shared region: no per-block loop and no
-/// copy (milestone 138 step 4), since a device round trip costs far more than the transfer.
+/// copy (milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 4),
+/// since a device round trip costs far more than the transfer.
 fn blk_read(direct_memory_access_phys: u64, block: u64, count: u64) {
     let used_before = submit_blk(
         direct_memory_access_phys,

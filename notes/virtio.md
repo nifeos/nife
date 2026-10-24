@@ -177,14 +177,16 @@ The driver's acknowledgement is always a subset of the device's offer.
 
 - `VIRTIO_F_VERSION_1` (bit 32) is mandatory for a modern device.
 - `VIRTIO_F_ACCESS_PLATFORM` (bit 33) is offered by a device behind an IOMMU (QEMU's
-  `iommu_platform=on`, milestone 16b), which then requires the driver to negotiate it. The DMA domain
-  is an identity map (IOVA equals PA, `kernel/src/iommu.rs`), so acking it changes no address. The
-  driver acks it only when offered, so one binary runs on the bare virtio-mmio disk, which does not
-  offer it, and on the IOMMU-fronted PCIe disk.
+  `iommu_platform=on`, milestone 16b (real hardware + IOMMU-backed driver isolation)), which then
+  requires the driver to negotiate it. The DMA domain is an identity map (IOVA equals PA,
+  `kernel/src/iommu.rs`), so acking it changes no address. The driver acks it only when offered, so
+  one binary runs on the bare virtio-mmio disk, which does not offer it, and on the IOMMU-fronted
+  PCIe disk.
 - `VIRTIO_BLK_F_FLUSH` (bit 9) is asked for only when offered. A driver that sent
-  `VIRTIO_BLK_T_FLUSH` without it would get `VIRTIO_BLK_S_UNSUPP` from a careful device and undefined
-  behavior from a careless one. The kernel's `sanitize_driver_features` strips only bits 28 and 34,
-  and `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs` holds that.
+  `VIRTIO_BLK_T_FLUSH` without it would get `VIRTIO_BLK_S_UNSUPP` from a careful device and
+  undefined behavior from a careless one. The kernel's `sanitize_driver_features` strips only bits
+  28 and 34, and `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs`
+  holds that.
 - The low word the caller passes is not masked against the offer. The indirect attacker's point is
   to ask for a bit the device does offer and be stripped by the kernel.
 
@@ -204,29 +206,30 @@ across its two queues, whose completions share one line.
 The block server waits on the interrupt too rather than polling the used ring. A WAIT per read fits
 inside the test watchdog on both ISAs at the 4-core boot, because each request moves whole
 filesystem blocks and the mount's read count stays in the low hundreds. QEMU completes inside
-`NOTIFY`, so the interrupt is already pending and the kernel's pending-signal count (§9a) returns
-the WAIT at once.
+`NOTIFY`, so the interrupt is already pending and the kernel's pending-signal count (milestone 9 (a
+virtio-blk driver at EL0, and an interrupt becomes a message)) returns the WAIT at once.
 
 ### The block server
 
-The block server (milestone 32 phase 2) brings the device up once and answers read, write, size
-and flush requests from the FS server forever. Every request is a CALL answered through the
-kernel-minted Reply. The bulk rides in a shared region and the control in the message.
+The block server (milestone 32 (a real filesystem: RedoxFS behind a capability FS server) phase 2)
+brings the device up once and answers read, write, size and flush requests from the FS server
+forever. Every request is a CALL answered through the kernel-minted Reply. The bulk rides in a
+shared region and the control in the message.
 
 Its DMA region is `1 + blk::TRANSFER_BLOCKS` contiguous pages (`kernel/src/user/fs_service.rs`).
 Page 0 holds the rings, the request header and the status byte and is private. The pages after it
 are the data buffer, which is the region shared with the FS server. One request moves up to
 `blk::TRANSFER_BLOCKS` contiguous blocks as a single data descriptor, since virtio-blk asks only
-that its length be whole sectors. There is no per-block loop and no copy (milestone 138 step 4).
-The server clamps the requested count to `blk::TRANSFER_BLOCKS` even though the field cannot
-encode more, because a request is never trusted to stay inside the region it shares.
+that its length be whole sectors. There is no per-block loop and no copy (milestone 138 (close the
+read gap: a 4 KiB request must stop moving 128 KiB) step 4). The server clamps the requested count
+to `blk::TRANSFER_BLOCKS` even though the field cannot encode more, because a request is never
+trusted to stay inside the region it shares.
 
-A flush is a two-descriptor chain, header and status, with no data descriptor (virtio 1.2
-§5.2.6.1). Its sector field is written as 0, as the specification asks, rather than left holding
-the previous request's value. A completion with status 0 says the device finished the flush. It
-cannot prove the hardware under the device is honest, and nothing at this layer could. Unlike a
-transfer, a refused flush does not panic the server. Its death would block every client of the
-filesystem, so `VIRTIO_BLK_S_UNSUPP` comes back as an error. A device that never offered the
-feature makes the server answer EOPNOTSUPP rather than a false yes (see
-`filesystem_contract::blk::FLUSH`), and a completed flush returns a count so a client can tell a
-round trip from a constant.
+A flush is a two-descriptor chain, header and status, with no data descriptor (virtio 1.2 section
+5.2.6.1). Its sector field is written as 0, as the specification asks, rather than left holding the
+previous request's value. A completion with status 0 says the device finished the flush. It cannot
+prove the hardware under the device is honest, and nothing at this layer could. Unlike a transfer, a
+refused flush does not panic the server. Its death would block every client of the filesystem, so
+`VIRTIO_BLK_S_UNSUPP` comes back as an error. A device that never offered the feature makes the
+server answer EOPNOTSUPP rather than a false yes (see `filesystem_contract::blk::FLUSH`), and a
+completed flush returns a count so a client can tell a round trip from a constant.
