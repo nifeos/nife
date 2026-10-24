@@ -109,9 +109,9 @@ fn an_asid_flush_reaches_the_other_cpus() {
         crate::testing::skip!("a cross-core TLB shootdown test needs at least two online cores");
     }
     let here = crate::cpu::id();
-    // Any ONLINE core but this one, from the set rather than `0..count` (first-silicon sweep,
-    // 2026-08-14): on a non-contiguous online set the range picks a parked core, the probe never
-    // runs, and the shootdown test times out reading as a TLB bug.
+    // Any ONLINE core but this one, from the set rather than `0..count`: on a non-contiguous online
+    // set the range picks a parked core, the probe never runs, and the test times out reading as a
+    // TLB bug.
     let target = crate::smp::online_cpus()
         .find(|&c| c != here)
         .expect("cores >= 2");

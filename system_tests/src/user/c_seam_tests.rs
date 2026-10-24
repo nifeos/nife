@@ -246,9 +246,8 @@ fn the_supervisor_restarts_the_faulted_c_component_and_the_restart_does_real_wor
     );
 
     // A clean exit reads as EXIT, which is what lets a userspace policy tell "finished" from
-    // "crashed" without guessing. The honest attempt is the third child, and since the underrun
-    // was added it is no longer the last, so its death is taken by position rather than by
-    // `last()`.
+    // "crashed" without guessing. The honest attempt is the third child but not the last, so its
+    // death is taken by position rather than by `last()`.
     let honest_death = of_kind(&msgs, RPT_DEATH)
         .nth(2)
         .expect("no death messages at all");

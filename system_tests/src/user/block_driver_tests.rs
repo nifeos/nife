@@ -26,9 +26,8 @@ use crate::sched;
 // RISC-V twin: `riscv_virtio_tests::the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
+// on the two kinds of gate.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region() {
@@ -52,9 +51,8 @@ fn the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region() {
 // RISC-V twin: `riscv_virtio_tests::the_kernel_refuses_an_indirect_descriptor_escape`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
+// on the two kinds of gate.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_kernel_refuses_an_indirect_descriptor_escape() {
@@ -123,9 +121,8 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
 // RISC-V twin: `riscv_virtio_tests::a_userspace_driver_writes_a_block_and_reads_it_back`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
+// on the two kinds of gate.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_userspace_driver_writes_a_block_and_reads_it_back() {
@@ -146,9 +143,8 @@ fn a_userspace_driver_writes_a_block_and_reads_it_back() {
 // RISC-V twin: `riscv_virtio_tests::a_userspace_driver_writes_a_block_over_the_pcie_transport`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
+// on the two kinds of gate.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[test_case]
 fn a_userspace_driver_writes_a_block_over_the_pcie_transport() {
@@ -176,9 +172,8 @@ fn a_userspace_driver_writes_a_block_over_the_pcie_transport() {
 // RISC-V twin: `riscv_virtio_tests::a_driver_killed_mid_write_leaves_the_device_and_transport_sane`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+// to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
+// on the two kinds of gate.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_driver_killed_mid_write_leaves_the_device_and_transport_sane() {

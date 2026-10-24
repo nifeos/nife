@@ -248,8 +248,8 @@ mod credential_tests;
 mod login_tests;
 
 /// **A login session's work outlives the login, and a suspended user's does not** (milestone 152
-/// (durable delegation)). Cut out of `login_tests` on 2026-10-12 (UTC) for its length, and named to
-/// sort right after it; it uses that module's wiring, so it carries that module's gate.
+/// (durable delegation)). Named to sort right after `login_tests`, whose wiring it uses, so it
+/// carries that module's gate.
 #[cfg(all(test, initial_ramdisk))]
 mod login_user_schedule_tests;
 

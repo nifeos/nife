@@ -22,10 +22,8 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     const CODE_VA: u64 = address_space_map::IMAGE_BASE;
     const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
     // The child's program: SEND(slot 0, rendezvous::SEND, REPORT_WORD) then EXIT, nine
-    // instructions, with the child's first granted cap in slot 0. This file used to carry three
-    // separate aarch64 copies of it; `supervision_tests` already keeps one pair (aarch64 and
-    // RISC-V) for its own children, so all three now share that pair. Same shape, one definition,
-    // and the tests below run on either machine.
+    // instructions, with the child's first granted cap in slot 0: `supervision_tests`' pair
+    // (aarch64 and RISC-V), so the tests below run on either machine.
     let code = super::supervision_tests::REPORT_STUB;
     let expect_word = super::supervision_tests::REPORT_WORD;
 
@@ -245,10 +243,9 @@ fn spawn_to_reap_repeats_without_leaking() {
             crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
         );
         let thread_control_block_region = crate::memory_region::create(2).expect("tcb region");
-        // This round's own ten frames, by name. The leak this test hunts is a per-cycle one, so
-        // asking per round about the pages that round allocated is the question; the machine's
-        // free total was the question the assertion used to ask, and it could be moved by any
-        // other core in a window that contains a child running, a remote reap and two reclaims.
+        // This round's own ten frames, by name. The leak this test hunts is a per-cycle one, so the
+        // question is per round; the machine's free total can be moved by any other core in a
+        // window that holds a child running, a remote reap and two reclaims.
         let as_run = crate::testing::RegionRun::of(as_region);
         let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
         let tid =
