@@ -210,6 +210,29 @@ reads three words from the thread instead of following a pointer into an `Addres
 improvement is not claimed; `icount` counts move with code layout (notes/benchmarks.md), and no IPC
 path changed. The registry itself is 21,904 bytes of `.bss` at 288 slots.
 
+## What the running-space tests leave open
+
+- The multicore test's placement is retried, not pinned, because the kernel has no affinity
+  primitive. The unmapper stands down when it finds the reader on its own core, and the test picks
+  a fresh target, up to 16 times. Sixteen co-placements in a row, or a migration between that check
+  and the `UNMAP`, still fail a correct kernel on the guard's "proves nothing about another core's
+  TLB" assertion. The guard fired once on a correct kernel, on the cpu-matrix `rv64` leg of CI run
+  37405717281 (2026-10-06 UTC), on a branch that touched neither the test nor the scheduler.
+- The negative control proves the loader, not the boot. It drives the `supervision_protocol` code
+  the progenitor builds boot servers with, in a fixture granted its own space the way the kernel
+  grants the progenitor's. A boot that wrote into a boot server would kill the progenitor, so the
+  boot itself is proven only by building every server through that code (`script/swish-check`)
+  without faulting.
+- The negative control keeps 32 frames the first time it runs in a boot, and none after. Measured
+  on aarch64, 2026-10-05, by running the control, the real run and a third witness in one test: 32
+  frames went after the first witness, and the count held across the next two. It is one-time
+  growth the first spawned program of a boot pays, not a frame per process. `scratch_window_tests`
+  records the same 32 for its own first builder, unexplained. Run alone, the test is that first
+  spawn; in the whole suite something earlier is.
+- Only the fault's address is asserted, not its kind. riscv64 reports a load or store page fault
+  without saying whether a translation existed, so "it faulted at this page" is the claim all three
+  ISAs can state alike.
+
 ## BUGS
 
 - **A builder can give its windows back only if its builder granted it its own space.** The

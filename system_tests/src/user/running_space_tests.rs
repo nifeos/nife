@@ -1,51 +1,23 @@
-//! `running_space_tests`: a running address space stays nameable (§249 (a running address space
-//! stays nameable), and its amendments), and what that lets milestone 95 (an unmap primitive, and
-//! the mappings init never lets go) finally do.
+//! A running address space stays nameable (§249 (a running address space stays nameable), and its
+//! amendments), and what that lets milestone 95 (an unmap primitive, and the mappings init never
+//! lets go) do.
 //!
-//! Each ruling has a test here, and each test a replayable falsification under
-//! `system_tests/falsifications/user.running_space_tests.*`:
-//!
-//! - **Option A**: a copy of the capability made before `CONFIGURE` names the space while its
-//!   thread runs, and `UNMAP` through it takes a page from under the thread, which faults.
-//! - **The multicore test** `notes/unmap.md`'s `BUGS` said could not exist: the reader spins on one
-//!   core and the `UNMAP` comes from another, so only the TLB shootdown can stop it.
-//! - **Amendment (a)**: deleting every capability leaves the thread running on its space; the
-//!   thread's reaping ends the space, and every capability to it then fails.
-//! - **Amendment (b)**: a second bind of a bound space is refused. Since milestone 812 that keeps a
-//!   space to one holder; threads share it by joining the holder's process.
-//! - **The corpse gap** `notes/naming-a-running-address-space.md` reasoned about and did not drive:
-//!   a corpse whose root was in a destroyed region no longer outlives that region.
-//! - **Milestone 95's negative control**: a builder that holds its own space, as the progenitor does
-//!   at slot 28, writes to a page it filled for a child and faults; without its own space, the same
-//!   write lands.
-//!
-//! Cross-ISA: every body is portable kernel code or portable userspace, and the hand-written reader
-//! is one stub per ISA (DECISIONS §19 (architectural parity is a tenet)).
-//!
+//! One test per ruling, each with a replayable falsification under
+//! `system_tests/falsifications/user.running_space_tests.*`: option A on one core and across two,
+//! amendments (a) and (b), the corpse gap, and milestone 95's negative control. Every body is
+//! portable; the hand-written reader is one stub per ISA (DECISIONS §19 (architectural parity is a
+//! tenet)). See notes/unmap.md, "The progenitor gives its windows back".
 
 //! # BUGS
 //!
-//! - **The multicore test needs two online cores** and skips on one. CI's QEMU legs boot four.
-//! - **The multicore test's placement guard can fire on a correct kernel.** Nothing pins the reader
-//!   away from the unmapper's core, so when the scheduler puts both on one core the guard's
-//!   "proves nothing about another core's TLB" assertion fails the run instead of retrying. Seen
-//!   once, on the cpu-matrix `rv64` leg of CI run 37405717281 (2026-10-06 UTC), on a branch that
-//!   touched neither this file nor the scheduler. Pinning the reader, or retrying the placement a
-//!   bounded number of times before failing, would make it a skip-or-retry rather than a red run.
-//! - **The negative control proves the loader, not the boot.** It drives the same
-//!   `supervision_protocol` code the progenitor builds boot servers with, in a fixture granted its
-//!   own space the way the kernel grants the progenitor's. A boot that writes into a boot server
-//!   would kill the progenitor, so the boot itself is proven only by building every server through
-//!   that code (`script/swish-check`) without faulting.
-//! - **The negative control keeps 32 frames the first time it runs in a boot, and none after.**
-//!   Measured on aarch64, 2026-10-05, by running the control and the real run and then a third
-//!   witness in one test: 32 frames gone after the first witness, the count unchanged across the
-//!   next two. So it is one-time growth the first spawned program of a boot pays, not a frame per
-//!   process; `scratch_window_tests` records the same 32 for its own first builder, unexplained.
-//!   Run alone, this test is that first spawn; in the whole suite something earlier is.
-//! - **The fault's kind is not asserted, only its address.** riscv64 reports a load or store page
-//!   fault without saying whether a translation existed, so "it faulted at this page" is the claim
-//!   all three ISAs can state alike.
+//! - The multicore test needs two online cores and skips on one; CI's QEMU legs boot four.
+//! - Its placement is retried, not pinned: sixteen co-placements, or a migration between the check
+//!   and the `UNMAP`, still fail a correct kernel.
+//! - The negative control proves the loader, not the boot.
+//! - The negative control keeps 32 frames the first time it runs in a boot, unexplained.
+//! - Only the fault's address is asserted: riscv64 does not say whether a translation existed.
+//!
+//! notes/unmap.md, "What the running-space tests leave open", has each in full.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -208,15 +180,13 @@ static UNMAP_RESULT: AtomicU64 = AtomicU64::new(u64::MAX);
 static UNMAPPER_CPU: AtomicU64 = AtomicU64::new(u64::MAX);
 static READER_CPU_AT_UNMAP: AtomicU64 = AtomicU64::new(u64::MAX);
 
-/// **The reader spins on one core, `UNMAP` runs on another, and the reader faults.**
+/// The reader spins on one core, `UNMAP` runs on another, and the reader faults.
 ///
-/// The test `notes/unmap.md`'s `BUGS` said could not exist before §249: no capability named a space
-/// a thread was running in, so no core could be caching a translation `UNMAP` had to reach. Here
-/// one is. The reader's core has the page in its TLB from the loop, and nothing on that core runs
-/// the unmap; only the shootdown `mmu::unmap_user_at` issues (`tlbi vaae1is`, an SBI remote fence,
-/// the NMI round) can take the translation away from it. Which core each side was on is read, not
-/// assumed: the reader's from its own current-CPU page at the moment of the unmap, the unmapper's
-/// from `cpu::id()`.
+/// The reader's core has the page in its TLB from the loop and nothing on that core runs the
+/// unmap, so only the shootdown `mmu::unmap_user_at` issues (`tlbi vaae1is`, an SBI remote fence,
+/// the NMI round) can take the translation away. Which core each side was on is read, not assumed:
+/// the reader's from its own current-CPU page at the moment of the unmap, the unmapper's from
+/// `cpu::id()`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.unmap_on_another_core_faults_a_reader_spinning_on_the_page.patch`
 #[test_case]
@@ -317,16 +287,13 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
     sched::reclaim_region(region).expect("the reader's region did not come back");
 }
 
-/// **A second bind of a bound space is refused, and a refused `CONFIGURE` consumes nothing**
-/// (§249's amendment (b)). Two embryos, one space, two capabilities to it made before either bind.
-/// The first binds; the second is answered `WrongObject`, the answer a second `CONFIGURE` of a
-/// started thread gives. Before §249 the consumed name was the only thing that stopped this. Since
-/// milestone 812 (`std::thread::spawn` runs real threads in one address space) threads share a
-/// space by joining its process, so what this refusal keeps is that a space has one holder.
+/// A second bind of a bound space is refused, and a refused `CONFIGURE` consumes nothing (§249's
+/// amendment (b)).
 ///
-/// And the bound space does not outlive its embryo: reclaiming the region reaps both TCBs, and the
-/// space bound to one of them goes in the same `DESTROY`, collected by the sweep as a space whose
-/// thread is gone.
+/// Two embryos, one space, two capabilities to it made before either bind. The first binds; the
+/// second is answered `WrongObject`, as a second `CONFIGURE` of a started thread is, so a space has
+/// one holder (threads share it by joining its process). Reclaiming the region reaps both TCBs, and
+/// the bound space goes in the same `DESTROY`, swept as a space whose thread is gone.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.a_second_bind_of_a_bound_space_is_refused.patch`
 #[test_case]
@@ -375,15 +342,12 @@ fn a_second_bind_of_a_bound_space_is_refused() {
     );
 }
 
-/// **Deleting every capability to a bound space leaves its thread running; reaping the thread ends
-/// the space, and every capability to it then fails** (§249's amendment (a)).
+/// Deleting every capability to a bound space leaves its thread running; reaping the thread ends
+/// the space, and every capability to it then fails (§249's amendment (a)).
 ///
-/// The first half is the absence of a final-capability rule, which nothing here has ever had. The
-/// second half is the one that needs a mechanism now that the registry owns bound spaces: the
-/// reaper must take the space out by the name the thread kept, or a dead process's memory stays
-/// nameable (and its root, its ASID and its revocation records stay spoken for) forever.
-///
-/// It also prints what the registry costs since `MAX_USER_SPACES` grew, measured from the type.
+/// There is no final-capability rule. The reaper takes the space out by the name the thread kept,
+/// or a dead process's memory, root, ASID and revocation records stay spoken for forever. It also
+/// prints what the registry costs at `MAX_USER_SPACES`, measured from the type.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.a_bound_space_dies_with_its_thread_not_with_its_capabilities.patch`
 #[test_case]
@@ -431,18 +395,14 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
     sched::reclaim_region(region).expect("the reader's region did not come back");
 }
 
-/// **A corpse whose space is rooted in a destroyed region does not keep that space past the
-/// region** (the gap `notes/naming-a-running-address-space.md` found by reading, confirmed closed).
+/// A corpse whose space is rooted in a destroyed region does not keep that space past the region
+/// (the gap `notes/naming-a-running-address-space.md` found by reading).
 ///
-/// The shape: the space and its root from region R, the TCB from region A, and the thread
-/// supervised, so its fault leaves it `Dead` and unreaped. Before §249 the corpse owned its space,
-/// `DESTROY(R)` saw neither it (its TCB is not in R) nor its space (bound spaces were not in the
-/// registry), and R came back with the corpse still holding a root in it. The revocation registry
-/// went on naming that root and its log pages, which R had just handed back, and the corpse's
-/// eventual reap would `forget_root` a page that could by then be someone else's root.
-///
-/// Now the registry owns the space and the sweep takes a corpse's: the name is dead and the
-/// revocation registry has forgotten the root before R's pages are free.
+/// The space and its root come from region R, the TCB from region A, and the thread is supervised,
+/// so its fault leaves it `Dead` and unreaped. `DESTROY(R)` must take the corpse's space: the
+/// registry owns it, so the name dies and the revocation registry forgets the root before R's pages
+/// are free. Otherwise the corpse's eventual reap would `forget_root` a page that could by then be
+/// someone else's root.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.a_corpse_does_not_keep_a_space_rooted_in_a_destroyed_region.patch`
 #[test_case]
@@ -587,16 +547,14 @@ fn next_report(report: sched::RendezvousId) -> Option<[u64; 5]> {
         .then(|| sched::ipc_receive(report))
 }
 
-/// **A builder that gave its scratch page up faults writing to the child's page it filled; one that
-/// could not give it up writes it** (milestone 95's negative control, the shape milestone 22 (trusted init) used).
+/// A builder that gave its scratch page up faults writing to the child's page it filled; one that
+/// could not give it up writes it (milestone 95's negative control, the shape milestone 22 (trusted
+/// init) used).
 ///
-/// Both runs build one child with `supervision_protocol::build_child`, the code the progenitor builds
-/// every boot server with, and then write to the scratch page the loader filled the child's code
-/// through. Given a capability to its own space (as the kernel gives the progenitor at slot 28), the
-/// loader `UNMAP`ped that page as soon as it was in the child, and the write faults at exactly that
-/// address. Without one, the write lands, which is the window the progenitor held onto every boot
-/// server's memory until §249; that second run is what stops the first passing because nothing was
-/// mapped there in the first place.
+/// Both runs build one child with `supervision_protocol::build_child`, the progenitor's code, then
+/// write to the scratch page the child's code was filled through. Holding its own space (as the
+/// progenitor does at slot 28) the loader `UNMAP`s that page once it is in the child, and the write
+/// faults at that address; without it the write lands, so the fault is not an unmapped address.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page.patch`
 #[cfg(initial_ramdisk)]
