@@ -1,5 +1,7 @@
 # The JH7110 against QEMU virt, in detail
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), which carries the summary table. This
 file holds the evidence for each row: the Image header and its load-address trick, DRAM, the UART,
 the PLIC, the CLINT, PCIe and the SBI extensions. Source tags such as [dtsi] are defined in the

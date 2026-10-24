@@ -200,6 +200,30 @@ it is built as milestone 757 (a test kernel fails a process on its Nth retype), 
 ([its block](../design/roadmap/0757-a-test-kernel-fails-a-process-on-its-nth-retype.md)). Its first
 sweep of `login` found one leak.
 
+## The retype-fault sweep of `login`
+
+`system_tests/src/user/nth_retype_tests.rs` sweeps one whole login under `crate::retype_fault`,
+which makes the kernel refuse one thread's Nth retype as though the region were empty. N runs from
+1 until a run makes fewer than N retypes, which is a login that ran to the end. That covers the
+`CONNECT` on the front door, the credential relay, `mint`'s caretaker build and the client's budget.
+After every run the test compares `login`'s capability table, and the usage of every region it
+holds, with their values before the sweep. A cleanup path that forgets a `cap_delete` or leaves a
+split child behind crashes nothing, so the kept slot or pages are the only evidence. This note's
+count found 17 such paths in `login` that no test reached.
+
+It is a kernel test because no syscall shows another process's capability table or which retype the
+kernel is on (`notes/scripts.md`, a new service test is a userspace program unless it cannot be).
+
+It shares `login_tests`' one `login` rather than building its own. A `login` cannot be torn down: it
+parks on a front door its own budget did not pay for (`holding.rs`'s BUGS). A second instance would
+be a permanent charge on the suite's frame ledger. Every run is refused or logs back out, so it
+leaves the instance as it found it, which is the property under test.
+
+What it does not sweep needs a fresh `login` per N, which is the teardown `holding.rs` cannot do:
+`login`'s own start-up (the three splits in `_start`) and a login that opens a schedule
+(`Durable::open`). `system_initializer`, `swish` and the rest of the 75 cleanup paths are milestone
+786 (sweep the other long-lived services under the retype fault).
+
 ## EXAMPLES
 
 ```sh

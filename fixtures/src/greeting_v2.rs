@@ -1,22 +1,13 @@
-//! **The second copy of the package** (milestone 614 (two installed versions of one program, each
-//! runnable, and a caller granted the one it needs)): a program whose bytes
-//! differ from `greeting`'s, packaged as `greeting` at 0.2.0 by `packages/greeting-0.2.0.recipe.toml`
-//! (the `as` key renames the member; the program keeps its own name here so the two ELFs cannot be
-//! confused on the host).
+//! The second copy of the package (milestone 614 (two installed versions of one program, each
+//! runnable, and a caller granted the one it needs)): bytes that differ from `greeting`'s,
+//! packaged as `greeting` at 0.2.0 by `packages/greeting-0.2.0.recipe.toml` (the `as` key renames
+//! the member; the program keeps its own name so the two ELFs cannot be confused on the host).
 //!
-//! It exists because rows key on the digest (ruling 2): a second version of `greeting` carrying the
-//! same member bytes would be the same row relabelled, and the gate could not prove that two
-//! versions are live at once. This one's line is different, so `script/swish-check` can tell which
-//! copy ran, and its digest differs, so the table holds two rows for `greeting`.
-//!
-//! ```text
-//! $ cd downloads
-//! $ jig install 0.2.0/greeting.nifepkg
-//!   installed; generation 3 is live
-//! $ packages/greeting/0.2.0/greeting
-//! hello from the second copy of the package
-//! ```
-//!
+//! Rows key on the digest (ruling 2), so a second version carrying the same bytes would be the same
+//! row relabelled. This one's line differs, so `script/swish-check` can tell which copy ran, and
+//! its digest differs, so the table holds two rows for `greeting`.
+//! notes/packages/the-test-programs.md has the transcript.
+
 //! # What this program holds
 //!
 //! Slot 0, its output: the sink contract (`crates/byte_sink_contract`). No manifest note, so a

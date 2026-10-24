@@ -1,17 +1,19 @@
 //! The tests for milestone 106 (a wait that ends on either the interrupt or the deadline), which
 //! builds DECISIONS §147 (a timer a userspace service cannot hold) option 1, on every architecture.
 //!
-//! Each proves something the crate's Kani harnesses cannot, because it is about the kernel half:
-//! that the real tick reaches the walk, that the walk's signal wakes a real waiter (and a bound
-//! receiver parked in `RECEIVE`) through §101 (notification objects)'s path, and that the syscall layer checks the right
-//! rights on the right objects. The arithmetic (the cache never passes an armed deadline, a walk
-//! fires exactly the due timers, a replaced or cancelled deadline never fires) is proved in
-//! `crates/inter_process_communication/src/timer.rs` and exercised here only end to end.
+//! Each proves the kernel half the crate's Kani harnesses cannot: that the real tick reaches the
+//! walk, that the walk's signal wakes a real waiter (and a bound receiver parked in `RECEIVE`)
+//! through §101 (notification objects)'s path, and that the syscall layer checks the right rights
+//! on the right objects. The arithmetic (the cache never passes an armed deadline, a walk fires
+//! exactly the due timers, a replaced or cancelled deadline never fires) is proved in
+//! `crates/inter_process_communication/src/timer.rs`. See notes/timer.md.
+
+//! # Timing
 //!
-//! **Timing assertions are one-sided where they can be.** "Not before the deadline" is exact,
-//! because the walk compares the same counter the test reads. "Soon after" is bounded loosely (a
-//! second), because a loaded CI runner under TCG can lose ticks, and a test that flaked on host
-//! load would prove nothing about the kernel.
+//! Timing assertions are one-sided where they can be. "Not before the deadline" is exact, because
+//! the walk compares the same counter the test reads. "Soon after" is bounded loosely (a second),
+//! because a loaded CI runner under TCG can lose ticks, and a test that flaked on host load would
+//! prove nothing about the kernel.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -314,17 +316,15 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     reclaim(r);
 }
 
-/// **The before and after, measured**: 200 ms asleep the way `thread::sleep` did it until this
-/// milestone (read the counter, `yield`, repeat) against the way it does now (arm, `WAIT`). Two
-/// kernel threads run the two loops, which are the PAL's loop and the PAL's new body with the
-/// syscall boundary taken out; what the boundary adds per iteration is `null_syscall`'s cost, which
-/// `bench/` already records.
+/// **The before and after, measured**: 200 ms asleep by a yield loop (read the counter, `yield`,
+/// repeat) against arm and `WAIT`. Two kernel threads run the PAL's two loops with the syscall
+/// boundary taken out; what the boundary adds per iteration is `null_syscall`'s cost, which
+/// `bench/` records.
 ///
-/// The printed line is the measurement and CI's log is where it is read, once per ISA. What the
-/// test asserts is only the shape nobody should be able to regress: the timer sleeper is woken
-/// once and is charged at most a tick or two, where the spinner is charged the ticks that landed
-/// while it held the core and loops thousands of times. The exact figures depend on what else the
-/// suite has runnable at that moment, which is the point of printing rather than asserting them.
+/// The printed line is the measurement, read once per ISA in CI's log. The test asserts only the
+/// shape: the timer sleeper is woken once and charged at most a tick or two, where the spinner is
+/// charged the ticks that landed while it held the core and loops thousands of times. The exact
+/// figures depend on what else the suite has runnable, which is why they are printed.
 #[test_case]
 fn a_timer_sleep_costs_a_wake_where_a_yield_loop_costs_a_cpu() {
     static SPINS: AtomicU64 = AtomicU64::new(0);

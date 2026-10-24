@@ -30,17 +30,13 @@ use pipeline_service::{answer, counts};
 
 /// **The headline: the same `date`, two destinations, the same bytes.**
 ///
-/// `date` is spawned twice from the same ELF with the same argument. The first time its output
-/// slot holds the shell's result endpoint and the shell prints what arrives; the second time it
-/// holds an endpoint into `wc`, and `wc` counts what arrives. Neither `date` was told which, and
-/// there is no message on the sink contract that could have told it.
+/// `date` is spawned twice from one ELF with one argument. First its output slot holds the shell's
+/// result endpoint and the shell prints what arrives; then it holds an endpoint into `wc`, which
+/// counts. Neither `date` was told which, and no message on the sink contract could have told it.
 ///
-/// The assertion is the byte count, which is the one number that has to agree. It is compared
-/// against the *observed* first arm rather than a constant, so it holds whether or not this
-/// boot has a clock and whatever `date` decides to say.
-///
-/// The word and line counts are checked too, because a byte count alone would pass for a `wc`
-/// that had simply counted the right number of wrong bytes.
+/// The byte count is compared against the observed first arm, not a constant, so it holds whether
+/// or not this boot has a clock and whatever `date` says. Word and line counts are checked too: a
+/// byte count alone would pass a `wc` that counted the right number of wrong bytes.
 #[test_case]
 fn one_program_two_destinations_and_the_same_bytes() {
     let mut buf = [0u8; 3072];

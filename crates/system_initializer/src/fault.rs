@@ -1,13 +1,11 @@
 //! How a builder fails: `must`, `must_ok` and `fail`. A half-built system is not worth limping
-//! along, so every failed step traps, and the kernel names the pc. Moved out of `lib.rs` unchanged
-//! but for visibility by milestone 843 (the system-initializer crate root is split along its
-//! seams), under §279 (the system-initializer crate root splits into private modules).
+//! along, so every failed step traps, and the kernel names the pc.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
-/// Unwrap a `Result<_, ()>` or fault: a half-built system is not worth limping along. Generic since
-/// DECISIONS §142, because `build_child` now returns a `Child` (a tcb plus what this builder keeps
-/// over it) where it used to return a bare slot.
+/// Unwrap a `Result<_, ()>` or fault: a half-built system is not worth limping along. Generic, so
+/// it also unwraps the `Child` `build_child` returns (DECISIONS §142 (what a spawner retains over a
+/// child after `START`)).
 pub(super) fn must<T>(r: Result<T, ()>) -> T {
     match r {
         Ok(v) => v,

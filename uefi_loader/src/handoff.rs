@@ -1,34 +1,29 @@
 //! **Building the handoff the kernel already knows how to read.**
 //!
-//! This is the half of milestone 87 that decided the shape of the rest of it. The kernel's `x86_64`
-//! boot handoff is PVH's `hvm_start_info`: one physical pointer to a structure carrying the memory
-//! map, the ACPI root pointer, and any loaded modules. `machine_discovery::x86_64` decodes it and
-//! `arch::x86_64::machine` consumes it, both host-tested, both already working.
-//!
-//! So this loader does not invent a UEFI handoff. **It synthesises an `hvm_start_info`**, and the
-//! kernel cannot tell which loader started it. That is not a shortcut, it is the answer to the
-//! hazard milestone 87 was briefed on: two boot paths that produce two different internal states
-//! diverge, and the divergence shows up on hardware nobody can attach a debugger to. There is one
-//! structure, one decoder, and one set of tests.
-//!
+//! The kernel's `x86_64` boot handoff is PVH's `hvm_start_info`: one physical pointer to a
+//! structure carrying the memory map, the ACPI root pointer and any loaded modules, decoded by
+//! `machine_discovery::x86_64` and consumed by `arch::x86_64::machine`. So this loader synthesises
+//! an `hvm_start_info` rather than inventing a UEFI handoff, and the kernel cannot tell which
+//! loader started it: one structure, one decoder, one set of tests, and no second boot path to
+//! diverge on hardware nobody can attach a debugger to (milestone 87 (the x86_64 bare-metal
+//! machine); notes/x86-uefi-boot.md).
+
 //! # This module is the *writer* for `machine_discovery::x86_64`'s *reader*
 //!
 //! And the tests below say so literally: every encoder here is checked by decoding its output with
 //! that crate. Neither side carries its own copy of the layout, which is the same rule
 //! `byte_sink_contract`, `grant_plan` and `clock_contract` are held to.
-//!
+
 //! # BUGS
 //!
-//! - **`EfiLoaderData` is reported as reserved and stays that way**, which is the half of this that
-//!   milestone 195 did not reclaim. It holds five things the kernel needs after the frame allocator
-//!   is up: the `hvm_start_info`, the memory map it points at, the module list, the userspace
-//!   archive, and the kernel image itself. Reclaiming the type would let the allocator hand out the
-//!   map it is reading, so what is lost is the padding: each of those is rounded up to a page and
-//!   the whole class is reported at page granularity. Measured rather than guessed, at two memory
-//!   sizes: see notes/x86-uefi-boot.md.
-//! - **The map is passed through in firmware order and is neither sorted nor coalesced.** UEFI
-//!   promises neither, and `machine_discovery::x86_64`'s own `BUGS` already records that its
-//!   consumer is where such a check belongs.
+//! - **`EfiLoaderData` is reported as reserved and stays that way** (milestone 195 (finish the UEFI
+//!   boot path) did not reclaim it): it holds the `hvm_start_info`, its memory map, the module
+//!   list, the archive and the kernel image, so reclaiming it would let the allocator hand out the
+//!   map it is reading. The cost is each one's page padding, measured at two memory sizes in
+//!   notes/x86-uefi-boot.md.
+//! - **The map is passed through in firmware order, neither sorted nor coalesced.** UEFI promises
+//!   neither, and `machine_discovery::x86_64`'s own `BUGS` records that its consumer is where such
+//!   a check belongs.
 
 /// `hvm_start_info`, version 1: the size this loader always writes.
 pub const START_INFO_LEN: usize = 56;
@@ -80,21 +75,13 @@ pub const fn e820_kind(efi_type: u32) -> u32 {
         // those stay reserved below. A loader that had taken `AllocatePages` defaults would be
         // freeing its own handoff here.
         t::BOOT_SERVICES_CODE | t::BOOT_SERVICES_DATA => E820_RAM,
-        // **And this loader's own code, which is dead by the time the kernel reads this map.**
-        // `EfiLoaderCode` is two things and both have finished: the PE image the firmware loaded,
-        // whose `include_bytes!` copies of the kernel and the archive were copied OUT of it before
-        // `ExitBootServices`, and the one-shot mode-switch trampoline, which jumped to the kernel's
-        // entry and can never run again. Reclaiming it matters more than its share of a big machine
-        // suggests, because the PE image is the whole embedded payload: 9 MiB for the tour build
-        // and 19 MiB for the test build, which on a 256 MiB machine is memory nobody can afford to
-        // spend on a copy of something already in RAM twice.
-        //
-        // `LOADER_DATA` is emphatically NOT here, and the asymmetry is the mechanism: every
-        // allocation this loader makes that the kernel reads later (the `hvm_start_info`, this map,
-        // the module list, the archive, and the kernel image itself) asks for `LOADER_DATA`, and
-        // the only one that asks for `LOADER_CODE` is the trampoline, because firmware sets the
-        // execute-disable bit on data. So the type that has to survive and the type that does not
-        // are already separated, by a choice made for an unrelated reason.
+        // **And this loader's own code, dead by the time the kernel reads this map**: the PE image
+        // the firmware loaded, whose embedded kernel and archive were copied OUT of it before
+        // `ExitBootServices` (9 MiB for the tour build, 19 MiB for the test build, which a 256 MiB
+        // machine cannot spare), and the one-shot mode-switch trampoline. `LOADER_DATA` is NOT
+        // here, and the asymmetry is the mechanism: everything the kernel reads later asks for
+        // `LOADER_DATA`, and only the trampoline asks for `LOADER_CODE`, because firmware sets the
+        // execute-disable bit on data.
         t::LOADER_CODE => E820_RAM,
         t::ACPI_RECLAIM_MEMORY => E820_ACPI_RECLAIMABLE,
         t::ACPI_MEMORY_NVS => E820_ACPI_NVS,
@@ -124,17 +111,13 @@ pub struct StartInfo {
     pub memmap: u64,
     /// How many entries it has.
     pub memmap_entries: u32,
-    /// **Where the NUL-terminated boot command line is**, or 0 when there is nothing to say.
-    ///
-    /// PVH has always carried this field and until milestone 243 this loader wrote a zero into it,
-    /// which this module's own text called out as a gap: there was nowhere for a boot argument to
-    /// come from or go to. It carries one thing today, `machine_discovery::framebuffer`'s
-    /// description of the screen the firmware was drawing on, and it is the field that means a
-    /// machine with no serial port is not silent.
-    ///
-    /// **A command line rather than a new structure field**, deliberately: `hvm_start_info` is
-    /// Xen's format, versioned by Xen, and a field appended to it is a fork of somebody else's
-    /// layout that looks exactly like the real thing to whoever reads it next. See that module.
+    /// **Where the NUL-terminated boot command line is**, or 0 when there is nothing to say. It
+    /// carries `machine_discovery::framebuffer`'s description of the screen the firmware was
+    /// drawing on (milestone 243 (a machine with no serial port)), so such a machine is not
+    /// silent, and the other words [`cmdline`] lists. A command line rather than a new structure
+    /// field, deliberately: `hvm_start_info` is Xen's format, versioned by Xen, and an appended
+    /// field is a fork of somebody else's layout that looks exactly like the real thing to whoever
+    /// reads it next.
     pub cmdline: u64,
 }
 
@@ -175,20 +158,15 @@ pub fn encode_module(addr: u64, size: u64) -> [u8; MODULE_ENTRY_LEN] {
     out
 }
 
-/// **How many bytes the kernel's boot command line may occupy**, NUL included.
+/// **How many bytes the kernel's boot command line may occupy**, NUL included: the one place the
+/// line's vocabulary is added up, though its tokens belong to two crates.
 ///
-/// `Framebuffer::MAX_LEN` is the screen token; the rest is a space and
+/// `Framebuffer::MAX_LEN` is the screen token; then a space and
 /// `machine_discovery::framebuffer::SCREEN_HOLD`, which the `screen_hold` feature adds for
-/// milestone 445 (the screen check stops sampling and starts asking). Sized for both whether or
-/// not that feature is on, so a caller's buffer has one length rather than two and nobody reading
-/// the copy that places it has to work out which build they are in.
-/// `boot_slot::cmdline::MAX_LEN` is the third token, which every build can carry: an installed
-/// machine's chooser writes it and every other boot leaves it off.
-///
-/// **This constant is the one place the line's vocabulary is added up**, and that is worth saying
-/// out loud because the tokens themselves belong to two different crates: the screen's to
-/// `machine_discovery::framebuffer`, the slot's to `boot_slot`. Nothing else in the tree sees all
-/// of them at once.
+/// milestone 445 (the screen check stops sampling and starts asking), counted whether or not that
+/// feature is on so a caller's buffer has one length rather than two; then
+/// `boot_slot::cmdline::MAX_LEN`, the slot token an installed machine's chooser writes and every
+/// other boot leaves off.
 pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAX_LEN
     + 1
     + machine_discovery::framebuffer::SCREEN_HOLD.len()
@@ -198,43 +176,15 @@ pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAX_
     + boot_slot::medium::MAX_LEN
     + 1;
 
-/// **Write the kernel's boot command line**, NUL-terminated, returning its length *without* the
-/// NUL. `out` must be at least [`CMDLINE_LEN`] bytes.
-///
-/// **Zero when there is nothing to say**, and the caller writes no command line at all in that
-/// case. That is the ordinary shape of a machine with neither a screen nor a chooser.
-///
-/// Up to three words, in the order a reader meets them:
-///
-/// - the screen the firmware was drawing on, which is the whole of what milestone 243 (a machine
-///   with no serial port has no way to say anything, and no gate can read it) carries across the
-///   handoff. `None` on a machine the firmware had no graphics output on, which is the `OptiPlex`
-///   with its serial module.
-/// - `boot_slot::cmdline::KEY` and a digit, when a chooser started this image. It is how the
-///   running system learns which slot to confirm, and it is written **only** when there is one:
-///   a stick, a `-kernel` boot, and a fallback to the image in this file all leave it off, and a
-///   kernel that does not find it simply confirms nothing.
-/// - `boot_slot::medium::NVME` when this boot came from the NVMe disk, which is the only case in
-///   which the kernel mounts it (the live stick proposal's G2, ruled by calef on PR #1652,
-///   2026-10-04 UTC). A stick leaves it off and its system never touches the internal disk.
-/// - `machine_discovery::framebuffer::SCREEN_HOLD` under the `screen_hold` feature, for one
-///   caller: `cargo xtask uefi-boot`, the gate that photographs that screen. It asks the kernel to
-///   stop between painting its boot tour and clearing it, announce that on the serial line, and
-///   wait for a byte back, so the gate reads a state rather than racing a window.
-///   `uefi_loader`'s `Cargo.toml` says what it costs a machine that is handed it by mistake.
-///
-/// **The screen moved from an argument to an `Option` when the slot arrived**, and the reason is
-/// worth a sentence: the caller used to skip writing a command line entirely when there was no
-/// screen, which would have silently dropped the slot on every serial-only machine. That is the
-/// exact class of bug this feature cannot afford, because its symptom is an upgrade that reverts
-/// days later on one kind of machine.
-///
-/// **Here rather than in the binary**, so the line two programs agree on is written where a host
-/// test can read it back with the kernel's own parsers, which is this module's rule for every
-/// other encoder in it.
+/// **Write the kernel's boot command line**, NUL-terminated; returns its length without the NUL,
+/// or 0 when there is nothing to say (no screen, no chooser) and the caller writes none. Up to four
+/// words, in order: the screen (milestone 243; `None` with no graphics output); the slot key
+/// `boot_slot::cmdline::KEY` and a digit, **only** when a chooser started this image;
+/// `boot_slot::medium::NVME` when this boot came from the NVMe disk; and `SCREEN_HOLD` under the
+/// `screen_hold` feature. Written here so a host test reads it back with the kernel's own parsers;
+/// notes/x86-uefi-boot/loader-design.md has each word's contract.
 ///
 /// # Panics
-///
 /// If `out` is shorter than [`CMDLINE_LEN`].
 #[must_use]
 pub fn cmdline(

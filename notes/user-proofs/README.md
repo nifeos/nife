@@ -12,7 +12,4 @@ These files carry the measurements its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named after the parent's own heading, and calef names files.
-
-- `what-kani-could-not-do` Name: provisional.
-- `what-it-took` Name: provisional.
+Each stem here is named after the parent's own heading, and calef names files.

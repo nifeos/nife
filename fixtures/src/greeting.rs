@@ -1,38 +1,19 @@
-//! **A program no boot image carries** (milestone 198 (a package manager) rung 3a).
+//! A program no boot image carries (milestone 198 (a package manager) rung 3a).
 //!
-//! It prints one line and exits. What makes it worth a file is where it comes from: `fixtures`
-//! lists it in `packaged_only`, so no archive packs it (`script/swish-check` reads the archive to
-//! make sure), and the only way onto a machine is the
-//! package `packages/greeting.recipe.toml` builds. So when it runs at the prompt, the image's catalogue,
-//! the fetch, the digest check and the installed-programs table are the only things that could have put it
-//! there. Every earlier install line ran a copy of the image's own `uptime`, which proved the path
-//! and not novelty.
-//!
-//! ```text
-//! $ jig install greeting@0.1.0
-//!   fetched and installed; generation 2 is live
-//! $ packages/greeting/0.1.0/greeting
-//! hello from a package this image never carried
-//! ```
-//!
+//! It prints one line and exits. `fixtures` lists it in `packaged_only`, so no archive packs it
+//! (`script/swish-check` reads the archive to make sure), and the only way onto a machine is the
+//! package `packages/greeting.recipe.toml` builds. So when it runs at the prompt, the image's
+//! catalogue, the fetch, the digest check and the installed-programs table are the only things that
+//! could have put it there. notes/packages/fetching.md has the transcript.
+
 //! # What this program holds
 //!
 //! Slot 0, its output: the sink contract (`crates/byte_sink_contract`). Slot 1, the clock page,
-//! because its manifest asks for one, and that is the second line it prints.
-//!
-//! **The manifest travels in its own bytes** (milestone 597 (a program carries its manifest in an
-//! ELF note), provisional; DECISIONS §197 (a package is one archive file) option M2): [`MANIFEST`],
-//! carried as an ELF note. No boot image has a row for this program, so the note is the only place
-//! the progenitor can learn it wants a clock, and a vouched copy holding slot 1 is the proof the
-//! note was read. Before notes, every installed program was endowed as `uptime` is, and this line
-//! said `clock: not held`.
-//!
-//! ```text
-//! $ packages/greeting/0.1.0/greeting
-//! hello from a package this image never carried
-//! clock: held at slot 1, as its manifest note asked
-//! ```
-//!
+//! because [`MANIFEST`] asks for one, carried as an ELF note (milestone 597 (a program carries its
+//! manifest in an ELF note), provisional; DECISIONS §197 (a package is one archive file) option
+//! M2). No boot image has a row for this program, so a vouched copy holding slot 1, the second line
+//! it prints, proves the note was read. notes/packages/the-test-programs.md has the transcript.
+
 //! # BUGS
 //!
 //! It proves the path and a manifest's travel, and nothing about the program: a line of text is

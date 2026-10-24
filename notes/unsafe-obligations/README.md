@@ -15,10 +15,5 @@ milestones that followed it, each summarized there.
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
+The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-
-- `kani-gate` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `caller-obligations` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `census` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `ceilings` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.

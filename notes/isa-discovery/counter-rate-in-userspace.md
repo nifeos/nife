@@ -1,5 +1,7 @@
 # The counter rate in userspace
 
+*Name: provisional. For how `cntfrq` learns the rate. calef names files.*
+
 An appendix of [ISA discovery](../isa-discovery.md): how userspace learns the counter rate, and the
 lesson.
 

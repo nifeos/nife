@@ -51,14 +51,8 @@ fn any_root() -> u64 {
     root
 }
 
-/// **The root the MMU is walking is the root that was installed, and so is the tag.**
-///
-/// `current_root_pa` is what `translate_user`, `is_mapped_in_current_space` and the fault
-/// classifier all start their walk from, so a mask or shift wrong here sends every one of them
-/// down somebody else's tables. It was unreachable by any harness until `read_satp` became a
-/// stubbable function: the `csrr` sat in the same call graph. Stated as a round trip through
-/// [`ttbr0_value`], the composer every address space is installed with, so it is not the
-/// formula restated: a composer and a decoder that disagree about a field fail it.
+/// The root and tag the MMU walks are the ones installed, as a round trip through
+/// [`ttbr0_value`], so a composer and decoder that disagree about a field fail it.
 ///
 /// Falsification: attested 2026-09-25. On patagonia with the patched Kani (pull request #1287, not yet merged).
 /// The shift in `current_root_pa` changed from 12 to 10: this goes red and its two siblings stay
@@ -83,15 +77,8 @@ fn the_live_root_is_the_root_that_was_installed() {
     assert!(is_enabled(), "a composed satp reads as Bare");
 }
 
-/// **The ASID probe reports exactly the bits the hardware kept, and leaves `satp` as it found
-/// it, swept.**
-///
-/// The probe is what milestone 58's skipped TLB flush is bought with: on a hart that implements
-/// too few ASID bits, [`asid_tagging_is_trusted`] must say no, and the only input it has is this
-/// count. Overcounting is the dangerous direction, since two address spaces would share a tag
-/// with no flush between them. It was one `asm!` block until 2026-09-25, so none of this was
-/// provable; every implemented-bit pattern is covered here, including the zero-bit hart the
-/// specification permits and no machine this tree has booted on has.
+/// The ASID probe counts exactly the bits the hardware kept, for every pattern including zero
+/// bits, and leaves `satp` as it found it, swept. Overcounting would share a tag unflushed.
 ///
 /// Falsification: attested 2026-09-25. On patagonia with the patched Kani, twice and one claim
 /// at a time: the readback shifted by `SATP_ASID_SHIFT - 1` (a miscount), and the restoring
@@ -104,7 +91,7 @@ fn the_live_root_is_the_root_that_was_installed() {
 fn the_asid_probe_counts_the_implemented_bits_and_puts_satp_back() {
     let implemented = u64::from(kani::any::<u16>());
     IMPLEMENTED_ASID.store(implemented, Relaxed);
-    // A live `satp` can only hold ASID bits the hart implements; the hardware put it there.
+    // A live `satp` holds only ASID bits the hart implements.
     let live: u64 = kani::any();
     kani::assume(live & ASID_FIELD & !(implemented << SATP_ASID_SHIFT) == 0);
     SATP.store(live, Relaxed);
@@ -129,16 +116,8 @@ fn the_asid_probe_counts_the_implemented_bits_and_puts_satp_back() {
     );
 }
 
-/// **A switch to the kernel-only root sweeps the TLB exactly when the ASID cannot be trusted,
-/// and writes nothing when that root is already live.**
-///
-/// This is milestone 58's safety argument as one statement: the unconditional flush on every
-/// `satp` write was removed, and what keeps address spaces apart without it is that the flush
-/// comes back on any hart whose tag is too narrow (and before the probe has run, when the flag
-/// is still false). Reached through [`deactivate_user`], the safe entry every switch to a
-/// kernel thread takes, so it covers [`switch_user_root`]'s early return and [`write_satp`]'s
-/// condition together. Before 2026-09-25 both conditions sat beside a `csrw` and a
-/// `sfence.vma` in the same function and no harness could reach either.
+/// A switch to the kernel-only root, through [`deactivate_user`], sweeps the TLB exactly when
+/// the ASID cannot be trusted and writes nothing when that root is already live.
 ///
 /// Falsification: attested 2026-09-25. On patagonia with the patched Kani, twice: `write_satp`'s
 /// condition inverted (sweep only when trusted), and `switch_user_root`'s early return deleted.

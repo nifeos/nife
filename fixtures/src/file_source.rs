@@ -1,31 +1,22 @@
-//! **A file in front of a byte source** (milestone 50, split out of the `sink` binary by milestone
-//! 292; notes/sink-protocol.md).
+//! A file in front of a byte source (milestone 50, split out of the `sink` binary by milestone
+//! 292; notes/sink-protocol.md): it opens the name `file_sink` wrote and streams the contents out
+//! over the sink contract, the same sixteen-byte framing that carries a program's `println!`.
 //!
-//! The read-back. It opens the name `file_sink` wrote and streams the contents out **over the sink
-//! contract**, the same sixteen-byte framing that carries a program's `println!`. That is what
-//! makes `<` the same shape as `|`: the program on the reading end (`wc`, in the test that matters)
-//! holds one endpoint and cannot tell whether a pipe or a filesystem is behind it. It is a separate
-//! process with its own FS session, so the reader's side of the claim is not co-located with the
-//! writer's.
+//! That makes `<` the same shape as `|`: the reader (`wc`, in
+//! `system_tests/src/user/sink_tests.rs::one_reader_two_sources_and_the_same_answer`) holds one
+//! endpoint, cannot tell a pipe from a filesystem behind it, and gives the same answer for both. It
+//! is a separate process with its own FS session, so the reader's side of the claim is not
+//! co-located with the writer's.
+
+//! # Capability contract
 //!
 //! | slot 0 | slot 1 | slot 2 | [`PAGE_VA`] |
 //! |---|---|---|---|
 //! | the byte sink, `WRITE` | the FS service, `WRITE` | the report, `WRITE` | shared with the FS server |
 //!
 //! Slot 0 is `WRITE` here and `READ` in `file_sink`: the same slot and contract, and the direction
-//! is a right. **It is spawned only after `file_sink` has reported that it closed the file**,
-//! because the two share the FS server's one file page.
-//!
-//! The pairing `system_tests/src/user/sink_tests.rs::one_reader_two_sources_and_the_same_answer`
-//! asserts, in the kernel's vocabulary:
-//!
-//! ```text
-//! let (source, report) = fs_service::start_file_source(blk, fs_server, image).unwrap();
-//! let out = spawn_wc(source);              // wc holds one endpoint and nothing else
-//! assert_eq!(wc_counts(out), piped);       // the same answer it gave for a pipe
-//! assert_eq!(ipc_receive(report)[0], fixture::DONE);
-//! ```
-//!
+//! is a right. It is spawned only after `file_sink` has reported that it closed the file, because
+//! the two share the FS server's one file page.
 
 //! # BUGS
 //!
