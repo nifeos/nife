@@ -161,8 +161,7 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
         // The honest attempt's clean exit is "finished", not "crashed", and that distinction is
         // why §26 (the fault endpoint: thread death becomes a message a supervisor holds)
-        // delivers both events. The underrun (the eighth pass's addition) runs after it, so the
-        // loop's own bound ends the run.
+        // delivers both events. The underrun runs after it, so the loop's own bound ends the run.
         attempt += 1;
     }
 

@@ -44,8 +44,8 @@ pub(crate) fn share_victim(window: u64) -> ! {
     // Stage our own name, then tell the attacker; the SEND blocks until the attacker receives it.
     put_page(victim);
     send(SYNC, SHARE_STAGED, 0, 0);
-    // Block until the attacker has written its own window. Only then do we call. Before the fix the
-    // attacker shared our frame and this is where the substitution landed; now it cannot reach it.
+    // Block until the attacker has written its own window. Only then do we call: a substitution
+    // would land here, if the attacker could reach our window.
     let _ = receive(SYNC);
     // The length travels in the register (we choose our own name's length); the name bytes travel
     // in our window, which only we and the server map.

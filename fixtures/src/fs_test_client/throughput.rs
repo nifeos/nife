@@ -29,13 +29,12 @@ pub(crate) fn throughput() -> ! {
     let handle = throughput_file();
 
     // **Every write gets a fresh, incompressible page, and that is not fussiness.** RedoxFS stores
-    // a file in records (8 KiB since milestone 138 step 1, 128 KiB before it), compresses each with
-    // lz4 when it is larger than one block, and skips a write outright when the record it would
-    // produce is byte-identical to the one already there. So a benchmark that sends one constant
+    // a file in records (8 KiB), compresses each with lz4 when it is larger than one block, and
+    // skips a write outright when the record it would produce is byte-identical to the one already
+    // there. So a benchmark that sends one constant
     // page measures the short circuit on every repeat, and one that sends several copies of an
-    // incompressible page into a single record measures lz4 finding the copies. The first draft
-    // of this bench did both, and reported random writes as fast as random reads because none of
-    // them wrote anything. See notes/benchmarks.md.
+    // incompressible page into a single record measures lz4 finding the copies. See
+    // notes/benchmarks/filesystem-throughput.md.
     let mut payload = 0x9E37_79B9_7F4A_7C15_u64;
 
     // What that costs, measured on its own so a reader can take it back out of the write phases,
