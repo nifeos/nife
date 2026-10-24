@@ -104,6 +104,9 @@ per block too. Neither costs the ordinary path anything. The injector's arming a
 overflow the server's stack and produce a different failure from the one being chased, so raising the
 stack grant goes with turning it on.
 
+The Reply names the caller and nothing else. With endpoint-only naming the server learns how to
+answer a request, never who sent it. The badge picks the client's window and scope.
+
 A badge at or past `fs::CLIENT_WINDOWS` would point outside the mapped windows. `admit` refuses it
 first (milestone 726 (an unknown badge fails closed in subtree_scope)); `window_base` folds it onto
 window 0 as a second line, which fails loudly rather than reading unmapped memory.

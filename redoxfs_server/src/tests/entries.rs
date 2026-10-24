@@ -670,8 +670,8 @@ fn create_into_a_populated_root_and_look_it_up() {
 /// The other tests drive `DiskMemory`, whose `write_at` writes exactly its buffer; the device drives
 /// `IpcDisk` behind [`BlockDisk`], which splits calls into whole blocks and read-modify-writes a
 /// short final chunk. `create_node` writes a fresh node block and extends a directory, the shape
-/// that would expose a chunking fault (notes/fs-server/write-path-history.md has the device hang
-/// that raised it). Bounded, so a livelock fails the run rather than wedging the suite.
+/// that would expose a chunking fault, and on device FS servers were seen spinning in `create_node`
+/// and `find_node_inner`. Bounded, so a livelock fails the run rather than wedging the suite.
 #[test]
 fn create_through_the_block_chunking_does_not_loop() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)

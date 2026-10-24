@@ -150,6 +150,9 @@ loop runs one request to completion before receiving the next, so nothing inside
 observe the name in both places. It is crash-atomic because it is one transaction and one commit in
 the header ring. That is measured, as the last operation of the crash workload.
 
+It needs `REMOVE` on the source directory and `CREATE` on the destination, both on one directory
+for a rename within it.
+
 A directory may be renamed in place but not moved between directories (`EINVAL`;
 `filesystem_contract::fs::RENAME` has the cycle argument). Keeping the parent fixed is what makes the
 in-place case safe without an ancestry walk.
