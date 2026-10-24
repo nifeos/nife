@@ -1,28 +1,12 @@
 //! **A thread's scheduled CPU time, as `SURVEY` reports it** (milestone 282 (a thread's CPU time, and the `top` it makes possible),
 //! DECISIONS §150 (how does a thread's CPU time reach userspace?)).
 //!
-//! `survey_record_tests` proves the selector *mechanism*: that a record can be asked for, that an
-//! unknown one is refused, that the walk is the same walk whichever record it is. This file proves
-//! the one thing no mechanism test can, which is that the **number means what it says**. A record
-//! that returned a constant zero, or that charged every tick to the wrong thread, would pass every
-//! assertion in that file.
-//!
-//! Its own file, which is this tree's rule rather than a preference: `tests.rs` is the merge
-//! hotspot every lane collides in.
-//!
-//! # The shape of the proof, and why it is a spinner against a sleeper
-//!
-//! CPU time is only meaningful as a comparison. An absolute figure could be wrong by any factor and
-//! still look plausible, so the assertions here are all **differences between two threads in one
-//! domain over one interval**: a runaway that never yields against a child parked in a send that
-//! nobody receives. The runaway must gain; the sleeper must not. That pair also happens to be the
-//! two ends of the accounting decision §150 made, since a wall-clock age would report the two
-//! **identically** and is exactly what this catches.
-//!
-//! Arch-neutral (DECISIONS §19 (architectural parity is a tenet)), and here that is a claim and not a convenience. The counter
-//! lives in `sched`, the increment is in `sched::on_tick`, and the only architecture-specific thing
-//! in reach is the one-instruction spin loop, which `force_kill_tests` already keeps for all three.
-//! So all three ISAs run literally these assertions.
+//! `survey_record_tests` proves the selector mechanism; this file proves the number means what it
+//! says. Every assertion is a difference between two threads in one domain over one interval, a
+//! runaway that never yields against a child parked in a send nobody receives, because a
+//! wall-clock age reports the two identically. The counter and its increment (`sched::on_tick`) are
+//! portable, so all three ISAs run these assertions (DECISIONS §19 (architectural parity is a
+//! tenet)). See notes/process-view/cpu-time-tests.md.
 
 use abi::survey::record;
 
@@ -103,18 +87,10 @@ fn record_of(viewer: u64, tid: u64, record: u64) -> u64 {
 /// **The headline: the thread that used the CPU is the thread that is charged for it.**
 ///
 /// One runaway and one child parked in a send, under one supervision endpoint, over half a second.
-/// The runaway is charged tens of milliseconds; the sleeper is charged essentially nothing, and in
-/// any case strictly less.
-///
-/// **This is the assertion wall-clock age would fail**, which is why it is the headline rather than
-/// a monotonicity check. §150 refused `spawn_instant` on the ground that a thread alive five
-/// minutes and a thread that *ran* for five minutes read identically; these two threads are the
-/// same age to within the microseconds it took to build the second one, so an age-based
-/// implementation reports them equal and this test says so.
-///
-/// The sleeper is allowed a nonzero figure rather than pinned to zero: it runs briefly on its way
-/// to its send, and a tick can land in that window. What it must not do is keep earning while it is
-/// blocked, which is what the comparison catches.
+/// The runaway must be charged more than the sleeper, and at least 50 ms. The two are the same age
+/// to within microseconds, so a wall-clock age, which §150 refused, reports them equal and fails
+/// here. The sleeper may show a nonzero figure, since a tick can land while it runs to its send; it
+/// must not keep earning while blocked.
 #[test_case]
 fn the_thread_that_ran_is_the_thread_that_is_charged() {
     let (budget, rendezvous_region) = arena();
@@ -155,16 +131,11 @@ fn the_thread_that_ran_is_the_thread_that_is_charged() {
         "a thread that did nothing but spin for half a second was charged {spun} ms",
     );
 
-    // Teardown. The runaway is forcibly killed the way `force_kill_tests` does it: the first
-    // reclaim arms the kill and refuses, the next tick on whichever core holds it converts it to a
-    // corpse, and a later reclaim succeeds. The wait is time-based for that reason.
-    //
-    // The deadline scales with the slowdown this very run measured, not with a guess about the
-    // model. Teardown needs a tick to land on the runaway's core, and `spun` is how many
-    // milliseconds of the window's `window_ms` that runaway actually collected: an ideal machine
-    // gives `spun == window_ms` (scale 1, the old fixed second), a model that delivers a tenth of
-    // the ticks gives scale 10. The scale is bounded by the `spun >= 50` assertion above (so at
-    // most 10 seconds), which means a real hang still fails, only later on a slow model.
+    // Teardown, as `force_kill_tests` does it: the first reclaim arms the kill and refuses, the
+    // next tick on the runaway's core makes it a corpse, and a later reclaim succeeds. The deadline
+    // scales with the slowdown this run measured (`window_ms / spun`: 1 on an ideal machine, 10 on a
+    // model that delivers a tenth of the ticks), bounded at 10 seconds by `spun >= 50`, so a real
+    // hang still fails.
     let window_ms = window() * 1000 / crate::arch::timer::frequency();
     let slowdown = (window_ms / spun.max(1)).max(1);
     let deadline = crate::arch::timer::now() + crate::arch::timer::frequency() * slowdown;
@@ -183,25 +154,11 @@ fn the_thread_that_ran_is_the_thread_that_is_charged() {
     collect_all(supervisor, &[sleeper]);
     tidy(budget, rendezvous_region, &[viewer, supervisor]);
 
-    // **This test's own frames are back before it leaves**, asked about the two runs it allocated
-    // rather than about the machine.
-    //
-    // This used to be `wait_for(|| free_page_frames() == frames_before)`, and it was written as a
-    // courtesy as much as an assertion: a force-killed runaway is converted to a corpse by a tick
-    // on whichever core holds it, so the last of its pages can land after this body returns, and a
-    // *neighbouring* test measuring the global count either side of its own teardown would see
-    // this test's pages arrive inside its window and report recovering more than it ever held
-    // (notes/load-sensitive-assertions/unowned-reds.md, "two unowned reds"). The courtesy is
-    // retired rather than
-    // dropped: after the 2026-09-23 sweep no test in this suite brackets the global count, so
-    // there is no neighbour left for a late page to confuse. The assertion half is kept, narrowed
-    // to the pages this test is actually responsible for, where `tidy`'s two reclaims make it
-    // deterministic instead of a wait.
-    //
-    // What it no longer covers, stated rather than hidden: the child's own non-region pages, the
-    // current-cpu page among them, which belong to no region and so cannot be named from here
-    // once the space is gone. `user/current_cpu_tests.rs` is where that frame is asserted on
-    // directly, and the whole-boot frame ledger in `testing.rs` is what would catch a drift.
+    // This test's own frames are back before it leaves, asked of the two runs it allocated rather
+    // than of the machine's free count, which a neighbour's late teardown can move. Not covered: the
+    // child's non-region pages (the current-cpu page among them), which no region names;
+    // `user/current_cpu_tests.rs` asserts on that frame, and the whole-boot frame ledger in
+    // `testing.rs` catches a drift. See notes/load-sensitive-assertions/unowned-reds.md.
     budget_run.assert_returned("the builder's budget did not come back");
     rendezvous_run.assert_returned("this test's rendezvous region did not come back");
 }
