@@ -154,6 +154,11 @@ was narrower and worth closing anyway: the error paths QEMU cannot easily provok
 pipeline whose first stage has no bytes to pipe, a pattern the shell holds no directory to expand, a
 spawn that failed under a program whose report would otherwise print a number.
 
+## The appendix
+
+[shell/the-program.md](shell/the-program.md) holds what the program grants from, how a path is walked
+across two trees, and the long form of the program's `BUGS` entries.
+
 ## BUGS
 
 **Sixteen Rust files outside the program still name `components/src/swish.rs`** in comments, since

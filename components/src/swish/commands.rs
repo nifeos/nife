@@ -26,36 +26,14 @@ pub(super) fn builtin(nav: &mut Nav, cmd: &[u8], each: &mut dyn FnMut(&[u8], boo
     }
 }
 
-/// **Read one line and act on it**, which since milestone 50 means asking first whether it has any
-/// operators on it.
+/// **Read one typed line and run the commands on it** (milestone 67, notes/swish-language.md): the
+/// outermost thing the prompt calls. It cuts the line on `;`, `&&` and `||` and hands each segment
+/// to [`dispatch`], so a segment is a whole command line and nothing under here learned a grammar.
 ///
-/// A line with no `>`, `<` or `|` takes exactly the path it took before those existed, which is
-/// deliberate: the operators must not make an ordinary command more expensive or more complicated,
-/// because an ordinary command is nearly every command.
-/// The routing itself is [`swish::route`], host-tested there, including the one ordering with a bug
-/// behind it: `caps` is answered **before** the line is split, or `caps date | wc` would lose the
-/// pipe. What is left here is which capability each answer reaches for.
-/// **Read one typed line and run the commands on it** (milestone 67, notes/swish-language.md).
-///
-/// This is the outermost thing the prompt calls. It cuts the line on `;`, `&&` and `||` and hands
-/// each segment to [`dispatch`], which is the function every path in this file already went
-/// through, so **a segment is a whole command line and nothing under here learned a new grammar**.
-///
-/// # A connector carries one bit and no capability
-///
-/// Each segment is planned from scratch against what this shell holds, exactly as if it had been
-/// typed alone. That is not a restriction adopted here, it is what the shell already was, and
-/// sequencing is the first construct that could have broken it. The concrete hazard is the pipeline
-/// region: a line splits one off this shell's budget, mints its endpoints in it, and `DESTROY`s it
-/// when the line is over, and that destroy is what turns a stalled writer's next `SEND` into
-/// `abi::Error::Gone` (notes/pipes.md). Reusing one region across a chain would keep every earlier
-/// segment's endpoints alive for the whole chain. It does not, because the split is **here**, above
-/// [`pipeline`](fn@pipeline), rather than inside it.
-///
-/// # A skipped segment leaves `$?` alone
-///
-/// [`LAST`] is written only by a segment that ran, which is bash's rule: `false && echo hi` leaves
-/// `$?` at the status of `false`. There is no "skipped" status, because nothing happened.
+/// A connector carries one bit and no capability: each segment is planned from scratch, and the
+/// line is cut here, above [`pipeline`](fn@pipeline), so each segment's pipeline region is its own
+/// and is `DESTROY`ed with it, which is what turns a stalled writer's next `SEND` into `Gone`
+/// (notes/pipes.md). [`LAST`] is written only by a segment that ran, bash's rule for `$?`.
 pub(super) fn dispatch_line(nav: &mut Nav, cmd: &[u8]) {
     // **A line ending in a single `&`** (milestone 48 (job control)) is one command run in the
     // background, refused before the connectors are looked for, since a chain cannot be.
@@ -94,6 +72,10 @@ pub(super) fn dispatch_line(nav: &mut Nav, cmd: &[u8]) {
     }
 }
 
+/// **Act on one command line**, routed by [`swish::route`] (host-tested there) to the capability each
+/// answer reaches for. A line with no `>`, `<` or `|` takes the path it took before those existed, so
+/// the operators cost an ordinary command nothing. `caps` is answered before the line is split, or
+/// `caps date | wc` would lose the pipe.
 pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
     match swish::route(cmd) {
         Route::Caps(tail) => caps(nav, tail),
@@ -107,28 +89,10 @@ pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
 
 /// **Run a command and say how long it took** (milestone 86, notes/time-command.md).
 ///
-/// The tail goes back through [`dispatch`], which is the function the prompt calls, so `time` adds no
-/// second way to run anything: a pipeline is timed as a pipeline, a builtin as a builtin, and a
-/// refusal is refused exactly as it would have been. That is what makes "what you time is what you
-/// run" a property of this code rather than a claim about it.
-///
-/// **The clock is this shell's, and the command is told nothing.** `time wc report.txt` times a
-/// program whose whole endowment is one rendezvous and no clock at all, which is the Unix behavior and
-/// the capability-model answer at the same time: a duration is observable to anyone who can watch a
-/// thing start and stop, so measuring it needs the observer's authority and not the subject's.
-/// Delegating a clock to the child instead would change what the child can do, and that is a
-/// different tool.
-///
-/// # What the number is, and what it is not
-///
-/// Wall clock, between this shell deciding to run the line and the line being over. Not CPU time:
-/// nothing in this kernel is asked what a thread spent, so there is no `user` or `sys` row to print
-/// and inventing one would be worse than the gap. If that arrives it is another row here.
-///
-/// The two readings are taken **around** the dispatch and nothing else is between them, so what is
-/// measured includes this shell's own planning, spawning and draining. For a spawned program that is
-/// the honest number: the shell is the thing that started it and the thing that noticed it finish,
-/// and there is no other vantage point from which the question has an answer.
+/// The tail goes back through [`dispatch`], so what you time is what you run: a pipeline as a
+/// pipeline, a builtin as a builtin, a refusal as a refusal. The command is told nothing. The number
+/// is wall clock taken around the dispatch, this shell's planning, spawning and draining included,
+/// and not CPU time, which nothing in this kernel reports.
 pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing through [`dispatch`]. `time time date` is a line
     // a person can type, and each level of recursion here costs a `dispatch` frame on a stack that
@@ -142,16 +106,9 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
         refused();
         return swish::write_untimed(Untimed::NothingToTime, &mut print);
     }
-    // **A duration needs no clock** (§72). Wall time is an offset plus this counter; across a
-    // command the offset cancels, so the subtraction below is the whole measurement, and
-    // `user_mode_runtime::monotonic_nanos` is ambient by the kernel's own choice (it opened the counter to
-    // EL0). `time` therefore cannot be refused and has no clock wiring: what a capability gates
-    // here is wall-clock *identity*, which is `date`'s business, not elapsed time.
-    //
-    // This is also strictly more correct than the clock version it replaces. A clock stepped
-    // mid-command used to make the answer a difference of two readings on different clocks,
-    // which the shell had to detect and disclaim; a monotonic counter cannot be stepped, so
-    // there is nothing left to disclaim.
+    // A duration needs no clock (§72): across a command the wall clock's offset cancels, and
+    // `monotonic_nanos` is ambient (the kernel opened the counter to EL0) and cannot be stepped.
+    // So `time` cannot be refused; a capability gates wall-clock identity, which is `date`'s.
     let start = monotonic_nanos();
 
     dispatch(nav, tail);
@@ -169,33 +126,12 @@ pub(super) const MAX_BATCHES: u64 = 256;
 
 /// **Run a command once per batch of what its pattern matched** (milestone 109).
 ///
-/// # Why this is a prefix word and not a program
-///
-/// A batching *program* would have to hold, at once, at least the union of every batch it hands
-/// out. There is no carrier for that union: that is the premise of the whole milestone, since a set
-/// larger than [`grant_plan::expand::MAX_NAMES`] is exactly what cannot be handed over. So such a
-/// program could only be given the **directory** plus a pattern, which is milestone 47's rejected
-/// "the directory plus a name list" answer wearing a different hat: it over-grants catastrophically,
-/// and it hands the batcher authority over names the pattern never matched.
-///
-/// Unix's `xargs` can be a program precisely because it holds *nothing*. Names in a pipe are text,
-/// and `rm`'s authority there comes from its uid. Here a name in a pipe is still text, so a
-/// `find | xargs rm` analogue would spawn an `rm` holding no authority at all; the pipe cannot carry
-/// the thing that has to be batched. What can mint a per-batch caretaker is whatever holds the
-/// directory capability with the right to delegate it, and in this system that is the shell asking
-/// the progenitor. So the batching goes where the authority already is.
-///
-/// This is **not** milestone 47's rejected "make `rm` a builtin", either. `rm` stays a program with
-/// an attenuated grant; what became a builtin is the *iteration*, which is a property of how the
-/// shell delegates rather than of anything any command does. `caps` and `time` are the precedent.
-///
-/// # It stops at the first batch that does not run
-///
-/// Unix carries on and reports 123 at the end, and that is its mechanism talking: its `xargs` cannot
-/// know what a child did to the names it was handed. Here the shell printed each batch's set before
-/// that batch ran, so it can name the boundary, and a sweep that stopped is a **prefix** of the
-/// match rather than an arbitrary subset. Batch four succeeding after batch three failed is the
-/// outcome worth designing against, because the user would have no way to tell which names it left.
+/// A prefix word and not a program: a batching program would have to hold the union of every
+/// batch, more than [`grant_plan::expand::MAX_NAMES`], which nothing can carry, so the batching goes
+/// where the directory authority already is. The iteration is the builtin; `rm` stays a program
+/// with an attenuated grant. The sweep stops at the first batch that does not run, so what ran is a
+/// prefix of the match, and each batch's set is printed before it runs, so the shell can name the
+/// boundary. See notes/glob-grant/xargs.md.
 pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing, [`time_command`]'s reason: `xargs xargs rm
     // *.txt` is a line a person can type, batching a batch is still one sweep, and every level of
@@ -293,23 +229,15 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
     }
 }
 
-/// **`user suspend <name>` and `user resume <name>`** (milestone 152 (durable delegation), calef's
-/// §108 (disabling credentials kills the durable session) ruling of 2026-09-26, names ratified): add the name to, or take it off,
-/// `login_contract::SUSPENDED_LIST` at the root of this shell's directory, in the one format
-/// `login` and the boot-time re-deriver read it in. `login` refuses a listed identity from its next
-/// login attempt, ends its durable session then, and the re-deriver skips it at boot.
-///
-/// **Owner-only by authority, not by a check.** The file `login` reads is at the file service's
-/// root, and only the owner's console holds that root. A confined shell running this edits a file
-/// of that name in its own subtree, which nothing reads.
+/// **`user suspend <name>` and `user resume <name>`** (milestone 152 (durable delegation), §108
+/// (disabling credentials kills the durable session)): edit `login_contract::SUSPENDED_LIST` at
+/// this shell's root, which `login` and the boot-time re-deriver read. Owner-only by authority: only
+/// the owner's console holds that root, and a confined shell edits a same-named file nothing reads.
 ///
 /// # BUGS
 ///
-/// **It does not send `login_contract::SUSPEND`**, the word that ends a durable session at once:
-/// this shell holds no capability to `login`'s front door. On the boot that runs this prompt that
-/// costs nothing yet, because `login` is started there with no schedule archive and so holds no
-/// durable session to end; the day it is, this shell needs the front door, `WRITE`, beside its
-/// root. Until then the cascade runs at the suspended identity's next login attempt.
+/// It does not send `login_contract::SUSPEND`, holding no capability to `login`'s front door, so a
+/// durable session ends at the identity's next login attempt (notes/shell/the-program.md).
 pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
     use grant_plan::UserVerb;
     let (name, suspend) = match verb {

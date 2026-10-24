@@ -5,10 +5,6 @@
 
 use super::*;
 
-/// The interactive shell: a terminal at slot 0, a spawn channel, a result channel, a budget. It is
-/// role **0** because `crates/system_initializer` starts this program with
-/// `(0, fs_rights, clock_slot)`, and it is also what any unrecognized role falls through to: this
-/// program's failure mode should be a prompt.
 /// **The navigating witness** (milestone 47): no terminal, a directory capability at slot 0, and a
 /// report rendezvous at slot 1. It runs the same builtins this file's prompt runs and reports a
 /// bitmap; see [`navigate`].
@@ -42,18 +38,12 @@ pub(super) const ROLE_TIMING: u64 = 5;
 /// Provisional name.
 pub(super) const ROLE_TWO_TREES: u64 = 6;
 
-/// **What `arg1` carries into every role that holds a directory**: the `filesystem_contract::dir` rights that
-/// capability was granted, with 0 meaning "you were granted no directory at all".
-///
-/// The shell is **told** rather than asking, and that is a gap in `filesystem_contract` rather than a shortcut:
-/// nothing on that wire reports what a handle carries, and `OPENDIR` refuses a request wider than
-/// the parent instead of narrowing it, so a shell that guessed `dir::ALL` from a narrower capability
-/// could not `cd` at all. See notes/shell-navigation.md.
-///
-/// **`x2` carries the clock slot** (milestone 86), or [`NO_CLOCK`] for a wiring that granted none.
-/// Told for the same reason and a sharper one: the slot moves with what else the boot granted, and a
-/// shell that probed the wrong number would find some other object and map a page that is not a
-/// clock. See [`CLOCK_SLOT`].
+/// **What `arg1` carries into every role that holds a directory**: the `filesystem_contract::dir`
+/// rights that capability was granted, 0 for none. Told rather than asked, because nothing on that
+/// wire reports what a handle carries and `OPENDIR` refuses a request wider than the parent, so a
+/// guess of `dir::ALL` could not `cd` (notes/shell-navigation.md). **`x2` carries the clock slot**
+/// (milestone 86), or [`NO_CLOCK`]: the slot moves with what else the boot granted, and a probe of
+/// the wrong number would map some other object as a clock. See [`CLOCK_SLOT`].
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(role: u64, arg: u64, clock: u64) -> ! {
     CLOCK_SLOT.store(clock, core::sync::atomic::Ordering::Relaxed);
@@ -91,7 +81,10 @@ pub extern "C" fn _start(role: u64, arg: u64, clock: u64) -> ! {
     }
 }
 
-/// The interactive prompt. `rights` is the [`_start`] convention: the `filesystem_contract::dir` rights of the
+/// The interactive prompt, role 0: a terminal at slot 0, a spawn channel, a result channel and a
+/// budget. `crates/system_initializer` starts this program with `(0, fs_rights, clock_slot)`, and
+/// any unrecognized role falls through here, because this program's failure mode should be a
+/// prompt. `rights` is the [`_start`] convention: the `filesystem_contract::dir` rights of the
 /// directory capability at [`DIR_TERMINAL`], or 0 for a boot that wired no filesystem.
 pub(super) fn interactive(rights: u64) -> ! {
     // **The line that says userspace is up**, and it is the top rung of milestone 268's boot
