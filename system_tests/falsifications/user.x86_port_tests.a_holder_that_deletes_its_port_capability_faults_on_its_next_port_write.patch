@@ -48,21 +48,17 @@ the same lines, moved out of `kernel/src/sched.rs` into `kernel/src/sched/capabi
 the same and only the path and line numbers differ.
 
 diff --git a/kernel/src/sched/capabilities.rs b/kernel/src/sched/capabilities.rs
-index cd75c6fdd..3990dd7d7 100644
+index 017d6613c..3f02e0b45 100644
 --- a/kernel/src/sched/capabilities.rs
 +++ b/kernel/src/sched/capabilities.rs
-@@ -266,14 +266,13 @@ pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
+@@ -189,10 +189,9 @@ pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
              .and_then(|sched| sched.threads.get_mut(current))
              .filter(|t| t.port_range_grant == Some((base, count)));
          if let Some(t) = held {
 -            t.port_range_grant = None;
 +            let _ = t;
-             // Under the lock, with `delete_port_range_caps_impl`'s broadcast and for its reason
-             // (milestone 315): every writer of a TSS port bitmap holds `IPC_TABLES`, so a
-             // revocation NMI cannot land inside one. No broadcast is owed here. The caller is the
-             // thread whose grant is installed, a core's bitmap only ever permits a range for the
-             // thread currently running on it, and that thread is running here, so this core is
-             // the only core to tell.
+             // Under the lock, as every TSS bitmap writer is. This core is the only one to tell:
+             // a core's bitmap permits a range only for the thread running on it, the caller.
 -            crate::arch::segments::revoke_installed_port_grant(base, count);
          }
      }
