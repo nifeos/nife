@@ -1,31 +1,14 @@
-//! **Sequencing: `;`, `&&` and `||`, and the one bit that passes between commands**
-//! (notes/swish-language.md). The outermost split of a typed line, above
-//! [`grant_plan::line::split`]: each **segment** is a whole command line as everything below
-//! already understood it, so nothing under here learned a new grammar.
-//!
-//! ```text
-//! line      := segment (connector segment)*
-//! connector := ';' | '&&' | '||'
-//! segment   := <a whole command line: stages, operators, prefix words>
-//! ```
-//!
-//! It is outermost because `time a && b` must time `a` and then run `b`, not hand `time` the
-//! string `a && b`; that is bash's binding too (a connector joins pipelines). The prefix words
-//! (`caps`, `time`, `xargs`) take a whole segment, which is why [`crate::route`] sees them first.
-//!
-//! **A connector carries one bit and no capability.** Each segment is planned from scratch against
-//! what the shell holds, as if typed alone. A `>` the shell backs (§55 (the file behind a `>` is
-//! the shell itself)) closes with its segment; each pipeline's region is destroyed at the end of
-//! its segment, not the line, so a writer stalled on an earlier segment is told `abi::Error::Gone`
-//! (notes/pipes.md); and [`Status`] is one small integer that designates nothing, so nothing
-//! downstream can be widened by it.
-//!
+//! **Sequencing: `;`, `&&` and `||`, and the one bit that passes between commands.** The outermost
+//! split of a typed line, above [`grant_plan::line::split`]: each segment is a whole command line,
+//! planned from scratch against what the shell holds. A `>` the shell backs (§55 (the file behind
+//! a `>` is the shell itself)) and a pipeline's region end with their segment; only a [`Status`]
+//! passes on. See notes/swish-language.md, "Sequencing splits outermost, and that is a decision".
+
 //! # BUGS
 //!
-//! - No grouping: `a && b || c` runs left to right as in bash, with no `{ }` or `( )`, so
-//!   `time a && b` times only `a` and a whole chain has no spelling.
-//! - A single `&` means background only as the last byte of a line ([`background`]), and only on a
-//!   line with no connector; anywhere else it is an ordinary byte.
+//! - No grouping: `a && b || c` runs left to right, and `time a && b` times only `a`.
+//! - A single `&` backgrounds only as a line's last byte, on a line with no connector
+//!   ([`background`]).
 //! - A skipped segment leaves `$?` alone, as bash does.
 
 use grant_plan::word::Cursor;
@@ -106,9 +89,8 @@ impl<'a> Sequence<'a> {
 
 /// **Cut a typed line into segments.** Pure and allocation-free.
 ///
-/// A connector inside quotes is text, which is what lets `echo 'a && b'` print one. An unclosed
-/// quote is refused here rather than further down, because this is the first scanner to see the
-/// whole line and a line missing its end designates something nobody typed.
+/// A connector inside quotes is text. An unclosed quote is refused here, the first scanner to see
+/// the whole line, since a line missing its end designates something nobody typed.
 ///
 /// # Examples
 ///
@@ -198,11 +180,9 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
 /// (job control), phase one). `None` for a line that does not, which runs in the foreground as it
 /// always did.
 ///
-/// Only the line's last unquoted byte counts, and only when it is not half of `&&`. A `&` anywhere
-/// else stays an ordinary byte, so `echo a & b` still prints its `&`; bash's `a & b`, two commands
-/// with the first in the background, has no spelling yet. What comes back is trimmed and may hold
-/// connectors or be empty: the shell refuses those, since backgrounding a chain is a different
-/// claim than backgrounding one job.
+/// Only the line's last unquoted byte counts, and only when it is not half of `&&`; anywhere else
+/// `&` is an ordinary byte. What comes back is trimmed and may hold connectors or be empty, which
+/// the shell refuses.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by milestone/48-job-control.
 ///

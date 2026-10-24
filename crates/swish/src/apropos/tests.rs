@@ -44,10 +44,9 @@ fn a_search_answer_names_pages_a_reader_can_type() {
         .map(|l| l.find("Pipes").or_else(|| l.find("Who")).unwrap_or(0))
         .filter(|&c| c > 0)
         .collect();
-    // **38, not `APROPOS_TITLE`.** Comparing the rendering against the constant it is derived
-    // from is an identity: a mutation run of 2026-09-19 (milestone 326) changed every `+` in
-    // that constant's definition and this assertion moved with it, six survivors in one line.
-    // The literal is what a reader at eighty columns actually gets.
+    // 38, not `APROPOS_TITLE`: comparing the rendering against the constant it is derived from
+    // is an identity that a mutation of the constant moves with. The literal is what a reader at
+    // eighty columns gets.
     assert_eq!(cols, [38, 38], "{s}");
     assert_eq!(APROPOS_TITLE, 38, "the column a title starts in");
     // Two results offered and two shown is not a truncation, so the honest tail stays off.
