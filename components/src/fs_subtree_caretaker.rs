@@ -1,46 +1,14 @@
-//! **The subtree caretaker: a directory capability attenuated to one subtree** (milestone 47,
+//! The subtree caretaker: a directory capability attenuated to one subtree (milestone 47,
 //! notes/dir-capability.md).
 //!
-//! `fs_file_caretaker` narrows a directory capability to one *file*; this narrows it to one
-//! *subtree*, the directory **and everything beneath it**, which is the shape `cd`, a per-process
-//! namespace and every "here is somewhere to write your logs" grant want. It is the caretaker
-//! pattern (Mark Miller's term): it holds the wider capability, exports a narrower one, and is the
-//! only path between them.
-//!
-//! # It performs no checks, and that is the design
-//!
-//! At startup it sends **one** [`fs::OPENDIR`], asking the FS server for a handle to the granted
-//! name carrying the granted rights; the server intersects those rights with its own and refuses if
-//! the answer came up short. Everything the client reaches afterwards goes *through that handle*,
-//! so the attenuation lives in the handle the server minted, not in any branch here.
-//!
-//! What this process does is **translate a namespace**: the client numbers handles from
-//! [`filesystem_contract::fs::ROOT`], which is the granted directory, and this maps each to the FS
-//! server's number and forwards. A handle this process never minted is `EBADF` from one check.
-//!
-//! - **The confined program holds an endpoint to this process and nothing that names the FS
-//!   server**, so "it cannot reach the parent directory" is a property of its capability table.
-//! - **A rights-carrying handle alone would not confine it.** The FS server's handle table is per
-//!   server, not per client, so a program holding the FS-service endpoint could name
-//!   [`filesystem_contract::fs::ROOT`] and be back at the image root. The handle is the
-//!   authority; the endpoint is the boundary.
-//!
+//! It narrows a directory capability to the granted directory and everything beneath it, and it
+//! performs no checks: one [`fs::OPENDIR`] at startup asks the FS server for a handle carrying the
+//! granted rights, and afterwards it only maps the client's handle numbers (from
+//! [`filesystem_contract::fs::ROOT`]) to the server's. The handle is the authority and the endpoint
+//! is the boundary: the confined program holds nothing that names the FS server. `start_granted_dir`
+//! (`kernel/src/user/fs_service/directory_grant.rs`) wires its slots and passes the name and rights
+//! in the three `START` words ([`filesystem_contract::grant`]). See notes/dir-capability/caretaker.md.
 
-//! # Capability contract (`kernel/src/user/fs_service/directory_grant.rs`, `start_granted_dir`)
-//!
-//! - **slot 0**: the FS-service endpoint, `WRITE`. The directory capability being attenuated.
-//! - **slot 1**: the narrowed endpoint, `READ`. The confined program `CALL`s here; this endpoint IS
-//!   the subtree capability.
-//! - **slot 2**: a report endpoint, `WRITE`. Readiness ([`filesystem_contract::READY`])
-//!   once the descent has succeeded, or [`filesystem_contract::DESCENT_REFUSED`] with the
-//!   errno, after which this process exits without serving.
-//! - **[`PAGE_VA`]**: the page shared with the FS server *and* with the client, sound because
-//!   every request on both hops is a blocking `CALL`, so the client is parked inside its own call
-//!   while this process uses the page.
-//!
-//! The granted name and the requested rights arrive in the three `START` argument words
-//! ([`filesystem_contract::grant`]), so a subtree grant costs no extra frame.
-//!
 //! # BUGS
 //!
 //! **No host fuzz target reaches this caretaker's decode.** It is inline in this EL0 binary with no
@@ -62,14 +30,19 @@ use filesystem_contract::{fs, grant, operation, reply_err, reply_errno, verb};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, exit, receive_request, send};
 
-/// The FS-service endpoint: the directory capability this process attenuates.
+/// The FS-service endpoint (slot 0, `WRITE`): the directory capability this process attenuates.
 const FS: u64 = 0;
-/// The narrowed endpoint: where the confined program calls. Holding it is holding the subtree.
+/// The narrowed endpoint (slot 1, `READ`): where the confined program calls. Holding it is holding
+/// the subtree.
 const CLIENT: u64 = 1;
-/// Where readiness goes, once.
+/// The report endpoint (slot 2, `WRITE`): [`filesystem_contract::READY`] once the descent has
+/// succeeded, or [`filesystem_contract::DESCENT_REFUSED`] with the errno, after which this process
+/// exits without serving.
 const REPORT: u64 = 2;
 
-/// The one page, shared with the FS server above and the client below.
+/// The one page, shared with the FS server above and the client below. Sound because every request
+/// on both hops is a blocking `CALL`, so the client is parked in its own call while this process
+/// uses the page.
 const PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 /// Its size, the contract's transfer unit.
 const PAGE: usize = filesystem_contract::PAGE;
@@ -137,26 +110,15 @@ impl Table {
     }
 }
 
-/// **The serve loop: a namespace translation and nothing else.**
+/// Serve [`CLIENT`] forever: a namespace translation and nothing else.
 ///
-/// Every request does the same three things, which is the point: map the client's handle to the FS
-/// server's, forward the request unchanged, and (for the verbs that mint a handle) map the answer
-/// back. There is no rights check anywhere in here, because the rights are on `dir`, the handle the
-/// FS server minted at startup, and everything the client can reach it reached through that handle.
-///
-/// # Milestone 61: the shape comes from the contract, and there is still no check
-///
-/// The `match` over opcodes is gone, replaced by [`filesystem_contract::verb`], which says for each verb
-/// whether the request's length field counts anything and whether its second word means something.
-/// **That is dispatch, not attenuation, and the distinction is the whole reason this program can be
-/// trusted.** A name filter or a rights test here would be a branch that could be wrong; a table
-/// lookup that decides whether to forward `len` or zero cannot refuse anything.
-///
-/// What it buys is that a verb added to the contract is forwarded from the day its row exists. The
-/// four extended-attribute verbs are the proof: they landed in milestone 57, this program was never
-/// taught them, and until now a program behind a subtree grant could not read its own files'
-/// attributes. It never needed teaching, only a table. The server still applies the grant's rights
-/// to them, because they take a **handle** and the handle is the one the server attenuated.
+/// Each request maps the client's handle to the FS server's, forwards the request unchanged, and,
+/// for a verb that mints a handle, maps the answer back. There is no rights check here: the rights
+/// are on `dir`, the handle the FS server minted at startup, and everything the client reaches it
+/// reaches through that handle. [`filesystem_contract::verb`] decides only whether the length field
+/// and the second word travel, which is dispatch and cannot refuse anything, so a verb added to the
+/// contract is forwarded from the day its row exists. The extended-attribute verbs take a handle, so
+/// the server applies the grant's rights to them too. See notes/dir-capability/caretaker.md.
 fn serve(dir: u64) -> ! {
     let mut table = Table([None; SLOTS]);
     table.0[0] = Some(dir);
@@ -198,10 +160,8 @@ fn serve(dir: u64) -> ! {
                 forward(fs::req(fs::CLOSE, server_handle, 0), 0)
             }
         } else if v.operand == verb::Operand::Rename {
-            // **The one verb whose second word is not opaque**, because it names a second directory.
-            // Both handles are the client's, so both are translated, and this is still translation
-            // and not a check: the FS server decides whether the rights on those two handles allow
-            // the move, and this process does not know or ask what they are.
+            // The one verb whose second word is not opaque: it names a second directory, so both
+            // handles are translated, and the FS server decides whether their rights allow the move.
             match table.get(fs::dst_handle(w1)) {
                 Some(dst) => forward(
                     fs::req(code, server_handle, len),
@@ -210,18 +170,10 @@ fn serve(dir: u64) -> ! {
                 None => reply_err(EBADF),
             }
         } else {
-            // Everything else is one forward. `len` travels only for the verbs whose length field
-            // counts something, and `w1` only for the verbs that read it (an offset for READ/WRITE,
-            // a size for TRUNCATE, a cursor for READDIR, a rights mask for OPENDIR/MKDIR, an
-            // attribute spec for SETXATTR). Zeroing the rest is not tidiness: it stops a client
-            // smuggling a length into a verb that has none.
-            //
-            // The destructive verbs are here with everything else, and the reason is worth stating:
-            // the FS server resolves the name under the handle this process substituted, and that
-            // handle carries whatever `REMOVE` the grant carried. A recursive `rm -r` is N of these
-            // requests, one per name. **Nothing here loops**, which is why a caretaker this small
-            // can be trusted with a destructive client: it cannot remove more per request than the
-            // client named, whatever the client meant.
+            // `len` travels only for the verbs whose length field counts something and `w1` only
+            // for the verbs that read it, which stops a client smuggling a length into a verb that
+            // has none. The destructive verbs come through here too, under whatever `REMOVE` the
+            // grant carried; nothing here loops, so no request removes more than the client named.
             let n = if v.carries_len() { len } else { 0 };
             let second = if v.carries_w1 { w1 } else { 0 };
             let (r0, r1) = call(FS, fs::req(code, server_handle, n), second);
@@ -229,9 +181,8 @@ fn serve(dir: u64) -> ! {
             if code == fs::OPEN {
                 size = r1;
             }
-            // The verbs that mint a handle get a number of the client's own. The client never learns
-            // the FS server's numbering, so a handle it guesses is a guess in a space it did not
-            // choose.
+            // A minted handle gets a number of the client's own, so the client never learns the FS
+            // server's numbering.
             if !v.mints_handle || r < 0 {
                 r
             } else {
@@ -256,26 +207,18 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     let mut buf = [0u8; grant::MAX_NAME];
     let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
 
-    // **The whole grant, in one request.** Descend into the named directory asking for exactly the
-    // rights this process was started with. The FS server intersects them with its own and refuses
-    // if the intersection is smaller, so a wiring that asked for more than the parent had fails
-    // here, loudly, rather than coming up serving a capability nobody meant to hand out.
+    // The whole grant, in one request. The FS server intersects the asked rights with its own and
+    // refuses if the intersection is smaller, so a wiring that asked for more fails here, loudly.
     put(&buf[..n]);
     let (r0, _) = call(
         FS,
         fs::req(fs::OPENDIR, fs::ROOT, n as u64),
         grant::spec_rights(spec),
     );
-    // **A refused descent is answered, not trapped** (2026-08-17, milestone 31 phase 3). It used to
-    // `panic!()`, which was survivable while the only thing waiting for the handshake was a kernel
-    // test: the test hit its watchdog and named the caretaker. Since `system_initializer` builds one
-    // of these per directory grant, the waiter is **The progenitor**, which serves every command the prompt
-    // ever runs and has no second thread, so a caretaker that died before answering would park the
-    // whole machine in `RECEIVE`. `rm nosuchdir/x` is an ordinary thing to type.
-    //
-    // Exiting rather than serving is the other half: a caretaker whose one `OPENDIR` failed holds no
-    // narrowed handle, so there is nothing it could serve, and coming up anyway would mean answering
-    // requests from `fs::ROOT`, which is the whole directory it was supposed to attenuate.
+    // A refused descent is answered, not trapped: the waiter is the progenitor, which serves every
+    // command and has no second thread, so a caretaker that died silently would park the machine in
+    // `RECEIVE`, and `rm nosuchdir/x` is ordinary. It then exits: with no narrowed handle, serving
+    // would mean answering from `fs::ROOT`, the whole directory it was meant to attenuate.
     if let Some(errno) = reply_errno(r0 as i64) {
         send(
             REPORT,
