@@ -14,19 +14,18 @@ const TIMETABLE_BUDGET_PAGES: u64 = 768;
 /// is safe on a loaded machine (notes/load-sensitive-assertions.md). Nothing here asserts that a
 /// fire happened *within* any interval; the test waits for the fires to arrive and the harness's
 /// per-test ceiling is the only backstop. A slow host makes this test slower and never makes it
-/// red, which is the property milestone 62 spent a week putting back into this tree.
+/// red.
 const FIRES: u64 = 4;
 
-/// Stack pages for the timetable, tracking `timetable::contract::STACK_PAGES`.
+/// Stack pages for the timetable, tracking `timetable::contract::STACK_PAGES`, which carries the
+/// measurement.
 ///
 /// A number a spawn site **states** rather than inherits, which is `supervision_protocol`'s own rule
 /// (`CHILD_STACK_PAGES`: "a builder that silently inherits somebody else's stack size finds faults
-/// that builder does not have"). The timetable needs it because its working set is the plan itself:
-/// a `grant_plan::Endowment` is a kilobyte, mostly the name set a directory grant can carry, and a
-/// `timetable::Registry` holds one per entry. Eight pages died here with a data abort whose faulting
-/// address was the stack pointer, which is what a stack overflow looks like from the kernel side and
-/// is worth recognising: it reads like a wild pointer and is not one. 32 became 48 on 2026-09-30,
-/// with the measurement, in `timetable::contract`'s `STACK_PAGES`.
+/// that builder does not have"). The timetable's working set is the plan itself, a kilobyte of
+/// `grant_plan::Endowment` per `timetable::Registry` entry. Eight pages died with a data abort at the
+/// stack pointer, a stack overflow that reads like a wild pointer. See
+/// notes/scheduled-execution/the-guest-tests.md.
 const TIMETABLE_STACK_PAGES: u64 = 48;
 
 /// The line `components/src/timetable.rs` prints when the plan is complete and it is about to arm. The
@@ -35,44 +34,24 @@ const TIMETABLE_STACK_PAGES: u64 = 48;
 const ARMED: &str = "timetable: armed";
 
 /// **The programs the timetable's document will ever build**, and the whole of what this spawn site
-/// hands over.
+/// hands over: the archive below holds exactly these, not the whole initial ramdisk (milestone
+/// 129's second stratum).
 ///
-/// The archive below holds exactly these and nothing else, which is milestone 129's second stratum:
-/// `timetable::Registry::programs` is complete and computable at registration, so the endowment can
-/// be narrowed to it instead of being the whole initial ramdisk.
-///
-/// **It is a written list rather than a computation here, and that is forced rather than chosen.**
-/// Computing it means calling `timetable::Registry::register`, which means `grant_plan::plan`, and
-/// those two carry 21632-byte and 12048-byte frames: `Registry` is a `[Row; MAX_ENTRIES]` and a
-/// `Row` holds a kilobyte of `Endowment`. That is exactly the shape `script/stack-frame-check`
-/// exists to refuse, because a frame larger than the 4096-byte guard page can step `sp` past the
-/// guard without touching it and land in the neighbouring thread's stack. The sizes are fine in
-/// `components/src/timetable.rs`, which is a process with a 32-page stack and says so; they are not fine
-/// in this binary, and no threshold should be widened to make them fine.
-///
-/// **What keeps the list honest is a host test rather than a comment.**
-/// `timetable::tests::the_archive_a_timetable_holds_is_measured_against_what_it_will_build` registers
-/// the same `components/timetable.conf` against the same `timetable::SHIPPED_HELD` and asserts the plan is
-/// exactly this set, by name. Editing the document without editing this list fails that test in
-/// milliseconds, on the host, with no emulator. The program itself then audits what it was handed
-/// and prints the answer, and the assertions below read it, so a wrong list fails twice.
-///
-/// `memory_grant_depleter` joined `least_authority_demo` on 2026-08-22, when milestone 129's `--mem` grant was backed:
-/// `timetable.conf`'s `at-boot memory_grant_depleter --mem 4` is admitted because `SHIPPED_HELD.mem_pages` (4,
-/// mirrored below as [`MEM_GRANT_PAGES`]) covers it.
+/// A written list rather than a computation, because computing it means
+/// `timetable::Registry::register`, whose stack frame `script/stack-frame-check` refuses in the
+/// kernel. The host test
+/// `timetable::tests::the_archive_a_timetable_holds_is_measured_against_what_it_will_build` holds
+/// it equal to the plan for `components/timetable.conf`, and the program's own audit line fails
+/// the assertions below as well. See notes/scheduled-execution/archive-narrowing.md.
 const PLANNED_PROGRAMS: [&str; 2] = ["least_authority_demo", "memory_grant_depleter"];
 
-/// **What `at-boot memory_grant_depleter --mem 4` grants, mirrored from `components/timetable.conf` and
-/// `timetable::SHIPPED_HELD.mem_pages`.** A written constant rather than a computed one for the
-/// same reason [`PLANNED_PROGRAMS`] is: this test does not depend on the `timetable` crate at all
-/// (`script/stack-frame-check` is why, see that constant's own doc), so nothing here can read the
-/// real value back. What keeps it honest is the same host test that keeps `PLANNED_PROGRAMS`
-/// honest: it parses the same document against the same `SHIPPED_HELD` and would go red first if
-/// the two drifted apart.
-///
-/// Used as a range rather than an exact literal below: how many of the 4 pages `memory_grant_depleter` actually
-/// manages to map is page-table overhead, which is page-table-implementation detail this milestone
-/// makes no claim about and which is free to differ between aarch64 and riscv64.
+/// **What `at-boot memory_grant_depleter --mem 4` grants**, mirrored from
+/// `components/timetable.conf` and `timetable::SHIPPED_HELD.mem_pages`, whose 4 pages admit the
+/// line. Written rather than computed for [`PLANNED_PROGRAMS`]' reason (this test does not depend
+/// on the `timetable` crate, because of `script/stack-frame-check`), and held by the same host
+/// test. Used as a range below: how many of the 4 pages `memory_grant_depleter` manages to map is
+/// page-table overhead, which this milestone makes no claim about and which may differ between
+/// aarch64 and riscv64.
 const MEM_GRANT_PAGES: u64 = 4;
 
 /// **Room for the archive this spawn site builds**, which is not the initial ramdisk.
@@ -140,13 +119,10 @@ struct Spawned {
 }
 
 impl Spawned {
-    /// **Give back the three regions the spawn site made**, once the timetable has finished.
-    ///
-    /// Every test here used to leave its budget and its TCB region behind, and the kernel's region
-    /// table is finite: milestone 152's lane found a later test's fire failing with "the budget
-    /// cannot back one instance" at 252 of 256 live regions. `reclaim_region` refuses a region
-    /// with a child still carved out of it, so the budget's success is also the statement that
-    /// every scheduled instance was collected.
+    /// **Give back the three regions the spawn site made**, once the timetable has finished. The
+    /// kernel's region table is finite, and `reclaim_region` refuses a region with a child still
+    /// carved out of it, so the budget's success is also the statement that every scheduled
+    /// instance was collected.
     fn reclaim(self) {
         // The timetable may still be on its way out of `exit` when the test has read its last word,
         // and a region with a running resident refuses (and arms the kill that ends it), so each
@@ -237,11 +213,8 @@ fn spawn_timetable_with(
 
     let content: u64 = segment_pages(&elf)
         + 1
-        // The archive is **copied** into fresh pages rather than shared with the initial ramdisk's,
-        // so it costs the address space a page each rather than only the tables reaching them. That
-        // is the price of the narrowing: there is no capability in this system for "these blocks of
-        // that archive", so a narrower endowment is a smaller archive, and a smaller archive is
-        // bytes somebody has to own.
+        // Copied, not shared with the initial ramdisk's pages: no capability names "these blocks
+        // of that archive", so a narrower endowment costs a page per archive page.
         + archive_pages
         + archive_pages / 512
         + TIMETABLE_STACK_PAGES
@@ -419,36 +392,12 @@ fn line(ep: RendezvousId, buf: &mut [u8; 256]) -> Option<usize> {
 /// that were admitted really run under supervision, and the entries that were refused never run at
 /// all** (milestone 129).
 ///
-/// One test, because the three parts are one claim and none of them means anything alone. A
-/// scheduler that fires proves nothing about authority; a printed plan proves nothing if what fires
-/// disagrees with it; and a refusal proves nothing unless something else in the same document did
-/// fire, since a scheduler that fired *nothing* would satisfy it trivially.
-///
-/// What it walks is the real program on the real document. `components/timetable.conf` is `include_str!`d
-/// by `components/src/timetable.rs` and read again by `crates/timetable`'s host tests, so there is one
-/// source for what this machine schedules and editing it moves the program, the host tests and this
-/// assertion together.
-///
-/// # The four answers, and why the refusals are the interesting ones
-///
-/// Upstream cron has one answer to a crontab line: it runs. The shipped document exercises four:
-///
-/// - `least_authority_demo 7`, `least_authority_demo 3`, and `memory_grant_depleter --mem 4` are **planned, backed and fired**, and their
-///   answers come back on the endpoint the plan said they would hold. The last of the three is
-///   milestone 129's `--mem` grant made real: this timetable holds `timetable::SHIPPED_HELD.mem_pages`
-///   pages it may split off, and `memory_grant_depleter` maps some of them and reports how many.
-/// - `memory_grant_depleter` with no `--mem` and `wc` are refused by **the prompt's own check**, unchanged: the
-///   same lines typed at a shell get the same sentences, because it is literally the same function.
-/// - `date` and `ps` are refused because **this timetable holds nothing to back them**. Those two
-///   are the ones Unix cannot refuse: there a clock and a process listing are ambient, so the lines
-///   run and the question of whether they should have is one nothing asks.
-///
-/// # What is asserted about time, and what deliberately is not
-///
-/// The fires are **counted, never timed**. Nothing here says an entry fired within its interval, and
-/// nothing compares a wall clock to anything: the test asks the timetable for [`FIRES`] fires and
-/// waits for them. A loaded host makes this slower and cannot make it red, which is
-/// notes/load-sensitive-assertions.md's rule applied at the point where it is easiest to get wrong.
+/// One test, because the three parts are one claim: a printed plan means nothing if what fires
+/// disagrees with it, and a refusal means nothing unless something else in the same document fired.
+/// It walks the real program on the real document, `components/timetable.conf`, which the program
+/// and `crates/timetable`'s host tests also read, so editing it moves all three together. The fires
+/// are counted, never timed. Which entry gets which of the four answers, and why each assertion is
+/// shaped as it is, is in notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_scheduled_entry_holds_what_the_plan_said_and_a_refused_one_never_runs() {
     let t = spawn_timetable(FIRES);
@@ -461,11 +410,8 @@ fn a_scheduled_entry_holds_what_the_plan_said_and_a_refused_one_never_runs() {
 
     // ---- the summary, after every corpse has been collected ----
     //
-    // The clean-exit count is the supervision half of the claim, and it is not decoration: each of
-    // those children was born with the timetable's supervision endpoint in its reserved fault slot,
-    // died, reported its death to the timetable, and had its region reclaimed through
-    // `Rendezvous::REAP`. A scheduler that leaked a region per fire would still print the fire count
-    // and would run out of budget instead of finishing.
+    // The clean-exit count is the supervision half of the claim: a scheduler that leaked a region
+    // per fire would still print the fire count, and would run out of budget instead of finishing.
     let Some(n) = line(out, &mut buf) else {
         panic!("the timetable ended its stream without a summary");
     };
@@ -494,9 +440,8 @@ fn the_plan_is_complete_before_the_first_tick(out: RendezvousId) {
     let mut buf = [0u8; 256];
     // ---- the plan, printed before the first tick ----
     //
-    // Read it to the arming line, keeping the facts the assertions below need. Reading it at all is
-    // half the claim: the timetable is blocked on these sends until this loop takes them, so
-    // nothing can have fired before the plan was complete.
+    // The timetable is blocked on these sends until this loop takes them, so nothing can have
+    // fired before the plan was complete.
     let mut saw_demo_grant = false;
     let mut saw_depleter_grant = false;
     let mut saw_nothing_else = false;
@@ -562,13 +507,9 @@ fn the_plan_is_complete_before_the_first_tick(out: RendezvousId) {
         saw_mem_refusal && saw_input_refusal,
         "the prompt's own refusals must arrive here unchanged",
     );
-    // **The negative control for the endowment**, which is milestone 129's second stratum. Before
-    // it, this spawn site handed the timetable the whole initial ramdisk and the program said so:
-    // an archive reaching every program in the tree behind a plan that names two. After it, the
-    // spawn site builds a sub-archive from `Registry::programs` and the program can no longer reach
-    // `date`, `ps`, `swish` or anything else it will never run. Asserting both directions is what
-    // makes this a control rather than a spelling check: a spawn site that quietly went back to the
-    // initial ramdisk would trip the second assertion, not merely fail to trip the first.
+    // **The negative control for the endowment** (milestone 129's second stratum). Both directions
+    // are asserted, so a spawn site that went back to handing over the initial ramdisk trips the
+    // second assertion rather than merely failing to trip the first.
     assert!(
         saw_exact_archive,
         "the timetable must be handed an archive holding exactly the programs its plan builds, and \
@@ -585,14 +526,10 @@ fn the_plan_is_complete_before_the_first_tick(out: RendezvousId) {
 fn only_the_admitted_entries_fired(t: &Spawned) {
     // ---- what actually fired ----
     //
-    // `least_authority_demo` squares its argument, so the shipped document's interval and at-boot entries answer
-    // 49 (`least_authority_demo 7`) and 9 (`least_authority_demo 3`); `memory_grant_depleter --mem 4` answers however many of its four pages
-    // it actually managed to map, which is at least one and at most four (page-table overhead is
-    // free to differ between aarch64 and riscv64, so the exact count is not this milestone's claim;
-    // `MEM_GRANT_PAGES` bounds it rather than pinning it). **This is the negative control**: every
-    // refused entry in the document is a program that would have written something else here (`date`
-    // and `wc` write `byte_sink_contract` bytes), so a document whose refusals had leaked would fail on
-    // the value rather than on a count.
+    // `least_authority_demo` squares its argument: 49 for `least_authority_demo 7`, 9 for
+    // `least_authority_demo 3`. `memory_grant_depleter --mem 4` answers how many of its pages it
+    // mapped, bounded by `MEM_GRANT_PAGES`. A leaked refusal (`date` and `wc` write
+    // `byte_sink_contract` bytes) fails on the value rather than on a count.
     let mut nines = 0;
     let mut forty_nines = 0;
     let mut depleter_reports = 0;
@@ -701,26 +638,13 @@ const STORED_SCHEDULE_CONTROL: &str =
 /// **A running timetable's document is replaced whole, by its registrar, and a replacement that
 /// fails changes nothing** (milestone 129 (scheduled execution), §222 (who holds a user's schedule)).
 ///
-/// The kernel test stands in for the registrar, which will be a user's durable session once
-/// milestone 152 rebuilds one. Three replacements, each the control for the others:
-///
-/// 1. **The stored schedule's shape**, [`STORED_SCHEDULE_CONTROL`]: what milestone 152's start-up
-///    test writes to disk, with the program renamed, for the reason that constant's own doc gives.
-///    §222's fifth sub-ruling is that the session writes the store and then replaces, so what the
-///    store holds must be exactly what a replacement accepts, unedited. Its `at-boot` line fires
-///    (9).
-/// 2. **A document that does not parse.** Refused whole, with its line number in the page, and
-///    nothing fires: the schedule in force is untouched.
-/// 3. **An edit.** The `at-boot` line is resent byte for byte and keeps its beat, so it does not
-///    fire a second time; the `every 30s` line is removed; a new `at-boot` line fires once (16); a
-///    scheduled `date` is unbacked; and a new hourly line arms and never comes round.
-/// 4. **An empty document**, which ends the timetable. It was asked for no fire count, so nothing
-///    else could.
-///
-/// Counted, never timed, as the test above. One tolerance, stated rather than hidden: the stored
-/// schedule's `every 30s` line is in force from the first replacement until the third, and a host
-/// stalled for thirty seconds in between would let it fire. A 49 before the 16 is therefore
-/// accepted and counted, and nowhere else; everything the test claims is about 9, 16 and the page.
+/// The test stands in for the registrar, a user's durable session once milestone 152 rebuilds one,
+/// and sends four replacements, each the control for the others: the stored schedule's shape
+/// ([`STORED_SCHEDULE_CONTROL`]), whose `at-boot` line fires (9); a document that does not parse,
+/// refused whole with its line number and firing nothing; an edit, whose resent `at-boot` line
+/// keeps its beat while a new one fires once (16); and an empty document, which ends it. Counted,
+/// never timed, with one stated tolerance: a 49 before the 16 is accepted. Each step, and why, is
+/// in notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_registrar_replaces_the_document_whole_and_a_failed_replacement_changes_nothing() {
     use timetable::registration as r;
@@ -908,11 +832,11 @@ const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NANOS_PER_SE
 
 /// **How far before 02:00 the calendar test publishes**, and so how long it waits for real time.
 ///
-/// It was five seconds (01:59:55), paid twice per boot on every architecture. The lead is not what
-/// the test proves: it only has to outlast the gap between this publication and the timetable's
-/// next pass, since a pass that first reads the page at 02:00 or later arms the next day's
-/// occurrence instead. A pass is one yield of a loop that never blocks here, so a second covers it
-/// with room, and when it does not, [`fires_at_two`] publishes again instead of going red.
+/// The lead is not what the test proves: it only has to outlast the gap between this publication
+/// and the timetable's next pass, since a pass that first reads the page at 02:00 or later arms the
+/// next day's occurrence instead. A pass is one yield of a loop that never blocks here, so a second
+/// covers it with room, and when it does not, [`fires_at_two`] publishes again instead of going
+/// red.
 const LEAD: u64 = clock_contract::NANOS_PER_SEC;
 
 /// **How long after 02:00 to wait for the report before publishing again.** Four seconds, so a
@@ -939,26 +863,12 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
 /// **Publish [`LEAD`] before 02:00, as an operator's `SET` if `set`, and return the 02:00 line's
 /// report**, which must arrive at or after 02:00 on the page's clock.
 ///
-/// The bound is one-sided, so it is not a timed assertion: a slow host only makes a report later.
-/// It is what makes the wait mean something. Without it a timetable that fired a calendar line the
-/// moment it saw the clock, a minute early, met no assertion here (it ended, measured 2026-10-06,
-/// in a 60-second watchdog hang); the minute is the grammar's resolution, so that is the earliest
-/// an early fire can be.
-///
-/// **A missed publication is published again, never failed.** A timetable whose first pass after
-/// the publication came at 02:00 or later armed tomorrow's occurrence, and only a later generation
-/// re-arms it. The retry is always `SYNCED`, which is safe whatever the timetable had done:
-///
-/// - It never read the first publication, or read it late and armed tomorrow: the retry is a new
-///   generation before 02:00, so 02:00 arms and fires once.
-/// - It armed 02:00 and has not fired yet: the retry re-arms the same occurrence, once.
-/// - It fired and the report is slow: the stamp it took at 02:00 keeps the retry from firing again.
-///   A `SET` retry would clear that stamp and fire twice, which is why a retry is never one.
-///
-/// So a step-4 `SET` the timetable never read at all is not retried into existence: the `SYNCED`
-/// retry fires only if the stamp was cleared, which is the property step 4 claims. That case needs
-/// no pass for [`LEAD`] plus [`MISSED`], five seconds, the same window the test had when it waited
-/// from 01:59:55. Step 2 has no stamp to protect and is covered by the retry whatever the delay.
+/// The bound is one-sided, so a slow host only makes a report later; without it a timetable that
+/// fired a minute early met no assertion. A missed publication is published again, never failed,
+/// and the retry is always `SYNCED`, never `SET`, which would clear the stamp a slow report relies
+/// on and fire twice. So a step-4 `SET` the timetable never read is not retried into existence, and
+/// that case needs a pass within [`LEAD`] plus [`MISSED`]. The case analysis is in
+/// notes/scheduled-execution/the-guest-tests.md.
 fn fires_at_two(t: &Spawned, set: bool) -> u64 {
     const ATTEMPTS: u32 = 5;
     let due = TWO_AM - publish_at(t, set, TWO_AM - LEAD);
@@ -982,26 +892,11 @@ fn fires_at_two(t: &Spawned, set: bool) -> u64 {
 /// (milestone 129, G5 as ruled with its step rule; notes/scheduled-execution/calendar-grammar-g5.md).
 ///
 /// The timetable is granted the clock page at `timetable::contract::CLOCK_SLOT`, starting UNKNOWN,
-/// and the test is both its registrar and its clock. Counted, never timed: every assertion is the
-/// identity of the next report, so a line that fired while the clock was unknown, or fired twice
-/// after a backward step, puts a report where the next assertion expects another one.
-///
-/// 1. Registered while the clock is unknown: two calendar lines, admitted, and dormant.
-/// 2. The clock becomes known a second before 02:00 and runs on: the 02:00 line fires when it gets
-///    there, and not before ([`fires_at_two`]).
-/// 3. A `SYNCED` step back to 01:30 fires nothing, then forward to 03:05: only the 03:00 line fires,
-///    once, for a step that covered it. It is `date`, which gets the clock page too and prints the
-///    day the page says.
-/// 4. An operator `SET` back to a second before 02:00 clears the stamps, so 02:00 fires again when
-///    the clock reaches it.
-/// 5. An empty document ends the timetable.
-///
-/// Each step publishes at most once before the test waits on a report, except step 3's pair, whose
-/// answer is the same whether or not the timetable saw the first of the two: the stamp from step 2
-/// is what keeps 02:00 from firing, and it holds across either generation. [`fires_at_two`]'s
-/// retries are the other exception, and its comment shows the same of each of them. That is
-/// deliberate: nothing tells the test when the timetable has read the page, so no assertion may
-/// depend on it.
+/// and the test is its registrar and its clock. Counted, never timed: each assertion is the
+/// identity of the next report, so a fire while the clock was unknown, or a second fire after a
+/// backward step, puts a report where another is expected. No assertion depends on when the
+/// timetable reads the page, which nothing tells the test. The five steps, and why each one's
+/// publications are safe, are in notes/scheduled-execution/the-guest-tests.md.
 #[test_case]
 fn a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3() {
     use timetable::registration as r;

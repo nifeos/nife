@@ -1,15 +1,14 @@
 //! **Spend an untyped budget until it is gone**, milestone 11.
 //!
-//! This process holds a capability to a chunk of raw memory (slot 0) and a report endpoint
-//! (slot 1). It maps page after page out of that memory region into its own address space, writes
-//! and reads each one to prove it is real, and keeps going until the region is exhausted. Then it
-//! reports how many it mapped.
+//! This process holds a chunk of raw memory (slot 0) and a report endpoint (slot 1). It maps page
+//! after page out of that memory region into its own address space, writes and reads each one to
+//! prove it is real, and reports how many it mapped once the region is exhausted.
 //!
-//! **The whole point is what the KERNEL does while this runs: nothing.** Every page here comes out
-//! of the region, so the kernel's free-frame count does not move. A process cannot make the kernel
-//! allocate, so it cannot exhaust it. `kernel::user::tests` checks exactly that, by reading the
-//! frame count on either side of the run.
-//!
+//! **The point is what the kernel does meanwhile: nothing.** Every page comes out of the region, so
+//! the kernel's free-frame count does not move; a process cannot make the kernel allocate, so it
+//! cannot exhaust it. `kernel::user::tests` checks exactly that, reading the frame count on either
+//! side of the run.
+
 //! # Bugs
 //!
 //! **It must not exit**, unlike every other one-shot fixture here, and that is a foot gun rather

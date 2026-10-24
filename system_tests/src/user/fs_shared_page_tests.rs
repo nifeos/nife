@@ -1,29 +1,21 @@
-//! **The shared-frame witness** (milestone 599 (a frame per filesystem client channel), provisional).
+//! The shared-frame witness (milestone 599 (a frame per filesystem client channel), provisional).
 //!
-//! Finding 1 of `notes/shared-page-audit.md`: the FS server shared one read-write staging frame
-//! with every client a boot wired, so what kept two clients apart was which of them was blocked, not
-//! what each could map. This test builds two live clients on one file service, one rewriting the
-//! frame the other staged its name in, and asserts the outcome. **Since milestone 599 gave each
-//! client its own channel window** (keyed by the badge on its endpoint capability), the two map
-//! different frames, so it now asserts isolation: the attacker's write cannot reach the victim's
-//! window, and the victim's request resolves the name it staged. It runs a negative control
-//! first: both clients on one window, the old wiring, where the substitution must land. A pass on
-//! separate windows means something only because the same witness substitutes on a shared one.
+//! Finding 1 of `notes/shared-page-audit.md` is one read-write staging frame shared by every FS
+//! client, which kept clients apart by which was blocked, not by what each could map. Each client
+//! now has its own channel window, keyed by the badge on its endpoint capability. The test runs two
+//! live clients, one rewriting the frame the other staged its name in, and asserts isolation, after
+//! a negative control on one shared window (the old wiring) where the substitution must land.
+//! Nothing here is architecture-specific, so one module meets DECISIONS §19 (architectural parity
+//! is a tenet) on every architecture `script/test` boots, as `dir_capability_tests` does.
+
+//! # Why a handshake and not a race
 //!
-//! One module for both ISAs, for `dir_capability_tests`'s reason: nothing here is
-//! architecture-specific, so the parity gate (DECISIONS §19 (architectural parity is a tenet)) is met by the same test running on
-//! every architecture `script/test` boots. It wires two portable `fs_test_client` roles and one
-//! portable `redoxfs_server`, and asserts on a verdict word.
-//!
-//! **Why a handshake and not a race.** The property under test is not "does a race fire" but "can a
-//! second holder of the frame change the bytes the server resolves for another client's call". The
-//! server reads the name from the page after the message arrives and has no way to tell whose bytes
-//! it read. A two-message handshake over a sync endpoint forces the interleaving the audit
-//! describes (victim stages its name, attacker overwrites it, victim calls) deterministically, so
-//! the witness runs the same interleaving on every architecture and every run, not only when a race
-//! lands.
-//! The interleaving is one a genuinely runnable second writer reaches by chance on the four-core
-//! boots; the handshake removes the flakiness, not the mechanism.
+//! The property is whether a second holder of the frame can change the bytes the server resolves
+//! for another client's call; the server reads the name from the page after the message arrives
+//! and cannot tell whose bytes it read. A two-message handshake over a sync endpoint forces the
+//! audit's interleaving (victim stages, attacker overwrites, victim calls) on every run. A runnable
+//! second writer reaches it by chance on four-core boots; the handshake removes the flakiness, not
+//! the mechanism.
 
 use filesystem_fixture as fixture;
 
@@ -61,18 +53,13 @@ fn witness(shared: bool) -> Option<u64> {
     Some(verdict)
 }
 
-/// **Two live clients on one file service; one rewrites the frame the other staged its name in.**
+/// Two live clients on one file service; one rewrites the frame the other staged its name in.
 ///
 /// The victim stages `fixture::SHARED_VICTIM_NAME`, the attacker writes
-/// `fixture::SHARED_USURPER_NAME` into the frame it maps, and then the victim calls. The victim
-/// reports which file it actually got.
-///
-/// **Two runs, and the first is the control.** On one shared window (the wiring every client had
-/// before milestone 599) the attacker's write lands in the victim's frame and the server resolves
-/// the attacker's name: `SHARED_SUBSTITUTED`. That run failing to substitute would mean the attack
-/// or the handshake is broken, and then the second run's pass would prove nothing. On separate
-/// windows, each keyed by its endpoint's badge, the attacker cannot reach the victim's frame and
-/// the victim's own name resolves: `SHARED_ISOLATED`, which is the fix.
+/// `fixture::SHARED_USURPER_NAME` into the frame it maps, then the victim calls and reports which
+/// file it got. The control runs first, on one shared window: it must report `SHARED_SUBSTITUTED`,
+/// or the attack or handshake is broken and the second run proves nothing. On separate windows the
+/// victim's own name resolves: `SHARED_ISOLATED`.
 #[test_case]
 fn a_second_client_cannot_substitute_the_name_on_its_own_window() {
     if fs_service::fs_server_image().is_none() {

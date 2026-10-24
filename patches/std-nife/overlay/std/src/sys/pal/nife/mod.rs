@@ -1,20 +1,12 @@
 //! Platform Abstraction Layer for nife (milestone 27): std over the native capability ABI.
 //!
-//! This is the Hermit shape (a `sys` backend implemented directly on a non-POSIX ABI), not the
-//! Redox shape (a libc first): there is no errno, no fd table, no `open`, no `fork` under here,
-//! because the OS does not have them and std does not actually need them. What a nife
-//! process *does* have is a capability table populated by its parent, and this PAL binds std to the two
-//! slots the std runtime contract names (see `rt`): an untyped budget that pays for the heap,
-//! and an endpoint that stdout/stderr SEND to.
-//!
-//! `net` and `fs` are bound to their capability-granted servers (phase two: net_stack's socket contract
-//! and the FS service), and each answers `Unsupported` when the program was not granted the
-//! capability that reaches its server. Everything the OS cannot honestly do yet (`process`,
-//! `thread::spawn`, ...) keeps the shared dispatch fallback rather than pretending; those PALs bind
-//! here when the servers behind them exist.
-//!
-//! This file lives in the nife repo (patches/std-nife) and is materialized into a
-//! patched rust-src by `cargo xtask std-src`; see notes/std.md for how the sysroot is built.
+//! The Hermit shape (a `sys` backend implemented directly on a non-POSIX ABI), not the Redox shape
+//! (a libc first): no errno, no fd table, no `open`, no `fork`, because the OS does not have them
+//! and std does not need them. A nife process has a capability table populated by its parent, and
+//! each PAL module binds one std concept to the slot the std runtime contract names for it (`rt`).
+//! A module whose capability was not granted answers `Unsupported`, and what the OS cannot honestly
+//! do refuses rather than pretending. This file is materialized into a patched rust-src by `cargo
+//! xtask std-src`; notes/std.md has the PAL surface and how the sysroot is built.
 
 #![allow(unsafe_op_in_unsafe_fn)]
 

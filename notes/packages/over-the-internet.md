@@ -113,6 +113,34 @@ greeting-0.1.0-aarch64 sha256:<64 hex> https://packages.basalt.test:8443/rolling
 | The resolver started from the lease | the test harness starts it, pointed at `helpers/name-server-peer` | identified work (milestone 801's block) |
 | Where the image says its index is | `package_index::SOURCES_ENTRY` names `basalt.test` at 10.0.2.9 and the test root | milestone 909 (basalt composes the bootable image from its packages) writes basalt's |
 
+## The index fetch test
+
+`package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`
+has a replayable falsification and two breaks attested by hand on 2026-10-10 (UTC).
+
+- With `package_index::public_address` admitting every address (on aarch64), the client connected
+  to the listed location at 10.0.2.9 and the test went red on the private-address line.
+- With `accept` hashing the fetched bytes instead of reading the entry's digest, `uptime` was
+  refused as `MemberMismatch` rather than `NotCataloged`. The flipped byte is also caught by the
+  package's own table of contents, which is why the test names the refusal.
+
+The rebinding half is milestone 871 (a sixth outsider pass attacks the confinement claim). The index
+lists `rebound` under `rebind.basalt.test`, whose name answers 192.0.2.1 (public) on the first query
+and the private peer on every later one. The resolver has no cache
+(`components/src/domain_name_resolver.rs`), so a client that checks one resolution and then connects
+by name asks twice, and a rebinding server answers the two apart. A client that did so printed this
+on aarch64 on 2026-10-10:
+`Tls(InvalidCertificate(NotValidForNameContext { expected: DnsName("rebind.basalt.test"), ...`.
+A `Tls(...)` reason means a TLS server answered, and the only one in slirp is the private peer at
+10.0.2.9:8443. The client dials only the address its check passed (`package_index::Location::check`),
+slirp has nothing at 192.0.2.1, and the reason is `ConnectionRefused`.
+
+The replayable record's patch makes `get` in
+`pinned_tls_exerciser/src/bin/package_fetch_exerciser.rs` connect by name again
+(`TcpStream::connect((server_name, to[0].port()))`). It went red on aarch64, riscv64 and x86_64
+(OVMF included) on patagonia on 2026-10-10, and green with it reverted. Row 35 of
+[confinement-claims.md](../confinement-claims.md) cites the test.
+
 ## BUGS
 
 - `package_fetch_exerciser` installs nothing; `jig` does since 2026-10-12, at the prompt, from the

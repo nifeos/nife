@@ -1,30 +1,20 @@
 //! `std::env::args()` on nife (milestone 205 (how a foreign program is told what to do),
 //! DECISIONS §170).
 //!
-//! # What a program hears, and what it does not
+//! Reads the argument page the loader mapped read-only at `rt::ARGS_PAGE` (capability in
+//! `rt::ARGS_SLOT`), in `program_argument_contract`'s layout, generated into this PAL as
+//! `argproto`. Per §170 the arguments are bytes and carry no authority: what a path may reach was
+//! fixed before the program started, by the directory in slot 4 alone.
 //!
-//! §170 ruled that a program written by somebody else hears its arguments as bytes, and that the
-//! bytes carry no authority. So this file is the whole of the transport: it reads the argument page
-//! its loader mapped read-only at `rt::ARGS_PAGE` (capability in `rt::ARGS_SLOT`), in
-//! `program_argument_contract`'s layout, generated into this PAL as `argproto`. What a word on that page
-//! may *reach* was decided before the program started, by the directory in slot 4 and nothing
-//! else; a path here that names something the program was not granted opens nothing.
-//!
-//! Before this file, nife fell through to std's `unsupported` backend, whose `args()` yields
-//! nothing, and unmodified `ripgrep` stopped at its own usage error.
-//!
-//! # An empty slot is an empty argv
-//!
-//! A program granted no argument page gets no arguments, not even `argv[0]`: the same
-//! honest-absence shape every other slot has. A page that does not parse whole reads as no
-//! arguments too (`program_argument_contract`'s docs say why a partial argv is never returned).
-//!
+//! A program granted no argument page gets no arguments, not even `argv[0]`, and a page that does
+//! not parse whole reads as no arguments too (`program_argument_contract`'s docs say why).
+
 //! # Zero copies
 //!
 //! The page is read-only, mapped for the life of the process, and never written after assembly, so
 //! each argument is an `&'static OsStr` borrowed straight off it. `OsStr` on nife is bytes, so any
 //! byte string is a valid one, which is what makes `from_encoded_bytes_unchecked` sound here.
-//!
+
 //! # BUGS
 //!
 //! - **Where the page sits and its layout are provisional** until calef rules on them

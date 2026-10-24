@@ -1,25 +1,12 @@
 //! **Revocation against a delegation that is still being made** (an eighth outsider pass at the
 //! confinement claim, claim 30's race window and the PortRange sweep).
 //!
-//! The cited test (`revocation_in_flight_tests`) revokes a capability that already sits parked in
-//! the hand-off slot. This module attacks the two places its `BUGS` section names as unmeasured:
-//!
-//! 1. **The window between the syscall's start and the filing of the copy.** `SEND_CAP` reaches
-//!    the seam (the test kernel's `delegation_pause::here`) after its rights gate and just before
-//!    the locked section that reads the source, derives the copy and files it. A revocation sweep
-//!    landing in that window must be seen: the delegation has to re-read the source under the hold
-//!    and find it gone. A kernel that read the source once, before the seam, would deliver a
-//!    capability naming a frame the revoker already took back, which is the use-after-free the
-//!    existing test's header describes, one step earlier.
-//!
-//! 2. **The PortRange sweep** (`x86_64`), which carries the same hand-off-clearing lines as the
-//!    PageFrame sweep with no test driving it through a parked hand-off. A port capability is
-//!    delegated over a rendezvous, the range is revoked, and the receiver must be handed nothing.
-//!
-//! Nothing blocks on the refused path: the seam makes the interleaving certain rather than timed,
-//! and every wait is clock-bounded. Cross-ISA for the first test (the seam, the delegation rule
-//! and the PageFrame sweep are portable kernel code, DECISIONS §19 (architectural parity is a
-//! tenet)); the second is `x86_64` only because port I/O is.
+//! `revocation_in_flight_tests` revokes a capability already parked in the hand-off slot. This
+//! module attacks the two gaps its `BUGS` names: a revoke between `SEND_CAP`'s rights gate and the
+//! filing of the copy, forced at the test kernel's seam (`delegation_pause::here`), and the
+//! PortRange sweep through a parked hand-off. Every wait is clock-bounded. The first test is
+//! cross-ISA (DECISIONS §19 (architectural parity is a tenet)); the second is `x86_64` only,
+//! because port I/O is. See notes/confinement-claims/the-eighth-pass-tests.md.
 
 use core::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
@@ -47,17 +34,10 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, abi::E
 /// **A revocation that lands after `SEND_CAP` has started and before the copy is filed must still
 /// be seen by the delegation.**
 ///
-/// The sender arms the seam from inside itself, invokes `SEND_CAP` through the real dispatcher,
-/// and parks at the seam with no lock held. The test then revokes the frame the sender is in the
-/// middle of delegating (the sweep deletes the source out of the sender's own table, which is
-/// asserted, so a revoke that never reached the sender cannot be mistaken for one that worked),
-/// releases the seam, and inspects the two things a broken window would leave behind: the
-/// syscall's answer and the rendezvous's waiting-sender count. The delegation must answer
+/// The sender parks at the seam mid-`SEND_CAP` with no lock held. The test revokes its frame,
+/// asserting the sweep emptied the sender's own slot, and releases it. The delegation must answer
 /// `NoSuchSlot` (it re-read a source that is gone) and park nothing.
-///
-/// The control run drives the same seam without the revoke: the delegation completes, parks, and
-/// a `RECEIVE_CAP` collects exactly the frame, which is what makes the refused run's emptiness the
-/// revocation talking.
+/// [`the_same_seam_without_a_revoke_delivers`] is the control run.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

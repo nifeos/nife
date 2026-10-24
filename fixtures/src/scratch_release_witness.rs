@@ -2,23 +2,26 @@
 //! unmap primitive, and the mappings init never lets go), §249 (a running address space stays
 //! nameable)).
 //!
-//! Holds a memory region to build a child from (slot 0, which the child is built straight out of), a report endpoint (slot 1), a small region
-//! that pays for its own page tables (slot 2), and, in one of the two runs the kernel's test makes,
-//! a `WRITE` capability to its own address space (slot 3), which is how the kernel endows the
-//! progenitor at slot 28. It builds one child with `supervision_protocol::build_child`, the code
-//! path the progenitor builds every boot server with, and then writes to the first page of its own
-//! scratch window, which is where the loader filled the child's first page.
+//! Holds a memory region the child is built straight out of (slot 0), a report endpoint (slot 1), a
+//! small region that pays for its own page tables (slot 2), and, in one of the kernel test's two
+//! runs, a `WRITE` capability to its own address space (slot 3), as the kernel endows the
+//! progenitor at slot 28. It builds one child with `supervision_protocol::build_child`, the path
+//! the progenitor builds every boot server with, then writes to the first page of its own scratch
+//! window, where the loader filled the child's first page.
+
+//! # What the two runs prove together
 //!
-//! **What the two runs prove together.** With slot 3, the loader gave that page up with `UNMAP` as
-//! soon as it was in the child, so the write faults and the second report never comes: that is the
-//! negative control milestone 95's block names, a builder writing to a page it built for a child and
-//! faulting. Without slot 3, the same write lands and the second report arrives, which is the
-//! window the progenitor held onto every boot server's memory until now. The second run is what
-//! keeps the first from passing for the wrong reason (a write that faulted because nothing was
-//! ever mapped there).
+//! With slot 3, the loader gave that page up with `UNMAP` as soon as it was in the child, so the
+//! write faults and the second report never comes: milestone 95's negative control, a builder
+//! faulting on a page it built for a child. Without slot 3 the same write lands and the second
+//! report arrives, the window a builder that cannot unmap leaves open. The second run keeps the
+//! first from passing for the wrong reason (a write that faulted because nothing was ever mapped
+//! there).
+
+//! # What it reports
 //!
-//! Reports `(1, va, 0)` once the child is built, `va` being the scratch page it is about to write,
-//! and `(2, va, 0)` only if the write landed; on a failed build, `(9, 0, 0)`. The kernel's test
+//! `(1, va, 0)` once the child is built, `va` being the scratch page it is about to write, and
+//! `(2, va, 0)` only if the write landed; on a failed build, `(9, 0, 0)`. The kernel's test
 //! (`system_tests`' `running_space_tests`) mirrors these three words, as `authority_tests` mirrors
 //! `root_supervisor`'s.
 //!

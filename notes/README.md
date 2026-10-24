@@ -73,6 +73,14 @@ area directories), ruled B). Appendices under
 
 `self-test-checks.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
 
+`progenitor-boot.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`user-address-spaces.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`x86-user-programs.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
 `system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
+
+`system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.

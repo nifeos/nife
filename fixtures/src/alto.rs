@@ -1,24 +1,13 @@
-//! **One of two programs in one package, named unlike it** (milestone 919 (a package carries
-//! several programs)).
+//! One of two programs in one package, named unlike it (milestone 919 (a package carries several
+//! programs)).
 //!
-//! The package is `duet` (`packages/duet.recipe.toml`), and it carries two programs, this and
-//! `tenor`, as the members `bin/alto` and `bin/tenor`. Neither is named after the package, so a
-//! bare `alto` at the prompt reaches this only if `jig install` wrote a row for each program and
-//! not one for the package. `fixtures` lists both in `packaged_only`, so no archive packs them.
-//!
-//! A second package, `solo` (`packages/solo.recipe.toml`), carries these same bytes as `bin/alto`.
-//! While `duet` is installed, installing `solo` is refused whole, naming `alto` and `duet`; once
-//! `jig remove duet` has run, it installs.
-//!
-//! ```text
-//! $ cd downloads
-//! $ jig install ./duet.nifepkg
-//!   installed; generation 7 is live
-//! $ alto
-//! alto: one of two programs in the package duet
-//! clock: held at slot 1, as its manifest note asked
-//! ```
-//!
+//! The package `duet` (`packages/duet.recipe.toml`) carries this and `tenor` as `bin/alto` and
+//! `bin/tenor`, so a bare `alto` at the prompt reaches this only if `jig install` wrote a row per
+//! program and not one for the package. `fixtures` lists both in `packaged_only`, so no archive
+//! packs them. `solo` (`packages/solo.recipe.toml`) carries the same bytes as `bin/alto`: it is
+//! refused whole while `duet` is installed, naming `alto` and `duet`, and installs once
+//! `jig remove duet` has run. notes/packages/several-programs.md has the transcript.
+
 //! # What this program holds
 //!
 //! Slot 0, its output, and slot 1, the clock page, because [`MANIFEST`] asks for one. `tenor`'s

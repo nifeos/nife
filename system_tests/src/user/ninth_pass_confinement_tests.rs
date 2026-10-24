@@ -1,34 +1,11 @@
 //! **Four fresh dispatcher attacks on the rights model** (a ninth outsider pass at the confinement
 //! claim, claims 2, 4, 5 and 26).
 //!
-//! Each test here is a hostile program reduced to the kernel operations it would issue, driven
-//! through the real dispatcher (`syscall::invoke`), the way a program's `svc`/`ecall` reaches it.
-//! None of them is a replay of an existing test: they come at the claims from angles the suite did
-//! not already have.
-//!
-//! - [`a_consumed_capability_cannot_be_reused`] (claim 4): a `PageFrame` carved from a budget is
-//!   sliced once (the positive control), the capability is deleted with `cap_delete`, and the same
-//!   slot is invoked again. The answer is `NoSuchSlot`, not a second slice: a consumed capability
-//!   names nothing. The existing `revocation_in_flight_tests` attack the *hand-off slot*; this is
-//!   the plain `cap_delete` path, which nothing drove through the dispatcher.
-//! - [`deleting_one_capability_leaves_its_neighbors`] (claim 5): three capabilities are filed, the
-//!   middle one is deleted, and the other two still resolve and still invoke. `capability`'s host
-//!   proof `delete_touches_only_its_slot` is over the table type; this is the live kernel table
-//!   under the real `SYS_CAP_DELETE` path.
-//! - [`a_badge_is_grant_gated_and_mints_no_wider_right`] (claim 26, the delegation-class power
-//!   `Rendezvous::BADGE` is): a `WRITE`-only holder cannot mint a badged view at all (no `GRANT`),
-//!   and a `WRITE | GRANT` holder's badged copy carries exactly `WRITE | GRANT`, never a bit more.
-//!   `BADGE` is the one method that mints a fresh capability to an endpoint from userspace, so a
-//!   widening here would be a client minting itself authority; nothing attacked it in a confinement
-//!   test.
-//! - [`an_out_of_range_or_empty_slot_names_nothing`] (claim 2, no ambient authority): a slot number
-//!   past the table and an empty slot inside it both answer `NoSuchSlot`.
-//!   `confinement_attack_tests` drives an empty slot; the out-of-range index is the other half, and
-//!   the one a program reaching past its table would use.
-//!
-//! **Nothing here blocks**, so a regression is red at an assertion rather than a watchdog hang: no
-//! `SEND`/`RECEIVE`/`CALL` with no peer is issued. Each capability is deleted and each region
-//! reclaimed, so the suite's frame and region ledgers are flat across the module.
+//! Each test is a hostile program reduced to the kernel operations it would issue, driven through
+//! the real dispatcher (`syscall::invoke`) the way a program's `svc`/`ecall` reaches it. Each comes
+//! at its claim from an angle the suite did not already have, and its own doc says which. Nothing
+//! blocks, and every capability and region is reclaimed. See notes/confinement-outsider-pass-9.md,
+//! "The kernel tests".
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: `invoke`, the rights model, the delegation rule and the capability table
@@ -60,14 +37,9 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// IPC: a one-shot reply capability), the decision "a consumed capability cannot be used again"
 /// lives under).
 ///
-/// A `PageFrame` is carved from a budget holding `Rights::ALL`, so it carries `GRANT` and
-/// `PageFrame::SLICE` is permitted: the positive control is one successful slice. The frame
-/// capability is then deleted through the same path `SYS_CAP_DELETE` takes
-/// (`delete_current_capability`), and the identical `SLICE` is issued again at the same slot. The
-/// second answer is `NoSuchSlot`: there is nothing there, which is what a consumed capability is
-/// from the inside. `current_capability` agrees the slot is empty.
-///
-/// Nothing blocks: `SLICE` does not touch the IPC path.
+/// A `PageFrame` from a `Rights::ALL` budget carries `GRANT`, so one `SLICE` succeeds (the positive
+/// control). Deleted on the `SYS_CAP_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
+/// `revocation_in_flight_tests`, which attack the hand-off slot, this drives plain `cap_delete`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -150,19 +122,9 @@ fn deleting_one_capability_leaves_its_neighbors() {
 /// delegation-class power of minting a fresh view of an endpoint; §14 (userspace cannot forge a
 /// right)).
 ///
-/// `BADGE` is the one method a program can reach that mints a *new* capability to an endpoint it
-/// holds, so it is exactly where a client would try to manufacture authority. Two refusals and one
-/// bounded success, each through the real dispatcher:
-///
-/// 1. A `WRITE`-only holder (no `GRANT`) is refused outright: minting a delegatable view is a
-///    delegation-class power, gated by `GRANT`.
-/// 2. A `WRITE | GRANT` holder mints a badged copy, and that copy carries exactly `WRITE | GRANT`,
-///    never `READ` or any bit the source lacked. A badged view is a narrower-or-equal view, as a
-///    delegation is.
-/// 3. The badged copy cannot be badged again (a badge is set once), and a zero badge is refused,
-///    so the method cannot be used to launder rights through repeated minting.
-///
-/// Nothing blocks: `BADGE` files a capability in the caller's own table and returns the slot.
+/// `BADGE`, the one reachable method that mints a new endpoint capability, is where a client would
+/// forge authority. A `WRITE`-only holder is refused (no `GRANT`); a `WRITE | GRANT` holder's copy
+/// carries exactly `WRITE | GRANT`; that copy cannot be re-badged and a zero badge is refused.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -228,12 +190,10 @@ fn a_badge_is_grant_gated_and_mints_no_wider_right() {
 /// **A slot past the table, and an empty slot inside it, both name nothing** (claim 2, no ambient
 /// authority).
 ///
-/// `confinement_attack_tests` drives an empty in-range slot; this adds the out-of-range index, the
-/// one a program reaching past the authority it was handed would actually use. Both answer
-/// `NoSuchSlot` (not `NotPermitted`): the lookup is a bounds check into this thread's own table, and
-/// there is nothing there in either case. A method that acts is chosen (`SEND`) so a let-through
-/// would be observable, but no object exists to act on, so the dispatcher cannot even reach the
-/// rights gate.
+/// `confinement_attack_tests` drives an empty in-range slot; this adds the out-of-range index a
+/// program reaching past its table would use. Both answer `NoSuchSlot`, not `NotPermitted`: the
+/// lookup is a bounds check into this thread's table. `SEND` is chosen so a let-through would be
+/// observable, though with no object the dispatcher never reaches the rights gate.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

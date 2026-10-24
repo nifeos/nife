@@ -1,9 +1,7 @@
 //! **Paths: a chain of names under the granted directory**.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -12,23 +10,14 @@ use super::*;
 
 /// Check every component of `path` and count the names that survive, or refuse the path.
 ///
-/// This is where "no global namespace" is enforced, on the client side, before a byte reaches the
-/// server. The server enforces it again (it resolves a single component under the handle it is
-/// given and nothing else); doing it here as well is not redundant, it is what turns a would-be
-/// escape into a legible `io::Error` instead of an `ENOENT` that reads like a missing file.
-///
-/// Every refusal is [`io::ErrorKind::InvalidFilename`], never `PermissionDenied`: no permission was
-/// consulted, and there is no name for what was asked, because this process holds no capability
-/// that designates it. The message says which case it was.
-///
-/// **A nested path is no longer one of them** (milestone 122). It is a chain of names, and [`walk`]
-/// spends one attenuated `OPENDIR` per link to reach the last one. **Nor is a leading `/`**
-/// (milestone 47's namespace half, 2026-08-18): `/` is the root of *this process's* namespace,
-/// which is the directory it was granted, so `/motd` and `motd` name one file and neither can
-/// reach anything the grant does not. That is Plan 9's answer rather than DOS's, and here it is
-/// less than Plan 9's: a nife process has exactly one root, so there is nothing for the leading
-/// slash to select between. What is still refused is what still names nothing: `..` at any
-/// position, and a Windows-shaped prefix.
+/// This is where "no global namespace" is enforced on the client side, before a byte reaches the
+/// server (which enforces it again), so a would-be escape is a legible `io::Error` rather than an
+/// `ENOENT` that reads like a missing file. Every refusal is [`io::ErrorKind::InvalidFilename`],
+/// never `PermissionDenied`: no permission was consulted, and no capability designates what was
+/// asked. Refused, each with its own message: `..` at any position, a Windows-shaped prefix, and a
+/// name that is not UTF-8 or is longer than the page. A nested path is a chain of names [`walk`]
+/// descends (milestone 122), and a leading `/` is the root of *this process's* namespace
+/// (milestone 47), so `/motd` and `motd` name one file. See notes/std/fs.md.
 pub(super) fn count_names(path: &Path) -> io::Result<usize> {
     let mut n = 0;
     for c in path.components() {
@@ -36,20 +25,12 @@ pub(super) fn count_names(path: &Path) -> io::Result<usize> {
             // "./motd" is "motd", and "a/./b" is "a/b": the current directory IS the one the walk
             // has reached.
             Component::CurDir => {}
-            // `/motd` is `motd`, for the same reason `./motd` is: this process has exactly one
-            // root and it is the directory it was granted. The slash selects nothing, because
-            // there is nothing else to select; what it buys is that a path a program built from
-            // `current_dir()` resolves instead of being refused.
-            //
-            // **A leading slash is relative to the base the walk was given, and that is a
-            // deliberate divergence from `openat`.** POSIX makes an absolute path ignore the
-            // `dirfd`; here `Dir::open_file("/x")` resolves under that `Dir` rather than jumping
-            // back to the granted root. The Unix rule exists because `/` names one global thing
-            // and a `dirfd` is a shortcut into it. Neither half is true here: a handle is a
-            // namespace, `/` is the root of whichever one you are resolving in, and a rule that
-            // let a name climb out of the handle it was asked of would make a `Dir` useless for
-            // the one thing programs reach for it for. It also cannot widen anything either way,
-            // since a process that holds a `Dir` holds the root it descended from.
+            // `/motd` is `motd`: this process has one root, the directory it was granted, so the
+            // slash selects nothing and a path built from `current_dir()` resolves. The slash is
+            // relative to the base the walk was given, a deliberate divergence from `openat`:
+            // `Dir::open_file("/x")` resolves under that `Dir`, because a handle is its own
+            // namespace (notes/std/fs.md). That widens nothing, since a process that holds a `Dir`
+            // holds the root it descended from.
             Component::RootDir => {}
             // A Windows-shaped prefix (`C:`, `\\?\`) is still nothing here, and unlike a leading
             // slash there is no root it could name.
@@ -137,23 +118,14 @@ pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::R
 
 /// **Resolve `path` to the directory its last name lives in, plus that name** (milestone 122).
 ///
-/// `File::open("a/b/c")` is `OPENDIR a`, `OPENDIR b`, then `OPEN c` against `b`'s handle. This is
-/// `openat` semantics, which is what the contract already was; what this function adds is that a
-/// path-shaped standard library can sit on top of it, which is the whole of milestone 122's option
-/// A. Unix answered the same question the same way and kept both interfaces, which is why [`Dir`]
-/// exists beside this.
-///
-/// **The rights story, because it looks like a widening and is not.** Every hop asks for
-/// `DESCEND | needs`, where `needs` is what the *final* verb requires on the directory it lands in
-/// (`filesystem_contract::verb::TABLE` is the list, and `OPEN`'s "READ or WRITE" is the one row a caller has
-/// to resolve from its own `OpenOptions`). Carrying `needs` down the whole chain rather than only
-/// asking for it at the end costs nothing that was ever available: a child's rights are its
-/// parent's intersected with the request, so a right an ancestor lacks is a right no descendant of
-/// it could have had either. The walk therefore asks for exactly the maximum the grant could give
-/// at the depth it is going to, and no more.
-///
-/// **At most two handles are open at once**, because the assignment in the loop drops the previous
-/// hop, which closes it. A deep path costs round trips rather than handle-table slots.
+/// `File::open("a/b/c")` is `OPENDIR a`, `OPENDIR b`, then `OPEN c` against `b`'s handle: the
+/// contract's `openat` semantics with a path-shaped std on top (milestone 122's option A; [`Dir`]
+/// is the other interface). Every hop asks for `DESCEND | needs`, where `needs` is what the *final*
+/// verb requires on the directory it lands in (`filesystem_contract::verb::TABLE`; [`open_rights`]
+/// resolves `OPEN`'s "READ or WRITE"). That is not a widening: a child's rights are its parent's
+/// intersected with the request, so the walk asks for exactly the most the grant could give at that
+/// depth. **At most two handles are open at once**, because the assignment in the loop drops, and
+/// so closes, the previous hop. See notes/std/fs-descent.md.
 pub(super) fn walk<'a>(p: &mut Page, from: u64, path: &'a Path, needs: u64) -> io::Result<(At, &'a str)> {
     let total = count_names(path)?;
     if total == 0 {

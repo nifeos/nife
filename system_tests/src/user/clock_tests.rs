@@ -12,19 +12,14 @@ fn start() -> (clock_service::Wiring, [u64; 5]) {
 
 /// **The machine finds out what time it is.**
 ///
-/// Three ISAs, three entirely different RTCs: a PL031 counting seconds at `0x9010000` on aarch64,
-/// a Goldfish counting nanoseconds at `0x101000` on riscv64, and on `x86_64` a CMOS the *kernel*
-/// reads and hands over already converted (DECISIONS §130), because DECISIONS §121 keeps its ports
-/// out of any capability userspace could hold. One binary, and on the first two the choice between
-/// drivers is made from the `compatible` string rather than from `target_arch`. What the assertion
-/// actually catches: a wrong base address, a wrong register offset, the Goldfish halves swapped,
-/// the seconds/nanoseconds unit confusion, a CMOS BCD/binary or 12h/24h decode mistake, and a
-/// missing century adjustment, all of which land outside a 74-year window.
-///
-/// It is a **plausibility** check, not an accuracy one, and deliberately so. Nothing in the
-/// guest knows the host's clock to compare against, so the honest claim is "this is a time a
-/// machine running this code could be at", which is exactly what `policy::is_plausible` is for and
-/// exactly what the previous behaviour (1970 plus uptime) fails.
+/// A PL031 counting seconds at `0x9010000` on aarch64, a Goldfish counting nanoseconds at
+/// `0x101000` on riscv64, and on `x86_64` a CMOS the *kernel* reads and hands over converted
+/// (DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)), because
+/// DECISIONS §121 (what a device capability is when the device has no page) keeps its ports out of
+/// any capability userspace could hold. One binary picks between the first two by `compatible`
+/// string. It is a **plausibility** check (`policy::is_plausible`), since the guest cannot know the
+/// host's clock: a wrong base or offset, swapped Goldfish halves, a unit mix-up, a BCD or 12h
+/// decode slip and a missing century all land outside a 74-year window, as does 1970 plus uptime.
 #[test_case]
 fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     if clock_service::machine_has_no_rtc() {

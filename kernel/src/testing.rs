@@ -269,7 +269,7 @@ const PAGE_FRAME_REPORT_MIN: usize = 16;
 ///
 /// - Two test sites keep their endpoints for the boot on purpose (notes/kernel-test-harness.md).
 /// - The kernel's `user::*_service` wiring still uses the never-freed pool, once per test.
-const SUITE_PAGE_FRAME_BUDGET: usize = 24_322;
+const SUITE_PAGE_FRAME_BUDGET: usize = 24_371;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///
