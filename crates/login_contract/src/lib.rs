@@ -464,11 +464,11 @@ pub mod durable {
         + USER_TIMETABLE_KEEPER_BUDGET_PAGES;
 
     /// **How many durable sessions fit a `table_slots`-slot capability table** with room left for
-    /// one ordinary login beside them: the largest `n` with `SLOTS_AT_REST + SLOTS_PER_SESSION * n
-    /// + SLOTS_LOGIN_PEAK <= table_slots`. Opening the last at a login peaks no higher: 16 held at
-    /// the open, 23 building the second store caretaker (Fork 8 D), 24 building
-    /// `user_timetable_keeper`; lower at start-up. Counted from the code on 2026-09-27, not
-    /// measured.
+    /// one ordinary login beside them: the largest `n` with
+    /// `SLOTS_AT_REST + SLOTS_PER_SESSION * n + SLOTS_LOGIN_PEAK <= table_slots`. Opening the last
+    /// at a login peaks no higher: 16 held at the open, 23 building the second store caretaker
+    /// (Fork 8 D), 24 building `user_timetable_keeper`; lower at start-up. Counted from the code on
+    /// 2026-09-27, not measured.
     ///
     /// # EXAMPLES
     ///

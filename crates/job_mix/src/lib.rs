@@ -139,7 +139,7 @@ pub const KIND_NAMES: [&str; JOB_KINDS] = [
 /// **The workfile, in AIM7's sense**: the multiset of jobs one task runs per round, and therefore
 /// the proportions. Sixteen entries so a round is long enough to time and short enough that a task
 /// visits every kind several times inside one subrun. [`ROUND_TRIP`] gets a quarter, because IPC
-/// is the primitive this kernel exists to be fast at, and the other six two each. The `job-mix:
+/// is the primitive this kernel exists to be fast at, and the other six get two each. The `job-mix:
 /// started` line prints [`JOB_KINDS`], so transcripts of different mixes cannot be confused.
 pub const MIX: [u8; 16] = [
     COMPUTE,

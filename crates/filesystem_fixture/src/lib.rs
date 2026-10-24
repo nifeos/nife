@@ -1131,7 +1131,7 @@ pub mod blank {
 
     /// The EFI system partition: first and last logical block, inclusive. 2048 is the 1 MiB
     /// alignment every real tool uses. Nothing formats it or [`LINUX`]; they give the table more
-    /// than one entry and unique GUID.
+    /// than one entry and more than one unique GUID.
     pub const ESP: (u64, u64) = (2048, 10239);
     /// The Linux filesystem partition.
     pub const LINUX: (u64, u64) = (10240, 30719);

@@ -157,7 +157,7 @@ statistics page, which the owner grants every login by default and can withhold.
 pool this prompt's jobs are carved from, read through `MemoryRegion::USAGE` on a view narrowed to
 `ENUMERATE`. It is the limit that binds a program started here, which the machine line is not.
 Upstream `free` prints only the first line, and inside a container that line describes memory the
-caller can never have; LXCFS exists to patch that. Printing both, labelled, answers both readers.
+caller can never have; LXCFS exists to patch that. Printing both, labeled, answers both readers.
 A prompt whose owner withheld the machine page prints the `Yours:` line alone and says on its
 second stream: `free: the machine's owner has not granted the machine statistics page`. If the
 refusal of paging out is ever lifted, §225 says a `Swap:` line takes the same two-row shape.

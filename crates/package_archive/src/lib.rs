@@ -18,14 +18,16 @@
 //! # BUGS
 //!
 //! - Nothing installs a package: that is milestone 507 (installing a package)'s activation fork.
-//! - The encoding and name are provisional until somebody else fetches a package (§197).
-//! - Where a manifest travels, and whether the digest is a Merkle root, are open.
+//! - The encoding and name are provisional until somebody else fetches a package (§197); where a
+//!   manifest travels, and whether the digest is a Merkle root, are open.
 //! - No compression, which would be a second hostile-input parser; the size cost is unmeasured.
 //! - Members and files are bounded by `u32` (4 GiB).
 //! - A duplicate member name is refused by the writer and first-wins in the reader, as in `nifefs`.
-//! - [`Package::parse`] allows overlapping members; accessors are bounds-checked, digests decide.
+//! - [`Package::parse`] lets members overlap or precede the table: accessors are bounds-checked,
+//!   and [`Package::verify`] fails any arrangement the digests do not match.
 //! - Nothing here says where a package came from; §195's per-source trust is a client's job.
 
+//!
 //! Name: provisional 2026-09-23 (milestone 198's rung 3a lane): an archive of a package's files, in
 //! the field's words; `package` alone is too generic and `pkg` an abbreviation. Not ratified.
 
