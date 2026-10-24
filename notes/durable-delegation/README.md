@@ -9,6 +9,11 @@ work that page points at but does not need to carry whole.
 - [which-programs-a-job-runs.md](which-programs-a-job-runs.md): Fork 8, which programs a scheduled
   job may run on the real boot. calef ruled option D on 2026-09-27 (UTC): the live activation
   generation. Built the same day.
+- [user-timetable-keeper.md](user-timetable-keeper.md): what `user_timetable_keeper` does, in
+  order, from its start to the timetable's death.
 
 *Name: provisional, minted 2026-09-27 (UTC) by the lane for milestone 152 (durable delegation), for
 the directory and every stem in it. Naming is calef's; `script/names --unratified` lists each stem.*
+
+*`user-timetable-keeper` Name: provisional, minted 2026-10-24 (UTC) for milestone 929 (comments in
+the Linux style across first-party Rust), after the program it describes.*

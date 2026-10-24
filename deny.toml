@@ -56,15 +56,21 @@ yanked = "deny"
 # next CVE nobody will fix. If this ever fires on something we cannot move off, the answer is an
 # `ignore` entry below WITH a written reason, per §35's rule that a dismissal is an argument.
 unmaintained = "all"
-# **One entry, and it is the tree's first.** Every entry here is a known-vulnerable dependency we
-# have decided to keep, so each one carries the sentence that says why, in the `reason` field
-# rather than only in a comment: cargo-deny prints `reason` in its own output, so the argument
-# travels with the finding instead of living in a file the reader may not open.
+# **Two entries.** Every entry here is a known-vulnerable dependency we have decided to keep, so
+# each one carries the sentence that says why, in the `reason` field rather than only in a comment:
+# cargo-deny prints `reason` in its own output, so the argument travels with the finding instead of
+# living in a file the reader may not open.
 #
-# Keep this list short, and read the entry below as the shape the next one should take: a **bounded
-# claim about a path we do not call**, with what would end it, rather than a dismissal.
+# Keep this list short, and read the entries below as the shape the next one should take: a
+# **bounded claim about a path we do not call**, with what would end it, rather than a dismissal.
+#
+# RUSTSEC-2026-0387 is also a time limit, and the limit is an exception to the mechanism rule:
+# cargo-deny has no expiry field, so nothing fails on its date. What ends it is the move recorded in
+# notes/cryptography-provider.md's BUGS section; when that lands, cargo-deny's
+# `advisory-not-detected` warning says the entry is stale, and it comes out in the same change.
 ignore = [
     { id = "RUSTSEC-2023-0071", reason = "The Marvin attack is a timing side channel in RSA PKCS#1 v1.5 DECRYPTION, which recovers a private key from an oracle that decrypts attacker-chosen ciphertexts. This tree uses `rsa` in exactly one place, `cryptography_provider`'s certificate and handshake signature verification, which performs public-key operations only: it holds no RSA private key, decrypts nothing, and has no oracle to offer. The advisory names a path we do not call. THIS STOPS BEING TRUE the moment anything here decrypts with `rsa`, signs with it, or uses RSA key transport; TLS 1.3 has no RSA key exchange, so the provider being TLS 1.3 only is part of what holds this claim up. Taken on calef's ruling of 2026-09-20 (\"Take rsa\") because `objects.githubusercontent.com` serves RSA 2048 and `ghcr.io` RSA 4096, so a client without RSA verification can reach GitHub and not download from it. See DECISIONS §198 (the glue is ours, the primitives are not) and notes/cryptography-provider.md." },
+    { id = "RUSTSEC-2026-0387", reason = "Secret-dependent branches in crypto-bigint before 0.7.6, published 2026-10-23 with no 0.5.x or 0.6.x fix. 0.5.5 enters this tree only through elliptic-curve 0.13, under p256 0.13 and p384 0.13, in cryptography_provider and cryptography_exerciser (and so in pinned_tls_client, pinned_tls_exerciser and jig); elliptic-curve 0.13 requires ^0.5, and the 0.14 generation that takes 0.7 also moves rand_core to 0.10, which no longer reaches getrandom 0.2, the hook entropy_backend answers. The only secret those crates touch is the ephemeral P-256 ECDHE scalar: the provider loads no private keys and signs nothing, and its ECDSA and ECDH peer-key handling operate on public values. That scalar meets crypto-bigint only as storage and comparison: U256 byte conversion, Limb::ct_lt in Scalar::from_repr, is_zero and conditional_select. The point multiplication's field arithmetic is p256's own adc/mac/sbb, not crypto-bigint's. None of the operations the advisory names (borrowing_sub as rewritten in the 0.7 line, trailing-zero counting, div_rem, nlimbs, crypto-bigint's Montgomery multiplication, UintRef equality, BoxedMontyForm::invert) is on that path, and UintRef and BoxedMontyForm do not exist in 0.5.5. This is a reading of the source, not a `cargo checkct` result on our targets. THIS STOPS BEING TRUE the moment anything here holds a long-lived elliptic-curve private key, signs with ECDSA, or calls crypto-bigint arithmetic on a secret. Time-limited: it ends when the provider moves to p256 0.14 (notes/cryptography-provider.md, BUGS), and is to be re-argued if that has not landed by 2026-12-01." },
 ]
 
 [licenses]

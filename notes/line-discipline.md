@@ -162,3 +162,109 @@ the drivers and shell the `WRITE` side, and none of the wiring is in the kernel.
 on
 both ISAs: `help`, `echo`, and `run` drive a worker to completion through the full path
 (input driver → line discipline → console server, and shell → line discipline → console server).
+
+## The graphical terminal: a session over a discipline
+
+`graphical_terminal` is a prompt on the display, launched from the swish prompt rather than started
+at boot (calef's ruling of 2026-09-30, milestone 632 (graphics on demand)). The person at the boot
+prompt delegates the display devices by typing its name. The progenitor then builds `gpu_driver`,
+`display_terminal`, and one of two keystroke sources, and passes the choice in `x0`:
+
+```text
+  arm 0 (a keyboard came):
+    keyboard_driver ──OPERATION_BYTES──► line_editor ──OPERATION_WRITE──► display_terminal ──► screen
+           graphical_terminal ◄──lines── (slot 2)     (slot 1 == slot 2's server)
+
+  arm 1 (no keyboard; the UART is the keystroke source):
+    boot input ──OPERATION_BYTES──► boot line_editor ◄──OPERATION_READRAW── graphical_terminal
+           graphical_terminal ──OPERATION_WRITE──► display_terminal ──► screen
+```
+
+On arm 0 the session's own `line_editor` does the whole job in cooked mode. It paints the prompt,
+echoes each keystroke and hands over the completed line. On arm 1 the program puts the boot
+discipline in raw mode, reads register-only, and paints the echo itself as the bytes arrive, which
+is the shell's own §227 (how Tab reaches the shell) shape. The discipline's cooked echo is bypassed
+in raw mode, so nothing echoes twice.
+
+A session ends on `^C` or on a line reading `quit`. Arm 1 puts the boot discipline back in cooked
+mode on the way out. The shell's §227 fallback, its `BAD_REQUEST` path, takes it back to raw at the
+next prompt, and that covers a session the kernel killed before it could clean up.
+
+The session holds four things. The result endpoint (slot 0) takes one word when the session ends.
+Slot 1 prints to the screen, with the page its server reads. Slot 2 owns the keystrokes. On arm 0
+only, a second page receives the lines the discipline delivers. It holds no device, no interrupt and
+no DMA.
+
+Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
+
+- A session runs no program. Its lines are echoed and nothing else.
+- Arm 1 has no line editing. The only edits are `^C` and retyping.
+- Arm 1 can switch the boot discipline's mode under the shell. Slot 2 on that arm is the boot
+  discipline's endpoint badged `line_editor::proto::RAW_ONLY_BADGE`, under milestone 709 (a
+  graphical terminal session on the no-keyboard arm holds only the raw half of the boot discipline).
+  So a session can neither type nor take a line the boot shell reads, and cannot print to the UART.
+  Flipping the mode while the shell is between reads abandons what the shell had half typed and
+  fails a parked read with `BAD_REQUEST`, which the shell's §227 recovery absorbs. That is a
+  disruption, not authority.
+
+## The keyboard as a second input source
+
+`keyboard_driver` turns virtio-input key events into the bytes a terminal understands, and its
+spawner picks one of two wirings in `arg0`:
+
+```text
+  MODE_RING (rung two, a compositor scene):
+  virtio-input ──virtio (PCIe, behind the IOMMU)──► keyboard_driver ──the input ring──► compositor
+   (a keyboard)                                      │                (shared memory)
+                                                     └──doorbell COMMIT──► "look at the surfaces"
+
+  MODE_DIRECT (milestone 177, option A: the boot's single-terminal case):
+  virtio-input ──virtio──► keyboard_driver ──OPERATION_BYTES, one CALL──► line_editor
+```
+
+`MODE_RING` is DECISIONS §33 (the compositor's authority is memory, not messages) seen from the
+producing side, and [glyphs.md](glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
+exactly one terminal, where there is no second window to misdirect a keystroke to
+(design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
+`line_editor`'s served endpoint, granted at spawn, and sends every keystroke there in the same
+`OPERATION_BYTES` framing the UART receive driver uses. A keyboard and a serial line are both one
+input source to the discipline, and neither contract grew to carry the other's bytes. That is
+narrower authority than the ring, not looser: one capability, fixed by whoever built the driver.
+
+The driver does no key repeat of its own: the device sends repeats, and `video_terminal::keymap`
+honors them. It drives no LEDs and switches no layouts. It handles no mouse or tablet, though a
+`virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci`), and it makes no
+configuration-space query.
+
+## Two sinks, and the badged copies
+
+The process's output side is chosen at spawn by `mode` and nowhere else:
+
+```text
+  MODE_CONSOLE (the plain-console boot):
+  input driver ──OPERATION_BYTES──►┌─────────────┐──text──► console server ──► UART
+                                   │ line_editor │
+       application ◄─lines─────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+
+  MODE_DISPLAY (a graphical_terminal session, built when the user launches it from the prompt):
+  keyboard_driver (direct) ──OPERATION_BYTES──►┌─────────────┐──OPERATION_WRITE──► display_terminal
+                                               │ line_editor │
+       application ◄─lines─────────────────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+```
+
+`Con::put` writes the same page in both modes, and only `Con::flush`'s wire shape differs. In
+`MODE_DISPLAY` the sink endpoint is `display_terminal`'s own, answered by one `CALL`, and the
+console's reply endpoint is never granted. The process holds no device in either mode.
+
+Every holder the boot wires is unbadged. Two badged copies of the terminal endpoint exist, and each
+is served an allowlist, so a request added to the contract later is refused on a badged copy until
+somebody decides that reader may send it.
+
+- `proto::RAW_ONLY_BADGE`, milestone 709 (a graphical terminal session on the no-keyboard arm holds
+  only the raw half of the boot discipline). Its holder, a `graphical_terminal` session reading
+  keystrokes over the UART, may switch raw mode and read raw bytes. Nothing it sends can reach the
+  queue the shell reads its next command from.
+- `proto::STDIN_BADGE`, milestone 892 (a std program at the prompt holds the network and a
+  resolver). It is a program's standard input and nothing else: it reads the line being typed,
+  eight bytes at a time. The unbadged surface never serves that read, so the shell's own lines
+  cannot be taken through it.

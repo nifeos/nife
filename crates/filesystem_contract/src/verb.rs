@@ -237,17 +237,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // fills the shared page, which costs a proxy nothing because the page is the one all three
     // parties already share (see `fs_subtree_caretaker`'s `PAGE_VA`).
     row(fs::STATFS, "STATFS", Operand::None, false, false, 0),
-    // **A gap this table itself was supposed to make impossible, closed by extending it rather
-    // than pointed at.** SYNC (milestone 55) landed after `LAST` was fixed at STATFS and was
-    // never given a row, so `verb::of(fs::SYNC)` answered `None` and every caretaker refused it
-    // with EINVAL: a program confined to a subtree or nameset grant could never SYNC through it.
-    // Nothing in this crate's own tree currently reaches SYNC that way (`fs_test_client` holds
-    // the raw FS-server endpoint), so the gap was latent rather than
-    // observed, and it surfaced only because milestone 47's mtime verbs had to extend `LAST`
-    // past it and the contiguity assert below would not let the gap stand unfilled. The row
-    // matches SYNC's own doc: any handle qualifies, and it needs `dir::WRITE` for the reason
-    // given there (a sync is an action on the device, and a read-only holder has nothing
-    // outstanding to make durable).
+    // SYNC: any handle qualifies, and it needs `dir::WRITE`, for the reason `fs::SYNC` gives.
     row(fs::SYNC, "SYNC", Operand::None, false, false, dir::WRITE),
     // **The mtime verbs** (milestone 47's `touch`; DECISIONS §112). All three are name-taking,
     // resolved directly under a directory handle rather than against an open file handle,
