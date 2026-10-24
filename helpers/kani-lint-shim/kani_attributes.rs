@@ -1,13 +1,13 @@
 //! The two Kani attribute macros, as pass-throughs, so `script/lint` can compile the proof
-//! harnesses without Kani installed (milestone 113). Half of the shim; `kani.rs` beside it
-//! re-exports these and supplies `any`, `assume` and `cover!`. An attribute macro can only come
-//! from a proc-macro crate, hence two crates (notes/unsafe-obligations/kani-gate.md). It is built
-//! by a plain `rustc` and is deliberately not a workspace package: a dependency named `kani` in a
-//! harness crate's manifest would collide with the real library `cargo kani` injects.
+//! harnesses without Kani installed (milestone 113 (the proofs' own unsafe code is ungated)). Half
+//! of the shim; `kani.rs` beside it re-exports these and supplies `any`, `assume` and `cover!`. An
+//! attribute macro can only come from a proc-macro crate, hence two crates
+//! (notes/unsafe-obligations/kani-gate.md). It is built by a plain `rustc` and is deliberately not
+//! a workspace package: a dependency named `kani` in a harness crate's manifest would collide with
+//! the real library `cargo kani` injects.
 //!
-//! **Names are provisional** (CLAUDE.md: calef names crates, programs and modules). The `kani`
-//! crate next door has no choice about its name; this one is internal to the shim and could be
-//! called anything.
+//! **Names are provisional** (CLAUDE.md: calef names crates, programs and modules); unlike `kani`,
+//! this one is internal to the shim and could be called anything.
 
 extern crate proc_macro;
 

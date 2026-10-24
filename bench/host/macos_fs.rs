@@ -1,6 +1,6 @@
-//! **The APFS side of milestone 38's filesystem-throughput comparison**, run natively on this
-//! laptop's APFS and real NVMe device, with no QEMU, virtio or host image file. It is a reference
-//! ceiling, not at a matched tier, so a ratio against it measures the tier as much as the
+//! **The APFS side of milestone 38 (filesystem throughput, and the comparison)**, run natively on
+//! this laptop's APFS and real NVMe device, with no QEMU, virtio or host image file. It is a
+//! reference ceiling, not at a matched tier, so a ratio against it measures the tier as much as the
 //! filesystem. It prints buffered, `F_NOCACHE` (macOS's nearest `O_DIRECT`; nothing is flushed),
 //! and `F_NOCACHE` plus `F_FULLFSYNC` per write (macOS's real barrier, stronger than nife's
 //! per-write commit). notes/benchmarks/host-programs.md has why, and why to take a median.

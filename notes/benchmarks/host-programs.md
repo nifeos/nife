@@ -9,7 +9,7 @@ Every native program here builds with a bare `rustc -O`, not Cargo, so it does n
 target the workspace sets. Native numbers are statistical, because a shared desktop runs underneath
 them. Take the median of a few runs rather than one reading.
 
-## The primitive suite (milestone 25)
+## The primitive suite (milestone 25 (cross-OS performance comparison))
 
 ### `null_syscall.rs`
 
@@ -57,7 +57,7 @@ object than nife builds, is in [cross-os-primitives.md](cross-os-primitives.md).
 `linux_all.rs` is the five metrics in one static binary, booted as PID 1 under QEMU-HVF by
 `bench/host/run_linux.sh`. That puts Linux on the same core and tier as nife.
 
-## Pipe throughput (milestone 50): `pipe_throughput.rs`
+## Pipe throughput (milestone 50 (pipes and redirection)): `pipe_throughput.rs`
 
 A round trip measures latency. This measures bytes moving one way, which is what `a | b` is when `a`
 has a lot to say.
@@ -73,13 +73,13 @@ uses a bigger write. Both are printed:
 - `pipe_64k` writes 64 KiB, as a real Unix program does. Its gap to `pipe_16` is what batching buys
   on Unix, the prize a buffering component would chase.
 
-## Filesystem throughput (milestone 38): `linux_fs.rs` and `macos_fs.rs`
+## Filesystem throughput (milestone 38 (filesystem throughput, and the comparison)): `linux_fs.rs` and `macos_fs.rs`
 
 [filesystem-throughput.md](filesystem-throughput.md) has the tiers, the tables and the list of what
 is not apples to apples. This section holds the reasons behind the programs' variants.
 
 nife's FS server holds no data cache. A record body is always a virtio round trip, batched since
-milestone 138 step 4 but never answered from memory. Every write is its own RedoxFS transaction that
+milestone 138 (close the read gap) step 4 but never answered from memory. Every write is its own RedoxFS transaction that
 commits before the reply. It does hold a small metadata cache since step 2 (`CachedDisk`, 64 blocks,
 about 257 KiB, as of 2026-08-22). That answers a repeated read of one file's tree spine from memory, so `fs_read`, a
 repeated read of one small inline file, is not comparable to a cold read. The four phases are
