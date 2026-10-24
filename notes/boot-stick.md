@@ -66,8 +66,9 @@ against a fake host). `src/host/` only runs the tools, and is exempt from `scrip
 with the reason recorded there: the coverage run cannot execute `diskutil` or erase a disk. It is
 run for real on each host instead, by `helpers/stick-maker-proof.sh` and the CI workflow.
 
-The obvious rule was "external, on USB", and a USB hard disk refutes it. A removable USB flash
-stick is offered; USB hard disks, which is where backups usually live, are refused:
+The obvious rule was "external, on USB", and two USB hard disks attached to the development Mac
+refute it. A removable USB flash stick is offered; USB hard disks, where backups usually live, are
+refused:
 
 ```console
 $ target/stick-maker/stick_maker-macos-arm64 --list --all

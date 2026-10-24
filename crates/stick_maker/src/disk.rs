@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn sizes_read_like_the_label() {
         assert_eq!(human_size(512), "512 B");
-        assert_eq!(human_size(31_914_983_424), "31.9 GB");
+        assert_eq!(human_size(32_000_000_000), "32.0 GB");
         assert_eq!(human_size(10_158_080), "10.2 MB");
     }
 

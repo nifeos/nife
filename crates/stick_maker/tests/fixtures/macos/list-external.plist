@@ -102,7 +102,7 @@
 					<key>DeviceIdentifier</key>
 					<string>disk4s1</string>
 					<key>Size</key>
-					<integer>209715200</integer>
+					<integer>314572800</integer>
 					<key>VolumeName</key>
 					<string>EFI</string>
 				</dict>
@@ -114,7 +114,7 @@
 					<key>MountPoint</key>
 					<string>/Volumes/Archive</string>
 					<key>Size</key>
-					<integer>1999790284800</integer>
+					<integer>1999685427200</integer>
 					<key>VolumeName</key>
 					<string>Archive</string>
 				</dict>
