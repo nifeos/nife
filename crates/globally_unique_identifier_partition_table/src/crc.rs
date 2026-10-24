@@ -1,28 +1,12 @@
-//! CRC-32, the one GPT uses, and the definition it is checked against.
+//! CRC-32 as GPT uses it, and the bitwise definition it is proved against.
 //!
-//! Three CRC32s guard a GPT: one over each header's first 92 bytes, one over each copy of the
-//! partition entry array. They are the whole integrity story of the format, so this module is the
-//! foundation everything else in the crate stands on, and it is 30 lines.
-//!
-//! # Which CRC-32
-//!
-//! The one everybody means: the IEEE 802.3 / zlib / PNG variant, reflected, polynomial
-//! `0x04C11DB7` written in its reversed form `0xEDB88320`, initialised to all ones and complemented
-//! at the end. UEFI 2.10 §5.3.2 specifies it by reference to "the 32-bit CRC algorithm" and every
-//! implementation on every disk in the world agrees. There is no room to be creative here; if this
-//! is wrong by one bit, no real disk parses.
-//!
-//! # Why there are two implementations
-//!
-//! [`crc32`] is table-driven because the exhaustive mutation tests run it a hundred thousand times
-//! over a 16 KiB entry array, and eight shifts per byte would turn a two-second test into twenty.
-//! The table is derived at compile time from the polynomial, which means the *derivation* is a
-//! second place a bug can hide.
-//!
-//! So the bitwise form is kept, and Kani proves the two agree on every input up to a bound (see
-//! `verification::crc32_matches_its_bitwise_definition`). That is the useful shape for a fast path:
-//! the optimisation and the definition side by side, with a machine holding them equal, rather than
-//! the optimisation alone with a comment claiming it is right.
+//! The IEEE 802.3 / zlib / PNG variant: reflected, polynomial `0x04C11DB7` written reversed as
+//! `0xEDB88320`, initialised to all ones and complemented at the end. UEFI 2.10 section 5.3.2
+//! specifies it by reference to "the 32-bit CRC algorithm". Four CRCs guard a GPT: each header's,
+//! over the size it declares (92 bytes in practice), and each copy of the entry array's. [`crc32`]
+//! is table-driven for the exhaustive tests; `crc32_bitwise` keeps the definition, and
+//! `verification::crc32_matches_its_bitwise_definition` proves the two agree up to a bound. See
+//! notes/globally-unique-identifier-partition-table/the-modules.md, "CRC-32".
 
 /// The reversed CRC-32 polynomial. `0x04C11DB7` with its bits in the other order, which is what a
 /// right-shifting (reflected) implementation uses.
@@ -57,10 +41,9 @@ pub fn crc32(bytes: &[u8]) -> u32 {
 
 /// CRC-32 over several slices, as though they were one.
 ///
-/// The GPT header's CRC covers the header with its own CRC field taken as zero, so somewhere that
-/// substitution has to happen. Doing it here, by feeding three pieces to one running CRC, avoids
-/// the alternative: a block-sized scratch buffer on the stack, inside a kernel, to change four
-/// bytes.
+/// The GPT header's CRC covers the header with its own CRC field taken as zero. Feeding three
+/// pieces to one running CRC makes that substitution without a block-sized scratch buffer on a
+/// kernel stack.
 pub(crate) fn crc32_pieces(pieces: &[&[u8]]) -> u32 {
     let mut crc = !0u32;
     for piece in pieces {
@@ -80,9 +63,8 @@ fn update(mut crc: u32, bytes: &[u8]) -> u32 {
 /// The same CRC-32, written as its definition: shift a bit out, and conditionally fold the
 /// polynomial back in.
 ///
-/// Not the crate's fast path, and not part of its public surface. It exists so that the table-driven
-/// version has something to be proved against, which is the only defence against a subtly wrong
-/// table.
+/// Not the fast path and not public: it is what the table-driven version is proved against, the
+/// only defence against a subtly wrong table.
 #[cfg(any(test, kani))]
 pub(crate) fn crc32_bitwise(bytes: &[u8]) -> u32 {
     let mut crc = !0u32;

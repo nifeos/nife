@@ -36,8 +36,7 @@ fn a_substituted_value_is_never_split() {
             Piece::Substituted(value),
         ]
     );
-    // And through `echo`, the only caller today: `$?` is substituted, printed once, and a
-    // quoted `$?` is not.
+    // And through `echo`: `$?` is substituted, printed once, and a quoted `$?` is not.
     let mut out = Vec::new();
     echo(
         b"$? '$?'",

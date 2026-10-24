@@ -1,29 +1,11 @@
-//! **The notification state machine** (milestone 151 (notification objects), DECISIONS §101 (notification objects)): a data word and a wait
-//! queue, and what a signal, a wait and a poll do with them.
+//! The notification state machine of milestone 151 (notification objects), to the rules of §101
+//! (notification objects): a data word and a wait queue, and what a signal, a wait and a poll do
+//! with them.
 //!
-//! A notification is the asynchronous half of IPC. A [`Rendezvous`](crate::Rendezvous) is a
-//! meeting: a sender blocks until a receiver takes its words. A notification is a doorbell: a
-//! signaller ORs bits into a word and never blocks, and a waiter takes whatever has accumulated.
-//! Two signals before anyone waits are one wake carrying both sets of bits, which is the point: a
-//! notification says *what happened since you last looked*, not *how many times*.
-//!
-//! It lives in this crate rather than its own because it is the same kind of object as the
-//! rendezvous one type over (an intrusive wait queue of TCBs, a decision core the kernel wraps with
-//! bookkeeping), and the proofs are the same shape, so they share a harness module and a row in
-//! `script/verify`.
-//!
-//! **The load-bearing invariant is the rendezvous's, restated for a word:** a non-zero word and a
-//! non-empty wait queue never coexist. A waiter only queues when the word is zero, and a signal that
-//! finds a waiter hands its bits straight to it instead of accumulating them. Every operation is
-//! proved to preserve it (the `verification` module below).
-//!
-//! **The TCB binding is decided here as one boolean and carried out in the kernel.** §101's binding
-//! makes a signal wake a thread that is blocked receiving on an *endpoint*, which is state this crate
-//! cannot see (it is the kernel's thread table and another object's queue). So [`Notification::signal`]
-//! takes `bound_receiving`, "the bound thread is parked in a receive right now", and answers
-//! [`Signal::ToBound`] when the kernel should deliver there. What is proved here is that the bits are
-//! never lost on any of the three paths; that the kernel reads `bound_receiving` correctly is argued at
-//! its call site (`kernel/src/sched.rs`, `signal_locked`).
+//! A signaler ORs bits into the word and never blocks; a waiter takes whatever has accumulated. A
+//! non-zero word and a queued waiter never coexist. Whether the bound thread is parked in a
+//! receive is the kernel's to decide, and [`Notification::signal`] takes it as a boolean. See
+//! `notes/inter-process-communication.md` ("The notification").
 //!
 //! Name: provisional (milestone 151's lane, 2026-09-26). `Notification` is §101's own word for the
 //! object, and seL4's; the module, the type and the two outcome enums are unratified.
@@ -33,7 +15,7 @@ use core::ptr::NonNull;
 use intrusive_fifo::{Fifo, Node, Unqueued};
 
 /// One notification object: the accumulated word and the threads waiting for it to become
-/// non-zero.
+/// non-zero. See `notes/inter-process-communication.md`.
 ///
 /// # Examples
 ///
@@ -95,8 +77,7 @@ pub enum Signal<T> {
 }
 
 /// What a [`wait`](Notification::wait) decided. As for the rendezvous's verdicts, the one that
-/// leaves the caller off the queue hands its token back (milestone 139 (drive the unsafe count
-/// down), round 10).
+/// leaves the caller off the queue hands its token back.
 pub enum Wait<T> {
     /// The word was non-zero: here it is, and it is now clear. The caller does not block, and keeps
     /// its token.
@@ -183,18 +164,14 @@ impl<T: Node> Notification<T> {
         (self.waiters.len(), self.word)
     }
 
-    /// **A signal arrives carrying `bits`.** Never blocks, never queues the signaller, never loses
-    /// a bit. In §101's order:
+    /// A signal arrives carrying `bits`. Never blocks, never queues the signaler, never loses a
+    /// bit. In §101's order: a thread waiting here takes the bits ([`Signal::Woke`]); otherwise, if
+    /// `bound_receiving` says the bound thread is parked in a receive, it takes the whole word
+    /// ([`Signal::ToBound`]); otherwise the bits are merged into the word by OR
+    /// ([`Signal::Counted`]).
     ///
-    /// 1. A thread waiting on this notification takes the bits and wakes ([`Signal::Woke`]).
-    /// 2. Otherwise, if the bound thread is parked in a receive (`bound_receiving`, which the
-    ///    kernel decides), it takes the accumulated word ([`Signal::ToBound`]).
-    /// 3. Otherwise the bits are merged into the word by OR ([`Signal::Counted`]).
-    ///
-    /// A signal of zero bits is [`Signal::Empty`] and changes nothing. That is a choice, recorded in
-    /// `notes/notification-objects.md`: waking a waiter with a word of zero would make `WAIT`'s
-    /// return value ambiguous with `POLL`'s "nothing", and a signal that ORs in nothing carries no
-    /// information to lose.
+    /// Zero bits is [`Signal::Empty`] and changes nothing, for the reason
+    /// `notes/notification-objects.md` gives.
     pub fn signal(&mut self, bits: u64, bound_receiving: bool) -> Signal<T> {
         if bits == 0 {
             return Signal::Empty;
@@ -213,12 +190,8 @@ impl<T: Node> Notification<T> {
         }
     }
 
-    /// **A thread `me` waits.** Take the word if it is non-zero; otherwise queue `me`, and the
-    /// caller blocks it.
-    ///
-    /// Safe since milestone 139's round 10: `me` is the waiter's token, which carries what this
-    /// used to ask the caller to promise (the kernel: `me` is the running thread, and a queued
-    /// thread is `Blocked`, which the reaper never frees).
+    /// A thread `me` waits. Take the word if it is non-zero, handing `me` back; otherwise queue
+    /// `me`, and the caller blocks it.
     pub fn wait(&mut self, me: Unqueued<T>) -> Wait<T> {
         if self.word != 0 {
             Wait::Word(core::mem::take(&mut self.word), me)
@@ -235,12 +208,11 @@ impl<T: Node> Notification<T> {
         core::mem::take(&mut self.word)
     }
 
-    /// **Take one specific waiter back off the queue**, returning its token if it was there. For a
-    /// teardown that ends a thread blocked in `WAIT` (`finish_blocked_resident`, from milestone 133 (ending a permanently blocked thread)),
-    /// which must unlink it before its page is freed. Drain-and-repush, the rendezvous's own shape
-    /// ([`Rendezvous::remove_receiver`](crate::Rendezvous::remove_receiver)) and for its reason,
-    /// and safe for its reason too: `victim` is only compared, and every other waiter goes back
-    /// with the token its own pop handed over.
+    /// Take one specific waiter back off the queue, returning its token if it was there. For a
+    /// teardown that ends a thread blocked in `WAIT`, which must unlink it before its page is
+    /// freed. The same drain-and-repush as
+    /// [`Rendezvous::remove_receiver`](crate::Rendezvous::remove_receiver): `victim` is only
+    /// compared.
     pub fn remove_waiter(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Fifo<T> = Fifo::new();
         let mut found = None;

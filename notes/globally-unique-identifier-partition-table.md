@@ -100,8 +100,9 @@ than the header claimed and then declaring the table good.
 
 The tests run against two tables this crate did not write, from implementations that share no code:
 `sgdisk` 1.0.10 (gptfdisk, C++) and macOS `diskutil`. Both are committed as the first 34 and last 33
-blocks of a 64 MiB image, about 34 KB each. Regeneration commands are at the top of
-`crates/globally_unique_identifier_partition_table/tests/real_disks.rs`.
+blocks of a 64 MiB image, about 34 KB each. The commands that regenerate them are in
+[`the-modules.md`](globally-unique-identifier-partition-table/the-modules.md), with the reasons
+behind the modules' doc comments.
 
 A parser that only round-trips its own output proves nothing, because every mistake it makes going
 in it makes symmetrically coming out. What the two independent writers bought:

@@ -1,52 +1,12 @@
 //! **Navigation in a system with no global namespace** (milestone 47's commands).
 //!
-//! `cd`, `pwd` and `ls` are *builtins*, in the same category as `caps`: they spawn nothing, need no
-//! grant, and confer no new authority, because the shell is reading and rebinding a capability it
-//! already holds. That is not a technicality, it retires a real worry: a listing **program** would
-//! have to be handed the power to read everything it lists. This module is the pure half of those
-//! builtins, host-tested in milliseconds; the requests they make live in `components/src/swish.rs`.
-//!
-//! # A working directory was never the problem
-//!
-//! In capability terms a working directory is *a directory capability the shell holds, used as the
-//! default base for resolving names*. Held by the shell that is entirely legitimate, the same as its
-//! untyped budget. What is bad on Unix is three specific things, and this module answers each:
-//!
-//! 1. **Children inherit it silently.** Here they do not: a name on the command line is resolved
-//!    against the shell's position **at the moment the grant is made** ([`crate::FileGrant`]), and
-//!    the child receives a capability to that one file. The child has no cwd and cannot re-resolve
-//!    anything, which is why the convenience is the shell's and the authority is explicit.
-//! 2. **Relative paths resolve implicitly**, so a program's reach depends on invisible state. Here
-//!    the resolution happens once, at the prompt, in a value you can print.
-//! 3. **`..` walks out**, so the cwd bounds nothing. Here it cannot: see below.
-//!
-
-//! # The three earned divergences
-//!
-//! Divergence from Unix is a tax on every user forever, so it has to be forced by the model rather
-//! than chosen. Three are:
-//!
-//! - **`/` is the root of *your* namespace** ([`Path::is_from_root`]), which is Plan 9's answer and
-//!   not DOS's. There is no global namespace to root a path in, so an absolute path names the one
-//!   root you have: the directory capability you were granted. Two shells both type `/report.txt`
-//!   and open different files, or one of them opens nothing, because the syntax is rooted in what
-//!   each holds. It confers nothing: `/a/b` reaches exactly what `cd a; cd b` reaches, so this is
-//!   syntax for a walk you could already take. Until 2026-08-18 the syntax was refused outright
-//!   (`Refused::Absolute`), which was the honest statement of a namespace that did not exist yet
-//!   rather than a position; `pwd` has printed `/a/b` since the day it was written, and a shell
-//!   that prints a path you cannot type back is the tell that the refusal had outlived itself.
-//! - **`..` stops at your root** ([`Cwd::ascend`] returns `false`, and nothing is sent). You descend
-//!   from what you hold and never ascend past it. Chroot's shape, reached from the other direction,
-//!   and here it is not a check that could be wrong: the shell holds a *stack* of directory
-//!   capabilities it descended through, `..` pops one, and at the root there is nothing to pop. The
-//!   FS server would refuse the name anyway (`..` is not a component it accepts), so the two
-//!   mechanisms agree without either relying on the other.
-//! - **`pwd` is relative to your root** ([`Cwd::render`]), because naming anything above it implies
-//!   a namespace that does not exist.
-//!
-//! What that buys, and Unix cannot: **every shell has its own root**. Two shells hold different
-//! subtrees and neither can name the other's files, not by policy but because no capability reaching
-//! them exists.
+//! The pure half of the `cd`, `pwd` and `ls` builtins, which spawn nothing and confer no new
+//! authority: the shell rebinds a directory capability it already holds. A name resolves once, at
+//! the prompt, into a value ([`crate::FileGrant`]), so a child has no cwd to inherit. `/` is the
+//! root of *your* namespace ([`Path::is_from_root`]), `..` stops at it ([`Cwd::ascend`]), and `pwd`
+//! renders relative to it ([`Cwd::render`]), so every shell has its own root. [`TwoRoots`] and
+//! [`Bindings`] compose a second root and named positions. See notes/shell-navigation.md and
+//! notes/grant-expression/grant-plan-crate.md ("Navigation").
 
 /// The deepest a shell tracks below its own root.
 ///
@@ -370,15 +330,9 @@ impl Cwd {
     /// **Where a token leaves you**, which is [`apply`](Cwd::apply) with the one thing a token
     /// carries that a step sequence does not: whether it started at your root.
     ///
-    /// Every caller that resolves a *token* should use this rather than `apply`, because a path
-    /// that began with `/` means the same thing from anywhere and `apply` alone would silently
-    /// resolve it from wherever the holder happened to be standing. That failure would not be a
-    /// refusal, it would be an answer, and this file's own history says the dangerous refusal is
-    /// the one that answers.
-    ///
-    /// It returns a new position rather than mutating, because most callers want to know where a
-    /// name resolves *without moving*: a grant is planned against the position a token names, and
-    /// the shell stays where it is.
+    /// Every caller that resolves a *token* uses this rather than `apply`, which would silently
+    /// resolve a `/` path from wherever the holder stands. It returns a new position rather than
+    /// moving, because a grant is planned against where a token lands while the shell stays put.
     pub fn resolve(&self, p: &Path<'_>) -> Result<Cwd, Refused> {
         let mut next = if p.is_from_root() { Cwd::root() } else { *self };
         next.apply(p.steps())?;
@@ -386,26 +340,14 @@ impl Cwd {
     }
 }
 
-/// **Two directory capabilities, composed under two labels** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md). Provisional name and shape, named in the
-/// milestone's own report rather than ratified.
+/// **Two directory capabilities, composed under two labels** (milestone 154 (a process that holds
+/// two directory capabilities)). Provisional name and shape, named in the milestone's own report
+/// rather than ratified.
 ///
-/// This is deliberately **not** `bind`'s ordered union. Milestone 47's four open questions
-/// (shadowing, enumeration, whether `$PATH` survives as a string) are still open, and this
-/// composes exactly the two labeled roots a process holds and nothing more: it is the smallest
-/// structure that answers the milestone's own question, "does `/a/x` reach grant A and `/b/y`
-/// reach grant B, with neither able to name the other's parent."
-///
-/// Each label selects one grant's root by an exact match on an absolute path's **first**
-/// component; nothing after the first component can re-select a grant, so a name that happens to
-/// collide with the other label is just an ordinary [`Step::Down`] inside whichever grant was
-/// already selected. Everything past the label resolves exactly the way a single [`Cwd`] always
-/// has: `..` stops at that grant's own root, never at some third, unheld "namespace root" above
-/// both labels. That is what makes `/a/../b` refused rather than a walk to a place nobody
-/// granted: the first component commits to grant A, and `..` from A's own root has nothing to
-/// pop, by the same mechanism [`Cwd::ascend`] already uses for a single grant. No new refusal, no
-/// new check: [`Cwd::apply`] already had this property, and composing two of them does not need
-/// it to have a second one.
+/// A label selects one grant's root by exact match on an absolute path's first component, and
+/// nothing later re-selects. Past the label a path resolves as a single [`Cwd`] does, so `..` stops
+/// at that grant's own root and `/a/../b` is refused. It is not `bind`'s ordered union. See
+/// notes/grant-expression/grant-plan-crate.md ("Navigation").
 pub struct TwoRoots<'a> {
     label_a: &'a [u8],
     label_b: &'a [u8],
@@ -432,16 +374,8 @@ impl<'a> TwoRoots<'a> {
     /// that grant's own root it lands, or [`Refused`] with the same reasons a single [`Cwd`]
     /// refuses.
     ///
-    /// A token with no leading `/` has no root to pick a grant from, and there is no default
-    /// grant here the way a single-root [`Cwd`] has a "where I am standing": a two-grant holder
-    /// has two roots and no reason to prefer either, which is exactly the shadowing question
-    /// milestone 47 leaves open rather than one this composition answers. It is refused the same
-    /// as `.` alone: [`Refused::NotAName`].
-    ///
-    /// A token whose first component names neither label is refused the same way: there is
-    /// nothing here for it to mean. That covers `/` alone (no first component at all) and a
-    /// leading `..` (nothing to pop before a grant is even chosen), because both leave `resolve`
-    /// with no label to have selected.
+    /// A relative token is [`Refused::NotAName`]: two roots give no reason to prefer either. So is a
+    /// token whose first component names neither label, which covers `/` alone and a leading `..`.
     pub fn resolve(&self, token: &[u8]) -> Result<(Which, Cwd), Refused> {
         let p = path(token)?;
         if !p.is_from_root() {
@@ -482,18 +416,9 @@ impl<'a> TwoRoots<'a> {
     /// design/decisions/0126-two-directory-cwd.md), built on [`TwoRoots::resolve`] and
     /// [`Cwd::resolve`] rather than reimplementing either.
     ///
-    /// A bare relative `token` resolves against `pos` inside whichever tree `which` currently
-    /// names, identical to today's one-grant behavior, parameterized by which tree the holder is
-    /// standing in. An absolute token (`/a/...` or `/b/...`) resolves the same way
-    /// [`TwoRoots::resolve`] always has, picking the tree by label and resolving the rest from
-    /// that tree's own root; that is also how a two-grant holder moves between trees, with no new
-    /// verb (`cd /b/somewhere` while standing in `a` just works).
-    ///
-    /// **The boundary**: `..` at either tree's own root refuses with [`Refused::AtYourRoot`], the
-    /// same refusal a one-grant [`Cwd::apply`] already gives at its own root, applied per-tree
-    /// rather than newly invented. That falls out for free here: a relative token is resolved by
-    /// `pos.resolve`, which is exactly [`Cwd::apply`]'s existing clamp; there is no third,
-    /// unheld "namespace root" above both labels for `..` to reach.
+    /// A relative `token` resolves against `pos` in tree `which`, as for one grant; an absolute one
+    /// picks the tree by label, which is how a holder moves between trees (`cd /b/somewhere`). `..`
+    /// at either tree's own root is [`Refused::AtYourRoot`], [`Cwd::apply`]'s own clamp.
     pub fn resolve_from(
         &self,
         which: Which,
@@ -523,21 +448,7 @@ impl<'a> TwoRoots<'a> {
     }
 }
 
-/// **`bind`'s namespace** (milestone 47, "`bind` is not blocked on a mount table. It is blocked on
-/// a second grant"; milestone 154 supplied the second grant). A [`BindEntry`] is exactly what that
-/// block predicted: "a value, not a capability... a `nav::Cwd` under a name: no cspace slot, no
-/// handle to leak, no lifetime." Composing two of them costs nothing a single [`Cwd`] did not
-/// already pay: [`Cwd::apply`]'s existing depth bound and root clamp are reused rather than
-/// reimplemented, so a bound name cannot reach deeper or higher than a direct walk to the same
-/// place already could.
-///
-/// **What this is not.** Milestone 154's own doc comment on [`TwoRoots`] says it plainly: "this is
-/// deliberately not `bind`'s ordered union." This is a step past `TwoRoots`, not past that caveat:
-/// one entry per name, first match wins at *insertion* (a name already bound refuses a second
-/// bind rather than silently shadowing it), no ordering, no union of several sources at one name.
-/// Milestone 47's four open `PATH` questions (shadowing across more than one source at a name,
-/// enumeration, the compile-time-set-to-runtime-lookup gap, whether `$PATH` survives as a string)
-/// are exactly as open as they were.
+/// How many names one [`Bindings`] can hold.
 pub const MAX_BINDS: usize = 4;
 
 /// One name a shell has bound to a position it already reached some other way.
@@ -591,7 +502,11 @@ impl BindRefused {
     }
 }
 
-/// A shell's bound names: [`MAX_BINDS`] slots, no allocator, exactly [`Cwd`]'s own shape.
+/// A shell's bound names, `bind`'s namespace: [`MAX_BINDS`] slots, no allocator, exactly [`Cwd`]'s
+/// own shape. A [`BindEntry`] is a value, a [`Cwd`] under a name, with no capability slot and no
+/// lifetime, and it resolves through [`Cwd::apply`], so a bound name reaches nothing a direct walk
+/// could not. One entry per name: a second bind of a name is refused, never shadowing. See
+/// notes/grant-expression/grant-plan-crate.md ("Navigation").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bindings {
     entries: [Option<BindEntry>; MAX_BINDS],
@@ -819,9 +734,8 @@ mod tests {
         cd(&mut cwd, "..").unwrap();
         assert_pwd(&cwd, b"/");
 
-        // And no amount of `..` in one token gets above it either, which is the case a per-step
-        // check would pass and a "count the ups" one would not. The whole token is refused, so the
-        // shell is still where it was rather than part of the way out.
+        // No number of `..` in one token gets above it either, and the whole token is refused, so
+        // the shell has not moved part of the way out.
         let mut cwd = Cwd::root();
         cd(&mut cwd, "a").unwrap();
         assert_eq!(cd(&mut cwd, "../../.."), Err(Refused::AtYourRoot));
@@ -869,8 +783,7 @@ mod tests {
         assert_pwd(&deep, b"/logs/2026");
         assert_pwd(&shallow, b"/logs/2026");
 
-        // And `pwd`'s output is now a token you can type back, which it was not before: this is
-        // the round trip, and its absence was the tell that the refusal had outlived its reason.
+        // `pwd`'s output is a token you can type back: the round trip.
         let mut buf = [0u8; RENDER_MAX];
         let n = deep.render(&mut buf);
         let mut elsewhere = Cwd::root();
@@ -998,8 +911,7 @@ mod tests {
         let ns = TwoRoots::new(b"a", b"b");
         assert_eq!(ns.resolve(b"/a/../b"), Err(Refused::AtYourRoot));
         // Symmetric, and however many `..`s a token carries, the whole token is refused rather
-        // than moving partway: `Cwd::apply`'s own all-or-nothing rule, composed rather than
-        // reimplemented.
+        // than moving partway, by `Cwd::apply`'s own all-or-nothing rule.
         assert_eq!(ns.resolve(b"/b/../../a"), Err(Refused::AtYourRoot));
     }
 

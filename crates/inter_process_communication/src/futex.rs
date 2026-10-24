@@ -2,12 +2,10 @@
 //! (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
 //! process) fork 2).
 //!
-//! A futex is a key, `(space, address)`, not an object, which is what lets `std`'s `Mutex::new`
-//! stay `const` and syscall-free. This module is the queueing: buckets of intrusive FIFOs, a key
-//! hashed to a bucket, oldest waiter first within a key. Keys can collide in a bucket, so lookups
-//! ask the caller each waiter's key (`key_of`), which is the kernel's own record. Reading memory,
-//! deciding to park and waking threads are the kernel's (`kernel/src/sched/futex.rs`);
-//! `notes/futex.md` has the argument and the open limits.
+//! A futex is a key, `(space, address)`, not an object. This module is the queueing: buckets of
+//! intrusive FIFOs, oldest waiter first within a key, with each waiter's key read back through
+//! `key_of` because keys collide in a bucket. The kernel side is `kernel/src/sched/futex.rs`; see
+//! `notes/futex.md` and `notes/inter-process-communication.md`.
 //!
 //! # EXAMPLES
 //!

@@ -270,6 +270,8 @@ three architectures, and the milestone's own list is finished.
   failure named itself in one run. `design/roadmap/0496-a-dying-programs-last-words-reach-nobody.md`
   has the shapes a real fix could take, and `std_tests::drain_sink` now carries the warning where a
   reader meets it.
+- The curves sit on crypto-bigint 0.5.5 (RUSTSEC-2026-0387), ignored in `deny.toml` with its
+  argument. The fix is `p256` 0.14, which needs `rand_core` 0.10 and so a newer `getrandom` hook.
 - **A vector proves the answer, not the manner.** Nothing measures timing, so a portable fallback
   that is correct and not constant-time passes every line. On x86_64 the fallbacks are exactly what
   runs, and constant-time behavior is the property §46 says is bought by exposure and not by a

@@ -1,24 +1,19 @@
-//! **Test-only reads and writes at the file service's root**, as the owner's console or a
+//! Test-only reads and writes at the file service's root, as the owner's console or a
 //! session would have made them.
-//!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
-/// **Write one of the owner's lists at the file service's root** (`kernel::user::login_tests` needs
-/// to), as the owner's console would: the run-unvouched list, the suspended list of milestone 152
-/// (durable delegation), or the durable-session manifest. `None` removes it.
+/// Write one of the owner's lists at the file service's root, as the owner's console would: the
+/// run-unvouched list, the suspended list or the durable-session manifest. `None` removes it.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn set_root_list(file: &str, list: Option<&[u8]>) {
     set_file(None, file, list);
 }
 
-/// **Write `file` inside `identity`'s own subtree** (DECISIONS §117 (a principal's subtree is named
+/// Write `file` inside `identity`'s own subtree (§117 (a principal's subtree is named
 /// by its identity string)), which must already exist: an identity's stored schedule (§122 (the
 /// on-disk schedule store)), as that identity's session would have written it. `None` removes it.
 #[cfg(any(test, feature = "system_tests"))]
@@ -87,7 +82,7 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
     }
 }
 
-/// **Read one of the owner's files at the file service's root** into `out`, [`set_root_list`]'s
+/// Read one of the owner's files at the file service's root into `out`, [`set_root_list`]'s
 /// other half: the byte count, or `None` when there is no such file.
 #[cfg(any(test, feature = "system_tests"))]
 pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
