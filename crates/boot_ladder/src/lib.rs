@@ -88,6 +88,8 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
     "preemption",
     "userspace",
     "budget",
+    "supervised",
+    "teardown",
     "blockdev",
     "deviceirq",
     "clock",
@@ -104,10 +106,11 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// | length | in force |
 /// |---|---|
 /// | 5 | 2026-09-14 to 2026-10-20 (UTC): `exceptions` to `scheduler` (milestone 268 (every architecture boots the same way)) |
+/// | 13 | 2026-10-20 to 2026-10-24 (UTC): the list without `supervised` and `teardown` (milestone 890 (riscv64 and `x86_64` join the shared boot path)) |
 ///
 /// Name: provisional (milestone 890 (riscv64 and `x86_64` join the shared boot path)'s lane,
 /// 2026-10-20 UTC).
-pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5];
+pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
 
 /// **The boot's middle stages ran to their end**: `nife: the capability core runs on <arch>.`
 ///
