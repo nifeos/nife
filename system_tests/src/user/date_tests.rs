@@ -67,15 +67,11 @@ fn spawn_date(
 /// diagnostic) plus the region they were retyped from, for the caller to reclaim once it is done
 /// reading (see [`spawn_date`]).
 ///
-/// The diagnostic endpoint goes in at the slot `date`'s manifest declares, through `grant_at`, which
-/// is what the real progenitor does through `abi::thread_control_block::CAP_INSERT`'s explicit target. That is the whole
-/// mechanism of DECISIONS §67 on the wiring side: a **named** slot rather than the next free one,
-/// because how many low slots a child gets depends on what else it was granted and a program that
-/// probes one number needs that number not to move.
-///
-/// No clock, deliberately. `date` at the interactive prompt has one and prints the time, so the only
-/// honest way to reach the sentence §67 was taken for is a `date` that was granted no clock, which
-/// is one of the two real unknown-clock causes rather than a fault injected for the test.
+/// The diagnostic endpoint goes in at the slot `date`'s manifest declares, through `grant_at`, as
+/// the real progenitor does with `abi::thread_control_block::CAP_INSERT`'s explicit target: DECISIONS
+/// §67's named slot, which does not move with whatever else the child was granted. No clock,
+/// deliberately: a `date` granted no clock is one of the two real unknown-clock causes rather than
+/// an injected fault, and it reaches the sentence §67 was taken for.
 fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
     let image = program("date").expect("no date program in the initial ramdisk");
     let region = crate::memory_region::create(2).expect("no region for date's two streams");
@@ -142,15 +138,11 @@ fn clock() -> clock_service::Wiring {
 
 /// **`date` prints the time the machine actually knows, in a form that reads back.**
 ///
-/// Three formats over the one clock, and the assertion is not "it printed something shaped
-/// like a date". The kernel computes the wall clock itself, straight from the page's offset
-/// plus the ambient counter, and requires `date`'s output to name the same instant. So a wrong
-/// epoch, a nanoseconds/seconds confusion, a timezone applied twice, or a calendar that is
-/// simply wrong all fail here, and none of them would fail a regex.
-///
-/// The window is ten seconds because the two readings are genuinely at different times (a
-/// process spawn sits between them) and the clock has one-second resolution. It is tight
-/// enough that the failures above miss it by decades.
+/// Three formats over the one clock. The kernel computes the wall clock from the page's offset plus
+/// the ambient counter and requires `date`'s output to name the same instant, so a wrong epoch, a
+/// nanoseconds/seconds confusion, a timezone applied twice or a wrong calendar fails where a regex
+/// would not. The window is ten seconds because a process spawn sits between the two readings and
+/// the clock has one-second resolution; the failures above miss it by decades (notes/date.md).
 #[test_case]
 fn date_prints_the_wall_clock_it_was_granted() {
     if clock_service::machine_has_no_rtc() {
@@ -229,18 +221,13 @@ fn date_prints_the_wall_clock_it_was_granted() {
 
 /// **An unknown clock is a sentence, not 1970 and not a panic.**
 ///
-/// This is DECISIONS §42's no-silent-degradation rule applied where a person can see it, and it
-/// is the reason `date` reads `clock_contract::state` before it reads the offset. `std`'s
-/// `SystemTime::now()` has no error channel and must panic here; `date` has one, so it says
-/// which of the two causes it was:
-///
-/// - **a frame nobody published to**, which is what a machine with no RTC (or one whose reading
-///   the clock service refused) leaves its readers holding. §43 recorded this path as proven by
-///   construction only, because both QEMU boards always have a working RTC. It is provable in
-///   the guest after all: the page is the contract, so an unpublished page **is** that machine.
-/// - **no clock capability at all**, which is a different fix and therefore a different
-///   sentence. Note there is no mapping either, so `date` has to answer without touching
-///   `CLOCK_VA`; a program that read the page to find out whether it had one would fault.
+/// DECISIONS §42's no-silent-degradation rule where a person can see it, and why `date` reads
+/// `clock_contract::state` before the offset. `std`'s `SystemTime::now()` would have to panic;
+/// `date` names the cause. Either a frame nobody published to, which a machine with no RTC (or one
+/// whose reading the clock service refused) leaves its readers; the page is the contract, so a
+/// blank page is that machine, which proves in the guest what §43 left proven by construction. Or
+/// no clock capability at all, a different fix and so a different sentence. Then there is no
+/// mapping either, and `date` must answer without touching `CLOCK_VA` (notes/date.md).
 #[test_case]
 fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
     let mut buf = [0u8; 128];
@@ -279,23 +266,12 @@ fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
 /// **A declared second stream carries the complaint, and the output carries nothing** (DECISIONS
 /// §67).
 ///
-/// This is the claim `2>` is built on, made where it can be checked by value rather than read off a
-/// transcript. The same `date` binary, spawned with no clock and with a diagnostic endpoint at the
-/// slot its manifest declares:
-///
-/// - the complaint arrives on the **diagnostic** endpoint, ending in `OPERATION_EOF`;
-/// - the **output** endpoint carries `OPERATION_EOF` and not one byte before it.
-///
-/// The second half is the one that matters, and it is exactly what `date > when.txt` used to get
-/// wrong: a shell draining the output into a file would write nothing, so the file is empty and the
-/// complaint went somewhere a person can read. Nothing about the program changed to make that true
-/// except which endpoint it wrote to, which is why the separation is a declaration rather than a
-/// convention about numbers.
-///
-/// The ordering is asserted too, by construction: the diagnostic stream is drained **first** and to
-/// completion. A `date` that had interleaved the two would leave this test blocked, which is the
-/// same deadlock a real prompt would hit, so the harness reproduces the constraint rather than
-/// papering over it.
+/// The claim `2>` is built on, checked by value. The same `date`, spawned with no clock and a
+/// diagnostic endpoint at its manifest's slot: the complaint arrives on the diagnostic endpoint,
+/// ending in `OPERATION_EOF`, and the output carries `OPERATION_EOF` and not one byte before it, so
+/// `date > when.txt` leaves the file empty and the complaint readable. The diagnostic stream is
+/// drained first and to completion: a `date` that interleaved the two would block this test, the
+/// same deadlock a real prompt would hit (notes/date.md, "The second stream").
 #[test_case]
 fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
     let (out, diag, region) = spawn_date_with_diagnostics();
