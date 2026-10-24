@@ -1,33 +1,14 @@
-//! **The secrets service** (notes/credentials.md): hold the key, expose the operation, never the
-//! key. The one process that holds secrets; everything else holds an endpoint meaning "you may ask
-//! this store to compute with a secret", so a client cannot enumerate identities, obtain a salt or
-//! a tag, or write a record. Today the one secret is an Argon2id tag and the one operation is
-//! `VERIFY`.
+//! The secrets service: hold the key, expose the operation, never the key (notes/credentials.md).
 //!
-//! ```text
-//!   the provisioner ──the provision endpoint──►┌────────────┐
-//!   (once, at boot)      (PUT, then SEAL)       │  secrets   │──►the entropy service
-//!                                               │  service   │   (salts; §44's endpoint)
-//!   a client ────────the verify endpoint───────►└────────────┘
-//!                  (VERIFY, forever)               the store lives here and nowhere else
-//! ```
-//!
-//! A process blocks on one endpoint at a time, so writing the store is a phase that ends:
-//! provision (each [`credential_contract::provision::PUT`] derives a record with an
-//! entropy-service salt, [`credential_contract::provision::SEAL`] ends it), then both ends of the
-//! provision endpoint are deleted, then serve `VERIFY` forever. A client is not refused write
-//! permission; there is no object left through which a write could travel.
-//!
-//! It never invents a salt (§44 (entropy is a capability)): a `PUT` that cannot get one answers
-//! [`credential_contract::NO_ENTROPY`], and a service that cannot draw its decoy record's salt and
-//! tag at start-up refuses to start, since a weaker fallback would fail silently.
-//!
-//! Slots: 0, the provision endpoint (RECEIVE), deleted at the seal; 1, the verify endpoint
-//! (RECEIVE); 2, the entropy service (WRITE); 3, an untyped budget for the memory-hard scratch;
-//! 4, a readiness endpoint (WRITE). Mapped: the provision page and the verify page, **two frames,
-//! never one**, because the provisioner writes plaintext secrets into its page. Owning this service
-//! lets an attacker answer logins while they hold it, not carry the passwords away.
-//!
+//! The one process that holds secrets. A client holds only the verify endpoint, so it cannot
+//! enumerate identities, obtain a salt or tag, or write a record. Provisioning is a phase that
+//! ends: each [`credential_contract::provision::PUT`] derives a record with an entropy-service
+//! salt, [`credential_contract::provision::SEAL`] ends it, and both ends of the provision endpoint
+//! are deleted, so no object is left through which a write could travel. It never invents a salt
+//! (§44 (entropy is a capability)): a `PUT` without one answers [`credential_contract::NO_ENTROPY`],
+//! and a decoy salt and tag it cannot draw at start-up means it refuses to start. Owning it lets an
+//! attacker answer logins while they hold it, not carry the passwords away.
+
 //! # BUGS
 //!
 //! - One verify page means one client at a time (today `login`); a second needs a page per
@@ -67,7 +48,8 @@ const BUDGET: u64 = 3;
 /// The readiness endpoint (slot 4): WRITE, one message.
 const READY: u64 = 4;
 
-/// The provisioner's page. Plaintext secrets cross it; nothing but the provisioner maps it.
+/// The provisioner's page. Plaintext secrets cross it; nothing but the provisioner maps it, and it
+/// is a frame of its own, never the verify page's.
 const PROV_VA: u64 = address_space_map::pair_page(0x0000_0000_00e0_0000);
 // SAFETY: the wiring maps one page read/write at PROV_VA before this program runs (milestone 139
 // round 6).
@@ -79,15 +61,9 @@ const VERIFY_WINDOW: MappedWindow = unsafe { MappedWindow::new(VERIFY_VA, proto:
 
 /// How many secrets the store holds. **Six: three logins and three shares.**
 ///
-/// Three, because calef's existing setup serves three family members with separate passwords
-/// (design/roadmap/0056-secrets-and-entropy.md). Doubled by milestone 65, because each of those
-/// family members also has a Time Machine share with its own account and password, and a secret
-/// here is scoped to a *resource* rather than to a person. Three family members therefore means
-/// at least three shares, which is why multi-share is the deliverable rather than a later
-/// generalisation: a single-secret store would have been discovered as wrong at the worst moment.
-///
-/// A store sized to the requirement also makes "the seventh is refused" a thing the tests can
-/// show rather than a branch nothing reaches.
+/// A secret is scoped to a resource, and each of three family members has a login and a Time
+/// Machine share (notes/credentials.md, BUGS). Sizing the store to the requirement lets the tests
+/// show the seventh refused rather than leave that branch unreached.
 const CAPACITY: usize = 6;
 
 /// The heap's virtual cap. It holds one allocation, the Argon2 scratch, plus the slack an
@@ -104,14 +80,10 @@ const E_ENTROPY: u64 = 0x01;
 const E_SCRATCH: u64 = 0x02;
 
 /// **The wire contract and the store must agree about their numbers**, and this is the only place
-/// both are in scope to be compared. `cseam` is the cautionary tale rule 7 was written from: a
-/// layout deliberately written twice with nothing checking that the two copies agree, whose drift
-/// shows up as a component scribbling on the wrong bytes arbitrarily far from the edit. A page
-/// offset that disagreed here would put a client's blob where the service reads a proof.
+/// both are in scope to be compared (rule 7). A page offset that disagreed here would put a
+/// client's blob where the service reads a proof.
 const _: () = assert!(proto::MAX_IDENTITY == credentialer::MAX_IDENTITY);
 const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
-// There were six until 2026-08-30; four of them were the NTLM path's and went with the SMB
-// implementation that was its only consumer (notes/smb.md).
 
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -188,8 +160,7 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
 
 /// One `PUT`, with its salt drawn fresh. Split out so the wipe above covers every exit.
 ///
-/// It served `PUT_NTLM` too until 2026-08-30 (notes/smb.md), which is why it takes a second word it
-/// no longer reads: `w1` carried the account name and domain lengths of the NTLM variant.
+/// `w1` is not read: a `PUT` is the page and `w0` alone (notes/smb.md has the opcode it served).
 fn put(store: &mut Store<CAPACITY>, scratch: &mut [Block], w0: u64, _w1: u64) -> u64 {
     // SAFETY: forwarded from PROV_WINDOW's own contract.
     let page = unsafe { PROV_WINDOW.as_slice() };

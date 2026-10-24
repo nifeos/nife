@@ -1,36 +1,13 @@
-//! **`date`**: print the wall-clock time (notes/clock.md, notes/calendar.md, notes/date.md). Read
-//! the clock page, add the ambient counter, hand the number to `calendar`, send the bytes. It holds
-//! two capabilities and neither can change anything.
+//! `date`: print the wall-clock time (notes/date.md, notes/clock.md, notes/calendar.md).
 //!
-//! **It reads and cannot set.** §43 (reading the clock is a page, setting it is a page you may
-//! write, proposing is an endpoint) makes those three different objects, and `date` holds only the
-//! read-only mapping, so there is no `date -s`: setting would be a different binary holding a
-//! different capability, recognisable by its wiring rather than its argument parsing.
-//!
-//! **An unknown clock is an answer.** `clock_contract::state::UNKNOWN` is the default, so a machine
-//! that never learned the time says so rather than printing 1970. It reads the state word before
-//! the offset and names the cause on its second stream ([`DIAG_SLOT`]): no clock granted, or none
-//! the machine believes. That stream exists so `date > when.txt` on a clockless machine leaves the
-//! file empty, and it carries the rule that every complaint is said, and the stream closed, before
-//! a byte of output: the reader drains it first, so interleaving would block a send nobody hears.
-//!
-//! | | |
-//! |---|---|
-//! | `a0` | which [`Format`] to print, `FMT_*` below. `0` is `Human`, so a bare spawn is `date` with no arguments. |
-//! | `a1` | the UTC offset in **minutes**, as a signed value. `0` is UTC, which is the default and the only sane one here: there is no tzdata (notes/calendar.md). |
-//! | `a2` | non-zero to add a second line naming the clock's **provenance**, which is the only way the four-state model is visible to a person. |
-//!
-//! ```text
-//! date                      Thu 2026-07-30 12:34:56 UTC
-//! date  (a0 = FMT_RFC3339)  2026-07-30T12:34:56Z
-//! date  (a0 = FMT_UNIX)     1785414896
-//! date  (a1 = 330)          Thu 2026-07-30 18:04:56 +05:30
-//! date  (a2 = 1)            Thu 2026-07-30 12:34:56 UTC
-//!                           date: clock source: rtc, generation 1
-//! date  (no clock service)  date: the time is unknown: the machine has no clock it believes
-//! date  (no clock granted)  date: the time is unknown: this process holds no clock capability
-//! ```
-//!
+//! It reads the clock page, adds the ambient counter, formats with `calendar` and sends the bytes.
+//! It holds the page read-only, so it cannot set the clock (§43). An unknown clock is an answer: it
+//! reads the state word before the offset and names the cause on [`DIAG_SLOT`], so `date >
+//! when.txt` on a clockless machine leaves the file empty. Every complaint is sent, and that stream
+//! closed, before a byte of output: the reader drains it first, so interleaving would block a send
+//! nobody hears. `a0` is the [`Format`] (`FMT_*`, `0` is `Human`), `a1` a signed UTC offset in
+//! minutes (there is no tzdata), and `a2` non-zero adds the clock's provenance line.
+
 //! # BUGS
 //!
 //! - One-second resolution; the counter is sampled just after the page, so an `a2` run's two lines
@@ -63,16 +40,9 @@ const CLOCK_SLOT: u64 = 1;
 
 /// **The declared second stream** (DECISIONS §67, notes/pipes.md): another endpoint with `WRITE`,
 /// speaking the same sink contract as [`REPORT`], carrying this program's complaints rather than its
-/// answer.
-///
-/// `date` is the first program to declare one and the reason the decision was taken: "the time is
-/// unknown" is a statement about the run, not the time, and it used to travel on the same endpoint
-/// as a timestamp. So `date > when.txt` on a clockless machine wrote the complaint into the file,
-/// which is the loss `2>` exists to prevent on Unix and which fd numbering is not needed to fix.
-///
-/// The slot is the one `grant_plan`'s manifest declares, which is what makes this a **declaration**
-/// rather than a number everybody agrees on forever: a program that says nothing has no second
-/// stream, and `2>` aimed at it is refused at the prompt.
+/// answer. "The time is unknown" is a statement about the run, not the time, so it stays out of a
+/// redirected file. The slot is the one `grant_plan`'s manifest declares: a program that declares
+/// none has no second stream, and `2>` aimed at it is refused at the prompt.
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Where the wiring maps the clock page, read-only. Must match `kernel/src/user.rs`'s
@@ -208,16 +178,9 @@ fn source_line(slot: u64, st: u64, generation: u64) {
 
 /// **Announce the end of the stream, then exit** (milestone 50).
 ///
-/// `date` was already writing the sink contract's `BYTES` framing before that contract had a name,
-/// because `OPERATION_BYTES` is zero and a bytes message's first word is therefore its byte count
-/// (notes/sink-protocol.md). What it was missing is the other half: a reader downstream of a `|`
-/// has no way to know the producer is finished except by being told, and inferring it from a death
-/// notification would be a fact about process supervision standing in for a fact about a stream.
-///
-/// So every exit path from `_start` goes through here. The send blocks until somebody takes it,
-/// which for a reader that stopped at the newline means this process stays parked; that is the same
-/// rendezvous every send on this system has, and the alternative (a stream whose end is invisible)
-/// makes `date | wc` impossible.
+/// Every exit path from `_start` comes here, so a reader downstream of a `|` is told the stream
+/// ended rather than inferring it from a death (notes/sink-protocol.md). The send blocks until
+/// somebody takes it, so a reader that stopped at the newline leaves this process parked.
 fn end() -> ! {
     diag_end();
     send(REPORT, byte_sink_contract::eof(), 0, 0);
