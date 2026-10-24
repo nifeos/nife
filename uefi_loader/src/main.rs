@@ -29,7 +29,7 @@
 //! - **Nothing validates the UEFI tables' header CRCs**: the firmware is the trust root here.
 //! - **Nothing verifies what it hands over at boot**: the trust boundary is the build (`build.rs`).
 //! - **AP bring-up under UEFI is proved on OVMF only** (milestone 195 (finish the UEFI boot path)).
-//! - **The `hvm_start_info` command line carries only the screen** (milestone 243 (no serial port)).
+//! - **The `hvm_start_info` command line holds only the screen** (milestone 243 (no serial port)).
 //! - **The screen is taken as the firmware left it**, and aarch64 and riscv64 do not hand it over.
 //! - **A `PixelBitMask` or `PixelBltOnly` adapter gets no screen** on `x86_64`; the loader says so.
 
