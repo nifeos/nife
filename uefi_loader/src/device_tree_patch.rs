@@ -1,23 +1,14 @@
 //! **Telling a device-tree kernel where its archive is**: a copy of the firmware's device tree with
 //! `/chosen/linux,initrd-start` and `linux,initrd-end` set.
 //!
-//! On aarch64 and riscv64 the kernel learns about the machine from a flattened device tree, and it
-//! finds the userspace archive the way Linux finds an initial ramdisk: two properties under
-//! `/chosen` (`memory::init`, via `device_tree_blob::DeviceTreeBlob::initial_ramdisk`). QEMU's
-//! `-initrd` writes them and U-Boot's `booti` writes them. **UEFI firmware does not**, because a
-//! UEFI loader places the archive itself and is expected to say so; this is that saying. It is the
-//! same job the Linux EFI stub does in `drivers/firmware/efi/libstub/fdt.c` (recalled, not read),
-//! done here in the smallest form that works: rebuild the blob with the two properties, and nothing
-//! else changed.
-//!
-//! **Pure and host-tested**, like the rest of this library: every test decodes the output with the
-//! crate the kernel decodes with, so the writer and the reader cannot drift apart without a test
-//! failing in milliseconds. That is the rule `handoff.rs` already follows for x86's
-//! `hvm_start_info`.
-//!
-//! The format is the Devicetree Specification v0.4, chapter 5 (read against the tree's own reader,
-//! `crates/device_tree_blob`, which is what actually has to agree).
-//!
+//! On aarch64 and riscv64 the kernel finds the userspace archive the way Linux finds an initial
+//! ramdisk, from those two properties (`memory::init`, via `DeviceTreeBlob::initial_ramdisk`).
+//! QEMU's `-initrd` and U-Boot's `booti` write them; **UEFI firmware does not**, because a UEFI
+//! loader places the archive itself and is expected to say so. This is the Linux EFI stub's job
+//! (`drivers/firmware/efi/libstub/fdt.c`, recalled, not read) in its smallest form. The format is
+//! the Devicetree Specification v0.4, chapter 5, and every test decodes the output with
+//! `crates/device_tree_blob`, the crate the kernel decodes with, so the two cannot drift apart.
+
 //! # BUGS
 //!
 //! - **The firmware's memory map is not carried into the tree.** Linux's stub replaces the

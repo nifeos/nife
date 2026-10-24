@@ -19,8 +19,8 @@ diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_me
 index 9a6d0500..01b883c1 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -106,7 +106,7 @@ pub const F_INDIRECT: u16 = 4;
- /// changes nothing the kernel actually sees. See the `in_region_is_sound` proof.
+@@ -40,7 +40,7 @@ pub const F_INDIRECT: u16 = 4;
+ /// See the `in_region_is_sound` proof and notes/dma/validator.md.
  pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
      match (addr.checked_add(len), base.checked_add(size)) {
 -        (Some(end), Some(limit)) => addr >= base && end <= limit,

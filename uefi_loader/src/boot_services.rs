@@ -20,14 +20,11 @@ use crate::SUCCESS;
 /// call with no buffer, or `None` when the firmware reports a map this loader cannot read.
 ///
 /// **Never stride the map by `size_of::<MemoryDescriptor>()`.** `GetMemoryMap` reports its own
-/// `descriptor_size`, which the specification lets be larger than the structure and which real
-/// firmware does make larger. Striding by the Rust size is the classic UEFI loader bug: it works on
-/// the firmware you tested and produces a garbage memory map on the next one. Every walk here
-/// strides by the size this returns, and a size smaller than the structure is refused.
-///
-/// The sizing call is expected to fail with `EFI_BUFFER_TOO_SMALL` and report the size it wanted; a
-/// firmware that returned success for a zero-length buffer would be reporting an empty machine,
-/// which is why the size is checked rather than the status.
+/// `descriptor_size`, which the specification lets be larger than the structure and real firmware
+/// does make larger; every walk here strides by the size this returns, and a size smaller than the
+/// structure is refused. The sizing call is expected to fail with `EFI_BUFFER_TOO_SMALL`, and the
+/// size is checked rather than the status: success for a zero-length buffer would be an empty
+/// machine.
 pub(crate) fn memory_map_size(services: &BootServices) -> Option<(usize, usize)> {
     let mut bytes = 0usize;
     let mut key = 0usize;

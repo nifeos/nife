@@ -62,35 +62,16 @@ pub(crate) fn riscv_initial_ramdisk_path() -> String {
 /// which one a new program belongs in.
 const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 
-/// **Every program this tree builds, read from the one place it is declared** (milestone 150; name
-/// provisional): the `[[bin]]` blocks in `components/Cargo.toml` and `fixtures/Cargo.toml`, which
-/// cargo needs anyway. All three archives pack exactly this list, so a program is added to them by
-/// adding its `[[bin]]` block and removed by deleting it.
-///
-/// **This replaced two hand-maintained tables**, `initial_ramdisk_aarch64()`'s own and the
-/// `portable_archive_entries()` riscv64 and `x86_64` shared. By 2026-09-19 they disagreed about two
-/// programs nobody had decided to leave out (`serial_driver` and `jh7110_entropy` were missing from
-/// aarch64's) and both had missed a third (`pmap`, built and packed nowhere). That was drift rather
-/// than policy, because the rule the shared table's own comment stated is the one this implements:
-///
-/// **Not filtered per architecture, deliberately.** Several programs cannot do their job everywhere
-/// (`console`, `input` and `keyboard_driver` need port I/O a ring-3 process cannot reach on
-/// `x86_64`, DECISIONS §121; `serial_driver` drives riscv64's UART; `jh7110_entropy` is radon's).
-/// They are packed anyway: an archive entry costs a directory slot and some bytes, nothing spawns a
-/// program by accident, and the tests that would spawn them `skip!()` with the reason. A
-/// per-architecture filter would put the same fact in two places and let them disagree, which is
-/// what the two tables did.
-///
-/// **Order does not matter.** The progenitor looks entries up by name and [`measurement_table`] is
-/// sorted, so this is `Cargo.toml` order and nothing depends on it.
+/// **Every program this tree builds**, read from the one place it is declared: the `[[bin]]` blocks
+/// in `components/Cargo.toml` and `fixtures/Cargo.toml`, less the programs a package lists as
+/// [`packaged_only`] (milestone 150 (adding a program should not need eight hand-maintained lists);
+/// name provisional). All three archives pack exactly this list, in `Cargo.toml` order, which
+/// nothing depends on: the progenitor looks entries up by name and [`measurement_table`] is sorted.
+/// It is deliberately not filtered per architecture.
 ///
 /// Refuses, rather than packing a partial archive, when a `[[bin]]` block has a shape
-/// [`bin_names`] does not understand, and when something else in the tree names a program no
-/// `[[bin]]` builds: see [`check_declared_programs`].
-///
-/// **Less the programs a package lists as `packaged_only`** (milestone 198 (a package manager)
-/// rung 3a): built like every other, packed by no archive, so they reach a machine only as a
-/// package. See [`packaged_only`].
+/// [`bin_names`] does not understand, and when [`check_declared_programs`] fails. See
+/// notes/adding-a-program/the-archives.md.
 fn declared_programs() -> Result<&'static [String], String> {
     // Read once per `xtask` run: `test` packs three archives, and they must pack the same list.
     static DECLARED: std::sync::OnceLock<Result<Vec<String>, String>> = std::sync::OnceLock::new();
@@ -154,11 +135,10 @@ fn declared_program_blobs(
 
 /// **The programs a `Cargo.toml` says no boot image packs**: the `packaged_only` list under
 /// `[package.metadata.nife]`, which cargo ignores and this reads (milestone 198 (a package
-/// manager) rung 3a). Empty when there is no such table. Strict for [`bin_names`]' reason: a
-/// line in that table this does not understand is an error, because skipping it would pack a
-/// program that was meant to arrive only as a package.
-///
-/// One line, `packaged_only = ["a", "b"]`, is the whole of the shape it reads.
+/// manager) rung 3a). They are built like every other program and reach a machine only as a
+/// package. Empty when there is no such table. One line, `packaged_only = ["a", "b"]`, is the
+/// whole shape it reads; any other line in that table is an error, because skipping it would pack
+/// a program that was meant to arrive only as a package.
 fn packaged_only(manifest: &str) -> Result<Vec<String>, String> {
     let mut inside = false;
     let mut names = Vec::new();
@@ -260,9 +240,8 @@ fn bin_names(manifest: &str) -> Result<Vec<String>, String> {
 }
 
 /// **Archive entries packed from outside `components/` and `fixtures/`**, each present only when its
-/// own build ran (see the `initial_ramdisk_*` functions). Hoisted out of the one test that used to
-/// hold it (milestone 595 (provisional)), because [`check_declared_programs`] now needs the same
-/// list.
+/// own build ran (see the `initial_ramdisk_*` functions). [`check_declared_programs`] and the
+/// lookup test both read it.
 const BUILT_ELSEWHERE: [&str; 16] = [
     "redoxfs_server",
     "mkfs",
@@ -297,14 +276,12 @@ fn is_std_built_elsewhere(p: grant_plan::Program) -> bool {
 
 /// **What the declared list must agree with, checked every time an archive is packed.**
 ///
-/// - It is not empty and it holds `progenitor`, so a scanner that stopped finding blocks fails
-///   here rather than packing an archive that boots nothing (a gate that computes the set it
-///   judges goes blind when the set empties; see
-///   design/roadmap/proposals/a-gate-that-selects-the-set-it-judges.md).
+/// - It holds `progenitor`, so a scanner that stopped finding blocks fails here rather than
+///   packing an archive that boots nothing (see
+///   design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
 /// - No name is declared twice, across both packages.
-/// - Every program `grant_plan` lets the shell spawn is built. Before milestone 150 (adding a program
-///   should not need eight hand-maintained lists) a `Program` whose binary was not packed compiled,
-///   passed every host test, and could not be spawned, and nothing said so until a boot.
+/// - Every program `grant_plan` lets the shell spawn is built; otherwise it passes every host test
+///   and fails only at boot.
 /// - Every program the kernel measures at boot ([`boot_programs`]) is built.
 fn check_declared_programs(names: &[String]) -> Result<(), String> {
     let has = |n: &str| names.iter().any(|m| m == n);
@@ -337,12 +314,9 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// **Build the RISC-V userspace archive** (milestone 20, the richer initial ramdisk step). Compiles
-/// the portable programs the second architecture runs and packs them into a nifefs archive. The
-/// kernel enters `progenitor` and nothing else: the tour used to enter `builder` as well, to load
-/// `least_authority_demo` by name from userspace, and milestone 295 retired it. Every entry is packed
-/// under its own name since milestone 266 (one progenitor). Point `NIFE_INITIAL_RAMDISK` at the
-/// result and boot the riscv kernel, e.g.:
+/// **Build the RISC-V userspace archive** (milestone 20): build both program packages for riscv64
+/// and pack each entry under its own name; the kernel enters `progenitor` and nothing else. Point
+/// `NIFE_INITIAL_RAMDISK` at the result and boot the riscv kernel, e.g.:
 ///
 /// ```text
 /// cargo xtask initial-ramdisk-riscv
@@ -354,21 +328,8 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
 /// His words: "B for #1998." Refused `initrd_riscv` (the foreign spelling, which stops at the
 /// boundary where it arrives).
 pub(crate) fn initial_ramdisk_riscv() -> bool {
-    // **Builds the whole package rather than naming binaries** (fixed 2026-08-27; see
-    // [`initial_ramdisk_x86`]'s doc comment, which used to describe this as the one structural
-    // difference between the two). The `--bin` list this used to carry predated every program
-    // in `user/` compiling for this target, and had to be kept in step with the packing table
-    // (itself generated since milestone 150, see [`declared_programs`]) by hand; it fell out of step twice in one night when
-    // `audit_sink` (milestone 49) landed in `Cargo.toml` and the packaging table but not here,
-    // and CI caught it both times with "cannot read .../audit_sink: No such file or directory".
-    // Verified 2026-08-27: `cargo build -p user --target riscv64imac-unknown-none-elf`, unfiltered,
-    // (`user` being the package milestone 175 split into `components` and `fixtures`),
-    // compiles clean on current `main` (every program is already riscv64-portable), so the list
-    // bought nothing but a place to forget an entry. Now a missing binary is structurally
-    // impossible instead of a gate someone has to remember to update.
-    //
-    // Profiled since `swish-check --release` (milestone progenitor-stack (provisional)), which
-    // packed debug programs under a release kernel until this read `profile_dir()`.
+    // The whole package, never a `--bin` list: a list has to be kept in step with
+    // `declared_programs` by hand. Every program compiles for this target.
     if !build_programs(RISCV_TARGET) {
         return false;
     }
@@ -413,9 +374,8 @@ pub(crate) fn initial_ramdisk_riscv() -> bool {
 }
 
 /// Where the `x86_64` initial ramdisk archive is written (milestone 161 (the x86_64 kernel port)).
-/// Separate from the other two for the reason they are separate from each other: it holds `x86_64`
-/// ELFs, and the kernel's loader refuses anything whose `e_machine` is not its own (`crates/elf`'s
-/// `EXPECTED_MACHINE`, which was itself wrong for this architecture until item 4 found it).
+/// Separate from the other two because it holds `x86_64` ELFs, and the kernel's loader refuses
+/// anything whose `e_machine` is not its own (`crates/elf`'s `EXPECTED_MACHINE`).
 pub(crate) fn x86_initial_ramdisk_path() -> String {
     workspace_root()
         .join("target/initial-ramdisk-x86_64.img")
@@ -423,32 +383,15 @@ pub(crate) fn x86_initial_ramdisk_path() -> String {
         .to_string()
 }
 
-/// **Build the `x86_64` userspace archive** (milestone 161, item 4's hand-off). The third archive,
-/// packing the same programs the other two do ([`declared_programs`]), built for
-/// `x86_64-unknown-none`.
-///
-/// **It builds the whole package rather than naming binaries**, as its siblings do: since milestone
-/// 150 (adding a program should not need eight hand-maintained lists) a `[[bin]]` block is packed
-/// here with no second edit.
+/// **Build the `x86_64` userspace archive** (milestone 161): build both program packages for
+/// `x86_64-unknown-none` and pack the same programs the other two archives pack
+/// ([`declared_programs`]).
 ///
 /// ```text
 /// cargo xtask initial-ramdisk-x86
 /// NIFE_INITIAL_RAMDISK=target/initial-ramdisk-x86_64.img cargo run -p kernel \
 ///     --target x86_64-unknown-none
 /// ```
-///
-/// # BUGS
-///
-/// **No disk fixture is generated**, so even a packed `fs_server` would have nothing to open. The
-/// runner attaches no drive; attaching one is a smaller piece of work here than it looks (q35's
-/// virtio is PCI, and the PCIe transport of DECISIONS §18 is already built and is x86's native bus)
-/// and is not this milestone's.
-///
-/// **`fs_server` and `mkfs` do not compile for `x86_64-unknown-none`.** The vendored RedoxFS engine
-/// pulls in `aes`, and on this `-mmx,-sse,+soft-float` target LLVM ends in `Do not know how to
-/// split the result of this operator!` at every optimization level. The routes out are a RedoxFS
-/// without its crypto feature, or a target spec that keeps SSE for userspace
-/// (notes/x86-port/userspace.md).
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd_x86` (the foreign spelling, which stops at the
@@ -467,27 +410,18 @@ pub(crate) fn initial_ramdisk_x86() -> bool {
     let Some(mut blobs) = declared_program_blobs("initial-ramdisk-x86", bin) else {
         return false;
     };
-    // The FS server and `mkfs` (milestone 164 (x86_64 userspace can't build `aes`)), on exactly the
-    // terms `initial_ramdisk_riscv` carries them: present iff something built them for this target,
-    // absent from a bare `initial-ramdisk-x86`, and `test` builds them first. Until milestone 164
-    // they could not be built for this target at all, because the vendored RedoxFS engine's `aes`
-    // dependency would not codegen without SSE; `.cargo/config.toml`'s `--cfg aes_force_soft` on
-    // this target is what changed that.
+    // The FS server and `mkfs` (milestone 164 (x86_64 userspace can't build `aes`)), present iff
+    // something built them for this target; `test` builds them first. They build here only because
+    // `.cargo/config.toml` sets `--cfg aes_force_soft` for this target.
     blobs.extend(file_server_blobs(X86_TARGET));
-    // The std demo (milestone 184 (extend the `std` port to x86_64)) and the rest of the `std` and ported programs, on the terms both
-    // other archives carry them: each present iff it was built for `x86_64-unknown-nife`.
+    // The std demo (milestone 184 (extend the `std` port to x86_64)) and the rest of the `std` and
+    // ported programs, each present iff it was built for `x86_64-unknown-nife`.
     blobs.extend(std_program_blobs("x86_64-unknown-nife"));
     blobs.extend(ported_program_blobs("x86_64-unknown-nife"));
-    // The image's package source, as on the other two: since milestone 198 rung 3a's installer the
-    // progenitor reads it for every install, and `jig` (milestone 809) is handed a copy, so x86_64
-    // carries one too (§19 (architectural parity is a tenet)); no fetch test reads it here, because
-    // this runner attaches no network.
-    //
-    // **Measure the boot programs before the x86 kernel is built** (milestone 22 phase B.1), and on
-    // this architecture that is not a nicety: with no manifest the generated `TRUST_ROOT` is empty
-    // and `trust::require` refuses every boot program as `Unmeasured`, so the kernel would come up
-    // and refuse to start the progenitor with an error about measurement rather than about the
-    // archive.
+    // Measure the boot programs before the x86 kernel is built (milestone 22 (trusted init) phase
+    // B.1). With no manifest the generated `TRUST_ROOT` is empty and `trust::require` refuses every
+    // boot program as `Unmeasured`. `write_archive` also packs the image's package source (§19
+    // (architectural parity is a tenet)).
     let Some((size, entries)) = write_archive(
         "initial-ramdisk-x86",
         "x86_64",
@@ -504,37 +438,17 @@ pub(crate) fn initial_ramdisk_x86() -> bool {
     true
 }
 
-/// **Build the aarch64 userspace archive.** Pack the built user ELFs into the initial ramdisk
-/// archive the kernel hands the progenitor (milestone 19f (run a real workload)).
-///
-/// The initial ramdisk is a **nifefs image**, the same format the virtio disk uses, so one parser
-/// serves both the RAM archive and the disk. It holds `progenitor` (the first process, milestone
-/// 266) and `hello` (the init roles the kernel re-enters for milestone 19d's and 19e's tests), plus
-/// the binaries lifted out of hello over 19f.2, 19f.3 and milestone 291 (`fixtures/src/hello.rs`
-/// was thirty-one programs wearing one name). The kernel reads the `progenitor` entry to boot; the
-/// progenitor loads the rest by name. Generated, not checked in, exactly like the disk and the flat
-/// kernel image: a blob in git is a blob nobody can review.
-///
-/// **Renamed from `mkinitrd` (2026-08-27), and given aarch64 its own
-/// `initial-ramdisk-aarch64` subcommand**, to match its two siblings ([`initial_ramdisk_riscv`],
-/// [`initial_ramdisk_x86`]): one job, one `initial_ramdisk_<arch>` naming scheme, three matching
-/// `cargo xtask initial-ramdisk-<arch>` subcommands. This function only packs, unlike its two
-/// siblings, which both build-then-pack in one call; `main`'s `"initial-ramdisk-aarch64"` arm calls
-/// [`crate::user`] (build, then pack) rather than this function alone, so the subcommand is
-/// self-contained the same way `initial-ramdisk-riscv`/`initial-ramdisk-x86` are. It is still
-/// called internally by `user()` (and so by `build`, `run`, `shell`, and everything else that boots
-/// the aarch64 kernel) exactly as `mkinitrd` was; the new subcommand is additive, so
-/// nothing that already called this function changed. **Name and subcommand provisional**, per this
-/// repo's naming convention: an architect's call to confirm or redirect.
+/// **Build the aarch64 userspace archive**: pack the built user ELFs into the nifefs initial
+/// ramdisk the kernel hands the progenitor (milestone 19f (run a real workload)). The kernel reads
+/// the `progenitor` entry to boot, and the progenitor loads the rest by name. Unlike its siblings
+/// this only packs: `user()` builds and then calls it, and so does every command that boots the
+/// aarch64 kernel, including the `initial-ramdisk-aarch64` subcommand. The image is generated and
+/// never checked in. See notes/adding-a-program/the-archives.md.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd_aarch64` (the foreign spelling, which stops at the
 /// boundary where it arrives).
 pub(crate) fn initial_ramdisk_aarch64() -> bool {
-    // **No table** since milestone 150: every `[[bin]]` in `components/` and `fixtures/`, the
-    // same list the other two archives pack ([`declared_programs`]). This function carried its own
-    // hand-written table before that, and an older three-way copy of it before milestone 130; the
-    // table had drifted from riscv64's and `x86_64`'s by two programs when it was deleted.
     let Some(mut blobs) = declared_program_blobs("initial-ramdisk-aarch64", bin_elf) else {
         return false;
     };
@@ -699,11 +613,10 @@ fn write_archive(
     blobs: &[(&'static str, Vec<u8>)],
 ) -> Option<(usize, usize)> {
     let mut files: Vec<(&str, &[u8])> = blobs.iter().map(|(n, b)| (*n, b.as_slice())).collect();
-    // **The image's package source** (milestone 198 (a package manager) rung 3a): every recipe under `packages/` for
-    // this architecture is built, written where the package tests' HTTP peer serves it, and its
-    // catalogue line packed here, *above* the measurement table so the kernel's trust root vouches
-    // for it. `package_archive::CATALOG`'s doc has why. It also runs the producer end to end on
-    // every archive build, which nothing did before.
+    // **The image's package source** (milestone 198 (a package manager) rung 3a): every recipe
+    // under `packages/` for this architecture is built, written where the package tests' HTTP peer
+    // serves it, and its catalogue line packed here, *above* the measurement table so the kernel's
+    // trust root vouches for it. `package_archive::CATALOG`'s doc has why.
     let catalogue = match crate::package::image_catalogue(arch) {
         Ok(catalogue) => catalogue,
         Err(complaint) => {
@@ -739,10 +652,8 @@ fn write_archive(
 
     let size = nifefs::image_size(&files);
     let mut img = std::vec![0u8; size];
-    // Carry the reason. "could not build the initial ramdisk archive" with the error thrown away is
-    // what milestone 291 hit on the commit that crossed `MAX_FILES`, and it cost a hunt through
-    // three candidate bounds by hand (`MAX_FILES`, `image_size` and `write_image`'s bounds check);
-    // the error names which one.
+    // Carry the error: it names which of `MAX_FILES`, `image_size` and `write_image`'s bounds check
+    // refused, and those are otherwise hunted for by hand.
     if let Err(e) = nifefs::write_image(&files, &mut img) {
         eprintln!(
             "{label}: could not build {what}: {e:?} ({} files, {} bytes)",
@@ -758,16 +669,13 @@ fn write_archive(
     write_measure_manifest(arch, &img).then_some((size, files.len()))
 }
 
-/// **Every program in an archive fits the address-space map's image band**, checked when the
-/// archive is packed rather than when some test first loads the program (milestone 206 (a program
-/// image has under 896 KiB)). The kernel's loader refuses a misplaced image by name, but only the
-/// programs a boot actually loads ever reach it; this reaches all of them. It exists because the
-/// first run after the map landed found `mkfs` linked with lld's default layout at `0x20_0000`,
-/// outside the shared linker script, where nothing had looked for eight weeks.
+/// **Every program in an archive fits the address-space map's image band** (milestone 206 (a
+/// program image has under 896 KiB)), checked at packing because the kernel's loader only judges
+/// the programs a boot loads.
 ///
-/// The program headers are read here by hand rather than with `crates/elf`, because that parser
-/// refuses a foreign `e_machine` and this packs riscv64 and `x86_64` archives on an aarch64 host.
-/// Entries that are not ELF (the catalogue, the measurement table) are skipped.
+/// The program headers are read by hand rather than with `crates/elf`, which refuses a foreign
+/// `e_machine`; this packs riscv64 and `x86_64` archives on an aarch64 host. Entries that are not
+/// ELF (the catalogue, the measurement table) are skipped.
 fn programs_fit_the_address_space_map(archive: &str, files: &[(&str, &[u8])]) -> bool {
     let mut fits = true;
     for (name, bytes) in files {
@@ -923,15 +831,13 @@ mod tests {
 
     /// **Every program something in the tree loads by name is one the tree builds** (milestone
     /// 150's gate on removal). Deleting a `[[bin]]` block takes the program out of all three
-    /// archives at once, which is the point; this is what stops that being silent when a kernel
-    /// test or the progenitor still asks for it by name. Without it, the test would `skip!()` with
-    /// "no such program in this archive" forever, or the progenitor would fail at boot.
+    /// archives at once; this stops that being silent while a test or the progenitor still asks
+    /// for it, where it would `skip!()` forever or fail at boot.
     ///
-    /// **A textual scan, and rung two rather than rung one**: it reads `program("name")` and
-    /// `.read("name")` string literals out of `kernel/src` and `crates/system_initializer/src`, the
-    /// two places that look programs up in an archive. A name built at runtime, or looked up by some
-    /// other spelling, is invisible to it. The set it judges is counted, so a scan that stopped
-    /// matching fails here rather than passing on nothing.
+    /// **A textual scan, rung two rather than rung one**: it reads `program("name")` and
+    /// `.read("name")` literals out of `kernel/src`, `system_tests/src` and
+    /// `crates/system_initializer/src`. A name built at runtime or spelled otherwise is invisible to
+    /// it. The set it judges is counted, so a scan that stopped matching fails rather than passes.
     #[test]
     fn every_program_the_tree_loads_by_name_is_declared() {
         let declared = declared_programs().unwrap_or_else(|e| panic!("{e}"));

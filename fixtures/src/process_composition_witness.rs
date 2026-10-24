@@ -1,22 +1,23 @@
 //! **A process composed from two capabilities, run in the space it was built in**, the claim of
 //! §185 (what carries the claim that userspace composes a process from an authority you can count
-//! on one hand). It holds a memory region (slot 0) and a report line (slot 1), and from those alone:
+//! on one hand). It holds a memory region (slot 0) and a report line (slot 1), and from those alone
+//! composes and runs a child in the steps below. The kernel allocates nothing on the way: every
+//! object is retyped from the region it was handed. Reading the archive is not a third capability:
+//! the kernel maps it read-only at `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, naming
+//! no kernel object. The verdict is one word, a bit per step
+//! (`capability_witness_contract::process_composition`).
+
+//! # The steps
 //!
-//! 1. reads `least_authority_demo` out of the archive by name and parses its ELF,
-//! 2. mints a rendezvous out of its own memory, for the child to answer on,
-//! 3. builds the child through `supervision_protocol::build_child_space`, the loader every composer
-//!    in this tree shares: an address space retyped from the budget, each segment laid down W^X, a
-//!    stack, a thread control block, and one capability (`WRITE` on that rendezvous) in its slot 0,
-//! 4. maps a frame of its own into the same space twice, which must be refused (break-before-make
-//!    holds in a space a process built),
-//! 5. configures the thread at the child's entry in that space and starts it with an input,
-//! 6. and receives the child's answer, the input squared, on the rendezvous it minted.
-//!
-//! The kernel allocates nothing on the way: every object is retyped from the region it was handed.
-//! The verdict is one word, a bit per step (`capability_witness_contract::process_composition`).
-//! Reading the archive is not a third capability: the kernel maps it read-only at
-//! `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, naming no kernel object.
-//!
+//! 1. Read `least_authority_demo` out of the archive by name and parse its ELF.
+//! 2. Mint a rendezvous out of its own memory, for the child to answer on.
+//! 3. Build the child with `supervision_protocol::build_child_space`, every composer's loader: an
+//!    address space, W^X segments, a stack, a thread, and `WRITE` on that rendezvous in slot 0.
+//! 4. Map a frame of its own into that space twice, which must be refused (break-before-make holds
+//!    in a space a process built).
+//! 5. Configure the thread at the child's entry in that space and start it with an input.
+//! 6. Receive the child's answer, the input squared, on the rendezvous it minted.
+
 //! # BUGS
 //!
 //! - A child that never answers hangs this program, which has no deadline and does not supervise

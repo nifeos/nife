@@ -5,10 +5,10 @@
 //! because it was handed the frame with `READ` alone.
 //!
 //! The verdict it reports is two bits: bit 0 the sentinel was read, bit 1 a writable mapping was
-//! refused. `kernel::user::tests` asserts both, separately, so a failure says which half broke.
+//! refused. `kernel::user::tests` asserts both, separately, so a failure says which half broke. The
+//! other half is `page_frame_producer`.
 //!
-//! The other half is `page_frame_producer`.
-//!
+
 //! Name: provisional (milestone 291). This was `hello`'s `PAGE_FRAME_CONSUMER` role, number 12.
 
 #![no_std]

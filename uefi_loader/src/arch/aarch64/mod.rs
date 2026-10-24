@@ -1,34 +1,23 @@
 //! **aarch64: the firmware's device tree, and the Linux arm64 boot state.**
 //!
-//! The kernel's entry contract here is the one U-Boot's `booti` meets (Linux's
-//! Documentation/arch/arm64/booting.rst, which `kernel/src/arch/aarch64/boot.s` cites): entered at
-//! the image's first byte with **the MMU off**, `x0` = the physical address of the device tree and
-//! `x1`..`x3` zero, at EL2 or EL1 (the kernel drops itself from EL2). UEFI hands over the opposite
-//! state: MMU on with an identity map, caches on. So the whole delta is:
-//!
-//! 1. copy the firmware's device tree, adding `/chosen/linux,initrd-*` for the archive
-//!    (`uefi_loader::device_tree_patch`);
-//! 2. exit boot services;
-//! 3. clean and invalidate the data cache to the point of coherency over everything the kernel will
-//!    read with its caches off, so it reads what was written rather than stale RAM;
-//! 4. turn the MMU and the data cache off at whichever exception level we are running at, and
-//!    branch (`leave_uefi.s`).
-//!
+//! The kernel's entry contract is U-Boot's `booti` (Linux's Documentation/arch/arm64/booting.rst,
+//! which `kernel/src/arch/aarch64/boot.s` cites): entered at the image's first byte with **the MMU
+//! off**, `x0` = the device tree's physical address and `x1`..`x3` zero, at EL2 or EL1 (the kernel
+//! drops itself from EL2). UEFI hands over MMU and caches on, identity-mapped. So the loader copies
+//! the firmware's device tree adding `/chosen/linux,initrd-*` (`uefi_loader::device_tree_patch`);
+//! exits boot services; cleans and invalidates the data cache to the point of coherency over all
+//! the kernel reads with its caches off; and turns the MMU and data cache off at its exception
+//! level and branches (`leave_uefi.s`). See notes/x86-uefi-boot/loader-design.md.
+
 //! # BUGS
 //!
-//! - **An ACPI machine is described second-hand.** A machine that offers no device tree is read out
-//!   of its ACPI tables and a tree is **written** for it here
-//!   ([`uefi_loader::device_tree_from_acpi`]), which is what makes an SBBR server (every aarch64
-//!   cloud instance) bootable at all. The translation loses what only AML holds: no PCI bus, no
-//!   virtio-mmio, no `fw_cfg`. That module's own BUGS section is the list, and the firmware's tree
-//!   stays first in [`discover`]'s order precisely because it is the richer of the two.
-//! - **The kernel is linked for `0x4008_0000`** (`kernel/link-aarch64.ld`), which is QEMU `virt`'s
-//!   RAM. argon's RAM starts at `0x8000_0000`, so this payload cannot place its kernel there and
-//!   says so with the firmware's memory map printed: the same limit milestone 127's port has to
-//!   lift for `booti`, not one the stick adds.
-//! - **Everything the kernel reads early must be below 2 GiB** ([`ALLOCATION_CEILING`]), because
-//!   the boot map in `boot.s` is one 1 GiB block of RAM at `0x4000_0000`. A firmware that keeps its
-//!   device tree higher is fine (it is copied down); one with no free RAM below 2 GiB is not.
+//! - **An ACPI machine is described second-hand** ([`uefi_loader::device_tree_from_acpi`]): the
+//!   tree written from its tables loses what only AML holds (no PCI bus, no virtio-mmio, no
+//!   `fw_cfg`). That module's BUGS is the list.
+//! - **The kernel is linked for `0x4008_0000`** (`kernel/link-aarch64.ld`), QEMU `virt`'s RAM;
+//!   argon's starts at `0x8000_0000`, so the loader refuses there with the memory map printed.
+//! - **Everything the kernel reads early must be below 2 GiB** ([`ALLOCATION_CEILING`]): `boot.s`
+//!   maps one 1 GiB block of RAM at `0x4000_0000`. A device tree kept higher is copied down.
 
 use core::ptr;
 
@@ -62,19 +51,11 @@ pub struct Found {
 
 /// **Find, or failing that write, the tree the kernel is handed.**
 ///
-/// # The order, and why it is this one
-///
-/// The firmware's own device tree is taken whenever the firmware offers one, and ACPI is read only
-/// when it does not. That order is not "the old path first"; it is the richer description first.
-/// A machine's device tree names its PCI bus with the BAR windows and the interrupt map, its
-/// virtio-mmio transports and its `fw_cfg`, none of which exist outside AML on an ACPI machine, so a
-/// tree written from ACPI ([`uefi_loader::device_tree_from_acpi`]) is strictly a subset of one the
-/// firmware hands over. Preferring ACPI where both exist would cost a working boot facts it already
-/// had.
-///
-/// A machine offering both is rare (QEMU `virt` with `acpi=off` offers only the tree, and with
-/// `acpi=on` only the tables), and the rule still has to be written down, because the machine this
-/// eventually runs on may not be either of those.
+/// The firmware's own device tree whenever it offers one, and ACPI only when it does not: the
+/// richer description first. A device tree names the PCI bus with its BAR windows and interrupt
+/// map, the virtio-mmio transports and `fw_cfg`, none of which exist outside AML, so a tree written
+/// from ACPI ([`uefi_loader::device_tree_from_acpi`]) is strictly a subset of one the firmware
+/// hands over. See notes/x86-uefi-boot/loader-design.md.
 pub fn discover(table: &SystemTable, services: &BootServices) -> Result<Found, &'static str> {
     if let Some(entry) = configuration_table(table)
         .iter()

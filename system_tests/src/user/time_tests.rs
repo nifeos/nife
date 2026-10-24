@@ -65,25 +65,14 @@ fn nanos_of(said: &[u8]) -> u64 {
 
 /// **A command is timed by the shell's clock, and the command is handed nothing.**
 ///
-/// This is the milestone's whole claim, and the three assertions are what make it one rather than a
-/// slogan:
-///
-/// - **The same command, timed and untimed, answers the same thing.** `least_authority_demo 3` is run twice in the
-///   script, once bare and once behind `time`, and both must report `3*3 = 9`. A prefix word that
-///   re-tokenized its tail, dropped an option or spawned something else would fail here, and nothing
-///   about the printed duration would have told anybody.
-/// - **The duration is positive and sane.** A real spawn (an address space, an ELF copy, a thread, a
-///   rendezvous and a reply) cannot take zero time, so a zero here means the two readings came from
-///   the same instant, which is what a `time` that read its clock once would print. The upper bound
-///   is loose on purpose: TCG under load is slow and a tight bound would be a flake, while a
-///   nanoseconds-for-microseconds error misses a ten-second ceiling by four orders of magnitude.
-/// - **`least_authority_demo` holds no clock.** Its manifest declares none, so the progenitor endows none, and it is still
-///   timed. That is the sentence the milestone exists for: measuring a thing needs the observer's
-///   authority, not the subject's.
-///
-/// And the builtin, which is the other end of the same claim: `time echo hello` spawns **no process
-/// at all** and still reports a duration, because what is being measured is an interval and not a
-/// process.
+/// Three assertions make the claim. `least_authority_demo 3`, run bare and behind `time`, must
+/// report `3*3 = 9` both times, so a prefix that re-tokenized its tail, dropped an option or
+/// spawned something else fails. The duration must be positive, since a real spawn cannot take zero
+/// time and a zero means two readings of one instant; the ten-second ceiling is loose because TCG
+/// under load is slow, yet a nanoseconds-for-microseconds error misses it by four orders of
+/// magnitude. `least_authority_demo` declares no clock and is still timed: measuring needs the
+/// observer's authority, not the subject's. And `time echo hello` spawns no process at all and
+/// still reports a duration, because what is measured is an interval.
 #[test_case]
 fn a_command_is_timed_by_the_shells_clock_and_holds_none_itself() {
     if clock_service::machine_has_no_rtc() {
@@ -141,30 +130,14 @@ fn a_command_is_timed_by_the_shells_clock_and_holds_none_itself() {
     );
 }
 
-/// **A shell that cannot read a clock refuses to time, and says which nothing it was.**
+/// **A shell with no usable clock times the command anyway** (§72 (`time` needs no clock: duration
+/// is ambient, wall-clock identity is authority)).
 ///
-/// The two causes are `date`'s and they are kept apart for `date`'s reason: nobody granted this
-/// process a clock, or the machine never learned the time. They call for different fixes, so they
-/// are different sentences.
-///
-/// **Neither of them runs the command**, and that is the assertion worth having rather than the
-/// wording. `time` is a request to measure; running the line unmeasured and saying nothing would be
-/// DECISIONS §42's silent degradation with a stopwatch on it, and running it while complaining would
-/// leave a person unable to tell which half happened. So the transcript must contain no `3*3 = 9`
-/// **A shell with no usable clock times the command anyway** (§72, 2026-08-16), which is the
-/// inversion of what this test asserted when it was written.
-///
-/// It used to prove the opposite: that `time` refused on a machine whose wall clock was absent or
-/// unbelieved, rather than running the line unmeasured, on §42's anti-silent-degradation grounds.
-/// That reasoning was right and its premise was wrong. A duration is two reads of the monotonic
-/// counter, which the kernel opened to EL0, so the offset a clock page carries cancels and `time`
-/// can always measure. The refusal was not protecting anyone; it was a capability check that
-/// gated nothing.
-///
-/// So both old causes are exercised here as *non*-causes: a zeroed clock page (UNKNOWN to
-/// `clock_contract`) and no clock capability at all. In each, the timed line must both answer and
-/// carry a duration, and neither of the two retired sentences may appear anywhere in the
-/// transcript.
+/// A duration is two reads of the monotonic counter, which the kernel opens to EL0, so the offset a
+/// clock page carries cancels and `time` can always measure. Both of `date`'s causes are exercised
+/// as non-causes: a zeroed clock page (UNKNOWN to `clock_contract`) and no clock capability at
+/// all. In each, the timed line must answer and carry a duration, and neither retired refusal
+/// sentence may appear anywhere in the transcript.
 #[test_case]
 fn a_shell_with_no_usable_clock_times_the_command_anyway() {
     let mut buf = [0u8; 2048];

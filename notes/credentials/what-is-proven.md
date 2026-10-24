@@ -37,9 +37,31 @@ Guest tests (`system_tests/src/user/credential_tests.rs`, on aarch64 and riscv64
 - A userspace client with one endpoint and no store gets the right answer to four questions,
   over a real Argon2id verification with a salt drawn from a real virtio-rng.
 - The identical endowment cannot write the store. The attacker holds exactly what the honest
-  client holds and tries `PUT`, `SEAL`, an undefined opcode, and lengths outside the contract. All
-  four are `MALFORMED`, and the credential it tried to install does not work.
+  client holds and tries `PUT`, `SEAL`, an undefined opcode, and lengths outside the contract. `PUT`
+  answers `MISMATCH` and the rest `MALFORMED` (see "Two opcode spaces" below), and the credential
+  it tried to install does not work.
 - The service survives all of it and answers correctly afterwards, because a credential service
   a malformed request can kill is a login outage anybody can cause.
 - The kernel reads the shared frame through the direct map, which no userspace program can do,
   and finds neither the presented secret nor any nonzero byte.
+
+## The guest fixture
+
+`credential_tests::provisioned` wires the entropy service, the credential service and the
+provisioner once per boot, and every guest test that needs the sealed store calls it. The seal is
+irreversible, so there is no way to ask for a second wiring. The service sends its readiness word
+between the seal and its serve loop, and a `SEND` on this kernel blocks until somebody receives.
+So the fixture drains that word before it returns. A test that let a client `CALL` first would find
+a service that had not reached its serve loop, and the boot would deadlock with a sender and a
+caller both waiting on nobody. The entropy service does not show this, because its wiring receives
+at once.
+
+## Two opcode spaces
+
+The provision endpoint and the verify endpoint number their opcodes independently, because the
+endpoint gives a number its meaning. `provision::PUT` and `verify::VERIFY` are both opcode 1. So
+an attacker's `PUT` on the verify endpoint is a verify of an identity nobody provisioned, and the
+honest answer is `MISMATCH`. There is no privileged request to refuse. `provision::SEAL` is opcode
+2, which the verify endpoint does not serve, so it answers `MALFORMED`. If the verify space grew an
+opcode 2, the same word would become that request instead. Nothing would break, because a word
+arriving at a serve loop never carries authority.
