@@ -177,6 +177,20 @@ Three things about that shape are deliberate:
 `script/swish-check` types `date` at the real prompt on both ISAs and requires `UTC` in the answer,
 which is the one word neither unknown-clock sentence contains.
 
+## What `uptime` can and cannot say
+
+`crates/uptime` prints how long the counter has been counting, and that is not quite how long the
+kernel has been up. `CNTVCT_EL0` and its RISC-V and `x86_64` equivalents are free-running hardware
+counters, set by firmware or the VMM at reset and not by this kernel. `date`'s module docs call the
+counter ambient and untouched for the same reason. So "up" means "since the counter started
+counting", which is at or before kernel entry. On real hardware the gap is whatever the boot ROM and
+firmware took, and it is unmeasured. There is no kernel-boot epoch, Linux's `CLOCK_BOOTTIME`, to read
+instead.
+
+Upstream `uptime` also prints a load average and a logged-in-user count, and neither exists here.
+`sched.rs` tracks preemptions and per-core run queues, not a decaying load average. "Logged in"
+presumes a login registry this system does not keep. A placeholder zero would read as a real answer.
+
 ## What a std program sees
 
 `SystemTime::now()` is the clock page plus the counter, and a std program's whole wall-clock
