@@ -12,6 +12,8 @@ the evidence its prose budget has no room for.
   placement went remote without its reschedule SGI.
 - [`test-flakes.md`](test-flakes.md): a per-CPU test asserting an affinity nobody promised, and
   the bounded-yield tests under host contention.
+- [`thread-dump.md`](thread-dump.md): what each field of `dump_threads` can claim, and what it
+  is for.
 - [`switch.md`](switch.md): the design behind `sched/switch.rs` and `sched/switch_decision.rs`:
   `schedule`'s rules, the pick, the per-thread grants, and the reaper's far side.
 - [`rendezvous.md`](rendezvous.md): the design behind `sched/rendezvous.rs`: send, receive, call
@@ -28,6 +30,7 @@ Each stem below is named for its content, and calef names files.
 - `reclaim-lost-wakeup` Name: provisional.
 - `missed-reschedule-poke` Name: provisional.
 - `test-flakes` Name: provisional.
+- `thread-dump` Name: provisional.
 - `switch` Name: provisional. After the source file it explains.
 - `rendezvous` Name: provisional. After the source file it explains.
 - `wake-handshake` Name: provisional. After the crate it explains.

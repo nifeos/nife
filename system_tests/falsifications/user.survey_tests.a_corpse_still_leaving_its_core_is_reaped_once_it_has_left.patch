@@ -13,13 +13,13 @@ on all three architectures at four cores with `NIFE_SMP=4 script/test --arch <ar
 a_corpse_still_leaving_its_core_is_reaped_once_it_has_left` (1 of 1 each).
 
 diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
-index 14c7ee6fb..6d23f028a 100644
+index 30185504c..c2052aa5a 100644
 --- a/kernel/src/sched/region_reaping.rs
 +++ b/kernel/src/sched/region_reaping.rs
-@@ -611,7 +611,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
-         // treat as fatal. The condition is this kernel's own and ends at that core's next
-         // `finish_switch`, which needs nothing from this caller but the lock, so yield it and look
-         // again.
+@@ -374,7 +374,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
+         // A corpse whose core still stands on its stack clears at that core's next
+         // `finish_switch`; refusing would reach userspace as `NotPermitted`. Yield the lock and
+         // look again.
 -        if t.is_some_and(|t| t.handshake.on_cpu) {
 +        if false && t.is_some_and(|t| t.handshake.on_cpu) {
              drop(guard);
