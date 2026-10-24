@@ -8,11 +8,8 @@ use crate::SRGB_TO_LINEAR;
 /// to linear light through [`SRGB_TO_LINEAR`], mixed there, and brought back to the sRGB code
 /// whose linear value is nearest. 0 is exactly `bg` and 255 exactly `fg`.
 ///
-/// Mixing the sRGB codes directly makes light text on a dark ground look bolder than its outline
-/// and dark on light thinner, because sRGB's codes are not proportional to light; Solarized Dark
-/// is the first case. Half coverage of white on black is half the light, sRGB 188, not code 128.
-/// Integer only: the table is a `const`, and the way back is a search of the same table, so no
-/// second table can disagree with the first.
+/// Integer only, and the way back searches the same table, so no second table can disagree with
+/// the first. Why linear light is in notes/glyphs/glyph-atlas.md.
 ///
 /// ```
 /// use glyph_atlas::blend;

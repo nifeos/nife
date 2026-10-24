@@ -16,20 +16,12 @@ pub(super) const LINES: &[Line] = &[
     // header rather than a tid is deliberate: a tid is a generational name that moves with how many
     // jobs ran before it, and a gate that pinned one would be pinning the boot's history.
     line(1, "ps", &["TID  STATE"]),
-    // **`ps` cannot see the machine, and this is the shape of the evidence at the prompt.** The
-    // listing above is short: at this line the shell's domain holds `ps` itself and whatever else
-    // the shell has running, which is nothing. A `/proc`-shaped `ps` would be listing the progenitor, the
-    // shell, the terminal, the FS server, the compositor, the net stack and every driver.
-    //
-    // **The count is deliberately not asserted here.** `ps | wc` answered three lines on one run
-    // and two on the next, because a pipeline spawns both stages into the same domain and whether
-    // `ps` walks before or after `wc` exists is a race. That is truthful (a survey is a snapshot,
-    // notes/process-view.md) and it makes a count a bad gate. The confinement claim is asserted
-    // deterministically and on both ISAs in `kernel::user::survey_tests`, which builds the domain
-    // it measures instead of inheriting one.
-    // And `caps ps` prints the scope **before** anything is spawned, which is the half Linux has no
-    // way to express: there, "which processes can this see" has one answer for every program on the
-    // machine and no command line chose it.
+    // **`ps` cannot see the machine**: the listing above holds only the shell's domain, where a
+    // `/proc`-shaped `ps` would list every server and driver. The count is not asserted, because
+    // whether `ps` walks before or after `wc` exists is a race (a survey is a snapshot,
+    // notes/process-view.md); `kernel::user::survey_tests` asserts the confinement claim
+    // deterministically on both ISAs. And `caps ps` prints the scope before anything is spawned,
+    // the half Linux cannot express: there every program sees the same processes.
     line(0, "caps ps", &["cap 7  endpoint  domain"]),
     // **`pgrep`, at the real prompt** (milestone 126), and what is asserted is deliberately not the
     // tids. `pgrep` prints nothing but names, one per line, and a tid is a generational name that

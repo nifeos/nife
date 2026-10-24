@@ -1,5 +1,5 @@
 #!/bin/sh
-# script/netboot-rehearsal: boot nife the way xenon will, on patagonia, with nothing plugged in (260).
+# script/netboot-rehearsal: boot nife the way xenon will, on your machine, with nothing plugged in (260).
 #
 #   script/netboot-rehearsal                    # the whole path, end to end, ~90 seconds
 #   script/netboot-rehearsal --keep-going       # do not stop QEMU when the marker appears
@@ -10,7 +10,7 @@
 # is a lane's pick waiting on him. Hyphenated because `script/` entry points are, and a noun because
 # things are named for what they are. Refused `netboot-test`, because what this stands in for is a
 # bench session with a camera rather than a unit under test, and the word would promise a verdict on
-# xenon that no gate on patagonia can give. Refused `board-netboot-rehearsal`, which reads as a
+# xenon that no gate on a development machine can give. Refused `board-netboot-rehearsal`, which reads as a
 # rehearsal of `board-netboot` rather than of a boot, and names a board where there is none: the
 # machine under test here is QEMU. Refused `pxe-rehearsal`, on `board-netboot`'s own precedent that
 # a name should be the thing rather than its wire.

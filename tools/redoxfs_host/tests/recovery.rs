@@ -1,22 +1,12 @@
 //! The recovery witness (milestone 57): a whole tree through the real on-disk format, written by
 //! one process and read back by another.
 //!
-//! This is the "the board is dead, can I get my data?" claim, tested the only way that means
-//! anything. **Every step is a separate invocation of the built binary**, so nothing is shared
-//! between the write and the read but the bytes in the image file: no cached `FileSystem`, no
-//! warm allocator, no in-process state that could make a reader agree with a writer for the wrong
-//! reason. A test that writes and reads inside one process proves the two halves of one program
-//! agree; this proves the format is on the disk.
-//!
-//! The tree is deliberately not flat and not small. A 300 KiB file spans many RedoxFS records
-//! (37.5 of the 8 KiB records milestone 138 moved to, 2.3 of the 128 KiB ones before it, and dozens
-//! of 4 KiB blocks either way), a three-deep directory chain exercises the path walk,
-//! an empty file and an empty directory are the edges that a "did you write anything?" bug slips
-//! through, a symlink is a node kind that is neither, and an executable proves the mode survives.
-//!
-//! The write side is upstream's own archiver (`import`, wrapping `redoxfs::archive`), on purpose:
-//! if our reader only ever read images our writer made, a shared misunderstanding of the format
-//! would pass. See notes/host-recovery.md.
+//! Every step is a separate invocation of the built binary, so only the image's bytes are shared
+//! and a reader cannot agree with a writer for an in-process reason. The tree has a 300 KiB file
+//! (37.5 of the 8 KiB records milestone 138 (close the read gap) moved to), a three-deep chain, an
+//! empty file and directory, a symlink and an executable. The write side is upstream's archiver
+//! (`import`), so a misunderstanding our reader shares with our writer cannot pass. See
+//! notes/host-recovery.md.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

@@ -151,6 +151,26 @@ What stage 1 must decide in its own block: where the crate lives, its name (an a
 how clang finds the generated headers, and whether cbindgen is taken or the headers are written by
 hand (a §46 question).
 
+## The platform layer's own constraints
+
+[`c_library/README.md`](../c_library/README.md) is the guide to the built crate. A few constraints
+its source relies on are recorded here rather than in its comments.
+
+- One client per protocol. Because the platform layer is built on `std`, a protocol change lands in
+  one place. A C program and a Rust program granted the same directory cannot see different things
+  in it. The cost is a few hundred KiB of `std` in every C program.
+- The futex is built from `thread::park` and `Thread::unpark` because `std` does not export its own
+  and the crate makes no system call. On nife each of those is one kernel wait or one kernel wake on
+  a word of the parked thread's own. The table's shape is WebKit's parking lot, which Rust's
+  `parking_lot` crate also takes.
+- `pthread_exit` `longjmp`s back to the `setjmp` that `c/thread_start.c` records on the thread's own
+  stack. The frames it skips are the C program's and `pthread_exit`'s own, which holds nothing with
+  a destructor when it jumps. From the main thread, `pthread_exit` waits for every other thread
+  `pthread_create` made to finish and then ends the process with status 0, as a process whose last thread exits does.
+- A pipe or socket pair needs no kernel object while both ends are in one process. A pipe between
+  two processes would need a kernel or server object, which this is not. `poll`'s wake is a
+  broadcast where a kernel would wake only the interested, which is cheap only while pipes are few.
+
 ## What stage 1 found (2026-10-10, UTC)
 
 Milestone 835 (a C library, stage 1: files, clock and memory) built the shape recommended above.
@@ -166,6 +186,24 @@ Three findings against this note's predictions:
   vararg in a general register, and Rust's `va_arg::<f64>` on aarch64 and x86_64 reads the
   floating-point save area. relibc's `printf` printed every `double` as 0 until it read the bits as
   a `u64`. SQLite's `speedtest1` did not notice, because SQLite formats numbers itself; ioping did.
+
+## The errno a C program sees
+
+`crates/c_library_errno` translates each `std::io::Error` the platform layer meets into an `errno`.
+It is a crate of its own so it can be proven on the host in milliseconds, because the platform layer
+itself builds only for the `*-unknown-nife` targets.
+
+The mapping is by meaning, the way `std` maps the other way (`decode_error_kind` on Unix). Where a C
+caller's behavior turns on the value, the value matters more than the wording:
+
+- SQLite treats `ENOENT` from `open` as "no such database, create it", and `EACCES` and `EPERM` as
+  "read-only". So a missing grant is `EACCES`, never `EIO`.
+- nife's `std` answers `Unsupported` for anything the platform does not provide (no grant, no such
+  operation), and C's word for that is `ENOSYS`.
+- Anything with no closer meaning is `EIO`, the errno a C program is least likely to retry.
+
+The numbers are Linux's generic ones, which `c_library`'s `errno.h` also uses. `c_library` checks at
+compile time that its constants equal the crate's, so the two cannot drift.
 
 ## BUGS
 

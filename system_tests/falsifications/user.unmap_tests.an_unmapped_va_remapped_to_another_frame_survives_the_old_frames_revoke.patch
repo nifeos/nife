@@ -10,9 +10,9 @@ Expected to fail: the last assertion, which finds nothing mapped at `VA` where i
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -245,7 +245,8 @@
-         // still a window to close, and a record with no page behind it is still a record a later
-         // revoke would act on.
+@@ -179,7 +179,8 @@
+         // Both halves, neither short-circuiting the other: a page with no record is still a window,
+         // and a record with no page is still one a later revoke would act on.
          let unmapped = mmu::unmap_user_at(root, va);
 -        let forgotten = hold.forget_mapping_at(root, va);
 +        let forgotten: Option<u64> = None;

@@ -5,6 +5,8 @@ Gates, records and the merge queue: the machinery that keeps many lanes honest.
 Part of [the notes index](../README.md), which says how to add a line.
 
 - [The `script/` entry points](../scripts.md): the normalized front-door commands and what each does.
+- [The test command](../xtask-test.md): what `cargo xtask test` runs and in what order, each flag's reason, and the x86_64 leg's extra machines. Name provisional.
+- [A swish-check leg](../swish-check-boot.md): what each boot of a `script/swish-check` leg proves, and the boot claims it reads. Name provisional.
 - [Every check in this repository](../check-inventory.md): audit of what runs, blocks, and asserts. Name provisional.
 - [A workflow records the run it was watched failing in](../observed-failing.md): no gate is trusted until it has been seen to fire. Name provisional.
 - [Selectors that can select nothing](../empty-selectors.md): gates that pass when their pattern matches nothing. Name provisional.
@@ -16,7 +18,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A merge-queue ejection, caught before the queue and recovered after it](../queue-ejection.md): the ready check, the text checks of lint in the pre-push hook, the `needs-maintainer` label on an ejected pull request, and the drain's hold on an ejected head. Names provisional.
 - [Which pull requests pay down debt](../debt-paydown.md): what the `debt-paydown` label means, the calls that set precedent, and how a lane gets it. Name provisional.
 - [A paused draft names its blocker, and the drain reads it back](../blocked-by-drafts.md): `Blocked-by:` on a draft pull request, and the `unblocked` label. Name provisional.
-- [Working from a cloud session](../working-from-a-cloud-session.md): what past cloud sessions hit, how to set up, claim and gate in CI, and what needs patagonia. Name provisional.
+- [Working from a cloud session](../working-from-a-cloud-session.md): what past cloud sessions hit, how to set up, claim and gate in CI, and what needs a local Mac. Name provisional.
 - [Build output on its own volume](../dev-machine-disk.md): why deleted `target/` directories fill a Mac's disk through local snapshots, and the runbook that moves lane worktrees to an unsnapshotted APFS volume. Names provisional.
 - [The automation's own identity](../automation-identity.md): the `smelter` GitHub App that replaces a personal token. Name provisional.
 - [Agent sessions act as the App](../session-identity.md): `helpers/smelter-token`, so a lane runs as nife-smelter rather than as calef. Name provisional.
@@ -37,6 +39,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [How stable the interface is](../interface-stability.md): what the interface is, the weekly counts of what broke and what grew, the proposed threshold, and what the counts cannot see. Names provisional.
 - [The violation ledger](../rule-violations.md): counting how often each written rule is broken. Name provisional.
 - [Load-sensitive assertions](../load-sensitive-assertions.md): the register of assertions that fail under host load, how to fix one, and each site's status. Appendix names provisional.
+- [The kernel test harness](../kernel-test-harness.md): the two hang watchdogs, skips, filters and repeats, the frame ledger, tick budgets, and the preemption window tests.
 - [The `uefi-test` exit-1-after-green rate](../uefi-test-exit-rate.md): the measured rate, the exit-path protocol the failure message now names, and why the VT-d lines are expected. Name provisional.
 - [The `uefi-boot` two-core rate at `-smp 2`](../uefi-boot-two-core-rate.md): the dedicated rate the UEFI gate's two-core assertion was owed, zero in 42 across a load gradient, and which stale records the fix left behind. Name provisional.
 - [The CI log baseline](../ci-log-baseline.md): which check failed each CI job, from expiring logs. Names provisional.
@@ -54,6 +57,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The system-test modules](../system-test-modules.md): what each module of the whole-system suite proves, and why each test is shaped as it is. Name provisional.
 - [The suite's frame budget](../frame-budget.md): what the system tests may leave unreturned, what they legitimately keep, the conventions, and every number the ceiling has been. Name provisional.
 - [The swish-check CI flake, measured](../swish-check-flake.md): two timing-race reds at one gate, counted over 30 days, explained mechanically. Name provisional.
+- [How swish-check reads what the shell answered](../swish-check-harness.md): the transcript readers, the gauges, the timeouts with their measurements, and why each script row asserts what it does. Name provisional.
 - [swish-check failures, 2026W40](../swish-check-flake-2026w40.md): the week's 18 failures classified; the echo splice that looked like it survived milestone 342 (the kernel and the `console` server drive one UART from two address spaces) all predates it. Name provisional.
 - [The truncated echo, 2026W42](../swish-check-flake-2026w42.md): a typed line whose input stopped mid-echo on aarch64, a receive interrupt cleared while a byte waited in the PL011's FIFO, and the `--input-race` boot that proves the fix. Name provisional.
 - [Crates that could be released on their own, 2026-10-07](../releasable-crates-2026-10-07.md): which crates could leave, who else implements each, and whether to offer them our proofs. Name provisional.

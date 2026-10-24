@@ -1,37 +1,12 @@
 //! The syscall boundary. **Five calls <!--count:syscalls-->.**
 //!
-//! DECISIONS §4 rule 3 said the syscall surface stays narrow and explicit, *"a boundary, not a
-//! habit."* §8 said milestone 7 was a hard decision point and that hacking one in without the
-//! conversation meant the plan had failed. §10 had the conversation and chose capabilities.
+//! `exit`, `exit_thread`, `yield` and `cap_delete` are authority over the caller itself, and
+//! `invoke(cap, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
+//! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
+//! `crates/abi`, which the kernel and every user program share.
 //!
-//! This is what that buys:
-//!
-//! ```text
-//!   exit(code)                          authority over yourself
-//!   exit_thread(word)                   likewise, one thread of yourself (milestone 812)
-//!   yield()                             likewise
-//!   cap_delete(slot)                    likewise: your own capability table is your own
-//!   invoke(cap, method, a0, a1, a2)     EVERYTHING ELSE
-//! ```
-//!
-//! All but one are authority over yourself and the last is everything else, which is the
-//! property worth remembering rather than the count. This header said "three calls" from
-//! 2026-07-14 until the 2026-08-17 documentation sweep, `abi::SYS_CAP_DELETE` having arrived on
-//! 2026-07-24 without it; the count is now a re-derived `<!--count:syscalls-->` claim.
-//!
-//! No `open`. No `read`. No `write`. No `fork`. **A process can only act on things it was
-//! handed.** The ABI lives in `crates/abi`, which both the kernel and every user program depend
-//! on, so the boundary is *one artifact* rather than two files that agree by luck.
-//!
-//! # No pointer ever crosses this boundary
-//!
-//! There used to be a `user_slice` here: the console `write` syscall took a `(ptr, len)` from
-//! userspace and the kernel read the user's memory, which is why it needed the `AT S1E0R`
-//! confused-deputy defence. Milestone 8 moved the console to a userspace server and deleted that
-//! path. Today every argument is a scalar in a register (a capability slot, a method, a `va`, a
-//! word), so the kernel follows no user pointer and there is no deputy to confuse. The primitive
-//! that made the old check possible, `mmu::user_can_read`, is kept for the next syscall that does
-//! take a user pointer.
+//! See notes/syscall-boundary.md, and DECISIONS §10 (process model: capability-based,
+//! microkernel) for the choice this surface carries out.
 
 use abi::Error;
 
@@ -39,11 +14,7 @@ use crate::arch::exceptions::TrapFrame;
 use crate::cap::{Capability, Object, Rights};
 use crate::sched;
 
-// **The `ThreadControlBlock` methods, in a file of their own** because this one reached §266 (a Rust
-// source file stays under 2,000 lines)'s ceiling when milestone 812 (`std::thread::spawn` runs
-// real threads in one address space) added `SET_THREAD_POINTER`. They were already one
-// out-of-line seam; [`invoke`] reaches them through one call. The other objects' methods followed
-// on 2026-10-12 (UTC), one child per object family, for §282 (when a file is split, the parent
+// The methods, one child module per object family, for §282 (when a file is split, the parent
 // becomes an index).
 mod address_space;
 mod memory_region;
@@ -69,25 +40,13 @@ use thread_control_block::thread_control_block_invoke;
 
 // Index exception (2026-10-12): `script/fastpath-footprint` finds the syscall entry by this
 // path, `kernel7syscall8dispatch` in the mangled name, and counts it flat as `syscall_entry`.
-/// Called from the `svc` arm of `exception_body` (`ecall` on riscv64, in `riscv_trap_body`). The
-/// *body*, not the dispatcher, since milestone 124 split the two: a syscall arrives from user mode,
-/// which is the case that deliberately does NOT move to the interrupt stack, because this path can
-/// block and a blocked thread's frames must live on its own stack.
+/// Decode and run one syscall, and write its result to the first argument register.
 ///
-/// **`#[inline(never)]` keeps this a symbol `script/fastpath-footprint` can name**, which is the
-/// third instance of a pattern the tree has now recorded twice
-/// (`design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`): that gate's
-/// `syscall_entry` half sums a flat list of symbols, so an LLVM inlining flip moves bytes into or
-/// out of the measurement without anything on the syscall path changing. Milestone 220's lane hit
-/// the *outward* direction, which is the one that reads as good news and is not: adding an
-/// unrelated dependency to this crate made LLVM fold these 1160 bytes into the aarch64 exception
-/// handler, and the gate reported `syscall_entry` shrinking 35% while the code a syscall fetches
-/// was identical. Re-recording the baseline there would have locked in an under-measurement.
+/// Called from the `svc` arm of `exception_body` (`ecall` on riscv64, in `riscv_trap_body`). A
+/// syscall stays on the thread's own stack, not the interrupt stack, because it can block.
 ///
-/// It also stands on its own, which is the test the tree asks of every `#[inline(never)]` it
-/// carries (`timer::tick`, `sched::grant_cycle_counter`, milestone 156's spawn
-/// bodies): this is a large match executed once per syscall, and one `bl` is not a cost worth
-/// duplicating a kilobyte of dispatcher into a handler that also serves faults and interrupts.
+/// `#[inline(never)]` keeps this a symbol `script/fastpath-footprint` can name and sum flat as
+/// `syscall_entry`; notes/syscall-boundary.md has what an inlining flip does to that sum.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -95,15 +54,10 @@ use thread_control_block::thread_control_block_invoke;
     unsafe(link_section = ".text.hot.syscall.dispatch")
 )]
 pub(crate) fn dispatch(frame: &mut TrapFrame) {
-    // The syscall number and arguments come from the trap frame through arch accessors, not raw
-    // register indices, because the ABI register file differs per architecture (aarch64 `svc` with
-    // the number in x8 and args in x0..x5; RISC-V `ecall` with the number in a7 and args in a0..a5).
-    // `TrapFrame::{syscall_nr, arg, set_arg}` hide that mapping so this dispatcher stays portable.
-    // See DECISIONS §10/§17.
+    // Through the frame's accessors: each architecture puts the number and arguments in
+    // different registers.
     let nr = frame.syscall_nr();
-    // Milestone 134's per-IPC stack-depth instrument keys each sample by method, and the method
-    // register may be overwritten by a result before the end of this function. Not in any build
-    // that measures time or footprint: see `crate::ipc_stack_depth`.
+    // Read now: a result may overwrite the method register before the stack-depth sample.
     #[cfg(any(test, feature = "ipc_stack_depth"))]
     let method = frame.arg(1);
 
@@ -111,7 +65,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
     if nr == abi::SYS_EXIT {
         sched::exit();
     }
-    // End this thread only (milestone 812): beside `exit`, and like it never back here.
+    // Ends this thread only, and like `exit` never comes back.
     if nr == abi::SYS_EXIT_THREAD {
         sched::exit_thread(frame.arg(0));
     }
@@ -121,8 +75,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
             sched::yield_now();
             Ok(0)
         }
-        // Drop a capability from the caller's own capability table (milestone 19d). Deleting an empty slot
-        // is a no-op, not an error: a loader recycling slots should not have to track emptiness.
+        // An empty slot is not an error: a loader recycling slots need not track emptiness.
         abi::SYS_CAP_DELETE => {
             let _ = sched::delete_current_cap(frame.arg(0));
             Ok(0)
@@ -138,9 +91,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
         _ => Err(Error::BadSyscall),
     };
 
-    // The return value goes back in the first argument register, which the trap-restore path pops
-    // into the register the user is waiting on. Writing to the trap frame IS writing to the user's
-    // registers.
+    // The trap-restore path pops the frame into the user's registers.
     frame.set_arg(
         0,
         match result {
@@ -157,16 +108,14 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
 
 // Index exception (2026-10-12): the decoder inlines into `dispatch` above, and moving it to a
 // child would let a codegen-unit split change what `syscall_entry` measures.
-/// Act on a capability.
+/// Invoke `method` on the capability in the caller's `slot`, with arguments `a0`, `a1` and `a2`.
 ///
-/// **The lookup is the security mechanism, and it is a bounds check.** `slot` is an index into
-/// *this thread's* table, which lives in kernel memory. An empty slot is `NoSuchSlot`: not
-/// "permission denied", but *there is nothing there*. That difference is what no-ambient-authority
-/// feels like from the inside.
+/// The lookup is the security mechanism: `slot` indexes this thread's own table in kernel memory,
+/// and an empty slot is `NoSuchSlot` (there is nothing there), not a refusal. Then the object's
+/// rights checks, then the method. Returns the method's result word or its `abi::Error`.
 ///
-/// `pub(crate)` so kernel tests in other modules can drive **this** path rather than a
-/// re-implementation of it: an authorization test that calls `sched` directly proves the helper, not
-/// the boundary. See `user/reap_tests.rs`.
+/// Public so kernel tests drive this path, not a copy of it (`user/reap_tests.rs` does). See
+/// notes/syscall-boundary.md.
 pub fn invoke(
     frame: &mut TrapFrame,
     slot: u64,
@@ -179,8 +128,7 @@ pub fn invoke(
 
     match cap.object {
         Object::Rendezvous(ep, badge) => match method {
-            // The round trip's methods and `SURVEY`, each in `rendezvous`, `#[inline(always)]` so
-            // the decoder compiles as it did with them written here (that module says why).
+            // `#[inline(always)]` in `rendezvous`, so the round trip stays inside `invoke`.
             abi::rendezvous::SEND => rendezvous_send(cap.rights, ep, badge, [a0, a1, a2]),
             abi::rendezvous::RECEIVE => rendezvous_receive(frame, cap.rights, ep),
             abi::rendezvous::SEND_CAP => {
@@ -189,16 +137,8 @@ pub fn invoke(
             abi::rendezvous::RECEIVE_CAP => rendezvous_receive_capability(frame, cap.rights, ep),
             abi::rendezvous::CALL => rendezvous_call(frame, cap.rights, ep, badge, [a0, a1]),
 
-            // **Collect a corpse this endpoint supervises** (DECISIONS §32). The method that lets a
-            // supervisor reap without holding the authority to *build*: reaping used to mean
-            // `MemoryRegion::DESTROY`, which needs WRITE on the region, and WRITE on a region is also what
-            // retypes a thread and an address space out of it.
-            //
-            // READ, not WRITE: the authority to collect a death is the authority to *receive* deaths
-            // here, which is what a supervisor holds and what a send-only holder (a peer that can
-            // report to this supervisor) deliberately does not. `a0` is the tid the kernel stamped on
-            // the death message, and it is authorized *relative to this endpoint* (sched's
-            // reap_supervised), so it is a name inside a relationship rather than a global handle.
+            // READ, the right to receive deaths here, which a send-only peer lacks (DECISIONS §32
+            // (a supervisor may collect a corpse without being able to build one)).
             abi::rendezvous::REAP => {
                 if !cap.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
@@ -206,26 +146,20 @@ pub fn invoke(
                 rendezvous_reap(ep, a0)
             }
             abi::rendezvous::SURVEY => rendezvous_survey(frame, cap.rights, ep, a0, a1),
-
-            // Body extracted, the pattern of milestone 156 (`syscall_entry`'s measured size is every method
-            // combined): minting a badge is spawn-time delegation, never a step of the IPC round
-            // trip, so it stays out of `invoke`'s own bytes (milestone 599).
             abi::rendezvous::BADGE => rendezvous_badge(ep, cap.rights, badge, a0),
             _ => Err(Error::BadMethod),
         },
 
-        // A one-shot reply to a specific caller (§12). Minted by the kernel at a CALL rendezvous,
-        // named by the caller's tid, consumed on use.
+        // §12 (Call/Reply IPC: a one-shot reply capability).
         Object::Reply(tid) => match method {
             abi::reply::REPLY => {
-                // Minted WRITE-only, so a narrowed derivative could not answer; and minted without
-                // GRANT, so it could not have been delegated here in the first place.
+                // Minted WRITE-only, so a narrowed copy cannot answer, and without GRANT, so it
+                // cannot have been delegated here.
                 if !cap.rights.allows(Rights::WRITE) {
                     return Err(Error::NotPermitted);
                 }
                 sched::ipc_reply(tid, [a0, a1]);
-                // One-shot: consume it, so a second reply is NoSuchSlot and the caller cannot be
-                // answered twice. This is the guarantee a pre-wired reply endpoint cannot make.
+                // Consumed, so the caller cannot be answered twice.
                 let _ = sched::delete_current_cap(slot);
                 Ok(0)
             }
@@ -233,51 +167,26 @@ pub fn invoke(
             _ => reply_other(slot, method, a0, a1, a2),
         },
 
-        // Another process's memory, under construction (19b). WRITE on the address space cap is the
-        // authority to shape it; the frame's own rights gate what kind of mapping, exactly as
-        // frame::MAP; the va gate is the proved paging::is_user_page_va, as everywhere.
         Object::AddressSpace(name) => address_space_invoke(frame, cap, name, method, [a0, a1, a2]),
 
-        // A thread under construction (19c.3). WRITE on the TCB cap is the authority to shape
-        // and start it. Every method refuses a thread that is not an embryo, in the scheduler.
         Object::ThreadControlBlock(tid) => {
             thread_control_block_invoke(frame, cap.rights, tid, method, [a0, a1, a2])
         }
 
-        // A notification (milestone 151, DECISIONS §101 (notification objects)). Extracted and `#[inline(never)]` for
-        // `memory_region_map`'s reason: none of these is a step of the IPC round trip
-        // `script/fastpath-footprint` bounds, so the new arm costs the flat `syscall_entry` one
-        // call rather than four method bodies.
         Object::Notification(id) => notification_invoke(cap.rights, id, method, a0),
 
-        // A timer (milestone 106, DECISIONS §147 (a timer a userspace service cannot hold)). Out of line for the notification arm's reason:
-        // neither method is a step of the IPC round trip the fastpath footprint bounds.
         Object::Timer(id) => timer_invoke(cap.rights, id, method, a0, a1, a2),
 
-        // A process (milestone 812): its one method is the supervisor's kill. Out of line for the
-        // timer arm's reason.
         Object::Process(pid) => process_invoke(cap.rights, pid, method),
 
-        // The reboot object (milestone 805 (`reboot` at the prompt), DECISIONS §251 (restarting the
-        // machine is a kernel object the progenitor hands out)). Out of line for the timer arm's
-        // reason, and colder than any of them: a successful call never returns. Holding the
-        // capability is the whole authority, so no rights bit is asked for (§251, "The method").
+        // No rights bit: holding the capability is the whole authority (DECISIONS §251 (restarting
+        // the machine is a kernel object the progenitor hands out)).
         Object::Reboot => reboot_invoke(method),
 
-        // The rights checks and the out-of-line bodies, in `memory_region`, `#[inline(always)]`
-        // for the reason `rendezvous` gives.
         Object::MemoryRegion(region) => memory_region_invoke(cap, region, method, [a0, a1, a2]),
 
         Object::PageFrame(phys, count) => match method {
-            // Body extracted (milestone 156), the same reason as `MemoryRegion`'s five methods:
-            // neither `MAP` nor `REVOKE` is a step of the IPC round trip, so both move out of
-            // `invoke`'s own bytes. `MAP`'s rights check is data-dependent (branches on `a1`), so
-            // it lives inside `page_frame_map` rather than at the call site here, unlike the fixed
-            // single-right checks the other extractions keep in `invoke`.
-            //
-            // §102 (2026-08-20): `count` rides on the capability, not on the syscall's arguments,
-            // so `MAP`'s and `REVOKE`'s wire shape is exactly what it was before the object could
-            // name a run. A single-page frame (`count: 1`) runs each loop below once.
+            // `MAP` checks its rights inside `page_frame_map`, because they depend on `a1`.
             abi::page_frame::MAP => page_frame_map(slot, a0, a1, a2),
             abi::page_frame::REVOKE => {
                 if !cap.rights.allows(Rights::GRANT) {
@@ -289,18 +198,10 @@ pub fn invoke(
             _ => Err(Error::BadMethod),
         },
 
-        // A device's MMIO page is almost passive: it is handed to MAP_INTO as the page to map
-        // (19d.2), and since milestone 23 it answers exactly one invocation, `REVOKE`.
         Object::DeviceFrame(phys) => match method {
-            // **Take the registers back from everyone else** (DECISIONS §41). The step live
-            // replacement needs between tearing one driver down and endowing the next, so that a
-            // device never has two owners. Needs `GRANT`, the same rule `PageFrame::REVOKE` uses: you
-            // were trusted to lend the device on, so you may take it back.
-            //
-            // Unlike a frame revoke this **spares the invoker's own** capability and mapping, and
-            // it must: only the kernel mints a `DeviceFrame`, and it does so once at boot, so a
-            // symmetric revoke would make the device unreachable for the rest of the machine's
-            // life. `revoke::revoke_device_from_others` carries the full argument.
+            // Spares the invoker's own capability and mapping, unlike a frame revoke: the kernel
+            // mints a `DeviceFrame` once (DECISIONS §41 (the endpoint is the broker, and a device
+            // is revoked by taking it back); `revoke::revoke_device_from_others` has why).
             abi::page_frame::REVOKE => {
                 if !cap.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
@@ -319,10 +220,6 @@ pub fn invoke(
         }
 
         Object::Irq(intid) => match method {
-            // Body extracted (milestone 156). `WAIT` does block on the same `sched::ipc_receive`
-            // the `Rendezvous` fastpath uses, but the caller here is a driver waiting on a device
-            // interrupt, not the IPC round trip this gate bounds, so it moves out of `invoke`'s
-            // own bytes with the rest. See `memory_region_map`'s doc comment for the full reasoning.
             abi::interrupt::WAIT => {
                 if !cap.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
@@ -338,44 +235,16 @@ pub fn invoke(
             _ => Err(Error::BadMethod),
         },
 
-        // A port range is enforced at the context switch (the TSS I/O bitmap), so like a
-        // `DeviceFrame` it is almost passive on the syscall path: it answers exactly one invocation,
-        // `REVOKE`, the take-back a live driver replacement needs (DECISIONS §121, milestone 299).
-        // Extracted, `#[inline(never)]`, for `memory_region_map`'s reason: a rare administrative
-        // method has no business growing the flat `syscall_entry` footprint the IPC round trip is
-        // measured against (`script/fastpath-footprint`). The variant is `x86_64`-only, so on the
-        // other two architectures this match is exhaustive without it and their dispatcher is
-        // unchanged.
+        // `x86_64` only; the other two architectures' match is exhaustive without it.
         #[cfg(target_arch = "x86_64")]
         Object::PortRange(base, count) => port_range_invoke(cap.rights, base, count, method),
     }
 }
 
-/// **The first proofs over the kernel's own source** (milestone 193).
+/// Kani proofs over the kernel's own source: the run arithmetic both mapping paths guard with.
 ///
-/// Every other `#[kani::proof]` in this tree sits in a crate under `crates/`, because until this
-/// milestone `script/verify` could not reach `kernel/src` at all: its own header says
-/// `cargo kani -p <crate>` never compiles the kernel. Milestone 191 measured what that cost, and
-/// the answer was every defect the corpus actually had. This module is the other side of that
-/// door, and `notes/kernel-proofs.md` is what a reader should open first, because a proof over
-/// this crate carries stubs that a proof over a pure crate does not.
-///
-/// # What is stubbed, and therefore what these proofs do NOT say
-///
-/// The list is short and it is exhaustive, which is the only reason it is worth writing down:
-///
-/// - **Global assembly is skipped**, by `--ignore-global-asm` in `script/verify`. That is the boot
-///   entry, the vector table and the context switch on all three architectures. Nothing below
-///   reaches any of it, and nothing below claims anything about it.
-/// - **`asm!` is an unsupported construct to Kani**, so every function that reaches one is
-///   unverifiable rather than verified: all of `kernel/src/arch/`, plus `cpu.rs` once and `user.rs`
-///   twice. If a harness ever calls into that code Kani reports the construct rather than proving
-///   past it, which is the failure direction we want.
-/// - **The panic handler is absent under `cfg(kani)`** (`panic.rs` says why: Kani links `std`,
-///   which already defines the lang item). Nothing here says what the kernel does after a panic.
-///
-/// The functions proved below touch none of that. They are integer arithmetic on words a user
-/// program chose, which is exactly where milestone 142's review found four defects by reading.
+/// A proof over this crate runs with global assembly skipped, `asm!` unverifiable and no panic
+/// handler; notes/kernel-proofs.md lists what that leaves these proofs unable to say.
 #[cfg(kani)]
 mod proofs;
 

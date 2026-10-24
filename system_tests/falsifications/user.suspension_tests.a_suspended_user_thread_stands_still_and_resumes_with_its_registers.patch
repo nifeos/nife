@@ -11,12 +11,11 @@ Expected to fail: "method 4 obeyed a TCB capability without WRITE". Nothing here
 architecture-specific, so one patch serves every leg.
 
 diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
-index 42610962c..0a138c599 100644
 --- a/kernel/src/syscall/thread_control_block.rs
 +++ b/kernel/src/syscall/thread_control_block.rs
-@@ -59,9 +59,6 @@ pub(super) fn thread_control_block_invoke(
-         // §300 (the paused state, a TCB verb, silent): the TCB capability is the whole
-         // authority, WRITE as for every method here.
+@@ -49,9 +49,6 @@
+             Ok(0)
+         }
          abi::thread_control_block::SUSPEND => {
 -            if !rights.allows(Rights::WRITE) {
 -                return Err(Error::NotPermitted);

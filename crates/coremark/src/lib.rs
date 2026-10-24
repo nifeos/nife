@@ -1,24 +1,17 @@
 //! **coremark**: a CoreMark-derived compute benchmark, in portable `no_std` Rust (milestone 19e).
 //!
-//! A faithful-in-spirit port of EEMBC's CoreMark: the same three work items that make a CoreMark
-//! iteration (a linked-list sort, a small-matrix multiply-accumulate, and a state machine over a
-//! byte buffer), each folded into a CRC so the compiler cannot optimize the work away and a run
-//! self-validates. It is **not** an EEMBC-certified CoreMark: the certified score requires the
-//! unmodified reference C. This is a Rust reimplementation whose value is that the *identical source*
-//! compiles for nife, macOS, and Linux, so the compute comparison across those three is one
-//! program on three OSs (notes/benchmarks.md).
-//!
-//! `run(iters)` does `iters` core iterations over a fixed, seeded dataset and returns a CRC. Same
-//! `iters` always yields the same CRC (a test pins it), which is the correctness check; the *score*
-//! is `iters` divided by the wall-clock the caller measures around it. The dataset is a few kilobytes
-//! (CoreMark's small-memory profile), so it stays cache-resident and fits a small userspace stack.
-//!
+//! The same three work items as an EEMBC CoreMark iteration (a linked-list sort, a small-matrix
+//! multiply-accumulate and a state machine over a byte buffer), each folded into a CRC so the
+//! compiler cannot delete the work and a run self-validates. It is not an EEMBC-certified CoreMark,
+//! which requires the unmodified reference C; its value is that the identical source compiles for
+//! nife, macOS and Linux. [`run`] does `iters` iterations over a fixed, seeded dataset of a few
+//! kilobytes (CoreMark's small-memory profile, so it stays cache-resident and fits a small stack),
+//! and the score is `iters` over the wall-clock the caller measures. See notes/benchmarks.md.
 
 //! # Examples
 //!
-//! How a caller scores a machine, and the two things about this crate that make the score mean
-//! anything. The CRC is the run's self-validation: it is the same on nife, macOS and Linux, so a
-//! comparison across the three is a comparison of *time* rather than of two different computations.
+//! How a caller scores a machine. The CRC is the same on nife, macOS and Linux, so a comparison
+//! across the three compares *time* rather than two different computations.
 //!
 //! ```
 //! use std::time::Instant;
@@ -38,9 +31,8 @@
 //! assert!(score > 0.0);
 //! ```
 //!
-//! The CRC is what stops the optimiser deleting the work, so the property worth asserting is that it
-//! **depends on the iteration count**. A compiler that hoisted any of the three work items out of the
-//! loop would give the same answer for every count:
+//! The CRC depends on the iteration count, so a compiler that hoisted a work item out of the loop,
+//! giving the same answer for every count, would fail this:
 //!
 //! ```
 //! use coremark::run;

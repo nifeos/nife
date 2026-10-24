@@ -1,33 +1,12 @@
 //! **The progenitor: the first process, on all three architectures.**
 //!
 //! The kernel loads this as the boot process, maps the initial ramdisk into it, and grants it the
-//! capabilities `GRANTS` names below. From those, and nothing else, it builds the whole interactive
-//! system out of its own budget: the console server, the input driver, the line discipline, the
-//! shell, the terminal's sink adapter and the job undertaker, wired together with endpoints and
-//! shared pages it creates. Then it stays alive as the spawn service. Every other process on the
-//! machine descends from this one, which is what the name says.
-//!
-//! **All of that is `crates/system_initializer`** (milestone 96), and so is the reasoning: what the
-//! progenitor gives away once the system is up, why the job pool is bounded, and the honest limits
-//! (LIFO recovery, the retained scratch mappings, the sixteen-slot capability table). This file is
-//! the boot entry and nothing else.
-//!
-//! **One program, three architectures** (milestone 266). Until then aarch64's first process was a
-//! *role* of the `hello` demo catalogue (`init_boot`, role 27) while riscv64 and `x86_64` got this
-//! purpose-built one, and the archive entry `init` meant a different binary depending on the board.
-//! That is [DECISIONS §19](../../design/decisions/0019-architectural-parity.md)'s own failure mode,
-//! and the bill was paid once already: a fix that landed in one copy and not the other presented as
-//! a boot that reached userspace and printed nothing at all, with no fault and no message.
-//! `script/swish-check` runs both legs, which is what makes it the gate for this file.
-//!
-//! **One `GRANTS` table, all three architectures** (milestone 166 unified the kernel's boot
-//! loaders into `kernel::user::boot_progenitor`). Until then aarch64 numbered these capabilities
-//! differently and carried two at slots 1 and 3 the interactive system never used, because its
-//! loader was shared with milestone 19d's test roles; riscv64 and `x86_64` used a third order. The
-//! slot layout is now identical everywhere, so there is no `cfg` here at all. The one genuine
-//! per-architecture difference is the *shape* of slot 1's console authority, a device page on
-//! aarch64 and riscv64 and an `x86_64` `PortRange` (milestone 299, DECISIONS §121), and that is the
-//! kernel's and `system_initializer`'s to know rather than a slot number this table records.
+//! capabilities [`GRANTS`] names. From those alone it builds the interactive system out of its own
+//! budget (the console server, the input driver, the line discipline, the shell, the terminal's
+//! sink adapter and the job undertaker), then stays alive as the spawn service. All of that is
+//! `crates/system_initializer` (milestone 96 (one init)); this file is the boot entry, one program
+//! with one `GRANTS` table and no `cfg` on every architecture (notes/progenitor-and-loading.md,
+//! "One program and one grant table on every architecture").
 //!
 //! Name: ratified 2026-09-08 (calef, milestone 266). `progenitor` replaces `init` as the archive
 //! entry and `system_initializer` as this program's name. `init` is a truncated verb where the rule
@@ -136,15 +115,14 @@ const GRANTS: BootEndowment = BootEndowment {
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(uart_shape: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
     // `uart_shape` is the console UART's register shape as `abi::uart` encodes it, read from the
-    // device tree by the kernel, which this process cannot read. `boot` hands it to the console and
+    // device tree by the kernel, which this process cannot read; `boot` hands it to the console and
     // input drivers, the two programs that map the UART.
     //
-    // **The second mounted tree is the disk tree** (milestone 154 (a process that holds two directory capabilities)'s mechanism, milestone 834 (ioping on nife and Linux)'s
-    // use): the whole NVMe namespace as one read-only file with no cache, at `/disk`. DECISIONS
-    // §126 (a real, single, moving `cwd`) reserved what the second subtree should be for an
-    // architect, and calef ruled it on nifeos/nife#2371, 2026-10-18 21:36 UTC: "Yes, read-only at
-    // prompt". The kernel grants slots 32 and 33 only on a machine with an NVMe disk, and `boot`
-    // probes them.
+    // **The second mounted tree is the disk tree** (milestone 834 (ioping on nife and Linux)): the
+    // whole NVMe namespace as one read-only, uncached file at `/disk`. DECISIONS §126 (a real,
+    // single, moving `cwd`) left the second subtree to an architect, and calef ruled it on
+    // nifeos/nife#2371, 2026-10-18 21:36 UTC: "Yes, read-only at prompt". The kernel grants slots
+    // 32 and 33 only on a machine with an NVMe disk, and `boot` probes them.
     system_initializer::boot(
         &GRANTS,
         initial_ramdisk_len,

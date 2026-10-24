@@ -360,6 +360,70 @@ fn the_display_terminal_is_replaced_live_and_its_screen_and_history_survive() {
     super::compositor_tests::retire_kernel_display(display_region);
 }
 
+/// **A supervised `display_terminal` takes a quiesce from its supervisor and from nobody else**
+/// (§232 (the `line_editor` swap contract): "only a supervisor sends it"). The test holds the
+/// endpoint `display_terminal` serves unbadged, as the `line_editor` printing through it does, and
+/// quiesces it. Honored, that would stop the screen on a control endpoint only the supervisor
+/// speaks on, and a supervisor that did not ask never says `CTL_RESUME`. So it is refused, the
+/// terminal goes on drawing, and the supervisor's own quiesce, sent through its badged copy when
+/// the test stops it, still works.
+///
+/// Falsification: replayable `system_tests/falsifications/user.terminal_display_swap_tests.a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor.patch`
+#[test_case]
+fn a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor() {
+    let (display_ep, surface, display_region) = super::compositor_tests::kernel_display();
+    let rig = Rig::start(display_ep, surface);
+    let (sink, sink_page) = (rig.sink, rig.sink_page);
+
+    let expect_p = &raw mut EXPECT;
+    // SAFETY: this test is the only user of `EXPECT` while it runs, and the suite runs one test
+    // at a time.
+    let expect: &mut video_terminal::Vt = unsafe { &mut *expect_p };
+    expect.reset_to(COLS, ROWS);
+    let w = wiring(sink, sink_page, surface);
+    both(&w, expect, b"before ");
+
+    use line_editor::proto::{self, BAD_REQUEST};
+    let quiesce = [proto::req(proto::OPERATION_QUIESCE, 0), 0];
+    // Each answer is checked before the next call: a terminal that honored one would never
+    // answer the next, and the run would end at the watchdog rather than at the assertion.
+    for (badge, what) in [
+        (0, "an unbadged holder"),
+        (proto::RAW_ONLY_BADGE, "a raw-only holder"),
+    ] {
+        let q = match badge {
+            0 => sched::ipc_call(sink, quiesce),
+            b => sched::ipc_call_badged(sink, quiesce, b),
+        };
+        assert_eq!(
+            q[0], BAD_REQUEST,
+            "{what} quiesced a supervised display_terminal (reply {:#x}): any application could \
+             freeze the screen until a CTL_RESUME nobody sends",
+            q[0],
+        );
+    }
+
+    // The supervisor's copy carries a quiesce and nothing else: it cannot print.
+    let printed = sched::ipc_call_badged(
+        sink,
+        [proto::req(proto::OPERATION_WRITE, 0), 0],
+        proto::SUPERVISOR_BADGE,
+    );
+    assert_eq!(
+        printed[0], BAD_REQUEST,
+        "the supervisor's badged copy was served OPERATION_WRITE"
+    );
+
+    both(&w, expect, b"and after");
+    w.assert_screen_is(
+        expect,
+        "a display_terminal that refused a stranger's quiesce",
+    );
+
+    rig.stop();
+    super::compositor_tests::retire_kernel_display(display_region);
+}
+
 /// Copy each image into fresh frames from `alloc` at its address in the supervisor, and add the
 /// extra stack pages, into [`ELF_MAPS`]. Returns how many of its entries are in use.
 fn copy_the_images_into_frames(images: [(&[u8], u64); 3], alloc: impl Fn() -> u64) -> usize {

@@ -1,25 +1,12 @@
-//! Fuzz the device-tree parser with arbitrary bytes.
+//! Fuzz the device-tree parser with arbitrary bytes, through every accessor the kernel calls on a
+//! blob during boot.
 //!
-//! **Why this target exists.** The device tree is the one parse in this system that runs before
-//! anything else: `kernel/src/boot.rs` reads it from the pointer firmware left in a register, on
-//! both ISAs, before there is a frame allocator, a scheduler, or a way to report a failure. The
-//! bytes are written by QEMU, by OpenSBI, or by a board's firmware, and none of those is us. A panic
-//! here is a kernel that cannot boot and cannot say why.
-//!
-//! **What it adds over the Kani proofs.** `crates/device_tree_blob`'s four harnesses prove the
-//! *leaf readers* total: `be32` and `be64` never panic for any offset into any buffer. They
-//! deliberately do not reach the seven walkers above them, because a walker is an unbounded loop
-//! over a symbolic blob and that is where bounded model checking stops. The walkers are where the
-//! state lives: a depth counter, two 16-entry per-depth cell-count stacks, a "which node am I
-//! inside" slot. Every one of those is indexed by a number the blob controls.
-//!
-//! That is not a hypothetical division of labour. This target found a real out-of-bounds index in
-//! `node_reg` within seconds of its first run; see `crates/device_tree_blob/tests/hostile.rs`.
-//!
-//! **Every accessor, not just `from_bytes`.** A blob that parses is not a blob that is safe to walk,
-//! and the kernel calls all of these on the same blob during boot. (An earlier draft said "all
-//! seven"; the count grows with the parser, and the rule is the walkers below track its public
-//! surface.)
+//! The device tree is parsed before anything else exists, on both ISAs, from bytes QEMU, OpenSBI or
+//! a board's firmware wrote; a panic here is a kernel that cannot boot and cannot say why.
+//! `crates/device_tree_blob`'s Kani harnesses prove the leaf readers (`be32`, `be64`) total but not
+//! the walkers, whose depth counter, per-depth stacks and current-node slot are indexed by numbers
+//! the blob controls. This target found an out-of-bounds index in `node_reg` within seconds of its
+//! first run (`crates/device_tree_blob/tests/hostile.rs`). notes/fuzzing/targets.md has the rest.
 
 #![no_main]
 
@@ -42,18 +29,10 @@ fuzz_target!(|data: &[u8]| {
     let _ = dtb.reserved_memory_regions(&mut out);
     let _ = dtb.initial_ramdisk();
 
-    // The three lookups that take a caller-supplied needle. The kernel's real needles are what the
-    // arch layer asks for: `intc`/`plic` for the interrupt controller, `pl031`/`goldfish-rtc` for
-    // the clock, `virtio_mmio` for the transport. The empty prefix is the cheapest way to reach the
-    // decode path at all, because it matches the first node at depth >= 2 whatever the blob calls
-    // it.
-    //
-    // **It is also the needle that cannot reach the deep-nesting bug**, and that is worth stating
-    // where somebody might otherwise assume a fixed list is thorough: matching stops at the first
-    // candidate, so an empty prefix always matches at depth 2. Reaching depth 17 needs a name that
-    // matches ONLY down there, which means the fuzzer has to build seventeen levels of nesting and
-    // name the bottom one `intc...`. Ten minutes did not get there; a reader did. See
-    // notes/fuzzing.md's BUGS section.
+    // The three lookups that take a caller-supplied needle, with the arch layer's real needles
+    // (`intc`/`plic`, `pl031`/`goldfish-rtc`, `virtio_mmio`). The empty prefix reaches the decode
+    // path cheapest, since it matches the first node at depth >= 2, and for that reason it cannot
+    // reach the deep-nesting bug: matching stops at the first candidate (notes/fuzzing.md's BUGS).
     for prefix in [&b""[..], b"intc", b"plic", b"memory", b"virtio_mmio"] {
         let _ = dtb.node_reg(prefix, &mut out);
         let _ = dtb.node_prop(prefix, b"reg");

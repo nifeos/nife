@@ -19,9 +19,9 @@ express_is_refused` record instead, so the two patches are not copies.
 diff --git a/crates/paging/src/domain.rs b/crates/paging/src/domain.rs
 --- a/crates/paging/src/domain.rs
 +++ b/crates/paging/src/domain.rs
-@@ -68,9 +68,6 @@ pub struct DmaRegion {
- /// not mapped. That is the safe direction (the device reaches less than it was granted, never more)
- /// and it is what the old `size / PAGE_SIZE` already did.
+@@ -44,9 +44,6 @@
+ /// not mapped: the device reaches less than it was granted, never more. See notes/paging.md, "DMA
+ /// domains".
  pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
 -    if !r.base.is_multiple_of(PAGE_SIZE) {
 -        return Err(MapError::Misaligned);

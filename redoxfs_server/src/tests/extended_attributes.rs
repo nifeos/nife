@@ -249,19 +249,14 @@ fn a_directory_carries_attributes_and_rmdir_takes_them_with_it() {
     );
 }
 
-/// **The last attribute takes the store directory with it**, so a filesystem holding no
-/// attributes is byte-for-byte a filesystem that never held any.
+/// The last attribute takes the store directory with it, so a filesystem holding no attributes is
+/// byte-for-byte one that never held any (`redoxfs_host extract` would otherwise recover an
+/// unexplained empty `.nife-attrs`).
 ///
-/// This closes a recorded limitation rather than adding a feature, and the reason it was worth
-/// closing is on the recovery side: `redoxfs_host extract` copies the store out with the tree,
-/// so a leftover empty `.nife-attrs` would appear in somebody's recovered files as a
-/// directory nothing explains.
-///
-/// Both ways of emptying it are exercised, because they reach the same place by different paths:
-/// `remove_xattr` writes an empty blob and `unlink` purges one, and only one of them goes
-/// through `write_attrs`. The middle assertion is the one that keeps this honest: while a second
-/// node still has attributes, the directory must **stay**, or the test would pass just as well
-/// against an implementation that removed the store every time.
+/// Both ways of emptying it are exercised: `remove_xattr` writes an empty blob and `unlink` purges
+/// one, and only the first goes through `write_attrs`. The middle assertion keeps it honest: while a
+/// second node still has attributes the directory must stay, or an implementation that removed the
+/// store every time would pass too.
 #[test]
 fn the_last_attribute_takes_the_store_with_it() {
     /// Whether the store directory exists at all. Reaches past the contract on purpose: no

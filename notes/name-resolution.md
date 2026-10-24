@@ -16,7 +16,7 @@ badge) records them. Fork 2 and Fork 3 below keep the options and the reasoning.
 | `accept` fuzzed with a property, not only for panics | `fuzz/fuzz_targets/domain_name_system_reply.rs` | 5.2 million runs in 120 s clean; deleting the owner check was caught |
 | A name resolved end to end through `net_stack`, with lies refused, then connected to | `components/src/socket_test_client.rs`, `helpers/name-server-peer` | green on aarch64 and riscv64; the same deleted check fails it with `0xe14f` |
 | The resolver, §248's confined program: a `Stack` endpoint, an entropy endpoint, and a zone grant per client badge, judged before anything is sent | `components/src/domain_name_resolver.rs` | the gate below |
-| What the resolver, its clients and its spawner agree on, and the grant table | `crates/domain_name_resolution_contract` | 11 host tests |
+| What the resolver, its clients and its spawner agree on, and the grant table | `crates/domain_name_resolution_contract`; [its parties](name-resolution/the-contract.md) | 11 host tests |
 | A granted client resolves inside its zone and is denied outside it; an ungranted one is denied everything | `system_tests/src/user/name_resolver_tests.rs`, `fixtures/src/name_resolver_test_client.rs` | green on aarch64, riscv64 and x86_64 over the `e1000e`; deleting the zone check fails it on `example.com` |
 
 `Query::accept` believes an address only after the reply is a response with our transaction id, is

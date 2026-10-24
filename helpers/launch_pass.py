@@ -16,21 +16,21 @@ under `helpers/`, which `script/names` puts out of its own scope, so its provena
 paragraph; the entry point's `Name:` block is in `script/launch-pass`.
 
 **Where it runs** (calef, 2026-10-14 UTC, asked "What if we launched a container on patagonia for
-the test?": "Yes"). Both harnesses run in a container inside podman's Linux VM on patagonia: the
-image `script/runner-container` builds, with the two harnesses added at the host's own versions
-(`.github/runner-container/Containerfile.outsider-pass`). The container sees the standalone clone
-(read-write) and a results directory, and nothing else of the host: no home directory, SSH key,
-`gh` token or MCP configuration. The model's API key is its one secret, passed by name from the
-launcher's environment so its value is never on a command line; use a key made for the pass, which
-its owner revokes afterward. Outbound network is allowed, for the model's API. The harness's
-session state lives in a podman volume named for the pass, kept until the lane has collected, so
-`--complete` resumes the same session in a new container run. Before anything starts, the podman
-machine must be up with at least 6 CPUs and 8 GiB; the launcher refuses with the exact
+the test?": "Yes"). Both harnesses run in a container inside podman's Linux VM on the Mac that
+launches them: the image `script/runner-container` builds, with the two harnesses added at the
+host's own versions (`.github/runner-container/Containerfile.outsider-pass`). The container sees the
+standalone clone (read-write) and a results directory, and nothing else of the host: no home
+directory, SSH key, `gh` token or MCP configuration. The model's API key is its one secret, passed
+by name from the launcher's environment so its value is never on a command line; use a key made for
+the pass, which its owner revokes afterward. Outbound network is allowed, for the model's API. The
+harness's session state lives in a podman volume named for the pass, kept until the lane has
+collected, so `--complete` resumes the same session in a new container run. Before anything starts,
+the podman machine must be up with at least 6 CPUs and 8 GiB; the launcher refuses with the exact
 `podman machine set` command otherwise, and never resizes or restarts the machine itself.
 
 **What one launch does, in order.** A standalone clone with no remote and one branch, `pass`, at
 the pinned commit. The prompt: the Mac's runner text from `briefs/confinement-outsider-pass-launch.md`
-(its `### GLM 5.3 on patagonia` heredoc, word for word) and the reviewer's brief from
+(its `### GLM 5.3 on a Mac` heredoc, word for word) and the reviewer's brief from
 `briefs/confinement-outsider-pass.md`, placeholders filled as that launch brief's `sed` fills them
 with the container's paths, and refused if it names a milestone or a roadmap block. Then the
 volume is provisioned (`script/ci-qemu` and `script/bootstrap`, in the clone, no model), and a
@@ -82,8 +82,8 @@ REFUSED = (
     (re.compile(r'^\s*\d+\s*$'), 'is a bare milestone number'),
 )
 # The runner text is the launch brief's, unchanged (calef, 2026-10-14 UTC): the Mac's section,
-# which both reviewers get, since both run on patagonia, in a container there.
-RUNNER_HEADING = '### GLM 5.3 on patagonia'
+# which both reviewers get, since both run on the same Mac, in a container there.
+RUNNER_HEADING = '### GLM 5.3 on a Mac'
 RUNNER_TRAILER = 'GLM 5.3 <noreply@z.ai>'
 SHORT_ROW = re.compile(r'^row \d+: (?!booted|host \(exempt\)).+$')
 

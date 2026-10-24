@@ -2,25 +2,18 @@
 //! names" ruling, 2026-10-15 UTC): the refused-name claim, over [`Server::handle`], one arm at a
 //! time.
 //!
-//! Two mechanisms hold the claim, and these tests are the second. The first is the compiler: every
-//! verb that resolves a name takes a [`crate::NameCopy`], whose only constructor copies the bytes
-//! out of the window, and whose text is reachable only through accessors that run
-//! `check_component`. A refactor that passes a window-borrowed `&str` to a verb, or reads a name
-//! without checking it, does not compile; `NameCopy`'s `compile_fail` doctest is the record.
-//!
-//! These tests are the second: they drive `handle` with every class of refused name (`..`, `.`,
-//! empty, a name with `/`, `\` or `:`, the attribute store's directory, and invalid UTF-8) and
-//! require `EINVAL` and, for the mutating verbs, an untouched directory. They catch an arm whose
-//! check is wrong, which the type cannot see. A legal name through the same arm is the control, so
-//! a refusal that reaches nothing because the arm reaches nothing proves nothing.
-//!
+//! The compiler holds the claim first: every verb that resolves a name takes a [`crate::NameCopy`],
+//! and `NameCopy`'s `compile_fail` doctest is the record. These tests are the second mechanism: they
+//! drive `handle` with every class of refused name (`..`, `.`, empty, a name with `/`, `\` or `:`,
+//! the attribute store's directory, and invalid UTF-8) and require `EINVAL` and, for the mutating
+//! verbs, an untouched directory, catching an arm whose check is wrong. A legal name through the
+//! same arm is the control, so a refusal that reaches nothing proves nothing.
+
 //! # What neither reaches
 //!
-//! The live attack is a client whose second thread rewrites the window between the server's check
-//! and its use (milestone 812 (threads in one address space)). That is a data race on the shared
-//! page, and safe single-threaded host code cannot stage it, so these tests do not fire it. The
-//! type is what closes it: the resolve reads the server's copy, which no thread of the client can
-//! write.
+//! A client whose second thread rewrites the window between the check and the use (milestone 812
+//! (threads in one address space)) is a data race safe single-threaded host code cannot stage, so
+//! these tests do not fire it. The type closes it: the resolve reads the server's copy.
 
 use filesystem_contract::fs;
 

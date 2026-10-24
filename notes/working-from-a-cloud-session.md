@@ -1,7 +1,7 @@
 # Working from a cloud session
 
 *Provisional name.* How to do this project's work from a Claude Code cloud session: a Linux
-container on Anthropic's infrastructure, opened from a phone or a browser, with no patagonia behind
+container on Anthropic's infrastructure, opened from a phone or a browser, with no local Mac behind
 it. Written 2026-09-24, before calef's travel week.
 
 The short version: claim, write, run the cheap gates, and land all work. The heavy gates run in CI.
@@ -64,13 +64,13 @@ so none of them depend on a laptop being awake.
 ## What does not work here
 
 - HVF. The default accelerator is TCG everywhere, and `--hvf` and `script/bench --real` are Mac-only.
-- Boards. `script/board-console`, `script/board-netboot` and the UART rig need patagonia's desk.
-- `helpers/at-risk-check.sh` under `launchd`. It watches patagonia's lane worktrees and nothing
+- Boards. `script/board-console`, `script/board-netboot` and the UART rig need the bench desk.
+- `helpers/at-risk-check.sh` under `launchd`. It watches its own Mac's lane worktrees and nothing
   else. A container has no launchd and nothing watches it, so commit and push before every pause.
 - Toolchain links. They live in each user account's `~/.rustup`, so a cloud session has its own,
   and `briefs/merge-and-cleanup.md` step 4 is a no-op unless something gated locally.
 - `script/effort` and the local half of `script/cadence-check`, which read `~/.claude/projects` from
-  patagonia's own session records. A container has only its own.
+  the Mac's own session records. A container has only its own.
 - Memory files under `~/.claude` on the Mac. Anything a session must know is in `AGENTS.md`,
   `briefs/` or `notes/`, or it is not known.
 

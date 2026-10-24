@@ -238,3 +238,15 @@ forever, by design, exactly like real hardware. So every interactive run must be
 - **A kernel's serial log is binary to `grep`.** The test logs carry the guest's control bytes, so
   `grep FAILED log` says `Binary file log matches` or nothing, rather than the line. Use `grep -a`.
 
+- **An aarch64 guest's SeqCst store followed by a SeqCst load can reorder under TCG.** Armv8 orders
+  an `STLR` before a later `LDAR`, and Rust's aarch64 SeqCst relies on it. QEMU 11.1.2 translates
+  `STLR` as a barrier then the store, and `LDAR` as the load then a barrier, so nothing sits between
+  the two (`target/arm/tcg/translate-a64.c`, `trans_STLR` and `trans_LDAR`). Store buffering with
+  SeqCst on both accesses was seen on an aarch64 host and on an x86_64 one; a `fence(SeqCst)` between
+  them holds. A correct Dekker-style handshake can therefore fail in QEMU and never on silicon.
+  riscv64 guests are unaffected. Measured in
+  [host-reordering-under-tcg](benchmarks/host-reordering-under-tcg.md). A fix is on qemu-devel and
+  in no release: LIU Zhiwei's series
+  ["Fix RCsc store->load ordering of release stores"](https://patchew.org/QEMU/20260821064032.49556-1-zhiwei._5Fliu@linux.alibaba.com/)
+  (2026-08-21 UTC). Bump the QEMU pin past the release that carries it, then rerun the store
+  buffering litmus to retire this entry.

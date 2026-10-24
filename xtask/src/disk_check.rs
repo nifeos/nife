@@ -8,19 +8,14 @@ use crate::host::capture;
 
 /// After a test run, read the blank disk back **from the host** and check what the guest put on it:
 /// the partition table with `crates/globally_unique_identifier_partition_table`, and the filesystem
-/// inside the data partition with the pinned engine through `tools/redoxfs_host`.
+/// inside the data partition, read in place by the pinned engine through `tools/redoxfs_host`.
+/// Returns whether both hold.
 ///
-/// This is the half a guest-side assertion cannot make. The in-guest check reads the filesystem
-/// through the same block server that wrote it, on the same machine, minutes later; this is a
-/// different program, on a different operating system, with a different engine build, opening the
-/// file the run left behind. If the two ever disagreed, the guest would be the one to doubt.
-///
-/// **The filesystem is read out of the partition in place** (milestone 110). This used to slice the
-/// partition into its own file first, because the tool took an image rather than a device plus a
-/// selector; that was twenty lines of the join written in a build script, and it is now in the tool
-/// where a person can use it. The partition is named by **type GUID**, not by slot number, for the
-/// same reason the guest's `mkfs` finds it that way: the type is what the partition is, and the slot
-/// is a fact about this table's current order.
+/// This is a different program, on a different operating system, with a different engine build,
+/// opening the file the run left behind; if it and the in-guest check ever disagreed, the guest
+/// would be the one to doubt. The partition is named by type GUID, not slot number, as the guest's
+/// `mkfs` finds it: the type is what the partition is, and the slot is this table's current order.
+/// See notes/host-recovery/devices-and-partitions.md.
 pub(crate) fn blank_check_after_run() -> bool {
     use filesystem_fixture::blank;
     use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
@@ -186,8 +181,7 @@ pub(crate) fn redoxfs_crash_check_after_run() -> bool {
 ///
 /// The `scratch` half is the on-disk half of the write proof, and it is the part a cache cannot
 /// fake: the guest read its own write back through the same FS server, but this reopens the image
-/// with a different process and the pinned engine. It is also what closes the write blocker
-/// notes/fs-server.md used to record, so it belongs in the gate, not in a comment.
+/// with a different process and the pinned engine.
 pub(crate) fn redoxfs_check_after_run() -> bool {
     redoxfs_reads_back(filesystem_fixture::MOTD_NAME, filesystem_fixture::MOTD)
         && redoxfs_reads_back(
@@ -198,22 +192,15 @@ pub(crate) fn redoxfs_check_after_run() -> bool {
         && redoxfs_glob_grant_took_exactly_the_match()
 }
 
-/// **The set grant, witnessed from outside the guest** (milestone 47's globbing lane).
+/// **The set grant, witnessed from outside the guest** (milestone 47 (navigation and naming)'s
+/// globbing lane): the host, with the pinned engine, reading the image the run left behind. Returns
+/// whether it holds; an untouched fixture (the guest never ran the set grant) passes.
 ///
-/// The guest reports that `echo gl-*.txt` and the grant `rm gl-*.txt` would transfer are the same
-/// names, and that a `rm` behind a nameset caretaker removed what it held. Both are statements by
-/// the thing under test. This is the other kind: the host, with the pinned engine, reading the
-/// image the run left behind.
-///
-/// Three claims, and they only mean anything together:
-///
-/// 1. **The two matched names are gone.** The expansion the guest printed is what actually
-///    disappeared, so "the expansion is the grant" is a fact about the disk.
-/// 2. **The two names the pattern did not match are still there.** They sit in the same directory,
-///    one entry away, and the caretaker a hop up holds a capability that could remove either. So
-///    their survival is a fact about the *set*, not about what was reachable.
-/// 3. **The unmatched directory still holds its file.** A `rm` that had walked into it would have
-///    emptied it, and a set capability carrying no `-r` cannot even look inside one it *did* match.
+/// Three claims, which only mean anything together. The two matched names are gone, so "the
+/// expansion is the grant" is a fact about the disk. The two unmatched names, one entry away and
+/// removable by the caretaker a hop up, are still there, so their survival is a fact about the
+/// *set*. The unmatched directory still holds its file, since a set capability with no `-r` cannot
+/// look inside even one it matched. See notes/glob-grant/tests.md.
 fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
     use filesystem_fixture::tree;
     let img = redoxfs_disk_path();
@@ -278,34 +265,15 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
 }
 
 /// **The directory capability's confinement, asserted from outside the confined program**
-/// (milestone 47).
+/// (milestone 47), on the image the run left behind. Returns whether every fixture name is still in
+/// the root, none of the attacker's names is, its creations (one renamed, one not) are in `sub`,
+/// `other/secret` and `sub/inner` read back unchanged, and both shells pass
+/// [`shell_navigation_landed`]. See notes/dir-capability/tests-and-stack-usage.md.
 ///
-/// The in-guest attacker reports a bitmap of what got through, which is a statement by the thing
-/// being tested. This is the other kind of evidence: a different process, on the host, with the
-/// pinned engine, reading the image the run left behind. Four claims, and each one is an escape
-/// that no in-guest verdict could have reported, because a program that broke out and then lied
-/// would still have left the file on the disk.
-///
-/// 1. **The fixture's own names are all still in the image root.** A capability granted on `sub`
-///    can remove nothing above itself, so a missing name here is an escape too.
-/// 2. **Nothing the attacker made is in the root.** It was granted `sub` and creates inside it, so
-///    a name of its making at this level got out.
-/// 3. **Its creations ARE in `sub`**, which is what stops claim 2 from being vacuous: an attacker
-///    that created nothing would satisfy it perfectly, and so would a caretaker that refused
-///    everything. And `sub` holds both a **renamed** name and an **un**renamed one, which is the
-///    `REMOVE` rung witnessed from outside the guest: one capability moved a name and another,
-///    running the same code against the same directory, could not.
-/// 4. **The two files nothing was granted the authority to change read back byte for byte.**
-///    `other/secret` is one directory entry away from the grant and the FS server can reach it on
-///    any request it likes; `sub/inner` is *inside* the grant, and the attacker writes only to what
-///    it made, so a change there means it wrote through something it should not have.
-///
-/// **BUGS.** Claim 1 checks containment, not equality, and that is deliberate rather than lazy: the
-/// root is shared with every other test in the boot, and the `std::fs` test creates `made-by-std`
-/// in it. An exact comparison would make this check fail whenever an unrelated test started or
-/// stopped writing a file, which is a coupling that manufactures facts (DECISIONS §27). The cost is
-/// that a leaked name whose spelling matches neither fixture prefix would slip past claim 2, so the
-/// attacker's names are the thing this check is precise about.
+/// # BUGS
+/// - The root check is containment, not equality, because other tests write the root too
+///   (`made-by-std`), and an exact match would manufacture failures (§27 (the filesystem service)).
+///   A leaked name matching neither fixture prefix slips past.
 fn redoxfs_subtree_was_confined() -> bool {
     use filesystem_fixture::tree;
     let img = redoxfs_disk_path();
@@ -374,19 +342,14 @@ fn redoxfs_subtree_was_confined() -> bool {
         }
 }
 
-/// **`rm` witnessed from outside the guest** (milestone 47's commands).
+/// **`rm` witnessed from outside the guest** (milestone 47's commands). `root` is the image root's
+/// listing and `home` the listing of the directory a shell was rooted at, both read on the host by
+/// the pinned engine after the run. Returns whether the name the shell removed is absent from
+/// `home`, the names it kept, made and touched are present, and none is in `root`.
 ///
-/// The navigating shell reports that its `rm` worked and that the handle it still held kept reading
-/// the bytes. Both are statements by the thing under test. This is the other kind of evidence: the
-/// host, with the pinned engine, reading the image the run left behind, where the name it removed
-/// must not be, the name it kept must be, and neither may have appeared in the root.
-///
-/// The pair is what makes it non-vacuous. A shell that created nothing satisfies "the removed name
-/// is absent" perfectly, so the kept name has to be there beside it. `touch`'s name is checked the
-/// same lightweight way as `NAV_DIR`'s: present, and not leaked to the root. Its *content* claim
-/// (a second `touch` does not truncate what the first write put there) is checked in-guest, by the
-/// shell that holds the handle to read it back with; this file has no run index to reconstruct the
-/// exact name a body-reading check through `redoxfs_reads_back` would need.
+/// The kept name is what makes "the removed name is absent" non-vacuous. `touch`'s content claim (a
+/// second `touch` does not truncate) is checked in-guest, since this file has no run index to
+/// rebuild the exact name `redoxfs_reads_back` would need. See notes/shell-navigation.md.
 fn shell_navigation_landed(root: &[String], home: &[String]) -> bool {
     use filesystem_fixture::tree;
     let count = |dir: &[String], prefix: &str| dir.iter().filter(|n| n.starts_with(prefix)).count();

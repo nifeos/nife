@@ -42,7 +42,7 @@ order.
   a few percent across builds as the compiler remakes inlining
   ([icount drift](benchmarks/icount-drift-and-provenance.md)).
 - Every leg boots one hart: under `-icount` all vCPUs share one clock, and an idle hart's `wfi` jumps
-  it forward. Every leg has measured one hart since; x86_64 briefly lost the pin on
+  it forward. x86_64 briefly lost the pin on
   2026-09-23.
 - A save runs with shipping features on and measurement features off. `icount`
   is the one bench feature allowed, because it changes how time is observed and not what is measured.
@@ -50,7 +50,7 @@ order.
   (`# qemu:`, checked by `--check`) and a `# why:` line (milestone 302 (a baseline records what it was saved against)). Auto-re-saving on a toolchain bump is refused (calef, 2026-09-21): such a floor could
   never report a nightly that made the kernel slower. Restamping is not (calef, 2026-09-26, milestone 598 (a nightly bump restamps the floors it proves it did not move)).
   The bump workflow rewrites only `# toolchain:` when an A/B of the two nightlies on one runner
-  moves no row by 0.5%, and none by 2% since the last save. The stamp now means "last proven valid
+  moves no row by 0.5%, and none by 2% since the last save. The stamp means "last proven valid
   for".
 - An unexplained movement is investigated, never re-saved away. The 2026-08-15 riscv64 `map_new`
   +15.6% nearly was (the
@@ -250,8 +250,8 @@ words.
 
 ## Appendices
 
-The third column lists the dated entries each holds, so a citation of "notes/benchmarks.md, the
-2026-08-24 section" resolves here.
+The third column lists the dated entries each holds, so a citation like "the 2026-08-24
+section" resolves here.
 
 | appendix | what it verifies | holds |
 |---|---|---|
@@ -279,6 +279,7 @@ The third column lists the dated entries each holds, so a citation of "notes/ben
 | [swish-check-x86-leg](benchmarks/swish-check-x86-leg.md) | the x86_64 shell leg was paced by ticks | 2026-10-03 |
 | [rfence-self-row](benchmarks/rfence-self-row.md) | the open `rfence_self` row | 2026-09-21; 2026-09-23 |
 | [preemption-in-the-window](benchmarks/preemption-in-the-window.md) | the masked `map_new` window | 2026-09-21 (three) |
+| [host-reordering-under-tcg](benchmarks/host-reordering-under-tcg.md) | arm64 CI hosts | 2026-10-24 |
 | [drift-since-the-2026-09-26-floors](benchmarks/drift-since-the-2026-09-26-floors.md) | drift on `main` on all three ISAs | 2026-10-02 |
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |

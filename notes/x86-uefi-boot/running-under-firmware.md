@@ -89,10 +89,74 @@ conventional. The loader asks the firmware for it by name now. A refusal is a pr
 than a failed boot, because a single-core boot on a machine whose firmware wants that page is worth
 more than no boot at all.
 
-Two cores come up under OVMF, five runs out of five, and `uefi-boot` gates it. The suite stays at one
-core, and that is a known defect rather than a preference. `every_secondary_runs_scheduled_work`
-fails about half the time at two cores on this architecture (`arch::x86_64::ap_boot`'s `BUGS` #3),
-which is why the PVH runner defaults to one as well. The tour does not run that test.
+Two cores come up under OVMF, and `uefi-boot` gates it on every boot with `smp: 2 core(s) online`
+(zero misses across the dedicated measurement,
+[uefi-boot-two-core-rate.md](../uefi-boot-two-core-rate.md)). The second local APIC also answers a
+question for xenon from the BUGS of milestone 215 (a PCI function's interrupt reaches nothing on
+x86_64). It asks whether device interrupts still reach the boot core's id, and the tour's `device
+irq` line is that answer.
+
+The suite under OVMF keeps the runner's one-core default. Two defects made two cores flake, and both
+are fixed: `boot_cpu_id`, by milestone 316 (which core booted), and `cpu_start` re-reading its count
+after the STARTUP IPIs. The PVH runner defaults to two per §153 (how a two-core x86_64 test earns
+its place). The whole suite at two cores under OVMF is not measured, so the default stands until it
+is.
 
 `NIFE_OVMF_CODE` and `NIFE_OVMF_VARS` name the firmware images on a machine that keeps them somewhere
 other than Homebrew's QEMU share; `NIFE_UEFI_TIMEOUT` moves the bound.
+
+## Inside the two gates
+
+`uefi_loader` embeds the kernel ELF and the archive with `include_bytes!`. Its build script takes
+both paths from the environment and refuses to build without them, rather than guessing at
+`target/`, so a stale `.efi` cannot be produced by hand. The file lands at `\EFI\BOOT\BOOTX64.EFI`,
+the removable-media path every UEFI implementation looks for with no configuration. Installing to a
+machine's own ESP with a boot entry of its own (`efibootmgr`'s job on Linux) is not done, and a
+machine that boots nife by default would need it.
+
+The archive is packed before the kernel is built. Packing regenerates
+`target/init-measure-x86_64.txt`, which `kernel/build.rs` compiles in as the measured-boot trust
+root. A kernel built first vouches for the previous archive, and the handover refuses the pair:
+
+```text
+MEASURED BOOT REFUSED: no measurement for the archive entry 'progenitor'
+```
+
+QEMU rarely shows this, because one working tree usually has both fresh. It bites when the kernel was
+built earlier in the session. The VisionFive 2 refused the pair on 2026-08-15 through
+`script/board-image`, and xenon on 2026-09-17, after its self-test passed.
+
+A release image embeds a kernel with its DWARF removed (calef, 2026-10-03 UTC, on the install boot
+slots). The release ELF is about 7.5 MB, 5.8 MB of it `.debug_*` that nothing on the machine reads.
+Symbols are resolved offline, against the unstripped file left in `target/`. The strip uses the
+archive packer's tool and flag.
+
+The ACPI assertion works because the two loaders find different roots. Under PVH the kernel scans
+the BIOS area for the RSDP and finds an ACPI 1.0 pointer with an RSDT. Firmware hands over a
+revision-2 RSDP with an XSDT. The runner boots at 2 GiB rather than PVH's 256 MiB, which puts
+firmware's tables above 1 GiB, where a real machine keeps them. Asserting the ECAM window, the end
+of that chain, makes the whole chain one gate.
+
+The screen is read through the QEMU monitor's screendumps. Everything the framebuffer path can get
+wrong shows only there: the loader's `LocateProtocol`, the byte order, the stride, the mapping
+surviving `mmu::init`, and the glyphs. The shell's half proves the console server writes both
+surfaces while keystrokes still arrive over COM1. Holding the screen is a handshake, calef's choice
+among three options on 2026-09-20. If the hold line never comes, nothing falls back to sampling. A
+boot that was not asked to hold is a wiring failure (the `screen_hold` feature, the token, the
+kernel's reader), and the gate says so instead of blaming working framebuffer code. Each held dump
+costs about 650 ms, so four retries sit well inside the kernel's ten-second hold.
+
+The held screen's first row is the middle of the firmware memory map:
+
+```text
+                0x00007ea8a000..0x00007eab4000  ram
+```
+
+`uefi-test` gives both test images the PVH runner's disk and NVMe controller, and the system image its
+GPU and keyboard. A PCI function whose BARs firmware
+placed is milestone 215's second question for xenon; under `-kernel` the kernel places them itself.
+The boot's 300 s bound is a hang detector, the bound `disk_throughput`'s boot uses. In CI the
+`system_tests` boot takes about 156 s at the default scanout and about 190 s at 1120x624, whose
+display and compositor tests compare 2.2 times the pixels. A passing boot exits as soon as the suite
+ends, so the margin costs nothing. The exit protocol's readings rest on one adjacency: the summary
+print and the success write are neighboring statements in `kernel/src/testing.rs`.

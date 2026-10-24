@@ -66,11 +66,18 @@ of 2026-09-26) stops a terminal so a replacement can take over. It rides the ter
 the endpoint's FIFO does the draining. A parked `OPERATION_READLINE` or `OPERATION_READRAW` is answered
 `FLAG_RETRY` first, because the reply capability naming that reader cannot leave the terminal. The
 terminal then waits on a control endpoint for `CTL_RESUME` or `CTL_QUIT`. A terminal started with
-no control endpoint refuses it with `BAD_REQUEST`. The boot terminal is not that case:
-`terminal_supervisor`, which `system_initializer` builds on every boot, starts it with a control
-endpoint. The terminal does not check who sends `OPERATION_QUIESCE`, so any unbadged holder (the
-input driver, the shell, `login`, `system_initializer`, `terminal_supervisor`) can quiesce the boot
-terminal until reboot.
+no control endpoint refuses it with `BAD_REQUEST`. The boot's own `line_editor` has one, because
+`terminal_supervisor` builds it.
+
+Only the supervisor may send it (§232 (the `line_editor` swap contract)). The supervisor sends it
+through a copy of the endpoint badged `proto::SUPERVISOR_BADGE`, and a terminal refuses a quiesce
+on any other copy with `BAD_REQUEST`, the unbadged one every client holds included, and refuses
+everything but a quiesce on that badge. Minting it takes `GRANT` on the unbadged endpoint.
+`system_initializer`, `terminal_supervisor` and `login` hold that, and `login` only to hand
+sessions a `WRITE`-only copy. No program a person runs holds it: the shell, the input driver and
+every session hold `WRITE` alone. Honored from anyone else, a quiesce
+would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole badge table is
+`proto::admits`.
 
 - `OPERATION_WRITE`: print `len` bytes from the client's output page. The terminal performs
   output-side newline translation (`\n` becomes `\r\n`) and passes everything else, ANSI
@@ -168,14 +175,15 @@ about the read, and what to do with it is the client's business.
 ### `BAD_REQUEST`
 
 `proto::BAD_REQUEST` (`u64::MAX`) is the reply `r0` to a request whose opcode the terminal does
-not implement, and to a second concurrent read. A sentinel rather than silence, so a confused
+not implement, to one the badge on the caller's copy does not admit, and to a second concurrent
+read. A sentinel rather than silence, so a confused
 client fails fast instead of hanging on a reply that will never come.
 
 ### Badged copies
 
 A terminal endpoint capability with a non-zero badge is served by the badge's value, and every
 request outside that badge's set is refused with `BAD_REQUEST`. An unbadged capability is served
-everything except `OPERATION_READ_LINE_BYTES`, and that is every holder the boot wires: the input
+everything except `OPERATION_READ_LINE_BYTES` and `OPERATION_QUIESCE`, and that is every holder the boot wires: the input
 driver, the shell and `login`. The badge is
 the kernel's word on every receive (§230 (badged endpoint capabilities)), and a badged copy cannot
 be re-badged, so a holder cannot widen it back.
@@ -189,6 +197,7 @@ be re-badged, so a holder cannot widen it back.
 - `proto::STDIN_BADGE` (milestone 892 (a std program at the prompt holds the network and a name
   resolver)) is a program's standard input, served
   `OPERATION_READ_LINE_BYTES` only.
+- `proto::SUPERVISOR_BADGE` is `terminal_supervisor`'s copy, served `OPERATION_QUIESCE` only.
 
 ## What a terminal owes a program, and what it does not
 
