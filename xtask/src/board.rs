@@ -129,7 +129,8 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
     }
 }
 
-/// Open a real board's serial console, log every byte, and stop on a deadline (milestone 216).
+/// Open a real board's serial console, log every byte, and stop on a deadline (milestone 216
+/// (nothing in this tree can read a board)).
 ///
 /// The engine is `crates/serial_console`, a recogniser over text with host tests; this is argument
 /// parsing and a report. Returns one of four exit codes, not a `bool`, because a scripted bench run
@@ -661,9 +662,10 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 }
 
 // ===========================================================================================
-// The board's boot script (milestone 218). The VisionFive 2 cannot boot this kernel from an
-// `extlinux.conf`: with no `fdt` line, U-Boot's pxe path hands `bootm` no device tree, and RISC-V's
-// `boot_prep_linux` refuses with a `hang()` only the reset button clears
+// The board's boot script (milestone 218 (every boot of the VisionFive 2 needs a human typing four
+// commands into U-Boot)). The VisionFive 2 cannot boot this kernel from an `extlinux.conf`: with no
+// `fdt` line, U-Boot's pxe path hands `bootm` no device tree, and RISC-V's `boot_prep_linux`
+// refuses with a `hang()` only the reset button clears
 // (crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log). So the card
 // carries a script `scan_dev_for_scripts` sources, issuing the commands a person types at the
 // `StarFive #` prompt (vf2-2026-09-01-manual-boot.log). See notes/visionfive2.md.
@@ -775,9 +777,10 @@ fn parse_ip_addr_addresses(text: &str) -> Vec<(String, std::net::Ipv4Addr)> {
     keep_private(found)
 }
 
-/// **The network-first script, with the card underneath it** (milestone 257). The two `load` lines
-/// of [`BOARD_BOOT_SCRIPT`] become `dhcp` plus two `tftpboot` lines, with the card's copy as the
-/// fallback; `fdt addr`, `fdt move` and `booti` are byte for byte milestone 218's.
+/// **The network-first script, with the card underneath it** (milestone 257 (boot radon over the
+/// network)). The two `load` lines of [`BOARD_BOOT_SCRIPT`] become `dhcp` plus two `tftpboot`
+/// lines, with the card's copy as the fallback; `fdt addr`, `fdt move` and `booti` are byte for
+/// byte milestone 218's.
 ///
 /// The kernel and archive are one measured pair, so a transfer that loses either takes both from
 /// the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP names, and `netretry

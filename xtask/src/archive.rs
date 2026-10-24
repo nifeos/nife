@@ -64,9 +64,10 @@ const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 
 /// **Every program this tree builds**, read from the one place it is declared: the `[[bin]]` blocks
 /// in `components/Cargo.toml` and `fixtures/Cargo.toml`, less the programs a package lists as
-/// [`packaged_only`] (milestone 150; name provisional). All three archives pack exactly this list,
-/// in `Cargo.toml` order, which nothing depends on: the progenitor looks entries up by name and
-/// [`measurement_table`] is sorted. It is deliberately not filtered per architecture.
+/// [`packaged_only`] (milestone 150 (adding a program should not need eight hand-maintained lists);
+/// name provisional). All three archives pack exactly this list, in `Cargo.toml` order, which
+/// nothing depends on: the progenitor looks entries up by name and [`measurement_table`] is sorted.
+/// It is deliberately not filtered per architecture.
 ///
 /// Refuses, rather than packing a partial archive, when a `[[bin]]` block has a shape
 /// [`bin_names`] does not understand, and when [`check_declared_programs`] fails. See
@@ -417,10 +418,11 @@ pub(crate) fn initial_ramdisk_x86() -> bool {
     // ported programs, each present iff it was built for `x86_64-unknown-nife`.
     blobs.extend(std_program_blobs("x86_64-unknown-nife"));
     blobs.extend(ported_program_blobs("x86_64-unknown-nife"));
-    // Measure the boot programs before the x86 kernel is built (milestone 22 phase B.1). With no
-    // manifest the generated `TRUST_ROOT` is empty and `trust::require` refuses every boot program
-    // as `Unmeasured`. `write_archive` also packs the image's package source (§19 (architectural
-    // parity is a tenet)), though no fetch test reads it here: this runner attaches no network.
+    // Measure the boot programs before the x86 kernel is built (milestone 22 (trusted init) phase
+    // B.1). With no manifest the generated `TRUST_ROOT` is empty and `trust::require` refuses every
+    // boot program as `Unmeasured`. `write_archive` also packs the image's package source (§19
+    // (architectural parity is a tenet)), though no fetch test reads it here: this runner attaches
+    // no network.
     let Some((size, entries)) = write_archive(
         "initial-ramdisk-x86",
         "x86_64",

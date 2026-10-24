@@ -9,11 +9,12 @@ use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
 use crate::host::{flag_value, kernel_elf, run, workspace_root};
 use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
 
-/// The microbenchmarks (milestone 21; design/roadmap/0021-benchmarks.md), with two instruments:
+/// The microbenchmarks (milestone 21 (benchmarks with teeth); design/roadmap/0021-benchmarks.md),
+/// with two instruments:
 ///
-/// - default: TCG with `-icount`, exact and reproducible counts. `--check` diffs them against
-///   `bench/baseline-aarch64.txt` and fails on drift; `--save --why "<reason>"` rewrites the
-///   baseline and is refused without a reason (milestone 302).
+/// - default: TCG with `-icount`, exact counts. `--check` diffs them against
+///   `bench/baseline-aarch64.txt`; `--save --why "<reason>"` rewrites it, refused without a reason
+///   (milestone 302 (a baseline records what it was saved against)).
 /// - `--real`: HVF on the host core, statistical nanoseconds, never gating. `--release` implies it.
 ///
 /// The bench kernel never exits on its own (semihosting does not work under HVF), so xtask watches
@@ -31,12 +32,13 @@ pub(crate) fn bench() -> bool {
         return false;
     }
 
-    // A save that cannot say why is refused (milestone 302, calef 2026-09-16; milestone 415 item
-    // 2): a row records a number and nothing about why it holds it, so a reader cannot tell
-    // compiler drift from a regression (notes/benchmarks.md, `rfence_self`). Refusing is the
-    // highest rung a string command line can reach, and the cost §190 (must an icount baseline
-    // save record why it moved) weighed is a reason typed on every save. Checked before the build
-    // so it costs a second; `run_bench` reads the flag again at the write.
+    // A save that cannot say why is refused (milestone 302, calef 2026-09-16; milestone 415
+    // (sub-tripwire drift accumulates across baseline saves) item 2): a row records a number and
+    // nothing about why it holds it, so a reader cannot tell compiler drift from a regression
+    // (notes/benchmarks.md, `rfence_self`). Refusing is the highest rung a string command line can
+    // reach, and the cost §190 (must an icount baseline save record why it moved) weighed is a
+    // reason typed on every save. Checked before the build so it costs a second; `run_bench` reads
+    // the flag again at the write.
     if save && save_reasons().is_empty() {
         eprintln!("bench: --save needs --why \"<reason>\". A floor with no recorded reason cannot");
         eprintln!("  tell the next reader drift from a regression. The reason goes in the file,");
@@ -48,9 +50,10 @@ pub(crate) fn bench() -> bool {
         return false;
     }
 
-    // E3 (milestone 134, design/roadmap/0134-the-measurements-that-decide.md): an extra kernel
-    // feature beside `bench`, for the padded-fastpath experiment. `--real` only: there is no cache
-    // under TCG for a footprint change to perturb, so an icount run would measure noise.
+    // E3 (milestone 134 (the register of measures),
+    // design/roadmap/0134-the-measurements-that-decide.md): an extra kernel feature beside `bench`,
+    // for the padded-fastpath experiment. `--real` only: there is no cache under TCG for a
+    // footprint change to perturb, so an icount run would measure noise.
     let extra_features = flag_value("--extra-features");
     if extra_features.is_some() && !real {
         eprintln!(
@@ -86,21 +89,24 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
         return bench_riscv(check, save, features);
     }
 
-    // x86_64 gates under icount like the other two (milestone 161); see `bench_x86`.
+    // x86_64 gates under icount like the other two (milestone 161 (the x86_64 kernel port)); see
+    // `bench_x86`.
     if std::env::args().any(|a| a == "--x86") {
         return bench_x86(real, check, save, features);
     }
 
-    // `--smp`: boot 4 harts under HVF for `smp_throughput` (DECISIONS §28) and `fs_read`
-    // (DECISIONS §32), which self-skip on one hart. Only meaningful with `--real`.
+    // `--smp`: boot 4 harts under HVF for `smp_throughput` (DECISIONS §28 (SMP placement)) and
+    // `fs_read` (milestone 32 (a real filesystem: RedoxFS behind a capability FS server)), which
+    // self-skip on one hart. Only meaningful with `--real`.
     let smp = std::env::args().any(|a| a == "--smp");
 
     // For --smp, the FS server goes before `user()` so the archive packs it, and the RedoxFS image
     // is the second mmio disk `fs_read` opens. Without it the bench skips, so the icount gate's
     // build never needs it.
     if (smp && !redoxfs_server_build(TARGET))
-        // `fs_walk` (milestone 606) runs `std_exerciser`, which reaches the archive only if built
-        // first, from this worktree's own std farm (notes/std.md).
+        // `fs_walk` (milestone 606 (a directory walk costs what it does on Linux)) runs
+        // `std_exerciser`, which reaches the archive only if built first, from this worktree's own
+        // std farm (notes/std.md).
         || (smp && !crate::farm::std_exerciser())
         || !mkdisk()
         || !user()
@@ -590,7 +596,7 @@ fn save_bench_baseline(
     baseline_path: &std::path::Path,
     qemu_binary: &str,
 ) -> bool {
-    // The header names the file it is in (milestone 73).
+    // The header names the file it is in (milestone 73 (name the aarch64 files aarch64)).
     let stem = baseline_path
         .file_name()
         .and_then(|n| n.to_str())
