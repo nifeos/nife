@@ -1,50 +1,25 @@
-//! **Crash injection: the failures a copy-on-write filesystem exists to survive** (milestone 37,
+//! Crash injection: the failures a copy-on-write filesystem exists to survive (milestone 37,
 //! DECISIONS §34 condition 1).
 //!
-//! RedoxFS's central selling point is crash consistency, and until this module existed we asserted
-//! it from the upstream design description with no measurement behind it. This is the instrument
-//! that turns the claim into a number: it takes the exact byte-level damage a dying machine or a
-//! lying device does to a disk, applies it to a real image, and hands the result back to the same
-//! [`Server::open`](crate::Server::open) the FS server always mounts with.
-//!
-//! # The seam, and why it is here rather than in QEMU
-//!
-//! The FS server reaches its disk through the [`BlockIo`] trait: read one 4096-byte
-//! filesystem block, write one, ask the size. On device that is `IpcDisk` calling the block server;
-//! on the host it is a `Vec`. **That trait is the seam a device failure enters through**, and it is
-//! the same seam on both, which is what makes the property host-testable in milliseconds. The
-//! device-level half (a real virtio write, torn by a real block server, recovered by a real FS
-//! server process) is a separate test; what it adds is the wiring, not the property.
-//!
+//! Applies the byte-level damage a dying machine or a lying device does to a disk to a real image,
+//! and hands the result to the same [`Server::open`](crate::Server::open) the FS server always
+//! mounts with. The seam is [`BlockIo`], the trait the server reaches its disk through on device
+//! and host alike, so the property is host-testable in milliseconds. See
+//! notes/fs-server/crash-consistency.md.
+
 //! # The model: record once, replay damaged
 //!
-//! A workload is run **once** against [`Recording`], which applies every block write to the image
-//! and appends it to an ordered log. That log is exactly what the device saw. Every crash is then a
-//! function of the pristine image and a prefix (or a mutilation) of that log:
-//!
-//! - [`Damage::Cut`] is a power cut. The first `landed` writes reached the platter and nothing
-//!   after did. The process is gone too, so the recovery is a fresh mount with no carried state,
-//!   which is what makes this a **kill mid-transaction** and not merely a lost write.
-//! - [`Damage::TornCut`] is the same cut with the last write caught mid-flight: its first `bytes`
-//!   bytes landed and the rest of that block still holds what was there before.
-//! - [`Damage::Dropped`] is a **lying device**: it acknowledged one write, never persisted it, and
-//!   then carried on persisting everything after. This is the one no filesystem can promise to
-//!   survive, and measuring what actually happens is the point (see the sweep in the tests).
-//! - [`Damage::Torn`] is the same lie with a half-written block instead of a missing one.
-//!
-//! Replaying a log is not an approximation of a crash; for a device with no reordering it *is* the
-//! crash, and it costs one `memcpy` per fault point instead of a re-run of the engine. It also
-//! makes each fault point start from a byte-identical image, which is not a nicety: DECISIONS §27
-//! records a day lost to a gate whose fixture one run mutated and another asserted on, and a crash
-//! harness that leaves state behind between runs produces exactly that class of false result.
-//!
+//! A workload runs once against [`Recording`], whose ordered write log is exactly what the device
+//! saw. Each crash is then the pristine image plus a prefix or a mutilation of that log
+//! ([`Damage`]). For a device with no reordering that is the crash, not an approximation, and every
+//! fault point starts from a byte-identical image (DECISIONS §27 records what a harness that leaves
+//! state behind between runs costs).
 
 //! # The negative control lives here too
 //!
-//! A crash suite that passes because the injector does nothing proves nothing, so
-//! [`only_this_generation`] exists to take the ring's history away: it blanks every header slot but
-//! one, leaving the mount no older generation to fall back to. The damage the injector does is then
-//! visible as a mount that fails. See `the_ring_is_what_saves_it` in the tests.
+//! [`only_this_generation`] blanks every header slot but one, so the mount has no older generation
+//! to fall back to and the injector's damage shows as a mount that fails. See
+//! `the_ring_is_what_saves_it` in the tests.
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -215,17 +190,13 @@ pub fn damaged_image(pristine: &[u8], log: &[Write], damage: Damage) -> Vec<u8> 
     image
 }
 
-/// **Take the header ring's history away**: blank every generation in the ring except the one at
+/// Take the header ring's history away: blank every generation in the ring except the one at
 /// `keep_slot`. The negative control's instrument.
 ///
-/// A mount's recovery is the ring scan in `FileSystem::open`: read all [`HEADER_RING`] slots, keep
-/// the newest one whose seahash still checks out, and ignore the rest. That fallback is the whole
-/// mechanism, and a suite that never tests without it cannot tell a working filesystem from an
-/// injector that does nothing. Blanking the other slots leaves the mount exactly one generation to
-/// trust, so if the injector damaged the newest commit, the mount now fails instead of stepping
-/// back a generation.
-///
-/// Blanking is zeroing, which fails `Header::valid()` on the signature, the first thing it checks.
+/// A mount's recovery is `FileSystem::open`'s scan of all [`HEADER_RING`] slots for the newest
+/// whose seahash checks out. With one slot left, damage to the newest commit makes the mount fail
+/// instead of stepping back a generation. Blanking is zeroing, which fails `Header::valid()` on the
+/// signature, the first thing it checks.
 pub fn only_this_generation(image: &mut [u8], keep_slot: u64) {
     for slot in 0..HEADER_RING {
         if slot != keep_slot {
