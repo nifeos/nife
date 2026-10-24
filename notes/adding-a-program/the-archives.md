@@ -32,7 +32,7 @@ packages, each entry present only if its own build ran:
 - the TLS graph's workloads;
 - the FS server and `mkfs`, which are their own workspace and target.
 
-Then come the image's package catalogue and index sources, on every architecture: the progenitor
+Then come the image's package catalog and index sources, on every architecture: the progenitor
 reads them for every install, and `jig` is handed a copy. Last comes the measurement table, so it
 measures everything above it. The progenitor refuses to load a program whose bytes the table does
 not vouch for. The packer writes the measurement manifest before the kernel is built, because

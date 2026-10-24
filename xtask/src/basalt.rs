@@ -1,15 +1,13 @@
 //! **basalt's published packages, fetched by digest for the gates** (milestone 810 (`ripgrep` is
 //! packaged in basalt and installed with `jig`), DECISIONS §297 (software reaches a nife system as a
-//! package `jig` installs from basalt) item 3).
+//! package `jig` installs from basalt) item 3). Name: provisional, `cargo xtask basalt-fetch`,
+//! minted 2026-10-13 (UTC) by lane `lane/ripgrep-from-basalt`.
 //!
 //! nife builds none of the foreign programs [`PACKAGES`] names (`rg`, `ioping`, `hackbench`,
 //! `speedtest1`); its tests take basalt's published package instead (calef, 2026-10-13 UTC: *"1 is
 //! preferable because that tests jig and basalt's delivery mechanism as well."*). First-party
 //! `rmle` and `demos` are pinned for `jig install`; nife's tests run their own builds (milestone
 //! 909 (basalt composes the bootable image from its packages) item 5).
-//!
-//! Name: provisional, `cargo xtask basalt-fetch`, minted 2026-10-13 (UTC) by lane
-//! `lane/ripgrep-from-basalt`.
 
 //! # What is pinned
 //!
