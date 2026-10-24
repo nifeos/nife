@@ -56,7 +56,7 @@ fn chunk(out: RendezvousId, buf: &mut [u8; 16]) -> Option<usize> {
 /// silence: no byte of the 36-character identifier reaches the sink, the stream is the one
 /// sentence, and the process ends normally. A `uuid` that fell back to a counter, a boot-time seed
 /// or a tick fails, the fallback `crates/globally_unique_identifier_partition_table` and
-/// `disk_partitioner` refuse. Arch-neutral (DECISIONS §19): every ISA runs literally this test.
+/// `disk_partitioner` refuse. Arch-neutral (DECISIONS §19 (architectural parity is a tenet)): every ISA runs this very test.
 #[test_case]
 fn a_process_granted_no_entropy_prints_no_identifier() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");

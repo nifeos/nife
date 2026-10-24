@@ -299,7 +299,7 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
 
 /// **A holder that deletes its own port capability faults on its next `out`** (milestone 313's
 /// audit, 2026-09-17): the grant is a cached field the switch installs, and `SYS_CAP_DELETE` must
-/// clear it with the slot, or §12's "a consumed capability cannot be used again" fails for the one
+/// clear it with the slot, or §12 (call/reply IPC: a one-shot reply capability)'s "a consumed capability cannot be used again" fails for the one
 /// object enforced outside the table. The progenitor makes this drop on every x86 boot. The child
 /// deletes [`PORT_SLOT_WITHOUT_WAKE`], executes `out` and exits rather than reporting, so a
 /// permitted `out` goes red instead of hanging (row 26's shape): the first `assert_eq!` fails,
