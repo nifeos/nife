@@ -1,5 +1,4 @@
-// Moved out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to
-// their own files). Its docs stay on its `pub mod` line in `lib.rs`, where they always were.
+// This module's docs are on its `pub mod` line in `lib.rs`.
 
 /// Request opcode, in bits 63:56 of the first `CALL` word. The low 32 bits carry a length
 /// or count; bits 55:32 are reserved and must be zero.
@@ -33,49 +32,23 @@ pub const OPERATION_SUSPEND_COUNT: u64 = 9;
 /// little-endian in the second word. Replied when the bytes are on the wire: r0 = bytes
 /// consumed, exactly as [`OPERATION_WRITE`] answers.
 ///
-/// Eight, not sixteen, and that is the request shape rather than a choice: a served request
-/// here arrives through `receive_cap`, which hands the server the reply capability and **two** data
-/// words. [`OPERATION_BYTES`] carries eight for the same reason, from the other direction. So a
-/// sixteen-byte `byte_sink_contract` message is two of these, which is the honest cost of a second
-/// writer that needs no page.
-///
-/// # Why this exists when `OPERATION_WRITE` already prints
-///
-/// [`OPERATION_WRITE`] reads from **the client's output page**, and there is one of those: init maps a
-/// single frame into the terminal read-only and into the shell read/write. A second printing
-/// client would need a second frame, and the terminal would have to be told which one a request
-/// meant, which is a protocol change with a page-index in it. `filesystem_contract` has the same shape and
-/// the same problem (DECISIONS §55: two client processes staging into one page do not compose,
-/// and that is why the file behind a `>` is the shell itself).
-///
-/// Register-only sidesteps it entirely, and the sixteen bytes are not a compromise: they are the
-/// three-word fastpath and the exact payload of a `byte_sink_contract` message, so an adapter that turns
-/// the sink contract into terminal output is one unpack and one `CALL` with **no page at all**.
-/// [`OPERATION_BYTES`] already proved the shape in the other direction, for the input driver.
-///
-/// So the terminal gets a second *writer* without a second page and without a second client
-/// convention, which is what a sink adapter needed (notes/sink-protocol.md).
+/// It gives the terminal a second writer without a second page: [`OPERATION_WRITE`] reads the one
+/// client output page init maps, the problem §55 (the file behind a `>` is the shell itself)
+/// records for `filesystem_contract`. Eight bytes is the request shape, not a choice: a served
+/// request arrives through `receive_cap` with two data words, so a sixteen-byte
+/// `byte_sink_contract` message is two of these. See notes/terminal-contract.md ("The IPC
+/// protocol") and notes/sink-protocol.md.
 pub const OPERATION_PRINT: u64 = 5;
 
 /// Application → terminal: switch the terminal between line-discipline and raw mode
 /// (milestone 169). `len` is 1 to enter raw mode, 0 to leave it. Replied immediately, r0 = 0.
 ///
-/// **Raw mode is the primitive a screen editor needs that the line discipline does not give
-/// it** (design/roadmap/0169-kilo-editor.md): DECISIONS §21 says a program "never sees a
-/// keystroke, an escape sequence, or an echo", which is exactly wrong for `kilo`, which needs
-/// all three. While raw mode is on, [`OPERATION_BYTES`] bypasses [`super::LineDisc`] entirely: no echo, no
-/// editing, no line assembly. A keystroke reaches the application exactly as it arrived, one
-/// [`OPERATION_READRAW`] reply per burst the driver delivered.
-///
-/// `OPERATION_READLINE` is refused (`BAD_REQUEST`) while raw mode is on, and `OPERATION_READRAW` is refused
-/// while it is off: the two input models do not mix on one terminal at once, and a client that
-/// tries gets a fast, loud refusal rather than a read that silently never completes.
-///
-/// Switching in either direction **abandons whatever line was in progress**: the line
-/// discipline's edit buffer going in, raw mode's queued-but-unread bytes coming out. That is
-/// the same discard `^C` already does to the edit buffer, and it exists for the same reason:
-/// a session must never resume half a line typed under the mode it just left. History and the
-/// kill buffer are untouched, because neither belongs to the in-progress line.
+/// While raw mode is on, [`OPERATION_BYTES`] bypasses [`super::LineDisc`] entirely, and each burst
+/// the driver delivers reaches the application through [`OPERATION_READRAW`]. `OPERATION_READLINE`
+/// is refused (`BAD_REQUEST`) in raw mode and `OPERATION_READRAW` outside it. Switching either way
+/// abandons the line in progress in the mode being left, as `^C` does; history and the kill buffer
+/// are untouched. See notes/terminal-contract.md ("The IPC protocol") and
+/// design/roadmap/0169-kilo-editor.md.
 pub const OPERATION_RAWMODE: u64 = 6;
 
 /// Application → terminal: read raw bytes, no line discipline (milestone 169). Valid only
@@ -87,20 +60,15 @@ pub const OPERATION_RAWMODE: u64 = 6;
 /// [`OPERATION_READLINE`]; a second one while one is parked is refused with `BAD_REQUEST`.
 pub const OPERATION_READRAW: u64 = 7;
 
-/// **The badge on a copy of the terminal endpoint that reads keystrokes and nothing else**
+/// The badge on a copy of the terminal endpoint that reads keystrokes and nothing else
 /// (milestone 709 (a graphical terminal session on the no-keyboard arm holds only the raw half
-/// of the boot discipline), fatal risk 7). The terminal serves [`OPERATION_RAWMODE`] and
-/// [`OPERATION_READRAW`] on a capability carrying **any non-zero badge** and refuses every other
-/// request on it with [`BAD_REQUEST`]: no [`OPERATION_BYTES`], so its holder cannot type a line
-/// somebody else reads; no [`OPERATION_READLINE`], so it cannot take one; no [`OPERATION_PRINT`] or
-/// [`OPERATION_WRITE`]; no [`OPERATION_QUIESCE`]. An unbadged capability is served exactly as before, which is
-/// every holder the boot wires (the input driver, the shell, `login`).
+/// of the boot discipline), fatal risk 7).
 ///
-/// The spawn service mints this one (`abi::rendezvous::BADGE`) for a `graphical_terminal`
-/// session with no keyboard, whose keystrokes come from the boot's own discipline. The badge is
-/// the kernel's word on every receive (§230 (badged endpoint capabilities)) and a badged copy
-/// cannot be re-badged, so a holder cannot widen it back to the unbadged surface. The terminal
-/// serves a badge by its value: this one, [`STDIN_BADGE`], and nothing on any other.
+/// The terminal serves a badge by its value: on this one only [`OPERATION_RAWMODE`] and
+/// [`OPERATION_READRAW`], refusing the rest with [`BAD_REQUEST`], and on an unknown one nothing.
+/// The spawn service mints it (`abi::rendezvous::BADGE`) for a keyboardless `graphical_terminal`
+/// session. A badged copy cannot be re-badged (§230 (badged endpoint capabilities)), so its holder
+/// cannot widen it back (notes/terminal-contract.md, "Badged copies").
 ///
 /// Name: provisional (the lane for milestone 709, 2026-10-03).
 pub const RAW_ONLY_BADGE: u64 = 1;
@@ -127,19 +95,16 @@ pub const STDIN_BADGE: u64 = 2;
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const OPERATION_READ_LINE_BYTES: u64 = 10;
 
-/// Supervisor → terminal: **stop serving so a replacement can take over** (milestone 23 (a capability-routed component OS with live replacement), the
-/// `line_editor` swap; ruled by calef 2026-09-26, "1a"). It rides the served endpoint, so its
-/// FIFO does the draining: every request queued ahead of it is served by this instance, and
-/// every one behind it by whoever receives next.
-///
-/// Before replying, the terminal answers any parked [`OPERATION_READLINE`] or [`OPERATION_READRAW`] with
-/// [`FLAG_RETRY`], because a reply capability cannot leave this process and a reader stranded
-/// on it could never be woken. Then it replies r0 = [`QUIESCED`] and stops receiving until its
-/// supervisor says [`CTL_RESUME`] or [`CTL_QUIT`] on its control endpoint.
-///
-/// **Refused with [`BAD_REQUEST`] by a terminal started with no control endpoint**, which is
-/// every terminal a boot builds today. Without one there is nobody to tell it to resume, so an
-/// honoured quiesce would be a dead terminal. See this crate's `BUGS` for who may send it.
+/// Supervisor → terminal: **stop serving so a replacement can take over** (milestone 23 (a
+/// capability-routed component OS with live replacement); calef, 2026-09-26, "1a"). The served
+/// endpoint's FIFO does the draining. Parked [`OPERATION_READLINE`] and [`OPERATION_READRAW`] get
+/// [`FLAG_RETRY`] (a reply capability cannot leave the process), the reply is r0 = [`QUIESCED`],
+/// and the terminal waits for [`CTL_RESUME`] or [`CTL_QUIT`] on its control endpoint. A terminal
+/// with none refuses it with [`BAD_REQUEST`]. See notes/terminal-contract.md.
+/// # BUGS
+/// - The terminal does not check the sender, and the exposure is live on every boot: any unbadged
+///   holder (input driver, shell, `login`, `system_initializer`, `terminal_supervisor`) can quiesce
+///   the boot terminal, which `terminal_supervisor` starts with a control endpoint, until reboot.
 ///
 /// Name: provisional (the lane for milestone 23, 2026-09-26).
 pub const OPERATION_QUIESCE: u64 = 8;

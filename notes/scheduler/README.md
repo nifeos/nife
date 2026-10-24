@@ -20,6 +20,8 @@ the evidence its prose budget has no room for.
   and reply, the capability rules on each arrival order, and freeing stranded callers.
 - [`wake-handshake.md`](wake-handshake.md): the design behind `crates/thread_wake_handshake`: the
   three races of the switch-out window, the states, and the loom model.
+- [`the-current-cpu-page.md`](the-current-cpu-page.md): the page a thread reads its core from, and
+  what its kernel tests prove.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*

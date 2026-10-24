@@ -129,6 +129,38 @@ Eight other attacks held, from recycled TCB slots to FP register leaks.
 [`confinement-claims/adversarial-pass-2026-09-21.md`](confinement-claims/adversarial-pass-2026-09-21.md)
 has every attack, what each fix does not settle, and what the pass could not reach.
 
+## What `RECEIVE_CAP` hands back
+
+`RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP` when the message
+carried none. A `CALL` server reads it as the slot of its one-shot `Reply`. No consumer in the tree
+checks the kind of object in that slot, and no ABI call would let one, as the audit by milestone 613
+(a system log service: the in-memory half) on PR #1494 found. So a word in `x1` that names a real
+slot without a delivery is authority. The worst case is `net_stack`, which
+any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `cap_delete(x1)`
+with no guard, so a chosen slot deletes one of the server's own capabilities.
+
+`system_tests/src/user/receive_cap_attack_tests.rs` holds the property on every arrival order.
+
+- The receive side writes `NO_CAP` unless a capability was installed for this delivery
+  (`Thread::cap_delivered`, `kernel/src/sched.rs`). That covers a plain `SEND`, an interrupt
+  signal and a death message reaching a parked `RECEIVE_CAP`. An `ipc_send` drops its words
+  straight into a parked receiver's mailbox, which is why the receiver-first order is the one at
+  risk. For the interrupt and the death message the word is the kernel's, not a sender's, so the
+  hazard there is order-dependence and a fail-open default rather than a chosen value.
+- `cap_delivered` does not cover the sender-first order. There `ipc_receive_cap`'s `FromSender`
+  path takes `Thread::outgoing_cap` unconditionally. So a delegation must never stay staged after a
+  plain `RECEIVE` collects its sender, or the sender's next plain `SEND` hands it to whoever
+  receives there.
+- A plain `RECEIVE` never takes a capability (§246 (a plain `RECEIVE` never takes a capability)). A
+  server that drains output with plain `RECEIVE` and never reads `x1` (swish, `wc`, `mdr`, the
+  terminal sink) would otherwise lose one of its 32 slots per delegation.
+- `x4 == REPLY_DELIVERED` tells a `CALL` server its Reply from a delegation (§245 (a `CALL` server
+  tells a Reply from a delegation)). Without the tag a server deletes the Reply as a delegation and
+  its caller is never answered, or answers a delegated rendezvous and parks for good.
+
+The throwaway attack programs that first drove the plain-`SEND` escape under QEMU are described in
+`design/roadmap/0634-*.md`.
+
 ## BUGS
 
 The full list, every entry as written, is [`confinement-claims/limitations.md`](confinement-claims/limitations.md).

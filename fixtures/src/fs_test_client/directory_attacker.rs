@@ -17,25 +17,15 @@ use crate::channel::{
     put_page_at,
 };
 
-/// **The attacker against a per-directory grant** (milestone 47). Spawned holding an endpoint to a
-/// `fs_subtree_caretaker`, which is a capability to one subtree with one rights set. Its job is to
-/// make "it cannot reach its parent or a sibling, and it carries no right it was not given" false.
+/// The attacker against a per-directory grant (milestone 47): tries to reach its parent or a
+/// sibling, or use a right it was not given, through one `fs_subtree_caretaker`.
 ///
-/// **It is told nothing about its own grant** beyond a run index (which only keeps the names it
-/// creates distinct across the runs that share one image). That is deliberate: it attempts every
-/// verb and reports a bitmap of what got through, and the kernel test asserts the *exact* expected
-/// set for each configuration. So the specification lives in the test rather than in the program
-/// being tested, and three runs of the same code are each other's controls: a caretaker that
-/// refused everything fails the wide run, and a caretaker that allowed everything fails the narrow
-/// one.
-///
-/// **What makes the attempts real.** `motd` is in the parent and `other/secret` is in a sibling, and
-/// both are on the image, one directory entry from the caretaker, which could open either on any
-/// request it liked. Milestone 33's attacker was handed a real neighbour's address for exactly this
-/// reason.
-///
-/// It never writes to `sub/inner` or anything outside `sub`, so the post-run host check can pin
-/// those bytes from outside the guest and catch an escape this program failed to report.
+/// `run` only keeps the names it creates distinct across runs on one image; it is told nothing
+/// else about its grant. It attempts every verb and reports a bitmap of what got through, and the
+/// kernel test asserts the exact set per configuration, so three runs of this code are each other's
+/// controls. `motd` (the parent) and `other/secret` (a sibling) are real and one entry from the
+/// caretaker. It never writes `sub/inner` or outside `sub`, so the post-run host check can pin those
+/// bytes. See notes/fs-server/the-test-client.md.
 pub(crate) fn dir_attacker(run: u64) -> ! {
     let mut v = 0u64;
     let mut buf = [0u8; 256];

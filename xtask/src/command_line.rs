@@ -20,10 +20,8 @@ pub(crate) fn main() -> ExitCode {
             maybe_hvf();
             eprintln!("--- booting nife to an interactive shell (type `help`, Ctrl-C to quit) ---");
             // A virtio-rng device (DECISIONS §120's 2026-08-26 amendment: "grant the QEMU-only
-            // virtio-rng stopgap"), the same terms `swish_check_leg` already attaches one on: this
-            // is the interactive boot itself, not the bench boot sharing its runner, so there is
-            // no icount-drift reason to keep it test-leg only, and the whole point of the
-            // amendment is that a person booting this way should have one.
+            // virtio-rng stopgap"): this is the interactive boot, not the bench boot sharing its
+            // runner, so no icount-drift reason keeps it to the test legs.
             // SAFETY: `set_var` became unsafe in edition 2024 because it races other threads.
             // xtask is single-threaded up to this point in `main`, before `cargo(&[..])` spawns
             // its child, so there is no concurrent reader to race.
@@ -39,12 +37,8 @@ pub(crate) fn main() -> ExitCode {
                 && user()
                 && cargo(&["run", "-p", "kernel", "--target", TARGET])
         }
-        // The aarch64 archive, standalone (2026-08-27): every other caller reaches
-        // `initial_ramdisk_aarch64` through `user()` as part of a boot (`build`, `run`, `shell`,
-        // ...), and `initial_ramdisk_aarch64` itself only packs, it does not build.
-        // `initial_ramdisk_riscv` and `initial_ramdisk_x86` both build-then-pack in one call, so
-        // this subcommand calls `user()` (build, then pack) rather than `initial_ramdisk_aarch64()`
-        // alone, to give aarch64 the same self-contained entry point its two siblings already have.
+        // `initial_ramdisk_aarch64` only packs, so this calls `user()` (build, then pack), as its
+        // two siblings build and pack in one call.
         "initial-ramdisk-aarch64" => user(),
         "initial-ramdisk-riscv" => initial_ramdisk_riscv(),
         // The third archive (milestone 161). Same programs, built for x86_64.
@@ -169,19 +163,10 @@ pub(crate) fn main() -> ExitCode {
     }
 }
 
-/// The packed initial ramdisk archive ([`archive::initial_ramdisk_path`]) is what
-/// `helpers/qemu-runner-aarch64.sh` passes to QEMU as `-initrd` (milestone 19f (run a real
-/// workload)); the raw user ELFs ([`host::bin_elf`]) are only the input `initial_ramdisk_aarch64`
-/// packs.
-///
-/// **Deliberately the same road Linux's initramfs travels**, now literally an archive like theirs.
-/// QEMU loads the file into RAM and writes its address into `/chosen/linux,initrd-start` in the
-/// device tree; the kernel finds it there (`memory::initial_ramdisk_region`, built at milestone 3
-/// (hand out physical memory) for exactly this). Nothing about the contents is known to the kernel
-/// at build time, which is the entire point of milestone 7c (user mode: EL0, capabilities, the ELF
-/// loader, and IPC).
-///
 /// If `--hvf` was passed, boot under Apple's Hypervisor.framework instead of TCG.
+///
+/// How the aarch64 kernel finds the initial ramdisk the runner passes as `-initrd` is in
+/// notes/adding-a-program/the-archives.md.
 pub(crate) fn maybe_hvf() {
     if std::env::args().any(|a| a == "--hvf") {
         // SAFETY: `set_var`/`remove_var` became unsafe in edition 2024 because they race other

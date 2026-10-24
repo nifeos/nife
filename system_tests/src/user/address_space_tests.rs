@@ -14,20 +14,13 @@ use crate::sched;
 
 /// **The milestone 15 witness: address spaces stay apart with NO flush on switch.**
 ///
-/// Two spaces map the *same* virtual address to different frames holding different bytes.
-/// We install A and read through the VA (loading A's translation, tagged with A's ASID,
-/// into the TLB), then install B, which since milestone 15 flushes nothing, and read
-/// again. If user mappings were still global, or the ASID did not ride TTBR0, or two
-/// spaces shared a tag, B's read would hit A's still-cached entry and see A's byte: one
-/// process reading another's memory, the exact bug the sledgehammer flush used to prevent.
-///
-/// **This ran on aarch64 only until milestone 58, and the reason it could not be ported is worth
-/// keeping.** `riscv64::mmu::write_satp` used to issue an unconditional `sfence.vma` on every root
-/// switch, so a RISC-V twin would have read B's byte because everything had just been flushed, not
-/// because the tagging works: a test that cannot fail for its stated reason, which is worse than no
-/// test. Porting it was never a test-portability change; it needed the ASID shootdown underneath.
-/// Now that RISC-V's context switch flushes nothing either, the assertion means the same thing on
-/// both ISAs and this is one suite, which is what DECISIONS §19 asks for.
+/// Two spaces map the *same* virtual address to different frames holding different bytes. The test
+/// installs A and reads through the VA, loading A's ASID-tagged translation into the TLB, then
+/// installs B, which flushes nothing, and reads again. If user mappings were global, or the ASID
+/// did not ride the root register, or two spaces shared a tag, B's read would hit A's cached entry
+/// and see A's byte: one process reading another's memory. The assertion means the same on aarch64
+/// and RISC-V only because neither context switch flushes (DECISIONS §19 (architectural parity is a
+/// tenet)); see notes/system-test-modules/address-space-tests.md.
 #[test_case]
 fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
     let mut a = AddressSpace::new(2).expect("no space A");
@@ -35,18 +28,11 @@ fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
 
     let (asid_a, asid_b) = (mmu::asid_of(a.ttbr0()), mmu::asid_of(b.ttbr0()));
 
-    // **An architecture that does not tag at all cannot be tested for tagging**, and this is the
-    // same refusal the doc comment above records about RISC-V before milestone 58: a test that
-    // cannot fail for its stated reason is worse than no test.
-    //
-    // x86_64 is that architecture today. A PCID lives in `CR3[11:0]`, and with `CR4.PCIDE` clear
-    // those bits are reserved-zero, so `arch::x86_64::mmu::ttbr0_value` drops the number and every
-    // `mov cr3` flushes the whole TLB. B's read would then return B's byte because nothing was
-    // cached, not because the tagging works. Turning `PCIDE` on is worth a measurement and is
-    // recorded as an architect's call (item 3 of milestone 161 (the x86_64 kernel port)); the day
-    // it is on, both
-    // spaces get
-    // real tags and this skip stops firing with nothing else edited.
+    // An architecture that does not tag cannot be tested for tagging: B's read would return B's
+    // byte because nothing was cached. x86_64 runs with `CR4.PCIDE` clear, so `CR3[11:0]` is
+    // reserved-zero, `arch::x86_64::mmu::ttbr0_value` drops the number and every `mov cr3` flushes
+    // the whole TLB. Turning `PCIDE` on is an architect's call (item 3 of milestone 161 (the x86_64
+    // kernel port)); once it is on, this skip stops firing with nothing else edited.
     if asid_a == 0 && asid_b == 0 {
         crate::testing::skip!(
             "this machine does not tag address spaces (x86 runs with CR4.PCIDE clear, so every \
@@ -93,45 +79,16 @@ fn asid_tagging_keeps_address_spaces_apart_without_flushes() {
     );
 }
 
-/// **An ASID flush reaches the OTHER cores, which is the whole of milestone 58 on RISC-V.**
-///
-/// The test above proves tagging keeps two spaces apart on one core. This one proves the other half
-/// of the contract, the half that is a distributed protocol on one ISA and a single instruction on
-/// the other: when `crates/address_space_identifier` says "flush, then the number may tag someone else", the flush has
-/// to have reached every core that could be holding an entry wearing it. aarch64's `tlbi aside1is`
-/// broadcasts in hardware. RISC-V's `sfence.vma` affects only the hart that runs it, so `flush_asid`
-/// has to IPI the others through SBI RFENCE and wait for them.
-///
-/// **This test fails without the shootdown**, which is the property worth having. The sequence:
-///
-///   1. a probe thread on **another** core installs space A and reads `VA`, which is what pulls the
-///      translation into *that* core's TLB, tagged with A's ASID, and **leaves it installed**
-///   2. this core moves `VA` onto a different frame **with no per-address invalidation at all**, so
-///      the only thing that can announce the change anywhere is the ASID sweep
-///   3. this core calls `flush_asid`
-///   4. the probe reads `VA` again, on the same core, with the same space still installed
-///
-/// Step 4 must see the new frame. If the sweep stayed local it sees the old one, and that byte is
-/// exactly the bug: a core still translating an address space that no longer means what it did.
-///
-/// **The space is never re-installed**, because a `satp` or `TTBR0` write between the reads may be
-/// treated as a flush. And the mapping is **changed rather than recycled**, because a recycled ASID
-/// would likely get the dead space's frames and read the right byte by accident.
+/// **An ASID flush reaches the other cores.** RISC-V's `sfence.vma` is local, so `flush_asid` must
+/// IPI the other harts through SBI RFENCE, where aarch64's `tlbi aside1is` broadcasts. A probe on
+/// another core caches `VA`'s translation; this core moves `VA` to a new frame with no per-address
+/// invalidation and calls `flush_asid`; the probe re-reads, space still installed, and must see the
+/// new frame. See notes/system-test-modules/address-space-tests.md.
 ///
 /// # BUGS
 ///
-/// - **The probe is placed, not pinned.** `spawn_on` is a hint and an idle core may steal, so the
-///   probe records where it actually ran and the test asserts only that it was not *this* core. It
-///   cannot land here: this thread spins without yielding, so its core never goes idle and never
-///   steals. Both of the probe's reads happen inside one thread with interrupts masked, so they
-///   cannot land on two different cores.
-/// - **It needs two cores** and skips nothing if it has one: it fails, because the runner passes
-///   `-smp 4` on both ISAs and a machine that came up single-core is a finding, not a reason to be
-///   quiet.
-/// - **A broken shootdown could hang this test instead of failing it**, if the reason it were broken
-///   were that the remote core never services the request. The probe's spin is deadline-bounded and
-///   reports `PROBE_GAVE_UP` so that case is named rather than silent, but the failure text would
-///   then be about the handshake and the real cause would be one level down.
+/// - The probe is placed, not pinned, so the test asserts only that it ran on another core.
+/// - A remote core that never services the shootdown fails as a handshake timeout (`gave_up`).
 #[test_case]
 fn an_asid_flush_reaches_the_other_cpus() {
     const VA: u64 = address_space_map::pair_page(0x40_0000);
@@ -152,9 +109,9 @@ fn an_asid_flush_reaches_the_other_cpus() {
         crate::testing::skip!("a cross-core TLB shootdown test needs at least two online cores");
     }
     let here = crate::cpu::id();
-    // Any ONLINE core but this one, from the set rather than `0..count` (first-silicon sweep,
-    // 2026-08-14): on a non-contiguous online set the range picks a parked core, the probe never
-    // runs, and the shootdown test times out reading as a TLB bug.
+    // Any ONLINE core but this one, from the set rather than `0..count`: on a non-contiguous online
+    // set the range picks a parked core, the probe never runs, and the test times out reading as a
+    // TLB bug.
     let target = crate::smp::online_cpus()
         .find(|&c| c != here)
         .expect("cores >= 2");
@@ -371,35 +328,13 @@ fn a_read_only_segment_is_mapped_read_only() {
     drop(space);
 }
 
-/// **A space installed with `while_installed` is still installed when its body asks, however many
-/// timer ticks the body spans.**
+/// **A space installed with `while_installed` stays installed however many ticks its body spans.**
 ///
-/// The witness for the x86_64 OVMF flake of 2026-10-13 (UTC), merge-group run 38345573542, where
-/// `map_physical_maps_a_shared_frame_and_a_device_page` read "shared page not mapped" from a page it
-/// had just mapped. `translate_user` walks the root the CPU holds now, and a kernel thread has no
-/// space of its own, so a context switch back to it installs the kernel's reserved root. A
-/// preemption between the install and the walk therefore took the space away under the body. It
-/// needs a tick inside a window a few microseconds wide and another runnable thread on the same
-/// core, and the one-core OVMF leg had that thread: `a_user_client_moves_data_through_shared_memory`,
-/// the test just before, leaves its client spinning forever.
-///
-/// This test makes both conditions certain rather than lucky: another thread is queued on this
-/// thread's core when the window opens, and the body spans five tick periods before it walks.
-/// Without interrupts held off inside `while_installed` it failed on every run on all three
-/// architectures (2026-10-13 UTC).
-///
-/// **The precondition is read inside the window, from this core's run queue**, not inferred from
-/// where a competitor once ran. The first cut waited for a competitor to report this core's bit and
-/// failed its own precondition on the riscv64 `rva23s64` CPU-matrix leg (merge-group run
-/// 38351881399, 2026-10-13 UTC). `spawn_on` is a hint, and a steal (§28 (SMP placement), whose
-/// message-shaped stealing lets an idle core pull a queued thread from a loaded one) breaks it:
-/// while the competitors were spawned in core order, a core whose own competitor had not arrived
-/// yet was idle, and it stole the one queued on this core. Every other core then held a spinner, so
-/// no core was idle again, nothing could steal one back, and this thread sat alone until `wait_for`
-/// gave up. Forcing that interleaving reproduced the panic with competitors on cores `[2, 1, 2, 3]`
-/// and this thread on core 0. So the setup now repairs the placement (a competitor spawned onto
-/// this core while its queue is empty) and the body reads the queue it is about to be preempted
-/// against.
+/// A context switch back to a kernel thread installs the kernel's reserved root, so a preemption
+/// between the install and `translate_user`'s walk would take the space away under the body;
+/// `while_installed` holds interrupts off. The test makes that preemption certain: a competitor is
+/// queued on this core inside the window, and the body spans five ticks. See
+/// notes/system-test-modules/address-space-tests.md.
 ///
 /// Name: provisional, lane maintainer/map-physical-flake, 2026-10-13 (UTC).
 ///
@@ -514,24 +449,13 @@ fn an_installed_space_stays_installed_across_a_timer_tick() {
 fn a_dead_user_thread_frees_its_whole_address_space() {
     let used = || crate::memory::stats().expect("no allocator").used;
 
-    // Warm up: the first user thread ever created pays for page tables in a region of
-    // kernel VA that nothing has touched. Measure the STEADY state, which is the one that
-    // has to hold forever.
-    //
-    // Snapshot the fault count BEFORE spawning (as the loop below always did). The old
-    // order, spawn then snapshot, was a race: on SMP the `kernel_test_subject` can fault in that
-    // gap, the snapshot swallows its fault, and the wait below times out on a count that will never
-    // move again. Latent until milestone 14 phase A.2/A.3 made spawn-to-fault fast enough
-    // to lose the race about once in seven runs.
-    //
-    // Pin the `kernel_test_subject` instances to THIS core (DECISIONS §28 made `spawn` scatter
-    // them). PageFrame accounting must be exact to catch a leak (the milestone-6 bug this test
-    // guards), but a thread's frames are freed by `finish_switch` on whatever core reaps it,
-    // *after* it leaves the thread table and outside IPC_TABLES. Scattered across cores, that free
-    // is asynchronous, so `used()` fluctuates and never reads exact. Kept on the test's own core,
-    // each `kernel_test_subject` instance's fault, reap, and frame free happen synchronously under
-    // the test's own yields, so `used()` is exact again. This tests the reaper, not placement, so
-    // pinning costs nothing.
+    // Warm up first: the first user thread pays for page tables in untouched kernel VA, and the
+    // steady state is what must hold. Snapshot the fault count BEFORE each spawn, or a fast fault
+    // lands in the gap and the wait times out. Subjects go to THIS core (DECISIONS §28 scatters
+    // `spawn`): a thread's frames are freed by `finish_switch` on whichever core reaps it, after it
+    // leaves the thread table and outside IPC_TABLES, so only on this core do fault, reap and free
+    // happen under the test's own yields and keep `used()` exact. This tests the reaper, not
+    // placement.
     let here = crate::cpu::id();
     let image = kernel_test_subject_image();
     let kernel_addr = a_kernel_address();
@@ -561,17 +485,11 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
     assert!(wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > f0));
     assert!(wait_for(|| !sched::is_thread_present(warmup)));
 
-    // Sample the baseline only once `used()` has STOPPED MOVING, for the same reason the
-    // assertion below waits rather than reading instantly, applied to the other end. The warm-up
-    // `kernel_test_subject`'s address space is freed by `finish_switch` on whatever core actually
-    // ran it, which under §28 placement need not be this one, and that free lands a beat *after*
-    // its ThreadId stops resolving. Sampling `before` inside that window captures frames that are
-    // about to come back, `used()` then settles BELOW `before`, and a wait for equality could never
-    // succeed. The failure said so plainly when it happened: it reported "-18 frames did not come
-    // back", a NEGATIVE leak, which no real leak can produce. Found when an unrelated change to
-    // the std::fs test shifted this test's timing; the race was already here.
-    // Two agreeing samples a yield apart mean nothing is in flight. Bounded by `wait_for`'s own
-    // deadline, so a genuinely unstable allocator fails the test rather than spinning here.
+    // Sample the baseline only once `used()` has STOPPED MOVING. The warm-up's space is freed by
+    // `finish_switch` on whatever core ran it (§28 (SMP placement)), a beat after its ThreadId
+    // stops resolving; a baseline sampled in that window is too high: `used()` settles below it,
+    // which reads as a negative leak. Two agreeing samples a yield apart mean nothing is in flight;
+    // `wait_for`'s deadline bounds it.
     let mut last = used();
     let settled = wait_for(|| {
         sched::yield_now();
@@ -591,31 +509,13 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
         assert!(wait_for(|| !sched::is_thread_present(kernel_test_subject)));
     }
 
-    // Exact in the leak direction, but allow the asynchronous reap to settle. Pinning the
-    // `kernel_test_subject` instances with `spawn_on` is a placement HINT, not a pin (DECISIONS
-    // §28): an idle core can steal one before this core runs it, and then the frame free
-    // (finish_switch dropping the address space, after the thread leaves the table and outside
-    // IPC_TABLES) lands on that core a beat after the ThreadId resolves to nothing. So wait for
-    // `used()` to come back to `before` rather than reading it the instant the last
-    // `kernel_test_subject` is gone. Still a leak trap: a real leak (the milestone-6 bug) never
-    // gives the frames back, so this wait times out and fails.
-    //
-    // `<=`, not `==`. Equality demanded that no OTHER test's teardown free a frame during this
-    // window, which is not a property four `kernel_test_subject` address spaces are responsible
-    // for, and it is the only way the old form could fail with a NEGATIVE count: it did, on CI and
-    // on a quiet aarch64 dev machine, as "-19 frames did not come back", frames arriving from
-    // outside the measured window. A leak still fails identically: every frame the
-    // `kernel_test_subject` instances keep holds `used()` above `before` forever. See
-    // notes/load-sensitive-assertions.md.
-    //
-    // The count in the message is the one the wait DECIDED on, not a fresh sample, and this site is
-    // why the distinction is worth code. `used() as i64 - before as i64` re-reads the allocator
-    // after the wait has already given up, so frames arriving in that gap make a genuine timeout
-    // print zero or a NEGATIVE count: the exact "-19 frames did not come back" that cost this
-    // family three separate diagnoses, now emitted by a form that can no longer fail for that
-    // reason. A reader who trusts the sign would re-run the old investigation from the top.
-    // `wait_for` re-evaluates the predicate once past its deadline, so a `false` return leaves
-    // `seen > before` and the count below is positive by construction, no cast required.
+    // Wait for `used()` to come back rather than reading it once: `spawn_on` is a hint (DECISIONS
+    // §28), so a stolen subject's frames are freed on another core a beat after its ThreadId goes.
+    // A real leak never gives them back, so the wait times out. `<=`, not `==`: another test's
+    // teardown may free frames inside this window. The message prints `seen`, the count the wait
+    // decided on: `wait_for` re-evaluates once past its deadline, so on a timeout `seen > before`
+    // by construction, where a fresh sample could print zero or a negative count. See
+    // notes/load-sensitive-assertions.md and notes/system-test-modules/address-space-tests.md.
     let mut seen = before;
     let came_back = wait_for(|| {
         seen = used();
