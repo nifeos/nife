@@ -3,18 +3,14 @@ use crate::cap::{Rights, rendezvous_cap};
 use crate::sched::RendezvousId;
 
 /// Spawn `uuid` with **nothing but somewhere to print**, which is what a program that did not
-/// declare [`grant_plan::Manifest::entropy`] is born holding.
+/// declare [`grant_plan::Manifest::entropy`] is born holding: its whole cspace is slot 0, so
+/// [`grant_plan::ENTROPY_SLOT`] is empty and a `CALL` on it can only be refused by the kernel
+/// (`printenv_tests::spawn_printenv`'s `None` arm, one authority over).
 ///
-/// `printenv_tests::spawn_printenv`'s `None` arm, and the same claim one authority over: the
-/// program's whole cspace is slot 0, so [`grant_plan::ENTROPY_SLOT`] is empty and a `CALL` on it
-/// can only be refused by the kernel.
-///
-/// **There is no `Some` arm here, and that is a limitation rather than a choice.** `Spawn::grants`
-/// fills a child's capability table from slot 0 upward and cannot place a capability at the slot a
-/// manifest names, which is the same gap `xtask`'s `swish-check` list already records for `date`'s
-/// second stream. So the endowed half of this milestone is proven at the real prompt, through the
-/// real `crates/system_initializer`, by `script/swish-check`; see this module's own note in
-/// `design/roadmap/0111-entropy-for-a-child.md`.
+/// There is no `Some` arm, as a limitation: `Spawn::grants` fills a table from slot 0 upward and
+/// cannot place a capability at the slot a manifest names (the gap `xtask`'s `swish-check` list
+/// records for `date`'s second stream). The endowed half is proven at the real prompt by
+/// `script/swish-check`; see `design/roadmap/0111-entropy-for-a-child.md`.
 fn spawn_uuid_holding_no_entropy(endpoints: u64) -> RendezvousId {
     let image = program("uuid").expect("no uuid program in the initial ramdisk");
     let out = crate::sched::create_rendezvous_from(endpoints).expect("no stdout rendezvous");
@@ -54,22 +50,13 @@ fn chunk(out: RendezvousId, buf: &mut [u8; 16]) -> Option<usize> {
 
 /// **A program that was not endowed entropy draws none, prints no identifier, and says so.**
 ///
-/// This is the half of milestone 111 that carries the claim. The endowment is the easy direction:
-/// wire a capability, watch a program use it. The claim is the other one, that authority a program
-/// did not declare is not quietly available anyway, and randomness is the authority where that is
-/// hardest to check by looking: a process that draws a key and a process that hardcodes one make
-/// the same syscalls and produce output of the same shape. Nothing but a test that takes the
-/// capability away can tell them apart.
-///
-/// So the assertions are about **silence**. Not one byte of the 36-character identifier reaches the
-/// sink, the whole stream is the one sentence, and the process ends normally rather than faulting
-/// on a `CALL` that could not succeed. A `uuid` that fell back to a counter, a boot-time seed or a
-/// monotonic tick would pass no part of this, which is exactly the fallback
-/// `crates/globally_unique_identifier_partition_table` refuses to provide and `disk_partitioner`
-/// refuses to invent.
-///
-/// Arch-neutral, so **both ISAs run literally this test** (DECISIONS §19): what is under test is
-/// the capability model's answer to an empty slot, which is not instruction-set-specific.
+/// The half of milestone 111 that carries the claim: authority a program did not declare is not
+/// quietly available anyway. A process that draws a key and one that hardcodes it make the same
+/// syscalls, so only taking the capability away tells them apart, and the assertions are about
+/// silence: no byte of the 36-character identifier reaches the sink, the stream is the one
+/// sentence, and the process ends normally. A `uuid` that fell back to a counter, a boot-time seed
+/// or a tick fails, the fallback `crates/globally_unique_identifier_partition_table` and
+/// `disk_partitioner` refuse. Arch-neutral (DECISIONS §19): every ISA runs literally this test.
 #[test_case]
 fn a_process_granted_no_entropy_prints_no_identifier() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
