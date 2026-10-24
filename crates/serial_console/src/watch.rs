@@ -1,24 +1,12 @@
-//! **The loop that cannot hang**, which is the whole difficulty of this milestone.
+//! **The loop that cannot hang.**
 //!
-//! Reading a serial port is one `open` and one `read`. Knowing when to stop reading is the part
-//! that has kept every board milestone waiting on a person with eyes, and it has three answers,
-//! all of which have to be here at once: the boot got where it was going, the board announced a
-//! failure, or nothing more is coming.
-//!
-//! # Why the read happens on another thread
-//!
-//! Because the deadline must hold **whatever the reader does**. `port::configure` asks the tty
-//! layer for a read timeout (`min 0 time 10`), and when that works a read returns on its own after
-//! a tenth of a second. When it does not work, and there are several ordinary ways for it not to
-//! (an `stty` that failed and was only warned about, a device that ignores the setting, a file or
-//! a pipe standing in for a port), a read blocks forever and a single-threaded loop blocks with it.
-//!
-//! So the read runs on a worker and this loop waits on a channel with a timeout. The worker may
-//! still be parked in `read` when we decide to stop; that is fine, because deciding to stop means
-//! returning, and the process exits, and the descriptor goes with it. What must never happen is
-//! this loop waiting on the board's goodwill, and it never does. This is `CLAUDE.md`'s
-//! `Never leave QEMU running` rule wearing different clothes: an emulator that never exits and a
-//! board that never speaks are the same bug from the tool's side.
+//! A session stops on one of three answers: the boot got where it was going, the board announced
+//! a failure, or nothing more is coming. The read runs on a worker thread and this loop waits on a
+//! channel with a timeout, so the deadline holds whatever the reader does: a port whose read
+//! timeout (`min 0 time 1`) did not take, a device that ignores it, or a file or pipe standing in
+//! for a port would block a single-threaded loop forever. The worker may still be parked in `read`
+//! when the session ends; the process exits and the descriptor goes with it.
+//! notes/board-console/design.md has the argument.
 
 use std::io::{self, Read, Write};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -42,25 +30,13 @@ pub struct Policy {
     pub until: Option<Stage>,
     /// Stop if the board falls silent for this long **after it has said something**.
     ///
-    /// The "after" is load-bearing. Before the first byte, silence means nobody has pressed power
-    /// yet, and a tool that gave up on that would be unusable at a bench where the operator is
-    /// three feet from the switch. Once bytes have flowed, silence is the runbook's
-    /// `Starting kernel ...`-then-nothing row, which is what a multicore hang looks like.
+    /// Before the first byte, silence means nobody has pressed power yet. Once bytes have flowed,
+    /// silence is the runbook's `Starting kernel ...`-then-nothing row. `None` disables it.
     ///
-    /// `None` disables it.
-    ///
-    /// **Suppressed once the boot tour completes, and re-armed if a soak starts** (milestone 219).
-    /// The kernel halts in `wfi` after its last line, so quiet at exactly [`Stage::Tour`] is normal
-    /// termination and reporting it as a hang would fail every good boot. A `--features soak_test`
-    /// kernel does not halt: it prints a heartbeat on the wall clock every five seconds whatever
-    /// the workload is doing, and reaching [`Stage::Soak`] says so, so from there silence means the
-    /// thing that prints is wedged.
-    ///
-    /// **That asymmetry is the whole of how this tool tells a hang from a slow run**, and it works
-    /// because the heartbeat is not on the work: a machine crawling at one round trip a second
-    /// still speaks on time, with a rate that says it is crawling. `kernel/src/soak.rs` is the
-    /// other half of the agreement and its beat interval (five seconds) is chosen against this
-    /// field's default (fifteen), so a run is called a hang after three missed beats.
+    /// Suppressed at the stages where quiet is a correct end state (`went_quiet`), and armed again
+    /// by [`Stage::Soak`] and [`Stage::Sweep`]. A soak's heartbeat is on the wall clock rather than
+    /// on the work, every five seconds against this field's default of fifteen, so a run is called
+    /// a hang after three missed beats.
     pub quiet_after: Option<Duration>,
     /// After [`Self::until`] is reached, keep reading this long before calling it a success.
     ///
@@ -144,14 +120,9 @@ impl Session {
     ///
     /// `0` reached what was asked for (or, with no stage asked for, watched the whole duration
     /// without the board announcing a failure). `1` the board announced a failure. `2` it went
-    /// quiet. `3` the time ran out with the requested stage unreached. Callers add `4` for a port
-    /// that could not be opened, which is not a session at all.
-    ///
-    /// **A writing mode adds no status and reuses `3`** (milestone 324). A stop that was asked for
-    /// and not confirmed is the time running out with the requested thing unreached, which is what
-    /// `3` already means; giving it a sixth code would make every bench script that already reads
-    /// these five wrong. A failure the board announced and a hang still win, because those are
-    /// facts about the board and an unconfirmed stop is a fact about this tool.
+    /// quiet. `3` the time ran out with the requested stage unreached, which is also an unconfirmed
+    /// stop. Callers add `4` for a port that could not be opened. A failure or a hang outranks an
+    /// unconfirmed stop: those are facts about the board, and it is one about this tool.
     #[must_use]
     pub fn exit_code(&self) -> i32 {
         let base = match &self.outcome {
@@ -204,27 +175,22 @@ impl Session {
 enum Read1 {
     Bytes(Vec<u8>),
     /// The source is finished. A file or a pipe reports this; a serial port configured with
-    /// `min 0 time 10` does not, which is why `stream_never_ends` exists.
+    /// `min 0 time 1` does not, which is why `stream_never_ends` exists.
     Ended,
     Failed(io::Error),
 }
 
 /// Watch a source until the policy says to stop, copying every byte to `sink` as it arrives.
 ///
-/// `stream_never_ends` says how to read a zero-byte result. For a serial port it is `true`: a
-/// timed-out `read` returns nothing and the board is simply not talking yet. For a replayed log it
-/// is `false`, where nothing means the file is over.
-///
-/// `sink` is written and flushed per chunk, deliberately, and the caller is expected to have it
-/// pointed at a file. A console session whose evidence exists only in a terminal that has since
-/// scrolled is the failure this tree keeps writing down; flushing per chunk is what makes the log
-/// survive the tool being killed.
+/// `stream_never_ends` says how to read a zero-byte result: `true` for a serial port, where a
+/// timed-out `read` means the board is not talking yet, and `false` for a replayed log, where it
+/// means the file is over. `sink` is written and flushed per chunk, so the log survives the tool
+/// being killed.
 ///
 /// # Errors
 ///
-/// Returns the sink's error if the log cannot be written, and the source's error if the read
-/// failed for a reason other than reaching the end. A read error does **not** discard the session:
-/// callers get the error, and the bytes are already in the log.
+/// The sink's error if the log cannot be written, and the source's if the read failed other than
+/// at its end. The bytes read so far are already in the log.
 ///
 /// # Examples
 ///
@@ -254,23 +220,16 @@ where
     watch_with(source, sink, policy, stream_never_ends, None)
 }
 
-/// [`watch`], with a writing mode attached (milestone 324).
+/// [`watch`], with a writing mode attached.
 ///
-/// The reading half is identical and is deliberately not duplicated: a second copy of this loop
-/// would be a second place for the deadline to be got wrong, and the deadline is the whole
-/// milestone. What `escape` adds is one call per complete line and one check per iteration.
-///
-/// **Complete lines only reach the escape.** The partial tail is offered to
-/// [`BootProgress::observe_partial`] as before, because a stage ratchet is monotone and more bytes
-/// cannot unmake it. Sending a byte is not monotone: it cannot be unsent, so it may only be decided
-/// on evidence that has finished arriving. That asymmetry is the reason the two are fed
-/// differently, and it is the one difference between this function and [`watch`].
+/// The same loop, so there is one place for the deadline. Only complete lines reach `escape`: a
+/// stage ratchet may move on a partial tail, because more bytes cannot unmake it, but a sent byte
+/// cannot be unsent, so it is decided only on evidence that has finished arriving.
 ///
 /// # Errors
 ///
-/// As [`watch`]. A failure to write to the *board* is not an error here: it is recorded in
-/// [`Session::stop`] and logged, because the board is still talking and the session is still
-/// worth finishing.
+/// As [`watch`]. A failed write to the board is recorded in [`Session::stop`] and logged, not
+/// returned: the board is still talking.
 pub fn watch_with<R>(
     source: R,
     sink: &mut dyn Write,
@@ -428,38 +387,19 @@ fn feed_lines(
             escape.observe_line(line, started.elapsed(), &mut *sink)?;
         }
     }
-    // The incomplete tail too, or U-Boot's newline-less `StarFive #` prompt is never
-    // seen. Offered as a *partial*, which is a weaker kind of evidence for the reasons
-    // `observe_partial` records; safe to re-offer as it grows, because the ratchet
-    // only moves forward.
+    // The tail too, as a partial, or U-Boot's newline-less `StarFive #` prompt is never seen. The
+    // ratchet only moves forward, so re-offering it as it grows is safe.
     progress.observe_partial(&feeding.tail);
     Ok(())
 }
 
 /// Whether the board has been silent past `quiet_after` at a stage where silence is a hang.
 ///
-/// Silence, and the two things that are not it. A board still inside its settle window is quiet
-/// because we asked it to be. A board that finished its tour is quiet because the kernel halted in
-/// `wfi`, which is how a good boot ends.
-///
-/// Named stages rather than `< Tour`, since milestone 219 (the boot tour ends and the kernel halts,
-/// so there is nothing to soak): the exemption belongs to the stages where quiet is the correct end
-/// state and not to everything past them. A soak has started and is under contract to keep
-/// speaking, so its silence is the hang this tool exists to name.
-///
-/// **[`Stage::Prompt`] joined the exemption at milestone 268** (every architecture boots the same
-/// way: describe the machine, test yourself, hand over), and for a different reason from `Tour`'s:
-/// a kernel that finished its tour is quiet because it halted, and a system sitting at a `swish`
-/// prompt is quiet because it is *waiting for somebody to type*. Both are correct terminal states
-/// of a boot, and since that milestone the prompt is the one a default boot is supposed to reach.
-///
-/// **[`Stage::SweepDone`] joined it in part 2 of milestone 324** (the bench console cannot speak
-/// to any of the three boards), on `Tour`'s reason exactly: `kernel/src/job_mix.rs` halts in `wfi`
-/// after `job-mix: done`. [`Stage::Sweep`] is deliberately NOT here, and that asymmetry is the
-/// whole of what part 2 bought: a sweep that started and stopped is the wedge this tool exists to
-/// name, where before it and a finished sweep both ended as the clock running out. What the
-/// exemption cannot do is shorten a subrun, so see `Stage::Sweep`'s own documentation on sizing
-/// `quiet_after` against the slowest one.
+/// A board inside its settle window is quiet because we asked it to be. The exempt stages are the
+/// correct end states, named rather than `< Tour` so that a soak or a sweep, under contract to keep
+/// speaking, is not exempt: [`Stage::Tour`] and [`Stage::SweepDone`] because the kernel halts in
+/// `wfi`, and [`Stage::Prompt`] because `swish` is waiting for somebody to type. A sweep's timer
+/// must still exceed its slowest subrun (see [`Stage::Sweep`]).
 fn went_quiet(
     policy: &Policy,
     spoke_at: Option<Instant>,
@@ -501,9 +441,9 @@ fn reader<R: Read>(mut source: R, tx: &mpsc::Sender<Read1>, stream_never_ends: b
         match source.read(&mut buffer) {
             Ok(0) => {
                 if stream_never_ends {
-                    // A configured port with `min 0 time 10` already blocked for a tenth of a
-                    // second before returning nothing. If the configuration did not take, this
-                    // sleep is what stops the loop spinning a core while the board is quiet.
+                    // A configured port (`min 0 time 1`) already blocked for a tenth of a second
+                    // before returning nothing. If the configuration did not take, this sleep is
+                    // what stops the loop spinning a core while the board is quiet.
                     thread::sleep(Duration::from_millis(20));
                     continue;
                 }
@@ -744,8 +684,8 @@ mod tests {
         assert!(session.progress.is_relocated());
     }
 
-    /// Sustained watching, which is what `design/fatal-risks/README.md`'s multicore entry needs: no stage
-    /// to wait for, so running the clock out is the plan rather than a disappointment.
+    /// Sustained watching, which is what `design/fatal-risks/README.md`'s multicore entry needs: no
+    /// stage to wait for, so running the clock out is the plan rather than a disappointment.
     #[test]
     fn watching_for_a_duration_ends_successfully() {
         let mut sink = Vec::new();
@@ -885,14 +825,9 @@ mod tests {
         assert_eq!(beat.refused, 0);
         assert_eq!(beat.mismatches, 0);
         assert_eq!(beat.stalled, 0);
-        // The finding milestone 219 measured rather than assumed: a saturated workload does not
-        // migrate under this scheduler. Asserted so that a future run which DOES cross cores fails
-        // this test and makes somebody read notes/soak.md.
-        //
-        // Milestone 221 did not change this number and could not: this is a captured log from
-        // before the tick route existed, frozen on purpose, and its `wakes` parses as zero. A
-        // fixture is a record of what a machine said, so it is the one thing here a later
-        // mechanism must not update.
+        // A saturated workload does not migrate under this scheduler (notes/soak.md), so a run
+        // that does cross cores fails here. The capture predates the tick route, so `wakes` parses
+        // as zero; a fixture records what a machine said and is never updated.
         assert_eq!(
             beat.crossings, 21,
             "this capture crossed cores 21 times in 25 seconds and then stopped; see notes/soak.md"
