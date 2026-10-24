@@ -84,3 +84,5 @@ area directories), ruled B). Appendices under
 `kernel-wired-services.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `test-kernel-seams.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
+
+`aarch64-port.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings `riscv-port.md` and `x86-port.md`.

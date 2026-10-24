@@ -1,19 +1,9 @@
 //! **Ask the aarch64 machine what it is, once, at boot.**
 //!
-//! Milestone 60's other half, and it is three `mrs` instructions. That is the whole difference
-//! between the two ISAs: ARM never removed the CPU's self-description, so there is no device tree
-//! in this path, no firmware to believe, and nothing to parse. `MIDR_EL1` names the part and the
-//! `ID_AA64*` space describes what it can do, architected and mandatory and readable at EL1.
-//!
-//! The decoding is in [`machine_discovery::aarch64`], host-tested against words real parts report. What can only
-//! happen on the machine is here: the reads, the record, and the refusal.
-//!
-//! # One of these was already being read, and that is the point
-//!
-//! `mmu::init` has always written `TCR_EL1.IPS` from `ID_AA64MMFR0_EL1.PARange`, with a comment
-//! saying to read it from the hardware rather than guess. It was right, and it was the only one:
-//! the 4 KiB granule the page tables are built on and the ASID width `crates/address_space_identifier` is built on were
-//! both simply assumed. They are the same register.
+//! `MIDR_EL1` names the part and the `ID_AA64*` registers say what it can do, so discovery reads
+//! registers and parses no firmware. The decoding is in [`machine_discovery::aarch64`],
+//! host-tested; what only the machine can do is here: the reads, the record, and the refusal. See
+//! notes/aarch64-port.md, "Asking the part what it is".
 
 use core::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 
@@ -30,11 +20,8 @@ use crate::{print, println};
 /// plausible all-zero machine.
 static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
 
-/// The `/psci` record, in three plain atomics rather than behind the mutex above (milestone 100).
-///
-/// `cpu_start` reads these, and it runs on the bring-up path with interrupts enabled; putting the
-/// PSCI facts behind a lock would put a lock rank on the path that starts a core, for a value that
-/// is written once before any secondary exists and never again. Atomics say that directly.
+/// The `/psci` record, in plain atomics rather than behind the mutex above: `cpu_start` reads it
+/// on the bring-up path with interrupts enabled, and it is written once before any secondary exists.
 const PSCI_ABSENT: u8 = 0;
 const PSCI_NO_METHOD: u8 = 1;
 const PSCI_HVC: u8 = 2;
@@ -50,22 +37,13 @@ static PSCI_ID_FROM_PROPERTY: AtomicU8 = AtomicU8::new(0);
 
 /// **Discover the machine, and refuse to run on one we cannot.**
 ///
-/// Two sources, and the split is the finding milestone 60 recorded: the ISA comes from ID registers,
-/// because ARM never removed the CPU's self-description, and the device tree says nothing about it.
-///
-/// **The pointer is no longer ignored** (milestone 100). One aarch64 fact is not in any ID register
-/// and could not be: whether a firmware call leaves EL1 at `hvc` or at `smc` depends on what runs
-/// above the kernel, not on the part. `/psci` states it, along with the `CPU_ON` function id, and
-/// both were compiled in until this read them.
+/// The ISA comes from ID registers. `dtb_ptr` is read for `/psci` only: the conduit depends on what
+/// runs above the kernel, not on the part.
 ///
 /// # Panics
 ///
-/// Deliberately, when the machine cannot run this kernel: no 4 KiB granule, or an `ASIDBits`
-/// encoding ARM has never defined. Both are unreachable on a conforming part and both are silent if
-/// unchecked, which is the combination that makes a boot-time comparison worth its cost.
-///
-/// **A machine with no usable `/psci` is not one of those cases**, and does not stop the boot: it is
-/// a machine this kernel runs on with one core, which it says at bring-up rather than here.
+/// With no 4 KiB granule, or a reserved `ASIDBits` encoding. A machine with no usable `/psci`
+/// does not stop the boot: it runs on one core, and bring-up says so.
 pub fn init(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, whose magic `memory::init` has already checked (it
     // runs first and panics otherwise), named through the boot map's direct region.
@@ -160,9 +138,7 @@ pub(crate) fn psci_record() -> Option<Psci> {
         },
         cpu_on,
         cpu_on_from_property: PSCI_ID_FROM_PROPERTY.load(Ordering::Relaxed) != 0,
-        // Not recorded: the only thing `standard` changes is which source the id came from, and
-        // `cpu_on_from_property` already says that. Reconstructing it here would be a second
-        // encoding of one fact, and the boot line reads the one that exists.
+        // Derived, not stored: `cpu_on_from_property` already says which source the id came from.
         standard: PSCI_ID_FROM_PROPERTY.load(Ordering::Relaxed) == 0 && cpu_on.is_some(),
     })
 }
@@ -220,22 +196,11 @@ mod tests {
         assert!(!cpu.missing_requirements().any());
     }
 
-    /// **The PSCI conduit and function id came from `/psci`, and they are what used to be compiled
-    /// in** (milestone 100).
+    /// **The PSCI conduit and function id came from `/psci`, and match QEMU `virt`'s.**
     ///
-    /// Three assertions and they are doing different jobs. The first is that discovery ran at all:
-    /// a build that skipped the parse leaves `psci()` at `None`, and every secondary would then
-    /// fail to start with `PSCI_NOT_DISCOVERED` rather than with a firmware error. The other two
-    /// hold the retired hardcodes against the machine, which is `crates/pci`'s discipline: on QEMU
-    /// `virt` the old constants were right, and the value of saying so here is that the day they
-    /// stop being right, this line says which one moved.
-    ///
-    /// **The conduit is keyed on the entry exception level, and that is a fact rather than a
-    /// hedge** (milestone 127's EL2 entry work). `hvc` was asserted as a constant here until a
-    /// rehearsal boot on `virt,virtualization=on` failed it. It should have: with an EL2 present
-    /// below nothing, an `hvc` from EL1 lands in that EL2, so QEMU implements PSCI on `smc` and
-    /// says so in the tree. TF-A does the same on a board. So the pairing is the assertion, and it
-    /// is a stronger one than the constant was: the machine is not free to say either.
+    /// A skipped parse leaves `psci()` at `None`. The conduit is keyed on the entry exception
+    /// level: entered at EL2, an `hvc` from EL1 would land in that EL2, so the machine states `smc`.
+    /// The id is held against the constant QEMU `virt` publishes, so a change says which moved.
     #[test_case]
     fn the_psci_call_was_read_from_the_machine() {
         let (conduit, cpu_on) = super::psci().expect("QEMU virt has a usable /psci node");
@@ -258,15 +223,9 @@ mod tests {
     /// **`boot.s` recorded the exception level firmware entered at, and it is one this kernel
     /// knows how to start from** (milestone 127, the seL4 machine).
     ///
-    /// The number is not decoration. `main.rs`'s `running_at_el1` proves where the kernel is; this
-    /// proves the entry was seen and handled rather than assumed, which is the half that differs
-    /// between QEMU's default `virt` (EL1, and the drop is a branch not taken) and both
-    /// `virt,virtualization=on` and a board's U-Boot (EL2, and the drop ran).
-    ///
-    /// A zero here is the specific regression worth catching: it means `.bss` was zeroed after the
-    /// store rather than before it, or that the store was dropped, and the reader of the boot
-    /// banner would be told the machine entered at "EL0", which is impossible and therefore
-    /// exactly the kind of manufactured fact this tree keeps hunting.
+    /// `running_at_el1` proves where the kernel is; this proves the entry was recorded. A zero
+    /// means `.bss` was zeroed after the store, or the store was dropped, and the banner would
+    /// claim an entry at EL0.
     #[test_case]
     fn the_entry_exception_level_was_recorded() {
         let entered = super::super::entry_el();
@@ -292,10 +251,8 @@ mod tests {
 
     /// **`TCR_EL1.IPS` holds what the part reported, and nothing else.**
     ///
-    /// This is the one field the kernel was already reading, and it is now read once into the
-    /// record. The test closes the loop: a change that made `mmu::init` write a constant, or read a
-    /// different field, would leave a live register disagreeing with the boot line that claims to
-    /// describe it.
+    /// A change that made `mmu::init` write a constant, or read another field, would leave the live
+    /// register disagreeing with the boot line that describes it.
     #[test_case]
     fn the_configured_physical_address_size_is_the_one_the_part_reported() {
         use aarch64_cpu::registers::TCR_EL1;

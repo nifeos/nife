@@ -34,20 +34,10 @@ impl UserFaultAccess {
 
 /// **What the last user fault was, in terms both instruction sets can state.**
 ///
-/// The distinction that carries the weight is `Permission` against `Translation`. A translation
-/// fault means we merely failed to map something. A permission fault means the page **is there**,
-/// the hardware found it, read the permission bits, and said no: that is the privilege boundary
-/// doing its job rather than an accident of an incomplete page table. A test that asserts only
-/// "something faulted" cannot tell those apart, and the sloppier of the two would pass it.
-///
-/// The two ISAs reach this answer very differently, and the difference is worth knowing:
-///
-/// - **aarch64 is told.** `ESR_EL1`'s fault status code says `permission fault, level 3` or
-///   `translation fault, level 2` outright, in silicon, at the instant of the fault.
-/// - **RISC-V is not.** `scause` has one code for "load page fault" and stops there; the
-///   architecture does not report *why* the walk refused. So the RISC-V side derives it, by walking
-///   the tables the hardware just walked and asking whether a translation exists. See
-///   `riscv64::exceptions::user_fault` for the caveat that derivation carries.
+/// `Permission` means the page is mapped and its permission bits refused the access: the
+/// privilege boundary working. `Translation` means nothing was mapped. aarch64 is told which by
+/// `ESR_EL1`'s fault status code; RISC-V derives it by walking the tables, with the caveat
+/// `riscv64::exceptions::user_fault` gives.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum UserFault {
     /// The address translated, and the permission bits refused this access.

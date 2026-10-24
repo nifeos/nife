@@ -2,21 +2,11 @@
 //! (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
 //! process) fork 4).
 //!
-//! The ABI is the same on all three architectures and lives in `sched`: the kernel holds each
-//! thread's value in `Thread::thread_pointer`, sets it from `CONFIGURE` and
-//! `ThreadControlBlock::SET_THREAD_POINTER`, and installs it whenever the thread is switched in.
-//! This file is the aarch64 register half of that.
+//! The ABI lives in `sched` (`Thread::thread_pointer`, set by `CONFIGURE` and
+//! `ThreadControlBlock::SET_THREAD_POINTER`); this file is the aarch64 register half.
 //!
-//! **EL0 can write `TPIDR_EL0` itself, and that is the asymmetry §269 records below the ABI.** A
-//! user write is not part of the contract, but the hardware allows it, so the hand-over saves the
-//! outgoing value rather than assuming the kernel's copy is current: a program that writes its own
-//! register keeps what it wrote for the rest of its life, and never sees a sibling's. `x86_64`
-//! cannot do this at all (`CR4.FSGSBASE` stays off), so there the hand-over only installs. The
-//! scope note is `notes/thread-pointer.md`.
-//!
-//! Before this file the kernel never touched `TPIDR_EL0`, so whatever one program wrote there was
-//! read by the next program to run on the same core. Nothing used the register, which is the only
-//! reason that was not a leak anybody noticed.
+//! EL0 can write `TPIDR_EL0` itself, so the hand-over saves the outgoing value rather than
+//! assuming the kernel's copy is current. See notes/thread-pointer.md.
 
 use aarch64_cpu::registers::TPIDR_EL0;
 use tock_registers::interfaces::{Readable, Writeable};
