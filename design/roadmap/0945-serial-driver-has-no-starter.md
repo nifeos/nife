@@ -20,7 +20,7 @@ riscv64's UART, so nothing in the kernel or the progenitor started this program.
 
 The choice was to retire it, or to make it the input driver the progenitor builds on riscv64 if it
 was the better driver for the NS16550. The proposal said to compare the two first. The comparison
-favoured `input` on every axis, so `serial_driver` is retired.
+favored `input` on every axis, so `serial_driver` is retired.
 
 ## The comparison
 

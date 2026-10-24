@@ -278,7 +278,8 @@ reaches the wire.
 - **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
   teardown returning every frame (BUGS):
   `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
-- **Milestone 945.** `serial_driver`, which the self-test left with no starter, is retired:
+- **Milestone 945.** `serial_driver` is retired by milestone 945 (`serial_driver` ships with nothing
+  to start it):
   `design/roadmap/0945-serial-driver-has-no-starter.md`.
 
 ## Index row
