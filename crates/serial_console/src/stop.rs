@@ -1,60 +1,31 @@
-//! **The one thing this tool sends, and the log entry that makes sending it safe.** It writes only
-//! what a named mode sends, and every byte it sends is printed into the log first (calef,
-//! 2026-09-19): [`Escape::observe_line`] is the only sender, and it writes the announcement before
-//! the byte, so a capture can never be a lie about a run. notes/board-console.md, "Writing to a
-//! board", has the whole argument.
+//! **The one thing this tool sends, and the log entry that makes sending it safe.**
 //!
-//! The byte ends a self-rebooting soak: `kernel/src/soak.rs` disarms its reboot loop on any byte at
-//! the console. `--stop` ends the series at the next draw and `--stop-after <n>` at the n-th;
-//! `--stop` is `--stop-after 1`, one mechanism, so the flags cannot disagree.
-//!
-//! **It sends only on the arming banner**, which `arm_reboot` prints after `console::discard_rx`
-//! drains the UART. That one line proves the drain has happened (a byte sent at
-//! `soak-test: started` is about 90 ms early and silently discarded), that a reboot loop exists to
-//! stop, and that the board is long past U-Boot's autoboot countdown, the hazard the ruling is
-//! about. It is also one per boot, so arming banners count draws one-to-one with
-//! [`lottery`](crate::lottery)'s, and `a_stop_after_n_log_tallies_as_n_draws` holds that. The cost:
-//! a session that attaches mid-draw waits up to `REBOOT_AFTER_SECONDS` for the next banner.
-//!
-//! It then waits [`CONFIRM_WINDOW`] for `soak-test-reboot: DISARMED`, and the exit status says
-//! whether it came: the first end-to-end evidence that the board's receive path works, which the
-//! kernel cannot get by itself.
-//!
+//! It writes only what a named mode sends and logs every byte first (calef, 2026-09-19):
+//! [`Escape::observe_line`] is the only sender. The byte ends a self-rebooting soak, and it goes
+//! out only on the arming banner, which `arm_reboot` prints after `console::discard_rx` drains the
+//! UART; a byte sent at `soak-test: started` is about 90 ms early and silently discarded. It then
+//! waits [`CONFIRM_WINDOW`] for `soak-test-reboot: DISARMED`. `--stop` is `--stop-after 1`.
+//! notes/board-console.md, "Writing to a board", has the whole argument.
+
 //! # BUGS
 //!
-//! - No byte from this module has reached a board yet: the decision and the exact bytes are tested
-//!   against captures and a `Vec<u8>`, the wire is not.
+//! - No byte from this module has reached a board: the decision and the bytes are tested against
+//!   captures and a `Vec<u8>`, the wire is not.
 //! - An unconfirmed send is three possible faults (the byte never left, the receive path is dead,
 //!   the kernel is wedged); beats still arriving with no `DISARMED` point at the receive path.
-//! - The markers are string literals checked against `kernel/src/soak.rs` by a reader; hoisting them
-//!   into `boot_ladder` would make the two agree by construction.
-//! - A board whose firmware refuses the reset (`soak-test-reboot: FAILED`) ends the session with
-//!   exit 0 even for `--stop-after 50`, which understates a series that never happened; only the
-//!   log and summary say so.
+//! - The markers are literals checked against `kernel/src/soak.rs` by a reader, not shared through
+//!   `boot_ladder`.
+//! - A firmware refusal (`soak-test-reboot: FAILED`) exits 0 even for `--stop-after 50`; only the
+//!   log and summary say the series never happened.
 
 use std::io::{self, Write};
 use std::time::{Duration, Instant};
 
 /// **The byte `--stop` puts on the wire: a carriage return.**
 ///
-/// The kernel's contract is any byte at all, so this is a choice inside a contract that is already
-/// fixed rather than anything two programs agree on. It is recorded here because it is the one
-/// value in this file a board will ever see.
-///
-/// **Carriage return because it is what the kernel's own instruction describes.**
-/// `kernel/src/soak.rs` prints *"press any key on this console"*, and the key a person at a bench
-/// presses when told that is Enter. A tool whose byte is the one the documented manual procedure
-/// produces is running the same experiment the procedure runs, rather than a similar one.
-///
-/// **`NUL` was the other candidate and was refused, narrowly.** It is the most inert byte there is:
-/// U-Boot ignores it, a shell line discipline ignores it, and it still sets the NS16550's
-/// data-ready bit, which is all the escape reads. It loses on the failure mode rather than on the
-/// success one. A carriage return that is not acknowledged means the receive path is at fault; a
-/// `NUL` that is not acknowledged could also be a USB-serial bridge or a driver treating a frame of
-/// eight zero bits as something other than a character, and a report that cannot separate those is
-/// worse than one that can. The inertness it buys is already bought by [`Escape`]'s gate, which
-/// sends nothing until the board has said it is running an armed soak; there is no state left for
-/// an inert byte to be inert in.
+/// The kernel accepts any byte, so this is a choice inside a fixed contract: Enter is what a
+/// person presses when `kernel/src/soak.rs` says *"press any key on this console"*. `NUL` was
+/// refused; notes/board-console/modules.md has why.
 pub(crate) const ESCAPE_BYTE: u8 = b'\r';
 
 /// **How long to wait for the board's `DISARMED` line before giving up on it.**
@@ -207,22 +178,14 @@ impl<'a> Escape<'a> {
 
     /// Offer one **complete** line from the board, plus how far into the session it arrived.
     ///
-    /// Complete lines only. A partial tail may ratchet a stage, because a substring match is
-    /// monotone, but it may not be allowed to send a byte: the arming banner's phrase could arrive
-    /// as the tail of a line that turns out to say something else, and this is the one decision in
-    /// the crate that cannot be taken back once it is wrong.
-    ///
-    /// `log` is the session's log, and this is the only place a byte is written to the board. The
-    /// announcement goes into the log **before** the write to the port, so the ordering of the two
-    /// failures is the readable one: a log that says a byte is going out and then says the write
-    /// failed is honest, where a byte on the wire that the log never mentions is the thing the
-    /// ruling forbids.
+    /// Complete lines only: the arming phrase could arrive as the tail of a line that says
+    /// something else, and a sent byte cannot be taken back. The only writer to the board: the
+    /// announcement goes into `log` **before** the byte, so no byte is on the wire unlogged.
     ///
     /// # Errors
     ///
-    /// The log's error, if the log cannot be written. A failure to write to the *port* is recorded
-    /// in the report and logged rather than returned, because the session is still worth finishing:
-    /// the board is still talking and the operator still wants what it says.
+    /// The log's error. A failed port write is reported and logged, not returned: the board is
+    /// still talking.
     pub(crate) fn observe_line(
         &mut self,
         line: &str,

@@ -170,16 +170,8 @@ kernel/src/sched/region_reaping.rs:210	34
 kernel/src/sched/region_reaping.rs:288	27
 kernel/src/sched/region_reaping.rs:455	30
 kernel/src/sched/region_reaping.rs:547	27
-kernel/src/sched/rendezvous.rs:730	25
-kernel/src/sched/rendezvous.rs:983	29
 kernel/src/sched/spawning.rs:15	33
 kernel/src/sched/spawning.rs:102	21
-kernel/src/sched/switch.rs:555	39
-kernel/src/sched/tests.rs:98	21
-kernel/src/sched/tests.rs:261	23
-kernel/src/sched/tests.rs:500	35
-kernel/src/sched/tests.rs:584	22
-kernel/src/sched/tests.rs:650	21
 kernel/src/sched/thread_table.rs:31	38
 kernel/src/sched/thread_table.rs:311	22
 kernel/src/screen.rs:1	21
