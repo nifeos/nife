@@ -1,5 +1,7 @@
 # The JH7110 watchdog: how the block counts, and what was read
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18.*
+
 `crates/jh7110_watchdog` holds the logic (the offsets, the sequences, the arithmetic and the
 device-tree query), and `kernel/src/drivers/jh7110_watchdog.rs` walks its sequences. Milestone 593
 (a wedged kernel resets itself, through a watchdog that does not need asking) is the plan and holds

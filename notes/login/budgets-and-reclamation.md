@@ -1,5 +1,7 @@
 # Login: the budgets, and giving things back
 
+*Name: provisional, minted 2026-10-24 (UTC) by the same lane, for its content. calef names files.*
+
 An appendix to [notes/login.md](../login.md). `components/src/login.rs` is a long-lived server that
 builds a channel and a caretaker for every login and tears them down again. This is what it takes
 for that to cost nothing over the life of the process, and the measurements behind its numbers.

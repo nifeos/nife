@@ -1,5 +1,7 @@
 # The syscall boundary: five calls, one decoder, and where each method's code sits
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+
 `kernel/src/syscall.rs` and its children under `kernel/src/syscall/` are the whole of what a user
 program can ask the kernel for. This note carries the design those files' doc comments link to. The
 semantics of each method are recorded in `design/decisions/`, and the wire contract is in

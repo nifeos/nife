@@ -1,5 +1,7 @@
 # The user-mode runtime
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-09.*
+
 `crates/user_mode_runtime` is what every nife userspace program links, on all three architectures.
 User mode is `EL0` on aarch64, U-mode on riscv64 and ring 3 on `x86_64`. The crate holds one
 syscall wrapper, `invoke`, and the calls every program builds on it: `send`, `receive`, `call`,
