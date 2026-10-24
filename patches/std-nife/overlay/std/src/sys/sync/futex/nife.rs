@@ -5,9 +5,8 @@
 //!
 //! **Without the space capability, or with a timeout, a wait yields instead of sleeping.** A
 //! futex wait may return spuriously and every caller re-checks its word, so a yield that returns
-//! is correct, only slower. That keeps every lock correct in a program given no space capability,
-//! which every program built before 812 is.
-//!
+//! is correct, only slower. That keeps every lock correct in a program given no space capability.
+
 //! # BUGS
 //!
 //! - **A timed wait spins on `yield` until its deadline** (`notes/futex.md`: the kernel's `WAIT`

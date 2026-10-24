@@ -9,24 +9,13 @@ fn current_cpu_reader_image() -> &'static [u8] {
 /// **A userspace thread learns which core it is on, by loading from memory, on all three
 /// architectures.**
 ///
-/// This is the whole of calef's 2026-09-21 ruling that a thread observing itself reads a page,
-/// proved end to end: `crates/current_cpu_contract` lays the page out, `AddressSpace::new` maps it
-/// read-only, `schedule()` writes the core at switch-in, and `user_mode_runtime::current_cpu`
-/// reads it. (The ruling's `design/decisions/` section is on another branch and is named here
-/// rather than cited.)
-///
-/// **What it asserts is membership in the online set, not a particular number**, and that is the
-/// assertion worth having rather than the one that looks stronger. A test that pinned the answer
-/// to `0` would pass on QEMU `virt` forever and say nothing, because the scheduler is free to put
-/// the thread anywhere. A test that the id names a core which is actually online is the one that
-/// catches the failure this tree has already paid for: the VisionFive 2's set is `{1, 2, 3}`, and
-/// treating a count as an index put `init` into a parked core's inbox and cost three boots
-/// (`crates/cpu_set`). A userspace consumer indexing an array by this value inherits that hazard,
-/// so the value had better be a real id.
-///
-/// **And that neither read is `None`**, which is the other half: a thread cannot execute an
-/// instruction without having been switched in first, so by the time this program runs its page has
-/// been written, and a `None` here means the page never got mapped or never got written.
+/// calef's 2026-09-21 ruling that a thread observing itself reads a page, proved end to end:
+/// `crates/current_cpu_contract` lays the page out, `AddressSpace::new` maps it read-only,
+/// `schedule()` writes the core at switch-in, and `user_mode_runtime::current_cpu` reads it. Each
+/// read must name a core in the online set rather than a particular number, since the scheduler may
+/// place the thread anywhere and a consumer indexing by the id needs a real one (the VisionFive 2's
+/// set is `{1, 2, 3}`). Neither read may be `None`: a running thread has been switched in, so its
+/// page has been written. See notes/scheduler/the-current-cpu-page.md.
 #[test_case]
 fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
@@ -120,26 +109,13 @@ fn a_space_that_never_ran_has_no_answer_and_then_has_the_right_one() {
 }
 
 /// **The page comes back when the space dies.** It is the one frame an address space owns that its
-/// region does not pay for, so `memory_region::destroy` does not cover it and `Drop` has to free it
-/// by hand. That is exactly the shape a leak hides in, and the suite's own frame ledger would only
-/// notice it as a slow drift across an unrelated test.
+/// region does not pay for, so `memory_region::destroy` does not cover it and `Drop` frees it by
+/// hand, which is the shape a leak hides in.
 ///
-/// **It asks about that one frame, not about the machine's free total**, and the difference is the
-/// whole reason this test stopped being trustworthy. It used to bracket `free_page_frames()` around
-/// the drop and demand equality, which asserts that *nothing else in the kernel allocated or freed
-/// anything* for the length of the window, a claim this test has no business making and cannot
-/// keep. It failed on pull request #1094, whose diff touches only tooling, with twenty frames MORE
-/// free than the baseline: a neighbouring test's late teardown landing inside the window. A leak
-/// shows as fewer, so the surplus could not even be the defect under test.
-/// See notes/load-sensitive-assertions.md.
-///
-/// The frame's own bit in the allocator is immune to that by construction. A neighbour freeing
-/// frames cannot move it, which is the direction every failure of the old form arrived from, and a
-/// leak still fails it: a frame `Drop` never returned stays marked used forever.
-///
-/// `memory_region::usage` (the scoped counter that fixed the sibling in `live_swap_tests.rs`, pull
-/// request #1101) is not available here for the reason stated at the top of this comment: this
-/// frame belongs to no region.
+/// It asks the allocator about that one frame's bit rather than bracketing the machine's free total,
+/// which a neighboring test's late teardown can move; a leak still fails it, because a frame `Drop`
+/// never returned stays marked used. `memory_region::usage` cannot scope it, since the frame belongs
+/// to no region. See notes/load-sensitive-assertions.md and notes/scheduler/the-current-cpu-page.md.
 #[test_case]
 fn the_page_is_returned_when_the_space_is_dropped() {
     let frame = {

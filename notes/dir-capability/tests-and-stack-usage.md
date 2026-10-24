@@ -55,6 +55,15 @@ work, so a capability that reaches nothing reports itself rather than passing as
 `ENUMERATED_A_STRANGER` catches a listing that contains a name from outside the grant. A listing is a
 rendering of authority, and a stranger in one is an escape even though nothing was opened.
 
+### The name-set run
+
+A fourth test runs the third caretaker, `fs_nameset_caretaker`, which inspects a name on every
+request. The subtree caretaker is covered by the three runs above, and the per-file caretaker by
+its own attacker. The name-set test grants one name inside `sub` and leaves `deeper` out. Its
+witness holds `dir::READ`, which `rm`'s own witness does not, so the naming question is asked
+through verbs `rm` never sends. It must still read and set the attributes of the one file the set
+names.
+
 ## And from outside the guest entirely
 
 The bitmap is a statement by the thing being tested. The other kind of evidence is a different

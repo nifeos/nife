@@ -85,6 +85,23 @@ claim keeps its stores from being hoisted above it. The release keeps them all v
 that sees the even sequence. The reader's fence keeps its data loads from sinking below the second
 sequence read, which is what makes the check mean anything.
 
+The writer also needs a release fence between its claim and its data stores, Linux's `smp_wmb()`
+in `write_seqcount_begin`. Without it a reader can see the new offset while the sequence still
+reads even and unchanged, pass its revalidation, and return a state from one publish beside an
+offset from another. `AcqRel` and even `SeqCst` on the compare-exchange still tear, because an
+acquire or release RMW orders accesses around itself, and what is needed is its own store ordered
+ahead of the plain stores after it. The bug is not reachable on x86, QEMU's TCG explores almost
+none of the orderings that produce it, and milestone 80 (Loom: the hand-rolled atomic protocols,
+model-checked) found it
+([interleaving.md](interleaving.md)).
+
+Two limits stand. The orderings are checked against C11, not ARM's or RISC-V's model: loom
+searches the C11 model, so a tear it finds is real and a clean run proves nothing about either
+ISA. Litmus-level confidence would need herd7-style tooling, and nothing yet reads this page from
+two physical cores under load. A reader's spin while a writer holds the sequence has no bound. The
+window is four stores wide and the writer holds no lock, so nothing can be preempted into a
+deadlock, but a writer killed inside it leaves the page odd for good.
+
 A torn read here would be a wrong time rather than a crash, which is the worst kind of bug to leave
 possible, so the invariant has its own test in `clock_contract`.
 

@@ -15,6 +15,7 @@ not:
 - [`pmap` and `LIST`](address-space-enumeration.md): the method, the delegation audit, and why no live view can be
   handed over today.
 - [`watch`](watch.md): built, then cut, and the test it leaves behind.
+- [The CPU-time tests](cpu-time-tests.md): why `cpu_time_tests` compares a spinner with a sleeper.
 - [The BUGS list in full](limitations.md): the parent's BUGS section, one line per entry there.
 
 *Name: provisional, for the directory and the stems `what-is-left` and

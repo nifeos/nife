@@ -2,25 +2,31 @@
 //! (provisional), the builder's scratch cursor is bounded).
 //!
 //! Holds a memory region to build children from (slot 0), a report endpoint (slot 1), and a second,
-//! 48-page region that pays for its own page tables (slot 2). It forges a `ripgrep`-sized ELF,
-//! 668 pages of image, the span milestone 121 (ripgrep on nife) measured, and builds a child from it
+//! 48-page region that pays for its own page tables (slot 2). It forges a `ripgrep`-sized ELF, 668
+//! pages of image, the span milestone 121 (ripgrep on nife) measured, and builds a child from it
 //! with `supervision_protocol::build_child_space` [`BUILDS`] times, each out of a region of its own
 //! that it destroys before the next. It never starts a child: what is under test is the builder's
 //! own address space, not the child's.
+
+//! # What it proves
 //!
-//! **What it proves.** Every page the loader fills is mapped once in the builder's own scratch
-//! window, and there is no unmap. The window is taken back only because destroying the child's
-//! region revokes every mapping of its pages, the builder's included (DECISIONS §13 (frame
-//! revocation)). [`BUILDS`] builds put 26,720 pages through the window, 1.6 laps of it. So they
-//! pass only if the loader reuses the pages the kernel gave back.
+//! Every page the loader fills is mapped once in the builder's own scratch window, and there is no
+//! unmap. The window is taken back only because destroying the child's region revokes every mapping
+//! of its pages, the builder's included (DECISIONS §13 (frame revocation)). [`BUILDS`] builds put
+//! 26,720 pages through the window, 1.6 laps of it, so they pass only if the loader reuses the
+//! pages the kernel gave back.
+
+//! # The negative control
 //!
-//! **And the negative control is built in.** The builder's own page tables come out of slot 2, 48
-//! pages, which covers the window's 32 last-level tables and the one or two above them. The old
-//! cursor, which never came back, needed a new table every 512 pages, 53 for this run. Measured
-//! on aarch64 on 2026-09-26 with the loader's wrap taken out: 36 builds, 24,048 scratch pages, and
-//! the 37th refused. So this is not a test that passes by having room to spare.
+//! The builder's own page tables come out of slot 2, 48 pages, which covers the window's 32
+//! last-level tables and the one or two above them. A cursor that never came back needs a new table
+//! every 512 pages, 53 for this run. Measured on aarch64 on 2026-09-26 with the loader's wrap taken
+//! out: 36 builds, 24,048 scratch pages, and the 37th refused. So this is not a test that passes by
+//! having room to spare.
+
+//! # What it reports
 //!
-//! Reports `(builds, pages, window_pages)` once, then exits: the builds that succeeded, the scratch
+//! `(builds, pages, window_pages)` once, then it exits: the builds that succeeded, the scratch
 //! pages they used between them, and the window's own size, so the kernel's test can check the run
 //! went round the window more than once without knowing this crate's numbers.
 //!

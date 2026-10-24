@@ -1,9 +1,6 @@
 //! **The terminal model the tests share**: `Screen` and `feed_all`, kept outside any one test
 //! module because the editor's tests and `handoff`'s both drive a [`LineDisc`] on it.
 //!
-//! Cut out of `lib.rs`'s `mod tests` unchanged by milestone 878 (the line editor's inline modules
-//! move to their own files), apart from `pub(super)` on what the test modules reach.
-//!
 //! Name: provisional (milestone 878's lane, 2026-10-12 UTC; §295 (the line editor's crate root
 //! splits into module files)).
 

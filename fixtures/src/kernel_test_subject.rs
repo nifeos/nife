@@ -1,22 +1,12 @@
 //! **The kernel test subject: the two programs the privilege-boundary tests need, and nothing else
 //! wants.**
 //!
-//! Both of these used to be aarch64 machine code assembled inline in `kernel/src/user.rs` (the
-//! `user_program!` macro, milestone 7a). That was fine while there was one instruction set. It
-//! stopped being fine when there were two: porting `kernel::user::tests` to RISC-V that way meant
-//! hand-assembling every one of them a second time, for no new coverage of anything portable.
-//!
-//! So they are a real ELF now, built by the ordinary toolchain for whichever target is being built,
-//! and the kernel loads them the way it loads any other program. The tests that drive them are the
-//! same tests on both ISAs.
-//!
-//! It is deliberately **not** a role of `hello`, which at the time was the argument this file had
-//! to make and which milestone 291 turned into the tree's rule: a program does one thing, and a
-//! role is an exception that has to say why. hello carried the roles a running system used; these
-//! two exist only to be killed or to be counted, and a process that reads a forbidden address on
-//! purpose has no business sharing an image with init. Keeping it separate also keeps it tiny,
-//! which the frame-accounting test cares about: it spawns this program five times and asserts
-//! every frame comes back exactly.
+//! A real ELF, built for whichever target is being built and loaded like any other program, so the
+//! tests that drive it (`kernel::user::tests`) are the same on both ISAs. It is not a role of
+//! `hello` (milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one name): a
+//! program does one thing): these two exist only to be killed or counted, and a program that faults
+//! on purpose has no business sharing an image with init. Separate, it stays tiny for the
+//! frame-accounting test, which spawns it five times and asserts every frame comes back.
 //!
 
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist), replacing `outlaw`.

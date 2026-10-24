@@ -175,7 +175,7 @@ list rather than a disclaimer.
   never opened it does not appear here at all.
 - No page for the F12 one-time boot menu is in this set. That is
   `art/bench/xenon-2026-09-05-boot-menu.jpg`, recorded in `notes/x86-uefi-boot.md`, and it is where
-  the `UEFI: SanDisk Ultra 1.26` and `UEFI: Micron 2450 NVMe 256GB` entries come from.
+  the stick's `UEFI:` entry and the `UEFI: Micron 2450 NVMe 256GB` entry come from.
 - No DMAR, no ACPI table contents, no PCI enumeration. None of that is in a firmware menu. The
   boot tour prints some of it and `notes/x86-uefi-boot.md` records what was seen.
 - Help text is transcribed verbatim only where it carries a fact (the COM port addresses, the
