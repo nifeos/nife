@@ -1,25 +1,10 @@
 //! **The framebuffer contract** (notes/framebuffer-contract.md): one definition for the GPU driver
 //! (`components/src/gpu_driver.rs`, which owns the virtio-gpu device), the client that draws
 //! (`fixtures/src/painter.rs`, which owns no device), and the kernel-side test that checks the
-//! result.
-//!
-//! ```text
-//!   virtio-gpu ──virtio──►┌────────────────┐◄──display IPC──┐ client
-//!    (PCIe, behind        │   gpu_driver   │                │ (holds a surface + an endpoint,
-//!     the IOMMU)          └────────────────┘                │  no device, no DMA authority)
-//!                              ▲     ▲
-//!                              │     └── the surface: N frames of pixels, mapped in BOTH
-//!                              └──────── the rings + request buffers, mapped in the DRIVER ONLY
-//! ```
-//!
-//! Control by message, pixels by shared frame (§10 (process model: capability-based)): a client
-//! `CALL`s the driver with an opcode and a rectangle, and the pixels live in frames mapped into both
-//! spaces at spawn, which the client may write at any time. The driver holds the `Virtio`
-//! capability, the interrupt and the whole DMA region; the client holds an endpoint and the surface,
-//! so it cannot program a queue, ring the device, see the rings or name a physical address. A
-//! hostile client can draw nonsense and nothing else, which is what the compositor builds on when it
-//! takes the client's place. No fonts, glyph cache, VT state or input: those are later clients of
-//! this same contract.
+//! result. Control is by message and pixels by shared frame (§10 (process model:
+//! capability-based)): a client `CALL`s the driver with an opcode and a rectangle, and writes
+//! pixels into a surface mapped into both spaces at spawn. The driver alone holds the device, its
+//! interrupt, its rings and the DMA region, so a hostile client can draw nonsense and nothing else.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `gfx_proto` to spell out the abbreviation;
 //! `_contract` per calef's 2026-10-18 ruling.
@@ -30,28 +15,12 @@
 // The surface: geometry and pixel format.
 // ================================================================================================
 
-/// The surface's width in pixels.
-///
-/// **Not square, on purpose.** A square surface makes a stride bug, a transposition, and an x/y swap
-/// all invisible: the byte count comes out the same and the checksum of a transposed square can
-/// still be built out of the right pixels. 1120x624 makes every one of those a size or content
-/// mismatch. The lower bound is the device's: QEMU refuses a scanout smaller than 16 in either
-/// dimension.
-///
-/// **Sized against the terminal's cell**: 80 columns by 24 rows, the floor milestone 142 (a text
-/// display good enough that people use it instead of a GUI) sets for a terminal somebody would live
-/// in, at `glyph_atlas`'s 14x26 cell (1120 = 80 * 14, 624 = 24 * 26, both exact, so no strip of the
-/// surface is outside the grid). It is 1.79:1.
-///
-/// [`SURFACE_BYTES`] is not a whole number of 4 KiB frames (2,795,520 bytes, 682.5 frames).
-/// [`SURFACE_PAGE_FRAMES`] rounds up, so the last frame carries 2 KiB of mapped-but-unused
-/// padding; nothing reads or writes there, because
-/// `user_mode_runtime::mapped_window::MappedWindow` bounds every access against [`SURFACE_BYTES`],
-/// not the frame count. The nearest frame-exact height that still holds 24 rows is 640, which would
-/// leave a 16-pixel strip outside the grid; an exact grid is worth more than an exact frame.
+/// The surface's width in pixels: 80 columns of `glyph_atlas`'s 14-pixel cell. Not square, so a
+/// stride bug, a transposition or an x/y swap shows as a size or content mismatch. See
+/// notes/framebuffer-contract/surface-geometry.md.
 pub const WIDTH: u32 = 1120;
-/// The surface's height in pixels. See [`WIDTH`] for why this is not equal to it, and for why this
-/// particular value.
+/// The surface's height in pixels: 24 rows of `glyph_atlas`'s 26-pixel cell. Not equal to
+/// [`WIDTH`], for the reason given there. See notes/framebuffer-contract/surface-geometry.md.
 pub const HEIGHT: u32 = 624;
 
 /// Bytes per pixel. One 32-bit word, in the format [`FORMAT`] names.
@@ -91,17 +60,10 @@ const _: () = assert!(
     WIDTH >= 16 && HEIGHT >= 16,
     "QEMU refuses a scanout smaller than 16 in either dimension",
 );
-// No assertion that SURFACE_BYTES fills whole frames: it does not (see WIDTH), and that is harmless,
-// because SURFACE_PAGE_FRAMES rounds up and every consumer (`user_mode_runtime::mapped_window::
-// MappedWindow`) bounds-checks against SURFACE_BYTES, not the frame count, so the unused tail of
-// the last frame is unreachable rather than a "partial page" anything can read or write.
-//
-// What that costs, said plainly: the `PageFrame` run capability the kernel mints over this surface
-// names 683 whole frames, so it names 2,048 bytes (683 * 4096 - 2,795,520) that are not part of
-// the surface. Those bytes are inside the same contiguous DMA allocation, not another object's
-// memory, so this is padding rather than a disclosure. It is written down because a capability
-// that names more than the object it stands for is the kind of fact this project's BUGS
-// convention exists to record. See notes/frames.md's BUGS.
+// SURFACE_BYTES does not fill whole frames (see WIDTH) and need not: SURFACE_PAGE_FRAMES rounds
+// up, and every consumer bounds-checks against SURFACE_BYTES, so the last frame's tail is
+// unreachable. The run capability over the surface names those 2,048 bytes too: padding inside the
+// same DMA allocation, not a disclosure. See notes/frames.md's BUGS.
 
 /// The byte offset of pixel `(x, y)` from the start of the surface.
 pub const fn offset_of(x: u32, y: u32) -> usize {
@@ -112,22 +74,11 @@ pub const fn offset_of(x: u32, y: u32) -> usize {
 // The test pattern.
 // ================================================================================================
 
-/// **The pixel at `(x, y)`: a function of the coordinates, not a fill.**
-///
-/// A solid fill proves almost nothing. Zeroed memory, a device that ignored the transfer, a client
-/// that wrote one pixel and a loop that never advanced, and a buffer written by the wrong process all
-/// pass a "is it all blue?" check. So each channel here is a different, coordinate-dependent
-/// function, chosen so that the failures a framebuffer actually has are all visible:
-///
-/// - **red** rises with `x` five times faster than with `y`, so a transposed or x/y-swapped buffer
-///   is wrong at almost every pixel;
-/// - **green** rises with `y` and, half as fast, with `x`, so a row-stride error shifts it;
-/// - **blue** is `x xor 2y` multiplied by an odd number, which is non-monotonic in both axes, so an
-///   off-by-one in either direction does not land on a neighbouring value.
-///
-/// No pixel value is repeated along a row or a column for the whole surface, and no channel is
-/// constant, which is what makes [`checksum`] able to catch a shifted, mirrored, truncated, or stale
-/// buffer rather than only a blank one.
+/// **The pixel at `(x, y)`: a function of the coordinates, not a fill.** Each channel is a
+/// different coordinate-dependent function: red rises with `x` five times faster than with `y`,
+/// green with `y` and half as fast with `x`, and blue is `x xor 2y` times an odd number. No value
+/// repeats along a row or a column, so [`checksum`] catches a shifted, mirrored, transposed,
+/// truncated or stale buffer. See notes/framebuffer-contract.md, "What the test proves".
 pub const fn pixel(x: u32, y: u32) -> u32 {
     let r = (x.wrapping_mul(5).wrapping_add(y)) & 0xff;
     let g = (y.wrapping_mul(3).wrapping_add(x >> 1)) & 0xff;
@@ -143,16 +94,9 @@ pub const fn pixel_at(i: usize) -> u32 {
 }
 
 /// **A position-sensitive digest of the whole surface**, FNV-1a over the pixel words in row-major
-/// order.
-///
-/// `read(i)` yields pixel `i`. It is a closure rather than a slice because the callers read the
-/// surface through a mapped page with volatile loads (userspace) or compute it from [`pixel_at`]
-/// (the kernel's expected value), and neither is a `&[u32]`.
-///
-/// FNV-1a is chosen for being a few lines, having no table, and mixing position into the result: the
-/// same multiset of pixels in a different order gives a different digest, which is the property that
-/// makes a rotated or mirrored surface fail. It is not a cryptographic hash and nothing here needs
-/// one; the measured-boot path (`crates/measured_boot`) is where that requirement lives.
+/// order, so the same pixels in a different order give a different digest. `read(i)` yields pixel
+/// `i`: a closure, because callers read through a mapped page with volatile loads or compute from
+/// [`pixel_at`], and neither is a `&[u32]`. Not a cryptographic hash, which nothing here needs.
 ///
 /// # Examples
 ///
@@ -307,17 +251,11 @@ pub mod status {
     pub const UP: u64 = 0xD15_0001;
 
     /// The driver's message after it serves its first flush: `send(REPORT, FLUSHED, digest, pixels)`,
-    /// where `digest` is [`super::checksum`] over the bytes the driver handed the device.
-    ///
-    /// This is the **driver-side witness**: a second, independent account of the surface's contents,
-    /// taken in a different address space from the client that wrote them and after the device
-    /// reported the transfer complete. It is status, not part of the client contract: a client cannot
-    /// ask for it and rung two's compositor can ignore it entirely.
-    ///
-    /// **The spawner cannot ignore it.** It is a blocking `SEND` from inside the driver's serving
-    /// loop, so until somebody receives it the driver serves no second flush. Milestone 177's
-    /// graphical boot (since removed by milestone 632 (graphics on demand)) took `UP` and never took this, and its screen
-    /// froze on the first frame.
+    /// where `digest` is [`super::checksum`] over the bytes the driver handed the device, a second
+    /// account of the surface from another address space. It is status, not part of the client
+    /// contract. **The spawner cannot ignore it**: it is a blocking `SEND` from the serving loop,
+    /// so until somebody receives it the driver serves no second flush. See
+    /// notes/framebuffer-contract.md's BUGS.
     pub const FLUSHED: u64 = 0xD15_0002;
 
     /// The client's verdict: `send(REPORT, PAINTED, digest, first_mismatch)`, where `digest` is

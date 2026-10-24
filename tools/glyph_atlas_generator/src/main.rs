@@ -1,13 +1,11 @@
 //! Write `crates/glyph_atlas`'s coverage tables from the vendored fonts, or with `--check` say
-//! whether the checked-in ones are what this tool makes.
+//! whether the checked-in ones are what this tool makes. The gate is `tests/regenerate.rs`, which
+//! `cargo xtask test` runs; `--check` is the same comparison for a person at a prompt.
 //!
 //! ```text
 //! cargo run --manifest-path tools/glyph_atlas_generator/Cargo.toml            # regenerate
 //! cargo run --manifest-path tools/glyph_atlas_generator/Cargo.toml -- --check # compare only
 //! ```
-//!
-//! The gate is `tests/regenerate.rs`, which `cargo xtask test` runs; `--check` is the same
-//! comparison for a person at a prompt.
 //!
 //! Name: provisional, the program's name is the package's. calef names things.
 

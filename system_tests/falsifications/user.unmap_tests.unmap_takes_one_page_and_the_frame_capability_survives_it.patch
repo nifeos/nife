@@ -9,10 +9,10 @@ Expected to fail: the assertion that the page is gone from the tables after `UNM
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -244,7 +244,7 @@
-         // no record (none should exist since 2026-09-21, when every route began recording) is
-         // still a window to close, and a record with no page behind it is still a record a later
-         // revoke would act on.
+@@ -178,7 +178,7 @@
+         let mut hold = crate::revoke::hold();
+         // Both halves, neither short-circuiting the other: a page with no record is still a window,
+         // and a record with no page is still one a later revoke would act on.
 -        let unmapped = mmu::unmap_user_at(root, va);
 +        let unmapped = mmu::translate_at(root, va).map(|(pa, _)| pa);
          let forgotten = hold.forget_mapping_at(root, va);

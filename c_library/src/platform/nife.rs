@@ -2,39 +2,22 @@
 //! library, stage 1: files, clock and memory), §265 (a C library started from relibc, whose Rust
 //! platform layer holds the capabilities)).
 //!
-//! # Why on `std`, and not on the protocol crates directly
+//! Nothing here makes a syscall or names a capability slot. Every file, clock, stdout and heap call
+//! goes through `std`, so a C program and a Rust program share one client of each protocol.
+//! `c_library/README.md` ("Why the platform layer is built on `std`") has the argument. nife issues
+//! no process identifier or user identity (milestone 49 (users, login, and attribution: what
+//! identity is for once it stops being authority)), so `getpid` is 0 and the user and group calls
+//! answer 65534, the conventional `nobody`, because 0 would claim root and grant nothing.
+
+//! # File descriptors and threads
 //!
-//! §265 asks that this layer "speaks the same protocol crates `std` speaks, so the two runtimes
-//! cannot disagree about a wire format". Building it on `std` itself is the strongest form of that:
-//! there is one client of the file contract (`std`'s `sys/fs/nife.rs`), one of the clock page, one
-//! stdout protocol and one heap, and a C program reaches each through it. Nothing here makes a
-//! syscall or names a capability slot. The cost is that `std` is linked into every C program,
-//! which is a few hundred KiB of the 496 MiB an image may have; the benefit is that a protocol
-//! change lands in one place and a C program and a Rust program granted the same directory cannot
-//! see different things in it.
-//!
-//! # File descriptors
-//!
-//! nife has none in the kernel. This layer keeps a process-local table from `int` to what a
-//! descriptor names: one of the three standard streams, a `std::fs::File`, or a directory
-//! (by path). 0, 1 and 2 are the standard streams from the start.
-//!
-//! # Answers that are fixed rather than asked
-//!
-//! nife issues no process identifier and attaches no user identity to a process (milestone 49
-//! (users, login, and attribution: what identity is for once it stops being authority)). So
-//! `getpid` is 0, as `std::process::id` is, and the user and group calls answer 65534, the
-//! conventional `nobody`, because 0 would claim root and grant nothing. Each is in
-//! `c_library/README.md`'s `BUGS`.
-//!
-//! # Threads
-//!
-//! Every thread of a C program shares the one descriptor table, behind a `std::sync::Mutex`
-//! (milestone 836 (a C library, stage 2: threads)). A call on a file holds it for the call, so two
-//! threads' file calls take turns; a call that can wait (a pipe or socket read or write) takes the
-//! descriptor's object out of the table and lets the lock go before it waits. `errno` is per
-//! thread (`platform::ERRNO`). The threads themselves are `std` threads (`crate::pthread`), and
-//! relibc's locks wait through `futex.rs`.
+//! nife has no descriptors in the kernel. This layer keeps a process-local table from `int` to a
+//! standard stream, a `std::fs::File` or a directory (by path); 0, 1 and 2 are the standard streams
+//! from the start. Every thread shares the table behind a `std::sync::Mutex` (milestone 836 (a C
+//! library, stage 2: threads)). A file call holds it for the call; a call that can wait (a pipe or
+//! socket read or write) takes the descriptor's object out and lets the lock go before it waits.
+//! `errno` is per thread (`platform::ERRNO`); the threads are `crate::pthread`'s, and relibc's
+//! locks wait through `futex.rs`.
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
@@ -640,7 +623,7 @@ impl Pal for Sys {
     fn getpriority(_which: c_int, _who: id_t) -> Result<c_int> {
         // The `Pal` answers as Linux's system call does, 20 minus the nice value, which
         // `getpriority` and `nice` undo. nife's scheduler has one class and no nice value, so the
-        // answer is nice 0. It was `Ok(0)` until 2026-10-12 (UTC), which read back as nice 20.
+        // answer is nice 0.
         Ok(20)
     }
 
@@ -650,12 +633,8 @@ impl Pal for Sys {
             return Err(Errno(EINVAL));
         }
         // Every field is zero, and only `RUSAGE_CHILDREN`'s zeros are a measurement (a nife process
-        // has no children). The kernel keeps a thread's on-CPU time (milestone 282 (a thread's CPU
-        // time, and the `top` it makes possible), §150 (how does a thread's CPU time reach
-        // userspace?)), but it is read through `SURVEY` on a capability an ordinary program does
-        // not hold, and `std` offers no way to it. Elapsed time is not CPU time (§150 refused it
-        // for `top`), so it is not passed off as one here. fio prints `usr=0.00%, sys=0.00%`, which
-        // means "not measured" (BUGS).
+        // has no children). A thread's CPU time needs a capability an ordinary program does not
+        // hold, and elapsed time is not CPU time, so nothing is passed off as one (README's BUGS).
         let zero = || timeval {
             tv_sec: 0,
             tv_usec: 0,

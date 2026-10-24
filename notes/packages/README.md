@@ -8,7 +8,9 @@ for, §219 (how the shell names an installed program to the spawner)'s gate D2, 
 [running-unvouched.md](running-unvouched.md). The owner's console, vouching for a build and the list
 of users who may run new code (§221 (the boot prompt is the owner's console)), is
 [vouching.md](vouching.md). Packages over the internet are
-[over-the-internet.md](over-the-internet.md). The index format survey is
+[over-the-internet.md](over-the-internet.md). The pinned TLS client those fetches speak through,
+and the two programs that prove it under QEMU, are [pinned-tls.md](pinned-tls.md). The index
+format survey is
 [the-index-format.md](the-index-format.md). A package with several programs is [several-programs.md](several-programs.md).
 What the package-only test programs print at the prompt is [the-test-programs.md](the-test-programs.md).
 Four candidate containers for a package (NIFEPKG2, tar, and each compressed with zstd), measured

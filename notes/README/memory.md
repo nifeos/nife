@@ -3,9 +3,9 @@
 Part of [the notes index](../README.md), which says how to add a line.
 
 - [Physical memory](../physical-memory.md): the frame allocator, bitmap over free list.
-- [The machine statistics page](../machine-statistics.md): the frame `free`, `vmstat` and `top` read, and how the kernel writes it. Name provisional.
 - [The MMU](../mmu.md): virtual addresses, page tables, the TLB and page faults.
 - [aarch64 page tables](../page-tables.md): the descriptor format the MMU walks, and its traps.
+- [The paging crate](../paging.md): the page-table formats one walk serves, the IOMMU encodings, and what the DMA-domain proofs cover.
 - [The higher-half kernel](../higher-half.md): why the kernel lives in TTBR1, and how it boots.
 - [The user address-space map](../address-space-map.md): which band of a process holds what, and where a new page goes.
 - [User address spaces in the kernel](../user-address-spaces.md): who frees a space's region, what a window costs, the registry, and handing a test service's memory back.

@@ -1,5 +1,7 @@
 # The `grant_plan` crate: how a line becomes a grant
 
+*Name: provisional, after the crate it covers.*
+
 An appendix to [`notes/grant-expression.md`](../grant-expression.md). That note carries the idea;
 this one carries the design of `crates/grant_plan`, the crate that holds the logic, where its doc
 comments link here. Each section names the module it covers.

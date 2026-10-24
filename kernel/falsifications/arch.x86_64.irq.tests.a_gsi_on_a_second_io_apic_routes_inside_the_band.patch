@@ -41,10 +41,10 @@ delivered through a second IO APIC, and nothing in this tree does. `irq.rs`'s mo
 so where a reader meets the feature.
 
 diff --git a/kernel/src/arch/x86_64/irq.rs b/kernel/src/arch/x86_64/irq.rs
-index 7f878eaf..03941f7b 100644
+index 81d1c50f4..4f2dc4881 100644
 --- a/kernel/src/arch/x86_64/irq.rs
 +++ b/kernel/src/arch/x86_64/irq.rs
-@@ -637,7 +637,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
+@@ -513,7 +513,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
          index < MAX_REDIRECTION_ENTRIES,
          "redirection index {index} is outside the vector band the entry-count cap reserves"
      );
@@ -52,4 +52,4 @@ index 7f878eaf..03941f7b 100644
 +    Some(GSI_VECTOR_BASE.wrapping_add(gsi as u8))
  }
  
- /// Is `vector` one of the IO APIC's? The trap handler asks, so that a device interrupt is counted
+ /// Is `vector` one of the IO APIC's? The trap handler asks, so a device interrupt is counted as

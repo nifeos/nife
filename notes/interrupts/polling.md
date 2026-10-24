@@ -1,5 +1,7 @@
 # Interrupts or polling: why every confined driver in this tree polls
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/interrupts.md](../interrupts.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). The main page keeps the conclusion; this is the argument and the measurements
 behind it.

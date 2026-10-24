@@ -1,14 +1,10 @@
 //! An EL0 component gets the userspace linker script, and it must NOT be the kernel's.
 //!
 //! `cargo:rustc-link-arg` is per-package, which is the whole reason the EL0 programs are their own
-//! packages rather than more binaries in `kernel/`.
-//!
-//! **The linker script lives in `crates/user_mode_runtime`, not here, and that is deliberate.** Both
-//! `components` and `fixtures` link against the identical EL0 layout, so a copy in each would be
-//! two places to be wrong about the image base with nothing comparing them; milestone 73 (name the aarch64 files aarch64) refused to
-//! rename `user/link.ld` on exactly that ground ("it is genuinely shared"), and milestone 175 split
-//! the package that held it. `user_mode_runtime` is the runtime that supplies `_start`'s ABI and the panic
-//! handler to every program in both packages, so a program image's layout is its business.
+//! packages rather than more binaries in `kernel/`. The script lives in `crates/user_mode_runtime`,
+//! the runtime that supplies `_start`'s ABI and the panic handler to every program, because
+//! `components` and `fixtures` link the identical EL0 layout: a copy in each would be two places to
+//! be wrong about the image base with nothing comparing them.
 
 use std::path::Path;
 

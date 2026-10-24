@@ -2,16 +2,12 @@
 //!
 //! Name: provisional (lane lane/surface-map-budget, 2026-10-21 UTC).
 //!
-//! [`crate::uefi::uefi_boot`]'s tour runs at OVMF's default 1280x800, and every byte of the handover
-//! between the kernel and `framebuffer_driver` scales with the screen: the aperture, the surface,
-//! and the records the driver's address space keeps for each page it maps. A budget that leaves
-//! the surface out still fits at 1280x800 and panics the handover at 1920x1080, xenon's HDMI
-//! panel. So the gate boots the same image once more at each mode in [`MODES`] and asks the
-//! serial wire whether both halves came up and the shell answered.
-//!
-//! Serial only, on purpose: reading the screen back is the tour's job, and its decoder is laid out
-//! for 1280x800. What breaks here breaks before a pixel of the terminal is drawn, and the kernel
-//! says so on COM1.
+//! [`crate::uefi::uefi_boot`]'s tour runs at OVMF's 1280x800, and the handover's aperture,
+//! surface and per-page mapping records all scale with the screen: a budget that leaves the surface
+//! out fits there and panics at 1920x1080, xenon's HDMI panel. So the gate boots the same image at
+//! each mode in [`MODES`] and asks the serial wire whether both halves came up and the shell
+//! answered. Serial only: the tour's decoder is laid out for 1280x800, and what breaks here breaks
+//! before a pixel of the terminal is drawn.
 
 use std::io::Write;
 use std::process::{Command, Stdio};

@@ -1,3 +1,6 @@
+*Name: provisional, minted 2026-10-23 (UTC) by maintainer/brief-run-a-milestone-wide. "Review a
+paydown" says the task; "review a comment sweep" was narrower than the checklist reaches.*
+
 **Provisional name.** Review one paydown pull request, a diff that moves, cuts or rewrites comments
 and prose without changing what the code does. You are a fresh agent, or the lane itself checking
 its own diff before it pushes. Do the work; do not ask questions.

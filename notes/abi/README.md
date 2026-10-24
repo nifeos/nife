@@ -11,7 +11,3 @@ what its prose budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `cycle-counter-grant` Name: provisional. Named for the grant milestone 229 built.
-- `method-contracts` Name: provisional. Named for what the crate's doc comments state. calef names
-  files.

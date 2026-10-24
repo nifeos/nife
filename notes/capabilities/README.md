@@ -15,8 +15,4 @@ Both are parts of milestone 7 (user mode: EL0, capabilities, the ELF loader, and
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `syscall-surface` Name: provisional. After the parent's own heading.
-- `ipc-endpoints` Name: provisional.
-- `table` Name: provisional.
+Each stem here is named for its content, and calef names files.

@@ -1,35 +1,12 @@
-//! **A timed window can exclude preemption, and this is the test that says so.**
-//! Milestone 541 (a timed window that excludes preemption).
+//! **A timed window can exclude preemption, and this is the test that says so** (milestone 541 (a
+//! timed window that excludes preemption)).
 //!
-//! `kernel/src/bench/spawn_map.rs`'s `map_new` masks interrupts across its timed window, because
-//! the window is roughly 250 microseconds of guest time against a 10 ms scheduler tick (`TICK_HZ`
-//! is 100 on all three architectures) and whether a timer interrupt lands inside it is therefore
-//! decided by the phase the boot left the timer in. On 2026-09-21 a semantically identical rewrite
-//! of one expression in `schedule()` moved that phase, one preemption landed in the window, and the
-//! row read +26.4% and failed the tripwire while the map path's object code was byte-identical. See
-//! notes/benchmarks.md and design/roadmap/0541-a-timed-window-that-excludes-preemption.md.
-//!
-//! **The benchmark build is not the tested build**, which is the gap this file closes. `--features
-//! bench` compiles the tour out and runs no tests, so nothing in the test suite ever executes
-//! `map_new`'s masked window; what the suite *can* test is the primitive that window rests on,
-//! which is that `arch::interrupts::disable` actually suppresses the scheduler tick and `restore`
-//! actually brings it back. If either half stopped being true, `map_new` would go back to timing
-//! the scheduler and would say nothing about it.
-//!
-//! These tests spin against the wall clock rather than counting instructions, so they hold under
-//! `-icount` and under HVF alike: the counter `now()` reads advances in both.
-//!
-//! **What they do not trust the wall clock for is the tick being raised.** Both used to assume that
-//! a masked spin of three tick periods guarantees a tick is pending when it ends. It does not: the
-//! emulator raises the timer from its own main loop, and on 2026-09-24 that measured 1 to 5 ms
-//! after the deadline typically and **86 ms** at worst, over 2,000 masked windows on the riscv64
-//! `sifive-u54` model. So `unmasking_delivers_the_tick_that_was_held` failed CI once on `rv64`
-//! (pull request #1195, a change to `design/decisions/` alone) saying the held tick had been
-//! dropped. The same measurement found the kernel taking the tick at the unmask in every one of
-//! 4,000 windows once it was pending, so the likely reading of that red is a tick not yet raised
-//! rather than one dropped; the log cannot say which, and that is the gap. Each window now ends only once the
-//! architecture says the tick is pending ([`until_the_tick_is_raised`]), which makes the first test
-//! non-vacuous and takes the host out of the second. See notes/load-sensitive-assertions.md.
+//! `bench/spawn_map.rs`'s `map_new` masks interrupts across its timed window, and the benchmark
+//! build runs no tests. What the suite can test is the primitive that window rests on:
+//! `arch::interrupts::disable` suppresses the scheduler tick, and `restore` delivers the held one.
+//! Each window spins on the wall clock and then waits until the tick is architecturally pending
+//! ([`until_the_tick_is_raised`]), because the emulator raises it late. See
+//! notes/load-sensitive-assertions.md and notes/benchmarks.md.
 
 use crate::sched;
 
@@ -76,25 +53,17 @@ const NEVER_RAISED: &str = "the timer was never raised in a second of masked spi
 
 /// **Interrupts masked means no preemption is taken, however long the window is.**
 ///
-/// This is the property `map_new` buys. The spin is three scheduler tick periods, so without the
-/// mask the timer would have fired at least twice; with it, this core's count must not move at
-/// all. The count is **per-core** (`cpu::PerCpu::preemptions`) for a reason this test found the
-/// hard way: on a multi-core kernel the global `sched::preemptions()` reported nine preemptions
-/// inside this masked window, every one of them another core ticking its own thread.
-///
-/// It asserts on the counter rather than on elapsed time on purpose. A window that merely *ran
-/// fast* proves nothing, because a preemption that returns promptly is cheap and one that yields a
-/// full quantum to another thread is not: the two differed by a factor of seven in the 2026-09-21
-/// measurements (6,670 ticks against 47,752 for one preemption on `x86_64`). The count is the
-/// thing that is either zero or not.
+/// The spin is three tick periods, so without the mask the timer would fire at least twice; with
+/// it, this core's count must not move. The count is per core, because the global one counts
+/// other cores ticking their own threads. It asserts on the count rather than elapsed time,
+/// because a cheap preemption and a full quantum differ sevenfold and only the count is zero or
+/// not.
 #[test_case]
 fn a_masked_window_takes_no_preemption() {
     let was_enabled = crate::arch::interrupts::disable();
     let before = sched::preemptions_here();
     crate::arch::timer::spin_for(three_tick_periods());
-    // **And a tick must actually be waiting**, or the window is vacuous: a host that had not yet
-    // raised the timer would pass this test with interrupts wide open. Still masked, so still on
-    // this core, and `preemptions_here` below reads the same counter as above.
+    // A tick must be waiting, or the window is vacuous. Still masked, so still on this core.
     let raised = until_the_tick_is_raised();
     let during = sched::preemptions_here();
     crate::arch::interrupts::restore(was_enabled);
@@ -110,31 +79,17 @@ fn a_masked_window_takes_no_preemption() {
     );
 }
 
-/// **And the interrupt is deferred, not lost**, which is the other half and the one a reader is
-/// right to doubt.
+/// **And the interrupt is deferred, not lost**: a mask that dropped the tick would starve the
+/// scheduler for the window's length.
 ///
-/// Masking a window would be a bad trade if it dropped the tick: the scheduler would be starved
-/// for as long as the window lasted and the benchmark would have bought its stable number by
-/// breaking the machine. It does not. The timer interrupt is pending across the mask and is
-/// delivered at `restore`, which is why `map_new`'s own probe can report a non-zero preemption
-/// count for a window that took none.
-///
-/// **The tick is raised before the mask comes off, and that is what makes this test about the
-/// kernel.** It used to spin three periods, unmask, spin one more and assert, which asks the host to
-/// have raised the timer within forty milliseconds of wall clock; the host once did not, and this
-/// assertion reported a dropped tick on `rv64` in a run that changed no code. Now the window waits
-/// for the pending bit ([`until_the_tick_is_raised`]), so by the unmask the interrupt is already
-/// waiting at this core and delivery is a matter of instructions. The spin after `restore` is kept,
-/// bounded at one tick period, because real hardware may take a few cycles to take an interrupt
-/// after unmasking, and a period is far beyond that.
+/// The window waits for the pending bit before the mask comes off, so delivery at `restore` is a
+/// matter of instructions, not of when the host raises the timer. The spin after `restore` is
+/// bounded at one tick period, far beyond the few cycles real hardware takes to deliver.
 #[test_case]
 fn unmasking_delivers_the_tick_that_was_held() {
     let was_enabled = crate::arch::interrupts::disable();
-    // **Which core is read is fixed under the mask, not before it.** The preemption this asserts
-    // on may migrate this thread, and `preemptions_here()` would then read whichever core it
-    // landed on: a counter that was never the one being watched. Read here, nothing can move this
-    // thread before the interrupt is taken, and `preemptions_on` pins every later read to the core
-    // that held the tick.
+    // The core is fixed under the mask: the preemption may migrate this thread, and every later
+    // read must be of the core that held the tick.
     let cpu = crate::cpu::id();
     let count = || sched::preemptions_on(cpu);
     let before = count();

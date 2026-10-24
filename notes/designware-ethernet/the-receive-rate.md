@@ -1,5 +1,7 @@
 # radon's receive rate: a one-segment window and a tick per round trip
 
+*Name: provisional.*
+
 *A child of [`notes/designware-ethernet.md`](../designware-ethernet.md) (milestone 53 (the board's
 own peripherals: network and storage on real silicon)), whose Results row is the 2.3 Mbit/s this
 page explains. Its names are provisional: `socket_contract::polled_wait`, `TCP_RECEIVE_BUF`,
@@ -44,7 +46,7 @@ costs. The price is a busy core while a stream flows.
 
 [The parent's bench step](../designware-ethernet.md#calefs-bench-step-on-radon), unchanged, from
 a commit that has the fix: same peer, same image flags, same console capture. While the transfer
-runs, in a fourth terminal on patagonia, capture the stream (it needs `sudo`; without it, skip
+runs, in a fourth terminal on the same Mac, capture the stream (it needs `sudo`; without it, skip
 the capture and say so in the Results row):
 
 ```sh

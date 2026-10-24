@@ -3,9 +3,11 @@
 //! `cargo xtask disk-throughput` builds the `disk_throughput` kernel **in release** (the number is
 //! the claim, and a debug build's would understate it), stages it behind the UEFI loader at
 //! `target/esp-disk-throughput` for a stick, and boots it under OVMF with `-device intel-iommu`
-//! and an emulated NVMe in four shapes. Each shape has a verdict it must produce, and the command
-//! fails if any produces another:
-//!
+//! and an emulated NVMe in the four shapes below, failing if any gives another verdict. **The
+//! numbers are QEMU's and mean nothing about a disk**; this proves the preflight and the verdict
+//! read the way the bench will read them.
+
+//! # Cases
 //! | case | machine | the kernel must say |
 //! |---|---|---|
 //! | `root-port` | NVMe behind a PCIe root port, 512-byte LBAs (xenon's shape) | both preflights PASS, `CONFINED-AT-RATE` |
@@ -14,9 +16,9 @@
 //! | `bypass` | the root bus bypasses the IOMMU, so the DMAR names no unit for it | scope FAIL, `UNCONFINED` |
 //!
 //! The last two are the night-of conditions going the wrong way, which is the point: a verdict
-//! nobody has seen come out red is a verdict nobody has tested. **The numbers are QEMU's and mean
-//! nothing about a disk**; this proves the preflight and the verdict read the way the bench will
-//! read them.
+//! nobody has seen come out red is a verdict nobody has tested.
+
+//! # Flags
 //!
 //! `--stage-only` builds and stages without booting, which is the night-of use. `--case <name>`
 //! runs one shape. `--debug` builds the debug profile instead, the fallback if a release image

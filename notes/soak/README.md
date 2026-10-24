@@ -40,3 +40,4 @@ Each stem below is named for its content, and calef names files.
 - `how-long-to-run-it` Name: provisional.
 - `limitations` Name: provisional.
 - `supervisor` Name: provisional.
+Each stem here is named for its content, and calef names files.

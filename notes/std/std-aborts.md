@@ -48,9 +48,10 @@ by unioning every `library/std/src/sys/` path out of cargo's own dep-info under
 `unimplemented!`, `todo!`, `rtabort!`, `intrinsics::abort()`, `panic_nounwind`. Comment lines are
 skipped, because this tree's PAL files discuss the panics they replaced at length.
 
-What it finds is compared against `ABORTS_ACCEPTED` in `xtask/src/farm.rs`, which carries the
+What it finds is compared against `ABORTS_ACCEPTED` in `xtask/src/farm/aborts.rs`, which carries the
 reason for every entry. A new one fails the build with the file, the line, and the two things it
-can be. Today there are 26 across 79 compiled sources, in three groups:
+can be. That makes the reading rung two of AGENTS.md's ladder, a check, where it had been rung
+four, a person reading. Today there are 26 across 79 compiled sources, in three groups:
 
 - unreachable on nife (nine): a body behind a `cfg` this target does not satisfy. `cfg_select!`
   keeps every arm's source in the file, so they are read but not compiled into anything reachable.

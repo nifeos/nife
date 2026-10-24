@@ -1,5 +1,7 @@
 # The hung component: what the test shows, and why the wedge is silent
 
+*Name: provisional.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md). It records the six results of
 `swapper`'s `ROLE_HUNG` case and why its wedge takes the shape it does.
 

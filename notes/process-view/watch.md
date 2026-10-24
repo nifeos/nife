@@ -1,5 +1,7 @@
 # `watch` was built, and then cut (milestone 281)
 
+*Name: provisional. For the program it records.*
+
 An appendix to [notes/process-view.md](../process-view.md), which summarizes it. `watch` is gone as
 of 2026-09-13, along with `crates/watch`. The reason is the useful part of this page rather than
 the obituary.

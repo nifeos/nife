@@ -1,5 +1,7 @@
 # The boards' screen: `ramfb`, and why it is the other way round
 
+*Name: provisional, for the QEMU device it describes.*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md). It holds how QEMU's `virt`
 boards got a screen on aarch64 and riscv64, the gate that reads it back, and what the first red CI
 run settled.
@@ -74,6 +76,16 @@ console and the arch-neutral discovery *type* on all three architectures, and it
 the DC8200 on the VisionFive 2. That is milestone 157 (real display output on the board), and the shape of the change it needs is
 one
 branch above `screen::attach` and nothing below it.
+
+## The `fw_cfg` wire format
+
+`fw_cfg` is the channel firmware reads the E820 map and ACPI tables through, and QEMU's
+`docs/specs/fw_cfg.rst` specifies it. QEMU, Linux, EDK2 and U-Boot all spell it `fw_cfg`, so a reader
+arriving from that spec is in the right place in `crates/firmware_configuration`. `ramfb` is a
+write-only file, and only `fw_cfg`'s DMA interface can write, so the crate speaks the DMA interface
+and not the port pair. Every multi-byte field is big-endian, including on the little-endian
+machines this tree runs on. That is the mistake the crate exists to make impossible, so every
+encoder takes native values and returns bytes, never a struct anybody could `transmute`.
 
 ## BUGS
 

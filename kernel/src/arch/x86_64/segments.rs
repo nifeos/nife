@@ -1,28 +1,13 @@
-//! **The GDT and the TSS**, which have no counterpart at all on the other two architectures.
+//! The GDT and the TSS, which have no counterpart on the other two architectures.
 //!
-//! aarch64 and RISC-V have no segmentation. `x86_64` has *almost* none: in 64-bit mode a segment's
-//! base and limit are ignored for everything except `fs` and `gs`, so the descriptors below carry
-//! essentially no information. What they still carry is the three bits that decide **what mode the
-//! CPU is in**: the code segment's `L` bit (64-bit), `DPL` (which ring), and `D/B`. So the GDT
-//! cannot be dispensed with even though almost every field in it is dead.
+//! In 64-bit mode a segment's base and limit are ignored except for `fs` and `gs`, but the code
+//! segment's `L`, `DPL` and `D/B` bits still decide the CPU's mode, so the GDT stays. The TSS gives
+//! the stack on a ring change (`RSP0`), an unconditional stack per IST vector for a fault whose
+//! cause is an unusable stack, and the I/O permission bitmap (§121 (x86 port I/O)).
 //!
-//! The TSS is the part that does real work, and its job is the one x86 gives no other mechanism for:
-//! **where does the stack pointer come from when the CPU changes ring?** On aarch64 an exception
-//! from EL0 lands on `SP_EL1`, a separate banked register the kernel has already set. On RISC-V the
-//! trap handler recovers its stack from `sscratch`. x86 reads `TSS.RSP0` out of memory, so a task
-//! that traps in from ring 3 gets whatever `RSP0` says, and if it says something wrong the very
-//! first user-mode fault is unrecoverable. The IST entries are the same mechanism with a stronger
-//! promise: an IST vector switches stacks **unconditionally**, even for a ring-0 trap, which is the
-//! only way to survive a fault whose cause is that the current stack is unusable.
-//!
-//! # The selector layout is not free
-//!
-//! `syscall`/`sysret` derive four selectors from two 16-bit fields of `IA32_STAR`, by arithmetic:
-//! entering the kernel takes CS = `STAR[47:32]` and SS = that + 8, and returning to user takes
-//! CS = `STAR[63:48]` + 16 and SS = `STAR[63:48]` + 8. So the order below (kernel code, kernel data,
-//! user **data**, user **code**) is forced by the instruction, and the apparently-backwards user
-//! pair is the tell. Reordering these to look tidier breaks `sysret` in a way that shows up as a
-//! general protection fault on the way back to a program that did nothing wrong.
+//! `syscall`/`sysret` derive four selectors from `IA32_STAR` by arithmetic (SS is CS + 8 entering;
+//! user SS and CS are the base + 8 and + 16), so the order kernel code, kernel data, user data,
+//! user code is forced, and reordering it faults `sysret`. See notes/x86-port/traps.md.
 
 use core::arch::asm;
 use core::cell::SyncUnsafeCell;
@@ -67,16 +52,11 @@ const IOMAP_BASE_DENY_ALL: u16 = 0xFFFF;
 
 /// A 64-bit Task State Segment, with its I/O permission bitmap.
 ///
-/// Almost every field of the 32-bit TSS is gone in long mode; what remains is three ring stacks,
-/// seven interrupt stacks, the I/O permission bitmap offset, and the bitmap itself. `#[repr(C,
-/// packed)]` because the layout is the CPU's, not Rust's, and the reserved words are load-bearing
-/// padding rather than slack.
-///
-/// **The bitmap lives inside the TSS on purpose** (milestone 299): `iomap_base` is an offset *from
-/// the TSS base*, and the CPU reads the bitmap out of the same segment, so the permission bits have
-/// to be contiguous with the rest of the structure rather than a separate allocation. One per core,
-/// like the rest of the TSS, so two cores never share the bits that say what ports the thread on
-/// each may reach.
+/// Long mode keeps three ring stacks, seven interrupt stacks, the bitmap offset and the bitmap.
+/// `#[repr(C, packed)]` because the layout is the CPU's and the reserved words are padding it
+/// requires. The bitmap is inside the TSS (milestone 299 (the x86 port-range capability)) because
+/// `iomap_base` is an offset from the TSS base; one per core, so no two cores share port
+/// permissions.
 #[repr(C, packed)]
 struct Tss {
     _reserved0: u32,
@@ -127,18 +107,12 @@ const _: () = assert!(size_of::<Tss>() == 104 + IOMAP_BYTES + IOMAP_GUARD);
 // `IOMAP_OFFSET` is the byte offset of the bitmap; the fixed part of a 64-bit TSS is 104 bytes.
 const _: () = assert!(core::mem::offset_of!(Tss, iomap) == IOMAP_OFFSET as usize);
 
-/// **One TSS per core** (milestone 161's SMP item, fixing exactly the limitation this static's own
-/// doc used to name: "every core needs its own, since `rsp0` names a per-core stack"). Indexed by
-/// `cpu::id()`, the same way every other per-core array in this kernel is; `TSS.rsp0` is what makes
-/// this matter, since sharing one across cores would let two cores race on the same ring-0 stack
-/// pointer the instant both took a trap from ring 3.
+/// One TSS per core, indexed by `cpu::id()`: `rsp0` names a per-core stack, and a shared TSS would
+/// let two cores race on one ring-0 stack pointer.
 ///
-/// A `SyncUnsafeCell` rather than a lock, by calef's ruling of 2026-10-09 on milestone 891 (a
-/// mutable static becomes an atomic, a lock or a recorded cell): the CPU reads this table by
-/// address, through the descriptor `ltr` loads, so it must sit at a fixed place and be written in
-/// place. Plain access is sound because each core touches only its own slot, `cpu::id()`'s, and the
-/// CPU reads that slot only on this same core (a ring change or an IST switch), so no two cores
-/// ever share an element.
+/// A `SyncUnsafeCell`, by calef's ruling of 2026-10-09 on milestone 891 (a mutable static becomes
+/// an atomic, a lock or a recorded cell): the CPU reads it by address, through the descriptor `ltr`
+/// loads. Each core touches only its own slot, and the CPU reads that slot only on that core.
 static TSS: SyncUnsafeCell<[Tss; crate::cpu::MAX_CPUS]> =
     SyncUnsafeCell::new([const { Tss::new() }; crate::cpu::MAX_CPUS]);
 
@@ -175,13 +149,8 @@ pub(crate) struct DescriptorTablePointer {
 
 /// Install the GDT and the TSS on this CPU, and reload every segment register from it.
 ///
-/// # Why the code-segment reload is a return and not a jump
-///
-/// `lgdt` changes the table but not the selectors already loaded, and `mov cs, ax` does not exist:
-/// CS can only be changed by a control transfer. The idiomatic 64-bit way is a far return: push the
-/// new selector and a target address, then `retfq`, which pops both. A far *jump* would work too but
-/// has to go through memory (`ljmp [mem]`) in 64-bit mode, which needs a scratch location; the
-/// stack is already there.
+/// `lgdt` leaves loaded selectors alone and CS changes only by a control transfer, so CS is
+/// reloaded by a far return (`retfq`); a 64-bit far jump would need a memory operand.
 ///
 /// # Safety
 /// Must be called once per CPU, with a valid stack and `cpu::init_this_cpu` already run on it
@@ -191,20 +160,15 @@ pub(crate) struct DescriptorTablePointer {
 pub unsafe fn init() {
     let id = crate::cpu::id();
 
-    // The TSS descriptor cannot be a constant: it holds the TSS's own address, which is only known
-    // once the image is linked and loaded. A 64-bit system descriptor spreads that address across
-    // three disjoint fields, which is a layout inherited from the 16-bit 286 and is why this looks
-    // the way it does rather than being a single store.
+    // The TSS descriptor holds the TSS's address, known only once loaded, across three fields.
     // SAFETY: indexing this core's own slot with `id` in bounds (`cpu::id()` cannot exceed
     // `MAX_CPUS`, which is exactly how big `TSS` is); reading only the address, not the (possibly
     // concurrently-written-by-another-core-at-a-different-index) contents.
     let base = unsafe { (&raw const (*TSS.get())[id]) as u64 };
     let limit = (size_of::<Tss>() - 1) as u64;
 
-    // Hand trap.s the address of the one field it writes: this core's OWN `TSS[id].rsp0`, through
-    // the per-CPU block `gs` already names, so there is nowhere a second core's write could land.
-    // Before the IDT exists, so no trap can have taken the path that reads it. See
-    // `cpu::PerCpu::x86_trap` / `cpu::X86TrapPerCpu::tss_rsp0_ptr`.
+    // trap.s writes this core's own `TSS[id].rsp0` through this per-CPU pointer, set before the
+    // IDT exists (`cpu::X86TrapPerCpu::tss_rsp0_ptr`).
     // SAFETY: writes this core's own `PerCpu` slot, reached the same way every per-CPU write on
     // this architecture is, before any trap can be taken on this core.
     unsafe {
@@ -232,22 +196,10 @@ pub unsafe fn init() {
         base: gdt_base,
     };
 
-    // **Loading a segment register in long mode DESTROYS that segment's base MSR**, and `gs`'s base
-    // is where this kernel keeps its per-CPU pointer (the analog of aarch64's `TPIDR_EL1` and
-    // RISC-V's `tp`). `cpu::init_this_cpu` has already run by the time anything calls this, because
-    // the console lock reads the per-CPU block, so the `mov gs, ax` below would silently zero the
-    // pointer and the very next `println!` would dereference null.
-    //
-    // That is exactly what happened during bring-up, and it is worth recording how it presented:
-    // not as a null dereference but as an instruction fetch from the middle of a static, several
-    // frames away, with the register dump showing a perfectly correct GDT, TSS and IDT. Nothing
-    // about the symptom pointed here.
-    //
-    // So the base is saved and put back around the reload. Doing it here rather than making the
-    // caller re-arm the pointer keeps the ordering constraint from existing at all, which is the
-    // ladder's first rung: the wrong state is not representable rather than merely documented.
-    // `fs` gets no such treatment because nothing uses its base; if anything ever does, it needs the
-    // same two lines.
+    // Loading a segment register in long mode zeroes that segment's base MSR, and `gs`'s base is
+    // the per-CPU pointer `cpu::init_this_cpu` already set (the console lock reads it). So it is
+    // saved and put back around the reload, here rather than by the caller. `fs` would need the
+    // same if anything used its base. See notes/x86-port/traps.md.
     let gs_base = super::percpu();
 
     // SAFETY: `gdtr` describes the table above, which is well-formed by construction. The far
@@ -272,11 +224,9 @@ pub unsafe fn init() {
             code = in(reg) KERNEL_CODE as u64,
             data = in(reg) KERNEL_DATA as u32,
             tss = in(reg) TSS_SELECTOR,
-            // `out`, never `lateout`: the `lea` writes `tmp` while `data` and `tss` are still to
-            // be read, and `lateout` lets the compiler give `tmp` an input's register. A release
-            // build put `tss` and `tmp` both in `rcx`, so `ltr` loaded the low bits of a code
-            // address as a selector: `#GP`, then a double fault, right after the boot's `pat`
-            // line. Only a release boot shows it, which is `cargo xtask uefi-boot --release`.
+            // `out`, never `lateout`: `lea` writes `tmp` while `data` and `tss` are unread, and
+            // sharing a register made `ltr` load a code address, `#GP` then a double fault. Only a
+            // release boot shows it (`cargo xtask uefi-boot --release`).
             tmp = out(reg) _,
             options(preserves_flags),
         );
@@ -290,14 +240,6 @@ pub unsafe fn init() {
     // SAFETY: once per core, on this core, before its IDT exists, with this core's own block.
     unsafe { super::ist::install(id, gs_base as u64) };
 }
-
-// Point this CPU's ring-0 trap stack at `top`. DELETED 2026-09-30 by the CI-warnings lane:
-// swish-check's x86_64 leg warned `set_kernel_stack` (and the `exceptions::set_syscall_kernel_stack`
-// half it existed to keep in step) was never used in any configuration, because `isr_restore` in
-// trap.s writes `TSS.RSP0` and the syscall path's slot together on every return to ring 3. The
-// property this pair existed for, "a trap and a `syscall` cannot name different stacks", is held
-// by that one code path; on the other two architectures the same job is `sscratch.kernel_sp`
-// (RISC-V) or nothing at all (aarch64 banks `SP_EL1`).
 
 /// Point an IST slot (1-based, as the IDT encodes it) at `top`, on this core.
 ///
@@ -333,30 +275,19 @@ pub(crate) fn interrupt_stack(id: usize, slot: u8) -> u64 {
     }
 }
 
-/// **Which port grant is installed in this core's TSS bitmap right now**, or `None` for the
-/// overwhelming majority of cores that never run a port-holding thread. Indexed by `cpu::id()`, the
-/// same per-core discipline the TSS and GDT arrays use.
+/// Which port grant this core's TSS bitmap holds now, or `None` on nearly every core; indexed by
+/// `cpu::id()`. [`set_port_range_grant`] compares the incoming thread's grant with it and does
+/// nothing on a match, which is what makes the switch cheap.
 ///
-/// This is the state that makes the switch cheap: [`set_port_range_grant`] compares the incoming thread's
-/// grant against it and does nothing when they match, which is every switch on a core where nothing
-/// holds a port (both sides `None`) and every switch that keeps the same holder running.
-///
-/// A `SyncUnsafeCell` by calef's ruling of 2026-10-09 (milestone 891), which names it with the
-/// tables the CPU reads because it is the record of what one of them holds: it must change in the
-/// same masked window as this core's bitmap, so a lock would add a second acquisition to the switch
-/// path for no second party. Plain access is sound because each core reads and writes only its own
-/// slot, with interrupts masked (see [`set_port_range_grant_on`] for the one rule).
+/// A `SyncUnsafeCell` (milestone 891, calef's ruling of 2026-10-09): it changes in the same masked
+/// window as the bitmap it records, so a lock would add an acquisition for no second party. Each
+/// core reads and writes only its own slot, with interrupts masked ([`set_port_range_grant_on`]).
 static INSTALLED_PORT_GRANT: SyncUnsafeCell<[Option<(u16, u16)>; crate::cpu::MAX_CPUS]> =
     SyncUnsafeCell::new([None; crate::cpu::MAX_CPUS]);
 
-/// Set every bit of ports `[base, base + count)` in `iomap` to `deny` (`true` = the port faults from
-/// ring 3, `false` = the port is permitted). A port's bit is bit `port % 8` of byte `port / 8`. The
-/// range is clamped to the real bitmap so a grant near the top of the port space cannot touch the
-/// guard byte or run off the end; `count == 0` writes nothing.
-///
-/// `iomap` is a raw pointer to the bitmap's first byte rather than a `&mut [u8; _]`, because the
-/// array is a field of a `#[repr(C, packed)]` static and taking a reference into it is exactly
-/// the shape the rest of this file avoids; a pointer plus an in-bounds index is the honest form.
+/// Set every bit of ports `[base, base + count)` in `iomap` to `deny` (`true` faults the port from
+/// ring 3). Port `p` is bit `p % 8` of byte `p / 8`; the range is clamped to the bitmap, so the
+/// guard byte is never touched. A raw pointer, because the bitmap is a field of a packed static.
 ///
 /// # Safety
 /// `iomap` must point at a live `[u8; IOMAP_BYTES + IOMAP_GUARD]` (a core's own TSS bitmap), and the
@@ -378,54 +309,29 @@ unsafe fn write_range_bits(iomap: *mut u8, base: u16, count: u16, deny: bool) {
     }
 }
 
-/// **Install a thread's port grant into this core's TSS, the lazy way** (milestone 299, DECISIONS
-/// §121 reversed 2026-09-15). `sched::schedule` calls this on switch-in with the incoming thread's
-/// `(base, count)` grant, or `None` if it holds no port capability.
+/// Install a thread's port grant into this core's TSS, lazily (milestone 299, §121).
+/// `sched::install_port_grant` calls this on switch-in with the incoming thread's `(base, count)`.
 ///
-/// The cost this pays, and the cost it does not, are the whole design:
+/// An unchanged grant returns after one comparison, as on nearly every switch. A change writes only
+/// the bits that move, then points `iomap_base` at the bitmap or past the limit; the CPU reads the
+/// TSS on each `in`/`out`, so no `ltr` is needed. `#[cold]` keeps the body out of the IPC
+/// fastpath's footprint (`script/fastpath-footprint`). See notes/x86-port/traps.md.
 ///
-/// - **When the grant is unchanged, it returns after one comparison.** Both sides `None` (a switch
-///   between two ordinary threads, which is nearly every switch on nearly every machine) costs a
-///   load and a branch and writes nothing. This is what makes the enforcement free for the threads
-///   that do not use it, the property §121's 2026-08-25 refinement said the naive always-write
-///   (~2,682 ns/switch) threw away.
-/// - **When it changes, it writes only the bits that move**, not the whole 8 KiB bitmap: it re-denies
-///   the outgoing holder's range (restoring the all-ones invariant for those bytes) and permits the
-///   incoming holder's, then points `iomap_base` at the bitmap (a holder is on the CPU) or past the
-///   limit (none is). For a 16550's eight ports that is one byte plus the `iomap_base` word.
-///
-/// No `ltr` re-issue is needed: the CPU reads `iomap_base` and the bitmap out of the TSS in memory
-/// on each `in`/`out`, so writing them takes effect on the next port access. The caller runs with
-/// interrupts masked (it is on the switch path), and this touches only this core's own TSS, so the
-/// writes cannot race a port access on this core or a TSS write on another.
-///
-/// **`#[cold]`, because its effect is rare even though it is called on every switch.** On a machine
-/// where one process holds a port capability, the early return is taken on all but a handful of
-/// switches, and marking the function cold keeps its body (and `write_range_bits`) out of the IPC
-/// fastpath's hot instruction footprint (`script/fastpath-footprint`, which follows non-cold calls
-/// out of `schedule()`'s switch), for the price of a call and a compare on the common switch.
+/// Context: interrupts masked and `sched::IPC_TABLES` held (the switch path; the single-hart bench
+/// boot calls it bare); touches only this core's TSS.
 #[cold]
 pub fn set_port_range_grant(grant: Option<(u16, u16)>) {
     set_port_range_grant_on(crate::cpu::id(), grant);
 }
 
-/// [`set_port_range_grant`] for a core that names itself by number rather than through `gs`.
+/// [`set_port_range_grant`] for a core named by number rather than through `gs`: the NMI half of a
+/// revocation broadcast names its core from the local APIC id register (`mmu::serve_shootdown_nmi`
+/// says why). The two numbers agree on this port, and the sender `debug_assert`s it.
 ///
-/// **The NMI half of a revocation broadcast names its core from the local APIC id register**, which
-/// is hardware ground truth, rather than through `cpu::id()`, and hands it here;
-/// `mmu::serve_shootdown_nmi`'s own doc says why. On this port
-/// the two numbers are the same (`smp::seat_cpus_from_acpi` seats every core at the slot its own
-/// APIC id names), and the sender `debug_assert`s it rather than assuming it.
-///
-/// # The one rule that makes every writer of a TSS bitmap safe
-///
-/// **A core's port bitmap is written only by a thread holding `sched::IPC_TABLES`, or by an NMI that
-/// such a thread sent.** That is what stops the revocation broadcast landing inside a switch-path
-/// install on the target core and leaving the two writers interleaved: while the revoker holds the
-/// lock, no other core can be inside `sched::install_port_grant`, because milestone 315 (a port
-/// revoke that reaches every core) moved that
-/// call inside the locked region for exactly this reason. The one exception is `bench_*` below,
-/// which runs in a `feature = "bench"` boot that pins a single hart and sends nothing.
+/// Context: a core's bitmap is written only by a thread holding `sched::IPC_TABLES`, or by an NMI
+/// such a thread sent, so a revocation cannot interleave with a switch-path install
+/// (`sched::install_port_grant` runs inside the lock). The exception is `bench_*`, whose boot pins
+/// one hart and sends nothing.
 #[cold]
 fn set_port_range_grant_on(id: usize, grant: Option<(u16, u16)>) {
     // SAFETY: this core's own slot, read and written only here and only with interrupts masked on
@@ -434,9 +340,7 @@ fn set_port_range_grant_on(id: usize, grant: Option<(u16, u16)>) {
     if installed == grant {
         return;
     }
-    // This core's own TSS bitmap, as a raw pointer to its first byte: the CPU reads it only on a
-    // ring-3 `in`/`out`, which cannot happen while this runs with interrupts masked on this core, and
-    // a pointer avoids taking a reference into the `packed` table.
+    // The CPU reads this bitmap only on a ring-3 `in`/`out`, which cannot run while this does.
     // SAFETY: forming a raw pointer into this core's own TSS slot; no reference is taken.
     let iomap = unsafe { (&raw mut (*TSS.get())[id].iomap).cast::<u8>() };
     if let Some((base, count)) = installed {
@@ -482,39 +386,14 @@ pub(super) fn revoke_installed_port_grant_on(id: usize, base: u16, count: u16) {
     }
 }
 
-/// **Take the grant out of every online core's TSS, and do not return until they have done it**
-/// (milestone 315). `PortRange::REVOKE`'s arch half.
+/// Take the grant out of every online core's TSS, returning once they have (milestone 315 (a port
+/// revoke that reaches every core)): `PortRange::REVOKE`'s arch half.
 ///
-/// A revoked holder can be *running on another core* at the instant the revoker deletes its
-/// capability, and that core's bitmap still permits the range: the cached grant
-/// (`thread::Thread::port_range_grant`) is cleared under `sched::IPC_TABLES`, but nothing had told
-/// the hardware. The audit in milestone 313 (the security audit that was due since August) accepted
-/// that as a window of at most one tick, on the
-/// reasoning that the next context switch on that core closes it and it cannot reopen. **It was not
-/// theoretical.** At `NIFE_SMP=2` the suite's own
-/// `user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write` went red in 7 of 12 full
-/// runs (the campaign in milestone 316 (which core booted)) and 5 of 30 filtered ones, every
-/// failure the same shape: the
-/// child's `out` was permitted and it exited cleanly where the test demands a fault. The instrument
-/// that named the cause was a snapshot of [`INSTALLED_PORT_GRANT`] taken at the revoke: on both
-/// captured failures it read "revoker on cpu 0, cpu 1 holds a grant".
-///
-/// The local reset comes first, so this core's own bitmap is right before anyone else is told to
-/// look, which is the order [`super::mmu::flush_tlb`] uses for the same reason. The remote half
-/// rides the TLB shootdown's NMI, and that choice is forced rather than preferred: see
-/// notes/x86-tlb-shootdown.md for why an ordinary IPI deadlocks against a core spinning for a lock
-/// with interrupts masked, which is exactly what a core waiting for `IPC_TABLES` is doing while the
-/// revoker holds it.
-///
-/// **`spare_this_cpu` is the take-back's asymmetry reaching the hardware** (2026-09-24 security
-/// audit). `PortRange::REVOKE` deletes the range from every table *but the invoker's*, and the
-/// invoker is by definition the thread running on this core, so this core's installed bitmap is
-/// the invoker's own grant whenever it names the range. Until that audit the local reset ran
-/// unconditionally: a boot-endowed holder that took its range back from everyone else lost its own
-/// bitmap until its next switch-in, and its next `out` faulted it to its supervisor. Fails closed,
-/// and latent, because nothing in the tree invokes the take-back yet; a whole-machine sweep
-/// (`keeper == None`) passes `false` and resets here too. The remote half is unaffected either way:
-/// no other core can be running the invoker.
+/// A revoked holder may be running on another core whose bitmap still permits the range. The local
+/// reset comes first, as in [`super::mmu::flush_tlb`]; the remote half rides the TLB shootdown's
+/// NMI, since an ordinary IPI deadlocks against a core spinning for `IPC_TABLES` with interrupts
+/// masked (notes/x86-tlb-shootdown.md). `spare_this_cpu` keeps the invoker's own grant, which the
+/// take-back leaves in place; a whole-machine sweep passes `false`. See notes/x86-port/traps.md.
 pub(crate) fn revoke_port_grant_everywhere(base: u16, count: u16, spare_this_cpu: bool) {
     if !spare_this_cpu {
         revoke_installed_port_grant(base, count);
@@ -530,38 +409,19 @@ pub fn installed_port_grant() -> Option<(u16, u16)> {
     unsafe { (*INSTALLED_PORT_GRANT.get())[crate::cpu::id()] }
 }
 
-/// **Bench-only** (DECISIONS §121's amendment, 2026-08-24): the I/O permission bitmap option 1
-/// would write into the current CPU's TSS on every switch-in, sized for the whole port space,
-/// **not installed as live**.
+/// Bench-only (§121's amendment, 2026-08-24): the whole-port-space bitmap the naive design writes
+/// into the TSS on every switch-in, never installed as live.
 ///
-/// The x86 port space is 16 bits (`in`/`out` address exactly 64 Ki ports), one bit of "may this
-/// ring-3 thread touch this port" each, so the bitmap is `65536 / 8 == 8192` bytes exactly (the
-/// module doc's "8 KiB" is not a round number picked for convenience; it is what the architecture
-/// requires). Some real implementations (Linux's, e.g.) append one further guard byte set to all
-/// ones, because the CPU may read two bytes when checking the highest port and a bitmap that ends
-/// exactly at the limit would read past it; that byte is not needed here because nothing ever
-/// checks this array against a real port access (see below).
-///
-/// **What this measures, and what it does not.** §121's option 1 would extend the live [`Tss`]
-/// with this array, point `iomap_base` at it, and have the scheduler overwrite it on every
-/// switch-in. This does the write (the dominant cost the amendment names) without any of the
-/// rest: `iomap_base` above still points past the end of `TSS`, `ltr` is never re-issued, and no
-/// `in`/`out` from ring 3 ever runs in this benchmark boot (there is no ring-3 program on this
-/// port yet; see `user::x86_programs`). So the number this produces is the cost of an 8 KiB
-/// per-CPU memory write on the switch path, not a proof that the bitmap enforces anything; that
-/// second half is option 1's real implementation, out of scope here (`design/decisions/0121-port-io-capability.md`).
-///
-/// (Milestone 299 built that real implementation; this bench's naive always-write stays as the
-/// upper-bound baseline the lazy `tss_iomap_lazy_switch`/`tss_iomap_lazy_nop` read against. It reuses
-/// the production [`IOMAP_BYTES`] rather than redefining it.)
+/// [`IOMAP_BYTES`] of it, with no guard byte, since no port access checks it. It measures the 8 KiB
+/// write alone: nothing points `iomap_base` at it. Milestone 299's lazy install is the real one;
+/// this stays the upper-bound baseline `tss_iomap_lazy_switch` and `tss_iomap_lazy_nop` read
+/// against. See design/decisions/0121-port-io-capability.md.
 #[cfg(feature = "bench")]
 #[repr(C, align(8))]
 struct BenchIoBitmap([u8; IOMAP_BYTES]);
 
-/// A second CPU-owned 8 KiB region, separate from the live `TSS` static above so this benchmark
-/// can never be mistaken for having wired the real one in. One instance because this port has one
-/// CPU (`smp::bring_up_secondaries` is a refusal on `x86_64` today); a real per-CPU version would
-/// need `crate::cpu::PerCpu`, which option 1 would also need and this benchmark does not.
+/// A second 8 KiB region, apart from the live `TSS` so this benchmark is never mistaken for the
+/// real bitmap. One instance, because a bench boot runs one hart.
 ///
 /// A `SyncUnsafeCell` with the live tables (calef's ruling of 2026-10-09, milestone 891): it stands
 /// in for the bitmap the CPU would read, so it keeps their fixed placement. Plain access is sound

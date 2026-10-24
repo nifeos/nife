@@ -1,5 +1,7 @@
 # The spawn protocol: the exchange, and the reasons behind its words
 
+*Name: provisional, after `grant_plan::spawnproto`'s own heading.*
+
 An appendix to [notes/grant-expression.md](../grant-expression.md). `grant_plan::spawnproto` is
 the wire between the shell and the progenitor. Its doc comments say what each word and bit holds.
 This page holds the order of the whole exchange and the reasons behind the choices that are not

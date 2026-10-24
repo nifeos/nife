@@ -1,5 +1,7 @@
 # Credentials: what is proven, and where
 
+*Name: provisional, after the parent's own heading.*
+
 An appendix to [`notes/credentials.md`](../credentials.md). It lists every host test, proof and
 guest test behind the credential service, and what each pins.
 

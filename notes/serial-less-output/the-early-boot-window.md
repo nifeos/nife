@@ -1,5 +1,7 @@
 # The window between the firmware and the kernel
 
+*Name: provisional, after the parent's "The window between the firmware and the kernel".*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md), which keeps the table of
 what a person at a monitor can see. This file holds why the window cannot be narrated, how the
 loader's banner bounds it, the experiment that proved the banner, and why the boards get nothing

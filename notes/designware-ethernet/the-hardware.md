@@ -1,5 +1,7 @@
 # radon's Ethernet: the hardware facts the crate is built on
 
+*Name: provisional.*
+
 A page beside [`notes/designware-ethernet.md`](../designware-ethernet.md). It holds the reference
 tables that `crates/designware_ethernet`'s module comments link to: where the controller's
 registers fall, how the two device trees describe the controller and its PHY, and how the receive

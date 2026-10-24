@@ -1,56 +1,12 @@
-//! The GICv3 CPU interface: system registers, `ICC_*_EL1`.
-//!
-//! Milestone 227. On a GICv2 the CPU interface is memory (`GICC_*`, `drivers/gic.rs`); on a GICv3 it
-//! is a set of system registers, so the instructions that reach it are `msr` and `mrs` and they
-//! live here by DECISIONS §4 rule 1. The memory-mapped half of the same controller (distributor and
-//! redistributors) is `drivers/gicv3.rs`, and `irq.rs` beside this file is the one place that holds
-//! both. See design/roadmap/0227-gicv3-driver.md for why the split falls here.
-//!
-//! # The registers, and what each costs to get wrong
-//!
-//! | register | what it does | the failure if skipped |
-//! |---|---|---|
-//! | `ICC_SRE_EL1.SRE` | selects the system-register interface over the legacy MMIO one | every other `ICC_*` access is UNDEFINED or silently goes nowhere |
-//! | `ICC_PMR_EL1` | priority mask, `0xff` lets everything through | a mask of 0 (a common reset value) delivers nothing |
-//! | `ICC_BPR1_EL1` | binary point; 0 restores the reset grouping | firmware can leave it wide enough to stop preemption between priorities |
-//! | `ICC_CTLR_EL1.EOImode` | 0: one EOI write drops priority AND deactivates | mode 1 without `ICC_DIR_EL1` leaves every interrupt active forever |
-//! | `ICC_AP1R0_EL1` | active-priority bits, for firmware that left some set | a stale bit masks everything at or below its priority |
-//! | `ICC_IGRPEN1_EL1` | Group 1 on, at this core | the distributor signals, the core never listens: milestone 222's silence |
-//!
-
-//! # The barriers, read from Linux (v6.16) rather than recalled
-//!
-//! A system-register write is not a memory access, so neither program order nor a `dmb` orders it
-//! against memory; an `isb` is what makes its effect visible to the instructions after it. The
-//! sequence here is Linux's, and each site cites the function it comes from:
-//!
-//! - **`ICC_SRE_EL1` write, then `isb`, then read it back** (`gic_enable_sre`,
-//!   `include/linux/irqchip/arm-gic-v3.h`). If the bit did not stick, EL2 has the interface disabled
-//!   and nothing after this can work; Linux prints "panic ahead", this kernel panics now.
-//! - **`isb` before `ICC_IGRPEN1_EL1`, and after it** (`gic_cpu_sys_reg_init` and
-//!   `gic_write_grpen1`, `arch/arm64/include/asm/arch_gicv3.h`): the mask and the control word must
-//!   be in effect before the group is switched on.
-//! - **`dsb sy` after reading `ICC_IAR1_EL1`** (`gic_read_iar_common`): the acknowledge must
-//!   complete before the handler's own device accesses, which a system-register read does not
-//!   otherwise guarantee.
-//! - **`isb` after `ICC_EOIR1_EL1`** (`gic_eoi_irq`).
-//! - **`dsb ishst` before `ICC_SGI1R_EL1`, `isb` after** (`gic_ipi_send_mask`). The first is the one
-//!   that matters for correctness here: the reschedule SGI tells another core to read an inbox this
-//!   core just wrote, and without the `dsb` the SGI can overtake the stores. The GICv2 path has the
-//!   same question with a Device store in place of the `msr`, and does not answer it; that is
-//!   recorded in `drivers/gic.rs`'s BUGS rather than changed here.
-//!
-//! The register names below are the assembler's own (`icc_pmr_el1`, ...); LLVM knows them without
-//! a target feature, so no `S3_0_C12_...` encodings appear.
+//! The GICv3 CPU interface, `ICC_*_EL1`; the rest of the GIC is `drivers/gicv3.rs`. Registers and
+//! barriers (Linux v6.16's): notes/aarch64-port.md, "The GICv3 CPU interface".
 //!
 //! # BUGS
 //!
-//! - **Only `ICC_AP1R0_EL1` is cleared.** Linux clears `AP1R1`-`AP1R3` too when the core implements
-//!   more than five priority bits. This kernel boots from firmware that took no interrupts, and the
-//!   higher registers only matter to a core with more than 32 active priority levels, so they are
-//!   left alone rather than written on the strength of a `PRIbits` read nobody has tested.
-//! - **Aff0 above 15 needs `ICC_CTLR_EL1.RSS`**, the range selector. [`send_sgi`] refuses one; no
-//!   core this kernel seats has one, because `smp.rs` seats cores by their Aff0 below `MAX_CPUS`.
+//! - **Only `ICC_AP1R0_EL1` is cleared**; Linux also clears `AP1R1`-`AP1R3` past five priority
+//!   bits. Firmware here took no interrupts, those registers matter only past 32 active priority
+//!   levels, and no write rests on an untested `PRIbits` read.
+//! - **Aff0 above 15 needs `ICC_CTLR_EL1.RSS`.** [`send_sgi`] refuses one; `smp.rs` seats none.
 //!
 //! Name: provisional (`gic_cpu_interface`), named for the GIC architecture's own term for this half
 //! of the controller.

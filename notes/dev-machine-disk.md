@@ -62,7 +62,7 @@ needs about 12 GiB.
 Do not assume `disk3`. Ask which container holds the Data volume:
 
     C=$(diskutil info /System/Volumes/Data | awk -F': *' '/APFS Container:/ {print $2}')
-    echo "$C"                                   # disk3 on patagonia
+    echo "$C"                                   # for example disk3
     diskutil apfs list "$C" | grep -E 'Name:|Role'
 
 Then add the volume, with no quota and no reserve, so it draws on the container's free space like

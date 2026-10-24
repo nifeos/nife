@@ -1,5 +1,7 @@
 # The interactive boot, migrated
 
+*Name: provisional.*
+
 An appendix to [notes/trusted-init.md](../trusted-init.md), which summarizes it.
 
 The tree in [supervision-tree.md](supervision-tree.md) proves the pattern with programs written for it. This is the same discipline applied

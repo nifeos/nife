@@ -1,5 +1,7 @@
 # GICv3: the gate against silent loss, and what no CPU matrix catches
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/interrupts.md](../interrupts.md), moved there on 2026-10-11 (UTC) under
 §212 (a prose budget). It holds the three points where a wrong GIC assumption now fails, the
 measurement that made GICv3 dangerous, the price milestone 222 (a leg that fails instead of skipping) put on a driver, and why aarch64

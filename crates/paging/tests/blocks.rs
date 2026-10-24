@@ -27,7 +27,7 @@ fn never_installed(flush: TlbFlush) {
 
 /// The pretend frame allocator. **The mapper borrows it**, so the borrow checker, not a guard a
 /// test has to remember to bind, is what keeps the tables alive until the mapper is gone and frees
-/// them afterwards (the shape `src/domain.rs`'s fixture moved to in milestone 310).
+/// them afterwards (the shape of `src/domain.rs`'s fixture).
 struct Pool {
     tables: RefCell<Vec<*mut PageTable>>,
     budget: Cell<usize>,
@@ -311,9 +311,8 @@ fn a_span_maps_exactly_its_pages_on_every_format() {
 /// **A block needs both addresses aligned, not either.** When the virtual and physical addresses
 /// sit at different offsets within a 2 MiB region, no leaf in the span can be a block, however
 /// long it is: a 2 MiB leaf at a misaligned `va` faults, and at a misaligned `pa` the hardware
-/// (or the format's mask) maps a different 2 MiB than the one granted. Milestone 326 (turn a mutation score upward)
-/// (2026-09-24): `map_span` computing either address at the wrong offset survived every test,
-/// because every span tested so far had the two at the same offset.
+/// (or the format's mask) maps a different 2 MiB than the one granted. A span with the two at
+/// the same offset cannot tell `map_span` computing either address at the wrong offset.
 fn skewed_spans_are_mapped_in_pages<F: PageFormat>() {
     for (va, pa) in [(VA + PAGE_SIZE, PA), (VA, PA + PAGE_SIZE)] {
         let len = 2 * MIB2;

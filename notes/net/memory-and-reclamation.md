@@ -104,3 +104,31 @@ capability-semantics change rather than a counter change. Its own lane. Mileston
   NIC still holds whatever receive buffers the dead driver posted, and handing those pages back to the
   allocator would let a live device write into somebody else's memory. Ending that safely means
   resetting the device at teardown, through the transport seam. Also its own lane.
+
+## The server's own limits
+
+`components/src/net_stack.rs` lists these as one line each in its `BUGS`. This is the long form.
+
+**No host fuzz target reaches the dispatch** (proposal #1592 part a, rank 2). The request match and
+every helper under it live in the EL0 binary. They take `virtio_net_transport::VirtioNet`, the clock
+and two blocking waits directly, so nothing builds for the host. Measured by reading on 2026-10-04
+(UTC), a host part would move about 630 lines into a sans-IO crate over smoltcp's `phy::Device`,
+with the clock and the waits behind an edge trait. `notes/fuzzing-the-services.md` has the pricing.
+
+**One client can take every socket.** The table is `SOCKETS` (sixteen) entries shared by every
+client of one stack, and nothing bounds how many one client holds. A client that opens sixteen and
+keeps them starves the rest of the network. A per-client quota wants the client named, which a
+badged front door per client would do, and nothing builds that yet. Milestone 649 (every client of
+a network stack shares its socket numbers) recorded it, and its confinement test runs the hostile
+second client, `socket_squatter`.
+
+**DHCP has no bound.** The lease loop runs until a server answers, and every spawner blocks on the
+report. So a link that is up with no DHCP server behind it is a wait with no end. The kernel's
+`e1000e_service` and `designware_ethernet_service` refuse a link that never came up
+(`Absent::NoLink`, `NotStarted::NoLink`). Every test runner provides slirp's server. Only a live
+link to a LAN with no DHCP server reaches the hang.
+
+**A spawn without slot 8 cannot reuse a socket's page.** With no address space to `UNMAP` from, a
+closed socket's page stays mapped. Its table entry then refuses every later frame rather than show
+the next socket the last one's page. After sixteen sockets with pages, the stack carries no more
+bytes. Every spawner in the tree grants slot 8.

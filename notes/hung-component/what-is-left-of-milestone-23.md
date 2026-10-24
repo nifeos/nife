@@ -1,5 +1,7 @@
 # The hung component: what it left of milestone 23
 
+*Name: ratified 2026-10-18 (calef: "Approve both").*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), on the other two residuals of
 milestone 23 (a capability-routed component OS with live replacement).
 

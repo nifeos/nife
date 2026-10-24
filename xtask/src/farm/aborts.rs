@@ -2,41 +2,22 @@
 //! every std call that kills a nife process instead of refusing it, and the list of the ones
 //! accepted.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
 use super::*;
 
-/// **Every std call that kills a nife process instead of refusing it** (milestone 64).
+/// **Every std call that kills a nife process instead of refusing it** (milestone 64). Returns
+/// false if the sweep cannot run or finds a body not in [`ABORTS_ACCEPTED`].
 ///
-/// This exists because milestone 64's own `BUGS` section said it did not, and named the cost:
-/// *"Nothing runs the sweep that found the three aborts. It is a person reading every module the
-/// PAL falls through and asking what its neighbours do, which is rung four of AGENTS.md's ladder.
-/// The three found so far were each found by accident or by one deliberate pass, and a fourth
-/// would be found the same way."* It was, and the fourth (`std::process::exit`) is the one that
-/// argues hardest for a gate: it does not live in a `sys/<module>/mod.rs` backend at all, so the
-/// by-hand method of reading module dispatchers would not have reached it however carefully
-/// somebody ran it.
-///
-/// **The method, and why it is exact rather than a grep over std.** The prioritised gap list in
-/// notes/crates-io-on-nife.md is built from PAL functions that answer `Unsupported`, and a
-/// function that aborts never answers, so it is structurally invisible there. This asks the
-/// complementary question directly: of the std sources rustc **actually compiled for this
-/// target**, which ones contain a body that terminates the process? The compiled set comes from
-/// cargo's own dep-info rather than from reading `cfg_select!` arms, so it is what the compiler
-/// did and not what we believe it did; nothing here has to model `cfg` evaluation.
-///
-/// **What it deliberately does not do.** It does not judge. Most of what it finds is correct
-/// (`Once::wait` cannot work without threads; a recursive `RwLock` on a single-threaded target is
-/// a deadlock either way), so the output is a set compared against [`ABORTS_ACCEPTED`], where each
-/// entry carries the reason it is allowed. A new one fails the build and has to be answered:
-/// either bind it in the PAL, or add it with its reason. That is the whole mechanism, and it is
-/// rung two of AGENTS.md's ladder where the milestone had rung four.
+/// It reads which `library/std/src/sys/` sources rustc actually compiled for nife out of cargo's
+/// own dep-info, so nothing here models `cfg`, and finds each body there that ends the process. A
+/// function that aborts never answers `Unsupported`, so the gap list in notes/crates-io-on-nife.md
+/// cannot see one. It does not judge: most of what it finds is correct, so a new body fails the
+/// build until it is bound in the PAL or accepted with its reason. See notes/std/std-aborts.md.
 pub(crate) fn std_aborts() -> bool {
     let compiled = compiled_std_sources();
     if compiled.is_empty() {
@@ -162,19 +143,13 @@ pub(super) fn abort_shaped(line: &str) -> Option<&'static str> {
 
 /// Every process-ending body a nife build compiles today, with the reason it stays.
 ///
-/// `(file as std names it, a substring of the line, why it is allowed)`. Matching on a substring
-/// rather than a line number is what keeps this from being rewritten by every nightly that adds a
-/// blank line; it still moves when upstream rewords the panic, which is a rebuild-and-reread this
-/// check is *for*.
-///
-/// **Read the third column before adding a fourth entry.** Three distinct reasons appear, and only
-/// one of them is a licence:
-///
-///   - *unreachable on nife*: the body sits behind a `cfg` nife does not satisfy, so it is
-///     compiled-adjacent rather than compiled. These are the safe ones.
-///   - *no answer exists*: single-threaded, so the call can only deadlock or end. Upstream chose
-///     to end, and there is no third option to build.
-///   - *ours, and deliberate*: the PAL's own, where ending the process is the honest report.
+/// `(file as std names it, a substring of the line, why it is allowed)`. A substring, not a line
+/// number, so a nightly that adds a blank line does not rewrite the list; an upstream rewording
+/// still moves it, which is a reread this check is for. Read the third column before adding an
+/// entry. Three reasons appear, and only one of them is a licence: *unreachable on nife* (behind
+/// a `cfg` nife does not satisfy; the safe ones), *no answer exists* (single-threaded, so the call
+/// can only deadlock or end, and upstream chose to end), and *ours, and deliberate* (the PAL's
+/// own, where ending the process is the honest report). See notes/std/std-aborts.md.
 pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
     // ---- unreachable on nife ------------------------------------------------------------------
     // The heap's generated `talc` core (milestone 784 (reuse what the tree wrote), item d): each is
@@ -248,9 +223,6 @@ pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
         "a `const` assertion inside the separator macro, evaluated at compile time",
     ),
     // ---- the same on every platform -------------------------------------------------------------
-    // (Until milestone 812 (`std::thread::spawn` runs real threads in one address space) this
-    // section held the `no_threads` locks' aborts, a wait with no other thread to end it. nife
-    // compiles the futex locks now, and those files no longer.)
     (
         "sys/sync/once/futex.rs",
         "Once instance has previously been poisoned",
@@ -334,15 +306,9 @@ pub(super) fn compiled_std_sources() -> Vec<PathBuf> {
             continue;
         };
         for tok in text.split_whitespace() {
-            // **`sys/` only, and the boundary is the claim rather than a convenience.** `sys` IS
-            // std's platform abstraction layer: everything under it is one platform's answer, and
-            // everything above it is portable code that behaves the same here as on Linux. A panic
-            // in `sys/` says "this platform has nothing to offer"; a panic in `thread/scoped.rs`
-            // or `path.rs` says "you called this wrong", and it says it identically everywhere.
-            // Sweeping all of std mixes the two and buries about forty of the second under none of
-            // the first, which is what the first version of this check did. The limit is recorded
-            // in notes/std.md's BUGS, because it is a real gap: portable std code that is only
-            // *reachable* on a platform this thin would not be caught here.
+            // `sys/` only: it is std's platform layer, where a panic says "this platform has
+            // nothing to offer", while one above it says "you called this wrong" on every platform.
+            // The gap this leaves is in notes/std/std-aborts.md's BUGS.
             if tok.contains("library/std/src/sys/") && tok.ends_with(".rs") {
                 let p = PathBuf::from(tok);
                 if p.is_file() && !out.contains(&p) {
@@ -357,15 +323,11 @@ pub(super) fn compiled_std_sources() -> Vec<PathBuf> {
 
 /// Which of `compiled` were not, in fact, compiled out of this worktree's own farm.
 ///
-/// Until 2026-10-10 `nife-dev` was one account-wide `rustup toolchain link`: two worktrees racing
-/// `cargo xtask std-src` on one machine left the loser's toolchain pointed at the winner's `target/nife-farm`,
-/// and `-Zbuild-std`'s dep-info then cached the winner's absolute paths as inputs to what looks
-/// like this worktree's own build. Left unchecked, [`std_aborts`] reads those paths, finds a body
-/// it has never seen, and reports it as a defect in this project's source with a file and a line
-/// number that in fact name a different checkout entirely. Comparing each path's canonical form
-/// against this worktree's own `farm_dir()` is the one comparison that turns that false accusation
-/// into a true statement about the machine. Found 2026-08-18 by milestone 117's fifth stranger, in
-/// its first `script/test` from a fresh clone, in its first ten minutes. See notes/std.md's BUGS.
+/// `-Zbuild-std`'s dep-info caches absolute paths, so a build that resolved another checkout's farm
+/// leaves paths [`std_aborts`] would report as a defect in this project's source, with a file and
+/// line that name a different checkout. Comparing each path's canonical form against this
+/// worktree's own `farm_dir()` turns that false accusation into a true statement about the
+/// machine. See notes/std/std-aborts.md's BUGS.
 pub(super) fn foreign_std_sources(compiled: &[PathBuf]) -> Vec<PathBuf> {
     let Ok(farm) = farm_std_src().canonicalize() else {
         // No farm resolves here at all. That is not this function's question: std_exerciser

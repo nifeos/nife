@@ -1,5 +1,8 @@
 # The riscv64 timer, and the counter permissions it sets
 
+*Name: provisional, minted 2026-10-23 (UTC) by milestone 929 (comments in the Linux style)'s riscv64
+lane.*
+
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/timer.rs`, the S-mode analog of aarch64's generic virtual timer.
 

@@ -24,6 +24,8 @@ work that page points at but does not need to carry whole.
 - [next-after-proofs.md](next-after-proofs.md): why `next_after` snaps onto the beat rather than
   counting periods, and why phase preservation is tested rather than proved. Moved from the parent
   under §212, 2026-10-11 (UTC).
+- [durable-store.md](durable-store.md): how boot-time re-derivation finds the schedules to
+  restore, through a manifest rather than a directory listing.
 - [the-crate.md](the-crate.md): the detail behind `crates/timetable`'s doc comments: the four
   answers by example, why registration's control word lives in the page, and how the phase is
   sampled.
@@ -32,15 +34,3 @@ work that page points at but does not need to carry whole.
 
 *Name: provisional, minted 2026-09-26 (UTC) by the lane for milestone 129 (scheduled execution), for the directory and every
 stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/129-calendar-grammar`. Naming is calef's; `script/names --unratified` lists each stem.*
-
-- `archive-narrowing` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for
-  the parent's "Where the set is computed, and why not at the spawn site". calef names files.
-- `next-after-proofs` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for
-  what the parent said about `next_after`'s Kani harnesses. calef names files.
-- `calendar-grammar-g5-sources` Name: provisional, minted 2026-10-13 (UTC) by
-  lane/prose-cap-notes-c, for G5's "The premise, checked against primary sources". calef names
-  files.
-- `the-crate` Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-10, for the
-  detail behind `crates/timetable`'s doc comments. calef names files.
-- `the-guest-tests` Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06,
-  for the detail behind `timetable_tests`' doc comments. calef names files.

@@ -1,5 +1,7 @@
 # The hung component: the code examples
 
+*Name: provisional. For the parent's Rust EXAMPLES. calef names files.*
+
 An appendix to the EXAMPLES section of [`notes/hung-component.md`](../hung-component.md), under
 §212 (a prose budget). The parent keeps the shell examples.
 

@@ -47,9 +47,10 @@ block's end, and a `Name:` paragraph (design/naming.md) from its marker to the n
 **The in-body count** (milestone 929). An `in-body` row holds the plain whole-line comment lines
 inside `fn` bodies under one directory, nested closures and items included and `// SAFETY:`
 comments left out, to a ceiling. The ceiling only falls, `--bank` lowers it, and once written it may
-not be removed. Bodies are found by the lexer: a `fn` outside brackets starts a signature, and the
-next `{` outside brackets opens its body unless a `;`, `,` or `}` comes first (a trait method, a
-`fn` pointer type).
+not be removed. Bodies are found by the lexer: a `fn` outside brackets starts
+a signature, and the next `{` outside brackets and the signature's `<>` opens its body unless a
+`;` or `}` comes first, or a `,` outside `<>` before any `where`, or a `>` closing generics the
+`fn` sits in (a trait method, a `fn` pointer type).
 
 **The rules** (§266 section 3 option (b)'s shape, ruled there by calef over exact match, applied
 one level down):
@@ -357,13 +358,18 @@ def block_texts(src, ceiling=CEILING):
 
 def fn_body_ranges(src):
     """[(open_line, close_line)] of every outermost `fn` body. A `fn` at bracket depth 0 starts a
-    signature; the next `{` at depth 0 opens its body, and a `;`, `,`, `)` or `}` first means it had
-    none (a trait method, a `fn` pointer type). Lexing is the ratchet's: comments and literals are
-    skipped whole."""
+    signature; the next `{` at depth 0 outside its generics opens its body, and a `;` or `}` first
+    means it had none (a trait method, a `fn` pointer type). So does a `,` outside the signature's
+    `<>` and before any `where`, or a `>` closing generics the `fn` sits inside (a `fn` pointer
+    type as a struct field, `Option<fn(u8) -> u8>`). `->` is not a `>`, and a `{` inside `<>` is a
+    const generic expression, whose `>=` or `>>` is at depth. Lexing is the ratchet's: comments and
+    literals are skipped whole."""
     out = []
     i, n, line = 0, len(src), 1
-    depth = 0        # () and [] nesting outside any body
+    depth = 0        # () and [] nesting outside any body, and {} inside a signature's <>
     pending = False  # a `fn` seen, its body not yet opened
+    angles = 0       # the pending signature's <> nesting at depth 0
+    where = False    # the pending signature has reached its `where` clause
     body = None      # (open_line, brace depth) while inside a body
     braces = 0
     while i < n:
@@ -414,8 +420,10 @@ def fn_body_ranges(src):
                 continue
         m = re.match(r"'?[A-Za-z_][A-Za-z0-9_]*", src[i:i + 200])
         if m:
-            if body is None and m.group(0) == 'fn' and depth == 0:
-                pending = True
+            if body is None and m.group(0) == 'fn' and depth == 0 and not pending:
+                pending, angles, where = True, 0, False
+            elif pending and m.group(0) == 'where' and depth == 0 and angles == 0:
+                where = True
             i += m.end()
             continue
         if body is not None:
@@ -426,13 +434,20 @@ def fn_body_ranges(src):
                 if braces == 0:
                     out.append((body, line))
                     body = None
-        elif c in '([':
+        elif c in '([' or (pending and c == '{' and (depth or angles)):
             depth += 1
-        elif c in ')]':
+        elif c in ')]' or (pending and c == '}' and depth):
             depth = max(0, depth - 1)
+        elif pending and depth == 0 and src.startswith('->', i):
+            i += 1
+        elif pending and depth == 0 and c == '<':
+            angles += 1
+        elif pending and depth == 0 and c == '>':
+            angles -= 1
+            pending = angles >= 0
         elif pending and depth == 0 and c == '{':
             body, braces, pending = line, 1, False
-        elif pending and depth == 0 and c in ';,}':
+        elif pending and depth == 0 and (c in ';}' or (c == ',' and not angles and not where)):
             pending = False
         i += 1
     return out
@@ -1137,6 +1152,30 @@ def selftest():
             '        /* four\n           five */\n        [0; 2]\n    }\n}\n// outside\n')
     if fn_body_ranges(body) != [(2, 11), (15, 19)] or in_body_lines(body) != 5:
         cases.append(('the in-body count finds bodies and counts their plain lines', False))
+    # A comma inside a signature's <> or where clause does not end the fn; a `fn` pointer type
+    # inside generics does, at the `>` that closes them, and `->`, `>=`, `>>`, `<<` are not <>.
+    bodied = {
+        'a comma in a return type\'s generics': 'fn f() -> Result<A, B> {\n    // c\n}\n',
+        'a comma in the fn\'s own generics': 'fn f<A, B>(a: A) -> B {\n    // c\n}\n',
+        'a comma in a where clause': 'fn f<T>() where T: Clone, T: Copy {\n    // c\n}\n',
+        'an arrow inside generics': 'fn f() -> Box<dyn Fn(u8, u8) -> u8> {\n    // c\n}\n',
+        'a shift in a const generic expression':
+            'fn f<const N: usize>() -> Foo<{ N >> 1 }, { N << 1 }> {\n    // c\n}\n',
+        'a comparison in a where clause':
+            'fn f<const N: usize>() where Foo<{ N >= 1 }>: Is, [(); N >> 1]: Sized {\n'
+            '    // c\n}\n',
+        'a fn pointer inside generics in a parameter':
+            'fn f(g: Option<fn(u8) -> u8>, h: Vec<Vec<u8>>) -> Vec<Vec<u8>> {\n    // c\n}\n',
+        'a fn pointer inside generics in a where clause':
+            'fn f<F>() where F: Into<fn(u8) -> u8>, {\n    // c\n}\n',
+    }
+    for name, src in bodied.items():
+        if fn_body_ranges(src) != [(1, 3)] or in_body_lines(src) != 1:
+            cases.append((f'{name} does not end the fn', False))
+    fields = ('struct S { f: Option<fn(u8) -> u8>, g: HashMap<u8, fn()>, }\n'
+              'type P = Vec<fn(u8, u8) -> Result<A, B>>;\nfn h() -> Result<A, B> {\n    // c\n}\n')
+    if fn_body_ranges(fields) != [(3, 5)] or in_body_lines(fields) != 1:
+        cases.append(('a fn pointer type inside generics has no body', False))
 
     # The message names the file, the line, the sizes and the remedy.
     msg = problems(tree(a=[(10, 41)]), {})[0]

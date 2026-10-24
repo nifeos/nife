@@ -1,4 +1,5 @@
-//! The documentation store (milestone 40) and the tree-wide search built on it.
+//! The documentation store (milestone 40 (documentation as a system service)) and the tree-wide
+//! search built on it.
 //!
 //! `manual` builds the index the guest reads and prints what it costs; `apropos` points the
 //! same index and the same reader at this repository instead of at what the image installs.
@@ -7,26 +8,21 @@ use crate::host::workspace_root;
 
 // ---- the documentation store (milestone 40) -------------------------------------------------
 
-/// **What each package's documentation is.**
+/// **What each package's documentation is**: a bundle is a package's pages plus the index shard
+/// over them, installed as a unit at `doc/<bundle>/` in the filesystem image, with `doc/bundles`
+/// listing the names (milestone 40's "installed by the package that owns it", minus a package
+/// manager).
 ///
-/// A bundle is a package's pages plus the index shard over them, and it is installed as a unit:
-/// `doc/<bundle>/` in the filesystem image, with `doc/bundles` listing the names. That is the shape
-/// milestone 40 asked for ("installed by the package that owns it") minus a package manager, and it
-/// is the reason the table is here rather than a `doc/` directory per crate: **copying a note into a
-/// crate directory would make a second copy that can drift**, and the whole point of in-tree
-/// documentation is that there is one.
-///
-/// So a bundle names paths that already exist, and the store is a build artifact. A page that has
-/// moved fails the build rather than shipping stale.
+/// A bundle names paths that already exist, because **a note copied into a crate directory would be
+/// a second copy that can drift**. The store is a build artifact, and a page that has moved fails
+/// the build rather than shipping stale.
 const DOC_BUNDLES: &[(&str, &[&str])] = &[
     ("manual", &["notes/documentation.md"]),
     ("swish", &["notes/pipes.md", "notes/line-discipline.md"]),
-    // **`notes/capabilities.md` is here because of milestone 117 rather than because of symmetry.**
-    // Three stranger runs found it unreachable by following the tree, and it is the page that
-    // answers what this system's central word means. A store that can be searched from the prompt
-    // and does not carry it is a manual with the first chapter missing. It is the kernel's own
-    // document, so it is in the kernel's bundle; `script/apropos` is the other half, for the reader
-    // who has a checkout rather than a prompt.
+    // `notes/capabilities.md` answers what this system's central word means, and three stranger
+    // runs (milestone 117 (the stranger test)) found it unreachable by following the tree. It is
+    // the kernel's own document, so it is in the kernel's bundle; `script/apropos` is the other
+    // half, for a reader with a checkout.
     (
         "kernel",
         &[
@@ -243,27 +239,15 @@ pub(crate) fn manual_store(term: Option<String>) -> bool {
 // ---- the tree-wide search (milestone 40, script/apropos) -----------------------------------
 
 /// **The same index, the same reader, pointed at this repository instead of at the image.**
+/// Searches for `term`; returns false on any error, or when a printed result's path was too long
+/// to hold.
 ///
-/// Milestone 117 has run three strangers at this tree, and what all three could not do is a list
-/// rather than an impression: reach `notes/net.md`, `notes/capabilities.md` or **any**
-/// `design/decisions/` file by following the tree while doing ordinary work, and find
-/// `crates/abi/src/lib.rs`, which is four syscall numbers and the whole design on one screen. None
-/// of those is hidden. They are unreachable in the sense that matters, which is that nothing a
-/// person would type leads to them, and a signpost read once does not count.
-///
-/// Milestone 40 already owns the machinery for that: an inverted index over markdown, a reader that
-/// merges shards, and a ranking. It was pointed only at what the filesystem image installs, which
-/// is six pages, because that is where a *guest* can search. A person with a checkout is not a
-/// guest and has no such limit, so this points the same code at all of it.
-///
-/// **It is deliberately not a second implementation.** `documentation::index::build` writes these shards
-/// and `documentation::index::search` reads them, exactly as `cargo xtask manual` and the guest's
-/// `apropos` builtin do, so a defect in the layout shows up in both places and a fix lands in both.
-/// What differs is the corpus and what a result names: a guest result names a page in the store it
-/// can open, and a result here names a **path in this repository**, because that is what a person
-/// with a checkout opens.
-///
-/// See notes/documentation.md.
+/// Milestone 117's stranger runs found pages that nothing a person would type led to. Milestone
+/// 40's inverted index, shard-merging reader and ranking were pointed only at the pages the image
+/// installs; this points the same `documentation::index::build` and `search` at the whole checkout,
+/// deliberately not a second implementation, so a layout defect shows in both places. A result
+/// names a **path in this repository**, because that is what a person with a checkout opens. See
+/// notes/documentation/repository-search.md.
 pub(crate) fn tree_apropos(term: Option<String>) -> bool {
     let Some(term) = term else {
         eprintln!("usage: script/apropos <word>");
@@ -338,12 +322,10 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
             ranked.offered()
         );
     }
-    // **Only a path this search printed can fail it.** Until 2026-09-19 any over-long path anywhere
-    // in the corpus made every search exit 1 with a warning per file, whatever the term: six
-    // roadmap and decision filenames had grown past the record, so the tool a newcomer is pointed
-    // at failed on its own README example. The rule above still holds for a result somebody is
-    // shown (a path they cannot open is worse than no result, so that exits 1 and names it); a path
-    // that never reached the output is a fact about the corpus and gets one line, not a failure.
+    // **Only a path this search printed can fail it.** A path a reader is shown but cannot open is
+    // worse than no result, so it exits 1 and is named; an over-long path that never reached the
+    // output is a fact about the corpus and gets one line, so the tool does not fail on its own
+    // README example.
     let max = documentation::index::PATH_MAX;
     let shown: Vec<&String> = long
         .iter()

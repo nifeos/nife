@@ -6,10 +6,8 @@ use super::*;
 
 /// Bring the CPU into a state where the kernel can safely run.
 ///
-/// Right now that means one thing: install the exception vectors, so that a fault
-/// produces a report instead of a silent death. Note the ordering constraint in
-/// `main.rs`: the console has to come up first, because the fault handler's whole
-/// job is to *print*.
+/// Installs the exception vectors, so a fault produces a report. The console must already be up,
+/// because the fault handler's job is to print.
 pub fn init() {
     exceptions::init();
 }

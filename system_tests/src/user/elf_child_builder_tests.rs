@@ -123,26 +123,12 @@ fn a_process_spends_memory_region_and_the_kernel_never_allocates() {
     assert!(reap_bare(demo), "the untyped demo outlived its kill");
 }
 
-/// **Milestone 19d.2b: a userspace builder delegates an interrupt to a driver it builds.** The last
-/// delegatable device authority after endpoints and device MMIO: an interrupt capability.
-/// `interrupt_child_builder` holds one for a test SGI (the kernel routed it), builds
-/// `interrupt_child`, hands it the Irq cap, and starts it. The child blocks in the interrupt's
-/// WAIT; the test raises the SGI; the interrupt is delivered as a message through the delegated
-/// capability, the child wakes and reports. A hang would mean the interrupt never reached the
-/// built child, so a passing test is the proof. Completes the "userspace delegates every authority
-/// kind" story the interrupt-driven drivers (input, virtio) rest on.
+/// A userspace builder delegates an interrupt to a driver it builds (milestone 19d.2b).
 ///
-/// **aarch64-only, because RISC-V has no second interrupt to raise.** It has no software-generated
-/// interrupt a test can assert on itself at all (the SBI IPI arrives down the software-interrupt
-/// arm and never reaches `irq_route`), so the only line it can raise by hand is the console UART's
-/// own, which `spawn_elf_child_builder` is already routing as the UART receive interrupt. A twin
-/// would have to share that one source between the builder's UART capability and the test's
-/// delegated one, and would then prove delivery through whichever route was bound last rather than
-/// through the delegated capability, which is the entire claim. The *property* (an interrupt
-/// arriving as a message through a delegated Irq cap) is proved on RISC-V by
-/// `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`, which asserts
-/// `ROUTED_IRQS` rises while a userspace driver waits on its own Irq cap, and by
-/// `sched::tests::an_interrupt_becomes_a_message`. See notes/interrupts.md.
+/// `interrupt_child_builder` hands `interrupt_child` the Irq cap for a test SGI; the test raises
+/// it, and the child wakes on the message and reports. A hang means the interrupt never reached
+/// the built child. aarch64-only: RISC-V has no second line to raise, and the property is proved
+/// there by other tests (notes/riscv-parity-scope.md, "The aarch64-only user tests").
 ///
 /// Name: provisional (milestone 405 (the nine `INIT` roles)), named for the builder it drives.
 ///
@@ -176,13 +162,11 @@ fn the_interrupt_child_builder_delegates_an_interrupt_to_its_child() {
         .expect("the builder's report region would not reclaim");
 }
 
-/// **Milestone 19d.2b: a userspace builder brings up the real console server.** Past 19d.2a's
-/// ID-read probe: `console_server_builder` builds the *actual* print server as a child, wires it a
-/// request/reply channel and a shared page and the UART, then plays the client, asking it to print
-/// a line. The server prints to the real UART (visible in the QEMU log) and acks the length; the
-/// builder reports that length. Receiving the exact line length proves a userspace-built console
-/// works end to end: a driver the builder constructed, on a channel it created, driving hardware it
-/// delegated. This is the shape the real boot path (19d.2c) uses.
+/// A userspace builder brings up the real console server (milestone 19d.2b).
+///
+/// `console_server_builder` builds the print server with a channel, a shared page and the UART,
+/// then asks it to print a line (visible in the QEMU log). The exact length coming back proves a
+/// built driver, on a channel its builder made, drove delegated hardware: the boot path's shape.
 ///
 /// Name: provisional (milestone 405), named for the builder it drives.
 ///
@@ -215,22 +199,12 @@ fn the_console_server_builder_brings_up_a_console_that_prints_for_it() {
         .expect("the builder's report region would not reclaim");
 }
 
-/// **Milestone 19d.2: a userspace builder builds a device driver and hands it the hardware.** The
-/// step beyond 19d.1: not just a child, but a child that touches a *device*. `device_child_builder`
-/// holds a UART **device capability** (a delegatable authority to map MMIO device-typed), builds
-/// `device_child`, and maps the UART's registers into it. The child reads the PL011's PrimeCell
-/// identification registers, whose value is the fixed `0xB105F00D` every real PL011 returns.
-/// Receiving that constant proves the whole chain: device access is a capability the kernel minted
-/// and the builder delegated, `MAP_INTO` mapped it device-typed (not cached normal memory, which
-/// would corrupt MMIO), and a userspace-built driver drove real hardware.
+/// A userspace builder builds a device driver and hands it the hardware (milestone 19d.2).
 ///
-/// **aarch64-only, because the assertion is a PL011 register and RISC-V `virt` has no PL011.**
-/// `0xB105F00D` in the PrimeCell identification registers is what makes this test exact rather
-/// than "the read did not fault"; the NS16550 on the other machine has no equivalent constant to
-/// name, and swapping in a virtio magic number would be a different test wearing this one's
-/// name. Device delegation to a userspace driver *is* proved on RISC-V, by
-/// `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`, which is a stronger
-/// version of the same claim (device MMIO, a DMA region, and an interrupt, all delegated).
+/// `device_child_builder` maps its UART device capability into `device_child`, which reads the
+/// PL011 PrimeCell ID, the fixed `0xB105F00D`: the kernel minted and the builder delegated the
+/// access, and `MAP_INTO` mapped it device-typed, not cached (which would corrupt MMIO). aarch64-
+/// only: RISC-V `virt` has no PL011 (notes/riscv-parity-scope.md, "The aarch64-only user tests").
 ///
 /// Name: provisional (milestone 405), named for the builder it drives.
 ///
@@ -261,15 +235,12 @@ fn the_device_child_builder_builds_a_driver_that_reads_real_hardware() {
         .expect("the builder's report region would not reclaim");
 }
 
-/// **Milestone 19d: a userspace builder parses a real ELF and builds a running process from it.**
-/// The kernel loads exactly one program, `report_child_builder`, and hands it the initial ramdisk
-/// mapped read-only plus a building budget and a report rendezvous. The builder reads
-/// `report_child` out of it and parses that ELF *in userspace* (the `elf` crate, no longer in the
-/// kernel's trusted core), then loads it as a child through the granular verbs: retype an address
-/// space, copy each segment into retyped frames and map them, retype and endow a TCB, configure,
-/// start. The child runs code the kernel never parsed and reports the agreed word. Receiving it is
-/// the whole thesis of milestone 19 working end to end: a verified kernel that runs a workload it
-/// did not load.
+/// A userspace builder parses a real ELF and builds a running process from it (milestone 19d).
+///
+/// `report_child_builder` gets the ramdisk read-only, a budget and a report rendezvous, parses
+/// `report_child` in userspace (the `elf` crate, outside the kernel's trusted core) and loads it
+/// through the granular verbs. The agreed word proves milestone 19's thesis: a verified kernel
+/// runs a workload it did not load.
 ///
 /// Name: provisional (milestone 405), named for the builder it drives.
 ///
@@ -298,13 +269,11 @@ fn the_report_child_builder_parses_an_elf_and_builds_a_running_child() {
         .expect("the builder's report region would not reclaim");
 }
 
-/// **Milestone 19e: a userspace builder builds a `least_authority_demo`, passes it an argument, and
-/// gets the answer back.** Every child before this took only its role in `x0`. A
-/// `least_authority_demo` computes on an input, so 19e widened `START` to carry three initial
-/// registers. `least_authority_demo_builder` builds one, starts it with the input in `x1`, and the
-/// `least_authority_demo` squares it and reports. Receiving `n*n` (not `n`, not garbage) proves the
-/// argument crossed `START` into a fresh EL0 thread's registers intact. This is the mechanism a
-/// real spawn service runs on: a workload parameterized by data, not just identity.
+/// A userspace builder passes a `least_authority_demo` an argument and gets the answer back
+/// (milestone 19e).
+///
+/// `START` carries three initial registers; the builder puts the input in `x1`, and receiving
+/// `n*n` (not `n`, not garbage) proves it reached a fresh EL0 thread's registers intact.
 ///
 /// Name: provisional (milestone 405), named for the builder it drives.
 ///
