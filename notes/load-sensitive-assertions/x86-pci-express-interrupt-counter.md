@@ -1,5 +1,7 @@
 # The x86_64 PCIe interrupt counter, 2026-09-04
 
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `x86-pcie-interrupt-counter`.*
+
 *(An appendix of [notes/load-sensitive-assertions.md](../load-sensitive-assertions.md), which holds
 the register and the rules. Moved here on 2026-09-24 and tightened; pull request #1211's first
 commit has the text verbatim.)*

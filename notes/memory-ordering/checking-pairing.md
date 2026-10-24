@@ -1,5 +1,7 @@
 # Can pairing be checked mechanically? Measured, not argued
 
+*Name: provisional. After the parent's own heading.*
+
 The measurement behind the `PAIR:` gate that [`notes/memory-ordering.md`](../memory-ordering.md)
 describes. A broad check was built, run and refused, and a narrow one shipped.
 

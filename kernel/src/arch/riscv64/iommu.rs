@@ -1,58 +1,19 @@
-//! The RISC-V IOMMU (v1.0.1) driver: riscv's IOMMU, in front of the PCIe bus.
+//! The RISC-V IOMMU (v1.0.1) driver, in front of the PCIe bus: the twin of aarch64's SMMUv3.
 //!
-//! Milestone 16b (DECISIONS §20, notes/iommu.md). The ratified RISC-V IOMMU is the architectural
-//! twin of the SMMUv3 next door (arch/aarch64/iommu.rs), and the structural rhyme is the point of
-//! building both: a **device directory table** instead of a stream table (keyed by the PCIe
-//! requester id, called `device_id`), a **device context** instead of an STE+CD (the IOMMU's copy
-//! of `satp`: a first-stage `iosatp` naming an Sv39 root the portable seam built), a **command
-//! queue** for invalidations, and a **fault queue** where blocked transactions are recorded.
+//! A device directory keyed by requester id holds each device's context, whose `iosatp` names an
+//! Sv39 domain the portable seam built. A command queue carries invalidations and a fault queue
+//! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20
+//! (IOMMU-backed DMA isolation)).
 //!
-//! On QEMU's `virt` board the IOMMU is itself a PCI function (`riscv-iommu-pci`, Red Hat
-//! 1b36:0014): its register file lives in BAR 0, which the kernel places like any other BAR (the
-//! kernel is the firmware here; see notes/pcie.md). The portable seam does that PCI legwork and
-//! hands this module the register base; everything after that is this file.
-//!
-//! # Default deny, and one honest asymmetry
-//!
-//! `init` installs an all-invalid device directory before enabling anything, so a device the
-//! kernel never attached faults (`DDT_ENTRY_INVALID`) instead of reaching memory. Before `init`
-//! runs, though, the reset state of `ddtp` is mode `Off`, which *blocks* all transactions on this
-//! IOMMU, so the pre-init window fails closed by architecture here; the SMMU needed an explicit
-//! `GBPA.ABORT` for the same posture. Sv39 single-stage translation requires the U bit on every
-//! leaf (a device does not "request supervisor privilege"), which is why the seam builds domains
-//! with `user_data` flags; see `paging::domain`.
-//!
+//! See notes/iommu.md and notes/riscv-port/iommu.md.
 
 //! # BUGS
 //!
-//! - **The MSI page table is offered and deliberately not used** (milestone 317). `CAPS.MSI_FLAT`
-//!   is set on QEMU's `riscv-iommu-pci` (measured: `CAPS = 0x78c2cf4f10`, bit 22 set, on QEMU
-//!   11.1.1's `virt`), so every device context here is the extended 64-byte format and carries
-//!   `msiptp`, `msi_addr_mask` and `msi_addr_pattern`. [`attach`] writes all four of those words
-//!   **zero**, which is `msiptp.MODE = Off`. No MSI page table is allocated and no entry in one is
-//!   ever programmed.
+//! - The MSI page table is offered and deliberately unused: [`attach`] writes `msiptp.MODE = Off`.
+//! - Untestable on owned silicon: no board ships the ratified IOMMU, so the base context format
+//!   has never run, and what `MODE = Off` does to an MSI-shaped write is a reading of the spec.
 //!
-//!   **This is the whole of riscv's position on interrupt confinement, and it is not a gap in the
-//!   same shape as the other two.** MSI confinement lives somewhere different on each
-//!   architecture: a separate IOMMU feature on `x86_64` (`ECAP.IR`, and VT-d intercepts a write to
-//!   the MSI address range so DMA remapping alone does not cover it), a separate *device* on
-//!   aarch64 (the `GICv3` ITS, which this tree's GICv2 machine does not have at all), and here, one
-//!   mode field inside a device context this driver already writes.
-//!
-//!   **What `MODE = Off` means for a transaction is a reading of the spec and not a measurement**,
-//!   and it is flagged as such because this tree has carried a claim from memory before. The
-//!   RISC-V IOMMU specification says MSI address translation is not performed in that mode and the
-//!   transaction is translated as an ordinary memory access, which would mean an MSI-shaped write
-//!   from an attached device is still bounded by the `iosatp` domain rather than escaping it. **No
-//!   boot here has tested that**, nothing forges an MSI, and `MSI page table offered (mode off)`
-//!   in the machine description is a report of the capability bit, not of any behaviour.
-//!   See design/roadmap/0317-interrupt-remapping-flags/riscv64.md.
-//! - **Untestable on the silicon this project owns, which inverts `x86_64`'s position.** The
-//!   comment below on `CAP_MSI_FLAT` notes that real silicon without MSI support reports
-//!   otherwise, and that branch has run zero times: no board shipping the ratified RISC-V IOMMU
-//!   exists, milestone 143 (silicon IOMMU), and the JH7110 (radon, the `VisionFive` 2) has no IOMMU at all. So this
-//!   architecture is confined in the emulated case and has no second witness, where `x86_64` has
-//!   xenon waiting to provide one.
+//! Details in notes/riscv-port/iommu.md, BUGS.
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{IrqSafeMutex, rank};
@@ -103,9 +64,8 @@ const DC_TC_V: u64 = 1 << 0;
 const FSC_MODE_SV39: u64 = 8 << 60;
 const TA_PSCID_SHIFT: u32 = 12;
 
-/// One recorded fault, in portable terms. `code` is the spec's CAUSE (e.g. 15 = store/AMO page
-/// fault, the "no mapping for that IOVA" case; 258 = invalid device-directory entry). Read today
-/// only by the confinement test; a production fault handler is future work.
+/// One recorded fault, in portable terms. `code` is the specification's CAUSE (15 = store/AMO page
+/// fault, no mapping for that IOVA; 258 = invalid device-directory entry). Only tests read it.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[derive(Debug, Clone, Copy)]
 pub struct Fault {
@@ -120,15 +80,10 @@ pub struct Fault {
 struct Iommu {
     base: u64,
     ddt: u64,
-    /// Extended (64-byte) device contexts, because the QEMU device reports `MSI_FLAT`. The base
-    /// format is 32 bytes; both are handled, decided once at init from the capabilities register.
+    /// The device context size: 64 bytes with `MSI_FLAT`, else 32, decided once at init.
     dc_bytes: u64,
-    /// `CAPS.MSI_FLAT`: does this unit offer the flat MSI page table? Recorded so the machine
-    /// description can say so, which is milestone 317's parity half: MSI confinement sits in a
-    /// different place on each of the three architectures, and each one has to be able to report
-    /// its own position from inside the guest rather than from a source comment. Kept separate
-    /// from [`Self::dc_bytes`] even though one implies the other today, because `dc_bytes` is a
-    /// layout and this is a capability, and a reader should not have to infer one from the other.
+    /// `CAPS.MSI_FLAT`: whether this unit offers the flat MSI page table, for the machine
+    /// description. A capability, kept apart from the layout [`Self::dc_bytes`] it implies.
     msi_flat: bool,
     cq: u64,
     cq_tail: u32,
@@ -206,7 +161,7 @@ fn device_context(root: u64, pscid: u16) -> [u64; 8] {
         0,                                // iohgatp: Bare
         (pscid as u64) << TA_PSCID_SHIFT, // ta
         FSC_MODE_SV39 | (root >> 12),     // fsc = iosatp
-        0,                                // msiptp: MODE Off (see BUGS above)
+        0,                                // msiptp: MODE Off (notes/riscv-port/iommu.md)
         0,                                // msi_addr_mask
         0,                                // msi_addr_pattern
         0,                                // reserved
@@ -247,9 +202,7 @@ pub fn init(base: u64) {
         caps & CAP_SV39 != 0,
         "the IOMMU does not support Sv39 first-stage (caps {caps:#x}); the seam depends on it"
     );
-    // MSI_FLAT widens the device context from 32 to 64 bytes (the MSI page-table words). QEMU's
-    // riscv-iommu-pci reports it, so the extended format is what this driver actually runs; the
-    // base format is kept because real silicon without MSI support will report otherwise.
+    // MSI_FLAT widens the device context to 64 bytes. Silicon without MSI may report 32.
     let msi_flat = caps & CAP_MSI_FLAT != 0;
     let dc_bytes = if msi_flat { 64 } else { 32 };
 
@@ -264,11 +217,8 @@ pub fn init(base: u64) {
     w64(base, FQB, queue_base(fq, FQ_LOG2));
     queue_enable(base, FQCSR, "fault");
 
-    // The device directory: one page of device contexts, all invalid. Keyed by device_id, which
-    // for PCIe is the requester id; one level covers ids 0..63 in the extended format, which
-    // spans all of bus 0. Installing it (mode 1LVL) is what arms translation: from this write on,
-    // a transaction from an unattached device is blocked with DDT_ENTRY_INVALID in the fault
-    // queue rather than reaching memory.
+    // One page of invalid contexts: ids 0..63 in the extended format, all of bus 0. From this
+    // write on, an unattached device is blocked with DDT_ENTRY_INVALID.
     let ddt = zeroed_page_frame("device directory");
     w64(base, DDTP, DDTP_MODE_1LVL | ((ddt >> 12) << 10));
     let mut spins = 0u32;
@@ -289,17 +239,9 @@ pub fn init(base: u64) {
     });
 }
 
-/// Is the IOMMU up? The portable seam asks this to decide whether attaching is possible.
-/// **This machine's IOMMU, for the machine description** (milestone 268).
-///
-/// One of the eight questions the description answers on every architecture. The vocabulary is this
-/// architecture's, because that is what parity means here: the same question, answered in the terms
-/// of the hardware that answers it. A machine with no IOMMU says so plainly rather than printing a
-/// blank, because a blank is indistinguishable from a line nobody wrote.
-// The machine description is the only caller, and it is
-// `#[cfg(not(any(test, feature = "bench")))]`: a test boot exits through semihosting and a bench
-// boot diverges into `bench::run`, so neither reads a bring-up transcript. Same treatment
-// `memory::print_summary` already carries, and for the same reason.
+/// Print this machine's IOMMU line for the machine description, in this architecture's terms; a
+/// machine with none says so.
+// The machine description is the only caller, and test and bench boots do not print it.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)
@@ -318,21 +260,19 @@ pub(crate) fn print_summary() {
     }
 }
 
-/// **Build a DMA domain over exactly `regions`, in the format this IOMMU walks**, and return its
-/// root. The RISC-V IOMMU's single-stage (`iosatp`) translation is Sv39, the CPU's own format.
-/// `aarch64`'s twin says why this is a function rather than a type alias.
+/// Build a DMA domain over exactly `regions` in Sv39, the format `iosatp` walks, and return its
+/// root.
 pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
     crate::iommu::build_identity::<paging::Sv39>(regions)
 }
 
+/// Whether the IOMMU is up, so the portable seam can attach.
 pub fn is_active() -> bool {
     IOMMU.lock().is_some()
 }
 
-/// **Whether requester `rid` is behind this IOMMU** (milestone 261 (the NVMe driver leaves the kernel)'s bench rehearsal): always, when
-/// it is up. This tree brings the unit up against a device tree whose `iommu-map` is an identity
-/// over the whole bus, so there is no second unit for a device to belong to. VT-d is the
-/// architecture where that stops being true; see `arch::x86_64::iommu::scope_of`.
+/// Whether requester `rid` is behind this IOMMU: the whole bus whenever it is up, since the
+/// device tree's `iommu-map` is an identity over it.
 pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
     if is_active() {
         crate::iommu::Scope::WholeBus
@@ -341,17 +281,17 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
     }
 }
 
-/// **Firmware-reserved DMA regions for requester `rid`: none on this architecture as this tree
-/// brings it up** (milestone 594 (every VT-d unit translates its own devices)). The VT-d driver reports its RMRRs here so
-/// [`crate::iommu::confine`] can map them into every domain. The RISC-V IOMMU has no firmware table for this; a device tree `reserved-memory` region with `iommu-addresses` would be the place, and this tree reads none.
+/// Firmware-reserved DMA regions for requester `rid`, for [`crate::iommu::confine`]: none here.
+///
+/// A device-tree `reserved-memory` region with `iommu-addresses` would hold them; this tree reads
+/// none.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
     _each: &mut dyn FnMut(paging::domain::DmaRegion),
 ) {
 }
 
-/// Push one 16-byte command and wait for the IOMMU to consume it (QEMU processes the queue on
-/// the tail write; polling the head is the architectural contract).
+/// Push one 16-byte command, `dword0` and `dword1`, and poll the head until the IOMMU consumes it.
 fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
     let entries = 1u32 << CQ_LOG2;
     let idx = (s.cq_tail % entries) as u64;
@@ -377,19 +317,17 @@ fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
     }
 }
 
-/// Point device `rid` at the domain rooted at `root` (an Sv39 table the portable seam built),
-/// tagged `pscid`, then invalidate so the IOMMU drops anything cached for the previous domain.
+/// Point device `rid` at the Sv39 domain at `root`, tagged `pscid`, then invalidate whatever the
+/// IOMMU cached for its previous domain.
+///
+/// Context: takes the `IOMMU` lock.
 pub fn attach(rid: u32, root: u64, pscid: u16) {
     let mut g = IOMMU.lock();
     let s = g.as_mut().expect("IOMMU attach before init");
     let offset = context_offset(rid, s.dc_bytes);
     let words = device_context(root, pscid);
 
-    // The device context, written back to front: address and tag words first, the valid bit
-    // last, with a barrier between, so the IOMMU can never observe a valid entry with a stale
-    // root. iohgatp stays Bare (no second stage; there is no guest here), and the MSI words stay
-    // zero (MSI mode Off). The words themselves come from `device_context`, which is pure so
-    // the harnesses below can prove what they say; this function only decides the order.
+    // The valid bit last, after a barrier, so the IOMMU never sees a valid entry with a stale root.
     let dc = phys_to_virt(s.ddt + offset) as *mut u64;
     // SAFETY: ddt is a kernel-owned frame; `context_offset` bounds rid so the whole
     // `dc_bytes`-long entry lies inside it.
@@ -410,16 +348,17 @@ pub fn attach(rid: u32, root: u64, pscid: u16) {
     }
     crate::arch::direct_memory_access_write_barrier();
 
-    // Invalidate the cached context and every translation, then fence: the IOMMU's IODIR covers
-    // its device-context cache, IOTINVAL.VMA (no address, no PSCID: everything) its address
-    // translation cache, IOFENCE.C orders both before any later transaction.
+    // IODIR drops the cached context, IOTINVAL.VMA every translation, and IOFENCE.C orders both
+    // before any later transaction.
     cmd_push(s, iodir_inval_ddt(rid), 0);
     cmd_push(s, CMD_IOTINVAL_VMA, 0);
     cmd_push(s, CMD_IOFENCE_C, 0);
 }
 
-/// Pop one fault from the fault queue, if any. The confinement test drains this to prove a DMA
-/// escape was stopped by the hardware, not merely absent.
+/// Pop one fault from the fault queue, or `None`. The confinement test drains it to prove the
+/// hardware stopped a DMA escape.
+///
+/// Context: takes the `IOMMU` lock.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn take_fault() -> Option<Fault> {
     let mut g = IOMMU.lock();
@@ -448,32 +387,11 @@ pub fn take_fault() -> Option<Fault> {
     })
 }
 
-/// The RISC-V IOMMU's counterpart to the SMMUv3's proofs in `arch/aarch64/iommu.rs`, from
-/// milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs).
+/// Proofs that a device context names exactly the domain the kernel built, and that no requester
+/// id's entry or invalidation lands on another's.
 ///
-/// **These run on an aarch64 host, never on riscv64.** Kani compiles for the host and no host here
-/// is riscv64, so this file reaches the prover through a proof-only module in `arch/mod.rs` that
-/// exists only under `cfg(all(kani, target_arch = "aarch64"))`. Two consequences a reader must
-/// carry:
-///
-/// - **Inside that module `crate::arch` is aarch64's.** This file's `phys_to_virt` and write
-///   barrier resolve to the host's, so nothing that calls through `crate::arch` is proved here, and
-///   neither harness calls anything that does: `device_context`, `is_in_directory`,
-///   `context_offset` and `iodir_inval_ddt` are word arithmetic on their arguments, this file's
-///   constants and `page_frames::FRAME_SIZE`. `script/lint` fails if this file gains a `crate::arch` reference it has not recorded, because that is the
-///   moment a future harness could start proving aarch64's code while reading as riscv64's. See
-///   notes/kernel-proofs.md, stub-list item 8.
-/// - **The register offsets and bit constants are not proved and cannot be**, exactly as on the
-///   SMMU side: the harnesses read fields back at the positions the RISC-V IOMMU specification
-///   (v1.0.1, ch. 3) gives them, and if that reading is wrong the code and the proof are wrong
-///   together. The boot-time confinement test in `kernel/src/virtio.rs` is not made redundant.
-///
-/// **Why these properties and not the SMMU's** (milestone 432's "what it is not"). The SMMU splits
-/// a 64-bit address across two 32-bit words that share a word with control bits; this device
-/// context is written in whole 64-bit stores, so that hazard does not exist here. What does exist is
-/// the same pair of questions in this format's shape: does the context name exactly the domain the
-/// seam built (address, tag, and a mode that is still translating), and can one requester id's
-/// entry, or its invalidation, land on another's.
+/// They run on an aarch64 host, where `crate::arch` is aarch64's, so they prove only this file's
+/// word arithmetic. See notes/riscv-port/iommu.md and notes/kernel-proofs.md, stub-list item 8.
 #[cfg(kani)]
 mod proofs {
     use super::*;
@@ -482,20 +400,10 @@ mod proofs {
     /// the width of `iosatp`'s PPN field. Spelled once so the assumption and the field agree.
     const PA_BITS: u32 = 56;
 
-    /// **The IOMMU is handed exactly the domain the kernel built, and it is still translating.**
+    /// The IOMMU is handed exactly the domain the kernel built, and it is still translating.
     ///
-    /// `fsc` is `iosatp`: MODE in bits [63:60], reserved zero in [59:44], the root's PPN in
-    /// [43:0]. Two failures live in that word. The PPN can be wrong, in which case the IOMMU walks
-    /// some other table; or MODE can stop being Sv39 (8), and MODE 0 is **Bare**, which is
-    /// translation switched off rather than pointed somewhere wrong. The first half is stated for
-    /// EVERY `root`, with no assumption, because "no address can turn translation off" is the
-    /// claim worth having unconditionally. The rest assumes what `attach`'s caller establishes and
-    /// nothing checks: the root is a page frame below 2^56.
-    ///
-    /// `ta.PSCID` is the tag the IOMMU's address translation cache keys on. A wrong tag is
-    /// invisible to every test here: the confinement test attaches one device and `attach`
-    /// invalidates the whole cache after every write, so two domains sharing a tag never both
-    /// have live entries. It would matter the day invalidation is narrowed to one PSCID.
+    /// `iosatp.MODE` is Sv39 for every `root`, since MODE 0 is Bare; the PPN, PSCID and other words
+    /// are exact for a page-frame root below 2^56. See notes/riscv-port/iommu.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.the_iommu_is_handed_exactly_the_domain_the_kernel_built.patch`
     #[kani::proof]
@@ -509,12 +417,11 @@ mod proofs {
             "iosatp.MODE is Sv39 for every root: no address bit can turn translation off"
         );
 
-        // `root` comes from `paging::domain`, so a page frame, and from RAM, so a real address.
+        // From `paging::domain`: a page frame in RAM.
         kani::assume(root % page_frames::FRAME_SIZE == 0);
         kani::assume(root < 1 << PA_BITS);
 
-        // Stated on the whole address rather than on the shifted field, so the harness does not
-        // repeat the implementation's `>> 12` back to itself.
+        // On the whole address, so the harness does not repeat the implementation's `>> 12`.
         assert!(
             (dc[3] & ((1 << 44) - 1)) << 12 == root,
             "iosatp.PPN is the table root entire"
@@ -541,18 +448,11 @@ mod proofs {
         );
     }
 
-    /// **No device can reach another device's context, or invalidate the wrong one.**
+    /// No device can reach another device's context, or invalidate the wrong one, in either
+    /// context format.
     ///
-    /// `context_offset` is the whole of the directory's addressing and its `assert!` is the only
-    /// thing between a requester id and a raw write. The stride depends on a capability bit read
-    /// at run time (64 bytes with `MSI_FLAT`, 32 without), so the bound has to agree with the
-    /// stride in both formats, not only in the one QEMU happens to run; the base format has run
-    /// zero times (the module's BUGS). Both formats are taken symbolically here.
-    ///
-    /// The invalidation is the second half of the same question. `IODIR.INVAL_DDT` names the
-    /// device in a 24-bit DID field; if it named a different device, or omitted DV (which means
-    /// "every device"), the old context could stay cached for the device just re-attached. The
-    /// assertion is that the command decodes, at the spec's positions, to this device and no other.
+    /// The directory bound agrees with the stride, and `IODIR.INVAL_DDT` decodes to exactly this
+    /// device with DV set. See notes/riscv-port/iommu.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.riscv64.iommu.proofs.no_device_can_reach_another_devices_context.patch`
     #[kani::proof]
@@ -563,9 +463,7 @@ mod proofs {
         let dc_bytes: u64 = if extended { 64 } else { 32 };
         // A PCIe requester id is 16 bits (`pci::Bdf::requester_id`).
         kani::assume(a <= u16::MAX as u32 && b <= u16::MAX as u32);
-        // Anything `context_offset` refuses panics rather than answering wrongly; restrict to what
-        // it admits, asked through the same predicate rather than restated, so a bound that drifts
-        // from the stride turns this red instead of being assumed away.
+        // Assume through the same predicate, not a restatement, so a drifting bound turns red.
         kani::assume(is_in_directory(a, dc_bytes) && is_in_directory(b, dc_bytes));
 
         let (oa, ob) = (context_offset(a, dc_bytes), context_offset(b, dc_bytes));

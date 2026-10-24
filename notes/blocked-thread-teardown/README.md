@@ -18,9 +18,4 @@ prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `what-the-machine-already-has` Name: provisional. Named after the parent's own heading.
-- `prior-art` Name: provisional. Named after the parent's own heading.
-- `mapping-and-authority` Name: provisional.
-- `the-four-proposals` Name: provisional.
+Each stem here is named for its content, and calef names files.

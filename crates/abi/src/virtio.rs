@@ -28,20 +28,13 @@ pub const NOTIFY: u64 = 3;
 /// region's first page, at which the kernel writes the region's own physical base as a
 /// little-endian `u64` before it grants the region to anyone.
 ///
-/// Descriptors speak physical addresses and a process knows only virtual ones, and no method
-/// translates one, deliberately. So a driver needs its region's physical base as a plain value,
-/// and a supervisor that builds the driver has no spare `START` word to carry it in. The page
-/// carries it instead. The last eight bytes of the first page, because no driver's rings or
-/// control buffers reach them: `entropy` ends at `0x500`, `net_stack` at `0xF00`, `gpu_driver`
-/// at `0x798` and `keyboard_driver` at `0x440`.
-///
-/// Shared by the kernel (which writes it), `system_initializer` (which reads it back for the
-/// rng and the NIC) and `gpu_driver` and `keyboard_driver` (which read it themselves), so it is
-/// a constant in a crate rather than a number in four places (AGENTS.md rule 7). Milestone 600
-/// (provisional) moved it here; it was a number in two places before. Name: provisional.
+/// No method translates a virtual address and a supervisor building a driver has no spare `START`
+/// word, so the page carries the base, in its last eight bytes because no driver's rings or buffers
+/// reach them (`entropy` ends at `0x500`, `net_stack` at `0xF00`, `gpu_driver` at `0x798` and
+/// `keyboard_driver` at `0x440`). The kernel writes it; `system_initializer`, `gpu_driver` and
+/// `keyboard_driver` read it, so it is one constant (AGENTS.md rule 7). Name: provisional.
 pub const DMA_PHYS_OFFSET: u64 = 4096 - 8;
 
-// The word is the page's last eight bytes, as the documentation says; a wrong operator in the
-// subtraction put it past the page or in the middle of a driver's rings, and nothing ran the
-// arithmetic. Mutation survivor triage, milestone 326 (turn a mutation score upward), batch 3.
+// The word is the page's last eight bytes; a wrong operator in the subtraction would put it past
+// the page or into a driver's rings, and nothing else runs the arithmetic.
 const _: () = assert!(DMA_PHYS_OFFSET + 8 == 4096);

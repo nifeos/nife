@@ -1,5 +1,7 @@
 # `machine_discovery` swept clean, and the gap was a harness that did not exist
 
+*Name: provisional.*
+
 An appendix to [`notes/falsification.md`](../falsification.md).
 
 2026-09-23. The crate parses ACPI tables and device trees, which is the bytes a machine hands us. So

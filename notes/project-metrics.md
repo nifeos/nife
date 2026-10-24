@@ -1,6 +1,6 @@
 # Project metrics: what moved, week by week
 
-*Name: `notes/project-metrics.md` is ratified (calef, 2026-09-02). He proposed it as
+*Name: ratified 2026-09-02 (calef, moving it from design/). He proposed it as
 `design/project-metrics.md` and moved it here on the argument that `design/` holds arguments
 (`design/fatal-risks/README.md`, the decisions, the roadmap) while `notes/` holds what was measured
 (`benchmarks.md`, `mutation-testing.md`, `unsafe-obligations.md`). `script/metrics` and the

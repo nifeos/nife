@@ -1,43 +1,15 @@
 //! **A hostile second client of a network stack** (milestone 649 (every client of a network stack
 //! shares its socket numbers); names here provisional).
 //!
-//! Milestone 800 (a non-Anthropic model attacks the confinement claim)'s fourth outsider pass
-//! booted the escape this program used to perform, on PR #1798: when a socket was a small number
-//! every client of one stack shared, a second client could attach its own page at the number
-//! another client was about to use, and that client's traffic then ran through the squatter's page,
-//! both directions. Since §255 (each socket is its own capability) a socket is a capability the
-//! stack mints and names by its kernel-stamped badge, so there is no number left to squat. This
-//! program is the same squatter, rewritten against the contract as it now stands, trying every way
-//! it has of reaching a socket somebody else opened while that socket is open.
+//! While an honest client holds a socket open, it tries every way it has of reaching that socket,
+//! and `system_tests/src/user/net_confinement_tests.rs` asserts each is refused and none of the
+//! honest traffic reaches its page. The five steps are in notes/net/the-test-clients.md.
 //!
-//! It is endowed like any stack client (report endpoint, `WRITE` on the stack's front door, an
-//! untyped budget: the three slots `socket_test_client` gets), and it:
-//!
-//! 1. attaches its own page through the **front door**, the move that used to land on the victim's
-//!    socket number;
-//! 2. asks the front door for every operation that names a socket (`SENDTO`, `SEND`, `CONNECT`,
-//!    `ACCEPT`, `CLOSE`, `RECEIVE`), each of which must be refused, because the front door names
-//!    none;
-//! 3. tries to mint a socket's capability itself with `BADGE`, which its front door has no `GRANT`
-//!    for;
-//! 4. opens a socket of its own and tries a kernel `RECEIVE` and `RECEIVE_CAP` on its capability,
-//!    refused as minted without `READ`; re-badges it, closes it, and tries the closed one (nothing);
-//! 5. arms a valid TFTP read request in its own page, reports which of those were refused, and
-//!    watches its page for the victim's traffic, bounded.
-//!
-//! `system_tests/src/user/net_confinement_tests.rs` runs it while an honest TFTP client holds a
-//! socket open, and asserts that every attempt was refused, that the honest client's exchange went
-//! through untouched, and that nothing of it reached this program's page.
-//!
-//! It rides in the `net_stack` binary beside `socket_test_client` for the same reason that client
-//! does: the initial ramdisk directory holds at most 15 files on aarch64. That makes the
-//! `net_stack` image the booted system runs carry a hostile client nothing in the boot ever starts,
-//! which is an exception to keeping test roles out of shipped images, recorded here so the next
-//! hostile fixture does not extend it unmarked.
+//! It rides in the `net_stack` binary: a hostile client in the shipped image that nothing starts,
+//! an exception to keeping test roles out of shipped images, marked so none extends it unmarked.
 //!
 //! Name: provisional, milestone 649's lane, 2026-10-07 (UTC), keeping the file name milestone 800's
 //! lane gave the program it replaces.
-//!
 
 //! # Capability contract
 //! - slot 0: the report endpoint (WRITE)
@@ -92,7 +64,7 @@ const WATCH_SECS: u64 = 5;
 // SAFETY: `run` maps this page writable at PAGE_FRAME_VA before any read or write below.
 static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE) };
 
-/// **The squat, against capabilities.** See the module doc for the five steps.
+/// **The squat, against capabilities.** See notes/net/the-test-clients.md for the five steps.
 pub fn run() -> ! {
     let frame = retype_into_page_frame(MEMORY_REGION);
     if frame < 0 || !map_page_frame(frame as u64, PAGE_FRAME_VA, true, MEMORY_REGION) {
@@ -135,18 +107,9 @@ pub fn run() -> ! {
     }
 
     // 4. A socket of our own: re-badging it is refused (a badge is set once), and once closed it
-    //    reaches nothing, not even the front door's power to open.
-    //
-    //    The two kernel-IPC probes are new ground, risk 7's fifth outsider pass (2026-10-10 UTC).
-    //    The capability the stack mints for a socket is a copy of the stack's own serve endpoint,
-    //    carrying the socket's badge (`socket_contract::stack_slots::MINT`). If that copy carried
-    //    `READ`, a kernel plain `RECEIVE` or `RECEIVE_CAP` on it would dequeue the stack's own
-    //    incoming queue, every other client's request to the stack, which is the capture class
-    //    milestone 649 closed reached by IPC rather than by a squatted page. The mint omits `READ`
-    //    (it is `WRITE | GRANT`), and the kernel refuses a receive on a `READ`-less endpoint
-    //    (`kernel/src/syscall.rs`, `RECEIVE`/`RECEIVE_CAP`), so both return a negative error at
-    //    once rather than blocking. A permissive kernel would instead block here, which the test
-    //    reads as the squatter never arming.
+    //    reaches nothing, not even the front door's power to open. The mint carries no `READ`, so
+    //    both kernel receives must fail at once; a permissive kernel blocks here instead, which
+    //    the test reads as the squatter never arming.
     let mut recv_refused = 0u64;
     if let (REP_OK, _, Some(own)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) {
         if (receive(own).0 as i64) < 0 {

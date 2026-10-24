@@ -278,6 +278,7 @@ It passed 5 of 5 alone. Cause unknown.
 
 ## See also
 
+- [live-replacement/the-operator.md](live-replacement/the-operator.md): the operator's design, role by role
 - DECISIONS §41 (the endpoint is the broker), §12 (a one-shot reply capability), §13 and §16 (revocation),
   §26 (the fault endpoint), §31 (the C seam), §32 (a supervisor may collect a corpse)
 - notes/component-manifest.md, notes/hung-component.md, notes/dependency-orchestration.md and

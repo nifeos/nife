@@ -1,5 +1,7 @@
 # Gaps in the shared suite: one open, the rest closed or corrected
 
+*Name: provisional.*
+
 An appendix to [notes/riscv-parity-scope.md](../riscv-parity-scope.md), moved there on 2026-10-11
 (UTC) under §212 (a prose budget). It holds the ASID gap milestone 58 (RISC-V TLB shootdown) closed,
 the 24-test

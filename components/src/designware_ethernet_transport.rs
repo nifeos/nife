@@ -8,7 +8,7 @@
 //! measured that its DMA is coherent, and started both channels with nothing available
 //! (`kernel/src/designware_ethernet.rs`); what is mapped here, and what is not, is
 //! `kernel/src/user/designware_ethernet_service.rs`'s header.
-//!
+
 //! # BUGS
 //!
 //! - **Polled**, for `e1000e_transport`'s reason, with its costs: no interrupt is granted, so

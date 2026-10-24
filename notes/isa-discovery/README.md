@@ -16,11 +16,3 @@ sequel, and the `BUGS`. This directory carries the detail its prose budget has n
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `psci-conduit` Name: provisional. For the parent's PSCI failure shapes and `smc` fixture. calef
-  names files.
-- `lookup-tables` Name: provisional. After the parent's "Four lookup tables, and why none of them is
-  a `match`". calef names files.
-- `the-crate-name` Name: provisional. After the parent's "Naming". calef names files.
-- `counter-rate-in-userspace` Name: provisional. For how `cntfrq` learns the rate. calef names
-  files.
