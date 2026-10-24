@@ -13,7 +13,7 @@ second `FileOut`, each with a 256-byte staging buffer held by value, on the shel
 frame. Twelve leaves four pages of headroom, because each smaller raise bought exactly enough and
 the next change found the wall again. The cost is 48 KiB of address space per child.
 
-`SHELL_STACK_PAGES` is twenty-one, for the shell alone. A file's name may be 255 bytes (milestone
+`SHELL_STACK_PAGES` is twenty-one, for the shell alone. A file's name may be 252 bytes (milestone
 946), an `Endowment` holds four file grants, and a debug build keeps a copy of one in a frame for
 every argument and return that carries it. Measured on `script/swish-check`'s aarch64 leg on
 2026-10-24 (UTC): twelve faults on the boot's first pipeline, sixteen in `installed/jig rollback`,

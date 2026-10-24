@@ -6,18 +6,18 @@ pub const READ: u64 = 1 << 0;
 pub const WRITE: u64 = 1 << 1;
 
 /// **The longest granted name, in bytes**: what the shell lets a line name as one file, what a
-/// name set ([`super::nameset`]) carries per name, and what a caretaker compares against. 255, which
-/// is Linux's `NAME_MAX` and [`super::xattr::MAX_NAME`], so a file a customer brings is not refused
-/// for its name. It is **provisional** (milestone 946 (a granted file name can be longer than sixteen bytes)): the bound is shared by the filesystem and the
-/// loader, so it is an architect's call, and it lives in this one constant so the call is one edit.
-/// RedoxFS itself stores at most 252 bytes of name (`DIR_ENTRY_MAX_LENGTH`), so a create of a longer
-/// name is the server's refusal, not this contract's.
+/// name set ([`super::nameset`]) carries per name, and what a caretaker compares against. 252, which
+/// is §307 (how long a name may be)'s bound for a program, a package and the files they travel in:
+/// RedoxFS's `DIR_ENTRY_MAX_LENGTH`, the smallest name limit of a filesystem nife installs onto.
+/// calef ruled it on 2026-10-24 (UTC), on milestone 946 (a granted file name can be longer than
+/// sixteen bytes): *"B"*, over 255, Linux's `NAME_MAX`, which would make a 253-byte name grantable
+/// and unstorable on nife's own disk.
 ///
 /// A name this long does not fit in a caretaker's `START` words. Those carry at most
 /// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the
 /// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
 /// two words by mistake.
-pub const MAX_NAME: usize = 255;
+pub const MAX_NAME: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
 /// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation

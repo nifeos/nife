@@ -221,7 +221,7 @@ impl Refusal {
             Refusal::PathRequired => "is granted the directory holding what you name; name it",
             Refusal::NoSuchOption => "no such option (this shell will not pass one along unread)",
             Refusal::FileNotNameable => {
-                "that is not a name this shell can grant: at most 255 bytes a file, 16 a directory, 8 deep"
+                "that is not a name this shell can grant: at most 252 bytes a file, 16 a directory, 8 deep"
             }
             // Each of these says what the *pattern* designates, because that is the grant. None of
             // them can be phrased as a permission, and none should be: nothing was denied, the
@@ -231,7 +231,7 @@ impl Refusal {
                 "that pattern matched more names than one grant can carry (at most 8, 512 bytes of name)"
             }
             Refusal::MatchNotNameable => {
-                "a name it matched cannot travel in a grant: at most 255 bytes"
+                "a name it matched cannot travel in a grant: at most 252 bytes"
             }
             Refusal::PatternInPath => {
                 "a pattern names files, not directories to walk: only the last component may be one"

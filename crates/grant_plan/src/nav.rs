@@ -62,7 +62,7 @@ impl Refused {
     /// each says what *is*, never what was denied.
     pub fn message(self) -> &'static str {
         match self {
-            Refused::NotAName => "that is not a name: one component, at most 255 bytes",
+            Refused::NotAName => "that is not a name: one component, at most 252 bytes",
             Refused::TooDeep => "too deep: this shell tracks at most 8 levels below its root",
             Refused::DirectoryNameTooLong => {
                 "that directory's name is longer than this shell can stand in: at most 16 bytes"
@@ -689,7 +689,7 @@ mod tests {
     fn each_refusal_is_its_own_exact_sentence() {
         assert_eq!(
             Refused::NotAName.message(),
-            "that is not a name: one component, at most 255 bytes",
+            "that is not a name: one component, at most 252 bytes",
         );
         assert_eq!(
             Refused::DirectoryNameTooLong.message(),

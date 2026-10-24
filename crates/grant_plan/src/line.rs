@@ -28,7 +28,7 @@ pub const MAX_STAGES: usize = 4;
 /// The three variants are three different capabilities in one slot. The program holds an endpoint
 /// with `WRITE` in every case and has no message it could send to ask which.
 ///
-/// The file variant is large because a file grant's name may be 255 bytes, and a `Box` is not an
+/// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
 /// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
 #[allow(clippy::large_enum_variant)]
@@ -76,7 +76,7 @@ pub enum Mode {
 /// second stream**, which is every program but `date` today: its diagnostics ride its one output
 /// in-band, as they always did.
 ///
-/// The file variant is large because a file grant's name may be 255 bytes, and a `Box` is not an
+/// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
 /// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
 #[allow(clippy::large_enum_variant)]
@@ -99,7 +99,7 @@ pub enum Diagnostics {
 /// **Where a stage's bytes come from**, which is what `<` and the right-hand side of `|` decide.
 /// [`Sink`]'s mirror, and deliberately the same contract read from the other end.
 ///
-/// The file variant is large because a file grant's name may be 255 bytes, and a `Box` is not an
+/// The file variant is large because a file grant's name may be 252 bytes, and a `Box` is not an
 /// option: this crate is `no_std` with no `alloc`, so it stays host-testable. The size is paid where
 /// it lands, which notes/glob-grant/xargs.md ("The bytes a set carries") measures.
 #[allow(clippy::large_enum_variant)]

@@ -97,7 +97,7 @@ pub const ARG_REGISTRATION_PAGE: usize = 2;
 /// `register_installed` 9.8, `admit_installed` 5.6, and `resolve_installed` -> `load_current` ->
 /// `store::load` 11.0. The bound is a size rather than an assertion, so growth in `grant_plan`'s
 /// planning path is met by raising it. Measured again on 2026-10-24 (UTC), once an `Endowment`'s file
-/// grants could name 255 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)): `login_user_schedule_tests`' re-derived session
+/// grants could name 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)): `login_user_schedule_tests`' re-derived session
 /// faults at 52 pages and passes at 56. 60 is that with the four pages
 /// `user_timetable_keeper`'s budget still holds; this crate is compiled optimized in a debug build.
 pub const STACK_PAGES: u64 = 60;

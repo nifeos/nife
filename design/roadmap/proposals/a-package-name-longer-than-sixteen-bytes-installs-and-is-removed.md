@@ -12,7 +12,7 @@ needs_person: no
 *(Title and slug provisional.)*
 
 Raised 2026-10-24 (UTC) by lane `milestone/946-granted-file-name-longer-than-sixteen-bytes`. That
-lane let a granted file's name be 255 bytes. Every name that rides two `START` words stayed at 16.
+lane let a granted file's name be 252 bytes. Every name that rides two `START` words stayed at 16.
 
 ## The limit
 

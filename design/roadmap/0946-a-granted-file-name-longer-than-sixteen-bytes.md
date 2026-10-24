@@ -12,8 +12,8 @@ needs_person: no
 # 946. A granted file name can be longer than sixteen bytes
 
 **IN-PROGRESS, 2026-10-24 (UTC).** Built, and gated by `script/swish-check` on aarch64 and x86_64.
-Left: the riscv64 leg, which CI runs, the bound itself ("Needs calef"), and the installed demo,
-which waits on milestone 909 ("BUGS").
+Left: the riscv64 leg, which CI runs, and the installed demo, which waits on milestone 909
+("BUGS").
 
 *(Title and slug provisional.)*
 
@@ -24,8 +24,8 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
 
 ## What a name may be
 
-- A file's name is at most `filesystem_contract::grant::MAX_NAME`, 255 bytes, provisional
-  (the question below). `grant_plan::MAX_FILE_NAME` mirrors it, pinned by a host test. It is the
+- A file's name is at most `filesystem_contract::grant::MAX_NAME`, 252 bytes ("The bound"
+  below). `grant_plan::MAX_FILE_NAME` mirrors it, pinned by a host test. It is the
   last component of a path the shell opens, a name a pattern matched, and a name in a grant's set.
 - A name that rides two `START` words is at most `grant::WORDS_NAME`, 16 bytes: a caretaker's
   directory, `rm`'s operand when it fits, a `login` identity's subtree, an activation message's
@@ -38,7 +38,7 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
 - A name set carries at most 8 names and 512 bytes of them (`nameset::MAX_NAMES`,
   `nameset::NAME_BYTES`): two of the longest names, or eight of 64 bytes. A record is a length
   byte, a flags byte, then the name. The shell's `NameSet` packs its names into those bytes rather
-  than holding eight slots of 255, and over either bound is the same refusal, never a truncation.
+  than holding eight slots of 252, and over either bound is the same refusal, never a truncation.
 
 ## How a long name reaches a program
 
@@ -82,17 +82,13 @@ set carries") has the numbers. The progenitor's capability peak stays at the 37 
 was measured the same way: `login_user_schedule_tests` faults at 52 pages and passes at 56, and
 `timetable::contract::STACK_PAGES` is 60, with the crate compiled optimized in a debug build.
 
-## Needs calef
+## The bound
 
-The bound on a granted name, `grant::MAX_NAME`, is an architect's call: the filesystem and the
-loader share it. It is one constant, and the build uses 255.
-
-- **B (recommended): 252**, §307 (how long a name may be)'s bound, which is RedoxFS's
-  `DIR_ENTRY_MAX_LENGTH` (calef, 2026-10-17: *"252 seems fine for now."*). A name of 253 to 255 bytes
-  is grantable under A and unstorable on nife's own disk, which is the "two numbers for one fact"
-  §307 refused.
-- **A: 255**, Linux's `NAME_MAX` and `xattr::MAX_NAME`. The server refuses a 253-byte create, so
-  nothing breaks; a name that long is only refused one step later.
+`grant::MAX_NAME` is 252, calef's ruling of 2026-10-24 (UTC): *"B"*. It is §307 (how long a name
+may be)'s bound, RedoxFS's `DIR_ENTRY_MAX_LENGTH`, the smallest name limit of a filesystem nife
+installs onto. The option he did not take was 255, Linux's `NAME_MAX` and `xattr::MAX_NAME`, under
+which a name of 253 to 255 bytes would be grantable and unstorable on nife's own disk. The stacks
+above were measured at 255; a shorter name can only make every frame that holds one smaller.
 
 ## Exit
 

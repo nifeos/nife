@@ -217,7 +217,7 @@ should be able to answer for every capability rather than a flag on one verb.
   bytes (`nav::MAX_DIRECTORY_NAME`, `grant::WORDS_NAME`). The path stack is an array because this
   program has no allocator. A directory grant names its directory in a caretaker's two `START`
   words, and a name you could `cd` into but not grant would be a place you cannot talk about. A
-  file, the last component, may be 255 bytes (`nav::MAX_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)). A longer directory
+  file, the last component, may be 252 bytes (`nav::MAX_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)). A longer directory
   name is `DirectoryNameTooLong` and deeper is `TooDeep`, refused rather than truncated.
 - `ls` reads a directory in rounds of 256 bytes and re-reads it per round, so a name added or
   removed mid-listing can be seen twice or missed. That is `READDIR`'s own caveat

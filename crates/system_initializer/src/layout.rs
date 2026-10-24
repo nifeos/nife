@@ -24,7 +24,7 @@ pub const CHILD_STACK_PAGES: u64 = 12;
 /// headroom: `script/swish-check`'s aarch64 leg passes at seventeen and faults at sixteen, in
 /// `installed/jig rollback`, where a program run by its path has its words designated. A debug
 /// shell keeps a copy of each `Endowment` it passes or returns, and an `Endowment` holds four file
-/// grants whose names may be 255 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)). The shell is built from the progenitor's own
+/// grants whose names may be 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)). The shell is built from the progenitor's own
 /// pages, once a boot, so the pages are not a job's. `pipeline_service`'s `SHELL_EXTRA_STACK` stays
 /// level with this. See notes/system-initializer/budgets.md.
 ///

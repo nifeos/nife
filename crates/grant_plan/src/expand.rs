@@ -28,7 +28,7 @@ pub const MAX_NAMES: usize = 8;
 /// the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a set carries").
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const NAME_BYTES: usize = 2 * (MAX_NAME + 1);
+pub const NAME_BYTES: usize = 512;
 
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -270,7 +270,7 @@ pub struct Expander<'a> {
 /// heap is capped at 32 KiB, never materializes a whole match. See notes/glob-grant/xargs.md ("The
 /// resume point is a name, not a cursor").
 ///
-/// [`Resume::After`] holds a whole [`Name`], up to 255 bytes, and a `Box` is not an option in a
+/// [`Resume::After`] holds a whole [`Name`], up to 252 bytes, and a `Box` is not an option in a
 /// crate with no allocator; there is one of these per sweep.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -933,13 +933,15 @@ mod tests {
         assert!(set.push(&a, false));
         assert!(set.push(&b, true));
         assert_eq!(set.name_bytes(), 2 * MAX_NAME);
-        assert_eq!(NAME_BYTES - 2 * MAX_NAME, 2);
-        assert!(!set.push(b"ccc", false), "one byte past NAME_BYTES");
-        assert!(set.push(b"cc", false), "and two bytes fit exactly");
+        const ROOM: usize = NAME_BYTES - 2 * MAX_NAME;
+        let fits = [b'c'; ROOM];
+        let over = [b'c'; ROOM + 1];
+        assert!(!set.push(&over, false), "one byte past NAME_BYTES");
+        assert!(set.push(&fits, false), "and the rest fits exactly");
         assert_eq!(set.name_bytes(), NAME_BYTES);
-        let got: [(&[u8], bool); 3] = [(&a, false), (&b, true), (b"cc", false)];
+        let got: [(&[u8], bool); 3] = [(&a, false), (&b, true), (&fits, false)];
         assert!(set.iter().eq(got.iter().copied()), "{set:?}");
-        let listing: [(&[u8], bool); 3] = [(&a, false), (&b, false), (b"ccc", false)];
+        let listing: [(&[u8], bool); 3] = [(&a, false), (&b, false), (&over, false)];
         assert_eq!(expand(b"*", &listing), Err(Refusal::TooManyNames));
     }
 
@@ -971,12 +973,17 @@ mod tests {
         assert!(!second.more);
         // And a long name that displaces held ones for room still leaves out only names after
         // what is kept.
-        let listing: [(&[u8], bool); 4] =
-            [(b"b1", false), (&c, false), (&b, false), (b"b2", false)];
+        // Each short name is long enough that the four together are over NAME_BYTES.
+        const SHORT: usize = (NAME_BYTES - 2 * MAX_NAME) / 2 + 1;
+        let mut b1 = [b'1'; SHORT];
+        b1[0] = b'b';
+        let mut b2 = [b'2'; SHORT];
+        b2[0] = b'b';
+        let listing: [(&[u8], bool); 4] = [(&b1, false), (&c, false), (&b, false), (&b2, false)];
         let first = batch(b"*", Resume::Start, &listing).unwrap();
         let mut held = first.names.iter().map(|(n, _)| n);
-        assert_eq!(held.next(), Some(&b"b1"[..]));
-        assert_eq!(held.next(), Some(&b"b2"[..]));
+        assert_eq!(held.next(), Some(&b1[..]));
+        assert_eq!(held.next(), Some(&b2[..]));
         assert_eq!(held.next(), Some(&b[..]));
         assert_eq!(held.next(), None, "c belongs to the next batch");
     }

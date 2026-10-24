@@ -17,7 +17,7 @@ pub const MAX_NAMES: usize = 8;
 /// Over it is the same refusal as a ninth name, never a truncation.
 ///
 /// Name: provisional (milestone 946).
-pub const NAME_BYTES: usize = 2 * (grant::MAX_NAME + 1);
+pub const NAME_BYTES: usize = 512;
 
 /// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the
 /// terminator.
@@ -25,7 +25,7 @@ pub const BYTES: usize = 2 * MAX_NAMES + NAME_BYTES + 1;
 
 // A set arrives in one page, and the longest name has to fit in one set.
 const _: () = assert!(BYTES <= super::PAGE);
-const _: () = assert!(NAME_BYTES >= grant::MAX_NAME);
+const _: () = assert!(NAME_BYTES >= 2 * grant::MAX_NAME);
 
 /// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
 pub const IS_DIR: u8 = 1 << 0;
