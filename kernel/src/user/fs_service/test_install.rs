@@ -1,12 +1,8 @@
-//! **The kernel test harness installs a package as an installer would** (milestone 152 (durable
-//! delegation)'s Fork 8 D). Moved out of `fs_service.rs` unchanged, apart from the installed-programs table's
-//! manager column, by milestone 809 (the package client becomes a program), when that file reached
-//! §266 (a Rust source file stays under 2,000 lines)'s ratchet.
+//! The kernel test harness installs a package as an installer would.
 
 use super::*;
 
-/// **Install `bytes` as the one program of package `name` at `version`, as an installer would**
-/// (milestone 152 (durable delegation), Fork 8 D, which runs a scheduled job from the store): the
+/// Install `bytes` as the one program of package `name` at `version`, as an installer would: the
 /// bytes at `packages/<name>/<version>/<program>`, and a generation `1` in `activation/` naming them
 /// with their digest, made live by `current`. Anything already there is overwritten, and a
 /// generation this writes replaces the whole table, which no test here needs more of.
@@ -64,9 +60,8 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
         call([fs::req(fs::CLOSE, h, 0), 0]);
     }
 
-    // The row and its pointer (milestone 614 (two installed versions of one program)): the bytes'
-    // path is its package and version columns, and its manager is `jig`, as milestone 809 (the
-    // package client becomes a program) records one.
+    // The row and its pointer: the bytes' path is its package and version columns, and its
+    // manager is `jig`.
     let entry = installed_programs::Entry {
         program,
         version,

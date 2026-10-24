@@ -125,6 +125,24 @@ It doesn't matter today, because we always run under QEMU with `-semihosting`. B
 real hole, and milestone 2 (exception vectors) is what closes it. Once `VBAR_EL1` points
 at a handler, that trap becomes something we can see and report instead of a silent death.
 
+## On x86_64: `isa-debug-exit`
+
+`kernel/src/arch/x86_64/semihosting.rs` keeps the aarch64 module name, because
+`arch::semihosting::exit` is the contract the test harness calls. Like the RISC-V one, its mechanism
+has nothing to do with ARM semihosting. It is QEMU's `isa-debug-exit` device: a write of any width
+to its I/O port terminates the guest with status `(value << 1) | 1`.
+
+That encoding is a real constraint. Every status the device can produce is odd, so exit code 0 is
+unreachable and success has to be an agreed nonzero number. A write of 0 gives host status 1, and a
+write of 1 gives 3. The module reports 3 for success and anything else for failure, and
+`helpers/qemu-runner-x86_64.sh` maps it back. Getting this backwards gives a suite that passes when
+it fails, the one failure a test harness must not have, so both halves name the number.
+
+A real machine has no `isa-debug-exit`. Milestone 87 (the x86_64 bare-metal machine) needs the
+answer the VisionFive 2 needed: print a fixed marker line the serial harness can read, then power
+down through ACPI S5 rather than SBI SRST. Nothing does that yet, so a test build on real x86
+hardware writes to a port nothing answers and falls through to the halt loop.
+
 ---
 
 *Add to this file as new semihosting operations come up.*

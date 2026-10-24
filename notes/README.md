@@ -59,6 +59,12 @@ area directories), ruled B). Appendices under
 
 `aarch64-modern-board-survey.md`: Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.
 
+`inter-process-communication.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.
+
+`machine-discovery.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.
+
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
 `paging.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-07. Named for the crate it documents.
+
+`smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
