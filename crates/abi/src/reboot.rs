@@ -1,14 +1,13 @@
-/// `invoke(cap, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the
-/// firmware for a cold reset (PSCI `SYSTEM_RESET` on aarch64, SBI SRST type 1 on riscv64, and on
-/// `x86_64` the FADT reset register, then port `0xCF9`, then the 8042). When every route was
-/// refused it returns the reason, one of the four `Reset…` values of [`crate::Error`], and the
-/// firmware's raw code is on the kernel console just before (calef's ruling of 2026-10-06 UTC
-/// on §251's amendment, item 3).
+/// `invoke(cap, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the firmware
+/// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, SBI SRST type 1 on riscv64, and on `x86_64`
+/// the FADT reset register, then port `0xCF9`, then the 8042). When every route was refused it
+/// returns the reason, one of the four `Reset…` values of [`crate::Error`], and the firmware's raw
+/// code is on the kernel console just before (calef's ruling of 2026-10-06 UTC on the amendment to
+/// §251 (restarting the machine is a kernel object), item 3).
 ///
-/// **It syncs nothing.** A caller with a writable filesystem sends
-/// `filesystem_contract::fs::SYNC` and waits for the reply first, or loses what the device had
-/// not flushed. A firmware that accepts the call and hangs looks the same as a slow reset from
-/// inside the machine.
+/// **It syncs nothing**: a caller with a writable filesystem sends `filesystem_contract::fs::SYNC`
+/// and waits for the reply first. A firmware that accepts the call and hangs looks the same as a
+/// slow reset from inside the machine.
 pub const REBOOT: u64 = 0;
 
 /// **Why the machine did not restart, from PSCI** (milestone 805 (`reboot` at the prompt)):
