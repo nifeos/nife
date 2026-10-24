@@ -22,7 +22,8 @@ use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, u
 pub(crate) fn bench() -> bool {
     let check = std::env::args().any(|a| a == "--check");
     let save = std::env::args().any(|a| a == "--save");
-    // Release changes instruction counts, so it never runs under icount and never gates.
+    // `--release` is for magnitudes next to release Linux. It changes instruction counts, so it
+    // never runs under icount and never gates.
     let release = std::env::args().any(|a| a == "--release");
     RELEASE.store(release, Ordering::Relaxed);
     let real = release || std::env::args().any(|a| a == "--real");
