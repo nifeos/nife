@@ -522,7 +522,7 @@ pub mod durable {
     pub enum RederiveSkip {
         /// No free slot: as many sessions are already kept as this process can hold.
         TableFull = 0,
-        /// The name does not fit `filesystem_contract::grant::MAX_NAME`, or this identity already
+        /// The name does not fit `filesystem_contract::grant::WORDS_NAME`, or this identity already
         /// has a session kept.
         Identity = 1,
         /// The stored schedule is missing or empty: a stale manifest line.

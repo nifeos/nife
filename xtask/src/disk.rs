@@ -286,10 +286,16 @@ pub(crate) const INSTALLED_UNVOUCHED: &str = "installed/unvouched";
 /// **Bytes nobody vouched for whose manifest note asks for an argument** (milestone 597 (a program
 /// carries its manifest in an ELF note), provisional): `least_authority_demo`, stripped. Unvouched
 /// bytes may hold only what the D2 ruling names, and an argument is a designation the line would
-/// have to make, so `script/swish-check` types it with one and the progenitor must refuse it. Not
-/// named after the program because a name is at most 16 bytes (`filesystem_contract`'s
-/// `MAX_NAME`), which `least_authority_demo` is not; CI found that on the first run.
+/// have to make, so `script/swish-check` types it with one and the progenitor must refuse it. Its
+/// own name is [`INSTALLED_LEAST_AUTHORITY_DEMO`]'s; this one predates names over sixteen bytes and
+/// milestone 597's record cites it.
 pub(crate) const INSTALLED_ASKS_AN_ARGUMENT: &str = "installed/asks-an-arg";
+
+/// **The same bytes under the program's own name** (milestone 946 (a granted file name can be
+/// longer than sixteen bytes)): `least_authority_demo` is twenty bytes, which a path's last
+/// component may now be, so `script/swish-check` runs it by this path and the shell opens it, reads
+/// its note and sends it, leaving the verdict to the progenitor. Provisional.
+pub(crate) const INSTALLED_LEAST_AUTHORITY_DEMO: &str = "installed/least_authority_demo";
 
 /// **A program whose manifest note cannot be read** (milestone 597, provisional): the unvouched
 /// witness again, with its note's version word set to one no reader knows. The shell must refuse it
@@ -733,6 +739,10 @@ impl SeededPrograms {
         write_seed_file(tree.join(INSTALLED_UNVOUCHED), &self.unvouched)?;
         write_seed_file(
             tree.join(INSTALLED_ASKS_AN_ARGUMENT),
+            &self.asks_an_argument,
+        )?;
+        write_seed_file(
+            tree.join(INSTALLED_LEAST_AUTHORITY_DEMO),
             &self.asks_an_argument,
         )?;
         write_seed_file(tree.join(INSTALLED_MALFORMED_NOTE), &self.malformed)?;

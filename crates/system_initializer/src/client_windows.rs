@@ -75,10 +75,10 @@ pub(super) const fn mounted_job_windows() -> Windows {
 /// a grant in the first tree.
 pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64, u64)> {
     use filesystem_contract::grant;
-    let mut buf = [0u8; grant::MAX_NAME];
+    let mut buf = [0u8; grant::WORDS_NAME];
     let n = grant::unpack_name(lo, hi, grant::spec_len(spec), &mut buf);
     let rest = spawnproto::in_mounted_tree(&buf[..n])?;
-    let (lo, hi) = grant::pack_name(rest);
+    let (lo, hi) = grant::pack_name(rest)?;
     Some((lo, hi, grant::spec(rest.len(), grant::spec_rights(spec))))
 }
 
@@ -138,7 +138,7 @@ pub(super) fn bound_channel(
     (lo, hi, spec): (u64, u64, u64),
 ) -> Option<Fs> {
     let files = FsCalls::map(Some(fs), own_ut, mapped)?;
-    let mut buf = [0u8; filesystem_contract::grant::MAX_NAME];
+    let mut buf = [0u8; filesystem_contract::grant::WORDS_NAME];
     let n = filesystem_contract::grant::unpack_name(
         lo,
         hi,
@@ -157,7 +157,7 @@ pub(super) fn bound_channel(
 
 /// **A caretaker's `START` words for a channel already bound to its directory**: the rights kept,
 /// the name emptied, which tells `fs_nameset_caretaker` its directory is the bound root and there is
-/// nothing to descend into.
+/// nothing to descend into (milestone 946).
 ///
 /// Name: provisional (milestone 946).
 pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {

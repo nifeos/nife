@@ -3,23 +3,39 @@ use super::grant;
 /// **The most names one set grant carries**, where `ARG_MAX` becomes a capability limit.
 ///
 /// Measured, not chosen: at sixteen names the shell ran off its stack planning one grant, because a
-/// set travels by value through four frames a debug build does not collapse. Eight names of sixteen
-/// bytes is 152 bytes per copy. Exceeding it is a refusal at the prompt
-/// (`grant_plan::Refusal::TooManyNames`), never a truncation, because `caps rm *.txt` prints the
-/// set before anything runs and a grant that quietly took a prefix would be one nobody checked.
+/// set travels by value through four frames a debug build does not collapse. Exceeding it is a
+/// refusal at the prompt (`grant_plan::Refusal::TooManyNames`), never a truncation, because `caps rm
+/// *.txt` prints the set before anything runs and a grant that quietly took a prefix would be one
+/// nobody checked. See notes/glob-grant/xargs.md ("Why the bound is eight").
 pub const MAX_NAMES: usize = 8;
 
-/// Bytes an encoded set occupies at most: a header and a name each, plus the terminator.
-pub const BYTES: usize = MAX_NAMES * (1 + grant::MAX_NAME) + 1;
+/// **The most bytes of name one set carries, all its names together.** A second bound beside
+/// [`MAX_NAMES`], for the same stack: a set travels by value through the shell's frames, so what it
+/// costs is its bytes, and holding eight names of [`grant::MAX_NAME`] each would cost eight times
+/// what a set of ordinary names needs. Two of the longest names fit, or eight of 64 bytes. Measured
+/// with milestone 946; the measurement is in notes/glob-grant/xargs.md ("The bytes a set carries").
+/// Over it is the same refusal as a ninth name, never a truncation.
+///
+/// Name: provisional (milestone 946).
+pub const NAME_BYTES: usize = 2 * (grant::MAX_NAME + 1);
 
-/// Bit 7 of a record's header: this name was a directory when the grant was planned.
-pub const IS_DIR: u8 = 1 << 7;
+/// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the
+/// terminator.
+pub const BYTES: usize = 2 * MAX_NAMES + NAME_BYTES + 1;
 
-/// The low bits of a record's header: the name's length. Zero terminates the set.
-const LEN: u8 = 0x7f;
+// A set arrives in one page, and the longest name has to fit in one set.
+const _: () = assert!(BYTES <= super::PAGE);
+const _: () = assert!(NAME_BYTES >= grant::MAX_NAME);
+
+/// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
+pub const IS_DIR: u8 = 1 << 0;
 
 /// Write `names` into `out`, returning the bytes used, or `None` if the set does not fit, a name
-/// is empty or too long, or there are more than [`MAX_NAMES`] of them.
+/// is empty or too long, there are more than [`MAX_NAMES`] of them, or together they are over
+/// [`NAME_BYTES`].
+///
+/// A record is a length byte, a flags byte ([`IS_DIR`]), then the name; a zero length ends the set,
+/// so a name may not be empty.
 ///
 /// **`None` rather than a short write**, for [`MAX_NAMES`]'s reason: the caller is building a
 /// capability, and a truncated capability is a different capability.
@@ -28,16 +44,22 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
         return None;
     }
     let mut n = 0;
+    let mut name_bytes = 0;
     for &(name, is_dir) in names {
-        if name.is_empty() || name.len() > grant::MAX_NAME {
+        if !grant::fits(name) {
             return None;
         }
-        let end = n + 1 + name.len();
+        name_bytes += name.len();
+        if name_bytes > NAME_BYTES {
+            return None;
+        }
+        let end = n + 2 + name.len();
         if end + 1 > out.len() {
             return None;
         }
-        out[n] = name.len() as u8 | if is_dir { IS_DIR } else { 0 };
-        out[n + 1..end].copy_from_slice(name);
+        out[n] = name.len() as u8;
+        out[n + 1] = if is_dir { IS_DIR } else { 0 };
+        out[n + 2..end].copy_from_slice(name);
         n = end;
     }
     *out.get_mut(n)? = 0;
@@ -73,14 +95,14 @@ impl<'a> Iterator for Names<'a> {
     type Item = (&'a [u8], bool);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let head = *self.buf.get(self.at)?;
-        let len = (head & LEN) as usize;
+        let len = *self.buf.get(self.at)? as usize;
         if len == 0 {
             return None;
         }
-        let name = self.buf.get(self.at + 1..self.at + 1 + len)?;
-        self.at += 1 + len;
-        Some((name, head & IS_DIR != 0))
+        let flags = *self.buf.get(self.at + 1)?;
+        let name = self.buf.get(self.at + 2..self.at + 2 + len)?;
+        self.at += 2 + len;
+        Some((name, flags & IS_DIR != 0))
     }
 }
 

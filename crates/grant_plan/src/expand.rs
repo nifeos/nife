@@ -21,6 +21,15 @@ pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 /// ("Why the bound is eight").
 pub const MAX_NAMES: usize = 8;
 
+/// **The most bytes of name one expansion may grant, all its names together**, for
+/// [`MAX_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it holds
+/// its names packed in this many bytes rather than [`MAX_NAMES`] slots of [`MAX_NAME`] each. It
+/// matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and exceeding it is
+/// the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a set carries").
+///
+/// Name: provisional (milestone 946).
+pub const NAME_BYTES: usize = 2 * (MAX_NAME + 1);
+
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Name {
@@ -72,8 +81,13 @@ impl Name {
 /// the set itself (`filesystem_contract::nameset`), and because a listing is a rendering of authority.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
-    names: [Name; MAX_NAMES],
-    /// Whether each name is a directory, in step with `names`.
+    /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
+    /// than [`MAX_NAMES`] slots of [`MAX_NAME`], because this is copied by value through the
+    /// shell's deepest frames ([`NAME_BYTES`]).
+    bytes: [u8; NAME_BYTES],
+    /// Where each name ends in `bytes`, in step with `is_directory`.
+    ends: [u16; MAX_NAMES],
+    /// Whether each name is a directory, in step with `ends`.
     ///
     /// Name: ratified 2026-10-18 (calef), for this field and for the `is_directory` parameters
     /// that feed it.
@@ -98,10 +112,8 @@ impl Default for NameSet {
 impl NameSet {
     pub const fn empty() -> Self {
         NameSet {
-            names: [Name {
-                bytes: [0; MAX_NAME],
-                len: 0,
-            }; MAX_NAMES],
+            bytes: [0; NAME_BYTES],
+            ends: [0; MAX_NAMES],
             is_directory: [false; MAX_NAMES],
             n: 0,
         }
@@ -113,21 +125,53 @@ impl NameSet {
         set.push(name, is_directory).then_some(set)
     }
 
-    /// Add a name. `false` if the set is full or the name cannot travel in a grant; the caller must
-    /// turn that into a refusal rather than carrying on with a smaller set.
+    /// Where name `i` starts in `bytes`.
+    fn start(&self, i: usize) -> usize {
+        if i == 0 { 0 } else { self.ends[i - 1] as usize }
+    }
+
+    /// Name `i`.
+    fn name(&self, i: usize) -> &[u8] {
+        &self.bytes[self.start(i)..self.ends[i] as usize]
+    }
+
+    /// The bytes of name the set holds, all its names together.
+    pub fn name_bytes(&self) -> usize {
+        self.start(self.n)
+    }
+
+    /// Whether `len` more bytes of name fit beside what is held.
+    fn has_room_for(&self, len: usize) -> bool {
+        self.n < MAX_NAMES && self.name_bytes() + len <= NAME_BYTES
+    }
+
+    /// Add a name. `false` if the set is full, by count or by bytes, or the name cannot travel in a
+    /// grant; the caller must turn that into a refusal rather than carrying on with a smaller set.
     pub fn push(&mut self, name: &[u8], is_directory: bool) -> bool {
-        if self.n == MAX_NAMES || self.contains(name) {
+        if !crate::file_name_fits(name) || self.contains(name) || !self.has_room_for(name.len()) {
             return false;
         }
-        match Name::new(name) {
-            Some(n) => {
-                self.names[self.n] = n;
-                self.is_directory[self.n] = is_directory;
-                self.n += 1;
-                true
-            }
-            None => false,
+        self.insert(self.n, name, is_directory);
+        true
+    }
+
+    /// Put `name` at index `at`, moving the names from `at` on up by one. The caller has checked
+    /// [`NameSet::has_room_for`].
+    fn insert(&mut self, at: usize, name: &[u8], is_directory: bool) {
+        let from = self.start(at);
+        let used = self.name_bytes();
+        let len = name.len();
+        self.bytes.copy_within(from..used, from + len);
+        self.bytes[from..from + len].copy_from_slice(name);
+        let mut i = self.n;
+        while i > at {
+            self.ends[i] = self.ends[i - 1] + len as u16;
+            self.is_directory[i] = self.is_directory[i - 1];
+            i -= 1;
         }
+        self.ends[at] = (from + len) as u16;
+        self.is_directory[at] = is_directory;
+        self.n += 1;
     }
 
     pub fn len(&self) -> usize {
@@ -142,40 +186,38 @@ impl NameSet {
         self.iter().any(|(n, _)| n == name)
     }
 
-    /// **Keep the [`MAX_NAMES`] smallest names offered**, in ascending byte order, which is how one
+    /// **Keep the smallest names offered that fit**, in ascending byte order, which is how one
     /// [`Batch`] is selected out of a match too large to hand over at once.
     ///
-    /// Returns whether the set had **room before this name**; `false` is [`Batch::more`]. The name
-    /// still goes in when it sorts below the largest held, displacing it, so what comes out is the
-    /// smallest prefix of the ordering, not the first names the directory yielded. It takes a
-    /// [`Name`] because the caller has established that `name` can travel in a grant.
-    fn keep_smallest(&mut self, name: Name, is_directory: bool) -> bool {
+    /// Returns whether nothing was left out: `false` when `name` itself, or names it displaced, did
+    /// not fit. The name goes in when it sorts below a name held, displacing the largest ones until
+    /// the set fits [`MAX_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts after
+    /// what is kept. The caller then refuses every later name after the set's last
+    /// ([`Expander::offer`]), or a short name could slip in behind a long one that was left out and
+    /// the next batch would skip it. It takes a name the caller has established can travel in a
+    /// grant.
+    fn keep_smallest(&mut self, name: &[u8], is_directory: bool) -> bool {
         // Where it belongs: the first slot holding a name that sorts after it.
         let at = (0..self.n)
-            .find(|&i| self.names[i].as_bytes() > name.as_bytes())
+            .find(|&i| self.name(i) > name)
             .unwrap_or(self.n);
-        let room = self.n < MAX_NAMES;
-        if room {
-            self.n += 1;
-        } else if at == MAX_NAMES {
-            // Full, and this name sorts after everything held. It belongs to a later batch.
+        let mut kept_all = true;
+        while !self.has_room_for(name.len()) && self.n > at {
+            self.n -= 1;
+            kept_all = false;
+        }
+        if !self.has_room_for(name.len()) {
+            // Everything after it is gone and it still does not fit: it belongs to a later batch.
             return false;
         }
-        let mut i = self.n - 1;
-        while i > at {
-            self.names[i] = self.names[i - 1];
-            self.is_directory[i] = self.is_directory[i - 1];
-            i -= 1;
-        }
-        self.names[at] = name;
-        self.is_directory[at] = is_directory;
-        room
+        self.insert(at, name, is_directory);
+        kept_all
     }
 
     /// The **last** name in the set, which is a batch's watermark: the exclusive lower bound the
     /// next batch resumes from. `None` for an empty set, which is a sweep that is over.
     pub fn last(&self) -> Option<&[u8]> {
-        (self.n > 0).then(|| self.names[self.n - 1].as_bytes())
+        (self.n > 0).then(|| self.name(self.n - 1))
     }
 
     /// `(name, is_directory)` per name, in the order the directory yielded them, or in **byte order** for
@@ -185,13 +227,13 @@ impl NameSet {
     /// total order and one expansion needs none. Sorting the unbatched case too would be a change to
     /// what `echo *.txt` prints, bought for nothing.
     pub fn iter(&self) -> impl Iterator<Item = (&[u8], bool)> {
-        (0..self.n).map(|i| (self.names[i].as_bytes(), self.is_directory[i]))
+        (0..self.n).map(|i| (self.name(i), self.is_directory[i]))
     }
 
     /// The one name, when the set holds exactly one. A grant that must designate a single thing (a
     /// per-file grant) asks this and refuses when the answer is `None`.
     pub fn only(&self) -> Option<&[u8]> {
-        (self.n == 1).then(|| self.names[0].as_bytes())
+        (self.n == 1).then(|| self.name(0))
     }
 }
 
@@ -212,7 +254,9 @@ pub struct Expander<'a> {
     /// bound. See [`Expander::batch`].
     resume: Option<Resume>,
     /// A match beyond this batch was seen. Only ever set in batching mode, where being over the
-    /// bound is a fact to report rather than a refusal.
+    /// bound is a fact to report rather than a refusal. Once it is, a match after the set's last
+    /// name is left out too, so the batch stays a prefix of the ordering
+    /// ([`NameSet::keep_smallest`]).
     more: bool,
 }
 
@@ -258,8 +302,8 @@ impl<'a> Expander<'a> {
     /// **One batch of an expansion, resumed from a name** (milestone 109).
     ///
     /// The same membership decision as [`Expander::new`] and a different collection policy: instead
-    /// of refusing the ninth match, this takes the [`MAX_NAMES`] smallest matches strictly after
-    /// `resume` and reports that the rest exist. Membership is decided once, in [`Expander::offer`],
+    /// of refusing the ninth match, this takes the smallest matches strictly after `resume` that fit
+    /// [`MAX_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided once, in [`Expander::offer`],
     /// so a batched line and an unbatched one cannot disagree about what a pattern designates.
     ///
     /// The policies differ on purpose: an unbatched line refuses a ninth match, and a batched line
@@ -303,8 +347,15 @@ impl<'a> Expander<'a> {
         {
             return;
         }
-        let Some(n) = Name::new(name) else { return };
-        if !self.set.keep_smallest(n, is_directory) {
+        // Once a match was left out, everything this batch has left out sorts after its last name,
+        // and so must every later match it leaves out, or the next batch, which resumes after that
+        // last name, would skip one. A match below the last name may still displace it.
+        if self.more
+            && self.set.last().is_some_and(|last| name > last)
+        {
+            return;
+        }
+        if !self.set.keep_smallest(name, is_directory) {
             self.more = true;
         }
     }
@@ -526,6 +577,9 @@ impl Expansion {
 mod tests {
     use super::*;
 
+    /// A name one byte longer than a grant carries.
+    const TOO_LONG: [u8; MAX_NAME + 1] = [b'x'; MAX_NAME + 1];
+
     /// Drive the expander over a listing, the way both `echo` and the planner do.
     fn expand(pattern: &[u8], listing: &[(&[u8], bool)]) -> Result<NameSet, Refusal> {
         let mut e = Expander::new(pattern);
@@ -598,7 +652,7 @@ mod tests {
     /// grant would otherwise be a prefix of what the command matched.
     #[test]
     fn a_matched_name_too_long_to_grant_refuses_the_whole_expansion() {
-        let listing: [(&[u8], bool); 2] = [(b"one.txt", false), (b"seventeen-bytes!!", false)];
+        let listing: [(&[u8], bool); 2] = [(b"one.txt", false), (&TOO_LONG, false)];
         assert_eq!(expand(b"*", &listing), Err(Refusal::MatchNotNameable));
     }
 
@@ -866,12 +920,61 @@ mod tests {
         assert_eq!(done.next(), None);
     }
 
+    /// **A set is bounded by its bytes as well as its count** (milestone 946): two of the longest
+    /// names fit, and a third name of any length is the same refusal as a ninth.
+    #[test]
+    fn a_set_refuses_past_its_bytes_as_it_does_past_its_count() {
+        let a = [b'a'; MAX_NAME];
+        let b = [b'b'; MAX_NAME];
+        let mut set = NameSet::empty();
+        assert!(set.push(&a, false));
+        assert!(set.push(&b, true));
+        assert_eq!(set.name_bytes(), 2 * MAX_NAME);
+        assert_eq!(NAME_BYTES - 2 * MAX_NAME, 2);
+        assert!(!set.push(b"ccc", false), "one byte past NAME_BYTES");
+        assert!(set.push(b"cc", false), "and two bytes fit exactly");
+        assert_eq!(set.name_bytes(), NAME_BYTES);
+        let got: [(&[u8], bool); 3] = [(&a, false), (&b, true), (b"cc", false)];
+        assert!(set.iter().eq(got.iter().copied()), "{set:?}");
+        let listing: [(&[u8], bool); 3] = [(&a, false), (&b, false), (b"ccc", false)];
+        assert_eq!(expand(b"*", &listing), Err(Refusal::TooManyNames));
+    }
+
+    /// **A batch is a prefix of the ordering even when its bytes, not its count, end it.** With a
+    /// long name left out for room, a short name sorting after it must be left out too, or the next
+    /// batch would resume after the short one and the long one would never be designated by any
+    /// batch. The listing is in an order that tempts exactly that.
+    #[test]
+    fn a_batch_cut_by_bytes_is_still_a_prefix_of_the_ordering() {
+        let a = [b'a'; MAX_NAME];
+        let b = [b'b'; MAX_NAME];
+        let c = [b'c'; MAX_NAME];
+        let listing: [(&[u8], bool); 4] = [(&c, false), (&a, false), (&b, false), (b"d", false)];
+        let first = batch(b"*", Resume::Start, &listing).unwrap();
+        let want: [(&[u8], bool); 2] = [(&a, false), (&b, false)];
+        assert!(first.names.iter().eq(want.iter().copied()), "{:?}", first.names);
+        assert!(first.more);
+        let second = batch(b"*", first.next().unwrap(), &listing).unwrap();
+        let want: [(&[u8], bool); 2] = [(&c, false), (b"d", false)];
+        assert!(second.names.iter().eq(want.iter().copied()), "{:?}", second.names);
+        assert!(!second.more);
+        // And a long name that displaces held ones for room still leaves out only names after
+        // what is kept.
+        let listing: [(&[u8], bool); 4] = [(b"b1", false), (&c, false), (&b, false), (b"b2", false)];
+        let first = batch(b"*", Resume::Start, &listing).unwrap();
+        let mut held = first.names.iter().map(|(n, _)| n);
+        assert_eq!(held.next(), Some(&b"b1"[..]));
+        assert_eq!(held.next(), Some(&b"b2"[..]));
+        assert_eq!(held.next(), Some(&b[..]));
+        assert_eq!(held.next(), None, "c belongs to the next batch");
+    }
+
     /// **Batching does not soften the other refusal.** A matched name that cannot travel in a grant
     /// stops the sweep, because a batch missing a name the pattern matched is the silent prefix this
     /// mechanism exists to refuse. Batching splits an authority; it never shrinks one.
     #[test]
     fn a_batch_still_refuses_a_match_it_cannot_name() {
-        let listing: [(&[u8], bool); 2] = [(b"one.txt", false), (b"seventeen-bytes!!", false)];
+        let listing: [(&[u8], bool); 2] = [(b"one.txt", false), (&TOO_LONG, false)];
         assert_eq!(
             batch(b"*", Resume::Start, &listing),
             Err(Refusal::MatchNotNameable),

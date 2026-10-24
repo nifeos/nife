@@ -43,7 +43,9 @@ capability table, not of a branch it is trusted to take. The boundary is an addr
 reason milestone 36's checker lives outside the component it checks.
 
 The grant costs no memory. The name and the direction ride in the caretaker's three `START` argument
-words (`filesystem_contract::grant`, 16 bytes of name). One frame is shared by all three processes.
+words (`filesystem_contract::grant`, at most `WORDS_NAME`, 16 bytes of name; `pack_name` refuses a
+longer one). A longer file name, up to `grant::MAX_NAME`, reaches a program on a page instead: a
+name set's frame, which `fs_nameset_caretaker` serves (milestone 946). One frame is shared by all three processes.
 That is sound because every request on both hops is a blocking `CALL`: the client is parked inside its own
 call for the whole time the caretaker touches the page.
 

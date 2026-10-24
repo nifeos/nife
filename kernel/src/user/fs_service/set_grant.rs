@@ -55,10 +55,6 @@ pub fn start_granted_set(
         arg2: client_arg2,
         stack_pages,
     } = grant;
-    assert!(
-        filesystem_contract::grant::fits(dir.as_bytes()),
-        "a granted directory's name rides in two argument words; this one does not fit",
-    );
     let (file_ep, file_shared, readiness) = ensure(blk_image, fs_server_image)?;
     // From one region the returned holding reclaims, as [`start_granted`]'s are. The set's own
     // frame is not in it: the caretaker maps that page, and a mapped page is freed only after its
@@ -83,7 +79,8 @@ pub fn start_granted_set(
         core::ptr::copy_nonoverlapping(encoded.as_ptr(), mmu::phys_to_virt(set_phys) as *mut u8, n);
     };
 
-    let (lo, hi) = filesystem_contract::grant::pack_name(dir.as_bytes());
+    let (lo, hi) = filesystem_contract::grant::pack_name(dir.as_bytes())
+        .expect("a granted directory's name rides in two argument words; this one does not fit");
     let spec = filesystem_contract::grant::spec(dir.len(), rights);
 
     let caretaker = crate::sched::spawn(move || {

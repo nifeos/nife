@@ -91,8 +91,16 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
   supervised by the client it serves)), and the progenitor builds one.
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the
   subtree one for this path. `rm *.txt` is planned, previewed by `caps`, and refused at delivery.
-- A directory or file name that does not fit in a grant's two argument words
-  (`filesystem_contract::grant::fits`), because each name travels packed into two words.
+- A directory name that does not fit in a grant's two argument words
+  (`filesystem_contract::grant::WORDS_NAME`, which `pack_name` refuses past), because the caretaker
+  is told its directory packed into two words.
+
+A file name that does not fit those two words is delivered, not refused (milestone 946 (a granted
+file name can be longer than sixteen bytes)). `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE`
+instead of a name and grants the set of that one name, which [`set_page`] writes on the page a
+words grant's set uses. The progenitor builds `fs_nameset_caretaker` for it, as it does for any set,
+and where the file server binds badges it puts the caretaker in front of the bound one, because a
+badge is bound to the whole directory and the set is what narrows it.
 
 ## The plain request
 

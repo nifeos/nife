@@ -185,11 +185,8 @@ fn spawn_rmle(
     file_shared: u64,
     report: RendezvousId,
 ) {
-    assert!(
-        filesystem_contract::grant::fits(file_name.as_bytes()),
-        "rmle's target name rides in two argument words; this one does not fit",
-    );
-    let (lo, hi) = filesystem_contract::grant::pack_name(file_name.as_bytes());
+    let (lo, hi) = filesystem_contract::grant::pack_name(file_name.as_bytes())
+        .expect("rmle's target name rides in two argument words; this one does not fit");
     let spec = filesystem_contract::grant::spec(file_name.len(), 0);
 
     sched::spawn(move || {

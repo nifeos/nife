@@ -235,9 +235,10 @@ Known limitations, next to the feature rather than only in a tracker.
   the prompt. The stop rule sees only failures the shell prints, a sweep lists the directory once
   per batch, and a name created mid-sweep joins it only above the watermark.
 - A literal operand's type bit is `false` because nothing enumerated it. Only a set the shell
-  expanded carries the types it observed. Today no wiring serves a single-name grant through
-  `fs_nameset_caretaker`, so nothing reads that bit; if one ever does, its listing would call a
-  directory a file.
+  expanded carries the types it observed. `rm` with a literal name longer than two argument words is
+  served through `fs_nameset_caretaker` (milestone 946), so its listing calls a directory of that
+  name a file; `rm` reads only the names from a listing and asks the server what each is, so
+  nothing acts on the bit.
 - A set capability cannot move a name out of its set, so `mv *.txt elsewhere/` is not expressible
   (see `RENAME` above).
 - Only the first pattern on a line is expanded. No manifest declares two name slots, so a second

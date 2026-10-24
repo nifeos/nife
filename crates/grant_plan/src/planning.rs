@@ -136,14 +136,14 @@ pub fn plan_against_with(
     // The file grant takes the next positional. The name is the whole designation; the direction
     // comes from the manifest, which is why `wc report.txt` reads and `tee report.txt` writes
     // without the human typing a mode.
-    let file = plan_file(&m, pos, &mut next, &holds, expanded)?;
+    let file = plan_file(&m, pos, &mut next, &holds, &expanded)?;
 
     // The directory grant takes the next positional, and it is resolved exactly as a file grant is:
     // the leading path is walked here, once, against where the shell is standing now, and the
     // result is recorded as a value. The child is handed a capability to the directory the names
     // are **in**, plus the names, because taking a name away is an operation on the directory that
     // holds it and no per-file capability can express it. See [`DirectoryGrantDeclaration`].
-    let dir = plan_directory_grant(&m, short_options, pos, &mut next, &holds, expanded)?;
+    let dir = plan_directory_grant(&m, short_options, pos, &mut next, &holds, &expanded)?;
 
     // **A program that hears words is granted what its words designate** (milestone 205, §170
     // (how a foreign program is told what to do) clauses 2 to 5): one directory grant at the
@@ -151,7 +151,7 @@ pub fn plan_against_with(
     // word was `.`. A line that designated nothing grants nothing (calef's N1 ruling,
     // 2026-09-27T06:27Z). What the grant may do is the manifest's [`WordGrant`], which the shell
     // turns into rights and the progenitor clamps to the manifest it endows.
-    let dir = words_directory_grant(&m, &holds, expanded, dir)?;
+    let dir = words_directory_grant(&m, &holds, &expanded, dir)?;
 
     // The input operand: `wc report.txt` is `wc < report.txt` with the operator left out, which is
     // unambiguous because no manifest declares both a file and an input
@@ -159,7 +159,7 @@ pub fn plan_against_with(
     // order. An explicit `<` wins, and the operand is then unplaceable below. See
     // notes/grant-expression/per-file-grants.md ("`wc report.txt`: the input operand").
     let mut streams = streams;
-    plan_input_operand(&m, &mut streams, pos, &mut next, &holds, expanded)?;
+    plan_input_operand(&m, &mut streams, pos, &mut next, &holds, &expanded)?;
 
     // Anything left designates a slot this program does not have.
     if let Some(&extra) = pos.get(next) {
@@ -241,7 +241,7 @@ fn plan_file(
     pos: &[&[u8]],
     next: &mut usize,
     holds: &Holdings,
-    expanded: Expansion,
+    expanded: &Expansion,
 ) -> Result<Option<FileGrant>, Refusal> {
     let file = match m.file {
         FileGrantDeclaration::Forbidden => None,
@@ -278,7 +278,7 @@ fn plan_directory_grant(
     pos: &[&[u8]],
     next: &mut usize,
     holds: &Holdings,
-    expanded: Expansion,
+    expanded: &Expansion,
 ) -> Result<Option<DirectoryGrant>, Refusal> {
     let dir = match m.directory {
         DirectoryGrantDeclaration::Forbidden => None,
@@ -318,7 +318,7 @@ fn plan_directory_grant(
 fn words_directory_grant(
     m: &Manifest,
     holds: &Holdings,
-    expanded: Expansion,
+    expanded: &Expansion,
     dir: Option<DirectoryGrant>,
 ) -> Result<Option<DirectoryGrant>, Refusal> {
     let dir = match (m.program_argument, expanded.designation()) {
@@ -353,7 +353,7 @@ fn plan_input_operand(
     pos: &[&[u8]],
     next: &mut usize,
     holds: &Holdings,
-    expanded: Expansion,
+    expanded: &Expansion,
 ) -> Result<(), Refusal> {
     if matches!(m.input, InputDeclaration::Required { .. })
         && matches!(streams.source, Source::None)
@@ -415,7 +415,7 @@ pub fn redirect_target(
     if !holds.directory {
         return Err(Refusal::NoSuchCapability(CapabilityKind::File));
     }
-    let (which, dir, names) = designate(token, 0, &holds, Expansion::none())?;
+    let (which, dir, names) = designate(token, 0, &holds, &Expansion::none())?;
     let name = names.only().ok_or(Refusal::FileNotNameable)?;
     Ok(FileGrant {
         which,
@@ -498,7 +498,7 @@ fn designate(
     token: &[u8],
     at: usize,
     holds: &Holdings,
-    expanded: Expansion,
+    expanded: &Expansion,
 ) -> Result<(nav::Which, nav::Cwd, NameSet), Refusal> {
     // Refuses a pattern anywhere but the last component before anything else looks at the token,
     // because `a*/b` is not a smaller question than `a*`, it is a different one (notes/glob.md).

@@ -94,9 +94,15 @@ fn a_quoted_limit_is_the_constant_behind_it() {
     let cases: &[(Refusal, &str, usize, &str)] = &[
         (
             Refusal::FileNotNameable,
-            "at most {} bytes",
+            "at most {} bytes a file",
             crate::MAX_FILE_NAME,
             "MAX_FILE_NAME",
+        ),
+        (
+            Refusal::FileNotNameable,
+            "{} a directory",
+            crate::nav::MAX_DIRECTORY_NAME,
+            "nav::MAX_DIRECTORY_NAME",
         ),
         (
             Refusal::FileNotNameable,
@@ -106,9 +112,15 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         ),
         (
             Refusal::TooManyNames,
-            "at most {}",
+            "at most {},",
             crate::expand::MAX_NAMES,
             "expand::MAX_NAMES",
+        ),
+        (
+            Refusal::TooManyNames,
+            ", {} bytes of name",
+            crate::expand::NAME_BYTES,
+            "expand::NAME_BYTES",
         ),
         (
             Refusal::MatchNotNameable,

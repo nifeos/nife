@@ -11,12 +11,21 @@ spawner read.
 `CHILD_STACK_PAGES` is twelve. Eight faulted twenty-four bytes below the lowest page once `2>` put a
 second `FileOut`, each with a 256-byte staging buffer held by value, on the shell's `run_pipeline`
 frame. Twelve leaves four pages of headroom, because each smaller raise bought exactly enough and
-the next change found the wall again. The cost is 48 KiB of address space per child. The kernel's
-`pipeline_service::SHELL_EXTRA_STACK` must stay level with it: a test wiring with less headroom
-finds faults the boot does not have.
+the next change found the wall again. The cost is 48 KiB of address space per child.
+
+`SHELL_STACK_PAGES` is twenty-one, for the shell alone. A file's name may be 255 bytes (milestone
+946), an `Endowment` holds four file grants, and a debug build keeps a copy of one in a frame for
+every argument and return that carries it. Measured on `script/swish-check`'s aarch64 leg on
+2026-10-24 (UTC): twelve faults on the boot's first pipeline, sixteen in `installed/jig rollback`,
+seventeen passes both boots. Twenty-one is that and the four pages of headroom `CHILD_STACK_PAGES`
+keeps. The planner (`grant_plan`) is compiled optimized even in a debug build, which took 14 KiB off
+its largest frame. The shell is built from the progenitor's
+own pages once a boot. The kernel's `pipeline_service::SHELL_EXTRA_STACK` must stay level with it:
+a test wiring with less headroom finds faults the boot does not have.
 
 `CARETAKER_STACK_PAGES` is four. The caretaker has no allocator and no recursion, and its one
-large frame is a sixteen-entry handle table and a `grant::MAX_NAME` name buffer.
+large frame is a sixteen-entry handle table and, in `fs_nameset_caretaker`, the two
+`grant::MAX_NAME` name buffers a rename compares. Its name set is a static, not a local.
 
 `NET_STACK_STACK_PAGES` and `RESOLVER_STACK_PAGES` are nine: the kernel harness's eight extra pages
 and the one every process gets, since `build_child` counts the whole stack. The resolver's debug

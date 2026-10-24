@@ -54,6 +54,9 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 // SAFETY: the wiring maps SET_VA read-only, at least nameset::BYTES bytes, before this program runs.
 const SET_WINDOW: MappedWindow = unsafe { MappedWindow::new(SET_VA, nameset::BYTES as u64) };
 
+/// This process's copy of its name set, taken at startup ([`_start`]) and never written again.
+static mut SET: [u8; nameset::BYTES] = [0; nameset::BYTES];
+
 /// How many handles a confined program may hold open at once, including the granted directory at
 /// index 0. `fs_subtree_caretaker`'s number, for `fs_subtree_caretaker`'s reason: no heap, one
 /// stack page.
@@ -287,21 +290,25 @@ fn list(set: &[u8], cursor: usize) -> i64 {
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // **Copy the set before anything else runs.** It arrives in a read-only page, and this process
-    // then works from a local for the rest of its life, so the namespace it serves cannot be changed
-    // by anything that touches that page later. It is 273 bytes on the one stack page `run` maps.
-    let mut set = [0u8; nameset::BYTES];
+    // then works from its own copy for the rest of its life, so the namespace it serves cannot be
+    // changed by anything that touches that page later. The copy is a static rather than a local
+    // because a set of the longest names is most of a stack page ([`nameset::BYTES`]).
+    // SAFETY: this process has one thread, and `SET` is written here, once, before `serve` takes
+    // the only shared borrow of it for the rest of the process's life.
+    let set = unsafe { &mut *core::ptr::addr_of_mut!(SET) };
     for (i, b) in set.iter_mut().enumerate() {
         *b = SET_WINDOW.r8(i as u64);
     }
+    let set: &[u8] = set;
 
-    let mut buf = [0u8; grant::MAX_NAME];
+    let mut buf = [0u8; grant::WORDS_NAME];
     let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
 
     // The descent, exactly `fs_subtree_caretaker`'s: ask for the granted directory with the granted
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
     // through the handle this one request minted. An empty name is a channel the progenitor already
-    // bound to the directory, whose root is the granted directory and whose rights the server holds
-    // it to, so there is nothing to descend into.
+    // bound to the directory (milestone 946), whose root is the granted directory and whose rights
+    // the server holds it to, so there is nothing to descend into.
     let dir = if n == 0 {
         fs::ROOT
     } else {
@@ -319,12 +326,12 @@ pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // A set with nothing in it is not a capability anybody meant to hand out, and the shell refuses
     // to plan one (`grant_plan::Refusal::NoMatch`). If one arrives anyway the wiring is wrong, and dying
     // here is better than serving a namespace with no names in it.
-    if nameset::count(&set) == 0 {
+    if nameset::count(set) == 0 {
         panic!();
     }
 
     send(REPORT, filesystem_contract::READY, 0, 0);
-    serve(dir, &set);
+    serve(dir, set);
 }
 
 user_mode_runtime::panic_handler!();

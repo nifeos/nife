@@ -204,13 +204,16 @@ fn rm_needs_an_operand_and_something_to_narrow() {
 /// so a grant cannot name its way out **whether or not it started at the root**.
 #[test]
 fn a_directory_grant_cannot_be_named_out_of_the_shells_root() {
+    let mut buf = [0u8; 512];
+    let too_long = crate::test_support::with_too_long_name(b"rm ", &mut buf);
     for (line, want) in [
         (&b"rm /.."[..], Refusal::FileNotNameable),
         (b"rm /../passwd", Refusal::FileNotNameable),
         (b"rm ..", Refusal::FileNotNameable),
         (b"rm ../motd", Refusal::FileNotNameable),
+        (too_long, Refusal::FileNotNameable),
         (
-            b"rm this-name-is-far-too-long.txt",
+            b"rm seventeen-bytes!!/old.txt",
             Refusal::FileNotNameable,
         ),
     ] {
@@ -469,11 +472,21 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
 #[test]
 fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(MAX_NAMES, filesystem_contract::nameset::MAX_NAMES);
+    assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
     assert_eq!(expand::MAX_NAME, filesystem_contract::grant::MAX_NAME);
-    // And the widest set this crate can plan must fit the buffer that contract sizes for it.
-    let widest: [(&[u8], bool); MAX_NAMES] = [(b"sixteen-bytes!!!", false); MAX_NAMES];
+    // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
+    // name it may hold, sharing every byte it may hold.
+    let wide = [b'w'; expand::NAME_BYTES / MAX_NAMES];
+    let widest: [(&[u8], bool); MAX_NAMES] = [(&wide[..], false); MAX_NAMES];
     let mut buf = [0u8; filesystem_contract::nameset::BYTES];
     assert!(filesystem_contract::nameset::encode(&widest, &mut buf).is_some());
+    let mut set = expand::NameSet::empty();
+    for i in 0..MAX_NAMES {
+        let mut name = wide;
+        name[0] = b'a' + i as u8;
+        assert!(set.push(&name, false), "name {i} fits the set's bytes");
+    }
+    assert_eq!(set.name_bytes(), expand::NAME_BYTES);
 }
 
 /// **A program that hears words places no positional grant** (milestone 205, DECISIONS §170).

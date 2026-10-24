@@ -855,7 +855,7 @@ pub(super) fn build_shell(
         &ChildEndowment {
             caps: &sh_caps[..n_caps],
             maps: &sh_maps[..n_maps],
-            stack_pages: CHILD_STACK_PAGES,
+            stack_pages: SHELL_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
