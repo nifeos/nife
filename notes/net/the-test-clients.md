@@ -65,8 +65,8 @@ Three attempts is ordinary resolver behavior, not a widened timeout.
 ## Reopening a socket
 
 `TEST_TCP_REOPEN` connects, closes, opens again and connects again. If `net_stack` gave a socket a
-local port tied to its place in the table, the reopen would reuse the exact port, and a second
-connect on a 4-tuple whose slirp flow had not cleared would stall the stack's bounded poll. The
+local port tied to its place in the table, the reopen would reuse the exact port. A second connect
+on a 4-tuple whose slirp flow had not cleared would then stall the stack's bounded poll. The
 rotating allocator gives the reopen a fresh port. The second socket also lands in the entry the
 first left, with a new badge, so the test exercises an entry's page being taken back and attached
 again.

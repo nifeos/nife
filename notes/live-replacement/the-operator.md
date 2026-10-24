@@ -2,15 +2,14 @@
 
 *An appendix to [`notes/live-replacement.md`](../live-replacement.md), which is the page to read and
 holds the five steps of a swap and why they run in that order. This file holds the design inside
-`components/src/swapper.rs`, the operator, one system per entry role. The directory and the stem
-are provisional names; naming is calef's.*
+`components/src/swapper.rs`, the operator, one system per entry role.*
 
 The operator is an unprivileged process. The kernel does not know a swap is happening, has no
-notion of a component, and gained no method for one. What it supplies is what it already supplied:
-endpoints that name no peer (§12 (call/reply IPC: a one-shot reply capability)), a death message
-(§26 (the fault endpoint)), a reap that needs no construction authority (§32), and revocation (§13
-(capability revocation and untyped reclamation), §16, and the device take-back of §41). Everything
-else is code in the operator.
+notion of a component, and gained no method for one. It supplies what it already supplied.
+There are endpoints that name no peer (§12 (call/reply IPC: a one-shot reply capability)), a death
+message (§26 (the fault endpoint)) and a reap that needs no construction authority (§32). There is
+revocation: §13 (capability revocation and untyped reclamation), §16, and the device take-back of
+§41. Everything else is code in the operator.
 
 ## The roles
 
