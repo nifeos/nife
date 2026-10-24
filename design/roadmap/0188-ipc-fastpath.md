@@ -1,34 +1,33 @@
 ---
-status: PARTIAL
+status: BUILT
 raised: 2026-08-28
-milestone_dependencies: 708
-decision_dependencies: 95
-machine_requirements: none
-specific_machine: radon (E5 on radon, milestone 708, is the measurement that decides phase 4)
-needs_person: yes
+built: 2026-10-24
 ---
 # 188. The IPC fastpath: the gate measures a shape userspace does not use, and three cheaper cuts come before a hand-written path
 
-Partial. Phases 1 to 3 are built and measured; phase 4 is an architect's and is untouched. The
-results change the recommendation's arithmetic without changing its conclusion.
+Built 2026-10-24 (UTC), closed with phase 4 refused. Phases 1 to 3 are built and measured. calef
+closed the block on 2026-10-24: *"Close 188, refuse phase 4"*. Phase 4 was not worth its permanent
+verification cost, which is how the block said it would close. Its trigger, a layout control
+showing a latency difference footprint explains, can no longer fire. On 2026-10-20 calef retired
+E3's question after step 0 showed milestone 796 (pin the hot trap path's placement) pins the hot trap path ahead of the padding
+(notes/footprint-perturbation.md). The refusal is milestone 951, with the condition that reopens it.
 
 calef's framing: *"a hand-maintained IPC fastpath, so the common case stops paying for the general
 one."* The title says the premise needs checking before the fastpath does. The gate that says we are
 over target measures an IPC shape that no userspace program in this tree performs. And the largest
 single item it reports on aarch64 is a symbol of which 94% is never fetched.
 
-Phase 4 only needs the measurement and the go-ahead; phases 1 to 3 were a lane's own call, needed
-nobody, and are done.
+Phases 1 to 3 were a lane's own call and needed nobody. What follows was written while phase 4 was
+held, and is kept as the case milestone 951 refers to.
 The decision is [§95 (hand-written IPC)](../decisions/0095-a-proven-ipc-fastpath.md), a hand-written
 IPC fastpath and whether it can stay proven. It is `DECIDED`, and what calef decided is *"don't
 decide yet"*, in two tiers. The eligibility predicate and its proof in `crates/ipc` are ratified as
 buildable now. The fastpath itself stays gated on the one measurement that would justify it:
-milestone 74 (cycle counters) on milestone 127 (the seL4 machine). So the decision field names §95
-and nothing else, and the dependency graph resolves it: the ruling answered what it was asked, and
-the wait that remains is E5, milestone 708 (an executed footprint ladder for radon). The milestone
-field names 708, and the machine and person fields carry its evening at radon. The spend is still
-calef's. Phase 4 is a standing verification obligation and a permanent maintenance cost, and this
-block recommends against starting it until the measurement exists.
+milestone 74 (cycle counters) on milestone 127 (the seL4 machine). While phase 4 was held, the
+block's fields named §95 and E5, milestone 708 (an executed footprint ladder for radon), as its
+wait. The block closed BUILT and carries no dependency fields. Phase 4 is a standing verification
+obligation and a permanent maintenance cost, and this block recommended against starting it until
+the measurement existed.
 
 ## Appendices
 
@@ -114,7 +113,7 @@ measurement first (E) is the recommendation. A hand-written fastpath (F) is defe
    outlining four cold arms made the closure bigger, because the walk follows the new call. The gate
    now reads `#[cold]` from the source instead of a list inside itself. That took 6 to 10% off both
    closures for +0.17% to +0.24% retired instructions, and `kmem::recycle` left the closure.
-4. Phase 4, the hand-written fastpath. Not started, held for calef.
+4. Phase 4, the hand-written fastpath. Refused 2026-10-24 (calef), milestone 951.
 
 | after phase 3 | `ipc_send_receive` | `ipc_call_reply` | `syscall_entry` | total |
 |---|---|---|---|---|
@@ -126,7 +125,7 @@ measurement first (E) is the recommendation. A hand-written fastpath (F) is defe
 had grown with the tree (`call` 35 files, `send` 64), which is why the gate reports two shapes
 rather than swapping one for the other.
 
-## Phase 4, which is the question calef is holding
+## Phase 4, which calef held and then refused
 
 The gap is not closed. `ipc_call_reply` is 48% to 103% over the 4 KiB target after phases 1 to 3.
 The original plan said phase 4 was not worth building if phase 3 got under 4 KiB, and it did not.
@@ -150,6 +149,9 @@ The recommendation stands. Do not start phase 4 on footprint arithmetic alone. S
 control shows a latency difference that footprint explains. Then build option 1 first, aimed at that
 34%. If no such difference appears, this milestone closes saying phase 4 was not worth its permanent
 verification cost.
+
+It closed that way on 2026-10-24. Under milestone 796's pin no pad or shift moves a hot instruction,
+so the layout control cannot show such a difference, and calef refused phase 4 (milestone 951).
 
 ## Open questions, and the one that is an architect's
 
@@ -186,7 +188,7 @@ Left open, for a lane rather than for calef:
 
 ## BUGS
 
-Phase 4 is not started, so there is nothing of its own to carry a `BUGS` section. Three limitations
+Phase 4 was refused unbuilt, so there is nothing of its own to carry a `BUGS` section. Three limitations
 of the gate are recorded where a reader meets them, in `script/fastpath-footprint` and milestone
 132. Phases 1 and 2 fixed all three: the root list measured a shape userspace does not run, the
 aarch64 entry figure counted sixteen vector entries where a syscall fetches one, and
@@ -229,9 +231,11 @@ like every other name in the tree.
   ceiling, not 51%). `design/decisions/` is not a lane's to amend, so it was written up as
   `design/roadmap/0380-the-ceiling-applies-to-a-number-that-moved.md` for whoever holds §144, and
   they folded it into §144 the same day, which is why that block is BUILT.
-- **Outstanding.** Phase 4 itself, the hand-written fastpath. Untouched, gated on calef, and the
-  section above says what would decide it. Checked against the tree: `kernel/src/sched.rs` has one
-  path through `ipc_call`, `ipc_receive_cap` and `ipc_reply` and no second one.
+- **Refused.** Phase 4 itself, the hand-written fastpath (calef, 2026-10-24 UTC: *"Close 188,
+  refuse phase 4"*). Its trigger cannot fire under milestone 796's pin, and a second path is a
+  permanent verification cost. Checked against the tree: `kernel/src/sched.rs` has one path through
+  `ipc_call`, `ipc_receive_cap` and `ipc_reply` and no second one. This refusal is milestone 951
+  (design/roadmap/0951-a-hand-written-ipc-fastpath.md), which carries the condition that reopens it.
 - **Refused.** `ReplyRecv` fusion, which would take the round trip from three syscalls to two. It is
   a syscall-surface change, DECISIONS §10 and §16 govern it, and the block already says it is named
   so it is tracked and not so it is planned. A lane must not take it.
@@ -253,4 +257,5 @@ on milestone 127's TX1 can observe the payoff. Gate: DECISION. PARTIAL 2026-09-0
 entry instead of sixteen (3,304 to 1,508, accounting, nothing got faster). Phase 3's finding:
 milestone 156's extraction does not transfer to a closure, and the gate now reads `#[cold]`
 from the source rather than a list inside itself; 6 to 10% off both closures for +0.2%
-instructions. The gap is not closed, so phase 4 stays an architect's.
+instructions. The gap is not closed. BUILT 2026-10-24: calef refused phase 4 (milestone 951) once its trigger
+could no longer fire.
