@@ -1,32 +1,13 @@
 #![no_std]
 //! **Live component replacement: the shared half** (milestone 23, DECISIONS §41).
 //!
-//! Four programs make up the hot-swap system (`swapper` the operator, `rust_swappable` and
-//! `c_swappable` the two instances of the swappable component, `swap_boundary_witness` the client
-//! and the attacker), and this is what they share: the wire protocol, the addresses of the pages
-//! they pass between them, the digest both language implementations of the component must compute,
-//! and the serving loop itself. Each of the four depends on this crate (rule 7).
-//!
-//! # The shape
-//!
-//! ```text
-//!                                    ┌──── the stable name: one endpoint, forever ────┐
-//!    swap_boundary_witness ──CALL──► │                  SVC                           │ ◄──RECEIVE_CAP── rust_swappable v1
-//!    (client)                        └────────────────────────────────────────────────┘ ◄──RECEIVE_CAP── c_swappable v2
-//! ```
-//!
-//! There is no process in that data path. The client's capability never changes, the client's loop
-//! never branches, and the swap is a change in *who is parked in `RECEIVE_CAP`*. That is the whole
-//! trick, and it is DECISIONS §12's endpoint-only naming cashed in: a client names an endpoint and
-//! never a peer, so the peer is free to be somebody else tomorrow.
-//!
-//! # The one thing the component owns that cannot be shared
-//!
-//! The UART's registers. Two processes writing one device's registers is the interleaving hazard
-//! the roadmap's step 2 exists for, so the operator takes the registers back with
-//! `PageFrame::REVOKE` on the device capability (DECISIONS §41) between quiescing the old instance and
-//! endowing the new one. The old instance is asked to touch them one more time afterwards, and the
-//! kernel's fault message is the receipt.
+//! What `swapper` (the operator), `rust_swappable` and `c_swappable` (the component's two
+//! instances) and `swap_boundary_witness` (client and attacker) share (rule 7): the wire protocol,
+//! the pages' addresses, the digest both languages compute, and the serving loop. A swap changes
+//! *who is parked in `RECEIVE_CAP`* on one stable endpoint, so the client never changes (DECISIONS
+//! §12 (Call/Reply IPC)'s endpoint-only naming). The UART's registers are the one thing not
+//! shared: the operator takes them back with `PageFrame::REVOKE` between quiescing the old instance
+//! and endowing the new one. See notes/live-replacement.md.
 //!
 //! Name: ratified 2026-10-18 (calef): "`hot_swap_contract` makes sense". "Swap" alone means paging in
 //! OS vocabulary; milestone 23's word for live replacement is hot swap.
@@ -47,16 +28,10 @@ pub const OPERATION_PUT: u64 = 1;
 
 /// **The sequence number a wedging instance swallows**: it takes the request, files the caller's
 /// one-shot `Reply` capability away, and stops answering *without dying* (milestone 23's third
-/// residual; notes/hung-component.md).
-///
-/// **Keyed on the request rather than on a count, and that is what makes it deterministic.** A wedge
-/// that fired after N requests would depend on how far the conversation had got when the operator
-/// was ready, which is a race. This fires on the identity of one request, so the same thing happens
-/// in the same place whatever order the scheduler picked, on every architecture, under TCG or HVF.
-/// It sits between [`SWAP_TRIGGER`] and the end of the conversation so there is a real conversation
-/// on both sides of the hang.
-///
-/// Zero means "never wedge", which is what the two healthy roles pass.
+/// residual; notes/hung-component.md). Keyed on one request's identity, not a count, so it fires in
+/// the same place under any scheduling; it sits after [`SWAP_TRIGGER`] so there is a conversation
+/// on both sides of the hang. Zero means "never wedge", which the healthy roles pass. See
+/// notes/hung-component/the-wedge-test.md.
 ///
 /// Provisional name (`wedge`), like everything else in this crate's report and role vocabulary. It
 /// is at least the word this tree already uses for the condition: DECISIONS §26 calls it "alive but
@@ -82,25 +57,19 @@ pub const BAD_REQUEST: u64 = u64::MAX;
 // ===========================================================================================
 // The broker protocol: the latency ladder's middle rung (`broker`).
 //
-// **Opt-in per channel, never the default.** A producer that chooses this rung speaks the same
-// `OPERATION_PUT` on the front endpoint and gets one of two answers: the backend's own reply (steady
-// state, pass-through) or `ACCEPTED` (the backend is down and the broker took custody). The
-// control messages travel in band on the same endpoint, for the same reason `OPERATION_QUIESCE` does:
-// synchronous rendezvous means a server blocks on one endpoint, and a second endpoint would need a
-// wait-any primitive the kernel deliberately does not have (DECISIONS §26.5).
+// **Opt-in per channel, never the default.** A producer speaks the same `OPERATION_PUT` on the
+// front endpoint and gets the backend's own reply or `ACCEPTED` (the broker took custody). Control
+// travels in band, as `OPERATION_QUIESCE` does, because a second endpoint would need a wait-any
+// primitive the kernel deliberately does not have (DECISIONS §26.5, in §26 (the fault endpoint:
+// thread death becomes a message a supervisor holds)).
 // ===========================================================================================
 
 /// **The broker's warning, which it is never asked to acknowledge** (DECISIONS §231 (a swap's warning
-/// to a dependent is advisory, and the supervisor never waits for it)). It replaced two in-band
-/// `CALL`s, `BOP_DOWN` and `BOP_UP`, on 2026-09-27. A `CALL` to a broker that does not answer hangs
-/// the operator, and the measurement behind §231 (`ROLE_UNWARNED`) showed the warning is only a
-/// courtesy: an unwarned broker loses nothing. So the operator writes what it wants on a page the
-/// broker maps read-only and signals a notification bound to the broker's thread, and does not wait.
-///
-/// The page's first word is [`WANT_DOWN`] or [`WANT_UP`]. The signal only wakes the broker; it reads
-/// the page on every wakeup, message or signal, so a signal it has not yet seen changes nothing but
-/// latency. That is what makes every ordering safe: a late or missed signal degrades to pass-through,
-/// which is the case `ROLE_UNWARNED` measured as lossless.
+/// to a dependent is advisory, and the supervisor never waits for it)). The operator writes
+/// [`WANT_DOWN`] or [`WANT_UP`] in the first word of a page the broker maps read-only, signals a
+/// notification bound to the broker's thread, and does not wait. The broker reads the page on every
+/// wakeup, so a late or missed signal degrades to pass-through, which `ROLE_UNWARNED` measured as
+/// lossless. See notes/non-cooperative-fallback.md.
 ///
 /// Name: provisional (milestone 23's lane, 2026-09-27), for this constant and the two below.
 pub const BROKER_WARN_VA: u64 = 0x0330_0000;
@@ -289,14 +258,9 @@ pub mod client_checks {
     pub const NONE_REFUSED: u64 = 1 << 6;
     /// **The hung rung only.** One of this client's calls was swallowed by a component that stopped
     /// answering, and it came back [`abi::Error::Gone`] when the operator destroyed that
-    /// component's region: milestone 254 (a caller stranded by a server that died)'s
-    /// `sched::strand_callers_of` answering every caller a finished server still held a reply
-    /// capability for.
-    ///
-    /// Without this bit the hung run would be indistinguishable from a run in which the component
-    /// simply happened to be replaced between two calls, which is the ordinary swap and proves
-    /// nothing new. With it, the client is saying: *I was stranded inside a `CALL`, and the kernel
-    /// freed me when my server's region was destroyed, with no help from my server.*
+    /// component's region (milestone 254 (a caller stranded by a server that died)'s
+    /// `sched::strand_callers_of`). Without it the hung run would read as an ordinary swap between
+    /// two calls.
     ///
     /// Name: provisional.
     pub const WAS_GONE: u64 = 1 << 7;
@@ -521,26 +485,11 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // The capability half of the contract (milestone 23's manifest residual).
 //
 // §41's sentence is that any program which **speaks the protocol** and **holds the right
-// capabilities** is the component. Everything above is the first half. Until this section existed
-// the second half was a set of literal arrays inside `swapper`, which is what the roadmap block
-// calls the defect in six words: "endowments are literals in the operator's source". A vendor's
-// build of the same component was therefore not a drop-in, because what to hand it lived in the
-// operator rather than with the contract.
-//
-// So the declarations live here, next to the wire format they belong to, and the operator wires
-// from them. Two things follow that are worth stating rather than noticing:
-//
-//   - **A manifest belongs to the contract, not to the build.** What a console component needs is
-//     decided by what a console component *is*, and a build that needed something else would not be
-//     substitutable for one that did not. `rust_swappable` and `c_swappable` are wired from one
-//     declaration, which is the drop-in claim in its smallest true form.
-//   - **A role name is the component's, and the object is the supervisor's.** `CLIENT` asks to use an
-//     endpoint it calls `service`; on the direct channel that is the shared service endpoint and on
-//     the queued channel it is the broker's front endpoint. One declaration, two routings, and the
-//     component cannot tell which it got.
-//
-// The role names are **provisional** (see this crate's report): a lane may not mint a name, and
-// these are the words a reader meets first.
+// capabilities** is the component; above is the first half, and this is the second. The
+// declarations live next to the wire format because a manifest belongs to the contract, not to
+// the build, and the operator wires from them: `rust_swappable` and `c_swappable` share one
+// declaration. A role name is the component's and the object is the supervisor's. The role names
+// are **provisional**. See notes/component-manifest.md.
 // ===========================================================================================
 
 use capability_plan::Direction::{Serve, Use};
@@ -814,23 +763,12 @@ pub fn probe_device() -> u64 {
 /// **`x86_64` has no device page to probe** (milestone 161), and this arm exists so the crate
 /// compiles for the third architecture rather than because there is something here to read.
 ///
-/// The other two arms differ only in a register layout, which is what a UART driver is *for*. This
-/// one differs in kind: COM1 on x86 is at I/O ports `0x3f8..0x400`, an address space with no page
-/// tables in front of it, so `user::UART_PHYS` is **zero** and there is nothing for a device
-/// capability to be a mapping of. That zero is the marker for
-/// [DECISIONS §121](../../../design/decisions/0121-port-io-capability.md) (PROPOSED), which is a
-/// question about what a capability *is* rather than a driver to write.
-///
-/// **So the live-swap fixture does not run here**, and `system_tests/src/user/live_swap_tests.rs` says so
-/// with `skip!()` rather than by leaving this arm to produce a passing test. A version of this that
-/// read `DEV_VA` anyway would in fact pass: on x86 the fixture would map physical page zero, the
-/// read would return an IVT byte, and revocation would still fault. That is the trap worth naming,
-/// because a green test proving revocation over a page that is not a device is a green test about
-/// nothing, and it would read as x86 having a device story it does not have.
-///
-/// The value is arbitrary and never observed. It is not `0`, because zero is what a real probe of a
-/// quiet line status register could plausibly return, and a sentinel a reader can tell from data is
-/// worth one line.
+/// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
+/// `user::UART_PHYS` is **zero**, the marker for DECISIONS §121 (what a device capability is when
+/// the device has no page: x86 port I/O), PROPOSED. `system_tests/src/user/live_swap_tests.rs`
+/// `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an IVT byte and
+/// still fault on revoke, a green test about nothing. The value is never observed, and is not `0`
+/// because a quiet line status register could return that.
 #[cfg(target_arch = "x86_64")]
 pub fn probe_device() -> u64 {
     u64::MAX
@@ -937,19 +875,12 @@ pub fn start(version: u64, xform: fn(u64) -> u64, a0: u64, log_base: u64, a2: u6
 
 /// **Serve the stateful contract** ([`STATEFUL_BACKEND`], DECISIONS §209).
 ///
-/// [`serve`]'s loop with one word of state and three differences:
-///
-/// - **An absorbing instance reads the handoff page before it serves anything**, and either
-///   announces the tally it took over ([`NOTE_ABSORBED`]) or refuses ([`NOTE_NOT_ABSORBED`]) and exits
-///   without ever receiving on the service endpoint. The refusal is what lets the operator not
-///   commit. An instance that served first and checked later would already have answered a request
-///   with the wrong tally, which is the loss the check is for.
-/// - **The reply's second word carries the tally rather than the echoed sequence number.** The two are
-///   equal exactly when no request was lost and no state was, so the client's existing `SEQ_ECHOED`
-///   check becomes the continuity witness without the client knowing which system it is in.
-/// - **Quiescing writes the blob**, before the reply, so the operator's `QUIESCED` is also the receipt
-///   that the page holds this instance's final state. And a quiesced instance can be told to
-///   [`POKE_RESUME`], because a swap that does not commit must leave the incumbent serving.
+/// [`serve`]'s loop with one word of state. An absorbing instance reads the handoff page **before
+/// it serves anything** and announces the tally it took over ([`NOTE_ABSORBED`]) or refuses
+/// ([`NOTE_NOT_ABSORBED`]) and exits, so the operator can decline to commit before any request is
+/// answered wrongly. The reply's second word is the tally, equal to the echoed sequence number
+/// exactly when nothing was lost. Quiescing writes the blob before the reply, so `QUIESCED` is the
+/// receipt; a quiesced instance can be told to [`POKE_RESUME`]. See notes/state-handoff.md.
 pub fn serve_with_state(
     version: u64,
     xform: fn(u64) -> u64,
@@ -1070,27 +1001,10 @@ pub fn serve(version: u64, xform: fn(u64) -> u64, log_base: u64, device: bool, w
             continue;
         };
         match operation {
-            // **Stop answering, without dying** (milestone 23's third residual,
-            // notes/hung-component.md). Everything a supervisor in this tree can notice is a
-            // *death*: a fault or an exit, a kernel-stamped message on the supervision endpoint, a
-            // corpse to reap, a region that comes home. None of that happens here. This process
-            // keeps its endpoint, keeps its device, stays `Blocked`, and every mechanism in the
-            // system reads it as a healthy server between requests, **because that is what a healthy
-            // server between requests looks like.**
-            //
-            // **It announces nothing.** The one message it sends is the ordinary swap trigger, the
-            // same three words a healthy incumbent sends after `SWAP_TRIGGER` requests, so the
-            // operator learns nothing from it that it would not learn from a healthy run. It is sent
-            // here, at the swallowed request, rather than earlier, for determinism alone: the
-            // operator's quiesce must arrive after this request was taken, or a healthy-looking
-            // incumbent would answer it and the run would test the healthy path. The operator finds
-            // the hang the only way a real supervisor could, by its quiesce going unanswered.
-            //
-            // Then it parks in `RECEIVE` on its control endpoint, which nothing in the hung system
-            // ever sends to: blocked awaiting a peer that will not speak, the commonest real hang.
-            // `slot`, the caller's one-shot `Reply`, stays in this process's table and is never used,
-            // and no `log_put` is made, so the witness page carries a real gap at this sequence number
-            // until the caller asks again.
+            // **Stop answering, without dying**: keep the endpoint, the device and `slot`, and
+            // park on a control endpoint nothing sends to, with no `log_put`. The ordinary swap
+            // trigger is sent here, at the swallowed request, so the operator's quiesce arrives
+            // after it was taken. See notes/hung-component/the-wedge-test.md.
             OPERATION_PUT if wedge != 0 && arg == wedge => {
                 user_mode_runtime::send(NOTE, NOTE_SWAP_NOW, version, served);
                 loop {

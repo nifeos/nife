@@ -11,10 +11,9 @@ pub const ROLE_TAG: u64 = 0xe1e0;
 /// **What the kernel hands `net_stack` at spawn**, in two of its three argument words (the third
 /// stays the listen grant, as for the virtio server).
 ///
-/// # Examples
+/// [`Handoff::unpack`] refuses what [`Handoff::pack`] did not make.
 ///
-/// The spawn handoff is the one thing the kernel and `net_stack` must agree on bit for bit, and it
-/// refuses what it did not make:
+/// # Examples
 ///
 /// ```
 /// use e1000e::Handoff;

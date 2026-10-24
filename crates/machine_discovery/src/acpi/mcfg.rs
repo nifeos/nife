@@ -1,9 +1,5 @@
 //! **The MCFG**: where the PCIe ECAM windows are.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
@@ -23,11 +19,8 @@ impl McfgEntry {
     /// functions x 4 KiB), and the range is inclusive at both ends.
     ///
     /// **A window that ends before it begins covers nothing, and says so rather than panicking.**
-    /// Nothing in the MCFG's encoding stops firmware writing `start_bus = 255, end_bus = 0`, and
-    /// the subtraction underflowed on exactly that until milestone 319's
-    /// `verification::an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus` found it.
-    /// Zero is the honest answer: there is no bus in the range, so there is no configuration space
-    /// to map.
+    /// Nothing in the MCFG's encoding stops firmware writing `start_bus = 255, end_bus = 0`. Zero
+    /// is the honest answer: there is no bus in the range, so no configuration space to map.
     pub const fn size(&self) -> u64 {
         if self.end_bus < self.start_bus {
             return 0;
@@ -55,10 +48,8 @@ pub fn mcfg_entry(body: &[u8], index: usize) -> Option<McfgEntry> {
     })
 }
 
-/// Machine-checked proofs over the MCFG (milestone 319).
-///
-/// Why these tables carry harnesses, and what is deliberately left unproved, is on
-/// `acpi::root`'s `verification`, beside the RSDP's.
+/// Machine-checked proofs over the MCFG (milestone 319). Why these tables carry harnesses is on
+/// `acpi::root`'s `verification`.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.
@@ -66,18 +57,10 @@ pub fn mcfg_entry(body: &[u8], index: usize) -> Option<McfgEntry> {
 mod verification {
     use super::*;
 
-    /// **An ECAM window's size is total, and counts exactly one mebibyte per bus it covers.**
-    ///
-    /// **This harness was also false when it was written.** [`McfgEntry::size`] computed
-    /// `end_bus - start_bus + 1` in `u64`, which underflows for any window whose end precedes its
-    /// start. Nothing in the MCFG's encoding forbids that pair, and `mcfg_entry` reads both bytes
-    /// straight out of the table without comparing them, so a malformed or merely creative MCFG
-    /// panicked whoever asked how big the window was. Fixed by answering zero, which is what "no bus
-    /// is in this range" means; the limitation is recorded in the `acpi` module's BUGS.
-    ///
-    /// The second clause is what stops this being a totality tautology: it pins the arithmetic to
-    /// 32 devices x 8 functions x 4 KiB per bus, inclusive at both ends, which an off-by-one in
-    /// either direction breaks.
+    /// **An ECAM window's size is total, and counts exactly one mebibyte per bus it covers.** A
+    /// window whose end precedes its start answers zero rather than underflowing. The second
+    /// clause pins the arithmetic to 32 devices x 8 functions x 4 KiB per bus, inclusive at both
+    /// ends, so an off-by-one either way fails it.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.mcfg.verification.an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus.patch`
     #[kani::proof]
     fn an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus() {

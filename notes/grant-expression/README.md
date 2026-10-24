@@ -13,6 +13,8 @@ for.
   it is proven, the interactive prompt, what it cost, and `wc report.txt` as an input operand.
 - [`clock-grant.md`](clock-grant.md): the four links `date` needed, the one this note got wrong,
   and what a delegable clock would still need.
+- [`grant-plan-crate.md`](grant-plan-crate.md): the design of `crates/grant_plan`, module by
+  module, which its doc comments link.
 - [`spawn-protocol.md`](spawn-protocol.md): the shell-to-progenitor exchange in order, the reasons
   behind its data messages, frames and sentinels, and its BUGS in full.
 
@@ -25,4 +27,5 @@ Each stem below is named for its content, and calef names files.
 - `memory-grant` Name: provisional.
 - `per-file-grants` Name: provisional, after the parent's heading.
 - `clock-grant` Name: provisional.
+- `grant-plan-crate` Name: provisional, after the crate it covers.
 - `spawn-protocol` Name: provisional, after `grant_plan::spawnproto`'s own heading.

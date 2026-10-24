@@ -1,34 +1,19 @@
-//! **Where the pixels are, told to the kernel by whoever booted it** (milestone 243).
+//! Where the pixels are, told to the kernel by whoever booted it (milestone 243 (a machine with no
+//! serial port has no way to say anything)).
 //!
-//! Many machines have no UART but do have a screen the firmware is already drawing on. The loader
-//! asks the firmware where the linear framebuffer is and writes it here; the kernel reads it and
-//! paints text into it.
-//!
-//! # Why it rides the boot command line rather than a new field
-//!
-//! The `x86_64` handoff is PVH's `hvm_start_info` (see [`crate::x86_64`]), and PVH **already carries
-//! a command line**: `cmdline_paddr` at offset 24, which [`crate::x86_64::BootInfo::cmdline`] has
-//! decoded since milestone 87 (the x86_64 bare-metal machine). `hvm_start_info` is Xen's, versioned by Xen, and a field appended to
-//! it would be a fork of somebody else's format; a `key=value` in the field the format provides is
-//! the smaller and reversible answer, and it is what Linux does with `video=`.
-//!
-//! It is arch-neutral on purpose, which is why it sits beside [`crate::cpu_list`] rather than inside
-//! [`crate::x86_64`]: a U-Boot framebuffer handoff on aarch64 says the same sentence.
-//!
-//! [`Framebuffer::encode`] is what `uefi_loader` calls and [`Framebuffer::parse`] is what the kernel
-//! calls, so neither party keeps its own copy of the spelling.
-//!
+//! The description rides the boot command line as one `screen=` token. [`Framebuffer::encode`] is
+//! what `uefi_loader` calls and [`Framebuffer::parse`] what the kernel calls, so neither keeps its
+//! own copy of the spelling. See `notes/serial-less-output.md` for why a token and not a field,
+//! and `notes/machine-discovery.md` ("The screen token").
+
 //! # BUGS
 //!
-//! - **Only the two 32-bit-per-pixel orders are expressible.** UEFI's `PixelBitMask` describes
-//!   channels by mask and `PixelBltOnly` means there is no linear framebuffer at all; a loader that
-//!   meets either says so and writes no token, so the kernel keeps whatever console it had. 15-bit
-//!   and 24-bit packed modes are not expressible either.
-//! - **Nothing here validates that the address is a framebuffer.** It is a physical address a
-//!   previous stage asserted, and the kernel writes to it. The trust boundary is the boot chain,
-//!   the same boundary the memory map already sits on.
-//! - **The size of the aperture is not carried.** `stride * height` is what a console needs and is
-//!   derivable; the firmware's `framebuffer_size` can be larger and nothing here would notice.
+//! - Only the two 32-bit-per-pixel orders are expressible. A loader meeting `PixelBitMask` or
+//!   `PixelBltOnly` writes no token, and the kernel keeps whatever console it had.
+//! - Nothing validates that the address is a framebuffer. The trust boundary is the boot chain,
+//!   where the memory map already sits.
+//! - The aperture's size is not carried; a firmware `framebuffer_size` larger than
+//!   `stride * height` goes unnoticed.
 
 /// The byte order of one 32-bit pixel, as it lies in memory.
 ///
@@ -89,38 +74,25 @@ pub struct Framebuffer {
 }
 
 impl Framebuffer {
-    /// The key this token opens with. `fb` rather than Linux's `video`, because Linux's takes a
+    /// The key this token opens with. `screen` rather than Linux's `video`, because Linux's takes a
     /// *mode request* (`video=1024x768`) and this takes an *answer*; borrowing the spelling would
     /// borrow the wrong meaning.
     pub const KEY: &'static str = "screen=";
 
     /// The longest token [`Self::encode`] can produce, for a caller sizing a buffer.
     ///
-    /// `screen=` plus `0x` and sixteen hex digits, three ten-digit decimals with their commas, and a
-    /// four-character order. Rounded up rather than derived, because the derivation would be a
-    /// second thing to keep in step with the encoder.
-    ///
-    /// **72 rather than 64, and the reason is a lesson about rounding up.** The token was `fb=`
-    /// when 64 was chosen, and the worst case was 59 bytes: five bytes of slack. calef ratified
-    /// `screen=` on 2026-09-04, four characters longer, which took the worst case to **63 of 64**.
-    /// One byte of headroom is not slack, it is a trap for whoever adds a field, and a wire format
-    /// that overflows its own buffer fails at the boundary between two programs where it is hardest
-    /// to see. Raised in the same change as the rename rather than left for the next person.
+    /// The worst case is 63 bytes: `screen=`, `0x` and sixteen hex digits, three ten-digit decimals
+    /// with their commas, and a four-character order. Rounded up rather than derived, so nothing
+    /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
+    /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
     pub const MAX_LEN: usize = 72;
 
-    /// How many bytes one row of pixels occupies, and the last byte the console may touch.
+    /// How many bytes the console may touch: `stride * height`.
     ///
-    /// Returns `None` when the arithmetic overflows or the geometry is degenerate, which is the
-    /// only validation a description read out of a boot handoff can be given.
-    ///
-    /// **The row width is compared in `u64`, and comparing it in `u32` was a defect.** It used to
-    /// read `self.stride < self.width.saturating_mul(4)`, which is worse than it looks: for any
-    /// width above `2^30 - 1` the product saturates to `u32::MAX`, so a stride of `u32::MAX`
-    /// satisfies the guard while one row of pixels genuinely needs more bytes than the stride has.
-    /// The span then returned is shorter than a single row and the console paints off the end of it.
-    /// Saturating made the overflow safe and the *comparison* meaningless; widening makes both true
-    /// at once. Found by milestone 319's
-    /// `verification::an_accepted_span_covers_every_pixel_the_geometry_describes`.
+    /// Returns `None` when the arithmetic overflows or the geometry is degenerate, including a
+    /// stride shorter than one row of pixels. The row width is compared in `u64`, because in `u32`
+    /// a saturated `width * 4` lets a too-short stride through. This is the only validation a
+    /// description read out of a boot handoff gets.
     #[must_use]
     pub const fn span(&self) -> Option<usize> {
         if self.width == 0 || self.height == 0 || (self.stride as u64) < self.width as u64 * 4 {
@@ -132,10 +104,8 @@ impl Framebuffer {
         }
     }
 
-    /// Write this description into `out` as one command-line token, returning its length.
-    ///
-    /// Hand-rolled rather than formatted: the only caller is a `no_std` UEFI application with no
-    /// allocator, where `core::fmt` would pull in machinery the binary otherwise does not have.
+    /// Write this description into `out` as one command-line token, returning its length. Written
+    /// by hand rather than with `core::fmt`, for a `no_std` caller with no allocator.
     ///
     /// # Panics
     ///
@@ -187,9 +157,8 @@ impl Framebuffer {
 
     /// Find and read the token on a boot command line, or `None` if there is not one.
     ///
-    /// **A malformed token reads as absent**, deliberately. The alternative is a kernel that
-    /// refuses to boot because a display description it could have done without did not parse,
-    /// which is the wrong trade for a diagnostic path: the UART, where there is one, still works.
+    /// A malformed token reads as absent: a display description the kernel could do without must
+    /// not stop the boot.
     ///
     /// # Examples
     ///
@@ -307,30 +276,19 @@ fn parse_decimal(text: &str) -> Option<u32> {
     Some(value)
 }
 
-/// Machine-checked proofs over the screen token (DECISIONS §14, milestone 319).
-///
-/// **This is a wire format, which is what makes it worth a prover rather than a test.** The loader
-/// writes the token and the kernel reads it, so the two halves are the kind of agreement AGENTS.md
-/// calls expensive to unship: they are separate binaries, and a description one can write that the
-/// other cannot read is a black screen with nothing to say why.
+/// Machine-checked proofs over the screen token, a wire format between two binaries: the loader
+/// writes it and the kernel reads it. See milestone 319 (the crate that parses firmware had no
+/// proofs) for what each harness restores.
 ///
 /// Names: provisional (milestone 319).
 #[cfg(kani)]
 mod verification {
     use super::*;
 
-    /// **An encoded token never exceeds the maximum it advertises.**
-    ///
-    /// [`Framebuffer::MAX_LEN`]'s own doc records how close this came: the token was `fb=` when 64
-    /// was chosen, calef ratified the four-characters-longer `screen=` on 2026-09-04, and the worst
-    /// case went to **63 of 64** without anything noticing. The constant is "rounded up rather than
-    /// derived", so nothing in the type system ties it to what [`Framebuffer::encode`] writes, and
-    /// the `put` closure inside `encode` slices `out` without a bound of its own: an overrun is a
-    /// panic in a `no_std` UEFI application, which is the worst place in this system to find one.
-    ///
-    /// Could plausibly have been false: it is one addition away at every field. A sixth field, a
-    /// longer order token, or hex that is not shortest-form all break it, and no test can enumerate
-    /// the `u64` that makes `write_hex` emit its sixteenth digit alongside three ten-digit decimals.
+    /// **An encoded token never exceeds the maximum it advertises.** Nothing in the type system
+    /// ties [`Framebuffer::MAX_LEN`] to what [`Framebuffer::encode`] writes, and an overrun is a
+    /// panic in a `no_std` UEFI application. One more field, a longer order token or non-shortest
+    /// hex breaks it, and no test can enumerate the widest `u64`.
     /// Falsification: replayable `crates/machine_discovery/falsifications/framebuffer.verification.an_encoded_token_never_exceeds_the_maximum_it_advertises.patch`
     #[kani::proof]
     #[kani::unwind(18)]
@@ -352,27 +310,11 @@ mod verification {
         kani::cover!(n >= 60, "the worst case really does get close to the bound");
     }
 
-    /// **A span is refused exactly when the geometry cannot be trusted, and never overflows.**
-    ///
-    /// [`Framebuffer::span`] is the only validation a description read out of a boot handoff gets,
-    /// and the console paints inside whatever it returns. So the claim that matters is not that the
-    /// arithmetic is right but that a `Some` is *sound*: `stride * height` bytes really is at least
-    /// as much as the pixels the geometry describes, for every `u32` triple, including the ones
-    /// where `width * 4` overflows a `u32` on its own.
-    ///
-    /// **This harness was false when it was written**, and the defect it found is subtler than the
-    /// one it was aimed at. The guard read `self.stride < self.width.saturating_mul(4)`, and
-    /// saturating is not the same as correct: for any width above `2^30 - 1` the product saturates
-    /// to `u32::MAX`, so a stride of `u32::MAX` passes a guard that one row of pixels genuinely
-    /// fails, and `span` hands the console fewer bytes than a single row needs. The `saturating_mul`
-    /// was put there to make the overflow safe and made the comparison meaningless instead. Fixed by
-    /// comparing in `u64`, where both are true at once.
-    ///
-    /// **And it was false once before that for a reason of its own**, which is worth recording
-    /// separately: the first spelling asserted `span >= width * 4 * height` in `u64` over a product
-    /// that reaches `2^64`, so it failed against code that was right. A red harness is not by itself
-    /// evidence of a defect, and telling this apart from the real one took reading the
-    /// counterexample rather than trusting the colour.
+    /// **A span is refused exactly when the geometry cannot be trusted, and never overflows.** The
+    /// console paints inside whatever [`Framebuffer::span`] returns, so the claim is that a `Some`
+    /// is sound: the stride covers a row of pixels, for every `u32` triple, including those where
+    /// `width * 4` overflows a `u32`. A red result here once came from a `u64` product that reached
+    /// `2^64` against correct code, so read the counterexample before trusting the colour.
     /// Falsification: replayable `crates/machine_discovery/falsifications/framebuffer.verification.an_accepted_span_covers_every_pixel_the_geometry_describes.patch`
     #[kani::proof]
     fn an_accepted_span_covers_every_pixel_the_geometry_describes() {
@@ -385,36 +327,17 @@ mod verification {
         };
         if let Some(span) = screen.span() {
             assert!(screen.width > 0 && screen.height > 0);
-            // **One half of the obvious claim, and the omission is a cost decision made out loud.**
-            // The natural spelling is `span >= width * 4 * height`, which reaches 2^64 at the type
-            // extremes and so has to be done in `u128`: that version proves the same thing and took
-            // **20 minutes** on the dev Mac before it was killed. Restating it as a conjunction did
-            // not help, because the second half (`span == stride * height`) asks the solver to equate
-            // two 64-by-64-bit multiplies, which is the case bit-blasting is worst at: **9 minutes**,
-            // also killed.
-            //
-            // What is left is the half that carries the defect. `span == stride * height` is
-            // `span`'s own definition and proving it restates the function; **`stride >= width * 4`
-            // is the guard**, it is where the `saturating_mul` made the comparison vacuous, and with
-            // it established the rest follows by arithmetic a reader can do. Two seconds.
+            // Only the guard half: `span == stride * height` restates `span`, and the full
+            // `span >= width * 4 * height` needs `u128` and does not finish (milestone 319).
             assert!(screen.stride as u64 >= screen.width as u64 * 4);
             kani::cover!(span > 0, "a real geometry is accepted");
         }
     }
 
-    /// **Every hex field the loader can write, the kernel reads back unchanged.**
-    ///
-    /// `write_hex` and `parse_hex` are forty lines apart and neither uses `core::fmt` (the encoder
-    /// doc says why: the only writer is a `no_std` UEFI application with no allocator). The writer
-    /// emits shortest-form digits behind a `0x` prefix; the reader refuses anything longer than
-    /// sixteen digits and anything without the prefix. Nothing but this says the two bounds are the
-    /// same bound.
-    ///
-    /// Could plausibly have been false, and the failure is silent in the direction that matters: a
-    /// reader one digit short of the writer rejects the token, and [`Framebuffer::parse`] is
-    /// documented to read a malformed token **as no screen at all**, so the kernel comes up with a
-    /// black screen and nothing to say why. A base above 2^60 is not hypothetical on a machine whose
-    /// firmware relocated its own windows, which is what xenon does.
+    /// **Every hex field the loader can write, the kernel reads back unchanged.** The writer emits
+    /// shortest-form digits behind `0x` and the reader refuses more than sixteen digits; nothing
+    /// else says the two bounds are one bound. A reader one digit short would read the token as no
+    /// screen at all, and a base above 2^60 is real on firmware that relocates its windows.
     /// Falsification: replayable `crates/machine_discovery/falsifications/framebuffer.verification.every_hex_field_the_loader_writes_is_one_the_kernel_reads_back.patch`
     #[kani::proof]
     #[kani::unwind(18)]
@@ -432,21 +355,13 @@ mod verification {
     }
 }
 
-/// **The token that asks the kernel to hold the screen at the handover**, so that a host watching
-/// the framebuffer is told when to look instead of guessing (milestone 445 (the screen check stops sampling and starts asking)).
+/// The word that asks the kernel to hold the screen at the handover, so a host watching the
+/// framebuffer is told when to look (milestone 445 (the screen check stops sampling and starts
+/// asking)). A debugging affordance: the kernel stops between painting the tour and clearing the
+/// screen, says so on the serial line and waits for a byte back (`kernel::console::yield_screen`).
+/// Without the word the handover is unchanged. A bare word, because it carries nothing.
 ///
 /// Name: provisional (`AGENTS.md`: calef names what a reader meets).
-///
-/// **A debugging affordance, and it belongs on no machine anybody boots for its own sake.** A
-/// kernel that finds this word on its boot command line stops between painting the tour and
-/// clearing the screen, says so on the serial line, and waits for a byte back; see
-/// `kernel::console::yield_screen`. Without the word nothing about the handover changes, which is
-/// the property that matters: the boot a gate photographs is otherwise the boot a stick performs.
-///
-/// **A bare word rather than `key=value`**, unlike [`Framebuffer::KEY`] beside it, because it
-/// carries nothing. The wait's bound is a constant in the kernel rather than a field here, so that
-/// a reader of the kernel meets the number and its reason in one place instead of having to find
-/// out what some host passed.
 pub const SCREEN_HOLD: &str = "screen-hold";
 
 /// Whether a boot command line carries [`SCREEN_HOLD`].
@@ -591,13 +506,9 @@ mod tests {
     /// The span is what bounds every write a console makes, so a geometry whose arithmetic
     /// overflows has to be refused rather than truncated.
     ///
-    /// **This test used to assert the opposite, and it was wrong** (milestone 319). It expected
-    /// `Some(u32::MAX * u32::MAX)` for a screen `u32::MAX` pixels wide with a stride of `u32::MAX`,
-    /// and called it "the honest answer" on a 64-bit host. It is not: four bytes per pixel means
-    /// that row needs four times the stride it has. The old `span` agreed with the test because both
-    /// were reading `width.saturating_mul(4)`, which saturates to `u32::MAX` and makes the
-    /// comparison vacuously true above `2^30 - 1`. A hand-written test that encodes the defect it
-    /// was meant to catch is the thing risk 2 warns about, and it is why this crate wanted a prover.
+    /// A screen `u32::MAX` pixels wide with a stride of `u32::MAX` is refused: four bytes per pixel
+    /// need four times that stride. A saturated `width * 4` would make the comparison vacuous above
+    /// `2^30 - 1`, and a test reading the same product would agree with it.
     #[test]
     fn a_span_that_cannot_be_computed_is_refused() {
         let absurd = Framebuffer {

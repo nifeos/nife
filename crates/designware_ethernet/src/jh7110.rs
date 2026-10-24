@@ -1,26 +1,12 @@
 //! **The JH7110 around the controller**: which node it is, what the board wired to it, and the
 //! one syscon field that tells the MAC it is talking RGMII.
 //!
-//! OpenBSD's `if_dwqe_fdt.c` (`dwqe_fdt_attach`, `dwqe_setup_jh7110`; ISC license, notice in the
-//! crate root) is the shape: the controller's address picks the port, the `phy-mode` picks the
-//! interface select, the PHY's node supplies its delays. The facts are checked against both trees
-//! radon could be handed, and they agree.
-//!
-//! # Two trees, and radon serves the vendor's
-//!
-//! radon's U-Boot hands the kernel **its own control tree**, built from `StarFive`'s U-Boot fork
-//! (notes/visionfive2.md, milestone 239 (radon's device tree does not describe the TRNG, so a working driver
-//! never runs)'s correction), not mainline Linux's. The two describe the
-//! same controller in different words:
-//!
-//! | | vendor U-Boot (`JH7110_VisionFive2_devel`) | mainline Linux |
-//! |---|---|---|
-//! | `compatible` | `starfive,jh7110-eqos-5.20` | `starfive,jh7110-dwmac`, `snps,dwmac-5.20` |
-//! | PHY | child node `ethernet-phy@0`, register values | `phy-handle` to `mdio/ethernet-phy@0`, picoseconds and microamps |
-//! | interface select | not in the tree: board code writes `AON_SYSCON_BASE + AON_SYSCFG_12`, bits `0x1c0000` | `starfive,syscon = <&aon_syscon 0xc 0x12>` |
-//!
-//! Both say `0x1603_0000` and `0x1604_0000`, `phy-mode = "rgmii-id"`, interrupts 7 and 78, and
-//! the same AXI configuration ([`BUS`]).
+//! The shape is OpenBSD's `if_dwqe_fdt.c` (`dwqe_fdt_attach`, `dwqe_setup_jh7110`; ISC license,
+//! notice in the crate root): the controller's address picks the port, the `phy-mode` picks the
+//! interface select, the PHY's node supplies its delays. radon's U-Boot hands over **the vendor's
+//! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
+//! compatible, PHY as register values, interface select in board code). Both are read here, and
+//! their shared facts agree. See notes/designware-ethernet/the-hardware.md.
 
 use device_tree_blob::DeviceTreeBlob;
 

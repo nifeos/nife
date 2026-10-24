@@ -1,10 +1,8 @@
 //! The GIC, found by its binding and cross-checked against the hardware's own words, on the host.
 //!
-//! Milestone 227. The three trees are QEMU 11.1.1's own `dumpdtb` output for the machines this
-//! kernel is run on: `gic-version=2` under TCG (the default runner, reused from the
-//! `device_tree_blob` fixtures rather than copied), `gic-version=3` under TCG, and
-//! `gic-version=3` under HVF, which is the configuration this milestone exists to make work.
-//! Regenerate the two GICv3 fixtures with:
+//! The trees are QEMU 11.1.1's `dumpdtb` output: `gic-version=2` under TCG (from the
+//! `device_tree_blob` fixtures), and `gic-version=3` under TCG and under HVF. Regenerate the GICv3
+//! two with:
 //!
 //!     qemu-system-aarch64 -machine virt,gic-version=3,iommu=smmuv3,dumpdtb=f.dtb -cpu cortex-a72 -smp 4
 //!     qemu-system-aarch64 -machine virt,accel=hvf,gic-version=3,iommu=smmuv3,dumpdtb=f.dtb -cpu host -smp 4
