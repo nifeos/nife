@@ -1,5 +1,4 @@
-//! GPT's GUIDs: how the GUID Partition Table stores a UUID on disk, and the partition types worth
-//! recognizing by name.
+//! GPT's GUIDs: how a GPT stores a UUID on disk, and the partition types worth recognizing by name.
 //!
 //! [`Uuid`] is in RFC 9562 byte order. On a GPT the first three groups are integers stored
 //! little-endian and the last two are stored as written (Microsoft's `GUID` struct, which RFC 9562
@@ -7,7 +6,8 @@
 //! is `28 73 2A C1 1F F8 D2 11 BA 4B ...` on disk. [`from_disk`] and [`to_disk`] alone see that
 //! order, so a [`Uuid`] here is always canonical. This module says GUID, as the UEFI fields do
 //! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says UUID (calef, 2026-10-06
-//! UTC). See notes/globally-unique-identifier-partition-table.md, "A GUID is mixed-endian".
+//! UTC). See notes/globally-unique-identifier-partition-table.md, "1. A GUID is mixed-endian, and
+//! only partly".
 
 pub use uuid::Uuid;
 
