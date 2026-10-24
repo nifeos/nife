@@ -14,6 +14,10 @@ the evidence its prose budget has no room for.
   the bounded-yield tests under host contention.
 - [`thread-dump.md`](thread-dump.md): what each field of `dump_threads` can claim, and what it
   is for.
+- [`switch.md`](switch.md): the design behind `sched/switch.rs` and `sched/switch_decision.rs`:
+  `schedule`'s rules, the pick, the per-thread grants, and the reaper's far side.
+- [`rendezvous.md`](rendezvous.md): the design behind `sched/rendezvous.rs`: send, receive, call
+  and reply, the capability rules on each arrival order, and freeing stranded callers.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
@@ -25,3 +29,5 @@ Each stem below is named for its content, and calef names files.
 - `missed-reschedule-poke` Name: provisional.
 - `test-flakes` Name: provisional.
 - `thread-dump` Name: provisional.
+- `switch` Name: provisional. After the source file it explains.
+- `rendezvous` Name: provisional. After the source file it explains.
