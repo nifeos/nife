@@ -1,20 +1,12 @@
-//! **A program that checks its own image and then does nothing but exist**, milestone 7.
+//! A program that checks its own image and then exits (milestone 7 (user mode: EL0, capabilities,
+//! the ELF loader, and IPC)): the "a real ELF ran and verified itself" fixture.
 //!
-//! This is the "a real ELF ran and verified itself" fixture. It needs no capabilities and no
-//! shared memory, which is why `kernel::user::tests` can spawn it bare: everything it inspects is
-//! its own memory, and the one syscall it makes is a yield, which is authority over itself that
-//! nobody has to grant.
-//!
-//! What the kernel test reads from it is not a report. It is the *absence* of a fault plus the
-//! presence of one syscall, and that pair says: `.text` executed, `.rodata` was readable, `.data`
-//! was copied from the file, `.bss` was zeroed (those bytes are not in the file), and the stack
-//! worked well enough to recurse eight frames. The checks themselves are
-//! [`loaded_image_check`], which exists so this program and `console_test_client` share one
-//! definition rather than two copies.
-//!
-//! It **exits** rather than spinning. A one-shot fixture with nothing left to do that never exits
-//! sits on a core for the rest of the boot; `no_leaked_threads` says so in as many words, and it
-//! was three such leaks that starved a later test off a four-hart machine entirely.
+//! It needs no capabilities and no shared memory, so `kernel::user::tests` spawns it bare; its one
+//! syscall, a yield, is authority over itself. The kernel test reads the absence of a fault plus
+//! that syscall: `.text` ran, `.rodata` was readable, `.data` was copied, `.bss` was zeroed, and
+//! the stack recursed eight frames. The checks are [`loaded_image_check`], shared with
+//! `console_test_client`. It exits rather than spinning, because a one-shot fixture that never
+//! exits holds a core for the rest of the boot (`no_leaked_threads`).
 //!
 //! Name: provisional (milestone 291). This was `hello`'s `SELF_CHECK` role, number 0, and 291 made
 //! each of that binary's roles its own program. Refused `self_checker`: "self" names the caller

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil info -plist on the development Mac, 2026-09-19; trimmed to the keys stick_maker reads, volume names scrubbed. Its HFS+ volume. -->
+<!-- Shaped from a diskutil info -plist capture, 2026-09-19; trimmed to the keys stick_maker reads, with identifiers, names and sizes replaced by neutral values. Every flag, bus, content type and filesystem is as captured. Its HFS+ volume. -->
 <plist version="1.0">
 <dict>
 	<key>BusProtocol</key>
@@ -8,25 +8,25 @@
 	<key>Content</key>
 	<string>Apple_HFS</string>
 	<key>DeviceIdentifier</key>
-	<string>disk6s2</string>
+	<string>disk4s2</string>
 	<key>FilesystemName</key>
 	<string>Journaled HFS+</string>
 	<key>FilesystemType</key>
 	<string>hfs</string>
 	<key>FreeSpace</key>
-	<integer>702070267904</integer>
+	<integer>800000000000</integer>
 	<key>Internal</key>
 	<false/>
 	<key>MountPoint</key>
-	<string>/Volumes/Backups</string>
+	<string>/Volumes/Archive</string>
 	<key>ParentWholeDisk</key>
-	<string>disk6</string>
+	<string>disk4</string>
 	<key>RemovableMedia</key>
 	<false/>
 	<key>Size</key>
-	<integer>3000110108672</integer>
+	<integer>1999685427200</integer>
 	<key>VolumeName</key>
-	<string>Backups</string>
+	<string>Archive</string>
 	<key>WholeDisk</key>
 	<false/>
 	<key>Writable</key>

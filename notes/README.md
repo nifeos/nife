@@ -61,12 +61,22 @@ area directories), ruled B). Appendices under
 
 `aarch64-modern-board-survey.md`: Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.
 
+`region-reaping.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-sched-objects.
+
 `inter-process-communication.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.
 
 `machine-discovery.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.
 
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
+`progenitor-boot.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`user-address-spaces.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
+`x86-user-programs.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
+
 `system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
+
+`system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.

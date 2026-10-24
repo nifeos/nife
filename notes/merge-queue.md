@@ -263,7 +263,8 @@ The ones a maintainer most needs:
 - A push after enqueue is silently discarded. The queue merges the SHA it enqueued, and the last
   commit exists only locally. Treat marking a pull request ready as the end of pushing, and confirm
   landed work by content (`git merge-base --is-ancestor <sha> origin/main`).
-- A branch in the merge queue cannot be pushed to. Gate, then arm.
+- A branch in the merge queue cannot be pushed to. Make the last push, then arm; CI need not be
+  green yet (`briefs/gate-in-ci.md`, Step 4).
 - A branch stacked on another pull request and then merged with `main` has two merge bases, and the
   queue evicts it as a conflict git does not see. Rebase onto `main` instead.
 - One push can raise two `synchronize` events and strand a green pull request outside the queue. The

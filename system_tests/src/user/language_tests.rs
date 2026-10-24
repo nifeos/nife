@@ -8,12 +8,10 @@ fn said<'a>(t: &'a [u8], line: &[u8]) -> &'a str {
     core::str::from_utf8(answer(t, line)).expect("the shell writes ASCII")
 }
 
-/// **The correctness gap this milestone closed**, at the one interface a human touches.
+/// A file with a space in its name can be named, so it can be granted.
 ///
-/// A file called `my notes.txt` could not be named before quoting existed, and in a shell whose
-/// thesis is that naming a resource is granting it, a resource you cannot name is a resource you
-/// cannot grant. So this is not an ergonomics test: it is the authority surface reaching a name it
-/// could not reach.
+/// In a shell where naming a resource is granting it, a resource you cannot name is a resource you
+/// cannot grant, so this is the authority surface reaching `my notes.txt`, not an ergonomics test.
 ///
 /// The counts are **derived from the `echo` that wrote the file**, not written down, so a `>` that
 /// dropped bytes or a quote that swallowed a word fails even though a file would still exist.

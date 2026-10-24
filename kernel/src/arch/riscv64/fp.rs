@@ -1,48 +1,16 @@
-//! **A thread's floating-point registers, RISC-V.** The register file, the `sstatus.FS` writes that
-//! decide who may touch it, and nothing else: the policy is [`crate::fp`]'s.
+//! A thread's floating-point registers on RISC-V: the register file and the `sstatus.FS` writes
+//! that decide who may touch it. The policy is [`crate::fp`]'s.
 //!
-//! # `sstatus.FS` is the best of the three, and this kernel uses a quarter of it
-//!
-//! Where aarch64 has an on/off switch and x86 has a one-bit "somebody else owns this", RISC-V has a
-//! **four-state machine** in `sstatus[14:13]`, designed by people who had context switching in mind:
-//!
-//! | value | name | meaning |
-//! |---|---|---|
-//! | `0b00` | Off | FP instructions raise an illegal-instruction trap |
-//! | `0b01` | Initial | the registers hold their initial values |
-//! | `0b10` | Clean | the registers match the copy in memory |
-//! | `0b11` | Dirty | the hardware set this because something *wrote* an FP register |
-//!
-//! Dirty is a hardware-maintained dirty bit. A kernel that keeps a thread's saved copy in a stable
-//! place can ask "have these registers been written since I loaded them" and skip the save when the
-//! answer is no, which is a strictly better question than the one aarch64 can answer.
-//!
-//! **This kernel asks the coarse question anyway**, using `Off` against everything else as a plain
-//! enable bit, because [`crate::fp`]'s rule is uniform across three ISAs and no workload exists yet
-//! to measure the difference on. That is a deliberate cost, recorded in that module's `BUGS` and
-//! here, rather than an oversight.
-//!
-//! # `sstatus` travels in the trap frame, and that is the trap
-//!
-//! On the other two architectures the control register this module writes is invisible to the trap
-//! path. Here it is not: `TrapFrame::sstatus` is saved on trap entry and written back by `trap.s`'s
-//! `csrw sstatus, t0` on the way out, so a handler that sets `FS` in the live CSR and returns has
-//! its write undone by its own return. The first-use handler in `exceptions.rs` therefore sets the
-//! **frame's** copy as well, and it is the only place that has to think about this: every later
-//! switch sets the live CSR from [`crate::fp::hand_over`] to match the incoming thread's `live`,
-//! and that thread's frame carries the same value because it was captured while the same flag held.
-//!
+//! This kernel uses `FS` as a plain enable, Off against everything else, though it has four states.
+//! `sstatus` travels in the trap frame, so the first-use handler sets the frame's copy too. See
+//! notes/riscv-port/traps.md.
 
 //! # BUGS
 //!
-//! - **A hart with no D extension cannot run this at all**, and says so rather than looping.
-//!   `sstatus.FS` is hardwired to zero on such a part, so [`enable`] does not take, [`is_enabled`]
-//!   reports it, and `crate::fp::enable_for_current` turns the first-use trap into an ordinary
-//!   fault. The thread dies with an illegal instruction, which is the truth. Nothing tests this:
-//!   every machine in this tree's matrix (`qemu-system-riscv64 -cpu rv64`, the JH7110's U74) has D.
-//! - **F without D is not handled.** A part with F only has 32-bit registers where [`fp.s`] writes
-//!   64, so the save would be wrong rather than refused. `arch::isa` already reads the ISA string
-//!   and is where that check belongs; it is recorded rather than built.
+//! - A hart with no D extension cannot run FP code; the first-use trap becomes a fault. Untested.
+//! - F without D is not handled: the save would write 64-bit registers a part has as 32-bit.
+//!
+//! Details in notes/riscv-port/traps.md, BUGS.
 
 use super::instructions;
 
@@ -72,9 +40,8 @@ const _: () = assert!(core::mem::offset_of!(FpState, fcsr) == 8);
 const _: () = assert!(core::mem::offset_of!(FpState, f) == 16);
 
 impl FpState {
-    /// The state a thread starts with, and the state the registers are scrubbed to: zeros, which is
-    /// what `FS == Initial` means in the table above, and round-to-nearest-even with no accrued
-    /// exceptions in `fcsr`.
+    /// The state a thread starts with and the registers are scrubbed to: zeros, and `fcsr`
+    /// round-to-nearest-even with no accrued exceptions.
     pub(crate) const INITIAL: Self = FpState {
         live: 0,
         fcsr: 0,
@@ -110,28 +77,17 @@ const SSTATUS_FS_INITIAL: u64 = 0b01 << 13;
 /// `FS = Dirty`: what the hardware sets the instant an FP register is written, and therefore what
 /// the first-use handler writes into the trap frame once it has loaded a register file.
 pub(super) const SSTATUS_FS_DIRTY: u64 = 0b11 << 13;
-/// `sstatus.VS`, bits 10:9: the vector extension's own enable, the same four-state field as `FS`.
-/// This module saves no vector register, so [`init`] turns it Off beside `FS` (2026-09-24 security
-/// audit). Hardwired to zero on a hart without V (QEMU's `rv64` default, radon's U74), so the
-/// clear is a no-op there; on a hart that arrives from firmware with it open, a thread could
-/// otherwise keep vector state that `hand_over` neither saves nor scrubs.
+/// `sstatus.VS`, bits 10:9, the vector unit's enable. Nothing saves vector state, so [`init`] turns
+/// it Off; a hart without V hardwires it to zero.
 const SSTATUS_VS: u64 = 0b11 << 9;
-/// **`XTheadVector`'s `VS`, bits 24:23** (milestone 89 (Scaleway EM-RV1)). The C906 and C910 implement
-/// vector 0.7.1, from before the ratified layout, and keep its enable in a different place. On a
-/// TH1520 the field above is not the vector unit's, so clearing only it leaves the gap the
-/// 2026-09-24 audit closed open on this core. Cleared only on a T-Head hart (`isa::is_thead`):
-/// elsewhere these bits are reserved, and a kernel has no business writing them. Linux's
-/// `SR_VS_THEAD` is the same mask.
+/// `XTheadVector`'s `VS`, bits 24:23 (Linux's `SR_VS_THEAD`), where the C906 and C910 keep vector
+/// 0.7.1's enable. Cleared only on a T-Head hart; elsewhere these bits are reserved.
 const SSTATUS_XTHEADVECTOR_VS: u64 = 0b11 << 23;
 
-/// **Put this hart into the state the rest of this module assumes**: FP off.
+/// Put this hart into the state this module assumes: FP and both vector enables off.
 ///
-/// Called from `sched::init` and `sched::adopt_secondary_idle`, per hart, rather than from
-/// `arch::init`. **This architecture is the reason for that choice**: `main`'s RISC-V tour installs
-/// `stvec` by calling `arch::exceptions::init()` directly and never passes through `arch::init` at
-/// all, so a hart booted by OpenSBI reached `sched::init` with `sstatus.FS` already set, no thread
-/// ever took the first-use trap, and two threads shared a register file. The reasoning is at the
-/// call site.
+/// Called per hart from `sched::init` and `sched::adopt_secondary_idle`, not `arch::init`, which
+/// the RISC-V boot does not pass through; firmware may leave `FS` open. The call site says why.
 pub fn init() {
     disable();
     instructions::clear_sstatus(SSTATUS_VS);
@@ -142,29 +98,22 @@ pub fn init() {
 
 /// Let this hart execute FP instructions, by moving `FS` out of Off.
 ///
-/// `csrs` rather than a read-modify-write: setting bit 13 takes Off to Initial and leaves Clean or
-/// Dirty alone, which is exactly the "at least open" this wants. No fence is needed; a CSR write is
-/// ordered with respect to the instructions after it.
+/// Setting bit 13 takes Off to Initial and leaves Clean or Dirty alone. A CSR write is ordered
+/// before the instructions after it, so no fence is needed.
 pub fn enable() {
-    // On a hart with no FP unit the field is hardwired to zero and this is a no-op, which
-    // [`is_enabled`] is how the caller finds out.
+    // A no-op without an FP unit; [`is_enabled`] tells the caller.
     instructions::set_sstatus(SSTATUS_FS_INITIAL);
 }
 
-/// Is the FP unit open on this hart right now?
-///
-/// Also the "does this hart have one at all" probe: on a part without D the field is hardwired to
-/// zero, so this reports false immediately after [`enable`] and `crate::fp::enable_for_current`
-/// turns the first-use trap into a fault rather than retrying an instruction that will never
-/// execute.
+/// Whether the FP unit is open on this hart now. False just after [`enable`] means the hart has no
+/// FP unit, so the first-use trap becomes a fault.
 pub(crate) fn is_enabled() -> bool {
     instructions::read_sstatus() & SSTATUS_FS != 0
 }
 
 /// Take the unit away again: `FS = Off`.
 ///
-/// **The caller owes the scrub**, as on every architecture here. See [`crate::fp`]'s header for the
-/// CVE that makes that sentence load-bearing rather than tidy.
+/// The caller owes the scrub, as on every architecture ([`crate::fp`]).
 pub(crate) fn disable() {
     instructions::clear_sstatus(SSTATUS_FS);
 }
@@ -195,9 +144,8 @@ unsafe extern "C" {
     fn fp_restore(state: *const FpState);
 }
 
-/// **One harmless FP instruction, to take the first-use trap on purpose.** Tests only.
-///
-/// `fmv.d.x f0, zero` writes zero into a register the caller is about to overwrite anyway.
+/// One harmless FP instruction, `fmv.d.x f0, zero`, to take the first-use trap on purpose. Tests
+/// only.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn touch() {
     // SAFETY: writes one FP register. Under `FS == Off` this raises the illegal-instruction trap

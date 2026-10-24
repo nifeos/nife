@@ -1,30 +1,13 @@
 //! **Somebody else's C, unmodified, on nife's C library** (milestone 835 (a C library, stage 1:
 //! files, clock and memory); `design/fatal-risks/1-only-software-written-for-nife.md`).
 //!
-//! Risk 1 is *"only software written for nife runs on nife"*. `ripgrep` (milestone 121 (`ripgrep`
-//! on nife: enumeration as a capability, and what the walk costs)) answered it once, in Rust,
-//! through `std`. These answer it in C, through a C library (§265 (a C library started from
-//! relibc, whose Rust platform layer holds the capabilities)) that neither program has heard of:
-//!
-//! - **SQLite 3.50.4's `speedtest1`**: 266,378 lines of C (the amalgamation and the benchmark)
-//!   written for POSIX, which basalt builds from both files pinned by SHA-256 (milestone 897 (SQLite
-//!   is packaged in basalt)).
-//! - **ioping 1.3**: one file, a storage-latency tool, the one milestone 834 (ioping on nife and
-//!   Linux) runs on silicon, built by basalt the same way (milestone 906 (ioping is packaged in
-//!   basalt)).
-//!
-//! `cargo xtask basalt-fetch` takes each package by the digest basalt's recipe
-//! records at the commit `xtask/basalt-pin` names.
-//!
-//! Neither source is touched. What differs from a Linux build is on the command line: the target
-//! flags, nife's headers, and for SQLite two compile-time options it documents.
-//!
-//! **Each test skips when its program is not in the archive**, which is wherever `cargo xtask
-//! basalt-fetch` did not run. CI's `rg-threads` rows fetch them and set `NIFE_SPEEDTEST1_REQUIRED`
-//! and `NIFE_IOPING_REQUIRED` to 1, so there a missing one fails rather than skips.
-//!
-//! **All three ISAs**, one body each, nothing architecture-specific asserted (§19 (architectural
-//! parity is a tenet; the targets are aarch64, riscv64, and x86_64)).
+//! SQLite's `speedtest1` and ioping, built by basalt from pinned sources nobody here touched, run
+//! through a C library (§265 (a C library started from relibc, whose Rust platform layer holds the
+//! capabilities)) neither has heard of. **Each test skips when its program is not in the
+//! archive**, except where CI's `rg-threads` rows set `NIFE_SPEEDTEST1_REQUIRED` and
+//! `NIFE_IOPING_REQUIRED` to 1 and a missing one fails. **All three ISAs** (§19 (architectural
+//! parity is a tenet; the targets are aarch64, riscv64, and x86_64)). The programs, their pins and
+//! what differs from a Linux build are in notes/system-test-modules.md.
 
 use super::*;
 

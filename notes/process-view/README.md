@@ -16,6 +16,7 @@ not:
   handed over today.
 - [`watch`](watch.md): built, then cut, and the test it leaves behind.
 - [`top`](top.md): what it ranks by, its summary and machine lines, and what it does not do.
+- [The CPU-time tests](cpu-time-tests.md): why `cpu_time_tests` compares a spinner with a sleeper.
 - [The BUGS list in full](limitations.md): the parent's BUGS section, one line per entry there.
 
 *Name: provisional, for the directory and the stems `what-is-left` and

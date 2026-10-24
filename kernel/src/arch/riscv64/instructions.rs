@@ -1,46 +1,21 @@
-//! **One function per instruction**: the riscv64 `asm!` that logic calls, kept out of the logic so a
-//! proof can replace it.
+//! One function per instruction: the riscv64 `asm!` that logic calls, kept out of the logic so a
+//! Kani harness can replace it with `#[kani::stub]` and a model.
 //!
 //! *Name provisional (a lane minted it 2026-09-25; names are calef's). It says what every item here
 //! is, one machine instruction, rather than what register it touches, because not all of them touch a
 //! CSR: `wfi`, the fences and the two general-register moves live here too.*
 //!
-//! # Why this file exists
-//!
-//! The model checker cannot reason about `asm!`. A harness whose call graph reaches one fails with
-//! "`InlineAsm` is not currently supported", so any logic *around* an instruction was unprovable for
-//! as long as the instruction sat inline in it: `current_root_pa` was one mask and a shift, and no
-//! harness could reach it, because the `csrr` that fed it was in the same function.
-//!
-//! So the rule for this directory, riscv64 first (see
-//! design/roadmap/0589-kani-can-target-riscv64-from-the-hosts-we-have.md, "Containment,
-//! priced"): **logic calls these, and these contain nothing but the instruction.** A harness then
-//! replaces one with `#[kani::stub]` and a model, and the logic that called it becomes reachable.
-//! notes/kernel-proofs/stubbing-an-instruction.md has the pattern and its caveat.
-//!
-//! # A stub is an assumption about the hardware
-//!
-//! Every model that replaces a function here is a claim about what the silicon does, written by
-//! somebody who read the specification and could have misread it. A proof over a stub proves the
-//! logic *given that claim*, and the claim itself is tested only by the QEMU and board suites. So a
-//! function here stays exactly one instruction (or one fixed sequence that has no Rust meaning of its
-//! own, like `sfence.vma` with no operands), and each one's documentation says what a model of it
-//! must honour.
-//!
+//! Each function stays one instruction, or one fixed sequence, and says what a model must honour.
+//! A stub is an assumption about the hardware. See notes/kernel-proofs/stubbing-an-instruction.md.
 
 //! # Codegen
 //!
-//! Every function is `#[inline(always)]`, so the instruction lands in its caller exactly where the
-//! inline `asm!` used to, with the same operands and the same `options`. The `options` are copied
-//! from each call site rather than unified: `nomem` on an `sstatus` write that changes what S-mode
-//! may *load* would let the compiler move a user-page access across it, which is why
-//! [`read_and_set_sstatus`] and [`read_and_clear_sstatus`] do not carry it and [`set_sstatus`] does.
+//! Every function is `#[inline(always)]`, with each call site's own `options`: `nomem` on an
+//! `sstatus` write that changes what S-mode may load would let a user-page access move across it.
 //!
-//! What stays `asm!` outside this file, on purpose: the register-preservation trap test in
-//! `exceptions.rs` (it is a test *of* registers), `fp::touch`'s one FP instruction (a test that the
-//! instruction traps), `timer::calibration_loop` (its instruction count is the point), `pmu::read_csr`
-//! (a dispatch whose every arm is already one `csrr`, because the CSR number is an immediate), and
-//! every SBI `ecall`, which goes through [`super::sbi::call`] instead.
+//! What stays `asm!` elsewhere, on purpose: `exceptions.rs`'s register-preservation test,
+//! `fp::touch`, `timer::calibration_loop`, `pmu::read_csr` (whose CSR number is an immediate), and
+//! every SBI `ecall`, which goes through [`super::sbi::call`].
 
 use core::arch::asm;
 
@@ -59,10 +34,8 @@ pub(super) fn read_satp() -> u64 {
 /// `csrr th.sxstatus` (CSR `0x5c0`): T-Head's supervisor-visible extension status, whose bit 21 is
 /// `MAEE`, whether the hart reads memory types out of PTE bits 63:59 (milestone 89 (Scaleway EM-RV1)).
 ///
-/// **Only on a T-Head hart.** Anywhere else `0x5c0` is a custom CSR nobody implements and the read is
-/// an illegal-instruction trap; `isa::probe_thead` asks the firmware for `mvendorid` first. QEMU's
-/// `thead-c906` implements it and returns `MAEE` clear, because QEMU does not model MAE
-/// (`target/riscv/tcg/th_csr.c`, read 2026-10-06 at `d7a65d17`).
+/// Only on a T-Head hart: elsewhere the read is an illegal-instruction trap. QEMU's `thead-c906`
+/// returns `MAEE` clear, since QEMU does not model MAE (`target/riscv/tcg/th_csr.c`).
 #[inline(always)]
 pub(super) fn read_th_sxstatus() -> u64 {
     let v: u64;

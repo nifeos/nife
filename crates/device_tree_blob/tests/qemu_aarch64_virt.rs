@@ -1,15 +1,11 @@
-//! Parse a real device tree, dumped from the machine we actually boot on.
+//! Parse a real device tree, dumped from the machine we actually boot on, on the host (§7
+//! (testing: QEMU harness + host-testable crates)).
 //!
-//! These run on the **host**, in milliseconds, with no emulator. That is the whole
-//! argument for keeping pure logic out of the kernel crate (DECISIONS §7).
-//!
-//! Regenerate the fixture with:
+//! Regenerate the fixture with the following; the `dtc` round-trip compacts QEMU's dump, which is
+//! padded to a full megabyte:
 //!
 //!     qemu-system-aarch64 -machine virt,dumpdtb=f.dtb -cpu cortex-a72 -nographic
 //!     dtc -I dtb -O dtb -o crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb f.dtb
-//!
-//! (The `dtc` round-trip is not cosmetic: QEMU pads its dump out to a full megabyte
-//! and says so in the header, so the raw dump is a 1 MB file describing 7 KB of tree.)
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -29,8 +25,7 @@ fn finds_the_ram() {
 
     assert_eq!(n, 1, "virt has one memory node");
 
-    // This is the number we hardcoded in milestone 1, now read from the machine
-    // instead of from a `dtc` dump we squinted at.
+    // The RAM base and size QEMU `virt` declares.
     assert_eq!(
         regions[0],
         Region {
@@ -45,17 +40,14 @@ fn qemu_virt_reserves_nothing() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 8];
 
-    // QEMU's virt leaves the reservation block empty. Real firmware often does not,
-    // and this assertion exists to document that we handle the empty case rather than
-    // to celebrate it.
+    // QEMU's virt leaves the reservation block empty; real firmware often does not.
     assert_eq!(dtb.reserved_regions(&mut regions).unwrap(), 0);
 }
 
 #[test]
 fn rejects_junk() {
-    // The failure we actually care about: someone hands us a pointer to something that
-    // isn't a device tree. The magic check is the only thing standing between that and
-    // a parser walking off into random memory, which in a kernel is unbounded.
+    // A pointer to something that isn't a device tree: the magic check is all that stops
+    // the parser walking into random memory.
     match DeviceTreeBlob::from_bytes(&[0xffu8; 64]) {
         Err(Error::BadMagic(m)) => assert_eq!(m, 0xffff_ffff),
         other => panic!("expected BadMagic, got {other:?}"),
@@ -100,9 +92,8 @@ fn finds_the_initial_ramdisk() {
         .unwrap()
         .expect("this fixture has an initial ramdisk");
 
-    // The bootloader loaded a file into RAM and told us where. Nobody else protects it.
-    // If the frame allocator hands this memory out, the initial ramdisk is gone before milestone 8
-    // (the console driver leaves the kernel) ever reads a byte of it.
+    // Nothing else protects the ramdisk the bootloader loaded: the kernel must reserve this range
+    // before the frame allocator hands it out.
     assert_eq!(initial_ramdisk.start, 0x4400_0000);
     assert_eq!(initial_ramdisk.end(), 0x4403_0d40);
     assert_eq!(

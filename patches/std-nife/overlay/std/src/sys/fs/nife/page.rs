@@ -1,21 +1,12 @@
-//! **The shared page**.
+//! **The shared page**: one per process, so a lock guards it, and every request that touches the
+//! page holds the guard across its `CALL`, which is also what makes the reply's bytes ours to read.
 //!
-//! One page for the whole process, so two concurrent operations would trample each other. A lock
-//! guards it, and every request that touches the page holds the guard across its `CALL`, which is
-//! also what makes the reply's bytes ours to read.
+//! The lock is `sys::sync::Mutex`, std's futex lock: the holder is blocked in `CALL` on the file
+//! server, so a waiter sleeps on the space's futex (slot 12), or yields where the program holds
+//! none, rather than spinning out its time slice (the fixed bug in notes/std/threads.md).
 //!
-//! **The lock sleeps; it was a spinlock until 2026-10-12 (UTC)** (lane milestone/121-rg-threads).
-//! A spinlock was right while a process had one thread. With `rg`'s parallel walker it was not:
-//! the holder is blocked in `CALL` waiting for the file server, and every other worker spun on
-//! the flag until its time slice ran out. On `x86_64` at two cores, both cores spun while the
-//! caretaker waited behind them, and one walk of 141 files passed the suite's 90 s per-test
-//! ceiling. It is now `sys::sync::Mutex`, the futex lock `std`'s own `Mutex` uses: a waiter sleeps
-//! on the space's futex (slot 12), or yields where the program holds none.
-//!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.

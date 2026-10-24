@@ -1,41 +1,31 @@
-//! **One task of the multi-tasking workload** (milestone 168), at EL0, where a real workload runs.
+//! One task of the multi-tasking workload (milestone 168), run at EL0, where a real workload runs.
 //!
-//! `crates/job_mix` is the workload's definition and why. This file is one task: it runs the mix
-//! when the supervisor releases it, self-times, and reports. `kernel/src/job_mix.rs` is the
-//! supervisor that releases it and owns the wall clock.
-//!
-//! The tasks are EL0 processes, not kernel threads, because DECISIONS §96 (process kernel or
-//! event kernel) asks what a process kernel costs a *workload*: every job below crosses the trap
-//! boundary the way a real program does, and the two that do not ([`job_mix::COMPUTE`] and
-//! [`job_mix::TOUCH`]) are the application time between kernel entries that displaces the cache a
-//! returning thread wanted.
-//!
+//! `crates/job_mix` defines the workload. This task runs the mix when the supervisor
+//! (`kernel/src/job_mix.rs`, which owns the wall clock) releases it, self-times, and reports. It is
+//! an EL0 process because DECISIONS §96 (process kernel or event kernel) asks what a process kernel
+//! costs a workload: every job crosses the trap boundary as a real program does, and the two that
+//! do not ([`job_mix::COMPUTE`], [`job_mix::TOUCH`]) are the application time that displaces the
+//! cache a returning thread wanted. See notes/job-mix.md.
+
 //! # The two roles
 //!
 //! - [`job_mix::ROLE_MIXER`]: block on the go endpoint, run [`job_mix::ROUNDS_PER_TASK`] rounds of
 //!   the mix in this task's own order, report `[jobs, ticks, index]`, block again. A go word of
 //!   [`job_mix::GO_BREAKDOWN`] instead asks for the last subrun's per-kind ticks, untimed. It never
 //!   exits; the supervisor halts the machine when the sweep is done.
-//! - [`job_mix::ROLE_ECHO`]: `RECEIVE_CAP` and `REPLY`, forever. The [`job_mix::ROUND_TRIP`] job's
+//! - [`job_mix::ROLE_ECHO`]: `RECEIVE_CAP` and `REPLY`, forever: the [`job_mix::ROUND_TRIP`] job's
 //!   other half.
 //!
 
 //! # BUGS
 //!
-//! - **A mixer's self-timed ticks are per-task latency, not the benchmark's number**, which is the
-//!   supervisor's wall clock over the whole subrun. They are printed beside it so one very slow
-//!   task can be told from many evenly slow ones.
-//! - **The compute grind can be recognized by a future compiler.** It is an LCG folded into a value
-//!   that leaves through a `#[inline(never)]` return and is accumulated across rounds, the defense
-//!   `kernel/src/bench/smp_throughput.rs`'s `busy` uses; nothing checks that it still holds.
-//! - **The touch job walks this task's own `.bss`**, so it measures cache displacement, not
-//!   page-table work; that is [`job_mix::MAP`]'s.
-//! - **The map and spawn jobs report a refusal; the others cannot.** A refused `SPLIT`, retype,
-//!   map, configure or start reports [`job_mix::REPORT_FAILED`] with the kernel's error, and the
-//!   supervisor prints `job-mix: FAILED` and halts, which proves `job_mix::MAP_REGION_PAGES` and
-//!   `job_mix::TASK_BUDGET_PAGES` are large enough on every architecture.
-//! - **A mixer whose `CALL` is refused keeps counting the job as done**: `user_mode_runtime::call`
-//!   returns no status, so a wedged echo server shows as a subrun that never completes.
+//! - A mixer's self-timed ticks are per-task latency, not the benchmark's number (the supervisor's
+//!   wall clock); they are printed so one slow task can be told from many.
+//! - A future compiler could recognize `grind`; nothing checks that its defense still holds.
+//! - The touch job walks this task's own `.bss`: cache displacement, not page tables.
+//! - Only the map and spawn jobs report a refusal ([`job_mix::REPORT_FAILED`]); the rest cannot.
+//! - A refused `CALL` still counts as done (`call` returns no status), so a wedged echo server
+//!   shows as a subrun that never completes.
 //!
 //! Name: ratified 2026-09-05 (calef, milestone 168 (a multi-tasking workload benchmark)). One task
 //! *inside* the mix; `job_mixer` claimed

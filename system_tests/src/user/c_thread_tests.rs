@@ -1,26 +1,14 @@
 //! **Somebody else's threaded C, unmodified, on nife's C library** (milestone 836 (a C library,
 //! stage 2: threads); `design/fatal-risks/1-only-software-written-for-nife.md`).
 //!
-//! hackbench (rt-tests 2.11, basalt's package) in its thread mode: groups of sender
-//! and receiver `pthread`s pass 100-byte messages over pipes or `socketpair`s, every receiver
-//! blocking in `read` until a sender's `write` wakes it, after every thread has said it is ready
-//! through one pipe and been started through another with `poll`. The source is not touched; what
-//! differs from a Linux build is on the command line (basalt's `recipes/hackbench.toml` says what
-//! and why).
-//!
-//! The program runs as a process (`std_threads_tests::run_as_process_with`): its threads are
-//! those of milestone 812 (`std::thread::spawn` runs real threads in one address space), joined to
-//! one process, so the process's end is checked to reap every one. hackbench times itself with
-//! `gettimeofday`, so it is given a clock as `c_program_tests` gives one.
-//!
-//! **Each test skips when hackbench is not in the archive**, which is wherever `cargo xtask
-//! basalt-fetch` did not run (milestone 907 (hackbench is packaged in basalt)). CI's `rg-threads`
-//! rows fetch it and set `NIFE_HACKBENCH_REQUIRED=1`, so there a missing one fails. All three ISAs,
-//! nothing architecture-specific asserted (§19 (architectural parity is a tenet)).
-//!
-//! The group sizes keep every run inside a process's 16 threads (`std`'s limit, milestone 812's
-//! `BUGS`): hackbench's own default, 10 groups of 40, is 400.
-//!
+//! hackbench (rt-tests 2.11, basalt's package) in thread mode: groups of sender and receiver
+//! `pthread`s pass messages over pipes or `socketpair`s, every receiver blocking in `read` until a
+//! sender's `write` wakes it. It runs as one process (`std_threads_tests::run_as_process_with`)
+//! whose end must reap every thread, and is given a clock for `gettimeofday`. **Each test skips
+//! when hackbench is not in the archive**, except where CI sets `NIFE_HACKBENCH_REQUIRED=1`. All
+//! three ISAs (§19 (architectural parity is a tenet)). The group sizes keep every run inside a
+//! process's 16 threads; see notes/system-test-modules.md.
+
 //! Name: provisional, lane milestone/836-a-c-library-stage-two-threads (#2009), 2026-10-12 (UTC),
 //! for the module and the file. The pull request records no other name considered.
 
@@ -277,10 +265,9 @@ fn unmodified_hackbench_threads_over_socket_pairs() {
 }
 
 /// **The C library keeps the promises fio 3.40 needed** (milestone 833 (the same storage benchmark
-/// on nife and Linux, by porting real fio)): `fixtures/c/c_library_contract.c`, written for the
-/// purpose, checks `basename` and `dirname`, `getrusage`'s zeros, `getpriority`'s nice value,
-/// `select`'s timeout, readiness and wake-up from another thread, an `O_SYNC` write read back, and
-/// the honest refusals of `dlopen`, `shmget` and `getaddrinfo`. Each check prints `ok` or `FAIL`.
+/// on nife and Linux, by porting real fio)): `fixtures/c/c_library_contract.c` checks `basename`,
+/// `dirname`, `getrusage`, `getpriority`, `select` (timeout, readiness, a wake from another
+/// thread), an `O_SYNC` write read back, and refusals from `dlopen`, `shmget` and `getaddrinfo`.
 ///
 /// Falsification: attested 2026-10-12. On patagonia, aarch64 under HVF, with `select`'s
 /// timeout rounded down to whole milliseconds as `ppoll`'s was: `FAIL select times out` (a 500 us

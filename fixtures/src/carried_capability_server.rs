@@ -1,6 +1,14 @@
-//! **A server that answers a `CALL` with a capability** (§255 (each socket is its own capability),
-//! milestone 649 (every client of a network stack shares its socket numbers)). The kernel half of
+//! A server that answers a `CALL` with a capability (§255 (each socket is its own capability),
+//! milestone 649 (every client of a network stack shares its socket numbers)): the kernel half of
 //! what the network stack does on every socket open, proved without a network.
+//!
+//! The first `CALL` is answered three times, in order: `REPLY_CAPABILITY` carrying slot 4 must be
+//! refused (no `GRANT`) and leave the Reply usable, one carrying an empty slot must be refused the
+//! same way, and one carrying slot 3 answers. The client's word on it arrives on slot 2. The second
+//! `CALL` gets a plain `REPLY`, which must deliver no capability. Report bits: 0, the no-`GRANT`
+//! copy was refused; 1, the empty slot was; 2, the carrying reply succeeded; 3, the word arrived.
+
+//! # Capability contract
 //!
 //! - slot 0: the request endpoint (`READ`), where the client `CALL`s
 //! - slot 1: the report endpoint (`WRITE`)
@@ -8,18 +16,9 @@
 //! - slot 3: the probe endpoint again, `WRITE | GRANT`: the copy it carries
 //! - slot 4: the probe endpoint again, `WRITE` only: a capability it may use and not pass on
 //!
-//! The first `CALL` is answered three times over, in order. `REPLY_CAPABILITY` carrying slot 4 must be
-//! refused (no `GRANT`) and must leave the Reply usable; `REPLY_CAPABILITY` carrying an empty slot must
-//! be refused the same way; then `REPLY_CAPABILITY` carrying slot 3 answers. The client proves the
-//! capability by sending a word on it, which arrives here on slot 2. The second `CALL` is answered
-//! with a plain `REPLY`, which must deliver no capability.
-//!
-//! Report: one word of bits. Bit 0, the no-`GRANT` copy was refused; bit 1, the empty slot was
-//! refused; bit 2, the carrying reply succeeded; bit 3, the client's word arrived on the probe.
-//!
 //! The other half is `carried_capability_client`; the wiring is
 //! `system_tests/src/user/carried_capability_service.rs`.
-//!
+
 //! Name: provisional (lane/649-sockets-are-capabilities, 2026-10-07 UTC).
 
 #![no_std]
