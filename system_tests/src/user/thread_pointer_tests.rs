@@ -133,13 +133,11 @@ fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
 
 /// **Every thread reads through its own thread pointer, however the threads are switched**, and
 /// both ways of giving a thread its pointer work: `CONFIGURE`'s sixth register for the even
-/// spinners, and the spinner's own `SET_THREAD_POINTER` on itself for the odd ones.
-///
-/// Twice as many spinners as the kernel has cpu ids run at once, so at least two share a core and
-/// are switched by the timer, and each ORs what it reads into a sticky result. At the end spinner
-/// `i` must hold exactly `1 << i`: a pointer that leaked across a switch shows as a foreign bit,
-/// one that never arrived as the poison bit (a self-setter whose set did not take reads word 63)
-/// or as no bit at all.
+/// spinners, the spinner's own `SET_THREAD_POINTER` on itself for the odd ones. Twice as many
+/// spinners as the kernel has cpu ids run at once, so at least two share a core and are switched
+/// by the timer, and each ORs what it reads into a sticky result. At the end spinner `i` must hold
+/// exactly `1 << i`: a pointer that leaked across a switch shows as a foreign bit, one that never
+/// arrived as the poison bit (a self-setter whose set did not take reads word 63) or as no bit.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.thread_pointer_tests.each_thread_reads_through_its_own_thread_pointer.patch`
 #[test_case]
