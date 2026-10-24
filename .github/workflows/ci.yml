@@ -1017,6 +1017,12 @@ jobs:
       # fatal at release. In this job because it is a required check and already has QEMU and OVMF;
       # the row's comment in script/ci-build has its price.
       - run: helpers/hang_evidence.py run -- script/ci-build release-uefi-boot
+      # **And the same release image booted over a network, with no disk attached** (milestone 260
+      # (boot xenon over the network)): OVMF PXE-boots it from the real `script/board-netboot`,
+      # with the DHCP offer parsed out of `bench/xenon-netboot/dnsmasq.conf`, and a client the
+      # config does not name must get no boot file. It is the half of xenon's network boot a
+      # stranger can check; the other half is a bench session.
+      - run: helpers/hang_evidence.py run -- script/ci-build netboot-rehearsal
       # **And the release aarch64 stick under EDK2 with `acpi=on`** (milestone 578 (an ACPI
       # discovery path for aarch64)): no device tree, only the tables, which is what every aarch64
       # cloud machine hands a kernel. The loader writes the tree from them (§278 (an ACPI machine
