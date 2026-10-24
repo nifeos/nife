@@ -1,43 +1,50 @@
 //! **basalt's published packages, fetched by digest for the gates** (milestone 810 (`ripgrep` is
 //! packaged in basalt and installed with `jig`), DECISIONS §297 (software reaches a nife system as a
-//! package `jig` installs from basalt) item 3). Name: provisional, `cargo xtask basalt-fetch`,
-//! minted 2026-10-13 (UTC) by lane `lane/ripgrep-from-basalt`.
+//! package `jig` installs from basalt) item 3).
 //!
 //! nife builds none of the foreign programs [`PACKAGES`] names (`rg`, `ioping`, `hackbench`,
-//! `speedtest1`). basalt does, from its `recipes/`, and publishes one package per architecture on a
-//! GitHub Release with an index at `basalt.nifeos.org`. calef ruled on 2026-10-13 (UTC) that
-//! nife's tests take that package rather than a build of their own: *"1 is preferable because that
-//! tests jig and basalt's delivery mechanism as well."* First-party `rmle` and `demos` are pinned
-//! for `jig install`; nife's tests run their own builds (milestone 909 (basalt composes the
-//! bootable image from its packages) item 5).
+//! `speedtest1`); its tests take basalt's published package instead (calef, 2026-10-13 UTC: *"1 is
+//! preferable because that tests jig and basalt's delivery mechanism as well."*). First-party
+//! `rmle` and `demos` are pinned for `jig install`; nife's tests run their own builds (milestone
+//! 909 (basalt composes the bootable image from its packages) item 5).
 //!
-//! **What is pinned is a basalt commit and the Release it published** ([`PIN`], the file
-//! `xtask/basalt-pin`), and no digest. Each package's SHA-256 is read from basalt's recipe at that
-//! commit (`recipes/<name>.toml`'s `[package_digest]`, which basalt's build refuses to publish
-//! unless the package matches; nife milestone 917 (basalt's packages build reproducibly, and the
-//! recipe records each package's digest)). So a basalt republish needs one edit here, the pin, and
-//! never a digest.
+//! Name: provisional, `cargo xtask basalt-fetch`, minted 2026-10-13 (UTC) by lane
+//! `lane/ripgrep-from-basalt`.
+
+//! # What is pinned
+//!
+//! A basalt commit and the Release it published ([`PIN`], the file `xtask/basalt-pin`), and no
+//! digest. basalt builds each package from its `recipes/` and publishes one per architecture on a
+//! GitHub Release, with an index at `basalt.nifeos.org`. Each package's SHA-256 is read from the
+//! recipe at the pinned commit (`recipes/<name>.toml`'s `[package_digest]`, which basalt's build
+//! refuses to publish unless the package matches; milestone 917 (basalt's packages build
+//! reproducibly, and the recipe records each package's digest)). A republish needs one edit here,
+//! the pin, and never a digest.
+
+//! # What it writes
 //!
 //! For each package of [`PACKAGES`] and each architecture, this:
 //!
-//! 1. fetches the package from the Release [`PIN`] names, and refuses it unless
-//!    `package_index::accept`, the installer's own decision, takes it under the recipe's SHA-256;
+//! 1. fetches the package from the Release, refused unless `package_index::accept`, the
+//!    installer's own decision, takes it under the recipe's SHA-256;
 //! 2. writes it into a repository in basalt's layout under `target/basalt/`, whose index
 //!    [`crate::disk`] hands to the test index host for `script/swish-check`'s `jig install` lines;
-//! 3. writes the package's program member to `target/basalt/programs/<triple>/<program>`, which the
-//!    kernel harness's archive and the shell check's disk carry for the tests and lines that run it
-//!    by path with hand-placed capabilities.
+//! 3. writes its program member to `target/basalt/programs/<triple>/<program>`, which the kernel
+//!    harness's archive and the shell check's disk carry for runs by path.
+
+//! # The host's reference `rg`
 //!
-//! It also fetches the host's reference `rg`, the same 14.1.1 from ripgrep's own Release, pinned by
-//! SHA-256 per host ([`HOST_RIPGREP`]). `script/swish-check` compares the guest's walk against what
-//! it prints, and `walk_pricing` holds it to the fixture's lines.
+//! It also fetches ripgrep's own 14.1.1 for the host, pinned by SHA-256 per host
+//! ([`HOST_RIPGREP`]). `script/swish-check` compares the guest's walk against what it prints, and
+//! `walk_pricing` holds it to the fixture's lines.
+
+//! # Environment
 //!
-//! **When [`crate::disk::BASALT_REPOSITORY`] names a repository**, as basalt's own `packages`
-//! workflow does with the one it just built, nothing is fetched: that repository's packages are
-//! accepted under its own index and their programs taken from it.
-//!
-//! **Without a network** a local run says what it could not fetch, succeeds, and skips every line
-//! and test of basalt's programs. In CI (`CI` set) a failed fetch fails the row.
+//! When [`crate::disk::BASALT_REPOSITORY`] names a repository, as basalt's own `packages` workflow
+//! does with the one it just built, nothing is fetched: that repository's packages are accepted
+//! under its own index and their programs taken from it. Without a network a local run says what
+//! it could not fetch, succeeds, and skips every line and test of basalt's programs. In CI (`CI`
+//! set) a failed fetch fails the row.
 
 use std::path::{Path, PathBuf};
 
