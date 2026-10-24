@@ -58,9 +58,9 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
     // reported, so this is not merely appeasing the lint.
     for (printed, _) in (0..MAX_MESSAGES).enumerate() {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
-        // **The stream's end carries the verdict** (2026-08-17): `rm` declares the sink contract
-        // and now speaks it, so the last message is `byte_sink_contract::eof()` with the status and the
-        // count in the two words that contract leaves free. It cannot collide with a text frame,
+        // The stream's end carries the verdict: `rm` speaks the sink contract it declares, so the
+        // last message is `byte_sink_contract::eof()` with the status and the count in the two
+        // words that contract leaves free. It cannot collide with a text frame,
         // whose first word is a byte count of at most sixteen.
         if w0 == byte_sink_contract::eof() {
             held.release_or_fail("rm's directory grant");
@@ -77,23 +77,15 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
     panic!("rm sent {MAX_MESSAGES} messages and never a verdict");
 }
 
-/// **The headline: `rm -r` removes the subtree it was granted, and a narrower capability
-/// cannot begin.**
+/// `rm -r` removes the subtree it was granted, and a narrower capability cannot begin.
 ///
-/// Three runs against one tree, in order, because they are one argument:
-///
-/// 1. `rm rm-doomed` with the full grant is **`EISDIR` and nothing removed**. A directory is a
-///    refusal, never a silent escalation to recursive removal, which is `rm(1)`'s behaviour and
-///    is what makes `-r` mean something.
-/// 2. `rm -r rm-doomed` through a capability carrying only `REMOVE` **cannot even look**: the
-///    `OPENDIR` is `ENOENT`, because a naming right withheld answers "in this scope there is no
-///    such name" (DECISIONS §47). The tree is still there. Nothing in the program decided this;
-///    the capability to walk was never handed over.
-/// 3. The same command through a capability carrying `ENUMERATE｜DESCEND｜REMOVE` takes the
-///    whole tree, bottom-up, five names.
-///
-/// Runs 1 and 2 are what make run 3 more than "a loop deleted some files": the *same binary*,
-/// the *same operand*, and the outcome is decided by what was in the capability table.
+/// Three runs against one tree, in order, with the same binary and operand. `rm rm-doomed` with
+/// the full grant is `EISDIR` and removes nothing: a directory is a refusal, never a silent
+/// escalation to recursion, as in `rm(1)`. `rm -r rm-doomed` through a capability carrying only
+/// `REMOVE` cannot look: `OPENDIR` is `ENOENT`, because a withheld naming right answers "in this
+/// scope there is no such name" (§47 (a directory capability carries six rights)). Through
+/// `ENUMERATE｜DESCEND｜REMOVE` it takes the whole tree, bottom-up, five names. The capability table
+/// decides the outcome, not the program.
 #[test_case]
 fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     if fs_service::fs_server_image().is_none() {
@@ -144,19 +136,13 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     );
 }
 
-/// **`-f` is idempotency, and silence is the default.** Both are `rm(1)`'s, checked against the
-/// man page rather than remembered.
+/// `-f` is idempotency, and silence is the default, both checked against `rm(1)`'s man page.
 ///
-/// - `rm rm-nothing` on a name that is not there is a diagnostic and a non-zero status.
-/// - `rm -f rm-nothing` is **neither**: "if the file does not exist, do not display a diagnostic
-///   message or modify the exit status". That is what makes a script re-runnable, and "absence
-///   is the desired state" is not a lie about failure.
-/// - `rm rm-solo` on a name that *is* there removes it and **prints nothing at all**, which is
-///   why `-v` exists. Without this run the `-f` claim above is equally true of a program that
-///   never prints.
-///
-/// Its names are its own, so this run and the recursive one above cannot depend on each other's
-/// order.
+/// `rm rm-nothing` on an absent name is a diagnostic and a non-zero status. `rm -f rm-nothing` is
+/// neither ("if the file does not exist, do not display a diagnostic message or modify the exit
+/// status"), which makes a script re-runnable. `rm rm-solo` on a present name removes it and prints
+/// nothing at all; without that run the `-f` claim would hold of a program that never prints. Its
+/// names are its own, so this run and the recursive one cannot depend on each other's order.
 #[test_case]
 fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     if fs_service::fs_server_image().is_none() {

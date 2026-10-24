@@ -1,22 +1,8 @@
-//! Masking and unmasking interrupts.
+//! Masking and unmasking interrupts: the `I` bit of `PSTATE.DAIF`, where a set bit means masked.
 //!
-//! On aarch64 this is the `I` bit of **`PSTATE.DAIF`**:
-//!
-//! | Bit | Name | Masks |
-//! |-----|------|-------|
-//! | 9   | `D`  | Debug exceptions |
-//! | 8   | `A`  | SError (system errors) |
-//! | 7   | `I`  | **IRQ** |
-//! | 6   | `F`  | FIQ |
-//!
-//! Set the bit to **mask** (disable), clear it to **unmask** (enable). Note the polarity:
-//! a `1` means "masked", which is the opposite of how most people read a flag called `I`.
-//!
-//! `msr daifset` / `msr daifclr` take a 4-bit immediate where bit 1 is `I`, so masking
-//! IRQs is `msr daifset, #2`. These are single instructions that touch only the bits you
-//! name, so there is no read-modify-write window to lose a race in.
-//!
-//! We only touch `I`. FIQ and SError stay as the boot protocol left them.
+//! `msr daifset, #2` and `msr daifclr, #2` touch only `I`, so there is no read-modify-write window.
+//! FIQ and SError stay as the boot protocol left them. See notes/aarch64-port.md, "Masking
+//! interrupts".
 
 use super::instructions;
 
@@ -37,8 +23,7 @@ pub(crate) fn is_enabled() -> bool {
 pub fn disable() -> bool {
     let was_enabled = is_enabled();
 
-    // If an IRQ fires between the read above and this instruction, it simply runs, and the state
-    // we read is still the truth about what to restore.
+    // An IRQ between the read and the mask runs and returns; the state read is still what to restore.
     instructions::mask_irqs();
 
     was_enabled
@@ -47,7 +32,6 @@ pub fn disable() -> bool {
 /// Put IRQs back the way [`disable`] found them.
 pub fn restore(was_enabled: bool) {
     if was_enabled {
-        // Unmasking only when they were unmasked before.
         instructions::unmask_irqs();
     }
 }

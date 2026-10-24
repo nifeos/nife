@@ -80,3 +80,5 @@ area directories), ruled B). Appendices under
 `current-cpu-page.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-15.
 
 `capability-manifest-note.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-15.
+
+`aarch64-port.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings `riscv-port.md` and `x86-port.md`.

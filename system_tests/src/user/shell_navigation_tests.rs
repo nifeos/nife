@@ -154,20 +154,14 @@ fn a_shell_navigates_its_own_subtree_and_clamps_at_its_root() {
     );
 }
 
-/// **The headline: every shell has its own root, and neither can name the other's files.**
+/// Every shell has its own root, and neither can name the other's files.
 ///
 /// Two shells, two subtrees of one image, one script. Each tries to open `sub/inner` and
-/// `other/secret` and reports which it reached, and it is **told nothing about which subtree it
-/// was rooted in**, so the property is read off the pair rather than claimed by either. The
-/// listings are checked the same way, because a listing is a rendering of authority: a name from
-/// the other shell's root appearing in one would be an escape even though nothing was opened.
-///
-/// Not by policy. The FS server can reach both directories on any request it likes, and the
-/// caretakers one hop up hold the whole image root. What stops each shell is that **no
-/// capability reaching the other subtree exists in its capability table**, which is why the two runs are
-/// sequential and it costs nothing: they are separate processes with separate roots, and being
-/// alive at the same instant would prove no more than this does (they share one page with the
-/// FS server, so the harness runs them in turn).
+/// `other/secret` and is told nothing about which subtree it was rooted in, so the property is read
+/// off the pair rather than claimed by either. Listings are checked too: a name from the other root
+/// in one is an escape with nothing opened. The FS server and caretakers reach both directories;
+/// what stops each shell is that its table holds no capability to the other subtree. They run in
+/// turn (sharing one page with the FS server), and running both at once would prove no more.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.shell_navigation_tests.two_shells_with_different_roots_cannot_name_each_others_files.patch`
 #[test_case]
