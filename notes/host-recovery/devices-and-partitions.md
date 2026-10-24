@@ -1,5 +1,7 @@
 # A device and a partition, not only an image file (milestone 110)
 
+*Name: provisional. After the parent's own heading.*
+
 How the recovery tool [`notes/host-recovery.md`](../host-recovery.md) describes reads a filesystem inside a partition of a real disk, the
 correction the work forced, a transcript, how it is proven, and its BUGS. It was built as
 milestone 110 (the recovery tool takes a device and a partition).

@@ -1,16 +1,13 @@
 //! The allocator workload (milestone 27): `alloc` collections on the untyped-backed heap.
 //!
-//! The first program in the tree that links `extern crate alloc`. It wires
-//! `memory_region_heap::MemoryRegionHeap` as its global allocator, then does the things a heap exists for
-//! and a bump pointer cannot do: interleaved allocation and free in arbitrary order (`Vec`,
-//! `String`, `BTreeMap`), drop-and-reuse, and a final large allocation that must fit in the pages
-//! already committed (proving freed memory is actually reusable, not leaked).
-//!
-//! Every step asserts its own result; a wrong value panics, which faults (`brk`/`ebreak`), which
-//! the kernel reports and the waiting test's watchdog turns into a failure. On success it SENDs a
-//! magic word plus the committed byte count, so the kernel test can also assert the heap grew and
-//! stayed inside its cap.
-//!
+//! The first program in the tree to link `extern crate alloc`, with
+//! `memory_region_heap::MemoryRegionHeap` as its global allocator. It interleaves allocation and
+//! free in arbitrary order (`Vec`, `String`, `BTreeMap`), drops and reuses, and ends with a large
+//! allocation that must fit in the pages already committed, which proves freed memory is reused.
+//! Every step asserts; a wrong value faults, and the waiting test's watchdog fails it. On success
+//! it SENDs a magic word and the committed byte count, so the test can also assert the heap grew
+//! and stayed inside its cap.
+
 //! # Capability contract (notes/abi.md §4)
 //! - slot 0: the untyped budget the heap draws from
 //! - slot 1: the report endpoint (WRITE)

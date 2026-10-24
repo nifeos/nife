@@ -6,9 +6,9 @@
 use super::*;
 
 /// **How many sockets are open at once, across every client** (§255). A constant of this server's,
-/// no longer of the wire: a client never names an entry. Sixteen, from the six the wire allowed,
-/// because the table is now shared by every client of the stack rather than divided among them by
-/// convention. A socket's real cost, its buffers and its mapped page, is paid only while it is open.
+/// not of the wire: a client never names an entry. Sixteen, because every client of the stack
+/// shares the table. A socket's real cost, its buffers and its mapped page, is paid only while it
+/// is open.
 pub(crate) const SOCKETS: usize = 16;
 
 /// Where the shared frame of the socket in table entry `entry` is mapped in `net_stack`'s address

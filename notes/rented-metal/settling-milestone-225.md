@@ -1,5 +1,7 @@
 # What it would cost to settle milestone 225's x86_64 and aarch64 legs
 
+*Name: provisional. After the parent's "What it would cost to settle milestone 225".*
+
 An appendix to [`notes/rented-metal.md`](../rented-metal.md). It holds the price of one bench
 evening per leg, the paragraph it replaced, and why a rented machine substitutes for xenon and argon
 in a soak and in nothing else. Every price was read on 2026-09-23.

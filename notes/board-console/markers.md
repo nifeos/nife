@@ -1,5 +1,7 @@
 # What board-console recognizes, and where each marker came from
 
+*Name: provisional.*
+
 An appendix to [notes/board-console.md](../board-console.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the marker tables with their sources, the traps
 in the four outcomes, and how a job-mix sweep is judged.

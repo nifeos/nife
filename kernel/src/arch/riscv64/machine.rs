@@ -1,20 +1,8 @@
-//! **The facts about a RISC-V machine that the kernel needs before it can read the device tree.**
+//! The two facts about a RISC-V machine the kernel needs before it can read the device tree: where
+//! the console UART is, and what the tree calls its node.
 //!
-//! Exactly two, both about the console: where its registers are, and what the tree calls its node.
-//! Everything else (RAM, the PLIC, the timebase, the harts) comes from the tree, and should. The
-//! console cannot, because the tree parser is the code most likely to need debugging and `println!`
-//! is how it gets debugged (the long version is at `console::UART_BASE`). So a new machine whose
-//! UART is somewhere new needs a compile-time answer here, and this file is the one place that
-//! answer lives.
-//!
-//! Until milestone 89 (Scaleway EM-RV1) the riscv64 address was written three times: in
-//! `console.rs`, in `user.rs` (the progenitor's device capability) and in `mmu.rs` (the mapping). They
-//! agreed because QEMU `virt` and the JH7110 both put UART0 at `0x1000_0000`. The TH1520 does not,
-//! and a second machine would have meant editing three files, two of them outside `arch/`. Now it is
-//! one cfg arm here. That move is counted as a seam repair in milestone 89's risk 9 tally.
-//!
-//! The machine is chosen by Cargo feature, the same mechanism `board` already is: one kernel image
-//! per machine.
+//! The console must print while the tree parser is debugged (`console::UART_BASE`), so a new
+//! machine's UART needs a compile-time answer, chosen by Cargo feature, here and nowhere else.
 //!
 //! Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC). Covers the module and the `board_th1520` feature.
 

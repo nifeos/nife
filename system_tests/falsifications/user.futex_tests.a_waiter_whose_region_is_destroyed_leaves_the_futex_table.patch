@@ -15,13 +15,13 @@ the same lines, moved out of `kernel/src/sched.rs` into `kernel/src/sched/region
 the same and only the path and line numbers differ.
 
 diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
-index a8df00c85..78fe42ec9 100644
+index 30185504c..3253ea9d4 100644
 --- a/kernel/src/sched/region_reaping.rs
 +++ b/kernel/src/sched/region_reaping.rs
-@@ -169,12 +169,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
+@@ -98,12 +98,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
+             }
          }
-         // A thread blocked in `AddressSpace::WAIT` (milestone 812) is on the futex table under its
-         // key. Leaving it there would leave a freed TCB on a queue a later `WAKE` walks.
+         // On the futex table under its key, where a later `WAKE` would walk a freed TCB.
 -        Some(Wait::Futex(key)) => {
 -            let ptr = thread_control_block_ptr(sched, tid);
 -            if let Some(token) = sched.futexes.remove(key, ptr) {
@@ -29,6 +29,6 @@ index a8df00c85..78fe42ec9 100644
 -            }
 -        }
 +        Some(Wait::Futex(_)) => {}
-         // A suspended thread (DECISIONS §300 (the paused state, a TCB verb, silent)) is on no
-         // queue and already holds its token.
+         // A suspended thread (§300 (the paused state, a TCB verb, silent)) is on no queue and
+         // already holds its token.
          Some(Wait::Resume) | None => {}

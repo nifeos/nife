@@ -7,7 +7,7 @@
 //! argument crossed `START` into a fresh thread's registers intact.
 //!
 //! A failed lookup, parse or build reports word 0.
-//!
+
 //! # BUGS
 //!
 //! The child is loaded unmeasured (notes/trusted-init.md).

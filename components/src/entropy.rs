@@ -1,33 +1,14 @@
 //! **The entropy service** (§44 (entropy is a capability), notes/entropy.md): the one process that
-//! reaches the entropy source. Clients hold an endpoint that means "you may obtain randomness", a
-//! strictly smaller authority than reaching the device: no queue, no DMA region, no request this
-//! service did not make for them.
+//! reaches the entropy source. Clients hold an endpoint meaning "you may obtain randomness", a
+//! strictly smaller authority than the device: no queue, no DMA region, no request it did not make
+//! for them. Owning it is worth exactly an attacker choosing random numbers, no more.
 //!
-//! ```text
-//!   virtio-rng ──virtio (mmio or PCIe)─────► entropy ──the request endpoint──► clients
-//!    (a device)                                  │        (CALL, bytes in the reply)
-//!                                                └── its DMA page: nobody else maps it
-//! ```
-//!
-//! Its authority: slot 0, the request endpoint (RECEIVE); slot 1, the device's `Irq`; slot 2, the
-//! confined `Virtio` transport; slot 3, a readiness endpoint (WRITE); and one DMA page. Owning it
-//! is worth exactly an attacker choosing random numbers, no more.
-//!
-//! **These are the device's bytes**: no pool, whitening, mixing or DRBG, since without a one-way
-//! function every transformation is reversible and only blurs the claim. It keeps a buffer of
-//! [`POOL_LEN`] bytes, handed out in order to exactly one client each and zeroed behind the cursor:
-//! a cache for round trips, not a transformation. virtio-rng may return fewer bytes than asked, and
-//! QEMU's does, so [`Pool::take`] gathers across refills and never pads or repeats; a device that
-//! yields nothing for [`REFILL_TRIES`] tries answers [`entropy_contract::NO_ENTROPY`].
-//!
-//! The second backend, [`instr`], runs RDSEED (`x86_64`) or RNDRRS (aarch64) inside this process,
-//! behind the same endpoint, because an unprivileged instruction a client ran itself would make the
-//! endpoint theatre. The kernel picks the backend, since `ID_AA64ISAR0_EL1.RNDR` is EL1-only
-//! (`kernel/src/user/entropy_service.rs::ensure_instruction`). RDRAND and RNDR are refused: they may
-//! answer from a hardware DRBG, which this file refuses in software. RDSEED and RNDRRS can run dry
-//! under load, and then the answer is [`proto::NO_ENTROPY`], never the DRBG sibling. On-die
-//! conditioning is part of each instruction's contract and is not a DRBG.
-//!
+//! **These are the device's bytes**: no pool, whitening, mixing or DRBG. A [`POOL_LEN`] buffer is
+//! handed out in order, once, and zeroed behind the cursor. The [`instr`] backend runs RDSEED or
+//! RNDRRS in this process, behind the same endpoint, because an instruction a client ran itself
+//! would make the endpoint theatre; RDRAND and RNDR are refused, since they may answer from a
+//! hardware DRBG. The kernel picks the backend (`ID_AA64ISAR0_EL1.RNDR` is EL1-only).
+
 //! # BUGS
 //!
 //! - An all-zero first draw condemns the backend: `NO_ENTROPY` for the rest of the boot, wrong
@@ -54,9 +35,13 @@ use user_mode_runtime::{
 };
 
 /// Capability slots for the virtio backend, by convention with `kernel/src/user/entropy_service.rs`.
+/// Slot 0, the request endpoint (RECEIVE).
 const REQ: u64 = 0;
+/// Slot 1, the device's `Irq`.
 const IRQ: u64 = 1;
+/// Slot 2, the confined `Virtio` transport.
 const VIRTIO: u64 = 2;
+/// Slot 3, a readiness endpoint (WRITE).
 const READY: u64 = 3;
 
 /// What `arg0` means, by convention with `kernel/src/user/entropy_service.rs::start` and
@@ -221,22 +206,12 @@ impl Pool {
             return 0; // the kernel refused our own in-region descriptor: a bug here, not a dry device
         }
 
-        // **The completion is the used ring advancing, not the wakeup**, and this driver looks
-        // before it blocks. Two reasons, and the second one is a fact about the board rather than
-        // an optimisation:
-        //
-        //  1. QEMU completes a virtio request synchronously inside `NOTIFY`, so on the machine this
-        //     runs on the ring has already moved by the time we get here.
-        //  2. **PCI INTx lines are shared four ways on both `virt` boards** (`pci::intx_irq`
-        //     swizzles device number modulo 4) while the kernel routes an intid to exactly one
-        //     endpoint (`sched::bind_irq`). With five PCI functions attached there is no
-        //     unshared line left, so a driver that blocked before looking would be betting on
-        //     owning its line. Looking first costs two loads and removes the bet.
-        //
-        // The wait is still here, and is what a genuinely asynchronous device gets: a wakeup can be
-        // stale, coalesced, or a previous operator's, so the loop re-checks the ring each time.
-        // Bounded, so a device that stopped answering becomes an honest "no entropy" rather than a
-        // hang.
+        // **The completion is the used ring advancing, not the wakeup**, so look before blocking.
+        // QEMU completes a request inside `NOTIFY`, and PCI INTx lines are shared four ways on both
+        // `virt` boards (`pci::intx_irq` swizzles modulo 4) while the kernel routes an intid to one
+        // endpoint (`sched::bind_irq`): with five PCI functions no unshared line is left. A wakeup
+        // can be stale, coalesced or a previous operator's, so the loop re-checks the ring, and it
+        // is bounded so a silent device is an honest "no entropy" rather than a hang.
         let mut len = 0;
         for _ in 0..WAIT_WAKEUPS {
             virtio_ring_barrier();
@@ -283,15 +258,10 @@ impl Pool {
 
     /// Take `n` bytes, as a little-endian word plus a count.
     ///
-    /// **The loop is here because the buffer boundary is not the client's problem.** A refill can
-    /// land short (QEMU's virtio-rng really does return fewer than the 256 bytes asked for, which
-    /// is what turned this from a spec allowance into a fixed bug), so the bytes a client asked for
-    /// can straddle two device requests. Gathering across the boundary keeps a short *device* read
-    /// invisible, which is the difference between "the device paced us" and "the caller cannot have
-    /// what it asked for".
-    ///
-    /// A count below `n` therefore means one thing only: the device went dry part-way through. It
-    /// is never padding. Zero means it was dry from the start.
+    /// A refill can land short (QEMU's virtio-rng returns fewer than the 256 bytes asked), so the
+    /// bytes a client asked for can straddle two device requests; gathering across them keeps a
+    /// short device read invisible. A count below `n` means the device went dry part-way, never
+    /// padding; zero means it was dry from the start.
     fn take(&mut self, n: u64) -> (u64, u64) {
         let mut word = 0u64;
         let mut got = 0;
@@ -423,29 +393,23 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
     }
 }
 
-/// **The instruction backend** (milestone 162): RDSEED on `x86_64`, RNDRRS on aarch64. Confined here
-/// rather than lifted into a shared userspace arch-abstraction crate: nothing in `components/src/`
-/// has
-/// needed one before this (the precedent, `crates/user_mode_runtime`, is the syscall ABI itself, one crate
-/// *every* program depends on, not a single-consumer helper), so a module inside the one program
-/// that uses it is the smaller thing to build. **Provisional**, flagged for an architect: if a
-/// second userspace program ever needs per-architecture `asm!` of its own, this is the first
-/// candidate to pull out into a crate rather than duplicate.
+/// **The instruction backend** (milestone 162 (real hardware entropy on x86_64 and aarch64)):
+/// RDSEED on `x86_64`, RNDRRS on aarch64, chosen by the kernel in
+/// `kernel/src/user/entropy_service.rs::is_instruction_backend_available`. Either can run dry
+/// under load, and then the answer is `NO_ENTROPY`, never the DRBG sibling; on-die conditioning is
+/// part of each instruction's contract and is not a DRBG. A module of the one program that uses it
+/// rather than a crate. **Provisional**, flagged for an architect: a second userspace program
+/// needing per-architecture `asm!` makes this the first candidate for a crate.
 mod instr {
     /// How many times to retry a transient "no data this cycle" result before giving up.
     ///
-    /// Both instructions this module uses draw straight from the conditioned entropy source rather
-    /// than a buffered DRBG (see the module doc above for why that is the point), so underflow under
-    /// load is expected rather than exceptional, unlike `RDRAND`/`RNDR`. Intel's DRNG Software
-    /// Implementation Guide (rev. 2.2, §5.3.1.2) calls this service an "asynchronous application"
-    /// (one that cannot block indefinitely waiting on a seed) and says to give up after "somewhere
-    /// between 1 and 100" retries depending on sensitivity to delay. This service is one serialized
-    /// request queue, not many threads hammering the instruction at once, so the high end of that
-    /// range costs nothing. ARM's own text for `RNDR`/`RNDRRS` ("if the instruction cannot return a
-    /// genuine random number in a reasonable period of time") reads as the hardware already
-    /// retrying before it ever signals failure, and Linux's `arch/arm64/include/asm/archrandom.h`
-    /// does not retry at the instruction level at all; one bound shared by both architectures is not
-    /// a stronger claim than either vendor makes, and it is simpler than two.
+    /// Both instructions draw from the conditioned source, not a DRBG, so underflow under load is
+    /// expected. Intel's DRNG Software Implementation Guide (rev. 2.2, section 5.3.1.2) tells an
+    /// "asynchronous application" to give up after "somewhere between 1 and 100" retries, and one
+    /// serialized request queue makes the high end free. ARM's text for `RNDR`/`RNDRRS` ("if the
+    /// instruction cannot return a genuine random number in a reasonable period of time") reads as
+    /// the hardware already retrying, and Linux's `arch/arm64/include/asm/archrandom.h` does not
+    /// retry; one bound for both is no stronger a claim than either vendor makes.
     #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     const RETRIES: u32 = 100;
 

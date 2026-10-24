@@ -1,5 +1,7 @@
 # Reading a two-build session: placement, and what each outcome means
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/ten-longest-notes.*
+
 An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md). It holds how the
 2026-09-04 procedure controlled for placement, and the routing table it was written to fill in. The
 2026-09-04 capture matched none of the E3 rows, because all of them assume the only variable is

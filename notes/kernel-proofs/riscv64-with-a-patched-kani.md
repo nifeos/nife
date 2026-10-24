@@ -1,5 +1,8 @@
 # Proving `kernel/src` for riscv64 with a patched Kani
 
+*Name: provisional, minted 2026-09-25 by milestone 589 (Kani can prove riscv64 from the hosts we
+already have). The native riscv64 route, beside the aarch64-host one.*
+
 An appendix to [`notes/kernel-proofs.md`](../kernel-proofs.md).
 
 Stock Kani compiles for the machine it runs on. `kernel/src/arch/mod.rs` picks its subtree by

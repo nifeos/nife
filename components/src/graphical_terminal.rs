@@ -1,52 +1,22 @@
-//! **The graphical terminal: a prompt on the display, launched from the swish prompt**
-//! (milestone 632 (graphics on demand), calef's 2026-09-30 ruling: graphics is launched from the
-//! swish prompt, not started at boot).
+//! The graphical terminal: a prompt on the display, launched from the swish prompt (milestone 632
+//! (graphics on demand)).
 //!
-//! The person at the boot prompt delegated the display devices by typing this program's name, and
-//! the progenitor built the stack from what the shell delegated: `gpu_driver`, `display_terminal`,
-//! and either the session's own line discipline with `keyboard_driver` behind it (a virtio keyboard
-//! came with the gpu), or nothing but the screen, with keystrokes from the boot's own line
-//! discipline over the UART. Two arms, chosen by `x0`, both a prompt that echoes what is typed:
-//!
-//! ```text
-//!   arm 0 (a keyboard came):
-//!     keyboard_driver ──OPERATION_BYTES──► line_editor ──OPERATION_WRITE──► display_terminal ──► screen
-//!            this program ◄──lines── (slot 2)     (slot 1 == slot 2's server)
-//!
-//!   arm 1 (no keyboard; the UART is the keystroke source):
-//!     boot input ──OPERATION_BYTES──► boot line_editor ◄──OPERATION_READRAW── this program
-//!            this program ──OPERATION_WRITE──► display_terminal ──► screen
-//! ```
-//!
-//! Arm 1 is the shell's own §227 (how Tab reaches the shell) shape: raw mode on the boot
-//! discipline, register-only reads, echo painted by the reader as the bytes arrive.
-//!
-//! **Ending.** `^C` or a line reading `quit` ends a session on either arm. Arm 1 puts the boot
-//! discipline back cooked on the way out; the shell's §227 fallback (its `BAD_REQUEST` path) takes
-//! it back to raw on the next prompt, also after a session the kernel killed.
-//!
-//! Its whole authority: the result endpoint (slot 0, one word when the session ends), one endpoint
-//! that prints to the screen (slot 1) with the page its server reads, one endpoint that owns the
-//! keystrokes (slot 2), and, on arm 0 only, the page the discipline delivers lines into. No
-//! device, no interrupt, no DMA.
-//!
+//! The progenitor builds the stack from the display devices the shell delegated when this program's
+//! name was typed. `x0` picks one of two arms, both a prompt that echoes what is typed: arm 0, when
+//! a virtio keyboard came with the gpu, reads cooked lines from the session's own line discipline;
+//! arm 1 reads the boot discipline raw over the UART and paints the echo itself, the shell's §227
+//! (how Tab reaches the shell) shape. `^C` or a line reading `quit` ends a session. It holds no
+//! device, interrupt or DMA, only the endpoints and pages at [`REPORT`], [`WRITE`], [`KEYS`],
+//! [`OUT_VA`] and [`IN_VA`]. The two arms, drawn, are in notes/line-discipline.md.
 
 //! # BUGS
 //!
-//! **A session runs no program.** Its lines are echoed and nothing else, so a full-screen program
-//! cannot reach `display_terminal` through a session, which milestone 705 (the graphical terminal
-//! runs full-screen programs) needs.
-//!
-//! **Arm 1 has no line editing.** Backspace and the arrows are stored and painted as the control
-//! bytes they are; the only edits are `^C` and retyping.
-//!
-//! **Arm 1 can still switch the boot discipline's mode under the shell.** Slot 2 on that arm is the
-//! boot discipline's endpoint badged `line_editor::proto::RAW_ONLY_BADGE`
-//! (milestone 709 (a graphical terminal session on the no-keyboard arm holds only the raw half of
-//! the boot discipline)), served `OPERATION_RAWMODE` and `OPERATION_READRAW` only, so a session cannot type
-//! or take a line the boot shell reads, or print to the UART. Flipping the mode while the shell is
-//! between reads abandons what the shell had half typed and fails a parked read with
-//! `BAD_REQUEST`, which the shell's §227 recovery absorbs. A disruption, not authority.
+//! - A session runs no program: its lines are echoed and nothing else, so a full-screen program
+//!   cannot reach `display_terminal`, which milestone 705 (the graphical terminal runs full-screen
+//!   programs) needs.
+//! - Arm 1 has no line editing: backspace and the arrows are painted as the control bytes they are.
+//! - Arm 1 can still switch the boot discipline's mode under the shell: a disruption, not
+//!   authority (notes/line-discipline.md).
 //!
 //! Name: ratified 2026-10-03 (calef, #1493). Refused `screen` (clashes with `SCREEN_BIT` of §106
 //! (take the `terminal_sink_caretaker` narrowing), and with GNU screen), `gate` (the tree's word
@@ -65,7 +35,8 @@ use line_editor::proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
 
-/// The result endpoint: one word when the session ends, the shape every reporting program answers.
+/// The result endpoint (slot 0): one word when the session ends, the shape every reporting program
+/// answers.
 const REPORT: u64 = 0;
 /// **The screen's write endpoint** (slot 1): arm 0's line discipline, arm 1's `display_terminal`.
 /// On either arm the contract is `OPERATION_WRITE` over one page, `line_editor::proto`'s

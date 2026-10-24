@@ -44,6 +44,31 @@ So:
 4. The maintainer writes the block at ratification, in the same commit that applies the name,
    while the alternatives are still in mind.
 
+### A document's block is a paragraph, not frontmatter
+
+A document under `design/`, `notes/` or `briefs/` carries its block as a paragraph under its title,
+in the grammar of every other kind (calef, 2026-10-24 UTC, who left the format to the lane). So
+adding a note touches the note and one index line. A shared README is where concurrent lanes
+conflict, and code refers to `notes/README.md` by path, so a change to it never takes CI's
+prose-only skip. A note's index line goes on its `notes/README/<area>.md` page.
+
+Frontmatter, with fields for status, date and minter, was the alternative. It lost on four counts:
+
+- `script/names` parses the paragraph already, for every kind, and a directory's README block is
+  the same paragraph. Frontmatter would be a second grammar for one kind.
+- A refusal is prose, with backticks and parentheses, and a ratification quotes calef. YAML would
+  need every one quoted, and the date and refusals are derived from the paragraph anyway
+  (`name_provenance.classify`).
+- GitHub renders frontmatter as a table above the title. The paragraph reads as a line under it.
+- No note carried frontmatter. Dozens already carried the paragraph, unread until it became the
+  rule.
+
+Where a README paragraph and the document's own block both exist, `script/names` reads them
+together and fails statuses that disagree. `helpers/document_name_migrate.py` lists and moves the
+README form; its header holds the rules, and `helpers/name_census.py` carries the BUGS line for
+the reading that goes when the sweep after milestone 929 (comments in the Linux style across first-party Rust) finds
+nothing left.
+
 ### The three states
 
 calef works back through the existing names over time. So the record has to hold which ones still

@@ -6,7 +6,7 @@
 //! count and the counter frequency it read, and the kernel's tests assert on all three.
 //!
 //! A failed lookup, parse or build reports word 0.
-//!
+
 //! # BUGS
 //!
 //! The child is loaded unmeasured (notes/trusted-init.md).

@@ -23,6 +23,8 @@ history behind each summary.
   it departs from upstream RedoxFS.
 - [`caches-and-io.md`](caches-and-io.md): the memo, the block cache, the wire shapes the dispatch
   decodes, and the EL0 binary's IO.
+- [`the-test-client.md`](the-test-client.md): why `fs_test_client`'s attackers and witnesses are
+  shaped as they are.
 
 Name: provisional, minted 2026-10-11 (UTC) by `lane/ten-longest-notes`, which split the parent under
 §212 (a prose budget), for the directory and every stem in it. The directory follows the
