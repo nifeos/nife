@@ -39,7 +39,8 @@ pub const MIN_COLUMNS: u32 = 120;
 
 /// **Where a surface lands on a firmware screen**: the arithmetic a driver needs to copy a
 /// rectangle of pixels onto a screen the firmware set up (the shell on the firmware screen, rung
-/// 1b of milestone 198; `components/src/framebuffer_driver.rs` is its one caller). It holds the
+/// 1b of milestone 198 (a package manager); `components/src/framebuffer_driver.rs` is its one
+/// caller). It holds the
 /// surface's size clipped to the screen's, placed top-left, the screen's stride and byte order, and
 /// **the scale every surface pixel is drawn at**: [`ScreenConsole::scale_for_cell`] of the screen's
 /// width, the kernel console's rule. See notes/serial-less-output/the-screen-console.md.

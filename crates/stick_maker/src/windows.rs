@@ -2,9 +2,9 @@
 //!
 //! `GetDriveTypeW` answers `DRIVE_REMOVABLE` from the same removable-media bit the other hosts
 //! read, and a USB hard disk answers `DRIVE_FIXED`, so `disk.rs`'s one rule refuses it. The four
-//! `kernel32` functions are declared by hand rather than through a bindings crate (DECISIONS §46).
-//! This file is the pure half, [`disk_from`], tested on every host; `host/windows.rs` calls it.
-//! See notes/boot-stick/the-program.md, "Windows".
+//! `kernel32` functions are declared by hand rather than through a bindings crate (§46 (thin
+//! primitives or whole subsystems)). This file is the pure half, [`disk_from`], tested on every
+//! host; `host/windows.rs` calls it. See notes/boot-stick/the-program.md, "Windows".
 
 //! # BUGS
 //!
