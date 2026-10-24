@@ -5,17 +5,14 @@
 
 use super::*;
 
-/// `IA32_GS_BASE`: the MSR holding the base of the `gs` segment, and this architecture's answer to
-/// aarch64's `TPIDR_EL1` and RISC-V's `tp`. A per-CPU register the kernel owns.
+/// `IA32_GS_BASE`: the base of the `gs` segment, which holds the per-CPU pointer (aarch64's
+/// `TPIDR_EL1`, RISC-V's `tp`).
 ///
-/// **There is a second one, and it is now load-bearing.** `IA32_KERNEL_GS_BASE` (0xC0000102) holds
-/// the *other* value, and `swapgs` exchanges the two. That pair is how a trap from ring 3 recovers
-/// the kernel's per-CPU pointer without trusting anything the user program could have set, which is
-/// exactly the problem RISC-V solves with `sscratch`. The convention this kernel keeps, stated once
-/// here because it is the sort of thing that is otherwise only true by accident: **while executing
-/// in ring 0, `IA32_GS_BASE` names the per-CPU block and `IA32_KERNEL_GS_BASE` holds the user's
-/// value; in ring 3 they are the other way round.** trap.s does the swapping, guarded on the
-/// interrupted CPL, and its header says why the guard rather than a bare instruction.
+/// `IA32_KERNEL_GS_BASE` (0xC0000102) holds the other value and `swapgs` exchanges the two, so a
+/// trap from ring 3 recovers the per-CPU pointer without trusting anything the user set (RISC-V's
+/// `sscratch` problem). **In ring 0, `IA32_GS_BASE` names the per-CPU block and
+/// `IA32_KERNEL_GS_BASE` holds the user's value; in ring 3 they are the other way round.** trap.s
+/// swaps them, guarded on the interrupted CPL, and its header says why.
 pub(super) const IA32_GS_BASE: u32 = 0xC000_0101;
 
 /// Read a model-specific register. `rdmsr` returns the value split across `edx:eax`, with the

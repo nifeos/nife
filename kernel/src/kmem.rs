@@ -1,50 +1,19 @@
-//! **The kernel's own object budget** (milestone 19c.1; design/init-and-granular-spawn.md).
+//! **The kernel's own object budget**: one untyped region, carved once at first use, that every
+//! kernel-owned object draws from (kernel endpoints, kernel thread stacks, kernel TCB pages).
 //!
-//! One untyped region, carved once at first use, that every kernel-owned object draws from:
-//! kernel endpoints (moved here from `IpcTables`'s private region), kernel thread stacks
-//! (which used to draw open-endedly from the frame allocator), and, with 19c.2, the kernel's
-//! own TCB pages. This is the milestone 14 thesis extended to its last uncovered corner: after
-//! this carve, **the kernel cannot spend beyond it, structurally**. The frame allocator's count
-//! does not move when kernel threads come and go; a steady-state test asserts exactly zero.
-//!
-//! # Recycling, and why it is not an allocator
-//!
-//! Region pages are watermark-carved and never individually returned (untyped.rs). Kernel
-//! threads churn constantly (every test spawns some), so spend-only pages would exhaust any
-//! carve. The fix is a fixed free-stack of dead object pages, reused page-for-page: a reaped
-//! thread's stack pages and (19c.2) TCB page go on it, the next spawn takes them back. This is
-//! page-granular, bounded by the carve, FIFO-free, and deliberately not a general allocator:
-//! one size (a page), one owner (the kernel), no headers, no coalescing, nothing to verify
-//! beyond a bounded stack. The distinction between this and the heap milestone 14 deleted is
-//! the distinction between a budget and a market.
-//!
-//! Creator-paid, resolved (the 19c conversation): a kernel-created thread's stack comes from
-//! this carve because **the kernel is its creator**; a progenitor-created TCB's memory comes from
-//! the progenitor's untyped because the progenitor is. One principle, two payers, no third regime.
+//! After the carve the kernel cannot spend beyond it, so the frame allocator's count does not move
+//! when kernel threads come and go, and a steady-state test asserts exactly zero. Dead object pages
+//! go on a fixed free-stack and are reused page for page: a budget with reuse, not an allocator.
+//! See notes/kernel-budget.md.
 
 use page_frames::FRAME_SIZE;
 
 use crate::sync::{IrqSafeMutex, rank};
 
-/// The carve: 2048 pages (8 MiB). Endpoints (one page each, ~60 across a full test run), live
-/// kernel stacks (6 pages x up to `MAX_THREADS`; see thread.rs `STACK_PAGES`), TCB pages (one
-/// each, 19c.2), and slack. Exhaustion fails the spawn or create cleanly, the same contract as
-/// every budget since milestone 11; raising this constant is the fix if the image ever
-/// legitimately needs more, and there have now been two such days.
-///
-/// 2026-08-15: this was 768 when stacks were 4 pages (512 of 768 budgeted for stacks, the same
-/// two-to-one ratio kept since), and the 24 KiB stacks made stacks alone outgrow the whole carve.
-/// The symptom was `kmem::page()` returning `None` late in the aarch64 suite, surfacing as an
-/// unrelated test's spawn failing with "no memory to wire one", exactly the failure shape this
-/// module's budget contract promises (clean refusal, far from the cause).
-///
-/// 2026-08-27: `sched::MAX_THREADS` doubled to 256 on a measured peak (its own doc comment carries
-/// the numbers), and this constant is the reason that raise is not free. A thread costs **7 pages
-/// here**, six of stack and one of TCB, so 256 of them is 1792, endpoints are ~60, and 2048 leaves
-/// 196 of slack. That is the whole arithmetic, and it is deliberately written as a sum rather than
-/// as a ratio to the old number: a carve sized by doubling would have been a guess, and a carve
-/// left at 1024 would have moved the ceiling from the thread table down to here, one level lower
-/// and no easier to diagnose.
+/// The carve: 2048 pages (8 MiB). A thread costs 7 pages here (six of stack, see thread.rs
+/// `STACK_PAGES`, and one of TCB), so `sched::MAX_THREADS` (256) takes 1792, endpoints about 60,
+/// and 196 are slack. Exhaustion fails the spawn or create cleanly; raising this is the fix when
+/// the image legitimately needs more. See notes/kernel-budget.md.
 const KERNEL_OBJ_PAGES: u64 = 2048;
 
 struct Pool {
