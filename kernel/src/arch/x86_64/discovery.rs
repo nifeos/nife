@@ -2,18 +2,10 @@
 //! after it**: the `x86_64` front end of `memory::init` (milestone 890 (riscv64 and `x86_64` join
 //! the shared boot path)).
 //!
-//! The other two architectures learn RAM, reservations and every device window from one device
-//! tree, inside `memory::init`, and each later bring-up step re-reads the tree for its own part
-//! (`smp::read_cpu_list`, the PLIC contexts, the timer's rate). This machine hands over a PVH
-//! `hvm_start_info` and ACPI instead, so [`init`] is the same step in this machine's terms: read
-//! the handoff, walk the tables, record the device windows `mmu::init` maps, find the PCIe
-//! topology while the boot map still reaches every bus, and bring the frame allocator up. The
-//! walk is kept here rather than re-read, because the tables are reachable only through the boot
-//! map that `mmu::init` replaces, and every later step that needs them (`smp::read_cpu_list`,
-//! `arch::irq::init_contexts` and `init`, the IOMMUs) runs after that.
-//!
-//! The parsing is `machine.rs`'s, host-tested in `machine_discovery`; this file is only the order.
-//! See notes/x86-port/acpi-and-pci.md.
+//! [`init`] reads the PVH `hvm_start_info`, walks the ACPI tables, records the device windows
+//! `mmu::init` maps, finds the PCIe topology while the boot map still reaches every bus, and brings
+//! the frame allocator up. The walk is kept, because the tables are reachable only through the boot
+//! map `mmu::init` replaces. The parsing is `machine.rs`'s; see notes/x86-port/acpi-and-pci.md.
 //!
 //! Name: provisional (milestone 890's lane, 2026-10-19 UTC).
 
@@ -73,12 +65,8 @@ pub(crate) fn init() {
     let acpi = machine::read_acpi(info.rsdp);
     machine::print_acpi_summary(&acpi);
 
-    // COM1's interrupt line (milestone 176 (the x86_64 discovery seam's wide half: COM1's IRQ and
-    // a CMOS RTC)), filling the same static the other two architectures fill from their device
-    // tree. **It is the legacy number, 4, and not the GSI it resolves to**, because an intid on
-    // this architecture is a legacy IRQ: `arch::irq::enable` resolves it through the MADT's
-    // overrides when it arms the line, and recording the GSI would resolve it twice on a machine
-    // that overrides IRQ 4.
+    // COM1's interrupt line, as the legacy number 4 and not its GSI: `arch::irq::enable` resolves a
+    // legacy IRQ through the MADT's overrides, so recording the GSI would resolve it twice.
     crate::memory::record_uart_irq(crate::user::UART_RX_INTID);
 
     // The IOMMUs' register windows, recorded now because `mmu::map_everything` maps them
@@ -108,12 +96,9 @@ pub(crate) fn init() {
 /// for a tree with no such node.
 fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
     match ecam {
-        // The MCFG's base is the configuration space of its FIRST bus, and `pci.rs` addresses a
-        // function as `base + (bus << 20 | ...)` with an absolute bus number. Those agree only
-        // when the first bus is zero, which every machine seen so far reports and no machine is
-        // required to. Refused rather than adjusted: subtracting `lo << 20` names a base below
-        // the window `mmu::map_everything` maps, so the arithmetic that looks like the fix
-        // produces config reads into whatever is underneath it.
+        // `pci.rs` addresses a function by absolute bus number from the MCFG base, which is the
+        // first bus's: they agree only when that bus is zero. Refused rather than adjusted, since
+        // `base - (lo << 20)` lies below the window `mmu::map_everything` maps.
         Some((_, lo, _)) if lo != 0 => {
             println!(
                 "  pci         : skipped, the MCFG's first bus is {lo} and this port assumes 0"
@@ -123,12 +108,9 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
             let buses = hi as u32 - lo as u32 + 1;
             let decode = machine::enable_pcie_ecam(base, buses);
             let ecam = (base, buses as u64 * 0x10_0000);
-            // **Where BARs may go, asked of the machine** (milestone 256). A failure here is a
-            // panic and not a fallback: the constant this replaced was checked against one
-            // emulated machine and was RAM on the first real one, so a kernel that carried on
-            // with it would be placing device registers over memory the allocator owns. The
-            // message is the whole diagnosis, because the machine that produces it has no
-            // serial cable and a photograph of the screen is the entire transcript.
+            // A failure here panics rather than falling back to a constant, which would place
+            // device registers over memory the allocator owns. The message is the whole diagnosis:
+            // on a machine with no serial cable, a photograph of the screen is the transcript.
             let bar = match super::mmu::memory_mapped_io_window(ecam) {
                 Ok(window) => window,
                 Err(why) => panic!("no PCI BAR window on this machine: {why}"),
@@ -153,12 +135,9 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
                     " alone (this host bridge reports no TOLUD)"
                 }
             );
-            // **The topology, read from the bridges** (milestone 320 (every PCI bus the machine has, not just bus zero)), while the boot map still
-            // covers the low 4 GiB indiscriminately: every bus the MCFG describes is readable
-            // without a mapping, and `mmu::init` then maps exactly the buses this found. Run after
-            // it, this would read its way off the end of the window it is trying to size. Only
-            // this architecture walks bridges: both `virt` boards describe a flat root complex and
-            // QEMU puts nothing behind a bridge on either. See `pci::survey`.
+            // The topology, read from the bridges while the boot map still covers the low 4 GiB, so
+            // every bus the MCFG describes is readable; `mmu::init` then maps exactly the buses
+            // this found. See `pci::survey`.
             crate::pci::survey();
             // Only this architecture's BARs may already be placed by something else when the
             // kernel arrives; both `virt` boards boot with every BAR zero. See `pci::bar_census`
@@ -169,12 +148,9 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
                  {outside} with a BAR this kernel can neither use nor adopt",
             );
         }
-        // **No MCFG means no PCI, and deliberately no fallback to the legacy 0xcf8/0xcfc
-        // configuration mechanism**, which this kernel could reach (`enable_pcie_ecam` uses it).
-        // The ports see only the first 256 bytes of a function's configuration space, so a machine
-        // that fell back would enumerate a different set of capabilities from one that did not,
-        // with every extended capability absent, and a driver that then failed would fail
-        // somewhere else entirely (milestone 215 (a PCI function's interrupt reaches nothing on `x86_64`) refused the same shape one level down).
+        // No MCFG means no PCI, with no fallback to the legacy 0xcf8/0xcfc mechanism: its ports
+        // see only the first 256 bytes of configuration space, so every extended capability would
+        // be absent and a driver would fail somewhere else entirely.
         None => {
             println!("  pci         : skipped, no MCFG: no PCI at all (no legacy fallback)");
         }

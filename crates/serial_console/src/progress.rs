@@ -9,14 +9,10 @@
 
 //! # BUGS
 //!
-//! - The sweep's marker heads are `crates/job_mix`'s constants, but the fields after them
-//!   (`tasks=`, `ticks_median=`, `rounds=`, `beat=`) are literals here and nowhere else. A kernel
-//!   that renames or inserts a field still prints a line this matches, the parse reads nothing,
-//!   and every test stays green. Captured fixtures and wire-spelled fields blunt it; sharing the
-//!   field names as the heads are shared is the fix, and it is not built.
-//! - The sweep's quiet timer is sized against the slowest subrun at the top of
-//!   `job_mix::TASK_SWEEP` as measured under TCG, since a sweep has no wall-clock heartbeat.
-//!   notes/board-console/limitations.md has the figure and the margin.
+//! - The fields after the sweep's shared heads (`tasks=`, `ticks_median=`) are literals here
+//!   alone, so a kernel that renames one parses as nothing with every test green.
+//! - The sweep's quiet timer is a margin over one TCG measurement; see
+//!   notes/board-console/limitations.md for both.
 
 use core::fmt;
 

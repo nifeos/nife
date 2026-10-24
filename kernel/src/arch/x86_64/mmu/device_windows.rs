@@ -38,33 +38,19 @@ pub const fn virtio_slots() -> u64 {
 pub const VIRTIO_IRQ_BASE: u32 = 0;
 
 /// Bytes of PCI BAR space the kernel maps for device registers, matching what the other two
-/// architectures reserve. 2 MiB covers every BAR QEMU hands out on this machine, and since
-/// milestone 256 it is the size of the window rather than a slice of a larger one: **where** that
-/// window goes is [`memory_mapped_io_window()`](super::memory_mapped_io_window())'s answer and is
-/// the machine's, not a constant's.
-///
-/// It stays small on purpose. It only ever has to hold the BARs this kernel **places**, and a BAR
-/// the machine placed itself is adopted where it stands (`pci::place_bars`) rather than moved into
-/// here, so on real firmware almost nothing is drawn from it. Every byte of it is mapped with
-/// 4 KiB leaves at boot, which is this module's first recorded BUG, so a window sized for the
-/// whole MMIO hole would be page tables for hundreds of megabytes nothing decodes.
+/// architectures reserve. 2 MiB covers every BAR QEMU hands out here; where the window goes is
+/// [`memory_mapped_io_window()`](super::memory_mapped_io_window())'s answer. It stays small on
+/// purpose: it holds only the BARs this kernel places (a BAR the machine placed is adopted where it
+/// stands, `pci::place_bars`), and every byte of it is mapped with 4 KiB leaves at boot.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
-/// The first interrupt a PCI function raises.
+/// The first interrupt a PCI function raises: zero, and nothing on this architecture reads it.
 ///
-/// **Zero, and nothing on this architecture reads it any more** (milestone 215, `x86_64` PCI
-/// interrupt routing). On the other two machines this is a fixed base the device tree states and
-/// legacy INTx lines land at base + pin. On q35 a PCI function's legacy interrupt goes through the
-/// PIRQ router to an IO APIC input the ACPI `_PRT` names, `_PRT` is AML, and this tree has no
-/// interpreter for it; zero was the marker for that rather than a value to trust.
-///
-/// What replaced it is not a better constant, it is **not a constant at all**: a function's
-/// interrupt is bound by `arch::x86_64::irq::alloc_msi_vector`, which reserves a vector and hands
-/// `kernel/src/pci.rs` the address and data to write into the function's own MSI-X table. The
-/// device is told where to deliver, so there is no board-specific routing to encode here. The
-/// constant survives because the arch contract's other two implementations are real and the
-/// portable code names it; `kernel/src/pci.rs` reaches it only on a machine whose
-/// `alloc_msi_vector` answers `None`, which this one never does.
+/// A function's interrupt is bound by `arch::x86_64::irq::alloc_msi_vector`, which hands
+/// `kernel/src/pci.rs` the address and data for the function's MSI-X table, so there is no
+/// board-specific routing to encode. q35's legacy INTx reaches an IO APIC input named only in AML,
+/// which this tree cannot interpret. The constant survives because portable code names it; `pci.rs`
+/// reaches it only when `alloc_msi_vector` answers `None`, which it never does here.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PCI_IRQ_BASE: u32 = 0;
