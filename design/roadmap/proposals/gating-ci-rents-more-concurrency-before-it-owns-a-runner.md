@@ -264,20 +264,19 @@ Each job on an owned runner writes its runner kind and image digest into its sum
 The irreversible part is not the code. A compromised host is a fact that has left the machine: its
 credentials are spent, and it is reinstalled, not cleaned.
 
-## What calef must rule
+## calef's rulings (2026-10-24, UTC)
 
-1. Move the organization from Team to Enterprise, $17 a month more for the first year, to raise
-   the cap from 60 jobs to 500? Recommended. If no, (b) is the only lever.
-2. Set nife's pull-request creation policy to `collaborators_only`? Recommended, after confirming
-   the App can still open pull requests. If no, the routing and the re-push mechanism still keep
-   forks off owned runners.
-3. May (b) proceed under the five preconditions, with the VM shape held for the day an outside
-   contributor appears? This would settle milestone 488 (a self-hosted CI runner)'s condition, in
-   the way [§203 (capacity is rented rather than bought)](../../decisions/0203-capacity-is-rented-not-bought.md)
-   allows.
-4. Is a green from owned hardware the gate of record, or must the push to `main` re-test those
-   groups on hosted runners?
-5. Who answers when an owned runner stops, and does the fallback flip automatically?
+1. Enterprise: not now, and it stays open. It comes back if the 60-job cap still binds under
+   ordinary load after #2668 moves the aarch64 and riscv64 guest jobs to x86_64 runners. Binding
+   means jobs at the cap with runners waiting, and merge-group runs well over their uncontended 14
+   minutes.
+2. The pull-request creation policy is `collaborators_only`, set the same day.
+3. (b) proceeds under the five preconditions, with the VM shape held for the day an outside
+   contributor appears.
+4. A green from owned hardware in the merge queue is the gate of record. A daily hosted run against
+   `main` catches runner drift.
+5. The fallback flips automatically both ways. It returns to owned hardware only after a canary job
+   passes there, and stays on hosted after two fallbacks within 24 hours.
 
 Not decided here: cutting demand, such as runs a later push cancels and the label bots' slots.
 
