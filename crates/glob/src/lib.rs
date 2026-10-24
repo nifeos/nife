@@ -1,10 +1,15 @@
 //! **glob: does this pattern match this name?** A total function on two byte strings: no IO, no
-//! syscalls, no allocation, no capability. What a match grants is the shell's question, and the
-//! answer is that the expansion you see is the grant: `echo *.txt` prints exactly what `rm *.txt`
-//! would hand over, which only holds if one matcher serves both. So it lives here once, with
-//! proofs, and is written rather than depended on because it is on the verification path (§46
-//! (thin primitives or whole subsystems; we write everything in between)). See notes/glob.md.
+//! syscalls, no allocation, no capability. One matcher serves both the shell's expansion and its
+//! grant, so `echo *.txt` prints exactly what `rm *.txt` would hand over. Written rather than
+//! depended on because it is on the verification path (§46 (thin primitives or whole subsystems;
+//! we write everything in between)). See notes/glob.md.
 //!
+//! Bytes, as `fnmatch(3)` in the C locale; a malformed pattern means itself; a leading `.` needs a
+//! literal `.` ([`Dot::Special`]); no `**`, qualifiers or POSIX classes (notes/glob-scope.md). The
+//! work is bounded by [`cost_bound`], which a caller can check before matching.
+//!
+
+//! # Syntax
 //! | syntax | meaning |
 //! |---|---|
 //! | `*` | any run of bytes, including none |
@@ -14,19 +19,7 @@
 //! | `[!abc]`, `[^abc]` | one byte *not* in the set |
 //! | `\x` | the byte `x`, with no special meaning |
 //! | anything else | itself |
-//!
-//! Everything is bytes, as `fnmatch(3)` in the C locale: a name is a byte string, so `?` can match
-//! half of a UTF-8 character. There is no error case, because a pattern is untrusted input: an
-//! unclosed `[` and a trailing `\` mean themselves, as in bash. A leading `.` in a name is matched
-//! only by a literal `.` ([`Dot::Special`], glibc's `FNM_PERIOD`), because `rm *` grants what it
-//! matches and the default should grant less. One name only: `**`, qualifiers and POSIX classes are
-//! out permanently (notes/glob-scope.md).
-//!
-//! It cannot be made to hang. It keeps one backtrack point, the latest `*`, so retries advance
-//! monotonically: at most `name.len() + 1`, each one pass over the pattern. [`cost_bound`] computes
-//! that from the lengths alone, Kani proves [`match_steps`] never exceeds it, and a host test runs
-//! the exponential-shaped pattern against a hundred thousand bytes. A caller can refuse an
-//! expensive pattern before starting.
+
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet): a standard term that is already right.
 
@@ -104,11 +97,8 @@ pub fn matches_with(pattern: &[u8], name: &[u8], dot: Dot) -> bool {
 /// True when the pattern contains an unescaped `*` or `?`, or a bracket expression that is actually
 /// closed. False means the pattern is a literal, and [`literal`] will give you the name it is.
 ///
-/// The shell needs this before it plans a grant: a word with no magic names one file and wants a
-/// single-name caretaker, while a word with magic is an enumeration and wants a caretaker over the
-/// matched set. Answering "yes" too eagerly is not a correctness bug (expanding a literal yields
-/// that one name), but it costs a directory enumeration for nothing, so this is precise: an
-/// unterminated `[` is a literal byte and is reported as such.
+/// Precise rather than eager, so an unterminated `[` is a literal byte: a false "yes" costs the
+/// shell a directory enumeration for a word that names one file. See notes/glob.md.
 pub fn has_magic(pattern: &[u8]) -> bool {
     let mut j = 0;
     while let Some((elem, _)) = decode(pattern, j, 0) {
@@ -123,11 +113,8 @@ pub fn has_magic(pattern: &[u8]) -> bool {
 /// **The one name a magic-free pattern names**, with its escapes stripped, written into `out`.
 ///
 /// `Some(name)` when the pattern has no magic and `out` was long enough; `None` when it has magic
-/// (call the expander instead) or would not fit.
-///
-/// This exists so escape-stripping is not reimplemented by every caller that has to turn a shell
-/// word into a filename. `a\*b` is the file called `a*b`, and getting that wrong means asking the
-/// filesystem for a name nobody has.
+/// (call the expander instead) or would not fit. `a\*b` is the file called `a*b`; this exists so
+/// no caller reimplements escape-stripping.
 pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]> {
     let mut j = 0;
     let mut n = 0;
@@ -165,7 +152,7 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
 
     // The single backtrack point: where to resume in the pattern after the most recent `*`, and how
     // much of the name that `*` is currently absorbing. `None` until a `*` is seen, and a later `*`
-    // simply replaces it. This is the whole anti-blowup argument (see the module comment).
+    // simply replaces it. This is the whole anti-blowup argument (notes/glob.md, "The algorithm").
     let mut star_next: Option<usize> = None;
     let mut star_absorbed = 0usize;
 
@@ -241,16 +228,11 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
 
 /// **The most steps a match of these two lengths can cost**, computable before matching starts.
 ///
-/// The derivation, since a bound nobody can check is a number: the retry position advances on every
-/// backtrack and is bounded by the name length, so there are at most `name_len + 1` backtracks;
-/// between two of them `i + j` strictly increases and is bounded by `name_len + pattern_len`; and
-/// each iteration examines at most one pass over the pattern to decode an element and one more to
-/// test a bracket expression. Saturating, so a pair of absurd lengths gives `usize::MAX` rather than
-/// a wrapped answer that would make the inequality vacuous.
-///
-/// It is a *bound*, deliberately loose rather than tight. What it is for is the shape: polynomial in
-/// both lengths, with no term that grows with the number of `*`s in the pattern. That last part is
-/// the whole difference between this and the matcher everyone writes first.
+/// At most `name_len + 1` backtracks, between two of them `i + j` strictly increases up to
+/// `name_len + pattern_len`, and each iteration is at most one pass over the pattern to decode and
+/// one to test a bracket expression. Saturating, so absurd lengths give `usize::MAX` rather than a
+/// wrapped bound. Loose on purpose: the point is polynomial in both lengths with no term in the
+/// number of `*`s. See notes/glob.md ("The algorithm, and why it cannot be made to hang").
 pub const fn cost_bound(pattern_len: usize, name_len: usize) -> usize {
     let iterations = name_len
         .saturating_add(2)
@@ -265,14 +247,9 @@ pub const fn cost_bound(pattern_len: usize, name_len: usize) -> usize {
 
 /// One element of a pattern, **resolved against the name byte it is being applied to**.
 ///
-/// The `c` parameter on [`decode`] is why [`Elem::Class`] carries a `hit` rather than the bounds of
-/// its body, and it is a concession to the model checker rather than to taste. The first version
-/// found the closing `]` in one loop and tested membership in another; Kani has to unroll both,
-/// nested inside the match loop it is already unrolling, and one harness ran twelve minutes on 3.5
-/// GB before it was killed. Scanning a bracket expression **once**, deciding membership as it goes,
-/// removed a whole loop from the unrolling. It is also less work at runtime, which is the usual
-/// shape of these: DECISIONS §46 rule 1 says restructure the code rather than weaken the claim, and
-/// the restructured code is normally better anyway.
+/// [`Elem::Class`] carries a `hit` rather than its body's bounds because a bracket expression is
+/// scanned once, deciding membership as it goes: two loops nested in the match loop were past what
+/// Kani could unroll (notes/glob/proofs.md, §46 (thin primitives or whole subsystems) rule 1).
 ///
 /// Callers with no name byte in hand ([`has_magic`], [`literal`], [`opens_with_a_literal_dot`]) pass
 /// any byte and read only the variant.
@@ -341,16 +318,9 @@ fn decode(pattern: &[u8], j: usize, c: u8) -> Option<(Elem, usize)> {
 ///
 /// Returns `(Some((hit, next)), scanned)` for a closed expression, with negation already applied, or
 /// `(None, scanned)` when there is no closing `]`, in which case the caller treats the `[` as a
-/// literal byte. `scanned` is charged either way.
-///
-/// Three rules here are older than any of us and all three are load-bearing for the patterns people
-/// actually type:
-///
-/// - A `!` or `^` immediately after the `[` negates.
-/// - A `]` immediately after that is a **member**, not the terminator. It is the only way to put a
-///   `]` in a class without an escape.
-/// - A `-` is a range only when a byte follows it that is not the terminator, which is why `[a-]`
-///   and `[-a]` both mean "a hyphen or an a".
+/// literal byte. `scanned` is charged either way. A `!` or `^` right after `[` negates; a `]` right
+/// after that is a member; a `-` is a range only before a byte that is not the terminator, so
+/// `[a-]` and `[-a]` both mean "a hyphen or an a".
 fn class_at(pattern: &[u8], open: usize, c: u8) -> (Option<(bool, usize)>, usize) {
     let mut k = open + 1;
     let negated = matches!(pattern.get(k), Some(b'!') | Some(b'^'));
@@ -475,8 +445,8 @@ mod tests {
         assert!(!matches(b"[!a]", b"bb"));
     }
 
-    /// The corners real glob implementations get wrong. Each line is a documented decision in the
-    /// module comment, pinned here so a rewrite has to argue with a test rather than with prose.
+    /// The corners real glob implementations get wrong, each a decision notes/glob.md ("Corners")
+    /// records, pinned so a rewrite has to argue with a test rather than with prose.
     #[test]
     fn the_corners_everyone_gets_wrong() {
         // An unterminated `[` is a literal `[`, not an error and not a wildcard.
@@ -637,21 +607,11 @@ mod tests {
     /// **The greedy matcher agrees with exhaustive search, on every pattern and name in a domain
     /// small enough to enumerate completely.**
     ///
-    /// This is the `network_time_protocol` lesson applied (see notes/ntp.md): a model checker is the tool for
-    /// domains too big to enumerate, not a better tool for domains that are not. Equivalence with a
-    /// recursive reference is exactly the property a solver struggles with, because the reference is
-    /// recursive and Kani has to unwind it, and it is exactly the property this loop settles
-    /// completely. Every pattern of length 0..=5 over an alphabet chosen to contain every syntactic
-    /// role (`a`, `b`, `*`, `?`, `[`, `]`, `!`, `-`, `\`) against every name of length 0..=3 over
-    /// `a`, `b`, `-`: 66,430 patterns times 40 names, 2,657,200 comparisons.
-    ///
-    /// Five is the shortest pattern length that reaches a full range (`[a-b]`) and a full negated
-    /// class (`[!ab]`), which is why it is not four.
-    ///
-    /// The alphabet is the interesting part. It is not "some characters"; it is one representative
-    /// of each thing the decoder can do, so the enumeration reaches unterminated brackets, `]`-first
-    /// classes, `[a-]`, `[!...]`, escaped metacharacters and trailing backslashes without anyone
-    /// having thought to write them down.
+    /// Every pattern of length 0..=5 over one representative of each syntactic role (`a`, `b`, `*`,
+    /// `?`, `[`, `]`, `!`, `-`, `\`) against every name of length 0..=3 over `a`, `b`, `-`: 66,430
+    /// patterns times 40 names, 2,657,200 comparisons. Five is the shortest length that reaches
+    /// `[a-b]` and `[!ab]`. Enumeration settles the equivalence a solver struggles to unwind; see
+    /// notes/glob/proofs.md ("What enumeration proves instead").
     #[test]
     fn greedy_agrees_with_exhaustive_search_over_every_short_pattern() {
         const PAT: &[u8] = b"ab*?[]!-\\";
@@ -662,10 +622,9 @@ mod tests {
         let mut checked = 0u64;
         let mut hits = 0u64;
 
-        // Under Miri, every 61st pattern instead of every pattern: 61 is prime and not a power of
-        // the 9-byte alphabet, so the sample still lands on every length and every syntactic role,
-        // ~44,000 comparisons instead of 2,657,200. The complete enumeration, which is the claim
-        // this test is named for, is native-only; "Miri-clean" means the sample (notes/undefined-behavior.md).
+        // Under Miri, every 61st pattern: 61 is prime and not a power of the 9-byte alphabet, so
+        // the sample lands on every length and role, ~44,000 comparisons. The complete enumeration
+        // is native-only; "Miri-clean" means the sample (notes/undefined-behavior.md).
         let stride: u64 = if cfg!(miri) { 61 } else { 1 };
         for plen in 0..=5usize {
             let combos = (PAT.len() as u64).pow(plen as u32);
@@ -698,11 +657,9 @@ mod tests {
         // actually ran. The Miri number is the same arithmetic at stride 61:
         // (1 + 1 + 2 + 12 + 108 + 969) patterns x 40 names.
         assert_eq!(checked, if cfg!(miri) { 43_720 } else { 2_657_200 });
-        // Not vacuous in either direction: an agreement test between two matchers that both said
-        // "no" to everything would pass, and most random patterns do not match most random names,
-        // so the positive side is the one worth pinning. 15,956 of the pairs match natively; the
-        // Miri sample keeps only the both-sides check, since its hit count is an accident of the
-        // stride.
+        // Not vacuous: two matchers that both said "no" to everything would agree, so the 15,956
+        // native matches are pinned. The Miri sample checks only agreement, since its hit count is
+        // an accident of the stride.
         if cfg!(miri) {
             assert!(hits > 0 && hits < checked, "{hits} matches");
         } else {
@@ -710,23 +667,15 @@ mod tests {
         }
     }
 
-    /// **The worst case over the proof's own domain, measured rather than guessed.**
+    /// **The worst case over the proof's own domain, measured rather than guessed**: where the
+    /// harnesses' `#[kani::unwind]` numbers come from.
     ///
-    /// This is where the `#[kani::unwind]` numbers on the harnesses come from. An unwind bound has to
-    /// exceed the most iterations any loop can run, or Kani reports an unwinding-assertion failure;
-    /// pick it too high instead and the formula grows for nothing, which is what put one harness past
-    /// 3 GB before this test existed. Every outer iteration adds at least one to the step count, so
-    /// the maximum step count over a domain is a safe upper bound for the iteration count over it.
-    ///
-    /// Enumerated over the same alphabet as the cross-check, at the lengths the harnesses use. The
-    /// alphabet is nine bytes rather than all 256, and that is sound for this purpose because the
-    /// step count depends on a byte's syntactic *role* rather than its value, and the alphabet holds
-    /// one of each.
-    /// Skipped under Miri rather than sampled, because sampling would be wrong here, not merely
-    /// weaker: the assertions pin the exact argmax over the domain (`at_three == 10`), and a
-    /// strided sample that misses the maximizing input fails the test against correct code. The
-    /// enumeration is ~1.8M `match_steps` runs, an hour of interpreter for a property about the
-    /// unwind-bound formula, not about memory; every path it walks is walked by the tests above.
+    /// An unwind bound must exceed the most iterations any loop runs, and one set too high grows
+    /// the formula for nothing. Every outer iteration adds at least one step, so the worst step
+    /// count is a safe bound on iterations. The nine-byte alphabet is sound because the step count
+    /// depends on a byte's syntactic role, not its value. Skipped under Miri: a strided sample can
+    /// miss the pinned argmax (`at_three == 10`) and fail against correct code. See
+    /// notes/glob/proofs.md.
     #[test]
     #[cfg_attr(
         miri,
@@ -776,19 +725,15 @@ mod tests {
 
     /// **The classic backtracking bomb, at a scale that would settle the question.**
     ///
-    /// `a*a*a*...*b` against a long run of `a` and no `b` is the input that makes a recursive
-    /// matcher try every way of splitting the run between the stars. With ten stars and 100,000
-    /// bytes that is astronomically many splits; the naive matcher above would not finish before the
-    /// heat death of anything. This one answers in the time it takes to walk the name a few times,
-    /// and the assertion is the interesting half: the measured step count is under the bound
-    /// [`cost_bound`] computed from the two lengths **before the match ran**.
+    /// `a*a*a*...*b` against a long run of `a` with no `b` makes a recursive matcher try every
+    /// split of the run between the stars. With ten stars and 100,000 bytes this one walks the name
+    /// a few times, and its measured step count is under the [`cost_bound`] computed before the
+    /// match.
     #[test]
     fn the_pathological_pattern_stays_inside_its_bound() {
-        // 100,000 bytes native; 2,000 under Miri. The linearity claim needs the scale (at 2,000 a
-        // quadratic matcher would still look plausible); the interpreter cannot afford the scale
-        // (the walk is ~4M matcher steps, most of an hour under Miri). Both assertions still run
-        // at both sizes, so Miri checks the memory rules on the same paths and the native run
-        // keeps the scale that settles the question. See notes/undefined-behavior.md.
+        // 100,000 bytes native, where a quadratic matcher would show; 2,000 under Miri, which
+        // cannot afford ~4M matcher steps. Both assertions run at both sizes
+        // (notes/undefined-behavior.md).
         const NAME_LEN: usize = if cfg!(miri) { 2_000 } else { 100_000 };
         let name = [b'a'; NAME_LEN];
         let pattern = b"a*a*a*a*a*a*a*a*a*a*b";
@@ -854,23 +799,16 @@ mod tests {
 
     // ---- what mutation testing found (milestone 85) -------------------------------------------
     //
-    // The first pass at these two wrote them inside `#[cfg(kani)] mod verification`, which
-    // `cargo test` never compiles, so neither had ever run when they were reported as killing
-    // anything. See notes/mutation-testing.md.
+    // These run under `cargo test`, outside `#[cfg(kani)]`. See notes/mutation-testing.md.
 
     /// **Each syntactic extra costs exactly what it scans**: a negation marker one step, an escape
-    /// one step, a range's tail its two bytes, a trailing star one step. The step count is the
-    /// DoS-bound contract, and Kani only proves it stays under [`cost_bound`], which a counter
-    /// stuck at zero would also satisfy; these say what it actually counts.
+    /// one step, a range's tail its two bytes, a trailing star one step. Kani proves only that the
+    /// count stays under [`cost_bound`], which a counter stuck at zero satisfies; these say what it
+    /// counts, as differences between near-identical matches.
     ///
-    /// Asserted as differences between near-identical matches rather than as absolute totals, so
-    /// the pins survive a deliberate change to the accounting while still catching a `+=` that
-    /// rotted into `-=` or `*=`.
-    ///
-    /// **The range is asserted twice and the second one is the one that bites.** At the head of a
-    /// one-member class every arithmetic mutation of `scanned += after_hi - after_lo` hides behind
-    /// a coincidence: `scanned` is 2 there and the tail is 2 bytes, so `2 + 2` and `2 * 2` agree,
-    /// and `4 - 2` and `4 / 2` agree too. One member in front of the range separates all four.
+    /// The range is asserted twice. At the head of a one-member class `scanned` is 2 and the tail
+    /// is 2, so `+`, `*`, `-` and `/` mutations of `scanned += after_hi - after_lo` agree; one
+    /// member in front of the range separates them.
     #[test]
     fn each_class_feature_costs_its_own_scan() {
         let steps = |p: &[u8], n: &[u8]| match_steps(p, n, Dot::Special).1;
@@ -912,14 +850,10 @@ mod tests {
         assert!(!matches(b"[a-\\", b"b"));
     }
 
-    /// **A range covers its interior and nothing else**, which is the half of the parse no step
-    /// count can see.
+    /// **A range covers its interior and nothing else**, the half of the parse no step count sees.
     ///
-    /// `scanned += after_hi - after_lo` charges exactly the bytes a range skips, so a resume index
-    /// that lands *inside* the range costs the same total: the loop re-scans one at a time what it
-    /// should have stepped over, and the ledger balances. What does not balance is membership.
-    /// Both ways of landing short widen the class, and a wider class is a larger grant, which is
-    /// the one direction this crate is not allowed to be wrong in.
+    /// A resume index that lands inside the range costs the same total steps, but widens the class,
+    /// and a wider class is a larger grant.
     #[test]
     fn a_range_admits_neither_its_hyphen_nor_a_reversed_endpoint() {
         // Resuming at the `-` would re-read it as an ordinary member. It is punctuation here, and
@@ -939,40 +873,22 @@ mod tests {
 
 /// The proofs, and the bounds they run under.
 ///
-/// **Why the pattern and name are short.** Kani unrolls loops, so the match loop appears in the
-/// formula once per possible iteration, and the number of possible iterations grows with the name
-/// length rather than staying flat. Three bytes each is where a full run finishes in about a minute
-/// on an M-series laptop. That is a real limit and it is stated rather than implied: these harnesses
-/// quantify over **every byte value** at those lengths, which is 2^48 pattern-name pairs per harness
-/// and reaches every arm of the decoder, but they do not quantify over length.
-///
-/// The length-independent claims are the host tests' job, and deliberately: the exhaustive
-/// cross-check against a naive recursive matcher covers 2,657,200 pattern/name pairs completely, and
-/// the blowup tests run at 100,000 bytes. Splitting it this way follows the rule `network_time_protocol` wrote
-/// down (notes/ntp.md): the solver takes the domains too big to enumerate, and enumeration takes the
-/// ones that are not.
+/// The harnesses quantify over every byte value of patterns and names up to three bytes (2^48
+/// pairs, every arm of the decoder) but not over length. The length-independent claims are the
+/// host tests': the exhaustive cross-check and the 100,000-byte blowup tests. See notes/glob.md
+/// ("What is proved") and notes/glob/proofs.md.
 #[cfg(kani)]
 mod verification {
     use super::*;
 
-    /// **Three, measured rather than chosen.** Four bytes each was tried first and abandoned twice:
-    /// the solver passed 3 GB and ten minutes without finishing, which is the `calendar` finding
-    /// again (a symbolic-length slice costs far more than the logic wrapped around it, notes/
-    /// verification.md). Three bytes still reaches a closed class (`[a]`), an escape (`\*a`), a
-    /// trailing backslash, an unterminated bracket and two stars, so every arm of the decoder is
-    /// quantified over. The forms that need four and five bytes, `[!a]` and `[a-b]`, are quantified
-    /// over by `a_negated_class_is_the_exact_complement_of_the_class`, which fixes the shape and
-    /// leaves the members symbolic; that harness would also catch a panic in them.
+    /// **Three, measured rather than chosen**: four bytes each passed 3 GB and ten minutes. Three
+    /// reaches `[a]`, `\*a`, a trailing backslash, an unterminated bracket and two stars; `[!a]`
+    /// and `[a-b]` are reached by `a_negated_class_is_the_exact_complement_of_the_class`.
     const P: usize = 3;
     const N: usize = 3;
 
-    /// Two symbolic lengths, within the bound above. Symbolic rather than fixed because the empty
-    /// pattern, the empty name and a pattern that runs out mid-class are all distinct code paths,
-    /// and they are the ones a caller reaches by typing something odd.
-    ///
-    /// It is also the single most expensive thing in these harnesses, which `calendar` had already
-    /// recorded: a symbolic-length slice costs far more than the logic wrapped around it. The three
-    /// bytes above are what that costs.
+    /// Two symbolic lengths, within the bound above, so the empty pattern, the empty name and a
+    /// pattern that ends mid-class are all reached. Symbolic length is the costliest thing here.
     fn any_lengths() -> (usize, usize) {
         let plen: usize = kani::any();
         let nlen: usize = kani::any();
@@ -983,11 +899,9 @@ mod verification {
 
     /// **Matching is total.**
     ///
-    /// For every pattern of up to three arbitrary bytes and every name of up to three arbitrary
-    /// bytes, under both [`Dot`] settings: no panic, no arithmetic overflow, no out-of-bounds index,
-    /// and the loop terminates within the unwinding bound. Termination is the property that matters for
-    /// an untrusted pattern, and it is what the unwinding assertion establishes: at these lengths
-    /// the matcher provably runs out of work, rather than being observed to.
+    /// For every pattern and name of up to three arbitrary bytes, under both [`Dot`] settings: no
+    /// panic, overflow or out-of-bounds index, and the loop terminates within the unwinding bound,
+    /// which is the property that matters for an untrusted pattern.
     /// Falsification: replayable `crates/glob/falsifications/verification.matching_is_total.patch`
     #[kani::proof]
     #[kani::unwind(11)]
@@ -1006,26 +920,10 @@ mod verification {
     /// **The cost of a match never exceeds the bound computed from the two lengths alone**, over
     /// every pattern and name of up to three arbitrary bytes.
     ///
-    /// This is the anti-blowup claim, and it is a separate harness from totality above for a reason
-    /// that cost two dead runs to find. [`cost_bound`] is three saturating 64-bit multiplies, and a
-    /// bit-blasting model checker is bad at multiplication (`network_time_protocol` measured about four times the
-    /// work per bit of operand, notes/ntp.md). Composed with a match loop that was already being
-    /// unrolled twenty times over two symbolic lengths, the harness passed 3 GB and was killed.
-    /// Splitting it moved the multiply next to a smaller unrolling instead of on top of the largest
-    /// one, which is the same restructure-rather-than-weaken move DECISIONS §46 rule 1 describes.
-    ///
-    /// **What this harness does and does not establish, because the difference is easy to overclaim
-    /// and was overclaimed here first.** `cost_bound(3, 3)` is 285, and no matcher at all is slow
-    /// enough to exceed that on three bytes, so this is **not** where exponential backtracking would
-    /// be caught. What it establishes is that the accounting is sound: `cost_bound` really is an
-    /// over-approximation of `match_steps` for every short input, including the corners where a step
-    /// costs more than one byte (an unterminated `[`, an escape inside a class, a backtrack). An
-    /// off-by-one in the charging shows up here, and an off-by-one in the charging is exactly what
-    /// would make the 100,000-byte host test pass while measuring the wrong thing.
-    ///
-    /// The blowup itself is ruled out by two other things: the host test that runs a ten-star pattern
-    /// against 100,000 bytes, and the structural argument in the module comment (one backtrack point,
-    /// a retry position that only advances). Neither is a solver's job.
+    /// This proves the accounting, not the absence of blowup: `cost_bound(3, 3)` is 285, which no
+    /// matcher exceeds on three bytes, but an off-by-one in the charging shows here. Separate from
+    /// totality because `cost_bound`'s multiplies on top of the match loop exhausted the solver.
+    /// See notes/glob/proofs.md.
     /// Falsification: replayable `crates/glob/falsifications/verification.the_cost_never_exceeds_the_bound.patch`
     #[kani::proof]
     #[kani::unwind(11)]
@@ -1042,16 +940,9 @@ mod verification {
         assert!(steps <= cost_bound(plen, nlen));
     }
 
-    /// **A pattern with no magic in it matches exactly one name: itself, unescaped.**
-    ///
-    /// The theorem the shell's grant planner rests on. If [`has_magic`] says no, the word names one
-    /// file, so the shell can skip the enumeration and ask for a single-name caretaker; if that
-    /// were wrong in either direction the grant would be wrong, either missing a file or naming one
-    /// the user did not write.
-    ///
-    /// Quantified over every pattern of up to three arbitrary bytes, which includes the escape
-    /// corners (`\*`, `\\`, a trailing `\`) and the unterminated brackets that are literals rather
-    /// than classes.
+    /// **A pattern with no magic in it matches exactly one name: itself, unescaped**, over every
+    /// pattern of up to three arbitrary bytes, escape corners and unterminated brackets included.
+    /// The shell's grant planner rests on it: if [`has_magic`] says no, it asks for one name.
     /// Falsification: replayable `crates/glob/falsifications/verification.no_magic_means_the_pattern_is_its_own_only_match.patch`
     #[kani::proof]
     #[kani::unwind(11)]
@@ -1062,12 +953,8 @@ mod verification {
         let p = &pattern[..plen];
         let n = &name[..nlen];
 
-        // An assumption rather than an early `return`, which says the restriction rather than
-        // implementing it. Measured expecting a solver win, and there was none: 181s with the
-        // `return`, 186s with the `assume`, which is noise. Recorded because "state the restriction
-        // as an assumption and the solver prunes earlier" is a plausible-sounding rule that did not
-        // hold here, and a plausible-sounding rule nobody measured is how the 60-unwind guess
-        // happened too.
+        // An assumption rather than an early `return`, to state the restriction; it is no faster
+        // (notes/glob/proofs.md, "The cost").
         kani::assume(!has_magic(p));
         let mut buf = [0u8; P];
         let lit = literal(p, &mut buf).expect("a magic-free pattern always has a literal");
@@ -1098,18 +985,10 @@ mod verification {
 
     /// **The leading-dot rule is exactly "a wildcard cannot reach a dotfile".**
     ///
-    /// Under [`Dot::Special`], a name beginning with `.` matches a pattern only if the pattern begins
-    /// with a literal `.`, and a name **not** beginning with `.` is matched identically under both
-    /// settings. The second half is the one worth proving: it says the policy has no effect anywhere
-    /// else, which is otherwise something a reader takes on trust.
-    ///
-    /// **The name is bounded at two bytes here rather than three, and the pattern still at three.**
-    /// This is the only harness that runs the match loop twice, so its cost is double everything
-    /// else's, and at three bytes it was 279 seconds, more than the rest of the crate put together.
-    /// Two is enough to state the rule completely, because the rule is a predicate on the name's
-    /// *first* byte: empty, `.`, `.x`, `x` and `xy` are every case there is, and a third byte adds
-    /// none. The pattern keeps three so `.*`, `\.x` and `[.]` are all reachable, which is where the
-    /// rule's interesting inputs actually live.
+    /// Under [`Dot::Special`] a name beginning with `.` matches only a pattern beginning with a
+    /// literal `.`, and any other name matches identically under both settings. The name is bounded
+    /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`,
+    /// `\.x` and `[.]` are reachable. See notes/glob/proofs.md.
     /// Falsification: replayable `crates/glob/falsifications/verification.the_dot_rule_only_touches_names_that_start_with_a_dot.patch`
     #[kani::proof]
     #[kani::unwind(9)]
@@ -1137,22 +1016,10 @@ mod verification {
     }
 
     /// **`[xy]` and `[!xy]` partition the byte space**, over every two-byte class body and every
-    /// byte, including the range spelling `[a-b]` that a symbolic body reaches on its own.
+    /// byte, the range spelling `[a-b]` included; this also reaches the four- and five-byte forms.
     ///
-    /// The complement is the half worth proving. An implementation that got the `]`-first or
-    /// `-`-last rule wrong in only one of the two spellings shows up here as an overlap or a gap,
-    /// and neither is visible from either spelling alone.
-    ///
-    /// This is also the harness that quantifies over the four- and five-byte class forms the
-    /// three-byte domain above cannot reach, so a panic in `[!...]` or in a range would fail here.
-    ///
-    /// **Three assumptions, and Kani found the need for the third.** Writing this without excluding
-    /// `!` and `^` at the head of the body failed in 42 seconds with a counterexample, and the
-    /// counterexample is correct: `[!y]` is not "the class of `!` and `y`", it is *already* a negated
-    /// class, so `[!!y]` is its complement rather than its double. The other two exclude bodies that
-    /// close early (`]`) or escape (`\`), which make the two spellings different patterns rather than
-    /// one pattern and its negation. All three are about what the two spellings *are*; bracket
-    /// parsing itself is quantified over without restriction by the totality harness above.
+    /// The body excludes `!` and `^` at its head (`[!!y]` is the complement of `[!y]`, as Kani's
+    /// counterexample showed), and `]` and `\`, which make the two spellings different patterns.
     /// Falsification: replayable `crates/glob/falsifications/verification.a_negated_class_is_the_exact_complement_of_the_class.patch`
     #[kani::proof]
     #[kani::unwind(10)]
