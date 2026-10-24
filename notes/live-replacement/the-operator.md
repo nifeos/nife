@@ -5,6 +5,13 @@ holds the five steps of a swap and why they run in that order. This file holds t
 `components/src/swapper.rs`, the operator, one system per entry role. The directory and the stem
 are provisional names; naming is calef's.*
 
+The operator is an unprivileged process. The kernel does not know a swap is happening, has no
+notion of a component, and gained no method for one. What it supplies is what it already supplied:
+endpoints that name no peer (§12 (call/reply IPC: a one-shot reply capability)), a death message
+(§26 (the fault endpoint)), a reap that needs no construction authority (§32), and revocation (§13
+(capability revocation and untyped reclamation), §16, and the device take-back of §41). Everything
+else is code in the operator.
+
 ## The roles
 
 - `ROLE_DIRECT` is the default rung. The stable name a client holds is the endpoint object itself,

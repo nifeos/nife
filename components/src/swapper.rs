@@ -221,8 +221,9 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 17);
 
     // Who depends on `console`, asked before step 2 acts: an empty set here, since nothing this
-    // operator runs declares it in `depends_on` (`CLIENT` is a pure consumer, §41). Reported so the
-    // test can check the graph agrees.
+    // operator runs declares it in `depends_on` (`CLIENT` is a pure consumer, by the sender-queue
+    // argument of §41 (the endpoint is the broker, and a device is revoked by taking it back)).
+    // Reported so the test can check the graph agrees.
 
     let live = [capability_plan::LiveInstance {
         id: 1,
@@ -1037,9 +1038,10 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     };
     send(REPORT, hot_swap_contract::RPT_UNANSWERED, bound, waited);
 
-    // What the supervisor can see, two negative results: `SURVEY` shows every member `BLOCKED`
-    // and none `DEAD`, as a healthy idle system does, and `Rendezvous::REAP` (§32) refuses every
-    // member `StillAlive`. The verdict above came from the clock, not from this view.
+    // What the supervisor can see, two negative results: `SURVEY` shows every member `BLOCKED` and
+    // none `DEAD`, as a healthy idle system does, and `Rendezvous::REAP` (§32 (a supervisor may
+    // collect a corpse without being able to build one)) refuses every member `StillAlive`. The
+    // verdict above came from the clock, not from this view.
 
     let (members, states) = survey_domain(w.faultep);
     send(REPORT, hot_swap_contract::RPT_SURVEY, members, states);
