@@ -51,8 +51,9 @@ const SPAWN: u64 = 2;
 /// (milestone 31 phase 3).
 ///
 /// A job behind a directory grant shares its region with the `fs_subtree_caretaker` that carries
-/// the grant (DECISIONS §92), so the first reclaim of that region is refused by construction: the
-/// sweep wakes the caretaker, arms §16's kill, and the retry after its next preemption reclaims
+/// the grant (DECISIONS §92 (a caretaker is supervised by the client it serves)), so the first
+/// reclaim of that region is refused by construction: the sweep wakes the caretaker, arms the kill
+/// of §16 (object revocation), and the retry after its next preemption reclaims
 /// (notes/grant-expression/per-file-grants.md). The number is far past the one preemption that
 /// needs, and running out is still [`fail`]: a corpse that never becomes collectable is a leak,
 /// and a leak here ends the prompt's memory a few commands later with nothing to point at.

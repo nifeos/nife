@@ -1,4 +1,5 @@
-//! The GPU driver: virtio-gpu, at EL0, confined (milestone 29, the display ladder's rung one).
+//! The GPU driver: virtio-gpu, at EL0, confined (milestone 29 (a display terminal: framebuffer,
+//! virtio-gpu, and a foreign component), the display ladder's rung one).
 //!
 //! It owns the device and the transport and serves [`graphics_contract`] to a client that owns the
 //! pixels and no device, so a hostile client can draw nonsense and nothing more; this process never
@@ -46,8 +47,9 @@ const DISPLAY: u64 = 3;
 /// Slot 4: the untyped this driver spends on the page tables its DMA region needs.
 const BUDGET: u64 = 4;
 /// Slot 5: the whole DMA region, one `PageFrame` capability naming the [`DMA_PAGE_FRAMES`]-page run
-/// (DECISIONS §102), which this driver maps itself in one call (milestone 108). One capability per
-/// page would be 684 at the 1120x624 scanout, which no sixteen-slot capability table holds.
+/// (DECISIONS §102), which this driver maps itself in one call (milestone 108 (the drivers move onto
+/// frame capabilities)). One capability per page would be 684 at the 1120x624 scanout, which no
+/// sixteen-slot capability table holds.
 const DMA_FRAME: u64 = 5;
 
 /// The DMA region, in frames: one for the rings and control buffers, then the surface. Must match
@@ -421,11 +423,11 @@ fn surface_pixel(i: usize) -> u32 {
 /// frame the kernel left out of this device's IOMMU domain, as the resource's backing, and report
 /// the device's response code. `direct_memory_access_phys` is the region's physical base.
 ///
-/// A virtio-gpu's backing addresses ride in a device-level command payload, which the kernel's
-/// descriptor validation does not parse (§18 keeps device knowledge out of the transport), so the
-/// IOMMU is the barrier. The kernel test checks it from the IOMMU's fault queue: QEMU answers a
-/// translation failure with a bounce buffer, so the response code is not the evidence. `victim`
-/// comes from the kernel because the test must know the exact address to look for. See
+/// A virtio-gpu's backing addresses ride in a command payload the kernel does not parse (§18 (the
+/// PCIe transport: the seam in the kernel) keeps device knowledge out of the transport), so the
+/// IOMMU is the barrier, checked by the kernel test from its fault queue: QEMU answers a translation
+/// failure with a bounce buffer, so the response code is not the evidence. `victim` comes from the
+/// kernel because the test must know the exact address to look for. See
 /// notes/framebuffer-contract/iommu-escape-test.md.
 fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     init(direct_memory_access_phys);
@@ -531,7 +533,7 @@ pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
         // The driver-side witness, once, after the first successful flush; see
         // notes/framebuffer-contract.md. This `send` blocks until received and nothing receives on
         // `DISPLAY` meanwhile, so a spawner that never takes it stops every flush after the first
-        // (milestone 177's hang).
+        // (milestone 177 (wire the graphical terminal stack into the real interactive boot)'s hang).
         if !reported_flush && gfx::operation(w0) == gfx::display::FLUSH && r0 == 0 {
             reported_flush = true;
             let digest = gfx::checksum(surface_pixel);

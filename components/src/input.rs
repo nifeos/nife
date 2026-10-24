@@ -1,4 +1,5 @@
-//! Console input, at EL0: the raw UART receive driver (milestone 19f.4, raw since milestone 28).
+//! Console input, at EL0: the raw UART receive driver (milestone 19f.4 (run a real workload), raw
+//! since milestone 28 (a solid terminal: the line discipline as a component)).
 //!
 //! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
 //! assembling, echoing and interpreting nothing; editing lives in `line_editor`. Bytes travel up to

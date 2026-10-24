@@ -1,5 +1,6 @@
-//! The keyboard driver (milestone 29's input): a confined userspace virtio-input driver that turns
-//! key events into the bytes a terminal understands.
+//! The keyboard driver (the input of milestone 29 (a display terminal: framebuffer, virtio-gpu, and
+//! a foreign component)): a confined userspace virtio-input driver that turns key events into the
+//! bytes a terminal understands.
 //!
 //! `arg0` picks where the bytes go. In [`MODE_RING`] they go into the input ring it shares with the
 //! compositor, and that mapping is its power to type (DECISIONS §33 (the compositor's authority is

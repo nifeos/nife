@@ -126,7 +126,7 @@ the device is a `PortRange` capability for COM1, which the kernel's TSS I/O bitm
 driver never invokes it.
 
 A keystroke is one byte and control flow, not bulk data, so the bytes ride in registers, up to eight
-in the words of one `OPERATION_BYTES` `CALL`, as §10's rule asks of control traffic. A paste drains
+in the words of one `OPERATION_BYTES` `CALL`, as the rule of §10 (process model: capability-based, microkernel) asks of control traffic. A paste drains
 in 8-byte messages, and the `CALL`'s rendezvous keeps a fast sender from outrunning the discipline.
 
 It is interrupt-driven on all three architectures, and the reason is measured. Until milestone 505

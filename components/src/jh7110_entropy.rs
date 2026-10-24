@@ -132,8 +132,8 @@ fn ack(bits: u32) {
     regs().ISTAT.set(bits);
 }
 
-/// Put the block in a known state before asking it for anything (milestone 159): zero `AUTO_AGE`
-/// and `AUTO_RQSTS`, disabling the reseed alarms; clear every `ISTAT` bit, since a `RAND_RDY`
+/// Put the block in a known state before asking it for anything (milestone 159 (a real hardware
+/// entropy source: the JH7110's TRNG)): zero `AUTO_AGE` and `AUTO_RQSTS`, disabling the reseed alarms; clear every `ISTAT` bit, since a `RAND_RDY`
 /// latched under U-Boot would satisfy the first poll; set `MODE.R256`, since the width after reset
 /// is a build-time parameter of the silicon; and leave `IE` at zero to poll. The order and the
 /// reasons are in notes/entropy/jh7110-trng.md.

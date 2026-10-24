@@ -262,10 +262,11 @@ impl Terminal {
             proto::OPERATION_WRITE => self.write(w0, slot),
             proto::OPERATION_READLINE => self.read_line(w0, slot),
             proto::OPERATION_PRINT => {
-                // A second writer, with no second page (DECISIONS §67, notes/sink-protocol.md):
-                // the bytes ride in the request's words, since a second page-based client would
-                // need a page index. Through the same `expand_output` as `OPERATION_WRITE`, so a
-                // sink adapter's newline becomes a carriage return and a newline, as the shell's does.
+                // A second writer, with no second page (DECISIONS §67 (a program's second stream
+                // is a declaration, not a number), notes/sink-protocol.md): the bytes ride in the
+                // request's words, since a second page-based client would need a page index.
+                // Through the same `expand_output` as `OPERATION_WRITE`, so a sink adapter's
+                // newline becomes a carriage return and a newline, as the shell's does.
                 let len = proto::len(w0).min(8);
                 let bytes = w1.to_le_bytes();
                 line_editor::expand_output(&bytes[..len], &mut self.con);
