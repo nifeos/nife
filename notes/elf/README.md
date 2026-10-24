@@ -7,6 +7,8 @@ budget has no room for.
 
 - [`why-not-mach-o-or-pe.md`](why-not-mach-o-or-pe.md): why macOS and Windows use other formats,
   and the punchline that UEFI boots PE, with a correction dated 2026-10-11.
+- [`parser.md`](parser.md): the design of `crates/elf`, what it refuses, which machine a file may
+  be for, the fuzz seeds, and how a note is found.
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the
 parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside

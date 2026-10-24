@@ -27,11 +27,11 @@ statement of that is in notes/falsification.md's own BUGS, that a recorded
 falsification proves the harness catches THAT defect and not the class.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index dcd2cbb5..01b06ac1 100644
+index d65bed7d..ff2098c8 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -199,13 +199,7 @@ pub enum Reap {
- /// only then is the distinction the holder's business.
+@@ -168,13 +168,7 @@ pub enum Reap {
+ /// liveness is disclosed only inside the relationship.
  pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -> Reap {
      match fault_ep {
 -        Some(ep) if ep == invoked_ep => {
