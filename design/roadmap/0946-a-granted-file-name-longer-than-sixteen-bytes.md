@@ -1,7 +1,6 @@
 ---
-status: IN-PROGRESS
+status: PARTIAL
 raised: 2026-10-20
-branch: milestone/946-granted-file-name-longer-than-sixteen-bytes
 promoted_from: a-granted-file-name-longer-than-sixteen-bytes
 milestone_dependencies: none
 decision_dependencies: none
@@ -11,9 +10,9 @@ needs_person: no
 ---
 # 946. A granted file name can be longer than sixteen bytes
 
-**IN-PROGRESS, 2026-10-24 (UTC).** Built, and gated by `script/swish-check` on aarch64 and x86_64.
-Left: the riscv64 leg, which CI runs, and the installed demo, which waits on milestone 909
-("BUGS").
+**PARTIAL, 2026-10-24 (UTC).** A file named over 16 bytes is granted at the prompt and read,
+gated by `script/swish-check` on aarch64 and x86_64 and by CI on all three. Left: an installed
+`least_authority_demo` run by its package path, which waits on milestone 909 ("BUGS").
 
 *(Title and slug provisional.)*
 
@@ -115,6 +114,9 @@ by the program it was granted to, and an installed `least_authority_demo` runs b
 
 ## Follow-on
 
+- **Outstanding.** The exit's second half, an installed `least_authority_demo` run by its package
+  path, checked 2026-10-24 (UTC): `jig install demos` is still refused, because every image packs
+  the program. It waits on milestone 909.
 - **Proposed.** A package name longer than sixteen bytes installs and is removed:
   `design/roadmap/proposals/a-package-name-longer-than-sixteen-bytes-installs-and-is-removed.md`.
 - **Milestone 909.** Taking the demos out of the shipped image is what lets an installed
