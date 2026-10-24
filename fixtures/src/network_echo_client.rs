@@ -18,14 +18,13 @@
 //! # What this program holds
 //!
 //! - slot 0: its output, the sink contract (`crates/byte_sink_contract`).
-//! - slot 1: the `--mem` budget, from which it mints the page it trades bytes with the stack
-//!   through; the network grant carries no memory.
+//! - slot 1: the `--mem` budget, which pays for its socket page (the network grant has no memory).
 //! - slot 10 ([`grant_plan::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
 //!   manifest declares `network`; empty when the progenitor built no stack (`x86_64`, or `NIFE_NET`
 //!   unset), and then this prints why and sends nothing.
 //! - while it runs, the capability of the socket it opened (from `OPEN_TCP`), which reaches that
 //!   socket and no other (§255 (each socket is its own capability)).
-
+//!
 //! Name: provisional. Introduced 2026-09-24 for milestone 590; says what it talks to, and expects
 //! to be retired rather than renamed once a real network tool can stand in for it.
 
