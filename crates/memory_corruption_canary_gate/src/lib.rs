@@ -4,8 +4,8 @@
 //! [`ArmGuard`], whose drop publishes `ARMED`; [`try_check`](Gate::try_check) returns a
 //! [`CheckGuard`] or [`None`]; [`disarm`](Gate::disarm) quiesces, so once it returns no pass is
 //! running or can start. One guard of either kind at a time. No fairness: `arm` and `disarm` spin,
-//! bounded by the kernel's callers, outside IRQ context. See notes/interleaving/what-was-modeled.md,
-//! "the corruption canary's serialization".
+//! bounded by the kernel's callers, outside IRQ context. See
+//! notes/interleaving/what-was-modeled.md, "the corruption canary's serialization".
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `canary_gate`: a memory-corruption detector
 //! over arbitrary byte ranges, not a stack canary.

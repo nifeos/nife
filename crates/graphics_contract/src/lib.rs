@@ -253,8 +253,8 @@ pub mod status {
     /// The driver's message after it serves its first flush: `send(REPORT, FLUSHED, digest, pixels)`,
     /// where `digest` is [`super::checksum`] over the bytes the driver handed the device, a second
     /// account of the surface from another address space. It is status, not part of the client
-    /// contract. **The spawner cannot ignore it**: it is a blocking `SEND` from the serving loop, so
-    /// until somebody receives it the driver serves no second flush. See
+    /// contract. **The spawner cannot ignore it**: it is a blocking `SEND` from the serving loop,
+    /// so until somebody receives it the driver serves no second flush. See
     /// notes/framebuffer-contract.md's BUGS.
     pub const FLUSHED: u64 = 0xD15_0002;
 
