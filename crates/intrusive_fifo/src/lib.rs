@@ -1,28 +1,12 @@
-//! An intrusive FIFO queue: **the link lives inside the node.** The queue is two pointers and a
-//! count; push and pop are a few pointer writes that cannot allocate or fail, and a pop hands back
-//! the object itself, as Linux's `list_head` and seL4's TCB queues do. The kernel's per-CPU run
-//! queues and migration inboxes use it, which is why the IRQ path never allocates for them.
-//!
-//! **One link means one queue.** A node can be on at most one `Fifo` at a time. For a scheduler
-//! that is the invariant, not a restriction: a thread is ready on one queue, parked in one inbox,
-//! blocked on one endpoint, or running. An [`Unqueued`] token, a non-`Clone` proof that one node is
-//! on no queue, makes it the compiler's fact: a push consumes one and a pop hands it back.
+//! An intrusive FIFO queue: the link lives inside the node, so push and pop cannot allocate or
+//! fail, and a pop hands back the node itself. The kernel's run queues and migration inboxes use
+//! it. Nothing here checks rule 2 below. See notes/intrusive-queues.md.
 //!
 //! # The caller's contract
 //!
-//! 1. A node is pushed onto at most one queue, and not pushed again until popped. **Enforced**:
-//!    a push takes the node's [`Unqueued`] token by value, and only a pop gives it back.
-//! 2. A node outlives its time on the queue (the kernel: a queued thread is `Ready`, and only
-//!    `Finished` threads are ever freed). Stated once, at [`Unqueued::new`].
-//! 3. All access to a queue and its nodes' links is serialized by the caller (the kernel: a run
-//!    queue is single-core with interrupts masked; an inbox is behind its mutex). Enforced for the
-//!    queue by `&mut self`; for the links, also stated at [`Unqueued::new`].
-//!
-//! Rule 2 is not expressible in any type available here, because the queue deliberately does not
-//! own its nodes. **This queue is safe because its callers are correct, and nothing in this crate
-//! can check that.** The API traffics in [`NonNull`] built from references, so nullness is a fact
-//! of construction (which is what CodeQL's `rust/access-invalid-pointer` was pointing at), and
-//! the Kani harness proves the ordering logic, never that a caller kept a queued node alive.
+//! 1. A node is on at most one queue until popped; a push consumes its [`Unqueued`] token.
+//! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
+//! 3. The caller serializes all access to a queue and its nodes' links; `&mut self` covers the queue.
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
 //! `intrusive`, an adjective without its noun; the primary type is `Fifo<T: Node>`.
@@ -70,24 +54,13 @@ pub unsafe trait Node: Sized {
     fn set_next(&mut self, next: Option<NonNull<Self>>);
 }
 
-/// **Proof that one node is on no queue**, and the only thing a queue will take.
+/// Proof that one node is on no queue, and the only thing a queue will take.
 ///
-/// Milestone 139, round 10 (calef's ruling C on #1842, 2026-10-08 UTC). Before it, every push was an
-/// `unsafe` call whose comment asserted the same sentence, "this node is live and on no other
-/// queue", and the kernel's scheduler carried twenty-one hand-written copies of it. A token turns
-/// that sentence into ownership: it is not `Clone` or `Copy`, [`Fifo::push_back`] consumes it, and
-/// [`Fifo::pop_front`] is the one place a queue hands it back. A node that holds no token cannot be
-/// pushed, so a node can no longer be on two queues at once without someone writing `unsafe`.
-///
-/// `#[repr(transparent)]` over the [`NonNull`] it carries, so it costs nothing at run time: the
-/// same register, the same layout, and `Option<Unqueued<T>>` is still one pointer wide.
-///
-/// What it cannot carry is lifetime (rule 2 in the crate docs). That is the one obligation left,
-/// and it is discharged once, where the token is minted ([`Unqueued::new`]), rather than at every
-/// push.
-///
-/// `#[must_use]`, because dropping a token is safe but strands its node: nothing can queue it again
-/// without minting a second token, which is exactly the `unsafe` this type exists to keep rare.
+/// Neither `Clone` nor `Copy`: [`Fifo::push_back`] consumes it and [`Fifo::pop_front`] hands it
+/// back, so a node cannot be on two queues without `unsafe`. `#[repr(transparent)]` over its
+/// [`NonNull`], so `Option<Unqueued<T>>` is one pointer wide. It cannot carry lifetime (rule 2),
+/// which [`Unqueued::new`] discharges once. A dropped token strands its node. See
+/// notes/intrusive-queues.md.
 ///
 /// Name: provisional (milestone 139, round 10, 2026-10-08 UTC). `Unqueued` is the name option C on
 /// #1842 carried when calef chose that option; whether choosing it ratified the name is his to say.
@@ -97,7 +70,7 @@ pub unsafe trait Node: Sized {
 pub struct Unqueued<T>(NonNull<T>);
 
 impl<T> Unqueued<T> {
-    /// **Mint the token for `node`.** The one `unsafe` step in queueing.
+    /// Mint the token for `node`. The one `unsafe` step in queueing.
     ///
     /// # Safety
     ///
@@ -243,10 +216,8 @@ impl<T: Node> Fifo<T> {
             None => self.head = Some(node),
         }
         self.tail = Some(node);
-        // Wrapping, because the wrap cannot happen and this is on every IPC (release builds check
-        // overflow, notes/overflow-checks.md). `len` counts nodes linked right now, each a distinct
-        // live object of nonzero size (it holds a link), so it is bounded by the address space and
-        // never reaches `usize::MAX`.
+        // Wrapping, on every IPC (release builds check overflow, notes/overflow-checks.md): `len`
+        // counts distinct live linked nodes of nonzero size, so it never reaches `usize::MAX`.
         self.len = self.len.wrapping_add(1);
     }
 
@@ -264,11 +235,9 @@ impl<T: Node> Fifo<T> {
             }
             (*node.as_ptr()).set_next(None);
         }
-        // Wrapping, because the wrap cannot happen: `head` was `Some`, so a push is outstanding and
-        // `len >= 1`. `any_push_pop_interleaving_is_fifo_and_lossless` below holds `len` equal to
-        // the model's count after every step, so a decrement that wrapped would fail that proof.
+        // Wrapping: `head` was `Some`, so `len >= 1`. The Kani proof below holds `len` to the
+        // model's count after every step, so a wrapped decrement would fail it.
         self.len = self.len.wrapping_sub(1);
-        // The token that was consumed at the push, handed back: this node is on no queue now.
         Some(Unqueued(node))
     }
 }
@@ -279,11 +248,9 @@ impl<T: Node> Default for Fifo<T> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). The interesting property of a queue is not one push
-/// or one pop but what holds across *any* interleaving of them, so the harness drives the real
-/// `Fifo` with a symbolic operation sequence and checks it against a trivially-correct model
-/// (an array and two counters). Every push/pop pattern up to the bound is covered at once,
-/// including the regrowth-from-empty transitions where head/tail bugs live.
+/// Machine-checked proofs (DECISIONS §14). The harness drives the real `Fifo` with a symbolic
+/// operation sequence against a trivially-correct model (an array and two counters), covering
+/// every push/pop pattern up to the bound, the regrowth-from-empty transitions included.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -304,7 +271,7 @@ mod verification {
         }
     }
 
-    /// **FIFO order, no loss, no invention, across every operation sequence.** Six symbolic
+    /// FIFO order, no loss, no invention, across every operation sequence. Six symbolic
     /// steps over three nodes: each step pushes some not-currently-queued node or pops. The
     /// model records the order tags went in; the queue must hand them back in exactly that
     /// order, agree about emptiness and length at every step, and never dereference a stale
@@ -317,9 +284,8 @@ mod verification {
             N { next: None, tag: 1 },
             N { next: None, tag: 2 },
         ];
-        // One token per node, minted from references, so the harness proves the same API the
-        // kernel calls. A token is in `held` while its node is off the queue and in the queue while
-        // it is on it, exactly as in the kernel.
+        // One token per node, minted from references: the same API the kernel calls. A token is
+        // in `held` while its node is off the queue.
         //
         // SAFETY: three distinct live locals declared before `q`, each on no queue, each minted
         // once, and the harness is the only accessor.
@@ -418,12 +384,10 @@ mod tests {
         q.push_back(token(&mut c));
         assert_eq!(q.len(), 3);
 
-        // A non-empty queue says so. Milestone 85: every earlier assertion met is_empty only in
-        // the empty state, so a body stuck at `true` passed.
+        // A non-empty queue says so; a body stuck at `true` passes every empty-state check.
         assert!(!q.is_empty());
 
-        // len falls by exactly one per pop. The push side was asserted above; the pop side was
-        // not, and the scheduler trusts this counter for its run-queue accounting.
+        // len falls by exactly one per pop; the scheduler's run-queue accounting trusts it.
         let first = q.pop_front().map(|t| tag(&t));
         assert_eq!(first, Some(1));
         assert_eq!(q.len(), 2);
