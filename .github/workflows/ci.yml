@@ -1352,8 +1352,10 @@ jobs:
       # (milestone 491 (a committed .dtb is checked against what its .dts compiles to)), and the
       # check's skip note says CI has the tool, so this job has to. The ubuntu-24.04 image does
       # not ship it.
-      - name: Install clang (the C component's compiler), shellcheck and dtc
-        run: sudo apt-get update && sudo apt-get install -y clang shellcheck device-tree-compiler
+      # ruby too: two script/lint checks parse YAML with `ruby -ryaml` (helpers/workflow_parses.py,
+      # helpers/issue_forms.py). The image ships it; the explicit install is for the reason above.
+      - name: Install clang (the C component's compiler), shellcheck, dtc and ruby
+        run: sudo apt-get update && sudo apt-get install -y clang shellcheck device-tree-compiler ruby
       # **No rust-cache entry is saved from a merge group, because nothing can ever restore one.**
       # A run restores caches from its own ref and the default branch's, and every merge group runs
       # on a fresh `gh-readonly-queue/...` ref. Measured 2026-10-07 (UTC): 0 hits in 111 merge-group

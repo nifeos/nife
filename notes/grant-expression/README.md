@@ -13,6 +13,8 @@ for.
   it is proven, the interactive prompt, what it cost, and `wc report.txt` as an input operand.
 - [`clock-grant.md`](clock-grant.md): the four links `date` needed, the one this note got wrong,
   and what a delegable clock would still need.
+- [`spawn-protocol.md`](spawn-protocol.md): the shell-to-progenitor exchange in order, the reasons
+  behind its data messages, frames and sentinels, and its BUGS in full.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
@@ -23,3 +25,4 @@ Each stem below is named for its content, and calef names files.
 - `memory-grant` Name: provisional.
 - `per-file-grants` Name: provisional, after the parent's heading.
 - `clock-grant` Name: provisional.
+- `spawn-protocol` Name: provisional, after `grant_plan::spawnproto`'s own heading.
