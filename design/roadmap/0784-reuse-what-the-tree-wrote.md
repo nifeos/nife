@@ -14,7 +14,7 @@ Written by the research lane `lane/reuse-audit` on 2026-10-04 (UTC) at base `7da
 calef's question of the same day: under the §46 (thin primitives or whole subsystems) amendment,
 *what that we already have in the tree would be a better candidate for reuse?* The ruling: outside the
 kernel and the crates Kani proves, the default is to take or adapt existing code, and writing our own
-needs a recorded reason. Title and slug are drafts. Every crate the table below does not weigh is
+needs a recorded reason. Every crate the table below does not weigh is
 weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
@@ -214,8 +214,8 @@ on the customer path.
   [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
   device behind the IOMMU. It did, on all three.
 - (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
-  number before and after on all three architectures. (c2) is
-  [948](0948-virtio-gpu-on-virtio-drivers.md).
+  number before and after on all three architectures. (c2) is milestone 948 (the virtio GPU device
+  runs on virtio-drivers).
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
@@ -263,8 +263,8 @@ the measured-boot trusted base.
 - **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Done.** Item (c0), nifeos/nife#2587, on calef's "A" on #2586.
-- **Milestone 948.** Item (c2).
-- **Outstanding.** (c1), (c3), (c4): no block names them (checked 2026-10-24 UTC).
+- **Milestone 948.** (c2).
+- **Outstanding.** (c1), (c3), (c4): no block (checked 2026-10-24 UTC).
 
 ## Index row
 
