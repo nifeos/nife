@@ -1,5 +1,7 @@
 # board-console's design: the read, the port, no dependency, and the tests
 
+*Name: provisional.*
+
 An appendix to [notes/board-console.md](../board-console.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the decisions that are not obvious from the code, why there is
 no serial dependency, and how it is tested with no board.

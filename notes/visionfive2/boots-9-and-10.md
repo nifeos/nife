@@ -1,5 +1,7 @@
 # Boots 9 and 10: the fifth bench stop
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md). On 2026-08-15 boots 9 and 10 showed that
 the state [boots-7-and-8.md](boots-7-and-8.md) read as corruption was the terminal state of a
 finished tour.

@@ -1,5 +1,7 @@
 # The sweep for self-referential harnesses
 
+*Name: provisional.*
+
 An appendix to [`notes/falsification.md`](../falsification.md), which states the result.
 
 Milestone 211, 2026-09-01. This note's own line about `derive_never_widens_rights` (a harness

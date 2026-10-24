@@ -1,5 +1,7 @@
 # Atmosphere's trusted base, and where it draws the hardware boundary
 
+*Name: provisional, for the trusted computing base it quotes.*
+
 An appendix to [`notes/verus.md`](../verus.md), under "Does Verus reach `asm!` and MMIO?". It holds
 SOSP '25's own list of the trusted assembly and Rust beside its verified kernel, and the rest of that
 paper's trusted computing base.

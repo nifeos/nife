@@ -1,5 +1,7 @@
 # board-console: the BUGS list in full
 
+*Name: provisional, after `notes/soak/limitations.md` and `notes/frames/limitations.md`.*
+
 An appendix to [notes/board-console.md](../board-console.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). The main page lists each limitation in a line; this is each one in
 full.

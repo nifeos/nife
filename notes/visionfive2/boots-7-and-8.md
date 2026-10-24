@@ -1,5 +1,7 @@
 # Boots 7 and 8: the fourth bench stop
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md). It keeps the fourth bench stop
 (2026-08-14) as written, including the conclusion the fifth stop overturned on 2026-08-15. Read it
 with [boots-9-and-10.md](boots-9-and-10.md) in hand.
