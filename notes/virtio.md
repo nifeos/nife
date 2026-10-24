@@ -138,3 +138,95 @@ that walks the directory without holding the whole image. It has one block buffe
 was the one place that had to be found by hand when the entry layout widened on 2026-08-01. It now
 depends on `nifefs` for them, which is CLAUDE.md's rule 7 (what two binaries must agree on is a
 crate). See [nifefs.md](nifefs.md).
+
+## The driver crate, `crates/virtio`
+
+The driver runs at EL0 and holds three things the kernel handed it. The DMA page is mapped at
+`DMA_VA`, and its physical address arrives as `_start`'s argument, because descriptors speak
+physical addresses. The other two are an `Irq` capability in slot 1 and a `Virtio` capability in
+slot 2. The device registers
+are not mapped. Every register access, the queue setup and the "go" go through the `Virtio`
+capability, so the driver cannot point the device outside its DMA region
+([dma.md](dma.md)). If anything here is wrong, this process faults and the kernel does not. The
+transport is modern virtio-mmio (version 2), virtio 1.x sections 4.2 (MMIO) and 5.2 (block).
+
+### The roles
+
+One binary carries several roles, each called from a `_start`:
+
+- `run` reads the nifefs superblock and the `motd` file and reports its first eight bytes, which the
+  kernel test checks against the known contents.
+- `run_write` writes a pattern into the `scratch` file's block, wipes the buffer, reads it back and
+  checks every byte, then re-reads block 0 to show the write did not eat the filesystem around it.
+- `run_write_abandon` submits a write and dies without waiting, the kill-mid-write case. The full
+  writer then runs against the same device and must succeed.
+- `run_attack` points a descriptor at kernel memory, and `run_attack_indirect` hides the same
+  target behind an `INDIRECT` descriptor whose inner table sits in the driver's own region. The
+  kernel strips `VIRTIO_RING_F_INDIRECT_DESC` in negotiation and refuses the flag on submit.
+- `run_net` is the virtio-net driver. It runs a DHCP exchange against QEMU's user-mode (slirp)
+  network: it transmits a hand-built DISCOVER on queue 1 and receives the OFFER on queue 0. That
+  exercises both queues and both directions of the confinement with no TCP/IP stack in the loop.
+- `run_blk_server` is the long-lived block server the FS server calls.
+
+A one-shot role exits rather than spinning. A leaked spinner stays on a run queue, and enough of
+them starve a later heavy test (the RedoxFS mount) past the hang watchdog.
+
+### Feature negotiation
+
+The driver's acknowledgement is always a subset of the device's offer.
+
+- `VIRTIO_F_VERSION_1` (bit 32) is mandatory for a modern device.
+- `VIRTIO_F_ACCESS_PLATFORM` (bit 33) is offered by a device behind an IOMMU (QEMU's
+  `iommu_platform=on`, milestone 16b), which then requires the driver to negotiate it. The DMA domain
+  is an identity map (IOVA equals PA, `kernel/src/iommu.rs`), so acking it changes no address. The
+  driver acks it only when offered, so one binary runs on the bare virtio-mmio disk, which does not
+  offer it, and on the IOMMU-fronted PCIe disk.
+- `VIRTIO_BLK_F_FLUSH` (bit 9) is asked for only when offered. A driver that sent
+  `VIRTIO_BLK_T_FLUSH` without it would get `VIRTIO_BLK_S_UNSUPP` from a careful device and undefined
+  behavior from a careless one. The kernel's `sanitize_driver_features` strips only bits 28 and 34,
+  and `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs` holds that.
+- The low word the caller passes is not masked against the offer. The indirect attacker's point is
+  to ask for a bit the device does offer and be stripped by the kernel.
+
+virtio-mmio's `DriverFeatures` is write-only. That `FEATURES_OK` stuck is what says the device
+accepted the set, so the flush bit's presence in the set is the negotiated fact.
+
+### A completion is the used ring advancing
+
+A driver cannot count one interrupt as one completion. The device's line is shared by every driver
+that ever held the device, and a wakeup can be spurious, coalesced, or left pending by a previous
+operator. A driver that died mid-write leaves its completion interrupt pending, and the next
+driver's first WAIT would consume it before its own request is on the used ring. So every wait
+loops: WAIT, quiet the device, re-enable the line, and let `used.idx` decide. Every real
+completion raises the line, so the loop cannot outlast the device. The net driver does the same
+across its two queues, whose completions share one line.
+
+The block server waits on the interrupt too rather than polling the used ring. A WAIT per read fits
+inside the test watchdog on both ISAs at the 4-core boot, because each request moves whole
+filesystem blocks and the mount's read count stays in the low hundreds. QEMU completes inside
+`NOTIFY`, so the interrupt is already pending and the kernel's pending-signal count (§9a) returns
+the WAIT at once.
+
+### The block server
+
+The block server (milestone 32 phase 2) brings the device up once and answers read, write, size
+and flush requests from the FS server forever. Every request is a CALL answered through the
+kernel-minted Reply. The bulk rides in a shared region and the control in the message.
+
+Its DMA region is `1 + blk::TRANSFER_BLOCKS` contiguous pages (`kernel/src/user/fs_service.rs`).
+Page 0 holds the rings, the request header and the status byte and is private. The pages after it
+are the data buffer, which is the region shared with the FS server. One request moves up to
+`blk::TRANSFER_BLOCKS` contiguous blocks as a single data descriptor, since virtio-blk asks only
+that its length be whole sectors. There is no per-block loop and no copy (milestone 138 step 4).
+The server clamps the requested count to `blk::TRANSFER_BLOCKS` even though the field cannot
+encode more, because a request is never trusted to stay inside the region it shares.
+
+A flush is a two-descriptor chain, header and status, with no data descriptor (virtio 1.2
+§5.2.6.1). Its sector field is written as 0, as the specification asks, rather than left holding
+the previous request's value. A completion with status 0 says the device finished the flush. It
+cannot prove the hardware under the device is honest, and nothing at this layer could. Unlike a
+transfer, a refused flush does not panic the server. Its death would block every client of the
+filesystem, so `VIRTIO_BLK_S_UNSUPP` comes back as an error. A device that never offered the
+feature makes the server answer EOPNOTSUPP rather than a false yes (see
+`filesystem_contract::blk::FLUSH`), and a completed flush returns a count so a client can tell a
+round trip from a constant.
