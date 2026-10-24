@@ -1,28 +1,14 @@
-//! **A `SEND_CAP` cannot widen a right out of its rights register, and cannot lend a GRANT-less
-//! capability** (milestone 903 (a seventh outsider pass attacks the confinement claim), fatal risk
+//! A `SEND_CAP` cannot widen a right out of its rights register, and cannot lend a GRANT-less
+//! capability (milestone 903 (a seventh outsider pass attacks the confinement claim), fatal risk
 //! 7's confinement claim, claims 1 and 2).
 //!
-//! Claim 1 ("a derive holds no more than its source") and claim 2 ("userspace cannot forge a right
-//! out of a syscall register") are proved in the host crate (`capability::derive_never_widens_rights`,
-//! `from_bits_cannot_forge_a_right`). This module drives the live kernel delegation path instead:
-//! `Rendezvous::SEND_CAP` through the real dispatcher (`syscall::invoke`), the way a program's
-//! `svc`/`ecall` reaches it. `SEND_CAP`'s second argument register (`a1`) is the rights the copy is
-//! narrowed to, so asking for a right the source lacks is literally forging a right out of a syscall
-//! register, which is claim 2 in its wire form, and widening on delegation, which is claim 1.
-//!
-//! `confinement_attack_tests` drives the refusal of `SEND` by a READ-only holder and of an ungranted
-//! slot. It does not drive a `SEND_CAP` whose rights mask asks to widen, nor a `SEND_CAP` of a
-//! source that lacks GRANT, which is what this adds.
-//!
-//! **Why nothing blocks.** `ipc_send_cap_from` runs the source derivation first, under the hold, and
-//! returns its error before the rendezvous is ever touched (`kernel/src/sched/rendezvous.rs`). So a
-//! refused delegation never parks a sender. A regression does: with the subset check dropped, the
-//! widening `SEND_CAP` derives a copy and parks the test thread on the receiverless rendezvous, and
-//! the run fails by the watchdog's thread dump, not at an assertion (the lane's falsification,
-//! aarch64, 2026-10-12 UTC). Red either way, but a reader of the failure sees a hang. The
-//! endpoint's waiting-sender count is asserted to stay zero after each refusal, the other half of
-//! "the rendezvous was not touched."
-//!
+//! The host crate proves both claims (`capability::derive_never_widens_rights`,
+//! `from_bits_cannot_forge_a_right`); this drives `Rendezvous::SEND_CAP` through `syscall::invoke`.
+//! Its `a1` register is the rights the copy is narrowed to, so asking for a right the source lacks
+//! is claim 2 in wire form and claim 1's widening. `ipc_send_cap_from` refuses before it touches the
+//! rendezvous, so a refusal parks nothing; a regression parks the test thread and fails by the
+//! watchdog's thread dump, not at an assertion. See notes/confinement-outsider-pass-7.md.
+
 //! Name: provisional (this pass's lane, 2026-10-12 UTC). Cross-ISA: `invoke`, the delegation rule
 //! (`Delegation::derive`) and the rendezvous are portable kernel code (DECISIONS §19 (architectural parity is a tenet)).
 
@@ -44,25 +30,11 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-/// **A holder cannot use `SEND_CAP`'s rights register to hand itself, or anyone, a right the source
-/// capability did not carry; and a capability without GRANT cannot be lent at all.**
+/// `SEND_CAP`'s rights register cannot widen a right, and a GRANT-less capability cannot be lent.
 ///
-/// Two refusals, each driven through the real dispatcher, each returning before the rendezvous is
-/// touched:
-///
-/// 1. **Widening.** The source holds `READ | GRANT` (it may be read and it may be passed on, but it
-///    may not be written). `SEND_CAP` is invoked with a rights mask of `READ | WRITE | GRANT`,
-///    asking the kernel to mint a copy that holds `WRITE`, a right the source never had. The answer
-///    is `NotPermitted`: `Delegation::derive`'s subset check refuses, so the `WRITE` bit set in the
-///    `a1` register buys nothing. This is claim 2 in its wire form and claim 1's monotonicity.
-///
-/// 2. **Lending without GRANT.** The source holds `READ | WRITE` but not `GRANT`. `SEND_CAP` is
-///    invoked with a mask of `READ` alone, a strict subset, so the only thing that can refuse it is
-///    the GRANT gate. The answer is `NotPermitted`: you may use a thing and not lend it.
-///
-/// The endpoint cap itself carries `WRITE`, so each refusal is the delegation rule talking, not the
-/// endpoint gate. After each, the endpoint's waiting-sender count is still zero, which is the
-/// kernel's own record that the refused delegation never parked anything.
+/// From `READ | GRANT`, a mask of `READ | WRITE | GRANT` fails `Delegation::derive`'s subset check;
+/// from `READ | WRITE`, a strict-subset mask of `READ` fails the GRANT gate. Both are `NotPermitted`
+/// through an endpoint cap carrying `WRITE`, and the waiting-sender count stays zero after each.
 ///
 /// Falsification: attested 2026-10-12. On patagonia, aarch64, with the subset check in
 /// `Delegation::derive` patched to `if false && ...`, the run went red by the watchdog, since the
