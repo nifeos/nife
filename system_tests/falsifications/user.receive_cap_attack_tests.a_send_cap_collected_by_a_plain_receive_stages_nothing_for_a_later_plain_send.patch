@@ -45,10 +45,10 @@ diff --git a/kernel/src/sched/rendezvous.rs b/kernel/src/sched/rendezvous.rs
 index c59bccd96..18d699a17 100644
 --- a/kernel/src/sched/rendezvous.rs
 +++ b/kernel/src/sched/rendezvous.rs
-@@ -316,7 +316,6 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
-                         // holds its own copy (`SEND_CAP` narrows a copy, never moving the source), so
-                         // dropping this one loses nothing, which is `ipc_send_cap`'s documented
-                         // cap-table-full semantics: the data word arrives and the capability is dropped.
+@@ -290,7 +290,6 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
+                         // A plain RECEIVE delivers no capability: drop the delegation a `SEND_CAP`
+                         // sender parked, or it rides that sender's next plain `SEND` to another
+                         // rendezvous. The sender keeps its own copy.
 -                        sched.threads.get_mut(sender).unwrap().outgoing_cap = None;
                          // Collected: the sender's rendezvous is complete, which is what lets its
                          // wake through the boot-8 gate.

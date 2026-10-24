@@ -1,44 +1,25 @@
-//! **A board's firmware prologue, declared rather than hard-coded** (milestone 324 part 3).
+//! **A board's firmware prologue, declared as data**: the half of the boot ladder that is not
+//! shared.
 //!
-//! calef ruled on 2026-09-19: *one tool with a board profile, and the profile is the firmware
-//! prologue only*. This module is the part that is **not** shared, written as data instead of as a
-//! run of `if line.contains(...)` inside [`crate::progress`]. The lower rungs a board's firmware
-//! prints (on the VisionFive 2: `U-Boot SPL`, OpenSBI, U-Boot proper, `Starting kernel ...`) are a
-//! `&'static Profile`; the kernel's own ladder (banner, machine, self-test, tour, prompt, and the
-//! workloads above them), the same on all three architectures, is [`crate::progress::Stage`].
+//! A [`Profile`] holds only what the firmware prints before the kernel runs an instruction (calef,
+//! 2026-09-19: *one tool with a board profile, and the profile is the firmware prologue only*):
+//! [`Profile::prologue`], the ordered rungs; [`Profile::refusals`], the ways that firmware gives up
+//! before handing over; and [`Profile::relocation`], a discriminator that is not a rung. The
+//! kernel's own ladder is [`crate::progress::Stage`], with its markers in `crates/boot_ladder`.
 //! Adding a board is adding a [`Profile`].
-//!
-//! # What a profile may and may not contain
-//!
-//! Only what the **firmware** prints, before the kernel has run an instruction:
-//!
-//! - [`Profile::prologue`], the ordered rungs. Order is the whole of their meaning.
-//! - [`Profile::refusals`], the ways that firmware gives up before handing over
-//!   (`Bad Linux RISCV Image magic!` is U-Boot's, so it belongs to the board, not the shared half).
-//! - [`Profile::relocation`], a discriminator that is deliberately not a rung: `Moving Image from`
-//!   answers what to check when `Starting kernel ...` is followed by silence
-//!   (`notes/visionfive2.md`), a different question from how far the boot got.
-//!
-//! Everything the kernel prints stays out; that is `crates/boot_ladder`'s.
 //!
 
 //! # BUGS
 //!
-//! - **Only [`RADON`] has been checked against a machine** (bytes off the wire in
-//!   `tests/fixtures/captured/`). [`XENON`]'s empty prologue is a measurement of one capture: it
-//!   boots through PVH straight into `nife on `, and a xenon that fell over inside its firmware
-//!   would print something nothing here names.
-//! - **argon has no profile** until it boots nife and prints something on a wire (milestone 127
-//!   (the seL4 machine)); one written from vendor documentation would be an assertion shaped as a
-//!   measurement.
-//! - **The default is [`RADON`]**, so an unconfigured session says it expected a VisionFive 2. The
-//!   QEMU callers in `xtask` (`boot-check`, `soak-test`, `job-mix`) name [`XENON`], a machine with
-//!   no firmware prologue.
-//! - **A [`Rung`] compares by depth alone**, so rung 2 of one profile equals rung 2 of another. A
+//! - Only [`RADON`] has been checked against a machine (notes/board-console/limitations.md).
+//! - [`XENON`]'s empty prologue rests on one capture; a firmware failure there names nothing.
+//! - argon has no profile until it prints something on a wire.
+//! - Nothing gates a profile against its board beyond review and a capture per asserted rung.
+//! - The default is [`RADON`]; the QEMU callers `boot-check` and `soak-test` name [`EMULATOR`].
+//! - A [`Rung`] compares by depth alone, so rung 2 of one profile equals rung 2 of another. A
 //!   session has exactly one profile, chosen before any byte is read, so they never meet.
-//! - **Nothing gates a profile against the board it claims to describe** beyond review and a
-//!   capture in `tests/fixtures/captured/` for every rung anybody asserts on.
 //!
+
 //! Names provisional, this lane's coinage (2026-09-19, milestone 324 part 3). `Profile` is the word
 //! calef's own ruling used (*"a board profile"*); `Rung` is `crates/boot_ladder`'s word for the
 //! same shape one level up; `Sign` was chosen over `Match` (a verb) and `Pattern` (which promises a
