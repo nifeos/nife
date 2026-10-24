@@ -6,7 +6,7 @@
 //! generation, so the sweep is the only thing that takes it back (fatal risk 7, DECISIONS §13
 //! (capability revocation and untyped reclamation)). `delegation_pause` holds an armed thread at
 //! the start of its delegation with no lock held while the test runs the whole sweep. See
-//! notes/capability-lifecycle.md, "A sweep inside a delegation, and how the tests force it".
+//! notes/capability-lifecycle.md, "Delegation reads its source in the critical section that files the copy".
 
 //! # BUGS
 //!
