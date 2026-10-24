@@ -1,40 +1,18 @@
-//! **A revocation sweep that lands inside a `MAP` leaves no mapping behind** (the
-//! map-revocation-window lane, 2026-10-04 UTC, provisional; fatal risk 7's confinement claim and
-//! DECISIONS §13 (capability revocation and untyped reclamation), whose "one honest race" this is).
+//! A revocation sweep that lands inside a `MAP` leaves no mapping behind (the map-revocation-window
+//! lane, 2026-10-04 UTC, provisional; fatal risk 7's confinement claim and DECISIONS §13
+//! (capability revocation and untyped reclamation), whose "one honest race" this is).
 //!
-//! `PageFrame::MAP` and `AddressSpace::MAP_INTO` read the frame capability, then build page tables,
-//! map, and record the mapping in the log a sweep unmaps from. A sweep deletes capabilities first
-//! and then unmaps what the log holds when it scans. So a `MAP` that read its frame before the sweep
-//! and recorded after the scan left a live mapping of a frame nobody held a capability to any more.
-//! Under `PageFrame::REVOKE` that is authority the revoker took back. Under `MemoryRegion::DESTROY`
-//! it is a mapping of a page the allocator hands to somebody else, which is §13's use-after-free.
-//!
-//! The revocation-race lane reasoned this from the code on 2026-10-04 and recorded it at
-//! `syscall::page_frame_map` without driving it. These tests drove it: before the fix both paths
-//! kept the mapping under both sweeps. The fix is `revoke::MappingHold`: the frame is read under the
-//! same hold of the mapping registry that maps and records it, and every sweep's unmap pass takes
-//! that hold after its capability pass, so a sweep is wholly before the read (the `MAP` finds the
-//! slot empty and answers `NoSuchSlot`, as if it had started after the revoke) or wholly after the
-//! record (the scan finds it).
-//!
-//! **How the interleaving is forced.** `delegation_pause`, the revocation-race lane's seam, reused
-//! rather than copied: a `MAP` is a use, not a delegation, but the question is the same one, and a
-//! second seam would be a second thing to keep in step. It holds an armed thread inside the `MAP`
-//! with no lock held, the test runs the whole sweep, then lets it go.
-//!
-//! `MemoryRegion::MAP` had the same window, narrower because a region is generational: a retype
-//! that succeeded before `DESTROY` claimed the region, recorded after the scan. The third test
-//! drives it, and the same hold closes it.
-//!
-//! The first two tests run their path twice, once under each sweep, because the two sweeps delete
-//! capabilities by different predicates (exact object for `REVOKE`, overlap for `DESTROY`) and
-//! unmap by different scans (scoped to the capability's family, and object-blind over the range).
-//!
+//! `delegation_pause` holds a mapper inside `PageFrame::MAP`, `AddressSpace::MAP_INTO` or
+//! `MemoryRegion::MAP`, after it reads its source and before it records the mapping; the test runs
+//! a whole sweep, lets it go, and asserts no mapping survived. The first two run under both
+//! `REVOKE` and `DESTROY`, whose predicates and scans differ. `revoke::MappingHold` is the fix. See
+//! notes/capability-lifecycle.md, "A sweep inside a `MAP`".
+
 //! # BUGS
 //!
-//! - **The `DeviceFrame` arm of `MAP_INTO` is reasoned, not driven.** It reads its capability
-//!   through the same `MappingHold` as the `PageFrame` arm, so `DeviceFrame::REVOKE`'s take-back is
-//!   covered by construction, but no test here drives it.
+//! - The `DeviceFrame` arm of `MAP_INTO` is reasoned, not driven: it reads its capability through
+//!   the same `MappingHold`, so `DeviceFrame::REVOKE` is covered by construction, but no test here
+//!   drives it.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -168,15 +146,12 @@ fn round(sweep: Sweep, frames: u64, phys: u64, report: &Report) -> bool {
     premise
 }
 
-/// **A sweep that lands inside a `PageFrame::MAP` must not leave the mapping in place.**
+/// A sweep that lands inside a `PageFrame::MAP` must not leave the mapping in place.
 ///
-/// The mapper adopts an address space of its own (a kernel thread has none), holds a frame with
-/// every right and a region to draw page tables from, and maps the frame read/write into its own
-/// space. It is held after the frame is read and before anything is mapped; the sweep runs whole;
-/// then it goes on, and afterwards asks its own page tables whether `VA` still translates.
-///
-/// The premise assertion is the check that the sweep really reached the mapper's table, so a green
-/// result cannot mean the sweep missed it.
+/// The mapper adopts its own address space, holds a frame with every right and a region for page
+/// tables, and maps the frame read/write. Held after the read, before the map, while the sweep
+/// runs; then it asks its own tables whether `VA` translates. The premise asserts the sweep reached
+/// the mapper's table, so green cannot mean the sweep missed it.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.map_revocation_window_tests.a_sweep_inside_a_page_frame_map_leaves_no_mapping.patch`
 #[test_case]
@@ -244,7 +219,7 @@ fn a_sweep_inside_a_page_frame_map_leaves_no_mapping() {
     }
 }
 
-/// **A sweep that lands inside an `AddressSpace::MAP_INTO` must not leave the mapping in place.**
+/// A sweep that lands inside an `AddressSpace::MAP_INTO` must not leave the mapping in place.
 ///
 /// The loader-side twin of the test above: a builder maps a frame it holds into a space under
 /// construction, the way `supervision_protocol::build_child_space` does. It is held after the
@@ -326,20 +301,11 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
     }
 }
 
-/// **A `MemoryRegion::DESTROY` that lands inside a `MemoryRegion::MAP` of that region must not
-/// leave the page mapped.**
+/// A `MemoryRegion::DESTROY` inside a `MemoryRegion::MAP` of that region leaves no page mapped.
 ///
-/// `MAP` retypes a page out of the region and maps it. No capability names the page, so the race is
-/// with the region itself: a retype that succeeded before `DESTROY` claimed the region, recorded
-/// after its unmap pass scanned, left a mapping of a page the allocator had already taken back.
-///
-/// The page tables `VA` needs are built first, out of a second region, by mapping the page beside
-/// it. Otherwise the region under test would also pay for those tables, and destroying it would
-/// cut tables out of the mapper's space as well, which is a different property than this test asks
-/// about (`page_table_region_tests` drives that one).
-///
-/// The premise is that the region really is gone when the mapper goes on: its name no longer
-/// resolves.
+/// No capability names the retyped page, so the race is with the region itself. `VA`'s page tables
+/// are built first from a second region, or destroying this one would also cut the mapper's tables
+/// (`page_table_region_tests` drives that). Premise: the region's name no longer resolves.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.map_revocation_window_tests.a_destroy_inside_a_memory_region_map_leaves_no_mapping.patch`
 #[test_case]

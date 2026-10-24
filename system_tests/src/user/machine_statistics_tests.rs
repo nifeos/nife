@@ -1,14 +1,12 @@
 //! **What `free`, `vmstat` and `slabtop` read, proved in the kernel** (milestone 126 (the `procps` package), DECISIONS
 //! §225 (`free` sees the machine and your share)).
 //!
-//! Two mechanisms, and each is tested where it could be wrong. `MemoryRegion::USAGE` is a method
-//! with a rights gate, so it is driven through the real dispatcher with capabilities holding exactly
-//! one right each. The machine statistics page is counters written from the scheduler, so it is
-//! read through its protocol crate and checked for the two things only a running kernel can make
-//! true: that the page exists and is recognized, and that its counters move.
-//!
-//! Arch-neutral: nothing here, nor in `crate::machine_statistics`, is under `arch/`, so all three
-//! architectures run these assertions (DECISIONS §19 (architectural parity is a tenet)).
+//! Each mechanism is tested where it could be wrong. `MemoryRegion::USAGE` has a rights gate, so it
+//! is driven through the real dispatcher with capabilities holding one right each. The machine
+//! statistics page is scheduler-written counters, read through its protocol crate for what only a
+//! running kernel makes true: the page exists, is recognized, and its counters move. Nothing here,
+//! nor in `crate::machine_statistics`, is under `arch/`, so all three architectures run it
+//! (DECISIONS §19 (architectural parity is a tenet)).
 
 use abi::{Error, usage};
 
@@ -119,12 +117,9 @@ fn the_machine_statistics_page_is_published_and_its_counters_move() {
         "the suite has switched threads many times and the page counted none"
     );
 
-    // **Wait for both the tick and its interrupt, not the tick alone.** A tick adds to its busy or
-    // idle word and then to its interrupt word, two relaxed adds on another core that this read can
-    // land between. Breaking on the tick word alone and then asserting the interrupt word is a
-    // race, and it failed on x86_64 in run 37089625155 (#1486's group, base d6a902a9b) with "the
-    // tick was not counted as an interrupt". So the loop waits on the whole claim, bounded by 50
-    // ticks of progress, and only a counter that never moves fails.
+    // Wait for both the tick and its interrupt: a tick's busy-or-idle add and its interrupt add are
+    // two relaxed adds on another core, and this read can land between them. Bounded by 50 ticks
+    // of progress, so only a counter that never moves fails.
     let ticks = |s: &machine_statistics_contract::Snapshot| s.busy_ticks() + s.idle_ticks();
     let start = ticks(&before);
     let mut now = before;
@@ -174,12 +169,10 @@ fn the_pages_switch_count_is_each_cpus_exact_count_as_of_its_last_tick() {
         s.cpus[c].busy_ticks + s.cpus[c].idle_ticks
     };
 
-    // Wait until every online core has ticked and its page line has caught up to its count. The
-    // loop waits on the claim itself rather than on the tick word, because the tick's two stores
-    // are relaxed and another core may see the tick word move before the copy (rule 4, weak memory
-    // ordering; the same shape as the race above). A core that stopped ticking (parked) keeps its
-    // last copy, which the protocol's BUGS allow, so the wait is bounded by 50 ticks of progress
-    // per core and the lower bound is asserted only for cores that ticked.
+    // Wait on the claim, not the tick word: the tick's two stores are relaxed, and another core may
+    // see the tick word move before the copy (rule 4, weak memory ordering). A parked core keeps its
+    // last copy, as the protocol's BUGS allow, so the wait is bounded by 50 ticks per core and the
+    // lower bound is asserted only for cores that ticked.
     let ticked =
         |now: &machine_statistics_contract::Snapshot, c: usize| ticks(now, c) > ticks(&before, c);
     let online = || (0..CPU_ID_BOUND).filter(|&c| before.cpus[c].online);
