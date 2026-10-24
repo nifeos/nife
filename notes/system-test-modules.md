@@ -1,8 +1,5 @@
 # The system-test modules: what each proves, and why it is shaped that way
 
-*Name: provisional (milestone 929 (comments in the Linux style across first-party Rust), lane
-`comments/929-system_tests-01`). calef names notes.*
-
 `system_tests/src/user.rs` declares every module of the whole-system suite, and each declaration's
 doc comment says in a few lines what the module proves. This note holds the reasoning those doc
 comments link to: why a test is shaped the way it is, and what it would miss if it were shaped any

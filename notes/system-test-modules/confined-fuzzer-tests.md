@@ -29,7 +29,7 @@ made between calls, so a wrong answer cannot steer what the generator does next.
 ## Serving a call that blocks
 
 A call that blocks is served, keyed on the parked thread's observed state and never on timing: sends
-are drained, receives released, `CALL`s answered and the notification signalled. Only a call that
+are drained, receives released, `CALL`s answered and the notification signaled. Only a call that
 neither completes nor parks somewhere serviceable is a finding.
 
 Every service is one `sched::conductor_move`, an operation that can never park the conductor. A
@@ -40,7 +40,7 @@ every fuzzer is parked on its GO and nobody is left to wake the judge.
 Only the stepped fuzzer is ever served, which also keeps the audit tractable. At every quiet point
 each fuzzer is parked on its GO and only the stepped one makes calls, so the one thread that can be
 blocked mid-call is the one being served. A fuzzer retypes endpoints and notifications of its own
-and parks on them; each such park is legitimate kernel behaviour, and the conductor releases every
+and parks on them; each such park is legitimate kernel behavior, and the conductor releases every
 one the same way.
 
 ## What it cannot reach

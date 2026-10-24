@@ -10,19 +10,19 @@ falsification patch reaches which part of claim 25 is in
 
 Every test but one takes a display the kernel serves itself, with no device behind it. That is not a
 shortcut. It keeps many device bring-ups down to one, and it makes the flush rectangles observable.
-A real driver honours the rectangle and says nothing about it. The stand-in records it, which is how
+A real driver honors the rectangle and says nothing about it. The stand-in records it, which is how
 "a one-window redraw does not cost a whole screen" becomes an assertion instead of a claim. It is
 also the swappable-component property for free: the compositor cannot tell whether the endpoint it
 flushes to is a virtio-gpu driver or the kernel.
 
-## No capability for a neighbour's pixels or the screen
+## No capability for a neighbor's pixels or the screen
 
 The first claim-25 test proves isolation from four directions. The attacker gets every advantage
 short of a capability. It is the same binary as the honest client, with the same grants. The kernel
-hands it the exact virtual address of its neighbour's pixels, one page past its own surface, where
+hands it the exact virtual address of its neighbor's pixels, one page past its own surface, where
 the contiguous allocation really put them. The test asserts that adjacency, so the attack cannot
 quietly become a poke at nothing. Every client maps its surface at the same virtual address, so this
-is also where the neighbour sees its own pixels. The attacker still cannot touch them, because the
+is also where the neighbor sees its own pixels. The attacker still cannot touch them, because the
 boundary is the mapping and not the layout.
 
 1. The refusal that needs no attack. Receiving on the ungranted input slot answers `NoSuchSlot`,
@@ -39,7 +39,7 @@ boundary is the mapping and not the layout.
    the screen, so there is nothing to read and no verb to ask with.
 
 The two probes are a write (integrity) and a read (confidentiality), so both directions are
-exercised on real hardware behaviour rather than argued from one.
+exercised on real hardware behavior rather than argued from one.
 
 ## Claim 25, part by part
 
@@ -48,7 +48,7 @@ one. The others sit behind the fault wait, behind a write probe that cannot see 
 exposure, or behind an address the fixture never maps. So each part has its own test and its own
 replayable falsification.
 
-Part 2 reads rather than writes, because a spawner that exposed the neighbour's pixels read-only
+Part 2 reads rather than writes, because a spawner that exposed the neighbor's pixels read-only
 would leave a write probe green while every pixel leaked.
 
 Part 3 reaches the witness digests without waiting on a fault. The compositor has write access to
