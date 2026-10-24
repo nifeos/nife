@@ -278,7 +278,7 @@ fn is_std_built_elsewhere(p: grant_plan::Program) -> bool {
 ///
 /// - It holds `progenitor`, so a scanner that stopped finding blocks fails here rather than
 ///   packing an archive that boots nothing (see
-///   design/roadmap/proposals/a-gate-that-selects-the-set-it-judges.md).
+///   design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md).
 /// - No name is declared twice, across both packages.
 /// - Every program `grant_plan` lets the shell spawn is built; otherwise it passes every host test
 ///   and fails only at boot.
@@ -421,8 +421,7 @@ pub(crate) fn initial_ramdisk_x86() -> bool {
     // Measure the boot programs before the x86 kernel is built (milestone 22 (trusted init) phase
     // B.1). With no manifest the generated `TRUST_ROOT` is empty and `trust::require` refuses every
     // boot program as `Unmeasured`. `write_archive` also packs the image's package source (§19
-    // (architectural parity is a tenet)), though no fetch test reads it here: this runner attaches
-    // no network.
+    // (architectural parity is a tenet)).
     let Some((size, entries)) = write_archive(
         "initial-ramdisk-x86",
         "x86_64",
@@ -672,7 +671,7 @@ fn write_archive(
 
 /// **Every program in an archive fits the address-space map's image band** (milestone 206 (a
 /// program image has under 896 KiB)), checked at packing because the kernel's loader only judges
-/// the programs a boot loads. `mkfs` once sat outside the band for eight weeks unnoticed.
+/// the programs a boot loads.
 ///
 /// The program headers are read by hand rather than with `crates/elf`, which refuses a foreign
 /// `e_machine`; this packs riscv64 and `x86_64` archives on an aarch64 host. Entries that are not

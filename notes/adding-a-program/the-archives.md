@@ -13,10 +13,11 @@ rather than kept as a table.
 
 The list is not filtered per architecture. Several programs cannot do their job everywhere.
 `console`, `input` and `keyboard_driver` need port I/O that a ring-3 process cannot reach on
-`x86_64` (DECISIONS §121 (what a device capability is when the device has no page)). `serial_driver` drives riscv64's UART, and `jh7110_entropy` is radon's.
-They are packed anyway. An archive entry costs a directory slot and some bytes, nothing spawns a
-program by accident, and the tests that would spawn one `skip!()` with the reason. A filter per
-architecture would put the same fact in a second place, where it could disagree with the first.
+`x86_64` (DECISIONS §121 (what a device capability is when the device has no page)). `serial_driver`
+drives riscv64's UART, and `jh7110_entropy` is radon's. They are packed anyway. An archive entry
+costs a directory slot and some bytes, nothing spawns a program by accident, and the tests that
+would spawn one `skip!()` with the reason. A filter per architecture would put the same fact in a
+second place, where it could disagree with the first.
 
 The riscv64 and `x86_64` packers build the whole of both packages rather than a `--bin` list, so a
 new `[[bin]]` reaches every archive with no second edit. The aarch64 packer only packs; `user()`
@@ -58,8 +59,8 @@ and IPC) set out to build. The raw user ELFs are only the packer's input.
 
 Packing refuses an archive rather than writing a partial one when:
 
-- a `[[bin]]` block has a key the reader does not know (DECISIONS §46 (thin primitives or whole subsystems) keeps a TOML parser out of
-  `xtask`, so the reader is strict instead);
+- a `[[bin]]` block has a key the reader does not know (DECISIONS §46 (thin primitives or whole
+  subsystems) keeps a TOML parser out of `xtask`, so the reader is strict instead);
 - the list lacks `progenitor`, names a program twice, or misses a program that `grant_plan` lets
   the shell spawn or that the kernel measures at boot;
 - an ELF falls outside the address-space map's image band, which the kernel's loader would only

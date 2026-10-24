@@ -50,11 +50,11 @@ StarFive # source ${scriptaddr}
 ## The script's shape, and its two settings
 
 The network-first script is the dullest shape that can express a fallback: one state variable, `if
-cmd; then` and `fi`, nesting never deeper than two, and no `else`. U-Boot's parser is a cut-down hush,
-and nobody has watched this script run on the board. A chain of guards costs a few more lines than
-nested branches and puts fewer parser features between the card and a board that boots. A host test
-holds the shape; another runs the script under `/bin/sh` with the U-Boot verbs stubbed, which proves
-the control flow but not that hush accepts it.
+cmd; then` and `fi`, nesting never deeper than two, and no `else`. U-Boot's parser is a cut-down
+hush, and nobody has watched this script run on the board. A chain of guards costs a few more lines
+than nested branches and puts fewer parser features between the card and a board that boots. A host
+test holds the shape; another runs the script under `/bin/sh` with the U-Boot verbs stubbed, which
+proves the control flow but not that hush accepts it.
 
 `autoload no` is required because bare `dhcp` in U-Boot means "get an address and TFTP the bootfile
 the DHCP server names". On a home network that server is the router. Without the setting, radon

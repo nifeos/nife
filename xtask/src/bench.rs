@@ -226,8 +226,8 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
 /// an I/O-bitmap write per switch-in (`kernel/src/arch/x86_64/segments.rs`).
 ///
 /// Default is TCG plus `-icount shift=0,sleep=off`, gated against `bench/baseline-x86_64.txt`;
-/// `--real` is plain TCG, statistical and never gating. `helpers/qemu-runner-x86_64.sh` attaches no
-/// disk, so this needs neither `mkdisk` nor `user()`. `cargo xtask bench --x86 [--real]
+/// `--real` is plain TCG, statistical and never gating. The bench boot runs no virtio, so it needs
+/// no disk, and neither `mkdisk` nor `user()`. `cargo xtask bench --x86 [--real]
 /// [--check|--save]`; why icount works here though `icount()` refuses x86_64 is in
 /// notes/benchmarks/x86-instruments.md.
 fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
@@ -254,7 +254,7 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     // different instrument: still deterministic, but `spawn_reap`'s parent spins until the reaper
     // on the other core runs, and unrelated edits swing rows by 40 to 90%
     // (notes/benchmarks/x86-instruments.md; gating them is
-    // design/roadmap/proposals/two-core-bench-is-a-different-instrument.md).
+    // design/roadmap/0585-two-core-bench-is-a-different-instrument.md).
     cmd.env("NIFE_SMP", "1");
     if real {
         eprintln!(
