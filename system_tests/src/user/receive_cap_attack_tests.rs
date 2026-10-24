@@ -163,9 +163,9 @@ fn a_server_that_deletes_the_received_slot_deletes_nothing_of_its_own() {
 /// **A `SEND_CAP` aborted by its rendezvous's teardown stages nothing for a later plain `SEND`**
 /// (the 2026-10-03 security audit's follow-up, item (c)). A sender parked in `SEND_CAP` keeps its
 /// delegation in `Thread::outgoing_cap` until a receiver takes it. `reclaim_region` drains the
-/// rendezvous and wakes the sender aborted; before the fix in `set_ipc_aborted` the capability
-/// stayed staged, and the sender's next plain `SEND`, parked on an unrelated rendezvous, handed it
-/// to whoever `RECEIVE_CAP`ed there: a delegation made to one endpoint, delivered to another.
+/// rendezvous and wakes the sender aborted, and `set_ipc_aborted` clears the staged capability, or
+/// the sender's next plain `SEND`, parked on an unrelated rendezvous, would hand it to whoever
+/// `RECEIVE_CAP`s there: a delegation made to one endpoint, delivered to another.
 #[test_case]
 fn a_send_cap_aborted_by_teardown_stages_nothing_for_a_later_plain_send() {
     static PARKED_ON_DOOMED: AtomicBool = AtomicBool::new(false);

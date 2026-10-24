@@ -45,8 +45,8 @@ fn endpoint(ep: RendezvousId, rights: Rights) -> Granted {
     crate::cap::rendezvous_cap(ep, rights)
 }
 /// A lending budget: each client retypes its socket page from it and lends the page to the stack,
-/// and since milestone 824 (a retype mints no right its budget lacks) the page carries the budget's
-/// rights.
+/// and the page carries the budget's rights (milestone 824 (a retype mints no right its budget
+/// lacks)).
 fn budget(region: u64) -> Granted {
     crate::cap::memory_region_lending_capability(region)
 }

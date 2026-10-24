@@ -1,8 +1,7 @@
 use super::*;
 
-/// **The boot-program entry every architecture's kernel loads itself**, which since milestone 266
-/// is one name for one program rather than an alias over three. Before that this constant had to
-/// pick the entry both ISAs happened to share and say so in a parenthesis.
+/// **The boot-program entry every architecture's kernel loads itself**: one name for one program
+/// (milestone 266), not an alias over three.
 const BOOT_PROGRAM: &str = super::PROGENITOR_ENTRY;
 
 /// **The initial ramdisk in RAM is the initial ramdisk this kernel was built against.** The
