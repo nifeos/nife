@@ -1,14 +1,10 @@
-//! **The delegation demo, the half that takes**, milestone 10.
+//! The delegation demo, the half that takes (milestone 10); the other half is
+//! `delegation_granter`.
 //!
 //! Holds the channel (slot 0), a report endpoint (slot 1), and a loopback endpoint (slot 2) it
-//! uses only to *attempt* re-delegation. It receives the delegated capability, proves it works by
-//! invoking it, then proves it cannot pass it on.
-//!
-//! Three things must hold and this reports on all three: the capability arrives, it carries real
-//! authority when a process that did not mint it invokes it, and the kernel refuses to let it
-//! travel further because it was handed over without `GRANT`.
-//!
-//! The other half is `delegation_granter`.
+//! uses only to *attempt* re-delegation. It reports on three things: the capability arrives, it
+//! carries real authority when a process that did not mint it invokes it, and the kernel refuses
+//! to let it travel further because it was handed over without `GRANT`.
 //!
 //! Name: provisional (milestone 291). This was `hello`'s `RECEIVER` role, number 10. See
 //! `delegation_granter` for why the qualifier: `receiver` alone could name almost anything that

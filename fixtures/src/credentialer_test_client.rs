@@ -1,34 +1,29 @@
-//! **The credential service's clients** (milestone 56, the credential half; notes/credentials.md).
+//! The credential service's clients (milestone 56, the credential half; notes/credentials.md).
 //!
 //! One binary, three roles, because a program that shares the honest path is a fairer test of a
-//! boundary than a different program failing for its own reasons. Every role holds **exactly the
-//! same endowment**: the verify endpoint, a report endpoint, and the page it writes its request
-//! into. No store, no provision endpoint, no entropy, no budget.
+//! boundary than a different program failing for its own reasons. Every role holds exactly the
+//! same endowment: an endpoint of the service, a report endpoint and the page it writes its request
+//! into. No store, no provision endpoint, no entropy, no budget. The roles differ in what they send
+//! and on which endpoint, never in whose password they present, so there is no role-to-credential
+//! lookup here; [`PEOPLE`] lives in `credential_contract::fixture`.
+
+//! # Roles
 //!
-//! **All three are behaviours, and none of them is a credential** (milestone 293, which checked).
-//! They differ in what they send and on which endpoint, not in whose password they present: the
-//! provisioner fills a store, the honest client asks four questions, and the attacker sends five
-//! things the contract does not offer. There is no role-to-credential lookup here to dissolve, which
-//! is the difference between this file and `login_test_client.rs`. What 293 did take from here is
-//! [`PEOPLE`], which lives in `credential_contract::fixture` now because three files were keeping their
-//! own copy of it.
-//!
-//! - [`ROLE_HONEST`] is what any authenticating server would be: it asks three questions and reports the
-//!   three answers, plus whether the shared page came back clean.
+//! - [`ROLE_HONEST`] is what any authenticating server would be: it asks three questions and
+//!   reports the three answers, plus whether the shared page came back clean.
 //! - [`ROLE_ATTACKER`] holds the identical endowment and tries to *write* the store through it:
 //!   `PUT`, `SEAL`, an opcode nobody defined, and lengths outside the contract. Then it asks
 //!   whether the credential it tried to install works. It must not.
-//! - [`ROLE_PROVISIONER`] is the one that runs *before* either, on the **provision** endpoint, and
-//!   is a separate role rather than a separate binary so that the difference between provisioning
-//!   and verifying is visible as one field of a `Spawn` literal: which endpoint is in slot 0.
-//!
+//! - [`ROLE_PROVISIONER`] runs *before* either, on the **provision** endpoint. It is a role rather
+//!   than a binary, so provisioning and verifying differ by one field of a `Spawn` literal: slot 0.
+
 //! # What the attacker proves, and what it does not
 //!
 //! It does not prove that a permission check works, because there is no permission check. It
 //! proves the shape: by the time this program runs, the provision endpoint has been deleted at
 //! both ends, so `PUT` is not a request that gets refused, it is a word with no object behind it.
 //! The serve loop it reaches implements one opcode. See components/src/credentialer.rs.
-//!
+
 //! # Capability contract (notes/abi.md §4)
 //!
 //! - slot 0: the credential service's endpoint (WRITE). **Which one is the whole story**: the
@@ -154,9 +149,8 @@ fn provisioner() -> ! {
     }
     // Then the three shares. A share's secret is scoped to the resource, so these are six
     // independent secrets in one store rather than three people with two credentials each. The
-    // account name and domain each share carries were bound into an NTLM key until 2026-08-30
-    // (notes/smb.md); they are kept in the table because they are what a share is *for*, and
-    // nothing stores them now.
+    // account name and domain each share carries stay in the table because they are what a share
+    // is *for*; nothing stores them (notes/smb.md).
     for (resource, password, _user, _domain) in SHARES {
         codes.push(request(
             PROV_WINDOW,
@@ -227,10 +221,8 @@ fn attacker() -> ! {
         proto::provision::PUT,
     ));
     // Re-seal it, in case a service that had not sealed would accept one. `SEAL` is 2, and this
-    // endpoint implements no opcode 2, so the answer is MALFORMED. It was MISMATCH between
-    // milestone 65 and 2026-08-30, when `verify::NTLM_PROOF` also lived at 2 and what the attacker
-    // sent read as a proof for a resource nobody provisioned; notes/smb.md, and `credential_contract`'s
-    // module docs on why a number's meaning is the endpoint's rather than its own.
+    // endpoint implements no opcode 2, so the answer is MALFORMED: a number's meaning is the
+    // endpoint's rather than its own (`credential_contract`'s module docs, notes/smb.md).
     codes.push(request(
         PAGE_WINDOW,
         IMPOSTOR,
@@ -253,9 +245,8 @@ fn attacker() -> ! {
         u64::MAX
     });
     // Opcode 3, which no serve loop here implements, so it is MALFORMED rather than a refusal:
-    // there is still nothing to refuse. It was `provision::PUT_NTLM` until 2026-08-30
-    // (notes/smb.md); the probe is kept because "an opcode from the other space" is the case it
-    // exercises, and 3 is still that.
+    // there is still nothing to refuse. The probe is "an opcode from the other space", the case it
+    // exercises (notes/smb.md).
     codes.push(request(PAGE_WINDOW, IMPOSTOR, IMPOSTOR_SECRET, 3));
     // And now the question that matters: did any of that install a credential?
     codes.push(request(

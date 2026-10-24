@@ -1,20 +1,12 @@
 //! The CoreMark workload, at EL0 (milestone 19e: "run a real workload").
 //!
-//! The first program that isn't a demo or a driver: it does substantial, standard compute. It runs
-//! the CoreMark-derived kernel (`crates/coremark`: a linked-list sort, a small-matrix multiply, and
-//! a state machine, the three work items of a CoreMark iteration) for a fixed iteration count, then
-//! SENDs the run's CRC home on the one endpoint init granted it (slot 0). The CRC is the run's
-//! self-validation: for a fixed iteration count it is a fixed value (`coremark::PINNED_CRC_64`), so
-//! init (and the kernel test) can check the computation came out right. A whole real program spawned
-//! against the native ABI (notes/abi.md): given a capability, it computes and reports.
-//!
-//! The compute lives in a portable crate on purpose, so the *identical* code later compiles for
-//! macOS and Linux and the compute comparison is one source on three OSs (notes/benchmarks.md).
-//!
-//! It **self-times**: it reads the virtual counter (`user_mode_runtime::now`) around the run, so it reports a
-//! real score, not just correctness. Under HVF those ticks are real nanoseconds; under TCG they are
-//! icount fiction (magnitudes are meaningless, the CRC is not). The report is three words:
-//! `[crc, ticks, freq]`, so the receiver can compute iterations per second without a second syscall.
+//! It runs the CoreMark-derived kernel in `crates/coremark` (a linked-list sort, a small-matrix
+//! multiply and a state machine) for a fixed iteration count, so the run's CRC is a fixed value
+//! (`coremark::PINNED_CRC_64`) that init and the kernel test check. It times itself with
+//! `user_mode_runtime::now` and SENDs `[crc, ticks, freq]` on slot 0, its one capability. Under HVF
+//! the ticks are real nanoseconds; under TCG they are icount fiction, and only the CRC is
+//! meaningful. The compute is a portable crate so the identical code also runs on macOS and Linux
+//! (notes/benchmarks.md).
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63) as a proper noun, EEMBC's industry benchmark. It
 //! shares its crate's name for the reason DECISIONS §63 gives: the crate is the logic, the program

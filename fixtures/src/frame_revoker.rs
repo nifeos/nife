@@ -1,15 +1,11 @@
-//! **Revoking a frame across the boundary**, milestone 13.
+//! Revoking a frame across the boundary (milestone 13).
 //!
 //! Holds a memory region (slot 0) and a report endpoint (slot 1). It retypes a page, maps it, then
-//! `REVOKE`s it: the kernel unmaps the page and deletes every capability to it, **this process's
-//! own included**, so a second operation on the frame slot finds nothing there.
-//!
-//! It reports 1 if the revoke succeeded and the slot is now empty. It deliberately does **not**
-//! touch the virtual address again afterwards: that page is unmapped and reading it would fault,
-//! which would end the process before it could report, turning a passing test into a hang.
-//!
-//! The multi-address-space unmapping and the safe reclamation are proven directly in
-//! `kernel/src/revoke.rs`; what this adds is the syscall path from EL0.
+//! `REVOKE`s it: the kernel unmaps the page and deletes every capability to it, this process's own
+//! included. It reports 1 if the revoke succeeded and the slot is now empty. It never touches the
+//! address again, because reading the unmapped page would fault before it could report and turn a
+//! pass into a hang. `kernel/src/revoke.rs` proves the multi-address-space unmapping and safe
+//! reclamation; this adds the syscall path from EL0.
 //!
 //! Name: provisional (milestone 291). This was `hello`'s `REVOKE_DEMO` role, number 16. Refused
 //! `revoke_demo`: "demo" says why it was written rather than what it does, and `revoke` alone is a
