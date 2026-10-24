@@ -4,13 +4,12 @@
 //! over the old one, and then read back and compared. A stick pulled out mid-write therefore holds
 //! either last time's file or this time's, never half of one, and a write the device silently
 //! mangled is reported rather than discovered at a firmware prompt.
-//!
+
 //! # BUGS
 //!
-//! - **The read-back may be served from the host's cache** rather than from the stick, so it proves
-//!   the bytes reached the filesystem, not the flash. The flush before it (`File::sync_all`, which
-//!   is `F_FULLFSYNC` on macOS and `fsync` elsewhere) is what asks the device to commit; ejecting
-//!   is what guarantees it.
+//! - **The read-back may be served from the host's cache**, so it proves the bytes reached the
+//!   filesystem, not the flash. `File::sync_all` (`F_FULLFSYNC` on macOS, `fsync` elsewhere) asks
+//!   the device to commit; ejecting is what guarantees it.
 
 use std::fs;
 use std::io::{self, Write as _};

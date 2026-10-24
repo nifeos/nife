@@ -1,50 +1,18 @@
-//! **Which PLIC context is each hart's S-mode?** The `interrupts-extended` property, decoded.
+//! Which PLIC context is each hart's S-mode? The PLIC node's `interrupts-extended`, decoded.
 //!
-//! The VisionFive 2 prep (2026-08-14, notes/visionfive2.md). The kernel used to derive a hart's
-//! S-mode context as `2*hart + 1`, which is QEMU `virt`'s layout: every hart contributes an M
-//! context and an S context, in hart order. The JH7110 breaks the formula in the quietest way
-//! available: its hart 0 is an MMU-less S7 monitor core that contributes **only an M context**, so
-//! from hart 1 on every context number shifts down by one and hart h's S context is `2h`, not
-//! `2h + 1`. A kernel using the formula there programs its neighbour's context: enables, claims and
-//! completes all land one context off, and every external interrupt sits pending forever.
-//!
-//! The layout was never a formula in the first place. It is the order of the PLIC node's
-//! `interrupts-extended` entries: entry *k* names, by phandle, the per-hart interrupt controller
-//! (`riscv,cpu-intc`) that context *k* feeds, and the interrupt number it raises there, 11
-//! (machine external) or 9 (supervisor external). So context *k* is hart *h*'s S context exactly
-//! when entry *k* points at hart *h*'s intc with interrupt 9, and this module reads that instead of
-//! assuming.
-//!
-//! Two walks stitch the answer together, because the property speaks in phandles and the kernel
-//! speaks in hart ids:
-//!
-//! 1. `cpu@` nodes give the hart ids ([`crate::cpu_list::CpuList`]), and each hart's child
-//!    `interrupt-controller` node (`riscv,cpu-intc`) gives the phandle those entries use. The two
-//!    lists align by tree order: each intc is nested inside its `cpu@` node, so the *i*-th
-//!    `riscv,cpu-intc` in the tree belongs to the *i*-th `cpu@` node.
-//! 2. The PLIC node, found by its binding ([`COMPATIBLES`], tried in order) rather than its label,
-//!    because the label differs between the machines this has to work on: QEMU spells it
-//!    `plic@c000000`, the JH7110 `interrupt-controller@c000000`. The binding strings differ too:
-//!    QEMU virt's PLIC node lists `sifive,plic-1.0.0` and `riscv,plic0`, but the VisionFive 2's
-//!    actual U-Boot-supplied control DTB lists only `riscv,plic0` (bench, 2026-08-21), the older,
-//!    generic binding. The T-Head TH1520 lists neither: its node says `thead,th1520-plic`,
-//!    `thead,c900-plic` (Linux `th1520.dtsi`, read 2026-09-25 for milestone 89 (Scaleway EM-RV1:
-//!    a second RISC-V implementation, rented)).
-//!
+//! Entry *k* names, by phandle, the `riscv,cpu-intc` that context *k* feeds and the interrupt it
+//! raises there (9 for supervisor external). So context *k* is hart *h*'s S context exactly when
+//! entry *k* points at hart *h*'s intc with 9; no formula such as `2*hart + 1` holds on every
+//! machine. The hart ids come from the `cpu@` nodes, aligned with the intcs by tree order. See
+//! `notes/machine-discovery.md` ("PLIC contexts").
 
 //! # BUGS
 //!
-//! - **Entries are assumed to be two cells wide** (one phandle cell, one interrupt cell), which is
-//!   correct for every `riscv,cpu-intc` (`#interrupt-cells = <1>`) and is not checked against the
-//!   referenced node. A PLIC wired to an interrupt parent with a different cell count would be
-//!   misread; no RISC-V tree does this, and checking would mean resolving every phandle's
-//!   `#interrupt-cells` first.
-//! - **A `cpu@` node without a `riscv,cpu-intc` child breaks the index alignment** of walk 1 for
-//!   every hart after it. Real trees give every hart an intc (a hart without one cannot take
-//!   interrupts at all); a tree that does not simply yields no mapping for the later harts, which
-//!   callers treat as "the tree did not say".
-//! - **A hart id at or above [`MAX_CONTEXT_HARTS`] is not recorded.** Same truncation posture as
-//!   [`crate::cpu_list::MAX_CPU_NODES`], and the same sixteen.
+//! - Entries are assumed two cells wide, which every `riscv,cpu-intc` is; it is not checked
+//!   against the referenced node.
+//! - A `cpu@` node without a `riscv,cpu-intc` child breaks the alignment for every later hart,
+//!   which then has no mapping.
+//! - A hart id at or above [`MAX_CONTEXT_HARTS`] is not recorded.
 //!
 //! Name: provisional (`plic` for the module, `PlicContexts` for the record), named for the
 //! controller whose property it decodes; the naming tenet's "standard terms are already right"
@@ -54,18 +22,14 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 
 use crate::cpu_list::CpuList;
 
-/// **Every `compatible` string this tree accepts as a PLIC**, in the order they are tried. One list,
-/// because two lookups read it: [`PlicContexts::from_device_tree`] here, and the kernel's
-/// `memory::init`, which finds the register block. Until 2026-09-25 each carried its own list and
-/// they disagreed (the kernel's lacked `riscv,plic0`), which is the drift one list removes.
+/// Every `compatible` string this tree accepts as a PLIC, in the order they are tried. Read here
+/// and by the kernel's `memory::init`, so the two cannot disagree.
 ///
 /// - `sifive,plic-1.0.0`: QEMU `virt` and the mainline JH7110 dtsi.
 /// - `riscv,plic0`: the older generic binding, and the only one radon's U-Boot control DTB states.
-/// - `thead,c900-plic`: T-Head's C9xx PLIC, the TH1520's (milestone 89), with the standard
-///   register layout. Two T-Head differences are firmware's or a driver's, not this parser's:
-///   M-mode must set bit 0 of the control word at `0x1f_fffc` before S-mode may touch the PLIC (OpenSBI does,
-///   `PLIC_FLAG_THEAD_DELEGATION`), and an edge source must be completed before it is handled or
-///   the next edge is lost (Linux `PLIC_QUIRK_EDGE_INTERRUPT`).
+/// - `thead,c900-plic`: the TH1520's (milestone 89 (Scaleway EM-RV1: a second RISC-V
+///   implementation, rented)), standard register layout. Its two quirks are firmware's or a
+///   driver's; see `notes/machine-discovery.md`.
 pub const COMPATIBLES: [&[u8]; 3] = [b"sifive,plic-1.0.0", b"riscv,plic0", b"thead,c900-plic"];
 
 /// The most harts a context map records; matches [`crate::riscv64::MAX_HARTS`].
@@ -115,8 +79,7 @@ impl PlicContexts {
         let mut out = PlicContexts::default();
 
         // Real trees do not agree on which binding string they carry; [`COMPATIBLES`] says which
-        // machine taught us each one. The VisionFive 2's control DTB found no node at all here
-        // until "riscv,plic0" was added (bench, 2026-08-21).
+        // machine carries each one.
         let mut entries = None;
         for compat in COMPATIBLES {
             if let Some(found) = dt.node_prop_compatible(compat, b"interrupts-extended")? {

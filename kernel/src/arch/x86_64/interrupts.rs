@@ -1,15 +1,10 @@
-//! **Interrupt masking, `x86_64`.** The third implementation of the arch contract aarch64 states with
+//! **Interrupt masking, `x86_64`**: `RFLAGS.IF` (bit 9), set by `sti`, cleared by `cli`, and read
+//! through `pushfq`, since RFLAGS has no `mov` form. The arch contract aarch64 states with
 //! `PSTATE.DAIF` and RISC-V with `sstatus.SIE`.
 //!
-//! On x86 the switch is `RFLAGS.IF` (bit 9), set by `sti` and cleared by `cli`. Reading it means
-//! reading RFLAGS, which has no `mov` form: `pushfq` puts it on the stack and `popq` takes it back.
-//!
-//! **The one hazard specific to this architecture** is that `sti` does not take effect until after
-//! the *next* instruction retires. That delay exists so `sti; hlt` cannot race (an interrupt arriving
-//! between the two would otherwise leave the CPU halted with nothing to wake it), and it is exactly
-//! why `wait_for_interrupt` in this module's parent spells that pair out rather than calling
-//! [`enable`] and then halting: two separate calls give the optimiser and the linker room to put
-//! something between them, and the something is a hang.
+//! `sti` takes effect only after the next instruction retires, so `sti; hlt` in one `asm!` cannot
+//! lose an interrupt between the two. Calling [`enable`] and then halting can: two calls leave room
+//! for something between them, and the something is a hang.
 
 use core::arch::asm;
 

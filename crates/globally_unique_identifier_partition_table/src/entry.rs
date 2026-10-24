@@ -1,24 +1,11 @@
 //! A partition entry: 128 bytes saying what a partition is, where it starts, and where it stops.
 //!
-//! # Decoding an entry cannot fail
-//!
-//! [`Entry::decode`] is **total**: every one of the 2^1024 bit patterns is a valid `Entry` value,
-//! and the round trip back through [`Entry::encode`] returns the bytes it started with. That is a
-//! deliberate layering, the same one `network_time_protocol` makes: decoding judges nothing, so it
-//! needs no error type, and every rule about whether an entry makes *sense* on a particular disk
-//! lives in [`crate::GloballyUniqueIdentifierPartitionTable`] where the disk's geometry is known.
-//!
-//! # The name is UTF-16, and the name is optional
-//!
-//! 36 UTF-16LE code units, null-padded, and it is a label for humans. Nothing in the format depends
-//! on it and nothing should: partitions are found by type GUID or unique GUID.
-//!
-//! Worth knowing before writing code that relies on names: **macOS does not write them.** Partition
-//! a disk image with `diskutil partitionDisk ... HFS+ MACDATA`, give the volume a name, and the GPT
-//! entry's 72 name bytes are still all zero, because on a Mac the volume name lives in the
-//! filesystem. The committed Apple fixture pins that behaviour. `sgdisk`, `parted` and Linux tools
-//! do write it. So a partition browser that keys off the GPT name shows blanks on half the disks in
-//! the world, and that is not a bug in the browser.
+//! [`Entry::decode`] is total: every one of the 2^1024 bit patterns is an `Entry`, and
+//! [`Entry::encode`] gives the bytes back. Whether an entry makes sense on a disk is judged in
+//! [`crate::GloballyUniqueIdentifierPartitionTable`], where the geometry is known. The name is 36
+//! UTF-16LE code units, null-padded, a label for humans that nothing depends on: macOS leaves it
+//! zero (the Apple fixture pins that), so find a partition by type or unique GUID. See
+//! notes/globally-unique-identifier-partition-table.md, "What the fixtures taught us".
 
 use crate::Error;
 use crate::guid::{self, Uuid};
@@ -92,9 +79,9 @@ impl Entry {
 
     /// A used entry covering `first_lba ..= last_lba`, with no attributes and no name.
     ///
-    /// Both GUIDs are the caller's: this crate has no randomness and will not invent a unique GUID
-    /// for you. That is the honest boundary (a GUID that is not random is not unique), and milestone
-    /// 55's entropy work is where the caller gets one.
+    /// Both GUIDs are the caller's: this crate has no randomness, and a GUID that is not random is
+    /// not unique. Milestone 56 (secrets, credentials, and the entropy to make them safe) is where
+    /// the caller gets one.
     pub const fn new(type_guid: Uuid, unique_guid: Uuid, first_lba: u64, last_lba: u64) -> Entry {
         Entry {
             type_guid,
@@ -144,9 +131,7 @@ impl Entry {
     ///
     /// `Err(`[`Error::NameTooLong`]`)` if `out` is too small; 4 bytes per code unit
     /// (`4 * NAME_UNITS` = 144) is always enough. An unpaired surrogate, which a hostile or
-    /// corrupt entry can carry, becomes U+FFFD rather than an error: the name is a label, and
-    /// refusing to list a partition because its cosmetic field is malformed would be the wrong
-    /// trade.
+    /// corrupt entry can carry, becomes U+FFFD: a malformed label is no reason to hide a partition.
     pub fn name_utf8(&self, out: &mut [u8]) -> Result<usize, Error> {
         let units = self.name.iter().position(|&u| u == 0).unwrap_or(NAME_UNITS);
         let mut written = 0;
@@ -204,9 +189,8 @@ impl Entry {
     /// True when this entry and `other` claim a block in common. Both must be used; an unused entry
     /// overlaps nothing, whatever its LBA fields say.
     ///
-    /// Half-open comparison on inclusive ranges, which is where this goes wrong if written in a
-    /// hurry: two partitions where one ends exactly where the next begins **do** overlap, because
-    /// `last_lba` is the last block *in* the partition.
+    /// `last_lba` is inclusive, so two partitions where one ends on the block the next begins on
+    /// **do** overlap.
     pub const fn overlaps(&self, other: &Entry) -> bool {
         self.is_used()
             && other.is_used()

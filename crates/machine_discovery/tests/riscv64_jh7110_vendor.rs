@@ -1,16 +1,10 @@
 //! The vendor tree the VisionFive 2 actually serves, and its two lies, on the host.
 //!
-//! Second first-silicon stop (bench, 2026-08-14; notes/visionfive2.md). The board's flashed
-//! firmware hands over a tree that marks the S-incapable S7 monitor core `status = "okay"` with
-//! `mmu-type = "riscv,sv39"`, both false, so the `status` gate the mainline-shaped fixture proves
-//! (`riscv64_jh7110.rs`) never fires on the real board: hart 0 read as startable, the kernel
-//! called `sbi hart_start` on it, and vendor OpenSBI died in M-mode. These tests hold the rule
-//! built from that crash: startability, the machine record, and the PLIC expectations all follow
-//! the hart's own `riscv,isa`, whose missing bare `s` is the node's one truthful property.
-//!
-//! The two fixtures deliberately assert the same conclusion (the S7 is not startable and does not
-//! speak for the machine) through different lies: mainline's S7 is excluded by `status`, the
-//! vendor's by its ISA string. A regression in either gate fails exactly one file.
+//! It marks the S7 monitor core, which has no S-mode, `status = "okay"` with
+//! `mmu-type = "riscv,sv39"`, so the `status` gate `riscv64_jh7110.rs` proves never fires.
+//! Startability, the machine record and the PLIC expectations follow the hart's own `riscv,isa`
+//! instead. The two fixtures reach one conclusion through different lies, so a regression in either
+//! gate fails exactly one file. See `notes/visionfive2/hart-roster-stops.md`.
 
 use machine_discovery::cpu_list::CpuList;
 use machine_discovery::plic::PlicContexts;

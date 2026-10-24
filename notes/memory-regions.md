@@ -85,28 +85,68 @@ which could then spend or destroy the program's heap. It reaches nothing outside
 separate socket-page region split off the job region would narrow this to the pages lent, at the
 cost of a region per networked job and a reclaim that must destroy the child first.
 
-## What this is, and what it is not
+## Where the boundary sits
 
-This converts a process's memory (its pages and their page tables) to region-backed, and
-demonstrates the property with a hard number. It is honest to be equally clear about the
-boundary: the kernel's *own* objects still come from the kernel heap. `Thread` structs, the
-scheduler's `BTreeMap` and `VecDeque`, rendezvous objects, capability tables, thread stacks: all
-still allocated the old way.
+Both the memory a process asks for and the memory it is made of come from regions.
+`MemoryRegion::MAP` pages are retyped from the caller's region. `exec` carves one region per
+process, from which the address space's root, its tables and its image pages are all retyped, so
+teardown is `memory_region::destroy` and the whole budget returns in one call. The kernel's own
+objects draw from the kernel's own budget (`kmem`, [kernel-budget.md](kernel-budget.md)), and an
+object a process creates is retyped from its creator's region
+([thread-control-block.md](thread-control-block.md)).
 
-Converting each of those is the same retype mechanism applied to a kernel object rather than a
-page. In seL4 you retype untyped into a TCB, into a CNode, into an endpoint, into a page table, and
-the kernel genuinely has no heap at all. That is the long tail, the part seL4 spent years and a
-proof on, and it is what "the allocators leave" in the milestone table ultimately means. What
-milestone 11 establishes is the mechanism and the property, for the memory a process spends, which
-is the load-bearing idea. The rest is the same move, object type by object type.
+The table and every decision over it are `crates/memory_regions`: host-testable, Kani-proved for
+the arithmetic, and searched by loom for the racing case (`script/interleaving-check`).
+`kernel/src/memory_region.rs` keeps only what a crate a model checker runs must not have, the I/O:
+the frame allocator, the direct map, the revoke and the lock. The division is not tidiness. A
+double free in the frame allocator's caller was a protocol bug, and a protocol that lives in a
+`no_std` kernel module is reachable by neither of this project's verification tools.
 
-## What is deliberately not here
+## How a region is reclaimed
 
-**Revocation.** In seL4, destroying an untyped invalidates every object ever retyped out of it,
-tracked by a capability derivation tree. We free a region as a whole and do not chase down the
-capabilities derived from it, because nothing in the current system outlives its region in a way
-that would matter. Revocation and the derivation tree are the natural next depth, and they are
-where the model gets genuinely hard.
+Destroying a region returns its whole backing, and the name goes with it: the slot's generation is
+bumped, so every `MemoryRegion` capability minted for it stops resolving, and the slot is reused by
+the next `create` or `split` ([generational-names.md](generational-names.md)).
+
+Returning retyped pages is safe because `destroy` first revokes every mapped page in the region
+(`revoke.rs`, §13 (capability revocation and untyped reclamation)): each is unmapped from every
+address space that held it, and every `PageFrame` capability to it is deleted. No live mapping
+survives, so a peer cannot be left mapping memory the allocator hands out again
+([capability-lifecycle.md](capability-lifecycle.md), [teardown.md](teardown.md)). A root region's
+pages go back to the frame allocator; a child's go back to its parent's budget, never to the
+allocator, so a page reaches the allocator only through the one root that owns it.
+
+`RegionTable::claim_for_destroy` decides and removes the name in one borrow, so at most one caller
+reaches the free loop for a region. Two callers can hold a name for one region (an owner's
+`MemoryRegion::DESTROY` and a supervisor's `rendezvous::REAP`, both landing in
+`sched::reclaim_region`). With a gap between the check and the removal, each would pass the
+refusal check and free the same pages ([object-revocation.md](object-revocation.md)).
+
+Two lock orders hold this together. `REGIONS` is released before the revoke, because revocation
+takes `IPC_TABLES`, a higher rank. And `unpin` is separate from `destroy`: tearing down a region's
+objects needs `IPC_TABLES`, while `destroy` must never take it, because it is reachable from
+`AddressSpace::Drop`, which already runs under the reaper's `IPC_TABLES`. So reclaiming is the reap
+(with `IPC_TABLES`), then `unpin` and `destroy` (without).
+
+## How many regions can be live
+
+`memory_region::MAX_REGIONS` (256) bounds regions live at once, not creations over the kernel's
+lifetime, since slots are reused. Every suite run prints the peak on its `regions:` line, with the
+test during which it was set. Measured 2026-09-26:
+
+| architecture | peak | spare | live when the first test starts | live after the last |
+|---|---|---|---|---|
+| aarch64 | **225** | 31 | 1 | 222 |
+| riscv64 | **224** | 32 | 1 | 221 |
+| `x86_64` | **125** | 131 | 1 | 122 |
+
+The table is nearly empty at boot. Almost every region live at the peak is one an earlier test left
+behind (on aarch64, `ntp_tests` 39 and `login_tests` 33 lead, then the compositor, file service and
+date stacks), and the peak is a few above that residue. A full table refuses quietly (a `--mem`
+split hangs). `design/roadmap/0676-the-ntp-and-login-tests-give-their-regions-back.md` is the work
+to account for the residue. There is no gate: as with `sched::MAX_THREADS`, a climbing peak is
+usually a boot doing more, and a gate needs a held list like the frame ledger's
+([frames.md](frames.md)), which regions do not have yet.
 
 ## The `memory_regions` crate
 
@@ -128,15 +168,12 @@ keeping a parallel copy (the discipline in notes/verification.md).
 
 ### The claim
 
-Two callers can hold a name for one region: an owner's `MemoryRegion::DESTROY` and a supervisor's
-`rendezvous::REAP`, both landing in `sched::reclaim_region`. They must not both run the free loop
-over the same pages. A protocol that checks under the `REGIONS` lock, releases it, and removes the
-slot later lets both pass the check inside that gap; riscv64 showed it on two cores as `double free
-of frame 0x82a3e000`. `RegionTable::claim_for_destroy` takes `&mut self` and decides and removes in
-one call, so the gap cannot be written. That is rung one of the ladder in `AGENTS.md`: the caller
-holds either the table or a claim, never a decision about a table it no longer holds. Removing the
-slot before the caller's I/O also protects everything else that resolves the name, since a retype
-on a region whose pages are on their way back to the allocator fails.
+The gap "How a region is reclaimed" describes is not hypothetical: riscv64 showed it on two cores as
+`double free of frame 0x82a3e000`. `claim_for_destroy` takes `&mut self`, so the gap cannot be
+written. That is rung one of the ladder in `AGENTS.md`: the caller holds either the table or a
+claim, never a decision about a table it no longer holds. Removing the slot before the caller's I/O
+also protects everything else that resolves the name, since a retype on a region whose pages are on
+their way back to the allocator fails.
 
 `DestroyClaim` is the exclusive right to reclaim one region's pages. Only `claim_for_destroy` mints
 one, it has no public constructor, and it is neither `Copy` nor `Clone`, so the kernel's free loop
@@ -173,13 +210,22 @@ almost all carved into job regions, and the objects live in those, so a count of
 would say its threads cost nothing. `Children` is the region's alone, since it is exactly the pages
 the subtree counts are drawn from.
 
-### BUGS
+## BUGS
 
+- **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
+  caller's own budget is exhausted, when the caller's capability table is full, or when
+  `MAX_REGIONS` is exhausted; `RETYPE_OBJ` collapses a different pair the same way (each method's
+  doc comment in `crates/abi`). The first two are facts about the caller; the third is a fact about
+  every other live region on the machine, which the caller did not cause and cannot fix. DECISIONS
+  §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer) declines it and
+  records non-binding guidance for whoever has a customer: cause-specific `Error` variants, the
+  shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's `EMFILE`/`ENFILE`.
+- **A split refused for a full table still bumps the parent**, which can then never be reclaimed.
+  The phantom child also stops `return_to_parent` coalescing, so the parent keeps only the LIFO
+  rule. `RegionTable::split`'s `# BUGS` has the reproduction, and
+  [region-split-on-a-full-table.md](region-split-on-a-full-table.md) the proposal.
 - A hole under a live child is not reused while that child lives, because `split` only bumps. A
   parent whose children always overlap (each carved before the one below it returns) never drains,
   so its holes never close. With every reap held back 150 ms, the riscv64 swish-check pool fills. A
   carve that searched the holes first would close it, at the price of the same scan on every split.
   It is not built, because no real workload has shown the overlap.
-- A split refused for a full table counts a child no name will ever return, so the parent never
-  looks quiescent again and keeps only the LIFO rule. notes/region-split-on-a-full-table.md has the
-  account and the options.

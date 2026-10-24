@@ -1,58 +1,13 @@
-//! **Wiring for `net_stack` over the `e1000e` NIC** (milestone 494 (a driver for the network card a
-//! PC actually has); notes/e1000e.md).
-//!
-//! Milestone 261 (the NVMe driver leaves the kernel)'s shape for a second real device. The kernel's
-//! `e1000e` module resets the controller and programs its rings; this file decides what the
-//! process that drives them is handed, and the whole of that decision is the spawn below.
-//!
-//! # What the server holds, and what it is denied
-//!
-//! Held, in the virtio server's slot layout so the rest of `net_stack` is unchanged:
-//!
-//! - slot 0, the **report** endpoint (WRITE): the DHCP lease, once;
-//! - slots 1 and 2 **empty**: there is no interrupt and no `Virtio` transport to hold;
-//! - slot 3, the heap's **budget**; slot 4, the **`Stack`** endpoint (READ); slots 5 and 6, the
-//!   **notification and timer** the poll loop sleeps on between looks at the rings;
-//! - slot 7, the **`Stack`** endpoint again (WRITE | GRANT), which each socket's capability is
-//!   minted from; slot 8, the server's **own address space** (WRITE), to unmap a closed socket's
-//!   page (§255 (each socket is its own capability));
-//! - mapped: **the DMA region**, [`::e1000e::layout::PAGES`] pages of normal memory: both rings and
-//!   every buffer;
-//! - mapped: **two pages of BAR0**, device-typed: the receive-queue page and the transmit-queue
-//!   page, which hold the tails it must write and the heads it may read.
-//! - `arg0`/`arg1`: [`::e1000e::Handoff`], the MAC address and the region's physical base.
-//!
-//! Denied, each a decision:
-//!
-//! - **BAR0's page 0 and page 5**: `CTRL`, `STATUS`, `RCTL`, `TCTL`, the interrupt registers, the
-//!   receive-address filter and the multicast table. It cannot reset the device, change its address,
-//!   receive promiscuously, or reach the PHY. That is the split, and it is a page boundary because
-//!   Intel put the queue registers on pages of their own.
-//! - **An `Irq` capability.** It polls, as milestone 261's server does and for the same reason:
-//!   x86 routes no device line to a userspace waiter yet (milestone 299 (the x86 port-range capability)'s scope note), and the
-//!   device is created with every interrupt masked.
-//! - **A `DeviceFrame` or `PageFrame` capability** for either window: they arrive as spawn-time
-//!   mappings, so it holds no name for them and cannot delegate or remap them.
-//!
-
-//! # Who starts it
-//!
-//! The tests and the bench boot, through [`start_net_server`], and the booted system, through
-//! [`start_for_boot`] (milestone 198 (a package manager)): `kernel::user::boot_progenitor` calls it
-//! when there is no virtio-net NIC, and grants the progenitor the `Stack` endpoint and the report.
-//! The booted system refuses one case a test does not, recorded at [`NotAtBoot`]: a PCH part no
-//! gate has driven. Every caller is refused a link that is down ([`Absent::NoLink`]).
+//! Wiring for `net_stack` over the `e1000e` NIC. The process driving the rings the kernel's
+//! `e1000e` module programs holds two queue pages of BAR0, the DMA region and `net_stack`'s usual
+//! slots, the interrupt and virtio transport left empty. Tests start it through
+//! [`start_net_server`], the booted system through [`start_for_boot`]. See notes/e1000e.md, "What
+//! the server holds".
 //!
 //! # BUGS
 //!
-//! - **The ring base registers are on the queue pages**, so the server can point a ring anywhere
-//!   (`crates/e1000e`'s header). The IOMMU domain is the whole of the DMA confinement, and
-//!   [`Wiring::confined_by_iommu`] says whether this machine has one that owns the device. On a
-//!   machine without, this driver is as confined as its arithmetic, which is milestone 261's own
-//!   position for NVMe.
-//! - **One wiring at a time.** A second bring-up resets the device under the first server, so
-//!   [`start_net_server`] refuses while the previous server's thread is present
-//!   ([`Absent::Busy`]). A test that does not release its holding makes every later one refuse.
+//! - The ring base registers are on the queue pages, so the IOMMU is the whole DMA confinement.
+//! - One wiring at a time ([`Absent::Busy`]): a test that keeps its holding blocks every later one.
 
 use ::e1000e::process::{DATA_PLANE_VA, RX_QUEUE_VA, TX_QUEUE_VA};
 
@@ -76,11 +31,9 @@ pub enum Absent {
     },
     /// The previous server is still alive, and a bring-up would reset the device under it.
     Busy,
-    /// Bring-up finished and `STATUS.LU` never rose within `e1000e::LINK_WAIT_MS`, so no server
-    /// was started. `net_stack`'s DHCP loop has no bound, and every caller blocks on its lease, so
-    /// a server over a dead link is a wait with no end: a boot that never reaches its prompt, or a
-    /// system test the harness watchdog stops, and the suite with it. Whether no link is a skip or
-    /// a failure is the caller's, since only it knows whether a link was promised.
+    /// Bring-up finished and `STATUS.LU` never rose within `e1000e::LINK_WAIT_MS`, so no server was
+    /// started: `net_stack`'s DHCP loop has no bound and every caller blocks on its lease. Whether
+    /// this is a skip or a failure is the caller's, which knows whether a link was promised.
     NoLink {
         /// The PCI device id.
         device: u16,
@@ -113,8 +66,8 @@ pub struct Wiring {
 /// the stack, that is the boot's own server, so a later bring-up there refuses rather than reset it.
 static SERVER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(u64::MAX);
 
-/// **Bring the NIC up and start `net_stack` over it.** `listen_grant` is the virtio server's: the
-/// inbound ports this stack may bind.
+/// Bring the NIC up and start `net_stack` over it. `listen_grant` is the virtio server's: the
+/// inbound ports this stack may bind. Refuses with [`Absent`].
 pub fn start_net_server(image: &'static [u8], listen_grant: u64) -> Result<Wiring, Absent> {
     refuse_if_busy()?;
     let found = bring_up()?;
@@ -131,22 +84,22 @@ pub fn start_net_server(image: &'static [u8], listen_grant: u64) -> Result<Wirin
 pub(crate) enum NotAtBoot {
     /// What [`start_net_server`] would have said.
     Absent(Absent),
-    /// **A part no gate has driven**, an I219 or another PCH part ([`::e1000e::pch::is_pch`]). Left
-    /// untouched: bring-up on one runs FreeBSD's I219 passes (`crates/e1000e/src/pch/sequence.rs`),
-    /// which no run here has executed on silicon, and a hang in them would take the prompt with it
-    /// on xenon, the one PC on the bench. Milestone 494's bench boot (`cargo xtask network-bench`,
-    /// notes/e1000e.md) is how a part earns its way out of this arm: see [`PCH_PROVEN_ON_SILICON`].
+    /// A part no gate has driven, an I219 or another PCH part ([`::e1000e::pch::is_pch`]), left
+    /// untouched: its bring-up runs FreeBSD's I219 passes (`crates/e1000e/src/pch/sequence.rs`),
+    /// unproven on silicon, and a hang there would take xenon's prompt. See
+    /// [`PCH_PROVEN_ON_SILICON`].
     Unproven {
         /// The PCI device id.
         device: u16,
     },
 }
 
-/// **The booted system's stack over this NIC** (milestone 198 (a package manager): rung 3a on the
-/// third architecture). [`start_net_server`] with no listen grant, the virtio stack's inbound
-/// authority at the prompt, and one refusal of its own ([`NotAtBoot::Unproven`]) that a test does
-/// not want and a boot does. The progenitor waits for the lease before the prompt, so the
-/// [`Absent::NoLink`] refusal is what keeps a boot with no link from never reaching `$`.
+/// The booted system's stack over this NIC: [`start_net_server`] with no listen grant, plus one
+/// refusal a boot wants and a test does not ([`NotAtBoot::Unproven`]).
+///
+/// `kernel::user::boot_progenitor` calls it when there is no virtio-net NIC. The progenitor waits
+/// for the lease before the prompt, so [`Absent::NoLink`] is what lets a boot with no link reach
+/// `$`.
 pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> {
     let dev = crate::pci::find_e1000e_device().ok_or(NotAtBoot::Absent(Absent::NoController))?;
     if ::e1000e::pch::is_pch(dev.device) && !PCH_PROVEN_ON_SILICON {
@@ -155,8 +108,7 @@ pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> 
     start_net_server(image, socket_contract::NO_LISTEN_GRANT).map_err(NotAtBoot::Absent)
 }
 
-/// **Whether the booted system may bring up an I219 on its own.** The lift of the refusal above is
-/// this one line, and it is gated on silicon, not on review.
+/// Whether the booted system may bring up an I219 on its own, gated on silicon, not on review.
 ///
 /// Flip it to `true` only in a commit that cites a xenon bench boot of the same I219 bring-up
 /// ending `verdict LEASED-AND-MEASURED` (notes/e1000e.md, "calef's bench step on xenon", with its
@@ -185,7 +137,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     let [arg0, arg1] = found.handoff.pack();
 
     // The endpoints, the notification and the timer out of one region, so reclaiming it wakes a
-    // server blocked on any of them: `virtio_service::wire_net_server`'s reasoning, unchanged.
+    // server blocked on any of them, as in `virtio_service::wire_net_server`.
     let ep_region = crate::memory_region::create(5).expect("no endpoint region for net_stack");
     let report = crate::sched::create_rendezvous_from(ep_region).expect("no report endpoint");
     let stack = crate::sched::create_rendezvous_from(ep_region).expect("no stack endpoint");
@@ -232,8 +184,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
 
     let tid = crate::sched::spawn(move || {
         // Slots 3 to 6 at their names before `run` grants in order, so the report lands in 0 and
-        // slots 1 and 2 stay empty: no interrupt, no virtio transport. `fs_service::start_std_full`
-        // is the precedent for a wiring whose empty slots mean something.
+        // slots 1 and 2 stay empty: no interrupt, no virtio transport.
         let at = |slot, cap| {
             crate::sched::grant_at(slot, cap).expect("a net_stack slot was already occupied");
         };
@@ -291,7 +242,6 @@ pub fn start_net_stack(
     start_with_client(image, cli_arg, 0, None, listen_grant)
 }
 
-/// **Rung 3a's fetch and verify over this NIC** (milestone 198 (a package manager)):
 /// `virtio_service::start_package_fetch`'s client, `catalogue` mapped into it read-only, over the
 /// `e1000e` server instead of the virtio one.
 pub fn start_package_fetch(
@@ -309,7 +259,7 @@ pub fn start_package_fetch(
     )
 }
 
-/// **The bench boot's client** (`kernel/src/network_bench.rs`): `socket_test_client`'s
+/// The bench boot's client (`kernel/src/network_bench.rs`): `socket_test_client`'s
 /// `TEST_TCP_DRAIN` against `peer`, packed `ipv4 << 16 | port`. The selector's number is the
 /// client's, spelled again here as every kernel-side caller of that client spells it.
 #[cfg_attr(not(feature = "network_bench"), allow(dead_code))]
