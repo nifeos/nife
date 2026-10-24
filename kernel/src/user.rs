@@ -59,6 +59,16 @@ pub use address_space_registry::*;
 #[cfg(target_arch = "x86_64")]
 pub mod x86_programs;
 
+/// A supervised child built from a hand-assembled stub, its whole world in one untyped region:
+/// the boot self-test's `supervised` and `teardown` checks, and the system tests that watch a
+/// child die. See notes/self-test-checks.md.
+// A unit-test build runs neither the self-test nor the suite, and a `bench` build has no self-test.
+#[cfg_attr(
+    any(test, all(feature = "bench", not(feature = "system_tests"))),
+    allow(dead_code)
+)]
+pub mod supervised_child;
+
 /// Bringing the virtio block driver up in userspace.
 ///
 /// **Milestone 9's headline.** The kernel enumerates the bus (kernel/src/virtio.rs) to find the

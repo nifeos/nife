@@ -9,10 +9,11 @@
 //! # BUGS
 //!
 //! - Nothing proves an architecture ran the right set; review guards the list.
-//! - The checks cost time on every boot: about a quarter of a second, and up to three spawns.
+//! - The checks cost time on every boot: about a quarter of a second, and up to six spawns.
 //! - [`blockdev`]'s driver is left running, holding disk 0.
 //! - [`budget`]'s helper thread can be left parked if the process never reports.
-//! - [`budget`] brackets the machine's used-frame count, sound only while nothing else allocates.
+//! - [`budget`] and [`teardown`] bracket the machine's used-frame count, sound only while nothing
+//!   else allocates.
 //! - A check whose operation never returns still hangs the boot; that needs a watchdog.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -200,8 +201,8 @@ pub fn run() {
     // records both `clock` and `trng`, and `entropy` runs after it because on a JH7110 it draws
     // from the service that bring-up wired.
     let runs: [fn(&mut Tally); RUNS] = [
-        exceptions, mapping, frames, timer, scheduler, preemption, userspace, budget, blockdev,
-        deviceirq, jh7110, entropy,
+        exceptions, mapping, frames, timer, scheduler, preemption, userspace, budget, supervised,
+        teardown, blockdev, deviceirq, jh7110, entropy,
     ];
     for (stage, check) in (FIRST_STAGE..).zip(runs) {
         sched::note_boot_stage(stage);
@@ -680,7 +681,7 @@ fn budget(tally: &mut Tally) {
         s.store(u64::MAX, Ordering::SeqCst);
     }
     let used = || memory::stats().map_or(u64::MAX, |s| s.used as u64);
-    sched::spawn(move || {
+    let helper = sched::spawn(move || {
         sched::ipc_receive(report);
         READY_USED.store(used(), Ordering::SeqCst);
         let mapped = sched::ipc_receive(report)[0];
@@ -688,6 +689,10 @@ fn budget(tally: &mut Tally) {
         MAPPED.store(mapped, Ordering::SeqCst);
     });
     let reported = wait_until(2, || MAPPED.load(Ordering::SeqCst) != u64::MAX);
+    // `teardown`, two checks on, brackets the same count, so the helper's own reap must land here.
+    if reported && let Some(h) = helper {
+        wait_until(2, || !sched::is_thread_present(h));
+    }
     let (before, after, mapped) = (
         READY_USED.load(Ordering::SeqCst),
         DONE_USED.load(Ordering::SeqCst),
@@ -714,6 +719,121 @@ fn budget(tally: &mut Tally) {
             false,
             format_args!("the process did not report within 2s"),
         );
+    }
+}
+
+/// **One supervised child that faults, its death received, and its region reaped.**
+///
+/// The child is `user::supervised_child`'s fault stub, built with its address space, code, stack,
+/// TCB and supervision endpoint all in one 16-page region, so the reap gives every frame back.
+/// The death is waited for on the corpse (`sched::corpse_fault_msg`) before the receive, because a
+/// receive has no deadline and a corpse parked as the endpoint's sender makes it return at once.
+/// Returns the child's thread id and the five words received, or which step refused.
+fn supervised_round() -> Result<(u64, [u64; 5]), &'static str> {
+    use crate::user::supervised_child;
+
+    let region = crate::memory_region::create(16).ok_or("no 16-page region for the child")?;
+    let Some(ep) = sched::create_rendezvous_from(region) else {
+        crate::memory_region::destroy(region);
+        return Err("no supervision endpoint in the child's region");
+    };
+    let fault = supervised_child::supervision_endpoint(ep);
+    let child =
+        match supervised_child::spawn(region, supervised_child::FAULT_STUB, &[], Some(fault)) {
+            Ok(tid) => tid,
+            Err(why) => {
+                let _ = sched::reclaim_region(region);
+                return Err(why);
+            }
+        };
+    if !wait_until(2, || sched::corpse_fault_msg(child).is_some()) {
+        let _ = sched::kill_thread(child);
+        let _ = sched::reclaim_region(region);
+        return Err("the child did not die within 2s");
+    }
+    let msg = sched::ipc_receive(ep);
+    sched::reap_supervised(ep, child).map_err(|_| "the corpse refused to be reaped")?;
+    Ok((child, msg))
+}
+
+/// **A faulting user-level thread's death reaches its supervisor as a message**, naming the
+/// thread, the faulting pc and the address (DECISIONS §26 (the fault endpoint)).
+///
+/// The child is born supervised: its endpoint sits in the reserved fault slot when it starts. The
+/// message must say `EVENT_FAULT`, the child's own thread id, the load instruction's pc and the
+/// unmapped address it read. See notes/self-test-checks.md.
+fn supervised(tally: &mut Tally) {
+    use crate::user::supervised_child::{CODE_ADDRESS, FAULT_ADDRESS, FAULT_PC_OFFSET};
+
+    let (child, msg) = match supervised_round() {
+        Ok(r) => r,
+        Err(why) => {
+            tally.record("supervised", false, format_args!("{why}"));
+            return;
+        }
+    };
+    let pc = CODE_ADDRESS + FAULT_PC_OFFSET;
+    let ok = msg[0] == abi::fault::EVENT_FAULT
+        && msg[1] == child
+        && msg[2] == pc
+        && msg[3] == FAULT_ADDRESS;
+    if ok {
+        tally.record(
+            "supervised",
+            ok,
+            format_args!(
+                "thread {child:#x} faulted at {pc:#x} reading {FAULT_ADDRESS:#x}; its supervisor received all three in a FAULT event, and reaped it"
+            ),
+        );
+    } else {
+        tally.record(
+            "supervised",
+            ok,
+            format_args!(
+                "thread {child:#x} faulted; its supervisor received event {} tid {:#x} pc {:#x} addr {:#x}, wanting {} {child:#x} {pc:#x} {FAULT_ADDRESS:#x}",
+                msg[0],
+                msg[1],
+                msg[2],
+                msg[3],
+                abi::fault::EVENT_FAULT,
+            ),
+        );
+    }
+}
+
+/// **Tearing a process down returns every frame it cost**: a second round of spawn and teardown
+/// moves the machine's used-frame count by zero.
+///
+/// Two rounds of [`supervised_round`], and only the second is judged. A first round pays first-use
+/// carves that are not leaks (a kernel stack the recycler has not held yet, the kernel's own
+/// object budget), and a machine at its steady state charges the repeat nothing. Like [`budget`]
+/// it brackets the used-frame count, so it is sound only while nothing else allocates in its
+/// window. See notes/self-test-checks.md.
+fn teardown(tally: &mut Tally) {
+    let used = || memory::stats().map(|s| s.used as i64);
+    let (Some(before), first) = (used(), supervised_round()) else {
+        tally.record(
+            "teardown",
+            false,
+            format_args!("the frame allocator is not up"),
+        );
+        return;
+    };
+    let after_first = used().unwrap_or(before);
+    let second = supervised_round();
+    let after_second = used().unwrap_or(after_first);
+    let (first_cost, second_cost) = (after_first - before, after_second - after_first);
+    match (first, second) {
+        (Ok(_), Ok(_)) => tally.record(
+            "teardown",
+            second_cost == 0,
+            format_args!(
+                "two rounds of a supervised child spawned, faulted and reaped: the first cost {first_cost} frame(s), the second {second_cost}"
+            ),
+        ),
+        (Err(why), _) | (_, Err(why)) => {
+            tally.record("teardown", false, format_args!("a round failed: {why}"));
+        }
     }
 }
 

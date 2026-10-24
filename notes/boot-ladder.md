@@ -8,7 +8,7 @@ CI, and they are what a person reads off a photograph of a monitor when there is
 nife on aarch64 (EL1, MMU off: physical addresses until mmu::init)   <- the console works
 ...
 nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz               <- discovery finished
-nife self-test: 8 of 13 passed, 5 absent: ...                        <- the kernel works here
+nife self-test: 10 of 15 passed, 5 absent: ...                       <- the kernel works here
 ...
 nife capability shell. naming a resource in a command IS granting it. <- userspace is up
 $
@@ -75,15 +75,17 @@ these lines *were* the transcript.
 
 ## The self-test: it reports, it does not gate
 
-`kernel/src/self_test.rs` runs thirteen checks between the description and the hand-off: `exceptions` (a
+`kernel/src/self_test.rs` runs fifteen checks between the description and the hand-off: `exceptions` (a
 breakpoint is caught and stepped over) and `mapping` (a fresh page is mapped, written, read back and
 unmapped at an address computed from this machine's own RAM). Then `frames` (one frame out of the
 allocator and back, with the accounting agreeing at both ends), `timer` (the counter advances and a
 tick interrupt arrives), `scheduler` (a spawned kernel thread runs and carries its captured state).
-The other eight are the per-port tours' claims. `preemption` runs one never-yield thread more than
+The other ten are the per-port tours' claims. `preemption` runs one never-yield thread more than
 there are cores, and none starves. `userspace` has a program at user level read a kernel address;
 it is killed and the kernel survives. `budget` has a process spend its untyped while the kernel's
-frame count does not move. The last five need a device:
+frame count does not move. `supervised` has a child born supervised fault, and its supervisor
+receives the death naming the thread, the pc and the address. `teardown` spawns and reaps that
+child twice, and the second round moves the frame count by zero. The last five need a device:
 
 | Check | Its claim | Where it can run |
 |---|---|---|
@@ -94,7 +96,7 @@ frame count does not move. The last five need a device:
 | `entropy` | the machine's entropy source serves a client | a TRNG or a seed instruction |
 
 A machine without the device reports the check `absent`, with its reason, and the verdict lists
-it: `nife self-test: 10 of 13 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
+it: `nife self-test: 12 of 15 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
 its own. Each `serial_console` board profile names the checks its board has the device for, and an
 absence of one of those is FAILED: radon may not be without `entropy`, `trng` or `clock`, and
 xenon not without `entropy` or `deviceirq`. The emulator profile `boot-check` uses forbids none.
@@ -133,7 +135,7 @@ names it). About 26 seconds against a warm target directory:
 $ script/boot-check
 boot-check (aarch64): reached shell prompt (3867 bytes in 2.9s)
 boot-check (aarch64): nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz
-boot-check (aarch64): nife self-test: 8 of 13 passed, 5 absent: blockdev deviceirq clock trng entropy
+boot-check (aarch64): nife self-test: 10 of 15 passed, 5 absent: blockdev deviceirq clock trng entropy
 ...
 boot-check: every architecture climbed the ladder to a shell prompt, and the self-test verdict on
 the way was green
@@ -149,7 +151,7 @@ Prove the gate has teeth, by making one check fail and requiring the run to come
 
 ```
 $ script/boot-check --inject
-boot-check (aarch64): nife self-test: 4 of 13 passed, 5 absent: blockdev deviceirq clock trng entropy, 4 FAILED: exceptions timer userspace budget
+boot-check (aarch64): nife self-test: 4 of 15 passed, 5 absent: blockdev deviceirq clock trng entropy, 6 FAILED: exceptions timer userspace budget supervised teardown
 ...
 boot-check: every architecture's self-test verdict came back RED, as the injection asked
 ```

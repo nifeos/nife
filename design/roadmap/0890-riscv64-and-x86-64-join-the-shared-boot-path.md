@@ -170,7 +170,7 @@ Every claim the three tours made, and where each one is now:
 | The JH7110's clock controller ungates the TRNG | riscv64 | `clock`; absent off a JH7110 |
 | The JH7110 TRNG's draws, timed | riscv64 | `trng`; absent off a JH7110 |
 | The boot's middle stages finished (`boot_ladder::TOUR`) | riscv64 | `kernel_main`, all three, after the verdict; the checks note stages 3 to 14 and 15 is finished |
-| A faulting ring-3 thread's death reaches its supervisor; two rounds of children leak no frames | `x86_64` | Not a check (BUGS) |
+| A faulting ring-3 thread's death reaches its supervisor; two rounds of children leak no frames | `x86_64` | `supervised` and `teardown`, all three (milestone 944) |
 | A bare riscv64 ELF initrd runs | riscv64 | Gone: every boot carries an archive |
 | Reports: image bounds, initial ramdisk, boot file | aarch64, `x86_64` | The machine description's |
 | An idle console server | aarch64 | Gone with `console_service` |
@@ -261,9 +261,6 @@ reaches the wire.
 - `x86_64`'s new order is proven on xenon without a screen only (above).
 - `clock`, `trng` and `entropy` pass on radon, but `serial_console` has not read radon's profile
   against them.
-- `x86_64`'s supervised death and two-round frame steady state are not checks. No portable spawn
-  takes a supervisor, and one before-and-after over a spawn and its teardown counts whatever else
-  allocated in the window, which is why that demo ran two rounds. `system_tests` proves both.
 - `serial_driver` is shipped in the drivers package and nothing starts it: riscv64's UART-driver
   step was its only starter. The hand-over's input driver serves riscv64's UART. It also assumes QEMU's register
   stride (`abi::uart`).
@@ -278,9 +275,8 @@ reaches the wire.
   runs (above, "Why radon took one keystroke per boot";
   `bench/radon-2026-10-21/890-keystroke-fix.log`).
 - **Outstanding.** xenon's boot of `main` with its monitor attached, after pull request #2528 (above).
-- **Proposed.** A portable check for a supervised death that reaches its supervisor, and one for
-  teardown returning every frame (BUGS):
-  `design/roadmap/proposals/the-self-test-proves-supervision-and-teardown.md`.
+- **Milestone 944.** A portable check for a supervised death that reaches its supervisor, and one
+  for teardown returning every frame: `design/roadmap/0944-the-self-test-proves-supervision-and-teardown.md`.
 - **Proposed.** Retire `serial_driver` from the drivers package, or give it a starter (BUGS):
   `design/roadmap/proposals/serial-driver-has-no-starter.md`.
 
