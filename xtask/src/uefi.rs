@@ -103,7 +103,8 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
     // `target/init-measure-x86_64.txt`, which `kernel/build.rs` compiles in as the measured-boot
     // trust root, so a kernel built first vouches for the previous archive and the handover refuses
     // ("MEASURED BOOT REFUSED"). QEMU rarely shows it; two benches did
-    // (notes/x86-uefi-boot/running-under-firmware.md). `initial_ramdisk_x86` never builds the kernel, so this order is safe.
+    // (notes/x86-uefi-boot/running-under-firmware.md). `initial_ramdisk_x86` never builds the
+    // kernel, so this order is safe.
     let mut build = vec!["build", "-p", "kernel", "--target", X86_TARGET];
     if let Some(list) = features {
         build.extend(["--features", list]);
@@ -258,11 +259,11 @@ pub(crate) fn uefi_stage(
 
 /// **Boot the UEFI image under OVMF and check the firmware path actually ran** (milestone 87).
 ///
-/// Each assertion is one only the firmware path can satisfy: `(xsdt)` in the ACPI line and no
-/// `rsdp 0x0` (PVH's tell), the tour's completion, the ECAM window from the MCFG read above 1 GiB
-/// (milestone 165), and the shell on the screen answering a serial keystroke ([`screen_watch`]).
-/// The runner bounds the boot, so a hang fails rather than hangs; it is stopped once the screen
-/// has answered. Returns whether everything held. See
+/// Each assertion is one only the firmware path can satisfy: `(xsdt)` in the ACPI line and
+/// no `rsdp 0x0` (PVH's tell), the tour's completion, the ECAM window from the MCFG read above 1 GiB
+/// (milestone 165 (x86_64 PCI enumeration)), and the shell on the screen answering a serial
+/// keystroke ([`screen_watch`]). The runner bounds the boot, so a hang fails rather than hangs; it
+/// is stopped once the screen has answered. Returns whether everything held. See
 /// notes/x86-uefi-boot/running-under-firmware.md, "What `uefi-boot` asserts".
 pub(crate) fn uefi_boot() -> bool {
     uefi_boot_staged()
@@ -361,10 +362,10 @@ fn start_uefi_screen_boot(sock: &str) -> Option<std::process::Child> {
         .arg(uefi_screen_esp_dir())
         .current_dir(workspace_root())
         .env("NIFE_SCREEN_MON", sock)
-        // Two cores (milestone 195): this checks that the loader's request for the trampoline
-        // page at 0x8000 worked, and that device interrupts still reach the boot core with a
-        // second local APIC. The suite keeps one core until it is measured at two under OVMF;
-        // see notes/x86-uefi-boot/running-under-firmware.md, "SMP under firmware".
+        // Two cores (milestone 195 (finish the UEFI boot path)): this checks that the loader's
+        // request for the trampoline page at 0x8000 worked, and that device interrupts still reach
+        // the boot core with a second local APIC. The suite keeps one core until it is measured at
+        // two under OVMF; see notes/x86-uefi-boot/running-under-firmware.md, "SMP under firmware".
         .env("NIFE_SMP", "2")
         // The bare firmware machine whether or not a suite leg ran first: `test()` sets these in
         // this process for the PVH leg, and the tour must be one machine either way.
@@ -791,7 +792,8 @@ pub(crate) fn uefi_test() -> bool {
     if !prepare_uefi_test() || !mkdisk() || !mknvmedisk() {
         return false;
     }
-    // The kernel's unit tests and the whole-system suite are separate images (milestone 609).
+    // The kernel's unit tests and the whole-system suite are separate images (milestone 609 (the
+    // system tests leave the kernel crate)).
     uefi_test_image("kernel") && uefi_test_image("system_tests")
 }
 
@@ -839,8 +841,9 @@ fn uefi_test_image(package: &str) -> bool {
         // measured at two under OVMF. Named here for a bare `uefi-test`; `test()` already sets them.
         .env("NIFE_DISK", disk_path())
         .env("NIFE_NVME", nvme_disk_path());
-    // The GPU and keyboard ride only the system image, whose tests use them (milestone 420). The
-    // referee is constructed before the child, because it sets `NIFE_GPU_MON`.
+    // The GPU and keyboard ride only the system image, whose tests use them (milestone 420 (x86_64
+    // has one fixture of five and no NIC, GPU, keyboard or RNG)). The referee is constructed before
+    // the child, because it sets `NIFE_GPU_MON`.
     let mut referee = None;
     if package == "system_tests" {
         command.env("NIFE_GPU", "1").env("NIFE_KEYBOARD", "1");
@@ -857,8 +860,9 @@ fn uefi_test_image(package: &str) -> bool {
     if std::env::var_os("NIFE_UEFI_TIMEOUT").is_none() {
         command.env("NIFE_UEFI_TIMEOUT", "300");
     }
-    // Timed and recorded (milestone 807); stderr is QEMU's own, never the guest console, so it
-    // goes straight to ours and not into what the checks below read.
+    // Timed and recorded (milestone 807 (the kernel suite reports what each test cost)); stderr is
+    // QEMU's own, never the guest console, so it goes straight to ours and not into what the checks
+    // below read.
     let (mut child, watch) = match crate::time_record::Watch::spawn(&mut command) {
         Ok(pair) => pair,
         Err(e) => {
@@ -948,9 +952,10 @@ fn uefi_test_image(package: &str) -> bool {
 /// 2026-10-15), and 1 with its reason on stderr when it fails itself. Name provisional.
 fn exit_verdict_lines(code: Option<i32>, exited: Duration, transcript: &str) -> Vec<String> {
     let mut lines = vec![
-        // The escape test's expected faults (milestone 215): the masked fault-event interrupt
-        // (this kernel polls) and the escape's translation failure. They invite a wrong theory
-        // about QEMU versions or firmware in a red run's output.
+        // The escape test's expected faults (milestone 215 (a PCI function's interrupt reaches
+        // nothing on x86_64)): the masked fault-event interrupt (this kernel polls) and the
+        // escape's translation failure. They invite a wrong theory about QEMU versions or firmware
+        // in a red run's output.
         "the qemu-system-x86_64 VT-d lines in this run's output (`Interrupt Mask set, irq is not \
          generated`, `vtd_iommu_translate: detected translation failure`) are the escape test's \
          own expected faults (milestone 215), not a cause"

@@ -90,7 +90,7 @@ The record is whole when every test announced on a `test <path> ... ` line has a
 time line names such a test, and their count is the `running` line's.
 
 The clock check compares the guest's sum of per-test times with the host's span for the same tests.
-On x86_64 the guest's clock is a TSC calibrated once at boot, which milestone 571 found can be wrong
+On x86_64 the guest's clock is a TSC calibrated once at boot, which milestone 571 (the x86 boot calibrates the TSC once, and can be wrong by 4x) found can be wrong
 by 4x, and nothing else in the tree would notice. The span holds every test body plus the overhead
 between tests: the name, the frame ledger's charge, and the reports after the last one. So the sum
 sits below the span and exceeds it only on a fast clock. Under TCG the guest's counter follows the
@@ -108,5 +108,5 @@ slowest honest test in about 27,000 per-test records was 20.5 s, measured over t
 runs on 2026-10-11 and eight lane runs on patagonia, a shared and busy host. That test was
 `package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`
 on aarch64, and no test reached 30 s. CI's `test` job runs every leg in a median of about 17 minutes,
-against milestone 721's 20-minute budget and a 25-minute `timeout-minutes`. A hang costs a run 2.5
+against milestone 721 (each merge-group CI job has a 20-minute budget)'s 20-minute budget and a 25-minute `timeout-minutes`. A hang costs a run 2.5
 minutes and fails with the test's name. The hang that motivated it is in [scheduler.md](scheduler.md).

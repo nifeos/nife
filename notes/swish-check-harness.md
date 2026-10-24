@@ -98,7 +98,7 @@ long an echo takes under load has not been measured.
 
 The `x86_64` leg's per-line bound under TCG is 45 s. Under KVM it costs what the others do and keeps
 their 30 s. Measured typed to prompt-back, one run each, with the boot thread no longer halting on
-the run queue (milestone 628):
+the run queue (milestone 628 (the x86_64 swish-check leg costs what the others do)):
 
 | where | lines | per line | slowest line |
 |---|---|---|---|
@@ -111,7 +111,7 @@ a second on the other two legs, so the difference is the screen path. `display_t
 damaged cells, the whole 924x344 surface on every scroll. `framebuffer_driver` copies them into an
 uncacheable aperture one word at a time. Both are unoptimized debug builds, and each store goes
 through TCG. A real PC pays the same copy in native stores, milliseconds per scroll, which is not
-measured on silicon (`framebuffer_driver`'s BUGS). Milestone 400's BUGS records the design half: the
+measured on silicon (`framebuffer_driver`'s BUGS). Milestone 400 (the shell on the firmware's screen)'s BUGS records the design half: the
 console blocks on the screen, since `components/src/console.rs`'s batcher is off.
 
 Milestone 624 (the paint path) measured on 2026-10-03 UTC, before milestone 628's fix, sharing
@@ -127,7 +127,7 @@ Those runs were paced by 10 ms ticks, 7.7 s a line on CI with a 35 s slowest lin
 90 s bound covered, and what 624's rule of twice the slowest local line at CI's worst 1.8x ratio
 (82 s) measured. They are not the evidence for 45 s.
 
-The leg-cost check (milestone 722) fails a leg whose median line costs more than five times its own
+The leg-cost check (milestone 722 (swish-check fails a leg that costs five times the others per line)) fails a leg whose median line costs more than five times its own
 baseline row. The rows come from CI's `swish-check` jobs on 2026-10-03 UTC, runs 37141733965 and
 37141058488, as the job printed the mean. A median sits at or under the mean, so these are loose,
 which is the right side for a tripwire.
@@ -148,7 +148,7 @@ slower than CI's arm64 runner also fails, and the answer is a measurement and a 
 
 ## What a leg does after its script
 
-The graphical launch (milestone 632, graphics on demand) boots the normal UART system with a
+The graphical launch (milestone 632 (graphics on demand), graphics on demand) boots the normal UART system with a
 virtio-gpu attached. The swish prompt must reach the serial console before anything is typed, which
 asserts the boot stayed minimal. Then the leg types `graphical_terminal`. The shell asks for
 graphics (`spawnproto::GRAPHICS_BIT`), the progenitor builds the session's stack from the devices it
@@ -161,7 +161,7 @@ boot proves.
 
 The key arrives one of two ways. `Keystrokes::Device` attaches a virtio-keyboard and presses the key
 with the monitor's `sendkey`. `Keystrokes::Serial` attaches no keyboard and types the same byte down
-the UART, the configuration every target machine has (milestone 192, option A). The session then
+the UART, the configuration every target machine has (milestone 192 (a keyboard on real silicon), option A). The session then
 reads the boot's line discipline raw, the shape of §227 (how Tab reaches the shell). Neither the
 screen nor the session can tell which source a byte came by, so a change that made it matter turns
 exactly one run red. `video_terminal::script::HOST_KEY` names the key once, and `HOST_KEY_BYTE`
@@ -172,7 +172,7 @@ check (a scanout of any other size is a `SET_SCANOUT` bug, and is skipped so the
 the colors of `video_terminal::Attr::DEFAULT`, and the font `glyph_atlas::REGULAR` at the terminal's
 cell.
 
-The reboot phase (milestone 805) waits for `the kernel was asked to restart the machine` without its
+The reboot phase (milestone 805 (`reboot` at the prompt)) waits for `the kernel was asked to restart the machine` without its
 `reboot:` prefix. The shell draws its next prompt once `reboot`'s report ends, and the kernel writes
 straight to the UART, so the prompt can land inside the kernel's line. Merge group 37554001967 read
 `reboo$t:  the kernel was asked...` on riscv64 on 2026-10-07 UTC.
@@ -182,7 +182,7 @@ straight to the UART, so the prompt can land inside the kernel's line. Merge gro
 `rg BUGS crates` is typed in `/search` on the second boot, and its answer must equal the host's as a
 multiset of lines. Order is not a claim, because RedoxFS and APFS list a directory differently. Its
 bound is 600 s, typed to prompt-back. Measured on patagonia on 2026-10-07 UTC with other lanes
-building (milestone 121):
+building (milestone 121 (`ripgrep` on nife)):
 
 | leg | the walk | load average |
 |---|---:|---:|
@@ -231,8 +231,8 @@ Several rows pin a shape rather than a value:
   cursor and six identical answers would let a missed line pass as its neighbor.
 
 The second boot's generation numbers skip one. The first boot vouched for a build as generation 4
-and rolled it back (§221, the boot prompt is the owner's console). A generation is never rewritten,
-so the removal is generation 5, and a rollback goes by number, landing on 4. Generation 3 is `greeting`'s
+and rolled it back (§221 (the boot prompt is the owner's console), the boot prompt is the owner's console). A generation is never rewritten,
+so the removal is generation 5, and a rollback goes by number ([packages.md](packages.md)'s BUGS), landing on 4. Generation 3 is `greeting`'s
 0.2.0, installed before the vouch, and lists both versions beside `noteless`. The removed program is
 `noteless` rather than `uptime` because §229 (how a bare name at the prompt reaches an installed program) refuses
 installing a package named after an image program.

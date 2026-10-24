@@ -11,12 +11,13 @@ use super::*;
 
 /// The redirection rows of [`SWISH_CHECK_SCRIPT`], in table order.
 pub(super) const LINES: &[Line] = &[
-    // **`uuid`, at the real prompt** (milestone 111), the only gate that can run it: the progenitor
-    // places a `WRITE` view of the entropy service at `grant_plan::ENTROPY_SLOT`, and elsewhere the
-    // kernel plays the progenitor and fills a table from slot 0 upward. The value is not asserted,
-    // since a predictable version-4 identifier is drawn from nothing; the shape is. 36 characters
-    // and a newline make `1 1 37`, and a `uuid` endowed with nothing leaves the file empty (its
-    // refusal goes to the second stream), so the count fails exactly then.
+    // **`uuid`, at the real prompt** (milestone 111 (a shell that can endow a child with entropy)),
+    // the only gate that can run it: the progenitor places a `WRITE` view of the entropy service at
+    // `grant_plan::ENTROPY_SLOT`, and elsewhere the kernel plays the progenitor and fills a table
+    // from slot 0 upward. The value is not asserted, since a predictable version-4 identifier is
+    // drawn from nothing; the shape is. 36 characters and a newline make `1 1 37`, and a `uuid`
+    // endowed with nothing leaves the file empty (its refusal goes to the second stream), so the
+    // count fails exactly then.
     line(1, "uuid > id.txt", &[]),
     line(1, "wc < id.txt", &["1 1 37"]),
     // And the second stream is empty, which is the same trick the `pgrep 2>` line above uses: this
@@ -83,9 +84,10 @@ pub(super) const LINES: &[Line] = &[
     line(1, "time date", &["time: real"]),
     // `caps` claims to print a process's whole authority, so the shell's own clock must show; READ
     // without GRANT is why nothing typed here can hand a clock to a child. The second phrase is
-    // milestone 31 phase 3's: `holdings().dir` is true exactly when the progenitor granted the
-    // shell a directory. Elsewhere the kernel plays the progenitor, so a boot that stopped granting
-    // it would fail nothing else; `wc gate.txt` keeps working because the shell opens that file.
+    // milestone 31 (a capability shell) phase 3's: `holdings().dir` is true exactly when the
+    // progenitor granted the shell a directory. Elsewhere the kernel plays the progenitor, so a
+    // boot that stopped granting it would fail nothing else; `wc gate.txt` keeps working because
+    // the shell opens that file.
     line(
         0,
         "caps",

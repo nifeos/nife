@@ -1,13 +1,13 @@
-//! **Where a kernel test leg's time went, written down by the program that spent it**
-//! (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each
-//! item cost)).
+//! **Where a kernel test leg's time went, written down by the program that spent it** (milestone
+//! 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost)).
 //!
 //! For every booted test image, from the guest's own record (`crates/test_times`), it stamps the
 //! child's stdout into four host phases (`build`, `boot`, `suite`, `exit`), proves every announced
 //! test has exactly one time line, and holds the guest's sum inside [`ClockCheck`]'s band, since on
-//! x86_64 the clock is a TSC calibrated once (milestone 571). A gap or a lying clock fails the leg.
-//! The rows go to the file at [`record_path`], which CI uploads and [`summary`] turns into the step
-//! summary (§254, Fork 3). See notes/kernel-suite-time.md, "How the record is taken".
+//! x86_64 the clock is a TSC calibrated once (milestone 571 (the x86 boot calibrates the TSC once,
+//! and can be wrong by 4x)). A gap or a lying clock fails the leg. The rows go to the file at
+//! [`record_path`], which CI uploads and [`summary`] turns into the step summary (§254, Fork 3).
+//! See notes/kernel-suite-time.md, "How the record is taken".
 
 //! # The file
 //!

@@ -219,9 +219,10 @@ impl RebootPhase<'_> {
 /// `glyph_atlas::REGULAR` at `video_terminal`'s cell, drawn 1:1 (what `Vt::pixel` paints and
 /// [`super::super::scanout`] grades), in `video_terminal::Attr::DEFAULT`'s colors.
 ///
-/// The decoder is `serial_console::screen::decode_exact` (milestone 377). `alphabet` is the
-/// caller's, which searches only for what it typed. `Err` for a scanout that is not the surface's
-/// size, a `SET_SCANOUT` bug rather than a near miss, so the next poll tries again.
+/// The decoder is `serial_console::screen::decode_exact` (milestone 377 (two screendump decoders,
+/// in two crates, reading the same font)). `alphabet` is the caller's, which searches only for what
+/// it typed. `Err` for a scanout that is not the surface's size, a `SET_SCANOUT` bug rather than a
+/// near miss, so the next poll tries again.
 fn screen_rows(
     bytes: &[u8],
     alphabet: &[u8],
@@ -394,10 +395,11 @@ pub(super) const RG_WALK_PREVIEW: &str = "caps rg BUGS crates";
 /// the directory is on the disk only beside `rg`.
 pub(super) const RG_WALK_CD: &str = "cd /search";
 
-/// **How long [`RG_WALK_LINE`] may take**, typed to prompt-back, on every leg (milestone 121).
-/// The slowest measured walk was 432.1 s, emulated `x86_64` on patagonia under load on 2026-10-07
-/// UTC; ten minutes covers it with room, and a hang still reports inside one CI job. The table,
-/// and why `x86_64` is slower, are in notes/swish-check-harness.md, "The `rg` walk".
+/// **How long [`RG_WALK_LINE`] may take**, typed to prompt-back, on every leg (milestone 121
+/// (`ripgrep` on nife)). The slowest measured walk was 432.1 s, emulated `x86_64` on patagonia
+/// under load on 2026-10-07 UTC; ten minutes covers it with room, and a hang still reports inside
+/// one CI job. The table, and why `x86_64` is slower, are in notes/swish-check-harness.md, "The
+/// `rg` walk".
 pub(super) const RG_WALK_SECS: u64 = 600;
 
 /// **How long any other line naming `rg` may take**, the install from basalt included. Loading
