@@ -214,7 +214,8 @@ on the customer path.
   [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
   device behind the IOMMU. It did, on all three.
 - (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
-  number before and after on all three architectures.
+  number before and after on all three architectures. (c2) is
+  [948](0948-virtio-gpu-on-virtio-drivers.md).
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
@@ -262,7 +263,8 @@ the measured-boot trusted base.
 - **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
 - **Done.** Item (c0), nifeos/nife#2587, on calef's "A" on #2586.
-- **Outstanding.** (c1) to (c4): no pull request names them (checked 2026-10-22 UTC).
+- **Milestone 948.** Item (c2).
+- **Outstanding.** (c1), (c3), (c4): no block names them (checked 2026-10-24 UTC).
 
 ## Index row
 
