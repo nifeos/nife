@@ -10,15 +10,15 @@
 //! notes/cryptography-provider.md ("What runs, as opposed to what builds") has the table.
 
 //! # BUGS
-//!
-//! - **This does not speak TLS**: no handshake and no network.
-//! - **No ECDSA or RSA signature vector**: signatures are exercised only by the two pinned chains.
+//! - **No TLS handshake, no network, no ECDSA or RSA vector**: only the two pinned chains verify.
 //! - **Expiry is never exercised**: the chains verify at `CAPTURED_AT`, not at "now".
-//! - **Run-time CPU feature detection and `x86_64-unknown-nife` disagree, and nothing warns.**
-//!   `chacha20` ran AVX2 in ring 3 and died with `vector 6 (invalid opcode)`; `--cfg
-//!   chacha20_force_soft` in `.cargo/config.toml` is the fix.
-//! - **A vector proves the answer, not the manner**: nothing measures timing, so a correct fallback
-//!   that is not constant-time passes.
+//! - **CPU feature detection and `x86_64-unknown-nife` disagree, silently**: `chacha20` ran AVX2 in
+//!   ring 3 (`vector 6 (invalid opcode)`) until `.cargo/config.toml` set `--cfg
+//!   chacha20_force_soft`.
+//! - **A vector proves the answer, not the manner**: a fallback that is not constant-time passes.
+//! - `cargo xtask test` builds it for every leg it boots
+//!   (`helpers/build-cryptography-exerciser.sh`, milestone 855 (the TLS graph enters the gated
+//!   build)); the kernel test skips only in a boot that did not build it.
 
 // `entropy_backend` defines `getrandom`'s two custom-backend symbols and nothing references them
 // from Rust, so an rlib nobody names is not linked. Same shape as a panic handler.

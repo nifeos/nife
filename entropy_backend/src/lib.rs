@@ -58,14 +58,14 @@ unsafe extern "Rust" fn __getrandom_v03_custom(
 
 /// `getrandom` **0.2**'s custom-backend hook: a different symbol and signature, the same body.
 ///
-/// What `getrandom::register_custom_getrandom!` expands to, written out so it needs none of 0.2's
-/// re-exports in scope. Upstream's signature, `fn(*mut u8, usize) -> u32` with the Rust ABI,
-/// returns zero for success; `fill_bytes` writes the whole slice or panics, so it never fails.
+/// What `getrandom::register_custom_getrandom!` expands to, written out to need none of 0.2's
+/// re-exports, at the cost of the macro's type check. Upstream's signature is `unsafe fn
+/// __getrandom_custom(*mut u8, usize) -> u32`, zero for success and an error code otherwise.
 ///
 /// # Safety
-///
-/// `dest` is valid for writes of `len` bytes, and 0.2 has already zero-filled it
-/// (`uninit_slice_fill_zero` in its `custom.rs`), so nothing here observes uninitialized memory.
+/// `getrandom` 0.2's contract, which is the 0.3 one plus a guarantee: `dest` is valid for writes of
+/// `len` bytes, and 0.2 has already zero-filled it (`uninit_slice_fill_zero` in its `custom.rs`),
+/// so nothing here observes uninitialized memory.
 #[unsafe(no_mangle)]
 unsafe extern "Rust" fn __getrandom_custom(dest: *mut u8, len: usize) -> u32 {
     // SAFETY: the caller's contract, restated above.
