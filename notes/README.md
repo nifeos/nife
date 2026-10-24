@@ -68,3 +68,5 @@ area directories), ruled B). Appendices under
 `system-initializer.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
+
+`system-test-modules.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.

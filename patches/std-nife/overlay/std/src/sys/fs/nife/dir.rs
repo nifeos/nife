@@ -1,55 +1,24 @@
 //! **`Dir`**: std's `openat`-shaped directory handle (milestone 122), unstable as
 //! `#![feature(dirfd)]`.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
 use super::*;
 
-/// **A directory a program holds** (milestone 122): std's own `openat`-shaped API, `Dir::open` and
-/// `Dir::open_file`, bound to the capability it already is.
+/// **A directory a program holds** (milestone 122): std's `openat`-shaped `std::fs::Dir`
+/// (`#![feature(dirfd)]`, rust-lang/rust#120426), bound to the capability it already is. It is
+/// also what `cap-std` binds to, DECISIONS §84's first preference for porting real software.
 ///
-/// This is the half of milestone 122 that matters more than nested paths, and the reason is the
-/// mistake it avoids rather than the software it runs. If path composition were the only interface,
-/// no program would ever be written to hold a directory and the system's model would be invisible
-/// to everything running on it, which is a capability system quietly becoming an ambient one with
-/// extra steps.
-///
-/// **It is not an interface this project invented**, which was the surprise: `std::fs::Dir` exists
-/// upstream behind `#![feature(dirfd)]` (rust-lang/rust#120426) and is exactly `openat`. Until this
-/// milestone nife got std's generic fallback, which stores a `canonicalize`d path, so `Dir::open`
-/// on this system failed at the first call in the first line, and the type most aligned with what
-/// this OS *is* was the one type it could not offer. It is also what `cap-std` binds to, which is
-/// DECISIONS §84's first preference for porting real software.
-///
-/// # The rights it asks for, which is the whole design
-///
-/// Everywhere else in this module the rule is **ask for the minimum the verb needs**, because
-/// over-asking is `EPERM` rather than attenuation and a PAL cannot read its own capability. A held
-/// directory has no single verb to be the minimum of: it is an object, and what will be asked of it
-/// later is not knowable when it is minted.
-///
-/// So a `Dir` asks for **everything its parent carries**, which is what `openat(dirfd, name,
-/// O_DIRECTORY)` hands back on Unix and is the honest analogue. It cannot widen anything: the
-/// server's answer is `parent & requested`, so the result is the projection of an authority this
-/// process already holds onto one directory inside it.
-///
-/// Knowing what the parent carries is the awkward part, because **the contract has no way to say
-/// "attenuate to whatever you have"** and no verb that reports a handle's rights. The common case
-/// costs one message: ask for `dir::ALL`, and a full-rights grant answers with the handle. A
-/// narrowed grant answers `EPERM`, and then [`Dir::held_rights`] finds out exactly what is there by
-/// asking for one right at a time, one message per bit of `dir::ALL` (seven today), once per
-/// `Dir::open` at the first hop only, since every hop after that descends from a parent whose
-/// rights are now known.
-///
-/// That probe is a workaround and is recorded as one: the fix is a sentinel in `OPENDIR`'s rights
-/// word meaning "the parent's, whatever they are", which is a contract change and therefore not a
-/// lane's to make. See the BUGS section of notes/std.md.
+/// A `Dir` asks for **everything its parent carries**, as `openat(dirfd, name, O_DIRECTORY)` does
+/// on Unix, where every verb elsewhere asks for its minimum; the server answers `parent &
+/// requested`, so nothing widens. The contract cannot say "attenuate to whatever you have", so the
+/// first hop asks for `dir::ALL`, and on `EPERM` [`Dir::held_rights`] asks one right at a time, at
+/// most once per `Dir::open`. The fix is a sentinel in `OPENDIR`'s rights word, a contract change.
+/// See notes/std/fs-descent.md.
 pub struct Dir {
     /// The server's handle, `proto::ROOT` for the granted directory itself.
     pub(super) at: At,
@@ -100,11 +69,8 @@ impl Dir {
     /// propagates out of the first probe as an ordinary `NotFound`.
     pub(super) fn held_rights(&self, p: &mut Page, name: &str) -> io::Result<u64> {
         let mut held = 0;
-        // Every bit of `dir::ALL`, lowest first, rather than a list of names. The list this
-        // replaced named six rights and `ALL` had carried a seventh (`SETTIME`, milestone 47)
-        // since 2026-08-24, so a `Dir` under a narrowed grant silently dropped it. Harmless so far,
-        // because no `Dir` operation asks for `SETTIME`; walking the mask is what keeps the next
-        // right from being missed the same way when one does.
+        // Every bit of `dir::ALL`, lowest first, rather than a list of names, so a right added to
+        // `ALL` is never silently dropped under a narrowed grant.
         let mut rest = fsproto::dir::ALL;
         while rest != 0 {
             let right = rest & rest.wrapping_neg();
@@ -142,36 +108,25 @@ impl Dir {
     }
 
     /// **Open a directory with the minimum permission for traversal** (`#![feature(dirfd)]`,
-    /// rust-lang/rust#120426, added to the trait every backend implements the day this overlay
-    /// was bumped past `nightly-2026-08-26`). Unix answers this with `O_PATH`/`O_SEARCH`: a
-    /// handle that can be descended through but not necessarily enumerated.
+    /// rust-lang/rust#120426), which Unix answers with `O_PATH`/`O_SEARCH`.
     ///
-    /// **This contract has no such right to ask for.** [`fsproto::dir`] has seven bits
-    /// (`ENUMERATE`, `READ`, `WRITE`, `CREATE`, `REMOVE`, `DESCEND`, `SETTIME`) and [`Dir`]'s own
-    /// header explains why every open here asks for all of them anyway: a held directory is an
-    /// object, not a verb, and there is no wire sentinel meaning "the least you'll let me have". So
-    /// the honest answer is [`Dir::open`] itself, which already asks for everything the parent
-    /// carries, a superset of "enough to traverse".
+    /// [`fsproto::dir`]'s seven bits (`ENUMERATE`, `READ`, `WRITE`, `CREATE`, `REMOVE`, `DESCEND`,
+    /// `SETTIME`) have no traverse-only right, and a held directory asks for everything its parent
+    /// carries (see [`Dir`]). So this is [`Dir::open`], a superset of "enough to traverse".
     pub fn open_for_traversal(path: &Path) -> io::Result<Dir> {
         let mut opts = OpenOptions::new();
         opts.read(true);
         Dir::open(path, &opts)
     }
 
-    /// **A second handle to the directory this one already holds**, which upstream added to every
-    /// backend on `nightly-2026-09-22` (`std::fs::Dir::try_clone`, still `#![feature(dirfd)]`).
-    /// Unix answers it with `dup`, Windows with `DuplicateHandle`, and both are cheap because a
-    /// descriptor is a copyable reference to an object the kernel owns.
+    /// **A second handle to the directory this one already holds** (`std::fs::Dir::try_clone`,
+    /// `#![feature(dirfd)]`).
     ///
-    /// **Here it is the gap [`Dir::open_dir`] and [`File::duplicate`] already record**, arrived at
-    /// from a third direction: a handle is a token the FS server minted for one session, the
-    /// contract has no dup verb, and copying the number would forge a second owner of the same
-    /// handle, including its close. So this refuses for anything the server minted.
-    ///
-    /// The granted directory is the exception and costs nothing, for the reason [`Dir::root`]
-    /// gives: `proto::ROOT` is a sentinel rather than a minted handle, any number of `Dir`s may
-    /// hold it at once, and its `Drop` closes nothing. That is the same split `open_dir("")`
-    /// already makes, so the two answers cannot disagree.
+    /// Refused with `Unsupported` for anything the server minted, the gap [`Dir::open_dir`] and
+    /// [`File::duplicate`] also record: a handle is a token minted for one session, the contract
+    /// has no dup verb, and copying the number would forge a second owner of the handle, including
+    /// its close. The granted directory costs nothing: `proto::ROOT` is a sentinel any number of
+    /// `Dir`s may hold, and its `Drop` closes nothing. `open_dir("")` makes the same split.
     pub fn duplicate(&self) -> io::Result<Dir> {
         if self.at.0 == proto::ROOT { Ok(Dir::root()) } else { Err(unsupported_err()) }
     }

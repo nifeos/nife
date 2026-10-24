@@ -1,26 +1,21 @@
 //! **Thread-local keys on nife, through the thread pointer** (milestone 812 (`std::thread::spawn`
 //! runs real threads in one address space); §269 (how threads share a process) fork 4).
 //!
-//! Each thread's thread pointer (`TPIDR_EL0`, `tp`, the `FS` base) names its own [`Block`]: the
-//! kernel sets it, at `CONFIGURE` for a spawned thread and through `SET_THREAD_POINTER` on its own
-//! TCB for the main thread, and keeps it per thread. A `thread_local!` is a key, an index into the
-//! block's slots, which is xous's shape for the same register. The block also carries what a
-//! thread needs to know about itself: its current-CPU page (§269 fork 6, whose address `CONFIGURE`
-//! answered) and its sleep objects.
+//! Each thread's thread pointer (`TPIDR_EL0`, `tp`, the `FS` base) names its own [`Block`], set by
+//! the kernel at `CONFIGURE` for a spawned thread and through `SET_THREAD_POINTER` on its own TCB
+//! for the main thread. A `thread_local!` is a key, an index into the block's slots (xous's shape).
+//! The block also holds the thread's current-CPU page (§269 fork 6), its sleep objects, and its
+//! allocation cache (milestone 561 (a per-CPU allocator is what the current-CPU page was for);
+//! [`allocation_cache`]). A spawned thread's end spills the cache before anything else of the
+//! thread's is freed ([`destroy_tls`]), and frees the block last ([`free_own_block`]).
+
+//! # The main thread's block
 //!
-//! **The main thread's block is made on first use**, before any second thread can exist, because
-//! `Thread::new` makes it first. Until then the main thread is the only thread, so a process-wide
-//! flag says "not yet" without a race. On `x86_64` that matters for more than speed: ring 3 cannot
-//! read the `FS` base (`CR4.FSGSBASE` is off), only address through it, so a block's first word
-//! points at the block itself and is read as `fs:[0]`, which before the base is set would read
-//! address zero.
-//!
-//! **The block holds the thread's allocation cache** (milestone 561 (a per-CPU allocator is what
-//! the current-CPU page was for)), so `sys/alloc/nife` reaches it with the thread pointer and one
-//! offset ([`allocation_cache`]). A spawned thread's end closes and spills it before anything else
-//! of the thread's is freed ([`destroy_tls`]), and frees the block itself last
-//! ([`free_own_block`]), because a free after the block is gone would otherwise write into it.
-//!
+//! Made on first use, before any second thread can exist, because `Thread::new` makes it first;
+//! until then a process-wide flag says "not yet" without a race. On `x86_64` ring 3 cannot read the
+//! `FS` base (`CR4.FSGSBASE` is off), only address through it, so a block's first word points at
+//! the block itself and is read as `fs:[0]`, which before the base is set would read address zero.
+
 //! # BUGS
 //!
 //! - **[`KEYS`] keys a process**, and a key is never reused: `std` makes one per `thread_local!`

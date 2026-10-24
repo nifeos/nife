@@ -1,23 +1,14 @@
-//! **An ordinary program that wants to print**, milestone 8.
+//! An ordinary program that wants to print (milestone 8 (the console driver leaves the kernel)).
+//! It owns no UART and cannot reach one: it writes its text into a page it shares with the console
+//! server (`components/src/console.rs`) and sends the length over an endpoint.
 //!
-//! It does not own a UART and cannot reach one. It writes its text into a page it *shares* with
-//! the console server and sends the length over an endpoint. That is the whole of "printing" in
-//! this system.
-//!
-//! # Why the bytes travel in shared memory and the length travels in a message
-//!
-//! DECISIONS §10: **IPC carries control, shared memory carries data.** The kernel is not in the
-//! data path at all. It never sees the bytes, never copies them, never validates a pointer into
-//! them. The confused-deputy problem that milestone 7d had to defend against **cannot arise
-//! here**, because the thing that could be confused (a kernel doing I/O for a user) no longer
-//! exists. The architecture dissolved the bug.
-//!
-//! It checks its own image first ([`loaded_image_check`]) and kills itself if any part of it is
-//! wrong, which is what lets `a_user_client_moves_data_through_shared_memory` assert on the
-//! absence of a fault as well as on the bytes.
-//!
-//! The server it talks to is `components/src/console.rs`, its own binary since 19f.3.
-//!
+//! IPC carries control and shared memory carries data (DECISIONS §10 (process model)), so the
+//! kernel never sees, copies or validates the bytes, and the confused deputy that milestone 7d
+//! (user mode: EL0, capabilities, the ELF loader, and IPC) defended against cannot arise. It checks
+//! its own image first ([`loaded_image_check`]) and kills itself if any part is wrong, which lets
+//! `a_user_client_moves_data_through_shared_memory` assert on the absence of a fault as well as on
+//! the bytes.
+
 //! Name: provisional (milestone 291). This was `hello`'s `PRINTING` role, number 2. Follows the
 //! `*_test_client` shape the tree already uses for a fixture that drives a real service
 //! (`fs_test_client`, `login_test_client`, `credentialer_test_client`, `socket_test_client`).
@@ -53,9 +44,8 @@ pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     require(print(b"      hello from EL0, printed by a driver that also runs at EL0.\n").is_ok());
     require(print(b"      the kernel never saw these bytes.\n").is_ok());
 
-    // Done, so exit. This used to spin ("so the timer can prove it still preempts us"), which the
-    // dedicated `interrupt_ignorer` binary proves better and without leaving a CPU-bound thread
-    // behind for the rest of the run.
+    // Done, so exit. Preemption is `interrupt_ignorer`'s to prove, and spinning here would leave a
+    // CPU-bound thread behind for the rest of the run.
     exit();
 }
 
