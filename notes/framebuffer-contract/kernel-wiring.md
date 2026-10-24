@@ -1,5 +1,7 @@
 # The kernel's display wiring
 
+*Name: provisional, named for its content.*
+
 This appendix to [`notes/framebuffer-contract.md`](../framebuffer-contract.md) carries the design
 behind `kernel/src/user/display_service.rs`: how the kernel wires the GPU driver, its clients and
 the firmware-screen terminal, and why each one holds what it holds.

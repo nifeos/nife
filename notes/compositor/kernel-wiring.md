@@ -1,5 +1,7 @@
 # The kernel's compositor wiring
 
+*Name: provisional.*
+
 This appendix to [`notes/compositor.md`](../compositor.md) carries the design behind
 `kernel/src/user/compositor_service.rs`: what the kernel hands the compositor and each client, and
 why the test wiring is shaped the way it is.

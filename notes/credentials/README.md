@@ -20,3 +20,4 @@ Each stem below is named for its content, and calef names files.
 - `argon2id` Name: provisional, after the algorithm it records.
 - `what-is-proven` Name: provisional, after the parent's own heading.
 - `contract` Name: provisional, after the crate it explains.
+Each stem here is named for its content, and calef names files.

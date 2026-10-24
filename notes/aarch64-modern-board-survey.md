@@ -1,5 +1,7 @@
 # A modern aarch64 board for nife's first ARM machine
 
+*Name: provisional, minted 2026-10-21 (UTC) by survey/aarch64-modern-board.*
+
 *Name provisional (`aarch64-modern-board-survey`), per the rule that a lane ships a provisional name
 and says so. Surveyed 2026-10-21 (UTC); every price and stock figure is that day's.*
 

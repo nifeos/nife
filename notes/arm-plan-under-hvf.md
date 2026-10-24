@@ -1,5 +1,7 @@
 # How much of the ARM plan runs under HVF
 
+*Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.*
+
 *Name provisional (`arm-plan-under-hvf`), per the rule that a lane ships a provisional name and says
 so. Measured 2026-10-21 (UTC) on patagonia, QEMU 11.1.2, `accel=hvf`, an Apple M-series core. The
 logs, probe sources and seL4 build recipe are in

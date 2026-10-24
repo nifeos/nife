@@ -11,8 +11,3 @@ budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `the-guest-test` Name: provisional, after the parent's "What the guest test proves". calef names
-  files.
-- `quote-state-machine` Name: provisional, after the parent's heading of the same name. calef names
-  files.

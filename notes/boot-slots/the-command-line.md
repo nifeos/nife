@@ -1,5 +1,7 @@
 # The two loader-to-kernel tokens on the command line
 
+*Name: provisional, for what the page describes. calef names files.*
+
 A page beside [`notes/boot-slots.md`](../boot-slots.md). It holds the design behind
 `boot_slot::cmdline` and `boot_slot::medium`, the two words `uefi_loader` writes on the kernel's
 command line for the running system to read.

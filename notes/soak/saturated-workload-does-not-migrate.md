@@ -1,5 +1,7 @@
 # A saturated workload does not migrate under this scheduler
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `migration-finding`.*
+
 An appendix to [notes/soak.md](../soak.md), which states the finding and what it means for risk 5.
 This file holds the measurement, the mechanism, the instrument that found it, and the instruments
 the soak was deliberately not built on.

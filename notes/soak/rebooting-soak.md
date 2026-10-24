@@ -1,5 +1,7 @@
 # The rebooting soak on radon: why, the hazard, and the reset
 
+*Name: provisional.*
+
 An appendix to [notes/soak.md](../soak.md). It is milestone 249 (the boot lottery is sampled by a
 person walking to the board): `--features reboot_soak_test`, `script/board-image --soak --reboot`
 and `script/board-console --tally`. The procedure and its outcomes are in

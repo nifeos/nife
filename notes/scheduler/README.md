@@ -36,3 +36,4 @@ Each stem below is named for its content, and calef names files.
 - `switch` Name: provisional. After the source file it explains.
 - `rendezvous` Name: provisional. After the source file it explains.
 - `wake-handshake` Name: provisional. After the crate it explains.
+Each stem here is named for its content, and calef names files.
