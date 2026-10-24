@@ -1,17 +1,10 @@
 //! **The 17 GiB machine, without the 17 GiB machine.**
 //!
-//! These run in the `x86_64` kernel leg under QEMU, which boots with 2 GiB and can therefore
-//! never produce the memory map that killed the first boot on real hardware. They do not need
-//! it to: [`super::firmware_fill_ceiling`] is a function of the map alone, so the map goes in
-//! as a value. It is transcribed from `art/bench/xenon-2026-09-05-first-light.jpg`, which is
-//! the only transcript that boot left. **It is 33 of the 38 entries the machine reports**, which
-//! is nearly the whole map rather than a small sample: every entry the photograph shows, being
-//! the tail plus the chain above 2 MiB. (This comment said 148 until 2026-09-04, from a
-//! misreading of the photograph that the second boot's clearer shot corrected. The count was
-//! wrong in the direction that undersold the fixture.)
-//!
-//! Moved out of `mmu.rs` unchanged apart from its indent by lane `maintainer/last-three-over-2000`
-//! (2026-10-12 UTC), when that file became an index; its path, `mmu::map_tests`, is the same.
+//! These run in the `x86_64` kernel leg under QEMU, which boots with 2 GiB and can never produce
+//! the memory map that killed the first boot on real hardware. [`super::firmware_fill_ceiling`] is
+//! a function of the map alone, so the map goes in as a value, transcribed from
+//! `art/bench/xenon-2026-09-05-first-light.jpg`: 33 of the 38 entries the machine reports, every
+//! one the photograph shows.
 
 use super::{LOCAL_APIC_PHYS, firmware_fill_ceiling};
 

@@ -28,31 +28,19 @@ pub fn current_sp() -> u64 {
 
 /// A DMA write memory barrier: order all prior stores before any device sees a later one.
 ///
-/// **`sfence`, and the reason it is nearly free is the whole reason x86 is worth porting to.** This
-/// machine is TSO: stores are already globally ordered with respect to each other, so the ordinary
-/// case needs no instruction at all. `sfence` is here because non-temporal stores and
-/// write-combining memory are the exceptions TSO does not cover, and a DMA buffer can legitimately
-/// be either.
-///
-/// This is where rule #4's bet pays out in the direction it was made. Code proven correct under
-/// ARM's weak model and RISC-V's RVWMO is correct here by construction; nothing about developing on
-/// x86 first could have said the reverse, and the tree would have accumulated invisible
-/// strong-ordering assumptions that only a real port would have found.
+/// `sfence`. x86 is TSO, so ordinary stores are already ordered against each other; `sfence` covers
+/// the exceptions TSO does not, non-temporal stores and write-combining memory, either of which a
+/// DMA buffer can be. See notes/x86-port/what-does-not-fit.md.
 pub fn direct_memory_access_write_barrier() {
     instructions::sfence();
 }
 
 /// Make the instruction fetcher aware of code just written as data.
 ///
-/// **Nothing to do, and this is the one place x86's complexity buys something.** The instruction
-/// cache on x86 is architecturally coherent with the data caches: a store to an address, followed
-/// by a fetch of that address, sees the store, on this core and on every other, with no
-/// software action at all. aarch64 needs a clean/invalidate loop over cache lines and a broadcast;
-/// RISC-V needs `fence.i` locally and an SBI RFENCE remotely (and getting that wrong is what hung
-/// init on first silicon). Here the guarantee is the hardware's.
-///
-/// A serialising instruction is still required if the *modifying* store and the fetch are separated
-/// by a jump the CPU may have already speculated past, which the callers here are not doing.
+/// Nothing to do: x86's instruction cache is architecturally coherent with the data caches, so a
+/// fetch sees an earlier store, on this core and on every other. A serializing instruction would
+/// still be needed if the store and the fetch were separated by a jump the CPU may already have
+/// speculated past; no caller here does that. See notes/x86-port/what-does-not-fit.md.
 pub fn sync_icache(va: u64, len: usize) {
     let _ = (va, len);
 }
