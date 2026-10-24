@@ -14,8 +14,3 @@ and BUGS. This directory carries the detail its prose budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `device-tree-handover` Name: provisional, for the handover the appendix measures. calef names
-  files.
-- `argon` Name: provisional, for the parent's argon bench check. calef names files.
-- `the-program` Name: provisional, for the program the appendix describes. calef names files.

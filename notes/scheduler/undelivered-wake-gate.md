@@ -1,5 +1,7 @@
 # The undelivered-wake gate: the misreading, the companions and the loom model
 
+*Name: provisional. After the main page's own heading.*
+
 An appendix to [notes/scheduler.md](../scheduler.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). The main page says what the gate does. This is why it was built, why the failure it was built
 against was misread, and how the protocol is model-checked.

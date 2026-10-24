@@ -15,8 +15,4 @@ carry the detail its prose budget has no room for.
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `shadow-ring` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `directions` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `validator` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-11.
+Each stem here is named for its content, and calef names files.

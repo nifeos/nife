@@ -1,5 +1,7 @@
 # The validator crate, and what its harnesses cover
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-11.*
+
 An appendix to [notes/dma.md](../dma.md), whose "The validator" section says what
 `crates/direct_memory_access_validator` does and why it owns the ring layout. This file holds the
 reasoning behind its predicate and the coverage argument of each Kani harness, which the crate's doc

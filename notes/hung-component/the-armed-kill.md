@@ -1,5 +1,7 @@
 # The hung component: the kill that a blocked thread never spends
 
+*Name: provisional.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), whose taxonomy names case (c): a
 thread blocked on an endpoint its supervisor cannot reach. This is the mechanism that made case (c)
 impossible to tear down when the note was written. Milestone 133 (ending a permanently blocked

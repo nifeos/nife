@@ -1,5 +1,7 @@
 # Two design choices in the framebuffer handoff
 
+*Name: ratified 2026-10-18 (calef: "Approve all five").*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md), which holds what was
 chosen: the firmware's framebuffer, carried across the handoff. This file holds why the address
 rides PVH's command line rather than a new structure field, and why the kernel's screen console is

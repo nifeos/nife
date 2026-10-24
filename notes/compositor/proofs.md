@@ -1,5 +1,7 @@
 # How the compositor is proved rather than asserted
 
+*Name: provisional.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), which states the conclusion.
 
 ## How the isolation is proved rather than asserted

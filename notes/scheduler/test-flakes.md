@@ -1,5 +1,7 @@
 # Two test flakes the scheduler's migration exposed
 
+*Name: provisional.*
+
 An appendix to [notes/scheduler.md](../scheduler.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). Each was a test asserting something the scheduler never promised, and each is recorded so the
 next person who sees it does not debug the branch in front of them.

@@ -1,5 +1,8 @@
 # The system initializer: the interactive system, built once
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-08. Named for the crate it
+describes. calef names files.*
+
 `crates/system_initializer` is everything the progenitor does after its kernel starts it.
 `components/src/progenitor.rs` is the one first process on every architecture, and all it holds is
 the table of slot numbers its kernel granted (`BootEndowment`). From that table alone `boot` parses
@@ -78,5 +81,3 @@ and `std` layouts of a child's table.
   pool is one region smaller until reboot. nife's `std` never splits (its allocator only `MAP`s), so
   this takes a program written to do it. Closing it needs a right that allows `MAP` and not `SPLIT`,
   which is the syscall surface and an architect's call.
-
-*Name: provisional. Named for the crate it describes. calef names files.*

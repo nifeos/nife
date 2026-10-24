@@ -1,5 +1,7 @@
 # What the alternatives to a framebuffer console cost
 
+*Name: provisional, after the parent's "What the alternatives cost".*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md). Milestone 243 (a machine
 with no serial port)'s block listed candidates and endorsed none. This file prices each against the
 two halves, the human watching and the gate reading.

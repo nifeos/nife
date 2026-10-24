@@ -1,5 +1,7 @@
 # Region reaping: what destroying a region does to the objects in it
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-sched-objects.*
+
 `sched::reclaim_region` is how a region's owner gets its memory back (§16 (object revocation)). It
 tears down every kernel object retyped from the region, unpins it and returns the pages. The code is
 `kernel/src/sched/region_reaping.rs`. The supervisor's way in, `rendezvous::REAP` (§32 (a supervisor

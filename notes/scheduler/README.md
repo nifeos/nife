@@ -24,12 +24,4 @@ the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `undelivered-wake-gate` Name: provisional. After the main page's own heading.
-- `reclaim-lost-wakeup` Name: provisional.
-- `missed-reschedule-poke` Name: provisional.
-- `test-flakes` Name: provisional.
-- `thread-dump` Name: provisional.
-- `switch` Name: provisional. After the source file it explains.
-- `rendezvous` Name: provisional. After the source file it explains.
+Each stem here is named for its content, and calef names files.

@@ -24,17 +24,4 @@ behind each section of the main page.
 `radon-2026-10-10` follow `notes/benchmarks/`'s shape, a page's appendices beside it, dated by the
 board and the evening. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `qemu-2026-09` Name: ratified 2026-10-18 (calef, "Yes") Refused `qemu-baselines`.
-- `saturated-workload-does-not-migrate` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `migration-finding`.
-- `tick-route` Name: provisional.
-- `placement-census` Name: provisional.
-- `radon-2026-09-03` Name: provisional. Dated like `radon-2026-10-10`.
-- `radon-2026-10-20` Name: provisional. Dated like `radon-2026-10-10`.
-- `radon-2026-10-21` Name: provisional. Dated like `radon-2026-10-10`.
-- `rebooting-soak` Name: provisional.
-- `rebooting-soak-procedure` Name: provisional.
-- `boot-lottery` Name: provisional.
-- `how-long-to-run-it` Name: provisional.
-- `limitations` Name: provisional.
+Each stem here is named for its content, and calef names files.

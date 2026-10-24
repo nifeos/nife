@@ -1,5 +1,7 @@
 # The hung component: what counts as hung, argued
 
+*Name: provisional. Named after the parent's question 2.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), whose question 2 states the
 answer: the bound is held by the supervisor. This is the argument, owner by owner, for what a bound
 should be denominated in, and where the built one, a duration on the swap's quiesce, sits against it.
