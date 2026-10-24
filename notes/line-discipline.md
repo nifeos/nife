@@ -149,3 +149,32 @@ Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
   Flipping the mode while the shell is between reads abandons what the shell had half typed and
   fails a parked read with `BAD_REQUEST`, which the shell's §227 recovery absorbs. That is a
   disruption, not authority.
+
+## The keyboard as a second input source
+
+`keyboard_driver` turns virtio-input key events into the bytes a terminal understands, and its
+spawner picks one of two wirings in `arg0`:
+
+```text
+  MODE_RING (rung two, a compositor scene):
+  virtio-input ──virtio (PCIe, behind the IOMMU)──► keyboard_driver ──the input ring──► compositor
+   (a keyboard)                                      │                (shared memory)
+                                                     └──doorbell COMMIT──► "look at the surfaces"
+
+  MODE_DIRECT (milestone 177, option A: the boot's single-terminal case):
+  virtio-input ──virtio──► keyboard_driver ──OPERATION_BYTES, one CALL──► line_editor
+```
+
+`MODE_RING` is DECISIONS §33 (the compositor's authority is memory, not messages) seen from the
+producing side, and [glyphs.md](glyphs.md) has its argument. `MODE_DIRECT` serves a boot with
+exactly one terminal, where there is no second window to misdirect a keystroke to
+(design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed `CALL` capability to
+`line_editor`'s served endpoint, granted at spawn, and sends every keystroke there in the same
+`OPERATION_BYTES` framing the UART receive driver uses. A keyboard and a serial line are both one
+input source to the discipline, and neither contract grew to carry the other's bytes. That is
+narrower authority than the ring, not looser: one capability, fixed by whoever built the driver.
+
+The driver does no key repeat of its own: the device sends repeats, and `video_terminal::keymap`
+honors them. It drives no LEDs and switches no layouts. It handles no mouse or tablet, though a
+`virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci`), and it makes no
+configuration-space query.
