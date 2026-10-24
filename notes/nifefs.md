@@ -129,6 +129,67 @@ Worth stating in full, because it is the argument for having a round-trip harnes
 is *proved total* by Kani, over every image length with no bound, and that proof is completely silent
 here. Nothing panicked. The property that broke had never been written down.
 
+## The capacity constants, as they stand
+
+`DIR_BLOCKS` is 14, which puts `MAX_FILES` at 178. The kernel suite's archive packs every program
+the tree builds and, where `cargo xtask basalt-fetch` ran, the program of each basalt package its
+tests use. With ripgrep, ioping, hackbench and SQLite's `speedtest1`, the x86_64 archive held 128
+entries against the previous ceiling of 127. `write_image` refused, which is the mechanism working.
+Fifty entries of headroom cost 2 KB in an image of many megabytes. Running out costs some lane a
+build failure on a change that has nothing to do with archives, because the ceiling is crossed by
+lanes that cannot see each other.
+
+The move from 6 to 14 kept the magic, by the rule the magic section above gives. `start_block` is
+absolute, every reader finds the same data at the same offsets, and `ENTRIES_IN_FIRST_BLOCK` is a
+function of `NAME_LEN` alone. No reader can tell, so a bump would only break the blk driver's
+hardcoded magic check.
+
+`DIR_BLOCKS` has one cost that is not image bytes. `a_short_image_is_refused_not_indexed` proves the
+boundary over a `kani::any()` array of `DIR_BLOCKS * BLOCK - 1` bytes, 7167 at 14 blocks. `parse`
+compares the length and returns before touching a byte, so the solver should not care. A `prove`
+shard's total cannot show one harness's share, so the number to watch on a raise is that harness's
+own time.
+
+Entries pack from `HEADER_LEN` with no per-block padding, so an entry may straddle a block boundary.
+That costs nothing to a reader holding the whole image (the kernel, the FS server, `xtask`). It is
+the whole limit for the blk driver, which walks the directory inside a 512-byte DMA buffer.
+`ENTRIES_IN_FIRST_BLOCK` is the bound that keeps it from reading past the buffer.
+
+`Fs` holds a borrowed image and a count, with no entry array. Entries decode on demand, a few
+instructions per lookup on a path that runs a handful of times per boot. `parse` still validates
+every entry up front, so a server rejects a corrupt image once rather than mid-request.
+
+## What is proved, and what is not
+
+The kernel parses the initial ramdisk (`kernel::user::program`), which puts this parser in the TCB
+on externally supplied bytes, the position the `device_tree_blob` parser holds. A proof of the whole
+parse over a symbolic image did not converge: CBMC ran past 20 CPU-minutes. So, as in
+`device_tree_blob`, the proof is two harnesses that converge and carry the weight.
+
+`the_validation_implies_reads_slice_is_in_bounds` covers every entry value and image length, with
+no symbolic arrays. It calls `Fs::entry_bounds`, the one function both `parse` and `read` use, so
+the check and the indexing cannot drift apart. A harness that restated the arithmetic would prove a
+property of its copy: making `read` slice from `(start_block + DIR_BLOCKS) * BLOCK` left such a
+restatement verifying in 0.04 seconds. Its two equalities are the format, not the implementation:
+an entry names an absolute block and blocks are `BLOCK` bytes.
+
+`a_short_image_is_refused_not_indexed` covers every image under the directory span. It carries
+`#[kani::unwind(9)]`. Without a bound, a guard weakened enough to admit the one length got no
+verdict. CBMC entered the entry loop, whose bound is a `count` read from symbolic bytes, and never
+finished. The `< BLOCK` weakening ran into CI's 45-minute timeout, and the off-by-one
+`< DIR_BLOCKS * BLOCK - 1` was killed at 420 s. On the correct tree no loop is reachable, so the bound adds no unwinding assertion
+and removes no path. Measured 2026-09-24 with Kani 0.67.0, three runs each: 0 of 164 checks failed
+(18 unreachable) both with and without it, at 0.16 to 0.29 s. Nine is the least bound that lets the
+8-byte magic compare finish. At 3 the `< BLOCK` replay went red in 4.3 s, but on an unwinding failure
+in `memcmp` reached only by `BadMagic` paths. At 9 it goes red in 19.6 s, in `parse`'s own entry loop,
+on paths where a short image is accepted.
+
+Two things are deliberately not proved. Whole-parse totality is the wall above; the indexing it
+would add is `u32le` and `copy_from_slice` at offsets under the directory span, which the proved
+length guard makes sound. `name_str` is not proved either: its panic surface is a slice bounded by
+`position()`, and its UTF-8 half is `core`'s validator, which costs CBMC minutes and is trusted
+everywhere else.
+
 ## BUGS
 
 - A duplicate name is not an error, and the first one wins. `Fs::read` returns the first entry
@@ -140,9 +201,8 @@ here. Nothing panicked. The property that broke had never been written down.
   only, so it can find the first `ENTRIES_IN_FIRST_BLOCK` files (12) and no more. It walks the tiny
   three-file test disk, not the initrd, so nothing hits it today, and nothing in the format announces
   the limit either.
-- `MAX_FILES` still grows with the suite, not with the system. 76 is 26 clear of the fuller of
-  the two initrds (riscv64, at 50), and the pressure on it is the number of programs the test suite
-  ships. The real fix, if it recurs, is not another `DIR_BLOCKS` bump but a directory whose size is
+- `MAX_FILES` still grows with the suite, not with the system. It is 178, and the pressure on it
+  is the number of programs the test suite ships. The real fix, if it recurs, is not another `DIR_BLOCKS` bump but a directory whose size is
   written in the superblock, so a reader learns it from the image instead of from a constant every
   reader has to agree on.
 - The archive has no directories, no writes, and no permissions. That is the design, not a gap:

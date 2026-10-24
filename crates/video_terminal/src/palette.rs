@@ -9,46 +9,16 @@
 #[cfg(doc)]
 use super::*;
 
-/// **The sixteen ANSI colours**, as `0x00RRGGBB` words in the surface's own pixel format: canonical
-/// Solarized Dark, with one entry moved by one unit.
-///
-/// Indices 0..8 are the normal colours in the usual ANSI order (black, red, green, yellow, blue,
-/// magenta, cyan, white) and 8..16 their bright forms, from Ethan Schoonover's published table
-/// (github.com/altercation/solarized, "The Values", `16/8 TERMCOL`), chosen by calef in §104 (the
-/// rich-text font is `DejaVu Sans Mono`, and the palette is Solarized).
-///
-/// **Solarized's bright half is mostly its greyscale ramp** (8, 10, 11, 12, 14; 9 orange, 13
-/// violet).
-///
-/// **Entry 14 is `0x93a1a0`, not Schoonover's `0x93a1a1`.** That one unit of blue is the only
-/// departure from the published table, so the palette passes the gate below: `93,a1,a1` repeats a
-/// channel, so a swapped green and blue would leave it unchanged. The nudge is a CIE76 difference
-/// of 0.56, under the roughly 2.3 quoted as just noticeable.
-/// `the_palette_is_solarized_dark_but_for_one_unit` holds that this is the whole difference.
-///
-/// # The gate
-///
-/// The properties that make a corrupted pixel a detectably wrong colour are a compile-time check
-/// ([`PaletteFaults`], the `const` assertion below), so **any palette that compiles is a good test
-/// instrument**, and the choice among them is free to be about how it looks.
+/// **The sixteen ANSI colours**, normal then bright, as `0x00RRGGBB` words: Solarized Dark from
+/// Schoonover's table (§104 (the rich-text font is DejaVu Sans Mono, and the palette is
+/// Solarized)), but entry 14 is `0x93a1a0`, one unit off, so it passes the gate
+/// ([`PaletteFaults`]). See notes/video-terminal/palette-keymap-and-script.md.
 ///
 /// # BUGS
 ///
-/// - **The defaults are still ANSI 7 on ANSI 0**, which in this palette is `base2` on `base02`: a
-///   pale cream on the dark highlight colour, not Solarized Dark's `base0` on `base03`. The fix is
-///   to point [`DEFAULT_FG`] and [`DEFAULT_BG`] at 12 and 8, and it waits on milestone 142's wider
-///   rendition, because a background index here is three bits and cannot name 8.
-/// - **Bold is bright, and Solarized's bright slots are greys.** SGR 1 on green, yellow, blue or
-///   cyan paints `base01`, `base00`, `base0` or `base1`, so `ls --color`'s bold blue directories come
-///   out as body-text grey (notes/solarized-and-bold-is-bright.md).
-/// - **The properties guard the sixteen, not every colour a cell can hold** (256-colour and
-///   24-bit colour can land a swapped channel on a legal colour); the pixel-exact scanout
-///   comparison carries that load.
-/// - **Changing one number may or may not leave this "Solarized"**, and [§104] names that as
-///   calef's question. It is recorded here, where a reader meets the constant, so nobody reasons
-///   from the belief that it is Schoonover's table untouched.
-///
-/// [§104]: ../../design/decisions/0104-the-font-and-the-palette.md
+/// - The defaults are ANSI 7 on ANSI 0, `base2` on `base02`, not Solarized's `base0` on `base03`.
+/// - The gate guards the sixteen, not every colour a cell can hold; the scanout comparison does.
+/// - Whether one changed number still leaves this "Solarized" is calef's question under §104.
 pub const PALETTE: [u32; 16] = [
     0x0007_3642, // 0 black: base02
     0x00dc_322f, // 1 red
@@ -82,29 +52,23 @@ const _: () = assert!(
 );
 
 /// **What makes a palette a test instrument**, one field per property milestone 141 (a palette
-/// worth looking at, and a gate that lets it be one) names. A corrupted pixel should be a
-/// detectably wrong colour rather than a different legal one, and each property closes one way it
-/// could be the second:
-///
-/// 1. `repeated_channel`: entries whose three channels are not all distinct, as a bit mask by
-///    index. Such an entry survives swapping its two equal channels, so a channel-order bug in the
-///    blit leaves it untouched.
-/// 2. `permuted_pairs`: pairs of entries related by a channel permutation (the identity included,
-///    so a duplicated entry counts). Swapping channels turns one legal colour into the other.
-/// 3. `shared_saturation`: channels (bit 0 red, 1 green, 2 blue) at `0xff` in more than one
-///    entry. A saturating write or a dropped shift tends to pin a channel at `0xff`, and a palette
-///    in which only one entry can be pinned there has few legal colours for that fault to land on.
-///
-/// These are this tree's reconstruction of what the palette's original comment was reaching for,
-/// not a specification anybody wrote down; a fourth failure mode nobody has named would pass them.
-/// See design/roadmap/0141-a-palette-worth-looking-at.md.
+/// worth looking at, and a gate that lets it be one) names, each closing one way a corrupted pixel
+/// could land on a different legal colour. They are this tree's reconstruction, not a
+/// specification; a fourth failure mode nobody has named would pass them. See
+/// notes/video-terminal/palette-keymap-and-script.md.
 ///
 /// Name: provisional (milestone 141's lane, 2026-09-26). Private to the crate: nothing outside
 /// needs it, and the gate is the `const` assertion beside [`PALETTE`], not a caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PaletteFaults {
+    /// Entries whose three channels are not all distinct, as a bit mask by index: a channel-order
+    /// bug in the blit leaves such an entry untouched.
     repeated_channel: u16,
+    /// Pairs of entries related by a channel permutation, the identity included, so a duplicated
+    /// entry counts: swapping channels turns one legal colour into the other.
     permuted_pairs: u8,
+    /// Channels (bit 0 red, 1 green, 2 blue) at `0xff` in more than one entry: a saturating write
+    /// or a dropped shift tends to pin a channel at `0xff`.
     shared_saturation: u8,
 }
 

@@ -1,39 +1,14 @@
 //! **One page this process was handed at a fixed virtual address, read and written by volatile
-//! access** (milestone 139).
+//! access.**
 //!
-//! Seven programs each hand-rolled the same four to six functions: `r8`/`w8`/`r16`/`w16`/`r32`,
-//! sometimes `r16le`/`w16le` or `a_r8`/`a_w8`, every one of them `unsafe { core::ptr::read_volatile
-//! ... }` or its `write_volatile` twin, over either a DMA page a driver's wiring maps before
-//! `_start` runs or a shared IPC frame the program `PageFrame::MAP`s itself. `entropy.rs`,
-//! `keyboard_driver.rs`, `virtio_net_transport.rs`, `multicast_dns_responder.rs`,
-//! `socket_test_client.rs`, `smb_server.rs` and `ntp.rs`
-//! all carried a copy; `ntp.rs`'s own comment named the duplication out loud ("the same shape
-//! `net_stack` and `socket_test_client` use") without anyone lifting it out.
-//!
-//! **The invariant every copy asserted by hand was the same one**: the offset passed in is inside
-//! the one page the kernel mapped at a known base VA. Copying that assertion N times is the §94
-//! shape (DECISIONS' `design/decisions/0094-what-may-live-in-a-library.md`), and nothing checked that
-//! any of the N were actually kept inside the page: a wrong offset constant was a silent
-//! out-of-bounds volatile access, not a caught bug.
-//!
-//! [`MappedWindow`] holds the one hand-written assertion, at construction, and turns the other end
-//! of it (staying inside the page) into a checked `assert!` instead of a repeated comment. A caller
-//! that gets an offset wrong now panics at the access instead of reading or writing past the page
-//! silently: this is a real reduction in what can go wrong, not a relocation of the same risk.
-//!
-//! Round 6 added [`MappedWindow::as_slice`]/[`as_mut_slice`](MappedWindow::as_mut_slice), for a
-//! different call shape: a caller that hands the whole page to a parsing or serialization routine
-//! rather than reading or writing named fields. Six files (`credentialer.rs`,
-//! `credentialer_test_client.rs`, `identity_provisioner.rs`, `login_test_client.rs`,
-//! `session_reviver.rs`, `smb_server.rs`) each hand-rolled `core::slice::from_raw_parts[_mut]` over
-//! their own shared page, the exact same duplicated-invariant shape as the `r8`/`w8` cluster above,
-//! just returning a slice instead of one field.
-//!
+//! [`MappedWindow`] takes the trust that the page is mapped once, at construction, and
+//! bounds-checks every access against it, so a wrong offset panics instead of reading or writing
+//! past the page. [`MappedWindow::as_slice`] and [`as_mut_slice`](MappedWindow::as_mut_slice) hand
+//! the whole page to a parser or serializer. [`doorbell_barrier`] orders device-visible stores. See
+//! notes/user-mode-runtime.md.
 
 //! # Examples
-//!
-//! Bare-metal only, like the rest of this crate (see the crate-level doc for why the examples below
-//! are `no_run`).
+//! Bare-metal only, like the rest of this crate, so the first example is `no_run`.
 //!
 //! ```no_run
 //! use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
@@ -47,9 +22,9 @@
 //! WINDOW.w16(0x080, 7);
 //! assert_eq!(WINDOW.r16(0x080), 7);
 //! ```
-//!
+
 //! An offset that would read or write past the window panics instead of touching memory outside
-//! it, which is the property no hand-written copy had:
+//! it:
 //!
 //! ```should_panic
 //! # use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
@@ -64,7 +39,8 @@ pub const PAGE: u64 = 4096;
 /// A caller-owned window onto one page this process was handed at a fixed virtual address: a DMA
 /// page a driver's wiring mapped before `_start` ran, or a shared IPC frame the program mapped
 /// itself with `PageFrame::MAP`. Every read and write is bounds-checked against `len`, so the only
-/// trust this type asks for is the one made at construction.
+/// trust this type asks for is the one made at construction. Accesses are native-endian, which is
+/// little-endian on every architecture this tree targets.
 #[derive(Clone, Copy)]
 pub struct MappedWindow {
     base: u64,
@@ -72,20 +48,19 @@ pub struct MappedWindow {
 }
 
 impl MappedWindow {
+    /// A window of `len` bytes at `base`.
+    ///
     /// # Safety
     /// `base .. base + len` must be a range the kernel has mapped read/write-accessible into this
-    /// process for as long as `self` is used. Every caller in this tree gets that from one of two
-    /// places: the wiring maps it before `_start` runs (a DMA page), or the program's own
-    /// `PageFrame::MAP` succeeded first (a shared IPC frame) and `self` is not read or written before
-    /// that call returns. Both are the same trust every `invoke` already extends to the kernel;
-    /// this type does not add a new one, it just asserts it once instead of at every access.
+    /// process for as long as `self` is used: the wiring maps it before `_start` runs (a DMA page),
+    /// or the program's own `PageFrame::MAP` succeeded first (a shared IPC frame) and `self` is not
+    /// read or written before that call returns. That is the trust every `invoke` already extends
+    /// to the kernel, asserted once instead of at every access.
     pub const unsafe fn new(base: u64, len: u64) -> Self {
         Self { base, len }
     }
 
-    /// Panics if `off .. off + size` would fall outside the window. The check every hand-written
-    /// copy skipped: a wrong offset constant used to be a silent out-of-bounds volatile access,
-    /// and is now a panic naming the access that caused it.
+    /// Panics if `off .. off + size` would fall outside the window, naming the access.
     fn check(&self, off: u64, size: u64) {
         assert!(
             off.checked_add(size).is_some_and(|end| end <= self.len),
@@ -110,12 +85,6 @@ impl MappedWindow {
         unsafe { core::ptr::write_volatile((self.base + off) as *mut T, val) }
     }
 
-    /// Named accessors matching the vocabulary every migrated call site already used
-    /// (`r8`/`w8`/`r16`/`w16`/`r32`), so migrating a file changes only where these functions are
-    /// *defined*, never where they are called. All native-endian, which is little-endian on both
-    /// architectures this tree targets; the `le` some copies wrote in their own name documented an
-    /// assumption this makes true rather than a different behaviour.
-    ///
     /// Read one byte at `off`.
     pub fn r8(&self, off: u64) -> u8 {
         self.read(off)
@@ -153,16 +122,12 @@ impl MappedWindow {
 
     /// **Move `len` bytes from offset `src` to offset `dst` inside the window**, the ranges allowed
     /// to overlap, as [`slice::copy_within`] does. Both ranges are bounds-checked once, not per
-    /// word.
+    /// word, which is what makes a scroll of the terminal's own pixels cheap.
     ///
-    /// For a caller moving a block of its own pixels (the terminal's scroll), where a word-at-a-time
-    /// loop of [`r64`](Self::r64)/[`w64`](Self::w64) at opt-level 0 costs a call, a bounds check and
-    /// a volatile access per word: 349,440 of them for one scroll of the 1120x624 scanout. **Not
-    /// volatile**, and safe anyway: no reference is formed, so the compiler assumes nothing about
-    /// who else sees the bytes, and what a peer or device reads afterwards is ordered by the fence
-    /// and the call the caller makes to publish them, exactly as for its volatile writes. A peer
-    /// writing the same bytes meanwhile would make the result a mix of both, as it would for any
-    /// copy.
+    /// Not volatile, and safe anyway: no reference is formed. What a peer or device reads afterwards
+    /// is ordered by the fence and the call the caller makes to publish the bytes, as for its
+    /// volatile writes; a peer writing the same bytes meanwhile makes the result a mix of both. See
+    /// notes/user-mode-runtime.md.
     ///
     /// Name: provisional, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
     /// [`slice::copy_within`], whose argument order it keeps.
@@ -180,29 +145,15 @@ impl MappedWindow {
         }
     }
 
-    /// The whole window as an ordinary byte slice, for a caller that hands it wholesale to a
-    /// parsing or serialization routine rather than reading or writing individual fields (round 6:
-    /// `credentialer.rs`, `credentialer_test_client.rs`, `identity_provisioner.rs`,
-    /// `login_test_client.rs`, `session_reviver.rs` and `smb_server.rs` each hand-rolled
-    /// `core::slice::from_raw_parts(VA as *const u8, proto::PAGE)` over their own shared
-    /// credential/filesystem/login page, one hand-written `// SAFETY:` comment per site asserting
-    /// the same invariant this type already exists to hold once). **Not volatile**: this returns
-    /// an ordinary Rust reference the compiler may assume nothing else touches while it is alive,
-    /// unlike [`read`](Self::read)/[`write`](Self::write)'s volatile access. Every migrated call
-    /// site already used an ordinary (non-volatile) slice this way, so this changes nothing about
-    /// that risk; it only collapses where the assertion is written.
+    /// The whole window as an ordinary byte slice, for a parser or serializer. **Not volatile**:
+    /// the compiler may assume nothing else touches the bytes while the reference is alive.
     ///
     /// # Safety
-    /// As [`new`](Self::new)'s (the window is mapped into this process for as long as the
-    /// returned reference is used), plus one more: nothing else, no peer process and no other
-    /// reference in this process, reads or writes this range while the returned slice is alive.
-    /// Every migrated call site gets that from the IPC protocol's own turn-taking (the shared page
-    /// is staged by one side, then handed off by a `SEND`/`receive`, one side touching it at a time)
-    /// rather than from a lock. **The claim is the call site's, and it includes this process's own
-    /// threads** since milestone 812 (`std::thread::spawn` runs real threads in one address space):
-    /// every caller today is a native program built without its own process, so it has one thread
-    /// and nothing can give it a second. A caller in a process with threads must say why none of
-    /// them touches the range.
+    /// As [`new`](Self::new)'s, for as long as the returned reference is used, plus one more:
+    /// nothing else, no peer process and no other reference or thread in this process, reads or
+    /// writes this range while the slice is alive. Callers get that from the IPC protocol's
+    /// turn-taking (one side stages the page, then hands it off by a `SEND`/`receive`) rather than
+    /// from a lock. A caller in a process with threads must say why none of them touches the range.
     ///
     /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round
     /// 9's question 2), with [`as_mut_slice`](Self::as_mut_slice). His words: "`as_slice` /
@@ -229,10 +180,8 @@ impl MappedWindow {
 ///
 /// For a driver whose doorbell is a direct store to a device-typed page in its own address space,
 /// with no syscall between the ring stores and it: `dmb sy` on aarch64, `fence` on riscv64,
-/// `mfence` on x86_64. Lifted on 2026-10-04 by milestone 494 (a driver for the network card a PC
-/// actually has) from `components/src/non_volatile_memory_express.rs`, whose own comment explains
-/// why it is stronger than [`crate::virtio::virtio_ring_barrier`] (those drivers notify through a
-/// syscall) and must not be merged with it. The `e1000e` data plane was its second caller.
+/// `mfence` on x86_64. Stronger than [`crate::virtio::virtio_ring_barrier`], whose drivers notify
+/// through a syscall, and not to be merged with it. See notes/user-mode-runtime.md.
 ///
 /// Name: provisional (milestone 494's lane, 2026-10-04).
 pub fn doorbell_barrier() {
