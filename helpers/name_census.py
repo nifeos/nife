@@ -279,6 +279,9 @@ def _document_block(path, stem, legacy, read, problems):
         problems.append(f"document {stem} ({path}): its own block says {ours or 'nothing parseable'} "
                         f"and its README paragraph says {theirs or 'nothing parseable'}; keep one, "
                         f"in the document (helpers/document_name_migrate.py lists both)")
+    elif ours == "ratified" and name_provenance.classify(mine)[1] != name_provenance.classify(old)[1]:
+        problems.append(f"document {stem} ({path}): its own block and its README paragraph are both "
+                        f"ratified, on different dates; keep one, in the document")
     return f"{mine} {old}", True
 
 

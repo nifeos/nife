@@ -73,8 +73,8 @@ def remedy(path):
         return ('write `/// Name: provisional, minted <date> (UTC) by <lane>.` as a paragraph of its '
                 'doc comment (design/naming.md)')
     if path.endswith('.md'):
-        return (f'give it an entry in {os.path.dirname(path)}/README.md, a paragraph '
-                f'`` `{os.path.basename(path)}`: Name: provisional, minted <date> (UTC) by <lane>. ``')
+        return ('write `*Name: provisional, minted <date> (UTC) by <lane>.*` as the paragraph under '
+                'its title (design/naming.md)')
     return ('write its block, `//! Name: provisional, minted <date> (UTC) by <lane>.`, at the top '
             'of the file (design/naming.md)')
 

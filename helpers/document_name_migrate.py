@@ -291,6 +291,9 @@ def selftest():
          "notes/a.md" in census({**after, "notes/a.md": "# A\n"})[2]),
         ("a document under a subdirectory inherits the directory's block",
          census({**after, "notes/x/c.md": "# C\n"})[0]["notes/x/c.md"][0] == "provisional"),
+        ("two ratifications on different dates fail",
+         any("different dates" in p for p in census({
+             **tree, "notes/a.md": "# A\n\n*Name: ratified 2026-10-19 (calef, in session).*\n"})[1])),
         ("a second run changes nothing", rerun == after),
         ("nothing else changed status",
          {p: v for p, v in now.items() if p != "notes/x/d.md"}
