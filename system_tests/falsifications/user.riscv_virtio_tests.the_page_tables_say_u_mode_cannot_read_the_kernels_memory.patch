@@ -51,11 +51,11 @@ and the red would be about the checker rather than about the kernel.
 of row 21 on this ISA and not the write half.
 
 diff --git a/kernel/src/arch/riscv64/mmu.rs b/kernel/src/arch/riscv64/mmu.rs
-index 6f604918..b231496b 100644
+index 5d35dec63..40aa1724e 100644
 --- a/kernel/src/arch/riscv64/mmu.rs
 +++ b/kernel/src/arch/riscv64/mmu.rs
-@@ -761,7 +761,7 @@ fn translate_in_either_half(va: u64) -> Option<(u64, Flags)> {
- /// every kernel address by refusing to look, so the one assertion it exists for could not fail.
+@@ -726,7 +726,7 @@ fn translate_in_either_half(va: u64) -> Option<(u64, Flags)> {
+ /// (`the_page_tables_say_u_mode_cannot_read_the_kernels_memory`).
  #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
  pub fn user_can_read(va: u64) -> bool {
 -    translate_in_either_half(va).is_some_and(|(_, f)| f.is_user_accessible())
