@@ -25,3 +25,9 @@ worth carrying:
 already recorded from a different angle. `aws-lc-rs`, which §196 never probed, fails the same way
 in `aws-lc-sys`. Neither is available to this project at any price a lane can pay, and that is
 a finding rather than a disappointment: it is §46's "no C in the shipping graph" holding.
+
+## Why a crate, and not a patch
+
+`entropy_backend` changes nothing of `getrandom`'s, so it is not a patch. A vendored fork would avoid
+the `rustflags` line every consuming workspace needs, but it would track a fast-moving crate. The
+lasting fix is a `nife` arm upstream, shaped like the existing `hermit.rs`.

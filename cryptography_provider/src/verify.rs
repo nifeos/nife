@@ -1,37 +1,23 @@
-//! Certificate and handshake signature verification: ECDSA over P-256 and P-384, and Ed25519.
+//! Certificate and handshake signature verification: ECDSA over P-256 and P-384, Ed25519, and RSA.
 //!
-//! These implement `rustls-pki-types`' `SignatureVerificationAlgorithm`, which `rustls-webpki`
-//! calls while walking a certificate chain and which `rustls` also uses for the peer's handshake
-//! signature. Each one is a pair of algorithm identifiers plus one call into a primitive.
-//!
-//! **RSA is here because calef ruled "take rsa" on 2026-09-20**, closing the fork this file
-//! carried open for a day. Without it the provider could verify `github.com`, whose chain is
-//! ECDSA P-256 throughout, and not the hosts that serve the bytes:
-//! `objects.githubusercontent.com` is RSA 2048 and `ghcr.io` is RSA 4096. The advisory against
-//! `rsa` 0.9 is RUSTSEC-2023-0071, a Marvin timing side channel in PKCS#1 v1.5 **decryption**;
-//! nothing in this file decrypts, and `deny.toml`'s first `ignore` entry states that as a bounded
-//! claim with what would end it.
-//!
-//! **Writing RSA verification here instead was considered and refused**, and remains refused. It
-//! is only public-key arithmetic and a padding check, with no secret to leak, so the usual reason
-//! to take cryptography rather than write it does not apply in its usual form. It is refused
-//! because the classic failures in exactly this code, Bleichenbacher's signature forgery and
-//! BERserk after it, are **spec-reading** failures, and DECISIONS §46 (thin primitives or whole
-//! subsystems; we write everything in between) is precisely about not trusting our own reading of
-//! a specification where exposure is what finds the bug.
-//!
+//! Each implements `rustls-pki-types`' `SignatureVerificationAlgorithm`, which `rustls-webpki` calls
+//! while walking a chain and `rustls` uses for the peer's handshake signature: a pair of algorithm
+//! identifiers plus one call into a primitive. RSA is taken (calef, 2026-09-20: "take rsa") because
+//! the hosts that serve the bytes are RSA: `objects.githubusercontent.com` is RSA 2048 and `ghcr.io`
+//! RSA 4096. RUSTSEC-2023-0071 is a timing side channel in PKCS#1 v1.5 decryption, which nothing
+//! here does; `deny.toml`'s first `ignore` entry bounds that claim. Writing RSA verification here is
+//! refused (notes/cryptography-provider/pricing-the-glue-path.md).
+
 //! # The two bounds this file enforces itself
 //!
-//! **A modulus between 2048 and 8192 bits.** `rsa` will happily verify against a 512-bit key, and
-//! a certificate chain is a stranger's input: accepting one is accepting a forgery. The bound is
-//! the same one `rustls`' own ring-backed table uses, which is where the names
+//! **A modulus between 2048 and 8192 bits.** `rsa` will verify against a 512-bit key, and a chain is
+//! a stranger's input. The bound is `rustls`' own ring-backed table's, which is where the names
 //! `RSA_PKCS1_2048_8192_SHA256` and friends come from.
 //!
-//! **A PSS salt length equal to the digest length.** `rsa::pss::VerifyingKey::new` takes that
-//! default, and it is the right one rather than a convenient one: the algorithm identifiers in
-//! `rustls-pki-types` (`alg_id::RSA_PSS_SHA256` and its siblings) encode exactly that salt length,
-//! so a signature made with another would be presented under a different identifier and never
-//! reach this code.
+//! **A PSS salt length equal to the digest length**, `rsa::pss::VerifyingKey::new`'s default. The
+//! identifiers in `rustls-pki-types` (`alg_id::RSA_PSS_SHA256` and its siblings) encode exactly that
+//! length, so a signature made with another arrives under a different identifier and never reaches
+//! this code.
 
 // **One import serves all three**, and that is worth a line rather than a puzzle: `p256`, `p384`
 // and `ed25519-dalek` all re-export the same `signature::Verifier` trait, so bringing it into
