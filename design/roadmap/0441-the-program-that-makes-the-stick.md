@@ -50,10 +50,10 @@ much as for this. radon's RAM does contain the riscv64 kernel's `0x8020_0000`.
 
 1. Finding the stick safely. One rule, the removable-media bit, read three ways (macOS
    `RemovableMedia`, Linux `/sys/block/*/removable` or an SD `device/type`, Windows
-   `DRIVE_REMOVABLE`). Chosen against "external, on USB" because a USB hard disk reports USB and not
-   internal while clearing the removable-media bit, and is where backups live: only removable media
-   is ever offered, and a USB hard disk never is. Captured `diskutil` documents for USB hard disks are
-   the test fixtures. Confirmation is by name and size, and erasing asks for the disk's identifier
+   `DRIVE_REMOVABLE`). Chosen against "external, on USB" because a USB hard disk, where backups live,
+   reports USB and not internal while clearing the removable-media bit. Only removable media is ever
+   offered, and a USB hard disk never is. Captured `diskutil` documents for USB hard disks are the
+   test fixtures. Confirmation is by name and size, and erasing asks for the disk's identifier
    typed back.
 2. Formatting: the OS's tools, `diskutil eraseDisk` and `sfdisk` plus `mkfs.vfat`, one FAT32
    partition on MBR. Not an in-tree FAT32 writer, and the reason is not effort: a tree-written
@@ -119,7 +119,7 @@ much as for this. radon's RAM does contain the riscv64 kernel's `0x8020_0000`.
 
 The first rung of §157's trivial install: `stick_maker`, one program per host with every
 architecture's boot file inside it, which finds removable disks by the removable-media bit (a
-USB hard disk reports USB too, so the bus is never the rule). It copies onto a FAT32 stick without
+USB hard disk reports USB too). It copies onto a FAT32 stick without
 administrator rights or erases with the OS's own tool, and it leaves a universal stick: `BOOTX64.EFI`,
 `BOOTAA64.EFI` and `BOOTRISCV64.EFI` side by side, each firmware booting its own. The aarch64 and
 riscv64 loaders are new (riscv64 through an ELF-to-PE converter, since rustc has no riscv64 UEFI
