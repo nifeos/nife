@@ -1,51 +1,20 @@
 //! **A soak capture, read into the exposure row the defect-discovery curve wants.**
 //!
-//! Built for milestone 225 (run the soak on radon, argon and xenon), whose rows feed milestone 201
-//! (is multicore reliability converging).
-//!
-//! `notes/multicore-defect-curve.md` keeps two tables, and the one most likely to go unwritten is
-//! an *exposure* row for every boot that ran the soak, clean or not. This makes that row the same
-//! way every time instead of by hand from the last heartbeat.
-//!
-//! It reads a finished capture (a `script/board-console` log, or a `script/soak-test` one from
-//! QEMU, which the curve does not accept but which proves the reader) and returns one [`Boot`] per
-//! kernel banner. A boot that never printed `soak-test: started` is kept, because "the board came
-//! up and the workload did not" is a finding, but it produces no row.
-//!
+//! [`read`] takes a finished capture (a `script/board-console` log, or a `script/soak-test` one
+//! from QEMU, which the curve does not accept but which proves the reader) and returns one [`Boot`]
+//! per kernel banner, in the columns `notes/multicore-defect-curve.md` defines. A boot that never
+//! printed `soak-test: started` is kept, as a finding, but produces no row. The three columns no
+//! console line carries are the caller's, in a [`Meta`].
 
-//! # What it reads, and what it cannot
-//!
-//! From the log alone: the architecture and the tick rate (the `nife machine:` line), the cores
-//! online (`smp: N core(s) online`, falling back to the machine line's processor count), and every
-//! heartbeat. From those, every column of the row except three, which no console line carries:
-//!
-//! - **machine**: the board's name. `nife machine: aarch64` is argon, an Apple Silicon Mac under
-//!   HVF, or QEMU, and the log cannot tell them apart.
-//! - **build**: the kernel does not print its commit.
-//! - **start**: the capture has no wall clock. The heartbeat's `t=` is the kernel's own.
-//!
-//! The caller passes those three, and anything not passed prints as `?` rather than as a guess.
-//!
-//! # The two checks to make before walking away
-//!
-//! Both come from milestone 221 (the soak never crosses cores, so build the hook that makes it).
-//! [`Boot::checks`] repeats them after the fact, so a run that was never checked at the bench is
-//! still classified correctly. `crossings` must rise between the first and last beat (frozen is a
-//! soak that never crossed cores, which the curve excludes), and `wakerate` must be near
-//! `TICK_HZ * cores` (well under it is the timer or the wake path falling behind).
-//!
 //! # BUGS
 //!
-//! - **The id is `E?`.** Ids are never reused and are assigned in the note, where the next free
-//!   one is visible. A reader that guessed would collide with a row another bench session added.
-//! - **"Rising" is judged on the first and last beats only.** A soak that crossed for a minute and
-//!   then froze for seven hours would pass. The per-beat series is in the log; reading the slope
-//!   would be a stronger claim than this check makes, and nothing has yet produced that shape.
+//! - **The id is `E?`.** Ids are assigned in the note, where the next free one is visible.
+//! - **"Rising" is judged on the first and last beats only**, so a soak that crossed for a minute
+//!   and then froze for seven hours would pass.
 //! - **The wakerate threshold is 80% of `TICK_HZ * cores`**, a judgment, not a measurement; a
 //!   board below it is printed as a question rather than failing the row.
 //! - **A boot is split at the banner (`nife on `)**, so a capture that lost the banner to line
-//!   noise merges two boots into one. The rebooting soak would show it as one long boot with two
-//!   `soak-test: started` lines; the count is printed so that is visible.
+//!   noise merges two boots; [`Boot::starts`] counts the `soak-test: started` lines so it shows.
 
 use crate::board;
 use crate::progress::{BootProgress, field};
@@ -119,6 +88,9 @@ pub struct Boot {
 }
 
 /// The three columns a console line cannot supply, and the log's own path for the last column.
+///
+/// The log cannot name the board (`nife machine: aarch64` is argon, HVF or QEMU), the kernel does
+/// not print its commit, and the capture has no wall clock. A field left `None` prints as `?`.
 #[derive(Debug, Clone, Default)]
 pub struct Meta {
     /// The board's name: `radon`, `argon`, `xenon`, or `hvf`.
@@ -313,6 +285,9 @@ impl Boot {
     }
 
     /// The bench checks and the verdict, one line each, worded for the person reading them.
+    ///
+    /// The checks are the note's two, made after the fact: `crossings` must rise between the
+    /// first and last beat, and `wakerate` must be near `TICK_HZ * cores`.
     #[must_use]
     pub fn checks(&self) -> Vec<String> {
         let mut out = Vec::new();
