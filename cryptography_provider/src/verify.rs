@@ -1,12 +1,12 @@
 //! Certificate and handshake signature verification: ECDSA over P-256 and P-384, Ed25519, and RSA.
 //!
-//! Each implements `rustls-pki-types`' `SignatureVerificationAlgorithm`, which `rustls-webpki` calls
-//! while walking a chain and `rustls` uses for the peer's handshake signature: a pair of algorithm
-//! identifiers plus one call into a primitive. RSA is taken (calef, 2026-09-20: "take rsa") because
-//! the hosts that serve the bytes are RSA: `objects.githubusercontent.com` is RSA 2048 and `ghcr.io`
-//! RSA 4096. RUSTSEC-2023-0071 is a timing side channel in PKCS#1 v1.5 decryption, which nothing
-//! here does; `deny.toml`'s first `ignore` entry bounds that claim. Writing RSA verification here is
-//! refused (notes/cryptography-provider/pricing-the-glue-path.md).
+//! Each implements `rustls-pki-types`' `SignatureVerificationAlgorithm`, which `rustls-webpki`
+//! calls while walking a chain and `rustls` uses for the peer's handshake signature: a pair of
+//! algorithm identifiers plus one call into a primitive. RSA is taken (calef, 2026-09-20: "take
+//! rsa") because the hosts that serve the bytes are RSA: `objects.githubusercontent.com` is RSA
+//! 2048 and `ghcr.io` RSA 4096. RUSTSEC-2023-0071 is a Marvin timing side channel in PKCS#1 v1.5
+//! decryption, which nothing here does; `deny.toml`'s first `ignore` entry bounds that claim.
+//! Writing RSA verification here is refused (notes/cryptography-provider/pricing-the-glue-path.md).
 
 //! # The two bounds this file enforces itself
 //!
