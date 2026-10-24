@@ -154,6 +154,26 @@ and it is why those rows fall short.
 - A Fable pass. 914's pass is still to run, on Fable, held to the same floor at the same pinned
   commit.
 
+## The kernel tests
+
+The pass's booted rows live in eight modules under `system_tests/src/user/`, each named
+`ninth_pass_*_tests.rs`. Each module's doc names its claims, and each test's doc says which angle it
+adds to the suite. They share one shape.
+
+Most reduce a hostile program to the kernel operations it would issue, driven through the real
+dispatcher (`syscall::invoke`) the way a program's `svc` or `ecall` reaches it. The ELF tests call
+the loader `exec` uses, and the EL0 and port tests boot real ring-3 children. Nothing blocks: no test
+issues a `SEND`, `RECEIVE` or `CALL` with no peer, and `SLICE`, `BADGE`, `REAP` and `SURVEY` do not
+park. So a regression is red at an assertion rather than a watchdog hang. Every capability is
+deleted and every region reclaimed, so the suite's frame and region ledgers are flat across each
+module.
+
+The x86 port children are built in one region each, the way `x86_port_tests` and
+`supervision_tests` build theirs. They reuse the architect-ratified stub builders in `x86_programs`,
+so the pass minted no ring-3 machine code, only new parameters and scenarios. `x86_port_tests`
+itself drives the paths found by milestones 299 (the x86 port-range capability), 313 (userspace
+confinement, read adversarially) and 768 (a read-only port range grants nothing).
+
 ## BUGS
 
 - The reviewer graded rows 19, 20, 24, 25 and 34 booted for a rerun, against the brief, and the
