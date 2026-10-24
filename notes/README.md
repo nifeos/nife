@@ -46,5 +46,3 @@ area directories), ruled B). Appendices under
 - [Build, boot and install](README/build-boot-and-install.md): the toolchain, the boot formats, packages and installing.
 - [How the tree is run](README/how-the-tree-is-run.md): gates, records and the merge queue that keep many lanes honest.
 - [Delegation and the method](README/delegation-and-the-method.md): how agents do the work here, and what it costs.
-
-`kernel-console.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-devices.

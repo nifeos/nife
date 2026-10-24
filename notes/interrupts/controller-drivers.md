@@ -1,5 +1,7 @@
 # The interrupt controller drivers
 
+*Name: provisional, minted 2026-10-23 (UTC) by lane comments/929-kernel-devices.*
+
 The design behind `kernel/src/drivers/gic.rs`, `gicv3.rs` and `plic.rs`. What a GIC is, its three
 kinds of interrupt and its backwards priorities are in [notes/interrupts.md](../interrupts.md);
 spreading lines across cores is in [affinity.md](affinity.md).

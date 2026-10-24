@@ -1,5 +1,7 @@
 # The kernel console
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-devices.*
+
 `kernel/src/console.rs` is where `print!` and `println!` end up. This note carries the design its
 doc comments link to. The console server, the shell and the gates that read the wire are in
 notes/board-console.md; output on a machine with no serial port is in notes/serial-less-output.md;

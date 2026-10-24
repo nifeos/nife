@@ -20,8 +20,3 @@ under §212 (a prose budget). The directory follows §212's siting default, `not
 
 The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-- `riscv-test-trigger` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `affinity` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `gicv3-history` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `polling` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `controller-drivers` Name: provisional, minted 2026-10-23 (UTC) by lane comments/929-kernel-devices.
