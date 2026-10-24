@@ -10,13 +10,13 @@ Expected to fail: "a process capability without BIND joined a thread", which get
 diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
 --- a/kernel/src/syscall/thread_control_block.rs
 +++ b/kernel/src/syscall/thread_control_block.rs
-@@ -77,9 +77,6 @@ fn thread_control_block_configure(
+@@ -82,9 +82,6 @@
      let aspace_name = match aspace.object {
          Object::AddressSpace(name) => name,
          Object::Process(pid) => {
 -            if !aspace.rights.allows(Rights::BIND) {
 -                return Err(Error::NotPermitted);
 -            }
-             // The result is the thread's current-CPU page (milestone 812, question 2 on #1892).
              let page = sched::configure_thread_control_block_joining(
                  tid,
+                 entry,

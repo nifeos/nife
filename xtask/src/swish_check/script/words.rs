@@ -48,19 +48,12 @@ pub(super) const LINES: &[Line] = &[
     // and this shell's.
     line(0, "least_authority_demo", &["needs an integer argument"]),
     line(0, "echo $?", &["2"]),
-    // **The progenitor's job budget is bounded and comes back** (milestone 22, the interactive increment).
-    // The progenitor now holds a pool with room for six live jobs instead of the kernel's whole construction
-    // budget, and every job runs in a region of its own that `job_undertaker` returns when the job ends.
-    // **Every job above plus these six go through a six-job pool, several times over**, so a boot
-    // where nothing collected would answer "could not spawn (the progenitor is out of memory)"
-    // somewhere in here rather than the arithmetic. How many that is was a hand-kept figure in this
-    // comment until 2026-09-26 and had drifted; it is now each line's `jobs` tag, summed in the
-    // success summary. The `rm` above is the one worth noticing, because it is the first job whose
-    // region holds **two** processes, the program and the `fs_subtree_caretaker` carrying its
-    // grant, and it is therefore the first thing in this script that would fail if
-    // `job_undertaker`'s retry did not collect both. Six distinct arguments rather than one
-    // repeated, because the transcript is walked with a moving cursor and six identical answers
-    // would let a missed line pass as its neighbor.
+    // **The progenitor's job budget is bounded and comes back** (milestone 22, the interactive
+    // increment): a six-job pool, each job in a region `job_undertaker` returns when it ends. Every
+    // job so far plus these six go through it several times over, so a boot that collected nothing
+    // answers "could not spawn" here. The `rm` above is the first job whose region holds two
+    // processes (the program and its `fs_subtree_caretaker`), the first to fail if the retry missed
+    // one. Six distinct arguments, because a moving cursor would let a missed line pass as its twin.
     line(1, "least_authority_demo 3", &["3*3 = 9"]),
     line(1, "least_authority_demo 4", &["4*4 = 16"]),
     line(1, "least_authority_demo 5", &["5*5 = 25"]),

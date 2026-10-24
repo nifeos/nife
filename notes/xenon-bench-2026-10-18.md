@@ -8,7 +8,7 @@ in this order, because each needs the one before:
 
 1. The I219 boot: milestone 494 (a driver for the network card a PC actually has)'s bench boot,
    which must end `verdict LEASED-AND-MEASURED`. About 20 minutes.
-2. On patagonia: flip `PCH_PROVEN_ON_SILICON` in a commit citing that log, and build the
+2. On the build Mac: flip `PCH_PROVEN_ON_SILICON` in a commit citing that log, and build the
    installer from it. About 5 minutes.
 3. Milestone 801 (packages over the internet)'s exit criterion: install, boot from the disk, then
    `jig update` and `jig install ioping` from `basalt.nifeos.org`. About 15 minutes.
@@ -27,7 +27,7 @@ evening's date is not set.
 
 | image | build | under OVMF | SHA-256 |
 |---|---|---|---|
-| I219 boot, house-LAN peer | `cargo xtask network-bench --stage-only --peer <patagonia's LAN address>:9494` | `release build`, `82574L ... link up`, `preflight dmar scope : PASS`, `dhcp : leased 10.0.2.15`; gate `verdict LEASED-AND-MEASURED` | `5d3b261e0aebbd6f3cefdf1b5ed536d68bc22df0033aff30931c1e19af8f70b4` |
+| I219 boot, house-LAN peer | `cargo xtask network-bench --stage-only --peer <the build Mac's LAN address>:9494` | `release build`, `82574L ... link up`, `preflight dmar scope : PASS`, `dhcp : leased 10.0.2.15`; gate `verdict LEASED-AND-MEASURED` | `5d3b261e0aebbd6f3cefdf1b5ed536d68bc22df0033aff30931c1e19af8f70b4` |
 | I219 boot, Internet Sharing peer | `... --peer 192.168.2.1:9494` | the same lines | `3ed24e29bb43b4503b4b9bcad683d13ce6f504dc3d43ede4fac59e51271c5520` |
 | installer, basalt's sources, flag unflipped (rehearsal only) | `cargo xtask std-exerciser`, then `NIFE_INDEX_SOURCES=basalt cargo xtask install-boot` | `install-boot: PASS`, three boots; steps 3 and 4 below | `91adb2e60680be4a2671b38cbf262b334b5d64bd92fb173012143e29d6c9a7dc` |
 | soak, debug | `cargo xtask uefi-image --features soak_test` | 4 cores online, 24 user threads; at 65 s `crossings=7080`, `wakerate=402/s`, `refused=0 mismatch=0 stalled=0` | `7be0aef659d4e888700b3dee371a356b989be071da09e8d0b588d0e466668fef` |
@@ -55,16 +55,16 @@ NVMe, against 41 to 42 us for a cached read, so it reaches the device.
 
 - **A monitor and a USB keyboard on xenon.** It halts at POST without a keyboard.
 - The serial chain: the C4PDJ module's COM1, the null-modem barrel and the FTDI adapter into
-  patagonia. Every step logs over it. The installer's `INSTALL` is typed there, since nife has no
+  the build Mac. Every step logs over it. The installer's `INSTALL` is typed there, since nife has no
   USB keyboard driver.
 - Ethernet on xenon with a path to the internet. Its room has no port, so either a long cable to the
-  house router or a cable to patagonia with macOS Internet Sharing on (patagonia is then
+  house router or a cable to the build Mac with macOS Internet Sharing on (the Mac is then
   `192.168.2.1`). Pick before building step 1's image. Internet Sharing meets milestone 494's
   criterion 2 only in spirit; the Results row says which.
 - Two FAT32 sticks: `NIFE` for the nife images and the ioping RPM, and the Fedora 44 live stick.
-- Someone at patagonia for step 2, which is a commit and a build.
+- Someone at the build Mac for step 2, which is a commit and a build.
 
-## Before the evening, on patagonia
+## Before the evening, on the build Mac
 
 In a checkout of the commit under test (a fresh worktree builds nothing it was not asked to):
 
@@ -84,7 +84,7 @@ without it answers `jig update` with `could not spawn (the progenitor is out of 
 ## Step 1: the I219 boot
 
 The procedure is `notes/e1000e.md`, "calef's bench step on xenon", with its table of every ending.
-In short: start the peer in a terminal on patagonia,
+In short: start the peer in a terminal on the build Mac,
 
 ```sh
 while true; do head -c 104857600 /dev/zero | nc -l 9494; done
@@ -182,7 +182,7 @@ sudo dnf install -y ioping nvme-cli || sudo rpm -i /run/media/liveuser/NIFE/iopi
 sudo stty -F /dev/ttyS0 115200 cs8 -cstopb -parenb -crtscts onlcr
 ```
 
-With `screen` capturing on patagonia, one command per boot, `B` the boot:
+With `screen` capturing on the build Mac, one command per boot, `B` the boot:
 
 ```sh
 B=1; {

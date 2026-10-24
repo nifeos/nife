@@ -121,12 +121,6 @@ pub(crate) fn image() -> bool {
     }
 }
 
-/// Locate an LLVM tool inside the rustup sysroot.
-///
-/// These ship with the `llvm-tools` component, which `rust-toolchain.toml` pins. We
-/// do NOT use the `rust-objdump` / `rust-objcopy` wrappers, because those require a
-/// separate `cargo install cargo-binutils` that nothing else in the project needs,
-/// and its absence produces a confusing "command not found" rather than a real error.
 /// The namespace `read_stripped` files a stripped copy under, from the triple in `path`.
 ///
 /// Only a triple names an architecture or a std build; the checkout's own directory name is not
@@ -150,29 +144,16 @@ fn strip_tag(path: &str) -> &'static str {
     }
 }
 
-/// **Read a program ELF for packing, with its debug information removed.**
+/// **Read the program ELF at `path` for packing, with its debug information removed**
+/// (`llvm-objcopy --strip-debug`), and return the stripped bytes.
 ///
-/// The initial ramdisk is *reserved RAM*: the frame allocator never owns those pages, so every byte
-/// in the archive is a byte the running system does not have. And a debug build is almost entirely
-/// debug information: `rust_swappable` is 720 KB, of which **3 KB** is `.text` plus `.rodata` and
-/// the other 717 KB is `.debug_*`. Twenty-odd programs like that made a 26 MB archive out of well
-/// under a megabyte of code, on a machine with 128 MB.
-///
-/// Nothing ever read those bytes. `crates/elf` parses **program headers only** (it has no
-/// section-header code at all), so the loader cannot see a debug section on either side of the
-/// boundary; the kernel prints a raw `pc` on a fault and symbolisation is done offline, against the
-/// unstripped binary that is still sitting in `target/`. So this is pure waste, and milestone 23 is
-/// where it stopped being free: five more programs pushed the archive 4 MB up and a *later,
-/// unrelated* test could no longer find a contiguous eight-megabyte region for the progenitor.
-///
-/// `--strip-debug` rather than `--strip-all`, deliberately: it takes the `.debug_*` sections, which
-/// is all of the bulk, and leaves the symbol table for anything that later wants to read it out of
-/// the archive rather than out of `target/`.
-///
-/// A missing `llvm-objcopy` is a hard failure rather than a silent fallback to unstripped bytes,
-/// because the measured-boot digest (§26's phase B.1) is taken over what this returns: a build that
-/// quietly packed different bytes depending on which tools were installed would be a build whose
-/// trust root means something different on each machine.
+/// The initial ramdisk is reserved RAM and a debug build is almost all `.debug_*`, which nothing
+/// reads (`crates/elf` parses program headers only; faults are symbolised offline against
+/// `target/`). `--strip-debug`, not `--strip-all`, keeps the symbol table. A missing `llvm-objcopy`
+/// is a hard failure, because the measured-boot digest (§26 (the fault endpoint)'s phase B.1) is
+/// taken over these bytes, and a build whose bytes depended on installed tools would have a
+/// different trust root on each machine. See notes/progenitor-and-loading.md, "The archive carries
+/// stripped ELFs".
 pub(crate) fn read_stripped(path: &str) -> std::io::Result<Vec<u8>> {
     let objcopy = llvm_tool("llvm-objcopy").ok_or_else(|| {
         std::io::Error::other("llvm-objcopy not found; the llvm-tools rustup component provides it")
@@ -183,31 +164,11 @@ pub(crate) fn read_stripped(path: &str) -> std::io::Result<Vec<u8>> {
         .file_name()
         .and_then(|s| s.to_str())
         .unwrap_or("program");
-    // Namespaced by the target directory the binary came from, so two architectures' builds of a
-    // program cannot overwrite each other's stripped copy.
-    //
-    // **x86_64 needs its own arm and the bug was latent rather than absent** (milestone 161). Before
-    // this port packed an archive, an `x86_64-unknown-none` path fell through to `"host"` and so
-    // shared a filename with every aarch64 build of the same program. Nothing noticed, because
-    // nothing ever asked for both; the moment an x86 archive is packed in the same run as an aarch64
-    // one, whichever ran second would silently read the other's bytes back out of `target/stripped`
-    // and measure them. That is the worst shape a bug can have here: the digest in a trust root
-    // would be a real digest of a real program, and the wrong one.
-    //
-    // The order matters too. `X86_TARGET` is `x86_64-unknown-none`, and a *host* path on an x86
-    // Linux CI runner contains `x86_64-unknown-linux-gnu`, which the naive `contains` would also
-    // match. The check is anchored on the full triple, so the two cannot be confused.
-    //
-    // **The two `*-unknown-nife` triples need separating too, for the same reason** (milestone
-    // 121). `std_exerciser` is built for both and lands here under one name; `rg` now is as well.
-    // Sequentially that is harmless, because each call writes the file it then reads, but it is
-    // the same shape of latent bug the paragraph above describes and it costs one arm to close.
-    // A third `*-unknown-nife` arm joined at milestone 184, for the same reason as the second.
-    //
-    // **The aarch64 std arm names its triple too, and a bare `contains("nife")` is the bug that
-    // replaced it.** Every checkout lives under a directory called `nife`, CI's included, so that
-    // substring matched the absolute path of every aarch64 bare-metal program and stripped it under
-    // the `std-` tag. See `strip_tag`.
+    // Namespaced by the triple the binary was built for, so two architectures' builds of a program
+    // cannot overwrite each other's stripped copy and have the wrong one measured into a trust
+    // root. Each arm of `strip_tag` is anchored on a full triple: an x86 Linux CI runner's host
+    // paths contain `x86_64-unknown-linux-gnu`, and every checkout lives under a directory called
+    // `nife`.
     let tag = strip_tag(path);
     let dst = out.join(format!("{tag}-{stem}"));
     // Fail before running the tool if the input is missing, so the caller's error message names the

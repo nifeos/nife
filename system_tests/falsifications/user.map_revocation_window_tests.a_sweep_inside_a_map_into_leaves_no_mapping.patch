@@ -23,16 +23,16 @@ Nothing here is architecture-specific, so one patch serves every leg.
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -92,11 +92,11 @@
-     // section of its own, and a sweep could fall between that read and the record and leave the
-     // mapping live: `revoke::MappingHold` has the whole account. The space's registry comes first
-     // because it ranks above the mapping registry; neither touches `IPC_TABLES`.
+@@ -66,11 +66,11 @@
+     let va = a0;
+     // The frame is read under the hold that maps and records it, so no sweep falls between the
+     // read and the record (`revoke::MappingHold`). The space registry ranks above that hold.
 +    let frame = sched::current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
      crate::user::with_user_address_space(name, |space| {
          let mut hold = crate::revoke::hold();
 -        let frame = hold.current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
-         // The mappable object is a PageFrame (normal memory) or a DeviceFrame (a device's
-         // MMIO, device-typed): the driver a userspace progenitor builds gets its registers this
-         // way (19d.2). a2 chooses the shape for a PageFrame; a DeviceFrame is always
+         let (phys, count, flags) = match frame.object {
+             Object::DeviceFrame(phys) => {
+                 if !frame.rights.allows(Rights::WRITE) {

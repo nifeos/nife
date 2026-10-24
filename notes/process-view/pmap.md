@@ -234,3 +234,21 @@ the layout.
 calef, 2026-09-26 (UTC), on #1365: *"take pmap out of milestone 126, and pick among A to D later."*
 `pmap` from the prompt is now milestone 602 (`pmap` from the prompt), provisional number, whose
 open decision is the table above. The choice among A, B, C and D is deferred, not refused.
+
+## At the prompt, once it can be reached
+
+Nothing at the interactive prompt can grant `components/src/pmap.rs` an address space. `ps` reaches
+the shell because `Manifest::domain` tells `system_initializer` which live supervision endpoint to
+place. There is no such manifest field or wiring for an address space. Since §249 (a running address
+space stays nameable) a builder can keep a copy, so the gap is the wiring, and the design for
+handing a narrowed view to a third party. `kernel::user::pmap_tests` proves the program end to end
+against a real space, and this is what it prints there:
+
+```text
+$ pmap
+              VA  PERM
+      0x00400000  r-x
+      0x00500000  rw-
+
+$ pmap        pmap: this address space may be mapped into, but not looked at: no ENUMERATE
+```

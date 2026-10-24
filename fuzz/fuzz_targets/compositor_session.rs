@@ -1,13 +1,13 @@
 //! Fuzz the compositor's **frame handling** with sessions of lying clients, and check the screen
 //! after every frame (proposal #1592 part a, rank 5).
 //!
-//! **What runs.** The decode the compositor binary's `serve_frame` runs for each client whose
-//! sequence moved (`compositor::commit_damage`, four untrusted control-page words in, screen damage
-//! and a status word out), the union of those, and `compositor::composite` into a host screen.
-//! A session is a sequence of frames; in each, any client may scribble on its own surface, write
-//! any four words as its damage rectangle, and ring (or not).
-//!
-//! **The rules it checks after every frame**, beyond "no panic":
+//! It runs the decode the compositor binary's `serve_frame` runs for each client whose sequence
+//! moved (`compositor::commit_damage`: four untrusted control-page words in, screen damage and a
+//! status word out), the union of those, and `compositor::composite` into a host screen. In each
+//! frame of a session any client may scribble on its own surface, write any four words as its
+//! damage rectangle, and ring or not. notes/fuzzing-the-services.md covers the session targets.
+
+//! # The rules it checks after every frame, beyond "no panic"
 //!
 //! 1. *A lie re-copies only the liar.* A client's damage, whatever four words it wrote, lands inside
 //!    its own window on the screen.

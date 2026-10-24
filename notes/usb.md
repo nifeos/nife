@@ -158,6 +158,45 @@ port's `PORTSC` as the firmware left it and over the five seconds after the driv
 | Under QEMU | INTx, SMMUv3; green | INTx, riscv-iommu; green | MSI (and MSI-X), VT-d; green |
 | Real silicon | argon: not tried | radon: refused, no IOMMU | xenon: a low-speed keyboard found at boot and typing; MSI, VT-d |
 
+## The rings and the cycle bit
+
+`crates/extensible_host_controller_interface` is the xHCI arithmetic with nothing it touches, the
+same split the NVMe driver has. This is the protocol it models (xHCI 1.2, chapters 4 and 6).
+
+The xHCI is the first controller in the tree whose data structures the device walks on its own.
+The driver lays them out in memory the controller reads by DMA: a device context base address
+array (one pointer per device slot), a command ring, an event ring with its segment table, and one
+transfer ring per endpoint. Every ring is an array of 16-byte TRBs (transfer request blocks), each
+with a cycle bit. The producer writes TRBs carrying its current cycle. The consumer accepts a TRB
+only while the bit matches its own, and both flip at the end of the ring. A producer ring ends in
+a link TRB back to its start. The driver rings a doorbell to say a ring has new work, and the
+controller writes events to the event ring and raises an interrupt.
+
+## The register window
+
+`register_window` makes the confinement checkable. Every page of the BAR, up to 16, is mapped
+except a page that overlaps the MSI-X table or pending-bit array. So the rule a reader checks is
+one sentence: the driver holds every register page of its controller except the page its
+interrupt message is programmed through.
+
+The interrupt page is withheld because no IOMMU guards it. Interrupt remapping is off on every x86
+boot here (§86 (whether an NVMe driver can leave the kernel), its interrupt finding). A process that
+could write an MSI-X entry could make the device deliver any vector it liked. An interrupt message
+is not a DMA the IOMMU translates, so nothing would stop it.
+
+The pages the driver needs are then checked against the mask: the capability and operational
+registers through the last port's status register, interrupter 0's registers, and the doorbells
+for every slot. A needed page that is withheld or out of reach is a refusal, because a driver
+started without it would fault on its first access.
+
+## Untrusted descriptors
+
+`crates/usb` is the part of the driver that reads untrusted input. Every descriptor and every
+report is whatever the device chose to send, and a device is whatever a stranger plugged in. So its
+parsers are total: they bound every walk, check every length before reading through it, and answer
+a `Refusal` that names what was wrong rather than panicking or guessing. Its Kani harnesses prove
+that for every input up to a bound, not only for the inputs a test happened to try.
+
 ## BUGS
 
 - Root ports only: a keyboard behind a hub is not found, and neither is a keyboard with a hub

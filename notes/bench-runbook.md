@@ -47,7 +47,7 @@ What follows, as facts:
   `0x7000_6000`, the P2597 carrier's J21 header) are awaiting the board, not false. None was ever
   read off a TX1.
 - The TK1 cannot run nife: nife has no 32-bit Arm port. So nife's aarch64 kernel has never run on
-  bare-metal aarch64 silicon. Its only real-silicon runs are the HVF leg on patagonia
+  bare-metal aarch64 silicon. Its only real-silicon runs are the HVF leg on an Apple Silicon Mac
   ([hvf-leg.md](hvf-leg.md)), which is virtualization.
 - The first `BUGS` entry below records the mechanism that would have caught the wrong board.
 
@@ -77,7 +77,7 @@ The procedures are canonical elsewhere. Follow them there, in this sequence:
    a set (milestone 217). **The archive is not optional** and a mismatched pair halts at
    `MEASURED BOOT REFUSED`, which cost a boot on 2026-09-01.
 2. Attach the console before power. `script/board-console --until banner --for 120s --log ...`,
-   115200 8N1. The UART is a WCH CH343 at `/dev/cu.usbmodem*` on patagonia.
+   115200 8N1. The UART is a WCH CH343 at `/dev/cu.usbmodem*` on the Mac it plugs into.
 3. Power on and type nothing. Milestone 218 shipped a `boot.scr.uimg` boot script and **it has
    never run on the board**; the line that exists only because of it is
    `nife: boot.scr is driving this boot, milestone 218`. If it does not appear, interrupt U-Boot and
@@ -98,13 +98,13 @@ line verbatim.
 
 ## What can go wrong that is not the board
 
-- A leaked QEMU on patagonia holds a disk image's write lock, and the next build fails with
+- A leaked QEMU on the build machine holds a disk image's write lock, and the next build fails with
   `Failed to get "write" lock` naming nothing (milestone 226). `lsof` on the image names the holder.
 - The console output can interleave. The kernel prints its fault reports with its own UART
   driver while the userspace console server drives the same device, with nothing arbitrating, so two
   writers' bytes shuffle (milestone 230's finding). A marker that looks corrupt may not be.
 - Nothing can power-cycle radon remotely (milestone 224). Its Kasa KP303 answers the vendor app
-  and is invisible to ARP from both patagonia and cordoba, so a hung soak needs a person.
+  and is invisible to ARP from every machine on the bench LAN, so a hung soak needs a person.
 
 ## xenon, if there is a second evening
 

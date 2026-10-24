@@ -12,7 +12,8 @@
 //!
 //! A supervisor starts it with a control endpoint in [`CONTROL`] and the start bits of
 //! `line_editor::proto` in its third argument. A quiesce is `OPERATION_QUIESCE` on the endpoint
-//! it serves, answered `QUIESCED`, after which it reads only [`CONTROL`]. Unlike `line_editor`'s, its
+//! it serves, through a copy badged `line_editor::proto::SUPERVISOR_BADGE` (refused on any other),
+//! answered `QUIESCED`, after which it reads only [`CONTROL`]. Unlike `line_editor`'s, its
 //! handoff is not mapped at build: the run comes from the machine's swap reserve
 //! (`line_editor::component::supervisor::SWAP_RESERVE_PAGES`), which exists only while a swap holds it. So it
 //! arrives with `CTL_HANDOFF`, a `SEND_CAP` on [`CONTROL`], is mapped at [`HANDOFF_ADDRESS`], and the

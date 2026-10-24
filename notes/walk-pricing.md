@@ -91,6 +91,48 @@ largest slope. That is a format and contract choice, so it is recorded rather th
 walker holding `std::fs::Dir` handles would pay one hop per directory instead of one per component;
 `walkdir` and `ignore` walk by path, so that is a change to the PAL or to them.
 
+## What `price` separates
+
+Every `read_dir` on nife is a message to a filesystem server, and every path is resolved one
+component per message: an `OPENDIR` per hop, then the verb, then a `CLOSE` per hop. The instrument
+is ordinary `std::fs` code, so the same function runs on nife through a granted directory and on a
+host through a path. That is the only way a comparison runs the same logic on both sides.
+
+One number for a walk hides which half of the system is expensive, so `price` measures four
+things, each a slope over one variable with the others held still:
+
+- Per component: reading the one small file at each level of a chain of directories, from one
+  component below the grant to ten. The slope is what one more name in a path costs.
+- Per entry: listing a directory of 128 files against listing one of 1, each with its
+  `file_type`, which is free on nife because `READDIR` carries it.
+- Per byte: reading a 4 KiB file against a 256 KiB one. This is what the search half of a search
+  tool pays, and it exercises the block path rather than the name path.
+- The whole walk: a recursive `read_dir` and read of every file, in the shape `walkdir` and
+  `ignore` walk in. It counts the path components it resolved, so the three slopes can be checked
+  against the total rather than trusted.
+
+Each slope point is the median of `REPS` timed runs after one untimed one. The whole walk is the
+median of `WHOLE_REPS`, warm, after the walk that counted, and each of those runs is also split by
+the `std::fs` call that spent the time (`Split`).
+
+## What the instrument does not see
+
+- A median of three removes a stray preemption and nothing else. The figures are magnitudes and
+  directions; a published comparison wants more runs and a spread.
+- The untimed run primes whatever caches each side has: the FS server's metadata cache on nife,
+  the dentry and page caches on a Unix host. So these are the costs of a second walk. A first walk
+  over a cold disk is a different number and is not taken here.
+- The per-entry slope is inside one `READDIR` page. 128 four-byte names fit in one; a directory of
+  more than about 680 such names would add a message per page, which this does not price.
+- It walks with paths, as `walkdir` and `ignore` do, which on nife means every open re-resolves
+  every component from the grant. A walker holding `std::fs::Dir` handles would pay one hop per
+  directory instead, and nothing here measures that shape.
+- The host example's matched-tier Linux run, `bench/host/run_linux_walk.sh` (milestone 606 (a
+  directory walk costs what it does on Linux)), builds it static for musl and boots it as PID 1
+  under QEMU-HVF on the machine nife's bench boot uses. The tree lives on the initramfs rather than
+  ext4 on virtio. For a warm walk that does not matter; for a cold one it does, and
+  notes/walk-cost.md says so.
+
 ## Reproduce
 
 ```text

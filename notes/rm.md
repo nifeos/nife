@@ -92,6 +92,25 @@ the namespace rather than an optimization. That walk must re-read from cursor 0,
 name shifts a real directory's entries; a set namespace is fixed, so re-reading would hand the loop
 the names this run has already taken away.
 
+## The program's shape
+
+`rm` is a program, not a shell builtin, and that is Unix's shape rather than a divergence from it.
+`cd`, `pwd` and `ls` are builtins here because the shell is rebinding a capability it already
+holds. `rm` is a destructive loop, not a rebinding. A builtin would run with the shell's entire
+endowment, where a program takes an explicit attenuated grant. So `caps rm -r logs` prints the
+subtree at risk before anything happens, and a bug in the recursion can only reach what the
+process was handed.
+
+The shell resolves any leading path at the prompt and grants the directory the name is in, at
+slot 0. The report endpoint is slot 1, and every other program in this tree takes its output at
+slot 0. The order is this way round so the two slots mean one thing on both wirings. The kernel's
+`start_granted_dir` puts the narrowed endpoint at slot 0 and a report endpoint at slot 1.
+`system_initializer`'s spawn service puts the caretaker it built at slot 0 and the shell's output
+at slot 1, ahead of every other grant. The name and the options ride in the three `START` argument
+words, packed by `filesystem_contract::grant` exactly as a per-file grant's name is. So the program
+costs no extra frame, and holds nothing that names a progenitor, a terminal, or the filesystem
+above its grant.
+
 ## BUGS
 
 - **`rm` runs at the interactive prompt only for a name one directory down** (milestone 31 phase 3,

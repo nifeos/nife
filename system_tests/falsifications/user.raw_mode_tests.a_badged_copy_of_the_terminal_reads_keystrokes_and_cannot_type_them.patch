@@ -1,13 +1,14 @@
 Falsifies `system_tests::user::raw_mode_tests::a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them`.
 
 Architecture: all three (the change is in a userspace component, `components/src/line_editor.rs`,
-built for every ISA from one source).
+built for every ISA from one source; the table it reads is `crates/line_editor/src/proto.rs`'s
+`admits`).
 
 The defect this restores is the one milestone 709 closes: the boot line discipline served every
 request the same whatever the badge on the capability that sent it, so a `graphical_terminal`
 session holding a copy of its endpoint could `OPERATION_BYTES` a command line into the queue the boot shell
-reads with `OPERATION_READLINE`. The patch lets the raw-only badge through the serve loop's
-allowlist whole (`proto::RAW_ONLY_BADGE => true`), which is that guard removed for this badge.
+reads with `OPERATION_READLINE`. The patch lets the raw-only badge through the terminal's
+allowlist whole (`RAW_ONLY_BADGE => true` in `proto::admits`), which is that guard removed for this badge.
 
 Expected to fail: `assert_eq!(r[0], BAD_REQUEST, "a badged holder's OPERATION_BYTES was served (r0 = 0):
 it can type a line the boot shell reads")`, the first assertion in the test. Under the patch the
@@ -23,17 +24,21 @@ into `Terminal::serve` and the guard came to sit ahead of that call instead. Sam
 lines removed. Replayed red on aarch64 the same day, at the same first assertion
 (`raw_mode_tests.rs:449`).
 
-diff --git a/components/src/line_editor.rs b/components/src/line_editor.rs
---- a/components/src/line_editor.rs
-+++ b/components/src/line_editor.rs
-@@ -195,9 +195,7 @@
-         let op = proto::operation(w0);
-         let allowed = match badge {
-             0 => op != proto::OPERATION_READ_LINE_BYTES,
--            proto::RAW_ONLY_BADGE => {
--                matches!(op, proto::OPERATION_RAWMODE | proto::OPERATION_READRAW)
--            }
-+            proto::RAW_ONLY_BADGE => true,
-             proto::STDIN_BADGE => op == proto::OPERATION_READ_LINE_BYTES,
-             _ => false,
-         };
+**Re-cut 2026-10-24 (UTC) by maintainer/terminal-quiesce-from-supervisor-only**, when the serve
+loop's allowlist moved into `line_editor::proto::admits` so `line_editor` and its host tests read
+one table. Same defect, `RAW_ONLY_BADGE => true` there. Replayed red on aarch64 the same day, at
+the same first assertion (`raw_mode_tests.rs:449`).
+
+diff --git a/crates/line_editor/src/proto.rs b/crates/line_editor/src/proto.rs
+index 44da33940..6e75276c9 100644
+--- a/crates/line_editor/src/proto.rs
++++ b/crates/line_editor/src/proto.rs
+@@ -201,7 +201,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+                 | OPERATION_RAWMODE
+                 | OPERATION_READRAW
+         ),
+-        RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
++        RAW_ONLY_BADGE => true,
+         STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,
+         SUPERVISOR_BADGE => operation == OPERATION_QUIESCE,
+         _ => false,
