@@ -94,8 +94,9 @@ has the transcript and the BUGS.
 - The store is a directory grant the owner's console alone makes, at the `std` layout's directory
   slot, on a line that names no directory of its own; the sources page comes with it (slot 18).
 
-The status is PARTIAL rather than BUILT: the exit criterion is xenon's installed system, which
-has not run it. The TUF client is 858's.
+The status is PARTIAL rather than BUILT. Items 1 to 8 are built; the exit criterion is xenon's
+installed system, which has not run it. Follow-on's `Outstanding` lines say what is left. The TUF
+client is 858's.
 
 ## What is calef's
 
@@ -117,8 +118,11 @@ options):
 Not a ruling but calef's hands: the exit criterion on xenon. The host is built:
 `basalt.nifeos.org` is a CNAME to `nifeos.github.io`, and
 `https://basalt.nifeos.org/rolling/metadata/stand-in-index` answers 200, listing every package
-against one Release (checked 2026-10-18 UTC, `rolling-2026-10-18-7a6a6b5`). On xenon the run waits
-on the I219 being admitted at boot, which takes milestone 494's bench boot first.
+against one Release (checked 2026-10-24 UTC, `rolling-2026-10-24-87a3b29`). The bench step is
+rehearsed under QEMU from an installed disk built with `NIFE_INDEX_SOURCES=basalt`. `jig update`
+resolves `basalt.nifeos.org` by name and reads the index over pinned TLS. `jig install ioping`
+fetches the Release asset through `github.com`'s redirect, judges it and installs it
+([notes/packages/jig.md](../../notes/packages/jig.md), "A rehearsal with basalt's sources").
 
 One fork was decided rather than asked, because it is reversible and in-tree: how a manifest
 names a fixed directory (809's open fork). `Manifest::indexes`, granted like the installer, puts
@@ -171,7 +175,8 @@ location's root fetched from the off-root host, and two redirects allowed fetche
 
 ## What it waits on
 
-- Milestones 384, 494 and 501, in the frontmatter, and 809 and 855.
+- Milestones 384, 494 and 501, in the frontmatter, and 809 and 855. Of 809, only items 1 to 6
+  (`jig` itself), which are built.
 - §250 (an image names its distribution's package index, and the bytes may live anywhere) is
   ruled, and its path was ruled on #1884 (Q4). The `unwritten` decision dependency is now the
   amendments those rulings make. Q3 amends §220 (signed builds: a vendor signs, a developer
@@ -207,9 +212,13 @@ exists. aarch64 silicon waits on an aarch64 board.
   location, so its redirect path is proved by the exerciser calling the same function.
 - If GitHub moves `github.com` to a root the image does not carry, `jig` passes over the Release
   and installs from the Pages copy, uncounted, until an image carries the new root.
-- At the prompt the index host is reached by the address the sources give, not by name, because
-  slirp's name server is the host's (milestone 892 (a std program at the prompt holds the network
-  and a name resolver)). Resolution by name is proved in the kernel harness.
+- The test sources give the peer's address, so the gated boot never resolves the index host by
+  name at the prompt: slirp's name server is the host's, which knows no `.test` name. basalt's
+  sources give none, and `jig` resolves through its root-zone badge (milestone 892); the rehearsal
+  above shows it, and the kernel harness gates resolution by name.
+- GitHub sets the size of its redirect's head (10,806 bytes on 2026-10-24 UTC), and no gate sees
+  it. Past `http_response::REDIRECT_HEAD_MAX` (32 KiB), `jig` passes over the Release and installs
+  from the Pages copy, uncounted. `notes/packages/jig.md`'s BUGS name the hand check.
 - The index copy is one page: this architecture's lines, at most 4,095 bytes.
 - `notes/packages/over-the-internet.md`'s BUGS carry the stand-in's limits (no "moved to", one plain
   HTTP location, no producer in the tree).
@@ -226,7 +235,19 @@ exists. aarch64 silicon waits on an aarch64 board.
   Q3, basalt's root SHA-256 as a default owner trust line. The §220 and §195 amendments the ruling
   makes are the integrator's text.
 - **Milestone 809.** `jig` holds the root zone (Q5) and installs from any repository whose root is
-  an owner trust line with a §220 ceiling: its `add-index`.
+  an owner trust line with a §220 ceiling: its `add-repository`. That verb waits on §195's
+  2026-10-10 amendment, clause 3, and on an unproposed milestone for §306's authority list. 801
+  waits on neither: it installs from the image's own index under the image's root (checked
+  2026-10-24 against `jig update` and `jig install`, which read only the image's sources).
+- **Outstanding.** The exit criterion: on xenon, install, boot from the disk, `jig update`, `jig
+  install ioping`. `notes/xenon-bench-2026-10-18.md`'s steps 1 to 3 are the procedure. It waits on
+  milestone 494's bench boot (494 is PARTIAL on it) and a fresh install
+  (`bench/xenon-2026-10-21/README-801.md`). Checked 2026-10-24: no xenon log under `bench/` runs
+  `jig`, and the QEMU rehearsal passes.
+- **Outstanding.** The second index address. `basalt.crickertech.com` does not resolve, basalt's
+  `backup` job fails, and `nifeos/basalt-backup` has no Pages site (checked 2026-10-24 with `dig`,
+  `curl` and the GitHub API). basalt's README lists the six steps, which need an organization
+  owner and the domain's DNS. The client's fallback is built and gated against the test peer.
 - **Milestone 858.** Who signs a target's locations, decided with the signing setup (Q1), and
   following a root that names a new location (Q2).
 
@@ -241,11 +262,9 @@ exists. aarch64 silicon waits on an aarch64 board.
   `Index::parse` once item 2's questions are ruled.
 - **Done.** The std farm's stamp now covers `byte_sink_contract`, found while adding the resolver's
   wire to the PAL.
-- **Done.** A fresh `net_stack` starts its ephemeral ports at a counter-derived point, not 49152.
-  A resolver's first `CONNECT` failed three runs in four after another stack's test had used the
-  same 4-tuple (CI run 38009701250). Milestone 783 (the network stack seeds its random generator
-  from the clock, and TCP sequence numbers come from it) is where that seed should come from
-  entropy.
+- **Done.** A fresh `net_stack` starts its ephemeral ports at a counter-derived point, not 49152
+  (CI run 38009701250). Milestone 783 (the network stack seeds its random generator from the
+  clock) is where that seed should come from entropy.
 - **Done.** Every std program the test harness starts hands back its frames when it ends: the clock
   service, the configuration page and the stack now come from one region a holding reclaims
   (calef, 2026-10-10 (UTC): "Lets fix the leaks."), proved by
