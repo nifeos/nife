@@ -345,7 +345,7 @@ fn insert_at_or_above_respects_its_floor() {
 /// The rights bits are the syscall wire format: delegation names them in a register, and
 /// `from_bits` turns the register back into authority, masking off undefined bits. The exact values
 /// are pinned because milestone 85 (mutation testing over the host crates)'s mutants (`1 << 1` as
-/// `1 >> 1`, `from_bits` ORing instead of masking) survived when nothing pinned them. The `ALL`
+/// `1 >> 1`, `from_bits` using `|` instead of a mask) survived when nothing pinned them. The `ALL`
 /// union is spelled out by hand, since a right missing from `ALL` is dropped at every delegation
 /// and a check that read `ALL` to check `ALL` would pass whatever it was given.
 #[test]
