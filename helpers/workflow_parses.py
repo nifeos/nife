@@ -38,8 +38,8 @@ workflow executes anything, and Psych::SyntaxError names the line and column thi
   direction in principle. The incident shape (a comment line that lost its `#`) is rejected by
   both; a file this passes and GitHub rejects is the residue.
 - A machine without `ruby` on PATH fails loudly naming that instead of degrading to a weaker
-  parse, so the gate is down there until ruby is installed. That is deliberate: a quiet
-  degradation is the failure this check exists to end.
+  parse, so the gate is down there until ruby is installed (`script/bootstrap` installs it). That
+  is deliberate: a quiet degradation is the failure this check exists to end.
 - A lost `#` inside a `run: |` block edits the script's text and stays valid YAML. Nothing that
   reads structure can see it.
 - Only `.github/workflows/` is walked. `.github/actions/` (composite actions) holds nothing
@@ -76,7 +76,7 @@ def parse(cwd, rels):
                              capture_output=True, text=True, cwd=cwd)
     except FileNotFoundError:
         return [], ("`ruby` is not on PATH. The parser is `ruby -ryaml` "
-                    "(helpers/workflow_parses.py); install ruby, do not skip the gate")
+                    "(helpers/workflow_parses.py); run script/bootstrap (it installs it), do not skip the gate")
     if run.returncode not in (0, 1):
         return [], (run.stderr.strip() or "ruby exited %d with no error text" % run.returncode)
     return [line for line in run.stderr.splitlines() if line.strip()], None
