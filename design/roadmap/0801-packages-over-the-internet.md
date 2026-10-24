@@ -236,9 +236,10 @@ exists. aarch64 silicon waits on an aarch64 board.
   makes are the integrator's text.
 - **Milestone 809.** `jig` holds the root zone (Q5) and installs from any repository whose root is
   an owner trust line with a §220 ceiling: its `add-repository`. That verb waits on §195's
-  2026-10-10 amendment, clause 3, and on an unproposed milestone for §306's authority list. 801
-  waits on neither: it installs from the image's own index under the image's root (checked
-  2026-10-24 against `jig update` and `jig install`, which read only the image's sources).
+  2026-10-10 amendment, clause 3, and on an unproposed milestone for §306 (the web's authority
+  list is a package and a capability). 801 waits on neither: it installs from the image's own
+  index under the image's root (checked 2026-10-24 against `jig update` and `jig install`, which
+  read only the image's sources).
 - **Outstanding.** The exit criterion: on xenon, install, boot from the disk, `jig update`, `jig
   install ioping`. `notes/xenon-bench-2026-10-18.md`'s steps 1 to 3 are the procedure. It waits on
   milestone 494's bench boot (494 is PARTIAL on it) and a fresh install
