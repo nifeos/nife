@@ -111,9 +111,9 @@ $ script/board-netboot --root target/esp        # in the other terminal, while y
 ```
 
 Then power xenon on. There is no third step and no copy. Every later boot is `cargo xtask uefi-image
---release` and a power cycle. Release is the profile every image for a machine is built in and the
-one CI rehearses; it is also less than half the debug image's size (8,180,736 against 21,778,944
-bytes on 2026-10-24), which matters at a real wire's TFTP rate. The file the firmware fetches is the same file the stick procedure copies, at the
+--release` and a power cycle. Release is the profile every image for a machine is built in, and
+the one CI rehearses. It is also less than half the debug image's size (8,180,736 against
+21,778,944 bytes on 2026-10-24), which matters at a real wire's TFTP rate. The file the firmware fetches is the same file the stick procedure copies, at the
 same path, staged once.
 
 ## What you should see, in order
