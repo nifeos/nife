@@ -1,38 +1,21 @@
-//! **`capability_plan`: what a component declares it needs, and how a supervisor wires it.** Under
-//! §41 (the endpoint is the broker), any program that speaks the protocol and holds the right
-//! capabilities is the component; this is the capability half. No IO and no syscalls: a [`Requirements`] (what the component says it needs) and
-//! a [`Provisions`] (what the supervisor routes to this child) become a [`Plan`] (exactly what to
-//! endow) or a typed [`Refusal`]. notes/component-manifest.md has the design, including why this is
-//! not `grant_plan::Manifest`: that declares what a person at a prompt may designate, this declares
-//! what a supervisor must route, and [`Direction`] (`Serve` is `READ`, `Use` is `WRITE`) is what
-//! stops a client of a stable rendezvous becoming its server.
-//!
-//! A manifest is a request; the provisions are the authority. A name the supervisor did not list
-//! resolves to [`Refusal::Unprovided`] before the component is built, so a manifest can fail to be
-//! satisfiable but cannot widen authority. The name is the component's and the object is the
-//! supervisor's, which is what makes a component substitutable: one declaration, many wirings.
-//!
-//! A malformed declaration (a duplicate role, two mappings at one address, zero pages) is caught by
-//! the `const fn` [`Requirements::problem`], which every real manifest asserts in a `const` item,
-//! so it does not compile. A provisioning mismatch is only known at run time, and [`plan`] reports
-//! it.
-//!
+//! What a component declares it needs, and how a supervisor wires it: the capability half of a §41
+//! (the endpoint is the broker) component. No IO and no syscalls: a [`Requirements`] and the
+//! supervisor's [`Provisions`] become a [`Plan`] (exactly what to endow) or a typed [`Refusal`]. A
+//! manifest is a request and the provisions are the authority: a name the supervisor did not list
+//! is [`Refusal::Unprovided`] before the component is built, so a manifest can be unsatisfiable but
+//! cannot widen authority. A malformed declaration fails to compile through
+//! [`Requirements::problem`]; a provisioning mismatch is [`plan`]'s refusal at run time. See
+//! notes/component-manifest.md and notes/component-manifest/capability-plan.md.
+
 //! # BUGS
-//!
-//! - A manifest is compiled in, not shipped with the build. calef ruled on 2026-09-26 that it
-//!   travels in the executable as an ELF note (§197 (a package is one archive file)); the note's
-//!   format is still the architect's, and nothing reads one yet.
-//! - [`Requirements::pages`] is a property of a build, not of the contract: two builds can honestly
-//!   differ, which is the strongest argument for shipping the manifest with the binary.
-//! - A malformed declaration's compile error names the manifest, not the role;
-//!   [`Requirements::problem`] in a host test prints the role.
+//! - A manifest is compiled into its supervisor, not read from the component's ELF note (§197 (a
+//!   package is one archive file)).
+//! - [`Requirements::pages`] is a property of a build, not of the contract.
+//! - A malformed declaration's compile error names the manifest, not the role.
 //! - [`MAX_CAPS`] and [`MAX_MAPS`] are hard bounds, about double any manifest here.
-//! - Nothing checks that a routed object is the kind the role wants; the kernel refuses the
-//!   `CAP_INSERT` or the first `RECEIVE` instead.
-//! - [`plan`] does not refuse two roles routed to one supervisor slot. The child then holds one
-//!   object twice, each copy with the rights its own role declared, so nothing is widened past the
-//!   declaration; it is a provisioning mistake that should be a [`Refusal`]. Found by the eighth
-//!   outsider pass (`notes/confinement-outsider-pass-8.md`, near miss 3).
+//! - Nothing checks that a routed object is the kind the role wants; the kernel refuses it later.
+//! - [`plan`] does not refuse two roles routed to one supervisor slot; no right is widened.
+//! - [`dependents`] finds direct dependents only; nothing warns a dependent's own dependents.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `component_plan`. The crate is the capability half
 //! of §41's component, so the name says capability; `grant_plan` is its sibling over a different
@@ -52,20 +35,11 @@ pub const MAX_CAPS: usize = 8;
 /// against the two that the widest manifest here asks for.
 pub const MAX_MAPS: usize = 4;
 
-/// **Which way an rendezvous points**, which is the axis this crate adds over a program's manifest and
-/// the reason a component's declaration is a different object from a program's.
-///
-/// It is a required field with no default, and that is deliberate in `writes_while_reading`'s shape
-/// (AGENTS.md's rung one): a component **cannot declare an rendezvous without saying whether it
-/// answers on it**. The rights fall out of the answer, so the supervisor never spells `READ` or
-/// `WRITE` and cannot spell one wrong.
-///
-/// The stakes are §41 (the endpoint is the broker)'s central refusal. `SEND` and `RECEIVE` are gated by different rights on the same
-/// object, so the same rendezvous handed out two ways is a one-way pipe in whichever direction each
-/// holder was trusted with. A typo that gave a client `READ` would let it park in `RECEIVE_CAP` and take
-/// its own server's requests, and the test that catches that
-/// (`a_client_of_the_stable_rendezvous_cannot_become_its_server`) would fail for a reason no reader
-/// could see from the operator's source. There is now nothing to typo.
+/// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
+/// field with no default, so a component cannot declare a rendezvous without saying whether it
+/// answers on it, and the supervisor never spells `READ` or `WRITE`. A client given `READ` could
+/// park in `RECEIVE_CAP` and take its own server's requests, which is §41 (the endpoint is the
+/// broker)'s central refusal. See notes/component-manifest/capability-plan.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {
     /// **The component answers here.** Requests arrive on this rendezvous and it replies: `READ`.
@@ -164,19 +138,12 @@ pub const STATE_HANDOFF_ROLE: &str = "handoff";
 /// tree runs on maps 4 KiB pages at this level.
 const HANDOFF_PAGE: u64 = 4096;
 
-/// **Where a component that carries state across a live replacement wants its handoff pages**
-/// (DECISIONS §209: state handoff is an opaque blob over a granted frame, and it is optional).
-///
-/// The page's bytes are the component's business and nobody else's. The supervisor never reads them
-/// and this crate never names their shape, which is the refusal of §116 (live component state handoff is declined, for want of a customer) to design one wire format for
-/// every kind of live state, kept. What the declaration buys the supervisor is two facts it could not
-/// otherwise know: **that** this contract carries state (so a swap must wait for the incoming
-/// instance to say it absorbed it before the outgoing one is retired), and **where** both instances
-/// read and write it (so the supervisor can route one frame to both).
-///
-/// A run of [`pages`](StateHandoff::pages) pages, which the supervisor mints as one frame capability
-/// with `MemoryRegion::RETYPE`'s page count, per DECISIONS §233 (`MemoryRegion::RETYPE` takes a page count). The count is the
-/// component's to declare, because it is a fact about how much state that component keeps.
+/// Where a component that carries state across a live replacement wants its handoff pages
+/// (DECISIONS §209: state handoff is an opaque blob over a granted frame, and it is optional). The
+/// bytes are the component's; the supervisor learns only that the contract carries state and where
+/// both instances read and write it. A run of [`pages`](StateHandoff::pages) pages, minted as one
+/// frame capability with `MemoryRegion::RETYPE`'s page count, per DECISIONS §233
+/// (`MemoryRegion::RETYPE` takes a page count). See notes/component-manifest/capability-plan.md.
 ///
 /// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -188,20 +155,12 @@ pub struct StateHandoff {
     pub pages: u64,
 }
 
-/// **What a component declares it needs.** The capability half of a contract, beside the wire half.
-///
-/// The order of [`caps`](Requirements::caps) is load-bearing: it **is** the component's capability table slot
-/// order, because `supervision_protocol::ChildEndowment::caps` lands its entries in slots 0, 1, 2, ...
-/// Before this crate that agreement was a comment in two files. Now the component derives its own
-/// slot numbers from this list with [`slot_of`], so a reordered manifest is a compile error rather
-/// than a component reading the wrong slot at run time.
-///
-/// What is **not** here is as deliberate as what is. Supervision is not declared, because a
-/// component does not choose whether it is watched: that is the supervisor's decision and it is done
-/// *to* the component (§32). Start arguments are not declared either, because they are
-/// configuration rather than authority: which log entries this instance writes and whether it was
-/// handed a device are facts about the wiring, and the component is told them rather than asking.
-/// A manifest declares what a component **needs**, not everything about how it is started.
+/// What a component declares it needs: the capability half of a contract, beside the wire half.
+/// The order of [`caps`](Requirements::caps) is the component's capability table slot order,
+/// because `supervision_protocol::ChildEndowment::caps` lands its entries in slots 0, 1, 2, ...,
+/// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32) and start
+/// arguments are not declared: a manifest declares what a component needs, not how it is started.
+/// See notes/component-manifest.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Requirements {
     /// The contract this component implements, for a reader and for a diagnostic. Not matched
@@ -219,69 +178,33 @@ pub struct Requirements {
     /// the crate's second `BUGS` entry and the strongest argument for eventually shipping a manifest
     /// with the binary that satisfies it.
     pub pages: u64,
-    /// **Which contracts this component cannot silently tolerate the absence of** (milestone 23's
-    /// dependency-aware orchestration residual). Named by contract, not by role: a role name is
-    /// resolved to an object by the supervisor's [`Provisions`] and that resolution can vary by
-    /// wiring (`CLIENT`'s `service` role is a console on the direct channel and a broker's front
-    /// rendezvous on the queued one), so a role cannot say which contract will answer it. A contract
-    /// name can, and does not change across wirings.
-    ///
-    /// **Populated only for a component that itself serves others**, and empty otherwise, because
-    /// that is the whole of what this field is for: deciding who [`dependents`] must warn before a
-    /// swap. A pure consumer (no `Direction::Serve` need at all, like `CLIENT`) never needs warning.
-    /// It calls through a `CALL`, and DECISIONS §41 already proved that call degrades for free: a
-    /// `CALL` that finds nobody receiving parks on the rendezvous's own sender queue, and the next
-    /// server to `RECEIVE_CAP` drains it. Nothing has to tell a pure consumer anything, so nothing here
-    /// claims one needs telling. A component that *serves* others while itself calling through to a
-    /// swappable dependency is different: `broker` blocks its one serving thread on a `CALL` to its
-    /// backend, so if the backend is what is being swapped, `broker` cannot go on answering its own
-    /// producers unless it is told first to stop calling through and start buffering (a page and a
-    /// signal it is never asked to acknowledge, DECISIONS §231 (a swap's warning to a dependent is
-    /// advisory, and the supervisor never waits for it)).
-    /// That is the edge this field exists to name.
-    ///
-    /// **Direct dependents only.** A dependent that has its own decoupling mechanism (a queue, a
-    /// cache) is not assumed to propagate the warning to *its* dependents, because whether it needs
-    /// to is a property of that mechanism and not something this crate can infer from two contract
-    /// names. See [`dependents`]'s docs and this crate's `BUGS` for what that leaves unbuilt.
+    /// Which contracts this component cannot silently tolerate the absence of (milestone 23's
+    /// dependency-aware orchestration residual), named by contract because a role's object varies
+    /// by wiring. Populated only for a component that itself serves others, since a pure consumer's
+    /// `CALL` degrades for free (DECISIONS §41). `broker`, which blocks its serving thread on a
+    /// `CALL` to its backend, must be warned before a swap (DECISIONS §231 (a swap's warning to a
+    /// dependent is advisory, and the supervisor never waits for it)). Direct dependents only; see
+    /// [`dependents`] and notes/component-manifest/capability-plan.md.
     pub depends_on: &'static [&'static str],
-    /// **Whether this contract carries state across a live replacement, and where** (DECISIONS §209,
-    /// milestone 23's last residual). `None` is the default answer and the common one: a component
-    /// that declares nothing is killed and replaced, which is what every component in this tree was
-    /// before §209 and what roughly fifty of fifty-two still are.
-    ///
-    /// A required field with no default, for [`Direction`]'s reason: a contract **cannot be declared
-    /// without saying whether it hands state off**, so "we forgot" is not a state the tree can be in.
-    ///
-    /// `Some` does two things. [`plan`] routes the supervisor's [`STATE_HANDOFF_ROLE`] object to the page
-    /// at [`StateHandoff::va`], and refuses with [`Refusal::Unprovided`] when the supervisor routes
-    /// nothing there. That refusal is the point: **a supervisor that cannot carry state must not
-    /// silently kill-and-replace a component that declared some**, because the loss would look
-    /// exactly like a successful swap. And [`Plan::state_handoff`] tells the supervisor to wait for the
-    /// incoming instance's verdict before it retires the outgoing one, since under §209 a swap
-    /// whose state was not absorbed does not commit.
+    /// Whether this contract carries state across a live replacement, and where (DECISIONS §209,
+    /// milestone 23's last residual). Required with no default, so "we forgot" is not a state the
+    /// tree can be in; `None`, the common answer, is kill and replace. With `Some`, [`plan`] routes
+    /// the supervisor's [`STATE_HANDOFF_ROLE`] object to [`StateHandoff::va`] and refuses with
+    /// [`Refusal::Unprovided`] when nothing is routed there, because lost state would look exactly
+    /// like a successful swap. [`Plan::state_handoff`] tells the supervisor to wait for the
+    /// incoming instance's verdict. See notes/component-manifest/capability-plan.md.
     ///
     /// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
     pub state_handoff: Option<StateHandoff>,
 }
 
 impl Requirements {
-    /// **Whether this declaration is well formed at all**, independent of any supervisor.
-    ///
-    /// A `const fn`, and that is the point: every real manifest in this tree asserts on it in a
-    /// `const` item, so a malformed declaration does not compile. Three things are checked, and each
-    /// one is a mistake that would otherwise be silent:
-    ///
-    /// - **A role declared twice.** The component would be handed two slots and read one of them,
-    ///   and nothing at run time distinguishes that from a correct wiring.
-    /// - **Two pages at one address.** One mapping silently wins; which one depends on the order the
-    ///   supervisor happened to install them.
-    /// - **Zero pages.** A component nothing pays for cannot be built, and the failure would arrive
-    ///   as a region split refusing for no visible reason.
-    ///
-    /// Over-long declarations are **not** checked here, because [`MAX_CAPS`] is this crate's limit
-    /// rather than the declaration's defect: it is [`plan`]'s refusal, where a reader meets the
-    /// bound.
+    /// Whether this declaration is well formed at all, independent of any supervisor. A `const fn`
+    /// that every real manifest asserts in a `const` item, so a malformed declaration does not
+    /// compile. It refuses a role declared twice, two pages at one address (a page anywhere in the
+    /// handoff run counts), an empty handoff and zero pages, each a mistake that would otherwise be
+    /// silent. An over-long declaration is [`plan`]'s refusal, where [`MAX_CAPS`] is met. See
+    /// notes/component-manifest/capability-plan.md.
     pub const fn problem(&self) -> Option<Refusal> {
         if self.pages == 0 {
             return Some(Refusal::NoPages);
@@ -527,17 +450,13 @@ impl Plan {
         self.pages
     }
 
-    /// **Where this component's handoff page is, if it carries state across a swap** (DECISIONS
-    /// §209). `None` means kill-and-replace: retire the outgoing instance as soon as the incoming one
-    /// is running. `Some` means the swap does not commit until the incoming instance says it absorbed
-    /// the blob, and a supervisor that retires the outgoing instance first has thrown the state away
-    /// with nothing to show for it.
-    ///
-    /// The mapping itself is already in [`maps`](Plan::maps), among the shared pages and installed
-    /// at build time in both instances, so a supervisor never installs it by hand. Unlike a device it
-    /// is not deferred past a revoke, and it cannot be: `PageFrame::REVOKE` is symmetric and would take
-    /// the supervisor's own capability with everyone else's. The outgoing instance is quiesced and
-    /// blocked before the incoming one is started, so the two never run against the page at once.
+    /// Where this component's handoff page is, if it carries state across a swap (DECISIONS §209).
+    /// `None` means kill and replace. `Some` means the swap does not commit until the incoming
+    /// instance says it absorbed the blob, so the outgoing instance must not be retired first. The
+    /// mapping is already in [`maps`](Plan::maps), installed at build time in both instances, and
+    /// is not deferred past a revoke: `PageFrame::REVOKE` is symmetric and would take the
+    /// supervisor's own capability too. The outgoing instance is quiesced and blocked before the
+    /// incoming one starts, so the two never run against the page at once.
     ///
     /// Name: ratified 2026-10-18 (calef, on the five `handoff` names of this crate: "Approve all five").
     pub fn state_handoff(&self) -> Option<StateHandoff> {
@@ -655,13 +574,8 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     Ok(out)
 }
 
-/// **The capability table slot a component reads one of its own needs in**, derived from its declaration.
-///
-/// This is the rung the whole crate is built to reach. The slot agreement used to be a pair of
-/// constants written twice, once as `pub const SVC: u64 = 0` in the contract and once as the position
-/// of an entry in a literal array in the operator, with a comment in each file asking the reader to
-/// check. Now the constant *is* the position, computed at compile time, and a role that the manifest
-/// does not declare **does not compile**.
+/// The capability table slot a component reads one of its own needs in, derived from its
+/// declaration at compile time, so a role the manifest does not declare does not compile.
 ///
 /// # Panics
 ///
@@ -711,20 +625,9 @@ const fn str_eq(a: &str, b: &str) -> bool {
 
 // ===================================================================================================
 // Dependency-aware orchestration (milestone 23's third residual, roadmap's own words: "if component
-// B is a client of component A, swapping A means quiesce B, swap, resume").
-//
-// This is the other half of [`Requirements::depends_on`]'s doc comment, made into a decision rather
-// than a fact a supervisor would otherwise have to work out by hand. It answers exactly one
-// question: **given the components a supervisor is currently running, which of them must be told
-// before a named contract is swapped?** It does not run the swap, does not touch a capability, and
-// does not decide *how* a dependent is told (that is a per-contract protocol, `broker`'s warning
-// page and signal today); it only says *who*.
-//
-// **Direct dependents only, and that is a scope decision recorded rather than an oversight.** A
-// dependent that itself absorbs its own dependency's downtime (a queue, in `broker`'s case) is not
-// assumed to need telling about *its* dependents in turn, because whether it does is a property of
-// that dependent's own mechanism and this crate has no way to know it from two contract names. See
-// this crate's `BUGS` for what a transitive version would need and why it is not built.
+// B is a client of component A, swapping A means quiesce B, swap, resume"). [`dependents`] says
+// who must be told before a named contract is swapped, not how, and finds direct dependents only;
+// see notes/component-manifest/capability-plan.md.
 // ===================================================================================================
 
 /// **How many running components one orchestration query may consider.** The same shape as
