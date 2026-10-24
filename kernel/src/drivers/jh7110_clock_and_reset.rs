@@ -1,49 +1,19 @@
-//! **The JH7110's clock and reset generator, the volatile half** (milestone 220).
+//! The JH7110's clock and reset generator, the volatile half.
 //!
-//! `crates/jh7110_clock_and_reset` owns the offsets, the bit positions, the bring-up plan and the device-tree
-//! query, all of it host-tested and pointer-free. This file is the twenty lines that actually
-//! store to a register, and it does nothing else: it walks a plan it is handed, against a base it
-//! is handed, and reports what the hardware said.
-//!
-//! Same rule as every driver here (DECISIONS §4): **it reaches into no kernel global.** No base
-//! address of its own, no static state, no idea which device it is bringing up.
-//!
-//! # Why this is in the kernel, when drivers here are EL0 processes
-//!
-//! DECISIONS §86 (whether an NVMe driver can leave the kernel, and what capability would let it)
-//! names *"the microkernel thesis that drivers are user programs"* as this project's direction of
-//! travel, so a kernel-resident driver is an exception and owes an argument. It is the same
-//! argument §86 settled for NVMe on 2026-09-03, and reusing it beats inventing a second one: **the kernel keeps the admin
-//! plane, EL0 gets the data path, and no new syscall surface is added.**
-//!
-//! Three things make the clock controller a stronger case for that split than NVMe was, not a
-//! weaker one:
-//!
-//! - **It is a shared resource, and granting it would *widen* a driver's authority rather than
-//!   confine it.** The STG window is one 64 KiB block holding the clocks and resets for USB,
-//!   both PCIe root ports, the DMA engine and the security block. A userspace TRNG driver holding
-//!   it could gate PCIe's clock or assert USB's reset. Milestone 159's whole demonstration is that
-//!   the driver holds *one page of one device's registers and two endpoints*; handing it the CRG
-//!   would trade the narrowest authority in this tree for the widest.
-//! - **It is one-shot setup, entirely off any hot path.** Fatal risk 6's unmeasured half is "at
-//!   real speed", and nothing about three register writes at wiring time is on that path. The
-//!   performance argument that makes EL0 attractive for NVMe's data path does not exist here.
-//! - **It costs zero new syscall surface**, which is the property §86 called the reversible part
-//!   of its own decision. `start_jh7110` already maps the device page and spawns; this adds three
-//!   stores before it. Nothing two programs agree on changes, so if a later milestone wants a
-//!   clock service at EL0 (a power-management story would want one), that is a decision taken on
-//!   its own evidence and not one this forecloses.
+//! `crates/jh7110_clock_and_reset` owns the offsets, bit positions, bring-up plan and device-tree
+//! query, host-tested and pointer-free. This walks a plan it is handed against a base it is handed
+//! and reports what the hardware said. It reaches into no kernel global (§4 (kernel shape:
+//! monolithic, deferred, with two cheap rules)). It is in the kernel because the window is shared
+//! by USB, PCIe, DMA and the security block, so granting it would widen a driver's authority
+//! (notes/jh7110-clock-and-reset.md, "Where it lives, and who may drive it").
 //!
 
-//! # SAFETY, and the one rule that keeps it true
+//! # SAFETY
 //!
-//! [`bring_up`] stores to whatever address it is given. `STG_BASE`'s fallback in the pure crate
-//! means a `Found` can name `0x1023_0000` on a machine that has nothing there, and a store to
-//! unmapped MMIO on RISC-V is a fault or a hang. **So the caller must have established that this
-//! machine is a JH7110 before calling**, and `memory::jh7110_clock_and_reset` is where that is
-//! established: it records a region only when the tree names either a CRG or a JH7110 TRNG, so
-//! QEMU's `virt` board (which names neither) never produces one and this driver is never reached
-//! there.
+//! [`bring_up`] stores to whatever address it is given, and the pure crate's fallback can name
+//! `0x1023_0000` on a machine with nothing there. The caller must establish that the machine is a
+//! JH7110 first; `memory::jh7110_clock_and_reset` records a region only when the tree names a CRG
+//! or a JH7110 TRNG, so QEMU's `virt` never reaches this driver.
 
 use jh7110_clock_and_reset::{
     CLOCK_ENABLE, Domain, MAX_RECORDED_CLOCKS, Report, Step, is_deasserted, with_parent,
@@ -51,31 +21,19 @@ use jh7110_clock_and_reset::{
 
 /// How many times [`bring_up`] reads the status word before giving up on a deassert.
 ///
-/// **An iteration count, not a duration**, which is a real limitation and is recorded as one in
-/// `notes/jh7110-clock-and-reset.md`'s `BUGS`. Linux polls the same word with a 1000 µs timeout
-/// (\[mainline-rst\]'s `readl_poll_timeout_atomic`); this runs before the scheduler is doing
-/// anything else and has no calibrated delay to hand at that point, so it counts reads instead.
-/// A million reads of an MMIO word is far longer than the microsecond the hardware needs and far
-/// shorter than a boot anyone would call hung.
+/// An iteration count, not a duration, because no calibrated delay exists this early (Linux polls
+/// with a 1000 µs timeout); recorded in `notes/jh7110-clock-and-reset.md`'s `BUGS`. A million reads
+/// is far longer than the hardware needs and far shorter than a hung boot.
 const POLL_LIMIT: u32 = 1_000_000;
 
-/// **Run `plan` against the clock-and-reset window at `base`.**
-///
-/// `base` is a *kernel virtual* address: the direct-map address of the controller's register
-/// window, mapped device-typed. `domain` says where the resets sit in it and bounds every
-/// identifier the plan names, so a plan written against the wrong domain produces `rejected`
-/// steps rather than stores to whatever the arithmetic landed on.
-///
-/// Idempotent by construction: enabling an enabled clock and deasserting a released reset are
-/// both no-ops in the hardware, which matters because the firmware may already have done some of
-/// this and nothing here can tell in advance.
+/// Run `plan` against the clock-and-reset window at `base`, a kernel virtual address in the
+/// direct map. `domain` bounds every identifier the plan names, so a wrong-domain plan counts
+/// `rejected` steps rather than storing. Idempotent, since firmware may have done some of it.
 ///
 /// # Safety
 ///
 /// `base` must be a mapped, device-typed window of at least `domain`'s extent, belonging to a
-/// JH7110 clock-and-reset generator. See this module's header: the caller establishes that the
-/// machine is a JH7110, because the pure crate's discovery will hand back a plausible address on
-/// a machine that has no such device.
+/// JH7110 clock-and-reset generator (see the module's `SAFETY`).
 pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> Report {
     let mut report = Report::default();
 
@@ -176,12 +134,10 @@ pub(crate) struct CardClock {
     pub hz: u32,
 }
 
-/// **Run an SD/MMC controller's card clock at no more than `want_hz`** (the tree's
+/// Run an SD/MMC controller's card clock at no more than `want_hz` (the tree's
 /// `assigned-clock-rates`), and say what rate it runs at, computed from the silicon's own words.
-/// radon's firmware leaves the divider at 2, so the clock the tree calls 50 MHz runs at 198 MHz and
-/// every card clock the driver derives from 50 is four times what it thinks (milestone 53 (the
-/// board's own peripherals: network and storage on real silicon)). Gated while the divider moves,
-/// then ungated, so the controller never sees a half-switched clock.
+/// radon's firmware leaves the divider at 2, so the clock the tree calls 50 MHz runs at 198 MHz.
+/// Gated while the divider moves, so the controller never sees a half-switched clock.
 ///
 /// # Safety
 ///

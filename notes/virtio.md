@@ -97,6 +97,55 @@ only intermittently, under enough scheduler churn (more threads, the idle thread
 and waking on interrupts). It is the kind of "cheap to follow, expensive to retrofit" ordering rule
 DECISIONS §9 (locking: IrqSafeMutex, plus a discipline) is about.
 
+## The kernel's half
+
+The design behind `kernel/src/virtio.rs`, the enumeration and the confined transport.
+notes/dma.md has the confinement itself and notes/pcie.md the transport seam.
+
+On riscv64 the virtio-mmio window is mapped only when the device tree names a `virtio,mmio` node.
+On the T-Head TH1520 the QEMU window's address is DRAM, and a probe there could mistake RAM for a
+device. A machine without the bus reports zero slots.
+
+Block devices have one ordering on every machine, and it is the roster's row order: every
+virtio-mmio slot in slot order, then every modern virtio-pci function in bus:device.function order.
+`disk_service::devices` lists the roster in the same order, so a listing and a wiring cannot
+disagree about which disk is which. On aarch64 and riscv64 both boards have five mmio block
+devices, attached nifefs first and RedoxFS second, so every ordinal a wiring asks for resolves
+before the PCI half. `q35` has no virtio-mmio bus (`arch::x86_64::mmu::VIRTIO_SLOTS` is 0), so
+ordinal 0 is the first `virtio-blk-pci` function, attached in the same order. The FS server drives
+ordinal 1, the crash test ordinal 2, and the roster wirings 3 and 4.
+
+The halves are not symmetric. Resolving a PCI ordinal brings the function up: it sizes and assigns
+BARs and enables decoding and bus mastering. The mmio half reads two identity registers. So
+a presence probe such as `fs_service::is_crash_disk_present` means "this ordinal exists", with the
+side effects of having asked.
+
+The PCI accessors `pread` and `pwrite` are safe functions over a module invariant rather than
+`unsafe fn`s. They are private, and every call site passes `common` plus a constant offset under
+0x40, `isr`, `notify_addr[q]`, or `device_config` plus an offset the capability's length bounds.
+All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, from a BAR that
+`pci::PciVirtioDevice` mapped. Twenty `unsafe` blocks restating one sentence would make nothing
+checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
+queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
+
+`MAX_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a boot
+has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
+can). The fix is reuse on driver death, which needs a generational name so a stale `Object::Virtio`
+capability cannot resolve to a different device. That is a design fork under §16 (object
+revocation). Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
+
+Two test hooks go around the shadow ring to reach the hardware. `provoke_iommu_escape` points queue
+0's available ring at a frame the IOMMU domain does not include and kicks; the device's first read
+is an out-of-domain IOVA, so the IOMMU faults it. `provoke_write_to_shadow` points queue 0's used
+ring into the shadow page, which the domain maps read-only, and fills its `flags` word with
+`0xffff`. With nothing available, a virtio-blk device answers a kick by setting and then clearing
+`VRING_USED_F_NO_NOTIFY` in that word. QEMU 11.1.1 does so whenever `VIRTIO_RING_F_EVENT_IDX` is not
+negotiated (`virtio_blk_handle_vq` through `virtio_queue_set_notification`), so a landed write
+leaves `0xfffe`. No fault record is promised: QEMU's AMD-Vi model refuses the write from the read's
+cached translation without logging an event (`amdvi_do_translate`'s IOTLB hit). So the test asks
+whether the write landed. Under TCG a kick is handled synchronously, so the result is in place when
+the kick returns.
+
 ## What a driver bug, and a driver's malice, cost
 
 The virtio driver is a process. A wrong descriptor into its own memory, a mis-parsed superblock, a

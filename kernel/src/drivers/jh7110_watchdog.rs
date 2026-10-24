@@ -1,14 +1,10 @@
-//! **The JH7110's watchdog, the volatile half** (milestone 593 (a wedged kernel resets itself),
-//! provisional number).
+//! The JH7110's watchdog, the volatile half.
 //!
-//! `crates/jh7110_watchdog` owns the offsets, the sequences and the arithmetic. This walks the
-//! sequences it is handed against a base it is handed, and reads two words back. It reaches into
-//! no kernel global (DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules)), and the clocks behind it are the caller's to turn on, through
-//! `drivers::jh7110_clock_and_reset`.
-//!
-//! Kernel-resident for the reason that module gives and one more: the only thing that pets it is
-//! the soak's supervisor, and a watchdog a user program pets resets the machine when that program
-//! is starved, which is a different experiment.
+//! `crates/jh7110_watchdog` owns the offsets, sequences and arithmetic; this walks the sequences
+//! against a base it is handed and reads two words back. It reaches into no kernel global (§4
+//! (kernel shape: monolithic, deferred, with two cheap rules)), and its clocks are the caller's to
+//! turn on (`drivers::jh7110_clock_and_reset`). In the kernel because the soak's supervisor pets
+//! it: a user program petting it would test starvation.
 //!
 //! Name: provisional (milestone 593's lane, 2026-10-20 UTC), for the module and [`Jh7110Watchdog`].
 

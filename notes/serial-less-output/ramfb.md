@@ -77,6 +77,27 @@ the DC8200 on the VisionFive 2. That is milestone 157 (real display output on th
 one
 branch above `screen::attach` and nothing below it.
 
+## The driver's constraints
+
+`kernel/src/drivers/ramfb.rs` talks to `fw_cfg` twice, before `arch::mmu::init`: once to walk the
+file directory and once to write the configuration. The coarse boot map covers every device window
+on both boards, so nothing is mapped for it, and the fine map does not cover `fw_cfg` at all. After
+boot there is nothing more to say to the device, and a window nobody can reach is a window nobody
+can be wrong about. The pixels are the kernel's own `.bss`, mapped at the same address by both maps,
+so the console keeps its pointer across the switch.
+
+The DMA address register takes two 32-bit halves, high first, and the device starts the transfer
+on the low write, so the pair is atomic without a doorbell. A `SeqCst` fence sits before that
+write. The command bytes are normal memory and the register is device memory, and on a weakly
+ordered machine the store that starts the transfer may be observed before the stores that say what
+it is. No other kernel code writes a structure a device reads outside the virtio ring's barriers.
+The fence has no pair in this tree: the reader is QEMU's `fw_cfg` model. It is the device-facing leg
+of the shape `components/src/compositor.rs`'s `flush` has, one step further out.
+
+`screen::is_kernel_memory` answers by address range rather than by a flag on the screen, so it
+stays true for a framebuffer from anywhere. Milestone 157's U-Boot aperture lies outside the kernel
+image and passes.
+
 ## The `fw_cfg` wire format
 
 `fw_cfg` is the channel firmware reads the E820 map and ACPI tables through, and QEMU's

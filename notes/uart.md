@@ -86,6 +86,49 @@ QEMU ignores both of these completely. There is no wire and no timing being simu
 QEMU takes the byte and puts it on your terminal instantly. We set them anyway because a real
 PL011 needs them, and the Raspberry Pi will.
 
+## The NS16550 driver
+
+RISC-V's `virt` has an NS16550, a 16550-compatible 8250, at `0x1000_0000`, and
+`kernel/src/drivers/ns16550.rs` drives it. Same idea as the PL011, different register block: eight
+registers, with the transmit-ready flag in the Line Status Register (LSR) instead of a flag
+register.
+
+The register block's shape is the board's, not the architecture's, so the driver carries it as data
+(`Shape`). QEMU wires byte-wide registers at consecutive addresses. The JH7110's UART0 is a Synopsys
+`DW_apb_uart` whose registers sit four bytes apart (`reg-shift = <2>`), want 32-bit accesses
+(`reg-io-width = <4>`) and run from a 24 MHz clock. A byte read of LSR at offset 5 there lands in
+the middle of the IER word, and the transmit poll spins on garbage forever. The shape comes from the
+device tree (notes/kernel-console.md). A 32-bit access is used only when the shifted offset is
+aligned, since an unaligned volatile `u32` traps. The stride is a runtime value no static layout
+macro can express, which is why this driver uses plain volatile access rather than `tock_registers`.
+
+The divisor is programmed only from a stated clock. A 16550 divides its clock by 16 times the
+divisor: 24 MHz gives 13 (115,385 baud, 0.16% high), and QEMU's stated 3.6864 MHz gives exactly 2.
+With no stated clock the divisor is 0 and the driver leaves the divisor and line controls alone,
+because U-Boot has set 115200 8N1 on any board that showed a prompt. The DW part ignores an LCR
+write while the transmitter is busy, so `init` drains it first (`LSR.TEMT`), bounded.
+
+The same 16550 is at I/O port `0x3f8` (COM1) on every x86 machine: a separate address space
+reached only by `in` and `out`, with no page tables in front of it. That changes how the registers
+are reached and nothing else, so it is a type parameter (`RegisterSpace`) rather than a second
+driver, and the port implementation lives in `arch/x86_64/port.rs` because `in` and `out` are
+instructions.
+
+LSR's Data Ready bit is cleared only by reading the byte out of the receive buffer. It is not
+write-one-to-clear and does not time out, so it works as a mailbox rather than an event. A poll
+every five seconds cannot miss a keypress, and it needs no interrupt, no PLIC route and no
+userspace driver. Two readers use it: the self-rebooting soak, where any byte is the stop button,
+and the screen hold. `discard_rx` clears U-Boot's leftovers when a soak arms, because the
+firmware's autoboot countdown invites a stray keystroke, and a stop on boot 1 of 50 yields no
+distribution at all.
+
+The RISC-V interrupt-delivery tests raise this UART's line in place of an SGI: setting
+`IER.ETBEI` while `LSR.THRE` is set asserts at once. On real silicon the THRE interrupt is
+edge-triggered inside the chip. Setting `ETBEI` while THRE is still 0, as it is while the boot
+banner shifts out, only arms the interrupt for the next 0-to-1 edge, which a polling console with
+nothing queued may never make. So `enable_tx_interrupt` waits for THRE first. QEMU has no transmit
+latency, and THRE reads 1 the moment the previous write retires, so QEMU never shows the race.
+
 ## Why the UART is every kernel's first device
 
 Because it needs nothing.

@@ -1,28 +1,17 @@
-//! **Getting a screen on the two architectures whose firmware never gives one** (milestone 243).
+//! A screen on aarch64 and riscv64 under QEMU, whose firmware never lights one: a
+//! [`ramfb`](crate::drivers::ramfb) over static pixels, handed to `console::attach_screen` as the
+//! same [`Framebuffer`] `x86_64` produces. A real board's display is milestone 157 (real display
+//! output on the board).
 //!
 //! *Module name provisional (AGENTS.md: an architect names modules).*
 //!
-//! Only `x86_64`'s boot chain includes a stage that has already lit a display. This module is the
-//! discovery half for aarch64 and riscv64, under the emulator; the console-on-a-framebuffer path
-//! itself (`machine_discovery::framebuffer`, `screen_console`) is arch-neutral.
-//!
-//! - **On real boards**, the answer is milestone 157 (real display output on the board): U-Boot
-//!   configures the display and advertises a `simple-framebuffer` node, and the kernel reads where
-//!   it is. That is board work and stays in 157.
-//! - **Under QEMU**, nothing has lit a display, so [`ramfb`](crate::drivers::ramfb) inverts the
-//!   arrangement: the guest provides the memory and the emulator scans it out. That is this module.
-//!
-//! Both end at `console::attach_screen` with the same [`Framebuffer`], so 157 adds a branch above
-//! this one and changes nothing below it.
-//!
-//! The pixels are a static because a `ramfb` needs a physically contiguous, permanently owned
-//! region **before the frame allocator exists** (the boot-tour console is armed before
-//! `memory::init`), and the allocator has no contiguous multi-frame request anyway.
+//! The pixels are a static because the region must be contiguous and owned before the frame
+//! allocator exists. See notes/serial-less-output/ramfb.md.
 //!
 
 //! # EXAMPLES
 //!
-//! There is one caller, `kernel_main`'s boot tour, and the whole of it is:
+//! The one caller, `kernel_main`'s boot tour, whole:
 //!
 //! ```text
 //! match screen::attach() {
@@ -31,18 +20,16 @@
 //! }
 //! ```
 //!
-//! `cargo xtask test --arch aarch64` asks QEMU for `-device ramfb` and a monitor, takes a
-//! `screendump`, and decodes it back into text with `serial_console::screen`, the gate that proves
-//! the glyphs and not merely the boot line.
+//! `cargo xtask test --arch aarch64` takes a `screendump` and decodes it back into text with
+//! `serial_console::screen`, proving the glyphs and not merely the boot line.
 //!
+
 //! # BUGS
 //!
-//! - **[`SPAN`] bytes of `.bss` are spent whether or not there is a screen**: 1.9 MB zeroed and
-//!   never written on the VisionFive 2, where `ramfb` cannot exist.
-//! - **The geometry is fixed at compile time**: 800x600, the smallest that holds the boot tour
-//!   without scrolling being the common case.
-//! - **Nothing here runs on `x86_64`**, which has its own discovery in
-//!   `arch::x86_64::machine::attach_screen` and a real aperture. The two share a type, not a path.
+//! - [`SPAN`] bytes of `.bss` are spent whether or not there is a screen: 1.9 MB on the
+//!   VisionFive 2, where `ramfb` cannot exist.
+//! - The geometry is fixed at compile time: 800x600, the smallest that mostly holds the boot tour.
+//! - Nothing here runs on `x86_64`, which has its own discovery and a real aperture.
 
 use core::cell::SyncUnsafeCell;
 
@@ -60,10 +47,7 @@ pub(crate) const STRIDE: u32 = WIDTH * 4;
 /// The whole framebuffer, in bytes.
 pub(crate) const SPAN: usize = (STRIDE * HEIGHT) as usize;
 
-/// **The pixels.**
-///
-/// Page-aligned, because `ramfb` is handed a physical address and a page boundary is the one
-/// alignment every stage of the address arithmetic below agrees about.
+/// The pixels. Page-aligned, the one alignment every stage of the address arithmetic agrees on.
 #[repr(C, align(4096))]
 struct Pixels([u8; SPAN]);
 
@@ -72,16 +56,10 @@ struct Pixels([u8; SPAN]);
 #[repr(C, align(8))]
 struct Scratch([u8; SCRATCH_LEN]);
 
-/// **`.bss`, and the boot tour is single-threaded when it is touched.** Both statics are written by
-/// exactly one core at exactly one point in `kernel_main`, before any other core is started and
-/// before any interrupt can arrive, which is why they are not behind the console lock. After
-/// [`attach`] returns, the console's own lock is what serializes the pixels, and nothing ever
-/// touches [`SCRATCH`] again.
-///
-/// `SyncUnsafeCell`s rather than locks, since milestone 891 (a mutable static becomes an atomic, a
-/// lock or a recorded cell): the emulator is handed both by physical address and reads them as
-/// device memory, so they need a fixed placement and in-place writes, and nothing here ever forms a
-/// reference to either. Only raw pointers leave this module.
+/// The pixels and the `fw_cfg` scratch, in `.bss`. Written by one core in `kernel_main` before any
+/// other core or interrupt exists; after [`attach`] the console's lock serializes the pixels and
+/// [`SCRATCH`] is never touched again. `SyncUnsafeCell`s because the emulator reads both by
+/// physical address: only raw pointers leave this module.
 static PIXELS: SyncUnsafeCell<Pixels> = SyncUnsafeCell::new(Pixels([0; SPAN]));
 static SCRATCH: SyncUnsafeCell<Scratch> = SyncUnsafeCell::new(Scratch([0; SCRATCH_LEN]));
 
@@ -90,23 +68,16 @@ static SCRATCH: SyncUnsafeCell<Scratch> = SyncUnsafeCell::new(Scratch([0; SCRATC
 /// [`ramfb::Error`].
 pub(crate) type Why = &'static str;
 
-/// **Bring up a `ramfb` and give it to the console.**
-///
-/// Returns what was brought up and the character grid it produced, for the caller's boot line.
-///
-/// **It must run before `arch::mmu::init`.** The `fw_cfg` register block is reached through the
-/// coarse boot map, which covers every device window; the fine map does not carry it, because after
-/// this call there is nothing more to say to the device. The framebuffer itself is the kernel's own
-/// `.bss` and is mapped by both maps at the same address, which is what lets the console keep the
-/// pointer across the switch without anybody re-pointing it.
+/// Bring up a `ramfb` and give it to the console. Returns the framebuffer and its character grid,
+/// for the caller's boot line. Must run before `arch::mmu::init`: only the coarse boot map reaches
+/// `fw_cfg`. The pixels are `.bss`, mapped at the same address by both maps, so the console keeps
+/// its pointer.
 ///
 /// # Errors
 ///
-/// A string naming which of the five machines this is: no device tree, no `fw_cfg` node in it, no
-/// `etc/ramfb` file behind that node (the ordinary case: QEMU started without `-device ramfb`), the
-/// device refusing, or a geometry `screen_console` cannot hold a cell of.
-// Dead on x86_64, which has its own discovery and a real aperture. Gated at the module rather than
-// here would mean a `cfg` at the one call site too; this keeps the call site arch-neutral.
+/// A string naming which case this is: no device tree, no `fw_cfg` node, no `etc/ramfb` file (the
+/// ordinary case, QEMU without `-device ramfb`), the device refusing, or too small a geometry.
+// Dead on x86_64, which has its own discovery; allowed so the one call site stays arch-neutral.
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
 pub fn attach() -> Result<(Framebuffer, u32, u32), Why> {
     let dtb = crate::device_tree().map_err(|_| "no device tree to find a fw_cfg in")?;
@@ -158,17 +129,10 @@ pub fn attach() -> Result<(Framebuffer, u32, u32), Why> {
     Ok((screen, cols, rows))
 }
 
-/// **Whether a framebuffer is this kernel's own memory rather than a device's aperture.**
-///
-/// The one question the rest of the kernel has to ask about a `ramfb`, and it is a safety property
-/// rather than a curiosity: `user::boot_screen_terminal` hands the screen's physical range to a
-/// userspace driver to map, which is right for a UEFI aperture (a BAR on a display adapter, memory
-/// no part of this kernel owns) and is a hole for this one (`.bss`, next to every other kernel
-/// static). Asked here because this module is what created the situation.
-///
-/// Answered by range rather than by a flag on the screen, so that it stays true for any future
-/// caller that arrives with a framebuffer from somewhere else, milestone 157's included: U-Boot's
-/// aperture is outside the kernel image and so passes, as it should.
+/// Whether a framebuffer is this kernel's own memory rather than a device's aperture. A safety
+/// property: `user::boot_screen_terminal` maps a screen's range into a userspace driver, right for
+/// an aperture and a hole for `.bss`. Answered by range, not a flag, so it holds for a framebuffer
+/// from anywhere.
 #[must_use]
 pub(crate) fn is_kernel_memory(screen: &Framebuffer) -> bool {
     let lo = crate::memory::image_start();

@@ -63,6 +63,15 @@ The kernel refuses to start the driver at all on a machine whose IOMMU does not 
 controller, because a process holding an xHCI register file names every physical address the
 controller reads.
 
+The kernel keeps less of an xHCI than of an NVMe controller, on purpose. NVMe kept its admin
+plane at EL1 (§86 (whether an NVMe driver can leave the kernel), option 2a), because creating a
+queue is where a ring's physical address is named. An xHCI names physical addresses everywhere: the
+slot array, the command ring, the event ring, every transfer ring and every input context. Its
+enumeration means reading what a device chose to send, the last thing to do at EL1. So the kernel
+keeps only what is not the driver's: the USB Legacy Support handshake that stops a PC's BIOS
+answering SMIs for the keyboard, the register window, and the DMA confinement. NVMe runs unconfined
+on a machine with no IOMMU, and this driver does not run at all, because it names every ring.
+
 ## What the driver holds
 
 `kernel/src/user/usb_keyboard_service.rs` is what the driver is handed, and its `Spawn` literal is
@@ -108,11 +117,12 @@ echo 'sendkey e' | nc -U /tmp/mon.sock
 
 ## The keystroke stall: the PLIC enable is written first
 
-`plic::enable`, which is also the driver's ACK, writes the enable bit before the priority. QEMU's
-PLIC re-evaluates delivery on a priority, threshold or completion write and on a rising line, never
-on an enable write. Written the other way round, an xHCI event raised while the driver is draining
-is stranded until another device's line rises, a UART byte for instance. On riscv64 that stalls the
-echo of `echo hello` mid-line about one boot in thirty, until a typed byte releases the held keys.
+`plic::enable`, which is the driver's ACK when no claim is outstanding, writes the enable bit before
+the priority. QEMU's PLIC re-evaluates delivery on a priority, threshold or completion write and on
+a rising line, never on an enable write. Written the other way round, an xHCI event raised while the
+driver is draining is stranded until another device's line rises, a UART byte for instance. On
+riscv64 that stalls the echo of `echo hello` mid-line about one boot in thirty, until a typed byte
+releases the held keys.
 
 It looks like a lost wakeup of `line_editor` across harts, and it is not one. A thread dump at the
 stall shows nobody sending to `line_editor`; the driver sits in `Irq::WAIT`, and its PLIC source is

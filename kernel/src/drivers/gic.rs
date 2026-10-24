@@ -1,60 +1,20 @@
-//! GICv2: the ARM Generic Interrupt Controller.
+//! GICv2: the ARM Generic Interrupt Controller, a machine-wide distributor (GICD) and a banked
+//! per-core CPU interface (GICC).
 //!
-//! The thing that decides *which* interrupt you are taking, and whether you are allowed to
-//! take it at all. The CPU only has one IRQ input line; the GIC is the multiplexer in front
-//! of it, and everything a kernel wants from interrupts (priorities, masking individual
-//! sources, routing to a particular core) lives here rather than in the CPU.
-//!
-//! # Two halves, and the split is the whole design
-//!
-//! | | Where | Shared? | What it does |
-//! |---|---|---|---|
-//! | **Distributor** (GICD) | `0x0800_0000` | one for the whole machine | decides *which core* gets an interrupt, and whether a given source is enabled at all |
-//! | **CPU interface** (GICC) | `0x0801_0000` | one **per core** (banked) | the core's own view: acknowledge, set a priority mask, signal end-of-interrupt |
-//!
-//! One distributor, N CPU interfaces at the *same address* (the hardware banks the registers
-//! per core). Which is what makes "route this interrupt to core 3" a thing the hardware can do
-//! without the software knowing.
-//!
-//! # Three kinds of interrupt, and the numbering is not arbitrary
-//!
-//! | INTID | Kind | |
-//! |---|---|---|
-//! | 0-15 | **SGI**: Software Generated | one core kicking another. How SMP bringup and TLB shootdown work. |
-//! | 16-31 | **PPI**: Private Peripheral | *per-core*. The timer is one of these, and it has to be: every core needs its own. |
-//! | 32+ | **SPI**: Shared Peripheral | the UART, the disk. Any core may service them. |
-//!
-//! **The timer is a PPI (INTID 30) and that is not an accident.** A timer that fired on only
-//! one core could not preempt threads on the others. Each core has its own timer, its own
-//! countdown, and its own interrupt, all wearing the same number.
-//!
-//! # Priorities are backwards
-//!
-//! **Lower value = higher priority.** And `GICC_PMR` is a *mask*: an interrupt is delivered
-//! only if its priority is **strictly less than** PMR. So `PMR = 0xff` means "let everything
-//! through" and `PMR = 0` means "let nothing through".
-//!
-//! Get the comparison backwards and you get a machine that takes no interrupts and gives you
-//! no clue why.
+//! Lower priority values are more urgent, and `GICC_PMR` delivers only a priority strictly less
+//! than itself. See notes/interrupts.md, "The GIC: the multiplexer in front of the CPU", and
+//! notes/interrupts/controller-drivers.md.
 //!
 
-//! # GICv2 only, and the other version is a sibling
-//!
-//! This file drives GICv2 and nothing else. A GICv3 is `gicv3.rs` beside it (the distributor and
-//! the redistributors) plus `arch/aarch64/gic_cpu_interface.rs` (the `ICC_*` system registers), and
-//! `arch/aarch64/irq.rs` decides which one the machine has from the device tree's `compatible`,
-//! then confirms it against the hardware before either is used (milestone 227).
+//! GICv2 only: a GICv3 is `gicv3.rs` plus `arch/aarch64/gic_cpu_interface.rs`, and
+//! `arch/aarch64/irq.rs` picks one from the device tree and confirms it against the hardware.
 //!
 //! # BUGS
 //!
-//! - **[`send_sgi`] issues no barrier before the `SGIR` write.** An SGI tells another core to look
-//!   at memory this core just wrote (the reschedule inbox), and on Arm a Device store is not
-//!   ordered after earlier Normal stores without a `dsb` (Linux's `writel` carries one). The GICv3
-//!   path has it (`gic_cpu_interface::send_sgi`). Here it is recorded rather than added, because
-//!   adding it changes the instruction count of every GICv2 reschedule, and the lane that found it
-//!   (milestone 227) was bound to leave the GICv2 path's counts alone. Nothing has been seen to
-//!   fail from it under TCG, which does not model the reordering; argon, a GIC-400, is where it
-//!   would. The fix is one `dsb ishst` in `arch::irq::send_sgi` ahead of the GICv2 call.
+//! - [`send_sgi`] issues no barrier before the `SGIR` write, so the Device store is not ordered
+//!   after the Normal stores the target core will read (the GICv3 path has the `dsb`). TCG does
+//!   not model the reordering; argon, a GIC-400, would. The fix is one `dsb ishst` in
+//!   `arch::irq::send_sgi` ahead of the GICv2 call.
 
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
@@ -95,15 +55,12 @@ register_structs! {
         (0x100 => ISENABLER: [ReadWrite<u32>; 32]),
         (0x180 => ICENABLER: [ReadWrite<u32>; 32]),
         (0x200 => _reserved1),
-        /// Priority. **One BYTE per interrupt**, 4 per register. Note the different stride
-        /// from ISENABLER: a bitmap vs an array of bytes, in the same device. Getting these
-        /// two confused is a classic way to enable interrupt 7 when you meant interrupt 224.
+        /// Priority. One byte per interrupt, a different stride from ISENABLER's bitmap.
         (0x400 => IPRIORITYR: [ReadWrite<u8>; 1024]),
         (0x800 => ITARGETSR: [ReadWrite<u8>; 1024]),
         (0xc00 => _reserved2),
-        /// Software Generated Interrupt Register. Writing here makes the GIC raise one of the
-        /// 16 SGIs (INTID 0-15) on a chosen set of cores. It is how one core pokes another, and
-        /// here it is how a test raises a controllable interrupt with no device attached.
+        /// Software Generated Interrupt Register: raises one of the 16 SGIs on a chosen set of
+        /// cores.
         (0xf00 => SGIR: WriteOnly<u32>),
         (0xf04 => _reserved3),
         (0x1000 => @END),
@@ -126,8 +83,7 @@ register_structs! {
         (0x010 => EOIR: WriteOnly<u32>),
         (0x014 => _reserved1),
         /// Identification. `ArchitectureVersion` (bits 19:16) is 2 on a GIC-400 and on QEMU's
-        /// model. Read once at boot (milestone 227) to confirm the device tree named a real CPU
-        /// interface: a GICv3 redistributor frame answers zero at this offset.
+        /// model; a GICv3 redistributor frame answers zero here. Read once at boot.
         (0x0fc => IIDR: ReadOnly<u32>),
         (0x100 => @END),
     }
@@ -166,7 +122,7 @@ impl Gic {
 
 /// `GICC_IIDR` at `gicc`, read before anything else is trusted: `arch::irq` hands it to
 /// `machine_discovery::gic::Gic::confirm`, so a tree naming the wrong block fails at boot instead
-/// of booting and taking nothing (milestone 222's measurement).
+/// of booting and taking nothing.
 ///
 /// # Safety
 /// `gicc` must be a mapped device-memory address with at least 256 bytes behind it.
@@ -204,11 +160,8 @@ pub(crate) fn init_this_cpu() {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::init_this_cpu before gic::init");
 
-    // Let everything through, then turn it on.
-    //
-    // ORDER: the mask before the enable. The other way round leaves a window where the interface is
-    // live with whatever PMR the firmware left behind, which on a cold boot is often 0: "deliver
-    // nothing", and you spend an afternoon wondering why your timer is silent.
+    // ORDER: the mask before the enable, or the interface goes live with the firmware's PMR,
+    // often 0 ("deliver nothing") on a cold boot.
     gic.gicc().PMR.set(PRIORITY_MASK);
     gic.gicc().CTLR.write(GICC_CTLR::ENABLE::SET);
 }
@@ -225,20 +178,13 @@ pub fn enable(intid: u32, target_cpu: usize) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::enable before gic::init");
 
-    // ISENABLER is a BITMAP: 32 interrupts per 32-bit register.
     let reg = (intid / 32) as usize;
     let bit = intid % 32;
     gic.gicd().ISENABLER[reg].set(1 << bit);
 
-    // IPRIORITYR is an array of BYTES: one per interrupt. Different stride, same device.
     gic.gicd().IPRIORITYR[intid as usize].set(TIMER_PRIORITY);
 
-    // ITARGETSR: which cores may service it. Bit N = core N.
-    //
-    // **Only meaningful for SPIs (32+).** PPIs and SGIs are per-core by definition, and the
-    // hardware ignores writes here for them. For an SPI we target the one core the policy chose,
-    // so a device's completion interrupt (and the driver wake it turns into) lands on that core
-    // rather than piling every device on core 0.
+    // ITARGETSR (bit N = core N) means something only for SPIs; PPIs and SGIs are per-core.
     if intid >= 32 {
         gic.gicd().ITARGETSR[intid as usize].set(1 << target_cpu);
     }
@@ -246,16 +192,14 @@ pub fn enable(intid: u32, target_cpu: usize) {
 
 /// Disable one interrupt source, at the distributor.
 ///
-/// **This is how a userspace driver's interrupt gets masked the moment it fires**, so a
-/// level-triggered device that holds its line asserted cannot re-fire in a storm before the
-/// driver has had a chance to service it. The driver re-enables it (via its `Irq` capability's
-/// `ACK`) once it has quieted the device. See notes/interrupts.md.
+/// How a userspace driver's interrupt is masked the moment it fires, so a level-triggered line
+/// cannot storm before the driver services it; its `Irq` capability's `ACK` re-enables it. See
+/// notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::disable before gic::init");
 
-    // ICENABLER is the mirror of ISENABLER: writing a 1-bit CLEARS the enable. Writing zeros
-    // does nothing, which is why enable and disable are two registers instead of one.
+    // Write-1-to-clear; zero bits leave their neighbours alone.
     let reg = (intid / 32) as usize;
     let bit = intid % 32;
     gic.gicd().ICENABLER[reg].set(1 << bit);
@@ -271,9 +215,7 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::send_sgi before gic::init");
 
-    // SGIR: bits[3:0] the SGI id, bits[23:16] the target CPU list (bit N = core N). This is how
-    // one core pokes another (SMP step 3c): a targeted SGI, delivered to that core's banked CPU
-    // interface, where its handler runs.
+    // SGIR: bits[3:0] the SGI id, bits[23:16] the target CPU list (bit N = core N).
     gic.gicd().SGIR.set((1 << (16 + target_cpu)) | intid);
 }
 

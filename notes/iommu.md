@@ -75,6 +75,21 @@ transport table and before it is ever rung, so the domain is installed the momen
 DMA. The regions a virtio device's domain covers are its DMA region (data buffers, used ring) and the
 kernel's shadow page (the descriptor table and available ring the device reads).
 
+## Reserved regions
+
+A domain covers the grant and every region the firmware reserved for the device. On VT-d an RMRR is
+memory the firmware keeps DMA-ing into, such as USB legacy emulation or a UMA GPU's stolen memory.
+VT-d 4.1 section 3.16 asks for it identity-mapped in whatever domain the device uses, and a domain
+built without it faults the firmware the moment it is attached. The other two architectures report
+none. A reserved region that overlaps the grant is left out rather than mapped twice, which would
+fail the whole build. The grant already covers those pages, and a firmware region overlapping
+kernel-allocated memory is a firmware bug the boot print names.
+
+The virtio shadow page is mapped read-only. A split virtqueue's descriptor table and available ring
+are the driver's half, which the device reads and never writes (virtio 1.2, section 2.7); its writes
+go to the used ring in the driver's region. Write permission on the shadow would be authority the
+device never needs, over the one page only the kernel may shape.
+
 ## Discovery differs by arch; the rest is portable
 
 The SMMUv3 is a device-tree platform node, found in `memory::smmu_region` and mapped by `mmu::init`;

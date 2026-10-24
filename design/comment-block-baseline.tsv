@@ -13,27 +13,3 @@
 cap	kernel/	20
 in-body	kernel/	5289
 block	lines
-kernel/src/console.rs:368	32
-kernel/src/console.rs:408	30
-kernel/src/designware_ethernet.rs:1	39
-kernel/src/drivers/gic.rs:1	39
-kernel/src/drivers/gicv3.rs:20	31
-kernel/src/drivers/jh7110_clock_and_reset.rs:1	36
-kernel/src/drivers/ns16550.rs:1	35
-kernel/src/drivers/ns16550.rs:399	27
-kernel/src/drivers/plic.rs:1	38
-kernel/src/drivers/plic.rs:123	35
-kernel/src/drivers/ramfb.rs:1	29
-kernel/src/extensible_host_controller_interface.rs:1	39
-kernel/src/iommu.rs:1	21
-kernel/src/kernel_log.rs:1	39
-kernel/src/pci.rs:1	25
-kernel/src/pci.rs:94	31
-kernel/src/pci.rs:201	31
-kernel/src/pci.rs:604	34
-kernel/src/pci.rs:869	26
-kernel/src/screen.rs:1	21
-kernel/src/screen.rs:23	23
-kernel/src/virtio.rs:137	27
-kernel/src/virtio.rs:319	31
-kernel/src/virtio.rs:1021	21
