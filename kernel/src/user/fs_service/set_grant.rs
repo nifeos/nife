@@ -1,9 +1,5 @@
-//! **A set grant** (milestone 47 (navigation and naming)'s globbing lane): a caretaker that answers
-//! only for the names in a set, the set mapped read-only into it on a frame of its own.
-//!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! A set grant: a caretaker that answers only for the names in a set, the set mapped read-only into
+//! it on a frame of its own. See notes/glob-grant.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -14,24 +10,11 @@ use super::*;
 /// (`components/src/fs_nameset_caretaker.rs`'s `SET_VA`).
 const SET_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
 
-/// **Wire a set grant and the program confined to it** (milestone 47's globbing lane,
-/// notes/glob-grant.md). [`start_granted_dir`]'s shape with a narrower namespace:
+/// A set grant: [`DirGrant`]'s shape, narrowed to the names in a set within one directory.
 ///
-/// ```text
-///   FS server ──file IPC──► fs_nameset_caretaker ──narrowed file IPC──► the confined program
-///            (the image root)         (one directory, and only the names in the set)
-/// ```
-///
-/// The interesting difference from every other grant here is **where the grant lives**. A name
-/// rides in two `START` argument words; a set does not fit in any number of registers, so it is
-/// encoded into a **frame of its own and mapped read-only** into the caretaker, which copies it
-/// into a local before it does anything else. That is the honest place for `ARG_MAX` to
-/// reappear: it is the size of a capability now, not the size of a buffer, and it is bounded by
-/// `filesystem_contract::nameset::MAX_NAMES` at both ends.
-///
-/// The set is written **before the caretaker is spawned**, into a frame nothing else has ever
-/// been handed, which is why it needs none of [`wait_for_caretaker`]'s ordering care: unlike
-/// the shared page, no client can reach it at all.
+/// A set does not fit in `START` registers, so it is encoded into a frame of its own, mapped
+/// read-only into the caretaker before it is spawned. No client can reach that frame, so it needs
+/// none of [`wait_for_caretaker`]'s ordering. See notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct SetGrant<'a> {
     /// The directory the caretaker descends into, one component under the image root. The set's
@@ -53,6 +36,8 @@ pub struct SetGrant<'a> {
     pub stack_pages: usize,
 }
 
+/// Wire `grant` and the program confined to it. Returns the program's report endpoint and what
+/// ends the grant, or `None` when no RedoxFS disk is attached.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_granted_set(
     blk_image: &'static [u8],
@@ -119,9 +104,7 @@ pub fn start_granted_set(
                         phys: file_shared,
                         flags: Flags::user_data(),
                     },
-                    // **Read-only, and that is not decoration.** The set is the namespace this
-                    // process serves; a writable mapping would let the one program that must not
-                    // be able to widen its own grant do exactly that.
+                    // Read-only: a writable set would let the caretaker widen its own grant.
                     Mapping {
                         va: SET_VA_CARETAKER,
                         phys: set_phys,
