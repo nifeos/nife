@@ -16,6 +16,8 @@ the evidence its prose budget has no room for.
   `schedule`'s rules, the pick, the per-thread grants, and the reaper's far side.
 - [`rendezvous.md`](rendezvous.md): the design behind `sched/rendezvous.rs`: send, receive, call
   and reply, the capability rules on each arrival order, and freeing stranded callers.
+- [`wake-handshake.md`](wake-handshake.md): the design behind `crates/thread_wake_handshake`: the
+  three races of the switch-out window, the states, and the loom model.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
@@ -28,3 +30,4 @@ Each stem below is named for its content, and calef names files.
 - `test-flakes` Name: provisional.
 - `switch` Name: provisional. After the source file it explains.
 - `rendezvous` Name: provisional. After the source file it explains.
+- `wake-handshake` Name: provisional. After the crate it explains.
