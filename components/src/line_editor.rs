@@ -1,43 +1,12 @@
-//! **`line_editor`: the line discipline as a userspace component** (milestone 28).
+//! `line_editor`: the line discipline as a userspace component (milestone 28).
 //!
-//! The layer Unix builds into the kernel as the tty line discipline is here a process. It sits
-//! between the raw input driver and the application, and between the application and its output
-//! sink, on plain endpoints:
-//!
-//! ```text
-//!   MODE_CONSOLE (the plain-console boot):
-//!   input driver ──OPERATION_BYTES──►┌─────────────┐──text──► console server ──► UART
-//!                                    │ line_editor │
-//!        application ◄─lines─────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
-//!
-//!   MODE_DISPLAY (a `graphical_terminal` session, built when the user launches it from the prompt):
-//!   keyboard_driver (direct) ──OPERATION_BYTES──►┌─────────────┐──OPERATION_WRITE──► display_terminal
-//!                                                │ line_editor │
-//!        application ◄─lines─────────────────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
-//! ```
-//!
-//! Nobody in that picture knows what they are talking to: rendezvous-only naming
-//! (notes/ipc-naming.md) makes the discipline swappable. The output side is chosen at spawn by
-//! `mode` ([`MODE_CONSOLE`]/[`MODE_DISPLAY`]) and nowhere else: `Con::put` writes the same page
-//! either way, and the wire shape differs only in [`Con::flush`].
-//!
-//! The IPC protocol is the terminal contract, notes/terminal-contract.md; the framing constants
-//! are `line_editor::proto`. Every request served here is a `CALL`, served through `RECEIVE_CAP`,
-//! answered through the kernel's one-shot Reply capability (DECISIONS §12), which makes the server
-//! deadlock-free: a READLINE with no line ready is *held* (the Reply parked in a slot) while the
-//! server keeps serving. The editing lives in the host-tested `line_editor`
-//! crate; this file is wiring.
-//!
-//! Its whole authority: the terminal endpoint (slot 0, RECEIVE), the output sink's request endpoint
-//! (slot 1: `CONREQ`/`SEND` in [`MODE_CONSOLE`], `display_terminal`'s served endpoint/`CALL` in
-//! [`MODE_DISPLAY`]), the console server's reply endpoint (slot 2, [`MODE_CONSOLE`] only), the
-//! sink's output page (write), the client's output page (read) and input page (write). No device.
-//!
-//! **Plus, when a supervisor that can replace it built it, a control endpoint** (milestone 23 (a
-//! capability-routed component OS with live replacement)) in the slot named by the second start
-//! argument (`0` for none). With one, `OPERATION_QUIESCE` answers any parked read with
-//! `FLAG_RETRY`, replies, and waits for `CTL_RESUME` or `CTL_QUIT`; without one, it is refused.
-//!
+//! The layer Unix builds into the kernel as the tty line discipline is here a process between the
+//! input driver and the application, and between the application and its output sink, on plain
+//! endpoints, so nobody it talks to knows what it is (notes/ipc-naming.md). Every request is a
+//! `CALL` answered through the kernel's one-shot Reply (DECISIONS §12), so a `READLINE` with no
+//! line ready is held while the server keeps serving. `mode` picks the sink ([`MODE_CONSOLE`] or
+//! [`MODE_DISPLAY`]) and only [`Con::flush`] differs. The editing is the host-tested `line_editor`
+//! crate, the protocol notes/terminal-contract.md, and the design notes/line-discipline.md.
 
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46) for the word and again
 //! 2026-08-01 (milestone 63) for the spelling, replacing `termd` and then `lineedit`. Refused
@@ -114,14 +83,10 @@ const HANDOFF_BYTES: usize = PAGE * line_editor::component::HANDOFF_PAGES as usi
 /// which is what a real tty's flooded input queue does too.
 const QUEUE: usize = 4;
 
-/// **These three live in `.bss`, not on the stack.** A user process here gets one 4 KiB page of
-/// stack (`kernel/src/user.rs`'s `USER_STACK_VA`), and `LineDisc` alone is a couple of KiB before
-/// `LineQueue` (four buffered lines) and `RawQueue` (milestone 169) are added on top of it; as
-/// stack locals in `_start`'s own frame that overflowed the page (found by
-/// `kernel::user::raw_mode_tests` faulting at `_start` with `sp` just past the mapped stack, the
-/// exact symptom `display_terminal.rs`'s own `TERMINAL` comment already names). `LineDisc::new`,
-/// `LineQueue::new` and `RawQueue::new` are all `const` precisely so this is possible; see
-/// `display_terminal.rs`'s `TERMINAL` for the same fix, one program over.
+/// These three live in `.bss`, not on the stack: a user process gets one 4 KiB stack page
+/// (`kernel/src/user.rs`'s `USER_STACK_VA`), and `LineDisc` alone is a couple of KiB before
+/// `LineQueue` and `RawQueue` are added, which overflowed the page as `_start` locals. Their `new`s
+/// are `const` so this is possible, as for `display_terminal.rs`'s `TERMINAL`.
 static mut DISC: LineDisc = LineDisc::new();
 static mut LINE_QUEUE: LineQueue = LineQueue::new();
 static mut RAW_QUEUE: RawQueue = RawQueue::new();
@@ -175,18 +140,12 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
             // delegation)).
             continue;
         };
-        // **A badged copy of this endpoint is the raw half and nothing else** (milestone 709 (a
-        // graphical terminal session on the no-keyboard arm holds only the raw half of the boot
-        // discipline), `proto::RAW_ONLY_BADGE`). Every holder the boot wires is unbadged and is
-        // served below exactly as before; a badged holder (a `graphical_terminal` session reading
-        // keystrokes over the UART) may switch raw mode and read raw bytes, and nothing it sends
-        // can reach the queue the shell reads its next command from. An allowlist, so a request
-        // added to the contract later is refused here until somebody decides a reader may send it.
-        //
-        // **A copy badged `proto::STDIN_BADGE` is a program's standard input and nothing else**
-        // (milestone 892 (a std program at the prompt holds the network and a resolver)): it reads
-        // the line being typed, eight bytes at a time, and the unbadged surface never serves that
-        // read, so the shell's own lines cannot be taken through it.
+        // A badged copy of this endpoint is served an allowlist, so a request added to the
+        // contract later is refused until somebody decides a reader may send it: `RAW_ONLY_BADGE`
+        // only the raw half (milestone 709 (a graphical terminal session on the no-keyboard arm
+        // holds only the raw half of the boot discipline)), `STDIN_BADGE` only the line being typed
+        // (milestone 892 (a std program at the prompt holds the network and a resolver)). The
+        // unbadged surface never serves that read. See notes/line-discipline.md.
         let op = proto::operation(w0);
         let allowed = match badge {
             0 => op != proto::OPERATION_READ_LINE_BYTES,
@@ -230,7 +189,10 @@ struct Terminal {
     // Set when a quiesce answered a parked OPERATION_READLINE with FLAG_RETRY and this instance then
     // resumed: the reader's re-issued read must not repaint a prompt the screen already shows.
     resuming_line: bool,
-    /// The control endpoint's slot, `0` when no supervisor can replace this instance.
+    /// The control endpoint's slot, named by the second start argument, `0` when no supervisor
+    /// that can replace this instance built it (milestone 23 (a capability-routed component OS with
+    /// live replacement)). With one, `OPERATION_QUIESCE` answers any parked read with `FLAG_RETRY`,
+    /// replies, and waits for `CTL_RESUME` or `CTL_QUIT`; without one, it is refused.
     control: u64,
     /// The start flags (`proto::START_ABSORB`, `proto::START_HANDOFF`).
     start: u64,
@@ -300,14 +262,10 @@ impl Terminal {
             proto::OPERATION_WRITE => self.write(w0, slot),
             proto::OPERATION_READLINE => self.read_line(w0, slot),
             proto::OPERATION_PRINT => {
-                // **A second writer, with no second page** (DECISIONS §67, notes/sink-protocol.md).
-                // The bytes are in the request's own words, so this client needs no frame mapped
-                // here and no frame of its own; `OPERATION_WRITE` above reads the *one* page the progenitor maps in,
-                // and a second page-based client would need this contract to grow a page index.
-                //
-                // Through the same `expand_output` as `OPERATION_WRITE`, so a newline from a sink adapter
-                // becomes a carriage return and a newline exactly as one from the shell does. Two
-                // writers, one terminal, one set of manners.
+                // A second writer, with no second page (DECISIONS §67, notes/sink-protocol.md):
+                // the bytes ride in the request's words, since a second page-based client would
+                // need a page index. Through the same `expand_output` as `OPERATION_WRITE`, so a
+                // sink adapter's newline becomes a carriage return and a newline, as the shell's does.
                 let len = proto::len(w0).min(8);
                 let bytes = w1.to_le_bytes();
                 line_editor::expand_output(&bytes[..len], &mut self.con);

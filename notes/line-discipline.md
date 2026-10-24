@@ -178,3 +178,36 @@ The driver does no key repeat of its own: the device sends repeats, and `video_t
 honors them. It drives no LEDs and switches no layouts. It handles no mouse or tablet, though a
 `virtio-tablet-pci` presents the same PCI id (recorded in `crates/pci`), and it makes no
 configuration-space query.
+
+## Two sinks, and the badged copies
+
+The process's output side is chosen at spawn by `mode` and nowhere else:
+
+```text
+  MODE_CONSOLE (the plain-console boot):
+  input driver ──OPERATION_BYTES──►┌─────────────┐──text──► console server ──► UART
+                                   │ line_editor │
+       application ◄─lines─────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+
+  MODE_DISPLAY (a graphical_terminal session, built when the user launches it from the prompt):
+  keyboard_driver (direct) ──OPERATION_BYTES──►┌─────────────┐──OPERATION_WRITE──► display_terminal
+                                               │ line_editor │
+       application ◄─lines─────────────────────└─────────────┘◄──OPERATION_WRITE / OPERATION_READLINE── application
+```
+
+`Con::put` writes the same page in both modes, and only `Con::flush`'s wire shape differs. In
+`MODE_DISPLAY` the sink endpoint is `display_terminal`'s own, answered by one `CALL`, and the
+console's reply endpoint is never granted. The process holds no device in either mode.
+
+Every holder the boot wires is unbadged. Two badged copies of the terminal endpoint exist, and each
+is served an allowlist, so a request added to the contract later is refused on a badged copy until
+somebody decides that reader may send it.
+
+- `proto::RAW_ONLY_BADGE`, milestone 709 (a graphical terminal session on the no-keyboard arm holds
+  only the raw half of the boot discipline). Its holder, a `graphical_terminal` session reading
+  keystrokes over the UART, may switch raw mode and read raw bytes. Nothing it sends can reach the
+  queue the shell reads its next command from.
+- `proto::STDIN_BADGE`, milestone 892 (a std program at the prompt holds the network and a
+  resolver). It is a program's standard input and nothing else: it reads the line being typed,
+  eight bytes at a time. The unbadged surface never serves that read, so the shell's own lines
+  cannot be taken through it.
