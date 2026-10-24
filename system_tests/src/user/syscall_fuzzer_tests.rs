@@ -1,62 +1,32 @@
 //! **A seeded syscall driver with a shadow model** (milestone 752 (a seeded syscall driver with a
-//! shadow model), provisional; part (b) of `design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`,
-//! ruled yes by calef on 2026-10-04 UTC).
+//! shadow model), provisional; part (b) of `design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md`).
 //!
-//! From a seed, seven actor threads issue random capability operations through the real syscall
-//! layer: `syscall::invoke`, the function the trap handler calls for `SYS_INVOKE`, with slots,
-//! methods and arguments drawn at random, including empty and out-of-range slots, methods an object
-//! does not have, rights a capability does not carry, revoked frames and both arrival orders at a
-//! rendezvous. The conductor (the test thread) keeps a model of every actor's capability table,
-//! every rendezvous's queues and the notification's word, predicts each answer before the kernel
-//! gives it, and fails on the first difference. After every operation the actor that ran it reads
-//! back its whole table, and that is compared slot by slot too, so a capability that arrives where
-//! the model says nothing should is a failure even when no register mentions it.
-//!
-//! **Actor 6 is the witness and holds nothing.** Every operation it issues must be refused as
-//! `NoSuchSlot`, and its table must stay empty for the whole run: a thread endowed with nothing
-//! gains nothing, whatever the others do around it.
-//!
-//! **The oracle is a model, not a crash**: a confinement defect delivers something wrong and
-//! crashes nothing, so a fuzzer watching only for panics passes it. A kernel panic still ends the
-//! run, as it ends any test.
-//!
-//! **The seed is the reproducer.** Nothing here reads a clock or a core number to decide what to
-//! do, so a seed replays the same operations in the same order on every run. A failure prints the
-//! seed, the step and the call; `NIFE_SYSCALL_FUZZ_SEEDS=<first>:<count>` at build time (read with
-//! `option_env!`) replaces the committed list, which is how the weekly sweep runs many seeds and
-//! how one seed is replayed. Coverage-blind, as an effort trade.
-//!
-//! **Kernel threads, not an EL0 program** (the proposal said EL0): they hold ordinary capability
-//! tables and enter through `syscall::invoke`, as `reap_tests` and `notification_tests` do. The
-//! oracle needs to know which side of a rendezvous parked first, which only the kernel can say
-//! without timing guesses (`sched::thread_death_disposition`). The trap entry itself is not
-//! exercised here; every EL0 test in the suite crosses it.
-//!
+//! From a seed, seven actor threads issue random capability operations through `syscall::invoke`,
+//! the function the trap handler calls for `SYS_INVOKE`. The conductor models every capability
+//! table, rendezvous queue and the notification's word, predicts each answer and each actor's whole
+//! table, and fails on the first difference. Actor 6 is the witness and holds nothing: every call
+//! it makes must be refused `NoSuchSlot`, and its table must stay empty. A seed replays the same
+//! operations on every run; `NIFE_SYSCALL_FUZZ_SEEDS=<first>:<count>` at build time (read with
+//! `option_env!`) replaces the committed list. See notes/fuzzing/the-syscall-driver.md.
 
 //! # What the generator reaches
 //!
 //! Objects: two rendezvous, one notification, two single-page frames, and the Reply capabilities
 //! `CALL` mints. Methods: `SEND`, `RECEIVE`, `SEND_CAP`, `RECEIVE_CAP`, `CALL`, `BADGE` on a
 //! rendezvous; `REPLY`; `SIGNAL`, `WAIT`, `POLL`, `BIND` on the notification; `REVOKE` on a frame;
-//! an unknown method on each; and `SYS_CAP_DELETE`.
-//!
+//! an unknown method on each; and `SYS_CAP_DELETE`. The actors are kernel threads, not an EL0
+//! program, so the trap entry is not exercised here.
+
 //! # BUGS
 //!
-//! - **`SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.**
-//!   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
-//!   `dispatch` would read as `SYS_CAP_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
-//! - **Not generated:** `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
-//!   `Timer`, `Irq`, `PageFrame::MAP` and `SLICE`, a bound notification (no TCB capability exists,
-//!   so `BIND` only reaches its refusals), and death messages. Each is a model extension, not a
-//!   rewrite; a timer needs the model to reason about time, which is why it was left.
-//! - **Unexpected wakes are seen late.** An actor the model says is parked is checked for a stray
-//!   answer at every step and at teardown, so a wrong wake is caught, but possibly some steps after
-//!   the operation that caused it.
-//! - **The corpus is tied to the kernel's walk, not only to this generator.** A kernel change that
-//!   alters any answer the model predicts re-rolls every seed's walk, so a corpus seed can rot
-//!   green with its defect still reachable (seed 342 did; the defect re-found at 559). The replay
-//!   table in `design/roadmap/0752-a-seeded-syscall-driver-with-a-shadow-model.md` still names
-//!   342 in its revocation-in-flight row.
+//! - `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
+//! - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
+//!   `Timer`, `Irq`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
+//! - An unexpected wake is caught, but possibly some steps after the operation that caused it.
+//! - A kernel change that re-rolls a corpus seed's walk can leave it green with its defect still
+//!   reachable.
+//!
+//! Each is told in full in notes/fuzzing/the-syscall-driver.md.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -79,25 +49,12 @@ const STEPS: usize = 96;
 /// The committed seeds: `0..SUITE_SEEDS`, each mixed through `splitmix` before use, then [`CORPUS`].
 /// Chosen from the measured wall time (see the roadmap block); the weekly sweep runs thousands.
 const SUITE_SEEDS: u64 = 32;
-/// **Seeds kept because they found something**, syzkaller's corpus in one line. The range above
-/// turns red under five of the six falsifications milestone 752 was measured against; seed 180 is
-/// the first a 5,000-seed sweep found red under the sixth, the patch for milestone 633 (an outside
-/// agent attacks the confinement claim), which needs a delegation left staged by a plain `RECEIVE`
-/// and then a later plain `SEND` collected by `RECEIVE_CAP` (2026-10-04, UTC). A seed is tied to
-/// this generator: a change to `pick_op` or `endow` re-rolls every seed, and the corpus must be
-/// re-found, which the roadmap block's replay table is for. A new finding's seed belongs here with
-/// its reason.
-///
-/// **Seed 559 is the revocation-in-flight patch's, re-found twice now.** §246 (a plain `RECEIVE`
-/// never takes a capability), a PROVISIONAL number, changed what a `CALL` or `SEND_CAP` at a plain
-/// `RECEIVE` does; the model's walk diverged, and seed 5 no longer reached a frame revoked while
-/// staged. A 2,000-seed sweep under that patch on aarch64 found it red first at seed 342, step 64
-/// (2026-10-04, UTC). The walk diverged again on main before 2026-10-07 (UTC): with the defect
-/// applied, seed 342 stayed green, verified by hand at a lane's claim commit (milestone 139 round
-/// 10), so a 5,000-seed sweep re-found it at seed 559, step 14, and dead 342 left the corpus. All
-/// six patches were replayed under QEMU on aarch64, riscv64 and x86_64, and each turned the driver
-/// red: four at seed 0 (steps 17 and 18), milestone 633's at seed 19 (step 63, inside the suite
-/// range now, so 180 is no longer the first), and revocation in flight at 559.
+/// **Seeds kept because they found something**, syzkaller's corpus in one line. Seed 180 is the
+/// first a 5,000-seed sweep found red under milestone 633 (an outside agent attacks the
+/// confinement claim)'s patch, and seed 559 the first under the revocation-in-flight patch. A
+/// change to `pick_op` or `endow`, or to any answer the model predicts, re-rolls every seed, and
+/// the corpus is re-found with the roadmap block's replay table. A new finding's seed belongs here
+/// with its reason. See notes/fuzzing/the-syscall-driver.md.
 const CORPUS: &[u64] = &[180, 559];
 /// The sweep's guest-time cap: it stops between seeds once this has passed and says how far it
 /// got, so a weekly run with a large count fits under the per-test budget
@@ -672,7 +629,7 @@ impl Model {
                     return refuse(Error::NotPermitted);
                 }
                 // Every copy in every table goes, the invoker's too, and so does a copy staged
-                // in a parked SEND_CAP (the 2026-09-21 fix).
+                // in a parked SEND_CAP.
                 for t in self.tables.iter_mut() {
                     for s in t.iter_mut() {
                         if matches!(s, Some(c) if c.obj == Obj::Frame(fr)) {
