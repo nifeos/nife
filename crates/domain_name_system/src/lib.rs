@@ -5,29 +5,17 @@
 //!
 //! Every byte parsed here came from a server the client may not trust, so the parser is total (Kani
 //! checks the name decoder, `fuzz/fuzz_targets/domain_name_system_reply.rs` the rest), and
-//! [`Query::accept`] believes as little as it can. A reply must, in order:
-//!
-//! 1. Parse as a DNS message at all ([`Reject::Malformed`]).
-//! 2. Be a response, to a standard query ([`Reject::NotAResponse`]).
-//! 3. Carry the transaction id we sent ([`Reject::IdMismatch`]): over UDP, the sixteen bits an
-//!    off-path forger must guess, so the caller draws it from the entropy service.
-//! 4. Not be truncated ([`Reject::Truncated`], which over UDP means "ask again over TCP").
-//! 5. Echo exactly our question: one question, our name (ASCII case aside), type A, class IN
-//!    ([`Reject::QuestionMismatch`]).
-//! 6. Succeed ([`Reject::NoSuchName`] for NXDOMAIN, [`Reject::ServerError`] for the rest).
-//! 7. Follow a chain of CNAMEs **from our name**, at most [`MAX_CHAIN`] links, taking only the A
-//!    records owned by its end ([`Reject::ChainTooLong`], [`Reject::NoAddress`]), so a reply about
-//!    `example.com` cannot plant an address for `bank.test`. The authority and additional sections
-//!    are never read.
-//!
+//! [`Query::accept`] believes as little as it can: [`Reject`] lists its seven checks in order. Only
+//! A records owned by the end of the CNAME chain from our name are taken, so a reply about
+//! `example.com` cannot plant an address for `bank.test`; authority and additional are never read.
+
 //! # BUGS
 //!
 //! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
 //! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAX`] and a larger answer costs a TCP retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
 //! - At most [`MAX_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
-//! - Host names are restricted to letters, digits, `-` and `_` per label ([`Name::from_dotted`]),
-//!   which keeps escape syntax out of the one place a client's text becomes wire bytes.
+//! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
 //!
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the external DNS wire format,
 //! named for the standard's full name, spelled out under §154 (the acronym test). His answer was
@@ -260,9 +248,8 @@ impl Name {
     /// same way, because the comparison only ever starts at a label boundary. Every name is within
     /// the root.
     ///
-    /// This is the test a grant scoped to a domain would apply. Whether a resolver grant should be
-    /// scoped that way is milestone 384's open question (notes/name-resolution.md), and nothing in the
-    /// tree applies this yet.
+    /// Nothing applies it yet: a resolver grant scoped to a domain is an open question of milestone
+    /// 384 (in a capability system the resolver is a grant; notes/name-resolution.md).
     ///
     /// ```
     /// use domain_name_system::Name;
@@ -540,25 +527,27 @@ pub struct Query {
     name: Name,
 }
 
-/// Why a reply was not believed. Each variant is one check in [`Query::accept`]'s list (the crate
-/// docs give the order), so a log or a test can say which check refused it.
+/// Why a reply was not believed. Each variant is one check in [`Query::accept`], declared in the
+/// order the checks run, so a log or a test can say which check refused it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reject {
     /// Not a DNS message, or its answer section is not.
     Malformed(Error),
     /// A query rather than a response, or a response to some other opcode.
     NotAResponse,
-    /// Not our transaction id.
+    /// Not our transaction id: over UDP, the sixteen bits an off-path forger must guess, so the
+    /// caller draws it from the entropy service.
     IdMismatch,
     /// The server truncated it. Over UDP, ask again over TCP.
     Truncated,
-    /// It does not echo exactly our question.
+    /// It does not echo exactly our question: one question, our name (ASCII case aside), type A,
+    /// class IN.
     QuestionMismatch,
     /// The name does not exist (NXDOMAIN).
     NoSuchName,
     /// Any other nonzero response code, carried so a caller can report it.
     ServerError(u8),
-    /// The CNAME chain from our name is longer than [`MAX_CHAIN`] links, or loops.
+    /// The CNAME chain, followed only from our name, is longer than [`MAX_CHAIN`] links, or loops.
     ChainTooLong,
     /// The name exists and has no A record, or the answer holds addresses only for other names.
     NoAddress,
@@ -646,8 +635,8 @@ impl Query {
         Ok(n + 2)
     }
 
-    /// **Judge a reply**, and return the addresses it gives for our name only if every check in the
-    /// crate docs' list passes. Total on any input: a reply cannot panic this, and that is fuzzed.
+    /// **Judge a reply**, and return the addresses it gives for our name only if every check
+    /// [`Reject`] lists passes. Total on any input: a reply cannot panic this, and that is fuzzed.
     ///
     /// # Examples
     ///

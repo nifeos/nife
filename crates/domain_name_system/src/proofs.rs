@@ -1,15 +1,13 @@
-//! Machine-checked proofs (Kani), run by `script/verify`. The property worth solver time here is
-//! the one a fuzzer can only sample: a name server, or anyone who can forge its replies, feeds the
-//! name decoder, and it must terminate and stay in bounds on **every** byte string. The compression
-//! pointer loop is the classic DNS parser hang, and the decoder's strictly-backwards fence turns it
-//! into an error; the first harness quantifies that over every message of the proved size.
+//! Machine-checked proofs (Kani), run by `script/verify`. A name server, or anyone who can forge
+//! its replies, feeds the name decoder, and it must terminate and stay in bounds on **every** byte
+//! string, which a fuzzer can only sample. The compression pointer loop is the classic DNS parser
+//! hang; the decoder's strictly-backwards fence makes it an error, and the first harness quantifies
+//! that over every message of the proved size.
 //!
-//! The bounds are small, the trade `globally_unique_identifier_partition_table`'s CRC harnesses
-//! record: what is proved is structure (termination, bounds, round trips), which grows no new
-//! behaviour with length, and realistic lengths are covered by the tests and the fuzz target. The
-//! first two harnesses are the retired `multicast_dns_protocol`'s, whose measurements chose these
-//! bounds: deciding the decoder against its full 255-byte output ran past twenty solver minutes, and
-//! against a 32-byte one it is seconds, with the loop identical.
+//! The bounds are small because what is proved is structure (termination, bounds, round trips),
+//! which grows no new behavior with length; tests and the fuzz target cover realistic lengths.
+//! Measured: the decoder against its full 255-byte output ran past twenty solver minutes, and
+//! against a 32-byte one it takes seconds, with the loop identical.
 
 use super::*;
 
