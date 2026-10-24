@@ -23,12 +23,12 @@ whose two ends are already given, so it never calls this function.
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -263,7 +263,7 @@
- /// address space (milestone 142's review, MAJOR 4). `count` is a `NonZeroU64` on the capability
- /// now, so the subtraction cannot underflow; this closes the other half.
+@@ -191,7 +191,7 @@
+ /// fit in a `u64`, or `count` is zero. The multiply is checked as well as the add. Both mapping
+ /// paths guard on it, and `syscall::proofs` proves it exact.
  pub(super) fn run_end_va(va: u64, count: u64) -> Option<u64> {
 -    va.checked_add(count.checked_sub(1)?.checked_mul(paging::PAGE_SIZE)?)
 +    va.checked_add(count.wrapping_sub(1).wrapping_mul(paging::PAGE_SIZE))
  }
  
- /// **Undo the `mapped` pages a failed run-map had already established**, in the space rooted at
+ /// Undo the first `mapped` pages of a failed run-map in the space rooted at `root`: unmap each

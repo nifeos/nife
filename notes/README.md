@@ -69,6 +69,14 @@ area directories), ruled B). Appendices under
 
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
+`syscall-boundary.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
+
+`scheduler-instruments.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
+
+`kernel-test-harness.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
+
+`self-test-checks.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.
+
 `progenitor-boot.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.
 
 `user-address-spaces.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.

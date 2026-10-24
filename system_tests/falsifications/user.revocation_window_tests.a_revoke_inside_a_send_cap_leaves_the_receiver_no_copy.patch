@@ -30,10 +30,10 @@ day.
 diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
 --- a/kernel/src/syscall/rendezvous.rs
 +++ b/kernel/src/syscall/rendezvous.rs
-@@ -108,17 +108,25 @@ pub(super) fn rendezvous_send_capability(
-     // The source is read, checked (GRANT, narrow-only) and copied inside `sched`, under the hold
-     // that files the copy, so no revocation sweep can fall between the read and the filing.
-     // Reading it here first was that gap (`sched::Delegation`).
+@@ -74,17 +74,25 @@
+     }
+     // The source is read, checked and copied inside `sched`, under the hold that files the
+     // copy, so no revocation sweep falls between the read and the filing (`sched::Delegation`).
 +    let src = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
 +    if !src.rights.allows(Rights::GRANT) {
 +        return Err(Error::NotPermitted);
