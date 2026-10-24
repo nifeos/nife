@@ -13,24 +13,12 @@ use std::time::{Duration, Instant};
 
 use super::*;
 
-/// One architecture's leg of [`swish_check`]: `aarch64`, `riscv64` or `x86_64`.
+/// One architecture's leg of [`swish_check`]: `aarch64`, `riscv64` or `x86_64`. Returns true
+/// when every boot of the leg passed.
 ///
-/// # The `x86_64` leg boots under firmware (milestone 182)
-///
-/// **Under OVMF, from the same `\EFI\BOOT\BOOTX64.EFI` `cargo xtask uefi-image` stages for a
-/// USB stick**, not through QEMU's PVH `-kernel` loader. That image is the thing a customer boots
-/// (DECISIONS §157, milestone 198's rung 1), so it is the one worth typing at: the loader, the
-/// firmware's memory map and ACPI tables, and the console server's tee onto the firmware's screen
-/// (milestone 400) are all on the path, and the PVH boot has none of them. What it costs over PVH
-/// is recorded in milestone 182's block, measured rather than asserted.
-///
-/// One `x86_64` difference, forced by the machine rather than chosen:
-///
-/// - **No virtio-rng, so `RDSEED`.** Every entropy device the kernel can find is virtio-mmio and
-///   `q35` has no mmio bus, so the kernel builds the progenitor's entropy service on the CPU's seed
-///   instruction instead (milestone 595 (provisional)), which the runner's `-cpu max` implements.
-///   The leg asserts the progenitor said so, because a boot that silently fell back to no entropy
-///   would otherwise surface only as the `uuid` lines failing.
+/// The `x86_64` leg boots under OVMF from the UEFI image a customer boots, not through QEMU's PVH
+/// loader (milestone 182), and builds its entropy service on `RDSEED`, since `q35` has no mmio bus
+/// for a virtio-rng; the leg asserts the progenitor said so. See notes/swish-check-boot.md.
 ///
 /// Falsification: replayable `xtask/falsifications/swish_check.boot.swish_check_leg.patch`
 pub(super) fn swish_check_leg(arch: &str) -> bool {
@@ -75,22 +63,11 @@ const USB_KEYBOARD_KEYS: [&str; 11] = ["e", "c", "h", "o", "spc", "h", "e", "l",
 
 /// **The USB keyboard boot** (milestone 242 (USB host and HID, because on commodity hardware the
 /// keyboard is not a UART)): the image the first boot built, with an xHCI controller and a USB
-/// keyboard attached and nothing else, `echo hello` typed on that keyboard through the QEMU
-/// monitor's `sendkey`, and `hello` required back on the console. On all three architectures,
-/// behind each one's IOMMU (`iommu=smmuv3`, `riscv-iommu-pci`, `intel-iommu`), which the kernel
-/// refuses to hand the controller over without.
-///
-/// What it proves, end to end: the kernel found and confined the controller, the EL0 driver reset
-/// it, enumerated the keyboard and configured its interrupt endpoint (the `usb       :` line says
-/// so before the prompt), the progenitor delegated the line discipline's endpoint to it, and a
-/// key pressed on the device reached the shell as the same bytes a serial line sends. **The serial
-/// line types nothing in this boot**, so the echo can have come from nowhere else.
-///
-/// The keyboard enumerates at **full speed** (`usb_version=1`), the speed real keyboards use, so
-/// the Evaluate Context step and the frame-based interval encoding run here rather than first on
-/// the bench. What it does not prove: a real keyboard on real silicon, which is calef's bench step
-/// in milestone 242's block; a hub; a low-speed device, which QEMU cannot model. The name is
-/// provisional.
+/// keyboard attached and nothing else that could type, `echo hello` typed through the QEMU monitor's
+/// `sendkey`, and `hello` required back. On all three architectures, behind each one's IOMMU, which
+/// the kernel refuses to hand the controller over without. The keyboard enumerates at full speed,
+/// as real keyboards do. Returns true when `hello` came back. It does not prove a real keyboard, a
+/// hub or a low-speed device. The name is provisional. See notes/swish-check-boot.md.
 fn usb_keyboard_boot(arch: &str) -> bool {
     let x86 = arch == "x86_64";
     let kvm = x86 && kvm_is_usable();
@@ -337,12 +314,10 @@ fn stop_runner(child: &mut std::process::Child, x86: bool) {
 /// the device rather than of an environment variable, so a developer's exported `NIFE_ACCEL` cannot
 /// change what this gate boots (`swish_check` clears it for that reason).
 ///
-/// Only the `x86_64` leg asks. The aarch64 and riscv64 legs stay on TCG on purpose: on CI's arm64
-/// runner, TCG is what puts their kernels in front of a weakly ordered host (ci.yml's header), and
-/// KVM there would trade that for speed the two legs do not need (0.2 s a line). The `x86_64` guest
-/// is TSO under either, so KVM gives up no ordering the leg was ever shown. Milestone 628 (the x86_64
-/// swish-check leg costs what the others do) measured what it buys; notes/benchmarks/swish-check-x86-leg.md. The name is
-/// provisional.
+/// Only the `x86_64` leg asks: the other two stay on TCG so CI's arm64 runner puts their kernels in
+/// front of a weakly ordered host, and the `x86_64` guest is TSO either way. Milestone 628 (the
+/// x86_64 swish-check leg costs what the others do) measured what it buys; see
+/// notes/benchmarks/swish-check-x86-leg.md and notes/swish-check-boot.md. The name is provisional.
 pub(crate) fn kvm_is_usable() -> bool {
     cfg!(all(target_os = "linux", target_arch = "x86_64"))
         && std::fs::OpenOptions::new()
@@ -777,24 +752,12 @@ fn swish_check_runner(
             cmd.env("NIFE_KEYBOARD", "1");
         }
     }
-    // **And a NIC** (milestone 590 (provisional)), on the two legs whose runner can attach one:
-    // the progenitor builds `net_stack` from it, and `network_echo_client` reaches the runners'
-    // echo peer through that. The runner attaches two (an mmio NIC and a PCIe one behind the
-    // IOMMU); the kernel grants the progenitor the mmio one and the other sits unclaimed.
-    //
-    // **Not on the scriptless keyboard boot**: it types nothing that reaches the network, and a
-    // boot with a gpu, a keyboard, a virtio-rng and the NIC all attached peaks at 30 of 32
-    // capability slots against the 28 `kernel/src/cap.rs` records (measured 2026-10-03 UTC, the
-    // fold's first run), a configuration no gate booted before the fold. Dropping the NIC keeps
-    // this boot the one milestone 632 measured (gpu, keyboard, rng: 28); the 30 is recorded in
-    // milestone 632's BUGS rather than hidden by raising the constant in a lane about CI.
-    //
-    // **Correction (2026-10-04 UTC, milestone 753 (provisional)): the keyboard boot has a NIC
-    // anyway.** `host::cargo` sets `NIFE_NET=1` in this process's own environment, and `cmd`
-    // inherits it, so skipping the line below removes nothing. The trace in
-    // notes/capability-peak-trace.md found `net_stack`'s endpoint among the keyboard boot's 31;
-    // without it that boot reads 30. Removing the variable here would change what the gate boots
-    // and what `CAPABILITY_TABLE_PEAK_MEASURED` records, so it is left for whoever owns that.
+    // A NIC (milestone 590 (provisional)) on the two legs whose runner can attach one: the
+    // progenitor builds `net_stack` from it, and `network_echo_client` reaches the runners' echo
+    // peer through that. The runner attaches an mmio NIC and a PCIe one behind the IOMMU; the
+    // kernel grants the progenitor the mmio one. The keyboard boot is meant to go without, but
+    // this guard removes nothing: `host::cargo` sets `NIFE_NET=1` in this process and `cmd`
+    // inherits it (notes/capability-peak-trace.md, notes/swish-check-boot.md).
     if !x86 && graphics != Some(Keystrokes::Device) {
         cmd.env("NIFE_NET", "1");
     }
@@ -930,43 +893,14 @@ fn after_hand_over(t: &str) -> String {
 /// shell the progenitor starts afterwards; there is nothing to wait for.
 fn boot_claim_failures(x86: bool, now: &dyn Fn() -> String) -> Vec<String> {
     let mut failed = Vec::new();
-    // **The progenitor gave the construction budget away, and says so from the inside** (milestone 22
-    // (trusted init: verify it, and shrink what a broken one can do), the interactive increment). The progenitor prints this one line after deleting the root untyped and
-    // before starting the shell, and it prints it only when `RETYPE` and `RETYPE_OBJ` on that
-    // slot both answered `NoSuchSlot`: the capability is gone, not narrowed. The other branch
-    // says "NOT dropped", so a boot that kept its budget fails here rather than passing quietly.
-    //
-    // **The message says what was not found, and nothing about the kernel.** It used to name
-    // two capability states ("it still holds the root untyped, or the delete did not take"),
-    // which are the two reasons the progenitor would print the other branch, and which this check has no
-    // evidence for: all it ever knows is whether a string is in a transcript. On milestone
-    // 230's first CI run it said exactly that about a boot where the progenitor had dropped the budget
-    // and had said so, and sent a maintainer looking for a capability bug that does not exist.
-    // A missing marker means a missing marker. The transcript is printed below; that is the
-    // evidence, and this line's job is to say which string was wanted and how close it came.
-    //
-    // **And the progenitor measured every program it loaded** (milestone 104 (the
-    // measurement continues past init)), which is the line that
-    // keeps the second link of the chain from evaporating. A kernel built without the
-    // measurement step refuses to boot at all, but a *table* that stopped naming things would
-    // leave a system that boots, prompts, and vouches for nothing, and it would look exactly
-    // like a healthy one. So the progenitor says which way it went either way, and the affirmative
-    // sentence is what this gate reads. The other branch names the programs it refused, so a
-    // boot that quietly stopped spawning half the prompt's commands fails here.
-    //
-    // **And its directory grants go through a bound badge** (milestone 606 (a directory walk
-    // costs what it does on Linux), calef's rulings D and T1 of 2026-09-27). Every leg's image carries `redoxfs_server`, whose bytes carry the
-    // subtree-grants note, so the progenitor must have read it; the `rm` lines below then run
-    // through the server's own narrowing rather than a caretaker. A progenitor that lost the
-    // note, or stopped reading it, says the negative sentence and fails here rather than
-    // passing quietly on the caretaker it falls back to.
-    //
-    // **And the progenitor has an entropy service, from the source this leg's machine has**
-    // (milestone 595 (provisional)). The `uuid` and `std_exerciser` lines below would fail
-    // without one, but as a refused draw several lines on, which says nothing about why. This
-    // names the source: a virtio-rng on the two `virt` machines, the CPU's `RDSEED` on `q35`,
-    // where the kernel builds the service and the progenitor is granted it. The negative is
-    // the kernel's own refusal, which both of its no-entropy sentences end with.
+    // The progenitor's four claims about its own boot, each a positive sentence this gate requires
+    // and the negative one it prints otherwise: it gave the construction budget away (milestone 22
+    // (trusted init: verify it, and shrink what a broken one can do)), measured every program it
+    // loaded (milestone 104 (the measurement continues past init)), delivers directory grants
+    // through a bound badge (milestone 606 (a directory walk costs what it does on Linux)), and has
+    // an entropy service from this machine's source (milestone 595 (provisional)). A missing
+    // marker means only a missing marker; the complaint names the string, never a capability state.
+    // Why each claim is shaped so: notes/swish-check-boot.md.
     let claims: [(&str, &str, &str); 4] = [
         (
             "giving the construction budget away",
@@ -1389,38 +1323,13 @@ fn resolver_refusal_failure(transcript: &str) -> Option<String> {
 }
 
 /// **Nothing may have died** (milestone 233 (`login` dies on every boot, and the boot says it is
-/// ready)), which is the ratchet the lane of milestone 230 (`script/shell-check` is red on `main`)
-/// identified and deliberately left, because it would have been red on both architectures until
-/// `login` was fixed. It was: `login` faulted at `_start` on every interactive boot, on both
-/// ISAs, for an unknown length of time, while every check above passed and the progenitor went on printing
-/// a line about a login service.
-///
-/// **The whole transcript, not the boot**, because the typed script is where a death would be
-/// most surprising. Nothing in `SWISH_CHECK_SCRIPT` traps on purpose: the three lines that fail
-/// (`wc` and `doc` with nothing named, `least_authority_demo` with no argument) are all refusals, two at the
-/// prompt before anything is spawned and one an ordinary non-zero exit, and `rm gate.txt`'s
-/// refusal is an answer rather than a fault. `echo $?` reading `2` right after `least_authority_demo` is this
-/// gate's own proof of that distinction: a thread the kernel killed does not get to set a status.
-/// A trap in any of them would be a real regression rather than a false positive here.
-///
-/// **What a deliberate trap does was measured rather than assumed** (milestone 233), because
-/// milestone 230's lane named it as the thing it could not cheaply find out. `least_authority_demo` was
-/// patched to `supervision_protocol::fail()` on `least_authority_demo 5` and this gate run against it. Two
-/// results, and the second is the more interesting one:
-///
-///   1. This check fires, naming the thread and the reason, so it is a check that can fail
-///      rather than one that only ever passes. That mattered: it was written against a tree
-///      where `login` had just stopped dying, so nothing else would have exercised it.
-///   2. **The prompt never comes back.** The run also failed with "the prompt never came back
-///      to take `least_authority_demo 6`", because the shell waits on the result endpoint of a job that
-///      faulted instead of sending, and nothing wakes that wait. A spawned command that traps
-///      hangs the shell rather than returning a status. That is a real limitation this gate now
-///      makes visible, and it is `components/src/swish.rs`'s to carry rather than this file's.
-///
-/// The first two of `KERNEL_FAULT_TOKENS` rather than one string, and that constant's own doc
-/// carries why. The same pair is what `kernel_wrote_during_boot` reads, which is the other half
-/// of this: a fault during the boot is both a failure here and the one thing that can shuffle a
-/// console line, so the two checks are looking at one fact from two sides.
+/// ready)): the kernel's report of killing a user thread anywhere in `transcript`, the typed script
+/// included, as a failure line; `None` when there is none. Nothing in `SWISH_CHECK_SCRIPT` traps
+/// on purpose: its failing lines are refusals, so a trap is a real regression. Reads the first two
+/// of `KERNEL_FAULT_TOKENS`, the pair `kernel_wrote_during_boot` reads, since a fault during the
+/// boot is also what can shuffle a console line. A deliberate trap was measured against this
+/// check (milestone 230 (`script/shell-check` is red on `main`) named it); notes/swish-check-boot.md
+/// has the result, including the hang a trapped command leaves in the shell.
 fn kernel_fault_failure(transcript: &str) -> Option<String> {
     let at = transcript.find(KERNEL_FAULT_TOKENS[0])?;
     if !transcript[at..].contains(KERNEL_FAULT_TOKENS[1]) {
@@ -1436,17 +1345,13 @@ fn kernel_fault_failure(transcript: &str) -> Option<String> {
     ))
 }
 
-/// **And the capability-slot gauge** (milestone 231 (nothing counts how many capability slots a
-/// boot actually uses)), which is the other half of this pair of milestones. Two claims, and neither is a margin picked out of the air.
-///
-/// The line must be *there*, because a gauge that stopped printing is a gauge nobody would miss
-/// until the wall arrived again, which is exactly how `CAPABILITY_TABLE_SLOTS` came to be raised
-/// three times reactively. And it must not say `ABOVE`, which is the kernel's own word for a
-/// boot that went past the peak `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records. That
-/// constant is a measurement rather than a target, so what this fails on is a recorded fact
-/// going stale, not a boot getting close to something. The fix when it fires is to measure,
-/// update the constant, and re-read the headroom arithmetic beside `CAPABILITY_TABLE_SLOTS`.
-/// Read from the raw transcript: [`GaugeFilter`] takes this line out of the one the waits read.
+/// **The capability-slot gauge** (milestone 231 (nothing counts how many capability slots a boot
+/// actually uses)), read from `raw_after_hand_over`, since [`GaugeFilter`] takes it out of the
+/// view the waits read. A failure line when the gauge is missing (a gauge that stopped printing
+/// is one nobody would miss) or says `ABOVE`, past the peak
+/// `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
+/// fix is to measure, update it, and re-read the headroom arithmetic beside
+/// `CAPABILITY_TABLE_SLOTS`. See notes/swish-check-boot.md.
 fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
     match raw_after_hand_over
         .lines()
