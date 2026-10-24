@@ -124,7 +124,7 @@ def load(cwd, rels):
                              capture_output=True, text=True, cwd=cwd)
     except FileNotFoundError:
         return {}, {}, ("`ruby` is not on PATH. The parser is `ruby -ryaml` "
-                        "(helpers/issue_forms.py); install ruby, do not skip the gate")
+                        "(helpers/issue_forms.py); run script/bootstrap (it installs it), do not skip the gate")
     if run.returncode != 0:
         return {}, {}, (run.stderr.strip() or "ruby exited %d with no error text" % run.returncode)
     docs, errors = {}, {}

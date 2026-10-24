@@ -9,6 +9,8 @@ a one-line BUGS list. These files carry the detail its prose budget has no room 
 - [`design.md`](design.md): partial lines, the reader thread, opening the port before configuring
   it, why there is no serial dependency, and how it is tested with no board.
 - [`limitations.md`](limitations.md): the BUGS list in full.
+- [`modules.md`](modules.md): the reasons several of `crates/serial_console`'s doc comments link:
+  the sweep point's fields, the clean-core count, what reading a screen proves, and the escape byte.
 - [`job-mix-examples.md`](job-mix-examples.md): watching a job-mix sweep under QEMU, its three
   endings as real runs, and why their numbers moved after milestone 168 (a multi-tasking workload
   benchmark).
@@ -23,3 +25,4 @@ Each stem below is named for its content, and calef names files.
 - `limitations` Name: provisional, after `notes/soak/limitations.md` and
   `notes/frames/limitations.md`.
 - `job-mix-examples` Name: provisional, for the parent's job-mix EXAMPLES.
+- `modules` Name: provisional, for the crate's modules whose comments link it.
