@@ -3,11 +3,10 @@
 //! 7's confinement claim, claims 1 and 2).
 //!
 //! The host crate proves both claims (`capability::derive_never_widens_rights`,
-//! `from_bits_cannot_forge_a_right`); this drives `Rendezvous::SEND_CAP` through `syscall::invoke`.
-//! Its `a1` register is the rights the copy is narrowed to, so asking for a right the source lacks
-//! is claim 2 in wire form and claim 1's widening. `ipc_send_cap_from` refuses before it touches
-//! the rendezvous, so a refusal parks nothing; a regression parks the test thread and fails by the
-//! watchdog's thread dump, not at an assertion. See notes/confinement-outsider-pass-7.md.
+//! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
+//! drives `SEND_CAP`'s `a1` rights register through `syscall::invoke`. `ipc_send_cap_from` refuses
+//! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test
+//! thread and fails by the watchdog's dump. See notes/confinement-outsider-pass-7.md.
 
 //! Name: provisional (this pass's lane, 2026-10-12 UTC). Cross-ISA: `invoke`, the delegation rule
 //! (`Delegation::derive`) and the rendezvous are portable kernel code (DECISIONS §19 (architectural parity is a tenet)).

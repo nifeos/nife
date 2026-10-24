@@ -22,12 +22,12 @@ use crate::sched;
 
 /// A capability revoked while it sits in the hand-off slot must not reach the receiver.
 ///
-/// A sender holds `PageFrame(phys, 1)` and hands a copy to a rendezvous nobody receives on, so
-/// `ipc_send_cap` parks it in `outgoing_cap`. `PageFrame::REVOKE` then runs over the frame,
-/// whole-machine, and the receiver arrives and must be handed nothing. The headline is the last
-/// assertion and every path reaches it, since `ipc_receive_cap` returns `NO_CAP` or a slot and both
-/// are inspected. Above it sit a vacuity guard (the sender really parked) and a premise check (the
-/// revoke reached the sender's own table); either failing means the test proved nothing.
+/// A sender's copy of `PageFrame(phys, 1)` parks in `outgoing_cap` on a rendezvous nobody receives
+/// on; a whole-machine `PageFrame::REVOKE` runs, and the receiver must be handed nothing. The
+/// headline is the last assertion and every path reaches it (`ipc_receive_cap` returns `NO_CAP` or
+/// a slot, both inspected), for milestone 307 (which assertion actually fires when a confinement
+/// claim is broken). A vacuity guard (the sender parked) and a premise check (the revoke reached
+/// the sender's table) above it each mean, failing, that the test proved nothing.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.revocation_in_flight_tests.a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver.patch`
 #[test_case]

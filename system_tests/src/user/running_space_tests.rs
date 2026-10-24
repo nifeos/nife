@@ -11,8 +11,8 @@
 //! # BUGS
 //!
 //! - The multicore test needs two online cores and skips on one; CI's QEMU legs boot four.
-//! - Its placement is retried, not pinned: sixteen co-placements, or a migration between the check
-//!   and the `UNMAP`, still fail a correct kernel.
+//! - Its placement is retried, not pinned: sixteen co-placements fail `placed`, and a migration
+//!   after the check fails the `assert_ne!`, on a correct kernel.
 //! - The negative control proves the loader, not the boot.
 //! - The negative control keeps 32 frames the first time it runs in a boot, unexplained.
 //! - Only the fault's address is asserted: riscv64 does not say whether a translation existed.
@@ -202,14 +202,10 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
     // SAFETY: the reader's own current-CPU frame, through the direct map; it lives as long as the
     // space, which outlives this test's reads (the space dies with the reader, after them).
     let reader_cpu = || unsafe { current_cpu_contract::CurrentCpuPage::new(cpu_page) }.cpu();
-    // **Placement is retried, not pinned, and a retry is weaker than pinning.** The kernel has no
-    // affinity primitive (the syscall surface is an architect's call, and `cpu.rs` records why
-    // tests are not pinned), so `spawn_on` is a hint: DECISIONS §28 (SMP placement: two random choices at spawn), idle stealing can pull the unmapper
-    // onto the reader's core, or the reader onto the unmapper's, before either runs. The unmapper
-    // therefore checks where the reader is and stands down, unmapping nothing, when it shares its
-    // core; the test then picks a fresh target and tries again, up to `ATTEMPTS` times. What
-    // remains is the window between that check and the `UNMAP` itself, which the assertion below
-    // still catches (and which would only fail a run, never pass one wrongly).
+    // Placement is retried, not pinned: there is no affinity primitive (`cpu.rs` says why), and
+    // under DECISIONS §28 (SMP placement: two random choices at spawn) idle stealing can co-locate
+    // the two. The unmapper stands down when it shares the reader's core and the test retries; a
+    // migration after that check is caught by the `assert_ne!` below, failing a run, never passing.
     const ATTEMPTS: usize = 16;
     const STOOD_DOWN: u64 = 2;
     let faults = crate::arch::exceptions::USER_FAULTS.load(Ordering::Acquire);

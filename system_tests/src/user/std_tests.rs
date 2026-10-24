@@ -83,11 +83,11 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
 const WRITER_CHECK_MS: u64 = 100;
 
 /// [`drain_sink`] for a caller that knows the writing thread: if it dies before ending the stream,
-/// fail at once and print all it wrote (milestone 514 (the HVF leg's std listener test hangs)).
+/// fail at once and print all it wrote (milestone 514 (the HVF leg's std listener test hangs in
+/// some full runs and passes alone)).
 ///
-/// A timer on a bound notification ends the `RECEIVE` every [`WRITER_CHECK_MS`] (§101
-/// (notification objects)) to ask whether the writer still resolves; `echo` prints lines as they
-/// arrive for the host relay (`xtask/src/inbound.rs`). See notes/std/the-proof.md.
+/// A bound notification's timer ends the `RECEIVE` every [`WRITER_CHECK_MS`] (§101 (notification
+/// objects)) to ask if the writer still resolves; `echo` serves `xtask/src/inbound.rs`'s relay.
 ///
 /// # BUGS
 /// - The tick is progress to the lost-wakeup watchdog, so a stuck writer reports as a livelock.

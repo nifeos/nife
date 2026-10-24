@@ -158,10 +158,10 @@ fn a_shell_navigates_its_own_subtree_and_clamps_at_its_root() {
 ///
 /// Two shells, two subtrees of one image, one script. Each tries to open `sub/inner` and
 /// `other/secret` and is told nothing about which subtree it was rooted in, so the property is read
-/// off the pair rather than claimed by either. Listings are checked the same way, since a name from
-/// the other root appearing in one is an escape with nothing opened. The FS server and the
-/// caretakers one hop up reach both directories; what stops each shell is that its table holds no
-/// capability to the other subtree. They run in turn, sharing one page with the FS server.
+/// off the pair rather than claimed by either. Listings are checked too: a name from the other root
+/// in one is an escape with nothing opened. The FS server and caretakers reach both directories;
+/// what stops each shell is that its table holds no capability to the other subtree. They run in
+/// turn (sharing one page with the FS server), and running both at once would prove no more.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.shell_navigation_tests.two_shells_with_different_roots_cannot_name_each_others_files.patch`
 #[test_case]

@@ -214,9 +214,10 @@ path changed. The registry itself is 21,904 bytes of `.bss` at 288 slots.
 
 - The multicore test's placement is retried, not pinned, because the kernel has no affinity
   primitive. The unmapper stands down when it finds the reader on its own core, and the test picks
-  a fresh target, up to 16 times. Sixteen co-placements in a row, or a migration between that check
-  and the `UNMAP`, still fail a correct kernel on the guard's "proves nothing about another core's
-  TLB" assertion.
+  a fresh target, up to 16 times. Two failures remain open to a correct kernel. Sixteen
+  co-placements in a row fail `assert!(placed, ...)`, which says the scheduler put both on one core
+  every time. A migration between the stand-down check and the `UNMAP` fails the later `assert_ne!`
+  on the two recorded cores, "proves nothing about another core's TLB".
 - The negative control proves the loader, not the boot. It drives the `supervision_protocol` code
   the progenitor builds boot servers with, in a fixture granted its own space the way the kernel
   grants the progenitor's. A boot that wrote into a boot server would kill the progenitor, so the

@@ -100,14 +100,14 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
     );
 }
 
-/// The confused-deputy question on RISC-V, the twin of milestone 41 (dead code: triage the
-/// suppressions)'s `the_hardware_says_el0_cannot_read_the_kernels_memory`.
+/// The confused-deputy question on RISC-V: the twin of
+/// `the_hardware_says_el0_cannot_read_the_kernels_memory`, added by milestone 41 (dead code: triage
+/// the suppressions) when `user_can_read` turned out to have no caller on riscv64.
 ///
 /// With no `AT S1E0R`, `mmu::user_can_read` walks the installed tables in software and reads the
 /// `U` bit. One root register translates user and kernel addresses alike, so that bit is the only
 /// line between U-mode and kernel memory (aarch64 also splits TTBR0/TTBR1). The precondition checks
-/// the kernel is mapped here at all, which also proves the kernel-half share happened. Nothing else
-/// on riscv64 calls `user_can_read` or `user_can_write`.
+/// the kernel is mapped here at all, which also proves the kernel-half share happened.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.riscv_virtio_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
 #[test_case]
