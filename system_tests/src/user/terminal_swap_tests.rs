@@ -2,19 +2,18 @@
 //! capability-routed component OS with live replacement); calef's ruling of 2026-09-27 that a
 //! terminal supervisor holds the line editor).
 //!
-//! A real `terminal_supervisor` builds a real `line_editor` from its declaration, over a fake
-//! console that acks every flush. The test plays the input driver and a line-mode reader on the
-//! terminal endpoint, exactly as `raw_mode_service` does, and holds the supervisor's swap endpoint,
-//! which on a real boot would be the installer's (milestone 198 (a package manager, and the trivial install), not built). What it proves is the
-//! whole §209 (state handoff is an opaque blob over a granted frame, and it is optional) swap on a
-//! component a person uses: a line half typed before the swap is finished after it, history typed
-//! before it is recalled after it, and the reader parked across it is handed back and asks again.
+//! A real `terminal_supervisor` builds a real `line_editor` over a fake console that acks every
+//! flush. The test plays the input driver and a line-mode reader, as `raw_mode_service` does, and
+//! holds the swap endpoint a real boot gives the installer (milestone 198 (a package manager, and
+//! the trivial install), not built). It proves the whole §209 (state handoff is an opaque blob over
+//! a granted frame, and it is optional) swap: a half-typed line is finished after it, history is
+//! recalled after it, and the reader parked across it is handed back and asks again.
+
+//! # The hung terminal
 //!
-//! A second test hangs the terminal and asks for the swap anyway. The fake console stops
-//! acknowledging, so `line_editor` blocks in its sink's reply and never receives the quiesce,
-//! which is a real hang rather than a fixture's: a forwarding component wedged behind its
-//! dependency. What it proves is that the supervisor's bound fires, and what the supervisor does
-//! then.
+//! A second test stops the fake console's acks, so `line_editor` blocks in its sink's reply and
+//! never receives the quiesce: a real hang, a forwarding component wedged behind its dependency. It
+//! proves that the supervisor's bound fires, and what the supervisor does then.
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
