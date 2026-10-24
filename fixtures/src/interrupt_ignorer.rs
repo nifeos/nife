@@ -1,15 +1,10 @@
 //! The interrupt ignorer: a runaway that ignores the interrupt entirely (DECISIONS §24).
 //!
-//! A tight loop that touches nothing and checks nothing. It is the case the cooperative tier cannot
-//! reach: the shell can set the interrupt flag all it likes, and this program never reads it. Only
-//! the forcible tier ends it, the shell tearing its region down with object revocation
-//! (DECISIONS §24, §16). That is the whole reason the second `^C` exists.
-//!
-//! It is deliberately a pure `loop`, accessing no memory the shell holds, so it is the honest worst
-//! case: it cannot be killed by revoking a frame it depends on (it depends on none), only by the
-//! region owner's `DESTROY` force-killing the resident thread. That kernel behavior is the §16
-//! amendment landing alongside this milestone; until it merges, the shell's teardown of this
-//! program is refused and the prompt returns having said so.
+//! A tight loop that touches nothing and checks nothing: the case the cooperative tier cannot
+//! reach, and the reason the second `^C` exists. It never reads the interrupt flag and depends on
+//! no frame the shell could revoke, so it is the honest worst case: only the forcible tier ends it,
+//! the region owner's `DESTROY` force-killing the resident thread (DECISIONS §16, its milestone 22
+//! amendment).
 //!
 //! It holds nothing: no capabilities, and it does not even map the shared job frame it was granted.
 //!
