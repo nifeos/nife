@@ -1,19 +1,12 @@
 //! **A revocation reaches a capability in flight, for the two sweeps no test drove through a parked
 //! hand-off** (a ninth outsider pass at the confinement claim, claim 30).
 //!
-//! `revocation_in_flight_tests` drives the `PageFrame` sweep through a hand-off slot and holds. Its
-//! own `# BUGS` section says the other two sweeps carry the same two lines and *no test drives
-//! either through a parked hand-off*, so their correctness was reasoned from the code, not
-//! measured. This module measures them: a capability parked in `Thread::outgoing_cap` (where
-//! `ipc_send_cap` writes a handed-off capability before any receiver has arrived) is in no
-//! capability table, so a sweep that reads tables alone would leave one alive and hand it to the
-//! receiver. These are the `DeviceFrame` and (x86_64) `PortRange` objects through that same window.
-//!
-//! The shape is `revocation_in_flight_tests`' shape, with a different object: a sender holds the
-//! capability in its own table, hands a copy to a rendezvous nobody is receiving on (so the copy
-//! parks in `outgoing_cap` and the sender blocks), the whole-machine revoke runs, and then the
-//! receiver arrives and must be handed nothing. The last assertion is reached on every path,
-//! because `ipc_receive_cap` returns either `NO_CAP` or a slot and both are inspected.
+//! A capability parked in `Thread::outgoing_cap` (where `ipc_send_cap` writes a hand-off before a
+//! receiver arrives) is in no table, so a table-only sweep would hand it on. These drive that
+//! window for `DeviceFrame` and `PortRange`, which `revocation_in_flight_tests`' `# BUGS` says were
+//! reasoned from the code, not measured. As there, a sender parks a copy on a rendezvous nobody
+//! receives on, the revoke runs, and the receiver must get nothing; `ipc_receive_cap` returns
+//! `NO_CAP` or a slot, and both are inspected.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: the `DeviceFrame` sweep is portable kernel code, so its test runs on every
@@ -30,19 +23,13 @@ use crate::sched::{
     ipc_send_cap as ipc_send_capability,
 };
 
-/// **A `DeviceFrame` revoked while it sits in the hand-off slot must not reach the receiver** (claim
-/// 30, §13 (capability revocation and untyped reclamation)).
+/// **A `DeviceFrame` revoked while it sits in the hand-off slot must not reach the receiver**
+/// (claim 30, §13 (capability revocation and untyped reclamation)).
 ///
-/// A device's MMIO page is the sharper confinement case than a RAM frame: `revoke_device_from_others`
-/// exists precisely so that after a live driver swap the device has exactly one owner, and a copy
-/// parked in a hand-off slot would give it a second owner the revoke never saw. The object is a
-/// freshly retyped RAM page used as the `DeviceFrame`'s physical address, so nothing else in the
-/// suite aliases it and the sweep is the only thing that can clear the parked copy.
-///
-/// The sender holds the capability in its table (so the revoke has a table copy to take, which the
-/// premise check reads) and parks a copy on the rendezvous. The main test thread is the revoke's
-/// caller, so it is the spared keeper; the sender is the only other holder and is swept. The
-/// receiver (the main thread) then arrives at `ipc_receive_cap` and must get `NO_CAP`.
+/// An MMIO page is sharper than a RAM frame: `revoke_device_from_others` gives a swapped device one
+/// owner, and a parked copy would be a second the revoke never saw. The frame names a fresh RAM
+/// page nothing else aliases. The sender holds it (the premise check reads that the revoke took it)
+/// and parks a copy; the main thread, the spared revoker, must then receive `NO_CAP`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -51,7 +38,8 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
     static PARKED: AtomicBool = AtomicBool::new(false);
     static RETURNED: AtomicBool = AtomicBool::new(false);
     /// Did the sender still hold the frame in its **own table** once its send completed? A `false`
-    /// here is the revoke having reached the one holder a table sweep can see, which is the premise.
+    /// here is the revoke having reached the one holder a table sweep can see, which is the
+    /// premise.
     static SENDER_STILL_HELD: AtomicBool = AtomicBool::new(true);
 
     let region = crate::memory_region::create(4).expect("no region");
@@ -108,13 +96,10 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
 /// **A `PortRange` revoked while it sits in the hand-off slot must not reach the receiver** (claim
 /// 30; the x86_64 port-range object, DECISIONS §121 (x86 port I/O)).
 ///
-/// The twin of the `DeviceFrame` case for the one object that exists only on x86_64. A `PortRange`
-/// is enforced by the TSS I/O bitmap installed at the context switch from the holder's cached
-/// grant, and `delete_port_range_caps` sweeps tables and the hand-off slot and forgets the cached
-/// grant. The parked-copy limb is what this drives: the whole-machine sweep must clear the copy in
-/// `outgoing_cap`, or the receiver files a `PortRange` the revoker believed it took back. The range
-/// named is a plausible but harmless one (`0x1000`, past the legacy device ports), never COM1, so a
-/// stray permitted `out` could not scribble on the console the transcript prints to.
+/// The `DeviceFrame` twin for the x86_64-only object, enforced by the TSS I/O bitmap the context
+/// switch installs from the holder's cached grant. `delete_port_range_caps` must clear the tables,
+/// the parked copy in `outgoing_cap` and the cached grant. The range (`0x1000`, past the legacy
+/// device ports, never COM1) is harmless: a stray permitted `out` cannot scribble on the console.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
