@@ -28,10 +28,10 @@ use crate::memory;
 
 /// **Whether the x86_64 runner was told to attach a device** (milestone 420 (x86_64 has one fixture
 /// of five and no NIC, GPU, keyboard or RNG)), baked in by `build.rs` because the guest cannot read
-/// the host's environment. `cargo xtask test` exports `NIFE_RNG` and `NIFE_NET` on every x86_64
-/// leg, so a device missing there is a runner that lost a `-device` line. A bare `cargo test`
-/// exports neither, and the skip stays the honest answer. Other architectures have their own
-/// devices and their own skips, so these are false off x86_64.
+/// the host's environment. `cargo xtask test` exports `NIFE_RNG` and `NIFE_NET` on every x86_64 leg,
+/// so a device missing there is a runner that lost a `-device` line. A bare `cargo test` exports
+/// neither, and the skip stays the honest answer. Other architectures have their own devices and
+/// their own skips, so these are false off x86_64.
 pub(crate) const X86_RNG_ATTACHED: bool =
     cfg!(target_arch = "x86_64") && !env!("NIFE_RNG_ATTACHED").is_empty();
 pub(crate) const X86_NIC_ATTACHED: bool =
@@ -41,9 +41,9 @@ pub(crate) const X86_NIC_ATTACHED: bool =
 pub(crate) const X86_FIXTURES_REQUIRED: bool =
     cfg!(target_arch = "x86_64") && !env!("NIFE_X86_FIXTURES_REQUIRED").is_empty();
 
-/// **Whether the runner was told to attach an NVMe controller**, on any architecture (milestone 421
-/// (the block roster names an NVMe disk)). The runners attach one exactly when `NIFE_NVME` names an
-/// image, so the block roster owes one NVMe entry when this is true and none when it is false.
+/// **Whether the runner was told to attach an NVMe controller**, on any architecture (milestone
+/// 421 (the block roster names an NVMe disk)). The runners attach one exactly when `NIFE_NVME` names an image, so the block roster owes
+/// one NVMe entry when this is true and none when it is false.
 ///
 /// Name: provisional. Named for what the test learns, the way `X86_NIC_ATTACHED` is.
 pub(crate) const NON_VOLATILE_MEMORY_EXPRESS_ATTACHED: bool =
@@ -167,18 +167,17 @@ mod uuid_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod non_volatile_memory_express_tests;
 
-/// **Milestone 30 (the network stack as a confined component)'s DHCP, TCP and UDP gates over the
-/// `e1000e` NIC** (milestone 494 (a driver for the network card a PC actually has)): `net_stack`
-/// driving QEMU's 82574L at EL0 through two pages of BAR0 and an IOMMU-confined DMA region, on all
-/// three architectures. The first NIC the x86_64 leg has.
+/// **Milestone 30 (the network stack as a confined component)'s DHCP, TCP and UDP gates over the `e1000e` NIC** (milestone 494 (a driver for
+/// the network card a PC actually has)): `net_stack` driving QEMU's 82574L at EL0 through two pages
+/// of BAR0 and an IOMMU-confined DMA region, on all three architectures. The first NIC the x86_64
+/// leg has.
 #[cfg(all(test, initial_ramdisk))]
 mod e1000e_tests;
 
 /// **A host name resolves through a confined resolver, and only inside the zone the client was
 /// granted** (milestone 384 (in a capability system the resolver is a grant), §248 (the name
-/// resolver is its own confined program)): `net_stack` over the `e1000e`, `domain_name_resolver` as
-/// its client, and a test client holding one badged capability to the resolver. All three
-/// architectures.
+/// resolver is its own confined program)): `net_stack` over the `e1000e`, `domain_name_resolver` as its
+/// client, and a test client holding one badged capability to the resolver. All three architectures.
 #[cfg(all(test, initial_ramdisk))]
 mod name_resolver_tests;
 
@@ -240,11 +239,11 @@ mod credential_tests;
 /// What these prove that nothing else would: that a correct identity and secret yield capabilities
 /// which actually work (a real `READDIR` through a freshly built `fs_subtree_caretaker`, a real
 /// page retyped from a freshly split budget), that a wrong secret is refused and nothing follows
-/// the refusal, and that two different identities' channels are independently working and correctly
-/// attributed in the service's own audit trail (DECISIONS §109's property, made checkable). See
-/// `components/src/login.rs`'s BUGS for what this slice does not attempt: a terminal, per-principal
-/// subtree scoping, and wiring into the interactive boot are all named there as follow-on rather
-/// than guessed at here.
+/// the refusal, and that two different identities' channels are independently working and
+/// correctly attributed in the service's own audit trail (DECISIONS §109's property, made
+/// checkable). See `components/src/login.rs`'s BUGS for what this slice does not attempt: a terminal,
+/// per-principal subtree scoping, and wiring into the interactive boot are all named there as
+/// follow-on rather than guessed at here.
 #[cfg(all(test, initial_ramdisk))]
 mod login_tests;
 
@@ -262,8 +261,8 @@ mod login_user_schedule_tests;
 /// subsequent `OPENDIR` can descend into), that a duplicate identity's credential half is refused
 /// without disturbing an existing subtree, and that re-running the tool against a subtree that
 /// already exists (`EEXIST`) is recovery rather than a second failure. See
-/// `components/src/identity_provisioner.rs`'s own module docs for the ordering argument these tests
-/// hold it to.
+/// `components/src/identity_provisioner.rs`'s own module docs for the ordering argument these tests hold
+/// it to.
 #[cfg(all(test, initial_ramdisk))]
 mod identity_provisioning_tests;
 
@@ -278,13 +277,13 @@ mod identity_provisioning_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod ntp_tests;
 
-/// **The untyped-backed userspace heap** (milestone 27): spawn the `allocator_exerciser` workload,
-/// the first program that links `extern crate alloc`, with an untyped budget (slot 0) and a report
+/// **The untyped-backed userspace heap** (milestone 27): spawn the `allocator_exerciser` workload, the
+/// first program that links `extern crate alloc`, with an untyped budget (slot 0) and a report
 /// endpoint (slot 1). The program wires `memory_region_heap` as its global allocator, churns
 /// `Vec`/`String`/`BTreeMap` with frees in arbitrary order, asserts every intermediate result
 /// itself (a wrong value faults), and reports a magic word plus how many bytes of heap it
-/// committed. Portable: the same test runs the riscv64 ELF on riscv and the aarch64 ELF on aarch64,
-/// out of each arch's own initial ramdisk.
+/// committed. Portable: the same test runs the riscv64 ELF on riscv and the aarch64 ELF on
+/// aarch64, out of each arch's own initial ramdisk.
 #[cfg(test)]
 pub mod alloc_service;
 
@@ -340,15 +339,15 @@ mod std_threads_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod ripgrep_tests;
 
-/// **`ripgrep`'s parallel walker on more than one thread** (milestone 121 (`ripgrep` on nife),
-/// fatal risk 1's third gap): `rg` run as a process, and the kernel's count of the threads it
-/// started. Skips without `rg`, like the module above.
+/// **`ripgrep`'s parallel walker on more than one thread** (milestone 121 (`ripgrep` on nife), fatal risk 1's third
+/// gap): `rg` run as a process, and the kernel's count of the threads it started. Skips without
+/// `rg`, like the module above.
 #[cfg(all(test, initial_ramdisk))]
 mod ripgrep_threads_tests;
 
 /// **Somebody else's C, unmodified, on nife's C library**: SQLite's `speedtest1` and ioping
-/// (milestone 835 (a C library, stage 1: files, clock and memory)). Each skips unless its program
-/// is in the archive, from basalt's package (`cargo xtask basalt-fetch`). Every ISA, per DECISIONS
+/// (milestone 835 (a C library, stage 1: files, clock and memory)). Each skips unless its program is
+/// in the archive, from basalt's package (`cargo xtask basalt-fetch`). Every ISA, per DECISIONS
 /// §19.
 #[cfg(all(test, initial_ramdisk))]
 mod c_program_tests;
@@ -363,17 +362,17 @@ mod c_thread_tests;
 /// **A TLS crypto provider's primitives against published test vectors**, for milestone 442 (a
 /// crypto provider `rustls` can use on all three bare-metal targets). `cargo xtask test` builds the
 /// program for every leg it boots since milestone 855 (the TLS graph enters the gated build). Every
-/// ISA, per DECISIONS §19 (architectural parity is a tenet; the targets are aarch64, riscv64 and
-/// x86_64), and here the x86_64 leg is the one that matters most: it is the only target whose build
-/// forces the portable implementations.
+/// ISA, per DECISIONS §19 (architectural parity is a tenet; the targets are aarch64, riscv64 and x86_64),
+/// and here the x86_64 leg is the one that matters most: it is the only
+/// target whose build forces the portable implementations.
 #[cfg(all(test, initial_ramdisk))]
 mod cryptography_tests;
 
 /// **A TLS 1.3 handshake against a peer that is not ours, trusting one pinned root**, for milestone
 /// 501 (a TLS client that speaks to one pinned peer), on `cryptography_tests`' terms: built by
-/// `cargo xtask test` through `helpers/build-pinned-tls-exerciser.sh`. Every ISA, over the `e1000e`
-/// each runner attaches, per DECISIONS §19 (architectural parity is a tenet; the targets are
-/// aarch64, riscv64 and x86_64).
+/// `cargo xtask test` through `helpers/build-pinned-tls-exerciser.sh`. Every ISA, over the `e1000e` each
+/// runner attaches, per DECISIONS §19 (architectural parity is a tenet; the targets are aarch64,
+/// riscv64 and x86_64).
 #[cfg(all(test, initial_ramdisk))]
 mod pinned_tls_tests;
 
@@ -433,8 +432,7 @@ pub mod process_composition_service;
 pub mod call_service;
 
 /// **A reply that carries a capability, at EL0** (§255 (each socket is its own capability),
-/// milestone 649 (every client of a network stack shares its socket numbers)). See
-/// fixtures/src/carried_capability_server.rs.
+/// milestone 649 (every client of a network stack shares its socket numbers)). See fixtures/src/carried_capability_server.rs.
 #[cfg(test)]
 pub mod carried_capability_service;
 
@@ -497,14 +495,13 @@ mod cycle_counter_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod child_thread_tests;
 
-/// **Forcible teardown: `DESTROY` tears a runaway down** (DECISIONS §16 amendment, §24's
-/// second-`^C` tier). A child spinning at EL0, never yielding and never checking an endpoint,
-/// cannot be waited out; its region's owner must be able to reclaim it anyway. This is the one
-/// cross-ISA test in this file, because the mechanism it proves is pure portable scheduler logic:
-/// the only per-architecture part is the single spin instruction (`b .` / `j .`), and the whole
-/// capability dance around it is the same code both ISAs run. It is separate from the aarch64
-/// module above precisely so it can run on both, which the parity gate (DECISIONS §19) asks of
-/// every kernel capability.
+/// **Forcible teardown: `DESTROY` tears a runaway down** (DECISIONS §16 amendment, §24's second-`^C`
+/// tier). A child spinning at EL0, never yielding and never checking an endpoint, cannot be waited
+/// out; its region's owner must be able to reclaim it anyway. This is the one cross-ISA test in this
+/// file, because the mechanism it proves is pure portable scheduler logic: the only per-architecture
+/// part is the single spin instruction (`b .` / `j .`), and the whole capability dance around it is
+/// the same code both ISAs run. It is separate from the aarch64 module above precisely so it can run
+/// on both, which the parity gate (DECISIONS §19) asks of every kernel capability.
 #[cfg(test)]
 mod force_kill_tests;
 
@@ -573,19 +570,18 @@ mod measured_boot_tests;
 
 /// **The fault endpoint: a supervisor watches a child die and reap it** (milestone 22, DECISIONS
 /// §26). These are the cross-ISA tests, because the mechanism is portable: a supervised child that
-/// faults (or exits) turns into a five-word message on its supervision endpoint, its corpse
-/// persists until the supervisor reaps it with §16 revocation, and a fresh child runs in its place.
-/// The only per-architecture parts are the two tiny code stubs (a null load that faults, and a
-/// `SEND` + exit), and even those are the same shape both ISAs already use elsewhere in this file.
-/// The kernel is the only sender on the fault endpoint, so the tid the supervisor reads is
-/// trustworthy without a badge.
+/// faults (or exits) turns into a five-word message on its supervision endpoint, its corpse persists
+/// until the supervisor reaps it with §16 revocation, and a fresh child runs in its place. The only
+/// per-architecture parts are the two tiny code stubs (a null load that faults, and a `SEND` + exit),
+/// and even those are the same shape both ISAs already use elsewhere in this file. The kernel is the
+/// only sender on the fault endpoint, so the tid the supervisor reads is trustworthy without a badge.
 #[cfg(test)]
 mod supervision_tests;
 
 /// The two load-bearing tests of the x86 port-range capability (milestone 299): a non-holder faults
-/// on `out` (and a holder's grant does not leak across the switch to it), and a revoked holder
-/// faults on its next `out`. `x86_64` only, because the mechanism is the TSS I/O permission bitmap,
-/// which the other two architectures have no counterpart to.
+/// on `out` (and a holder's grant does not leak across the switch to it), and a revoked holder faults
+/// on its next `out`. `x86_64` only, because the mechanism is the TSS I/O permission bitmap, which
+/// the other two architectures have no counterpart to.
 #[cfg(all(test, target_arch = "x86_64"))]
 mod x86_port_tests;
 
@@ -601,19 +597,18 @@ mod x86_port_tests;
 #[cfg(test)]
 mod reap_tests;
 
-/// **Notification objects** (milestone 151 (notification objects), DECISIONS §101 (notification
-/// objects)): the kernel half of the binding, the syscall layer's rights and registers, teardown,
-/// and a program binding a notification to itself through the real boundary. Cross-ISA: nothing
-/// here is architecture-specific except the register each `TrapFrame::arg` names, which is exactly
-/// what the `Irq::WAIT` and program tests read.
+/// **Notification objects** (milestone 151 (notification objects), DECISIONS §101 (notification objects)): the kernel half of the binding, the
+/// syscall layer's rights and registers, teardown, and a program binding a notification to itself
+/// through the real boundary. Cross-ISA: nothing here is architecture-specific except the register
+/// each `TrapFrame::arg` names, which is exactly what the `Irq::WAIT` and program tests read.
 #[cfg(test)]
 mod notification_tests;
 
 /// **Timers** (milestone 106 (a wait that ends on either the interrupt or the deadline), DECISIONS
-/// §147 (a timer a userspace service cannot hold)): the tick reaching the expiry walk, a wait
-/// ending on a signal or on the deadline (in `WAIT` and in a bound `RECEIVE`), a replaced or
-/// cancelled deadline never firing, and the syscall layer's rights. Cross-ISA: the counter each
-/// test reads is the one the walk compares, on every architecture.
+/// §147 (a timer a userspace service cannot hold)): the tick reaching the expiry walk, a wait ending
+/// on a signal or on the deadline (in `WAIT` and in a bound `RECEIVE`), a replaced or cancelled deadline
+/// never firing, and the syscall layer's rights. Cross-ISA: the counter each test reads is the one
+/// the walk compares, on every architecture.
 #[cfg(test)]
 mod timer_tests;
 
@@ -652,8 +647,7 @@ mod survey_record_tests;
 #[cfg(test)]
 mod irq_send_refusal_tests;
 
-/// **What the CPU-time record's number means** (milestone 282 (a thread's CPU time, and the `top`
-/// it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
+/// **What the CPU-time record's number means** (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
 ///
 /// `survey_record_tests` proves that a record can be asked for and that an unknown one is refused,
 /// which a record returning a constant zero would satisfy. This proves the figure: a runaway is
@@ -668,10 +662,10 @@ mod cpu_time_tests;
 /// `arch::mmu::translate_at`, so a divergence here means something is wrong under `arch/`.
 ///
 /// Every listing goes through the real syscall dispatcher, driven by `pmap::collect`, the loop
-/// `components/src/pmap.rs` really runs, `survey_tests`'s discipline verbatim. The negative control
-/// is the one that matters: a capability holding `ENUMERATE` alone can list every mapping and is
-/// refused `MAP_INTO`, and a capability holding `WRITE` alone can map and is refused `LIST`, so the
-/// split is proved in both directions rather than asserted in prose.
+/// `components/src/pmap.rs` really runs, `survey_tests`'s discipline verbatim. The negative control is
+/// the one that matters: a capability holding `ENUMERATE` alone can list every mapping and is
+/// refused `MAP_INTO`, and a capability holding `WRITE` alone can map and is refused `LIST`, so
+/// the split is proved in both directions rather than asserted in prose.
 #[cfg(test)]
 mod pmap_tests;
 
@@ -692,9 +686,9 @@ mod unmap_tests;
 mod running_space_tests;
 
 /// **`ThreadControlBlock::SUSPEND` and `RESUME` from the syscall boundary** (DECISIONS §300 (the
-/// paused state, a TCB verb, silent)): a user thread stops, resumes with its registers, obeys only
-/// a TCB capability with `WRITE`, and dies with its region while stopped. Cross-ISA, one
-/// hand-written spinner per ISA (DECISIONS §19).
+/// paused state, a TCB verb, silent)): a user thread stops, resumes with its registers, obeys only a
+/// TCB capability with `WRITE`, and dies with its region while stopped. Cross-ISA, one hand-written
+/// spinner per ISA (DECISIONS §19).
 #[cfg(test)]
 mod suspension_tests;
 
@@ -755,11 +749,11 @@ mod dir_capability_tests;
 ///
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason: nothing here is
 /// architecture-specific, so the parity gate (DECISIONS §19) is met by literally the same test
-/// running twice. It wires the same three portable programs [`dir_capability_tests`] does, twice (a
-/// second `fs_subtree_caretaker`, a second capability table slot) for one confined program, and
-/// proves the deliverable both milestone 47's `bind` and milestone 64's `File::open` fork were
-/// blocked on: `/a/x` and `/b/y` both resolve, `/a/../b` is refused, and neither caretaker can see
-/// the other's tree.
+/// running twice. It wires the same three portable programs [`dir_capability_tests`] does, twice
+/// (a second `fs_subtree_caretaker`, a second capability table slot) for one confined program, and proves
+/// the deliverable both milestone 47's `bind` and milestone 64's `File::open` fork were blocked
+/// on: `/a/x` and `/b/y` both resolve, `/a/../b` is refused, and neither caretaker can see the
+/// other's tree.
 #[cfg(all(test, initial_ramdisk))]
 mod multi_dir_namespace_tests;
 
@@ -900,9 +894,8 @@ mod sink_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod system_log_tests;
 
-/// **`OPERATION_RAWMODE` and `OPERATION_READRAW`, proved against a real `line_editor`** (milestone
-/// 169 (`kilo`, the smallest real text editor, as the forcing function for raw terminal input)):
-/// echo suppression, literal (uninterpreted) delivery of what the line discipline would otherwise
+/// **`OPERATION_RAWMODE` and `OPERATION_READRAW`, proved against a real `line_editor`** (milestone 169 (`kilo`, the smallest real text editor, as the forcing function for raw terminal input)): echo
+/// suppression, literal (uninterpreted) delivery of what the line discipline would otherwise
 /// consume as an editing command, the two input models refusing each other, and a read parked
 /// before data arrives still being answered once it does. See the module's own doc for why the
 /// echo-suppression check is proven both ways rather than only the direction that matters.
@@ -962,11 +955,10 @@ mod receive_cap_attack_tests;
 #[cfg(test)]
 mod revocation_in_flight_tests;
 
-/// **A revocation sweep that lands inside a delegation leaves no copy behind** (the revocation-race
-/// lane, 2026-10-04 UTC, provisional). Milestone 761 (capability lookup off the global lock)'s
-/// `BUGS` recorded the gap between a delegating syscall's read of its source and its filing of the
-/// copy; these tests hold a thread in that gap with `delegation_pause` and run the sweep. Its own
-/// header has the reasoning.
+/// **A revocation sweep that lands inside a delegation leaves no copy behind** (the
+/// revocation-race lane, 2026-10-04 UTC, provisional). Milestone 761 (capability lookup off the global lock)'s `BUGS` recorded the gap
+/// between a delegating syscall's read of its source and its filing of the copy; these tests hold a
+/// thread in that gap with `delegation_pause` and run the sweep. Its own header has the reasoning.
 ///
 /// Cross-ISA: the delegations, the sweeps and the seam are portable kernel code (DECISIONS §19).
 #[cfg(test)]
@@ -975,17 +967,16 @@ mod revocation_window_tests;
 /// **A revocation sweep that lands inside a `MAP` leaves no mapping behind** (the
 /// map-revocation-window lane, 2026-10-04 UTC, provisional). The use-side sibling of
 /// [`revocation_window_tests`]: `PageFrame::MAP` and `AddressSpace::MAP_INTO` held after their
-/// frame read, under `PageFrame::REVOKE` and `MemoryRegion::DESTROY`. Its own header has the
-/// reasoning.
+/// frame read, under `PageFrame::REVOKE` and `MemoryRegion::DESTROY`. Its own header has the reasoning.
 ///
 /// Cross-ISA: the map paths, the sweeps and the seam are portable kernel code (DECISIONS §19).
 #[cfg(test)]
 mod map_revocation_window_tests;
 
 /// **A seeded syscall driver with a shadow model** (milestone 752 (a seeded syscall driver with a
-/// shadow model), provisional). Random capability operations from a seed, every answer and every
-/// table predicted by a model and compared. Its own header has the oracle, the replay and the
-/// `BUGS`; a module of its own for `tests.rs`' merge-hotspot reason, named to sort before
+/// shadow model), provisional). Random capability operations from a seed, every answer and every table
+/// predicted by a model and compared. Its own header has the oracle, the replay and the `BUGS`;
+/// a module of its own for `tests.rs`' merge-hotspot reason, named to sort before
 /// [`thread_leak_police`].
 ///
 /// Cross-ISA: one portable body through the portable syscall layer, run on every architecture
@@ -1066,20 +1057,20 @@ mod confinement_attack_tests;
 /// **A spend-only budget narrows a SPLIT child and every RETYPE alike** (milestone 903 (a seventh
 /// outsider pass attacks the confinement claim), fatal risk 7's confinement claim, claim 3). Drives
 /// the real dispatcher: SPLIT off a WRITE-only budget inherits WRITE, and so do RETYPE and
-/// `RETYPE_OBJ` for a frame, a rendezvous, a notification and a timer. A characterization of the
-/// gap until milestone 824 (a retype mints no right its budget lacks) closed it; its header has the
+/// `RETYPE_OBJ` for a frame, a rendezvous, a notification and a timer. A characterization of the gap
+/// until milestone 824 (a retype mints no right its budget lacks) closed it; its header has the
 /// history.
 ///
 /// Cross-ISA: the retype paths and the rights model are portable kernel code (DECISIONS §19).
 #[cfg(test)]
 mod seventh_pass_retype_tests;
 
-/// **A `SEND_CAP` cannot widen a right out of its rights register, nor lend a GRANT-less
-/// capability** (milestone 903, fatal risk 7's confinement claim, claims 1 and 2). Drives the live
-/// kernel delegation path (`Rendezvous::SEND_CAP` through the real dispatcher) with a widening
-/// rights mask and with a GRANT-less source, where the host crate's `derive_never_widens_rights`
-/// and `from_bits_cannot_forge_a_right` prove the same properties on pure logic. Both refuse before
-/// the rendezvous is touched, so nothing blocks. Its header has the reasoning.
+/// **A `SEND_CAP` cannot widen a right out of its rights register, nor lend a GRANT-less capability**
+/// (milestone 903, fatal risk 7's confinement claim, claims 1 and 2). Drives the live kernel
+/// delegation path (`Rendezvous::SEND_CAP` through the real dispatcher) with a widening rights mask
+/// and with a GRANT-less source, where the host crate's `derive_never_widens_rights` and
+/// `from_bits_cannot_forge_a_right` prove the same properties on pure logic. Both refuse before the
+/// rendezvous is touched, so nothing blocks. Its header has the reasoning.
 ///
 /// Cross-ISA: the delegation rule and the rendezvous are portable kernel code (DECISIONS §19).
 #[cfg(test)]
@@ -1125,8 +1116,7 @@ mod eighth_pass_delegation_race_tests;
 /// kernel while the first is benign, and a `W|X` request dressed in vendor OS bits. Each refusal
 /// is pinned to the error that names why.
 ///
-/// Cross-ISA: the band, the halves and `load` are portable over each ISA's `Mapper` (DECISIONS
-/// §19).
+/// Cross-ISA: the band, the halves and `load` are portable over each ISA's `Mapper` (DECISIONS §19).
 #[cfg(all(test, initial_ramdisk))]
 mod eighth_pass_elf_attack_tests;
 
@@ -1183,10 +1173,9 @@ mod eighth_pass_dir_escape_tests;
 /// **A consumed capability names nothing, a delete spares its neighbors, and a badge mints no wider
 /// right** (a ninth outsider pass at the confinement claim, claims 2, 4, 5 and 26). A frame sliced
 /// once, deleted, then invoked again answers `NoSuchSlot`; deleting the middle of three
-/// capabilities leaves the other two resolving and invoking; `BADGE` is `GRANT`-gated and
-/// write-once and copies exactly its source's rights; and a slot past the table or empty inside it
-/// names nothing. Nothing blocks. Its own header says which existing test each comes at from a new
-/// angle.
+/// capabilities leaves the other two resolving and invoking; `BADGE` is `GRANT`-gated and write-once
+/// and copies exactly its source's rights; and a slot past the table or empty inside it names
+/// nothing. Nothing blocks. Its own header says which existing test each comes at from a new angle.
 ///
 /// Cross-ISA: `invoke`, the rights model and the capability table are portable kernel code
 /// (DECISIONS §19 (architectural parity is a tenet)).
@@ -1197,8 +1186,8 @@ mod ninth_pass_confinement_tests;
 /// pass at the confinement claim, claims 6, 7, 8 and 9). A holder of an unrelated endpoint carrying
 /// `READ | ENUMERATE`, every right a supervisor needs, is refused `REAP` with `NotSupervised`, gets
 /// the same answer for a made-up tid, and surveys nothing; the owning endpoint sees and reaps the
-/// same child. Where `confinement_attack_tests` drives the right endpoint with a missing right,
-/// this drives the wrong endpoint with every right.
+/// same child. Where `confinement_attack_tests` drives the right endpoint with a missing right, this
+/// drives the wrong endpoint with every right.
 ///
 /// Cross-ISA: the supervision relationship is portable kernel code (DECISIONS §19); the child stub
 /// is per-architecture in `supervision_tests`.
@@ -1208,8 +1197,8 @@ mod ninth_pass_supervision_tests;
 /// **The map gate admits only the aligned low half, and no mapping flag is W+X** (a ninth outsider
 /// pass at the confinement claim, claims 10 and 11). A confined budget holder's `MemoryRegion::MAP`
 /// is refused `BadPointer` for a kernel-half and an unaligned address, tied to the proved
-/// `is_user_page_va` gate, and every `Flags` a mapping path installs is writable or
-/// user-executable, never both. One layer up from `crates/paging`'s per-format proofs.
+/// `is_user_page_va` gate, and every `Flags` a mapping path installs is writable or user-executable,
+/// never both. One layer up from `crates/paging`'s per-format proofs.
 ///
 /// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).
 #[cfg(test)]

@@ -1,9 +1,8 @@
 //! The system-test image: the kernel, linked as a library, with the whole-system suite on top.
 //!
-//! Name: provisional, minted on 2026-09-27 by the lane for milestone 609 (the system tests leave
-//! the kernel crate). calef ruled the shape that day (a system-test image crate that links the
-//! kernel as a library, the suite moved unchanged) and called the name provisional. Nothing was
-//! refused yet.
+//! Name: provisional, minted on 2026-09-27 by the lane for milestone 609 (the system tests leave the
+//! kernel crate). calef ruled the shape that day (a system-test image crate that links the kernel as
+//! a library, the suite moved unchanged) and called the name provisional. Nothing was refused yet.
 
 //! # What this is
 //!
@@ -48,8 +47,7 @@ pub use kernel::system_test_access::*;
 #[allow(unused_imports)]
 pub use kernel::*;
 
-// All of it is the suite, and its crates are dev-dependencies, so it exists only under `cargo
-// test`.
+// All of it is the suite, and its crates are dev-dependencies, so it exists only under `cargo test`.
 #[cfg(test)]
 pub mod user;
 
