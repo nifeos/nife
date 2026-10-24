@@ -1,33 +1,9 @@
-//! A physical frame allocator.
-//!
-//! Hands out 4 KiB pages of physical memory. This is the bottom of the memory
-//! hierarchy: everything above it (page tables at milestone 4, the kernel heap, DMA
-//! buffers at milestone 8, user process pages at milestone 7) ultimately asks this for
-//! its memory, and there is nothing underneath it to ask.
-//!
-//! # Why a bitmap, and not a free list
-//!
-//! The classic hobby-OS answer is a free list: link each free page to the next by
-//! writing a pointer *into the free page itself*. Zero metadata overhead, O(1)
-//! allocation, and genuinely elegant (it is what xv6 does).
-//!
-//! We use a bitmap instead, for two reasons:
-//!
-//! 1. **Contiguity.** A free list cannot answer "give me 8 physically contiguous
-//!    frames." Milestone 8's virtio DMA buffers need exactly that, and retrofitting it
-//!    means throwing the free list away.
-//!
-//! 2. **Testability.** A free list stores its metadata inside the memory it manages, so
-//!    testing it requires handing it real memory and doing unsafe pointer writes. A
-//!    bitmap's logic is *pure*: given a bitmap and a request, which frame? We can test
-//!    it exhaustively on the host with no memory at all, which is DECISIONS §7.
-//!
-//! The cost is 1 bit per frame: 32 KiB of bitmap per GiB of RAM. Cheap.
-//!
-//! # Why this is a separate crate
-//!
-//! Pure logic. Bytes in, frame numbers out. No hardware, no `unsafe`. Its tests run on
-//! the host in milliseconds instead of booting an emulator.
+//! A physical frame allocator: hands out 4 KiB pages of physical memory from a bitmap, one bit per
+//! frame. It is the bottom of the memory hierarchy; page tables, the kernel heap, DMA buffers and
+//! user pages all ask it, and nothing is underneath it to ask. Pure logic with no `unsafe`, so its
+//! tests run on the host (DECISIONS §7 (testing: QEMU harness and host-testable crates)).
+//! notes/physical-memory.md has why a bitmap and not a free list (contiguous runs for DMA, and host
+//! testability), and the bootstrap order.
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
 //! `frames`: the same collision DECISIONS §113 already found and fixed for the kernel's `PageFrame`
@@ -106,10 +82,9 @@ impl Stats {
 
 /// One bit per frame. `1` means used.
 ///
-/// **Everything starts used.** Memory is guilty until proven innocent: a frame is only
-/// handed out after someone has explicitly said "this address range is real RAM." A
-/// bitmap that defaulted to free would cheerfully allocate the MMIO hole at
-/// `0x0900_0000` and hand you the UART's registers as scratch space.
+/// **Everything starts used**: a frame is handed out only after someone has said its range is real
+/// RAM, so an unknown address (an MMIO hole) is never allocated. notes/physical-memory.md, "Guilty
+/// until proven innocent".
 ///
 /// # Examples
 ///
@@ -219,17 +194,10 @@ impl<'a> PageFrameAllocator<'a> {
 
     /// Mark every frame **touched by** `[start, start+size)` as used.
     ///
-    /// This is the function where an off-by-one hands out a frame containing kernel
-    /// code, and the kernel then overwrites itself. Consider: our image ends at
-    /// `0x4009_7010`, which is not frame-aligned. The frame at `0x4009_7000` holds our
-    /// last 0x10 bytes *and* 4080 bytes of nothing.
-    ///
-    /// If we round that end *down*, we declare the frame free and hand it out, and
-    /// something writes over the tail of our own kernel.
-    ///
-    /// So: round the start **down** and the end **up**. Claim every frame the region so
-    /// much as touches. Over-reserving wastes at most 4 KiB per region. Under-reserving
-    /// corrupts the kernel.
+    /// The start rounds **down** and the end **up**: a region ending mid-frame (a kernel image
+    /// ending at `0x4009_7010`) still owns that frame, and rounding down would hand out the tail of
+    /// the kernel. Over-reserving wastes at most 4 KiB per region. notes/physical-memory.md, "The
+    /// rounding asymmetry".
     pub fn mark_used(&mut self, start: u64, size: u64) {
         for i in self.page_frame_range(start, size) {
             if !self.get(i) {
