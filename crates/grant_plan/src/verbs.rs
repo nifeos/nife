@@ -98,18 +98,12 @@ pub struct VerbGrant {
 pub const MAX_VERB: usize = 16;
 
 /// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted
-/// by their bytes, which `capability_manifest_note`'s record requires. The
-/// least each needs: `list` the catalog, `remove` and `rollback` the installer, `install` all three
-/// of the installer, the catalog (to resolve a name and check what arrives) and the network.
-///
-/// Since milestone 801 (packages over the internet): `update` holds the network, the clock and
-/// entropy (TLS to the index) and writes the index store; `install` reads the store too, and
-/// takes the clock and entropy, since a name the index copy lists is fetched over TLS; `list`
-/// reads the store beside the catalog.
-///
-/// `list -u` (milestone 809, the flag calef ruled 2026-10-17 UTC) reads the activation directory
-/// alone: the installed-programs table, and the index copy beneath it. Not the catalog, since
-/// `list -u` compares what is installed with the index and nothing else.
+/// by their bytes, which `capability_manifest_note`'s record requires. Each holds the least it
+/// needs: `update` and `install` reach the index over TLS, so they take the network, the clock and
+/// entropy; `install` also takes the installer, the catalog (to resolve a name and check what
+/// arrives) and reads the index store, and `update` writes it. `remove` and `rollback` hold the
+/// installer alone. `list` reads the catalog and the store, and `list -u` (calef, 2026-10-17 UTC)
+/// only the activation directory, comparing what is installed with the index copy beneath it.
 pub(crate) const JIG_VERBS: &[VerbGrant] = &[
     VerbGrant {
         verb: "install",
@@ -149,14 +143,12 @@ pub(crate) const JIG_VERBS: &[VerbGrant] = &[
 /// **A manifest narrowed by the verb a line used** (milestone 809 (the package client becomes a
 /// program), option V2, which calef's "One program." ruling of 2026-10-06 kept): with an empty
 /// `verbs` the manifest is returned as it is, and otherwise each field [`ManifestAuthorities`] names is kept only
-/// when the manifest declares it and the verb's entry names it. A `verb` that is not in the table,
-/// or none, keeps none of them: the program runs, holding only what no verb chooses, and says what
-/// it takes.
+/// when the manifest declares it and the verb's entry names it. A `verb` not in the table, or none,
+/// keeps none of them: the program runs holding only what no verb chooses, and says what it takes.
 ///
-/// So one program holds, per line, what 281 (`watch` holds exactly what `ps` holds)'s test asks of
-/// two: `jig list` cannot reach the installer or the network, because that line was not granted
-/// them. The shell calls this to plan and preview, and the progenitor to endow, each with the word
-/// it read; they read the same argv, so they agree.
+/// So `jig list` cannot reach the installer or the network, which is what 281 (`watch` holds
+/// exactly what `ps` holds)'s test asks of two programs. The shell calls this to plan and preview,
+/// and the progenitor to endow, each with the word it read from the same argv, so they agree.
 pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) -> Manifest {
     if verbs.is_empty() {
         return *m;

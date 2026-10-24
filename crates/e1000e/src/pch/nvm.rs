@@ -2,17 +2,9 @@
 //! registers in BAR0 rather than the chipset's SPI controller (milestone 494 (a driver for the
 //! network card a PC actually has)).
 //!
-//! Two things in the bring-up need it: [`super::sequence`]'s post-reset LCD configuration, which
-//! replays (register, value) pairs the board vendor stored in the NVM's extended configuration
-//! region, and the "is an NVM present" check FreeBSD makes after every PHY reset.
-//!
-//! Ported from FreeBSD's Intel shared code, `e1000_ich8lan.c`, read on 2026-10-05: the SPT branches
-//! of `e1000_init_nvm_params_ich8lan` ([`Geometry::read`]), `e1000_valid_nvm_bank_detect_ich8lan`
-//! ([`valid_bank`]), `e1000_read_nvm_spt` ([`read_word`], single words only),
-//! `e1000_read_flash_data32_ich8lan`, `e1000_flash_cycle_init_ich8lan` and
-//! `e1000_flash_cycle_ich8lan`. Read only: nothing here can write or erase the flash, and no write
-//! path was ported.
-//!
+//! [`super::sequence`] needs it for the post-reset LCD configuration and the NVM-present check.
+//! Read only: nothing here can write or erase the flash. Each item names the SPT branch of
+//! FreeBSD's `e1000_ich8lan.c` it follows; see notes/e1000e/the-i219-port.md, "The NVM".
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

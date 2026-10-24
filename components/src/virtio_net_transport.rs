@@ -1,17 +1,12 @@
 //! A virtio-net transport for smoltcp, at EL0, behind the multi-queue DMA confinement.
 //!
-//! This is the driver half of the net server (milestone 30, piece 3): it brings the NIC up through
-//! the confined `Virtio` capability, manages the receive and transmit rings, and hands frames to
-//! `net_stack`'s `Nic`, which presents smoltcp's `phy::Device` over this NIC and the `e1000e` one
-//! (milestone 494 (a driver for the network card a PC actually has) moved the `Device` impl there
-//! on 2026-10-04 so one stack can drive either). smoltcp does the TCP/IP; this file only moves
-//! Ethernet frames across the virtqueue, the same confinement the disk and the by-hand net driver
-//! use.
-//!
-//! Everything the device DMAs stays inside the one DMA page the spawn service maps, so the kernel's
-//! validator confines it exactly as it does the disk. The page is small, so the MTU is small
-//! (`MTU`); a demonstrator with a single-page DMA region cannot post full 1514-byte buffers, and
-//! that is a recorded caveat, not a bug (see notes/net.md).
+//! The driver half of the net server (milestone 30 (the network stack as a confined component),
+//! piece 3): it brings the NIC up through the confined `Virtio` capability, manages the receive and
+//! transmit rings, and moves Ethernet frames across them for `net_stack`'s `Nic`, which presents
+//! smoltcp's `phy::Device` over this NIC and the `e1000e` one. smoltcp does the TCP/IP. Everything
+//! the device DMAs stays inside the one page the spawn service maps, which the kernel's validator
+//! confines as it does the disk's; so the MTU is small (`MTU`), and full 1514-byte buffers cannot
+//! be posted: a recorded caveat, not a bug (notes/net.md, notes/net/the-driver-and-dhcp.md).
 //!
 //! Name: ratified 2026-10-06 (calef, "Yes", in conversation), replacing `net_transport`, itself
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
@@ -20,18 +15,12 @@
 //! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: `crates/virtio`
 //! also drives net, so the device-class name alone would collide). This file is a single-consumer
 //! `#[path]` module rather than a `[[bin]]`, which is why rule 7's check leaves it alone.
-//!
+
 //! # BUGS
 //!
 //! - The DMA-page layout below (`RX_DESC`..`TX_USED`, stride 0x200) restates
-//!   `direct_memory_access_validator`'s `DESC_OFF`/`AVAIL_OFF`/`USED_OFF`/`RING_BLOCK`, which the
-//!   kernel aliases, as literals; `entropy.rs` and `crates/virtio`'s own net driver spell the
-//!   same numbers again, and nothing checks the copies against the crate. Consuming the constants
-//!   takes a `components` -> `direct_memory_access_validator` dependency edge, a §46 (thin
-//!   primitives or whole subsystems) decision (milestone 410 (six copies of the shared-frame
-//!   accessors) priced it, 2026-10-16 UTC, and did not take it; the same pricing priced out
-//!   lifting this file's `r8`/`w8`/... aliases, which are one-line forwards over `MappedWindow`
-//!   and hold no arithmetic of their own).
+//!   `direct_memory_access_validator`'s ring offsets as literals, and nothing checks the copies
+//!   (notes/net/the-driver-and-dhcp.md has why the constants are not consumed).
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -247,25 +236,11 @@ impl VirtioNet {
         let id = r32(RX_USED + 4 + slot * 8) as usize; // descriptor head = buffer index
         let total = r32(RX_USED + 4 + slot * 8 + 4) as u64; // bytes written incl the virtio header
 
-        // **Both of those are 32-bit values the DEVICE wrote, and neither is ours to trust**
-        // (notes/shared-page-audit.md, finding 6). The IOMMU and
-        // `crates/direct_memory_access_validator` confine where the device may *touch*; they say
-        // nothing about what it may *say*, and the used ring is inside this driver's own DMA page,
-        // which the device is entitled to write.
-        //
-        // An unchecked `id` walks `rx_buf(id) = 0x400 + id * 0x2C0` clean out of the one-page DMA
-        // region: `id = 4` is already past it, and `id` near 1.5 million lands on this process's
-        // heap, so a lying device makes us copy our own memory into a frame and hand it to
-        // smoltcp, which may put it on the wire. An unchecked `total` reads past the buffer and
-        // asks the allocator for up to 4 GiB. Neither needs a race; the device simply lies once.
-        //
-        // Fail closed: a completion naming a buffer we never posted is consumed and dropped, and
-        // one claiming more bytes than a buffer holds is truncated to the buffer. `entropy.rs`
-        // already clamps its length this way; this driver and `keyboard_driver.rs` were the two that did not.
-        //
-        // The dropped completion's buffer is NOT re-posted, because a bogus `id` does not say
-        // which buffer it was. That costs a receive buffer per lie, which is the right trade: a
-        // device that lies has already stopped being a network card.
+        // `id` and `total` are device-written and untrusted (notes/shared-page-audit.md, finding
+        // 6): an unchecked `id` walks `rx_buf(id)` out of the DMA page, an unchecked `total` reads
+        // past the buffer. Fail closed: drop a completion naming a buffer never posted, without
+        // re-posting it (a bogus `id` does not say which), and truncate a length to the buffer.
+        // notes/net/the-driver-and-dhcp.md has the worked case.
         if id >= RX_BUFS {
             self.rx_seen = self.rx_seen.wrapping_add(1);
             return None;

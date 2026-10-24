@@ -1,9 +1,8 @@
 //! **The document**: a timetable as a person writes it, parsed into entries, each refusal naming
 //! the line it is about. It never sees a grant; what an entry may become is `admission`'s question.
 //!
-//! Moved out of the crate root unchanged by milestone 877 (the timetable crate root is split along
-//! its seams), as §294 (the timetable crate root splits into private modules) lays out; the root
-//! re-exports every public item at its old path.
+//! The crate root re-exports every public item, as §294 (the timetable crate root splits into
+//! private modules) lays out.
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
@@ -11,9 +10,8 @@ use crate::{MAX_ENTRIES, NANOS_PER_SEC, recurrence};
 
 /// **When an entry fires.** Two shapes on the monotonic counter, and one on the wall clock.
 ///
-/// The calendar shape waited for a ruling rather than a default, because what a time-of-day entry
-/// does when the clock steps is a decision with content in it. calef ruled G5 on 2026-09-26, with
-/// S3 and its `SET` fix for steps ([`Registry::observe`](crate::Registry::observe)).
+/// The calendar shape is G5, which calef ruled on 2026-09-26 with S3 and its `SET` fix for clock
+/// steps ([`Registry::observe`](crate::Registry::observe)).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Schedule {
     /// Once, as soon as the scheduler is armed, and never again.
@@ -116,9 +114,8 @@ impl Error {
 
 /// Parse a timetable document.
 ///
-/// Fails on the **first** problem, with its line, which was the retired `multicast_dns_config`'s posture too, and the right one
-/// for a document a person edits: reporting six errors when the first one is a typo that shifted
-/// everything after it is noise, and the second error is often the first one wearing a hat.
+/// Fails on the **first** problem, with its line: in a document a person edits, the errors after a
+/// typo are usually that typo again.
 ///
 /// # Examples
 ///
@@ -312,11 +309,8 @@ mod tests {
     }
 
     /// **The accessor, as distinct from the variant.**
-    /// `each_error_points_at_the_line_that_is_wrong` above compares whole `Error` values, so the
-    /// line is checked but `Error::line` is never called: a mutation run of 2026-09-19
-    /// (milestone 326) replaced its whole match with a constant `1` and nothing failed. This is
-    /// what a reader is sent to the file with, so an editor sent to the top of the document for a
-    /// fault on line 40 would have been nobody's failing test.
+    /// `each_error_points_at_the_line_that_is_wrong` compares whole `Error` values and never calls
+    /// `Error::line`, which is what a reader is sent to the file with.
     #[test]
     fn error_line_reads_the_number_each_variant_carries() {
         let errs = [

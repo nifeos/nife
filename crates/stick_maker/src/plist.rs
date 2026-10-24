@@ -1,25 +1,18 @@
 //! **Just enough of Apple's XML property list format to read `diskutil -plist`.**
 //!
-//! `diskutil list` and `diskutil info` print a human table by default and a property list with
-//! `-plist`. The table is for people: its column widths move with the longest name and its wording
-//! is not a contract. The plist is the machine-readable output Apple documents for scripts, so it
-//! is what this program reads.
+//! `diskutil`'s default table is for people, with moving column widths and no contract; `-plist` is
+//! the machine-readable output Apple documents for scripts, so it is what this reads.
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-20
 //! (UTC), "Keep ours.", on milestone 784 (reuse what the tree wrote)'s item (f). The `plist` crate
-//! (1.10.1) would bring nine crates new to the tree, `serde` among them, to read the output of a
-//! trusted local `diskutil`, in a program that runs only on the host. The XML plist grammar `diskutil` emits is eight element types and five
-//! character entities, fully specified by Apple's DTD, and the whole of correctness is "does it
-//! read what `diskutil` wrote", which the fixtures captured from this machine answer.
-//!
+//! would bring nine crates new to the tree; `diskutil`'s grammar is eight element types and five
+//! character entities. See notes/boot-stick/the-program.md, "macOS".
+
 //! # BUGS
 //!
 //! - **Binary plists are not read.** `diskutil -plist` writes XML, which is all this is for.
-//! - **`<data>` and `<date>` are kept as their raw text**, undecoded, because nothing here needs
-//!   them; `<real>` likewise. A caller that wants one has to decode it.
-//! - **Numeric character references (`&#65;`) are not decoded.** `diskutil` escapes only the five
-//!   named entities; a volume name holding a character it chose to write numerically would be
-//!   shown with the reference in it, which is ugly and harmless.
+//! - **`<data>`, `<date>` and `<real>` are kept as their raw text**, undecoded.
+//! - **Numeric character references (`&#65;`) are not decoded**; `diskutil` writes named entities.
 
 use std::collections::BTreeMap;
 

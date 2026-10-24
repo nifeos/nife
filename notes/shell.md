@@ -128,6 +128,10 @@ directory needs a capability. So `swish::echo` and `swish::expansion` are host-t
 against a fixture directory, which is what makes `echo *.txt` and `caps rm *.txt` provably render
 the same set.
 
+The crate's own design is in two appendices: [the `swish` crate](shell/the-swish-crate.md), for
+bare words, version sets, completion, designation and `time`, and [what `caps`
+prints](shell/caps-preview.md), for the reason behind each preview row.
+
 ### What did not move, and why
 
 - `builtin` and `dispatch_one`. Every arm is a request to the filesystem server (`cd`, `ls`,

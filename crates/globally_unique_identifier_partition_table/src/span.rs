@@ -1,19 +1,11 @@
 //! **Where to read**: a byte range of a disk, restated in the transfer unit a block device
 //! actually moves.
 //!
-//! This is still no I/O (nothing here touches a device); it is the arithmetic between two block
-//! sizes, and it exists because on nife those two sizes are never the same number.
-//!
-//! A GPT is written in *logical* blocks, almost always 512 bytes: the primary header is at LBA 1,
-//! the entry array at LBA 2, the backup header at the last LBA. The block service a program holds
-//! moves one **filesystem block** per request, 4096 bytes (`filesystem_contract::blk::BLOCK_SIZE`), because
-//! that is what RedoxFS reads and what makes a mount's device round trips affordable. So "read LBA
-//! 1" is really "read transfer block 0 and take bytes 512..1024 of it", and "read the 33 blocks of
-//! the backup table" straddles a boundary that depends on the disk's size.
-//!
-//! Getting that wrong is an off-by-one that reads a plausible-looking buffer full of the wrong
-//! bytes, and the CRC then says the table is broken when the table is fine. So it is one function
-//! with its own tests rather than three open-coded divisions in a driver.
+//! Still no I/O. A GPT counts 512-byte logical blocks (primary header at LBA 1, entry array at LBA
+//! 2, backup header at the last LBA), and the block service moves one 4096-byte filesystem block
+//! per request (`filesystem_contract::blk::BLOCK_SIZE`). A wrong offset reads plausible wrong bytes
+//! and the CRC blames a good table, so this is one tested function. See
+//! notes/globally-unique-identifier-partition-table.md, "What this crate does not do".
 //!
 //! ```
 //! # use globally_unique_identifier_partition_table::span::Span;
@@ -46,10 +38,9 @@ impl Span {
     /// The blocks covering `len` bytes at `byte_offset`, when the device moves `transfer` bytes at
     /// a time.
     ///
-    /// `None` for a `transfer` of zero, a `len` of zero (nothing to read is not a read), or any
-    /// arithmetic that would leave a `u64`. Refusing rather than saturating is the same rule
-    /// [`crate::Header::entry_array_bytes`] follows: a saturated length means reading a shorter
-    /// buffer than was asked for and then believing what is in it.
+    /// `None` for a `transfer` of zero, a `len` of zero, or any arithmetic that would leave a
+    /// `u64`. Refusing rather than saturating keeps a caller from believing a shorter read than it
+    /// asked for.
     pub const fn covering(byte_offset: u64, len: u64, transfer: u64) -> Option<Span> {
         if transfer == 0 || len == 0 {
             return None;
@@ -124,9 +115,8 @@ mod tests {
         );
         assert_eq!(array.buffer_bytes(T), Some(20480));
 
-        // The backup half, which is the one worth having a function for: 33 logical blocks
-        // (the array plus the header) ending on the last block of the disk. It does not begin on
-        // a transfer boundary and nothing about the number 33 makes that obvious.
+        // The backup half: 33 logical blocks (array and header) ending on the disk's last block,
+        // which does not begin on a transfer boundary.
         let backup = Span::covering((BLOCKS - 33) * 512, 33 * 512, T).unwrap();
         assert_eq!(backup.first_block, (BLOCKS - 33) * 512 / T);
         assert_eq!(backup.offset, ((BLOCKS - 33) * 512 % T) as usize);

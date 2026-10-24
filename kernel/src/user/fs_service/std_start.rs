@@ -1,10 +1,5 @@
-//! **Starting a `std` program with a directory capability** (milestone 27 (Rust `std` on the native
-//! ABI) phase two, the FS half), narrowed, clocked or bound to one subtree. The spawn they share is
-//! `std_spawn`.
-//!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! Starting a `std` program with a directory capability: whole, narrowed by a caretaker, clocked,
+//! or bound to one subtree by the FS server. The spawn they share is `std_spawn`. See notes/std.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -17,21 +12,12 @@ use super::*;
 pub(super) const STD_FS_HEAP_PAGES: u64 = 256;
 pub(super) const STD_FS_STACK_PAGES: u64 = std_runtime_contract::STACK_PAGES;
 
-/// **Wire the service and endow a std program with a directory capability** (milestone 27 phase
-/// two, the FS half).
+/// Wire the service and endow a std program with a directory capability.
 ///
-/// This is the one spawn site that makes `std::fs` work: an ordinary std ELF, given the std slot
-/// convention (heap untyped at 0, stdout at 1) **plus the FS-service endpoint at slot 4** and
-/// the page it shares with the FS server, mapped at the VA the PAL expects
-/// (`sys/pal/nife/rt.rs::FS_PAGE`). Slots 2 and 3 are deliberately left EMPTY, which is why
-/// the grants go in by explicit slot instead of in order: this program holds a filesystem and no
-/// network, and `std::net` must be able to tell.
-///
-/// The same binary spawned without slot 4 gets `Unsupported` from every `std::fs` call. That is
-/// the whole point: the code never chose to have a filesystem, its capability table did.
-///
-/// Returns `(readiness, stdout)`: the readiness endpoints if this call wired the service, and
-/// the program's stdout endpoint for the test to reassemble.
+/// The std slot convention (heap at 0, stdout at 1) plus the FS-service endpoint at slot 4 and its
+/// shared page at the PAL's `FS_PAGE`. Slots 2 and 3 stay empty, so `std::net` can tell it holds no
+/// network; without slot 4 every `std::fs` call answers `Unsupported`. Returns `(readiness,
+/// stdout)`: the readiness endpoints if this call wired the service, and the program's stdout.
 pub fn start_std(
     blk_image: &'static [u8],
     fs_server_image: &'static [u8],
@@ -50,14 +36,11 @@ pub struct StdSpawn {
     pub thread: crate::thread::ThreadId,
 }
 
-/// The same spawn, **also handing back the heap region and the thread**, so a caller that knows the
-/// program exits can give the memory back (`user::holding`'s reasoning, milestone 121).
+/// [`start_std`], also handing back the heap region and the thread, so a caller that knows the
+/// program exits can give the memory back.
 ///
-/// [`start_std`] deliberately does not: `std_exerciser` is spawned once and its 256 pages are a
-/// charge this suite's frame ledger has always carried. A program built outside this tree is
-/// different, because it is present only when somebody built it, so leaving its pages spoken for
-/// would make the ledger fail for whoever ran the experiment and pass for everyone else. Rather than
-/// budget for a test that usually does not run, its caller reclaims.
+/// A program built outside this tree is present only when somebody built it, so leaving its pages
+/// spoken for would fail the frame ledger only for that person; its caller reclaims instead.
 pub fn start_std_full(
     blk_image: &'static [u8],
     fs_server_image: &'static [u8],
@@ -93,9 +76,9 @@ pub struct NarrowedStd {
 
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 impl NarrowedStd {
-    /// **Give back everything the program held that the caller can name**: the heap's region and
-    /// the stack frames. Only after the thread is gone, which the caller must have seen: a frame
-    /// freed under a running program is a use-after-free with the program as the victim.
+    /// Give back everything the program held that the caller can name: the heap's region and the
+    /// stack frames. Panics if the thread is still present, since a frame freed under a running
+    /// program is a use-after-free.
     ///
     /// And the caretaker, through its [`super::holding::Holding`]. Returns whether everything
     /// came back, which a test should assert: `false` is a service that outlived its holding.
@@ -112,22 +95,12 @@ impl NarrowedStd {
     }
 }
 
-/// **A std program holding one subtree with a chosen set of rights** (milestone 121 (`ripgrep` on nife: enumeration as a capability)), rather than
-/// the image root with all of them.
+/// A std program holding the subtree `name` with `rights`, rather than the image root with all of
+/// them: [`start_std_full`]'s spawn with a [`narrow_dir`] caretaker in front.
 ///
-/// [`start_std_full`]'s spawn with a [`narrow_dir`] caretaker in front: the program's slot 4 is
-/// the caretaker's narrowed endpoint instead of the FS server's own, and it maps the same file
-/// page at the same VA, for the reason [`start_granted_two_dirs`] gives (one thread of control,
-/// one `CALL` in flight). So `std::fs` inside it sees `name` as `/`, carrying `rights` and nothing
-/// wider. Nothing in the PAL knows the difference, which is the point: a stranger's walker runs
-/// against a narrowed grant exactly as it runs against the root.
-///
-/// Built for milestone 121: `std_exerciser`'s walk under `ENUMERATE | READ | DESCEND` and the same
-/// walk refused under a grant lacking `ENUMERATE`, and then `rg` doing both. `line`, when given,
-/// is a command line as typed at the prompt (`rg --stats 'walk entry'`): it becomes the program's
-/// argv through `grant_plan::argv`, the function the shell uses, so the program hears exactly the
-/// words `swish` would send for that line. Milestone 205 (how a foreign program is told what to do)
-/// built that page as DECISIONS §170 (how a foreign program is told what to do) ruled.
+/// `std::fs` inside it sees `name` as `/`, and nothing in the PAL knows the difference. `line`,
+/// when given, is a command line as typed at the prompt; it becomes the program's argv through
+/// `grant_plan::argv`, as the shell sends it (§170 (how a foreign program is told what to do)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_std_narrowed(
     blk_image: &'static [u8],
@@ -150,11 +123,9 @@ pub fn start_std_narrowed(
     )
 }
 
-/// [`start_std_narrowed`], **and a wall clock**: `clock_page` is a clock service's page
+/// [`start_std_narrowed`], and a wall clock: `clock_page` is a clock service's page
 /// (`clock_service::Wiring::page_phys`), granted read-only at `std_runtime_contract::CLOCK_SLOT`
-/// and mapped at `CLOCK_PAGE`, so `SystemTime::now()` answers instead of refusing. Built for
-/// milestone 835 (a C library, stage 1: files, clock and memory): SQLite's `speedtest1` times every
-/// test with `gettimeofday`, which nife's C library answers from `SystemTime`.
+/// and mapped at `CLOCK_PAGE`, so `SystemTime::now()` answers instead of refusing.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[allow(clippy::too_many_arguments)]
 pub fn start_std_narrowed_clocked(
@@ -207,7 +178,7 @@ pub struct BoundStd {
 
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 impl BoundStd {
-    /// **Give back everything, and take the grant back first.** `UNBIND` from the kernel's own
+    /// Give back everything, and take the grant back first. `UNBIND` from the kernel's own
     /// unbadged call closes every handle the badge minted and leaves the badge revoked; then the
     /// window returns to the pool, and the heap, stack and endpoint come back as
     /// [`NarrowedStd::release`] returns them. Returns whether the server accepted the `UNBIND`.
@@ -233,19 +204,13 @@ impl BoundStd {
     }
 }
 
-/// **A std program holding one subtree, enforced by the FS server itself** (milestone 606 (a
-/// directory walk costs what it does on Linux), calef's ruling D, 2026-09-27): the same grant as
-/// [`start_std_narrowed`], with no caretaker in front.
+/// A std program holding one subtree, enforced by the FS server itself (calef's ruling D,
+/// 2026-09-27): the same grant as [`start_std_narrowed`], with no caretaker in front.
 ///
-/// The kernel claims a client window, opens `name` with `rights` under that window's badge, and
-/// `BIND`s the badge to the handle, so from then on a request carrying the badge sees the
-/// directory as its root and reaches only what it opens (`subtree_scope` decides both). The
-/// program then gets the FS server's endpoint with that badge on it, and the window mapped where
-/// the PAL expects its page. Only an eligible server takes `BIND`; `redoxfs_server` is the first.
-///
-/// Caretakers stay the default: the production choice between the two is the progenitor's, per
-/// mount, from what the filesystem's package declares. This is the kernel harness's route, for
-/// the tests and the bench boot.
+/// The kernel `BIND`s a claimed window's badge to `name` opened with `rights`, so a request with
+/// that badge sees the directory as its root (`subtree_scope`). The program gets the badged
+/// endpoint and the window. Only an eligible server takes `BIND`. Caretakers stay the default; the
+/// progenitor chooses per mount, and this is the test harness's route.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_std_bound(
     blk_image: &'static [u8],
@@ -288,8 +253,8 @@ pub struct BoundGrant {
     pub shared: u64,
 }
 
-/// **Bind `name` under the image root, with `rights`, to a fresh client window's badge** (ruling
-/// D). [`start_std_bound`]'s first half, and what a test uses to speak for the badge itself.
+/// Bind `name` under the image root, with `rights`, to a fresh client window's badge:
+/// [`start_std_bound`]'s first half, and what a test uses to speak for the badge itself.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn bind_subtree(
     blk_image: &'static [u8],

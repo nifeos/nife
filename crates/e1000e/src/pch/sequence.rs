@@ -1,28 +1,11 @@
 //! **The I219 bring-up, in FreeBSD's order** (milestone 494 (a driver for the network card a PC
 //! actually has)).
 //!
-//! FreeBSD brings an SPT-class I219 up in three passes, and the kernel calls the three functions
-//! here in the same order (`kernel/src/e1000e.rs`):
-//!
-//! 1. [`init_phy_workarounds`], at attach: gate the hardware's automatic PHY configuration, force
-//!    the PHY out of ultra-low-power (through the Management Engine if there is one, by PHY
-//!    registers if not), make sure the MAC-PHY interconnect is PCIe rather than `SMBus` (forcing
-//!    `SMBus` and then power-cycling the PHY with `LANPHYPC` if it does not answer), then reset the
-//!    PHY so it starts from a known state. From `e1000_init_phy_workarounds_pchlan`,
-//!    `e1000_disable_ulp_lpt_lp`, `e1000_phy_is_accessible_pchlan` and
-//!    `e1000_toggle_lanphypc_pch_lpt`.
-//! 2. [`global_reset`], after the kernel's descriptor-ring flush: the MAC and PHY reset together,
-//!    then the post-reset PHY configuration from the NVM. From `e1000_reset_hw_ich8lan`,
-//!    `e1000_get_cfg_done_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_sw_lcd_config_ich8lan`,
-//!    `e1000_write_smbus_addr` and `e1000_oem_bits_config_ich8lan`.
-//! 3. [`init_hw`], before the rings are programmed, and [`transmit_errata`] once transmit is on:
-//!    `e1000_init_hw_ich8lan`'s hardware bits and `e1000_setup_copper_link_pch_lpt`, and
-//!    `em_initialize_transmit_unit`'s SPT errata.
-//!
-//! Every function names in its comment the FreeBSD function it follows. Read on 2026-10-05 from
-//! `sys/dev/e1000/` on FreeBSD's `main`. Only the branches for FreeBSD's `e1000_pch_spt` class are
-//! carried, because every I219 this crate claims is in it ([`super::is_pch`]).
-//!
+//! The kernel (`kernel/src/e1000e.rs`) calls three passes in this order: [`init_phy_workarounds`]
+//! at attach, [`global_reset`] after its descriptor-ring flush, and [`init_hw`] before the rings
+//! are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's `e1000_pch_spt`
+//! branches are carried ([`super::is_pch`]), and each function names the FreeBSD function it
+//! follows. See notes/e1000e/the-i219-port.md, "The three passes".
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

@@ -24,17 +24,12 @@ pub const REMOVE: u64 = 1 << 4;
 /// decided by the shape of the tree rather than by the grant. That is ambient authority
 /// reintroduced by recursion, which is the thing this milestone exists to refuse.
 pub const DESCEND: u64 = 1 << 5;
-/// **Assert an arbitrary modification time** ([`super::fs::SETMTIME_AT`], `touch -t`;
-/// DECISIONS §112). The seventh rung, added for a right the first six could not express:
-/// every other mutating right bounds what the caller may do to the *bytes* or the *names* in a
-/// directory, and this one bounds what the caller may *claim* about when it did. `touch`'s
-/// plain form ([`super::fs::SETMTIME`], setting a name's mtime to now) needs only [`WRITE`],
-/// the same rung `TRUNCATE` and `SETXATTR` already use, because the value it writes is one the
-/// server observed rather than one the caller asserts. This right gates the assertion, not the
-/// write: a program trusted to write a file's bytes is not, by that trust alone, trusted to
-/// backdate or postdate it, which is the same distinction POSIX's own `utime()` draws (write
-/// permission suffices to set the current time; only the owner may set an arbitrary one) and
-/// the one DECISIONS §43 already draws between reading the wall clock and setting it.
+/// **Assert an arbitrary modification time** ([`super::fs::SETMTIME_AT`], `touch -t`; DECISIONS
+/// §112). Every other mutating right bounds what the caller may do to the bytes or names in a
+/// directory; this one bounds what it may claim about when it did. Plain `touch`
+/// ([`super::fs::SETMTIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
+/// `utime()` draws the same line, and DECISIONS §43 (reading the clock is a page, setting it is a
+/// page you may write) draws it between reading the wall clock and setting it. See notes/touch.md.
 ///
 /// Name: provisional (milestone 47's mtime lane, 2026-08-24, DECISIONS §112 (`touch`'s two
 /// behaviors need two rights)); an architect's to ratify. Candidates considered and set aside:
@@ -108,10 +103,8 @@ pub const fn explain(errno: i32) -> &'static str {
         9 => "no such handle",
         24 => "too many handles open at once",
         EINVAL => "that is not a name this contract can resolve",
-        // The extended-attribute vocabulary (milestone 57). It renders here rather than in an
-        // `xattr::explain` of its own for this module's own reason: the sentence a human reads
-        // belongs next to the decision about what the errno means, and there is one such place.
-        // Every line is still a fact about the thing or the capability.
+        // The extended-attribute vocabulary, rendered here beside the rest for this function's
+        // reason.
         super::xattr::ENODATA => "that attribute is not set",
         super::xattr::ERANGE => "that is not a name an attribute can have",
         super::xattr::E2BIG => "that attribute value is too large to store",
@@ -202,14 +195,8 @@ mod proofs {
         let requested: u64 = kani::any();
         let needed: u64 = kani::any();
         let child = parent.attenuate(requested);
-        // **Raw bits beside the `allows` phrasing** (milestone 211's sweep). This is a
-        // strengthening rather than a finding, and the distinction is worth keeping: the
-        // sweep looked for a defect the `allows`-only phrasing would miss and did not find
-        // one. `attenuate` does not call `allows`, and every wrong `allows` tried (any-of
-        // for all-of, a guard refusing the empty set) still exhibits the widening on some
-        // input, so the implication goes red. The line below is here because a claim about
-        // subsets is cheaper to read as `x & !y == 0` than as a double negation over a
-        // predicate, not because the double negation was blind.
+        // Raw bits beside the `allows` phrasing: a claim about subsets reads plainer as
+        // `x & !y == 0` than as a double negation over a predicate.
         assert_eq!(
             child.bits() & !parent.bits(),
             0,

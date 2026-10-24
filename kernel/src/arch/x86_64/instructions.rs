@@ -1,28 +1,13 @@
-//! **One function per instruction**: the `x86_64` `asm!` that logic calls, kept out of the logic so a
-//! proof can replace it. The `x86_64` twin of `arch/riscv64/instructions.rs`, which has the full
-//! reasoning; this header keeps only what differs.
+//! **One function per instruction**: the `x86_64` `asm!` that logic calls, kept out of the logic so
+//! a proof can replace it. The twin of `arch/riscv64/instructions.rs`, which has the reasoning.
 //!
 //! *Name provisional (a lane minted it 2026-09-25, matching the riscv64 file; names are calef's).*
 //!
-//! # What is here and what is not
-//!
-//! This port was already mostly contained: `port.rs` is its `in`/`out`, `mod.rs` has `rdmsr` and
-//! `wrmsr` as functions, and `interrupts.rs` is `pushfq`/`cli`/`sti` one per function. What moved
-//! here are the control-register accesses, which were written out at eleven sites across four files,
-//! some of them inside the logic that edits the register (`CR4.SMEP`, `CR4.PCE`), plus `clts`,
-//! `invlpg`, `hlt`, `sfence` and the `rsp` read.
-//!
-//! What stays `asm!` elsewhere, on purpose: `lidt` and the GDT reload (each a fixed sequence over a
-//! descriptor in memory), `int3` in the breakpoint self-test, the `rdseed` retry loop in `isa.rs`,
-//! and `fp::touch`.
-//!
-//! # A stub is an assumption about the hardware
-//!
-//! A model that replaces a function here is a claim about the silicon, from the Intel SDM, unchecked
-//! against any core. Each function's documentation says what a model must honour.
-//! notes/kernel-proofs/stubbing-an-instruction.md has the pattern and its caveat.
-//!
-//! Every function is `#[inline(always)]` and carries its call site's `options` unchanged.
+//! Here: the control-register accesses, `clts`, `invlpg`, `hlt`, `sfence` and the `rsp` read
+//! (`port.rs`, `msr.rs` and `interrupts.rs` hold theirs). `lidt`, the GDT reload, `int3`, `rdseed`
+//! and `fp::touch` stay `asm!`. A model replacing a function is a claim about the silicon, so each
+//! says what a model must honor (notes/kernel-proofs/stubbing-an-instruction.md). Every function
+//! is `#[inline(always)]` and carries its call site's `options` unchanged.
 
 use core::arch::asm;
 
