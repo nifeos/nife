@@ -1,29 +1,11 @@
 //! **A `Vt` as a §209 (state handoff is an opaque blob over a granted frame, and it is optional)
-//! blob**: everything a replacement `display_terminal` needs to carry on where
-//! its incumbent stopped (milestone 23 (a capability-routed component OS with live replacement);
-//! calef's ruling of 2026-10-19 (UTC), "everything").
-//!
-//! The live grid, the scrollback in order, the cursor, the rendition and the parser's state, so a
-//! sequence cut in half by a swap (`ESC [ 3` before it, `1 m` after) still means red. What is not
-//! carried is the damage record: a replacement repaints its whole surface from the absorbed state,
-//! which is what makes the screen after a swap a witness of the state rather than of the pixels
-//! the incumbent left behind.
-//!
-//! The layout is fixed little-endian words, never a memory image of `Vt`, so a build with a
-//! different field order or a different `Cell` padding reads it the same way. A cell is four words:
-//! the character (a `char` needs 21 bits) with the rendition flags at bit 21 and the underline
-//! style at bit 28, then the foreground, the background and the underline color. A color word's
-//! top byte is its kind (`0` indexed, `1` 24-bit, `2` none, for an underline that follows the
-//! foreground) and the low three bytes its value. Only the cells in use are written: `cols * rows` of the live grid,
-//! then the scrollback's rows oldest first, so a blob is as long as the screen has history.
+//! blob** for milestone 23 (a capability-routed component OS with live replacement): everything a
+//! replacement `display_terminal` needs (calef, 2026-10-19 UTC), as fixed little-endian words, and
+//! not the damage record. The layout is in notes/video-terminal/handoff-and-component.md.
 //!
 //! # BUGS
 //!
-//! **A blob for a grid of another shape is refused, not reflowed** ([`Refusal::Geometry`]). The
-//! replacement negotiates its geometry with the screen before it absorbs, so a swap that also
-//! changes the screen's size, or a build that changes `MAX_CELLS` or the scrollback budget so the
-//! old shape no longer fits, rolls back and the incumbent serves on. Reading an earlier layout is
-//! kept across builds; reading another geometry is not attempted.
+//! - A blob for a grid of another shape is refused, not reflowed ([`Refusal::Geometry`]).
 //!
 //! Name: provisional (the lane for milestone 23, 2026-10-19 UTC), for this module and every item
 //! in it. calef names things.
@@ -36,11 +18,9 @@ use crate::vt::MAX_PARAMS;
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 pub const MAGIC: u32 = 0x4d52_5456;
-/// The layout this build writes. **A build reads every earlier one too** (calef, 2026-10-19 UTC:
-/// a replacement reads its predecessor's handoff layout). So a change to the layout is a new
-/// number, the reader for the old number stays, and the new layout's blob is added to the fixtures
-/// in `handoff/tests.rs`, whose tests fail on a layout that changed without a bump and on a bump
-/// without a fixture.
+/// The layout this build writes. **A build reads every earlier one too** (calef, 2026-10-19 UTC),
+/// so a layout change is a new number with a fixture in `handoff/tests.rs`. See
+/// notes/video-terminal/handoff-and-component.md.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 pub const LAYOUT: u32 = 2;
