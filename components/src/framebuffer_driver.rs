@@ -1,40 +1,14 @@
 //! **The framebuffer driver: a screen the firmware already set up, served behind the framebuffer
 //! contract** (the shell on the firmware screen; milestone 198's rung 1b).
 //!
-//! `gpu_driver` serves [`graphics_contract`] by programming a virtio-gpu device. A PC has none, but
-//! its firmware leaves a linear framebuffer running when it hands over (UEFI's
-//! `EFI_GRAPHICS_OUTPUT_PROTOCOL`, whose aperture outlives `ExitBootServices`). This driver serves
-//! the **same contract** over that screen, so `display_terminal` cannot tell the two apart. On the
-//! boards U-Boot's `simple-framebuffer` would feed the same driver.
-//!
-//! # Its whole authority
-//!
-//! - slot 0, a **report** endpoint (`WRITE`): one `UP` message once it is serving;
-//! - slot 1, the **display** endpoint (`READ`): where its one client `CALL`s `INFO` and `FLUSH`;
-//! - slot 2, an **untyped**: the budget its surface mapping's page tables come out of;
-//! - slot 3, the **surface**: one `PageFrame` capability naming a run of RAM frames the size of
-//!   the covered part, shared with the client, which it maps itself (DECISIONS §102 (a Frame
-//!   names a run of pages));
-//! - mapped before `_start`: **the covered part of the aperture**, device-typed and, on `x86_64`,
-//!   write-combining, at [`APERTURE_VA`]: the rows the surface can reach
-//!   (`screen_console::Aperture::span`), the whole screen unless it exceeds
-//!   `display_service::MAX_APERTURE_PAGES`. A spawn-time mapping, not a capability, so it cannot
-//!   map the screen again, delegate it, or hand it on.
-//!
-//! No interrupt, no DMA, no transport, no physical address. The kernel passes the geometry in its
-//! three argument registers (`screen_console::Aperture::to_words`, then the aperture's offset into
-//! its first page).
-//!
+//! It serves [`graphics_contract`], as `gpu_driver` does over virtio-gpu, over the linear
+//! framebuffer UEFI's `EFI_GRAPHICS_OUTPUT_PROTOCOL` leaves running past `ExitBootServices` (on the
+//! boards, U-Boot's `simple-framebuffer`), so `display_terminal` cannot tell the two apart. Its
+//! authority is the slot constants below and the covered aperture at [`APERTURE_VA`]; no
+//! interrupt, DMA, transport or physical address. A flush copies the changed rectangle from the
+//! surface into the aperture as a scale-by-scale block (`screen_console::Aperture::copy_wide`,
+//! host-tested), and never reads the aperture.
 
-//! # What a flush is, here
-//!
-//! The client draws into the surface (RAM) and says which rectangle changed. Here a flush is **a
-//! copy** into the aperture in the screen's byte order and stride, **as a scale-by-scale block**
-//! at `screen_console::ScreenConsole::scale_for`'s scale (a 1920x1080 monitor shows a 960x540
-//! surface at two). The arithmetic is `screen_console::Aperture::copy_wide`, host-tested: pairs of
-//! pixels in one qword store, word stores only at an unaligned edge. **It never reads the
-//! aperture**, only the surface.
-//!
 //! # BUGS
 //!
 //! - **A full-screen flush is the whole screen.** A scroll (whole-surface damage) rewrites every
@@ -43,8 +17,7 @@
 //!   `paging::Flags::user_write_combining`), as qword stores: a `u64` is the widest store the
 //!   `x86_64` target can legalize (`-mmx,-sse,+soft-float`). A scroll-aware flush contract is the
 //!   remaining lever, outside this driver. Not measured on silicon.
-//! - **One client, no arbitration.** Whoever holds the display endpoint draws; the compositor is
-//!   what multiplexes it.
+//! - **One client, no arbitration**: whoever holds the display endpoint draws; the compositor muxes.
 //!
 //! Name: ratified 2026-10-06 (calef, in conversation), in the `<device>_driver` shape `gpu_driver`,
 //! `block_driver` and `keyboard_driver` take, the device being a linear framebuffer. Considered
@@ -63,11 +36,15 @@ use screen_console::Aperture;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{exit, receive_request, reply, send};
 
-/// Capability slots, by convention with `kernel/src/user/display_service.rs`.
+/// Capability slots, by convention with `kernel/src/user/display_service.rs`. Slot 0, a report
+/// endpoint (`WRITE`): one `UP` message once it is serving.
 const REPORT: u64 = 0;
+/// Slot 1, the display endpoint (`READ`): where its one client `CALL`s `INFO` and `FLUSH`.
 const DISPLAY: u64 = 1;
+/// Slot 2, an untyped: the budget its surface mapping's page tables come out of.
 const BUDGET: u64 = 2;
-/// The surface, one `PageFrame` capability naming the whole run (DECISIONS §102).
+/// The surface, one `PageFrame` capability naming the whole run (DECISIONS §102): RAM frames the
+/// size of the covered aperture, shared with the client, which maps it itself.
 const SURFACE_FRAME: u64 = 3;
 
 /// Where this driver maps the surface. Its choice: it holds the frames. 2 MiB-aligned for the
@@ -76,9 +53,13 @@ const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
 
 /// Where the kernel maps the covered part of the aperture before `_start`. **Must match
 /// `kernel/src/user/display_service.rs`'s `SCREEN_APERTURE_VA`.** A service window on the
-/// address-space map (milestone 206 (a program image has under 896 KiB)), 8 MiB of it at most, and 2 MiB-aligned for the same reason as
-/// above. It was `0x4000_0000` until 2026-09-26, the first address of the heap band, which this
-/// driver could use only because it has no heap.
+/// address-space map (milestone 206 (a program image has under 896 KiB)), 8 MiB of it at most, and
+/// 2 MiB-aligned for the same reason as above. Device-typed (write-combining on `x86_64`), it
+/// covers the rows the surface can reach (`screen_console::Aperture::span`), the whole screen
+/// unless that exceeds `display_service::MAX_APERTURE_PAGES`. It is a spawn-time mapping, not a
+/// capability, so this driver cannot map the screen again, delegate it, or hand it on. The
+/// geometry arrives in the three argument registers (`screen_console::Aperture::to_words`, then
+/// the aperture's offset into its first page).
 const APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
 
 /// Failure codes, sent on the report endpoint in a `0xDEAD_...` word so a failure names its step.
@@ -101,7 +82,7 @@ pub extern "C" fn _start(size: u64, layout: u64, offset: u64) -> ! {
     if offset >= 4096 {
         die(E_GEOMETRY);
     }
-    // **The surface is the covered part's size, exactly** (2026-10-04): the kernel allocated
+    // **The surface is the covered part's size, exactly**: the kernel allocated
     // `width * height` pixels at a stride of `width`, and a flush reads only inside that, because
     // `copy_wide` refuses a rectangle that leaves the covered part.
     let surface_bytes = width as u64 * height as u64 * 4;
@@ -143,8 +124,8 @@ pub extern "C" fn _start(size: u64, layout: u64, offset: u64) -> ! {
                 // The wide copy: qword stores where the aperture's own alignment permits them,
                 // word stores at the edges. `offset` is the aperture's distance into its first
                 // page from an 8-aligned base, so it is exactly the misalignment `copy_wide`
-                // wants. This halves the store count into the uncacheable aperture (its own BUGS
-                // bullet below, and `screen_console::Aperture::copy_wide`'s doc for the numbers).
+                // wants. This halves the store count into the uncacheable aperture (the module's
+                // BUGS, and `screen_console::Aperture::copy_wide`'s doc for the numbers).
                 let copied = aperture.copy_wide(
                     x,
                     y,

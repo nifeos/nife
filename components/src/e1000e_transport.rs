@@ -2,18 +2,13 @@
 //! actually has); notes/e1000e.md).
 //!
 //! The volatile shell around `crates/e1000e`'s [`DataPlane`]: two windows and a barrier. The ring
-//! logic, the descriptor formats and the judgement of every word the device writes are in the
-//! crate, host-tested against a simulated device; this file is only the accesses the crate cannot
-//! make for itself. The kernel already reset the device, read its MAC address and set both ring
-//! bases (`kernel/src/e1000e.rs`); what is mapped here, and what is not, is
-//! `kernel/src/user/e1000e_service.rs`'s header.
-//!
-//! A `#[path]` module of `net_stack` beside `virtio_net_transport.rs`, which is milestone 494's
-//! recommendation: the driver runs in the process that runs the stack, as virtio-net does. A
-//! separate driver process would put a NIC parser and a TCP stack in different address spaces, and
-//! the block records that at equal cost that would be preferred; the reason it is not done here is
-//! effort (a frame protocol two programs agree on), said in those words.
-//!
+//! logic, descriptor formats and judgement of every device-written word are the crate's,
+//! host-tested against a simulated device. The kernel already reset the device, read its MAC and
+//! set both ring bases (`kernel/src/e1000e.rs`); `kernel/src/user/e1000e_service.rs`'s header says
+//! what is mapped here. It is a `#[path]` module of `net_stack`, as virtio-net is: a separate
+//! driver process would be preferred at equal cost, and is not built because it needs a frame
+//! protocol two programs agree on.
+
 //! # BUGS
 //!
 //! - **Polled.** No interrupt is granted (the service's header says why). While frames flow the
