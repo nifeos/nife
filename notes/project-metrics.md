@@ -282,6 +282,17 @@ Documents over each writing-standards limit; exempted ones count
 
 The 40-line comment-block cap: files holding a longer block, then the lines past it.
 
+## Comments by directory
+
+![Comment blocks over their directory's cap](project-metrics/comment-blocks-by-directory.svg)
+
+![Comment lines past their directory's cap](project-metrics/comment-blocks-excess-by-directory.svg)
+
+![Plain comment lines inside function bodies](project-metrics/comment-in-body.svg)
+
+Milestone 929 (comments in the Linux style across first-party Rust): its two counts, one series per directory, each week at the caps and in-body ceilings
+its own `design/comment-block-baseline.tsv` holds. A cap step reads as a jump in the first two.
+
 ## Line-number citations
 
 ![Line-number citations](project-metrics/line-citations.svg)
