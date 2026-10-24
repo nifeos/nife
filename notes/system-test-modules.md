@@ -53,14 +53,14 @@ the accounting check exists.
 `authority_tests` boots the supervision tree of milestone 22 (trusted init). Its restart test is all
 decisions in an unprivileged process that holds no memory; the kernel's whole part is one message
 per death. The progenitor deleted its untyped before the crash, and the companion test confirms it
-can no longer use it, so the evidence that it did not build the replacement is authority, not
+can no longer use it. So the evidence that it did not build the replacement is authority, not
 scheduling order. The same test is where the real tree proves restart by label (milestone 105 (the
 two forks milestone 22 named and left)). `sub_server_supervisor` has two children on one endpoint,
 identical programs told nothing but an attempt number; one crashes, one finishes, and it restarts by
 label alone. That check shares the test because every `run_tree` leaves a parked tree of about 1,100
-frames for the rest of the suite, and a third tree would put the suite over
-`SUITE_PAGE_FRAME_BUDGET` (measured in CI, 2026-10-05 UTC). Dropping the label fails inside
-`run_tree` at stage 23, not at an assertion, so the kernel claim's falsification lives in
+frames for the rest of the suite. A third tree would put the suite over `SUITE_PAGE_FRAME_BUDGET`
+(measured in CI, 2026-10-05 UTC). Dropping the label fails inside `run_tree` at stage 23, not at an
+assertion, so the kernel claim's falsification lives in
 `supervision_tests::a_supervisor_tells_two_dead_children_apart_by_label`.
 
 `child_thread_tests`' reclaim test never probes the TCB region with `reclaim_region` while its child
@@ -83,7 +83,7 @@ answers are distinct.
 
 ## The shell, end to end
 
-The scripted shells are the real shell binary, so the builtins under test are the builtins at the
+The scripted shells run the real shell binary. The builtins under test are the builtins at the
 prompt. `pipeline_service` serves the terminal's `OPERATION_WRITE` and collects every byte the shell
 prints, so a pipeline that ran but printed the wrong thing fails. Its second thread speaks the
 progenitor's spawn protocol because the shell cannot tell the difference, and neither should the
@@ -94,8 +94,8 @@ manifest the prompt checks against rather than from a second copy of an ordering
 that a loop can delete a tree; it is that the walk stops where the capabilities stop.
 
 `redirection_tests` asserts only the shape "same producer, two destinations, the same bytes". A `>`
-that dropped every second byte would still produce a file, and a `wc` that agreed with it would
-still print three numbers, so any weaker assertion would pass a broken redirection.
+that dropped every second byte would still produce a file. A `wc` that agreed with it would still
+print three numbers. Any weaker assertion would pass a broken redirection.
 
 `language_tests` asserts about the same shell run as `redirection_tests`. Each scripted shell is a
 live process whose frames nothing reclaims, and one more of them put `time_tests` over the frame
@@ -109,7 +109,7 @@ what a word is and what a status means.
 proves: a program answers without touching memory it does not hold.
 
 `uuid_tests` proves only the empty-slot direction in the guest. `Spawn::grants` fills a capability
-table from zero and cannot place a capability at the slot a manifest names, so the endowed direction
+table from zero and cannot place a capability at the slot a manifest names. So the endowed direction
 is proven at the real prompt, through the real `crates/system_initializer`, by `script/swish-check`.
 
 ## Somebody else's C

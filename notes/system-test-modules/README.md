@@ -11,8 +11,8 @@ not fit a doc comment.
 - [`confined-fuzzer-tests.md`](confined-fuzzer-tests.md): the conductor's oracles, how it serves a
   blocked call, and what it cannot reach.
 
-*Name: provisional. The directory follows the siting default of §212 (a prose budget),
-`notes/X/` beside `notes/X.md`. calef names directories.*
+*Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
+beside `notes/X.md`. calef names directories.*
 
 Each stem below is named for the test file it explains, and calef names files.
 
