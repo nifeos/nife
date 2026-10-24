@@ -1,40 +1,22 @@
 //! **`system_installer`**: what a booted stick runs to put this system on the machine's own disk.
-//! See notes/installing.md and notes/boot-slots.md.
-//!
 //! It is the most destructive program in the tree, so what stands between a stranger and a wiped
-//! disk is its authority, not its judgement. It holds one disk as a `filesystem_contract::blk`
-//! endpoint, with no path to type, and an entropy endpoint so GPT ids are drawn (no entropy, no
-//! write). It is spawned only after a person answers a question naming the disk, asked by
+//! disk is its authority, not its judgement: one disk as a `filesystem_contract::blk` endpoint,
+//! with no path to type, and an entropy endpoint so GPT ids are drawn (no entropy, no write). It is
+//! spawned only after a person answers a question naming the disk, asked by
 //! `kernel/src/user/install_service.rs`, because a confirmation it printed itself could be skipped.
-//!
-//! | `a0` | |
-//! |---|---|
-//! | [`ROLE_SURVEY`] | read the table back and say whether this disk already carries nife |
-//! | [`ROLE_INSTALL`] | draw the ids, write the table, lay out the EFI system partition, copy the boot file |
-//! | [`ROLE_CONFIRM`] | mark the boot slot this machine started from successful, so a good upgrade sticks |
-//!
-//! `ROLE_SURVEY` and `ROLE_CONFIRM` hold no entropy endpoint, so the only table either can write
-//! is one it read: confirm changes the attribute bits `boot_slot` owns and nothing else. An install writes, in order: a GPT with the nife data partition first, two boot slots, and an
-//! EFI system partition last; a FAT32 volume in that partition; the boot file at
-//! `\EFI\BOOT\BOOTX64.EFI`, where it is the chooser; and the same file raw into slot 0, marked
-//! good ([`boot_slot::State::installed`]). Slot 1 is laid out empty so an upgrade never
-//! repartitions. The slots are partitions because UEFI gives GPT attribute bits 48 to 63 to the
-//! owner of the type GUID, and [`types::NIFE_BOOT`](globally_unique_identifier_partition_table::guid::types::NIFE_BOOT)
-//! is ours. Data goes first because `redoxfs` finds its header within the disk's first 65,536
-//! blocks, so a whole-disk server mounts it. `redoxfs_server`'s `mkfs` makes the filesystem, not
-//! this. The boot file is the one this machine booted from, mapped read-only by the kernel: it
-//! seals the kernel and the archive together, so they cannot be installed apart.
-//!
+//! `a0` is [`ROLE_SURVEY`], [`ROLE_INSTALL`] or [`ROLE_CONFIRM`]. The layout an install writes, and
+//! why each part sits where it does, is in notes/installing/system-installer.md; see also
+//! notes/installing.md and notes/boot-slots.md.
+
 //! # BUGS
 //!
-//! - Whole disk only; the table is replaced wholesale.
-//! - The installed filesystem server holds the whole disk, bounded only by the extent `mkfs`
-//!   recorded. Bounding the server needs a base-block field on the `blk` wire (calef's call) or a
-//!   caretaker costing one IPC per block; `mkfs`'s `PartitionDisk` is the bounded shape.
+//! - Whole disk only: the partition table is replaced wholesale.
+//! - Not crash-atomic, and the copy shows no progress.
+//! - It writes no firmware boot entry, only the removable-media path.
+//! - The installed filesystem server holds the whole disk, bounded only by `mkfs`'s extent.
 //! - The logical block size is assumed to be 512; a 4096-byte NVMe namespace gets a bad table.
 //! - The slots cost 128 MiB, and nothing writes slot 1 yet (`cargo xtask rollback-boot` does).
-//! - Disks under about 700 MiB are refused, untested. Not crash-atomic; the copy shows no progress.
-//! - It writes no firmware boot entry, only the removable-media path.
+//! - Disks under about 700 MiB are refused, untested.
 //! - A block-for-block clone keeps its source's disk and partition GUIDs; nothing re-draws them.
 //!
 //! Name: ratified 2026-10-06 (calef), replacing `installer`. Refused `basalt_installer`.
@@ -79,12 +61,14 @@ const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 const BOOT_FILE_VA: u64 = address_space_map::runtime_window(0x1000_0000);
 
 // The roles, in `a0`. Must match kernel/src/user/install_service.rs.
-/// Write the table, the EFI system partition and the boot file.
+/// Draw the ids, write the table, lay out the EFI system partition and copy the boot file.
 pub const ROLE_INSTALL: u64 = 0;
-/// **Read the table back and report what is on the disk.** No entropy endpoint, no writes.
+/// **Read the table back and report whether this disk already carries nife.** No entropy
+/// endpoint, no writes.
 pub const ROLE_SURVEY: u64 = 1;
 /// **Mark the boot slot named in `a1` successful**, so an upgrade that came up is not rolled back.
-/// No entropy endpoint; the only table it can write is the one it read.
+/// No entropy endpoint; the only table it can write is the one it read, and it changes only the
+/// attribute bits `boot_slot` owns.
 pub const ROLE_CONFIRM: u64 = 2;
 
 /// The transfer unit of the block service: one filesystem block per request.
@@ -274,39 +258,15 @@ fn read_primary() -> bool {
 const MAX_PARTITIONS: usize = 16;
 
 /// **Say that this boot worked**, by setting `boot_slot::State::successful` on the slot the
-/// machine started from.
+/// machine started from. Answers [`R_CONFIRMED`], [`R_NO_SLOT`] having written nothing, or
+/// [`R_DISK_FAILED`] with the step that failed.
 ///
-/// # The one number that comes from outside
-///
-/// `slot` is the index among this disk's `NIFE_BOOT` partitions, in table order, as
-/// `uefi_loader`'s chooser counted them and wrote onto the kernel's command line. It is counted
-/// the same way here, which is the whole of the agreement between the two: the chooser's
-/// `the_disk_with_slots` collects boot-type partitions in index order and so does the loop below.
-///
-/// **A number this program cannot match is a refusal, never a nearest slot.** Confirming the wrong
-/// entry would mark an image good that never ran, which is worse than not confirming at all: the
-/// machine would then keep an upgrade that does not work instead of rolling back to one that does.
-///
-/// # Why it is safe to run twice, and safe to lose power in the middle
-///
-/// Setting a bit that is already set writes the same bytes, so a second run is a second copy of
-/// the same table, and this one returns before writing anything when it finds the slot already
-/// successful. That is the *cheap* half of idempotence and it is the one a reader should not rely
-/// on: the property that matters is the byte-level one below.
-///
-/// The bits this changes are nine, inside one `u64`, inside one 128-byte entry, inside one 512-byte
-/// logical block. They are never split across two writes, so the entry array on the disk is always
-/// either the old entry or the new one and never a third thing. What *can* be interrupted is the
-/// four-write sequence that puts the array and the two headers back, and the order below is chosen
-/// so that **at every instant at least one complete, self-consistent copy of the table is on the
-/// disk**: the backup is finished before the primary is touched. `uefi_loader::chooser`'s
-/// `write_back` writes the same four ranges in a different order, which does not have that
-/// property; changing it is that lane's and it is named in this program's `BUGS`.
-///
-/// The worst outcome of an interrupted confirmation is therefore a slot that is not confirmed,
-/// which is exactly the state the machine was in a moment earlier and rolls back safely, or a
-/// primary table that does not parse beside a backup that does, which is the recovery case
-/// `BUGS` says nothing yet reads.
+/// `slot` is the index among this disk's `NIFE_BOOT` partitions in table order, counted as
+/// `uefi_loader`'s chooser counts them (`the_disk_with_slots`) before writing it onto the kernel's
+/// command line. A number that matches no slot is a refusal, never a nearest slot. It is safe to
+/// run twice and to interrupt: the changed bits sit in one 512-byte block, and the backup table is
+/// complete before the primary is touched. See notes/installing/system-installer.md; nothing yet
+/// reads the backup when the primary fails to parse (`uefi_loader::chooser`'s `BUGS`).
 fn confirm(slot: u64) -> ! {
     let size = call(BLK, req(blk::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
@@ -365,10 +325,8 @@ fn confirm(slot: u64) -> ! {
 
     let state = State::from_attributes(parts[at].attributes);
     if state.successful {
-        // **Already good, so the disk is not written at all.** An installed machine boots its
-        // confirmed slot every day of its life, and a write on every one of those boots is a write
-        // that can be interrupted on every one of them. `State::attempted` refuses the same write
-        // for the same reason, one stage earlier.
+        // Already good, so the disk is not written: a write on every boot is a write that can be
+        // interrupted on every boot. `State::attempted` refuses the same write one stage earlier.
         send(REPORT, R_CONFIRMED, slot, 0);
         user_mode_runtime::exit()
     }
@@ -686,11 +644,8 @@ fn write_efi_system_partition(
 
     // The boot file itself, contiguous from the cluster the volume's directory entry names.
     //
-    // **Refuse a volume whose clusters do not land on transfer blocks**, rather than dividing and
-    // silently writing somewhere else. `file_allocation_table` aligns its data area for exactly
-    // this reason, and the run that made it do so wrote ten megabytes six sectors early onto a real
-    // disk and produced a file the firmware would not start. This is the check that would have said
-    // so in one line.
+    // Refuse a volume whose clusters do not land on transfer blocks rather than divide and write
+    // somewhere else (notes/installing.md, "FAT32 had to be written").
     let first = layout.esp_first + volume.file_first_sector();
     if !first.is_multiple_of(SECTORS_PER_TRANSFER) {
         return Err(42);
@@ -706,8 +661,7 @@ fn write_efi_system_partition(
 /// it leaves a slot holding a valid-looking prefix of a boot image.
 ///
 /// `crates/boot_slot` reserves a whole 4096-byte transfer block for the header so the image after
-/// it starts on a block boundary. Milestone 198's rung 2a lost ten megabytes to an unaligned start
-/// once (`crates/file_allocation_table`'s own notes) and that is the reason the padding is there.
+/// it starts on a block boundary (notes/installing.md, "FAT32 had to be written").
 fn write_slot(slot_first: u64, boot_file_len: u64) -> Result<(), u64> {
     // SAFETY: the kernel mapped `boot_file_len` bytes read-only at `BOOT_FILE_VA`; this program
     // has one thread, and nothing else in it writes there.

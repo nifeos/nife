@@ -1,66 +1,12 @@
-//! **How deep one IPC reaches into a thread's kernel stack** (milestone 134).
+//! How deep one IPC reaches into a thread's kernel stack.
 //!
-//! Milestone 134's E1 predicts a knee in IPC latency against thread count: thread kernel stacks sit
-//! `STACK_SLOT_SPAN` apart, each IPC touches a different one, and at roughly 1 to 2 KiB each they
-//! fill a 32 KB L1d somewhere between 16 and 32 threads. This measures the per-IPC figure;
-//! notes/stack-high-water.md reports the deepest path across the suite, which is not IPC.
-//!
-//! # The method
-//!
-//! The same watermark as milestone 84 (stack high-water), through `crate::stack::paint` and
-//! `crate::stack::high_water`, re-armed **once per operation**. Immediately before one IPC operation
-//! the thread paints its own kernel stack from the bottom up to [`MARGIN`] bytes below its live `sp`;
-//! immediately after, it scans for the deepest word that is no longer paint. The result is the
-//! deepest byte that one operation reached, as a distance from the stack's top. Many operations,
-//! many samples, and the report gives the minimum, the median and the maximum.
-//!
-//! Two shapes, each measured two ways:
-//!
-//! - **Kernel threads** ([`kernel_thread_shapes`]), which is E1's own shape: `bench.rs`'s
-//!   `ipc_thread_scaling` runs kernel-thread pairs through `sched::ipc_send`/`ipc_receive`, and
-//!   `call_reply` runs `ipc_call` against `ipc_receive_cap`/`ipc_reply`. The thread wraps each call in
-//!   [`measured`], so the sample is that one call.
-//! - **EL0 threads** ([`el0_shapes`]), which is the shape every real service runs. A user thread
-//!   cannot paint its kernel stack, so the kernel does it for a registered thread at the end of every
-//!   syscall ([`after_syscall`], called from `syscall::dispatch`): scan what the syscall that is
-//!   ending reached, then paint for the next one. An EL0 thread's trap frame sits at the very top of
-//!   its kernel stack (`sched::current_kernel_stack_top`'s note), so here the distance from the top
-//!   is exactly the stack one syscall touches, trap frame included.
-//!
-
-//! # What the instrument costs, and why it does not perturb what it reads
-//!
-//! **Nothing in a default build**: all of this, including the one call in `syscall::dispatch`, is
-//! `any(test, feature = "ipc_stack_depth")`. `script/fastpath-footprint`, `script/bench` and the
-//! icount tripwire build neither. In a test build every syscall pays one relaxed load of
-//! [`EL0_ARMED`] and returns.
-//!
-//! **In the path it measures, nothing below the paint.** Painting and scanning are done by the
-//! measuring thread in its own frames, which sit *above* the painted ceiling; the operation then runs
-//! below them. The one frame that is counted and is not the kernel's is the closure [`measured`] calls
-//! (kernel shapes only), a few dozen bytes, and the report prints each series' caller offset so the
-//! excursion below the call site can be read directly. What the instrument does cost is time (a
-//! paint of up to 24 KiB per sample), which is why it is off in every build that measures time, and
-//! why sampling stops once each series is full.
-//!
-
-//! # What it does not capture
-//!
-//! - **Interrupt nesting at the deepest instant.** A timer interrupt taken while an operation is at
-//!   its deepest adds a trap frame to that sample (the handler itself runs on the interrupt stack
-//!   when the trap is from the kernel; from EL0 it runs on this stack, before the next syscall). Those
-//!   samples are the long tail, which is why the **median** is the per-IPC figure and the maximum is
-//!   reported beside it as the interrupt-contaminated bound, not as the IPC's depth.
-//! - **Real hardware.** Depth is decided by which calls run, not by timing, so QEMU measures it
-//!   honestly (notes/stack-high-water.md, "Why the numbers are host-load-immune"), and this is not a
-//!   timing number. What differs on silicon is codegen only if the build differs: the release kernel
-//!   radon boots and the debug kernel `script/test` boots are different programs, and both are
-//!   measured (see notes/stack-high-water.md for which is which).
-//! - **Which lines are cache-hot.** A depth says how many bytes one operation *can* touch; it does not
-//!   say they are all touched, or that they miss. That is M7's question in milestone 134's tier B.
-//! - **Placement.** Under `script/test` the machine has four cores and the two ends may land on
-//!   different ones, so a sample can come from the cross-core wake path or the same-core one. Both
-//!   ends are spawned on the caller's core, and the report's spread says whether it mattered.
+//! Immediately before one IPC operation the thread paints its own kernel stack up to [`MARGIN`]
+//! below its live `sp`; immediately after, it scans for the deepest word no longer paint. Kernel
+//! threads wrap each call in [`measured`] ([`kernel_thread_shapes`]); for EL0 threads
+//! [`after_syscall`] scans and repaints at the end of each syscall ([`el0_shapes`]). Each series
+//! reports its median, which is the per-IPC figure, beside the interrupt-contaminated maximum.
+//! Built only under `any(test, feature = "ipc_stack_depth")`. See
+//! notes/stack-high-water/per-ipc-depth.md.
 //!
 //! Name: provisional (milestone 134 (the register of measures)'s lane, 2026-09-19): module, feature
 //! and the `ipc-stack-depth:` line prefix alike. Names are an architect's.
@@ -69,36 +15,25 @@ use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering
 
 use crate::{println, sched};
 
-/// Bytes between the arming frame's `sp` and the top of the painted region. It has to cover the
-/// frames that run below [`arm`] while it paints (a debug build makes `write_volatile` and even
-/// `wrapping_add` real calls) and the scan's frame afterwards. `floor` is this margin plus
-/// everything above it, and a sample **at or above** its floor (a reading of `floor` or less) means
-/// the operation never went below the margin and the number is the instrument's rather than the
-/// kernel's; [`report`] refuses those. A reading can be *less* than `floor`: `KernelStack::new`
-/// paints the whole stack in a test build and [`arm`] never repaints `[ceiling, sp)`, so the words
-/// just above the ceiling keep the creation paint until something writes them (see
-/// [`kernel_thread_shapes`] for what that did to the calibration).
+/// Bytes between the arming frame's `sp` and the top of the painted region.
 ///
-/// **Two values, because the first attempt used one and it was wrong in the release build.**
-/// milestone 84's boot-stack paint uses 512, and at 512 every release-build series on aarch64 read
-/// exactly its floor: the whole IPC path, below the measuring frame, is shallower than 512 bytes
-/// there. In release the paint loop is inlined into `arm` and has no callees, so a small margin
-/// is enough; in debug it keeps a real call chain, and 256 was tried there and measured too small.
-/// Neither number is trusted on its own say-so: [`kernel_thread_shapes`] measures a null operation
-/// first (`null` in the report) and that line is the instrument's own reach, whose median must not
-/// sit below its floor.
+/// It covers the frames that run below [`arm`] while it paints and the scan's frame afterwards. A
+/// series whose median reads at or below its floor never went below the margin, and [`report`]
+/// refuses it. Larger in debug, where the paint loop keeps real calls; 512 put every release series
+/// at its floor. The `null` series checks the value on every run.
 #[cfg(debug_assertions)]
 const MARGIN: u64 = 512;
 #[cfg(not(debug_assertions))]
 const MARGIN: u64 = 64;
 
-/// Samples kept per series. Depth is nearly deterministic (milestone 84 found two runs identical to
-/// the byte), so the value of more samples is only in characterising the interrupt tail.
+/// Samples kept per series. Depth is nearly deterministic, so more samples only characterize the
+/// interrupt tail.
 const SAMPLES: usize = 256;
 
-/// One series: one operation, by one role, in one shape. Single writer (the thread that owns the
-/// role), read only after that thread has finished, so relaxed atomics are the whole story; they
-/// are atomics rather than a `static mut` so the storage needs no `unsafe` at all.
+/// One series: one operation, by one role, in one shape.
+///
+/// Single writer (the role's thread), read only after it has finished, so relaxed atomics suffice;
+/// atomics rather than a `static mut` so the storage needs no `unsafe`.
 struct Series {
     n: AtomicUsize,
     /// `top - ceiling`: the shallowest value a sample can read, recorded from the last arming.
@@ -138,9 +73,10 @@ impl Series {
     }
 }
 
-/// The current thread's kernel stack as `(bottom, top)`. `KernelStack::new` puts the top exactly
-/// `STACK_PAGES` pages above the bottom, and this does the same arithmetic rather than holding the
-/// scheduler lock for a second lookup.
+/// The current thread's kernel stack as `(bottom, top)`.
+///
+/// Computes the bottom as `KernelStack::new` does, `STACK_PAGES` below the top, rather than taking
+/// the scheduler lock for a second lookup.
 fn own_span() -> (u64, u64) {
     let top = sched::current_kernel_stack_top()
         .expect("ipc_stack_depth: this thread has no kernel stack");
@@ -245,8 +181,8 @@ fn send_receive_kernel() {
     sched::ipc_receive(done);
 }
 
-/// CALL against `RECEIVE_CAP` and REPLY between two kernel threads, the shape `bench.rs`'s `call_reply`
-/// times and the one real services issue.
+/// CALL against `RECEIVE_CAP` and REPLY between two kernel threads, the shape `bench.rs`'s
+/// `call_reply` times and the one real services issue.
 fn call_reply_kernel() {
     for s in [
         &K_CR_CLIENT_CALL,
@@ -307,11 +243,8 @@ fn call_reply_kernel() {
 /// Both kernel-thread shapes, then their report. Returns how many series fell short of a usable
 /// measurement (see [`report`]); zero is a clean run.
 pub(crate) fn kernel_thread_shapes() -> usize {
-    // The calibration: the same `measured` around an operation that does nothing. Whatever it
-    // reads is the instrument's own reach (the closure call, `scan`'s frame), and it must be its
-    // floor; anything deeper means the margin is too small for this build and every other line
-    // is contaminated by the instrument. On a spawned thread like every other series, because the
-    // caller may be the boot thread, which runs on the linker-script stack and owns no kernel stack.
+    // The calibration: `measured` around nothing reads the instrument's own reach. On a spawned
+    // thread, because the caller may be the boot thread, which owns no kernel stack.
     K_NULL.reset();
     let done = sched::create_rendezvous();
     sched::spawn_on(crate::cpu::id(), move || {
@@ -323,12 +256,7 @@ pub(crate) fn kernel_thread_shapes() -> usize {
     })
     .expect("ipc_stack_depth: no calibration thread");
     sched::ipc_receive(done);
-    //
-    // **Judged on the median, like every other series, and the first version judged it on every
-    // sample and was wrong.** Its maximum sits a few hundred bytes below the floor whatever the
-    // margin (504 bytes at a 1,024-byte margin in the debug build), which is a trap frame from a
-    // timer tick that landed mid-sample, not the instrument: an excursion the margin cannot move
-    // is not the margin's. The tail is printed so it stays visible.
+    // Judged on the median: the maximum carries a timer tick's trap frame, which no margin moves.
     let null_floor = K_NULL.floor.load(Ordering::Relaxed);
     let mut null = [0u32; SAMPLES];
     for (dst, src) in null.iter_mut().zip(K_NULL.depth.iter()) {
@@ -336,23 +264,9 @@ pub(crate) fn kernel_thread_shapes() -> usize {
     }
     null.sort_unstable();
     let (null_median, null_max) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
-    //
-    // **Clean means "no deeper than the floor", not "exactly the floor"** (2026-09-24). The check
-    // said `==` until the HVF leg, which runs this suite on the physical core, failed it on every
-    // run from the day it merged: median 856 against a floor of 976, 120 bytes *shallower*. That is
-    // the instrument's true reach. Its own callees stop 392 bytes into the 512-byte margin, so the
-    // words between them and the ceiling are never written and keep the paint `KernelStack::new`
-    // laid down, which `arm` never repaints because it paints only below the ceiling. Under TCG
-    // the same thread read exactly its floor, and not because the instrument reaches it: measured
-    // over three TCG runs, the first 29 to 76 samples read the true reach (920 against 1040 on that
-    // build) and every sample after one moment read the floor, because one interrupt trap frame
-    // pushed while `sp` sat below the ceiling writes the ceiling word, and nothing ever paints it
-    // again. Whether that moment comes before sample 128 (median at floor) or after (median below
-    // it) is timing, so `==` was a timing assertion that TCG's slowness happened to pass and the
-    // physical core, finishing all 256 samples in microseconds, did not. What the check exists to
-    // catch is the margin being too small, which reads *deeper* than the floor, and `<=` still
-    // catches exactly that on every accelerator. Nothing TCG could fail on for that reason passes
-    // now. See notes/stack-high-water.md.
+    // `<=`, not `==`: whether the median reads exactly the floor depends on when the first trap
+    // frame overwrites the ceiling word (notes/stack-high-water/per-ipc-depth.md). Too small a
+    // margin reads deeper than the floor, which this still catches.
     let null_clean = null_median <= null_floor;
     println!(
         "ipc-stack-depth: kernel null (the instrument alone) floor {null_floor} median \
@@ -420,8 +334,8 @@ struct El0Slot {
     tid: AtomicU64,
     bottom: AtomicU64,
     top: AtomicU64,
-    /// The ceiling of the last paint, or 0 before the thread's first syscall: the first window
-    /// covers the spawn path into EL0, which is not an IPC, so it primes and records nothing.
+    /// The ceiling of the last paint, or 0 before the thread's first syscall, whose window is the
+    /// spawn path into EL0 and so records nothing.
     ceiling: AtomicU64,
     /// One series per rendezvous method number (`abi::rendezvous::*` are 0 to 4, and a Reply
     /// capability's `REPLY` is 0). Within one role the methods it issues are distinct, which is
@@ -440,9 +354,8 @@ impl El0Slot {
         }
     }
 
-    /// This role has started at least one series and every series it started is full, so painting
-    /// can stop. The "at least one" matters: before the first sample every series is empty, and an
-    /// `all` over nothing is true.
+    /// This role has started at least one series and filled every series it started, so painting
+    /// can stop. Before the first sample every series is empty, and `all` over nothing is true.
     fn is_done(&self) -> bool {
         self.series.iter().any(|s| s.n.load(Ordering::Relaxed) > 0)
             && self
@@ -478,14 +391,11 @@ fn reset_el0() {
     }
 }
 
-/// **Called by `syscall::dispatch` at the end of every syscall** in a test build or with the
-/// feature on. `method` is `frame.arg(1)` as the syscall found it (the result registers may since
-/// have been overwritten). For an unregistered thread this is one load and a return.
+/// Record how deep the syscall now ending went, then repaint for the next.
 ///
-/// For a registered one: scan how deep the syscall now ending went, record it against its method,
-/// then paint for the next. The window between two of these calls is the syscall itself plus
-/// whatever ran on this stack while the thread was in user mode, which is only an interrupt taken
-/// from EL0; that is the tail the median discards.
+/// `nr` is the syscall number and `method` is `frame.arg(1)` as the syscall found it. Called by
+/// `syscall::dispatch` last. An unregistered thread pays one load. The window also holds any
+/// interrupt taken from EL0 since the last call, which is the tail the median discards.
 #[inline(never)]
 pub(crate) fn after_syscall(nr: u64, method: u64) {
     if !EL0_ARMED.load(Ordering::Relaxed) {
@@ -511,10 +421,13 @@ pub(crate) fn after_syscall(nr: u64, method: u64) {
     s.ceiling.store(arm(bottom), Ordering::Relaxed);
 }
 
-/// `os_primitives_benchmarker`'s roles, as `bench.rs` spells them (`EL_IPC_SERVER`,
-/// `EL_IPC_CLIENT`) and the fixture's `_start` matches them. A third copy of a number two binaries
-/// agree on, which AGENTS.md rule 7 says should be a crate; recorded in notes/stack-high-water.md's
-/// BUGS rather than fixed here, because the fix moves the fixture's protocol.
+/// `os_primitives_benchmarker`'s roles, as `bench.rs` spells them and the fixture's `_start`
+/// matches them.
+///
+/// # BUGS
+///
+/// A third copy of a number two binaries agree on, which AGENTS.md rule 7 says should be a crate
+/// (notes/stack-high-water.md's BUGS).
 #[cfg(initial_ramdisk)]
 const EL_IPC_SERVER: u64 = 3;
 #[cfg(initial_ramdisk)]
@@ -526,9 +439,10 @@ const SOAK_RESPONDER: u64 = 0;
 #[cfg(initial_ramdisk)]
 const SOAK_CALLER: u64 = 1;
 
-/// SEND/RECEIVE between two EL0 processes: `bench.rs`'s `ipc_rtt_el0`, lmbench's `lat_pipe`. The
-/// client runs its own fixed loop, reports and exits; the server parks in RECEIVE forever, so the
-/// endpoints come from a region a `Holding` reclaims, which is what wakes it to die.
+/// SEND/RECEIVE between two EL0 processes, `bench.rs`'s `ipc_rtt_el0`.
+///
+/// Returns `None` when the program is not in the initial ramdisk. The server parks in RECEIVE
+/// forever, so the endpoints come from a region a `Holding` reclaims, which wakes it to die.
 #[cfg(initial_ramdisk)]
 fn send_receive_el0() -> Option<()> {
     use crate::cap::{Rights, rendezvous_cap};
@@ -597,9 +511,10 @@ fn send_receive_el0() -> Option<()> {
     Some(())
 }
 
-/// CALL against `RECEIVE_CAP` and REPLY between two EL0 processes, using the soak workload's caller and
-/// responder, which loop forever: this waits until both have filled their series and then takes
-/// them back.
+/// CALL against `RECEIVE_CAP` and REPLY between two EL0 processes, the soak workload's pair.
+///
+/// Returns `None` when `soaker` is not in the initial ramdisk. Both loop forever, so this waits up
+/// to 30 seconds for their series to fill and then reclaims them.
 #[cfg(initial_ramdisk)]
 fn call_reply_el0() -> Option<()> {
     use crate::cap::{Rights, rendezvous_cap};
@@ -728,11 +643,12 @@ pub(crate) fn el0_shapes() -> usize {
     bad
 }
 
-/// Print one series as a line and say whether it is a measurement. Returns 1 when it is not: too
-/// few samples, or a median at the floor (the operation did not go below the paint's ceiling, so
-/// the number is the instrument's own frames and margin rather than the kernel's depth). A minimum
-/// at the floor with a median above it is a measurement: it is the shorter of two paths one
-/// operation can take (RECEIVE that finds its sender already waiting does not block).
+/// Print one series as a line and say whether it is a measurement.
+///
+/// Returns 1 for too few samples or a median at the floor, where the number is the instrument's own
+/// frames rather than the kernel's depth; 0 otherwise. A minimum at the floor under a higher median
+/// is still a measurement: the shorter of an operation's two paths, such as a RECEIVE that does not
+/// block.
 fn report(plane: &str, shape: &str, role: &str, operation: &str, s: &Series) -> usize {
     let n = s.n.load(Ordering::Relaxed).min(SAMPLES);
     let mut v = [0u32; SAMPLES];
@@ -749,17 +665,14 @@ fn report(plane: &str, shape: &str, role: &str, operation: &str, s: &Series) -> 
     }
     let (min, median, max) = (v[0] as u64, v[n / 2] as u64, v[n - 1] as u64);
     if median <= floor {
-        // Not a depth: the operation stayed inside the frames the instrument itself occupies (for
-        // EL0, `after_syscall` and `arm` below `dispatch`, plus the margin). What is true is the
-        // bound, so that is what the line says, rather than a median that is the instrument's.
+        // Not a depth: the operation stayed inside the instrument's own frames, so print the bound.
         println!(
             "ipc-stack-depth: {plane} {shape} {role} {operation} AT FLOOR: at most {floor}, shallower than \
              the instrument can see (max {max}, samples {n})"
         );
         return 1;
     }
-    // The excursion below the measuring frame: what the operation itself costs, whatever the
-    // caller's own depth. For EL0 the caller offset is zero and the two numbers are the same.
+    // Below the measuring frame: the operation's own cost. Zero caller offset for EL0.
     println!(
         "ipc-stack-depth: {plane} {shape} {role} {operation} median {median} min {min} max {max} \
          below-caller {} floor {floor} samples {n}",
@@ -770,11 +683,10 @@ fn report(plane: &str, shape: &str, role: &str, operation: &str, s: &Series) -> 
 
 #[cfg(test)]
 mod tests {
-    /// **Per-IPC kernel stack depth, measured** (milestone 134). Prints one `ipc-stack-depth:` line
-    /// per role and operation, kernel-thread shapes first, then EL0. Asserts only that each line is
-    /// a measurement (enough samples, every one below the paint ceiling), not what the numbers are:
-    /// this is the first time they exist, and a threshold belongs after the spread has been seen.
-    /// notes/stack-high-water.md carries the readings.
+    /// Every IPC series is a measurement: one `ipc-stack-depth:` line per role and operation.
+    ///
+    /// Asserts enough samples and a median below the paint ceiling, not the numbers themselves.
+    /// notes/stack-high-water/per-ipc-depth.md carries the readings.
     #[test_case]
     fn one_ipc_reaches_a_measured_depth_into_its_kernel_stack() {
         let bad = super::kernel_thread_shapes();

@@ -1,41 +1,16 @@
-//! Stack overflow detection.
+//! Kernel stack overflow detection and measurement.
 //!
-//! # Why this exists
-//!
-//! Milestone 3 hung the machine. A test put a 16 KiB array on the 64 KiB boot stack,
-//! `sp` walked below `__stack_bottom`, and the frame wrote straight through `.bss`,
-//! `.data`, and into `.text`. The kernel then executed its own corrupted code.
-//!
-//! There was no crash, no fault, no message. It hung *while printing*, and the print
-//! had nothing to do with it. The bug was thousands of instructions upstream, in a
-//! function prologue that had already returned.
-//!
-//! That is the worst failure mode this codebase can produce, and it was completely
-//! invisible. So now it isn't.
-//!
-//! # What the real fix is
-//!
-//! A **guard page**: leave the page below the stack unmapped, and the MMU faults the
-//! instant anything touches it. Precise, free at runtime, and impossible to miss.
-//!
-//! We can't do that yet, because we have no MMU. That's milestone 4, and the TODO is
-//! recorded in link-aarch64.ld.
-//!
-//! Until then, a canary. It is strictly worse than a guard page: it detects the damage
-//! *after* it has happened rather than preventing it, and only if the overflow actually
-//! wrote over the canary words. But it turns "the machine went insane for no reason"
-//! into "you blew the stack," which is the difference between an afternoon and five
-//! seconds.
+//! A canary under the boot stack, the guard-page lookup a fatal fault prints, and the paint that
+//! measures how deep each kernel stack has been. See notes/stack.md,
+//! notes/stack/reading-a-guard-page-report.md and notes/stack-high-water.md.
 
 use core::ffi::c_void;
 
-/// Written at the very bottom of the stack. Nothing legitimate should ever touch it.
+/// The canary, written at the very bottom of the boot stack, where nothing legitimate writes.
 ///
-/// Four words rather than one: a big stack frame decrements `sp` past the bottom and
-/// then writes throughout the frame, so a wider target is more likely to be hit.
-// Arbitrary, but deliberately not zero (fresh RAM and `.bss` are full of zeroes) and not
-// a plausible pointer or small integer, so a stray write is unlikely to reproduce one by
-// accident.
+/// Four words, because a big frame moves `sp` past the bottom and then writes throughout the
+/// frame, so a wider target is likelier to be hit. Not zero (fresh `.bss` is zeroes) and not a
+/// plausible pointer or small integer, so a stray write is unlikely to reproduce it.
 const CANARY: [u64; 4] = [
     0x57ac_c0de_57ac_c0de,
     0xc0ff_ee00_1eaf_babe,
@@ -68,44 +43,32 @@ pub(crate) fn headroom() -> i64 {
 
 /// Which kernel stack a faulting address belongs to, when it lands in that stack's guard page.
 ///
-/// There are three kinds and they are allocated three different ways, which is exactly why nothing
-/// used to name them: the boot stack's guard is a linker symbol, a secondary's is an offset into a
-/// `.bss` array (milestone 90), and a thread's is a slot in the virtual stack area 64 GiB up.
+/// Each kind is allocated a different way; notes/stack/reading-a-guard-page-report.md has them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GuardPage {
     /// The boot stack's guard page (`__stack_guard`). Core 0 runs the whole test suite on it.
     Boot,
     /// Secondary core `id`'s guard page.
     Secondary(usize),
-    /// A thread kernel stack's guard page: the slot index within `thread::STACK_AREA`, counting
-    /// from zero. Not a `ThreadId`, deliberately, because turning a slot back into a thread needs the
-    /// scheduler lock and this runs in a handler that may not take one.
+    /// A thread kernel stack's guard page: the slot index within `thread::STACK_AREA`, from zero.
+    /// Not a `ThreadId`: naming the thread needs the scheduler lock, which a fault handler may not
+    /// take.
     Thread(u64),
-    /// Core `id`'s **interrupt** stack guard page (milestone 124): the stack a trap taken on kernel
-    /// code runs its handler on. A fault here means the handler chain itself ran off the bottom,
-    /// which is a different animal from a thread running out of room and sends a reader to
-    /// `script/stack-depth-check`'s interrupt-stack bound rather than to the thread one.
+    /// Core `id`'s interrupt-stack guard page: a trap handler chain ran off the bottom, which
+    /// `script/stack-depth-check`'s interrupt-stack bound covers.
     Interrupt(usize),
 }
 
-/// **Is `addr` inside a kernel stack guard page, and whose?**
+/// Find the kernel stack guard page `addr` lies in, if any.
 ///
-/// The one question a fatal kernel fault should answer before anything else, because the answer
-/// turns "unexpected trap at some address" into "this stack overflowed", and those two send a
-/// reader to completely different places. Nothing did it before milestone 78: a thread-stack
-/// overflow reached CI as `unexpected RISC-V trap: scause=0xf ... from_user=false`, which reads as
-/// a fault in the memory system rather than the guard page doing its job.
-///
-/// Takes no locks and touches no allocator, because every caller is already in a fault handler.
+/// Returns the stack's kind, or `None` when `addr` is in no guard page. Takes no lock and touches
+/// no allocator, because every caller is a fatal-fault path. See
+/// notes/stack/reading-a-guard-page-report.md.
 ///
 /// # BUGS
 ///
-/// **A `None` here does not mean the stack is fine.** A guard page is one page, and the kernel has
-/// stack frames bigger than that (`sched::reap_region_objects` is 6832 bytes on riscv64), so a
-/// function entered near the bottom of a 24 KiB thread stack can put `sp` clean below the guard
-/// page without ever touching it, and then write into the *neighbouring slot's* top stack page,
-/// which is mapped and in use. That produces silent corruption rather than a fault, and this
-/// function cannot see it. See notes/load-sensitive-assertions.md.
+/// A `None` does not mean the stack is fine: a frame larger than the one-page guard can step over
+/// it into the neighboring slot without faulting (notes/load-sensitive-assertions.md).
 pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
     const PAGE: u64 = 4096;
 
@@ -128,8 +91,7 @@ pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
     let (area, watermark) = crate::thread::stack_area_span();
     if (area..watermark).contains(&addr) {
         let off = addr - area;
-        // A slot is [guard page][STACK_PAGES of stack], so an offset inside the first page of a
-        // slot is a guard-page hit and anything above it is ordinary stack.
+        // A slot is [guard page][STACK_PAGES of stack]: its first page is the guard.
         if off % crate::thread::STACK_SLOT_SPAN < PAGE {
             return Some(GuardPage::Thread(off / crate::thread::STACK_SLOT_SPAN));
         }
@@ -138,16 +100,11 @@ pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
     None
 }
 
-/// Where in the thread-stack area an address falls: `(slot, bytes above that slot's lowest usable
-/// byte)`. Negative means inside the slot's guard page, which is the bottom page of every slot.
+/// Locate `addr` in the thread-stack area, for saying where a faulting `sp` was.
 ///
-/// Separate from [`guard_page_at`] because that function answers "is this address a guard page",
-/// and reading a guard-page fault needs the other half too: **where `sp` was**. The same fault
-/// address means opposite things depending on the answer, so both have to be said in the same
-/// units, and `guard_page_at` returns nothing at all for an address that is ordinary live stack.
-///
-/// Reads one relaxed atomic (via [`crate::thread::stack_area_span`]) and takes no lock, because
-/// every caller is a fault handler that has already lost the machine.
+/// Returns `(slot, bytes above that slot's lowest usable byte)`, negative inside the slot's guard
+/// page, or `None` outside the area. Unlike [`guard_page_at`] it answers for ordinary live stack
+/// too. Reads one relaxed atomic and takes no lock, because every caller is a fatal-fault path.
 pub(crate) fn thread_stack_site(addr: u64) -> Option<(u64, i64)> {
     let (area, watermark) = crate::thread::stack_area_span();
     if !(area..watermark).contains(&addr) {
@@ -156,47 +113,18 @@ pub(crate) fn thread_stack_site(addr: u64) -> Option<(u64, i64)> {
     let span = crate::thread::STACK_SLOT_SPAN;
     let off = addr - area;
     let slot = off / span;
-    // The guard page is the first page of the slot, so the slot's lowest usable byte is one page
-    // in. `above` is signed for exactly the case this exists to report: a negative value is an
-    // address in the guard page, and how negative says how far a single step reached.
+    // The guard is the slot's first page, so its lowest usable byte is one page in. Signed: a
+    // negative value is in the guard page, and its size says how far one step reached.
     let above = (off % span) as i64 - 4096;
     Some((slot, above))
 }
 
-/// Shout if `addr` is a kernel stack guard page, naming which stack, how far below its bottom the
-/// access landed, **and where `sp` actually is**. Called from both ISAs' fatal-fault paths with the
-/// faulting address.
+/// Report a fault at `addr` that landed in a kernel stack guard page; do nothing otherwise.
 ///
-/// The distance is the number that matters: a few bytes past the bottom is an ordinary overflow,
-/// and *thousands* of bytes past it means a single frame jumped most of the way across the guard,
-/// which is the case where the next one jumps clean over it. Printing it is what let milestone 78
-/// tell those apart.
-///
-/// # Why `sp` is printed beside the address
-///
-/// The faulting **address** and the stack **pointer** agree only when the fault really is `sp`
-/// walking off the end. They come apart in two ways that look like an ordinary overflow:
-///
-///   - a store through a stray pointer that happens to name a guard page, with `sp` nowhere near
-///     it, and
-///   - a store just **past the top** of the stack in the slot below. Slot `N`'s guard page starts
-///     at exactly the address one past slot `N-1`'s last usable stack byte, because the slots are
-///     contiguous and the guard is each slot's first page. So `guard base + 0` and `guard base +
-///     8` are the first two words above a *different* stack's top, and a pointer that treats a
-///     stack top as inclusive lands there rather than anywhere near `sp`.
-///
-/// So it prints `sp` in the same units and leaves the comparison to the reader.
-///
-/// **The `sp` it prints is the interrupted one, taken from the trap frame**: a trap from kernel
-/// mode runs its handler on this core's interrupt stack, so the live `sp` would name an unrelated
-/// stack. aarch64 computes it from the frame's own address; RISC-V reads the frame's saved `x2`.
-///
-/// **One reading of "slot N-1" is a trap, and the printed guidance names it.** aarch64 has no
-/// double fault: if the vector's own `SAVE_CONTEXT` store lands in a guard page it re-enters the
-/// same vector with `sp` another 272 lower, repeatedly, until the frame fits, which puts it in the
-/// slot below and leaves `FAR_EL1` holding the *first* failing address. That produces exactly the
-/// "sp is one slot down" picture a store past a neighbour's top does. The fault PC separates them:
-/// inside the vector table means the walk, ordinary Rust means the store.
+/// `addr` is the faulting address and `interrupted_sp` the `sp` saved in the trap frame (the live
+/// one is the interrupt stack's). Prints which stack, how far below its bottom the access landed,
+/// where `sp` was, and for a thread or interrupt stack a scan of its words. Called from both ISAs'
+/// fatal-fault paths. notes/stack/reading-a-guard-page-report.md says how to read it.
 pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
     let Some(kind) = guard_page_at(addr) else {
         return;
@@ -204,10 +132,8 @@ pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
 
     crate::println!();
     crate::println!("  *** KERNEL STACK OVERFLOW ***");
-    // The span to scan, filled in by the arms that have one. The scan runs at the very END of this
-    // function rather than inside the arm, and that ordering is load-bearing: see the `BUGS` note
-    // on `print_text_words`, which faulted mid-report on 2026-08-16 and took `ELR_EL1`, `FAR_EL1`
-    // and every line below it with it.
+    // The span to scan. The scan itself runs last: it is the only part that can fault, and a
+    // fault there must not take the lines below with it.
     let mut scan: Option<(u64, u64)> = None;
     match kind {
         GuardPage::Boot => {
@@ -249,14 +175,11 @@ pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
                 bottom.saturating_sub(addr),
                 crate::interrupt_stack::SIZE,
             );
-            // The same conservative scan the thread arm gets, and for the same reason: a handler
-            // chain deep enough to run off the bottom is exactly the thing whose callers nobody
-            // can name from the fault alone.
             scan = Some((bottom, top));
         }
     }
 
-    // The line the report was missing. Everything above is about the faulting ADDRESS.
+    // Everything above is about the faulting address; this is where `sp` was.
     let sp = interrupted_sp;
     match thread_stack_site(sp) {
         Some((slot, above)) if above >= 0 => crate::println!(
@@ -284,40 +207,21 @@ pub(crate) fn warn_if_guard_page(addr: u64, interrupted_sp: u64) {
     crate::println!("  The guard page is ONE page. A frame larger than that can step over it");
     crate::println!("  into the slot below without faulting; see notes/stack.md.");
 
-    // LAST, because it is the only part of this report that can itself fault. See its BUGS.
+    // Last, because it is the only part of this report that can itself fault.
     if let Some((bottom, top)) = scan {
         print_text_words(bottom, top);
     }
 }
 
-/// Print every word on the overflowed stack that points into the kernel's text section, deepest
-/// first: a conservative backtrace, and the only kind this kernel can produce, because it does
-/// not maintain frame pointers (the 2026-08-15 CI overflow was symbolized by rebuilding CI's
-/// exact binary in a container to learn what one register meant; this exists so the next report
-/// carries its own call chain). Most hits are genuine return addresses; some are spilled
-/// function pointers or stale words from a previous tenant of a reused stack slot, so read it as
-/// candidates for `llvm-addr2line`, not as a walked chain. Capped so a full stack cannot flood
-/// the serial log the dump itself needs.
+/// Print every word in `[bottom, top)` that points into `.text`, deepest first, up to 40.
 ///
-/// Thread and interrupt stacks only, deliberately. The boot and secondary arms above could take the
-/// same scan but have never overflowed outside milestone 3's era; add them when one does.
+/// A conservative backtrace, because this kernel keeps no frame pointers: read the hits as
+/// candidates for `llvm-addr2line`. Asks the page tables before each page and reports unmapped
+/// bytes instead of reading them. See notes/stack/reading-a-guard-page-report.md.
 ///
 /// # BUGS
 ///
-/// **A thread slot's pages are not necessarily mapped, and assuming they were cost a whole
-/// report.** This function's first version derived its span from the slot geometry and read it
-/// unconditionally, on the premise that "thread.rs maps every slot whole". That premise is true of
-/// a *live* slot and false of a dead one: `KernelStack::drop` unmaps all six pages and hands the
-/// address range back to `FREE_STACK_ADDRESS_SPACE`. On 2026-08-16 (CI run 31960738448) the very first read
-/// took a translation fault, which re-entered the fault handler and destroyed `ELR_EL1` and
-/// `FAR_EL1` before either had been printed. The report ate itself on its first real firing, and
-/// the one fact it was added to establish was the fact that killed it.
-///
-/// Two things follow, and both are here rather than in a tracker. The scan asks the page tables
-/// before every page and says so when the answer is no, which turns the old fault into the single
-/// most useful line in the report: **a slot whose stack is unmapped was freed under whoever was
-/// standing on it.** And the caller runs this LAST, so a future surprise in here can only cost the
-/// scan and never the registers.
+/// - Thread and interrupt stacks only; the boot and secondary stacks get no scan.
 fn print_text_words(bottom: u64, top: u64) {
     const CAP: usize = 40;
     let text = crate::arch::mmu::text_start()..crate::arch::mmu::text_end();
@@ -331,8 +235,7 @@ fn print_text_words(bottom: u64, top: u64) {
     let mut p = bottom;
     let mut unmapped = 0u64;
     while p < top && printed < CAP {
-        // Ask the page tables rather than assume. A whole slot reads as unmapped when its
-        // `KernelStack` has been dropped, which is a diagnosis rather than an obstacle.
+        // A dropped `KernelStack` leaves its whole slot unmapped.
         if p.is_multiple_of(4096) && !crate::arch::mmu::is_mapped(p) {
             unmapped += 4096;
             p += 4096;
@@ -367,8 +270,8 @@ fn print_text_words(bottom: u64, top: u64) {
     }
 }
 
-/// Shout if the canary is dead. Called from the panic handler and the fault handler,
-/// because a corrupted stack makes every *other* diagnostic a potential lie.
+/// Report a dead canary. Called from the panic and fault handlers, because a corrupted stack
+/// makes every other diagnostic suspect.
 pub(crate) fn warn_if_smashed() {
     if !is_intact() {
         crate::println!();
@@ -395,20 +298,12 @@ fn top() -> u64 {
     (&raw const __stack_top) as u64
 }
 
-// --- Stack high-water measurement (milestone 84) ---
+// --- Stack high-water measurement ---
 //
-// The canary above answers "did an overflow happen"; nothing answered "how close are we". The
-// FS-server stack bug (notes/nifefs.md) was found the expensive way, and until this landed the
-// claim "the stacks are big enough" was an argument, not a measurement. So: paint every
-// kernel-owned stack with a pattern before use, and at the end of the test suite scan each for the
-// deepest overwritten word. Test builds only, deliberately: painting 16 KiB per thread spawn would
-// perturb the spawn benchmark, and the report goes through the test channel anyway. `paint` and
-// `high_water` themselves are built everywhere: the `ipc_stack_depth` feature's per-operation
-// measurement (crate::ipc_stack_depth) needs them in the release bench kernel, and the
-// progenitor's stack gauge (crate::progenitor_stack) paints one user stack, once, in every boot.
-//
-// A watermark sees only exercised paths. An unexercised deep path stays invisible, the same limit
-// coverage has. See notes/stack-high-water.md.
+// Paint a stack before use, then scan for the deepest word overwritten. `paint` and `high_water`
+// are built everywhere (`ipc_stack_depth` and `progenitor_stack` use them); the kernel-stack
+// report is test builds only, so painting adds nothing to a spawn outside a test. A watermark
+// sees only exercised paths. See notes/stack-high-water.md.
 
 /// The paint word. Not zero (fresh `.bss` is zeroes, and a stack full of zeroes would read as
 /// untouched), not a plausible pointer or length, and not one of the canary words.
@@ -421,10 +316,6 @@ const PAINT: u64 = 0x5AFE_57AC_5AFE_57AC;
 /// This writes every word in it, so a live frame anywhere inside is corrupted: a call site painting
 /// a stack that is in use has to skip the live portion itself (see `paint_boot_stack`, which stops
 /// a margin below the running `sp`).
-///
-/// It was a safe fn until milestone 112, with that requirement written as a `// SAFETY:` comment
-/// naming "the caller". Three call sites, and any other safe code in the kernel could have written
-/// this pattern over an arbitrary address range.
 pub(crate) unsafe fn paint(bottom: u64, top: u64) {
     let mut p = bottom as *mut u64;
     while (p as u64) < top {
@@ -436,29 +327,16 @@ pub(crate) unsafe fn paint(bottom: u64, top: u64) {
     }
 }
 
-/// **The most bytes this stack ever used**, for a painted stack `[bottom, top)`: scan upward from
-/// the bottom for the first word that is no longer [`PAINT`], and return the distance from there to
-/// the top. Not the depth now and not the space free; the maximum ever reached, which is what
-/// painting buys (the deepest frame destroys the paint and the damage outlives it).
+/// Measure the most bytes a painted stack `[bottom, top)` has ever used.
 ///
-/// The reading inverts twice, so: the **painted** bytes are the ones nothing ever used, and the
-/// number counts *up* from a deepest point that is at a *low* address. Paint left is room to
-/// spare. See notes/stack-high-water.md. Iterative, no locals of size, so the scan
-/// itself needs no meaningful depth on whatever stack it runs on.
-///
-/// A frame whose deepest word happened to store the paint value exactly reads one word shallow.
-/// Classic limitation of the method; a 64-bit pattern makes it vanishingly unlikely.
+/// Scans up from `bottom` for the first word that is not [`PAINT`] and returns its distance from
+/// `top`: the deepest point ever reached, not the depth now. Iterative, so it needs little stack of
+/// its own. A deepest word that stored the paint value reads one word shallow.
 ///
 /// # Safety
 /// `[bottom, top)` must be a mapped, readable, 8-byte-aligned range, and it must be a range
 /// [`paint`] ran over, or the answer is a reading of somebody else's bytes rather than a
 /// measurement.
-///
-/// **This one is milestone 112's correction to milestone 82's survey**, which found four sites by
-/// grepping SAFETY comments for the word "caller" and so missed this one: it had the identical
-/// defect (a safe fn dereferencing an address range built from its own arguments) written in the
-/// passive voice, "a mapped stack region", which names the obligation without naming anybody who
-/// owes it. Passive voice hides the defect from the pattern that found the rest of it.
 pub(crate) unsafe fn high_water(bottom: u64, top: u64) -> u64 {
     let mut p = bottom as *const u64;
     while (p as u64) < top {
@@ -474,21 +352,16 @@ pub(crate) unsafe fn high_water(bottom: u64, top: u64) -> u64 {
     0
 }
 
-/// How far below the paint-time `sp` the boot-stack paint stopped, recorded so the report can say
-/// what its floor is: a measured high-water equal to the floor means "nothing after the paint went
-/// deeper than the paint itself", not "this is the true maximum".
+/// Where the boot-stack paint stopped, below the paint-time `sp`. A high-water equal to this floor
+/// means nothing after the paint went deeper than it, not that this is the true maximum.
 #[cfg(any(test, feature = "system_tests"))]
 static BOOT_PAINT_CEILING: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
-/// Paint the unused part of the boot stack. Called from `kernel_main` right after [`init`], so the
-/// live portion (boot.s frames plus `kernel_main`'s own) is honestly skipped rather than painted
-/// over: everything from the canary up to a margin below the current `sp` gets the pattern.
+/// Paint the boot stack from above the canary to 512 bytes below the current `sp`.
 ///
-/// Two honest limits. Depth used *before* this runs and never reached again is invisible; the boot
-/// path to here is a handful of shallow frames, so the floor is low, and the report prints it. And
-/// the margin below `sp` exists because the paint loop's own callees (`write_volatile` is a real
-/// call in a debug build) push frames below our `sp` while the loop runs; painting inside a live
-/// callee frame would corrupt it.
+/// Called from `kernel_main` right after [`init`], so the live frames are skipped. Depth used
+/// before this runs and never reached again is invisible; the report prints the floor. The 512-byte
+/// margin covers the paint loop's own callees, which are real calls in a debug build.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn paint_boot_stack() {
     let ceiling = crate::arch::current_sp() - 512;
@@ -521,10 +394,10 @@ pub(crate) fn note_thread_stack_use(used: u64) {
     THREAD_STACK_SCANS.fetch_add(1, Ordering::Relaxed);
 }
 
-/// Per-stack high-water report, printed by the test runner after the last test. The numbers are a
-/// property of the code and the suite, not of the host: depth is determined by what ran, so a
-/// loaded runner moves nothing here (the one caveat is interrupt-arrival timing, which decides
-/// where on a stack a trap frame lands; see notes/stack-high-water.md for the measured spread).
+/// Print every kernel stack's high-water mark and fail on any over its limit.
+///
+/// Run by the test runner after the last test. Depth depends on what ran, not on host load, apart
+/// from where a trap frame lands. Limits and margins: notes/stack-high-water.md, "The gate".
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn report_high_water() {
     use core::sync::atomic::Ordering;
@@ -557,8 +430,7 @@ pub(crate) fn report_high_water() {
         );
     }
 
-    // The per-CPU interrupt stacks (milestone 124), every seat, because a slot is painted whether
-    // or not its core ever came online and an untouched one reads 0 rather than lying.
+    // Every seat: `interrupt_stack::init` painted each slot, so an unused one reads 0.
     let mut max_interrupt = 0u64;
     for id in 0..crate::cpu::MAX_CPUS {
         let (b, t) = crate::interrupt_stack::span(id);
@@ -575,8 +447,7 @@ pub(crate) fn report_high_water() {
         }
     }
 
-    // Live thread stacks last, so long-lived service threads (the FS server, the shape of the
-    // motivating incident) are counted even though nothing ever reaps them.
+    // Live thread stacks too, so threads nothing ever reaps are counted.
     crate::sched::scan_live_thread_stacks();
     let tmax = THREAD_STACK_MAX.load(Ordering::Relaxed);
     let tsize = (crate::thread::STACK_PAGES * 4096) as u64;
@@ -586,29 +457,8 @@ pub(crate) fn report_high_water() {
         THREAD_STACK_SCANS.load(Ordering::Relaxed),
     );
 
-    // The gate, landed after the measurement per the milestone's measure-then-gate sequence.
-    // Checked after the printing, so a trip always comes with the numbers that explain it.
-    //
-    // The margins are justified by the measured spread, which is unusually small: two aarch64 runs
-    // agreed byte for byte on every stack under host loads of 33 and 9, and the two ISAs agree to
-    // within ~410 bytes (boot 53808/54216, secondaries 8504/8448, thread 11352/11672; see
-    // notes/stack-high-water.md). So each limit sits far above anything observed, and what it buys
-    // against that stability is an alarm that still fires BEFORE the stack actually runs out:
-    //
-    //   - boot 61440: +7.2 KiB over the observed max, and a trip still leaves a full page before
-    //     the guard. Growth lands here first (test_main runs every test body on this stack).
-    //   - secondary 16384: ~2x observed. Milestone 90 put a guard page under each of these stacks
-    //     (smp.rs), so this is no longer the only thing standing between a deep secondary and
-    //     silent .bss corruption; it is now what a guard page cannot be, an alarm that fires ~48
-    //     KiB BEFORE the fault, in the run that drifts rather than the run that dies.
-    //   - thread 18432: sized against the measured worst-case STACKING, not just the observed
-    //     high-water. The 2026-08-15 CI overflows (thread.rs, `STACK_PAGES`) showed the honest
-    //     worst case is observed-deepest (~11.7 KiB) plus a blocked thread's resident residue
-    //     (~1.4 KiB) plus a preemption landing at the deepest instant (~2.3 KiB), about 15.5 KiB,
-    //     which is why the old 16 KiB stacks overflowed under load and why the old 14336 limit
-    //     could pass a green run whose true worst case was already past the stack. 18432 sits
-    //     ~3 KiB above that sum, and trips 6 KiB before the 24 KiB stack's guard, so a load-heavy
-    //     but healthy run passes while real growth still alarms long before the fault.
+    // Checked after the printing, so a trip always comes with its numbers. The boot, secondary and
+    // thread limits and their margins are in notes/stack-high-water.md, "The gate".
     assert!(
         used <= 61440,
         "boot stack high-water {used} exceeded 61440: the suite's deepest path has grown ~7 KiB \
@@ -620,12 +470,8 @@ pub(crate) fn report_high_water() {
          the guard page below it (smp.rs) would still catch a real overflow, but something is \
          running much deeper on an idle-and-traps stack than the suite has ever measured",
     );
-    // The interrupt stacks, whose whole point is that this number is bounded rather than paid by
-    // whichever thread was unlucky. Half the 16 KiB slot: `script/stack-depth-check` puts the
-    // deepest chain reachable from the dispatcher at about 4 KiB on both ISAs, and the same
-    // measure-then-gate discipline as the rows above says the alarm belongs above what has been
-    // measured and far below the guard. A trip here means a handler chain grew, which is a real
-    // finding and not a stack to enlarge.
+    // Half the 16 KiB slot, above the ~4 KiB chain `script/stack-depth-check` finds and far below
+    // the guard. A trip means a handler chain grew, not that the stack is too small.
     assert!(
         max_interrupt <= 8192,
         "an interrupt stack's high-water {max_interrupt} exceeded 8192, half its slot: a trap \
@@ -643,11 +489,10 @@ pub(crate) fn report_high_water() {
 mod tests {
     //! Tests for stack overflow detection.
 
-    /// Proves the stack canary works, without actually smashing the stack.
+    /// The canary is intact and there is more than 4 KiB of stack left.
     ///
-    /// The runner checks this after every test (see testing.rs), so a test that blows the
-    /// stack is now caught immediately and by name, rather than corrupting the kernel and
-    /// hanging somewhere unrelated. That is exactly how milestone 3 went wrong.
+    /// The runner also checks the canary after every test (testing.rs), so a test that overflows
+    /// is caught by name.
     #[test_case]
     fn stack_canary_is_intact_and_we_have_headroom() {
         assert!(crate::stack::is_intact(), "stack canary is already dead");

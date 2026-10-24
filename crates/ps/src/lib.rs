@@ -2,32 +2,21 @@
 //! program's logic, lifted out to run on the host; `components/src/ps.rs` is the syscall and the
 //! two output streams. The listing is a capability, not ambient `/proc`: this crate is handed a
 //! function that reads one entry of a domain, backed by `abi::rendezvous::SURVEY` on an endowed
-//! supervision endpoint, so it cannot widen the domain or learn that another exists.
-//!
-//! A monitor that reports nothing because it could not look reads exactly like a quiet machine, so
-//! three answers stay distinct to the terminal: rows on the output stream; an empty domain, said on
-//! diagnostics; and a refusal, named on diagnostics with no rows.
-//!
-//! §67 (a program's second stream is a declaration) requires every complaint said, and that
-//! stream closed, before a byte of output, and an endpoint can be destroyed mid-walk. So [`collect`] takes the whole domain
-//! into the caller's buffer first, then the caller emits [`Survey::write_diagnostics`] and
-//! [`Survey::write_report`] in that order. The buffer is the caller's because a `[Row; MAX_ROWS]`
-//! local made `collect`'s frame larger than the 4,096-byte guard page under every kernel thread
-//! stack (`script/stack-frame-check`). Sized at [`MAX_ROWS`], the kernel's whole thread table,
-//! truncation cannot happen; a shorter buffer says it was truncated, on diagnostics.
-//!
+//! supervision endpoint, so it cannot widen the domain or learn that another exists. Rows, an
+//! empty domain and a refusal stay three distinct answers. [`collect`] takes the whole domain
+//! into the caller's buffer before anything is written, then the caller emits
+//! [`Survey::write_diagnostics`] and [`Survey::write_report`] in that order (§67 (a program's
+//! second stream is a declaration)). notes/process-view/the-ps-crate.md has the reasons.
+
 //! # BUGS
 //!
-//! - No `CMD` column: there is no display name, and no design for whether a confined viewer may
-//!   see one.
-//! - The tid is printed whole, `(generation << 32) | slot`, as `abi::rendezvous::REAP` takes it;
-//!   splitting it would publish the thread table's shape.
+//! - No `CMD` column: there is no display name, and no design for who may see one.
+//! - The tid prints whole (`(generation << 32) | slot`); split, it would expose the table's shape.
 //! - `ps` does not sort; [`Survey::rank_by_cpu_time`] is for `components/src/top.rs`.
-//! - `TIME` is a second walk joined on the tid ([`Survey::join_cpu_time`]); a thread that dies
-//!   between them prints `-`.
+//! - `TIME` is a second walk ([`Survey::join_cpu_time`]); a thread that dies between prints `-`.
 //! - Each row is its own snapshot, so an early row may be stale when the table prints.
-//! - Nothing automated spawns `ps` or `pgrep`; host tests and `kernel::user::survey_tests` cover
-//!   the logic and the syscall, and only a static stack measurement covers the buffer.
+//! - Nothing automated spawns `ps` or `pgrep`; only a static stack measurement covers the buffer
+//!   (host tests and `kernel::user::survey_tests` cover the logic and the syscall).
 //!
 //! Name: ratified 2026-08-23 (calef): the name every reader knows, shared with
 //! `components/src/ps.rs` as one thing split at the IO boundary.
@@ -35,27 +24,10 @@
 #![cfg_attr(not(test), no_std)]
 
 /// The widest domain a survey can produce: the kernel's entire thread table (`MAX_THREADS` in
-/// `kernel/src/sched.rs`).
-///
-/// **A buffer this size makes truncation unreachable rather than handled.** A `ps` holding the
-/// widest grant this system can express sees every thread on the machine, so there is no "and N
-/// more" the shipped program can ever print. If the kernel's table grows, this is the number that
-/// moves with it, and a compile-time assertion in `kernel::user::survey_tests` is what keeps the
-/// two in step rather than a reader.
-///
-/// **128 from milestone 126 until 2026-08-27**, when the kernel's ceiling doubled on a measured
-/// peak (`sched::MAX_THREADS` carries the numbers) and this followed it, which is that assertion
-/// working as designed. The raise is not free here, because a `[Row; MAX_ROWS]` is a stack
-/// allocation in both shipped programs, so it was measured rather than waved through:
-/// `-Z emit-stack-sizes` puts `_start` at 4,240 bytes in `ps` and 4,320 in `pgrep`, against the 12
-/// pages (49,152 bytes) `system_initializer::CHILD_STACK_PAGES` maps under every child. Under 9% of
-/// the stack each, and nothing else in these programs is deep: `collect` is 368 bytes and the next
-/// frame down is smaller still.
-///
-/// **It was three programs and a worse number until milestone 281.** `watch` held *two* of these
-/// buffers, one across its whole run and one declared inside its redraw loop, and measured 8,464
-/// bytes: 17% of the stack, the worst of the three. It was deleted rather than fixed, and the
-/// figures above are what is left.
+/// `kernel/src/sched.rs`). **A buffer this size makes truncation unreachable rather than handled**,
+/// and a compile-time assertion in `kernel::user::survey_tests` keeps the two in step. The buffer
+/// is a stack allocation in `ps` and `pgrep`; notes/process-view/the-ps-crate.md has its measured
+/// cost against the child stack.
 pub const MAX_ROWS: usize = 256;
 
 /// One line of the listing: a thread and what it is doing.
@@ -69,15 +41,10 @@ pub struct Row {
     pub state: u64,
     /// **Scheduled on-CPU time in milliseconds**, or `None` when nobody asked for it.
     ///
-    /// `None` rather than `0`, and the difference is the whole reason this is an `Option`.
-    /// [`collect`] performs one walk, for the state record, because that is all `pgrep` and a plain
-    /// listing want; the figure arrives only if a caller then runs
-    /// [`Survey::join_cpu_time`](Survey::join_cpu_time). A zero here would be a thread that has
-    /// genuinely never been on a CPU at a tick, which is a different fact from "not asked", and a
-    /// column that printed them the same way would be this crate's own `BUGS` section coming true.
-    ///
-    /// It also stays `None` for a row whose tid was in the first walk and not the second, which is
-    /// a thread that died in between. See [`Survey::join_cpu_time`].
+    /// `None` rather than `0`: [`collect`] walks only for the state record, and the figure arrives
+    /// only if a caller then runs [`Survey::join_cpu_time`]. A zero is a thread that has never been
+    /// on a CPU at a tick, a different fact from "not asked". It also stays `None` for a thread
+    /// that died between the two walks.
     pub cpu_millis: Option<u64>,
 }
 
@@ -107,16 +74,10 @@ pub struct Survey<'a> {
 /// **Walk a domain to its end and keep what it says.**
 ///
 /// `read(cursor)` is one `abi::rendezvous::SURVEY`: it answers `(next_cursor, tid, state)`, where a
-/// negative first word is a refusal and `abi::survey::DONE` means the walk is over. Start at 0, feed
-/// each `next_cursor` back; this function is that loop.
-///
-/// **It is deliberately a closure rather than a syscall**, which is what makes every case here
-/// reachable from a host test: the empty domain, the refusal, and a domain of a hundred threads all
-/// cost microseconds and no emulator.
-///
-/// The walk stops at the first refusal and reports it, rather than skipping the entry and carrying
-/// on. A survey that silently dropped an entry it could not read would be the failure this whole
-/// program exists to avoid, one row smaller.
+/// negative first word is a refusal and `abi::survey::DONE` means the walk is over. Start at 0,
+/// feed each `next_cursor` back; this function is that loop. A closure rather than a syscall, so
+/// every case is reachable from a host test. The walk stops at the first refusal and reports it
+/// rather than skipping the entry.
 ///
 /// # Examples
 ///
@@ -195,28 +156,13 @@ impl Survey<'_> {
     /// **Fill in [`Row::cpu_millis`] from a second walk of the same domain** (milestone 282 (a thread's CPU time, and the `top` it makes possible),
     /// `abi::survey::record::CPU_TIME`).
     ///
-    /// `read(cursor)` is one `SURVEY` asking for the CPU-time record, exactly as the closure
-    /// [`collect`] takes is one asking for the state record. The caller binds the record, not this
-    /// function, because a program that wants a third fact tomorrow joins it the same way.
-    ///
-    /// **Two walks joined on the tid, rather than one walk carrying two facts**, which is the shape
-    /// DECISIONS §204 (how userspace asks where a thread runs) chose when it made the record a selector: the cursor and the tid are the
-    /// same whichever record is asked for, so only the third word moves, and a program that wants
-    /// one fact pays nothing for the existence of the others. The cost is one extra syscall per
-    /// thread, which §204 priced at about 45 microseconds per second for sixty-four threads at a
-    /// one-second refresh.
-    ///
-    /// **A domain can change between the two walks**, and this is where that shows. A tid in the
-    /// first walk and not the second is a thread that died in between: its row keeps `None` and the
-    /// listing prints that it does not know, rather than borrowing a number from another row. A tid
-    /// in the second walk and not the first is simply ignored, because there is no row to put it
-    /// in. That is `readdir`'s bargain, the same one a single walk already takes between its own
-    /// calls (see the `BUGS` section of notes/process-view.md), and it is stated here rather than
-    /// hidden because the failure it prevents is a plausible wrong number.
-    ///
-    /// A refusal in the second walk is recorded exactly as one in the first is, so a caller that
-    /// checks [`is_refused`](Self::is_refused) afterwards is told rather than shown a table with a
-    /// blank column.
+    /// `read(cursor)` is one `SURVEY` asking for the CPU-time record, bound by the caller, as
+    /// [`collect`]'s closure is for the state record. Two walks joined on the tid, rather than one
+    /// walk carrying two facts, is DECISIONS §204 (how userspace asks where a thread runs)'s shape.
+    /// A tid in the first walk and not the second died in between and keeps `None`; one only in the
+    /// second is ignored. A refusal in the second walk is recorded as one in the first is, so
+    /// [`is_refused`](Self::is_refused) tells the caller. notes/process-view/the-ps-crate.md has
+    /// the cost and the bargain.
     pub fn join_cpu_time(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
         let mut cursor = 0u64;
         loop {
@@ -276,14 +222,10 @@ impl Survey<'_> {
     /// **What there is to complain about, as a clause a program name prefixes**, or `None` when the
     /// walk succeeded and found processes.
     ///
-    /// Split out of [`write_diagnostics`](Survey::write_diagnostics) so that a *second* program over
-    /// the same survey reuses these sentences instead of writing a parallel catalogue: `crates/pgrep`
-    /// filters this listing and has to describe a refusal in the same words, or the two programs
-    /// drift into disagreeing about what one refusal means. The clause carries no program name and no
-    /// newline for exactly that reason.
-    ///
-    /// The order is the order [`write_diagnostics`](Survey::write_diagnostics) has always used, and
-    /// the empty domain is last because it is the only one of the four that is **not** a failure.
+    /// Split out of [`write_diagnostics`](Survey::write_diagnostics) so `crates/pgrep` describes a
+    /// refusal in the same words; the clause carries no program name and no newline for that
+    /// reason. The order is [`write_diagnostics`](Survey::write_diagnostics)'s, and the empty
+    /// domain is last because it is the only one of the four that is not a failure.
     pub fn complaint(&self) -> Option<&'static str> {
         if self.stalled {
             return Some("the survey did not advance; the listing is incomplete");

@@ -11,14 +11,11 @@ use super::*;
 /// Close the TCP socket at `handle`: a connection drains its close handshake, and a listener
 /// resets any peer whose handshake already landed in it.
 ///
-/// **A listener closed with a handshake in it resets that peer** (milestone 514, 2026-10-12 UTC).
-/// `tcp_accept` re-arms before it returns, so a peer that connects between the last `ACCEPT` and
-/// this `CLOSE` completes its handshake into a socket nobody will accept. Closing that socket and
-/// dropping it unpolled sent nothing, so the peer held an established connection to nobody: the
-/// inbound prober waited on one for the rest of the run while the next listener's `accept` timed
-/// out with nobody connecting. Forced on HVF by polling 300 ms before this close, the run failed in
-/// exactly that shape; with the reset the peer reconnects and the next listener serves it. Linux
-/// resets a closed listener's unaccepted connections for the same reason.
+/// A listener closed with a handshake in it resets that peer, as Linux resets a closed listener's
+/// unaccepted connections. `tcp_accept` re-arms before it returns, so a peer that connects between
+/// the last `ACCEPT` and this `CLOSE` completes into a socket nobody accepts; dropping it unpolled
+/// sends nothing and leaves the peer an established connection to nobody. Milestone 514 (the HVF
+/// leg's std listener test hangs in some full runs) records the runs that showed it.
 ///
 /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). Named for its module.
 pub(super) fn close_tcp(
@@ -39,11 +36,9 @@ pub(super) fn close_tcp(
         return;
     }
     socket.close();
-    // Drain the close handshake so the peer (and slirp's flow for it) sees a clean teardown before
-    // we drop the socket. Dropping a socket mid-close leaves the peer's connection half-open, which
-    // on the guestfwd echo peer blocks the next connection to it. Both FINs exchanged (Closed or
-    // TimeWait) is enough; waiting for full Closed would linger in TimeWait's timer. Bounded, so a
-    // peer that never finishes still returns.
+    // Drain the close handshake before the drop: a socket dropped mid-close leaves the peer
+    // half-open, which blocks the guestfwd echo peer's next connection. Both FINs (Closed or
+    // TimeWait) suffice; full Closed would wait out TimeWait. Bounded, so a stuck peer returns.
     service_until(iface, dev, sockets, |s| {
         matches!(
             s.get_mut::<tcp::Socket>(handle).state(),

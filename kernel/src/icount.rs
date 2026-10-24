@@ -1,56 +1,29 @@
-//! **The instruction-count instrument**: a boot mode that asserts timing claims in a unit a busy
-//! host cannot move (notes/instruction-clock.md). From inside a guest, a slow handler and a
-//! descheduled emulator are the same observation (notes/load-sensitive-assertions.md). Under
-//! `-icount shift=0,sleep=off`, QEMU's virtual clock advances exactly one nanosecond per retired
-//! guest instruction and nothing else, so a claim in instructions cannot be falsified by load.
+//! The instruction-count instrument: a boot that asserts timer claims in instructions.
 //!
-//! 1. **The timer fired at the deadline the kernel armed.** On riscv64 SBI's `set_timer` is
-//!    write-only, so nothing else proves firmware was armed with `DEADLINE`.
-//! 2. **The handler takes fewer than N instructions**, deadline to next arm: the quantity
-//!    `MISSED_TICKS` only approximates.
-//! 3. **Zero missed ticks**: in virtual time a miss cannot be the emulator.
-//! 4. **The deadline advances by exactly one interval per delivered tick.** Claims 1 to 3 compare
-//!    arrival against the deadline that fired, so a kernel that re-anchors its whole grid from
-//!    `now` passes them byte-identically while the delivered rate falls; this law catches it, with
-//!    no retry loop because claim 3 already made the window miss-free.
-//!
-//! It is opt-in, and not for speed (compute runs at about the same rate): every vCPU shares one
-//! virtual clock, so an idle hart in `wfi` jumps it and multi-hart timing becomes fiction (hence
-//! `-smp 1`), and a clock-bound wait costs instructions, about 3 s of wall clock per 0.64 s of
-//! virtual time. So it is its own boot, feature and command, like `script/bench`, and the
-//! `tick_trace` hooks are `#[cfg(feature = "icount")]`, absent from test and shipping builds. The
-//! feature implies `bench`, because both boots park at the same point (kernel/Cargo.toml).
-//!
-//! Every quantity is in instructions: one counter tick is `1e9 / frequency()` nanoseconds, so
-//! aarch64's 62.5 MHz counter reads in steps of 16 and riscv64's 10 MHz `rdtime` in steps of 100.
-//! That resolution is printed, since it decides what a change can show. The boot prints
-//! `icount: done` and parks in `wfi`; `xtask icount` owns and ends the QEMU child.
+//! Under `-icount shift=0,sleep=off` QEMU's virtual clock advances one nanosecond per retired
+//! instruction, so a busy host cannot move these numbers. [`run`] asserts four claims: the timer
+//! fired at the armed deadline, the handler stays under a bound, no tick is missed, and the
+//! deadline advances one interval per tick. Its own boot, `-smp 1`, behind the `icount` feature,
+//! which implies `bench`. See notes/instruction-clock.md.
 //!
 //! *Provisional names throughout: the `icount` feature, this module, `tick_trace`,
 //! `script/icount`.*
 
 use crate::println;
 
-/// Timer ticks to sample before deciding. Sixty-four is enough for a max to mean something and
-/// cheap in wall clock: the guest spins through 64 tick periods of virtual time, which is 0.64 s of
-/// virtual time and therefore ~6.4x10^8 guest instructions, the dominant cost of this boot.
+/// Timer ticks to sample: enough for a maximum to mean something, and 0.64 s of virtual time, the
+/// boot's dominant cost.
 const SAMPLE_TICKS: u64 = 64;
 
-/// Iterations of the calibration loop. Each iteration is exactly two instructions on both ISAs, so
-/// this is a 2,000,000-instruction window: long enough that the fixed cost around it is noise, short
-/// enough (2 ms of virtual time) to sit well inside one 10 ms tick period most of the time.
+/// Iterations of the calibration loop, two instructions each on both ISAs: a 2,000,000-instruction
+/// window, usually inside one 10 ms tick period.
 const CALIBRATION_ITERS: u64 = 1_000_000;
 
-/// **Per-tick timing, recorded from the timer handler itself.**
+/// Per-tick timing, recorded from the timer handler itself.
 ///
-/// Three relaxed stores and a few relaxed read-modify-writes per tick, in trap context, which is
-/// DECISIONS §9's rule for handlers (record and defer; never work, never print). Compiled in only
-/// under the `icount` feature, so the test and shipping handlers are untouched by it: a handler that
-/// carried this on every path would be measuring a handler that does not ship.
-///
-/// One set of counters rather than one per CPU, deliberately: this boot runs `-smp 1` because a
-/// shared virtual clock makes multi-hart timing fictional (notes/benchmarks.md), and [`record`]
-/// ignores any hart but the boot one so a stray secondary cannot silently pollute a mean.
+/// Relaxed stores and read-modify-writes only, which is §9 (locking)'s rule for handlers. Compiled
+/// in only under `icount`, so no other handler carries it. One set of counters: the boot runs
+/// `-smp 1`, and [`record`] drops any hart but the boot one.
 pub mod tick_trace {
     use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -62,24 +35,18 @@ pub mod tick_trace {
     static HANDLER_MAX: AtomicU64 = AtomicU64::new(0);
     static EARLY: AtomicU64 = AtomicU64::new(0);
 
-    /// One tick's numbers, all in counter ticks.
+    /// Record one tick's numbers, all in counter ticks.
     ///
-    /// - `fired`: the deadline this interrupt was armed against, read before the re-arm overwrites
-    ///   it. On aarch64 that is `CNTV_CVAL_EL0`, which the hardware itself consults; on riscv64 it
-    ///   is the `DEADLINE` word the kernel handed to SBI, which is the whole point of claim 1.
-    /// - `arrival`: the counter as the handler read it, before it did anything about the tick.
-    /// - `done`: the counter after the next deadline is armed, which on riscv64 is after the SBI
-    ///   `ecall` has returned.
+    /// `fired` is the deadline this interrupt was armed against (`CNTV_CVAL_EL0` on aarch64, the
+    /// `DEADLINE` word handed to SBI on riscv64), `arrival` the counter as the handler first read
+    /// it, and `done` the counter after the next deadline is armed. Called from `rearm`.
     ///
-    /// Called from `rearm` on both ISAs. Anything that is not the boot hart is dropped rather than
-    /// mixed in.
+    /// Context: the timer interrupt handler; takes no lock.
     pub(crate) fn record(fired: u64, arrival: u64, done: u64) {
         if crate::cpu::id() != 0 {
             return;
         }
-        // An arrival *before* its own deadline would mean the machine fired early, which is a
-        // finding rather than a measurement, so it is counted separately instead of being folded
-        // into a mean as a zero.
+        // An early arrival is a finding about the machine, counted apart rather than averaged.
         let Some(arrival_latency) = arrival.checked_sub(fired) else {
             EARLY.fetch_add(1, Ordering::Relaxed);
             return;
@@ -99,9 +66,8 @@ pub mod tick_trace {
         COUNT.load(Ordering::Relaxed)
     }
 
-    /// Interrupts that arrived before the deadline they were armed against. Should be zero; a
-    /// nonzero value means the emulator, not the kernel, and the boot says so rather than averaging
-    /// it away.
+    /// Interrupts that arrived before their armed deadline. Nonzero means the emulator, not the
+    /// kernel.
     pub(crate) fn early() -> u64 {
         EARLY.load(Ordering::Relaxed)
     }
@@ -120,8 +86,7 @@ pub mod tick_trace {
         )
     }
 
-    /// Drop everything recorded so far. Called once the boot is ready to measure, so the ticks that
-    /// landed during console bring-up and secondary startup are not in the sample.
+    /// Drop everything recorded so far, so bring-up ticks are not in the sample.
     pub fn reset() {
         COUNT.store(0, Ordering::Relaxed);
         ARRIVAL_SUM.store(0, Ordering::Relaxed);
@@ -133,13 +98,10 @@ pub mod tick_trace {
     }
 }
 
-/// Instructions per counter tick under `-icount shift=0`: one tick is `1e9 / frequency()`
-/// nanoseconds and one nanosecond is one instruction.
+/// Instructions per counter tick under `-icount shift=0`: `1e9 / frequency()`, 16 on aarch64 and
+/// 100 on riscv64.
 ///
-/// This is the instrument's resolution, and it is exact only because both machines' counter
-/// frequencies divide a gigahertz: 62.5 MHz gives 16 and 10 MHz gives 100. A board whose counter
-/// did not would make every number here a rounded one, so the division is checked rather than
-/// assumed.
+/// Panics unless the frequency divides 1 GHz, since otherwise every number would be rounded.
 fn instructions_per_tick() -> u64 {
     let freq = crate::arch::timer::frequency();
     assert!(freq > 0, "icount: the counter frequency is zero");
@@ -151,21 +113,11 @@ fn instructions_per_tick() -> u64 {
     1_000_000_000 / freq
 }
 
-/// **Prove we are actually on the instrument before measuring anything with it.**
+/// Panic unless this boot is running on the instrument.
 ///
-/// The failure this prevents is the one this repository keeps writing comments about: a set
-/// variable naming a missing file, an env var that silently did nothing, a device that was not
-/// attached. Booted without `-icount shift=0` this kernel runs perfectly well and every number
-/// below becomes a wall-clock number wearing an instruction's units, which is worse than an error
-/// because it looks like a measurement.
-///
-/// The check is direct. The arch layer runs a loop of exactly `2 * CALIBRATION_ITERS + 1`
-/// instructions and says so; under the instrument the counter must advance by exactly that many
-/// nanoseconds. A tolerance of 1% covers the one timer interrupt that may land inside the window
-/// (a tick handler is a four-figure number of instructions against a seven-figure window) and is
-/// nowhere near wide enough to admit either of the other two ways this kernel is ever run: plain
-/// TCG retires far fewer than one instruction per nanosecond of wall clock, and HVF on this host
-/// retires several.
+/// Booted without `-icount shift=0` every number would be wall clock in instruction units. A loop
+/// of a known instruction count must advance virtual time by that many nanoseconds, within 1%,
+/// which one tick admits and plain TCG or HVF does not (notes/instruction-clock.md).
 fn calibrate(per_tick: u64) {
     let before = crate::arch::timer::now();
     let expected = crate::arch::timer::calibration_loop(CALIBRATION_ITERS);
@@ -181,8 +133,7 @@ fn calibrate(per_tick: u64) {
     );
 }
 
-/// Run the claims and park. Never returns, never semihosts (the bench boot's contract, and for the
-/// same reason: `xtask` owns the child on both accelerators).
+/// Run the four claims and park. Never returns and never semihosts: `xtask` owns the QEMU child.
 pub fn run() -> ! {
     let per_tick = instructions_per_tick();
     println!();
@@ -196,16 +147,11 @@ pub fn run() -> ! {
 
     calibrate(per_tick);
 
-    // Everything before this line was console bring-up, secondary startup and a calibration loop,
-    // and the ticks that landed during it are not the ticks under test.
     tick_trace::reset();
     let missed_before = crate::arch::timer::missed_ticks();
 
-    // A consistent (ticks, deadline) pair, for claim 4. The timer handler runs to completion
-    // between two of this thread's instructions (`-smp 1`, and nothing else is running), so the
-    // two values it maintains are never observed half-updated; what a naive pair of reads CAN
-    // straddle is a whole tick landing in between. Re-read the count until it brackets the
-    // deadline unchanged, which is the same guard the suite's twin uses.
+    // A consistent (ticks, deadline) pair for claim 4: re-read until no tick landed between the
+    // two reads. On `-smp 1` the handler never leaves them half-updated.
     let snapshot = || loop {
         let t = tick_trace::count();
         let d = crate::arch::timer::deadline();
@@ -227,7 +173,6 @@ pub fn run() -> ! {
         tick_trace::snapshot();
     let early = tick_trace::early();
 
-    // Every number in instructions, which is the only unit in this boot that means anything.
     println!("icount: ticks {count}");
     println!(
         "icount: arrival_instructions min {} mean {} max {}",
@@ -248,19 +193,8 @@ pub fn run() -> ! {
         ticks_measured * crate::arch::timer::interval()
     );
 
-    // **Claim 1: the timer fired at the deadline the kernel armed.**
-    //
-    // `arrival - fired` is the interrupt's delivery latency plus the trap path, and on the
-    // instrument it is a property of this kernel's code alone. What it rules out is the thing no
-    // wall-clock test on either ISA can: a timer armed with something other than the grid cell the
-    // kernel recorded. Such an implementation re-anchors on every tick, so its arrival latency
-    // grows by a handler's worth of instructions per tick and leaves this bound within a handful of
-    // ticks, while `DEADLINE` and `CNTV_CVAL_EL0` keep reading back exactly as the re-arm law
-    // demands.
-    //
-    // The bound is `ARRIVAL_BOUND` in the arch layer, because the trap path is the arch's own and
-    // the two ISAs do not have the same one. Measured first, then set with margin; the run prints
-    // what it saw, so the margin is visible rather than asserted about.
+    // Claim 1: the timer fired at the deadline the kernel armed. `ARRIVAL_BOUND` is the arch's,
+    // because the trap path is.
     assert_eq!(
         early, 0,
         "icount: {early} interrupts arrived BEFORE the deadline they were armed against, which is \
@@ -276,14 +210,7 @@ pub fn run() -> ! {
         crate::arch::timer::ARRIVAL_BOUND
     );
 
-    // **Claim 2: the handler takes fewer than N instructions.**
-    //
-    // Measured deadline-to-armed, so it covers interrupt delivery, the trap path, the tick
-    // bookkeeping and the re-arm (on riscv64 including the SBI `ecall` round trip). That span is
-    // what `MISSED_TICKS` counts indirectly: a miss is this number exceeding one tick period. The
-    // missed-tick assertions on both ISAs could only ever say "it did not exceed 10 ms", and could
-    // not tell a handler that took 10 ms from an emulator that was not running for 10 ms. This says
-    // what it actually is.
+    // Claim 2: deadline to re-armed, the span `MISSED_TICKS` only approximates.
     assert!(
         handler_max * per_tick <= crate::arch::timer::HANDLER_BOUND,
         "icount: the timer handler took {} instructions from deadline to re-arm, over a bound of \
@@ -292,30 +219,15 @@ pub fn run() -> ! {
         crate::arch::timer::HANDLER_BOUND
     );
 
-    // **And the third, which closes a BUGS entry rather than adding a claim.** The miss taxonomy on
-    // both ISAs calls a re-arm less than one interval late a slow handler and a whole interval or
-    // more the emulator, and notes/load-sensitive-assertions.md records that the cut leaves a window
-    // one tick period wide in which a host deschedule is still blamed on this kernel. Virtual time
-    // has no deschedules, so here a miss has exactly one possible cause and needs no taxonomy.
+    // Claim 3: virtual time has no deschedules, so a miss can only be the handler.
     assert_eq!(
         missed, 0,
         "icount: {missed} deadlines had already passed when the handler re-armed. Under -icount \
          the host cannot cause that, so it is the handler taking longer than a whole tick period."
     );
 
-    // **Claim 4: the deadline advanced by exactly one interval per delivered tick.**
-    //
-    // The re-arm law, and the reason it is asserted here rather than left to the suite is that
-    // claims 1-3 cannot see a violation of it at all: a kernel that re-anchors the grid from `now`
-    // arms the timer with the very word it records, so the arrival latency stays at its clean-run
-    // value on every tick while the delivered rate collapses. Milestone 62 measured exactly that
-    // (the table in this module's header), and until 2026-08-18 the roadmap and both notes said
-    // this instrument was strictly stronger than the suite's drift test. It was not.
-    //
-    // No retry loop, and that is claim 3 paying for itself: a miss re-anchors the grid on purpose
-    // (`rearm`'s safety valve), so the law only holds over a miss-free window, and `missed == 0` was
-    // asserted a few lines above. The suite's twin has to hunt for such a window because a loaded
-    // host manufactures misses; virtual time cannot.
+    // Claim 4: one interval per delivered tick. Claims 1 to 3 cannot see a grid re-anchored from
+    // `now`. The law holds only over a miss-free window, which claim 3 just asserted.
     assert_eq!(
         deadline_delta,
         ticks_measured * crate::arch::timer::interval(),
