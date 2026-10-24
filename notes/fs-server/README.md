@@ -14,6 +14,7 @@ history behind each summary.
   did.
 - [`verb-table.md`](verb-table.md): one row per opcode, and the row that carries a security property.
 - [`statfs.md`](statfs.md): op 18 in full.
+- [`file-protocol.md`](file-protocol.md): why each file and block verb is shaped as it is.
 - [`throughput.md`](throughput.md): where the milliseconds go, the cache, the transfer unit and the
   throughput BUGS.
 - [`kernel-wiring.md`](kernel-wiring.md): how `kernel/src/user/fs_service/` wires the servers, the

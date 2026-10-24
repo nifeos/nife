@@ -4,17 +4,15 @@
 //! The whole program is: read the ambient monotonic counter, hand the nanoseconds to
 //! [`uptime::format`], send the bytes. It holds one capability (the output sink) and cannot
 //! change anything: the counter is granted to every process unconditionally, so the manifest is
-//! `least_authority_demo`'s. The finding (milestone 126 (the `procps` package) assumed this
-//! wanted kernel-side accounting; it did not) is recorded in the process-view note's
-//! machine-statistics appendix, notes/process-view/the-machine-and-your-share.md, moved there
-//! 2026-10-09 (UTC).
-//!
+//! `least_authority_demo`'s. That it needs no kernel-side accounting, which milestone 126 (the
+//! `procps` package) assumed, is in notes/process-view/the-machine-and-your-share.md.
+
 //! # Capability contract
 //!
 //! | slot | what | why |
 //! |---|---|---|
 //! | 0 | the output sink, `WRITE` | where the one line goes |
-//!
+
 //! # EXAMPLES
 //!
 //! ```text
@@ -25,7 +23,7 @@
 //!   uptime would grant the new process, and nothing else:
 //!     cap 0  endpoint  result   report its answer back
 //! ```
-//!
+
 //! # BUGS
 //!
 //! See `crates/uptime`'s module docs: no load average, no logged-in-user count, one-second

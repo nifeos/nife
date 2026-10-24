@@ -23,7 +23,7 @@ fn blk_request_carries_a_block_count_and_defaults_to_one() {
         assert_eq!(operation(w0), blk::READ);
         assert_eq!(blk::req_blocks(w0), blocks);
     }
-    // A pre-step-4 caller's word (the plain, one-argument `req`) decodes as one block.
+    // A single-block caller's word (the plain, one-argument `req`) decodes as one block.
     assert_eq!(blk::req_blocks(req(blk::READ)), 1);
     // `blk::req(operation, 1)` and `req(operation)` are wire-identical, which is the compatibility property
     // stated: a caller that upgrades to naming one block explicitly changes nothing on the wire.
