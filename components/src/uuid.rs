@@ -3,7 +3,10 @@
 //! (`uuid::Builder::from_random_bytes`), print the canonical form in RFC order, uppercase.
 //! It is `disk_partitioner`'s draw with the disk taken away, and `date`'s shape one manifest field
 //! over ([`grant_plan::Manifest::entropy`] rather than `Manifest::clock`): the part of randomness a
-//! person at the prompt can reach.
+//! person at the prompt can reach. It takes no arguments; there is no argv on this ABI
+//! (notes/abi.md).
+
+//! # Capability contract
 //!
 //! | slot | what | why it is that and not wider |
 //! |---|---|---|
@@ -13,12 +16,15 @@
 //!
 //! `READ` on slot 9 would let it take another client's request off the service's endpoint, and
 //! `GRANT` would let it hand a random source on; neither is given.
+
+//! # Without the entropy grant
 //!
-//! **Without the entropy grant it prints nothing** and says why on its second stream:
-//! `entropy_contract::delivered` reports the empty slot as `None`, and `uuid > id.txt` must leave
-//! the file empty, because a predictable identifier is wrong and looks right. No counter fallback,
-//! as in `disk_partitioner` and the partition table. It takes no arguments; there is no argv on
-//! this ABI (notes/abi.md).
+//! It prints nothing and says why on its second stream: `entropy_contract::delivered` reports the
+//! empty slot as `None`, and `uuid > id.txt` must leave the file empty, because a predictable
+//! identifier is wrong and looks right. No counter fallback, as in `disk_partitioner` and the
+//! partition table.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! uuid                     A4E1B0C7-2F3D-4A81-9C6E-5B7D0F2A1E44
@@ -26,7 +32,7 @@
 //! uuid  (no entropy)       uuid: no entropy capability was granted; nothing was generated
 //! caps uuid                cap 9  endpoint  entropy  WRITE. it may ask the entropy service ...
 //! ```
-//!
+
 //! # BUGS
 //!
 //! - One identifier per invocation, until `ProgramArgumentDeclaration` has positional arguments.
@@ -52,8 +58,9 @@ use uuid::{Builder, Uuid};
 /// Slot 0: where the identifier goes. An endpoint with `WRITE`, under the sink contract.
 const REPORT: u64 = 0;
 
-/// Slot 8: the declared second stream (DECISIONS §67). The refusal goes here so a `>` on the line
-/// cannot swallow it into a file that then looks like a successful run.
+/// Slot 8: the declared second stream (DECISIONS §67 (a program's second stream is a declaration,
+/// not a number)). The refusal goes here so a `>` on the line cannot swallow it into a file that
+/// then looks like a successful run.
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Slot 9: the entropy service, `WRITE`. Its *presence* is what the draw finds out about, and it
@@ -65,11 +72,10 @@ const ENTROPY_SLOT: u64 = grant_plan::ENTROPY_SLOT;
 pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let has_diag = is_granted(DIAG_SLOT);
 
-    // **Draw first, print second**, which is the ordering the refusal forces rather than a style:
-    // this program must write nothing at all when it holds no entropy, so nothing may go out
-    // before the draw has answered. §67's reader also drains the second stream to end-of-stream
-    // before it reads a byte of output, so the complaint has to be finished before the identifier
-    // starts.
+    // Draw first, print second: without entropy this program writes nothing at all, so nothing
+    // may go out before the draw has answered. §67's reader drains the second stream to
+    // end-of-stream before it reads a byte of output, so the complaint is finished before the
+    // identifier starts.
     let mut random = [0u8; 16];
     let drawn = user_mode_runtime::entropy::fill(ENTROPY_SLOT, &mut random).map(|()| random);
 

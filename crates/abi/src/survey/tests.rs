@@ -19,9 +19,7 @@ fn the_state_record_is_zero_so_pre_selector_callers_select_it() {
 ///
 /// **"One past the end" is written against the last constant rather than as a literal**, so
 /// adding a record moves it instead of quietly turning this line into an assertion that a
-/// *known* record is unknown. That is not hypothetical: [`record::CPU_TIME`] took the value
-/// this test used to name, and the test failed rather than passing for the wrong reason, which
-/// is what it is for.
+/// *known* record is unknown.
 #[test]
 fn only_the_records_this_kernel_answers_are_known() {
     assert!(record::is_known(record::STATE));

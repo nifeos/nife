@@ -1,5 +1,7 @@
 # What the documentation index costs, measured
 
+*Name: provisional.*
+
 An appendix to [`notes/documentation.md`](../documentation.md), which states the conclusion.
 
 `cargo xtask manual` over the current bundles:

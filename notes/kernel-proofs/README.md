@@ -8,9 +8,6 @@ its word budget.
 counterpart to the SMMU's proofs) as §212's parent-named sibling directory of
 `notes/kernel-proofs.md`, whose own name is provisional too. Naming is calef's.*
 
-`riscv64-with-a-patched-kani` Name: provisional, minted 2026-09-25 by milestone 589 (Kani can prove
-riscv64 from the hosts we already have). The native riscv64 route, beside the aarch64-host one.
-
 `smmu-proofs` and `x86-irq-proofs` Name: provisional, minted 2026-10-11 (UTC) by
 lane/fourth-ten-longest-notes. That lane moved the main page's two per-file proof sections here
 under §212 (a prose budget). The SMMUv3 pair is from milestone 255 (a quarter of `kernel/src/arch/`

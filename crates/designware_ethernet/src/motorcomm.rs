@@ -1,28 +1,12 @@
 //! **The Motorcomm YT8531, the PHY on both of radon's ports**, configured for the board it is on.
 //!
 //! The sequence is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and `ytphy_yt8521_update`
-//! (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`, ISC license, notice in
-//! the crate root): the RGMII delays, the receive pad drive strengths, the clock output, and the
-//! transmit clock inversion chosen per negotiated speed. Two registers OpenBSD does not touch come
-//! from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the part and not as code
-//! ([`EXT_SLEEP_CONTROL1`], [`EXT_CLOCK_GATING`]); why this driver writes them is at each.
-//!
-//! # Two spellings of the same settings, and they agree
-//!
-//! radon's firmware hands over **the vendor U-Boot's** tree, which states the PHY's register
-//! values directly; mainline Linux states the physical quantities they encode. For radon's
-//! `gmac0` (VisionFive 2 v1.3B):
-//!
-//! | quantity | vendor U-Boot (`starfive_visionfive2.dts`) | mainline Linux (`...-v1.3b.dts`) | register value |
-//! |---|---|---|---|
-//! | receive clock delay | `rx_delay_sel = <0xa>`, `rxc_dly_en = <0>` | `rx-internal-delay-ps = <1500>` | `0xa`, delay-enable clear |
-//! | transmit clock delay | `tx_delay_sel = <0xa>` | `tx-internal-delay-ps = <1500>` | `0xa` |
-//! | receive clock drive | `rgmii_sw_dr_rxc = <0x6>` | `motorcomm,rx-clk-drv-microamp = <3970>` | `6` at 1.8 V |
-//! | receive data drive | `rgmii_sw_dr = <0x3>` | `motorcomm,rx-data-drv-microamp = <2910>` | `3` at 1.8 V |
-//! | transmit clock inverted at 1000 | `tx_inverted_1000 = <0x1>` | `motorcomm,tx-clk-1000-inverted` | set |
-//!
-//! [`Settings::FALLBACK_GMAC0`] is that column, used only when a tree states neither spelling, and
-//! [`Settings::source`] says which happened.
+//! (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`, ISC license, notice
+//! in the crate root). [`EXT_SLEEP_CONTROL1`] and [`EXT_CLOCK_GATING`] come from Linux's
+//! `drivers/net/phy/motorcomm.c`, read as facts about the part; why this driver writes them is at
+//! each. The vendor tree states register values and mainline states physical quantities, and for
+//! `gmac0` they agree. [`Settings::FALLBACK_GMAC0`] is used only when a tree states neither, and
+//! [`Settings::source`] says which happened. See notes/designware-ethernet/the-hardware.md.
 
 use crate::mdio::{self, Mdio};
 

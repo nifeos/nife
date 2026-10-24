@@ -13,9 +13,3 @@ budget has no room for.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `sources` Name: provisional. After the parent's "What was read, and when". calef names files.
-- `linux-research-challenges` Name: provisional. For the paper's research-challenges section. calef
-  names files.
-- `rust-in-linux` Name: provisional. For the evidence under the parent's "The claim to check: is
-  anyone actually walking the path". calef names files.

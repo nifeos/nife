@@ -1,10 +1,8 @@
-//! **The installer's half of the spawn service**: an edit to the installed-programs table, asked on the spawn
-//! endpoint by the owner's console or on an installer endpoint by a package manager (milestone 198
-//! (a package manager) rung 3a, DECISIONS §208 (installing a package is granting it, and the
-//! installed programs are versioned), §270 (a package manager holds an installer endpoint, not the spawn
-//! endpoint)). Moved out of the crate's root by milestone 809 (the package client becomes a
-//! program), when the root outgrew §266 (a Rust source file stays under 2,000 lines)'s
-//! ratchet; the spawn loop calls in.
+//! **The installer's half of the spawn service**: an edit to the installed-programs table, asked on
+//! the spawn endpoint by the owner's console or on an installer endpoint by a package manager
+//! (DECISIONS §208 (installing a package is granting it, and the installed programs are
+//! versioned), §270 (a package manager holds an installer endpoint, not the spawn endpoint)). The
+//! spawn loop calls in. See notes/packages.md.
 
 use super::*;
 
@@ -45,9 +43,8 @@ pub(super) fn serve_installer(
     if !spawn.abandoned {
         let (r0, r1, r2) = spawnproto::activation_reply(answer.status, answer.live, answer.member);
         send(reply, r0, r1, r2);
-        // **Who holds the name** (milestone 919 (a package carries several programs)): calef's
-        // ruling is that the owner removes the first package before installing the second, so
-        // the refusal names it. Only `jig` installs, and it reads these two after the reply.
+        // A name taken by another package is refused with that package's name, which `jig` reads
+        // after the reply (milestone 919 (a package carries several programs)).
         if answer.status == spawnproto::ActivationStatus::NameTaken {
             for (a, b, c) in spawnproto::holder_words(answer.holder()) {
                 send(reply, a, b, c);
@@ -194,37 +191,16 @@ pub(super) struct Activating {
     pub(super) manager: &'static str,
 }
 
-/// **Serve one activation request** (milestone 198 (a package manager) rung 3a's installer,
-/// DECISIONS §208 (installing a package is granting it, and the installed programs are versioned)).
-/// Returns the reply's status and the generation live afterwards.
-///
-/// - **Install**: the package's frames are staged exactly as an image's are ([`take_frames`], [`stage_frames`]), so
-///   what is checked is this process's copy. `package_archive::installable` decides on the bytes:
-///   the image's catalog must vouch for the whole file, and every program member is a program
-///   (milestone 919 (a package carries several programs)). Each program's bytes go to
-///   `packages/<name>/<version>/<program>`, a place per package version that is never rewritten
-///   with other bytes, and one new generation records every program's digest.
-/// - **Remove**: a new generation without the named package's rows. Their bytes stay where they
-///   are, so a rollback can bring them back; nothing collects them yet.
-/// - **Rollback**: `current` names the generation one below the live one. Nothing else is written.
-/// - **Vouch** (DECISIONS §221 (the boot prompt is the owner's console)): the executable's frames
-///   are staged as an install's are, and a new generation records this process's hash of its own
-///   copy under the name that follows, marked `installed_programs::OWNER`. Nothing is placed: the
-///   digest vouches for the bytes wherever they are, and a rollback undoes it.
-///
-/// Each of the four ends in [`FsCalls::commit`], so the only thing that ever changes what runs is
-/// one rename of `current`. **Who may do this** is whoever holds the spawn endpoint, which is the
-/// boot prompt alone, and DECISIONS §221 ruled that whoever holds that prompt is the machine's
-/// owner, who may also write `activation/` directly; and, for install, remove and rollback, a
-/// program the owner's console granted an installer endpoint (milestone 809 (the package client
-/// becomes a program), DECISIONS §270 (a package manager holds an installer endpoint, not the spawn
-/// endpoint)). A fetch was a fifth verb until milestone 809: `jig` fetches now, and this process
-/// parses no network input.
-///
-/// **Out of line on purpose**, for [`build_grant`]'s reason: it holds a page-sized buffer and
-/// [`edit`] another beneath it, and since milestone 809 the spawn loop calls it from two places
-/// (the spawn endpoint and an installer endpoint). Inlined at both, the loop's frame carried both
-/// copies, and `script/swish-check`'s stack gauge measured the progenitor under its floor.
+/// **Serve one activation request** (DECISIONS §208): install, remove, rollback or vouch, each
+/// ending in one [`FsCalls::commit`], the rename of `current`. Returns the status and the
+/// generation live afterwards. An install stages the package as an image is staged
+/// ([`take_frames`], [`stage_frames`]) and places each program at
+/// `packages/<name>/<version>/<program>`; a remove leaves the bytes for a rollback, and nothing
+/// collects them; a vouch records this process's hash of the staged executable as
+/// `installed_programs::OWNER`. Vouch is served only on the spawn endpoint, the owner's console
+/// (§221 (the boot prompt is the owner's console)). Out of line, for [`build_grant`]'s reason: it
+/// holds a page-sized buffer with [`edit`]'s beneath it, and the spawn loop calls it from two
+/// places. See notes/packages.md.
 #[inline(never)]
 pub(super) fn activate(
     verb: Option<spawnproto::Activation>,
@@ -365,10 +341,8 @@ fn rollback(cx: &EditContext, new: &mut [u8; PAGE_BYTES]) -> (spawnproto::Activa
         return (S::NoEarlier, live);
     }
     let back = live - 1;
-    // **A rollback undoes rows; a manager may undo only its own and the owner's**
-    // (`installed_programs::foreign_change`, calef's 2026-10-06 ruling on milestone 809). The
-    // generation below is read into the page the next generation would have used, since a
-    // rollback writes none.
+    // A manager may undo only its own rows and the owner's (`installed_programs::foreign_change`).
+    // The generation below is read into `new`, which a rollback never writes.
     let Ok(n) = files.generation(act, back, new) else {
         return (S::StoreFailed, live);
     };
@@ -403,16 +377,14 @@ fn remove(
     let Ok(operand) = core::str::from_utf8(named) else {
         return (S::NotInstalled, live);
     };
-    // **The verb's object is a package, or a package at a version** (calef, 2026-10-14 (UTC),
-    // milestone 919 (a package carries several programs): "jig remove should work on packages,
-    // not programs."). `@` is the qualified form's separator and is reserved for it: a word with
-    // one is never a package name, so the two cannot be mistaken for each other.
+    // The operand is a package or `package@version` (milestone 919). `@` never appears in a
+    // package name, so the two forms cannot be mistaken for each other.
     let (package, version) = match operand.split_once('@') {
         Some((p, v)) if !p.is_empty() && !v.is_empty() => (p, Some(v)),
         _ => (operand, None),
     };
-    // **Another manager's rows are not this one's to remove** (calef, 2026-10-06; milestone
-    // 809). Checked over every row the edit would take, before anything is written.
+    // Another manager's rows are not this one's to remove: checked over every row the edit would
+    // take, before anything is written.
     let foreign = installed_programs::entries(table).flatten().any(|e| {
         e.package == package
             && e.package != installed_programs::OWNER
@@ -463,9 +435,7 @@ fn vouch(
     }
     let entry = installed_programs::Entry {
         program,
-        // **A vouch claims no version**: the owner vouches for bytes (DECISIONS §221
-        // (the boot prompt is the owner's console), ruling 1), so the version column
-        // carries `installed_programs::NO_VERSION` and no pointer names the row.
+        // The owner vouches for bytes, not a version (§221 ruling 1), so no pointer names the row.
         version: installed_programs::NO_VERSION,
         package: installed_programs::OWNER,
         digest: measured_boot::sha256(bytes),
@@ -506,9 +476,8 @@ fn install(
         return Answer::from((S::Unknown, live));
     };
     let bytes = staged_image(len);
-    // Whoever fetched it (`jig`, since milestone 809) checked it was the package asked
-    // for; what decides here is only whether the image vouches for these bytes, or, failing
-    // that, the copy of the image's index `jig update` wrote (milestone 801).
+    // Whoever fetched it checked it was the package asked for. What decides here is whether the
+    // image vouches for these bytes, or else the copy of the index `jig update` wrote.
     let no_program = Answer::from((S::NoProgram, live));
     let got = match package_archive::installable(catalog, bytes) {
         Ok(got) => got,
@@ -525,11 +494,8 @@ fn install(
     if !got.programs().all(|p| place_program(files, &package, &p)) {
         return Answer::from((S::StoreFailed, live));
     }
-    // **The row is digest-keyed; name and version are label columns** (ruling 2 of
-    // milestone 614 (two installed versions of one program, each runnable)). The version is the upstream developer's claim as the package header
-    // carries it; the package column is the package's name, the stem's first field, because
-    // the version has a column of its own and no row carries the architecture. Who asked
-    // (milestone 809): `jig`, or the owner's console.
+    // The row is keyed on the digest; name and version are labels (ruling 2 of milestone 614 (two
+    // installed versions of one program, each runnable)). No row carries the architecture.
     let rows = || {
         got.programs().map(|p| installed_programs::Entry {
             program: p.name,
@@ -539,19 +505,15 @@ fn install(
             manager,
         })
     };
-    // **A bare name belongs to one package, and never to one the image carries** (DECISIONS
-    // §229 (how a bare name at the prompt reaches an installed program), B2 and calef's
-    // ruling of 2026-09-27; calef, 2026-10-14 (UTC): "If two packages offer the same program
-    // name, refuse the second package. Need to remove the first one before installing the
-    // second one."). One program refused refuses the package. A base program is updated
-    // through the boot slot under §235 (the OS is built and updated from packages), so the
-    // image refusal blocks no update. The prompt still refuses a name that is both, because a
-    // later base can add a name a package already holds.
+    // A bare name belongs to one package, and never to one the image carries (§229 (how a bare
+    // name at the prompt reaches an installed program) B2; milestone 919). One program refused
+    // refuses the package. A base program updates through the boot slot (§235 (the OS is built
+    // and updated from packages)), so this blocks no update; the prompt still refuses a name that
+    // is both, because a later base can add a name a package holds.
     let image = |program: &str| Program::from_name(program.as_bytes()).is_some();
-    // **And the owner's grants** (milestone 892 (a std program at the prompt holds the network and
-    // a resolver)): exactly what each program's note asks of the network and of resolver zones,
-    // all or nothing. The owner's yes was given before the package was sent: `jig install` lists
-    // these asks and sends nothing without it, and only the owner's console holds an installer.
+    // The owner's grants, all or nothing: what each program's note asks of the network and of
+    // resolver zones (milestone 892 (a std program at the prompt holds the network and a
+    // resolver)). `jig install` lists these asks and sends nothing without the owner's yes.
     let granted = || got.programs().flat_map(asked_grants);
     let n = match installed_programs::with_entries_granting(table, rows, image, granted, new) {
         Ok(n) => n,

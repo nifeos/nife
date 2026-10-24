@@ -1,14 +1,12 @@
 //! **Embed the boot files in the program**, so the download is one file.
 //!
 //! `NIFE_STICK_PAYLOADS` names a directory laid out the way the stick will be (`EFI/BOOT/*.EFI`),
-//! which `cargo xtask stick` builds and then points this at. Every file under `EFI/BOOT/` is
-//! embedded at its relative path. Each of those files is already a sealed unit, a UEFI loader
-//! carrying its kernel and the archive that kernel measures (`uefi_loader/build.rs` refuses a
-//! pair that does not match), so nothing here pairs anything.
+//! which `cargo xtask stick` builds. Every file under `EFI/BOOT/` is embedded at its relative path.
+//! Each is already sealed, a UEFI loader carrying its kernel and the archive that kernel measures
+//! (`uefi_loader/build.rs` refuses a pair that does not match), so nothing here pairs anything.
 //!
-//! Unset, the program builds with no boot files and refuses to write a stick, saying how to build
-//! one that has them. That keeps `cargo build --workspace`, `cargo test` and `script/lint` working
-//! with no environment, the same arrangement `uefi_loader/build.rs` uses.
+//! Unset, the program builds with no boot files and refuses to write a stick, so `cargo test` and
+//! `script/lint` work with no environment. See notes/boot-stick/the-program.md.
 
 use std::path::{Path, PathBuf};
 use std::{env, fs};

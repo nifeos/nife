@@ -1,5 +1,7 @@
 # What happened to RedLeaf after 2020
 
+*Name: provisional. After the parent's "What happened after 2020".*
+
 An appendix to [`notes/redleaf.md`](../redleaf.md). It holds the state of the public repository,
 the authors' own critique a year later (PLOS '21), and the group's next kernel, Atmosphere, which
 took the other bet.

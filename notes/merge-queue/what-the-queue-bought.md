@@ -1,5 +1,7 @@
 # What the queue bought, measured on 2026-08-16
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `measured-2026-08-16`.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md), which keeps the conclusion. This file
 holds the measurement in full: the windows, the table, the example, the five caveats, the prover's
 tail, and what it corrected about the milestone.

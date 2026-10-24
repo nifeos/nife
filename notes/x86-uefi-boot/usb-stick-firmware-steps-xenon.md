@@ -1,5 +1,7 @@
 # The stick procedure's firmware steps, as checked against the machine
 
+*Name: ratified 2026-10-18 (calef, "Yes") Refused `stick-firmware-steps`.*
+
 An appendix to [notes/x86-uefi-boot.md](../x86-uefi-boot.md), whose bench procedure keeps the four
 steps in short form. This file holds each step as first written, what the machine's own menus said
 about it, and the POST hazard the steps do not name.

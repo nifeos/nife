@@ -4,22 +4,15 @@
 //! `bg` and `^Z`, all acting on the capabilities this shell holds for a supervised job, its TCB
 //! included (DECISIONS §309 (a supervised job's `ThreadControlBlock` goes to the shell that asked
 //! for it)).
-//!
+
 //! # BUGS
 //!
-//! - Only a supervised job can run in the background. It is the one kind of job this shell holds
-//!   capabilities for (the region it was built from and its shared frame). Every other program is
-//!   built in the progenitor's pool, answers on the one result rendezvous every job shares, and is
-//!   reaped by `job_undertaker`, so the shell would hold nothing to wait on or stop it with, and
-//!   its answer would be read as the next command's. `&` on one is refused with a sentence.
+//! - Only a supervised job, the one kind this shell holds capabilities for, can run in the
+//!   background; `&` on any other is refused with a sentence (notes/shell/the-program.md).
 //! - A finished background job is reported when `jobs`, `wait` or `fg` next looks, not before the
-//!   prompt: the shell is blocked reading the line while it waits for one.
-//! - A background job's region is split off this shell's budget under whatever comes after it, so
-//!   finishing jobs out of order leaves a hole until the later ones go
-//!   (notes/object-revocation.md, LIFO return of pages).
-//!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
+//!   prompt, since the shell is blocked reading the line.
+//! - Background jobs finishing out of order leave a hole in this shell's budget until the later
+//!   ones go (notes/object-revocation.md, LIFO return of pages).
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -34,19 +27,12 @@ use super::*;
 const JOB_UNTYPED_PAGES: u64 = 32;
 /// The range a supervised job's shared frame is mapped into, in our own space, one page per job.
 ///
-/// **This range used to start at `0x00c0_0000`, which is [`OUT_VA`]**, and nothing said so. The two
-/// agreed until 2026-08-01 (`abb44b67f`), when `OUT_VA` moved off [`FS_VA`] onto the job frames'
-/// first page. From then on the first supervised job of every boot printed `could not map the job
-/// frame` (the page was already mapped), and the second worked only because the cursor had advanced
-/// past the collision on the way to failing. `script/swish-check` scripted no supervised job, so
-/// nothing ran it for eight weeks. The assertion in `main.rs` is what now holds the range apart
-/// from every fixed window this shell has, and the `interrupt_heeder` line in that script is what
-/// runs it.
-///
-/// 16 MiB up is a pair page on the address-space map (milestone 206 (a program image has under 896 KiB)), clear of all four fixed
-/// windows and the image window at 64 MiB, and a whole 2 MiB-aligned table's worth of pages sits
-/// under it, so the first job costs one page-table page and the next 511 cost none. The program's
-/// own image and stack are in bands of their own and cannot be reached from here.
+/// It must stay clear of every fixed window this shell has, [`OUT_VA`] and [`FS_VA`] among them:
+/// the assertion in `wiring.rs` holds that, and the `interrupt_heeder` line in
+/// `xtask/src/swish_check/script/interrupts.rs` runs a supervised job. 16 MiB up is a pair page on
+/// the address-space map (milestone 206 (a program image has under 896 KiB)), clear of the image
+/// window at 64 MiB, with a 2 MiB-aligned table's worth of pages under it: the first job costs one
+/// page-table page and the next 511 none.
 pub(super) const JOBFRAME_WINDOWS: core::ops::Range<u64> =
     0x0000_0000_0100_0000..0x0000_0000_0120_0000;
 
@@ -309,19 +295,11 @@ static WATCH_TIMER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU6
 static WATCH_NOTIFICATION: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
 /// **One beat of the watch loop: a scheduler tick asleep** (milestone 106 (a wait that ends on
-/// either the interrupt or the deadline)), rather than a `yield`.
-///
-/// Until 2026-09-26 this was `yield_now()`, which kept the shell runnable for the whole life of
-/// every foreground job: a hart's worth of scheduler passes spent asking a shared page whether
-/// anything had changed. Now the shell sleeps ten milliseconds between looks, which is 100 wakes a
-/// second, each a page read and a `CALL` for the `^C` count. It is **not** the destination of
-/// milestone 103 (`^C` stops spinning: the shell's interrupt watch, blocking), a watch that wakes
-/// only when the job ends or `^C` arrives: that needs the job's exit and the terminal's `^C` to
-/// signal a notification this shell waits on, which is 103's to build. See that milestone's block.
-///
-/// **The grace window changed meaning with it**, and is recorded rather than hidden:
-/// `grant_plan::COOP_GRACE_TICKS` counts loop iterations, so 200 of them are now two seconds of
-/// wall time where they were 200 yields, as long as a yield happened to take.
+/// either the interrupt or the deadline)), rather than a `yield`: ten milliseconds between looks,
+/// 100 wakes a second, each a page read and a `CALL` for the `^C` count. A watch that wakes only
+/// when the job ends or `^C` arrives needs both to signal a notification this shell waits on, which
+/// is milestone 103 (`^C` stops spinning: the shell's interrupt watch, blocking).
+/// `grant_plan::COOP_GRACE_TICKS` counts loop iterations, so its 200 are two seconds of wall time.
 fn watch_pause() {
     use core::sync::atomic::Ordering::Relaxed;
     let mut t = WATCH_TIMER.load(Relaxed);

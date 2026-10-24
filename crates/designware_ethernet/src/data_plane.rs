@@ -43,15 +43,10 @@ pub enum TxError {
 /// **The data plane**: ring cursors and the region's physical base. Everything `net_stack` does
 /// to the device goes through this, so all of it runs on the host against a simulated device.
 ///
-/// # The tail pointers, and the one slot that is never the device's
-///
-/// A tail pointer is the address one past the last descriptor the device may use; the device
-/// works from its current descriptor up to the tail and suspends there (OpenBSD's
-/// `GMAC_CHAN_RX_END_ADDR` and `GMAC_CHAN_TX_END_ADDR` writes). On receive, one descriptor is
-/// always held back so that "the device has every descriptor" and "the device has none" are never
-/// the same tail address: OpenBSD's `if_rxr_init(..., DWQE_NRXDESC - 1)` makes the same choice.
-/// The held-back slot is the one just behind [`DataPlane::rx_cursor`], and each received frame
-/// reposts it and holds back the slot just consumed.
+/// A tail pointer is one past the last descriptor the device may use. On receive one descriptor,
+/// the one just behind [`DataPlane::rx_cursor`], is always held back, so that "the device has every
+/// descriptor" and "the device has none" are never the same tail address; each received frame
+/// reposts it and holds back the slot just consumed. See notes/designware-ethernet/the-hardware.md.
 #[derive(Debug)]
 pub struct DataPlane {
     phys: u64,

@@ -13,8 +13,3 @@ sweep evidence its prose budget has no room for.
 *Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, which split the parent
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
-
-- `first-sweep` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the
-  parent's "The sweep, 2026-09-03". calef names files.
-- `partial-sweep` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the
-  parent's "The second sweep, 2026-09-03: `PARTIAL`". calef names files.

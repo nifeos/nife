@@ -10,11 +10,10 @@ other, so one thread's message is delivered to a thread that never asked for one
 released as though a transfer happened.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..34869b3fc 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -265,7 +265,7 @@ impl<T: Node> Rendezvous<T> {
-     pub fn send(&mut self, me: Unqueued<T>) -> Send<T> {
+@@ -251,7 +251,7 @@ impl<T: Node> Rendezvous<T> {
+         // words is the forgery the refusal exists to stop.
          if self.bound_to_interrupt {
              Send::Refused(me)
 -        } else if let Some(receiver) = self.receivers.pop_front() {

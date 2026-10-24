@@ -1,3 +1,5 @@
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pull-request`.*
+
 This PR adds an unstable `--target <TRIPLE>` option, so Kani can verify a crate for a target other than the host, and adds `riscv64gc-unknown-linux-gnu` as a target Kani has a machine model for.
 
 Towards #2402. It covers the part of that issue that needs no new machine-model work: 64-bit little-endian targets. The 16-bit and big-endian cases asked for there are left for later (see "Not in this PR").
