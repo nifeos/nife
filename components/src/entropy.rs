@@ -285,8 +285,9 @@ impl Pool {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
     if mode == MODE_INSTRUCTION {
         // No virtio device, no DMA page, no IRQ: the kernel would not have spawned this mode
         // unless it already confirmed the instruction's feature bit (aarch64's `ID_AA64ISAR0_EL1`,

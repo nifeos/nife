@@ -26,8 +26,9 @@ use user_mode_runtime::{exit, receive, receive_cap, require, send};
 const CHANNEL: u64 = 0;
 const REPORT: u64 = 1;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let (_w, slot, _) = receive_cap(CHANNEL);
     require(slot != rendezvous::NO_CAP);
 

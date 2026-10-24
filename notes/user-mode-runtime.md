@@ -65,6 +65,20 @@ by hand (`arch/x86_64/trap.s`).
 It draws the number and all six words at random, unknown numbers included, which no typed wrapper
 can express.
 
+## Entering a process
+
+The kernel enters a new thread with the stack pointer at the top of its stack page, 16-byte aligned.
+On aarch64 and riscv64 that is what a function expects. On `x86_64` the psABI expects `rsp % 16 ==
+8` at a function's first instruction, because a `call` has just pushed the return address. A plain
+`extern "C" fn _start` therefore runs every frame eight bytes off. Without SSE nothing faults, so the
+mistake stays latent until a local needs 16-byte alignment and lands eight bytes off.
+
+`program_entry!(start)` writes `_start` for a program: a one-`call` shim on `x86_64`, as std's entry
+has (`patches/std-nife/overlay/std/src/sys/pal/nife/entry.rs`), and a plain function elsewhere.
+Every `no_std` program uses it, and `script/lint` refuses an `extern "C" fn _start` written by hand
+under `components/`, `fixtures/` or `redoxfs_server/`. `loaded_image_check`'s alignment check is the
+proof from inside a process: `image_self_checker` fails it on `x86_64` without the shim.
+
 ## Ending a process
 
 `exit` and `trap` are the two ways a program ends, and they report differently. `exit` reports

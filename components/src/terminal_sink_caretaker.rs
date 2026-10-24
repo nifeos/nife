@@ -41,8 +41,9 @@ const SINK: u64 = 0;
 /// delegated onward**, and that is what a caretaker is for.
 const TERM: u64 = 1;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_x0: u64, _x1: u64, _x2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(SINK);
         let mut buf = [0u8; byte_sink_contract::INLINE_MAX];

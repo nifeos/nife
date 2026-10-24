@@ -53,8 +53,9 @@ const CONFIG_SLOT: u64 = 1;
 /// `crates/system_initializer`'s `CHILD_CONFIG_VA`.
 const CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let Some(page) = config_page() else {
         line(b"printenv: no configuration was granted");
         send(REPORT, byte_sink_contract::eof(), 0, 0);

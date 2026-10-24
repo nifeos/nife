@@ -11,8 +11,9 @@ IOMMU?
 
 Measured 2026-10-22 (UTC) at base `79941d883`, on an Apple M3 running macOS 26.6.2, with the pinned
 nightly of 2026-10-22 and QEMU 11.1.2 for all three systems. The crate is exactly
-`vendor/virtio-drivers`. [virtio-drivers-probe.sh](virtio-drivers-probe.sh) builds the probe in a
-detached worktree and runs it; nothing in this tree depends on the crate.
+what `vendor/virtio-drivers` held at `c1ce64f2e`, the last main to carry it.
+[virtio-drivers-probe.sh](virtio-drivers-probe.sh) builds the probe in a detached worktree at that
+commit and runs it; nothing in this tree depends on the crate.
 
 ## Result
 

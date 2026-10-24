@@ -844,8 +844,9 @@ impl Typed {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let Some(h) = Handoff::unpack([arg0, arg1, arg2]) else {
         send(
             REPORT,

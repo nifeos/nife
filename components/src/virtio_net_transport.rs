@@ -8,6 +8,13 @@
 //! confines as it does the disk's; so the MTU is small (`MTU`), and full 1514-byte buffers cannot
 //! be posted: a recorded caveat, not a bug (notes/net.md, notes/net/the-driver-and-dhcp.md).
 //!
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
+//! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
+//! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
+//! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
+//! `direct_memory_access_validator`, so no driver can aim device DMA. See
+//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//!
 //! Name: ratified 2026-10-06 (calef, "Yes", in conversation), replacing `net_transport`, itself
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
 //! card transport is `<device family>_transport`, as `e1000e_transport` beside it. Refused

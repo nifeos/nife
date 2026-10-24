@@ -113,8 +113,9 @@ enum Programs {
     Store,
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) -> ! {
     PAGE.store(registration_page, core::sync::atomic::Ordering::Relaxed);
     // A scheduled job never holds the run-unvouched capability, gate D2 of §219 (how the shell
     // names an installed program to the spawner), so §220 (signed builds, and trusting a key is

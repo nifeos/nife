@@ -56,8 +56,9 @@ const INPUT: u64 = 9;
 /// the pair band, so nothing the loader lays down can be there already.
 const VA: u64 = address_space_map::pair_page(0x0040_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     send(REPORT, compose(initial_ramdisk_len), 0, 0);
     exit()
 }

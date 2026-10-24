@@ -29,8 +29,9 @@ const MEMORY_REGION: u64 = 0;
 const REPORT: u64 = 1;
 const CHILD: &str = "report_child";
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     // SAFETY: forwarded from user_mode_runtime::initial_ramdisk::bytes's own contract: the kernel
     // mapped the archive at INITIAL_RAMDISK_VA and passed its length in x1.
     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };

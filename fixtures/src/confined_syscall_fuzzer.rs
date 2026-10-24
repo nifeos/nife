@@ -192,8 +192,9 @@ fn report_word(i: usize, v: u64) {
     unsafe { core::ptr::write_volatile((REPORT_VA as *mut u64).add(i), v) }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(seed: u64, role: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(seed: u64, role: u64, _arg2: u64) -> ! {
     let mut rng = Rng(splitmix(
         seed ^ role.wrapping_add(1).wrapping_mul(0xA076_1D64_78BD_642F),
     ));

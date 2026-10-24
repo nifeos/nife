@@ -59,8 +59,9 @@ const SPAWN: u64 = 2;
 /// and a leak here ends the prompt's memory a few commands later with nothing to point at.
 const MAX_ATTEMPTS: usize = 1024;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     loop {
         // The kernel is the only sender on this endpoint (§26 clears the child's fault slot at
         // `START`), so the tid is trustworthy without a badge.

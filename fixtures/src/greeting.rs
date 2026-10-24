@@ -46,8 +46,9 @@ capability_manifest_note::carry!(MANIFEST);
 /// The line. The gate asserts it, so a copy of any program the image carries could not print it.
 const LINE: &[u8] = b"hello from a package this image never carried\n";
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(LINE);
     say(if is_granted(CLOCK) {
         b"clock: held at slot 1, as its manifest note asked\n"

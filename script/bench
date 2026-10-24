@@ -18,6 +18,10 @@
 #   script/bench --real --smp  HVF on 4 harts; adds the multi-hart throughput bench (smp_throughput)
 #                              and, with a RedoxFS disk attached, the filesystem ones: fs_read and
 #                              milestone 38's four throughput phases (fs_seq_read and friends)
+#   script/bench --keyboard  attach a virtio keyboard and press it over the QEMU monitor, for the
+#                            keyboard_up and keyboard_event rows of keyboard_driver; composes with
+#                            --riscv and --x86, never gates. See
+#                            notes/benchmarks/kernel-bench-harness.md, "The keyboard rows"
 #
 # **All three architectures, each against its own baseline.** With no architecture flag the
 # instrument is aarch64 and the baseline is `bench/baseline-aarch64.txt`; `--riscv` and `--x86`

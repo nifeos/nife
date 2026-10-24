@@ -128,8 +128,9 @@ pub const P_RW_REFUSED: u64 = 1 << 0;
 /// ASCII `HOLDG`. Must match `system_tests/src/user/disk_tests.rs`.
 pub const R_HOLDING: u64 = 0x_48_4F_4C_44_47;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     match role {
         ROLE_SURVEY => survey(),
         ROLE_PROBE => probe(),

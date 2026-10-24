@@ -391,8 +391,9 @@ fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) -> ! {
     // The crash injector's arming, straight out of the START arguments (milestone 37). All zero on
     // every boot but the crash test's, and `AT_WRITE == 0` is what makes the injector inert.
     {

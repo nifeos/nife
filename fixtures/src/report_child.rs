@@ -18,8 +18,9 @@ use user_mode_runtime::{exit, send};
 
 const REPORT: u64 = 0;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     send(REPORT, capability_witness_contract::REPORT_CHILD_WORD, 0, 0);
     exit();
 }

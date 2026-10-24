@@ -226,8 +226,9 @@ fn commit(seq: &mut u32, damage: compositor::Rect) {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, neighbour_va: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, neighbour_va: u64, _arg2: u64) -> ! {
     // `HELLO` first, for one reason: its reply cannot arrive until the compositor is serving the
     // doorbell, and the compositor publishes every control page before it starts serving. So the
     // rendezvous *is* the synchronization, and no client polls for a valid control page.

@@ -84,8 +84,9 @@ const _: () = assert!(grant_plan::ENTROPY_SLOT == 9);
 const _: () = assert!(grant_plan::DOMAIN_SLOT == 7);
 const _: () = assert!(grant_plan::REBOOT_SLOT == 13);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // A kernel refusal comes back in the first word as a negative `abi::Error`; a service's reply
     // is non-negative. So the sign alone says whether something answered, and anything answering
     // is the failure this program exists to catch.

@@ -13,8 +13,9 @@
 //! Bare-metal only, like the rest of this crate (see the crate-level doc for why this is `no_run`).
 //!
 //! ```no_run
-//! #[unsafe(no_mangle)]
-//! pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
+//! user_mode_runtime::program_entry!(start);
+//!
+//! fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 //!     // SAFETY: the kernel maps `initial_ramdisk_len` bytes of the archive, read-only, at
 //!     // INITIAL_RAMDISK_VA, before this process's `_start` runs (`bytes`'s own contract).
 //!     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };

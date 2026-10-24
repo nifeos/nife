@@ -27,8 +27,9 @@ const REPORT: u64 = 2; // report the verdict here
 const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
 const RW_VA: u64 = address_space_map::pair_page(0x0000_0000_00B0_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let (_data, frame, _) = receive_cap(CHANNEL);
     let received = frame != rendezvous::NO_CAP;
 

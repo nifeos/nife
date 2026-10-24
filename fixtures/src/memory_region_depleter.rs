@@ -40,8 +40,9 @@ const MEMORY_REGION: u64 = 0;
 const REPORT: u64 = 1;
 const BASE_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Signal that we are loaded and about to start spending the region. The test measures the
     // kernel's frame count HERE, so it sees only what we do from now on.
     send(REPORT, 0, 0, 0);

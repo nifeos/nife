@@ -96,8 +96,9 @@ static mut PRIMARY: [u8; 5 * blk::BLOCK_SIZE] = [0; 5 * blk::BLOCK_SIZE];
 /// that begins inside a transfer block depends on the disk's size, so six is the worst case.
 static mut BACKUP: [u8; 6 * blk::BLOCK_SIZE] = [0; 6 * blk::BLOCK_SIZE];
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     // The shared page is a `PageFrame` we hold, mapped here out of our own budget (milestone 108).
     // Before either role, because every `blk` call goes through it.
     if !user_mode_runtime::map_page_frame(BLK_PAGE_FRAME, BLK_PAGE, true, BUDGET) {

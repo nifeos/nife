@@ -38,8 +38,9 @@ const VIRTIO_NET: u64 = 40;
 /// The block server (milestone 32 phase 2): serves blocks over blk IPC to the FS server.
 const VIRTIO_BLK_SERVER: u64 = 32;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
     match role {
         VIRTIO_BLK => virtio::run(direct_memory_access_phys),
         VIRTIO_ATTACK => virtio::run_attack(direct_memory_access_phys),

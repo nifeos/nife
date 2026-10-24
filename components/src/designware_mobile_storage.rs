@@ -82,8 +82,9 @@ fn transfer() -> &'static mut [u8] {
     unsafe { core::slice::from_raw_parts_mut(TRANSFER_VA as *mut u8, blk::TRANSFER_MAX) }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let Some(h) = Handoff::unpack([arg0, arg1, arg2]) else {
         send(READY, STEP_BAD_HANDOFF, arg0, 0);
         exit();

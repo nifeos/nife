@@ -20,8 +20,9 @@ use user_mode_runtime::{exit, interrupt_wait, send};
 const REPORT: u64 = 0;
 const INTERRUPT: u64 = 1;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let _ = interrupt_wait(INTERRUPT);
     send(
         REPORT,

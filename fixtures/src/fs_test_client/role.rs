@@ -61,8 +61,9 @@ const ROLE_SHARE_VICTIM: u64 = 13;
 /// whole of its power. See [`share_attacker`].
 const ROLE_SHARE_ATTACKER: u64 = 14;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, a1: u64, _a2: u64) -> ! {
     match role {
         ROLE_BENCH => bench(),
         ROLE_ATTACKER => attacker(a1 != 0),

@@ -44,8 +44,9 @@ const REPORT: u64 = 0;
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 const MACHINE_SLOT: u64 = grant_plan::MACHINE_SLOT;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let has_diag = is_granted(DIAG_SLOT);
     let granted = is_granted(MACHINE_SLOT);
     let machine = if granted {

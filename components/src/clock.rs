@@ -50,8 +50,9 @@ const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
 /// The startup report's first word, so a reader of the endpoint knows this is the clock speaking.
 const RPT_READY: u64 = 0x_c10c_c0de;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(rtc_kind: u64, rtc_seed: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(rtc_kind: u64, rtc_seed: u64, _a2: u64) -> ! {
     // SAFETY: the wiring maps the clock page read/write at CLOCK_VA before this program runs, and
     // nothing unmaps it. We are the first to touch it, so stamping it here cannot race a reader
     // that has already seen the magic.

@@ -41,8 +41,9 @@ const SYNC_SLOT: u64 = grant_plan::SYNC_SLOT;
 /// `EOPNOTSUPP`: the device offers no flush, which `fs::SYNC` passes through on purpose.
 const EOPNOTSUPP: i64 = 95;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let has_diag = is_granted(DIAG_SLOT);
     let complain = |text: &[u8]| write_on(if has_diag { DIAG_SLOT } else { REPORT }, text);
 
