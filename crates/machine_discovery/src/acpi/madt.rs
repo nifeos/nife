@@ -1,10 +1,6 @@
 //! **The MADT** (signature `APIC`): where the interrupt controllers are, and how the legacy ISA
 //! IRQs reach them once its interrupt source overrides are applied.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
@@ -389,10 +385,8 @@ pub fn isa_irq_table(body: &[u8]) -> [IsaIrqRouting; ISA_IRQ_COUNT] {
     table
 }
 
-/// Machine-checked proofs over the MADT (milestone 319).
-///
-/// Why these tables carry harnesses, and what is deliberately left unproved, is on
-/// `acpi::root`'s `verification`, beside the RSDP's.
+/// Machine-checked proofs over the MADT (milestone 319). Why these tables carry harnesses is on
+/// `acpi::root`'s `verification`.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.
@@ -404,17 +398,11 @@ mod verification {
     /// harness here is linear in this, so it is the whole cost knob.
     const N: usize = 36;
 
-    /// **The MADT walk terminates and never reads outside the body**, for every byte pattern.
-    ///
-    /// The entry list is self-describing: each entry carries its own length byte, which is firmware
-    /// telling the parser how far to advance. A length of zero never advances and a length past the
-    /// end reads the next entry out of the middle of this one, so this loop is a hostile input away
-    /// from hanging the boot. The unwind bound is what proves termination: a walk that could fail to
-    /// advance cannot be unrolled to a fixed depth.
-    ///
-    /// Could plausibly have been false: `len < 1` instead of `len < 2` (which accepts the
-    /// zero-advance case as soon as a `type` byte is followed by a `1`), or `>=` in place of `>` in
-    /// the bound check. Both keep every test in this file green.
+    /// **The MADT walk terminates and never reads outside the body**, for every byte pattern. Each
+    /// entry's length byte is firmware telling the parser how far to advance: zero never advances,
+    /// and a length past the end reads the next entry out of the middle of this one. The unwind
+    /// bound is what proves termination. `len < 1` for `len < 2`, or `>=` for `>` in the bound
+    /// check, keeps every test green.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.madt.verification.the_madt_walk_terminates_and_stays_inside_the_body.patch`
     #[kani::proof]
     #[kani::unwind(20)]

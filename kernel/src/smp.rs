@@ -1,23 +1,11 @@
-//! Bringing the other cores online (SMP steps 2 and 3b, DECISIONS §11).
+//! Bringing the other cores online, and the roster of which cores exist (DECISIONS §11 (SMP:
+//! per-CPU run queues, message-based migration)).
 //!
-//! Core 0 starts each secondary with a PSCI `CPU_ON`, handing it a physical entry point
-//! (`secondary_boot` in boot.s) and its own stack. The secondary replays the MMU-enable and lands
-//! in [`secondary_main`].
-//!
-//! **Step 2** brought a core up "alive and idle" (bring-up path only). **Step 3b-ii** makes it a
-//! full scheduler participant: it adopts the kernel's fine map, becomes its own idle thread with
-//! its own run queue, brings up its GIC CPU interface and timer, and from then on schedules and is
-//! preempted like the boot core.
-//!
-//! **Step 3c** adds cross-core placement. A core's run queue is single-owner, so to give it a
-//! thread another core hands it through this core's **inbox** (the one cross-core scheduler
-//! structure) and fires the reschedule SGI; the target drains its inbox into its own queue in the
-//! handler. `sched::spawn_on(core, f)` is the primitive.
-//!
-//! **Load balancing** is the last piece, and since DECISIONS §28 it lives in `sched::spawn` itself:
-//! two random choices at spawn, then work stealing by idle cores. There used to be an explicit
-//! `spawn_balanced` that round-robined placement, and milestone 41 deleted it, because §28 left it
-//! with no caller and a doc comment claiming a test used it that had already moved to plain `spawn`.
+//! The boot core reads the core list ([`read_cpu_list`]), then starts each secondary
+//! ([`bring_up_secondaries`]) at a physical entry point on its own stack; the secondary lands in
+//! [`secondary_main`], which makes it a scheduler participant. Load balancing is `sched::spawn`'s
+//! (DECISIONS §28 (SMP placement: two random choices at spawn, message-shaped stealing)). See
+//! notes/smp.md.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
@@ -31,12 +19,10 @@ use crate::{arch, print, println};
 /// 64 KiB per secondary, matching core 0's boot stack (link-aarch64.ld).
 const SECONDARY_STACK_SIZE: usize = 64 * 1024;
 
-/// The unmapped page below each secondary stack (milestone 90).
+/// The unmapped page below each secondary stack.
 ///
-/// One page of address space per core and **zero physical frames**: `map_everything` simply skips
-/// it, so the MMU faults on the first byte written past the bottom of the stack. Same mechanism as
-/// the boot stack's `__stack_guard` (link-aarch64.ld, link-riscv64.ld) and as a kernel thread's
-/// guard (`thread::KernelStack`); this was the one kernel stack that had no such page.
+/// One page of address space per core and **zero physical frames**: `map_everything` skips it, so
+/// the MMU faults on the first byte written past the bottom of the stack. See notes/smp.md.
 const SECONDARY_STACK_GUARD: usize = 4096;
 
 /// A core's slot: its guard page, then the stack that grows down into it. A multiple of the page
@@ -47,22 +33,10 @@ const SECONDARY_STACK_SLOT: usize = SECONDARY_STACK_GUARD + SECONDARY_STACK_SIZE
 /// stack from link-aarch64.ld); slots `1..MAX_CPUS` belong to the secondaries. On RISC-V the boot
 /// hart is whichever one OpenSBI picked, so the unused slot is not always 0.
 ///
-/// **The `UnsafeCell` is load-bearing, and not for interior mutability the usual way.** An
-/// immutable `static` of plain arrays lands in **`.rodata`**, which the fine kernel map makes
-/// **read-only** (W^X), and a stack you cannot write is not a stack. That bug is invisible on the
-/// coarse boot map (where `.rodata` is writable) and fires the instant a secondary adopts the fine
-/// map. See DECISIONS §11.
-///
-/// **The `link_section` is what makes the guard pages possible** (milestone 90). These used to be
-/// ordinary `.bss`, and `map_everything` maps `.data`..`__bss_end` as one range, so there was
-/// nowhere to put a hole. In their own region the mapper maps each stack separately and skips each
-/// guard. The region is `(NOLOAD)`, so nothing zeroes it, which `.bss` was getting for free from
-/// boot.s: a stack does not need it, and the high-water instrument paints every usable byte of one
-/// in a test build anyway.
-///
-/// The core count stays here rather than being written again in two linker scripts: the scripts
-/// anchor `__secondary_stacks_start`..`__secondary_stacks_end` around whatever this emits, and
-/// `the_secondary_stack_region_is_the_size_the_linker_reserved` holds the two together.
+/// The `UnsafeCell` keeps the static out of `.rodata`, which the fine kernel map makes read-only.
+/// The `link_section` gives the stacks their own `(NOLOAD)` region, so the mapper can map each
+/// stack and skip each guard; nothing zeroes it. The linker scripts only anchor
+/// `__secondary_stacks_start`..`__secondary_stacks_end` around it. See notes/smp.md.
 #[repr(C, align(4096))]
 struct Stacks(core::cell::UnsafeCell<[[u8; SECONDARY_STACK_SLOT]; MAX_CPUS]>);
 
@@ -97,14 +71,10 @@ pub fn online_harts_mask() -> usize {
     ONLINE_MASK.load(Ordering::Acquire)
 }
 
-/// The online cpus, by id, in ascending order: the mask above as an iterator. The online set is
-/// NOT contiguous from zero on real boards (the VisionFive 2's slot 0 is the excluded S7, so its
-/// set is {1,2,3}), and `0..online_count()` as an index range is the bug the first-silicon bench
-/// found in `pick_spawn_target` (2026-08-14): modulo-count produced index 0, a placement into a
-/// parked core's inbox that nothing will ever drain. Iterate the set, never the count.
-///
-/// The mask arithmetic lives in `crates/cpu_set`, where the {1,2,3} shape QEMU cannot boot is
-/// host-tested; this adds only the live mask.
+/// The online cpus, by id, in ascending order: [`online_harts_mask`] as an iterator. The online
+/// set is not contiguous from zero on real boards (the VisionFive 2's is {1,2,3,4}), so iterate
+/// the set, never `0..online_count()`. The mask arithmetic is `crates/cpu_set`'s, host-tested.
+/// See notes/smp.md.
 pub fn online_cpus() -> cpu_set::Cpus {
     cpu_set::cpus_in(online_harts_mask())
 }
@@ -122,12 +92,9 @@ static RAN_ON: [core::sync::atomic::AtomicBool; MAX_CPUS] =
     [const { core::sync::atomic::AtomicBool::new(false) }; MAX_CPUS];
 
 /// Set by a probe placed on a specific core via `spawn_on`: indexed by the core it was **placed
-/// on**, holding the core it actually **ran on**, plus one (so zero means "has not run yet").
-///
-/// Both halves matter, and they used to be conflated: the index was the core it ran on, which made
-/// the array a record of which cores had been busy rather than of which placements arrived. Since
-/// DECISIONS §28.3 an idle core may steal a placed thread before its target runs it, so the two are
-/// genuinely different questions. See `work_can_be_placed_on_every_cpu`.
+/// on**, holding the core it actually **ran on**, plus one (so zero means "has not run yet"). The
+/// two differ because an idle core may steal a placed thread before its target runs it (DECISIONS
+/// §28.3). See `work_can_be_placed_on_every_cpu`.
 #[cfg(test)]
 static SPREAD: [core::sync::atomic::AtomicU32; MAX_CPUS] =
     [const { core::sync::atomic::AtomicU32::new(0) }; MAX_CPUS];
@@ -175,9 +142,8 @@ static HWID: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(u64::MAX) }; MAX_CP
 
 /// Per slot: did the tree describe a core this kernel could actually start? False for a core
 /// firmware marked `status = "disabled"`, for one whose own `riscv,isa` disclaims supervisor mode
-/// (the VisionFive 2's S7, whose vendor node lies about everything else; bench, 2026-08-14), and
-/// for one whose `enable-method` is a mechanism this kernel does not speak (`spin-table`, or a
-/// per-SoC method).
+/// (the VisionFive 2's S7, whose vendor node claims a schedulable core everywhere else), and
+/// for one whose `enable-method` is a mechanism this kernel does not speak. See notes/smp.md.
 static STARTABLE: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// How many `cpu@` nodes the tree had, which may be more than the slots that got seated. Kept so
@@ -185,50 +151,31 @@ static STARTABLE: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MA
 /// quietly using fewer.
 static DESCRIBED: AtomicUsize = AtomicUsize::new(0);
 
-/// **Read the machine's core list out of its device tree** (milestone 100).
+/// **Read the machine's core list out of its device tree.**
 ///
-/// Called once, on the boot core, before [`bring_up_secondaries`] and while the device tree is still
-/// mapped (both boots call it in the same breath as `arch::isa::init`, ahead of `mmu::init`
-/// replacing the coarse boot map). It records the roster and prints it; it starts nothing.
-///
-/// Until this existed the core list was `0..MAX_CPUS`, a constant, and on QEMU `virt` that is the
-/// right answer for the wrong reason: `virt` numbers its cores densely from zero, so the constant
-/// and the machine agreed. On a board that numbers them any other way the kernel would have called
-/// `CPU_ON` on ids that are not there and never called it on the ids that are, and the second half
-/// of that produces no error at all, because nothing asks about a core it never named.
+/// Called once, on the boot core, before [`bring_up_secondaries`] and before `mmu::init` replaces
+/// the coarse boot map the tree is reached through. Seats each described core at the slot its
+/// hardware id names and prints the roster; it starts nothing. See notes/smp.md.
 ///
 /// # Panics
 ///
-/// If the blob is unreadable. Both callers run after `memory::init` has already parsed the same
-/// pointer, so a failure here means something un-mapped the tree between the two, which is a kernel
-/// bug rather than a machine we should tolerate.
+/// If the blob is unreadable. `memory::init` has already parsed the same pointer, so that is a
+/// kernel bug, not a machine to tolerate.
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn read_cpu_list() {
     let dt = crate::device_tree().expect("device tree is unreadable");
     let list = CpuList::from_device_tree(&dt).expect("cannot read /cpus");
 
-    // Seat each described core at the slot its own hardware id names. A slot IS a hart id:
-    // everywhere the kernel indexes hardware (the per-CPU blocks, the secondary stacks, the RISC-V
-    // trap stashes, GIC and PLIC targets, IPI hart masks) it uses the logical id, so seating by
-    // hwid makes logical-id-equals-hardware-id hold by construction rather than by a positional
-    // assignment checked afterwards at bring-up. It is also what keeps an excluded core from
-    // costing anyone else a seat: the old `take(MAX_CPUS)` truncated the *described* list before
-    // startability was known, so on the VisionFive 2 the unusable S7 consumed a slot and U74
-    // hart 4 fell off the end, parked with nothing to report (bench, 2026-08-14). Seated by id,
-    // the S7 occupies only slot 0, its own, and hart 4 sits at slot 4.
-    //
-    // The startability predicate is `machine_discovery::cpu_list::Cpu::is_startable`, host-tested
-    // against both JH7110 fixtures (the mainline tree's `status` lie and the vendor tree's
-    // ISA-string truth); see it for why `Unstated` passes and why supervisor mode is required.
+    // Seat each core at the slot its hardware id names: logical id equals hardware id by
+    // construction, and an excluded core costs no other core its seat. See notes/smp.md.
     let mut startable = 0;
     let mut unseated = 0; // startable cores whose hart id names no slot
     for cpu in list.cpus().iter() {
         let ok = cpu.is_startable();
         startable += usize::from(ok);
         let Some(slot) = usize::try_from(cpu.hwid).ok().filter(|&s| s < MAX_CPUS) else {
-            // A core this build cannot seat: its id is past the per-CPU statics (or it is a
-            // clustered aarch64 machine's Aff1-bearing affinity value, same refusal as ever, made
-            // earlier). Only counted against us when we could otherwise have run it.
+            // Its id is past the per-CPU statics, as every clustered aarch64 affinity value is.
+            // Counted only when we could otherwise have run it.
             unseated += usize::from(ok);
             continue;
         };
@@ -243,8 +190,6 @@ pub(crate) fn read_cpu_list() {
     }
     DESCRIBED.store(list.described, Ordering::Release);
 
-    // The RISC-V timer's counter rate is a `/cpus` property and is read separately, right after this
-    // in `bring_up_machine`, by `timer::init_frequency`. See arch/riscv64/timer.rs.
     print!("  smp: {} core(s) in the device tree", list.described);
     if startable != list.described {
         print!(", {startable} startable");
@@ -257,10 +202,8 @@ pub(crate) fn read_cpu_list() {
     }
     println!();
 
-    // One honest line per hart excluded for missing supervisor mode, in the machine's own terms.
-    // On the VisionFive 2's vendor tree this is the only place the S7's exclusion is visible at
-    // all: status and mmu-type both claim a schedulable core, and trusting them handed the
-    // S-incapable hart to sbi hart_start and crashed vendor OpenSBI (bench, 2026-08-14).
+    // The only place a hart excluded for missing supervisor mode is visible: the VisionFive 2's
+    // vendor tree claims its S7 is schedulable in both status and mmu-type.
     for cpu in list.cpus().iter() {
         if !cpu.supervisor {
             println!(
@@ -292,25 +235,13 @@ pub(crate) fn read_cpu_list() {
     seat_cpus_from_acpi(&cpus[..count]);
 }
 
-/// **Seat the cores the ACPI MADT lists** (milestone 161 (the `x86_64` kernel port)'s SMP item), the device-tree walk's seating
-/// done over the MADT's `LocalApic` entries, which are x86's own per-core list.
+/// **Seat the cores the ACPI MADT lists**: [`read_cpu_list`]'s seating, over the MADT's
+/// `LocalApic` entries.
 ///
-/// Called once, by `x86_64`'s [`read_cpu_list`] on the boot core, before [`bring_up_secondaries`]
-/// (`arch::machine::Acpi::cpus[..cpu_count]` is what it passes here). It seats each described core at the slot its own local APIC id names,
-/// mirroring [`read_cpu_list`]'s seating by hardware id: every per-cpu array in this kernel is
-/// indexed by logical id, so the same logical-id-equals-hardware-id invariant has to hold here too.
-/// `arch::boot_cpu_id` reading the boot core's own local APIC id (via `CPUID`, this same milestone)
-/// rather than assuming 0 is what makes that hold for the boot core as well as for the secondaries;
-/// see its own doc for why the two have to agree.
-///
-/// `cpus` is `(local_apic_id, enabled)` per MADT `LocalApic` entry, in the table's own order.
-/// `enabled` is what [`STARTABLE`] takes directly: unlike the device-tree architectures, there is no
-/// second check to fold in (no supervisor-mode string to distrust), because a MADT entry that is
-/// present but not enabled already means exactly "a socket exists here and firmware will not start
-/// it", the same thing `enabled` says.
-///
-/// x86-only: ACPI is x86's discovery mechanism, not a portable one, the same reason
-/// `arch::machine::Acpi` itself lives under `arch/x86_64/` rather than beside `device_tree_blob`.
+/// `cpus` is `(local_apic_id, enabled)` per entry, in table order
+/// (`arch::machine::Acpi::cpus[..cpu_count]`). Each core is seated at the slot its local APIC id
+/// names, and `enabled` is what [`STARTABLE`] takes. Called once, by `x86_64`'s [`read_cpu_list`],
+/// before [`bring_up_secondaries`]. See notes/smp.md.
 #[cfg(target_arch = "x86_64")]
 fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     let mut startable = 0;
@@ -319,9 +250,7 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     for &(apic_id, enabled) in cpus {
         let slot = apic_id as usize;
         if slot >= MAX_CPUS {
-            // A core this build cannot seat: its local apic id is past the per-CPU statics. Only
-            // counted against us when we could otherwise have run it, the same convention
-            // read_cpu_list's `unseated` uses.
+            // Past the per-CPU statics; counted only when we could otherwise have run it.
             unseated += usize::from(enabled);
             continue;
         }
@@ -348,8 +277,7 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     }
     println!();
 
-    // As read_cpu_list's own closing check: the core we are executing on has to be in the roster at
-    // its own index, or the roster describes a machine other than the one running this code.
+    // As in read_cpu_list: the core we run on must be in the roster at its own index.
     let boot = arch::boot_cpu_id();
     if hwid(boot) != Some(boot as u64) {
         println!(
@@ -359,15 +287,12 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     }
 }
 
-/// The hardware id of logical core `id`, or `None` for a slot no described core's hart id names.
+/// The hardware id of logical core `id`, or `None` for a slot no described core's id names.
 ///
-/// Since seating went by-id (2026-08-14) a filled slot holds its own index by construction, so a
-/// `Some` answer is always `Some(id)`; the value of asking is the `None`, which distinguishes a
-/// seat the machine filled from one it did not.
-///
-/// **Used outside tests on `x86_64` only**: `arch::x86_64::irq::send_reschedule` looks up a target
-/// core's local APIC id here (milestone 161's SMP item). aarch64 and RISC-V never need to ask,
-/// because their own reschedule messages (an SGI, an SBI IPI) are already sent by *logical* id.
+/// A filled slot holds its own index by construction, so a `Some` is always `Some(id)`; the `None`
+/// is what distinguishes a seat the machine filled. Used outside tests only on `x86_64`, where
+/// `arch::x86_64::irq::send_reschedule` looks up a target's local APIC id; aarch64 and RISC-V send
+/// their reschedule IPIs by logical id.
 #[cfg_attr(
     not(any(test, feature = "system_tests", target_arch = "x86_64")),
     allow(dead_code)
@@ -393,51 +318,21 @@ unsafe extern "C" {
 
 /// Start every secondary core the machine described, and wait until each has come online.
 ///
-/// Called once, on core 0, after the heap and scheduler exist (a secondary's stack is static, so
-/// bring-up itself needs no allocator, but step 3 will) and after [`read_cpu_list`] has recorded
-/// which cores there are. Core 0 keeps doing all real scheduling work; the secondaries only idle
-/// until then.
+/// Called once, on the boot core, after the scheduler exists and [`read_cpu_list`] has recorded
+/// the roster. Empty and unstartable seats are skipped. See notes/smp.md.
 ///
 /// # BUGS
 ///
-/// - **A core whose hardware id names no slot is refused, loudly, rather than remapped**
-///   (milestone 100, reshaped by the by-id seating, 2026-08-14). The kernel indexes hardware by
-///   logical id everywhere: `cpu::PERCPU`, the secondary stacks and the RISC-V trap stashes are
-///   arrays indexed by it; the GICv2 targets an SPI by CPU-interface number and `send_sgi` by that
-///   same number; the PLIC's S-mode context table (`arch::irq`) is indexed by hart id and the SBI
-///   IPI mask is a bitmap of hart ids. Giving a core a logical id other than its hardware id would
-///   need every one of those to translate, so [`read_cpu_list`] seats each core at the slot its
-///   hardware id names and the equation holds by construction. The refusal that used to live here
-///   (a positional slot whose recorded hwid was not its index) is now the seating's: a core whose
-///   id is at or past `MAX_CPUS`, which includes every id on a clustered aarch64 board
-///   (`MPIDR_EL1.Aff1` in use), gets a named line at roster time and stays parked. A machine whose
-///   ids are sparse but small (say harts {0, 2}) now simply works, seats {0, 2}, where the
-///   positional roster refused it; nothing between the ids is started or counted.
-///
-///   What that entanglement no longer includes, since the first-silicon sweep (2026-08-14): the
-///   assumption that the online *logical ids* are contiguous from zero. Every per-cpu loop, both
-///   IRQ-affinity round-robins and the spawn/wake placement now go through [`online_cpus`] /
-///   [`nth_online`] (or mask with [`online_harts_mask`], as the RISC-V RFENCE calls do), so a
-///   machine whose online set is {1,2,3,4}, the VisionFive 2 with all four U74s seated, is
-///   handled (notes/visionfive2.md).
-/// - **The conduit half is proved by parsing and not by calling.** `crates/machine_discovery`'s host tests read a
-///   real QEMU dump that states `smc`, so the decode is exercised; no machine here boots that
-///   configuration, so the `smc` instruction path has never executed. See `arch::cpu_start`.
+/// - A core whose hardware id is at or past `MAX_CPUS` stays parked rather than being remapped.
+/// - The PSCI `smc` conduit is proved by parsing, never by a call. See `arch::cpu_start`.
 #[cfg_attr(feature = "single_hart", allow(unreachable_code))]
 pub(crate) fn bring_up_secondaries() {
     // Record the boot core as online before starting anyone, so a TLB shootdown from here on names
     // it. (Secondaries add their own bits as they come up.)
     ONLINE_MASK.fetch_or(1 << cpu::id(), Ordering::Release);
 
-    // **The single-hart measurement build** (milestone 134's E1/E3/E4 on radon; kernel/Cargo.toml's
-    // `single_hart`). Mark the boot core online, as above, and start nobody. It returns HERE rather
-    // than at the top, because the mask is not optional: everything that broadcasts reads it, and a
-    // kernel with an empty online set while `online_count` says one is the disagreement the x86
-    // bring-up already caught once.
-    //
-    // A card, unlike a QEMU runner, has no `-smp 1` to pass, and E1 and E4 need one hart so their
-    // threads contend for the same core's cache. `bench::thread_scaling::real_single_hart_or_skip`
-    // is what would otherwise refuse on radon; see notes/footprint-perturbation.md.
+    // The single-hart measurement build (kernel/Cargo.toml's `single_hart`) starts nobody, but only
+    // after the mask above: everything that broadcasts reads it. See notes/smp.md.
     #[cfg(feature = "single_hart")]
     {
         println!("  smp: 1 core(s) online (single_hart: secondaries left parked)");
@@ -457,34 +352,17 @@ pub(crate) fn bring_up_secondaries() {
         }
     }
 
-    // What starts a core here, and whether this machine can be asked at all. The arch prints the
-    // mechanism it found (the PSCI conduit and function id on aarch64, read out of `/psci`); a
-    // machine that states none is a real machine and this is where we say so, once, rather than
-    // firing calls into an exception level that may not exist.
+    // A machine that states no start mechanism is told so once, here, rather than sent calls into
+    // an exception level that may not exist.
     arch::print_bring_up_mechanism();
     if !arch::can_start_secondaries() {
         println!("  smp: 1 core(s) online");
         return;
     }
 
-    // The entry point PSCI/SBI needs is PHYSICAL: the core starts with its MMU off. Cast the
-    // function item through a pointer (not straight to an integer, which the compiler warns on).
-    //
-    // **Below the refusal above, not before it** (milestone 161, roadmap item 4). It used to be the
-    // first thing this function did, and on x86_64 that panicked: `secondary_boot` is in `.boot`
-    // there, a section the linker places at its *physical* address because the trampoline starts in
-    // 32-bit protected mode and cannot name a 64-bit one, so `virt_to_phys` gets a low address and
-    // subtracts a high-half base from it. Computing an entry for a machine that cannot be asked to
-    // start anything was always work for nothing; on the third architecture it was also wrong.
-    //
-    // **On x86_64, `virt_to_phys` is not called at all** (fixed, milestone 161's SMP item; this was
-    // the milestone's own second named bug). `secondary_boot` there is linked at the fixed low
-    // *virtual* address it has to execute from (`AP_TRAMPOLINE_PHYS`, a STARTUP IPI can only name a
-    // page below 1 MiB), which already IS its physical address; `virt_to_phys` would compute
-    // `secondary_boot's address - DIRECT_MAP_BASE`, an unsigned underflow, since that address is
-    // nowhere near the direct map. `arch::secondary_boot_entry` is the identity function for this
-    // reason, kept as a function rather than a bare `secondary_boot as u64` so the "no conversion
-    // here, and here is why" reasoning lives beside the one call site that needs it.
+    // The entry is PHYSICAL: the core starts with its MMU off. Computed only once the machine can
+    // be asked at all, and on x86_64 not converted, because `secondary_boot` is linked at its
+    // physical trampoline address there and `virt_to_phys` would underflow. See notes/smp.md.
     #[cfg(target_arch = "x86_64")]
     let entry = arch::secondary_boot_entry(secondary_boot as *const () as u64);
     #[cfg(not(target_arch = "x86_64"))]
@@ -515,10 +393,8 @@ pub(crate) fn bring_up_secondaries() {
         if ret == 0 {
             started += 1;
         } else {
-            // A core the firmware declines to start returns an error rather than hanging. Degrade:
-            // note it and carry on with the cores we have. Before milestone 100 this line's "not
-            // present?" was the only thing standing between us and a wrong core list, because
-            // `0..MAX_CPUS` on a machine with fewer cores lands here on every absent one.
+            // A core the firmware declines to start returns an error rather than hanging: note it
+            // and carry on with the cores we have.
             println!("  smp: cpu {id} did not start (firmware returned {ret})");
         }
     }
@@ -534,7 +410,7 @@ pub(crate) fn bring_up_secondaries() {
 
 /// A secondary core's first Rust, called from `secondary_boot` once its MMU is on and it has a
 /// stack. `cpu_id` came from `MPIDR_EL1`. It turns the core into a full scheduler participant and
-/// then becomes that core's idle thread. (Step 3b-ii.)
+/// then becomes that core's idle thread. See notes/smp.md.
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
     // 1. Per-CPU pointer first, ahead of anything that could take a lock (the lock path reads this
@@ -562,23 +438,9 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
     crate::arch::irq::init_this_cpu();
     arch::timer::init();
 
-    // 6. (tests only) Prove this core schedules from its OWN queue by spawning a probe onto it.
-    //
-    //    `spawn_on(cpu::id(), ..)`, NOT `spawn`, and that is the whole point of the probe. Plain
-    //    `spawn` places by DECISIONS §28's power of two choices: the thread lands on the lighter of
-    //    two randomly sampled cores, deliberately not the spawner's. So each secondary's probe went
-    //    to a random core, several probes piled onto the same one, and the cores nobody happened to
-    //    sample never set their `RAN_ON` slot. The test then waited for a condition that could not
-    //    become true, and only passed when the random placement happened to cover every core.
-    //
-    //    It read as host slowness for a long time, because a random placement moves between runs
-    //    exactly the way a loaded runner does. Widening the wait from 10 s to 60 s changed nothing,
-    //    which is what finally separated the two: a deadline cannot fix an unreachable condition.
-    //    Second time §28 has invalidated a test's placement assumption; see the reap wait in
-    //    notes/riscv-parity-scope.md, which was a yield count until §28 broke it the same way.
-    //
-    //    The comment here used to say "there is no migration yet, so it runs here". That was true
-    //    when it was written and stopped being true at §28, with nothing to catch it.
+    // 6. (tests only) Prove this core schedules from its OWN queue. `spawn_on`, not `spawn`:
+    //    `spawn` places on the lighter of two sampled cores (DECISIONS §28), so the probes would
+    //    not cover every core. See notes/smp.md.
     #[cfg(any(test, feature = "system_tests"))]
     crate::sched::spawn_on(cpu::id(), || {
         RAN_ON[cpu::id()].store(true, Ordering::Release);
@@ -600,51 +462,17 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 }
 
 // The SMP tests need more than one core online (the runners default to `-smp 4`; NIFE_SMP moves
-// it, up to MAX_CPUS). They run on both
-// architectures now that RISC-V brings up secondary harts via SBI HSM (parity workstream A): the
-// bring-up, cross-core work placement (inbox + reschedule IPI), and load balancing are all portable
-// and exercised identically on the GIC/SGI and PLIC/SBI-IPI paths.
+// it, up to MAX_CPUS). See notes/smp.md.
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Wait for `cond`, bounded by the CLOCK rather than by a yield count.
+    /// Wait for `cond`, yielding, bounded by the clock: up to 60 s, inside the suite's 90 s
+    /// per-test watchdog (`DEFAULT_BUDGET_SECS`).
     ///
-    /// Every wait in this module used to be `spins < 5_000_000` yields, and a yield count is not a
-    /// duration. On the machine the number was calibrated on it was generous; on a four-vCPU CI runner
-    /// emulating four cores under TCG, this core can burn five million cheap yields long before the
-    /// secondaries it is waiting for have been scheduled at all. That is not a hang, it is an
-    /// impatient observer, and it failed `main` on 2026-07-30 in two different places for the same
-    /// reason. Exactly the defect fixed the same day in the reap waits (kernel/src/user.rs): wait on
-    /// the clock, not on a spin count.
-    ///
-    /// Ten seconds is far beyond any honest completion here (these are sub-second locally) and well
-    /// inside the harness's 90 s per-test ceiling, which remains the real backstop for a genuine hang.
-    /// Still a leak trap rather than a masked failure: work that never runs times out and fails.
-    /// Wait for `cond`, yielding, up to a budget chosen to sit **inside** the suite's per-test
-    /// watchdog.
-    ///
-    /// **Sixty seconds, not ten, and the reason is host contention rather than guest slowness.**
-    /// These tests assert that work placed on a secondary actually ran there. On a shared CI runner
-    /// (or a laptop running several QEMU instances) the guest's vCPU threads are starved of *host*
-    /// CPU, so guest wall clock advances while the secondaries get no chance to run at all. Ten
-    /// seconds was short enough that ordinary CI load produced a red run on unmodified `main`:
-    /// measured at 1 failure in 6 runs under synthetic load, and on 2026-08-02 it failed three
-    /// pull requests in a row, each time on a different RISC-V CPU model. **A failure that moves
-    /// between models is a statement about the host, not about the ISA.**
-    ///
-    /// Widening a timeout usually hides a bug, and this project has said so in this very file's
-    /// neighbourhood. It does not here, and the distinction is what makes the change honest:
-    /// `all_ran` is *exactly* the property under test, not a proxy for it. Widening a wait that
-    /// stands in for the property (a yield count, a whole-machine thread headcount) hides the
-    /// property breaking; widening a wait on the property itself only delays noticing, and the thing
-    /// that notices is the layer below.
-    ///
-    /// **That layer is why this is 60 and not unbounded.** `DEFAULT_BUDGET_SECS` fails any test at
-    /// 90 s, so a genuinely dead secondary is caught either way. Staying under it means this test
-    /// reports `secondary cores did not run scheduled work in time`, which names the subsystem,
-    /// rather than the watchdog's generic livelock message. Two deadlines for one property is what
-    /// produced the false reds; one of them is now clearly subordinate to the other.
+    /// Returns whether `cond` held by the deadline. The bound is wide for host contention starving
+    /// the guest's vCPUs, and under the watchdog so that a failure names the subsystem. See
+    /// notes/smp.md and notes/load-sensitive-assertions.md.
     fn wait_for(mut cond: impl FnMut() -> bool) -> bool {
         let deadline = crate::arch::timer::now() + 60 * crate::arch::timer::frequency();
         while crate::arch::timer::now() < deadline {
@@ -656,23 +484,11 @@ mod tests {
         cond()
     }
 
-    /// **Every secondary stack sits on an unmapped page** (milestone 90).
+    /// **Every secondary stack sits on an unmapped page**, in the live kernel page tables.
     ///
-    /// Proven by walking the live kernel page tables, not by overflowing a stack: `translate` reads
-    /// the root out of the hardware register (`TTBR1_EL1` / `satp`), so this is the map the CPU is
-    /// actually using. A test that faulted on purpose would be a test the suite could not survive,
-    /// and this catches the thing that would actually go wrong, someone mapping the region as one
-    /// range again and closing the holes.
-    ///
-    /// The pages either side of each hole must translate, or the hole is in the wrong place and
-    /// protects nothing. That is the failure the boot stack's own guard test guards against
-    /// (`the_guard_page_is_a_hole` in each arch's mmu.rs), and it is worth repeating per core here
-    /// because these holes come from a loop over slots rather than from one linker symbol.
-    ///
-    /// This says nothing about the **coarse boot map**, on which the guards are inside a 2 MiB
-    /// block and are therefore mapped. A secondary is on that map only between `secondary_boot` and
-    /// `mmu::init_secondary`, a few instructions of Rust; the boot stack's guard has exactly the
-    /// same window. See notes/stack-high-water.md.
+    /// `translate` reads the root out of the hardware register, so this is the map the CPU is using.
+    /// The pages either side of each hole must translate, or the hole protects nothing. It says
+    /// nothing about the coarse boot map, on which the guards are mapped. See notes/smp.md.
     #[test_case]
     fn every_secondary_stack_sits_on_a_guard_page() {
         for id in 0..MAX_CPUS {
@@ -706,13 +522,9 @@ mod tests {
         }
     }
 
-    /// **The linker reserved exactly the region the Rust side emits** (milestone 90).
-    ///
-    /// `MAX_CPUS` lives in Rust and the two linker scripts only anchor whatever `.secondary_stacks`
-    /// contains, so there is no second copy of the core count to drift. This holds that arrangement
-    /// honest from the other side: if the static ever stops landing in the region (a lost
-    /// `link_section`, a section renamed in one script), the stacks would still work and the guard
-    /// pages would silently be somewhere else.
+    /// **The linker reserved exactly the region the Rust side emits.** If the static stopped
+    /// landing in `.secondary_stacks` (a lost `link_section`, a section renamed in one script), the
+    /// stacks would still work and the guard pages would silently be somewhere else.
     #[test_case]
     fn the_secondary_stack_region_is_the_size_the_linker_reserved() {
         unsafe extern "C" {
@@ -732,32 +544,14 @@ mod tests {
         assert_eq!(lo % 4096, 0, "the region is not page-aligned");
     }
 
-    /// **The cores we started are the cores the machine described** (milestone 100).
-    ///
-    /// The list used to be `0..MAX_CPUS`, a constant that happens to be right on QEMU `virt`, so the
-    /// assertion that matters is not the count but where it came from: the tree is re-read here,
-    /// independently of the boot path, and its `cpu@` nodes must be the roster the bring-up used.
-    ///
-    /// It also pins the invariant the rest of the kernel still rests on. Per-CPU blocks, secondary
-    /// stacks, RISC-V trap stashes, GIC targets, PLIC contexts and SBI IPI masks are all indexed by
-    /// logical id, and `read_cpu_list` seats each core at the slot its hardware id names, so the
-    /// two are equal by construction. This proves the seating put every described core where its
-    /// id says, on the machine every merge boots.
+    /// **The cores we started are the cores the machine described**: the tree is re-read here,
+    /// independently of the boot path, and each `cpu@` node must be seated at the slot its hardware
+    /// id names, which is what the rest of the kernel indexes by.
     #[test_case]
     fn the_roster_is_the_machines_own_cpu_list() {
-        // **No roster, no claim** (device-tree architectures): `read_cpu_list` is the only thing
-        // that fills `described_count()` in there, and zero means "nobody has said", a third
-        // answer from "this machine has no cores".
-        //
-        // **x86_64 always skips here, not just when its roster is empty.** Its own roster
-        // (`smp::seat_cpus_from_acpi`, milestone 161's SMP item) is real and `described_count()` is
-        // nonzero on it from boot (`every_cpu_the_tree_described_is_running` and
-        // `all_secondaries_came_online` below both run and pass there), but *this* test's
-        // independent re-read is device-tree-specific (`device_tree_blob::DeviceTreeBlob::from_ptr`
-        // on `crate::DTB`), and `crate::DTB` on x86 holds PVH's `hvm_start_info` pointer, not an
-        // FDT blob: parsing it as one would not skip, it would panic. An ACPI-based independent
-        // re-read (walking the MADT again and comparing) would give this test the same power there;
-        // nobody has written it yet, so this fixture genuinely is not on that boot.
+        // Zero means nobody has read a roster, not "this machine has no cores". x86_64 always
+        // skips: `crate::DTB` holds PVH's `hvm_start_info` pointer there, and parsing it as a
+        // device tree would panic. See notes/smp.md, BUGS.
         if super::described_count() == 0 || cfg!(target_arch = "x86_64") {
             crate::testing::skip!(
                 "nothing has read this machine's core roster from a device tree (either \
@@ -773,12 +567,8 @@ mod tests {
             list.described,
             "the roster and a fresh read of the tree disagree about how many cores exist",
         );
-        // The tree's count is the runner's `-smp`, which is no longer required to equal MAX_CPUS:
-        // the constant is a ceiling (it sizes the per-CPU statics), not the machine. What the suite
-        // does require is at least two cores (or the SMP tests prove nothing) and no more than the
-        // statics can seat (a bigger `-smp` would park real cores, and
-        // `every_cpu_the_tree_described_is_running` below would fail on the honest count anyway;
-        // this names the cause first).
+        // The tree's count is the runner's `-smp`. MAX_CPUS is a ceiling, not the machine; the
+        // suite needs at least two cores and no more than the statics can seat.
         assert!(
             list.described >= 2,
             "the SMP suite needs -smp of at least 2; the tree describes {}",
@@ -797,18 +587,15 @@ mod tests {
                 slot < MAX_CPUS,
                 "hart {slot} has no seat: the runner's -smp exceeds cpu::MAX_CPUS",
             );
-            // Seating is by hart id (read_cpu_list), so the slot a core occupies IS its hardware
-            // id; this holds the two walks together the way the old positional roster check did.
+            // Seating is by hart id (read_cpu_list), so the slot a core occupies IS its hardware id.
             assert_eq!(
                 super::hwid(slot),
                 Some(cpu.hwid),
                 "hart {} is not seated at the slot its own id names",
                 cpu.hwid,
             );
-            // The supervisor rule (bench, 2026-08-14) must change nothing on QEMU: every virt cpu
-            // is an S-mode hart, whichever generation of ISA-string spelling its tree uses, so
-            // the started set here is exactly what it was before the rule existed. A false
-            // `supervisor` on this machine means the parser read a modern string's silence, or a
+            // Every QEMU virt cpu is an S-mode hart, so the supervisor rule excludes none. A false
+            // `supervisor` here means the parser read a modern ISA string's silence, or a
             // multi-letter extension, as a denial.
             assert!(
                 cpu.is_startable(),
@@ -818,20 +605,12 @@ mod tests {
         }
     }
 
-    /// **Every core the machine described came online.**
-    ///
-    /// The pair of the test above: that one says the roster is the machine's, this one says we used
-    /// all of it. Before milestone 100 there was no way to state this, because the count the
-    /// bring-up worked from was a constant and could only ever agree with itself.
+    /// **Every core the machine described came online**: the pair of the test above, which says
+    /// the roster is the machine's; this says we used all of it.
     #[test_case]
     fn every_cpu_the_tree_described_is_running() {
-        // **No roster, no claim.** `read_cpu_list` (device-tree architectures) or
-        // `smp::seat_cpus_from_acpi` (x86_64, milestone 161's SMP item) is what fills this in,
-        // and neither has a device-tree dependency in what follows (unlike
-        // `the_roster_is_the_machines_own_cpu_list`, which does and skips x86 outright), so this
-        // one genuinely runs and passes there too, from `described_count() == 1` (a lone boot
-        // core, this port's default) on up. Zero here means "nobody has said", a third answer
-        // from "this machine has no cores".
+        // Zero means nobody has read a roster. Nothing below reads a device tree, so this runs on
+        // x86_64 too.
         if super::described_count() == 0 {
             crate::testing::skip!(
                 "nothing has read this machine's core roster yet (neither read_cpu_list nor \
@@ -845,13 +624,10 @@ mod tests {
         );
     }
 
-    /// **The online iterator is the live mask, exactly, and the sampler never leaves it** (the
-    /// first-silicon sweep's mechanism, 2026-08-14). Every broadcast-style loop in the kernel now
-    /// either iterates `online_cpus()` or masks with `online_harts_mask()` (the RISC-V RFENCE
-    /// calls), so proving the iterator equals the mask is proving those loops visit exactly the
-    /// online set: no parked slot, no skipped online cpu. The non-contiguous {1,2,3} shape this
-    /// machine cannot boot is host-proven in `crates/cpu_set`; this pins the delegation to the
-    /// live mask, on the machine every merge boots.
+    /// **The online iterator is the live mask, exactly, and the sampler never leaves it.** Every
+    /// broadcast-style loop iterates `online_cpus()` or masks with `online_harts_mask()`, so this
+    /// proves those loops visit exactly the online set. The non-contiguous shape is host-proven in
+    /// `crates/cpu_set`; this pins the delegation to the live mask.
     #[test_case]
     fn the_online_set_is_the_mask_and_the_sampler_stays_inside_it() {
         let mask = online_harts_mask();
@@ -893,10 +669,7 @@ mod tests {
     /// on an eight-slot kernel has four secondaries, honestly.
     #[test_case]
     fn all_secondaries_came_online() {
-        // **No roster, no claim**, same reasoning as `every_cpu_the_tree_described_is_running`
-        // just above: no device-tree dependency here either, so this runs and passes on x86_64
-        // too, including at `described_count() == 1` (`ONLINE` and `described_count() - 1` are
-        // both 0 for a lone boot core with no secondaries started, this port's default).
+        // Zero means nobody has read a roster; no device tree is read, so this runs on x86_64 too.
         if super::described_count() == 0 {
             crate::testing::skip!(
                 "nothing has read this machine's core roster yet (neither read_cpu_list nor \
@@ -925,9 +698,7 @@ mod tests {
         // is cores 1..N; on RISC-V QEMU's boot hart is not fixed, so it is every core but that one.
         let boot = crate::arch::boot_cpu_id();
         let is_secondary = |c: usize| c != boot;
-        // The online set, not `0..MAX_CPUS`: only a core that came online spawned a probe, so on a
-        // machine whose online set is not the full roster the fixed range would wait forever on
-        // cores that never existed here (first-silicon sweep, 2026-08-14).
+        // The online set, not `0..MAX_CPUS`: only a core that came online spawned a probe.
         let all_ran = || {
             online_cpus()
                 .filter(|&c| is_secondary(c))
@@ -947,44 +718,15 @@ mod tests {
         }
     }
 
-    /// **Work can be placed on any core from another core** (SMP step 3c, the delivery mechanism):
-    /// `spawn_on(target, ..)` pushes the thread into `target`'s inbox and pokes it with a reschedule
-    /// SGI, and `target` itself takes it out onto its own run queue.
+    /// **Work can be placed on any core from another core**: `spawn_on(target, ..)` pushes the
+    /// thread into `target`'s inbox and pokes it with a reschedule IPI, and `target` itself takes it
+    /// out onto its own run queue.
     ///
-    /// One placement is in flight at a time and each is followed all the way to a reap, so the
-    /// adoption this counts on the target can only be the thread this test just placed there.
-    ///
-    /// # What this asserts, and what it deliberately does not (milestone 78)
-    ///
-    /// It asserts **arrival at the named core**, read from that core's own adoption counter
-    /// (`PerCpu::adopted`). It does **not** assert that the target then ran the thread, and the
-    /// difference is the whole fix.
-    ///
-    /// The old version placed one persistent spinning probe per core and waited, up to 60 s, for
-    /// every core to have run one. That is a load-balancing outcome rather than a delivery one, and
-    /// the scheduler does not promise it: stealing is **pull-based from an idle core** (§28.3), and
-    /// a core that is not idle neither steals nor pushes. So this sequence, which a contended host
-    /// makes ordinary, wedges permanently:
-    ///
-    ///   1. the probe for core A is placed on A's run queue while the test thread runs on A;
-    ///   2. an idle core B, which has no probe yet, steals it (a queued thread, so it is fair game);
-    ///   3. the remaining probes are placed and every core is now busy, so nothing is idle;
-    ///   4. A holds only the test thread, which never yields into idleness (`schedule()`: a thread
-    ///      yielding into an empty run queue simply carries on), so A never steals a probe back.
-    ///
-    /// Nothing rebalances after that, and `SPREAD[A]` stays zero forever. The failure was therefore
-    /// **not** "not yet, give it longer", which is what the old 60 s budget assumed and what
-    /// milestone 78's first pass argued when it left this test alone; it was a condition that could
-    /// not become true, reported as a timeout. It blocked merges on `rva23s64` and `thead-c906` on
-    /// 2026-08-04, on pull requests that changed no kernel code.
-    ///
-    /// This is the **third** time §28 has invalidated a placement assumption in a test in this file;
-    /// the comment in `secondary_main` step 6 is the second, and it is the one that named the rule a
-    /// deadline cannot fix an unreachable condition.
-    ///
-    /// The claim that was lost is covered where it belongs: `every_secondary_runs_scheduled_work`
-    /// proves each core runs what is on its own queue, and `a_batch_of_cpu_bound_work_reaches_every_cpu`
-    /// proves placement plus stealing fills the whole machine. Delivery here, execution there.
+    /// One placement is in flight at a time, each followed to a reap, so the adoption counted on the
+    /// target (`PerCpu::adopted`) is this test's thread. It asserts arrival at the named core, not
+    /// that the target then ran it: a steal can move a placed thread, and a wait for every core to
+    /// run one can wedge forever. `every_secondary_runs_scheduled_work` and
+    /// `a_batch_of_cpu_bound_work_reaches_every_cpu` cover execution. See notes/smp.md.
     #[test_case]
     fn work_can_be_placed_on_every_cpu() {
         for s in &SPREAD {
@@ -993,19 +735,12 @@ mod tests {
 
         let n = online_count();
         let here = cpu::id();
-        // **A machine with one core is not a machine that failed this test.** This was an assertion
-        // until milestone 161 brought up a third architecture whose SMP bring-up is not written
-        // (x86 INIT-SIPI-SIPI, roadmap item 5), which is exactly the "the fixture is not on this
-        // boot" case milestone 145's `skip!()` exists for. Both other legs run at `-smp 4` and are
-        // unaffected; a single-core leg now says so rather than reporting a red suite for a
-        // property it had no way to exercise.
+        // A machine with one core is not a machine that failed this test.
         if n < 2 {
             crate::testing::skip!("a cross-core placement test needs at least two online cores");
         }
 
-        // Every ONLINE core but this one, placed from here: the remote path, inbox plus SGI. The
-        // set, not `0..n` (first-silicon sweep, 2026-08-14): the range would place probes into
-        // parked cores' inboxes and wait forever for an adoption no one performs.
+        // Every ONLINE core but this one, placed from here: the remote path, inbox plus IPI.
         for target in online_cpus().filter(|&c| c != here) {
             place_one_probe_on(target);
         }
@@ -1098,8 +833,7 @@ mod tests {
             .expect("spawn failed");
         }
 
-        // Every ONLINE core must get fed; `(0..n)` would demand a mark from a parked slot that can
-        // never make one and ignore online cores past the count (first-silicon sweep, 2026-08-14).
+        // Every ONLINE core must get fed, and a parked slot never can be.
         let done = || online_cpus().all(|c| ON[c].load(Ordering::Relaxed) != 0);
         assert!(
             wait_for(done),
@@ -1110,36 +844,15 @@ mod tests {
     }
 
     /// **A kernel thread that migrates between harts keeps a per-CPU pointer that names the hart it
-    /// is actually on** (DECISIONS §28; the RISC-V `trap.s` S-mode `tp` fix).
+    /// is actually on** (DECISIONS §28).
     ///
-    /// RISC-V keeps the kernel per-CPU pointer in `tp`, a general register the trap frame saves and
-    /// restores. A kernel thread preempted on one hart carries `tp = &percpu[origin]` in its frame;
-    /// when an idle hart steals it, it used to resume through `trap_return` with that stale `tp` and
-    /// then read, and corrupt, the origin hart's scheduler state (its idle thread was marked
-    /// `Finished`, and that hart's next `schedule()` panicked "the last thread exited"). aarch64 never
-    /// had the bug: its per-CPU pointer is `TPIDR_EL1`, a system register the frame never carries, so
-    /// `percpu_matches_hart` there is a constant `true` and this test is a no-op.
-    ///
-    /// This drives exactly the corrupting motion: waves of cpu-bound workers, each alive long enough
-    /// (several 100 Hz ticks) to be preempted and so to acquire a saved frame, and more of them than
-    /// cores so that as the early finishers drain their harts to idle, those harts steal the still-
-    /// running, already-preempted workers, migrating a framed kernel thread across harts. Every spin,
-    /// each worker re-checks that `tp` still names the hart it runs on; one false reading is the bug.
-    /// Pre-fix it trips within the first wave on RISC-V.
+    /// RISC-V keeps the per-CPU pointer in `tp`, which the trap frame saves and restores, so a
+    /// stolen preempted thread must not resume with its origin hart's `tp`; on aarch64 it is
+    /// `TPIDR_EL1`, which no frame carries, and this is a no-op. Waves of preempted cpu-bound
+    /// workers, more than cores, migrate across harts, each re-checking `tp` on every spin.
     ///
     /// # BUGS
-    ///
-    /// **Under host load this test loses coverage quietly rather than going red.** A worker's `life`
-    /// is a span of *counter* time, which advances whether or not the guest is executing, so a
-    /// worker descheduled through most of its 40 ms burns the span having run very little: it is
-    /// preempted fewer times, acquires a saved frame less often, and drives less of the migration
-    /// the test exists to provoke. Measured, not reasoned: one riscv64 wave took 1005 ms of wall
-    /// clock and was charged ten delivered ticks, so the guest ran for about a tenth of it. The
-    /// direction is safe (a loaded run passes having proven less; it does not fail having proven
-    /// nothing), which is why it is recorded rather than fixed. Denominating `life` in delivered
-    /// ticks too is the obvious repair and is not obviously right: it would stretch the workers as
-    /// well as the drain, and their product is what the harness's 90 s per-test ceiling has to
-    /// hold, where today only one factor grows. See notes/load-sensitive-assertions.md.
+    /// Under host load this loses coverage quietly rather than going red. See notes/smp.md.
     #[test_case]
     fn a_migrated_kernel_thread_keeps_its_hart_pointer() {
         use core::sync::atomic::AtomicUsize;
@@ -1175,25 +888,10 @@ mod tests {
                 }
             }
 
-            // Drain this wave, checking the invariant throughout, and yielding so the workers
-            // sharing this core get their turns promptly rather than only when a tick preempts us.
-            //
-            // **The budget is delivered ticks, not counter time** (milestone 62). A fixed spin count
-            // is out for the reason this module fixed everywhere in 2026-07-30: an idle hart's
-            // yields return at once under §28, so a count elapses in no time. Counter time is out
-            // for the reason milestone 62 exists: `timer::now()` advances while the emulator is
-            // descheduled, so the two seconds this used to allow are two seconds of *host* clock,
-            // of which a loaded host hands the guest a fraction. That is not hypothetical here.
-            // Under `script/repeat-under-load` this assertion failed twice with 59 of 60 workers
-            // arrived, which is a deficit of one worker's ~40 ms against a budget the host had
-            // already spent. Ticks stretch the other way: a descheduled emulator misses deadlines,
-            // so 200 ticks is two seconds when the machine is quiet and longer when it is not. See
-            // `testing::TickBudget` and notes/load-sensitive-assertions.md.
-            //
-            // The workers' own `life` is still counter time, deliberately: it bounds how long a
-            // worker *holds* a hart, and a worker cut short by a descheduled emulator has simply
-            // done less spinning, which costs coverage rather than correctness. This budget is the
-            // one that decides pass or fail.
+            // Drain this wave, yielding so the workers sharing this core get their turns. The
+            // budget is delivered ticks, not counter time or a spin count, so a descheduled
+            // emulator stretches it; the workers' `life` stays counter time on purpose. See
+            // `testing::TickBudget` and notes/smp.md.
             let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HZ);
             while DONE.load(Ordering::Relaxed) < total {
                 assert!(
@@ -1222,25 +920,11 @@ mod tests {
     /// **A preemptible kernel thread that asks for its own name gets its own name**, however it
     /// migrates (notes/mmu.md, BUGS: a user thread losing its text translation).
     ///
-    /// The name lives in the running core's `PerCpu`. If reading it takes two steps (the per-CPU
-    /// register into a general register, then the field), a tick between them that moves the
-    /// thread to another core leaves the load reading the first core's `current`, which by then
-    /// names some other thread. `sched::adopt_address_space` asks from the kernel thread every
-    /// `user::run` spawn starts on, so a split read there gives the new space to another thread,
-    /// and the caller resumes U-mode on the reserved root at its next switch-in.
-    ///
-    /// The motion is [`a_migrated_kernel_thread_keeps_its_hart_pointer`]'s: waves of preempted
-    /// cpu-bound workers that idle cores steal. Each worker takes its own name once with interrupts
-    /// masked, where no tick can split the read, then asks again with them open. One answer naming
-    /// another thread is the bug. Its BUGS note applies here unchanged.
-    ///
-    /// Three choices are measured, not cautious. An idle core steals only from a backlog, so the
-    /// staggered lives keep cores draining, and stealing, through every wave; six even waves moved
-    /// a worker about six times per run. TCG takes an interrupt only between translation blocks, and
-    /// a clock read on every pass put most of them outside the read, so the clock is read once per
-    /// 256. Twenty-four waves, because the `x86_64` kernel leg boots two cores and moved a worker
-    /// four or five times per run at that count. With all three, every run on every ISA failed
-    /// against a split read (nine of nine, 2026-10-14 UTC).
+    /// The name lives in the running core's `PerCpu`, so a read split across a migration reads
+    /// another core's `current`. Each worker takes its own name once with interrupts masked, then
+    /// asks again with them open, in [`a_migrated_kernel_thread_keeps_its_hart_pointer`]'s waves;
+    /// one answer naming another thread is the bug. The staggered lives, the clock read once per 256
+    /// reads and the 24 waves are measured choices. See notes/smp.md.
     #[test_case]
     fn a_migrated_kernel_thread_reads_its_own_name() {
         use core::sync::atomic::{AtomicU64, AtomicUsize};

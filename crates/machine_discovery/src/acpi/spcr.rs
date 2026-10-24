@@ -1,9 +1,5 @@
 //! **The SPCR**: where the firmware's console UART is, and which interrupt it raises.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;

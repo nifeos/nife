@@ -9,13 +9,12 @@ because the send rendezvouses with the driver parked in `Irq::WAIT`. That driver
 `1`, which is exactly what its interrupt looks like.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs
-index 845029a65..3dd0fb1b9 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
-@@ -263,9 +263,7 @@ impl<T: Node> Rendezvous<T> {
-     /// TCB (`thread::Thread::own_token`) until this call takes it, and a thread queued here is
-     /// `Blocked`, which the reaper never touches.)
+@@ -249,9 +249,7 @@ impl<T: Node> Rendezvous<T> {
      pub fn send(&mut self, me: Unqueued<T>) -> Send<T> {
+         // Before a receiver is popped: the receiver here is the driver, and handing it a sender's
+         // words is the forgery the refusal exists to stop.
 -        if self.bound_to_interrupt {
 -            Send::Refused(me)
 -        } else if let Some(receiver) = self.receivers.pop_front() {

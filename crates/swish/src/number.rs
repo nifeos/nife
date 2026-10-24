@@ -1,7 +1,5 @@
 //! **A number as the shell prints it**: [`write_num`], which nearly every renderer here calls.
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 /// Write a small unsigned number in base 10.

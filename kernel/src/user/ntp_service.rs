@@ -1,18 +1,9 @@
-//! **The wiring for the three network time programs** (milestone 51; split from one binary by
-//! milestone 290).
+//! The wiring for the three network time programs: `components/src/network_time_client.rs`,
+//! `fixtures/src/network_time_test_server.rs` and `fixtures/src/unwritable_clock_witness.rs`.
 //!
-//! Until milestone 290 there was one `ntp` binary with three `arg0` roles. There are three programs
-//! now: `components/src/network_time_client.rs`, `fixtures/src/network_time_test_server.rs` and
-//! `fixtures/src/unwritable_clock_witness.rs`.
-//!
-//! **The invariant this file carries is that the client and the witness are endowed by one
-//! function.** `spawn_with_client_endowment` takes the image as a parameter, so a slot added to
-//! the client is a slot the witness gets, and there is no second capability list to forget. That,
-//! rather than the two sharing a binary, is what keeps
-//! `an_ntp_client_holds_no_writable_clock_page` proving what it claims: the fault comes from the
-//! capability set, and any process holding that set faults at that address whatever code it runs.
-//! **Do not grow a second list here.** A hand-maintained copy of a fact the wiring already holds is
-//! how a confinement claim decays without breaking a build (milestone 117's `swish` `caps` bug).
+//! The client and the witness are endowed by one function, [`spawn_with_client_endowment`], so
+//! `an_ntp_client_holds_no_writable_clock_page` tests the client's real capability set. Do not grow
+//! a second list of grants here. See notes/ntp.md.
 
 use super::*;
 use crate::cap::{Rights, memory_region_cap, memory_region_lending_capability, rendezvous_cap};
@@ -23,11 +14,8 @@ use crate::user::holding::Holding;
 /// `components/src/network_time_client.rs`, `fixtures/src/network_time_test_server.rs` and
 /// `fixtures/src/unwritable_clock_witness.rs`.
 ///
-/// **One numbering space across all three**, which is what it was when they were one binary and did
-/// not move in the split, so a boot log from before milestone 290 still reads. Each program declares
-/// only the words it sends; the whole vocabulary is here even though the tests assert on five of the
-/// eight, because the point of a mirror is that it is complete and a failing test that prints `3` is
-/// only readable if `3` has a name on this side too.
+/// One numbering space across all three. Each program declares only the words it sends; the whole
+/// vocabulary is here, so a failing test that prints `3` has a name for it on this side.
 #[allow(dead_code)]
 pub mod rpt {
     pub const SYNCED: u64 = 1;
@@ -65,8 +53,7 @@ pub const ATTEMPTS: u64 = 3;
 /// Each of the three mints or maps at most one shared frame and pays for its page tables. Small
 /// and fixed: none of them links a heap.
 const BUDGET_PAGES: u64 = 16;
-/// Extra stack pages. The client builds a 48-byte packet and does IPC; the same three `socket_test_client`
-/// and its relatives get is plenty and leaves no doubt.
+/// Extra stack pages: the client builds a 48-byte packet and does IPC, and three is plenty.
 const STACK_PAGES: u64 = 3;
 
 /// The endpoints one exchange retypes from the region its caller passes: the server's two and the
@@ -81,8 +68,8 @@ pub const EXCHANGE_PAGES: u64 = 3;
 pub struct Server {
     /// The socket contract's endpoint. The server holds `READ`; a client is given `WRITE`.
     pub stack: RendezvousId,
-    /// **Drain this before waiting on the client.** The server reports once, with a blocking
-    /// `send`, and the client's `RECEIVE` is queued behind it.
+    /// Drain this before waiting on the client: the server reports once, with a blocking `send`,
+    /// and the client's `RECEIVE` is queued behind it.
     pub report: RendezvousId,
 }
 
@@ -95,7 +82,6 @@ fn stack_pages() -> [Mapping; STACK_PAGES as usize] {
         flags: Flags::user_data(),
     }; STACK_PAGES as usize];
     for (k, m) in maps.iter_mut().enumerate() {
-        // Zeroed so the process starts clean.
         let phys = crate::memory::alloc_zeroed()
             .expect("no frame for a network time program's stack")
             .addr();
@@ -105,19 +91,12 @@ fn stack_pages() -> [Mapping; STACK_PAGES as usize] {
     maps
 }
 
-/// Spawn `network_time_test_server`: `variant` selects the reply it builds, `claimed_nanos` is the
-/// wall-clock time it claims. The kernel supplies the claimed time because the server holds no
-/// clock capability of its own, which keeps every test's expectation an exact number rather
-/// than a window.
+/// Spawn `network_time_test_server`: `variant` selects the reply it builds, and `claimed_nanos` is
+/// the wall-clock time it claims, supplied by the kernel because the server holds no clock.
 ///
-/// **Four slots, and it is a different endowment from the client's on purpose.** It holds no
-/// propose endpoint and no entropy endpoint, so a reader can see from the wiring alone that the peer
-/// answering the client cannot itself reach the clock.
-///
-/// Both endpoints are retyped from `region`, and the server's thread goes into `held`. The server
-/// serves until it is killed: once `region` is reclaimed its `RECEIVE` fails at once and it loops,
-/// so the caller hands `region` to the same holding, whose kill ends it (milestone 608 (kernel
-/// tests give back their rendezvous points)).
+/// Four slots and no propose or entropy endpoint, so the peer answering the client cannot reach the
+/// clock. Both endpoints are retyped from `region` and the thread goes into `held`; the server
+/// serves until killed, so the caller hands `region` to the same holding.
 pub fn start_server(
     image: &'static [u8],
     variant: u64,
@@ -155,21 +134,13 @@ pub fn start_server(
     Server { stack, report }
 }
 
-/// **The client's endowment, in one place, and the whole security argument rests on there being
-/// only one of these.** `entropy` is an `Option` on purpose: a client wired without it is the test
-/// that proves the refusal is loud, and the empty slot is what "no entropy capability" actually is.
+/// The client's endowment, the one list of grants both `network_time_client` and
+/// `unwritable_clock_witness` (`image`) are spawned with, so the witness holds the client's five
+/// slots by construction. Returns the report endpoint, retyped from `region`; the thread goes into
+/// `held`.
 ///
-/// `image` is a parameter, which is the load-bearing part. Both `network_time_client` and
-/// `unwritable_clock_witness` come through here, so the witness is given **the same five slots** as
-/// the client by construction: what it fails to reach, it fails to reach as a fully endowed network
-/// time client rather than as a stripped-down one. Before milestone 290 the two were one binary and
-/// this file's argument was that they shared *code*; they never needed to, because the fault the
-/// witness proves comes from the capability set rather than from the instructions. **Adding a second
-/// list of grants beside this one is the way this claim decays without breaking a build.**
-///
-/// `a0` and `a1` are the program's own two arguments (the client's server address and port, the
-/// witness's target address); `arg2` is unused by both. The report endpoint is retyped from
-/// `region` and the thread goes into `held`, as [`start_server`]'s do.
+/// `a0` and `a1` are the program's two arguments. `entropy` is an `Option` because a client wired
+/// without it is the test that the refusal is loud: the empty slot is "no entropy capability".
 #[allow(clippy::too_many_arguments)]
 fn spawn_with_client_endowment(
     image: &'static [u8],
@@ -239,9 +210,8 @@ pub fn start_client(
     )
 }
 
-/// Spawn `unwritable_clock_witness`: the client's endowment, pointed at `va`. **Same function, same
-/// five slots, different image**, which is the whole of why the witness cannot drift away from what
-/// the client actually holds.
+/// Spawn `unwritable_clock_witness`: the client's endowment, pointed at `va`, through the same
+/// function, so the witness cannot drift from what the client holds.
 pub fn start_witness(
     image: &'static [u8],
     stack: RendezvousId,
