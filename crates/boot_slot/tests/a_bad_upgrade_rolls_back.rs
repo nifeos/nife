@@ -1,10 +1,7 @@
 //! **What the rollback promise actually says**, written as the sequences a disk goes through
-//! rather than as assertions about single functions.
-//!
-//! A per-function test of `attempted` proves arithmetic. What is worth proving here is the
-//! property the feature exists for: *a machine handed a bad upgrade ends up back on the image it
-//! came with, in a bounded number of reboots, with nobody typing anything.* Every test below is a
-//! loop over boots with no console in it.
+//! rather than as assertions about single functions: *a machine handed a bad upgrade ends up back
+//! on the image it came with, in a bounded number of reboots, with nobody typing anything.* Every
+//! test below is a loop over boots with no console in it.
 //!
 //! # EXAMPLES
 //!

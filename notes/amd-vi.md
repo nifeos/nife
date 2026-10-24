@@ -98,6 +98,34 @@ device reaches everything, untranslated. With it applied, on the AMD-Vi machine:
   0. Attested 2026-10-05, not replayable: that test already carries its one record, which widens the
   domain and works on every unit.
 
+## The exclusion range and aliases
+
+An exclusion range is a window of device addresses the unit does not translate. With `Allow` set
+in the Exclusion Base register, every device's access inside `[base, limit]` goes straight to
+memory, untranslated and unchecked, whatever its device table entry says (section 3.3.1, MMIO 0020h
+and 0028h; section 2.1.4.4 for translation requests into the range). Firmware sets one to keep a
+region it DMAs into reachable, and nothing clears it at reset. A range left in force would be a
+hole in the default deny that no entry the driver writes can close. So `clear_exclusion_range`
+zeroes both registers, `ExEn` and `Allow` with them, and `Unit` cannot be built without the record
+it returns. A range the firmware still needs is not lost: an IVMD with `ExclusionRange` set is
+mapped into the named devices' domains as a read-write identity region instead, as Linux does. A
+range set with no IVMD naming it is firmware's alone, and the boot line says it was cleared, in
+capitals.
+
+QEMU 11.1.1 stores the limit register and drops every write to the base register
+(`amdvi_mmio_write` has no case for MMIO 0020h), and no walk consults either. Its firmware sets no
+range. So under QEMU the test proves the limit half of the programming and that the boot left both
+registers zero. The base half and the effect on a device's DMA are provable only on silicon. The
+range the test writes is the last 4 KiB of the 52-bit address space, which no machine backs with
+memory, so on silicon the moment between the write and the clear excludes nothing.
+
+A device behind a PCIe-to-PCI bridge is translated under its alias's id, so `attach` writes the
+device's own entry and its alias's, as Linux does (`clone_aliases`, from memory). Two functions
+behind one bridge reach the unit under one id, so no pair of entries can confine them apart. The
+second attach therefore fails closed: every entry either device's DMA arrives under is set to the
+blocked entry, and the boot prints the pair in capitals. Both devices stop doing DMA. Giving such a
+pair one shared domain on purpose would be an alias group, which the BUGS below say is not built.
+
 ## What a first AMD board should show
 
 A boot on silicon is the outstanding piece. Read these lines:
@@ -116,12 +144,26 @@ A boot on silicon is the outstanding piece. Read these lines:
 ## BUGS
 
 - Nothing has run on AMD silicon.
+- QEMU confines nothing without `dma-remap=on` (the runner sets it), writes no address into event
+  records (`take_fault` reports `None`), and records `devfn` without the bus.
+- At enable, a stale cached entry can be used until the invalidations run, as on Linux.
 - Interrupt remapping is never enabled (every entry leaves `IV` clear), the same posture as VT-d.
-- No fault interrupt; `take_fault` is drained only by tests. Milestone 102 owns it.
+- No fault interrupt: only tests drain the event log, until milestone 102 (what a confined device's
+  fault reaches).
+- A type 20h IVMD is added to every domain but pre-attaches no device; no IVMD has ever run.
+- Domain ids are never reused; past 65,535 attaches a boot panics.
+- Nothing revokes a device's domain in production, and a re-attach leaks the old tables
+  (`kernel/src/iommu.rs`), the same gap every IOMMU driver here has at the seam.
+- The exclusion clear is half proved under QEMU, which ignores those registers.
+- Two devices behind one alias cannot both work: the second attach blocks the alias, loudly. Giving
+  such a pair one shared domain on purpose (an alias group) is not built. `attach` assumes an alias
+  is served by its device's unit and tracks at most `MAX_ALIASES` per unit, failing closed past
+  that.
+- The root is checked against the 52-bit field, not the unit's real address width.
 - `notes/confinement-claims.md` has no AMD-Vi row, because that note is over its word budget and a
   row would grow it. This note is where the AMD-Vi claims are recorded until it is trimmed.
 - Milestone 633 (an outside agent attacks the confinement claim)'s second pass recorded five gaps
   in `amd_vi.rs`'s BUGS. Milestone 767 (design/roadmap/0767-amd-vi-hardening-before-the-first-amd-boot.md)
   closed four: the exclusion range, aliases, read-only mappings and the entry proof. Production
-  revocation stays open, with what QEMU could not show of the other four; the driver's BUGS has
-  both. The claims the row should make are proposed in notes/confinement-outsider-pass-2.md.
+  revocation stays open, with what QEMU could not show of the other four; this list has both. The
+  claims the row should make are proposed in notes/confinement-outsider-pass-2.md.

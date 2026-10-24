@@ -5163,7 +5163,6 @@ kernel/src/arch/x86_64/mmu/layout.rs::phys_to_ptr
 kernel/src/arch/x86_64/mmu/layout.rs::phys_to_virt
 kernel/src/arch/x86_64/mmu/layout.rs::virt_to_phys
 kernel/src/arch/x86_64/mmu/map_tests.rs
-kernel/src/arch/x86_64/mmu/memory_mapped_io_window.rs::memory_mapped_io_window
 kernel/src/arch/x86_64/mmu/shootdown.rs::serve_shootdown_nmi
 kernel/src/arch/x86_64/mmu/user_space.rs::activate_user
 kernel/src/arch/x86_64/mmu/user_space.rs::asid_of

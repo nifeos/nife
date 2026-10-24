@@ -101,7 +101,8 @@ process's capability table. The same document is four refusals in a scheduler gr
 four running jobs in one granted a clock, a directory and a terminal. Neither the document nor the
 program manifests can tell those two apart.
 
-Every field on the shipped scheduler's `Held` is `false` or zero, and that is checkable against the
+Every field on the shipped scheduler's `Held` but `mem_pages` (four, for the `--mem 4` line) is
+`false`, and that is checkable against the
 slot list in `components/src/timetable.rs`'s header:
 
 - slot 0: its output endpoint (WRITE)

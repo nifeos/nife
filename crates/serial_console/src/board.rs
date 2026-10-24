@@ -15,7 +15,7 @@
 //! - [`XENON`]'s empty prologue rests on one capture; a firmware failure there names nothing.
 //! - argon has no profile until it prints something on a wire.
 //! - Nothing gates a profile against its board beyond review and a capture per asserted rung.
-//! - The default is [`RADON`]; the QEMU callers `boot-check` and `soak-test` name [`EMULATOR`].
+//! - The default is [`RADON`]; QEMU's `boot-check`, `soak-test` and `job-mix` name [`EMULATOR`].
 //! - A [`Rung`] compares by depth alone, so rung 2 of one profile equals rung 2 of another. A
 //!   session has exactly one profile, chosen before any byte is read, so they never meet.
 //!

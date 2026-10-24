@@ -1,9 +1,5 @@
 //! The three little-endian readers every table here, `ivrs` included, takes its fields with.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 pub(super) fn u16(bytes: &[u8], at: usize) -> u16 {

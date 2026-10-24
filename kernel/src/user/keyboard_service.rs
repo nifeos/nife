@@ -6,9 +6,8 @@ use crate::sched::RendezvousId;
 const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
 
-/// One page, like every other driver here except the GPU driver's. A keyboard's event queue is
-/// eight eight-byte records; there is nothing bulk about it, so the standing rule holds in the
-/// other direction too: **a device gets the grant it needs and no more.**
+/// One page: a keyboard's event queue is eight eight-byte records, and a device gets the grant it
+/// needs and no more.
 const DMA_PAGE_FRAMES: u64 = 1;
 
 pub struct Wiring {
@@ -21,10 +20,9 @@ pub struct Wiring {
     head: u32,
 }
 
-/// **A virtio keyboard, wired and confined but driven by nobody yet**: what [`wire_device`] hands
-/// back. [`display_service::GpuDevice`]'s twin, one device over, and for the same two holders: the
-/// kernel's own test wiring ([`start`]) and, since milestone 600 (provisional), the progenitor,
-/// which `kernel::user::boot_progenitor` grants these to. Name: provisional.
+/// A virtio keyboard, wired and confined but driven by nobody yet: what [`wire_device`] returns,
+/// [`display_service::GpuDevice`]'s twin. [`start`] drives it, and `kernel::user::boot_progenitor`
+/// grants it to the progenitor. Name: provisional.
 pub(crate) struct KeyboardDevice {
     /// The `Virtio` capability's id.
     pub vid: usize,
@@ -35,8 +33,8 @@ pub(crate) struct KeyboardDevice {
     pub dma: u64,
 }
 
-/// **Find the keyboard, build its DMA page, route its interrupt and register its confined
-/// transport**, and spawn nothing. `None` if no virtio-input function is on the bus.
+/// Find the keyboard, build its DMA page, route its interrupt and register its confined
+/// transport, and spawn nothing. `None` if no virtio-input function is on the bus.
 pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     let d = crate::pci::find_input_device()?;
 
@@ -65,11 +63,10 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     })
 }
 
-/// **Wire and spawn the keyboard driver.** `None` if no virtio-input function is on the bus.
+/// Wire and spawn the keyboard driver. `None` if no virtio-input function is on the bus.
 ///
-/// The kernel keeps the doorbell's receiving half and the ring, so it can stand in for the
-/// compositor; a real system hands both to `compositor` instead and nothing about this driver
-/// changes, which is the same swap rung two made at the display seam.
+/// The kernel keeps the doorbell's receiving half and the ring, standing in for the compositor; a
+/// real system hands both to `compositor` and the driver does not change.
 pub fn start(image: &'static [u8]) -> Option<Wiring> {
     let KeyboardDevice { vid, intid, dma } = wire_device()?;
     let ring = crate::memory::alloc_zeroed()
@@ -119,7 +116,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
 }
 
 impl Wiring {
-    /// **Take what the driver has typed into the ring**, advancing the head the way a compositor
+    /// Take what the driver has typed into the ring, advancing the head the way a compositor
     /// does. Returns how many bytes landed in `out`.
     pub fn take_typed(&mut self, out: &mut [u8]) -> usize {
         use compositor::proto::ring;
@@ -128,9 +125,7 @@ impl Wiring {
         let tail = unsafe { core::ptr::read_volatile((base + ring::TAIL) as *const u32) };
         // The tail is published after the bytes it advertises; read it before them.
         //
-        // PAIR: `ring_publish`'s `fence(SeqCst)` in components/src/keyboard_driver.rs. Milestone 43's audit named this
-        // reader as the one that gets it right, against `components/src/compositor.rs`'s `drain_input`,
-        // which reads the same contract and had no fence at all.
+        // PAIR: `ring_publish`'s `fence(SeqCst)` in components/src/keyboard_driver.rs.
         core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
         let mut n = 0;
         while self.head != tail && n < out.len() {

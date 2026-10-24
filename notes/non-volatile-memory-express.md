@@ -228,11 +228,13 @@ it.
   answered `EIO` rather than as `CSTS.CFS`. The direct price of not mapping the controller register
   page, and a worse diagnostic than the kernel-resident driver gave.
 - A doorbell stride above `non_volatile_memory_express::MAX_DSTRD` (8) is refused rather than
-  served. Doorbell N sits
-  at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell file past the one page of
-  BAR0 the server is mapped. Kani found this; QEMU reports 0 and §86 quotes the spec calling 0 "the
-  expected doorbell stride value" for hardware, so no controller this project has met would hit it,
-  and one that did now fails loudly at bring-up naming itself.
+  served. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell
+  file past the one page of BAR0 the server is mapped. Kani found this, producing `DSTRD = 15` in
+  under a second, which puts queue 1's submission tail at `0x41000`. A real controller reporting it
+  would have met `MappedWindow`'s bounds check as a panic in the disk driver rather than a
+  diagnosis. QEMU reports 0 and §86 quotes the spec calling 0 "the expected doorbell stride value"
+  for hardware, so no controller this project has met would hit it, and one that did now fails
+  loudly at bring-up naming itself.
 - Polling only. Completions are spotted by phase-tag polls with a spin bound, not by the
   interrupt-as-message path the virtio drivers use. Right for QEMU (which completes synchronously
   inside the doorbell write) and for a boot test; wrong for a shared machine under load. The
