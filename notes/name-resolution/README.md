@@ -9,6 +9,4 @@ three forks and the BUGS. These files carry what its prose budget has no room fo
 *Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17. The directory follows §212
 (a prose budget)'s siting default, `notes/X/` beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `the-contract` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
+Each stem here is named for its content, and calef names files.

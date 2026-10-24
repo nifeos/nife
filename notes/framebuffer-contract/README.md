@@ -25,11 +25,3 @@ under §212 (a prose budget). The directory follows §212's siting default, `not
 
 The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-- `iommu-escape-test` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `scanout-referee` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes,
-  after the parent's own word for the check.
-- `later-rungs` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `flushed-hang` Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.
-- `surface-geometry` Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.
-- `kernel-wiring` Name: provisional, named for its content.
-- `the-display-tests` Name: provisional, named for its content.

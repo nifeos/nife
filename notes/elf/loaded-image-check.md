@@ -1,5 +1,8 @@
 # A program that checks its own loaded image
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-18, for the crate it describes.
+calef names files.*
+
 An appendix to [`notes/elf.md`](../elf.md), which explains how the kernel loads an ELF file and what
 the loader refuses. This file holds what `crates/loaded_image_check` proves about a loaded image from
 inside the process, and why it fails the way it does.

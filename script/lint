@@ -2845,8 +2845,11 @@ fi
 "$(dirname "$0")/names" --check
 python3 helpers/name_rules.py --selftest
 # The sweep that moves a document's block out of its README into the document, and the census's
-# reading of both homes while it runs (helpers/document_name_migrate.py's header).
+# reading of both homes while it runs (helpers/document_name_migrate.py's header). `--check` fails a
+# README that holds a document's block again, which lanes cut before the rule kept doing after the
+# first sweep.
 python3 helpers/document_name_migrate.py --selftest >/dev/null
+python3 helpers/document_name_migrate.py --check
 python3 helpers/name_crossings.py --selftest
 python3 helpers/name_ruled.py --selftest
 

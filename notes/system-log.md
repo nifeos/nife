@@ -1,5 +1,7 @@
 # The system log service
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.*
+
 §242 (a system log) rules what the system log is. This note carries the design of the two crates
 that build it: `crates/system_log`, the service's logic, and `crates/system_log_contract`, the wire
 contracts it shares with the spawner, its readers, the kernel and the console. The syscalls are in
