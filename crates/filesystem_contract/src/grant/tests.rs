@@ -46,7 +46,7 @@ fn a_granted_name_may_be_longer_than_two_words() {
     assert!(!grant::fits(&[b'n'; grant::MAX_NAME + 1]), "one byte past it");
     assert!(!grant::fits(b""));
     assert!(grant::pack_name(b"least_authority_demo").is_none());
-    assert!(grant::WORDS_NAME < grant::MAX_NAME);
+    const { assert!(grant::WORDS_NAME < grant::MAX_NAME) };
     // The spec word's length field is one byte, so the longest name must still be sayable in it.
     assert_eq!(grant::spec_len(grant::spec(grant::MAX_NAME, grant::READ)), grant::MAX_NAME);
 }

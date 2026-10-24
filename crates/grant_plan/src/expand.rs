@@ -264,10 +264,14 @@ pub struct Expander<'a> {
 /// before it.
 ///
 /// The resume point is a **name**, not a directory cursor, which `rm` taking names away would
-/// shift. A name is stable under removal and insertion, so "the [`MAX_NAMES`] smallest matches
-/// strictly greater than this" terminates whatever the command does to what it was handed, and the
-/// shell, whose heap is capped at 32 KiB, never materializes a whole match. See
-/// notes/glob-grant/xargs.md ("The resume point is a name, not a cursor").
+/// shift. A name is stable under removal and insertion, so "the smallest matches strictly greater
+/// than this" terminates whatever the command does to what it was handed, and the shell, whose
+/// heap is capped at 32 KiB, never materializes a whole match. See notes/glob-grant/xargs.md ("The
+/// resume point is a name, not a cursor").
+///
+/// [`Resume::After`] holds a whole [`Name`], up to 255 bytes, and a `Box` is not an option in a
+/// crate with no allocator; there is one of these per sweep.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Resume {
     #[default]
