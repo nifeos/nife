@@ -55,7 +55,9 @@ architecture's own counter, so compare a row only along its own line. The row de
 
 A key press cost 11% more on every architecture with the same syscalls, the difference being the
 crate's free list, `Result` plumbing, bounds checks and ring atomics in an unoptimized build.
-Bring-up cost 21% to 56% more, part of it a bigger image to load; the split was not measured.
+Bring-up cost 21% to 56% more, part of it a bigger image to load; the split was not measured. Both
+columns ran the trial's own kernel and wiring; the shipping driver's figures are in the keyboard
+rows.
 
 ## What the trial left on the hand-written driver
 
