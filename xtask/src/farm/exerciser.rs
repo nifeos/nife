@@ -1,4 +1,5 @@
-//! **`std-exerciser`**: build the std programs against the farm, for every std target.
+//! **`std-exerciser`**: build the std programs against the farm, for every std target (milestone 27
+//! (Rust `std` on the native ABI)).
 //!
 //! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
 //! to `farm` is `pub(super)` here, which reaches the same modules.

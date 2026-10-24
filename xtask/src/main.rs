@@ -1,6 +1,6 @@
 //! Build orchestration for nife: a Rust binary on the *host* for what does not fit `cargo build`
 //! (a custom target, a linker script, QEMU's flags), in Rust rather than a Makefile because it
-//! composes. See DECISIONS §7.
+//! composes. See DECISIONS §7 (testing: QEMU harness and host-testable crates).
 //!
 //! `run` and `test` do not invoke QEMU themselves: cargo runs `helpers/qemu-runner-aarch64.sh`
 //! through the runner setting in `.cargo/config.toml`, so the QEMU flags live in one place.

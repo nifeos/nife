@@ -9,9 +9,9 @@ use crate::archive::initial_ramdisk_path;
 use crate::disk::disk_path;
 use crate::{TARGET, profile_dir};
 
-/// The absolute ELF path of the binary `name` the `user` package builds (milestone 19f.2+):
-/// `hello`, `least_authority_demo`, `console`, and so on, each of which `initial_ramdisk_aarch64`
-/// packs into the archive under that same name.
+/// The absolute ELF path of the binary `name` the `user` package builds (milestone 19f (run a real
+/// workload), from 19f.2): `hello`, `least_authority_demo`, `console`, and so on, each of which
+/// `initial_ramdisk_aarch64` packs into the archive under that same name.
 ///
 /// **The path is absolute** because cargo runs the runner script from the package directory for
 /// `cargo test` and from the workspace root for `cargo run`. A relative path resolved under one and

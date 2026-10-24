@@ -1,5 +1,6 @@
-//! The instruction-count instrument (milestone 78): the two timing claims a wall clock cannot
-//! make, on both ISAs. See script/icount.
+//! The instruction-count instrument (milestone 78 (the load-sensitive assertions)): the two timing
+//! claims a wall clock cannot make, on both ISAs (§19 (architectural parity is a tenet)). See
+//! script/icount.
 
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};

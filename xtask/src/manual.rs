@@ -1,4 +1,5 @@
-//! The documentation store (milestone 40) and the tree-wide search built on it.
+//! The documentation store (milestone 40 (documentation as a system service)) and the tree-wide
+//! search built on it.
 //!
 //! `manual` builds the index the guest reads and prints what it costs; `apropos` points the
 //! same index and the same reader at this repository instead of at what the image installs.
@@ -19,9 +20,9 @@ const DOC_BUNDLES: &[(&str, &[&str])] = &[
     ("manual", &["notes/documentation.md"]),
     ("swish", &["notes/pipes.md", "notes/line-discipline.md"]),
     // `notes/capabilities.md` answers what this system's central word means, and three stranger
-    // runs (milestone 117) found it unreachable by following the tree. It is the kernel's own
-    // document, so it is in the kernel's bundle; `script/apropos` is the other half, for a reader
-    // with a checkout.
+    // runs (milestone 117 (the stranger test)) found it unreachable by following the tree. It is
+    // the kernel's own document, so it is in the kernel's bundle; `script/apropos` is the other
+    // half, for a reader with a checkout.
     (
         "kernel",
         &[

@@ -8,8 +8,8 @@ use crate::host::capture;
 
 /// After a test run, read the blank disk back **from the host** and check what the guest put on it:
 /// the partition table with `crates/globally_unique_identifier_partition_table`, and the filesystem
-/// inside the data partition, read in place (milestone 110) by the pinned engine through
-/// `tools/redoxfs_host`. Returns whether both hold.
+/// inside the data partition, read in place by the pinned engine through `tools/redoxfs_host`.
+/// Returns whether both hold.
 ///
 /// This is a different program, on a different operating system, with a different engine build,
 /// opening the file the run left behind; if it and the in-guest check ever disagreed, the guest
@@ -192,9 +192,9 @@ pub(crate) fn redoxfs_check_after_run() -> bool {
         && redoxfs_glob_grant_took_exactly_the_match()
 }
 
-/// **The set grant, witnessed from outside the guest** (milestone 47's globbing lane): the host,
-/// with the pinned engine, reading the image the run left behind. Returns whether it holds; an
-/// untouched fixture (the guest never ran the set grant) passes.
+/// **The set grant, witnessed from outside the guest** (milestone 47 (navigation and naming)'s
+/// globbing lane): the host, with the pinned engine, reading the image the run left behind. Returns
+/// whether it holds; an untouched fixture (the guest never ran the set grant) passes.
 ///
 /// Three claims, which only mean anything together. The two matched names are gone, so "the
 /// expansion is the grant" is a fact about the disk. The two unmatched names, one entry away and
@@ -272,8 +272,8 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
 ///
 /// # BUGS
 /// - The root check is containment, not equality, because other tests write the root too
-///   (`made-by-std`; an exact match would manufacture failures, DECISIONS §27). A leaked name
-///   matching neither fixture prefix slips past.
+///   (`made-by-std`), and an exact match would manufacture failures (§27 (the filesystem service)).
+///   A leaked name matching neither fixture prefix slips past.
 fn redoxfs_subtree_was_confined() -> bool {
     use filesystem_fixture::tree;
     let img = redoxfs_disk_path();

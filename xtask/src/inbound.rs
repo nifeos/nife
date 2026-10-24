@@ -16,12 +16,13 @@
 /// not match and the prober says exactly what came back instead.
 const INBOUND_IN: &[u8] = b"nife-in!";
 const INBOUND_OUT: &[u8] = b"nife-out!";
-/// How many connections the guest **offers** over a whole boot: two each from the two programs
-/// that listen on the forwarded port, one after the other (`socket_test_client`'s hand-written
-/// accept role from milestone 107, and `std_exerciser`'s `std::net::TcpListener` half from
-/// milestone 64). The prober keeps connecting until it has this many or the run ends, and it must
-/// keep going even once it has enough to pass, because a guest sitting in `ACCEPT` needs a peer:
-/// stopping early would hang the guest's own test rather than the host's.
+/// How many connections the guest **offers** over a whole boot: two each from the two programs that
+/// listen on the forwarded port, one after the other (`socket_test_client`'s hand-written accept
+/// role from milestone 107 (the socket contract learns to accept), and `std_exerciser`'s
+/// `std::net::TcpListener` half from milestone 64). The prober keeps connecting until it has this
+/// many or the run ends, and it must keep going even once it has enough to pass, because a guest
+/// sitting in `ACCEPT` needs a peer: stopping early would hang the guest's own test rather than the
+/// host's.
 const INBOUND_OFFERED: usize = 4;
 
 /// How many of those the prober must actually **collect** for the leg to pass.

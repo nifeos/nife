@@ -1,5 +1,5 @@
 //! **The modules generated into std verbatim** from host-tested crates, and the doc-example strip
-//! and module inlining that copy needs.
+//! (milestone 68 (code-quality gates)) and module inlining that copy needs.
 //!
 //! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
 //! to `farm` is `pub(super)` here, which reaches the same modules.
