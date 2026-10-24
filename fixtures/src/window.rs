@@ -398,9 +398,9 @@ fn read_validated_geometry() -> (u32, u32, u32, u32) {
     // Told rather than assumed, because the compositor chooses the size; still bounded by the
     // largest surface the contract allows, since a larger claim describes memory we were not
     // granted. Checked arithmetic: `w * h * 4` in `u32` wraps, and `w = h = 0x10000` multiplies to
-    // exactly 0, which would pass the bound (milestone 43 (a second security audit),
-    // notes/shared-page-audit.md finding 4).
-    // `display_terminal.rs` validates the same geometry by division.
+    // exactly 0, which would pass the bound and let the paint loop write 2^32 pixels past a
+    // two-frame surface (milestone 43 (a second security audit), notes/shared-page-audit.md finding
+    // 4). `display_terminal.rs` validates the same geometry by division.
     let bytes = w
         .checked_mul(h)
         .and_then(|px| px.checked_mul(4))
