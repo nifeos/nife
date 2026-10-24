@@ -5,18 +5,10 @@
 //! with a given process exit status. That is how `cargo test` learns whether the
 //! kernel's tests passed (DECISIONS §7).
 //!
-//! It is worth seeing what this actually is: a trap instruction, an operation number
-//! in a register, arguments pointed to by another register, a result returned in a
-//! register. **That is a syscall**, and the kernel answering it is QEMU. Milestone 7
-//! builds the other side of exactly this shape. See notes/semihosting.md.
-//!
-//! Requires QEMU's `-semihosting` flag.
+//! Requires QEMU's `-semihosting` flag. See notes/semihosting.md.
 
-// Every item here is reachable only from the test harness (`testing.rs`) and the test-mode arm of
-// the panic handler, both `cfg(test)`. So a plain `cargo build` has no caller for any of it, and
-// the allows below say exactly that: `not(test)`, not "everywhere". The distinction matters,
-// because it means the test build still holds this file to the dead-code gate, and a day when
-// nothing calls `exit` any more is a day the gate speaks up.
+// Every item here is reachable only from the test harness and the test-mode panic handler, so the
+// allows are `not(test)`: the test build still holds this file to the dead-code gate.
 
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) const EXIT_SUCCESS: u32 = 0;
@@ -58,9 +50,8 @@ pub fn exit(code: u32) -> ! {
         );
     }
 
-    // If the host did not end the run, stop rather than run on: the same `wfi` loop riscv64's and
-    // x86_64's `exit` end in, written out here because `halt` takes a `HaltReason` and the exit path
-    // is beneath every holder of one (milestone 720 (provisional)).
+    // The host did not end the run: stop. Not `halt`, which takes a `HaltReason` this path is
+    // beneath every holder of.
     loop {
         aarch64_cpu::asm::wfi();
     }

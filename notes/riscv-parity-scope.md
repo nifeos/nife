@@ -164,3 +164,27 @@ the blk binary at a bogus role: panic, `ebreak`, killed, reaped) and by the kill
 Two lessons, both repeats: a stale comment is misinformation with authority (the teardown note's
 "a TODO that outlives the decision that resolved it" rule, hit again); and a parity claim is only
 as wide as the suite that checks it. The fault path was in the suite's blind spot on both counts.
+
+## The aarch64-only user tests
+
+Two tests in `system_tests/src/user/elf_child_builder_tests.rs` run only on aarch64. Each names this
+section, and each property they cover is proved on RISC-V by a different test.
+
+The interrupt-delegation test (`interrupt_child_builder`) needs an interrupt the test can raise by
+hand. RISC-V has no software-generated interrupt a test can assert on itself: the SBI IPI arrives
+down the software-interrupt arm and never reaches `irq_route`. The only line it can raise by hand is
+the console UART's own, and `spawn_elf_child_builder` already routes that as the UART receive
+interrupt. A twin would share that one source between the builder's UART capability and the test's
+delegated one. It would then prove delivery through whichever route was bound last, not through the
+delegated capability, which is the whole claim. On RISC-V the property (an interrupt arriving as a
+message through a delegated Irq cap) is proved by
+`riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`, which asserts that
+`ROUTED_IRQS` rises while a userspace driver waits on its own Irq cap, and by
+`sched::tests::an_interrupt_becomes_a_message`.
+
+The device-delegation test (`device_child_builder`) asserts a PL011 register, and RISC-V `virt` has
+no PL011. The constant `0xB105F00D` in the PrimeCell identification registers is what makes the test
+exact rather than "the read did not fault". The NS16550 on the other machine has no equivalent
+constant, and a virtio magic number in its place would be a different test under this one's name.
+On RISC-V, device delegation is proved by the same virtio-disk test, which is a stronger form of the
+claim: device MMIO, a DMA region and an interrupt, all delegated.
