@@ -10,10 +10,10 @@ are in [budgets.md](budgets.md), and the builders the spawn service calls after 
 ## The boot order is the capability table's budget
 
 The progenitor builds every boot component from one capability table, and most of the boot's order
-exists to keep that table's peak low. The table's size is `kernel::cap::CAPABILITY_TABLE_SLOTS`,
-and `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records the boot's measured peak and the
-headroom rule. Every boot prints `capability slots: N of M at peak`, which is what says whether the
-order below still fits. A build that runs out of slots inside `build_child` fails with no route to
+exists to keep that table's peak at or under `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED`, the
+boot's measured peak, well below the table's size, `kernel::cap::CAPABILITY_TABLE_SLOTS`. Every
+boot prints `capability slots: N of M at peak` (`kernel::cap::report_peak`), and
+`script/swish-check` fails a boot whose peak goes above the recorded one. A build that runs out of slots inside `build_child` fails with no route to
 a person: the boot reaches userspace and prints nothing.
 
 Three facts drive the order.
@@ -44,13 +44,13 @@ From those, the steps in `boot_steps.rs` run in this order.
    are deleted. That is a slot and an authority: a progenitor that kept them could hand the UART to
    anything it later builds.
 5. The spawn channel and the supervision endpoint are retyped only now. Held through the three
-   driver builds, they would push the early peak over.
+   driver builds, they would raise the early peak.
 6. The shell is built but not started. Its budget copy and its window-0 slice are deleted at once,
    and the configuration page is placed at a named slot after the build. The machine statistics
    page goes to the shell before the login block, and the progenitor keeps no copy, because a page
-   held across that block would spend its last slot.
-7. The terminal's sink adapter, after the shell. Built earlier, it put the progenitor one slot over
-   while the loader retyped the shell's address space.
+   held across that block would raise the highest peak.
+7. The terminal's sink adapter, after the shell. Built earlier, it would hold its slots across the
+   shell's build, which is a peak.
 8. The login stack, after the shell has given back its transient capabilities.
 9. The giveaway.
 

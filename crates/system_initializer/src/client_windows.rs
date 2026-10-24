@@ -57,7 +57,8 @@ pub(super) fn window_zero(fs: Fs) -> Option<Fs> {
 /// # BUGS
 ///
 /// - A window whose job is never reaped is never free again (`grant_plan::job_windows`).
-/// - A caretaker on a once-bound window gets `EBADF` throughout: `UNBIND` leaves the badge revoked.
+/// - A caretaker on a once-bound window (the fallback after a failed `BIND`) gets `EBADF`
+///   throughout, since `UNBIND` leaves the badge revoked: the grant fails closed.
 pub(super) const fn job_windows() -> Windows {
     Windows::new(1, login_contract::DURABLE_WINDOW)
 }

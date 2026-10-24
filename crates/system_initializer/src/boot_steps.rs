@@ -323,7 +323,7 @@ pub(super) fn start_device_services(
     let kernel_built_entropy = is_granted(g.entropy_ep);
 
     // Entropy and the network before the terminal plumbing is retyped: their trios are kernel
-    // grants, and held across the plumbing's six retypes they push the early peak over.
+    // grants, and held across the plumbing's six retypes they raise the early peak.
     let entropy = start_entropy(g, ut, ent_elf, kernel_built_entropy);
     let network = start_network(g, ut, net_elf);
     let resolver = start_domain_name_resolver((fs, table, ut), network, entropy.client);
@@ -629,7 +629,8 @@ fn start_console(
 /// Build the system log service, draining the kernel's ring into the console through `request`,
 /// when the archive has it and the kernel granted the ring, its cursor and its notification. Built
 /// right after the console, because until it attaches the kernel prints for itself and can splice
-/// with the console's bytes. The ring's grants are released either way.
+/// with the console's bytes (§175 (where the kernel's own output goes once userspace owns the
+/// console), ruling B). The ring's grants are released either way.
 #[inline(never)]
 fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'static>>, request: u64) {
     if let Some(log_program) = log_elf
@@ -771,7 +772,7 @@ pub(super) fn start_keystroke_sources(
 }
 
 /// Retype the spawn channel and the supervision endpoint, after the drivers are built: held
-/// through the driver builds, they push the early peak over. The progenitor keeps `deaths` only
+/// through the driver builds, they would raise the early peak. The progenitor keeps `deaths` only
 /// for its `GRANT`, to place a `READ` view in each job's fault slot; `job_undertaker` receives
 /// on it.
 #[inline(never)]
@@ -875,7 +876,7 @@ pub(super) fn build_shell(
 /// Hand the shell the machine statistics page (`READ | GRANT`, when [`GRANT_MACHINE_PAGE`]
 /// allows), keeping no copy, and the second mounted tree's endpoint (`WRITE`, at
 /// [`spawnproto::MOUNTED_TREE_SLOT`]). Runs before the login block, because a page held across it
-/// would spend the table's last slot. The display devices stay with the spawn service; the shell
+/// would raise the table's highest peak. The display devices stay with the spawn service; the shell
 /// gets none.
 #[inline(never)]
 pub(super) fn finish_shell_endowment(
@@ -1278,6 +1279,11 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
 /// three budgets. The shell's placement is what makes the boot prompt the owner's console (§221
 /// (the boot prompt is the owner's console)), and deleting it makes the prompt refuse every
 /// unvouched image. See notes/system-initializer/the-boot-order.md, "The giveaway".
+///
+/// # BUGS
+///
+/// - The prompt holds it with no login, which §221's 2026-10-06 amendment rules out (milestone
+///   806).
 #[inline(never)]
 pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option<u64>) -> Kept {
     let (ut, term_ep) = (w.ut, w.term.ep);

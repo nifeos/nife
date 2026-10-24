@@ -22,10 +22,10 @@ https://packages.basalt.test:8443/rolling/targets/uptime-0.1.0-x86_64.nifepkg: N
 tree prints `NotFound` there and exits 0.
 
 diff --git a/crates/system_initializer/src/children.rs b/crates/system_initializer/src/children.rs
-index 914053131..121550cb8 100644
+index fa1dfc5d5..22fae6ada 100644
 --- a/crates/system_initializer/src/children.rs
 +++ b/crates/system_initializer/src/children.rs
-@@ -294,7 +294,7 @@ pub(super) fn build_domain_name_resolver(
+@@ -292,7 +292,7 @@ pub(super) fn build_domain_name_resolver(
                  (0, service, abi::rights::READ),
                  (1, stack, abi::rights::WRITE),
                  // Every right: lending a socket a page retyped from this budget needs `GRANT`.

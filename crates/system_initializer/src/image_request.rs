@@ -92,16 +92,16 @@ pub(super) fn copy_args(
     Some(page)
 }
 
-/// **The spawn endpoint, as the spawn loop reads it.** The shell sends unbadged, `job_undertaker`
-/// sends `spawnproto::reaped` under [`spawnproto::UNDERTAKER_BADGE`], and an installer holder under
-/// [`spawnproto::installer_badge`]. Every receive takes reaped messages out of the way and keeps
-/// another sender's first message, and a short pool waits for the reaps it is owed
-/// ([`split`](SpawnEndpoint::split)); see notes/system-initializer/children.md.
+/// **The spawn endpoint, as the spawn loop reads it**: shell requests, `job_undertaker`'s reaps
+/// ([`spawnproto::UNDERTAKER_BADGE`]) and installer holders ([`spawnproto::installer_badge`]).
+/// Every receive takes reaps out of the way and keeps another sender's first message, and a short
+/// pool waits for owed reaps ([`SpawnEndpoint::split`]). See notes/system-initializer/children.md.
 ///
 /// # BUGS
 ///
 /// - A job that answers and then does not exit holds that wait, and `^C` cannot reach it.
-/// - [`STASHED`] first messages at once; one more is dropped, and its sender's follow-ups refused.
+/// - [`STASHED`] first messages at once; one more is dropped and its sender's follow-ups refused.
+///   Only a pipeline of that many installer holders reaches it.
 pub(super) struct SpawnEndpoint {
     ep: u64,
     /// The file service's unbadged endpoint, which a reap's `UNBIND` goes to, or `None` on a boot
