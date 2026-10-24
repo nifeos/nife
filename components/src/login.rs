@@ -1,8 +1,8 @@
-//! **The login service: authentication produces capabilities** (milestone 49, §109 (attribution
-//! is a channel property)). It authenticates an identity against the credential service and, on
-//! success, hands back capabilities instead of mutating an identity field: a fresh directory, a
-//! fresh budget, a logout ticket and, when free, the terminal. See notes/login.md for the design,
-//! and notes/login/budgets-and-reclamation.md for its budgets and what giving each back takes.
+//! **The login service: authentication produces capabilities** (milestone 49 (users, login, and
+//! attribution), §109 (attribution is a channel property)). It authenticates an identity against
+//! the credential service and, on success, hands back capabilities instead of mutating an identity
+//! field: a fresh directory, a fresh budget, a logout ticket and, when free, the terminal. See
+//! notes/login.md, and notes/login/budgets-and-reclamation.md for its budgets.
 
 //! # What it holds to
 //!
@@ -282,10 +282,11 @@ fn vouched_caretaker(
         )
     };
 
-    // Read the way `crates/system_initializer` reads it (milestone 104): bytes that are not UTF-8
-    // are the empty table, which vouches for nothing. Checked once: both blobs are read-only for
-    // the life of this process. The check is a consistency check on the progenitor's hand-over, not
-    // an independent verification (notes/login.md, "Measured boot: the posture").
+    // Read as `crates/system_initializer` reads it (milestone 104 (the measurement continues past
+    // init)): bytes that are not UTF-8 are the empty table, which vouches for nothing. Checked
+    // once: both blobs are read-only for the life of this process. It is a consistency check on the
+    // progenitor's hand-over, not an independent verification (notes/login.md, "Measured boot: the
+    // posture").
     //
     // SAFETY: as above, for `table_len` bytes at `PROGRAM_MEASUREMENTS_VA`.
     let table = unsafe {
@@ -910,9 +911,10 @@ impl Durable {
 
     /// **End this session now** (the §108 cascade): replace its document with an empty one through
     /// the page, as its user could, wait for the timetable's exit word, then [`Durable::retire`].
-    /// The timetable stops firing at once and lets a job already running finish (§222's fourth
-    /// sub-ruling), so "now" means within one job's run. `Err` hands the session back when the
-    /// timetable has not stopped within [`END_WAIT_SECS`]; see this program's BUGS.
+    /// The timetable stops firing at once and lets a job already running finish (the fourth
+    /// sub-ruling of §222 (who holds a user's schedule)), so "now" means within one job's run.
+    /// `Err` hands the session back when the timetable has not stopped within [`END_WAIT_SECS`];
+    /// see this program's BUGS.
     fn end(self) -> Result<(), Self> {
         use core::sync::atomic::{AtomicU64, Ordering};
         let word = |off: usize| {
@@ -1273,12 +1275,13 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 }
 
 /// **Mint one principal's capability set**: a fresh `fs_subtree_caretaker` attenuated to
-/// `identity`'s own home subtree (DECISIONS §117: the identity string, used directly) and the
-/// construction region itself, the caretaker's logout ticket (notes/login.md, "Reclaiming a
-/// session: the design argument"), both held with full rights for [`delegate`] to narrow. `None`
-/// on any failure, answered [`login_contract::DENIED`]: a spent budget, an identity too long to
-/// grant, no provisioned subtree, or `care` being `None` because `_start`'s measurement refused
-/// the caretaker. `identity_provisioner` creates the subtree; this process never does (§117).
+/// `identity`'s own home subtree (DECISIONS §117 (a principal's subtree is named by its identity
+/// string), used directly) and the construction region itself, the caretaker's logout ticket
+/// (notes/login.md, "Reclaiming a session: the design argument"), both held with full rights for
+/// [`delegate`] to narrow. `None` on any failure, answered [`login_contract::DENIED`]: a spent
+/// budget, an identity too long to grant, no provisioned subtree, or `care` being `None` because
+/// `_start`'s measurement refused the caretaker. `identity_provisioner` creates the subtree; this
+/// process never does (§117).
 fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
 

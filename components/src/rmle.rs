@@ -1,5 +1,5 @@
-//! **`rmle`, the Rust multi-line editor: the smallest real text editor** (milestone 169,
-//! design/roadmap/0169-kilo-editor.md), on the raw-keystroke primitive that milestone added to the
+//! **`rmle`, the Rust multi-line editor: the smallest real text editor** (milestone 169 (`kilo`:
+//! the smallest real text editor)), on the raw-keystroke primitive that milestone added to the
 //! terminal contract (`OPERATION_RAWMODE`/`OPERATION_READRAW`, `crates/line_editor`). Modelled on
 //! antirez's public-domain `kilo` (<https://github.com/antirez/kilo>): a fixed screen, a row array,
 //! a cursor, insert and delete, save. Rust rather than a port of `kilo.c`, because DECISIONS §31

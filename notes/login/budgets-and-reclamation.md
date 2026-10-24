@@ -13,7 +13,7 @@ or `fail(2)` if it cannot.
   child's. Its only spender is `mint`'s `build_child`. `supervision_protocol::fill_and_map`'s scratch
   cursor is one process-wide allocator, so every segment and blob page of every caretaker this
   process builds moves it on, successful build or not. Each 2 MiB it first reaches costs a page
-  table. Since milestone 604 the cursor wraps inside `supervision_protocol::SCRATCH_WINDOW`, so the
+  table. Since milestone 604 (the builder's scratch cursor is bounded) the cursor wraps inside `supervision_protocol::SCRATCH_WINDOW`, so the
   most it can cost is `SCRATCH_TABLE_PAGES` (32). Measured on 2026-08-26 over a whole aarch64 suite
   run, the twenty-six caretakers the login tests build spend `usage() == (1, 128)` of it. So 128 is
   128 times the observed high-water, not a tight count.
@@ -76,7 +76,7 @@ what it retyped before the step that failed.
 `reclaim` retries a refused `DESTROY` up to `RECLAIM_ATTEMPTS` (1024) times, yielding between
 tries. A region holding a live thread is refused with §16 (object revocation)'s kill armed, and
 preemptions later the retry succeeds. `system_initializer` uses 64. `login` needs more because of
-`Durable::retire`: a session region's two store caretakers are killed by §40's cascade as their
+`Durable::retire`: a session region's two store caretakers are killed by the cascade of §40 (a supervisor's death is its subtree's death) as their
 supervisor's supervisor exits, an asynchronous teardown this process can only wait out. Measured
 on 2026-09-30 on the riscv64 TCG leg: at 64 the wait gave up inside the race in 4 boots of 4,
 `discard` leaked the whole 784-page durable budget, and the next `SCHEDULE` login was `DENIED` for

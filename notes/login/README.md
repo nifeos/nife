@@ -8,7 +8,8 @@ the detail its prose budget has no room for.
   splits at start-up and why each has its own parent, what it takes to give a channel or a region
   back completely, the capability-table ordering, and the measurements behind each number.
 
-*Name: provisional, minted 2026-10-24 (UTC) by the milestone 929 lane comments/929-components-02.
+*Name: provisional, minted 2026-10-24 (UTC) by the milestone 929 (comments in the Linux style across first-party Rust) lane
+comments/929-components-02.
 The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside `notes/X.md`.
 calef names directories.*
 
