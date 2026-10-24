@@ -1,9 +1,10 @@
-//! Putting an extended attribute back onto a **host** file, the last step of a recovery
-//! (milestone 57). `std` wraps none of it: `setxattr` with `XATTR_NOFOLLOW` on macOS, `lsetxattr`
-//! on Linux, and an arm that refuses on any other platform. Links are never followed, since an
-//! extracted symlink's target on the host is somebody else's file. A failure carries the platform's
-//! errno, because it decides what the person recovering does next. Names are bytes, passed with a
-//! NUL terminator and never given a namespace prefix. See notes/host-recovery/the-library.md.
+//! Putting an extended attribute back onto a **host** file, the last step of a recovery (milestone
+//! 57 (partitioning and formatting a real drive, and extended attributes)). `std` wraps none of it:
+//! `setxattr` with `XATTR_NOFOLLOW` on macOS, `lsetxattr` on Linux, and an arm that refuses on any
+//! other platform. Links are never followed, since an extracted symlink's target on the host is
+//! somebody else's file. A failure carries the platform's errno, because it decides what the person
+//! recovering does next. Names are bytes, passed with a NUL terminator and never given a namespace
+//! prefix. See notes/host-recovery/the-library.md.
 
 use std::ffi::CString;
 use std::io;

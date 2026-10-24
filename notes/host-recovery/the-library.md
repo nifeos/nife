@@ -101,7 +101,7 @@ refuses on a platform nobody has taught it. Three properties are decisions:
 - `tests/recovery.rs` runs every step as a separate invocation of the built binary. Nothing is
   shared between the write and the read but the image's bytes: no cached `FileSystem`, no warm
   allocator. Its tree is neither flat nor small. A 300 KiB file spans 37.5 of the 8 KiB records
-  milestone 138 moved to, and dozens of 4 KiB blocks. A three-deep chain exercises the path walk.
+  milestone 138 (close the read gap) moved to, and dozens of 4 KiB blocks. A three-deep chain exercises the path walk.
   An empty file and an empty directory are where a "did you write anything?" bug slips through. A
   symlink is a node kind that is neither, and an executable proves the mode survives.
 - `tests/partition.rs` builds the filesystem as an image and then places it in partition 3, so the
@@ -112,6 +112,6 @@ refuses on a platform nobody has taught it. Three properties are decisions:
 - `tests/attributes.rs` takes its fixture from `redoxfs_server::Server`, the sans-IO core the board
   runs, over a `DiskFile`. A reader and a writer in one crate can share a misunderstanding of the
   format and agree perfectly. A destination that holds no attributes is a case, not a skip: the test
-  asserts the tool said so, with a count, as DECISIONS §42 requires.
+  asserts the tool said so, with a count, as DECISIONS §42 (a filesystem declares what it offers and must be truthful) requires.
 - `tests/roundtrip.rs` reopens the image for every operation, so a read goes through the filesystem
   rather than a cache. It is the pin's witness: the same engine the FS server serves images with.

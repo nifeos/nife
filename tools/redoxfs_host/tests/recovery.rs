@@ -3,9 +3,10 @@
 //!
 //! Every step is a separate invocation of the built binary, so only the image's bytes are shared
 //! and a reader cannot agree with a writer for an in-process reason. The tree has a 300 KiB file
-//! (37.5 of the 8 KiB records milestone 138 moved to), a three-deep chain, an empty file and
-//! directory, a symlink and an executable. The write side is upstream's archiver (`import`), so a
-//! misunderstanding our reader shares with our writer cannot pass. See notes/host-recovery.md.
+//! (37.5 of the 8 KiB records milestone 138 (close the read gap) moved to), a three-deep chain, an
+//! empty file and directory, a symlink and an executable. The write side is upstream's archiver
+//! (`import`), so a misunderstanding our reader shares with our writer cannot pass. See
+//! notes/host-recovery.md.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

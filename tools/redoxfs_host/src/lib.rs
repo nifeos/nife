@@ -3,11 +3,11 @@
 //! The library half of the `redoxfs_host` tool: create an image, walk it, read a file back, and
 //! extract a subtree, against the vendored 0.9.1 pin (vendor/redoxfs), the engine the nife FS
 //! server serves it with. Every read verb takes a [`Volume`], an image or one GPT partition of a
-//! device (milestone 110), whose offset lives in the [`PartitionDisk`] the engine is handed. The
-//! read paths open read-only and write nothing: `read_node_inner`, never `read_node`, whose atime
-//! update dirties the header ring. No key handling: the volume is not encrypted (milestone 57,
-//! decided 2026-07-30). Engine errors become `String` here. See notes/host-recovery.md and
-//! notes/host-recovery/the-library.md.
+//! device (milestone 110 (the recovery tool takes a device and a partition)), its offset in the
+//! [`PartitionDisk`] the engine is handed. Reads write nothing: `read_node_inner`, never
+//! `read_node`, whose atime update dirties the header ring. No key handling: the volume is not
+//! encrypted (milestone 57 (partitioning and formatting a real drive, and extended attributes),
+//! decided 2026-07-30). Engine errors become `String` here (notes/host-recovery/the-library.md).
 
 use std::fs::File;
 use std::path::Path;

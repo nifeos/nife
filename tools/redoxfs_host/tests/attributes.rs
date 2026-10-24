@@ -1,11 +1,13 @@
-//! **The attribute half of the recovery witness** (milestone 57): metadata written by the FS
-//! server on one side, back on a real host file on the other. It answers calef's test of a backup,
-//! *if I am struggling to get the data off, the backup has failed at its job*, for the attributes a
-//! Time Machine sparsebundle keeps Apple metadata in.
+//! **The attribute half of the recovery witness** (milestone 57 (partitioning and formatting a real
+//! drive, and extended attributes)): metadata written by the FS server on one side, back on a real
+//! host file on the other. It answers calef's test of a backup, *if I am struggling to get the data
+//! off, the backup has failed at its job*, for the attributes a Time Machine sparsebundle keeps
+//! Apple metadata in.
 //!
 //! The fixture is written by `redoxfs_server::Server`, the board's sans-IO core, never by a second
 //! writer in this crate that could share the reader's misunderstanding. A destination that cannot
-//! hold attributes is a case, not a skip: the tool must say so with a count (DECISIONS §42).
+//! hold attributes is a case, not a skip: the tool must say so with a count (DECISIONS §42 (a
+//! filesystem declares what it offers and must be truthful)).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

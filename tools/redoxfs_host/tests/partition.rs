@@ -1,5 +1,6 @@
-//! Reading a filesystem out of a **partition on a device** (milestone 110), each read a separate
-//! invocation of the built binary, as in `recovery.rs`, so only the bytes are shared.
+//! Reading a filesystem out of a **partition on a device** (milestone 110 (the recovery tool takes
+//! a device and a partition)), each read a separate invocation of the built binary, as in
+//! `recovery.rs`, so only the bytes are shared.
 //!
 //! The filesystem is built as an image and then placed, so an offset wrong by one block opens
 //! nothing. The table comes from the parser the reader uses; xtask's `blank_check_after_run`

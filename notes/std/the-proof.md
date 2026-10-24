@@ -120,9 +120,10 @@ Granted a directory:
   size or a handle number fails. A file nife makes is stamped by the FS server's counter, which
   restarts at each mount, so it reads as early 1970 and only its order means anything. The
   half-second in the time it sets pins truncation, since the wire carries whole seconds.
-- The time refusals: through an open handle, because the contract asks by name; setting through a
-  handle, because it would stamp whatever holds the name now; an access time, because no verb sets
-  one and the mtime beside it must not change either; the granted directory, which has no name.
+- The time refusals each mark a place where a success would be a lie. Reading through an open
+  handle is refused because the contract asks by name. Setting through a handle would stamp
+  whatever holds the name now. No verb sets an access time, so the mtime beside it must not change
+  either. The granted directory has no name to ask by.
 - The fixture's `deeper` exists so a second descent has somewhere to go and `dir::DESCEND` has
   something to withhold. A move between directories is one `RENAME` carrying a handle on each side.
   `Dir::open(".")` costs no message, because it is what the endpoint is bound to.
@@ -140,7 +141,7 @@ Granted the network:
 - `denied refused` matters most: a program that could bind an ungranted port would make inbound
   authority decoration, and no other line would show it. Exclusivity, `in use refused`, is what
   makes a port grantable. A listener that went deaf after one connection would pass a one-round gate
-  and fail milestone 55's Samba-shaped workload. The guest and the host prober are one gate only
+  and fail the Samba-shaped workload of milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS). The guest and the host prober are one gate only
   together.
 - A round keeps accepting through `WouldBlock`. On sifive-u54 and rva22s64 one 15 s window opened
   while the prober still held an earlier connection, and round 0 failed with nobody having tried

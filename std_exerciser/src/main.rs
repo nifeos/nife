@@ -10,7 +10,8 @@
 #![feature(dirfd, random)]
 //!
 //! **One binary, its behavior chosen by the authority it was granted** (no ambient authority,
-//! DECISIONS §10, §25, §27). A directory in slot 4 runs `fs_demo`; a subtree rather than the root
+//! DECISIONS §10 (process model: capability-based, microkernel), §25 (socket identity), §27 (the
+//! filesystem service)). A directory in slot 4 runs `fs_demo`; a subtree rather than the root
 //! runs `walk_transcript` (milestone 121 (`ripgrep` on nife: enumeration as a capability)); the
 //! network in slots 2 and 3 runs `net_demo`, which serves if its stack carries a listen grant; and
 //! neither runs `offline_demo`, where `fs` and `net` are honestly `Unsupported`. Slots 5 to 7 are
@@ -108,8 +109,9 @@ fn offline_demo() {
     );
     println!("instant monotonic ok");
 
-    // Wall-clock time (milestone 51), from the clock page at slot 5. Asserted rather than printed,
-    // because a date is not a deterministic transcript, against the clock service's own window.
+    // Wall-clock time (milestone 51 (wall-clock time, the `date` command, and an NTP service)),
+    // from the clock page at slot 5. Asserted rather than printed, because a date is not a
+    // deterministic transcript, against the clock service's own window.
     let wall = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("the wall clock is before the Unix epoch");
@@ -123,8 +125,9 @@ fn offline_demo() {
     assert!(t2 >= t1, "the monotonic counter went backwards");
     println!("wall clock ok");
 
-    // Real entropy (milestone 56), from the entropy service at slot 6. Asserted, not printed. Two
-    // 32-byte draws agree with probability 2^-256 from a real source, always from a counter seed.
+    // Real entropy (milestone 56 (secrets, credentials, and the entropy to make them safe)), from
+    // the entropy service at slot 6. Asserted, not printed. Two 32-byte draws agree with
+    // probability 2^-256 from a real source, always from a counter seed.
     let mut a = [0u8; 32];
     let mut b = [0u8; 32];
     SystemRng.fill_bytes(&mut a);
@@ -133,8 +136,9 @@ fn offline_demo() {
     assert!(a.iter().any(|&x| x != 0), "a draw is all zeros");
     println!("entropy ok");
 
-    // Inert configuration (milestone 47's environment-variable fork, DECISIONS §111): before
-    // `main` ran, `pal::nife::init` seeded `TZ`, `LANG` and `TERM` from the page at slot 7
+    // Inert configuration (milestone 47 (navigation and naming)'s environment-variable fork,
+    // DECISIONS §111 (inert configuration is a read-only page)): before `main` ran,
+    // `pal::nife::init` seeded `TZ`, `LANG` and `TERM` from the page at slot 7
     // (`sys/env/nife.rs::seed`). A process granted no such page is seeded with nothing.
     assert_eq!(
         std::env::var("TZ").as_deref(),
@@ -168,8 +172,9 @@ fn offline_demo() {
 
 /// The `env ok` line of [`offline_demo`]'s transcript.
 fn environment_holds_only_what_was_seeded() {
-    // Three claims (milestone 64): `vars()` returns rather than panicking, it holds exactly the
-    // three keys the config grant seeded and nothing ambient, and `set_var` takes.
+    // Three claims (milestone 64 (enough `std` to run somebody else's crate)): `vars()` returns
+    // rather than panicking, it holds exactly the three keys the config grant seeded and nothing
+    // ambient, and `set_var` takes.
     assert_eq!(
         std::env::vars().count(),
         3,
@@ -255,10 +260,10 @@ fn paths_answer_or_refuse_honestly() {
 const NOT_BEFORE: Duration = Duration::from_secs(1_767_225_600);
 const NOT_AFTER: Duration = Duration::from_secs(4_102_444_800);
 
-/// **The `std::fs` transcript** (milestone 27 phase two, the FS half): `File`, `Read`,
-/// `read_to_string` and `metadata`, served by the RedoxFS FS server over the §27 contract through
-/// the one directory capability this process holds. `motd` is already open: opening it was the
-/// probe that chose this branch.
+/// **The `std::fs` transcript** (milestone 27 (Rust `std` on the native ABI) phase two, the FS
+/// half): `File`, `Read`, `read_to_string` and `metadata`, served by the RedoxFS FS server over the
+/// §27 contract through the one directory capability this process holds. `motd` is already open:
+/// opening it was the probe that chose this branch.
 ///
 /// A name means "under the directory I hold", so a path that would leave it is refused before a
 /// byte reaches the server, as `InvalidFilename` and never `PermissionDenied`; an expressible name
@@ -313,8 +318,8 @@ fn fs_demo(mut motd: File) {
         "absolute dotdot",
     );
     refused("../motd", "dotdot");
-    // `..` is refused at every position (milestone 122): this names a file the root grant really
-    // reaches, by an ascent no verb performs.
+    // `..` is refused at every position (milestone 122 (a directory handle `std` can hold)): this
+    // names a file the root grant really reaches, by an ascent no verb performs.
     refused(
         &format!(
             "{}/../{}/{}",
@@ -330,8 +335,9 @@ fn fs_demo(mut motd: File) {
         other => panic!("a missing name did not read as NotFound: {other:?}"),
     }
 
-    // CREATE, then a SHORTER second write (milestone 31 phase 2): without TRUNCATE the first
-    // write's tail would survive. §27's four corrections all trace to that, so it is pinned here.
+    // CREATE, then a SHORTER second write (milestone 31 (a capability shell) phase 2): without
+    // TRUNCATE the first write's tail would survive. §27's four corrections all trace to that, so
+    // it is pinned here.
     let long = b"the first write, deliberately the longer of the two";
     let short = b"the second write, shorter";
     assert!(
