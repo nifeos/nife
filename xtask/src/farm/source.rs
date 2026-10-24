@@ -136,7 +136,7 @@ pub(super) fn is_sysroot_anchor(rel: &Path) -> bool {
 /// the nightly in 1 run of 8, and every time under `cargo xtask std-exerciser`; with real copies,
 /// the farm in 30 of 30. The copies cost about 90 MB per farm (nightly-2026-10-06); the rest of
 /// `lib`, libLLVM at 140 MB among it, is found by path and keeps sharing blocks. See
-/// notes/std/caveats.md, "`cargo xtask` through the rustup proxy built against unpatched std".
+/// notes/std/caveats.md, "The farm copies `rustc` and its driver rather than linking them".
 pub(super) fn unlink_sysroot_anchors(farm: &Path) -> std::io::Result<()> {
     for dir in ["bin", "lib"] {
         for e in std::fs::read_dir(farm.join(dir))? {
