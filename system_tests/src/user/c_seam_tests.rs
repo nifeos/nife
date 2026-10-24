@@ -59,19 +59,12 @@ fn spawn_confiner() -> (sched::RendezvousId, u64) {
 
 /// **Wait, with a deadline, for the next report to be parked on the endpoint.**
 ///
-/// A bounded wait rather than a bare blocking receive, and the difference is the whole reason
-/// this function exists. Milestone 202 broke the confinement on purpose (`WITNESS_RO` mapped
-/// read/write, so the deliberate out-of-bounds store lands instead of faulting) to check that
-/// this file's load-bearing test would notice. It noticed, and it noticed as a **watchdog
-/// timeout at 234 seconds** whose diagnostic reads `a livelock, not a lost wakeup`, because the
-/// confiner reports a death only when one is delivered and the blocking receive here had
-/// nothing to take. The test failed for the right reason and said the wrong thing, which is
-/// the failure mode `design/roadmap/0202-confinement-claims-falsified.md` calls out by name.
-///
-/// Thirty seconds against a 90-second per-test budget: long enough that a loaded host cannot
-/// make an honest run look stalled (a healthy run's largest gap is a shim build and start, well
-/// under a second), short enough that a stalled one fails here with a sentence about
-/// confinement rather than there with a thread dump.
+/// The confiner reports a death only when one is delivered, so under a broken confinement (the
+/// out-of-bounds store landing instead of faulting) a bare blocking receive here has nothing to
+/// take, and the test would fail for the right reason as a watchdog livelock, saying the wrong
+/// thing (`design/roadmap/0202-confinement-claims-falsified.md`). Thirty seconds against a
+/// 90-second per-test budget: a healthy run's largest gap, a shim build and start, is well under a
+/// second, and a stalled run fails here with a sentence about confinement.
 fn wait_for_report(report: sched::RendezvousId) -> bool {
     let deadline = crate::arch::timer::now() + 30 * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
@@ -136,15 +129,11 @@ fn of_kind(msgs: &[[u64; 5]; EXPECTED_REPORTS], kind: u64) -> impl Iterator<Item
 /// **A C out-of-bounds write faults the process and touches nothing outside its grant.** The
 /// milestone's one load-bearing test.
 ///
-/// Two bugs, two fault paths, two witnesses. The off-by-one store lands on a page mapped
-/// read-only into the component and read/write into the confiner: same physical memory, present
-/// in the offender's page tables, and provably unchanged, which is the strongest form the claim
-/// can take. The wild store a page further out lands on a virtual address the component has no
-/// mapping for and the confiner does: a different frame, the same number, and unchanged.
-///
-/// The verdict bitmap is asserted for **equality**, not for containing the interesting bits,
-/// because a missing bit is exactly what a broken confinement looks like and a superset would
-/// mean the checker started answering a question nobody asked.
+/// The off-by-one store lands on a page mapped read-only into the component and read/write into
+/// the confiner: the same frame, present in the offender's tables, and provably unchanged. The
+/// wild store lands on a virtual address the component has no mapping for and the confiner does:
+/// another frame, unchanged. The verdict bitmap is asserted for **equality**: a missing bit is a
+/// broken confinement, and a superset is the checker answering a question nobody asked.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.c_seam_tests.a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant.patch`
 #[test_case]
@@ -212,15 +201,11 @@ fn a_c_out_of_bounds_write_faults_and_changes_nothing_outside_its_grant() {
 /// **The supervisor restarts the crashed C component, and the restarted component does real
 /// work.**
 ///
-/// The restart half of §26, with a foreign component on the end of it. Three instances run in
-/// sequence: two crash, and the third computes a checksum and a transform in C, writes them
-/// into the shared grant, and exits cleanly. The confiner checks that output against an
-/// independent Rust implementation of the same definition, which is why `OUTPUT_CORRECT` is
-/// worth a bit of its own: "an instance ran" is cheap, "the C produced the right answer after
-/// two crashes" is the claim.
-///
-/// The clean exit must arrive as `EVENT_EXIT` and must **not** be restarted, which is the other
-/// half of "both events flow" (§26.3) and is what ends the run.
+/// The restart half of §26: two instances crash, and the third computes a checksum and a transform
+/// in C into the shared grant and exits. The confiner checks that output against an independent
+/// Rust implementation (`OUTPUT_CORRECT`), because "the C produced the right answer after two
+/// crashes" is the claim. The clean exit must arrive as `EVENT_EXIT` and must **not** be restarted
+/// (§26.3), which ends the run.
 #[test_case]
 fn the_supervisor_restarts_the_faulted_c_component_and_the_restart_does_real_work() {
     let msgs = run_seam();

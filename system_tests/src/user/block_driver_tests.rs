@@ -69,48 +69,29 @@ fn the_kernel_refuses_an_indirect_descriptor_escape() {
     );
 }
 
-/// **The PCIe transport end to end** (DECISIONS §18): the same driver reads the same file off
-/// the disk QEMU attached as `virtio-blk-pci`, found by ECAM enumeration, BARs placed by the
-/// kernel, and the completion arriving as an interrupt the kernel turned into a message. The
-/// riscv twin proved the seam on the PLIC board; this proves the same subsystem, from the same
-/// portable crate and seam, on two more interrupt controllers.
-///
-/// **It runs on `x86_64` too since milestone 215** (a PCI function's interrupt reaches nothing on
-/// `x86_64`), and there it is the whole of that milestone's claim rather than one more transport: the completion arrives as
-/// an **MSI-X** message the device writes straight to the local APIC, because a legacy INTx pin on
-/// `q35` goes through a PIRQ router only ACPI's `_PRT` describes. On aarch64 the same completion
-/// arrives as INTx through the GIC (SPI 3 + swizzle). The assertion below is the same either way,
-/// which is the point: a driver binds an intid and waits, and how the machine delivers it is the
-/// arch layer's business.
-// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport`. Gated here rather than run twice: that
-// module drives the same property on the other instruction set, through the same `block_driver` and
-// `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
-// to prove nothing new. (It read "through hello's roles" until milestone 291, when aarch64 stopped
-// having any: the two legs differ by ISA now and by nothing else.) See this module's comment on
-// the two kinds of gate.
+/// **The PCIe transport end to end** (DECISIONS §18): the same driver reads the same file off the
+/// disk QEMU attached as `virtio-blk-pci`, found by ECAM enumeration, BARs placed by the kernel,
+/// and the completion arriving as an interrupt the kernel turned into a message. On aarch64 that is
+/// INTx through the GIC (SPI 3 + swizzle). On `x86_64` it is an **MSI-X** message the device writes
+/// straight to the local APIC, because a legacy INTx pin on `q35` goes through a PIRQ router only
+/// ACPI's `_PRT` describes (milestone 215 (a PCI function's interrupt reaches nothing on
+/// `x86_64`)). The assertion is the same either way: a driver binds an intid and waits.
+// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport`, the
+// same property through the same `block_driver` and `net_stack` binaries; a second copy here would
+// double the suite's slowest tests to prove nothing new. See this module's comment on the two
+// kinds of gate.
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[test_case]
 fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     use crate::arch::exceptions::ROUTED_IRQS;
 
-    // **The baseline is sampled before the device is wired, and the ordering is the fix rather
-    // than a longer wait.** The trap handler bumps `ROUTED_IRQS` immediately *before*
-    // `sched::irq_notify`, and `Irq::WAIT` is an `ipc_receive` on the endpoint that notify signals
-    // (`syscall::irq_wait`), so a driver cannot reach its report without this counter having
-    // already moved. The assertion can therefore only fail one way: a baseline sampled after the
-    // completion it is asking about. Sampling here forecloses that, because until `start_pci`
-    // runs there is no queue, no route and no driver, so nothing this device does can be counted
-    // before this line.
-    //
-    // It used to be sampled between the wiring and the `ipc_receive`, which is *after* the driver is
-    // spawned, and that is what made this test flake on x86_64. See
+    // **The baseline is sampled before the device is wired.** The trap handler bumps
+    // `ROUTED_IRQS` immediately *before* `sched::irq_notify`, and `Irq::WAIT` receives on the
+    // endpoint notify signals, so a driver cannot report without this counter having moved, and
+    // until `start_pci` runs there is nothing to count. The check guards that chain: a driver that
+    // polls the used ring, or a handler that counts after `irq_notify`, breaks it and this fires,
+    // where the first assertion alone would pass a polled driver. See
     // notes/load-sensitive-assertions.md.
-    //
-    // So the assertion is now implied by the report rather than racing it, which is the point of
-    // keeping it: it is a guard on that implication. A driver rewritten to poll the used ring, or
-    // a handler that counted after `irq_notify` instead of before it, breaks the chain and this
-    // fires. The first assertion alone would pass on a polled driver, which is why deleting this
-    // one was never an option.
     let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);
 
     let Some(report) = virtio_service::start_pci(blk_image()) else {
