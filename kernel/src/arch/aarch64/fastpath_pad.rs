@@ -1,18 +1,16 @@
-//! The aarch64 half of E3's padding (see `kernel/src/fastpath_pad.rs`): one function, nothing
-//! but `nop`, sized to roughly double `bench/fastpath-aarch64.txt`'s recorded `ipc_fastpath`
-//! (5,792 bytes at the time this was written). 1,448 `nop`s at 4 bytes each is 5,792 bytes plus
-//! one `ret`, so the padded closure lands within a few bytes of exactly double; re-measure with
+//! The aarch64 half of E3's padding (see `kernel/src/fastpath_pad.rs`): one function of `nop`s,
+//! sized to roughly double `bench/fastpath-aarch64.txt`'s recorded `ipc_fastpath` (5,792 bytes).
+//! 1,448 `nop`s at 4 bytes each is 5,792 bytes plus one `ret`. Re-measure with
 //! `script/fastpath-footprint --features fastpath_pad --arch aarch64` after touching this file or
-//! the fastpath it is attached to, since the target is the *current* baseline, not a constant.
+//! the fastpath, since the target is the current baseline, not a constant.
 //!
-//! Written in `global_asm!` rather than a Rust loop because the whole point is *static* footprint:
-//! a `for` loop over `nop`s is a handful of instructions regardless of the count, and would pad
-//! nothing this tool can see. A `.rept` block is bytes on disk, which is what
-//! `script/fastpath-footprint` sums.
+//! `global_asm!` rather than a Rust loop: the point is static footprint, and a `.rept` block is
+//! bytes on disk, which `script/fastpath-footprint` sums. A loop over `nop`s is a handful of
+//! instructions whatever the count.
 use core::arch::global_asm;
 
-/// One sled unit: `fastpath_pad` alone links exactly this many `nop`s, as it did before the
-/// ladder (milestone 134's layout control) made the count a multiple. See
+/// One sled unit: `fastpath_pad` alone links exactly this many `nop`s, and the ladder of
+/// milestone 370 (a layout control) links a multiple of it. See
 /// `crate::fastpath_pad::PAD_UNITS` and, for the zero block after the sled,
 /// `crate::fastpath_pad::SHIFT_BYTES`.
 const UNIT_NOPS: usize = 1448;

@@ -210,6 +210,53 @@ reads three words from the thread instead of following a pointer into an `Addres
 improvement is not claimed; `icount` counts move with code layout (notes/benchmarks.md), and no IPC
 path changed. The registry itself is 21,904 bytes of `.bss` at 288 slots.
 
+## What the running-space tests leave open
+
+- The multicore test's placement is retried, not pinned, because the kernel has no affinity
+  primitive. The unmapper stands down when it finds the reader on its own core, and the test picks
+  a fresh target, up to 16 times. Two failures remain open to a correct kernel. Sixteen
+  co-placements in a row fail `assert!(placed, ...)`, which says the scheduler put both on one core
+  every time. A migration between the stand-down check and the `UNMAP` fails the later `assert_ne!`
+  on the two recorded cores, "proves nothing about another core's TLB".
+- The negative control proves the loader, not the boot. It drives the `supervision_protocol` code
+  the progenitor builds boot servers with, in a fixture granted its own space the way the kernel
+  grants the progenitor's. A boot that wrote into a boot server would kill the progenitor, so the
+  boot itself is proven only by building every server through that code (`script/swish-check`)
+  without faulting.
+- The negative control keeps 32 frames the first time it runs in a boot, and none after. Measured
+  on aarch64, 2026-10-05, by running the control, the real run and a third witness in one test: 32
+  frames went after the first witness, and the count held across the next two. It is one-time
+  growth the first spawned program of a boot pays, not a frame per process. `scratch_window_tests`
+  records the same 32 for its own first builder, unexplained. Run alone, the test is that first
+  spawn; in the whole suite something earlier is.
+- Only the fault's address is asserted, not its kind. riscv64 reports a load or store page fault
+  without saying whether a translation existed, so "it faulted at this page" is the claim all three
+  ISAs can state alike.
+
+## The scratch window test
+
+`system_tests::user::scratch_window_tests` proves milestone 604 (the builder's scratch cursor is
+bounded), the loader's wrapping window, which needs no `UNMAP`. What it leaves open:
+
+- CI does not run it. The whole suite skips it, and it runs only when named (`script/test --test
+  scratch_window`). It was run that way on all three architectures on 2026-09-26, and milestone
+  604's block has the times. A gate that only runs by hand is weaker than one CI runs; the cost
+  below is the kernel's, and the default suite would pay it on every leg.
+- It takes five seconds on aarch64 alone and 104 s in CI's whole aarch64 suite (run 36279440107),
+  and on `x86_64` it ran past the leg's timeout. `crate::revoke::revoke_region` finds each page to
+  unmap by scanning every live address space's mapping log from the start, once per page. A
+  region's destroy costs its mapped pages times every record on the machine, and forty 668-page
+  reaps behind a suite's worth of live spaces pay that forty times. The progenitor reaping a job
+  pays it too. Milestone 658 (a region reap scans every mapping on the machine per page) is the fix.
+- It keeps 32 frames. Measured by the suite's frame ledger on aarch64, run alone, 2026-09-26: both
+  regions reclaim without error and the exerciser exits, yet 32 frames do not come back. 32 is also
+  `supervision_protocol::SCRATCH_TABLE_PAGES`, which points at the tables the builder's own region
+  paid for. That is a guess from one number, not a trace.
+- It proves the loader, not the progenitor. The progenitor's own numbers (its 128-page table
+  budget, its job pool against the window) are compile-time assertions in
+  `crates/system_initializer`, not a boot that spawns `rg` a hundred times. `rg` is in no CI
+  archive, for the reasons of milestone 121 (`ripgrep` on nife).
+
 ## BUGS
 
 - **A builder can give its windows back only if its builder granted it its own space.** The
