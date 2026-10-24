@@ -7,19 +7,20 @@
 //! `a2` the registration page of §222 (who holds a user's schedule). No directory, console, network
 //! or device, and no clock page unless granted. Store mode (milestone 152's Fork 8 D) holds
 //! `activation/` and `packages/` instead. See `notes/scheduled-execution/the-program.md`.
-//!
-//! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
 
 //! # BUGS
 //!
-//! - It has not adopted milestone 106's timer (milestone 674), so it spins and polls between fires.
+//! - It has not adopted milestone 106's timer (milestone 674), so it spins, polls and reaps lazily.
 //! - A hung child stops the whole timetable once the budget runs out; nothing kills it.
 //! - The archive holds every image the plan builds: code, not authority (see the note).
 //! - `--mem` entries run alone, and others due meanwhile run late, once (see the note).
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
-//! - A replacement's plan is cut at `registration::BODY_MAX`; only the compiled-in one is audited.
+//! - A replacement's plan is cut at `registration::BODY_MAX`; the verdict word survives. Only the
+//!   compiled-in document is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 //! - In store mode an oversized program's refusal is unnamed, and a fire failure is only `E_BUDGET`.
+//!
+//! Name: ratified 2026-09-13 (calef), with `crates/timetable` and `components/timetable.conf`.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

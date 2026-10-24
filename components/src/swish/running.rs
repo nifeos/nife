@@ -795,8 +795,9 @@ pub(super) struct DirWords {
 /// `Ok` is `(the caretaker's START words, the program's)`: the directory and the
 /// `filesystem_contract::dir` rights (`REMOVE`, or `REMOVE_TREE` with `-r`), then the operand and
 /// `flags`. Nothing between here and the process decodes them. Refused with nothing spawned: a
-/// second tree, the namespace root, a directory deeper than one level, and a set of more than one
-/// name. See `notes/swish-language/running.md`, "The directory grant".
+/// second tree, the namespace root, a directory deeper than one level, a set of more than one name,
+/// and a name that does not fit in a grant's two argument words. See
+/// `notes/swish-language/running.md`, "The directory grant".
 pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<DirWords, &'static [u8]> {
     // **A grant in a two-grant shell's second tree** (milestone 154). The progenitor builds the
     // caretaker by descending from the root of the one filesystem it holds, which is the first

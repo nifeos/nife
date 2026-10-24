@@ -24,8 +24,7 @@ frame per filesystem client channel) closes it.
 ## Running bytes
 
 A path at the prompt runs bytes, not a name (§219 (how the shell names an installed program to the
-spawner), option D). The shell reads the file through the
-file service it already holds, into frames split from its own budget. It sends them on the spawn
+spawner), option D). The shell reads the file through the file service it already holds, into frames split from its own budget. It sends them on the spawn
 endpoint under `IMAGE_BIT`, one frame at a time: retyped, filled, delegated narrowed to `READ`, then
 deleted. The progenitor hashes its own copy and looks the digest up in the installed-programs table.
 A hit runs with the manifest the bytes carry.
@@ -76,7 +75,7 @@ enumerate it, read it or walk into it. With it the capability is `REMOVE_TREE`, 
 walk. `caps rm -r logs` prints the difference before anything happens.
 
 The shell holds no `GRANT` on its file-service rendezvous, so it cannot hand a caretaker anything.
-It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Four
+It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Five
 shapes cannot be delivered, and each is refused with nothing spawned rather than half-granted.
 
 - A directory in a two-grant shell's second tree. The progenitor descends from the root of the first
@@ -90,6 +89,8 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
   supervised by the client it serves)), and the progenitor builds one.
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the
   subtree one for this path. `rm *.txt` is planned, previewed by `caps`, and refused at delivery.
+- A directory or file name that does not fit in a grant's two argument words
+  (`filesystem_contract::grant::fits`), because each name travels packed into two words.
 
 ## The plain request
 
@@ -113,7 +114,9 @@ last line". A dead thread cannot enqueue another `SEND`, so the child cannot sti
 What can still be in flight is `terminal_sink_caretaker`'s trailing `CALL` to `line_editor`. That is
 the caretaker-hop display race §106 (an unredirected tail stage's output goes to the screen)
 accepts: the next `$ ` can interleave with that call's output. It is a display glitch, not a
-correctness or confinement failure, and milestone 151 (notification objects) tracks it.
+correctness or confinement failure. Milestone 151 (notification objects) built the primitive the
+fix needs, and milestone 40 (documentation as a system service) owns the fix: the shell binds a
+notification and waits on the caretaker's drain.
 
 A corpse can be refused once if its region still holds something schedulable, so the reap retries
 with a yield between attempts. A reap that never succeeds leaks one job's worth of the progenitor's

@@ -10,8 +10,9 @@
 
 //! # BUGS
 //!
-//! - Whole disk only, the table replaced wholesale; not crash-atomic, and the copy shows no
-//!   progress. It writes no firmware boot entry, only the removable-media path.
+//! - Whole disk only: the partition table is replaced wholesale.
+//! - Not crash-atomic, and the copy shows no progress.
+//! - It writes no firmware boot entry, only the removable-media path.
 //! - The installed filesystem server holds the whole disk, bounded only by `mkfs`'s extent.
 //! - The logical block size is assumed to be 512; a 4096-byte NVMe namespace gets a bad table.
 //! - The slots cost 128 MiB, and nothing writes slot 1 yet (`cargo xtask rollback-boot` does).

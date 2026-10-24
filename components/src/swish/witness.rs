@@ -938,9 +938,9 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
 /// **`touch`'s mtime half, typed as real command lines and read back through the wire**
 /// (the mtime lane of milestone 47 (navigation and naming), DECISIONS §112 (`touch`'s two
 /// behaviors need two rights)). Runs after [`touch_twice`] and reuses `touched`, which by then
-/// names a file with a body: a bare
-/// `touch`, then `touch -t`, each checked against a `GETMTIME` read. Chained, because
-/// `TOUCH_AT_ROUND_TRIPPED` is checked against the mtime `TOUCH_MTIME_ADVANCED` established.
+/// names a file with a body: a bare `touch`, then `touch -t`, each checked against a `GETMTIME`
+/// read. Chained, because `TOUCH_AT_ROUND_TRIPPED` is checked against the mtime
+/// `TOUCH_MTIME_ADVANCED` established.
 fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     use filesystem_fixture::{navscape as nb, tree};
 

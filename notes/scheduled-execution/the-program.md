@@ -36,8 +36,9 @@ delegation)): a durable job writes through what its entry grants.
 ## Probes before anything is allocated
 
 `_start` reads four slots before it allocates anything: the activation slot, which is what makes
-it store mode, the run-unvouched slot, the clock slot and the report slot. Until then an occupied slot can only be what the spawn site placed there. A
-region split later could land in the slot and read as held.
+it store mode, the run-unvouched slot, the clock slot and the report slot. Until then an occupied
+slot can only be what the spawn site placed there. A region split later could land in the slot and
+read as held.
 
 A scheduled job never holds the run-unvouched capability, gate D2 of §219 (how the shell names an
 installed program to the spawner). That is how §220 (trusting a key is scoped) keeps its reach.
@@ -131,6 +132,11 @@ never becomes collectable is a leak.
   ([mem-entries.md](mem-entries.md)).
 - A hung child stops the whole timetable once the budget runs out. The loop then blocks on the
   supervision endpoint, and nothing kills a livelocked child.
+- A calendar line fires up to one pass late, because `Registry::next_deadline` covers only counter
+  rows.
+- A replacement's printed plan is cut at `registration::BODY_MAX`, and the verdict word survives.
+  The archive audit is printed only for the compiled-in document.
+- In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 - In store mode a program over `contract::STAGING_BYTES` is refused without saying which refusal
   it was, and a fire failure is reported only as the page's exit word, `contract::E_BUDGET`.
 
