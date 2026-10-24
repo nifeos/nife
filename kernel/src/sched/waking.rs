@@ -1,21 +1,19 @@
-//! **Waking a blocked thread.**
+//! Waking a blocked thread. See notes/scheduler.md ("Wakes") and notes/interleaving.md.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
-/// Move a blocked thread back to the ready queue. Caller holds the lock.
+/// Move the blocked thread `tid` back to a ready queue on this core.
 ///
-/// The decision lives in `thread_wake_handshake::Handshake::try_wake`, extracted so loom can search its
-/// interleavings on the host (notes/interleaving.md); this function is the kernel-side half, the
-/// queue push and the trace ring. The two rules the verdicts carry, kept here in one breath
-/// because this is where a reader meets them: **the undelivered-wake gate** (boot 8: a wake whose
-/// critical section delivered nothing has not dequeued the thread from its rendezvous and has
-/// nothing for its receive to return, so it is refused and recorded as `refuse:tid` on the ring), and
-/// **the wake-before-switch-out deferral** (a thread still on its CPU has a stale saved context,
-/// so the wake parks in `wake_pending` and its own core's `finish_switch` completes it once the
-/// context is provably saved; found by a 2-in-10 flake, notes/intrusive-queues.md).
-// In the pinned hot section: milestone 796 (pin the hot trap path's placement).
+/// The decision is `thread_wake_handshake::Handshake::try_wake`, which loom searches on the host
+/// (notes/interleaving.md); this is the queue push and the trace ring. A wake whose critical
+/// section delivered nothing is refused (the undelivered-wake gate, recorded as `refuse:tid`), and
+/// a thread still on its CPU has its wake parked for its own core's `finish_switch` to complete
+/// once its context is saved (notes/intrusive-queues.md). In the pinned hot section (milestone 796
+/// (pin the hot trap path's placement)).
+///
+/// Context: caller holds `IPC_TABLES`.
 #[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.sched.wake"))]
 pub(super) fn wake(sched: &mut IpcTables, tid: ThreadId) {
     if let Some(t) = sched.threads.get_mut(tid) {
@@ -25,9 +23,8 @@ pub(super) fn wake(sched: &mut IpcTables, tid: ThreadId) {
                 trace::record(trace::Event::WakeRefused, tid, 0);
             }
             WakeVerdict::Deferred => {
-                // A completed rendezvous is forward progress even when its queueing is deferred:
-                // keep the hang watchdog's heartbeat alive so a slow-but-live IPC pipeline
-                // (std_net) is not read as a deadlock (test builds only).
+                // Forward progress for the hang watchdog even when queueing is deferred, so a slow
+                // but live pipeline is not read as a deadlock.
                 #[cfg(any(test, feature = "system_tests"))]
                 crate::testing::note_progress();
                 trace::record(trace::Event::WakeDeferred, tid, 0);
