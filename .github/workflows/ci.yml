@@ -160,9 +160,12 @@ concurrency:
 # guest core is a host thread. An aarch64 or riscv64 guest on an aarch64 host can therefore be shown
 # reorderings the host permits, where an x86_64 host sees only what TSO allows. That is the one
 # place CI puts kernel code in front of a weakly ordered machine, which is the discipline DECISIONS
-# §4 (kernel shape: monolithic, deferred, with two cheap rules) rule 4 commits us to. The QEMU half
-# of that argument is recalled from QEMU's documentation rather than measured here; milestone 587's
-# BUGS says so. The split took the build jobs' draw on that pool from one runner to four, which is
+# §4 (kernel shape: monolithic, deferred, with two cheap rules) rule 4 commits us to. **Measured on
+# 2026-10-24, the host half holds and the suite half does not**
+# (notes/benchmarks/host-reordering-under-tcg.md): an aarch64 host shows these guests
+# message-passing reorderings and an x86_64 host shows none, but with every kernel spinlock
+# weakened to order nothing these legs passed on both hosts. The placement buys exposure that no
+# test here yet turns into a failure. The split took the build jobs' draw on that pool from one runner to four, which is
 # the price of removing the 33-minute serial pole and is paid knowingly.
 #
 # Everything else moved because the arm64 hosted pool, not the 60-job cap, was the constraint: on
