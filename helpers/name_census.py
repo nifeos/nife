@@ -33,6 +33,10 @@ Name: provisional, minted 2026-10-18 (UTC) by lane maintainer/metrics-names-seri
 under `helpers/`, which `script/names` puts out of its own scope, so this paragraph is the record.
 It takes `name_` for the family beside `name_provenance.py`; `census` because it counts a whole
 tree, where `name_provenance` parses one block. calef has not named it.
+
+BUGS. `_document_block` still reads a document's block from a README paragraph opening
+`` `stem` Name: `` until the sweep after milestone 929 (helpers/document_name_migrate.py --apply)
+moves the last one into its document; then that path goes.
 """
 
 import collections
@@ -167,11 +171,11 @@ DOCUMENT_ROOTS = ("design", "notes", "briefs")
 def is_top_document(path):
     """True for a document directly under `design/`, `notes/` or `briefs/`, blocked or not.
 
-    Such a document's block is its own entry in that directory's README. It does not inherit the
-    README's directory block the way a subdirectory's documents do (§75), because that block is
-    about the word `notes` (or `design`, `briefs`), which `script/names` does not count. One with no
-    entry is `unblocked` rather than a `script/names --check` failure, held by the module-block
-    ratchet instead.
+    Such a document's block is a paragraph of its own opening `Name:` (`_document_block`). It does
+    not inherit the README's directory block the way a subdirectory's documents do (§75), because
+    that block is about the word `notes` (or `design`, `briefs`), which `script/names` does not
+    count. One with no block is `unblocked` rather than a `script/names --check` failure, held by
+    the module-block ratchet instead.
     """
     parts = path.split("/")
     return (len(parts) == 2 and parts[0] in DOCUMENT_ROOTS and parts[1].endswith(".md")
@@ -254,8 +258,36 @@ def _rust_records(paths, read, surface_files, problems):
     return out, unblocked
 
 
+def _document_block(path, stem, legacy, read, problems):
+    """`(text, legacy)`: a document's block, from its own `Name:` paragraph or its README's.
+
+    The document's own paragraph is the rule (calef, 2026-10-24 UTC). A README paragraph opening
+    `` `stem` Name: `` is the older home, still read until the sweep after milestone 929 moves the
+    last of them (helpers/document_name_migrate.py). Where both exist the document's is read first
+    and the README's follows it, so a refusal written only in the README still reaches
+    `script/names --refused`, and two statuses that disagree are a problem rather than a silent
+    winner. `(None, False)` when neither exists.
+    """
+    mine = name_provenance.document_block(read(path) or "")
+    old = legacy.get(stem)
+    if mine is None:
+        return old, old is not None
+    if old is None:
+        return mine, False
+    ours, theirs = name_provenance.classify(mine)[0], name_provenance.classify(old)[0]
+    if ours != theirs:
+        problems.append(f"document {stem} ({path}): its own block says {ours or 'nothing parseable'} "
+                        f"and its README paragraph says {theirs or 'nothing parseable'}; keep one, "
+                        f"in the document (helpers/document_name_migrate.py lists both)")
+    return f"{mine} {old}", True
+
+
 def _document_records(markdown, pathset, read, problems):
-    """Directories and documents under design/, notes/ and briefs/: `(records, missing, unblocked)`."""
+    """Directories and documents under design/, notes/ and briefs/: `(records, missing, unblocked)`.
+
+    A record is `(kind, name, path, block, what, legacy)`, `legacy` True when any of the block was
+    read from a README paragraph rather than from the document.
+    """
     out, missing, unblocked = [], 0, []
     for root in DOCUMENT_ROOTS:
         _own, stems, _loose = name_provenance.markdown_blocks(read(root + "/README.md") or "")
@@ -263,11 +295,11 @@ def _document_records(markdown, pathset, read, problems):
             if os.path.dirname(path) != root or not is_top_document(path):
                 continue
             stem = os.path.basename(path)[:-3]
-            block = stems.get(stem)
+            block, legacy = _document_block(path, stem, stems, read, problems)
             if block is None:
                 unblocked.append(path)
             else:
-                out.append(("document", stem, path, block, "document"))
+                out.append(("document", stem, path, block, "document", legacy))
     for d in sorted({os.path.dirname(p) for p in markdown} - {"design", "notes", "briefs"}):
         if _RECORD_STEM.match(os.path.basename(d)):
             continue
@@ -297,11 +329,14 @@ def _document_records(markdown, pathset, read, problems):
             problems.append(f"directory {d}/: {readme} carries no paragraph opening `Name:`")
             missing += 1 + len(names)
             continue
-        out.append(("directory", d + "/", readme, own, "directory"))
+        out.append(("directory", d + "/", readme, own, "directory", False))
         if roadmap:
             continue
         for stem in names:
-            out.append(("document", stem, f"{d}/{stem}.md", stems.get(stem, own), "document"))
+            path = f"{d}/{stem}.md"
+            block, legacy = _document_block(path, stem, stems, read, problems)
+            out.append(("document", stem, path, own if block is None else block, "document",
+                        legacy))
         all_stems = {os.path.basename(p)[:-3] for p in markdown if os.path.dirname(p) == d}
         for stem in sorted(set(stems) - all_stems):
             problems.append(f"directory {d}/: {readme} records `{stem}`, which is not a file here")
@@ -331,7 +366,7 @@ def census(paths, read, british=None):
     docs, missing, unblocked_docs = _document_records(markdown, pathset, read, problems)
     rust, unblocked = _rust_records(paths, read, surface_files, problems)
     unblocked += unblocked_docs
-    for kind, name, path, text, what in rust + docs:
+    for kind, name, path, text, what, legacy in [r + (False,) for r in rust] + docs:
         status, date, refused, problem = name_provenance.classify(text)
         if problem is not None:
             problems.append(f"{what} {name} ({path}): the block must start `ratified <date>`, "
@@ -340,7 +375,7 @@ def census(paths, read, british=None):
             missing += 1
             continue
         records.append({"kind": kind, "name": name, "path": path, "status": status, "date": date,
-                        "refused": refused, "text": text, "what": what})
+                        "refused": refused, "text": text, "what": what, "legacy": legacy})
 
     for kind, name, path, prefix in surfaces:
         source = read(path)

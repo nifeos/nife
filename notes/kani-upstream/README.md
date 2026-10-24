@@ -25,6 +25,4 @@ It waits on a maintainer approving the fork's CI run, then on re-review. The com
 - [pr-4913-followups.patch](pr-4913-followups.patch): three small review findings, in #4913 as
   `450cbc2`.
 
-- `pull-request-4913-before-ready` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pr-4913-before-ready`.
-- `pull-request-4913-review` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pr-4913-review`.
 - `pull-request-4913-body` Name: ratified 2026-10-18 (calef, "Approve all"). Refused `pull-request`.

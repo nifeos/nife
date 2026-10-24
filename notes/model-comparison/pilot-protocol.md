@@ -1,6 +1,6 @@
 # Pilot protocol: Opus 5 against Opus 5.5 on three tasks from 2026-09-24
 
-*Name: provisional (2026-09-24). Committed before any run. Nothing below changes after the first
+*Name: ratified 2026-10-18 (calef, "Approve all"). Refused `protocol`. Committed before any run. Nothing below changes after the first
 run starts; a deviation is recorded in the results note as a deviation.*
 
 ## What is being compared

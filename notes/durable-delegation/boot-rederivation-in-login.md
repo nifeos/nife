@@ -11,7 +11,7 @@ boot-time re-derivation privilege) gives to a separate, boot-only process. This 
 written to the seven questions in `CLAUDE.md`. Counts are from the code at `c457dee32`, 2026-09-27
 (UTC), unless a line says otherwise.
 
-Name: the file's provisional, minted by milestone 152's lane on 2026-09-27.
+Name: provisional, minted by milestone 152's lane on 2026-09-27.
 
 ## The options
 
