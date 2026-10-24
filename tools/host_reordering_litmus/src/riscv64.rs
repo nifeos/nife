@@ -3,6 +3,8 @@
 //! With no firmware QEMU starts every hart at the image's entry in M-mode with its hart id in
 //! `a0`, so there is nothing to start: [`start_secondaries`] is empty. M-mode runs on physical
 //! addresses, which RISC-V's main-memory PMA makes coherent, cacheable memory.
+//!
+//! Name: provisional, minted 2026-10-24 (UTC) by maintainer/measure-arm64-host-reordering.
 
 use core::arch::{asm, global_asm};
 
@@ -21,27 +23,27 @@ _start:
 "#
 );
 
-pub fn start_secondaries(_cores: usize) {}
+pub(crate) fn start_secondaries(_cores: usize) {}
 
-pub fn putc(c: u8) {
+pub(crate) fn putc(c: u8) {
     // SAFETY: the NS16550 transmit register of QEMU's virt machine.
     unsafe { core::ptr::write_volatile(0x1000_0000 as *mut u8, c) }
 }
 
 /// The `time` CSR, in ticks of [`ticks_per_second`].
-pub fn ticks() -> u64 {
+pub(crate) fn ticks() -> u64 {
     let t: u64;
     // SAFETY: reads the time CSR, which QEMU's virt backs with the ACLINT's mtime.
     unsafe { asm!("rdtime {}", out(reg) t, options(nostack, nomem)) }
     t
 }
 
-pub fn ticks_per_second() -> u64 {
+pub(crate) fn ticks_per_second() -> u64 {
     10_000_000
 }
 
 /// Ends QEMU through the SiFive test device at 0x10_0000.
-pub fn exit(code: u32) -> ! {
+pub(crate) fn exit(code: u32) -> ! {
     let value = if code == 0 {
         0x5555
     } else {

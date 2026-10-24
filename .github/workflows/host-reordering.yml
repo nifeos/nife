@@ -1,5 +1,9 @@
 name: host-reordering
 
+# Observed failing: 2026-10-24, by script: a workflow new on this branch cannot cite the run its own
+#   first push raises (notes/observed-failing.md). Its arm is a measurement rather than a gate; the
+#   runs it fired, and what each counted, are in notes/benchmarks/host-reordering-under-tcg.md.
+
 # **Temporary, and scoped to one lane's branch** (maintainer/measure-arm64-host-reordering,
 # 2026-10-24 UTC). It measures whether an aarch64 CI host shows a guest memory reorderings an
 # x86_64 host does not: the litmus guest in tools/host_reordering_litmus, then the kernel suite's

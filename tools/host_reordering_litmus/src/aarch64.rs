@@ -3,6 +3,8 @@
 //! Every core turns the MMU on with one shared identity map before it runs Rust, so the litmus
 //! accesses are to Normal, inner-shareable, write-back memory, the type the kernel's own data
 //! has. The low gigabyte (the PL011) is Device-nGnRnE.
+//!
+//! Name: provisional, minted 2026-10-24 (UTC) by maintainer/measure-arm64-host-reordering.
 
 use core::arch::{asm, global_asm};
 
@@ -62,7 +64,7 @@ unsafe extern "C" {
 
 /// Starts cores `1..cores` through PSCI CPU_ON, which QEMU's `virt` serves over HVC when it boots
 /// a kernel at EL1 without firmware.
-pub fn start_secondaries(cores: usize) {
+pub(crate) fn start_secondaries(cores: usize) {
     for id in 1..cores {
         let mut ret: i64 = 0xC400_0003;
         // SAFETY: PSCI CPU_ON with a valid entry point and the core index as its context id; the
@@ -84,20 +86,20 @@ pub fn start_secondaries(cores: usize) {
     }
 }
 
-pub fn putc(c: u8) {
+pub(crate) fn putc(c: u8) {
     // SAFETY: the PL011 data register of QEMU's virt machine, identity-mapped as Device memory.
     unsafe { core::ptr::write_volatile(0x0900_0000 as *mut u32, c as u32) }
 }
 
 /// The virtual counter, in ticks of [`ticks_per_second`].
-pub fn ticks() -> u64 {
+pub(crate) fn ticks() -> u64 {
     let t: u64;
     // SAFETY: reads CNTVCT_EL0, which EL1 may always read.
     unsafe { asm!("isb", "mrs {}, cntvct_el0", out(reg) t, options(nostack, nomem)) }
     t
 }
 
-pub fn ticks_per_second() -> u64 {
+pub(crate) fn ticks_per_second() -> u64 {
     let f: u64;
     // SAFETY: reads CNTFRQ_EL0.
     unsafe { asm!("mrs {}, cntfrq_el0", out(reg) f, options(nostack, nomem)) }
@@ -105,7 +107,7 @@ pub fn ticks_per_second() -> u64 {
 }
 
 /// Ends QEMU through semihosting SYS_EXIT (`-semihosting` must be on the command line).
-pub fn exit(code: u32) -> ! {
+pub(crate) fn exit(code: u32) -> ! {
     let block: [u64; 2] = [0x20026, code as u64];
     // SAFETY: semihosting SYS_EXIT with a parameter block that lives across the call.
     unsafe {
