@@ -18,6 +18,7 @@ behind each section of the main page.
 - [`rebooting-soak-procedure.md`](rebooting-soak-procedure.md): the procedure and the outcome table.
 - [`boot-lottery.md`](boot-lottery.md): the rebooting soak's draws so far, and how many remain.
 - [`how-long-to-run-it.md`](how-long-to-run-it.md): the survey behind "no duration is prescribed".
+- [`supervisor.md`](supervisor.md): the kernel supervisor's constants and orderings.
 - [`limitations.md`](limitations.md): the BUGS list in full.
 
 *Name: provisional: the directory `notes/soak/` and the stem

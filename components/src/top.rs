@@ -1,32 +1,13 @@
 //! **`top`: the domain `ps` lists, ordered by what it is costing** (§150 (how does a thread's CPU
-//! time reach userspace?), notes/process-view.md). Walk one supervision domain twice, once for run
-//! states and once for CPU time, rank by the second, and report on one stream and complain on the
-//! other. The walk and table are `crates/ps`, the summary `crates/top`; this is the syscalls and
-//! the two sinks.
-//!
-//! | slot | what | why |
-//! |---|---|---|
-//! | 0 | the output sink, `WRITE` | where the summary and the table go |
-//! | 7 | the process domain, `ENUMERATE` | the supervision endpoint whose members it may **name** |
-//! | 8 | the diagnostics sink, `WRITE` | where a refusal goes, so `>` cannot swallow it |
-//! | 11 | the machine statistics page, `READ`, mapped read-only | the machine line under the summary, which is what became of `tload` (§225 (`free` sees the machine and your share)) |
-//!
-//! `ps`'s authority plus one read-only page: nothing here can name a process outside the domain it
-//! was handed. No clock: uptime is the ambient monotonic counter. CPU time is continuous, so two
-//! runs show how much work another thread did between them; §150 accepted that, because
-//! `ENUMERATE` is already the right to learn what exists, and the leak stays inside the domain.
-//!
-//! ```text
-//! $ top
-//! up 00:01:12, 3 threads: 1 running, 0 ready, 1 blocked, 1 dead
-//! machine: 2 runnable on 4 cores, 7% busy since boot
-//!          TID  STATE     TIME(ms)
-//!            9  running        310
-//! 4294967302  dead             150
-//!            5  blocked         20
-//! $ top        top: this process holds no process-domain capability
-//! ```
-//!
+//! time reach userspace?)). It walks one supervision domain twice, for run states and for CPU time,
+//! ranks by the second, reports on [`REPORT`] and complains on [`DIAG_SLOT`]. The walk and table
+//! are `crates/ps`, the summary `crates/top`; this is the syscalls and the two sinks. It holds
+//! `ps`'s authority plus one read-only page (slot 11, the machine statistics page, for the machine
+//! line that is what became of `tload`, §225 (`free` sees the machine and your share)), so it can
+//! name no process outside its domain. No clock: uptime is the ambient monotonic counter. CPU time
+//! is continuous, so two runs show another thread's work between them; §150 accepted that, because
+//! `ENUMERATE` is already the right to learn what exists. See notes/process-view/top.md.
+
 //! # BUGS
 //!
 //! - It does not refresh: an interval spin would be charged to this thread by the counter the table
@@ -52,11 +33,12 @@ use user_mode_runtime::{exit, is_granted, monotonic_nanos, send, survey, survey_
 /// output lands.
 const REPORT: u64 = 0;
 
-/// **The process domain**: a supervision endpoint with `ENUMERATE`. Everything this program can see
-/// comes through here, and both walks use it.
+/// **The process domain** (slot 7): a supervision endpoint with `ENUMERATE`, whose members this
+/// program may name. Everything it can see comes through here, and both walks use it.
 const DOMAIN_SLOT: u64 = grant_plan::DOMAIN_SLOT;
 
-/// The declared second stream (DECISIONS §67): complaints about the run, never about the domain.
+/// The declared second stream (slot 8, DECISIONS §67 (a program's second stream is a declaration,
+/// not a number)): complaints about the run, never about the domain, so `>` cannot swallow them.
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 
 /// Whether this process was granted a second stream, decided once in [`_start`].
@@ -66,9 +48,8 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     HAS_DIAG.store(is_granted(DIAG_SLOT), Ordering::Relaxed);
 
-    // **Walk first, complain second, print third** (DECISIONS §67 (a program's second stream is a declaration, not a number)), for the reason `ps` gives: a
-    // survey cannot know its complaints up front, and the reader of the second stream drains it to
-    // end-of-stream before it reads a byte of the first.
+    // Walk first, complain second, print third (§67): a survey cannot know its complaints up front,
+    // and the second stream's reader drains it to end-of-stream before it reads the first.
     let mut rows = [ps::Row::default(); ps::MAX_ROWS];
     let mut found = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
     found.join_cpu_time(&mut |cursor| {
@@ -80,9 +61,8 @@ pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));
     diag_end();
 
-    // The summary goes out only when the table does. A summary above a refusal would be a count of
-    // rows this program is about to decline to print, which is the "plausible listing of nothing"
-    // `ps::Survey::write_report` refuses for the same reason.
+    // The summary goes out only when the table does: above a refusal it would count rows about to
+    // be declined, the "plausible listing of nothing" `ps::Survey::write_report` refuses.
     if found.is_complete() && !found.rows().is_empty() {
         top::write_summary(found.rows(), monotonic_nanos(), &mut |bytes| {
             write_on(REPORT, bytes);

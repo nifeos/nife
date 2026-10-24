@@ -1,21 +1,16 @@
 //! **Synchronous IPC between kernel threads**: the round trip, a relay through a third thread,
 //! `CALL`/`REPLY` and a broker.
 //!
-//! Cut out of `bench.rs` unchanged by lane `maintainer/last-three-over-2000`, which left the
-//! parent an index (§282 (when a file is split, the parent becomes an index)) and under §266 (a
-//! Rust source file stays under 2,000 lines).
-//!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
-/// **Synchronous IPC round trip, the classic microkernel number.** A server loops
-/// receive-then-send; the client times send-then-receive. One iteration is two rendezvous, two
-/// mailbox copies, two wakes, two switches.
+/// Synchronous IPC round trip between two kernel threads: two rendezvous, two copies, two wakes and
+/// two switches per iteration.
 ///
-/// It is the receiver-first mode: every send finds its receiver already waiting, the path a server
-/// loop lives on. The window's opening tick selects it, and the run fails if any send blocks.
+/// It measures the receiver-first mode, which the window's opening tick selects; the run fails if
+/// any send blocks.
 pub(super) fn ipc_rtt() {
     let request = sched::create_rendezvous();
     let reply = sched::create_rendezvous();
@@ -51,21 +46,11 @@ pub(super) fn ipc_rtt() {
     sched::ipc_send(request, [u64::MAX, 0, 0]); // release the server
 }
 
-/// **The confined-server tax: a request routed through a server that fans out to a backend.** This
-/// is the microkernel architecture's per-request cost that a monolith does not pay, and the topology
-/// both real userspace servers use: the FS server CALLs the block server (`client -> fs -> blk -> fs
-/// -> client`), `net_stack` CALLs the NIC driver (`client -> net_stack -> driver -> net_stack -> client`). Each
-/// iteration here is that two-hop shape: the client sends to a relay, the relay forwards to a backend
-/// and waits, the backend replies, the relay replies to the client. Two rendezvous become four, two
-/// context switches become four.
+/// The confined-server tax: a request routed through a relay that calls a backend, the shape the
+/// FS server and `net_stack` use. Four rendezvous and four switches per iteration.
 ///
-/// Read it against `ipc_rtt` above (the one-hop client<->server round trip): the **difference** is
-/// what one confined intermediary that delegates to a backend costs, the "server tax" a skeptic asks
-/// about, isolated and deterministic. It is on the icount baseline for exactly that reason. The real
-/// servers' end-to-end numbers are elsewhere and cannot be gated: `fs_read` (below) is device-latency
-/// dominated (~200 us/block under HVF swamps this few-hundred-tick tax), and `net_stack`'s path is DHCP- and
-/// timer-driven, neither deterministic under `-icount`. So this kernel-side topology bench is how the
-/// server tax gets a gated regression number; see notes/benchmarks.md.
+/// Its difference from [`ipc_rtt`] is what one confined intermediary costs, deterministic and on
+/// the icount baseline. See notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn relay_rtt() {
     let cl_req = sched::create_rendezvous(); // client -> relay
     let cl_reply = sched::create_rendezvous(); // relay -> client
@@ -84,8 +69,7 @@ pub(super) fn relay_rtt() {
     })
     .expect("bench: no relay backend");
 
-    // The relay: the confined intermediary. For each client request it does a full round trip to the
-    // backend, then answers the client. On the sentinel it releases the backend and exits too.
+    // The relay: a full round trip to the backend per request; on the sentinel, release it too.
     sched::spawn(move || {
         loop {
             let m = sched::ipc_receive(cl_req);
@@ -150,24 +134,12 @@ pub(super) fn call_reply() {
     sched::ipc_send(ep, [u64::MAX, 0, 0]);
 }
 
-/// **What a queue broker costs when both ends are up** (milestone 23, DECISIONS §41).
+/// What a queue broker costs when both ends are up, §41 (the endpoint is the broker).
 ///
-/// Milestone 23's latency ladder has two rungs built, and the rule that governs where each is used
-/// is *opt-in per channel, never the default*. This benchmark is why that rule is a rule.
-///
-/// - **The default rung has no benchmark of its own, because it has no cost of its own.** A client
-///   holds a capability to a stable endpoint and whoever is parked in `RECEIVE_CAP` on it answers; a
-///   swap changes who that is. No process stands in the data path, so the steady state *is*
-///   [`call_reply`] above, instruction for instruction, and the swap adds nothing to it. That is
-///   the number to quote for milestone 23's flagship.
-/// - **This is the opt-in rung**: `broker` interposed, so a producer never blocks on an absent
-///   consumer. Read it against `call_reply`, which is deliberately the same client and the same
-///   backend with nothing in between: the **difference** is the whole tax, and it is paid on every
-///   request in the steady state, not only during a swap.
-///
-/// The topology is the CALL/reply idiom rather than `relay_rtt`'s SEND/RECEIVE pairs, because that is
-/// what the broker actually speaks: the broker serves its front endpoint with `RECEIVE_CAP`, holds the
-/// client's one-shot Reply capability while it CALLs the backend, and answers through it.
+/// The broker serves its front endpoint with `RECEIVE_CAP`, holds the client's one-shot Reply
+/// capability while it CALLs the backend, and answers through it. Its difference from
+/// [`call_reply`], the same client and backend with nothing between, is the opt-in rung's whole
+/// tax. See notes/benchmarks/kernel-bench-harness.md.
 pub(super) fn broker_rtt() {
     let front = sched::create_rendezvous(); // client -> broker
     let back = sched::create_rendezvous(); // broker -> backend
@@ -185,8 +157,7 @@ pub(super) fn broker_rtt() {
     })
     .expect("bench: no broker backend");
 
-    // The broker: pass-through. Both ends are up, so it buffers nothing; it forwards the request and
-    // hands the backend's answer straight back.
+    // The broker: both ends are up, so it buffers nothing.
     sched::spawn(move || {
         loop {
             let m = sched::ipc_receive_cap(front);

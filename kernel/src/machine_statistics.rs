@@ -1,34 +1,16 @@
-//! **The machine statistics page, the kernel's half** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and your share) part 2).
+//! The machine statistics page, the kernel's half: the writes to the frame `free`, `vmstat` and
+//! `top` read, for §225 (`free` sees the machine and your share) part 2.
 //!
-//! One frame holding the machine-wide counters `free`, `vmstat` and `top` read: the free frame
-//! count, and per core the busy and idle ticks, the context switches, the interrupts and the run
-//! queue. The layout is `crates/machine_statistics_contract`'s; this module is the writes.
-//!
-//! **The counters live in the page itself**, so there is no copy and no refresh to schedule. Each
-//! per-core word is written only by its own core (the tick and the cross-core interrupt run on
-//! the core they count, and the tick publishes the switch count the core keeps in its own
-//! `PerCpu` block), and each core's words are one cache line
-//! of their own, so nothing here contends. The frame count is written under the allocator's own
-//! lock, by whoever changed it.
-//!
-//! **Before [`publish`] the writes land in a static sink** rather than behind a branch: the page
-//! pointer starts at the sink, so a writer pays one load and one add whether or not the page
-//! exists yet, and never a test. Nothing counted before `publish` reaches the page; `publish`
-//! runs before the scheduler starts, so that is the boot path's own few interrupts at most. The
-//! switch count is not affected: it lives in `PerCpu` and the tick copies the whole of it.
-//!
-//! The capability to the page is minted once, for the progenitor, with `READ` and `GRANT`
-//! (`kernel::user::boot_progenitor`). Nothing else in the system can name the frame.
-//!
+//! Each per-core word is written only by its own core, on a cache line of its own; the frame count
+//! under the allocator's lock. Before [`publish`] the writes land in a static sink, so a writer
+//! never tests whether the page exists. The layout is `crates/machine_statistics_contract`'s. See
+//! notes/machine-statistics.md.
+
 //! # BUGS
-//!
-//! - A counter written before [`publish`] is lost, by the design above.
-//! - The switch count on the page is up to one tick old, because the tick is what publishes it
-//!   (milestone 629 (the context-switch statistic stops costing the switch path)). A core that stops ticking leaves its last copy, like `RUNNABLE`.
-//! - Interrupts are counted where they reach the scheduler: the tick, a cross-core poke and a
-//!   device interrupt routed to a driver. A spurious or unrouted interrupt is not counted.
-//! - The soak build's timer-driven `irq_notify` counts as a device interrupt, because it takes the
-//!   same path on purpose (`kernel/src/soak.rs`).
+//! - A counter written before [`publish`] is lost.
+//! - The switch count on the page is up to one tick old.
+//! - A spurious or unrouted interrupt is not counted.
+//! - The soak build's timer-driven `irq_notify` counts as a device interrupt.
 //!
 //! Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 
@@ -66,9 +48,9 @@ fn mine(offset: usize) -> &'static AtomicU64 {
     at(word::cpu(cpu::id()) + offset)
 }
 
-/// **Make the page**: a zeroed frame, the header, the current frame counts, and from here on every
-/// counter lands in it. Called once, at boot, after the frame allocator and before the scheduler.
-/// Returns the frame's physical address.
+/// Make the page: a zeroed frame, the header and the current frame counts, after which every
+/// counter lands in it. Called once, after the frame allocator and before the scheduler. Returns
+/// the frame's physical address.
 pub fn publish() -> u64 {
     let frame = crate::memory::alloc_zeroed().expect("no frame for the machine statistics page");
     let phys = frame.addr();
@@ -107,9 +89,8 @@ pub fn interrupt() {
     mine(word::INTERRUPTS).fetch_add(1, Ordering::Relaxed);
 }
 
-/// This core took a tick with `idle` running or not, and `runnable` threads were waiting on it, and
-/// it has made `switches` context switches since boot (`cpu::PerCpu::switches`, which the switch
-/// counts and this publishes; milestone 629).
+/// This core took a tick with `idle` running or not, `runnable` threads waiting, and `switches`
+/// context switches since boot (`cpu::PerCpu::switches`, which this publishes).
 #[inline]
 pub(crate) fn tick(switches: u64, idle: bool, runnable: u64) {
     mine(word::ONLINE).store(1, Ordering::Relaxed);

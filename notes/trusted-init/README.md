@@ -11,6 +11,8 @@ since. These files carry the phases in full.
   milestone 96 (one init: the spawn service written twice).
 - [`chain-past-the-progenitor.md`](chain-past-the-progenitor.md): milestone 104 (the measurement continues past init), the progenitor
   measuring what it loads, with its BUGS and what is still not covered.
+- [`measured-boot.md`](measured-boot.md): the design behind `crates/measured_boot`: one hash on
+  both sides, a digest's type and text, the manifest, and the loader's verdict.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*

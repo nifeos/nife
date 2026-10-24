@@ -2,12 +2,9 @@
 //! helpers only they use. [`_start`](crate::entry::_start) dispatches them by role number.
 //!
 //! **This is a temporary home** (calef, 2026-10-11 UTC, on §273's first fork: "Proceed with
-//! both"). Pull request #1922 gives the shell a non-interactive script mode, turns these roles
-//! into scripts the shipping shell runs, and deletes this file and the role numbers. Until
-//! then the shipping binary carries them, as it did before the split.
-//!
-//! Moved whole out of `components/src/swish.rs` by milestone 844 (the shell program is split
-//! along its seams), as §273 (the shell program becomes a directory of modules) lays out.
+//! both"). Milestone 885 (the shell's test roles become scripts the shipping shell runs) deletes
+//! this file and the role numbers; until then the shipping binary carries them. Each script's
+//! design is in `notes/swish-language/witness.md`.
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -41,14 +38,9 @@ impl Nav {
 
 /// **A shell driven by a script instead of a keyboard, running real pipelines** (milestone 50).
 ///
-/// Every line below goes through [`dispatch`], which is the function the prompt calls, so what is
-/// under test is the shell rather than a reimplementation of it. Everything it prints goes out over
-/// the terminal contract to whoever holds the other end, which in the guest test is the kernel; the
-/// transcript it produces is the assertion.
-///
-/// The lines are chosen so that the answers are checkable against each other rather than against
-/// magic numbers. `date` and `date | wc` are the same binary sent to two destinations, and the
-/// second one's byte count has to be the first one's length or the indifference claim is false.
+/// Every line goes through [`dispatch`], the prompt's own function, and the transcript printed over
+/// the terminal contract is the assertion. The answers check each other: `date | wc` has to count
+/// `date`'s length. See `notes/swish-language/witness.md`.
 pub(super) fn piping() -> ! {
     let mut nav = Nav::empty();
     for line in [
@@ -76,27 +68,14 @@ pub(super) fn piping() -> ! {
 }
 
 /// The last thing [`piping`] prints, so a reader knows the transcript is complete rather than
-/// having to guess from a quiet rendezvous. Must match `kernel::user::pipeline_tests`.
+/// having to guess from a quiet rendezvous. Must match `system_tests::user::pipeline_tests`.
 const PIPELINE_DONE: &[u8] = b"== pipelines done\n";
 
 /// **A scripted shell that holds a filesystem as well as a spawn channel** (milestone 50).
 ///
-/// The same wiring as [`piping`] plus one capability, and that one capability is the whole
-/// difference between a `>` that is refused and a `>` that writes a file. Every line goes through
-/// [`dispatch`], so what is under test is the prompt.
-///
-/// The lines are ordered so the answers check each other rather than constants, which is the shape
-/// [`piping`]'s script has and for the same reason:
-///
-/// - `ls > out.txt` writes a listing into a file; the `ls` after it prints **the same listing**
-///   (nothing between them changes the directory), and `wc < out.txt` has to agree with what was
-///   printed. One builtin, two destinations.
-/// - `wc out.txt` is the line above it with the `<` left out, and it has to give the same three
-///   numbers: naming a file to a program that declares an input is the operator, unwritten.
-/// - `date` and `date > date.txt` are one unmodified program sent two places, and `wc < date.txt`
-///   has to report the length of what `date` printed.
-/// - The last two files are **the same two commands with one operator changed**, so what `>>` does
-///   is measured against what `>` does rather than against a constant.
+/// [`piping`]'s wiring plus one capability, the whole difference between a `>` that is refused and
+/// a `>` that writes a file. Every line goes through [`dispatch`], and the answers check each other
+/// rather than constants. See `notes/swish-language/witness.md`, "The redirecting script".
 pub(super) fn redirecting(rights: u64) -> ! {
     let mut nav = Nav::rooted_at(DIR_TERMINAL, rights);
     for line in [
@@ -107,11 +86,8 @@ pub(super) fn redirecting(rights: u64) -> ! {
         // The same designation with the operator left out (milestone 31's input operand). It has
         // to answer what the line above it answered, or one of the two opened something else.
         b"wc out.txt",
-        // **And the same designation inside a pipeline**, which is the line that used to answer
-        // nothing at all: the operand is resolved by the planner, and `pipeline` used to wire the
-        // head's input off the line instead of off the plan, so the stage was spawned with an empty
-        // input slot, where a `receive` answers `NoSuchSlot` rather than blocking: the stage counted
-        // an empty stream and said so. Its answer has to be the length of the line above it.
+        // The same designation inside a pipeline: the head's input is wired off the plan, and the
+        // answer has to be the length of the line above it.
         b"wc out.txt | wc",
         // The same unmodified `date`, twice, to two destinations.
         b"date",
@@ -138,14 +114,10 @@ pub(super) fn redirecting(rights: u64) -> ! {
         b"wc out.txt 2> err.txt",
         // ---- milestone 67's grammar, on this same shell (notes/swish-language.md) ----
         //
-        // **One witness rather than a seventh**, and that is a memory decision rather than a
-        // filing one: every scripted shell in this suite is a live process whose frames are never
-        // reclaimed, and adding one more put `time_tests` over the frame pool intermittently
-        // (`refused to load a user program: Unmappable(OutOfPageFrames)`). The wiring these lines need
-        // is this wiring exactly, so a second copy of it bought nothing but the failure.
+        // On this shell, not a seventh: another live scripted shell puts `time_tests` over the
+        // frame pool (`notes/swish-language/witness.md`, "One witness, not a seventh").
         //
-        // The correctness gap quoting closed: a name with a space in it, written and read back.
-        // Before milestone 67 the `>` would have written to a file called `"my`.
+        // A name with a space in it, written and read back.
         b"echo hello world > \"my notes.txt\"",
         b"wc < \"my notes.txt\"",
         // The same designation with the operator left out, which has to agree with the line above
@@ -183,23 +155,15 @@ pub(super) fn redirecting(rights: u64) -> ! {
     exit();
 }
 
-/// [`PIPELINE_DONE`]'s twin for [`redirecting`]. Must match `kernel::user::redirection_tests`.
+/// [`PIPELINE_DONE`]'s twin for [`redirecting`]. Must match `system_tests::user::redirection_tests`.
 const REDIRECT_DONE: &[u8] = b"== redirections done\n";
 
 /// **A scripted shell that times what it runs** (milestone 86).
 ///
-/// [`piping`]'s wiring plus at most one capability, and that one capability is the whole difference
-/// between a `time` that reports a duration and a `time` that refuses. The same script runs against
-/// three clock states (a published page, a blank page, no page at all), so the refusals are reached
-/// by changing a capability table rather than by a branch anybody wrote for the test.
-///
-/// The lines check each other rather than constants, which is [`redirecting`]'s shape:
-///
-/// - `least_authority_demo 3` and `time least_authority_demo 3` are the same command run twice, so the answer has to be the same
-///   both times. That is the "what you time is what you run" claim, made where it can fail.
-/// - `time echo hello` times a **builtin**, which spawns nothing: the duration is real and there is
-///   no process anywhere in it.
-/// - `time` alone names the third refusal, which is about the line and not about a clock.
+/// [`piping`]'s wiring plus at most one capability, the clock page. The same script runs against a
+/// published page, a blank page and no page, so each refusal comes from the capability table and
+/// not a test branch. The lines check each other. See `notes/swish-language/witness.md`, "The
+/// timing script".
 pub(super) fn timing() -> ! {
     let mut nav = Nav::empty();
     for line in [
@@ -222,7 +186,7 @@ pub(super) fn timing() -> ! {
     exit();
 }
 
-/// [`PIPELINE_DONE`]'s twin for [`timing`]. Must match `kernel::user::time_tests`.
+/// [`PIPELINE_DONE`]'s twin for [`timing`]. Must match `system_tests::user::time_tests`.
 const TIMING_DONE: &[u8] = b"== timings done\n";
 
 // ---- the navigating witness (milestone 47) ----
@@ -233,14 +197,10 @@ const REPORT: u64 = 1;
 /// **A shell driven by a script instead of a keyboard**, so the builtins above can be gated on both
 /// ISAs (DECISIONS §19) against a real subtree served by a real `fs_subtree_caretaker`.
 ///
-/// It is **told nothing about which subtree it was rooted in**, beyond a run index that keeps the
-/// names it creates distinct across runs sharing one image. It tries to name one file that exists
-/// only in `sub` and one that exists only in `other`, and reports which it reached. So "two shells
-/// with different roots cannot name each other's files" is read off the *pair* of reports rather
-/// than claimed by either, and the two runs are each other's control.
-///
-/// The lines below are literally command lines, parsed by `grant_plan::parse` and executed by
-/// [`builtin`], which is the same path the prompt takes.
+/// `spec` carries the rights and a run index, nothing about which subtree it was rooted in. It
+/// reports which of `sub`'s and `other`'s files it reached, so confinement is read off the pair of
+/// runs. Lines go through [`builtin`], the prompt's path. See `notes/swish-language/witness.md`,
+/// "The navigating script".
 pub(super) fn navigate(spec: u64) -> ! {
     use filesystem_fixture::{VERDICT, navscape as nb, tree};
     let run = filesystem_contract::grant::spec_len(spec) as u64;
@@ -262,13 +222,8 @@ pub(super) fn navigate(spec: u64) -> ! {
         v |= nb::MADE_DIR;
     }
 
-    // 7b. **`cd /` is `pwd`'s output typed back**, which is the round trip the syntax exists for.
-    //     It descends into the directory step 7 just made and comes back with a leading slash, and
-    //     the middle check is what stops a shell that never moved from passing by accident. The
-    //     directory has to be one this shell made, because the two subtrees this script runs in
-    //     are not the same shape: only one of them ships a child directory, which is why an
-    //     earlier draft of this step passed for one shell and silently proved nothing for the
-    //     other.
+    // 7b. `cd /` is `pwd`'s output typed back. The middle check stops a shell that never moved.
+    //     The directory must be one this shell made: only one of the two subtrees ships a child.
     if matches!(
         run_line(&mut nav, line(&mut cmd, b"cd ", &dirname)),
         Some(Say::Nothing)
@@ -283,29 +238,19 @@ pub(super) fn navigate(spec: u64) -> ! {
 
     probe_directory_removal(&mut nav, run, &dirname, &mut cmd, &mut v);
 
-    // 11a. **`touch`, the two-fold contract.** First on a name that is not there: the create half.
-    //      Then, once it holds a body, a second `touch` on the same name: the no-op half. A
-    //      `touch` that truncated what it found would satisfy the first check and fail this one,
-    //      which is why the two are chained rather than asked as one question.
+    // 11a. `touch`, the two-fold contract (see `touch_twice`).
     let touched = run_name(tree::NAV_TOUCH, run);
     touch_twice(&mut nav, &touched, &mut cmd, &mut v);
 
-    // 11a-bis. **`touch`'s mtime half** (milestone 47's mtime lane, DECISIONS §112), on the same
-    //      name `touch_twice` just proved the create half against: a bare `touch` observed through
-    //      `GETMTIME`, then `touch -t 2030-01-01T00:00:00Z` observed to land on exactly that
-    //      instant rather than "now" again.
+    // 11a-bis. `touch`'s mtime half, on the name `touch_twice` just made.
     touch_mtime_probes(&mut nav, &touched, &mut v);
 
-    // 11a-ter. **`WRITE` without `SETTIME`, over the real wire.** A fresh directory this shell
-    //      mints with `MKDIR`, deliberately attenuated one bit narrower than everything else in
-    //      this script: bare `touch` must still work through it, and `touch -t` must not.
+    // 11a-ter. `WRITE` without `SETTIME`, over the real wire.
     let narrow_dir = run_name(tree::NAV_TOUCH_NO_SETTIME, run);
     touch_mtime_without_settime(&nav, name_of(&narrow_dir), &mut v);
 
-    // 11. And neither removal can reach out of the root, for the reason `cd` cannot: `..` is a pop
-    //     of a stack that has nothing above the root in it, so nothing is ever sent. The name is
-    //     refused where it is parsed, which is why this goes through the path resolver rather than
-    //     through `removed`.
+    // 11. Neither removal reaches out of the root. Through the path resolver, not `removed`,
+    //     because `..` is refused where it is parsed and nothing is sent.
     let reached_out = nav.act(b"../motd", |nav, t, handle, name| {
         if nav.name_call_in(t, fs::UNLINK, handle, name, 0) < 0 {
             Say::Failed(0)
@@ -437,14 +382,8 @@ fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
         *v |= nb::NAVIGATION_FAILED;
     }
 
-    // 9. **`UNLINK` while still holding the file.** The name goes; the object does not. This is the
-    //    unlink/revoke split as a measurement rather than a claim.
-    //
-    //    Sent through the contract rather than typed as a command line, because **`rm` is a program
-    //    now** (milestone 47's rmdir lane) and this witness holds no spawn channel: it is confined
-    //    to a subtree by a `fs_subtree_caretaker` and nothing in its capability table names a progenitor. So what
-    //    is under test here is the verb `rm` sends, at the far end of the same caretaker chain the
-    //    program runs behind, and `components/src/rm.rs`'s own guest test is what covers the program.
+    // 9. `UNLINK` while still holding the file: the name goes, the object does not. Sent as the
+    //    verb `rm` sends, because `rm` is a program and this witness holds no spawn channel.
     if removed(nav, fs::UNLINK, name_of(&doomed)) {
         *v |= nb::UNLINKED;
         let mut buf = [0u8; 64];
@@ -474,9 +413,8 @@ fn probe_directory_removal(
 ) {
     use filesystem_fixture::{navscape as nb, tree};
 
-    // 10. `UNLINK` of a **directory** is refused, and so is `RMDIR` of a directory with a name in
-    //     it. Together they are the safety property this lane rests on: **no single call on this
-    //     contract takes a subtree away.** Emptying one is a deliberate second step.
+    // 10. `UNLINK` of a directory is refused, and so is `RMDIR` of a non-empty one: no single call
+    //     on this contract takes a subtree away.
     if !removed(nav, fs::UNLINK, name_of(dirname)) {
         *v |= nb::UNLINK_REFUSED_A_DIRECTORY;
     }
@@ -522,10 +460,8 @@ fn probe_bind(
 ) {
     use filesystem_fixture::{navscape as nb, tree};
 
-    // 12. **`bind`**, milestone 47's "blocked on a second grant" closed by milestone 154: name a
-    //     position this shell already reached (a directory nested inside the one it made at step
-    //     7, holding a marker file) under a fresh top-level word, then reach the real files
-    //     through the bound name three different ways over the real wire.
+    // 12. `bind` a directory nested in step 7's, holding a marker, under a fresh top-level word,
+    //     then reach it through the bound name three ways.
     let nested = run_name(tree::NAV_BIND_NESTED, run);
     let alias = run_name(tree::NAV_BIND_ALIAS, run);
     let marker_made = matches!(
@@ -593,21 +529,13 @@ fn probe_bind(
 
 // ---- the two-tree witness (milestone 154) ----
 
-/// **A shell holding two trees, driven by a script** (milestone 154, one tree with the second
-/// mounted in it, as calef ruled on 2026-09-26).
+/// **A shell holding two trees, driven by a script** (milestone 154 (a process that holds two
+/// directory capabilities), one tree with the second mounted in it, as calef ruled on 2026-09-26).
 ///
-/// The wiring is `fs_service::start_granted_two_dirs`': the first tree over the fixture's `sub` at
-/// slot 0, the second over its sibling `other` at slot 1, both carrying the rights `spec` names,
-/// and a report rendezvous at slot 2. The mount point, `fixture::twotrees::MOUNT`, is this
-/// witness's own, the way the slot order is: nothing tells an interactive shell where a second
-/// tree is mounted yet, and that transport lands with the first real second filesystem.
-///
-/// Every line is a real command line through [`builtin`], the prompt's own path; the `<` probe
-/// goes through `grant_plan::redirect_target` and [`open_source`], the pipeline's own path. What
-/// is under test is the shell's resolver, walk and grant plumbing, not a reimplementation.
-///
-/// Nothing here may print: this wiring maps no terminal page, so [`print`] would fault. Every
-/// step below is one that answers in a value.
+/// Wired by `fs_service::start_granted_two_dirs`: `sub` at slot 0, `other` at slot 1, both with
+/// `spec`'s rights, and a report rendezvous at slot 2. Lines go through [`builtin`] and
+/// [`open_source`], the shell's own paths. Nothing here may print: this wiring maps no terminal
+/// page, so [`print`] would fault. See `notes/swish-language/witness.md`, "The two-tree script".
 pub(super) fn two_trees(spec: u64) -> ! {
     use filesystem_fixture::{VERDICT, tree, twotrees as tt};
     const A: u64 = 0;
@@ -787,9 +715,8 @@ fn listing_is(nav: &mut Nav, token: &[u8], present: &[u8], absent: &[u8]) -> boo
 
 // ---- the globbing witness (milestone 47's globbing lane) ----
 
-/// A small collector: what `echo` printed, or what a grant rendered to. Fixed size, written before
-/// the shell had a heap (2026-09-26) and still enough, and generous enough that a truncation cannot make two renderings agree
-/// by both running out at the same place.
+/// A small collector: what `echo` printed, or what a grant rendered to. Fixed size, and generous
+/// enough that a truncation cannot make two renderings agree by both running out at one place.
 struct Text {
     buf: [u8; 96],
     n: usize,
@@ -822,16 +749,9 @@ impl Text {
 
 /// **The demonstration: `echo *.txt` prints exactly the authority `rm *.txt` would transfer.**
 ///
-/// Both halves run here, in a shell that holds a real directory capability behind a real
-/// `fs_subtree_caretaker`, over a real `READDIR`. They share the expander (that is the point of
-/// there being one), and they do **not** share the plumbing: `echo` goes text → words → expand →
-/// print, and the grant goes parse → positionals → expand → `grant_plan::plan` → the grant's names →
-/// render. So a planner that narrowed, reordered or added to a set would show up here as a
-/// disagreement.
-///
-/// The three refusals after it are what stop the agreement from being vacuous in the other
-/// direction: a pattern that matched nothing, a pattern where one cannot mean anything, and a line
-/// with no pattern in it at all.
+/// Both halves share the expander and not the plumbing, over a real `READDIR`, so a planner that
+/// narrowed, reordered or added to a set shows up as a disagreement. Three refusals keep the
+/// agreement from being vacuous. See `notes/swish-language/witness.md`, "The globbing script".
 pub(super) fn globbing(spec: u64) -> ! {
     use filesystem_fixture::{VERDICT, globscape as gb, tree};
     let mut nav = Nav::rooted(filesystem_contract::grant::spec_rights(spec));
@@ -1016,14 +936,11 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
 }
 
 /// **`touch`'s mtime half, typed as real command lines and read back through the wire**
-/// (milestone 47's mtime lane, DECISIONS §112). Runs after [`touch_twice`] and reuses `touched`,
-/// which by then names a file with a body: a bare `touch` on it and then a `touch -t`, each
-/// checked against a `GETMTIME` read rather than assumed to have worked.
-///
-/// Two claims, and they are chained deliberately (early return on the first) because the second
-/// is only meaningful once the first held: `TOUCH_MTIME_ADVANCED` establishes what "the mtime
-/// this file had a moment ago" is, and `TOUCH_AT_ROUND_TRIPPED` is checked against *that*
-/// value, not against zero (`filesystem_fixture::navscape`).
+/// (the mtime lane of milestone 47 (navigation and naming), DECISIONS §112 (`touch`'s two
+/// behaviors need two rights)). Runs after [`touch_twice`] and reuses `touched`, which by then
+/// names a file with a body: a bare `touch`, then `touch -t`, each checked against a `GETMTIME`
+/// read. Chained, because `TOUCH_AT_ROUND_TRIPPED` is checked against the mtime
+/// `TOUCH_MTIME_ADVANCED` established.
 fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     use filesystem_fixture::{navscape as nb, tree};
 

@@ -1,41 +1,14 @@
-//! **Fatal risk 6's bench boot** (milestone 261 (the NVMe driver leaves the kernel); design/fatal-risks/README.md risk 6,
-//! notes/risk-6-bench-evening.md). Behind the `disk_throughput` feature, name provisional.
+//! Fatal risk 6's bench boot, behind the `disk_throughput` feature (name provisional).
 //!
-//! The decisive experiment is "one real, non-virtio device on real silicon, confined, at
-//! throughput", and on xenon two things have to be true on the night that no code can make true:
-//! the VT-d unit this kernel programs must be the one that owns the NVMe's requester id, and the
-//! namespace's LBA size must give `blocks_per` in `1..=8`. Either one failing used to arrive at the
-//! bench as something that looked like a result: a throughput number from a device nothing was
-//! translating, or a boot test that said "skipped". So this boot prints **both verdicts before it
-//! measures anything**, then measures, then prints **one verdict line** whose first word cannot be
-//! read as a pass unless both held.
-//!
-//! What it prints, in order, every line prefixed `disk-throughput:` so a photograph of the screen
-//! and a serial capture are read the same way:
-//!
-//! 1. `preflight 1/2 dmar scope : PASS|FAIL`, with which unit owns the controller and how;
-//! 2. `preflight 2/2 lba size   : PASS|FAIL`, with the LBA size and `blocks_per`;
-//! 3. `ipc floor`, `write`, `flush` and `read`, each with its count and its time;
-//! 4. `verdict CONFINED-AT-RATE | UNCONFINED | SKIPPED | FAILED`, and nothing after it.
-//!
-//! # What the numbers count
-//!
-//! The client is the kernel's boot thread, playing the part a client process would: every block is
-//! one `CALL` across a rendezvous into the EL0 server, which builds one NVMe command, rings the
-//! doorbell, polls the completion's phase tag, and replies. So a figure is **one command in flight,
-//! 4096 bytes per command, polled, plus two context switches per block**. That is a lower bound on
-//! the device and an honest measure of this driver; it is not comparable to `fio` at queue depth 32,
-//! and the `ipc floor` line exists so the IPC share can be subtracted by whoever quotes it.
-//!
+//! [`run`] replaces the hand-over: it preflights the two night-of conditions (the DMAR scope that
+//! owns the NVMe, and an LBA size this driver serves), measures a confined EL0 NVMe driver's write,
+//! flush and read throughput one command at a time, prints one `disk-throughput:` verdict and
+//! halts. It writes to the disk. See notes/bench-boots.md and notes/risk-6-bench-evening.md.
+
 //! # BUGS
-//!
-//! - **It writes.** A window of [`WINDOW_BLOCKS`] blocks starting 1 MiB into the namespace is
-//!   overwritten and read back. On xenon that disk was wiped on 2026-09-17 and holds nothing; on
-//!   any other machine this build is a way to destroy data, which is why it is a feature no gate
-//!   builds and why the verdict names the window it wrote.
-//! - **The client is in the kernel**, so the figure leaves out the cost of a client that is itself
-//!   a process. The server is the thing risk 6 is about, and it is the same process either way.
-//! - **Sequential only**, one pass, no warm-up and no repeats. A second boot is the repeat.
+//! - It writes: [`WINDOW_BLOCKS`] blocks 1 MiB into the namespace are overwritten.
+//! - The client is in the kernel, so the figure leaves out a client process's cost.
+//! - Sequential only, one pass, no warm-up and no repeats.
 
 use filesystem_contract::blk;
 
@@ -62,8 +35,7 @@ pub fn run() -> ! {
     println!("disk-throughput: fatal risk 6 bench boot (milestone 261). WRITES to the NVMe disk.");
     println!(
         "disk-throughput: preflight first; a skip is not a pass. {} build, {} Hz counter.",
-        // The photograph has to say which, because a debug build's figures understate the
-        // driver and `cargo xtask disk-throughput --debug` is the documented fallback.
+        // A debug build's figures understate the driver, so the photograph says which.
         if cfg!(debug_assertions) {
             "DEBUG"
         } else {
@@ -111,15 +83,9 @@ impl core::fmt::Display for Verdict {
     }
 }
 
-/// **The driver whose number is published is the measured one.** An ordinary boot measures the
-/// progenitor and the progenitor measures everything it loads; this boot replaces the hand-over, so
-/// it runs the same chain itself through `trust::require_program` (milestone 563 (a seal check that
-/// reads bytes cannot see a check that was dropped) moved it there from this file, so the soak,
-/// job-mix and bench boots share it): the archive's measurement table must be the one this kernel
-/// image vouches for, and the NVMe server's bytes must hash to that table's entry for it. Either
-/// refusal halts with `MEASURED BOOT REFUSED`. It is also what keeps `TRUST_ROOT` in the image at
-/// all: with the hand-over gone nothing else reads it, a release build drops it, and
-/// `uefi_loader`'s seal check then refuses the pair.
+/// The NVMe server's image, measured through `trust::require_program` as the progenitor would
+/// have; a refusal halts with `MEASURED BOOT REFUSED`. Returns why when the archive has none. See
+/// notes/bench-boots.md.
 fn measured_server() -> Result<&'static [u8], &'static str> {
     const NAME: &str = "non_volatile_memory_express";
     let image = crate::trust::require_program(NAME)
@@ -184,8 +150,7 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
             rid,
             why: Error::UnsupportedNamespace { lba_shift, blocks },
         }) => {
-            // The server never started, so there is no wiring to ask for a scope; the controller's
-            // requester id is enough to answer it anyway, and the answer is still worth the photo.
+            // No server, so no wiring; the requester id still answers the scope.
             print_scope(rid, crate::iommu::scope_of(rid));
             println!(
                 "disk-throughput: preflight 2/2 lba size   : FAIL  {}-byte lbas ({blocks} of them): \
@@ -275,9 +240,7 @@ fn ipc_floor(disk: &Wiring) -> Result<(), Verdict> {
 
 /// Time writing `count` stamped blocks across the window.
 fn timed_writes(disk: &Wiring, count: u64) -> Result<u64, Verdict> {
-    // Write: stamp each block's first and last words with its number, so the read phase can tell
-    // a block that came back from the wrong place. The rest of the page is a fixed pattern filled
-    // once, outside the timed loop.
+    // Each block's first and last words are stamped with its number, the rest a fixed pattern.
     // SAFETY: the blk contract's turn-taking. A request is a CALL, so this thread holds the buffer
     // exactly while the server is not running.
     unsafe { disk.transfer_block() }.fill(0x5a);
@@ -312,8 +275,7 @@ fn timed_flush(disk: &Wiring) -> Result<(), Verdict> {
 
 /// Time reading the window back, and check every block's stamp.
 fn timed_reads(disk: &Wiring, count: u64) -> Result<u64, Verdict> {
-    // Read, and verify every block's stamp. Clobbering the stamp words first is what makes a read
-    // that never reached the device fail rather than pass on what the write phase left behind.
+    // The stamp is clobbered first, so a read that never reached the device fails.
     let mut wrong = 0u64;
     let start = arch::timer::now();
     for b in WINDOW_START..WINDOW_START + count {
