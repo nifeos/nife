@@ -1,43 +1,31 @@
-//! stdout/stderr over the **sink contract** (`crates/byte_sink_contract`, milestone 50), on the endpoint
-//! the std slot convention puts in slot 1 (see `pal/nife/rt.rs`): SEND, register-only, up to 16
-//! bytes per message.
+//! stdout/stderr over the **sink contract** (`crates/byte_sink_contract`, milestone 50), on the
+//! endpoint the std slot convention puts in slot 1 (see `pal/nife/rt.rs`): SEND, register-only, up
+//! to 16 bytes per message. Register-only is forced by substitutability: a sink that also required
+//! a page mapped at an agreed address could not be swapped by putting a different capability in
+//! this slot, and that is what redirection is here (notes/sink-protocol.md). stderr shares the
+//! endpoint, so out and err interleave by 16-byte chunk (a caveat in notes/std.md).
+
+//! # stdin
 //!
-//! Bulk data over a register-only IPC is deliberate, and since milestone 50 it is forced rather
-//! than merely cheap. The three-word message is the ABI's whole fastpath (notes/abi.md §2) and
-//! std's own `LineWriter` batches user writes, but the real argument is substitutability: a sink
-//! that also required a page mapped at an agreed address could not be swapped for another by
-//! putting a different capability in this slot, and *that* is what redirection is here. See
-//! notes/sink-protocol.md.
-//!
-//! **stdin is a byte stream when the line gave one** (milestone 784 (reuse what the tree wrote),
-//! item (f2)): a streamed file or a pipe's read end at `rt::STDIN_STREAM_SLOT`, in the sink
-//! contract's frames up to its EOF. The first `RECEIVE` also tests the slot: the kernel's refusal
-//! is a negative word, which no frame begins with, and after it reads go to the console.
-//!
-//! Otherwise stdin is the console, for a program granted it, and end of input for every other
-//! (milestone 892 (a std program at the prompt holds the network and a resolver)). The terminal
-//! endpoint, badged as standard input, sits at `rt::STDIN_SLOT`; each read `CALL`s it for up to
-//! eight bytes of the line being typed, which the terminal's own discipline echoes and edits. An
-//! empty slot answers an error word rather than a count, and that is end of input at once.
-//!
-//! stderr shares the endpoint, so out and err interleave by 16-byte chunk. Recorded as a caveat in
-//! notes/std.md; one endpoint is what the contract grants today.
-//!
+//! A byte stream when the line gave one (milestone 784 (reuse what the tree wrote), item (f2)): a
+//! streamed file or a pipe's read end at `rt::STDIN_STREAM_SLOT`, in the sink contract's frames up
+//! to its EOF. The first `RECEIVE` also tests the slot: the kernel's refusal is a negative word,
+//! which no frame begins with, and after it reads go to the console, for a program granted it
+//! (milestone 892 (a std program at the prompt holds the network and a resolver)). Each read
+//! `CALL`s the terminal endpoint at `rt::STDIN_SLOT`, badged as standard input, for up to eight
+//! bytes of the line being typed, which the terminal echoes and edits. An empty slot answers an
+//! error word rather than a count: end of input at once.
+
 //! # A dead reader ends this program, and a missing one does not
 //!
-//! This used to swallow every failed SEND, on the grounds that "a program without a console still
-//! runs, it just prints into the void, which is what every OS does to a process whose stdout is
-//! closed". That is right for a program with no console and wrong for a pipeline, where `yes | head`
-//! must end when `head` exits. `byte_sink_contract::classify` splits the two, and each half is routed
-//! through the seam std already has for exactly this:
+//! `byte_sink_contract::classify` splits the two, and each is routed through std's own seam:
 //!
 //! - **No sink** ([`byte_sink_contract::Sent::NoSink`]) is [`io::ErrorKind::Unsupported`], which
-//!   [`is_ebadf`] accepts, so `io::stdio`'s `handle_ebadf` swallows it and the program keeps
-//!   running. It is also the same answer every other ungranted capability gives in this PAL.
-//! - **A destroyed sink** ([`byte_sink_contract::Sent::Gone`]) is [`io::ErrorKind::BrokenPipe`], which
-//!   `is_ebadf` rejects, so it propagates and `println!` panics. The target is panic=abort, so the
-//!   process dies and the kernel attributes the fault. That is what a Rust program on Linux does
-//!   when its reader exits, and it is milestone 50's "`SIGPIPE` becomes a return code".
+//!   [`is_ebadf`] accepts, so `io::stdio`'s `handle_ebadf` swallows it and the program keeps running.
+//! - **A destroyed sink** ([`byte_sink_contract::Sent::Gone`]) is [`io::ErrorKind::BrokenPipe`],
+//!   which `is_ebadf` rejects, so `println!` panics and (panic=abort) the process dies with the
+//!   fault attributed: what a Rust program on Linux does when its reader exits, as `yes | head`
+//!   needs. It is milestone 50's "`SIGPIPE` becomes a return code".
 
 use crate::io;
 use crate::sync::Mutex;
@@ -210,8 +198,7 @@ pub const STDIN_BUF_SIZE: usize = 64;
 
 /// **The seam that decides whether a failed print is fatal.** `io::stdio`'s `handle_ebadf` swallows
 /// an error this accepts and propagates everything else, and a propagated error makes `println!`
-/// panic. This used to return `true` unconditionally, which is why the old code's "print into the
-/// void" applied to a dead sink as well as a missing one.
+/// panic. Only the no-sink refusal is accepted, so a dead sink is fatal and a missing one is not.
 pub fn is_ebadf(err: &io::Error) -> bool {
     err.kind() == io::ErrorKind::Unsupported
 }

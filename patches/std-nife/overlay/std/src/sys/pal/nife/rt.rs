@@ -5,28 +5,22 @@
 //! out-of-tree crate. The ABI *constants* are not re-stated: `abi.rs` next door is generated
 //! verbatim from `crates/abi/src/lib.rs` by `cargo xtask std-src`. Only the one trap, `trap6`, is
 //! hand-copied; if `user_mode_runtime`'s changes, change this.
-//!
+
 //! # The std slot convention
 //!
-//! A std program's loader owes it, per the out-of-band-contract rule of notes/abi.md §4, the slots
-//! `crates/std_runtime_contract` lists, each with what it grants. Two are always there: an untyped
-//! budget the global allocator draws heap pages from lazily (`memory_region::MAP`, at
-//! [`HEAP_BASE`], capped at [`HEAP_MAX`]), and the endpoint `stdout` and `stderr` SEND to, 16
-//! bytes per message (w0 = byte count, w1|w2 = the bytes, little-endian), so out and err
-//! interleave.
-//!
-//! The rest (the network, a directory, the clock, entropy, configuration, arguments, a resolver,
-//! threads) are granted only to a program given that authority, and each is bound by the `sys/`
-//! module that owns it. A slot left empty makes the matching std call answer that it has nothing:
-//! `Unsupported`, `Err`, or a loud panic where the signature has no error channel (as
-//! `SystemTime::now()` and `SystemRng` do, rather than report 1970 or predictable bytes). Programs
-//! that never use a slot never touch it.
+//! A std program's loader owes it the slots `crates/std_runtime_contract` lists (the out-of-band
+//! rule of notes/abi.md §4). Two are always there: an untyped budget the allocator draws heap pages
+//! from lazily (`memory_region::MAP`, at [`HEAP_BASE`], capped at [`HEAP_MAX`]), and the endpoint
+//! `stdout` and `stderr` SEND to, 16 bytes per message (w0 = byte count, w1|w2 = the bytes,
+//! little-endian), so out and err interleave. The rest are granted only to a program given that
+//! authority, and an empty slot makes the std call answer that it has nothing: `Unsupported`,
+//! `Err`, or a loud panic where the signature has no error channel (`SystemTime::now()`,
+//! `SystemRng`). notes/std.md lists the slots.
 
 // **The numbers themselves live in `crates/std_runtime_contract`** (milestone 595 (provisional)),
-// generated into this PAL as `runtimeproto` by `cargo xtask std-src`. They were written here, and
-// again twice in the kernel test harness, until the progenitor became a fourth place that had to
-// agree; now all of them read one file. Every address in it is a row of the user address-space map
-// (`crates/address_space_map`, milestone 206): the three pages are runtime windows, above the net
+// generated into this PAL as `runtimeproto` by `cargo xtask std-src`, so the progenitor, the
+// kernel test harness and this PAL read one file. Every address in it is a row of the user
+// address-space map (`crates/address_space_map`, milestone 206): the three pages are runtime windows, above the net
 // PAL's per-socket frames (0x1000_0000 upward, one page per socket id) and below the initial
 // ramdisk window (0x2000_0000), and the heap is the map's heap band. That crate's tests pin each
 // number to its band.
@@ -43,17 +37,12 @@ use super::abi;
 /// the contract: the number in `x8`/`a7`/`rax`, six words in and six back in `x0..x5`,
 /// `a0..a5`, or `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`.
 ///
-/// **Every syscall comes through here**, and the reason is a defect found on 2026-10-05
-/// (notes/job-mix/spawn-job-miscompiled-yield.md). The kernel writes its result into the first register on
-/// the way out of every syscall, and some methods write the next five. A wrapper that declares
-/// fewer outputs than that tells the compiler a register survives the trap when it does not, and
-/// the compiler is entitled to keep a live value there. `user_mode_runtime::yield_now` did, and an
-/// optimised loop sent `DESTROY`'s arguments to the wrong capability after a yield. This file had
-/// the same declarations (`yield_now` with no output, `invoke` with `x1..x4` input-only); no std
-/// program is known to have been miscompiled by them, which is luck rather than a property.
-///
-/// No `nomem`: a `CALL` is how a shared page changes hands (`sys/fs`'s `Page` relies on that),
-/// and a yield is when other threads write memory this one shares with them.
+/// **Every syscall comes through here**: the kernel writes its result into the first register on
+/// the way out of every syscall, and some methods write the next five, so a wrapper declaring fewer
+/// outputs lets the compiler keep a live value in a clobbered register
+/// (notes/job-mix/spawn-job-miscompiled-yield.md). No `nomem`: a `CALL` is how a shared page
+/// changes hands (`sys/fs`'s `Page` relies on that), and a yield is when other threads write
+/// memory this one shares with them.
 #[inline(always)]
 unsafe fn trap6(nr: u64, a: [u64; 6]) -> [u64; 6] {
     let mut w = a;
@@ -249,25 +238,16 @@ pub fn now() -> u64 {
     }
 }
 
-/// Ticks per second. aarch64 reports it in `CNTFRQ_EL0`, the one architecture where the machine
-/// states its own rate. Neither other one has such a register: RISC-V states the timebase in the
-/// device tree and `x86_64`'s TSC rate is measured or read from `CPUID`, and in both cases only the
-/// kernel can ever know it. So the kernel learns it once at boot and maps the answer read-only at
-/// `counter_frequency_contract::PAGE_VA` into every process it builds; this reads that page, the
-/// same way `user_mode_runtime::cntfrq` does, which is what keeps a `std` program and a `no_std`
-/// program on one machine agreeing about what a second is.
-///
-/// **RISC-V returned a hardcoded 10 MHz here until 2026-09-21**, QEMU `virt`'s rate, copied from the
-/// same gap `user_mode_runtime::cntfrq` carried. radon (the VisionFive 2) runs at 4 MHz, so every
-/// `Instant` duration and every `thread::sleep` in a std program on that board was out by 2.5x and
-/// said nothing. calef's ruling: only accurate numbers, never hardcoded ones.
+/// Ticks per second. aarch64 reports it in `CNTFRQ_EL0`; RISC-V states it in the device tree and
+/// `x86_64`'s TSC rate is measured or read from `CPUID`, so only the kernel knows it, and maps it
+/// read-only at `counter_frequency_contract::PAGE_VA` into every process. This reads that page as
+/// `user_mode_runtime::cntfrq` does, so `std` and `no_std` programs agree about a second. Never
+/// hardcoded (calef: only accurate numbers): radon (VisionFive 2) runs at 4 MHz, QEMU `virt` at 10.
 ///
 /// # Panics
 ///
-/// If the rate is unknown, which is a zeroed or unrecognized page. **It used to fall back to 1 GHz**,
-/// and that fallback is gone for the reason above: a std program whose `Instant` is silently scaled
-/// wrong reports durations nobody can tell from real ones. Dying is the honest outcome, and it
-/// matches `user_mode_runtime::cntfrq` exactly, which is the property this function exists to keep.
+/// If the rate is unknown (a zeroed or unrecognized page), exactly as `user_mode_runtime::cntfrq`
+/// does: a silently scaled `Instant` reports durations nobody can tell from real ones.
 pub fn cntfrq() -> u64 {
     #[cfg(target_arch = "aarch64")]
     {
