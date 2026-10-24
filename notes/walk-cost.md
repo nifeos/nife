@@ -163,6 +163,26 @@ Measured 2026-09-27 on the release kernel, three `--smp` boots in one session: `
 0.347 to 0.355 ms, against 0.508 to 0.521 ms through the caretaker and Linux's 0.41 to 0.42 ms.
 That is about 0.85x Linux. It also saves a process per grant.
 
+### The hard cases, as one crate decides them
+
+`crates/subtree_scope` owns `..`, symbolic links, hard links and mount crossings, so no server
+decides them. `..` and `.` are never names, so a path can only go down. A symbolic link is never
+followed, on the way or at the end; a server that wants links followed inside a grant is asking for
+a policy the crate does not have. A mount point is never crossed, so a grant is one filesystem.
+
+A hard link is a second name for a file, and a file reached by a name inside the grant is inside the
+grant. That is the Unix rule, and it is the right one for a subtree grant, whose authority is over
+names. A directory has no hard links in any eligible filesystem. A server is eligible only when it
+is memory-safe and routes every path and every handle through the crate.
+
+A badge is a window and a grant at once. Under §230 (badged endpoint capabilities) a badge is the
+index of the client's staging window, and the crate binds a grant to that same index. So a revoked
+badge must not be handed to a new client while its old holder is alive. The progenitor's window pool
+releases a window at reap, after the holder is dead, and nothing in the crate can check that. The
+proof is bounded: paths up to `PROOF_PATH` bytes, and binding tables of `PROOF_BADGES` badges over
+`PROOF_OPERATIONS` operations. The functions have no loops whose behaviour changes past those bounds,
+which is the argument that the bound is enough.
+
 ### The trust tradeoff
 
 Lines of code outside tests, blank lines and comments, counted 2026-09-26:
