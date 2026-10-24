@@ -1,5 +1,8 @@
 # G5's premise, checked against primary sources
 
+*Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-c, for G5's "The premise,
+checked against primary sources". calef names files.*
+
 Moved verbatim from [calendar-grammar-g5.md](calendar-grammar-g5.md) under §212 (a prose budget) on
 2026-10-13 (UTC). That page holds the ruling, the grammar and what the 129 lane builds; this holds
 the source reading behind it.

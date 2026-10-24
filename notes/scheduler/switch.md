@@ -1,5 +1,7 @@
 # The switch: `schedule`, its decision, and the reaper's far side
 
+*Name: provisional. After the source file it explains.*
+
 An appendix to [notes/scheduler.md](../scheduler.md). It carries the design behind
 `kernel/src/sched/switch.rs` and `kernel/src/sched/switch_decision.rs`, whose doc comments link
 here. It also says what the tests in `kernel/src/sched/tests.rs` are built against. The rendezvous

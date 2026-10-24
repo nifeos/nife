@@ -1,5 +1,7 @@
 # The second FLUSH that never returned (resolved 2026-09-19)
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/framebuffer-contract.md](../framebuffer-contract.md), moved there on
 2026-10-11 (UTC) under §212 (a prose budget). It is the record of milestone 177 (wire the graphical
 terminal stack into the real interactive boot)'s hang, carried unexplained

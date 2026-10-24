@@ -1,5 +1,7 @@
 # radon's receive rate: a one-segment window and a tick per round trip
 
+*Name: provisional.*
+
 *A child of [`notes/designware-ethernet.md`](../designware-ethernet.md) (milestone 53 (the board's
 own peripherals: network and storage on real silicon)), whose Results row is the 2.3 Mbit/s this
 page explains. Its names are provisional: `socket_contract::polled_wait`, `TCP_RECEIVE_BUF`,

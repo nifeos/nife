@@ -1,5 +1,7 @@
 # Testing an interrupt as a message on RISC-V, which has no SGI
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/interrupts.md](../interrupts.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). It records how the work of 2026-07-31 made the two interrupt-to-message tests
 run on RISC-V.

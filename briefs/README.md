@@ -82,10 +82,6 @@ on today is a cost problem that can change weekly without this directory changin
 | `survey-the-queue.md` | Read-only report on the state of the merge queue. |
 | `triage-a-failing-check.md` | Read-only diagnosis of why a CI check failed, and this repository's specific log traps. |
 
-`review-a-paydown.md`: Name: provisional, minted 2026-10-23 (UTC) by maintainer/brief-run-a-milestone-wide. "Review a paydown" says the task; "review a comment sweep" was narrower than the checklist reaches.
-
-`run-a-milestone-wide.md`: Name: provisional, minted 2026-10-23 (UTC) by maintainer/brief-run-a-milestone-wide. "Wide" means many lanes on one milestone at once; "run a fleet" was considered and names the agents rather than the milestone.
-
 ## The rule every brief here follows
 
 Say what to do about the failures that are known, and say "stop" about everything else. A brief

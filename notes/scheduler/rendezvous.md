@@ -1,5 +1,7 @@
 # Rendezvous: send, receive, call and reply, and freeing stranded callers
 
+*Name: provisional. After the source file it explains.*
+
 An appendix to [notes/scheduler.md](../scheduler.md). It carries the design behind
 `kernel/src/sched/rendezvous.rs`, whose doc comments link here. It also says what the tests in
 `kernel/src/sched/rendezvous/tests.rs` are built against. The switch every blocking path ends in is

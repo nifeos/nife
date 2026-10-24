@@ -1,5 +1,7 @@
 # The lost wakeup on `reclaim_frees_a_started_then_exited_childs_regions` (closed)
 
+*Name: provisional.*
+
 An appendix to [notes/scheduler.md](../scheduler.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). It is the full record of milestone 72 (lost wakeup): the mechanism, the proof, the ISA skew and
 the thread accumulation it was not.

@@ -103,6 +103,10 @@ area directories), ruled B). Appendices under
 
 `swish-check-boot.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-03.
 
+`user-mode-runtime.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-09.
+
+`video-terminal.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-09.
+
 `mapping-log.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.
 
 `capability-objects.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.

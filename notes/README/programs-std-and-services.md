@@ -6,6 +6,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 
 - [The services the kernel wires](../kernel-wired-services.md): the grant shape of each confined service `kernel/src/user.rs` wires, and why that shape is the isolation.
 - [Rust `std` on the native ABI](../std.md): std's platform layer implemented on the capability ABI.
+- [The user-mode runtime](../user-mode-runtime.md): the syscall trap, exit and `require`, time, and the windows every `no_std` program links.
 - [Somebody else's crate on nife](../crates-io-on-nife.md): fifty crates.io crates built against nife's `std`.
 - [`ripgrep` on nife](../ripgrep-on-nife.md): unmodified ripgrep builds and runs, and what stops it.
 - [What a directory walk costs](../walk-pricing.md): a walk split per component, per entry and per KiB, on nife and a host.

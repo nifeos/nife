@@ -1,5 +1,7 @@
 # CI's toolchain download, 2026-10-19 (provisional name)
 
+*Name: provisional, minted 2026-10-19 (UTC) by maintainer/rustup-retry.*
+
 Measured 2026-10-19 (UTC) by maintainer/rustup-retry, after a docs-only pull request (#2379) went red
 because one TCP connect to static.rust-lang.org timed out. Two questions: how often does the
 download fail CI, and should the toolchain be cached? The constraints are those of

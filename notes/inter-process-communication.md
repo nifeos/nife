@@ -1,5 +1,7 @@
 # The IPC decision core
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.*
+
 `crates/inter_process_communication` holds the decisions the kernel's IPC makes, with no kernel in
 them, so they can be proved on the host. It has four parts: the synchronous rendezvous, the
 notification, the timer and the futex wait queues. The kernel wraps each one with what the crate

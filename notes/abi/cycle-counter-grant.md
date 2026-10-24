@@ -1,5 +1,7 @@
 # The fine counter is not ambient, and that took a decision (milestone 229)
 
+*Name: provisional. Named for the grant milestone 229 built.*
+
 An appendix to [notes/abi.md](../abi.md), whose section on the one ambient thing, reading the clock,
 summarizes it.
 

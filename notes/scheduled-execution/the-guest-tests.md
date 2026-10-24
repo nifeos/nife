@@ -1,5 +1,8 @@
 # The timetable's guest tests
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06, for the detail behind
+`timetable_tests`' doc comments. calef names files.*
+
 An appendix of [scheduled execution](../scheduled-execution.md), for
 `system_tests/src/user/timetable_tests.rs`. The parent says what the timetable does. This file says
 how each kernel test proves it, and why each one is shaped the way it is.

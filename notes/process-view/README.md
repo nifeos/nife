@@ -22,6 +22,7 @@ not:
 *Name: provisional, for the directory and the stems `what-is-left` and
 `the-machine-and-your-share`. Naming is calef's; `script/names --unratified` lists each stem.*
 
+Each stem here is named for its content, and calef names files.
 Each stem below is named for its content, and calef names files.
 
 - `survey-design` Name: ratified 2026-10-18 (calef, "survey-design.md") Refused `survey-method`.
