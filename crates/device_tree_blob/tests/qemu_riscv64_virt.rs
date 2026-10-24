@@ -1,17 +1,11 @@
-//! Parse the RISC-V virt board's device tree, the second machine we boot on.
+//! Parse the RISC-V virt board's device tree, the second machine we boot on, on the host.
 //!
-//! The aarch64 twin of this file (`qemu_aarch64_virt.rs`) explains why these run on the host. This one
-//! exists because the riscv boot path leans on two parser features the aarch64 tree never
-//! exercises: a device nested under `/soc` (the PLIC), and the `/reserved-memory` node OpenSBI
-//! uses to fence off its own firmware. Without these tests, both paths were only ever executed
-//! inside a booting kernel, where a parsing bug surfaces as an allocator handing out firmware
-//! RAM, far from its cause.
-//!
-//! Regenerate the fixture with:
+//! It holds two parser features the aarch64 tree never exercises: a device nested under `/soc`
+//! (the PLIC) and the `/reserved-memory` node OpenSBI fences its firmware with. Regenerate the
+//! fixture with the following, re-adding `/reserved-memory` by hand (the `.dts` says why):
 //!
 //!     qemu-system-riscv64 -machine virt,dumpdtb=f.dtb -nographic
 //!     dtc -I dtb -O dts f.dtb -o crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dts
-//!     (re-add the /reserved-memory node; see the comment in the .dts for why it is hand-added)
 //!     dtc -I dts -O dtb crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dts \
 //!         -o crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb
 

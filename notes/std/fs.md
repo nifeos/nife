@@ -204,3 +204,15 @@ Still Unsupported, and now genuinely because no verb in the contract backs it:
 - `fsync`/`datasync` succeed rather than refuse, and that is honest rather than a shrug. Nothing is
   buffered on the client side, and the server commits a RedoxFS transaction per write (that is what
   makes a kill mid-write recoverable), so a returned write is already durable.
+
+### Creating a file is not creating a filesystem
+
+§27 keeps *filesystem* creation host-side, because RedoxFS's std-gated core APIs are exactly
+creation, which needs a UUID and `getrandom`. Creating a *file* is a different operation.
+`Transaction::create_node` is not std-gated, so the server makes a file through `CREATE` without
+entropy ever becoming a userspace dependency.
+
+### A leading slash selects nothing
+
+A leading `/` is Plan 9's answer rather than DOS's, and less than Plan 9's: a nife process has
+exactly one root, so the slash has nothing to select between.

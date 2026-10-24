@@ -17,13 +17,13 @@ widening is caught twice. It is not caught by anything in the `reap_decision`
 harnesses, which this patch leaves untouched.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index dcd2cbb5..3aa946e6 100644
+index d65bed7d..ffe0d92b 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -224,8 +224,8 @@ pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -
- ///
- /// Liveness is not an input. A corpse is still in the domain, which is what makes `ps` able to show
- /// a `Dead` child the supervisor has not collected yet.
+@@ -186,8 +186,8 @@ pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -
+ /// (`sched::survey_supervised`). It is the predicate [`reap_decision`] authorizes with, so the
+ /// threads a supervisor sees are the ones whose deaths reach it. Liveness is not an input: an
+ /// uncollected corpse is still in the domain. See notes/capabilities/table.md ("Reap and survey").
 -pub const fn survey_includes(fault_ep: Option<u64>, invoked_ep: u64) -> bool {
 -    matches!(fault_ep, Some(ep) if ep == invoked_ep)
 +pub const fn survey_includes(fault_ep: Option<u64>, _invoked_ep: u64) -> bool {

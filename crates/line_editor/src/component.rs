@@ -1,5 +1,4 @@
-// Moved out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to
-// their own files). Its docs stay on its `pub mod` line in `lib.rs`, where they always were.
+// This module's docs are on its `pub mod` line in `lib.rs`.
 
 use capability_plan::Direction::{Serve, Use};
 use capability_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
@@ -98,18 +97,17 @@ pub const DISPLAY: Requirements = Requirements {
     state_handoff: Some(HANDOFF),
 };
 
-/// **How `terminal_supervisor` is endowed**, by `system_initializer` on a real boot and by the
-/// kernel's own test: one list both builders and the supervisor read (AGENTS.md rule 7). The
-/// supervisor holds every object a `line_editor` is built from, with `GRANT`, so it can build a
-/// second one; and the terminal endpoint with `WRITE` too, so it can send `OPERATION_QUIESCE`
-/// through the copy it badges [`proto::SUPERVISOR_BADGE`](crate::proto::SUPERVISOR_BADGE).
+/// How `terminal_supervisor` is endowed, by `system_initializer` on a real boot and by the
+/// kernel's own test: one list both builders and the supervisor read (AGENTS.md rule 7).
+/// The supervisor holds every object a `line_editor` is built from, with `GRANT`, and the terminal
+/// endpoint with `WRITE` too, so it can send `OPERATION_QUIESCE` through the copy it badges
+/// [`proto::SUPERVISOR_BADGE`](crate::proto::SUPERVISOR_BADGE).
 ///
-/// Start arguments: the output sink's mode (`line_editor`'s own `MODE_CONSOLE` = 0 or
-/// `MODE_DISPLAY` = 1), the lengths of the `line_editor` image copied to [`ELF_VA`](supervisor::ELF_VA) and of the
-/// supervisor's own image copied to [`OWN_IMAGE_ADDRESS`](supervisor::OWN_IMAGE_ADDRESS), packed by
-/// [`image_lengths`](supervisor::image_lengths), and the slot of an endpoint to receive swap requests on, `0` for none (a boot today: the trigger is
-/// milestone 198 (a package manager, and the trivial install)'s installer, ruled by §308 (the
-/// installer asks the terminal to swap) and not built).
+/// Start arguments: the output sink's mode (`MODE_CONSOLE` = 0 or `MODE_DISPLAY` = 1), the
+/// lengths of the images copied to [`ELF_VA`](supervisor::ELF_VA) and
+/// [`OWN_IMAGE_ADDRESS`](supervisor::OWN_IMAGE_ADDRESS) packed by
+/// [`image_lengths`](supervisor::image_lengths), and the slot of a swap-request endpoint, `0` for
+/// none. See notes/line-discipline.md ("The component's slots") for what it holds and why.
 ///
 /// Name: provisional (the lane for milestone 23, 2026-09-27), for the module and every constant
 /// in it. `terminal_supervisor` itself is calef's to name.
@@ -232,19 +230,14 @@ pub mod supervisor {
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const LEND: u64 = 3;
-    /// **The machine's swap reserve, in pages** (milestone 23 (a capability-routed component OS with
-    /// live replacement); calef's ruling "D" of 2026-10-19 (UTC)). One per machine, apart from every
-    /// job pool, and sized to the largest swappable instance plus its handoff: today
-    /// `display_terminal`'s, whose budget holds one instance and so cannot hold its replacement
-    /// (`video_terminal::component::SWAP_PAGES`, which `terminal_supervisor` holds to this at compile
-    /// time). Here beside [`LEND`], the message that lends it, because every party to a swap reads
-    /// this module. Whoever drives a swap splits it whole and lends it to the supervisor with the request; the
-    /// supervisor gives it back before it answers, and the lender's `DESTROY` revokes what was made
-    /// from it. So swaps are serialized by the reserve itself: a second swap while one holds it finds
-    /// nothing to split, and is refused until the first one is answered.
+    /// The machine's swap reserve, in pages (milestone 23 (a capability-routed component OS with
+    /// live replacement); calef's ruling "D" of 2026-10-19 (UTC)).
     ///
-    /// The holder is the swap trigger, milestone 694 (the installer asks the terminal to swap). Until
-    /// that is built the kernel's test holds it (`system_tests::user::terminal_display_swap_tests`).
+    /// Sized to the largest swappable instance plus its handoff, and held to
+    /// `video_terminal::component::SWAP_PAGES` by `terminal_supervisor` at compile time. It sits
+    /// beside [`LEND`], the message that lends it, because every party to a swap reads this
+    /// module. Lending it whole serializes swaps: a second swap finds nothing to split and is
+    /// refused. See notes/line-discipline.md ("The component's slots").
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const SWAP_RESERVE_PAGES: u64 = 396;

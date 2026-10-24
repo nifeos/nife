@@ -12,15 +12,15 @@ Expected to fail: `assert_ne!` "the swap system could not be built: stage 117" i
 Replayed red at exactly that assertion on aarch64 on 2026-10-18 (UTC).
 
 diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
-index 38cc2218f..d1860c627 100644
+index 30185504c..4ca472006 100644
 --- a/kernel/src/sched/region_reaping.rs
 +++ b/kernel/src/sched/region_reaping.rs
-@@ -74,7 +74,7 @@ pub(super) enum RegionReap {
- /// with the same shape (the condition clears by itself, and reaping the thread now would let its
- /// owner reuse memory the dying thread has not given back yet).
+@@ -39,7 +39,7 @@ pub(super) enum RegionReap {
+ /// verdict on one resident"), and the stack fault behind `standing` in
+ /// notes/stack/kernel-stack-freed-under-its-owner.md.
  pub(super) fn region_reap_verdict(state: State, standing: bool) -> RegionReap {
 -    if matches!(state, State::Ready | State::Running) {
 +    if matches!(state, State::Ready | State::Running | State::Blocked) {
          RegionReap::RefuseAndArm
      } else if state == State::Blocked && !standing {
-         // Milestone 133, proposal A. `Blocked` used to sit in the arm above, and being there is
+         // An armed kill is spent only for a `Running` thread, which this one never becomes.

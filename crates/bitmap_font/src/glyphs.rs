@@ -1,42 +1,12 @@
-//! **The glyph bitmaps** (milestone 29). Generated data, kept in its own file so the code that
-//! *uses* a font is not buried in 128 rows of hexadecimal.
+//! The glyph bitmaps (milestone 29 (a display terminal)), generated data in a file of its own so
+//! the code that uses the font is not buried in 128 rows of hexadecimal.
 //!
-//! # Where these bits come from, and what they owe
-//!
-//! **They are ours.** This is an original drawing in the style of the Kaypro II's character
-//! generator, not that ROM and not any other font's table. It was drawn glyph by glyph in
-//! `crates/bitmap_font/kaypro-style-7x8.art`, which is the authoring source and the thing to edit;
-//! the rows below are that file, transcribed. `the_art_file_and_this_table_agree` (in this
-//! file) parses the
-//! `.art` back and fails if the two ever drift, so the picture a reviewer reads and the bits a
-//! terminal draws cannot disagree.
-//!
-//! Nothing here is licensed from anyone, so nothing travels with the image. That is the property
-//! the old table had for a different reason (`font8x8` was public domain) and it is worth keeping:
-//! a bitmap font is compiled into the kernel and into every binary that draws text, so its licence
-//! is a licence on the artefact rather than on a build-time tool.
-//!
-//! **Why the Kaypro's style and not the Kaypro's bits.** calef owned a Kaypro II and its font won
-//! a poll. The dumped ROM is excluded: `ivanizag/kaypro-disassembly` carries no `LICENSE` at all,
-//! which is all-rights-reserved by default, and this tree's standing rule is that ambiguous is
-//! treated as obliged. A *typeface as typeface* is not copyrightable subject matter (37 CFR
-//! 202.1(e)), so the look is free to reproduce while the specific file is somebody's work. See
-//! notes/glyphs.md, which records the whole reasoning and the ROM's hashes.
-//!
-//! # The geometry, which is the Kaypro's and is why the grid got wider
-//!
-//! Seven columns, of which the **middle five carry ink** and the outer two are gutter. That is what
-//! the machine did in hardware: MAME's `kaypro_v.cpp` shifts out `0`, five ROM bits, `0`. Eight
-//! rows: 0..=6 are the body with the baseline at row 6, and row 7 is the one-row descender. Caps
-//! and digits fill rows 0..=6, x-height letters rows 2..=6.
-//!
-//! # The bit order, which is the one thing a font table gets wrong
-//!
-//! One byte per row, top row first. **Bit 0 is the LEFTMOST pixel** (little-endian within the row),
-//! which is the opposite of the convention most bitmap fonts use and exactly the sort of thing that
-//! produces a mirrored alphabet nobody notices until it is on a screen. `lib.rs` asserts it against
-//! a glyph whose shape is asymmetric. Bits 0 and 6 are the gutter and are clear in every glyph,
-//! which `lib.rs` also asserts.
+//! The rows are `crates/bitmap_font/kaypro-style-7x8.art` transcribed: an original drawing in the
+//! Kaypro II's style, not its ROM or any other font's table, licensed from nobody, and the file to
+//! edit. `the_art_file_and_this_table_agree` parses the `.art` back and fails if the two drift. One
+//! byte per row, top row first, and bit 0 is the leftmost pixel, the opposite of most bitmap fonts;
+//! bits 0 and 6 are the gutter, clear in every glyph. Rows 0 to 6 are the body with the baseline at
+//! row 6, and row 7 is the descender. See notes/glyphs.md and notes/glyphs/bitmap-font.md.
 
 /// The rows of every glyph in the basic-latin block, indexed by byte. Bytes 0x00..0x20 and
 /// 0x7f are blank in this font: they are control codes, and a terminal never puts one in a cell.
@@ -228,27 +198,12 @@ mod tests {
         }
     }
 
-    /// **Every row of the table is read, which is what the coverage floor is actually asking for.**
-    ///
-    /// `the_art_file_and_this_table_agree` compares all 128 glyphs, but it reads them through a
-    /// loop over a parsed picture, so a line-coverage tool sees the parser execute and the 128
-    /// literal rows never "run". That is the shape of every generated-data file and the reason
-    /// `script/coverage`'s exemption list exists; this file does not belong on that list, because
-    /// its own comment says the list is for things that **physically cannot run**, never for things
-    /// that are merely untested.
-    ///
-    /// So this asserts properties of the whole table rather than exempting it. Each is cheap and
-    /// each would have caught a real transcription accident:
-    ///
-    /// - **No printable character is blank.** A row of zeroes where a letter should be is the
-    ///   commonest way a hand-transcribed table goes wrong, and it is invisible until somebody
-    ///   types that character.
-    /// - **Space is blank**, which is the same assertion from the other side.
-    /// - **Nothing sets a bit outside the seven drawn columns.** The cell is 7 wide with a
-    ///   one-pixel gutter each side, so bit 7 must be clear in every row of every glyph; a stray
-    ///   bit there would smear into the neighbouring cell.
-    /// - **No two printable glyphs are identical.** Two characters that draw the same picture is a
-    ///   copy-paste that a reader cannot see and a specimen sheet barely shows.
+    /// Every row of the table is read, which is what the coverage floor asks for. The art comparison
+    /// reads the 128 rows through a parsed picture, so a line-coverage tool never sees them run, and
+    /// `script/coverage`'s exemption list is only for code that physically cannot run. So this
+    /// asserts properties of the whole table, each a real transcription accident: no printable
+    /// character is blank, space is blank, no bit is set outside the seven drawn columns (bit 7
+    /// would smear into the next cell), and no two printable glyphs are identical.
     #[test]
     fn every_glyph_in_the_table_is_read_and_plausible() {
         assert_eq!(BASIC[0x20], [0; 8], "space must be blank");

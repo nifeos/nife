@@ -26,11 +26,9 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
     // The runaway's whole world in one region: the address space's root and tables, its code
     // page, its stack, and its TCB, so a single `DESTROY` reclaims all of it.
     let region = crate::memory_region::create(16).expect("no region for the runaway");
-    // These sixteen frames, by name. The window below spans a runaway spinning on whichever core
-    // §28 (SMP placement: two random choices at spawn) placed it on, a kill converted by that
-    // core's own tick, and up to a second of yielding: ample room for a neighbouring test's
-    // teardown to land inside a machine-wide free-frame delta. See `testing::RegionRun` and
-    // notes/load-sensitive-assertions.md.
+    // These sixteen frames, by name: the window below (a remote core's tick and up to a second of
+    // yielding) is room for a neighbour's teardown to land in a machine-wide free-frame delta. See
+    // §28 (SMP placement: two random choices at spawn) and notes/load-sensitive-assertions.md.
     let run = crate::testing::RegionRun::of(region);
     let aspace = user_address_space_create(region).expect("no aspace");
 
@@ -59,19 +57,15 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
         .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
 
-    // Let the runaway actually reach EL0 and start spinning, so we tear down a running thread,
-    // not an embryo. A few yields is plenty; it is preemptible the instant it lands.
+    // Let the runaway reach EL0, so the teardown is of a running thread, not an embryo.
     for _ in 0..8 {
         sched::yield_now();
     }
 
-    // The forcible tier: reclaim the region while the runaway is still live. The first pass arms
-    // the kill and refuses; the runaway is converted to a corpse at its next preemption; the
-    // retry reclaims. The wait is time-based, not a fixed spin count, because since DECISIONS §28
-    // the runaway may be placed on another core, where only that core's own timer tick converts
-    // it (the kill is bounded by the tick, §28.3 / §16). A tight yield loop on this core would
-    // finish inside one 10 ms tick and never give the remote core a chance; a one-second deadline
-    // spans ~100 ticks, ample, while still failing a real bug rather than hanging the emulator.
+    // The first pass arms the kill and refuses; the runaway becomes a corpse at its next
+    // preemption; the retry reclaims. Time-bounded, because the runaway may be on another core that
+    // only its own tick converts (§28.3 / §16 (object revocation)): a yield loop here would end
+    // inside one 10 ms tick, and one second spans ~100 ticks while still failing a real bug.
     let deadline = crate::arch::timer::now() + crate::arch::timer::frequency();
     let mut reclaimed = false;
     while crate::arch::timer::now() < deadline {
@@ -125,11 +119,9 @@ const RECEIVE_STUB: &[u32] = &[
 #[cfg(target_arch = "x86_64")]
 const RECEIVE_STUB: &[u32] = &super::x86_programs::receive();
 
-/// A child that blocks in `CALL` on the rendezvous in slot 0 and is never replied to. Byte for
-/// byte [`RECEIVE_STUB`] with `CALL` where the `RECEIVE` was, and the difference in the machine is the
-/// whole of milestone 133's harder case: once a server has collected the request, the caller is on
-/// **no queue at all**, so no rendezvous sweep can reach it and the only thing that could wake it
-/// is the one-shot `Reply` capability the server is now holding.
+/// A child that blocks in `CALL` on the rendezvous in slot 0 and is never replied to: [`RECEIVE_STUB`]
+/// with `CALL` for `RECEIVE`. Once a server collects the request the caller is on no queue, so no
+/// rendezvous sweep reaches it and only the server's one-shot `Reply` capability could wake it.
 #[cfg(target_arch = "aarch64")]
 const CALL_STUB: &[u32] = &[
     0xD280_0000, // movz x0, #0            (slot 0)
@@ -159,15 +151,12 @@ const CALL_STUB: &[u32] = &[
 const CALL_STUB: &[u32] = &super::x86_programs::call();
 
 /// Build a child from parts in one region, give it `rights` on `ep` in slot 0, run `code`, and
-/// hand back its region and its tid. The three milestone 133 tests below differ only in the stub
-/// and the rights, and the twenty lines of address-space assembly they share had already been
-/// copied twice in this file before it was worth lifting.
+/// hand back its region and its tid. The milestone 133 (ending a permanently blocked thread, and
+/// deciding who may) tests below differ only in stub and rights.
 ///
-/// The rendezvous is deliberately **not** created from `region`: that is the difference between
-/// the case [`destroy_reclaims_a_region_whose_resident_is_blocked_in_receive`] already covered (the
-/// rendezvous sweep wakes the resident, so the armed kill becomes spendable) and the case that
-/// hung forever until milestone 133, ending a permanently blocked thread: the rendezvous belongs to
-/// somebody else, so nothing wakes the resident and nothing ever will.
+/// `ep` is not created from `region`, unlike in
+/// [`destroy_reclaims_a_region_whose_resident_is_blocked_in_receive`], where the rendezvous sweep
+/// wakes the resident: here it belongs to somebody else, so nothing ever wakes the resident.
 fn child_blocked_on(
     ep: crate::sched::RendezvousId,
     rights: crate::cap::Rights,
@@ -225,26 +214,19 @@ fn reclaim_within_two_seconds(region: u64) -> bool {
     false
 }
 
-/// **`DESTROY` reclaims a region whose resident is `Blocked`, not just one that spins.**
+/// `DESTROY` reclaims a region whose resident is `Blocked` in `RECEIVE`, not just one that spins.
 ///
-/// The companion to the test above and the property the aarch64 test boot actually needed. §16's
-/// kill is *armed* by the refusal and *spent* by `schedule()`, and a thread parked in `RECEIVE` never
-/// reaches `schedule()`: before 2026-08-16 a region holding a blocked server was refused on every
-/// pass, forever, and its memory was gone until the machine stopped. That is not an exotic case. A
-/// server is a thing that blocks, and the `spawn_elf_child_builder` tests each built one out of a
-/// 2048-frame budget, which is how the boot came to end with 216 free frames (notes/frames.md).
+/// §16's kill is armed by the refusal and spent by `schedule()`, which a parked thread never
+/// reaches. The child's rendezvous is in the region, so `reap_region_objects`' sweep, which runs
+/// before the refusal for this reason, aborts the IPC and wakes it, and the armed kill is spent.
+/// See notes/object-revocation.md and notes/frames.md.
 ///
-/// What makes the reclaim land is that the child's rendezvous is **in the region being reclaimed**, so
-/// the sweep that removes it aborts the child's IPC and wakes it, and the kill the same pass arms is
-/// then spendable. `reap_region_objects` does that sweep before the refusal for exactly this reason.
-///
-/// **Verified it can fail**, and it was: moving the rendezvous sweep back below the refusal in
+/// Verified it can fail, and it was: moving the rendezvous sweep back below the refusal in
 /// `reap_region_objects` makes this test spend its whole two-second deadline and trip its own
 /// assertion, "a region holding a resident blocked in RECEIVE never reclaimed" (checked 2026-08-16).
 #[test_case]
 fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
-    // The child's whole world in one region, its rendezvous included: address space, code, stack, TCB, and
-    // the rendezvous it will park on.
+    // The child's whole world in one region, the rendezvous it parks on included.
     let region = crate::memory_region::create(16).expect("no region for the blocked child");
     let run = crate::testing::RegionRun::of(region); // this region's frames, not the machine's
     let ep = sched::create_rendezvous_from(region).expect("no rendezvous in the child's region");
@@ -270,8 +252,7 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
     .expect("map stack");
 
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    // READ, because the child receives on it. The rights are the point of not reusing
-    // `supervision_tests::build_child_in`, which inserts a WRITE report cap.
+    // READ, because the child receives; `supervision_tests::build_child_in` inserts WRITE.
     let slot = sched::thread_control_block_insert_cap(
         tid,
         crate::cap::rendezvous_cap(ep, crate::cap::Rights::READ),
@@ -286,17 +267,14 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
         .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
 
-    // **Wait for it to be queued on the rendezvous, not for "probably scheduled by now."** A test that
-    // reclaims before the child has parked proves nothing at all: the child would still be Ready, and
-    // the ordinary force-kill path above would carry it. See the same lesson in
-    // `a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked`.
+    // Wait until it is queued: a child still `Ready` would take the ordinary force-kill path.
     assert!(
         super::wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
         "the child never blocked on its rendezvous, so this test would prove the wrong thing",
     );
 
-    // The retry loop, as `user::holding::Holding` runs it: the first pass sweeps the rendezvous (which
-    // wakes the child) and arms the kill; a later pass finds the corpse and reclaims.
+    // As `user::holding::Holding` runs it: the first pass sweeps the rendezvous (waking the child)
+    // and arms the kill; a later pass finds the corpse and reclaims.
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
     let mut reclaimed = false;
     while crate::arch::timer::now() < deadline {
@@ -319,47 +297,28 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
     run.assert_returned("reclaiming a blocked resident's region did not return its frames");
 }
 
-/// **`DESTROY` reclaims a region whose resident is blocked on a rendezvous it does not own**
-/// (milestone 133, proposal A). **This is the test that hung before this milestone**, and the
-/// difference from its sibling above is one line: the rendezvous is created from the kernel's own
-/// pinned region rather than from the child's, so the sweep that opens `reap_region_objects` never
-/// touches it and the child is never woken by anything.
+/// `DESTROY` reclaims a region whose resident is blocked on a rendezvous it does not own
+/// (milestone 133, proposal A).
 ///
-/// That is not an exotic arrangement, it is what a hung component *is*. A server parks in `RECEIVE`
-/// on a rendezvous its clients own; a client parks in `CALL` on a server's. Either way the
-/// resident waits on somebody else's object, §16's kill is armed by the refusal and spent by
-/// `schedule()` only for a thread that is `Running`, and a thread waiting for a rendezvous nobody
-/// will ever complete does not become `Running` again. So the arm was armed and never landed, the
-/// refusal was permanent, and **the region was gone for the life of the machine.** No privilege
-/// fixed it, because it was a scheduler property rather than an authorization one.
+/// This is what a hung component is: a resident waiting on somebody else's object, which the
+/// region sweep never touches, so nothing wakes it to spend the armed kill. Asserted in order: the
+/// region comes back; the child is off the receiver queue (else a freed TCB is still linked, a
+/// dangling pointer rather than a leak); every frame returns. See notes/blocked-thread-teardown.md.
 ///
-/// The three assertions are the milestone, in order: the region comes back, the child is off the
-/// rendezvous's receiver queue (so the reclaim did not free a TCB that a queue still pointed at,
-/// which is the failure mode that would be a dangling pointer rather than a leak), and every frame
-/// returns to baseline.
-///
-/// **Verified it can fail**: reverting `region_reap_verdict`'s `Blocked` arm to
-/// `RegionReap::RefuseAndArm` makes this spend its whole two-second deadline and trip its own
-/// first assertion.
+/// Verified it can fail: reverting `region_reap_verdict`'s `Blocked` arm to
+/// `RegionReap::RefuseAndArm` spends the two-second deadline and trips the first assertion.
 #[test_case]
 fn destroy_reclaims_a_region_whose_resident_blocks_on_a_rendezvous_it_does_not_own() {
-    // Somebody else's rendezvous is the whole point: it is not created from `region`, so the sweep
-    // that opens `reap_region_objects` never touches it and nothing ever wakes the child. It comes
-    // out of a region of the test's own, which the child's reclaim cannot reach, and which the
-    // test reclaims last.
-    //
-    // Creating it before a machine-wide free-frame baseline used to be load-bearing, and sampling
-    // in the other order cost this test two runs at a deterministic 32 frames. The accounting
-    // below names the child's own region instead, so the rendezvous's pages are outside the
-    // measurement by construction rather than by ordering.
+    // Somebody else's rendezvous, from a region of the test's own that the child's reclaim cannot
+    // reach and the test reclaims last. The accounting names the child's region, so these pages
+    // are outside it by construction.
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let ep = sched::create_rendezvous_from(endpoints).expect("no rendezvous");
 
     let (region, tid) = child_blocked_on(ep, crate::cap::Rights::READ, RECEIVE_STUB);
     let run = crate::testing::RegionRun::of(region);
 
-    // **Wait for it to be queued, not for "probably scheduled by now."** Reclaiming a child that
-    // is still `Ready` proves the old force-kill path and nothing about this one.
+    // Wait until it is queued: a child still `Ready` proves only the force-kill path.
     assert!(
         super::wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
         "the child never blocked on the rendezvous, so this test would prove the wrong thing",
@@ -387,36 +346,19 @@ fn destroy_reclaims_a_region_whose_resident_blocks_on_a_rendezvous_it_does_not_o
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **A `Reply` capability naming a torn-down caller does not survive the teardown**, which is the
-/// half of milestone 133 that is a security property rather than a capacity one.
+/// A `Reply` capability naming a torn-down caller does not survive the teardown (milestone 133's
+/// security half).
 ///
-/// `cap::reply_cap` mints `Object::Reply(tid)` whose payload is a generational thread name with
-/// **no call identity**, and `sched::ipc_reply`'s guard checks the caller's `WaitRole` and discards
-/// the rendezvous. That is sound only while nothing can leave a reply park and enter a second
-/// `CALL` with an unconsumed `Reply` still naming it. A design that freed a stranded caller by
-/// *waking* it would create exactly that path, and a hung server's stale `Reply` would then pass
-/// the role check and forge an answer to a later, unrelated conversation. `L4Re` documents the
-/// identical hazard as a consequence of its own finite receive timeouts and Zircon documents it
-/// for `zx_channel_call`'s timeout; see notes/blocked-thread-teardown.md.
+/// `Object::Reply(tid)` carries no call identity, so a stale one could forge an answer to a later
+/// `CALL`. Proposal A never wakes the caller and also sweeps the capability (seL4's two fixes);
+/// this pins the sweep, which a change could drop while every capacity assertion passed. The
+/// caller is collected, on no queue at all. See notes/blocked-thread-teardown.md, "A hazard".
 ///
-/// **Proposal A takes both of seL4's fixes rather than either.** The caller is never woken, which
-/// is `ThreadState_Inactive` and means no second `CALL` can exist to be forged against; and the
-/// outstanding capability is swept anyway, which is `cteDeleteOne(callerCap)` from `cancelIPC`.
-/// This test pins the sweep, because the sweep is the half that a later change could quietly drop
-/// while every capacity assertion above went on passing. **A change that traded a permanent block
-/// for a forgeable reply would be a worse defect than the one it fixes**, and a test that asserted
-/// only the reclaim would not notice.
-///
-/// The caller staged here is the hardest shape there is: its request was collected, so it sits on
-/// **no queue at all** and no rendezvous sweep could reach it.
-///
-/// **Verified it can fail**: deleting the `delete_matching` sweep from
-/// `sched::finish_blocked_resident` leaves the slot occupied and trips the middle assertion, while
-/// the reclaim itself still succeeds.
+/// Verified it can fail: deleting the `delete_matching` sweep from `sched::finish_blocked_resident`
+/// trips the middle assertion while the reclaim still succeeds.
 #[test_case]
 fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
-    // Out of a region of the test's own, reclaimed last, so it is outside what this test accounts
-    // for. See the test above.
+    // From a region of the test's own, reclaimed last, outside what the test accounts for.
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let ep = sched::create_rendezvous_from(endpoints).expect("no rendezvous");
 
@@ -424,9 +366,8 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     let (region, tid) = child_blocked_on(ep, crate::cap::Rights::WRITE, CALL_STUB);
     let run = crate::testing::RegionRun::of(region); // this region's frames, not the machine's
 
-    // Collect the request, which is what moves the caller off the sender queue and leaves it
-    // reply-parked on nothing. `ipc_receive_cap` deliberately does not wake a caller: the reply is
-    // the only thing that may, and this server never sends one.
+    // Collecting the request leaves the caller reply-parked on nothing. `ipc_receive_cap` does not
+    // wake a caller: only the reply may, and this server never sends one.
     let [_word, slot, _w1, _badge, ..] = sched::ipc_receive_cap(ep);
     assert_ne!(
         slot,
@@ -451,8 +392,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
         "a region whose resident is reply-parked never reclaimed",
     );
 
-    // **The sweep.** The server (this thread) held a live `Reply` naming a thread that no longer
-    // exists; after the teardown it holds nothing, so there is no capability left to forge with.
+    // The sweep: this thread's `Reply` named a thread that no longer exists, and is gone.
     assert!(
         sched::current_cap(slot).is_err(),
         "a stale Reply capability outlived the caller it names: a hung or compromised server can \
@@ -467,47 +407,28 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **A region lent to an address space is freed by its owner, and by nobody else.**
+/// A region lent to an address space is freed by its owner, and by nobody else.
 ///
-/// The deterministic half of the intermittent `double free of frame 0x82a3e000` that
-/// [`destroy_reclaims_a_region_whose_resident_is_blocked_in_receive`] hit once in 45 runs on riscv64
-/// (notes/object-revocation.md BUGS). That test needs two cores to disagree; this one needs
-/// nobody, because it stages the window by hand instead of racing for it.
-///
-/// The window, in the order the machine takes it. `sched::reclaim_region` reaps the region's
-/// threads under `IPC_TABLES`, then unpins, then destroys. The reaper (`sched::finish_switch`) takes a
-/// dead thread's address space out of the table under `IPC_TABLES`, **releases the lock**, and only then
-/// drops it, because `AddressSpace::drop` runs a revocation sweep that takes `IPC_TABLES` itself. So the
-/// unpin and the drop are unordered, and the old code's safety argument (the pin refuses the
-/// borrower's `destroy`) is exactly the thing the unpin has already withdrawn.
-///
-/// What this asserts is the property that makes the ordering irrelevant: **dropping a space built
-/// from a lent region returns nothing.** Called on the old code it fails on its own assertion
-/// rather than panicking in the allocator, which is the difference between a regression gate and a
-/// coin flip: the double free needs the two `memory_region::destroy` calls to also overlap, and no test
-/// can schedule that.
+/// The deterministic half of the intermittent riscv64 double free in notes/object-revocation.md
+/// ("Two names for one region"), staged by hand. `sched::reclaim_region` reaps under `IPC_TABLES`, unpins, destroys; the
+/// reaper drops a dead space after releasing `IPC_TABLES` (its `Drop` takes it), so unpin and drop
+/// are unordered. Asserted: dropping a space built from a lent region returns nothing. Against the
+/// old code that fails an assertion rather than needing two `destroy` calls to overlap.
 #[test_case]
 fn an_address_space_never_frees_a_region_it_was_lent() {
     // Four pages is enough for a root and one table; nothing is mapped here, so the space is only
     // ever asked who owns its memory.
     let region = crate::memory_region::create(4).expect("no region for the lent-backing test");
-    // **These four frames, by name, and that is what retires the settling loop that stood here.**
-    // This test used to sample the machine's free-frame count until two reads a yield apart
-    // agreed, because an earlier test's thread can be reaped from another core a beat after it
-    // leaves the table and its space's region freed inside this window. The wait was real work
-    // done to make a global counter usable; asking about this region's own run removes the need
-    // for it, since nothing any other core does can touch these four bits. `RegionRun::of` also
-    // asserts all four are used, which is the "the region should have cost exactly its 4 pages"
-    // claim the subtraction used to make.
+    // These four frames, by name: another core's late reap cannot touch them, as it can a
+    // machine-wide free count. `RegionRun::of` also asserts the region cost exactly its 4 pages.
     let run = crate::testing::RegionRun::of(region);
     let name = user_address_space_create(region).expect("no address space from the region");
 
-    // Out of the registry, exactly as a dead thread's reaper takes it (§249 (a running address
-    // space stays nameable)): from here the space is an owned value whose `Drop` is the thing under
-    // test, which is the shape the reaper holds it in.
+    // Out of the registry, as a dead thread's reaper takes it (§249 (a running address space stays
+    // nameable)): an owned value whose `Drop` is under test.
     let space = take_user_address_space(name).expect("the space was not in the registry");
 
-    // `reclaim_region`'s unpin, arriving BEFORE the drop. This one line is the whole race.
+    // `reclaim_region`'s unpin, arriving before the drop: the whole race.
     crate::memory_region::unpin(region);
     drop(space);
 

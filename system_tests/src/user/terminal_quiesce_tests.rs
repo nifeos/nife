@@ -1,8 +1,8 @@
 //! **A terminal can be quiesced for replacement without stranding its reader** (milestone 23 (a
 //! capability-routed component OS with live replacement); calef's ruling of 2026-09-26, "1a and
-//! 2b"). `OPERATION_QUIESCE` rides the terminal endpoint, and a parked `OPERATION_READLINE` or `OPERATION_READRAW` is
-//! answered `FLAG_RETRY` before the terminal stops receiving, because the reply capability that
-//! names the reader cannot leave `line_editor`'s capability table.
+//! 2b"). `OPERATION_QUIESCE` rides the terminal endpoint, and a parked `OPERATION_READLINE` or
+//! `OPERATION_READRAW` is answered `FLAG_RETRY` before the terminal stops receiving, because the
+//! reply capability that names the reader cannot leave `line_editor`'s capability table.
 //!
 //! The test plays the supervisor as well as the input driver and the reader, on the harness
 //! `raw_mode_service` already provides. As the supervisor it quiesces through a copy badged

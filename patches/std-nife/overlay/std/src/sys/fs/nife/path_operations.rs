@@ -1,9 +1,7 @@
 //! **Path-level operations**.
 //!
-//! Cut out of `sys/fs/nife.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, for §266 (a Rust source file stays under 2,000 lines) and §282
-//! (when a file is split, the parent becomes an index). What was private to `nife` is `pub(super)`
-//! here, which reaches the same modules: `nife` and its children.
+//! A seam of `sys/fs/nife.rs` (§282 (when a file is split, the parent becomes an index)):
+//! `pub(super)` here reaches `nife` and its children.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -11,37 +9,22 @@
 use super::*;
 
 /// A name's metadata: open, `FSTAT`, close, then `GETMTIME`. Four messages instead of one, because
-/// the contract has no stat-by-name verb; the effect is the same and the authority is identical (the
-/// name still resolves only under the granted directory, and every one of the four needs the same
-/// `dir::READ` the walk asks for).
+/// the contract has no stat-by-name verb; the authority is identical (the name still resolves only
+/// under the granted directory, and all four need the `dir::READ` the walk asks for).
 ///
-/// **A directory answers too** (milestone 64). `OPEN` refuses a directory with `EISDIR`, and that
-/// refusal *is* the answer to "what kind of thing is this name", so it is read as one rather than
-/// propagated. Without this, `Path::is_dir()` was false for every directory, and
-/// `std::fs::create_dir_all` was not idempotent: it recovers from `AlreadyExists` by asking whether
-/// the name is already a directory, and got told no.
-///
-/// **The mtime is asked for by name, after the kind is known** (milestone 64's last pass). The walk
-/// has already reached the directory holding the name, so `GETMTIME` against that handle is one
-/// more message and needs no right the walk did not already ask for. It is issued after `OPEN`
-/// rather than before so that every *error* this function returns is the one it returned before
-/// the mtime existed: a refused `GETMTIME` is kept in the [`FileAttr`] and surfaces from
-/// `modified()`, never from here (see [`Mtime`]). The four messages are not atomic, so a name
-/// replaced between `OPEN` and `GETMTIME` reports the new node's time with the old node's size,
-/// which is the same window a Unix program that calls `stat` twice has.
-///
-/// The size it reports for a directory is 0 and that is a placeholder rather than a measurement,
-/// for the reason [`FileAttr`] gives. `accessed`/`created` still refuse, so nothing here invents a
-/// fact the contract does not carry.
+/// **A directory answers too** (milestone 64): `OPEN`'s `EISDIR` *is* the answer to "what kind of
+/// thing is this name", so `Path::is_dir()` and `create_dir_all`'s recovery from `AlreadyExists`
+/// work. `GETMTIME` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
+/// a refused one surfaces from `modified()` (see [`Mtime`]). The four are not atomic: a name
+/// replaced between `OPEN` and `GETMTIME` reports the new node's time with the old node's size, the
+/// window a Unix program calling `stat` twice has. A directory's size is a placeholder 0.
 pub fn stat(path: &Path) -> io::Result<FileAttr> {
     if !is_reachable() {
         return Err(unsupported_err());
     }
     // ``, `.` and `/` name the granted directory, which no `OPEN` can reach: it is the directory
-    // the endpoint is bound to rather than a name inside it. Holding the capability at all is the
-    // whole of what there is to know about it, and it has no name to ask an mtime by. (`/` used
-    // to fall through to the walk and come back `InvalidFilename`, a leftover from before a
-    // leading slash named this process's root; `count_names` is the same test `readdir` uses.)
+    // the endpoint is bound to rather than a name inside it, and it has no name to ask an mtime
+    // by. `count_names` is the same test `readdir` uses.
     if count_names(path)? == 0 {
         return Ok(FileAttr { size: 0, dir: true, mtime: Mtime::Unnamed });
     }
@@ -90,17 +73,14 @@ pub fn exists(path: &Path) -> io::Result<bool> {
     }
 }
 
-/// **List a directory** (`OPENDIR` + `READDIR`, milestone 64).
-///
-/// Two shapes, and the difference is which directory capability answers:
+/// **List a directory** (`OPENDIR` + `READDIR`, milestone 64), drained here rather than streamed
+/// ([`ReadDir`] says why).
 ///
 /// - `read_dir(".")` (or `read_dir("")`) lists **the granted directory itself**, which is handle
 ///   `fs::ROOT` and costs no `OPENDIR`.
 /// - `read_dir("sub")` asks the server for a capability to `sub` first, lists through it, and
 ///   closes it. That is descend-then-enumerate, and it is the only way to reach `sub`: this
 ///   process holds no name for it other than through its parent.
-///
-/// The listing is drained here rather than streamed; [`ReadDir`] says why.
 pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     if !is_reachable() {
         return Err(unsupported_err());
@@ -191,20 +171,14 @@ pub fn rmdir(p: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// **Move a name** (`RENAME`, milestone 64), and the reason this one matters out of proportion to
-/// how often crates name it: write-a-temp-then-rename is how every careful program replaces a file,
-/// and `filesystem_contract::fs::RENAME` is both concurrency-atomic and crash-atomic, which is what that idiom
-/// actually needs.
+/// **Move a name** (`RENAME`, milestone 64): write-a-temp-then-rename is how a careful program
+/// replaces a file, and `filesystem_contract::fs::RENAME` is concurrency-atomic and crash-atomic.
 ///
-/// The two names travel in the shared page back to back, source first, because one request word
-/// cannot carry two lengths.
-///
-/// **`RENAME` is the one verb that names two directories**, and since milestone 122 both of them
-/// can be somewhere other than the granted root: each side is walked separately and its handle goes
-/// into the request, which is what makes `rename("a/tmp", "b/final")` a single atomic message
-/// rather than something a caller has to build out of copy and unlink. The rights asked for differ
-/// by side, and that is the contract's rather than a nicety: the source directory loses a name
-/// (`REMOVE`) and the destination gains one (`CREATE`).
+/// Each side is walked separately (milestone 122) and both handles go in one request, so
+/// `rename("a/tmp", "b/final")` is a single atomic message. The source directory loses a name
+/// (`REMOVE`) and the destination gains one (`CREATE`), which is the contract's rule. The two names
+/// travel in the shared page back to back, source first, because one request word cannot carry two
+/// lengths.
 pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
     if !is_reachable() {
         return Err(unsupported_err());
@@ -227,17 +201,11 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// **Copy a file's contents** (milestone 64, rank 26), as an open, a read/write loop, and two
-/// closes. No verb backs this and none needs to: unlike `rename`, which has to be atomic and
-/// therefore has to be the server's job, a copy is exactly "read all of one, write all of the
-/// other", and doing it here costs the same messages doing it in the caller would.
-///
-/// Both names resolve under the granted directory, so this cannot copy across a capability boundary;
-/// a program holding two directories needs the namespace milestone 47 owns.
-///
-/// **What it does not copy is permissions**, which every other platform's `fs::copy` does. There are
-/// none to copy (§27 has no mode bits), so the usual caveat is inverted: nothing is silently lost,
-/// because there was never anything there.
+/// **Copy a file's contents** (milestone 64, rank 26): an open, a read/write loop, and two closes.
+/// No verb backs it and none needs to: unlike `rename` it need not be atomic, and doing it here
+/// costs the messages the caller would spend. Both names resolve under the granted directory, so
+/// it cannot copy across a capability boundary (a program holding two directories needs the
+/// namespace milestone 47 owns). It copies no permissions, because §27 has none to copy.
 pub fn copy(from: &Path, to: &Path) -> io::Result<u64> {
     let mut reader = OpenOptions::new();
     reader.read(true);
@@ -295,34 +263,14 @@ pub fn set_perm_nofollow(_p: &Path, _perm: FilePermissions) -> io::Result<()> {
 
 /// **`std::fs::set_times`** (milestone 64, rank 28): `SETMTIME_AT`, the caller's time, by name.
 ///
-/// **Always `SETMTIME_AT`, never `SETMTIME`, and the rights follow from that.** std hands this
-/// function a `SystemTime` the caller chose, which is an assertion about history even when the
-/// caller computed it from `SystemTime::now()`; DECISIONS §112 put exactly that authority behind
-/// `dir::SETTIME`, separate from `dir::WRITE`. So the walk asks for `WRITE | SETTIME` and a grant
-/// without `SETTIME` answers `ReadOnlyFilesystem`. Falling back to `SETMTIME` there would write the
-/// server's own "now" in place of the time the caller asked for and report success, which is the
-/// one thing this function must not do; and the server's "now" is a logical counter, not a time
-/// (see `FileAttr::modified`).
-///
-/// Three things are refused before any message is sent, so a refusal never leaves half a change
-/// behind:
-///
-/// - **An access time.** No verb sets one. Refusing the whole call is the honest answer to a
-///   request this contract can only half carry; setting the mtime and dropping the atime would
-///   report success for something that did not happen.
-/// - **A time past `i64::MAX` seconds.** The contract's reply word is signed, so `GETMTIME` could
-///   never report such a value back; it would read as an error. The server accepts it (§112 does
-///   not referee plausibility), and this PAL declines to write a time it cannot read.
-/// - **The granted directory itself** (``, `.`, `/`), which has no name to ask by.
-///
-/// **Whole seconds.** The wire carries seconds and the server stores a zero nanosecond part, so a
-/// sub-second part is truncated. That is the same answer a second-granularity filesystem gives on
-/// Unix, and std documents timestamp precision as platform-dependent; it is recorded in
-/// notes/std/file-times.md's BUGS rather than refused, because refusing every `SystemTime::now()` would make
-/// the call unusable for its commonest caller.
-///
-/// A `FileTimes` with nothing set changes nothing, and still resolves the name, so a missing file
-/// is `NotFound` as it is on Unix rather than a vacuous success.
+/// Never `SETMTIME`: a caller's `SystemTime` asserts history, which DECISIONS §112 puts behind
+/// `dir::SETTIME`, so the walk asks for `WRITE | SETTIME` and a grant without it answers
+/// `ReadOnlyFilesystem`. Falling back would write the server's logical "now" and report success.
+/// Refused before any message, so nothing is half done: an access time (no verb sets one), a time
+/// past `i64::MAX` seconds (`GETMTIME`'s signed reply could never read it back), and the granted
+/// directory itself (``, `.`, `/`), which has no name. A sub-second part is truncated, as on a
+/// second-granularity Unix filesystem. An empty `FileTimes` still resolves the name, so a missing
+/// file is `NotFound`. See notes/std/file-times.md.
 pub fn set_times(p: &Path, times: FileTimes) -> io::Result<()> {
     if !is_reachable() {
         return Err(unsupported_err());

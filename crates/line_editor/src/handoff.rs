@@ -1,5 +1,4 @@
-// Moved out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to
-// their own files). Its docs stay on its `pub mod` line in `lib.rs`, where they always were.
+// This module's docs are on its `pub mod` line in `lib.rs`.
 
 use super::{HIST, LINE_MAX, LineDisc, PROMPT_MAX, RAW_QUEUE_MAX, RawQueue};
 

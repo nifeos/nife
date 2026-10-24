@@ -1,61 +1,23 @@
-//! **`http_response`**: one HTTP/1.x `GET`, written, and the response to it, read as it arrives.
+//! One HTTP/1.x `GET`, written, and the response to it, read as it arrives: the pure-logic halves
+//! of the plain LAN client rung 3a of milestone 198 (a package manager, and the trivial install that
+//! makes a second customer possible) fetches packages with.
 //!
-//! Rung 3a of milestone 198 (a package manager, and the trivial install that makes a second
-//! customer possible) fetches a package from a host on the same network over plain HTTP. DECISIONS
-//! §196 (nife carries TLS) rules HTTPS for the internet rung, and under §195 (a reviewed recipe
-//! vouches for a package) a package's digest, not its transport, decides whether its bytes may run,
-//! so the LAN rung needs a plain client and nothing more. This crate is that client's two halves
-//! that are pure logic: the request line, and a reader for the response that never holds the body.
+//! [`get_request`] writes the request line. [`Response::feed`] takes each socket read, keeps only
+//! the status line and headers in a fixed buffer (parsed by `httparse`), and hands back the part
+//! that is body, so the caller hashes and stores it without this crate holding a byte. It is
+//! strict: it requires `Content-Length` and CRLF line ends, refuses `Transfer-Encoding`, caps the
+//! head at [`HEAD_MAX`] and refuses a body longer than it said. See notes/packages/fetching.md.
 //!
-//! **The reader is incremental and holds only the head.** A response arrives a socket read at a
-//! time, at most `socket_contract::DATA_MAX` bytes each, and the body is a package that may be a
-//! megabyte. [`Response::feed`] takes each read, keeps the status line and headers in a fixed
-//! buffer, and hands back the part of the read that is body, so a caller can hash it and write it
-//! somewhere without this crate owning a byte of it. That is the same borrowing shape
-//! `package_archive` uses, for the same reason: the first consumer has no allocator.
-//!
-//! **The head is parsed by `httparse`**, the parser under `hyper`, which is `no_std`, has no
-//! dependencies and no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status is how
-//! this reader knows the head has not ended yet. What stays ours is the policy around it: the head
-//! cap, the request writer, and the rules below, which `httparse` does not enforce because a general
-//! HTTP parser is deliberately more lenient than a package client should be.
-//!
-//! **It is strict, because every byte it reads came off a network.** A response it cannot read
-//! exactly is refused rather than guessed at:
-//!
-//! - **`Content-Length` is required.** HTTP/1.0 lets a server end a body by closing the
-//!   connection, but a client that accepts that cannot tell a complete package from a truncated
-//!   one, and the net server reports a peer's close as a failed receive after a bounded wait, not
-//!   as an end. A digest would still catch the truncation; refusing it here says why.
-//! - **`Transfer-Encoding` is refused**, chunked included. A `GET` sent as HTTP/1.0 is never owed a
-//!   chunked reply, so a server sending one is not speaking to us.
-//! - **Lines end in CRLF** (`httparse` also accepts a bare LF, and a client that does can be made to
-//!   disagree with a proxy about where a line stops), a header section is at most [`HEAD_MAX`]
-//!   bytes, a duplicated `Content-Length` must agree with itself, and a body longer than it said is
-//!   refused.
 
 //! # BUGS
 //!
-//! - **No redirects, no keep-alive, no `Range`.** One request per connection, and a `3xx` is a
-//!   status like any other that the caller refuses.
-//! - **A close-delimited body is refused**, per the list above. A server that omits
-//!   `Content-Length` cannot serve a package to nife.
-//! - **Header values other than the two it reads are not validated.** They are skipped, not
-//!   interpreted, so a malformed `Date` costs nothing; a malformed line (no colon) is refused.
-//! - **The head parse is `httparse`'s, and is not proved here.** What vouches for it is upstream's
-//!   own fuzzing (OSS-Fuzz) and its use under `hyper`. What is ours is the glue, and
-//!   `fuzz/fuzz_targets/http_response_feed.rs` checks that how the reads fall never changes the
-//!   answer. No Kani harness covers the head: the reader is not on the verification path, so
-//!   design/decisions/0046-dependency-rule.md takes the parser rather than proving one, and the
-//!   harness the hand-written parser had never finished in a CI shard's minutes.
-//! - **At most [`MAX_HEADERS`] header lines.** `httparse` parses into a caller-supplied array, and
-//!   this crate has no allocator, so a head with more lines is refused as [`Error::HeadTooLong`]
-//!   even when it is under the byte cap. The array lives on the stack for the length of one parse
-//!   (4 KiB).
-//! - **The head is parsed again on every read until it ends**, because `httparse` does not resume.
-//!   Bounded by the head cap (quadratic in it, for a peer that sends one byte per read); not measured.
-//! - **A minor version other than 0 or 1 is refused** (`HTTP/1.2` does not exist); `httparse`
-//!   accepts only those two.
+//! - No redirects, no keep-alive, no `Range`: a `3xx` is a status the caller refuses.
+//! - A close-delimited body is refused, so a server that omits `Content-Length` cannot serve nife.
+//! - Header values other than the two it reads are skipped, not validated.
+//! - The head parse is `httparse`'s, vouched for by upstream fuzzing, not proved here.
+//! - At most [`MAX_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
+//! - The head is re-parsed on every read until it ends, quadratic in the cap; not measured.
+//! - A minor version other than 0 or 1 is refused.
 //!
 //! Name: provisional 2026-09-24 (milestone 198's rung 3a consumer lane). `http` alone would claim
 //! more than a request writer and a response reader; `design/naming.md` is the rule and calef's the

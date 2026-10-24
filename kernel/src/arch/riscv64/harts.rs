@@ -5,12 +5,10 @@
 
 use super::*;
 
-/// Start a secondary hart, via the SBI HSM
-/// (Hart State Management) extension's `sbi_hart_start(hartid, start_addr, opaque)`. The firmware
-/// starts the target hart at `entry` (a physical address) in S-mode with paging off, `a0` = its hart
-/// id and `a1` = `context`. Returns the SBI error (0 = success; a hart QEMU did not create, when
-/// `-smp` is smaller than `MAX_CPUS`, returns a nonzero error rather than hanging). See boot.s
-/// `secondary_boot`.
+/// Start hart `target_hart` at physical `entry` in S-mode, paging off, with its hart id in `a0` and
+/// `context` in `a1`, through SBI HSM `hart_start`. See boot.s `secondary_boot`.
+///
+/// Returns the SBI error: 0 on success, nonzero for a hart the machine does not have.
 pub fn cpu_start(target_hart: u64, entry: u64, context: u64) -> i64 {
     const SBI_HSM_EID: usize = 0x0048_534D; // "HSM"
     const SBI_HART_START_FID: usize = 0;
@@ -28,29 +26,21 @@ pub fn cpu_start(target_hart: u64, entry: u64, context: u64) -> i64 {
     unsafe { sbi::call(SBI_HSM_EID, SBI_HART_START_FID, args) }.error as i64
 }
 
-/// Can this machine start a secondary hart at all? Asked once by `smp::bring_up_secondaries`.
+/// Whether this machine can start a secondary hart, asked once by `smp::bring_up_secondaries`.
 ///
-/// **Always true here, and the asymmetry with aarch64 is the point.** RISC-V has exactly one
-/// mechanism: SBI HSM `hart_start`, an `ecall` to the firmware that is already under us by
-/// construction (this kernel is entered in S-mode, so something is running in M-mode). There is no
-/// conduit to choose and no function id to look up, which is why milestone 100 is an aarch64
-/// milestone with a RISC-V half rather than the other way round. Whether the firmware *implements*
-/// HSM is a separate question and one `isa::init` already answers: `SBI_REQUIRED` includes it, so a
-/// firmware without it stops the boot before this is reached.
+/// Always true: SBI HSM is the one mechanism, and `isa::init` refuses firmware without it
+/// (`SBI_REQUIRED`) before this is reached.
 pub fn can_start_secondaries() -> bool {
     true
 }
 
-/// Print how this machine starts a hart. One line, on every boot, beside the SMP count; the aarch64
-/// twin has something to say here because it read `/psci`, and this one says what is fixed.
+/// Print how this machine starts a hart, one line on every boot beside the SMP count.
 pub fn print_bring_up_mechanism() {
     crate::println!("  smp: sbi hsm hart_start (the only mechanism RISC-V defines)");
 }
 
-/// Send a reschedule inter-processor interrupt to `target_hart` via the SBI IPI extension. The
-/// firmware sets the target hart's `sip.SSIP`, so it takes a supervisor software interrupt
-/// (`scause` = 1) and drains its inbox. The RISC-V analog of an aarch64 reschedule SGI; used by
-/// `arch::irq::send_reschedule` (and so by `sched::place_on` when it hands a thread to another hart).
+/// Send a reschedule IPI to `target_hart` through SBI IPI, which pends its `sip.SSIP` so it takes a
+/// supervisor software interrupt and drains its inbox. The analog of aarch64's reschedule SGI.
 pub fn sbi_send_ipi(target_hart: usize) {
     const SBI_IPI_EID: usize = 0x0073_5049; // "sPI"
     const SBI_SEND_IPI_FID: usize = 0;

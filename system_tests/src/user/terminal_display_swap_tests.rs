@@ -3,17 +3,17 @@
 //! 2026-10-19 (UTC): a dedicated swap reserve, "everything" handed off, the spawner supervises).
 //!
 //! A real `terminal_supervisor` in display mode builds a real `display_terminal` on the kernel's
-//! display stand-in, and a `line_editor` printing through it. The test plays the application on the
-//! terminal's endpoint, holds the supervisor's swap endpoint, and holds the machine's one swap
-//! reserve, which on a real boot would be the installer's (milestone 694 (the installer asks the
-//! terminal to swap), not built).
+//! display stand-in, with a `line_editor` printing through it. The test plays the application,
+//! holds the supervisor's swap endpoint and the machine's one swap reserve (the installer's on a
+//! real boot: milestone 694 (the installer asks the terminal to swap), not built).
+
+//! # Why a kernel test
 //!
-//! It is a kernel test rather than a userspace one because its two witnesses are memory no
-//! program holds: the scanout, read through the direct map and compared pixel for pixel with an
-//! engine the kernel runs itself, and the handoff blob, read out of the reserve after the swap and
-//! compared byte for byte with the blob that engine writes. The pixels show the screen survived;
-//! the blob shows the scrollback, the cursor, the rendition and the parser's state did, which no
-//! pixel on a live view can.
+//! Its two witnesses are memory no program holds. The scanout, read through the direct map, is
+//! compared pixel for pixel with an engine the kernel runs itself, which shows the screen survived.
+//! The handoff blob, read out of the reserve after the swap, is compared byte for byte with the
+//! blob that engine writes, which shows the scrollback, cursor, rendition and parser state did; no
+//! pixel on a live view can show those.
 //!
 //! Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
 

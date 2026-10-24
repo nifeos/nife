@@ -128,6 +128,52 @@ fallback for a tree that does not say, and the boot prints which source won.
 
 The Pi port wants all of it, because none of the addresses will match.
 
+## The parser's bounds
+
+The blob comes from firmware, and firmware is the trust boundary here, so these bounds are boot
+robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
+into an `Error`.
+
+- `MAX_TOTALSIZE` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize` before
+  anything else is checked, and the magic says only that the pointer is at a blob. A `totalsize`
+  of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the end of RAM.
+  The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has met is
+  QEMU `virt`'s, under 64 KiB, and a VisionFive 2's U-Boot tree is under 32 KiB.
+- `be32` and `be64` add with `checked_add`, because every offset comes out of the blob. The
+  verification module proves both total.
+- A `reg` pair whose `start + size` wraps is `Error::RegionOverflow`. `Region::end` still
+  saturates, because `Region` is `pub` with `pub` fields and anyone can build one. That is the
+  argument `elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
+  own, whatever the parser that usually builds it checked. The fuzz target
+  `fuzz/fuzz_targets/device_tree_blob_walk` found the panic it closes.
+- The walkers that keep per-depth state stop at a depth of 16. Past it they refuse to match
+  rather than return an `Error`, so they never index past their stacks (BUGS below).
+
+## Finding a node
+
+`node_reg` matches a node-name prefix. It found the interrupt controller on both QEMU boards:
+`intc@8000000` on aarch64 `virt`, a direct child of the root, and `plic@c000000` on riscv64
+`virt`, nested under `/soc`. It decodes with the parent's cell counts even though QEMU writes 2
+and 2 at both levels, because relying on that breaks the first board that differs. A name is only
+a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"` or
+`"riscv,plic0"`, and the Pi port will need that.
+
+`node_reg_compatible` is that lookup, first needed for the RTC of milestone 51 (wall-clock time).
+The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
+finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
+drive. `compatible` lists the most specific entry first, and a match on any entry counts.
+`node_prop_compatible`, `parent_prop_compatible` and `phandle_prop` follow the same pattern: the
+deciding property may come after the wanted one in a node, so each open node's candidate is
+remembered and the answer is taken when a matching node closes.
+
+`node_prop_inherited` exists because `interrupt-parent` sits in a different place on each machine.
+QEMU's riscv64 `virt` writes it on the serial node, QEMU's aarch64 `virt` once on the root, and the
+mainline JH7110 dtsi on `/soc`. A read of the device's own node alone works on one of the three.
+
+`node_props` reads every match, because a heterogeneous RISC-V machine describes each hart as its
+own `cpu@` node with its own `riscv,isa`. A kernel that read the first one and then scheduled onto
+any hart would have read the wrong node, and the JH7110 is that machine.
+
 ## BUGS
 
 The blob is the first thing this kernel reads and the last thing it can check against anything
@@ -159,6 +205,30 @@ failure, so every limitation here is a limitation on the boot path specifically.
 
 `crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two, hand-built rather than
 fuzzer-minimized, so a reader meets the attack next to the code.
+
+## A tree written from ACPI: what it loses
+
+`uefi_loader/src/device_tree_from_acpi.rs` writes a device tree for an aarch64 machine that offers
+only ACPI, and its BUGS keep one line per loss. The full accounts:
+
+- No PCI. An ECAM window is in the MCFG, but a PCI node also needs `ranges` (the 32-bit and 64-bit
+  BAR windows) and an `interrupt-map`. On an ACPI machine both live in the DSDT's `_CRS` and `_PRT`,
+  which are AML. So no `pci-host-ecam-generic` node is written at all, `memory::pci_regions()`
+  answers `None`, and the boot takes the path it takes on the JH7110, which has no such node either.
+- No virtio-mmio and no `fw_cfg`, for the same reason: QEMU describes them in AML.
+- No ITS node. The MADT's ITS entry is decoded and the loader prints it, but `machine_discovery::gic`
+  reads none and the kernel drives no ITS (milestone 317 (the interrupt-remapping flags, and where
+  MSI confinement actually lives)). A node nothing reads would be output no host test can check
+  against a reader.
+- The memory map is the UEFI one, merged. Runtime-services and ACPI regions are excluded, so the
+  kernel will not hand out the tables it was described by. Conventional, boot-services and loader
+  memory is offered as RAM, the same set the firmware's own device tree offers.
+- Register block sizes are architectural, not stated. The MADT gives a GIC distributor's address and
+  never its length, because the GIC architecture fixes the frame at 64 KiB. The same goes for the
+  GICv2 CPU interface and the PL011's page. A machine whose frames differ would need this told
+  rather than assumed, and nothing here would notice.
+- One `/memory` node per merged run, capped at `MAX_RAM`. A machine with more runs than that is
+  described short, and nothing says so.
 
 ---
 

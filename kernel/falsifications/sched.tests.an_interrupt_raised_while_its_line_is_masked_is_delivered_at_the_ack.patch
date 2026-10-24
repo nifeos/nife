@@ -16,12 +16,12 @@ riscv64 only. aarch64's GIC and x86_64's self-IPI have no claim to forget, and t
 riscv64's, which neither of their kernels compiles.
 
 diff --git a/kernel/src/arch/riscv64/irq.rs b/kernel/src/arch/riscv64/irq.rs
-index 46e1e2cd1..3c5583b62 100644
+index 0342c41d0..6a5dcaf33 100644
 --- a/kernel/src/arch/riscv64/irq.rs
 +++ b/kernel/src/arch/riscv64/irq.rs
-@@ -138,10 +138,8 @@ pub(crate) fn hold_claim(source: u32, context: usize) {
- /// nothing claimed), it enables the source at its stable target hart (see [`target_context`]), so
- /// device interrupts spread across harts instead of all landing on the boot hart.
+@@ -116,10 +116,8 @@ pub(crate) fn hold_claim(source: u32, context: usize) {
+ /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
+ /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).
  pub fn enable(intid: u32) {
 -    match CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
 -        CTX_UNASSIGNED => crate::drivers::plic::enable(intid, target_context(intid)),
@@ -31,4 +31,4 @@ index 46e1e2cd1..3c5583b62 100644
 +    crate::drivers::plic::enable(intid, target_context(intid));
  }
  
- /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's
+ /// Reserve a vector a PCI function may deliver an MSI-X message on: `None` on this architecture.
