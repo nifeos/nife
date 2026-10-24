@@ -14,6 +14,15 @@ arrive with a device tree whose `/chosen/bootargs` this kernel does not parse; x
 through PVH with no device tree at all. One `env!` is identical on all three and needs no parsing.
 The price is a kernel relink, measured at about 2.3 s, when the filter *changes*.
 
+## A filter across the two test images
+
+Each leg boots two test images, the kernel's own and `system_tests`', so a filter naming a system
+test selects nothing in the kernel's image. `cargo xtask test --test` sets
+`NIFE_TEST_FILTER_ACROSS_IMAGES` (provisional), and the harness then leaves the count to xtask,
+which checks the sum over both images. Left unset, as for a bare `cargo test`, an empty selection
+still fails. The 2.3 s relink above buys back the 53 s of suite a filtered run skips, and
+`rerun-if-env-changed` is what makes a changed filter rebuild at all.
+
 ## What the flag turns off, and why
 
 A filtered run is not the suite, so three things that assert what unselected tests would have

@@ -1,29 +1,11 @@
-//! **The NVMe controller's admin plane** (milestone 53's storage half, narrowed to the admin half
-//! by milestone 261 (the NVMe driver leaves the kernel); notes/non-volatile-memory-express.md, [DECISIONS §86 (whether an NVMe driver can leave the kernel)](../../design/decisions/0086-el0-nvme-driver.md)).
+//! The NVMe controller's admin plane, what stays in the kernel under option 2a of §86 (whether an
+//! NVMe driver can leave the kernel).
 //!
-//! What is left in the kernel after §86's **option 2a**, and the line is the one the hardware
-//! already draws. Creating a queue names the physical address a ring lives at, in a PRP field of
-//! an admin command; the admin rings' own bases are the `ASQ` and `ACQ` registers. **That is the
-//! dangerous authority**, so it stays at EL1: reset the controller, build the admin pair by
-//! register, enable it, IDENTIFY the namespace, and create the one I/O queue pair whose rings are
-//! inside the region the IOMMU has already confined the device to. A process that never issues an
-//! admin command and never touches those registers cannot choose where any ring lives, which is
-//! what makes the geometry below a guarantee rather than an agreement.
-//!
-//! **The data path is gone from this file and runs at EL0.** Building a command, copying it into
-//! the submission ring, ringing the doorbell and watching a completion's phase tag are
-//! `components/src/non_volatile_memory_express.rs`'s now, over the same `crates/non_volatile_memory_express` arithmetic this module
-//! computes with. The bring-up below is still a test of that machinery, because the admin queue
-//! rides the identical ring discipline.
-//!
-//! Rule 2 shapes what is here exactly as it shaped the whole driver before: [`NonVolatileMemoryExpress`] takes the
-//! register window's virtual base and one DMA region, passed in, and reaches for nothing else.
-//! What reaches into the kernel is [`bring_up`], the policy function, which finds the controller
-//! on the bus (`pci::find_nvme_device`), allocates the DMA region, and **confines the device to it
-//! in hardware** before the controller is enabled: on all three `virt` machines the IOMMU denies an
-//! unlisted requester id by default (milestone 16b), so a controller that has not been confined
-//! cannot fetch its first command, and this bring-up is proof the confinement admits exactly what
-//! it should.
+//! Creating a queue names where a ring lives, so that authority stays here: reset the controller,
+//! build the admin pair by register, enable it, IDENTIFY the namespace, and create the one I/O
+//! pair inside the region [`bring_up`] confined the device to before enabling it. The data path
+//! runs at EL0 in `components/src/non_volatile_memory_express.rs`. [`NonVolatileMemoryExpress`]
+//! takes its register window and DMA region passed in. See notes/non-volatile-memory-express.md.
 //!
 //! Name: ratified 2026-09-17 (calef, DECISIONS §154), performed 2026-09-18. Introduced 2026-08-15
 //! with milestone 53's NVMe block driver as `nvme.rs`, the volatile half of the `nvme` crate, and
@@ -41,24 +23,19 @@ use crate::arch::mmu;
 /// block server serves the FS server without a translation layer.
 pub const BLOCK_SIZE: usize = filesystem_contract::blk::BLOCK_SIZE;
 
-/// The EL0 server's client windows (milestone 834 (ioping on nife and Linux)), named here for the NVMe system tests.
+/// The EL0 server's client windows (milestone 834 (ioping on nife and Linux)), named here for the
+/// NVMe system tests.
 #[cfg(feature = "system_tests")]
 pub use ::non_volatile_memory_express::{
     CLIENT_WINDOWS, DISK_TREE_WINDOW, FILESYSTEM_WINDOW, INSTALLER_WINDOW,
 };
 
-/// The DMA region's layout, in page offsets. One contiguous run, allocated by [`bring_up`] and
-/// confined as one region, in two halves that are **not** the same authority:
+/// The DMA region's layout, in page offsets, one run confined as one region.
 ///
-/// - pages 0..[`DATA_PLANE_PAGE`] are the **admin plane's**, and no EL0 process is mapped them:
-///   the two admin rings and the IDENTIFY buffer;
-/// - pages [`DATA_PLANE_PAGE`].. are the **data plane's**, mapped into the EL0 server: the I/O
-///   submission ring, the I/O completion ring, and one window of [`TRANSFER_PAGES`] pages of
-///   transfer buffer per client (`non_volatile_memory_express::CLIENT_WINDOWS`).
-///
-/// The IOMMU confines the device to the whole run, because the controller fetches from both
-/// halves. Splitting the *mappings* is what withholds the admin plane from the driver; see
-/// `components/src/non_volatile_memory_express.rs`'s "What it holds" for what that does and does not buy.
+/// Pages below [`DATA_PLANE_PAGE`] (the admin rings and the IDENTIFY buffer) are mapped into no
+/// process. From it up, the I/O rings and one [`TRANSFER_PAGES`] window per client are the EL0
+/// server's. The IOMMU bounds the device to the whole run, since it fetches from both halves; the
+/// split mappings are what withhold the admin plane. See notes/non-volatile-memory-express.md.
 const ADMIN_SQ_PAGE: u64 = 0;
 const ADMIN_CQ_PAGE: u64 = 1;
 const IDENTIFY_PAGE: u64 = 2;
@@ -72,15 +49,13 @@ const IO_CQ_PAGE: u64 = 4;
 pub(crate) const TRANSFER_PAGES: u64 = filesystem_contract::blk::TRANSFER_BLOCKS as u64;
 const DMA_PAGES: u64 = 5 + TRANSFER_PAGES * ::non_volatile_memory_express::CLIENT_WINDOWS as u64;
 
-/// **Test-only escape-target hook for the confinement falsification** (milestone 261's Outstanding
-/// item; milestone 202 (every confinement test is a ritual until somebody breaks the confinement and watches it fail)'s convention: a claim, a test, a replayable falsification). Zero in every
-/// shipped boot and in every passing test, so [`bring_up`] confines the controller to its own DMA
-/// region and nothing else. The replayable falsification
+/// A frame outside the DMA region that [`bring_up`] adds to the controller's IOMMU domain; zero in
+/// every shipped boot and passing test.
+///
+/// Only the replayable falsification
 /// (`system_tests/falsifications/...a_confined_el0_server_cannot_dma_outside_its_region.patch`)
-/// stores the physical base of a frame *outside* that region here; [`bring_up`] then widens the
-/// controller's IOMMU domain to include it, so an EL0 server that aims a PRP at that frame has its
-/// DMA land instead of faulting, and the test's canary is overwritten. That one store is the whole
-/// falsification, and it lives only in the patch, which is why the shipped tree never writes this.
+/// stores one, so an EL0 server's PRP at it lands instead of faulting, per milestone 202 (every
+/// confinement test is a ritual until somebody breaks the confinement and watches it fail).
 #[cfg(feature = "system_tests")]
 pub(crate) static ESCAPE_TARGET: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(0);
@@ -125,9 +100,9 @@ pub enum Error {
     UnsupportedController,
 }
 
-/// An initialized NVMe controller with one I/O queue pair, ready to be handed to an EL0 data
-/// plane. Constructed only by [`NonVolatileMemoryExpress::new`]; holding one is holding a disk that has already
-/// proven it can answer admin commands, and the authority to create more queues.
+/// An initialized NVMe controller with one I/O queue pair, ready to be handed to an EL0 data plane.
+/// Constructed only by [`NonVolatileMemoryExpress::new`]; holding one is holding a disk that has
+/// already proven it can answer admin commands, and the authority to create more queues.
 pub struct NonVolatileMemoryExpress {
     /// BAR0's virtual base: the register file and, from 0x1000, the doorbells.
     regs: u64,
@@ -172,11 +147,8 @@ impl NonVolatileMemoryExpress {
             cid: 0,
         };
         let cap = Cap(c.reg64(regs::CAP));
-        // The doorbell stride is checked here as well as in `non_volatile_memory_express::Handoff::unpack`, and the
-        // duplication is deliberate: a controller whose doorbell file does not fit the one page
-        // this wiring hands an EL0 data plane should fail at bring-up, loudly, naming the
-        // controller, rather than as a process that starts and then cannot address its own
-        // doorbells. `MAX_DSTRD` is Kani's finding, and its own doc has the arithmetic.
+        // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
+        // naming the controller, not in a process that cannot reach its doorbells (`MAX_DSTRD`).
         if cap.max_queue_entries() < ENTRIES as u32
             || cap.min_page_size() > page_frames::FRAME_SIZE
             || cap.doorbell_stride() > non_volatile_memory_express::MAX_DSTRD
@@ -243,11 +215,9 @@ impl NonVolatileMemoryExpress {
             return Err(refused);
         }
 
-        // The I/O pair, by admin command, completion queue first: the submission queue names its
-        // completion queue, so creating them in the other order is an Invalid Queue Identifier.
-        // **Both rings are inside the data plane's half of the region**, which is what makes the
-        // EL0 server able to reach them at all; it is the kernel that decided so, here, and the
-        // server has no command it could issue to change it.
+        // Completion queue first: the submission queue names it, so the other order is an Invalid
+        // Queue Identifier. Both rings sit in the data plane's half, where only the kernel put
+        // them.
         let cq_prp = direct_memory_access_phys + IO_CQ_PAGE * page_frames::FRAME_SIZE;
         let cmd = Command::create_io_cq(c.next_cid(), IO_QID, ENTRIES, cq_prp);
         c.transact(cmd)?;
@@ -263,19 +233,11 @@ impl NonVolatileMemoryExpress {
         self.ns.bytes()
     }
 
-    /// **Take the controller down, then give its DMA region back** (milestone 261 (the NVMe driver
-    /// leaves the kernel)'s DMA-escape test, the one caller). Clears `CC.EN` and waits for
-    /// `CSTS.RDY` to follow, the same step [`NonVolatileMemoryExpress::new`] takes before reprogramming a
-    /// controller that was left enabled. A disabled controller fetches no command and posts no
-    /// completion, so only after that are the region's frames freed: freeing them under an enabled
-    /// controller is the use-after-free-by-hardware notes/dma.md warns about.
+    /// Take the controller down (`CC.EN` cleared, `CSTS.RDY` followed), then free its DMA region.
     ///
-    /// The IOMMU domain still names the region afterwards, and its tables are not freed: the device
-    /// stays attached to them, and the next [`bring_up`] replaces the domain. A frame reallocated
-    /// meanwhile is reachable only by a controller that is off.
-    ///
-    /// `Err` when the controller will not report not-ready (or reports fatal status), and then
-    /// nothing is freed, because a controller that may still be running may still DMA.
+    /// Freeing under an enabled controller is use-after-free by hardware (notes/dma.md). The IOMMU
+    /// domain still names the region until the next [`bring_up`], reachable only by a controller
+    /// that is off. Returns `Err`, freeing nothing, when the controller will not report not-ready.
     ///
     /// Name: ratified 2026-10-05 (calef, #1647).
     #[cfg(feature = "system_tests")]
@@ -323,11 +285,8 @@ impl NonVolatileMemoryExpress {
                 + slot as u64 * 64) as *mut [u32; 16];
             core::ptr::write_volatile(dst, cmd.0);
         }
-        // Publish the command before the doorbell: the controller is another observer, and the
-        // doorbell write must not be reordered ahead of the entry it announces.
-        // direct_memory_access_write_barrier is a full barrier on both ISAs (DSB SY / fence), so it
-        // also orders the poll reads below against this ring, which is why one barrier a side is
-        // enough.
+        // The entry before the doorbell that announces it. A full barrier (DSB SY / fence), so it
+        // also orders the poll reads below; one barrier a side is enough.
         crate::arch::direct_memory_access_write_barrier();
         self.wr32(
             non_volatile_memory_express::doorbell(0, Doorbell::SubmissionTail, self.dstrd),
@@ -488,11 +447,8 @@ pub struct Found {
     pub controller: NonVolatileMemoryExpress,
 }
 
-/// Why [`bring_up`] produced no controller. **Two different facts**, and until milestone 261's
-/// bench rehearsal they shared one `None`: a machine with no NVMe, and a machine whose NVMe this
-/// driver refused. The boot test turned both into the same "skipped" line, and xenon's second
-/// attempt on 2026-09-17 printed exactly that for a disk that was there
-/// (`bench/xenon-2026-09-17/nvme-attempt-2-no-controller-found.log`).
+/// Why [`bring_up`] produced no controller: none on the bus, or one this driver refused, two
+/// facts a test must not report alike.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Absent {
     /// No function on the bus carries the NVMe class code.
@@ -501,16 +457,11 @@ pub enum Absent {
     Refused { rid: u32, why: Error },
 }
 
-/// **Find, confine, and initialize the machine's NVMe disk.** [`Absent::NoController`] when no
-/// controller is on the bus (every boot the runner did not attach one), which is a fact about the
-/// machine; a controller that is present but fails bring-up prints the phase it died in and
-/// returns [`Absent::Refused`], which is a fact about this driver and never a reason to skip.
+/// Find, confine and initialize the machine's NVMe disk.
 ///
-/// The order is the confinement story: the device gets its DMA region *before* the controller is
-/// enabled, so there is no instant at which an enabled controller could reach anything else. On a
-/// machine with no IOMMU (a plain `virt` boot with the flag off) the confinement step is skipped
-/// and the driver still runs, with nothing but the driver's own arithmetic bounding the addresses;
-/// the test boots all have one, so the proven configuration is the confined one.
+/// Returns [`Absent::NoController`] with none on the bus, and [`Absent::Refused`], after printing
+/// the phase it died in, for one that fails bring-up. The device is confined to its DMA region
+/// before the controller is enabled; with no IOMMU only the driver's arithmetic bounds it.
 pub fn bring_up() -> Result<Found, Absent> {
     let dev = crate::pci::find_nvme_device().ok_or(Absent::NoController)?;
     // Zeroing is load-bearing for the completion rings: the phase discipline starts from
@@ -526,11 +477,7 @@ pub fn bring_up() -> Result<Found, Absent> {
             size: DMA_PAGES * page_frames::FRAME_SIZE,
             writable: true,
         };
-        // **The confinement falsification's widening point** ([`ESCAPE_TARGET`]). `None` in the
-        // shipped tree (the static is zero), so the confinement is tight. The replayable patch
-        // stores a frame outside the region into `ESCAPE_TARGET`, and that frame then joins the
-        // controller's domain: an EL0 server aiming a PRP at it succeeds, and the confinement
-        // test's canary is overwritten. See milestone 202.
+        // The falsification's widening point; `None` unless the patch set [`ESCAPE_TARGET`].
         #[cfg(feature = "system_tests")]
         let extra = {
             let escape = ESCAPE_TARGET.load(core::sync::atomic::Ordering::Relaxed);

@@ -1,26 +1,12 @@
 //! nife
 //!
-//! # Why the attributes at the top
+//! `no_std`, because there is no operating system beneath us to answer `std`'s syscalls, and
+//! `no_main`, because no C runtime sets up a stack and calls `main`: the entry point is `_start`,
+//! in assembly. See notes/no-std.md.
 //!
-//! `no_std` : there is no operating system beneath us, because we *are* the
-//!             operating system. `std`'s `File::open` would make a syscall, and
-//!             there is nobody to answer it. We link only `core`.
-//!
-//! `no_main`: in a normal program `main` is not the first thing to run. The C
-//!             runtime (`crt0`) sets up the stack, initializes libc, builds `argv`,
-//!             and *then* calls `main`. There is no libc here and nobody has set up
-//!             a stack, so there can be no `main`. Our entry point is `_start`, in
-//!             assembly, and it sets up the stack itself.
-//!
-//! See notes/no-std.md.
-//!
-//! # Why a library
-//!
-//! Two images link this crate (milestone 609 (the system tests leave the kernel crate)): the
-//! kernel binary, `src/main.rs`, which is nothing but a link line, and the system-test image,
-//! `system_tests/`, which is the same kernel with the whole-system suite on top. So everything
-//! lives here, and `no_main` applies only when `cargo test` builds this library as its own
-//! bootable test image for the kernel's unit tests.
+//! Two images link this crate: the kernel binary, `src/main.rs`, which is only a link line, and the
+//! system-test image, `system_tests/`. So everything lives here, and `no_main` applies only when
+//! `cargo test` builds this library as the kernel's own unit-test image.
 
 #![no_std]
 #![cfg_attr(any(test, feature = "system_tests"), no_main)]
@@ -38,8 +24,8 @@
 // The five x86_64 tables the CPU reads by address (`IDT`, `TSS`, `GDT`, the installed port grant
 // and the bench I/O bitmap) are `core::cell::SyncUnsafeCell`s, by calef's ruling of 2026-10-09 on
 // milestone 891 (a mutable static becomes an atomic, a lock or a recorded cell). The gate is a
-// dependency on an unstable `core` API: if it changes shape, the fallback is a hand-written wrapper;
-// if it stabilizes, delete this line.
+// dependency on an unstable `core` API: if it changes shape, the fallback is a hand-written
+// wrapper; if it stabilizes, delete this line.
 #![feature(sync_unsafe_cell)]
 #![test_runner(crate::testing::runner)]
 #![reexport_test_harness_main = "test_main"]
@@ -73,11 +59,12 @@ mod preemption_window_tests;
 // decode logic is crates/pci, and each arch supplies its window/irq constants. See
 // kernel/src/pci.rs.
 mod pci;
-// The NVMe block driver (milestone 53's storage half): the volatile half of crates/non_volatile_memory_express, brought
-// up over the PCIe transport above and confined behind the machine's IOMMU. See kernel/src/non_volatile_memory_express.rs.
-// Only the test boot drives it today (nothing production-wired rides NVMe until the block-server
-// question in notes/non-volatile-memory-express.md's BUGS is decided), so the non-test build allows it dead rather than
-// cfg-gating a module whose next caller is already known.
+// The NVMe block driver (milestone 53's storage half): the volatile half of
+// crates/non_volatile_memory_express, brought up over the PCIe transport above and confined behind
+// the machine's IOMMU. See kernel/src/non_volatile_memory_express.rs. Only the test boot drives it
+// today (nothing production-wired rides NVMe until the block-server question in
+// notes/non-volatile-memory-express.md's BUGS is decided), so the non-test build allows it dead
+// rather than cfg-gating a module whose next caller is already known.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 mod non_volatile_memory_express;
 // The `e1000e` NIC's control plane (milestone 494 (a driver for the network card a PC actually
@@ -86,14 +73,15 @@ mod non_volatile_memory_express;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 mod e1000e;
 // The JH7110 Ethernet port's control plane (milestone 53 (the board's own peripherals: network and
-// storage on real silicon)): clocks, PHY, the DMA-coherence probe, ring bases, then the DMA page goes
-// to `net_stack`. riscv64-only because the JH7110 is; the module header carries the parity note.
-// See kernel/src/designware_ethernet.rs.
+// storage on real silicon)): clocks, PHY, the DMA-coherence probe, ring bases, then the DMA page
+// goes to `net_stack`. riscv64-only because the JH7110 is; the module header carries the parity
+// note. See kernel/src/designware_ethernet.rs.
 #[cfg(target_arch = "riscv64")]
 mod designware_ethernet;
 // The xHCI bring-up policy (milestone 242 (USB host and HID)): find the controller, take it from
 // the firmware, draw the driver's register window and confine its DMA, then hand the whole
-// controller to `usb_keyboard_driver` at EL0. See kernel/src/extensible_host_controller_interface.rs.
+// controller to `usb_keyboard_driver` at EL0. See
+// kernel/src/extensible_host_controller_interface.rs.
 mod extensible_host_controller_interface;
 // What an xHCI's ports read before the firmware handoff and after the driver's scan: an instrument
 // for xenon's `0 of 26 ports in use`. See kernel/src/xhci_port_probe.rs.
@@ -122,8 +110,9 @@ mod job_mix;
 // that is not asked for it should be the kernel that ships.
 #[cfg(feature = "lock_wait")]
 mod lock_wait;
-// Fatal risk 6's bench boot (milestone 261 (the NVMe driver leaves the kernel)): preflight the two night-of conditions, then measure a
-// confined EL0 NVMe driver's throughput and halt. Behind a feature because it writes to the disk.
+// Fatal risk 6's bench boot (milestone 261 (the NVMe driver leaves the kernel)): preflight the two
+// night-of conditions, then measure a confined EL0 NVMe driver's throughput and halt. Behind a
+// feature because it writes to the disk.
 #[cfg(feature = "disk_throughput")]
 mod disk_throughput;
 #[cfg(feature = "network_bench")]
@@ -195,19 +184,12 @@ mod testing;
 #[doc(hidden)]
 pub use testing::{SKIP_REASON, SKIP_REASON_LEN};
 
-/// **The kernel's insides, for the system-test image and nothing else** (milestone 609 (the system
-/// tests leave the kernel crate)). The whole-system suite lives in `system_tests/`, a second image
-/// that links this library, and its tests observe state no syscall exposes: the scheduler's queues,
-/// capability slots, region accounting. So under the `system_tests` feature, and only there, each
-/// module that suite names is re-exported here, and the test crate glob-imports this module so its
-/// `crate::sched::...` paths read exactly as they did when the files lived in this crate.
+/// The kernel's insides, for the system-test image and nothing else.
 ///
-/// The modules themselves stay private. Making them `pub` would have been one word each and would
-/// have switched off dead-code warnings for the whole kernel, because a library's public items are
-/// never dead. A facade that exists only in the test image keeps every ordinary build checked.
-///
-/// Each `pub use` brings a module's `pub` items only. A test that needs something private asks for
-/// it to be made `pub`; that is the visibility cost of the move, paid where it is visible.
+/// Under the `system_tests` feature each module `system_tests/` names is re-exported here, and that
+/// crate glob-imports this one, so its tests can observe state no syscall exposes. The modules stay
+/// private, because a library's public items are never dead and `pub` would switch off dead-code
+/// warnings kernel-wide. Each `pub use` brings only `pub` items.
 #[cfg(feature = "system_tests")]
 #[doc(hidden)]
 pub mod system_test_access {

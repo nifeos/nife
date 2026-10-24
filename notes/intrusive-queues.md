@@ -45,13 +45,39 @@ transition under `SCHED`.
 The queue borrows nodes it does not own, and the borrow checker cannot see any of it. The
 safety is a discipline, stated once and kept:
 
-1. **A queued thread is `Ready`, and only `Finished` threads are reaped**, so a queued TCB is
-   never freed. This is the load-bearing rule, and it is why `sched::thread_control_block_ptr` (the one place a
-   ThreadId becomes a pointer) documents it rather than each push site re-arguing it.
+1. **A queued thread is `Ready`, and only `Finished` threads are reaped**, so a queued TCB is never
+   freed. This is the load-bearing rule, and it is why `sched::thread_control_block_ptr` (the one
+   place a ThreadId becomes a pointer) documents it rather than each push site re-arguing it.
 2. **The `Box` in the thread table pins the address** (phase B replaces it with a TCB page from
    untyped, pinned the same way).
 3. **Only the queue that holds a thread touches its link**, under that queue's synchronization:
    a run queue is single-core with interrupts masked; an inbox is behind its mutex.
+
+## The crate's contract, and the `Unqueued` token
+
+`crates/intrusive_fifo` states its caller's contract as three rules, and its doc comments cite them
+by number:
+
+1. A node is pushed onto at most one queue, and not pushed again until popped. A push takes the
+   node's `Unqueued` token by value, and only a pop gives it back, so the compiler enforces this.
+2. A node outlives its time on the queue. In the kernel a queued thread is `Ready`, and only
+   `Finished` threads are freed.
+3. The caller serializes all access to a queue and its nodes' links. `&mut self` enforces it for
+   the queue; for the links it is stated at `Unqueued::new`.
+
+Rule 2 fits no type available here, because the queue deliberately does not own its nodes. The
+queue is safe because its callers are correct, and nothing in the crate can check that. The API
+takes `NonNull` built from references, so nullness is a fact of construction. That is what CodeQL's
+`rust/access-invalid-pointer` was pointing at. The Kani harness proves the ordering logic, never
+that a caller kept a queued node alive.
+
+The token is calef's ruling C on #1842 (2026-10-08 UTC). It is neither `Clone` nor `Copy`, so a
+node cannot be on two queues at once unless someone writes `unsafe`. Lifetime is the one obligation
+it cannot carry, and `Unqueued::new` discharges it once, where the token is minted, rather than at
+every push. It is `#[repr(transparent)]` over its pointer, so it costs nothing at run time: the same
+register, the same layout, and `Option<Unqueued<T>>` is still one pointer wide. The kernel's
+footprint gate rests on that. It is `#[must_use]` because dropping a token is safe but strands its
+node: queueing the node again needs a second token, which is the `unsafe` the type keeps rare.
 
 ## What is proved
 
@@ -82,8 +108,8 @@ A `Finished` thread cannot be freed while its core is still switching off its st
 reaps it from its successor, after the switch (`finish_switch`). Being woken is the same
 hazard as being freed, for the same reason, with the same fix:
 
-- `on_cpu` (on the thread's embedded `thread_wake_handshake::Handshake`): set when a core schedules a
-  thread in, cleared by that core's successor after the switch away.
+- `on_cpu` (on the thread's embedded `thread_wake_handshake::Handshake`): set when a core schedules
+  a thread in, cleared by that core's successor after the switch away.
 - `wake()` finding `on_cpu` set does not queue the thread; it parks the wake in the handshake's
   `wake_pending`.
 - `finish_switch`, running on the thread's own core with the context provably saved, completes

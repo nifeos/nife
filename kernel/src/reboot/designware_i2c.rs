@@ -2,23 +2,11 @@
 //! (radon's cold reboot dies in OpenSBI's PMIC write): write bytes to a 7-bit address, optionally
 //! read bytes back, one transfer.
 //!
-//! It exists because the 2026-10-10 radon bench put the board's reset in the outcome table's
-//! fourth row: the PMIC's bus provably up, and OpenSBI's own driver still failing to read the PMIC
-//! ten times, most plausibly on the controller's reset-default timing, which that firmware never
-//! programs. Option B is this kernel programming the timing itself (out of
-//! `jh7110_clock_and_reset::standard_mode_100k`) and writing the AXP15060's reset bit directly, so
-//! the reset stops depending on OpenSBI's marginal read at all.
-//!
-//! Every register offset and bit is the vendor U-Boot `drivers/i2c/designware_i2c.{c,h}` of the
-//! tree 592 pinned (`starfive-tech/u-boot` `1539c1fb5a49`, fetched 2026-10-10), the driver radon's
-//! own firmware was built from. The sequence mirrors its `__dw_i2c_init`, `i2c_xfer_init`,
-//! `__dw_i2c_write` and `i2c_xfer_finish`: disable, program, set the target address, enable, wait
-//! the bus free, push bytes (the last with STOP), wait `STOP_DET`, disable.
-//!
-//! Bounded everywhere, for the drivers' own reason: this runs on the way to a reset, where
-//! proceeding to the next route beats hanging on silicon that is not answering. Nothing here takes
-//! an interrupt, a lock or a global; the caller passes the controller's base address, per the
-//! driver rule.
+//! It programs the timing itself (`jh7110_clock_and_reset::standard_mode_100k`). Every register
+//! offset and bit is vendor U-Boot's `drivers/i2c/designware_i2c.{c,h}` at `starfive-tech/u-boot`
+//! `1539c1fb5a49`, and the sequence mirrors its `__dw_i2c_init`, `i2c_xfer_init`, `__dw_i2c_write`,
+//! `__dw_i2c_read` and `i2c_xfer_finish`. Every wait is bounded, since on the way to a reset the
+//! next route beats a hang; it takes no interrupt, lock or global. See roadmap 0592.
 //!
 //! Name: provisional (milestone 592, 2026-10-10): calef names public items.
 
@@ -74,7 +62,8 @@ const INTR_STOP_DET: u32 = 1 << 9;
 /// `IC_RAW_INTR_STAT`'s transmit-abort bit (`IC_TX_ABRT`).
 const INTR_TX_ABRT: u32 = 1 << 6;
 
-/// The value a `DesignWare` I2C IP answers in `IC_COMP_TYPE` (the vendor header's `DW_I2C_COMP_TYPE`).
+/// The value a `DesignWare` I2C IP answers in `IC_COMP_TYPE` (the vendor header's
+/// `DW_I2C_COMP_TYPE`).
 pub(crate) const DW_I2C_COMP_TYPE: u32 = 0x4457_0140;
 
 /// Every wait's bound, the size of the console drivers' own bounds: far more polls than a 100 kHz
@@ -160,14 +149,12 @@ impl DesignWareI2c {
         Err(Failure::BusBusy(self.rd(STATUS)))
     }
 
-    /// **Write `write` then read `read` back, one transaction**, standard mode at the timing
-    /// `mode` gives. The vendor's own two halves, `__dw_i2c_write`'s address-then-data and
-    /// `__dw_i2c_read`'s read with STOP on the last byte, in one function because this driver's
-    /// one caller wants exactly that shape: send a register address, get or set one byte.
+    /// Write `write` then read `read` back to the 7-bit `target`, one transaction, standard mode
+    /// at `mode`'s timing; returns the [`Failure`] if it did not end well.
     ///
-    /// The reads are issued by pushing `READ_CMD` into the transmit FIFO, which is how the IP
-    /// works: reads are commands the master transmits. The STOP goes on the last command of all,
-    /// whichever half it ends in.
+    /// The steps: disable, program, set the target address, enable, wait for the bus to be free,
+    /// push the commands (reads are `READ_CMD`s in the transmit FIFO, as the IP requires) with STOP
+    /// on the last of all, whichever half it ends in, wait for `STOP_DET`, disable.
     pub(crate) fn write_read(
         &self,
         mode: &jh7110_clock_and_reset::StandardMode,

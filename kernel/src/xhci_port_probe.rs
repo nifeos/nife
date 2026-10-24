@@ -1,19 +1,8 @@
-//! **What an xHCI's ports read, and when** (feature `xhci_port_probe`, an instrument; name
-//! provisional). Built to answer one question about xenon: the driver's scan reported `0 of 26
-//! ports in use` with a keyboard and the boot stick both plugged in. Was nothing connected, or was
-//! the scan early?
+//! What an xHCI's ports read, and when: an instrument behind the `xhci_port_probe` feature.
 //!
-//! Prints, as `xhci-probe:` lines:
-//!
-//! 1. Before the firmware handoff: the controller as the firmware left it (`USBCMD`, `USBSTS`,
-//!    `HCCPARAMS1`, `USBLEGSUP`, `USBLEGCTLSTS`), which ports are USB 2 and which USB 3 (the
-//!    Supported Protocol capabilities), and every port's `PORTSC`.
-//! 2. After the driver's one bring-up report, which follows its reset and its scan: every port's
-//!    `PORTSC` at once, then each port whose value moved, at fixed offsets out to five seconds,
-//!    with `USBSTS` and interrupter 0's `IMAN` and `ERDP` beside them.
-//!
-//! Reads only. A `PORTSC` read has no side effect, so the driver running beside this sees the
-//! controller it would have seen anyway. The boot stalls about five seconds in the second step.
+//! [`before_handoff`] prints the controller and every `PORTSC` as the firmware left them, and
+//! [`after_report`] every `PORTSC` after the driver's scan, then each port that moved, out to five
+//! seconds. It only reads, and stalls the boot about five seconds. See notes/bench-boots.md.
 //!
 //! Name: provisional, minted 2026-10-21 (UTC) by maintainer/xenon-usb-no-ports.
 

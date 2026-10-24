@@ -1,36 +1,14 @@
-//! **The `e1000e` NIC's control plane** (milestone 494 (a driver for the network card a PC actually
-//! has); notes/e1000e.md).
+//! The `e1000e` NIC's control plane: find the controller, confine its DMA to one region, reset
+//! it, read its MAC address, program both rings' bases and enable receive and transmit.
 //!
-//! The kernel half of milestone 261 (the NVMe driver leaves the kernel)'s shape applied to a second
-//! device. This file finds the controller, confines its DMA to one region, resets it, reads its MAC
-//! address, programs both rings' base registers and turns the receiver and transmitter on; then
-//! `kernel/src/user/e1000e_service.rs` hands a process the two queue pages of BAR0 and the region,
-//! and that process (`net_stack`, through `components/src/e1000e_transport.rs`) fills descriptors
-//! and moves tails. Every offset, bit and layout here comes from `crates/e1000e`.
-//!
-//! What stays here is what the process must not be able to do: reset the device, change the MAC
-//! address or the receive filter, turn on promiscuous receive, or reach the PHY. All of it is on
-//! BAR0's pages 0 and 5, which the process is never mapped. **What does not stay here is ring
-//! placement**: the ring base registers share a page with the tails (`crates/e1000e`'s header), so
-//! a process that drives the data plane can repoint a ring, and the IOMMU domain built below is the
-//! whole of what bounds the device's DMA.
-//!
+//! The process (`net_stack`) is handed BAR0's two queue pages and the region; this file keeps what
+//! it must not do, on pages 0 and 5. A ring base shares a page with its tail, so the IOMMU domain
+//! is the whole DMA bound. Every offset and layout is `crates/e1000e`'s. See notes/e1000e.md.
+
 //! # BUGS
-//!
-//! - **Two bring-ups share this file, and QEMU proves one of them.** The 82574L's reset is this
-//!   file's own; an I219 instead runs FreeBSD's three passes from `crates/e1000e/src/pch/`
-//!   (`sequence`: the PHY workarounds, the global reset with the PHY, the hardware and copper-link
-//!   setup), with the SPT ring flush here between the first two. The QEMU gates run the 82574L and
-//!   the MDIO primitive both paths share (the PHY identifier read); the I219 passes first run on
-//!   xenon (notes/e1000e.md's bench step). FreeBSD's link-up reconfiguration is not ported
-//!   (`pch`'s `BUGS`).
-//! - **Waiting for link is a bounded spin at bring-up**, up to [`LINK_WAIT_MS`]. QEMU's link is
-//!   up at once; a real copper link negotiates in seconds. A bring-up that times out reports
-//!   [`Found::link_up`] false and `user::e1000e_service` starts no server over it, because a
-//!   `net_stack` with no link waits for a lease that never comes. The spin holds a core, which is
-//!   acceptable once per wiring and not more often.
-//! - **The DMA region is allocated once per boot and never returned**, like the NVMe region, so a
-//!   boot that wires the NIC carries [`::e1000e::layout::PAGES`] pages for its whole life.
+//! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
+//! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
+//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -91,9 +69,10 @@ pub struct Found {
 /// The region's physical base, once allocated: zero until the first bring-up.
 static REGION: AtomicU64 = AtomicU64::new(0);
 
-/// **Find, confine, reset and program the NIC.** Called once per data plane; a second call resets
-/// the device under whatever process held the first, so the service that calls this refuses while
-/// that process lives (`e1000e_service`'s `BUGS`).
+/// Find, confine, reset and program the NIC, or return why not.
+///
+/// A second call resets the device under the process that held the first, so the service that
+/// calls this refuses while that process lives (`e1000e_service`'s `BUGS`).
 pub fn bring_up() -> Result<Found, Absent> {
     let dev = crate::pci::find_e1000e_device().ok_or(Absent::NoController)?;
     let region = region_for(dev.rid);
@@ -103,8 +82,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     let mut hw = Bar { c: &c, dev: &dev };
     let mut phy_id = None;
     if pch {
-        // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order (`crates/e1000e/src/pch/`,
-        // which has the sources and Intel's licence). QEMU's 82574L does not take this branch.
+        // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
+        // here.
         use ::e1000e::pch::sequence;
         let id = sequence::init_phy_workarounds(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
         phy_id = Some(id);
@@ -144,8 +123,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
     c.w(regs::RFCTL, c.r(regs::RFCTL) & !::e1000e::RFCTL_EXTEN);
 
-    // The rings. Heads and tails at zero: `DataPlane::start` posts the receive buffers by moving
-    // the receive tail, which is the process's first act.
+    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
     let rx = region + layout::RX_RING;
     let tx = region + layout::TX_RING;
     c.w(regs::RDBAL, rx as u32);
@@ -166,8 +144,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     }
     c.w(regs::RCTL, ::e1000e::rctl());
 
-    // The 82574L's PHY answers at address 1 with no pages and no semaphore. QEMU emulates it, so
-    // this is the one MDIO read the gates see.
+    // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let phy_id = match phy_id {
         Some(id) => id,
         None => ::e1000e::pch::phy::id_at(&mut hw, 1).map_err(|e| refused(Error::PhyId(e)))?,
@@ -245,10 +222,9 @@ fn zero(region: u64) {
     }
 }
 
-/// **Empty the descriptor rings before the reset, if the hardware says it must**, FreeBSD's
-/// `em_flush_desc_rings`. Skipped when the transmit ring the device points at is not this
-/// driver's region: the dummy descriptor has to go somewhere both the device may read and this
-/// kernel owns, and a ring firmware left behind is neither.
+/// Empty the descriptor rings before the reset if the hardware says it must, FreeBSD's
+/// `em_flush_desc_rings`. Skipped when the device's transmit ring is not in `region`, since the
+/// dummy descriptor must go where both the device may read and this kernel owns.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
     use ::e1000e::pch::{flush, regs as pch};
     c.w(
@@ -321,9 +297,8 @@ impl Controller {
     }
 }
 
-/// **What `crates/e1000e`'s I219 sequences and its MDIO layer run against**: BAR0, the function's
-/// configuration space for the vendor-id read the reset needs as a delay, the timer, and the
-/// console for what the bench boot should see.
+/// What `crates/e1000e`'s I219 sequences and MDIO layer run against: BAR0, configuration space
+/// (the vendor-id read the reset uses as a delay), the timer, and the console.
 struct Bar<'a> {
     c: &'a Controller,
     dev: &'a crate::pci::PciE1000eDevice,

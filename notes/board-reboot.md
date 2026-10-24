@@ -106,6 +106,8 @@ Its limits, which its `BUGS` lists one line each:
 
 ## BUGS
 
+- The reboot object's caller gets one of four portable reasons, not the firmware's own code. The
+  raw PSCI or SBI number is only on the kernel's console line just above.
 - The proof is in no CI gate. Each leg takes over two minutes, because the window is the board's
   own 120 seconds. A regression is found when somebody runs it.
 - On `x86_64` only attempt 1 has run. q35 offers the FADT route (`0xCF9 <- 0x0F`), so the `0xCF9`

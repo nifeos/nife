@@ -1,40 +1,21 @@
-//! **A thread's own CPU, as a page rather than a crossing** (§204 (how userspace asks where a
-//! thread runs)). Observing another thread is a rendezvous selector; a thread observing itself
-//! reads a per-thread page shaped like Linux's `rseq(2)`. This crate is that page's one
-//! definition, so the kernel (the one writer) and `user_mode_runtime::current_cpu` (every reader)
-//! cannot drift on its layout or address (AGENTS.md rule 7). It serves a per-CPU allocator, which
-//! asks once per allocation, where a crossing would cost a decade more than a load. It is a page
-//! and not a register because EL0 has no core-id register on `aarch64` or `riscv64`, and §19
-//! (architectural parity is a tenet) wants one mechanism; a page also has room for more.
+//! A thread's own CPU, as a page rather than a crossing (§204 (how userspace asks where a
+//! thread runs)): the page's one definition, for the kernel (its one writer) and
+//! `user_mode_runtime::current_cpu` (every reader). See notes/current-cpu-page.md.
 //!
-//! # One writer, and it is the reader's own core
-//!
-//! The kernel writes the word in `schedule()` on the destination core, on the way in (and in
-//! `sched::adopt_address_space`, the same write arriving late), so writer and reader are the same
-//! hardware thread and program order suffices. A migration's handoff between two writers is
-//! ordered by the scheduler's own release/acquire pair on the run queue. So the store and the load
-//! are `Relaxed`, and an aligned 64-bit access does not tear on any target. A reader can still be
-//! stale the instruction after it reads: a per-CPU cache built on this must be correct, not merely
-//! fast, when the answer is the last core's.
-//!
-//! Unset reads as [`None`], never a plausible zero, because zero is a valid CPU id: an unprepared
-//! frame lacks [`MAGIC`], and a page whose thread never ran holds [`UNSCHEDULED`].
-//! The word is a **cpu id**, the kernel's own numbering, and the online set is not `0..count`. On
-//! the VisionFive 2 it is `{1, 2, 3}`, so size per-CPU arrays by [`CPU_ID_BOUND`] (`crates/cpu_set`).
-//!
+//! The kernel writes the word on the reader's own core in `schedule()`, and the scheduler's
+//! release/acquire pair on the run queue orders a migration's handoff, so both accesses are
+//! `Relaxed`; an aligned 64-bit access does not tear. A reader may be stale the instruction after
+//! it reads, so a per-CPU cache built on it must stay correct on the last core's answer. Unset
+//! reads as [`None`], never zero. The word is a cpu id, not an index into `0..count`: size
+//! per-CPU arrays by [`CPU_ID_BOUND`].
+
 //! # BUGS
 //!
 //! - Nothing outside tests reads the word yet; the write costs under 1.5 ns on an M3 (#1904).
-//! - The reader forms an `&AtomicU64` over read-only memory. Miri rejects that shape over an
-//!   immutable binding; whether it is sound on a read-only mapping is unsettled, and a raw atomic
-//!   load that never forms the reference is the fallback.
-//! - At most [`THREAD_PAGE_SLOTS`] threads per process (§269 fork 6). [`PAGE_VA`] is the first
-//!   thread's page; others read the address `CONFIGURE` answered, which `std` keeps in TLS.
-//! - A userspace-built address space never bound to a TCB has no page, and
-//!   `user_mode_runtime::current_cpu` there faults rather than returning [`None`]. Deliberately not
-//!   mapped in `user::user_address_space_create`; that function's comment says why.
-//! - [`CPU_ID_BOUND`] is the kernel's compile-time `MAX_CPUS`, not the online set: right for
-//!   sizing, useless for iterating, which is the selector's question.
+//! - The reader forms an `&AtomicU64` over read-only memory, which Miri rejects; see the note.
+//! - At most [`THREAD_PAGE_SLOTS`] threads a process (§269 fork 6); see notes/current-cpu-page.md.
+//! - An address space never bound to a TCB has no page, so `current_cpu` there faults.
+//! - [`CPU_ID_BOUND`] is the compile-time `MAX_CPUS`: right for sizing, useless for iterating.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". `current_cpu` is the field's own word for this
 //! quantity (`cpu` is ruled in design/naming.md, 2026-10-03); the suffix follows its sibling.
@@ -53,9 +34,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 /// The test `the_magic_is_the_one_published_programs_compare` holds it.
 pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 
-/// **What the CPU word holds before the kernel has ever switched this thread in.** Not zero,
-/// because zero is a valid CPU id on every machine this tree runs on except the VisionFive 2, and
-/// "a wrong number is worse than no number" (calef, 2026-09-21).
+/// What the CPU word holds before the kernel has ever switched this thread in. Not zero, because
+/// zero is a valid CPU id, and "a wrong number is worse than no number" (calef, 2026-09-21).
 ///
 /// # Examples
 ///
@@ -76,12 +56,9 @@ pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 /// ```
 pub const UNSCHEDULED: u64 = u64::MAX;
 
-/// **One past the highest CPU id this kernel will ever hand out**: the size a per-CPU array in
-/// userspace must have. The kernel's `cpu::MAX_CPUS` *is* this constant rather than a second copy
-/// of the number, which is AGENTS.md rule 7 applied to a value two binaries agree on.
-///
-/// **Not the online count.** See the crate's `BUGS` section, and `crates/cpu_set` for why counting
-/// is not indexing.
+/// One past the highest CPU id this kernel will ever hand out: the size of a per-CPU array in
+/// userspace. The kernel's `cpu::MAX_CPUS` is this constant (AGENTS.md rule 7). Not the online
+/// count; see the crate's `BUGS` section, and `crates/cpu_set` for why counting is not indexing.
 ///
 /// # Examples
 ///
@@ -110,26 +87,25 @@ const OFF_ALLOWANCE: usize = OFF_CPU + 8;
 const OFF_TICK_HZ: usize = OFF_ALLOWANCE + 8;
 
 /// The whole page's size in bytes: the magic, then three little-endian `u64`s, the CPU, the
-/// allowance and the scheduler tick. Far under one frame (4096 bytes), which is the unit this is
-/// mapped as, and inside one cache line, which is what makes the reader a single load with no line
-/// shared with anybody else's writes.
+/// allowance and the scheduler tick. Under one frame, the unit it is mapped as, and inside one
+/// cache line, so the reader is a single load on a line nobody else writes.
 pub const PAGE_BYTES: usize = OFF_TICK_HZ + 8;
 
-/// **The CPU word's offset in the page**, for a reader that cannot call [`CurrentCpuPage::cpu`]:
+/// The CPU word's offset in the page, for a reader that cannot call [`CurrentCpuPage::cpu`]:
 /// hand-assembled machine code loading the word by absolute address.
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
 pub const CPU_WORD_OFFSET: u64 = OFF_CPU as u64;
 
-/// **How many threads of one process can each have a page**: the slots below [`PAGE_VA`] in
+/// How many threads of one process can each have a page: the slots below [`PAGE_VA`] in
 /// `address_space_map::PROCESS_PAGES` (milestone 812 (`std::thread::spawn` runs real threads in one
 /// address space), §269 (how threads share a process) fork 6). Slot `k` is at [`thread_page_va`]`(k)`;
 /// slot 0 is [`PAGE_VA`] itself, so a process's first thread reads where every thread read before.
 pub const THREAD_PAGE_SLOTS: usize =
     (address_space_map::PROCESS_PAGES.bytes() / address_space_map::PAGE) as usize;
 
-/// **Where thread page slot `k` is mapped**: [`PAGE_VA`] for slot 0, and one page lower for each
+/// Where thread page slot `k` is mapped: [`PAGE_VA`] for slot 0, and one page lower for each
 /// slot after it, inside `PROCESS_PAGES` and so inside the stack's last-level table. `None` past
 /// [`THREAD_PAGE_SLOTS`].
 pub const fn thread_page_va(k: usize) -> Option<u64> {
@@ -140,45 +116,12 @@ pub const fn thread_page_va(k: usize) -> Option<u64> {
     }
 }
 
-/// **The fixed virtual address the kernel maps this page at** in every process it builds a space
-/// for, and it is the same number on all three architectures. Both sides agree on it through this
-/// crate rather than through two copies of a constant.
-///
-/// **Beside the stack, in the same last-level table**, and the reason is a measurement rather than a
-/// convention. The first draft put this at three quarters of each architecture's low half, copying
-/// `counter_frequency_contract::PAGE_VA` (seven eighths) and its argument: a page mapped
-/// unconditionally into every process must not share a neighbourhood with the low few megabytes
-/// where every ELF loads and every fixture maps its own windows. That argument is right about
-/// collisions and says nothing about what the address *costs*, and the cost turned out to be the
-/// larger fact.
-///
-/// A virtual address alone in a far corner of the space is alone in its **page tables** too. On
-/// `aarch64` a 4 KiB-granule walk indexes L1 on bits 38:30, L2 on 29:21 and L3 on 20:12, so an
-/// address sharing no gigabyte with anything the process already maps needs a fresh L1 entry, a
-/// fresh L2 table and a fresh L3 table: **three page-table frames retyped and zeroed, per address
-/// space**, every spawn. `script/bench`'s `spawn_el0` measured that at **1,245 ticks per spawn**
-/// (+10.25% against the recorded baseline, over the gate's 10% bound), of which only 277 was
-/// allocating and zeroing this page's own frame. The other 968 was the walk.
-///
-/// So the page goes **under tables the process already paid for**. From 2026-09-21 that was the
-/// last page of the first gigabyte (`0x3FFF_F000`), which shared the L1 and L2 tables every program's
-/// segments paid for and bought one L3, measured at 741 ticks a spawn. Sharing the L3 as well would
-/// have meant sitting in the same 2 MiB as the program's own segments, a collision hazard, because
-/// nothing said which pages were whose.
-///
-/// **Since 2026-09-26 it is `address_space_map::CURRENT_CPU_PAGE`, `0x7FFF_F000`**, and the hazard is
-/// gone rather than avoided (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D). The map moved every program's
-/// image and stack to the top of the second gigabyte and reserved the last 64 KiB of it,
-/// `PROCESS_PAGES`, for pages the kernel maps into every process unasked. This page is the last of
-/// them, one page above the stack's top page and in the same 2 MiB, so it shares the stack's L1, L2
-/// **and** L3: the mapping buys no table at all, only its leaf. The first gigabyte's tables, which
-/// this page used to lean on, are no longer paid for by every program, so staying there would have
-/// cost two more tables per spawn than it did.
-///
-/// **One number rather than three**, which the first draft could not have: `0x7FFF_F000` is inside
-/// every one of these architectures' low halves, Sv39's included (its `SPLIT_SHIFT` is 38, so its
-/// low half ends at `0x0000_0040_0000_0000`). The host build gets the same constant and maps
-/// nothing anywhere.
+/// The fixed virtual address the kernel maps this page at in every process, the same on all three
+/// architectures: `address_space_map::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One page
+/// above the stack's top page, it shares the stack's L1, L2 and L3 tables, so the mapping buys only
+/// its leaf; a page alone in its tables cost 1,245 ticks per spawn (notes/benchmarks/spawn-el0.md).
+/// The map is milestone 206 (a program image has under 896 KiB) and DECISIONS §171 (where a
+/// program image starts) option D. See notes/current-cpu-page.md.
 pub const PAGE_VA: u64 = address_space_map::CURRENT_CPU_PAGE;
 
 /// Build a fresh page's bytes: the magic, and [`UNSCHEDULED`] for a thread that has not run yet.
@@ -206,14 +149,10 @@ pub fn build_page_allowing(allowance: u64, tick_hz: u64) -> [u8; PAGE_BYTES] {
     page
 }
 
-/// **Publish the core a thread is about to run on.** The kernel's half, called from the context
-/// switch with the id of the core doing the switching, which is the core the thread will execute
-/// on. It is one relaxed store and it does not check the magic: this is the hottest line this crate
-/// contributes to, and the page it names was built by [`build_page`] two mappings ago.
-///
-/// `Relaxed` is the whole ordering, and its counterpart is named in the crate docs: the scheduler's
-/// own release/acquire handoff, which already orders everything else about a thread moving to a
-/// core. Nothing here needs a fence of its own and adding one would be cargo cult.
+/// Publish the core a thread is about to run on. The kernel calls it from the context switch with
+/// the switching core's id. One `Relaxed` store, with no magic check, on the hottest path this
+/// crate touches. It pairs with the scheduler's release/acquire handoff of the thread to the core,
+/// which orders everything else about the move, so it needs no fence of its own.
 ///
 /// # Safety
 ///
@@ -231,7 +170,7 @@ pub unsafe fn publish(page_va: u64, cpu: u64) {
     word.store(cpu, Ordering::Relaxed);
 }
 
-/// **The current-CPU page**, as seen through one thread's read-only mapping of it at [`PAGE_VA`].
+/// The current-CPU page, as seen through one thread's read-only mapping of it at [`PAGE_VA`].
 ///
 /// # Examples
 ///
@@ -257,13 +196,9 @@ pub struct CurrentCpuPage {
     base: *const u8,
 }
 
-// **Deliberately NOT `Send` or `Sync`**, which is where this differs from
-// `counter_frequency_contract::TimebasePage`. That page is the same bytes for every thread, so
-// handing one across a thread boundary is meaningful; this one is *this* thread's answer and
-// carrying it to another thread would carry a wrong one. Nothing in the tree needs to, so nothing
-// asserts that it may: the raw pointer makes the type neither by default, and every hand-written
-// `unsafe impl Send`/`Sync` in this tree is a claim that the compiler is wrong, counted by
-// `script/lint`. Two claims not made is two fewer to be wrong about.
+// Deliberately neither `Send` nor `Sync`, unlike `counter_frequency_contract::TimebasePage`: this
+// is this thread's answer, and carrying it to another thread carries a wrong one. The raw pointer
+// makes the type neither by default. See notes/current-cpu-page.md.
 
 impl CurrentCpuPage {
     /// Name the current-CPU page mapped at `va`.
@@ -298,14 +233,14 @@ impl CurrentCpuPage {
         Some(word.load(Ordering::Relaxed))
     }
 
-    /// **How many cores this thread's process may use**, `std::thread::available_parallelism`'s
+    /// How many cores this thread's process may use, `std::thread::available_parallelism`'s
     /// answer (milestone 812, §269 fork 7), or `None` for an unrecognized page or one built without
     /// an allowance. One load, never written after the page is built, so it needs no ordering.
     pub fn allowance(&self) -> Option<core::num::NonZeroUsize> {
         core::num::NonZeroUsize::new(self.word(OFF_ALLOWANCE)? as usize)
     }
 
-    /// **The scheduler tick's rate in hertz, and so the resolution of every timed wait**, or
+    /// The scheduler tick's rate in hertz, and so the resolution of every timed wait, or
     /// `None` for an unrecognized page or one built without it. The kernel checks deadlines only
     /// from the tick (DECISIONS §147 (a timer a userspace service cannot hold)), so a `Timer::ARM`
     /// fires at the first tick at or after its deadline: a wait asked for 1 ms lasts up to
@@ -319,7 +254,7 @@ impl CurrentCpuPage {
         core::num::NonZeroU64::new(self.word(OFF_TICK_HZ)?)
     }
 
-    /// **Which CPU this thread is running on**, or `None` if this page is unrecognized (a frame
+    /// Which CPU this thread is running on, or `None` if this page is unrecognized (a frame
     /// nobody prepared) or its thread has never been switched in. Never a fabricated 0.
     ///
     /// Two aligned loads and two comparisons, no syscall.
@@ -335,17 +270,11 @@ impl CurrentCpuPage {
 mod tests {
     use super::*;
 
-    /// **`build_page`'s bytes, at the alignment `publish` and `new` require.** A bare
-    /// `[u8; PAGE_BYTES]` is 1-aligned, so every test here used to break both functions' safety
-    /// contract, and Miri said so: `script/undefined-behavior-check` reported an unaligned
-    /// `&AtomicU64` in `publish` and failed its weekly run (milestone 636 (the scheduled workflows
-    /// are failing)). The kernel's real page is a frame, which is aligned by construction. Every
-    /// buffer here is also reached through `as_mut_ptr`, including the read-only tests, because
-    /// `cpu` forms an `&AtomicU64` and Miri refuses one over a binding Rust may assume never
-    /// changes; the crate's BUGS has what that means for the real read-only mapping.
-    ///
-    /// It is also the one place these tests argue the two functions' safety: every call goes
-    /// through a method that borrows the buffer for exactly that call.
+    /// `build_page`'s bytes at the alignment `publish` and `new` require; a bare `[u8; PAGE_BYTES]`
+    /// is 1-aligned, and `script/undefined-behavior-check` (Miri) reports the unaligned
+    /// `&AtomicU64`. Buffers are reached through `as_mut_ptr`, read-only tests included, because
+    /// Miri refuses an `&AtomicU64` over an immutable binding (the crate's BUGS). Every call is a
+    /// method that borrows the buffer for exactly that call, the one place the tests argue safety.
     #[repr(C, align(8))]
     struct Aligned([u8; PAGE_BYTES]);
 
@@ -489,10 +418,7 @@ mod tests {
         assert_eq!(thread_page_va(1), Some(PAGE_VA - address_space_map::PAGE));
     }
 
-    /// The layout constants do not overlap and the page fits in one frame and one cache line,
-    /// pinned so a mutant swapping an offset is caught here rather than by a wrong core id on real
-    /// hardware. The shape `counter_frequency_contract::the_layout_offsets_do_not_overlap` uses.
-    /// **The magic is the one every `std` already published in basalt compares**: no nife-built
+    /// The magic is the one every `std` already published in basalt compares: no nife-built
     /// reader would notice a change, since each takes its copy from this crate, and only the
     /// non-required `rg-threads` job runs a published one.
     #[test]
@@ -500,6 +426,9 @@ mod tests {
         assert_eq!(&MAGIC, b"CURRCPU1");
     }
 
+    /// The layout constants do not overlap and the page fits in one frame and one cache line,
+    /// pinned so a mutant swapping an offset is caught here rather than by a wrong core id on real
+    /// hardware. The shape `counter_frequency_contract::the_layout_offsets_do_not_overlap` uses.
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {

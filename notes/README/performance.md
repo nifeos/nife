@@ -7,6 +7,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The instruction clock](../instruction-clock.md): timing claims measured in instructions retired, not wall time.
 - [What fio needs from nife's C library](../fio-on-nife.md): milestone 833 (the same storage benchmark on nife and Linux, by porting real fio)'s list of missing headers and functions, found by compiling fio 3.40. Name provisional.
 - [The bench runbook: which machine, in what order, and what an evening buys](../bench-runbook.md).
+- [The bench boots](../bench-boots.md): what `disk_throughput`, `network_bench`, `storage_bench` and `xhci_port_probe` print, and why. Name provisional.
 - [Taking a benchmark on radon](../footprint-perturbation.md): running the cache-footprint experiments on the small-cache board.
 - [The workload that does not stop](../soak.md): a sustained multicore workload whose threads never migrate.
 - [A kernel-initiated reboot on every board](../board-reboot.md).

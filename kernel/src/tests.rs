@@ -39,22 +39,13 @@ fn stack_pointer_is_16_byte_aligned() {
 
 /// Proves we are where we think we are.
 ///
-/// QEMU's `virt` machine starts a kernel at EL1 by default, which is exactly where a kernel
-/// belongs. **A machine can hand us EL2 instead, and then this test is the one that proves
-/// the drop worked** (milestone 127, the seL4 machine): `virt,virtualization=on` starts the
-/// kernel at EL2 the way U-Boot does on a board, `boot.s` reads `CurrentEL` and `eret`s down,
-/// and the assertion below is unchanged either way. The older comment here said that if this
-/// ever read EL2 "we will need to drop down ourselves"; that is now what happens, and the
-/// entry level is recorded rather than lost (`arch::entry_el`). See notes/aarch64.md.
+/// We run at EL1, whether the machine started us there or at EL2 and `boot.s` dropped down
+/// (`virt,virtualization=on`, or U-Boot on a board; `arch::entry_el` records which). See
+/// notes/aarch64.md.
 ///
-/// EL is an aarch64 concept, so this is gated. **RISC-V needs no twin, and the older
-/// comment here promising one "with the RISC-V boot path" outlived the boot path it
-/// was waiting for.** That ISA deliberately gives S-mode no way to read its own
-/// privilege level, and it does not need one: `arch::riscv64::exceptions`'s
-/// `breakpoint_is_caught_and_execution_resumes` proves the same thing sideways, because
-/// the breakpoint arm it counts is guarded on the trap having come from S-mode, and an
-/// M-mode `ebreak` would have gone to OpenSBI's `mtvec` and never reached us at all.
-/// See notes/riscv-arch-tests.md.
+/// RISC-V has no twin: S-mode cannot read its own privilege level, and
+/// `arch::riscv64::exceptions`'s `breakpoint_is_caught_and_execution_resumes` proves it sideways,
+/// since an M-mode `ebreak` would go to OpenSBI and never reach us.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn running_at_el1() {
@@ -65,13 +56,9 @@ fn running_at_el1() {
 
 /// Proves the boot protocol actually delivered a device tree.
 ///
-/// This is the test that closes the correction from milestone 1. Back then we
-/// shipped an ELF, QEMU took its bare-metal path, and `x0` arrived as zero. Now
-/// we ship a flat binary carrying an arm64 Image header, QEMU recognizes it as a
-/// kernel, follows the Linux boot protocol, and hands us a real pointer.
-///
-/// A zero here means we have silently regressed to the ELF path, which would be
-/// easy to do by editing the runner script and hard to notice any other way.
+/// The flat binary's arm64 Image header makes QEMU follow the Linux boot protocol and pass a
+/// pointer. A zero means the runner has regressed to shipping an ELF, which QEMU loads on its
+/// bare-metal path with `x0` zero. See notes/boot-protocol.md.
 #[test_case]
 fn device_tree_pointer_was_provided() {
     use core::sync::atomic::Ordering;
@@ -84,16 +71,9 @@ fn device_tree_pointer_was_provided() {
 
 /// Proves the pointer points at an actual device tree, not just at something.
 ///
-/// A nonzero pointer is necessary but not sufficient. Every flattened device tree
-/// begins with the magic `0xd00dfeed`, stored **big-endian** (the format predates
-/// the little-endian consensus and never changed), so we have to byte-swap on the
-/// way in. If this passes, the machine is genuinely describing itself to us.
-/// **Not on `x86_64`**, and the reason is the whole of what that architecture's boot handoff
-/// differs by: what arrives in `kernel_main`'s one pointer there is PVH's `hvm_start_info`,
-/// which carries the same *kind* of thing (the memory map, the root of everything else
-/// discoverable) in an entirely different format. `machine_discovery::x86_64` decodes it and
-/// is host-tested against a real dump, which is the stronger place for that check to live;
-/// this test's subject genuinely does not exist there.
+/// Every flattened device tree begins with the magic `0xd00dfeed`, stored big-endian, so it is
+/// byte-swapped on the way in. Not on `x86_64`, whose one pointer is PVH's `hvm_start_info`;
+/// `machine_discovery::x86_64` decodes that, host-tested against a real dump.
 #[test_case]
 fn device_tree_has_the_right_magic() {
     use core::sync::atomic::Ordering;
@@ -105,10 +85,7 @@ fn device_tree_has_the_right_magic() {
         );
     }
 
-    // DTB holds the PHYSICAL address QEMU gave us in x0. Since the kernel moved to the
-    // high half, TTBR0 is disabled and a low address does not exist: dereferencing it
-    // directly faults, which is exactly what we want and exactly what this line used to
-    // do. Name it through the direct map instead.
+    // DTB holds the physical address from x0; with TTBR0 disabled, only the direct map reaches it.
     let pa = crate::DTB.load(Ordering::Relaxed) as u64;
     let ptr = crate::arch::mmu::phys_to_virt(pa) as *const u32;
 
