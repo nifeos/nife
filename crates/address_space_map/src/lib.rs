@@ -1,35 +1,13 @@
 //! **The user address-space map**: which band of a process's low half holds what, the same on all
 //! three architectures (§171 (where a program image starts), option D).
 //!
-//! ```text
-//!   band              start         end           size       what goes in it
-//!   NULL_GUARD        0x0000_0000   0x0020_0000     2 MiB    nothing, ever
-//!   PAIR_PAGES        0x0020_0000   0x1000_0000   254 MiB    pages one builder agrees with the one program it builds
-//!   RUNTIME_WINDOWS   0x1000_0000   0x4000_0000   768 MiB    windows a loader or runtime places for a program
-//!   HEAP              0x4000_0000   0x5000_0000   256 MiB    the heap, and nothing else
-//!   SERVICE_WINDOWS   0x5000_0000   0x6000_0000   256 MiB    large shared windows a service contract names
-//!   IMAGE             0x6000_0000   0x7F00_0000   496 MiB    the program's own ELF segments
-//!   STACK             0x7F00_0000   0x7FFF_0000   ~16 MiB    the stack, growing down from STACK_TOP
-//!   PROCESS_PAGES     0x7FFF_0000   0x8000_0000    64 KiB    per-process pages the kernel maps (current CPU)
-//! ```
-//!
 //! The bands tile `[0, 2 GiB)` with no gap (a host test holds that); above 2 GiB only the timebase
 //! page (`counter_frequency_contract::PAGE_VA`) is assigned. A new page goes in the first band that
-//! fits: the program's code or data, [`IMAGE`] (a hand-built child's code page at [`IMAGE_BASE`]
-//! too); the stack, [`STACK`]; a page the kernel maps into every process unasked,
-//! [`PROCESS_PAGES`], sharing the stack's page tables; the heap, [`HEAP`]; a window a loader or
-//! runtime places for programs that did not choose it, [`RUNTIME_WINDOWS`], sited with an argument
-//! in its protocol crate; a large window a service contract names, [`SERVICE_WINDOWS`]; otherwise
-//! a pair page, [`PAIR_PAGES`], which pairs reuse freely and [`pair_page`] checks at compile time.
-//!
-//! The image band ends at 2 GiB because `x86_64` builds with `code-model: small` and static
-//! relocation, so a static image must end below `0x8000_0000` ([`CODE_MODEL_CEILING`]); one layout
-//! for all three is parity. It starts past the heap and the block channel, whose addresses std's
-//! PAL carries. The stack sits directly above it, so a loader can name the stack's base as the
-//! limit, and [`STACK`]'s lowest page is never mapped ([`MAX_STACK_PAGES`]). The process pages
-//! share the stack's 2 MiB table: `notes/benchmarks/spawn-el0.md` measured the current-CPU page
-//! at 1,245 ticks per spawn with three fresh tables and 741 with one.
-//!
+//! fits, asked in the order the note gives, and a pair page is checked at compile time by
+//! [`pair_page`]. The image band ends at 2 GiB because `x86_64` builds with `code-model: small`
+//! ([`CODE_MODEL_CEILING`]), and [`STACK`]'s lowest page is never mapped ([`MAX_STACK_PAGES`]).
+//! See notes/address-space-map.md for the table of bands and why each number is what it is.
+
 //! # BUGS
 //!
 //! - Pair pages are checked for membership, not for collisions within one process; fixtures with

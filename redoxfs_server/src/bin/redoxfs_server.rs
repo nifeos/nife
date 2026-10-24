@@ -1,17 +1,12 @@
-//! **The FS-server EL0 binary** (milestone 32 phase 2): RedoxFS, confined, served over IPC.
+//! The FS-server EL0 binary (milestone 32 phase 2): RedoxFS, confined, served over IPC.
 //!
-//! The sans-IO core is [`redoxfs_server::Server`]; this file is only the two IO edges it needs and the
-//! runtime a dedicated binary carries. Below it, the [`IpcDisk`] turns the RedoxFS `Disk` trait into
-//! a **blk-IPC client**: a `read_at`/`write_at`/`size` is one or more `CALL`s to the block server,
-//! up to `blk::TRANSFER_BLOCKS` contiguous filesystem blocks per call (milestone 138 step 4).
-//! `IpcDisk` is itself wrapped in [`redoxfs_server::CachedDisk`] (step 2), which answers a repeated
-//! single-block read (the tree spine `Transaction::read_tree_and_addr` walks fresh on every
-//! `Server::read`/`write`/...) from memory instead of a second round trip. Above both, [`serve`]
-//! turns file-service requests from clients into `Server` calls and answers through the one-shot
-//! Reply the kernel mints. The allocator is the untyped-backed heap, so every byte RedoxFS
-//! allocates is paid from this process's own budget, which is the whole reason phase 2 waited on
-//! milestone 27's `GlobalAlloc`.
-//!
+//! The two IO edges of [`redoxfs_server::Server`] and a dedicated binary's runtime. [`IpcDisk`] is
+//! the RedoxFS `Disk` as a blk-IPC client, up to `blk::TRANSFER_BLOCKS` blocks per `CALL`
+//! (milestone 138 step 4), wrapped in [`redoxfs_server::CachedDisk`] (step 2). [`serve`] answers
+//! requests through the one-shot Reply the kernel mints. The heap is untyped-backed, so RedoxFS
+//! pays from this process's own budget. It only opens the image, never creates (creation is
+//! std-gated and host-side). See notes/fs-server/caches-and-io.md.
+
 //! # Capability contract (notes/fs-server.md, notes/abi.md §4)
 //! - **slot 0**: an untyped budget, the heap's (RedoxFS is alloc-heavy; nothing runs without it).
 //! - **slot 1**: the block-service endpoint, `WRITE`. The FS server is the block server's client.
@@ -22,18 +17,14 @@
 //!   bytes of contiguous pages (the block buffer).
 //! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `fs::TRANSFER_MAX`
 //!   bytes of contiguous pages (a name on open, file bytes on read/write).
-//!
-//! The server only ever OPENS the image (never creates: creation is std-gated and host-side), and
-//! it maps RedoxFS's error type to the wire exactly once, in `Server::handle`, via `filesystem_contract::reply_err`.
-//!
+
 //! # BUGS
 //!
-//! **Window 0 is still shared by the boot's long-lived clients** (milestone 599 (a frame per
-//! filesystem client channel)). A job behind a directory grant gets a window of its own from the
-//! progenitor's pool, and the server reads window `badge` for each request. The shell, `login`,
-//! the identity provisioner and the progenitor's own activation calls all use window 0, and are
-//! kept apart by being blocked, not by mapping: the progenitor calls only while the shell waits on
-//! it, and nothing connects to `login` in the shipped boot. See `notes/page-frame-slice.md`.
+//! - Window 0 is still shared by the boot's long-lived clients (milestone 599 (a frame per
+//!   filesystem client channel)): the shell, `login`, the identity provisioner and the progenitor's
+//!   own activation calls. They are kept apart by being blocked, not by mapping: the progenitor
+//!   calls only while the shell waits on it, and nothing connects to `login` in the shipped boot. A
+//!   job behind a directory grant gets a window of its own. See `notes/page-frame-slice.md`.
 
 #![no_std]
 #![no_main]
@@ -82,15 +73,12 @@ const BLOCK: usize = blk::BLOCK_SIZE;
 /// kernel grants is the real ceiling.
 const HEAP_MAX: u64 = 8 * 1024 * 1024;
 
-/// **How many single blocks [`redoxfs_server::CachedDisk`] holds** (milestone 138 (close the read
-/// gap) step 2, resized by milestone 606 (a directory walk costs what it does on Linux)). The number and its measurement live beside the cache, in the library, so the
-/// host test that counts a walk's device reads runs the same cache this binary does.
-///
-/// **One constant for every FS server this build starts**, including milestone 37's two crash-test
-/// instances, whose heap budget is a fraction of [`HEAP_MAX`] (`CRASH_BUDGET_PAGES` in
-/// `kernel/src/user/fs_service.rs`, 2 MiB). That holds because a slot is allocated when a block
-/// first lands in it and the header ring is never cached, so a server pays for the blocks it
-/// touched, and a crash-test server touches a few dozen.
+/// How many single blocks [`redoxfs_server::CachedDisk`] holds (milestone 138 (close the read
+/// gap) step 2, resized by milestone 606 (a directory walk costs what it does on Linux)). The number
+/// and its measurement live in the library, so the host walk test runs this binary's cache. One
+/// constant serves every FS server this build starts, milestone 37's crash-test instances on 2 MiB
+/// included (`CRASH_BUDGET_PAGES` in `kernel/src/user/fs_service.rs`), because a slot is allocated
+/// only when a block lands in it and the header ring is never cached.
 const CACHE_SLOTS: usize = redoxfs_server::CACHE_SLOTS;
 
 #[global_allocator]
@@ -103,25 +91,15 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 /// stack grant if you do.
 const VERIFY_WRITES: bool = false;
 
-/// **The crash injector** (milestone 37, DECISIONS §34 condition 1), armed by this process's START
-/// arguments and inert otherwise.
-///
-/// The seam is [`IpcDisk`]: it sits between the engine and the device, so it is where a block write
-/// can be torn in half and where the process can be killed with a transaction half on the platter.
-/// A dedicated binary would have been the alternative and was rejected: the whole point is that the
-/// thing which crashes is the FS server the gate otherwise runs, not a lookalike. What arms it is
-/// the `Spawn` literal, which is this process's entire authority, so a boot that does not ask for a
-/// crash cannot get one.
+/// The crash injector (milestone 37, DECISIONS §34 condition 1), armed by this process's START
+/// arguments and inert otherwise. The seam is [`IpcDisk`], and the `Spawn` literal arms it, so a
+/// boot that does not ask for a crash cannot get one. See notes/fs-server/crash-consistency.md.
 ///
 /// - `arg0` (`CRASH_AT_WRITE`): which file-service `WRITE` request to die inside, counted from 1.
-///   Zero disables the injector completely, which is every boot but the crash test's.
-/// - `arg1` (`CRASH_AFTER_BLOCKS`): how many block writes into that request to let through before
-///   dying. **One**, in the test, because one is the count that cannot miss: a write transaction
-///   always issues at least one block write, and a `k` larger than the transaction is a server that
-///   never dies and a test that hangs.
-/// - `arg2` (`CRASH_TEAR_BYTES`): how much of that last block to actually put on the platter. The
-///   block is read first and only this many bytes of the new contents are laid over it, which is a
-///   real torn write at a real device: new bytes in front, the old ones still behind.
+///   Zero disables the injector, as on every boot but the crash test's.
+/// - `arg1` (`CRASH_AFTER_BLOCKS`): block writes into that request to let through before dying.
+///   One in the test, because a write transaction always issues at least one.
+/// - `arg2` (`CRASH_TEAR_BYTES`): bytes of that last block laid over its old contents.
 mod inject {
     use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -204,9 +182,8 @@ impl IpcDisk {
             let b = block + i as u64;
             // The crash injection (milestone 37), and the only line the ordinary path pays for it.
             if let Some(tear) = inject::tear_now() {
-                // A real torn write: read the block, lay the first `tear` bytes of the new contents
-                // over it, and put THAT on the platter. New bytes in front, old bytes behind, which
-                // is what a drive leaves when the rail collapses mid-block.
+                // A real torn write: the first `tear` new bytes over the old block, which is what a
+                // drive leaves when the rail collapses mid-block.
                 if tear > 0 {
                     if Self::blk(blk::READ, b) < 0 {
                         return Err(Error::new(EIO));
@@ -216,9 +193,8 @@ impl IpcDisk {
                         return Err(Error::new(EIO));
                     }
                 }
-                // Then die, with the transaction's commit still unwritten. Announce it first, on the
-                // readiness endpoint this process already holds, so the waiting test knows the kill
-                // was the injector's and not something else going wrong.
+                // Then die with the commit unwritten, announcing it first on the readiness endpoint
+                // so the waiting test knows the kill was the injector's.
                 send(READY, filesystem_fixture::crash::CUT, 0, 0);
                 panic!();
             }
@@ -233,10 +209,8 @@ impl IpcDisk {
             if Self::blk(blk::WRITE, b) < 0 {
                 return Err(Error::new(EIO));
             }
-            // WRITE-VERIFY (fix/redoxfs-repeat-write diagnostic): read the block straight back and
-            // compare. If the transport is lossy (a write that does not land, or a read that returns
-            // stale bytes), the engine would later walk a corrupt allocator chain and spin; catching
-            // it here turns that far-away hang into an immediate, located fault.
+            // WRITE-VERIFY: a lossy transport would later make the engine walk a corrupt allocator
+            // chain and spin; reading the block back here turns that into a located fault.
             if VERIFY_WRITES {
                 let mut echo = [0u8; BLOCK];
                 if Self::blk(blk::READ, b) < 0 {
@@ -255,19 +229,9 @@ impl IpcDisk {
 
 impl Disk for IpcDisk {
     unsafe fn read_at(&mut self, block: u64, buffer: &mut [u8]) -> Result<usize> {
-        // **Batch whole blocks, up to blk::TRANSFER_BLOCKS per CALL** (milestone 138 step 4). Every
-        // request pays a fixed per-CALL term (the IPC round trip and the block server's own work),
-        // and fewer CALLs for the same payload is the whole optimization; it costs nothing else
-        // because the device already moves the whole batch in one virtio descriptor. RedoxFS reads
-        // whole blocks (and multi-block records), always block-aligned, but a short final chunk (a
-        // compressed record) is still possible and is still read as one whole block with only the
-        // requested bytes copied out.
-        //
-        // **This does not touch the five repeated tree-spine reads**: `Transaction::read_tree_and_addr`
-        // issues them as five separate single-block `read_at` calls from different points in the
-        // walk, not one call this loop could batch. [`CachedDisk`] (milestone 138 step 2, below
-        // this `Disk` impl) is what removes them, by answering a repeat from memory before this
-        // method is ever reached.
+        // Whole blocks, up to blk::TRANSFER_BLOCKS per CALL (milestone 138 step 4); a short final
+        // chunk (a compressed record) is read as one whole block with only its bytes copied out.
+        // The five tree-spine reads arrive as separate calls, and [`CachedDisk`] answers those.
         let mut off = 0usize;
         let mut b = block;
         while off < buffer.len() {
@@ -294,13 +258,8 @@ impl Disk for IpcDisk {
     }
 
     unsafe fn write_at(&mut self, block: u64, buffer: &[u8]) -> Result<usize> {
-        // **The crash injector needs single-block granularity, and a diagnostic readback does too.**
-        // The injector's whole mechanism is "let K block writes through, corrupt block K+1, die",
-        // which a batched multi-block virtio request cannot do (the device completes the descriptor
-        // whole or not at all); `VERIFY_WRITES` reads each block straight back to catch a lossy
-        // transport, one CALL per block. Both stay on the pre-step-4 path unconditionally, which
-        // costs nothing in the ordinary case: `AT_WRITE` is 0 on every FS server but milestone 37's
-        // own dedicated crash-test instance, and `VERIFY_WRITES` is a diagnostic, off by default.
+        // The crash injector and `VERIFY_WRITES` need one CALL per block (a batched virtio request
+        // completes whole), so either takes the unbatched path; both are off on an ordinary server.
         if VERIFY_WRITES || inject::AT_WRITE.load(core::sync::atomic::Ordering::Relaxed) != 0 {
             return Self::write_at_unbatched(block, buffer);
         }
@@ -319,9 +278,8 @@ impl Disk for IpcDisk {
                 b += full_blocks as u64;
                 continue;
             }
-            // A short final chunk: read-modify-write, one block, as ever. A partial final block
-            // would clobber the rest of the block otherwise; RedoxFS does not send one today, but a
-            // Disk owes the courtesy.
+            // A short final chunk: read-modify-write one block so the rest of it survives. RedoxFS
+            // does not send one today, but a Disk owes the courtesy.
             let tail = &buffer[off..];
             if Self::blk(blk::READ, b) < 0 {
                 return Err(Error::new(EIO));
@@ -345,19 +303,14 @@ impl Disk for IpcDisk {
 }
 
 impl IpcDisk {
-    /// **Make the device durable** (milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)): one `filesystem_contract::blk::FLUSH`, and the block
+    /// Make the device durable (milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)): one `filesystem_contract::blk::FLUSH`, and the block
     /// server's answer handed back untouched.
     ///
-    /// Not part of the `Disk` trait, because RedoxFS's `Disk` has no sync method and this tree does
-    /// not modify vendored code to give it one. Nothing below the FS server needs it either: the
-    /// engine's transactions commit before this server replies, so the flush is a fact about the
-    /// device rather than a step in a filesystem operation.
-    ///
-    /// **The error is returned as it arrived**, negative and unmapped. That is the one place a
-    /// block-protocol errno reaches a file-service client, and it is deliberate: `EOPNOTSUPP` from
-    /// a device with no flush and `EIO` from a device that refused one are different facts, and
-    /// folding either into the other would leave a caller unable to tell "this storage cannot be
-    /// made durable" from "this storage failed to". `filesystem_contract::fs::SYNC` documents the boundary.
+    /// Not part of `Disk`, which has no sync method; the engine's transactions commit before this
+    /// server replies, so the flush is a fact about the device. A negative errno is returned
+    /// unmapped, the one place a block-protocol errno reaches a file-service client: `EOPNOTSUPP`
+    /// (no flush) and `EIO` (a refused one) are different facts. See
+    /// `filesystem_contract::fs::SYNC`.
     fn sync() -> i64 {
         Self::blk(blk::FLUSH, 0)
     }
@@ -371,11 +324,6 @@ impl IpcDisk {
 /// writable, contiguous bytes shared with the clients bound to this endpoint, and every call site
 /// clamps before this runs. The returned slice is `'static` and aliases that region, so no two live
 /// slices from here may overlap in a way that outlives one request.
-///
-/// (The contract was already written, spelled `SAFETY:` in the doc comment rather than as a
-/// `# Safety` section, which is the form rustdoc renders as the contract and the form
-/// `clippy::missing_safety_doc` recognises. Milestone 112's `script/lint` check is what found it:
-/// it was the only one of 46 `unsafe fn`s in the tree without the section.)
 unsafe fn file_page(base: u64, len: usize) -> &'static mut [u8] {
     unsafe { core::slice::from_raw_parts_mut(base as *mut u8, len) }
 }
@@ -427,22 +375,12 @@ impl ServeEdges for IpcEdges {
 /// is only the IO around it.
 fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
     loop {
-        // RECEIVE_CAP delivers (first word, the Reply cap's slot, second word, the caller's badge).
-        // The Reply names the caller; endpoint-only naming means we never learn who they are, only
-        // how to answer. The badge (milestone 599) names which client channel this request's bytes
-        // are in, which is the whole of how two clients are now kept apart: `window` is that
-        // client's own window rather than one frame shared with every client.
-        //
-        // **A plain `SEND` carries its badge too** (milestone 613 (a system log service: the
-        // in-memory half), calef's ruling of 2026-10-03 UTC on #1494, amending §230 (badged
-        // endpoint capabilities)). Before it, a client that `SEND`s rather than `CALL`s through its
-        // badged capability arrived here as badge 0, the unbound value, and was admitted against
-        // another client's window and outside its own scope (with no Reply to answer). It now
-        // arrives as itself. `system_log_tests` pins the kernel half.
-        //
-        // **The Reply is typed by the kernel's `x4`** (milestone 706, DECISIONS §245 (a `CALL`
-        // server tells a Reply from a delegation)): a client that `SEND_CAP`s a capability here
-        // gets it deleted, never answered into.
+        // RECEIVE_CAP delivers the first word, the Reply's slot, the second word and the caller's
+        // badge. The badge (milestone 599) names the client's own window, which is how two clients
+        // are kept apart; a plain `SEND` carries its badge too (milestone 613 (a system log service:
+        // the in-memory half), amending §230 (badged endpoint capabilities); `system_log_tests`
+        // pins it). The Reply is typed by the kernel's `x4` (milestone 706, DECISIONS §245 (a
+        // `CALL` server tells a Reply from a delegation)), so a `SEND_CAP`'d capability is deleted.
         let req = receive_request(FILE);
         let reply_slot = req.delivered.into_reply();
         // SAFETY: `fs::TRANSFER_MAX` is exactly the window's mapped length, and this slice is the
@@ -465,10 +403,8 @@ pub extern "C" fn _start(crash_at_write: u64, crash_after_blocks: u64, crash_tea
     }
     HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
-    // Open the image over blk IPC and bind to its root. A bad image (or a block server that never
-    // answers correctly) faults here, which the kernel reports; the server never creates.
-    // CachedDisk wraps IpcDisk to hold the tree spine's single-block reads in memory (milestone 138
-    // step 2); the CALLs themselves are unchanged, batched where step 4 already batches them.
+    // A bad image, or a block server that never answers correctly, faults here; the server never
+    // creates. CachedDisk holds the tree spine's single-block reads (milestone 138 step 2).
     let mut server = match Server::open(CachedDisk::new(IpcDisk, CACHE_SLOTS)) {
         Ok(s) => s,
         Err(_) => panic!(), // not a RedoxFS image, or the disk misbehaved: die legibly.

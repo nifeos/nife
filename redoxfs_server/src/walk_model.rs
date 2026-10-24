@@ -1,28 +1,20 @@
-//! **A directory walk, replayed against the server core on the host** (milestone 606 (a directory
+//! A directory walk, replayed against the server core on the host (milestone 606 (a directory
 //! walk costs what it does on Linux), provisional number).
 //!
-//! `walk_pricing` times a walk from inside a confined `std` program, where every figure carries
-//! the kernel, the caretaker hop and the device. This replays the same walk one layer down: the
-//! request sequence `std`'s nife PAL sends for `walk_pricing::walk` (`OPENDIR` per component,
-//! `READDIR` pages, `OPEN`, `FSTAT`, `READ` to end of file, a `CLOSE` per handle), issued straight
-//! at [`Server`] over a [`Counting`] disk. So it answers two questions the on-target figure cannot
-//! separate:
-//!
-//! - **how many device reads a walk costs**, exactly and deterministically, which is what a test
-//!   can gate on (`tests/walk_cost.rs`: a warm walk reads nothing from the device);
-//! - **what the server's own work costs**, on the same core the HVF guest runs on, with no IPC and
-//!   no device in the number (`examples/walk_replay.rs`).
-//!
+//! The request sequence `std`'s nife PAL sends for `walk_pricing::walk`, issued straight at
+//! [`Server`] over a [`Counting`] disk. It answers what the on-target figure cannot separate: how
+//! many device reads a walk costs, exactly (`tests/walk_cost.rs`: a warm walk reads nothing from
+//! the device), and what the server's own work costs (`examples/walk_replay.rs`). See
+//! notes/walk-cost.md.
+
 //! # BUGS
 //!
-//! - **The request sequence is a model of the PAL, not the PAL.** It is written from
+//! - The request sequence is a model of the PAL, written from
 //!   `patches/std-nife/overlay/std/src/sys/fs/nife.rs` (`walk`, `dir_at`, `readdir`, `File::open`,
-//!   `read_to_end`'s size hint and its probe read at end of file) and nothing checks that the two
-//!   agree. If the PAL changes how many requests an operation takes, this goes on replaying the
-//!   old count until someone edits it. The on-target `walk split` line is the check on it.
-//! - **Staged through the server, not by `redoxfs_host`.** The on-target image is built by the
-//!   host tool from `walk_pricing::stage`'s directory, so its block layout differs from the one
-//!   this builds. Counts of requests are the same; counts of device reads can differ.
+//!   `read_to_end`), and nothing checks that the two agree. The on-target `walk split` line is the
+//!   check on it.
+//! - Staged through the server, not by `redoxfs_host`, so the block layout differs from the
+//!   on-target image's: counts of requests are the same, counts of device reads can differ.
 //!
 //! Name: provisional 2026-09-26 (milestone 606's lane); calef names modules.
 

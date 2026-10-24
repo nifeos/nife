@@ -3,20 +3,10 @@
 //!
 //! nife's C library implements relibc's `Pal` on nife's own `std` (`c_library/src/platform/nife.rs`),
 //! so every failure arrives as a `std::io::Error` and leaves as an `errno`. This crate is that
-//! translation and nothing else, so it can be proven on the host in milliseconds: the platform
-//! layer itself only builds for the `*-unknown-nife` targets.
-//!
-//! The mapping is by meaning, the way `std` maps the other way (`decode_error_kind` on Unix). Where
-//! a C caller's behavior turns on the value, the value matters more than the wording:
-//!
-//! - SQLite treats `ENOENT` from `open` as "no such database, create it", and `EACCES` and `EPERM`
-//!   as "read-only", so a missing grant is `EACCES`, never `EIO`.
-//! - nife's `std` answers `Unsupported` for anything the platform does not provide (no grant, no
-//!   such operation), and C's word for that is `ENOSYS`.
-//! - Anything with no closer meaning is `EIO`, the errno a C program is least likely to retry.
-//!
-//! The numbers are Linux's generic ones, which `c_library`'s `errno.h` also uses (`c_library` checks
-//! at compile time that its constants equal these, so the two cannot drift).
+//! translation alone, so it is proven on the host. The mapping is by meaning: a missing grant is
+//! `EACCES` (SQLite reads it as read-only), `Unsupported` is `ENOSYS`, and anything with no closer
+//! meaning is `EIO`. The numbers are Linux's generic ones, and `c_library` checks at compile time
+//! that its `errno.h` agrees. See notes/c-library.md, "The errno a C program sees".
 //!
 //! Name: ratified 2026-10-18 (calef). The C library's crate name plus the one thing this holds.
 //! `errno` is C's own identifier, kept whole as a foreign name (design/decisions/0154's table).

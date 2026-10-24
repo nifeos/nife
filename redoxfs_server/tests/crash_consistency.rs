@@ -1,46 +1,30 @@
 //! **Is RedoxFS actually crash consistent?** (milestone 37, DECISIONS §34 condition 1)
 //!
-//! DECISIONS §34 made RedoxFS the primary filesystem on three conditions, and the first was that
-//! this stop being a claim. Crash consistency is the property the engine was chosen for and the
-//! first thing a skeptic asks a filesystem, and until this file existed the evidence for it was the
-//! upstream design description. That is the kind of claim this project's rules forbid.
-//!
+//! §34 (RedoxFS is the primary filesystem, on three conditions) set three conditions, and the first
+//! was that crash consistency stop being a claim taken from the upstream design description. See
+//! notes/fs-server/crash-consistency.md.
+
 //! # The property, stated so it can fail
 //!
-//! A workload is a sequence of operations, each of which returns to its caller only after the
-//! engine has committed it. Call the state of the filesystem after the first `p` of them `S(p)`.
-//! Then:
-//!
-//! > **For every point at which the device could stop, the filesystem a fresh mount recovers is
-//! > exactly `S(p)` for some `p`.** Not a blend of two states, not a half-applied operation, not a
-//! > length nobody ever wrote, and not a mount that fails.
-//!
-//! That is prefix consistency, and it is strictly stronger than "every acknowledged write is either
-//! wholly present or wholly absent": a state that is `S(p)` for some `p` contains operation `i`
-//! whole or not at all, for every `i`, and it also rules out the state where a later operation
-//! survived and an earlier one did not.
-//!
-//! Two further assertions turn that from a shape into a measurement. `p` must be **non-decreasing**
-//! as the cut point advances, so recovery cannot be arbitrary and a later crash cannot lose more
-//! than an earlier one. And at the last cut point, where nothing is lost at all, `p` must be the
-//! whole workload, so a filesystem that recovered `S(0)` every time (perfectly prefix-consistent
-//! and perfectly useless) fails here.
-//!
+//! A workload's operations each return only after the engine commits. With `S(p)` the state after
+//! the first `p`: for every point at which the device could stop, a fresh mount recovers exactly
+//! `S(p)` for some `p`, never a blend, a half-applied operation, an unwritten length or a failed
+//! mount. That implies "every acknowledged write is wholly present or absent" and also forbids a
+//! later operation surviving an earlier one. `p` must be non-decreasing as the cut advances, and the
+//! whole workload at the last cut, so a filesystem recovering `S(0)` every time fails.
+
 //! # Determinism, because a crash harness that leaks state manufactures facts
 //!
 //! Every fault point starts from a byte-identical clone of one in-memory image, built in this
-//! process by `FileSystem::create` and never written to. Nothing is read from disk, nothing carries
-//! between iterations, and nothing carries between runs. DECISIONS §27 records a day lost to a gate
-//! whose fixture one run mutated and another asserted on, producing three incompatible root causes
-//! from three honest investigations; this is that lesson applied before the fact rather than after.
-//!
+//! process by `FileSystem::create` and never written to, so nothing carries between iterations or
+//! runs (DECISIONS §27 (the filesystem service: a capability-shaped contract) records the day a
+//! fixture one run mutated and another asserted on cost).
 
 //! # The controls
 //!
 //! `the_ring_is_what_saves_it` and `a_torn_commit_is_a_header_the_engine_rejects` are the negative
-//! controls, and they are not optional. Without them a passing suite is equally consistent with an
-//! injector that does nothing at all, which is the same discipline milestone 29's checker (it must
-//! reject black, swapped channels, a one-pixel shift) and milestone 31's second attacker run apply.
+//! controls, and not optional: without them a passing suite is equally consistent with an injector
+//! that does nothing at all.
 
 #![cfg(feature = "hosttest")]
 
@@ -80,16 +64,11 @@ type State = Vec<(&'static str, Option<Entry>)>;
 /// Read the whole state out of a mounted server. Reads only, so calling it never perturbs the write
 /// log a [`Recording`] is building.
 ///
-/// Fallible on purpose: a read that fails is a *detection*, and the lying-device test needs to tell
-/// "the filesystem refused to hand me these bytes" apart from "the filesystem handed me the wrong
-/// ones". Collapsing the two would hide the only property that survives a lying device.
-///
-/// **`ENOENT` is the only error that means "absent", and getting that wrong invented a filesystem
-/// bug.** The first version of this function treated *any* failed `open_file` as a name that is not
-/// there, and a dropped write to a directory's tree block makes the lookup answer `EIO`. Nine fault
-/// points then looked like states that never existed, complete with an empty root, when what had
-/// actually happened was the engine refusing to guess at a block whose checksum did not match. The
-/// harness was reporting the opposite of the property under test.
+/// Fallible on purpose: a failed read is a detection, and the lying-device test must tell "the
+/// filesystem refused these bytes" from "it handed back the wrong ones". `ENOENT` is the only error
+/// that means absent: a dropped write to a directory's tree block makes a lookup answer `EIO`, and
+/// reading that as absence once reported nine states that never existed
+/// (notes/fs-server/crash-consistency.md).
 fn snapshot<D: redoxfs::Disk>(srv: &mut Server<D>) -> Result<State, syscall::error::Error> {
     let mut state = State::new();
     for &name in &NAMES {
@@ -202,25 +181,16 @@ struct Recorded {
     states: Vec<State>,
 }
 
-/// Build the fixture and run the workload once, recording every block write.
-///
-/// The workload is chosen to attack the shapes a crash is most likely to catch out, in the order a
-/// real client would produce them:
-///
-/// 1. a plain overwrite of an existing file;
-/// 2. a **shorter** overwrite, which leaves the old tail (DECISIONS §27's sharp edge) and so makes
-///    a mid-operation recovery visibly different from either neighbour;
-/// 3. the `TRUNCATE` that removes it, a change to a file's *shape* rather than its bytes;
+/// Record the workload once over a fresh fixture; each step is a shape a crash is likely to catch:
+/// 1. an overwrite of an existing file;
+/// 2. a shorter overwrite, leaving the old tail (DECISIONS §27), so a torn recovery is visible;
+/// 3. the `TRUNCATE` that removes it, a change to the file's shape rather than its bytes;
 /// 4. a `CREATE`, which extends a directory;
-/// 5. a **160 KiB single write**, larger than RedoxFS's 128 KiB record, so one acknowledged
-///    operation is forty block writes and "wholly present or wholly absent" has something to mean;
-/// 6. a shrink of that file by 60 KiB, which frees records;
-/// 7. a plain overwrite, so the biggest operation is not the last thing that happened;
-/// 8. a **`RENAME`**, which is the only operation here that changes two directory entries at once
-///    and the one whose whole value is its atomicity (DECISIONS §42). A cut inside it must leave
-///    the old name or the new one, and a snapshot reads both, so "neither" and "both" are states
-///    that never existed and fail the sweep. This is what makes the verb's crash-atomicity claim a
-///    measurement instead of a reading of the engine's design.
+/// 5. a 160 KiB write, over RedoxFS's 128 KiB record, so one operation is forty block writes;
+/// 6. a 60 KiB shrink of it, which frees records;
+/// 7. an overwrite, so the biggest operation is not the last thing that happened;
+/// 8. a `RENAME`, changing two entries at once (§42 (a filesystem declares what it offers and must
+///    be truthful)): "neither" and "both" fail the sweep.
 fn record_workload() -> Recorded {
     // The fixture, built the way the running system's is: the host tool creates the filesystem and
     // puts the files in, and the server only ever opens it.
@@ -283,16 +253,12 @@ fn record_workload() -> Recorded {
         .expect("operation 8");
     mark(&mut srv, &mut states, 8);
 
-    // Operations 9 to 12 are the attribute ones (milestone 57). They are interleaved with a write
-    // to the same file rather than run as a block, because the claim being measured is that an
-    // attribute and its file land **together**: the two live in different files on the platter, and
-    // a recovery that had the new bytes without the new attribute (or the reverse) is a state that
-    // never existed and fails the sweep below.
-    //
-    // The four cover the three shapes the store has. 9 creates the store directory and the node's
-    // first blob, which is two node creations inside one commit. 11 grows the blob, rewriting the
-    // store file in place. 12 **shrinks** it, which is the path that has to truncate afterwards or
-    // leave a tail the reader walks as records nobody wrote (DECISIONS §27, and notes/xattr.md).
+    // Operations 9 to 12 are the attribute ones (milestone 57 (partitioning and formatting a real
+    // drive, and extended attributes)), interleaved with a write to the same file: an attribute and
+    // its file live in different files on the platter, and a recovery holding one change without
+    // the other never existed and fails the sweep. 9 creates the store and the node's first blob
+    // (two creations in one commit), 11 grows the blob, and 12 shrinks it, the path that must
+    // truncate afterwards (DECISIONS §27, notes/xattr.md).
     srv.set_xattr(
         h,
         b"user.DOSATTRIB",
@@ -452,19 +418,14 @@ fn a_torn_final_write_at_every_point_recovers_a_state_that_really_existed() {
     );
 }
 
-/// **A device that lies**: it acknowledged a write, never persisted it, and carried on persisting
-/// everything after. Or it half-persisted one and carried on.
+/// A device that lies: it acknowledged a write and never persisted it (or half-persisted it), then
+/// carried on persisting everything after.
 ///
-/// **This is the case no filesystem can promise to survive, and saying so precisely is the point.**
-/// RedoxFS's `Disk` trait has no flush and no barrier, so ordering is the device's job; a device
-/// that reorders or forgets a block underneath a commit that has already been written can leave a
-/// valid header pointing at a block that never landed. What RedoxFS *does* guarantee is that this is
-/// never silent: every `BlockPtr` carries a seahash of the block it names, checked on every read, so
-/// a lost or torn block is an error and not a wrong answer.
-///
-/// So this test asserts the property that is actually available: **no outcome is silently wrong.**
-/// Each fault point lands in exactly one of three buckets, and the fourth bucket, the one where the
-/// filesystem hands back bytes nobody ever wrote, must be empty.
+/// No filesystem can promise to survive this: RedoxFS's `Disk` has no flush or barrier, so a valid
+/// header can point at a block that never landed. What RedoxFS guarantees is that it is never
+/// silent, since every `BlockPtr` carries a seahash checked on every read. So the test asserts that
+/// no outcome is silently wrong: each fault point lands in one of three buckets, and the fourth,
+/// bytes nobody ever wrote, must be empty.
 #[test]
 fn a_lying_device_is_detected_and_never_silently_wrong() {
     let Recorded {
