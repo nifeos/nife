@@ -1,32 +1,13 @@
 //! **`top`: the same domain `ps` lists, ordered by what it is costing** (§150 (how does a thread's
 //! CPU time reach userspace?), notes/process-view.md). The program's logic, lifted out to run on
-//! the host; `components/src/top.rs` is the syscalls and the output streams.
-//!
-//! `top` means the top N by consumption, so the name waited for something to rank by:
-//! `abi::survey::record::CPU_TIME`, a measurement, where §150 refused wall-clock age and userspace
-//! sampling as numbers that would not mean what the name says. The walk, the CPU-time join, the
-//! ranking and the table are all `ps`'s ([`ps::collect`], [`ps::Survey::join_cpu_time`],
-//! [`ps::Survey::rank_by_cpu_time`], [`ps::Survey::write_report`]); this holds the summary line
-//! ([`write_summary`]), which a ranked view needs because the head of a distribution says nothing
-//! about its size.
-//!
-//! ```text
-//! $ top
-//! up 00:01:12, 4 threads: 1 running, 1 ready, 1 blocked, 1 dead
-//!          TID  STATE     TIME(ms)
-//!            9  running        310
-//! 4294967302  dead             150
-//!            5  blocked         20
-//!            7  ready            0
-//! $ top        top: this process holds no process-domain capability
-//! ```
-//!
+//! the host; `components/src/top.rs` is the syscalls and the output streams. It ranks by CPU time
+//! through `ps` ([`ps::Survey::rank_by_cpu_time`]) and adds the lines above the table,
+//! [`write_summary`] and [`write_machine_line`]. See notes/process-view/top.md.
+
 //! # BUGS
 //!
-//! - No live refresh: an interval spin would be charged to this program by the very counter the
-//!   table ranks on, so `top` would report itself as the busiest thread.
-//! - No `%CPU`: a percentage needs two samples, and a cumulative one against uptime is the
-//!   wall-clock-age error §150 refused. `TIME(ms)` is the cumulative figure, as Unix's `TIME+`.
+//! - No live refresh: an interval spin would rank `top` itself as the busiest thread.
+//! - No `%CPU`, which needs two samples; `TIME(ms)` is cumulative, as Unix's `TIME+` is.
 //! - No top *N*: `ProgramArgumentDeclaration` cannot declare an optional integer.
 //! - The summary counts this domain, not the machine, because nothing here is ambient.
 //! - Ties break by tid, so a quiet machine ranks in slot order.
@@ -37,21 +18,11 @@
 #![cfg_attr(not(test), no_std)]
 
 /// **The line above the table**: how long the machine has been counting, how many threads the
-/// domain holds, and what they are doing.
+/// domain holds, and what they are doing, ending in a newline, for the output stream.
 ///
-/// Ends with a newline, and is written to the **output** stream rather than to diagnostics: it is
-/// part of the answer, not a complaint about it. A caller that was refused prints neither this nor
-/// the table (`ps::Survey::write_report` already declines), which keeps `top > out.txt` empty on a
-/// refusal exactly as `ps > out.txt` is.
-///
-/// `uptime_nanos` is `user_mode_runtime::monotonic_nanos()`, the ambient counter every process
-/// holds unconditionally (`kernel/src/arch/*/timer.rs`'s documented exception to DECISIONS §10 (process model: capability-based, microkernel)'s
-/// no-ambient-authority rule). It is a parameter rather than a call so that this function is a pure
-/// one and its output is a value a host test can assert on.
-///
-/// The state counts are in the order a reader scans for: what is on a CPU, what wants one, what is
-/// waiting, what is over. A zero count is printed rather than elided, because a row missing from a
-/// status line reads as a status line that did not check.
+/// `uptime_nanos` is `user_mode_runtime::monotonic_nanos()`, passed in so this stays a pure
+/// function a host test can assert on. A refused caller prints neither this nor the table. See
+/// notes/process-view/top.md, "The summary line".
 ///
 /// # Examples
 ///
@@ -98,17 +69,9 @@ pub fn write_summary(rows: &[ps::Row], uptime_nanos: u64, out: &mut dyn FnMut(&[
 }
 
 /// **The machine line under the summary, which is what became of `tload`** (milestone 126,
-/// DECISIONS §225 (`free` sees the machine and your share)).
-///
-/// Upstream `tload` draws the load average as a graph. This kernel keeps no decaying load figure,
-/// and §225 ruled that the question belongs in `top`'s summary rather than in a program of its
-/// own, so the line says what the machine statistics page can say truthfully: how many threads were
-/// runnable at each core's last tick, on how many cores, and what share of all ticks since boot
-/// went to something other than the idle thread. `None` prints the sentence a withheld page earns
-/// rather than a machine of zeroes.
-///
-/// It widens `top`'s authority past `ps`'s by one read-only page, which also settles the question
-/// milestone 281's rule left open: `top` no longer holds exactly what `ps` holds.
+/// DECISIONS §225 (`free` sees the machine and your share)): the threads runnable at each core's
+/// last tick, on how many cores, and the share of ticks since boot not spent idle. `None` prints the
+/// sentence a withheld page earns rather than a machine of zeroes. See notes/process-view/top.md.
 pub fn write_machine_line(
     machine: Option<&machine_statistics_contract::Snapshot>,
     out: &mut dyn FnMut(&[u8]),
