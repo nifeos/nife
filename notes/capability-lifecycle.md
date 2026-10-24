@@ -167,7 +167,8 @@ until something puts a capability in it. That is the whole of §10, seen from th
 
 `system_tests::user::revocation_window_tests` drives a sweep into each delegating syscall that names
 a `PageFrame`: `SEND_CAP`, `ThreadControlBlock::CAP_INSERT` and `PageFrame::SLICE`. The claim is
-fatal risk 7's, and the use-after-free it guards is DECISIONS §13's.
+fatal risk 7's, and the use-after-free it guards is that of DECISIONS §13 (capability revocation
+and untyped reclamation).
 
 The frame is the object that matters most. Most objects carry generational names (`crates/slots`,
 DECISIONS §16 (object revocation)), so a copy minted after its object died names a dead generation

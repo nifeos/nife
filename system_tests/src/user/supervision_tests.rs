@@ -189,11 +189,11 @@ fn a_faulting_child_reports_to_its_supervisor_and_is_reaped_then_respawned() {
         "the corpse did not retain its fault message: it was reaped too early, or lost its state",
     );
 
-    // Reap it with §16 revocation, the supervisor's explicit act. The corpse is Dead, not live, so
-    // the region reclaims without a force-kill. Retried, not asserted once: `depart` delivers the
-    // death message before the corpse leaves its own kernel stack, and until its `switch_to` the
-    // reap is refused, since a stack must not be unmapped under a core standing on it. See
-    // notes/stack/kernel-stack-freed-under-its-owner.md and the `on_cpu` refusal in
+    // Reap it by revocation (§16 (object revocation)), the supervisor's explicit act. The corpse is
+    // Dead, not live, so the region reclaims without a force-kill. Retried, not asserted once:
+    // `depart` delivers the death message before the corpse leaves its own kernel stack, and until
+    // its `switch_to` the reap is refused, since a stack must not be unmapped under a core standing
+    // on it. See notes/stack/kernel-stack-freed-under-its-owner.md and the `on_cpu` refusal in
     // `reap_region_objects`.
     assert!(
         super::wait_for(|| sched::reclaim_region(region).is_ok()),

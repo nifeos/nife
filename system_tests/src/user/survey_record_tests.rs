@@ -136,11 +136,12 @@ impl Domain {
 
 /// Every thread a survey reports was placed on a cpu that is actually online.
 ///
-/// The assertion asks the online mask, not a count. The online set is not `0..n`: it is
-/// `{1, 2, 3}` on the VisionFive 2, whose slot 0 is an M-mode monitor core with no MMU, so
-/// `id < online_count()` would pass on QEMU `virt` while reporting a parked core. It also pins the
+/// The assertion asks the online mask, not a count. The online set is not `0..n`: it is `{1, 2, 3}`
+/// on the VisionFive 2, whose slot 0 is an M-mode monitor core with no MMU, so `id <
+/// online_count()` would pass on QEMU `virt` while reporting a parked core. It also pins the
 /// sentinel: a started thread never reports [`record::NO_CPU`], so a reader is not tallying "no
-/// answer" as a core. See notes/process-view/survey-design.md, "The cpu id is a name, not an index".
+/// answer" as a core. See notes/process-view/survey-design.md, "The cpu id is a name, not an
+/// index".
 #[test_case]
 fn every_surveyed_thread_reports_a_cpu_that_is_online() {
     let domain = Domain::build();

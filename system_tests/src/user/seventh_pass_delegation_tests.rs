@@ -5,8 +5,8 @@
 //! The host crate proves both claims (`capability::derive_never_widens_rights`,
 //! `from_bits_cannot_forge_a_right`); this drives `Rendezvous::SEND_CAP` through `syscall::invoke`.
 //! Its `a1` register is the rights the copy is narrowed to, so asking for a right the source lacks
-//! is claim 2 in wire form and claim 1's widening. `ipc_send_cap_from` refuses before it touches the
-//! rendezvous, so a refusal parks nothing; a regression parks the test thread and fails by the
+//! is claim 2 in wire form and claim 1's widening. `ipc_send_cap_from` refuses before it touches
+//! the rendezvous, so a refusal parks nothing; a regression parks the test thread and fails by the
 //! watchdog's thread dump, not at an assertion. See notes/confinement-outsider-pass-7.md.
 
 //! Name: provisional (this pass's lane, 2026-10-12 UTC). Cross-ISA: `invoke`, the delegation rule
@@ -33,8 +33,8 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// `SEND_CAP`'s rights register cannot widen a right, and a GRANT-less capability cannot be lent.
 ///
 /// From `READ | GRANT`, a mask of `READ | WRITE | GRANT` fails `Delegation::derive`'s subset check;
-/// from `READ | WRITE`, a strict-subset mask of `READ` fails the GRANT gate. Both are `NotPermitted`
-/// through an endpoint cap carrying `WRITE`, and the waiting-sender count stays zero after each.
+/// from `READ | WRITE`, a strict-subset mask of `READ` fails the GRANT gate. Both answer
+/// `NotPermitted` through an endpoint cap with `WRITE`, and no sender is left waiting after each.
 ///
 /// Falsification: attested 2026-10-12. On patagonia, aarch64, with the subset check in
 /// `Delegation::derive` patched to `if false && ...`, the run went red by the watchdog, since the

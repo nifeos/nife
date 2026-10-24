@@ -7,7 +7,7 @@
 //! `--threads 1` lines here never reach. The tests skip when the archive has no `rg`, as in every
 //! ordinary build: `rg` is installed with `jig`, never in the base image (calef, 2026-10-07 UTC),
 //! and CI's `rg-threads` rows fetch it by digest with `cargo xtask basalt-fetch`. One body serves
-//! all three ISAs, as DECISIONS §19 requires. See notes/ripgrep-on-nife.md.
+//! all three ISAs (DECISIONS §19 (architectural parity is a tenet)). See notes/ripgrep-on-nife.md.
 
 use super::*;
 
@@ -153,7 +153,8 @@ fn run_confined(
     let spent = crate::memory_region::usage(spawned.heap).map_or(0, |(spent, _)| spent);
     // Give everything back: the heap, the stack, the argument page and the caretaker. The suite's
     // frame ledger carries exactly one `std_exerciser` (`fs_service::start_std`'s reasoning); kept
-    // caretakers run the aarch64 suite out of page frames in `std_net_runs_over_the_socket_contract`.
+    // caretakers run the aarch64 suite out of page frames in
+    // `std_net_runs_over_the_socket_contract`.
     assert!(
         spawned.release(),
         "{who}'s caretaker outlived its holding: a service this test cannot give back",

@@ -121,10 +121,11 @@ pub(super) fn drain(parking: sched::RendezvousId, n: usize) {
 /// Collect every member of a domain through the rendezvous that showed it.
 ///
 /// A region holding a live thread refuses reclamation, and the refusal arms a kill on the way past
-/// (§16's amendment), so a test that keeps children alive ends them itself rather than leaving them
-/// to `tidy`. It also asserts every tid a survey reported is reapable through the same rendezvous,
-/// `capability::survey_includes`'s scope property from the control side. The wait is the clock's,
-/// not a yield count: a released child's time to exit is the host's (notes/hvf-leg.md).
+/// (the amendment to §16 (object revocation)), so a test that keeps children alive ends them itself
+/// rather than leaving them to `tidy`. It also asserts every tid a survey reported is reapable
+/// through the same rendezvous, `capability::survey_includes`'s scope property from the control
+/// side. The wait is the clock's, not a yield count: a released child's time to exit is the host's
+/// (notes/hvf-leg.md).
 pub(super) fn collect_all(cap: u64, tids: &[u64]) {
     for &tid in tids {
         assert!(
@@ -243,8 +244,8 @@ fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
     );
 }
 
-/// The negative control (milestone 126, the block's own requirement): a viewer not granted the
-/// domain is refused loudly, not shown an empty list.
+/// The negative control (milestone 126 (the `procps` package, now `process-tools`), the block's own
+/// requirement): a viewer not granted the domain is refused loudly, not shown an empty list.
 ///
 /// Through the real dispatcher: a send-only holder gets `NotPermitted`; a holder of nothing gets
 /// `NoSuchSlot`, there being nothing to name; a `READ` holder of a genuinely empty domain gets
@@ -314,7 +315,8 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
 
     // A domain names its members and does not act on them (calef, 2026-08-17), and the two rights
     // separate both ways: a viewer holding `ENUMERATE` alone can look and cannot reap, and a
-    // supervisor's plain `READ` handle can reap and cannot look, so a view is a grant somebody made.
+    // supervisor's plain `READ` handle can reap and cannot look, so a view is a grant somebody
+    // made.
     let viewer = hold_view(ep);
     assert_eq!(
         reap(viewer, child),
@@ -522,9 +524,9 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
 ///
 /// A viewer still cannot name a thread outside its domain (see
 /// `a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted`). But `next_cursor` is the
-/// machine-wide `generational_table::Table` slot + 1, and a tid's low half is that slot and its high
-/// half the slot's machine-wide recycle count, so the gap between two members' cursors counts the
-/// threads created between them. notes/process-view.md's `BUGS` has the disposition.
+/// machine-wide `generational_table::Table` slot + 1, and a tid's low half is that slot and its
+/// high half the slot's machine-wide recycle count, so the gap between two members' cursors counts
+/// the threads created between them. notes/process-view.md's `BUGS` has the disposition.
 #[test_case]
 fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     let (budget, rendezvous_region) = arena();
@@ -615,7 +617,7 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
 /// arrives in a register, so a shell-spawned `pgrep` names every member (`crates/pgrep`'s `BUGS`).
 /// Four distinct answers: members matched (`pgrep dead` names the corpse alone), nothing matched
 /// (not the empty answer, not a refusal, which upstream's exit 1 conflates), the domain is empty
-/// (`crates/ps`'s sentence), and refused (a send-only holder, milestone 108's shape). The tid
+/// (`crates/ps`'s sentence), and refused (a send-only holder, as in the negative control). The tid
 /// `pgrep` printed cannot be reaped through the capability that printed it, which is why there is
 /// no `pkill`. See notes/process-view/pgrep.md.
 #[test_case]

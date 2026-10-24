@@ -83,11 +83,11 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
 const WRITER_CHECK_MS: u64 = 100;
 
 /// [`drain_sink`] for a caller that knows the writing thread: if it dies before ending the stream,
-/// fail at once and print everything it wrote (milestone 514).
+/// fail at once and print all it wrote (milestone 514 (the HVF leg's std listener test hangs)).
 ///
 /// A timer on a bound notification ends the `RECEIVE` every [`WRITER_CHECK_MS`] (§101
-/// (notification objects)) to ask whether the writer still resolves. `echo` prints lines as they
-/// arrive, for the host relay (`xtask/src/inbound.rs`). See notes/std/the-proof.md.
+/// (notification objects)) to ask whether the writer still resolves; `echo` prints lines as they
+/// arrive for the host relay (`xtask/src/inbound.rs`). See notes/std/the-proof.md.
 ///
 /// # BUGS
 /// - The tick is progress to the lost-wakeup watchdog, so a stuck writer reports as a livelock.
@@ -178,15 +178,15 @@ fn printable(bytes: &[u8]) -> &str {
 }
 
 /// Kill the filesystem mid-transaction on a real device, then mount what is left of it (milestone
-/// 37, DECISIONS §34 condition 1), asserted identically on each ISA (rule 5, §19).
+/// 37, condition 1 of DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions)),
+/// asserted identically on each ISA (rule 5, §19 (architectural parity is a tenet)).
 ///
 /// A block server brings up the crash test's own disk and an FS server mounts it. The driver writes
 /// payload A, reads it back and reports it acknowledged; its second write walks into the injector,
 /// which tears a block at 2048 bytes and traps with the commit unwritten (the `CUT` word says the
 /// kill was the injector's). A different FS-server process mounts the disk, its readiness sentinel
 /// being the consistency result, and a fresh client reads which payload is there. Either payload
-/// passes; a mixture, a length nobody wrote or the pre-boot contents fail. See
-/// notes/fs-server/crash-consistency.md.
+/// passes; a mixture, a length nobody wrote or the pre-boot contents fail (notes/fs-server.md).
 pub(super) fn assert_a_kill_mid_transaction_recovers(
     blk_image: &'static [u8],
     redoxfs_server_image: &'static [u8],

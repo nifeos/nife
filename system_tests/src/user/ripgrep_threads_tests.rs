@@ -6,8 +6,7 @@
 //! ends, [`sched::process_threads_started`] must be the main thread plus the workers it asked for,
 //! and its output the fixture's 138 match lines, each once, in any order (the host's `rg` is held
 //! to the same list by `walk_pricing`). They skip without `rg`; CI's `rg-threads` rows run them at
-//! four cores on all three ISAs. See notes/ripgrep-on-nife.md, "Threads: it asks, and since
-//! milestone 812 it gets more than one".
+//! four cores on all three ISAs. See notes/ripgrep-on-nife.md, on threads.
 
 //! Name: provisional, lane milestone/121-rg-threads (#2016), 2026-10-12 (UTC), for the module and
 //! the file. The pull request records no other name considered.

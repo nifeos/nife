@@ -136,9 +136,9 @@ capability would let it) answers. |
 ## The in-flight test, and what it leaves untested
 
 `kernel::user::revocation_in_flight_tests` holds the first finding. The claim it guards is row 4 of
-[notes/confinement-claims.md](../confinement-claims.md), DECISIONS §12's "a consumed capability
-cannot be used again", and the region sweep's promise that no capability names a page the allocator
-is about to hand out.
+[notes/confinement-claims.md](../confinement-claims.md), "a consumed capability cannot be used
+again" from DECISIONS §12 (call/reply IPC: a one-shot reply capability). It also guards the region
+sweep's promise that no capability names a page the allocator is about to hand out.
 
 The `PortRange` sweep has a second limb that no test reaches. `ipc_receive_cap` files a delivered
 capability with `CapabilityTable::insert` directly, not through

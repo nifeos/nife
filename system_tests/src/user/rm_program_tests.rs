@@ -83,8 +83,9 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
 /// the full grant is `EISDIR` and removes nothing: a directory is a refusal, never a silent
 /// escalation to recursion, as in `rm(1)`. `rm -r rm-doomed` through a capability carrying only
 /// `REMOVE` cannot look: `OPENDIR` is `ENOENT`, because a withheld naming right answers "in this
-/// scope there is no such name" (DECISIONS §47). Through `ENUMERATE｜DESCEND｜REMOVE` it takes the
-/// whole tree, bottom-up, five names. The capability table decides the outcome, not the program.
+/// scope there is no such name" (§47 (a directory capability carries six rights)). Through
+/// `ENUMERATE｜DESCEND｜REMOVE` it takes the whole tree, bottom-up, five names. The capability table
+/// decides the outcome, not the program.
 #[test_case]
 fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     if fs_service::fs_server_image().is_none() {

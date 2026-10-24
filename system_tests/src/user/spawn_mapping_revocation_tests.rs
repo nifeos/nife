@@ -35,9 +35,9 @@ const WIRED_VA: u64 = address_space_map::pair_page(0x0060_0000);
 /// One frame is mapped into two live spaces, by [`user_address_space_map`] (the `MAP_INTO` engine)
 /// and by [`AddressSpace::map_physical`] (as `Spawn::maps` does). `PageFrame::REVOKE` then runs
 /// whole-machine ([`crate::revoke::revoke_page_frame`], the single-page case of
-/// `revoke_page_frame_run`), and neither space may still map it. The headline is the last assertion,
-/// reached on every path; a vacuity guard (mapped in both places) and a premise check (the revoke
-/// reached the recorded mapping) above it each say, failing, that the test proved nothing.
+/// `revoke_page_frame_run`), and neither space may still map it. The headline is the last
+/// assertion, reached on every path; a vacuity guard (mapped in both places) and a premise check
+/// (the revoke reached the recorded mapping) above it say, failing, the test proved nothing.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.spawn_mapping_revocation_tests.a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked.patch`
 #[test_case]

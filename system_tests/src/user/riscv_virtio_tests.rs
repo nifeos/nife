@@ -61,14 +61,14 @@ fn wait_for(mut done: impl FnMut() -> bool) -> bool {
     done()
 }
 
-/// A faulting riscv user thread dies, and the kernel does not: DECISIONS §10's promise ("a driver
-/// bug is a crashed process, not a dead machine") on the second ISA.
+/// A faulting riscv user thread dies, and the kernel does not: the promise of DECISIONS §10
+/// (process model: capability-based, microkernel), "a driver bug is a crashed process".
 ///
 /// Every riscv userspace panic handler ends in `ebreak` expecting to die, so the trap dispatcher
-/// must kill on a U-mode `ebreak` rather than step over it (a stepped-over panic loops forever), and
-/// kill rather than panic on any other U-mode fault. The blk binary's `_start` panics on an unknown
-/// role, so spawning it with one is the smallest honest fault: panic, `ebreak`, killed, reaped. The
-/// kill-mid-write test below needs a driver to genuinely die.
+/// must kill on a U-mode `ebreak` rather than step over it (a stepped-over panic loops forever),
+/// and kill rather than panic on any other U-mode fault. The blk binary's `_start` panics on an
+/// unknown role, so spawning it with one is the smallest honest fault: panic, `ebreak`, killed,
+/// reaped. The kill-mid-write test below needs a driver to genuinely die.
 #[test_case]
 fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
     use crate::arch::exceptions::USER_FAULTS;
@@ -100,8 +100,8 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
     );
 }
 
-/// The confused-deputy question on RISC-V (the twin of
-/// `the_hardware_says_el0_cannot_read_the_kernels_memory`, milestone 41).
+/// The confused-deputy question on RISC-V, the twin of milestone 41 (dead code: triage the
+/// suppressions)'s `the_hardware_says_el0_cannot_read_the_kernels_memory`.
 ///
 /// With no `AT S1E0R`, `mmu::user_can_read` walks the installed tables in software and reads the
 /// `U` bit. One root register translates user and kernel addresses alike, so that bit is the only
