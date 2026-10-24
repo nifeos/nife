@@ -250,11 +250,14 @@ const DISPATCH_ARMS: &[SysEdit] = &[
         "cfg_select! {",
         "    target_os = \"nife\" => {\n        mod os;\n        pub(crate) use os::{LocalPointer, local_pointer};\n        pub use os::{Storage, thread_local_inner, value_align};\n    }",
     ),
-    // ... and the TLS-destructor guard is a no-op.
+    // ... and the TLS-destructor guard is upstream's hermit and xous arm, word for word: `enable`
+    // is a no-op because `destroy_tls` in `sys/thread_local/key/nife.rs` runs every destructor
+    // itself and only then `rt::thread_cleanup`. That ordering is what upstream's `guard/retained.rs`
+    // promises, so a `local_pointer!` key needs no destructor (`LOCAL_POINTER_NEEDS_DTOR` is false).
     SysEdit::After(
         "thread_local/mod.rs",
         "pub(crate) mod guard {\n    cfg_select! {",
-        "        target_os = \"nife\" => {\n            pub(crate) fn enable() {}\n        }",
+        "        target_os = \"nife\" => {\n            pub(crate) fn enable() {}\n            #[cfg(not(target_thread_local))]\n            mod retained;\n            #[cfg(not(target_thread_local))]\n            pub(crate) use retained::{LOCAL_POINTER_NEEDS_DTOR, cleanup_pending};\n        }",
     ),
     // Thread-local keys through the thread pointer (milestone 812 (`std::thread::spawn` runs
     // real threads in one address space)): xous's shape, `sys/thread_local/key/nife.rs`.

@@ -240,6 +240,13 @@ pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
         "a destructor that panicked; unwinding out of TLS teardown is undefined on every platform",
     ),
     (
+        "sys/thread_local/guard/retained.rs",
+        "`cleanup_pending` called although `LOCAL_POINTER_NEEDS_DTOR` is false",
+        "unreachable by construction on every platform that takes the `retained` guard (hermit, \
+         xous, windows without native TLS, and nife): `local_pointer!` registers the only caller \
+         only when `LOCAL_POINTER_NEEDS_DTOR` is true, and here it is false",
+    ),
+    (
         "sys/thread_local/no_threads.rs",
         "Attempted to initialize thread-local while it is being dropped",
         "a TLS access from inside TLS teardown, a caller bug on every platform",
