@@ -1,28 +1,20 @@
 //! Fuzz a stub resolver's reply checks with arbitrary bytes as the reply.
 //!
-//! **Why this target exists.** `crates/domain_name_system` reads what a name server sends back, and
-//! anyone who can forge a reply chooses those bytes. Milestone 384 (in a capability system the
-//! resolver is a grant) puts the resolver on the path of every connection made by name, so a reply
-//! that panics the parser takes name resolution down, and one that slips an address past
-//! `Query::accept` sends a client to the wrong host. The Kani harnesses prove the name decoder and
-//! the TCP reassembly on small inputs; this target covers `accept` itself, which is too large for
-//! the solver.
+//! A forged reply that panics `crates/domain_name_system` takes name resolution down, and one that
+//! slips an address past `Query::accept` sends a client to the wrong host (milestone 384 (in a
+//! capability system the resolver is a grant)). Kani proves the name decoder and the TCP reassembly
+//! on small inputs; `accept` is too large for the solver. The input is the raw reply, so the
+//! captures in `crates/domain_name_system/tests/fixtures` seed it unmodified, and the query is
+//! built from the reply's own id and question so a mutation reaches the answer section.
+
+//! # What is asserted, beyond "it returned"
 //!
-//! The input is the reply, raw, so the real captures in `crates/domain_name_system/tests/fixtures`
-//! seed it unmodified (`script/fuzz` passes that directory read-only). The query is built from the
-//! reply's own id and question where they parse, so a mutation reaches the answer section instead of
-//! dying on the id check every time.
-//!
-//! **What is asserted, beyond "it returned":**
-//!
-//! 1. **An accepted address is really there.** Every address `accept` hands back is the data of a
-//!    class-IN A record in the answer section, owned by the name `accept` reports as canonical, and
-//!    that name is ours or is reached from ours by a CNAME in the same section. This is the property
-//!    a poisoning bug violates, checked by a second, independent walk of the message. Falsified on
-//!    2026-10-04: with `accept`'s owner check deleted, so that any A record in the answer counts,
-//!    this assertion fired inside a two-minute run starting from the three real captures.
-//! 2. **TCP framing does not change the bytes.** The reply framed for TCP and fed in pieces of one,
-//!    three and all bytes comes back whole and identical, and a buffer one byte too small refuses it.
+//! 1. **An accepted address is really there.** Each address `accept` returns is a class-IN A
+//!    record's data in the answer section, owned by the canonical name `accept` reports, which is
+//!    ours or reached from ours by a CNAME there; a second, independent walk checks it. Falsified on
+//!    2026-10-04: with `accept`'s owner check deleted, it fired within two minutes of the captures.
+//! 2. **TCP framing does not change the bytes.** Framed and fed in pieces of one, three and all
+//!    bytes, the reply comes back whole, and a buffer one byte too small refuses it.
 //! 3. **The name decoder is total at every offset**, with its resume offset inside the message.
 
 #![no_main]

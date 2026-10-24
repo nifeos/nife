@@ -1,27 +1,12 @@
 //! Fuzz the nifefs archive **round trip**: build an image, parse it back, read every file.
 //!
-//! **This target asks a different question from the other three**, and the difference is the reason
-//! it exists rather than a `nifefs_parse` sibling. The other three ask "does hostile input make
-//! this panic". Asking that of `Fs::parse` would be fuzzing a function Kani has already proved
-//! total: `the_validation_implies_reads_slice_is_in_bounds` covers every `start_block`, `len` and
-//! image length with no bound at all, and `a_short_image_is_refused_not_indexed` covers the
-//! truncated case. A fuzz target there would burn CI time to rediscover a theorem.
-//!
-//! What is *not* proved, and cannot be by a harness of that shape, is that the writer and the reader
-//! agree. `write_image` picks block placements and packs a directory; `parse` and `read` decode it.
-//! Nothing checks that what went in comes out, and the last bug in this crate was exactly that
-//! shape: a name over `NAME_LEN` was silently truncated, so two distinct files could land under one
-//! name and the second would win. That was found by hand on 2026-08-01. This is the harness that
-//! would have found it.
-//!
-//! **The property.** For any set of (name, contents) the writer accepts, the image it produces
-//! parses, holds exactly that many files, and every name reads back byte-identical contents. Failing
-//! that is a data-loss bug in an archive format, which is worse than a panic and much quieter.
-//!
-//! **Structured input, not bytes.** `libfuzzer-sys` derives the input through `arbitrary`, so the
-//! fuzzer mutates the *file set* rather than an image's bytes. Byte mutation would spend its whole
-//! budget producing images the writer never writes, which tells us nothing about whether the writer
-//! and reader agree.
+//! Kani already proves `Fs::parse` total (`the_validation_implies_reads_slice_is_in_bounds`,
+//! `a_short_image_is_refused_not_indexed`). What no harness of that shape proves is that
+//! `write_image` and `parse`/`read` agree. **The property:** for any set of (name, contents) the
+//! writer accepts, the image parses, holds exactly that many files, and every name reads back
+//! byte-identical. Failing it is quiet data loss, the shape of the name-truncation bug found by
+//! hand on 2026-08-01. The input is a structured file set (`arbitrary`), because byte mutation would
+//! spend the budget on images the writer never writes. notes/fuzzing/targets.md has more.
 
 #![no_main]
 

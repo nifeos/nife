@@ -11,6 +11,7 @@ These files carry the evidence its prose budget has no room for.
 - [`ci-budget.md`](ci-budget.md): the exec rates behind sixty seconds, and the revert test that
   showed the job is a sweep.
 - [`elf-seeds.md`](elf-seeds.md): why there is one ELF seed per machine, and what a seed buys.
+- [`targets.md`](targets.md): the longer reasons behind each parser target.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
@@ -23,3 +24,4 @@ Each stem below is named for its content, and calef names files.
 - `three-bugs` Name: provisional. Named after the main page's own heading.
 - `ci-budget` Name: provisional.
 - `elf-seeds` Name: provisional.
+- `targets` Name: provisional.
