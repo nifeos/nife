@@ -33,7 +33,7 @@ tree: the same insertion, against the new lines above it.
 diff --git a/crates/system_initializer/src/boot_sequence.rs b/crates/system_initializer/src/boot_sequence.rs
 --- a/crates/system_initializer/src/boot_sequence.rs
 +++ b/crates/system_initializer/src/boot_sequence.rs
-@@ -133,6 +133,18 @@ pub fn boot(
+@@ -113,6 +113,18 @@ pub fn boot(
      let mounted_tree = mounted_tree.filter(|_| w.with_fs);
      let (shell, sh_clock_slot) = build_shell(&w, &sh_elf, chan, sh_budget);
      finish_shell_endowment(g, shell.tcb, mounted_tree);
@@ -50,5 +50,5 @@ diff --git a/crates/system_initializer/src/boot_sequence.rs b/crates/system_init
 +        }
 +    }
  
-     // Free every boot cap the spawn service does not need, so the progenitor's 16-slot capability table has room to
-     // build a supervised child (which holds a job untyped and a job frame while the loader retypes
+     // Free every boot cap the spawn service does not need, so the capability table has room to
+     // build a supervised child. Only the input frame here: `term_ep` is still delegated below (the

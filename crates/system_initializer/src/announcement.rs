@@ -1,7 +1,6 @@
 //! What the progenitor says: `announce`, the one sentence at a time it prints at the terminal
-//! before the shell starts, and `sentence`, which composes one without an allocator. Moved out of
-//! `lib.rs` unchanged but for visibility by milestone 843 (the system-initializer crate root is
-//! split along its seams), under §279 (the system-initializer crate root splits into private
+//! before the shell starts, and `sentence`, which composes one without an allocator. A private
+//! module of the crate root, under §279 (the system-initializer crate root splits into private
 //! modules).
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
