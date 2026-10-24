@@ -530,12 +530,12 @@ def classify(changed, tree, before=None):
     files, dirs = scan(tree)
     prose_only = True
     tests, unacted = set(), set()
-    readers, comment_tests = None, None
+    rust_index, comment_tests = None, None
     for f in changed:
         if f.endswith(".rs"):
-            if readers is None:
-                readers = rust_readers(tree)
-            ok, why, owed = comment_only_rust(f, tree, (before or {}).get(f), readers)
+            if rust_index is None:
+                rust_index = rust_readers(tree)
+            ok, why, owed = comment_only_rust(f, tree, (before or {}).get(f), rust_index)
             report.append(f"{'SKIP' if ok else 'RUN '}  {f}: {why}")
             if ok:
                 comment_tests = (comment_tests or set()) | set(owed)
@@ -543,9 +543,9 @@ def classify(changed, tree, before=None):
                 prose_only = False
             continue
         if f in HOST_ONLY_TOOLS:
-            readers = host_tool_readers(f, tree)
-            if readers:
-                report.append(f"RUN   {f}: a host-only tool, but named by {', '.join(readers[:3])}")
+            callers = host_tool_readers(f, tree)
+            if callers:
+                report.append(f"RUN   {f}: a host-only tool, but named by {', '.join(callers[:3])}")
                 prose_only = False
             else:
                 report.append(f"SKIP  {f}: host-only tool; only metrics.yml runs it and the lint job selftests it")
@@ -568,16 +568,16 @@ def classify(changed, tree, before=None):
             continue
         else:
             reason = "prose that no code names"
-        readers = [(d, place, pkg) for d, hits in dirs.items() if f.startswith(d + "/")
+        walkers = [(d, place, pkg) for d, hits in dirs.items() if f.startswith(d + "/")
                    for place, pkg in hits]
-        rust = sorted({pkg for _, _, pkg in readers if pkg})
-        unowned = sorted({place for _, place, pkg in readers if pkg is None and place.split(":")[0].endswith(".rs")})
+        rust = sorted({pkg for _, _, pkg in walkers if pkg})
+        unowned = sorted({place for _, place, pkg in walkers if pkg is None and place.split(":")[0].endswith(".rs")})
         if unowned:
             report.append(f"RUN   {f}: its directory is read by Rust in no package ({', '.join(unowned)})")
             prose_only = False
             continue
         tests.update(rust)
-        unacted.update(place.split(":")[0] for _, place, pkg in readers if pkg is None)
+        unacted.update(place.split(":")[0] for _, place, pkg in walkers if pkg is None)
         note = f"; tests of the packages that walk its directory: {' '.join(rust)}" if rust else ""
         report.append(f"SKIP  {f}: {reason}{note}")
     if unacted:
@@ -833,6 +833,13 @@ def selftest():
     cases.append(("comment-only Rust beside prose skips", p is True and c == ["kernel"]))
     p, t, r, c = classify(["kernel/src/map.rs", "Cargo.lock"], tree, {"kernel/src/map.rs": BASE_RS})
     cases.append(("comment-only Rust beside code runs", p is False and c is None))
+    # Order matters to the loop: prose or a host-only tool listed before the Rust must leave the
+    # Rust readers' index, cached across files, intact.
+    p, t, r, c = classify(["notes/plain.md", "kernel/src/map.rs"], tree, {"kernel/src/map.rs": BASE_RS})
+    cases.append(("prose before comment-only Rust skips",
+                  p is True and t == ["documentation"] and c == ["kernel"]))
+    p, t, r, c = classify(["script/metrics", "kernel/src/map.rs"], tree, {"kernel/src/map.rs": BASE_RS})
+    cases.append(("a host-only tool before comment-only Rust skips", p is True and c == ["kernel"]))
     # A prose-only diff reports no comment class, so rustfmt keeps skipping it.
     cases.append(("prose alone has no comment class", classify(["design/roadmap/0001-x.md"], dict(base_tree))[3] is None))
     # The lexer: lifetimes and chars, byte strings, and an escaped quote.
