@@ -225,7 +225,7 @@ impl ClockPage {
             // it fails the same three loom harnesses the writer's release fence does, so both
             // halves of the pair are checked rather than argued (notes/interleaving.md).
             //
-            // PAIR: the writer's `W_SEQ.store(claimed + 2, Ordering::Release)` at the end of
+            // PAIR: the writer's `fence(Ordering::Release)` after its claim of the sequence in
             // `publish`, below in this file. **The only protocol in the tree where both halves must
             // be here**, because a reader is in a different address space and reaches this page with
             // no syscall at all: there is no IPC rendezvous underneath to supply the edge the way

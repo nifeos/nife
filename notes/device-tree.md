@@ -146,8 +146,8 @@ into an `Error`.
   argument `elf::Segment::page_range` makes too: a type anyone can construct has to hold on its
   own, whatever the parser that usually builds it checked. The fuzz target
   `fuzz/fuzz_targets/device_tree_blob_walk` found the panic it closes.
-- The walkers that keep per-depth state stop at a depth of 16 and refuse to match past it, so
-  they never index past their stacks (BUGS below).
+- The walkers that keep per-depth state stop at a depth of 16. Past it they refuse to match
+  rather than return an `Error`, so they never index past their stacks (BUGS below).
 
 ## Finding a node
 
@@ -158,10 +158,10 @@ and 2 at both levels, because relying on that breaks the first board that differ
 a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"` or
 `"riscv,plic0"`, and the Pi port will need that.
 
-`node_reg_compatible` is that lookup, first needed for the RTC of milestone 51
-(wall-clock time). The RTC is
-`pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one finds
-nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can drive.
+`node_reg_compatible` is that lookup, first needed for the RTC of milestone 51 (wall-clock time).
+The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
+finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
+drive. `compatible` lists the most specific entry first, and a match on any entry counts.
 `node_prop_compatible`, `parent_prop_compatible` and `phandle_prop` follow the same pattern: the
 deciding property may come after the wanted one in a node, so each open node's candidate is
 remembered and the answer is taken when a matching node closes.

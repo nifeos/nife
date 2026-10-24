@@ -66,7 +66,11 @@ of 2026-09-26) stops a terminal so a replacement can take over. It rides the ter
 the endpoint's FIFO does the draining. A parked `OPERATION_READLINE` or `OPERATION_READRAW` is answered
 `FLAG_RETRY` first, because the reply capability naming that reader cannot leave the terminal. The
 terminal then waits on a control endpoint for `CTL_RESUME` or `CTL_QUIT`. A terminal started with
-no control endpoint refuses it with `BAD_REQUEST`, which is every terminal a boot builds today.
+no control endpoint refuses it with `BAD_REQUEST`. The boot terminal is not that case:
+`terminal_supervisor`, which `system_initializer` builds on every boot, starts it with a control
+endpoint. The terminal does not check who sends `OPERATION_QUIESCE`, so any unbadged holder (the
+input driver, the shell, `login`, `system_initializer`, `terminal_supervisor`) can quiesce the boot
+terminal until reboot.
 
 - `OPERATION_WRITE`: print `len` bytes from the client's output page. The terminal performs
   output-side newline translation (`\n` becomes `\r\n`) and passes everything else, ANSI
@@ -170,8 +174,9 @@ client fails fast instead of hanging on a reply that will never come.
 ### Badged copies
 
 A terminal endpoint capability with a non-zero badge is served by the badge's value, and every
-request outside that badge's set is refused with `BAD_REQUEST`. An unbadged capability is served in
-full, and that is every holder the boot wires: the input driver, the shell and `login`. The badge is
+request outside that badge's set is refused with `BAD_REQUEST`. An unbadged capability is served
+everything except `OPERATION_READ_LINE_BYTES`, and that is every holder the boot wires: the input
+driver, the shell and `login`. The badge is
 the kernel's word on every receive (§230 (badged endpoint capabilities)), and a badged copy cannot
 be re-badged, so a holder cannot widen it back.
 

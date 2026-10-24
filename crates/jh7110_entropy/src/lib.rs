@@ -3,10 +3,11 @@
 //! finds the device, and the decision of whether a generation succeeded, failed or is running.
 //!
 //! It never dereferences a pointer, so it is host-testable and Kani-reachable; the backend is
-//! `components/src/jh7110_entropy.rs`. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is set,
-//! and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is [`Outcome::Lockup`]. None of it has
-//! run on silicon. The `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels below name the
-//! sources in notes/entropy/jh7110-trng.md, which has the bring-up order and health testing.
+//! `components/src/jh7110_entropy.rs`. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is set
+//! (NetBSD's rule), and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is [`Outcome::Lockup`].
+//! None of it has run on silicon. The `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels below
+//! name the sources in notes/entropy/jh7110-trng.md, which has the bring-up order and health
+//! testing.
 //!
 //! # Examples
 //!
@@ -43,9 +44,11 @@ pub mod regs {
     /// answer.
     ///
     /// **A driver that never writes this register does not get 32 usable bytes.** The width after
-    /// reset is a build-time parameter (\[trm\]'s `BUILD_CONFIG.PRNG_LEN_AFTER_RST`), and in
-    /// 128-bit mode only `RAND0..RAND3` carry the answer; `STAT.R256` ([`super::STAT_R256`])
-    /// reports the current width, and all three cited drivers write `MODE` during bring-up.
+    /// reset is a build-time parameter (\[trm\]'s `FEATURES.MAX_RAND_LENGTH` and
+    /// `BUILD_CONFIG.PRNG_LEN_AFTER_RST`), and in 128-bit mode only `RAND0..RAND3` carry the
+    /// answer, which is why \[driver\] clamps its read to four words without `R256`.
+    /// `STAT.R256` ([`super::STAT_R256`]) reports the current width, and all three cited drivers
+    /// write `MODE` during bring-up.
     pub const MODE: u64 = 0x08;
     /// Status-mode register: `MISSION_MODE`, `NONCE_MODE` and `MAX_REJECTS` per \[trm\]. None of
     /// the three drivers cited here writes a value of its own into it (mainline leaves it alone

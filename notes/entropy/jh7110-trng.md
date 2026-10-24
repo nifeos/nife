@@ -52,11 +52,11 @@ trng: trng@1600C000 {
 };
 ```
 
-It is the same device, window and interrupt under a different string: a stale fork, not
-different silicon. Accepting `starfive,trng` is a claim about the register layout, and the vendor
-Linux driver at the firmware's own vintage (vendor-driver) backs it. It defines `CTRL` 0x00,
-`STAT` 0x04, `MODE` 0x08, `SMODE` 0x0C, `IE` 0x10, `ISTAT` 0x14, `RAND0`..`RAND7` 0x20..0x3C,
-`AUTO_RQSTS` 0x60 and `AUTO_AGE` 0x64. Its `CTRL`, `STAT` and `ISTAT` bit positions match mainline's
+It is the same device, window and interrupt under a different string: a stale fork, not different
+silicon. Accepting `starfive,trng` is a claim about the register layout, and the vendor Linux driver
+at the firmware's own vintage (vendor-driver) backs it. It defines `STARFIVE_CTRL` 0x00, `STAT`
+0x04, `MODE` 0x08, `SMODE` 0x0C, `IE` 0x10, `ISTAT` 0x14, `RAND0`..`RAND7` 0x20..0x3C, `AUTO_RQSTS`
+0x60 and `AUTO_AGE` 0x64. Its `CTRL`, `STAT` and `ISTAT` bit positions match mainline's
 `jh7110-trng.c`. Two drivers written against one IP block agree completely.
 
 `discover` reports the node's `status` and does not act on it. The vendor tree marks the TRNG

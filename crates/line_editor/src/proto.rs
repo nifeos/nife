@@ -100,10 +100,11 @@ pub const OPERATION_READ_LINE_BYTES: u64 = 10;
 /// endpoint's FIFO does the draining. Parked [`OPERATION_READLINE`] and [`OPERATION_READRAW`] get
 /// [`FLAG_RETRY`] (a reply capability cannot leave the process), the reply is r0 = [`QUIESCED`],
 /// and the terminal waits for [`CTL_RESUME`] or [`CTL_QUIT`] on its control endpoint. A terminal
-/// with none, every one a boot builds today, refuses it with [`BAD_REQUEST`]. See
-/// notes/terminal-contract.md.
+/// with none refuses it with [`BAD_REQUEST`]. See notes/terminal-contract.md.
 /// # BUGS
-/// - The terminal does not check the sender: any holder of an unbadged copy may send it.
+/// - The terminal does not check the sender, and the exposure is live on every boot: any unbadged
+///   holder (input driver, shell, `login`, `system_initializer`, `terminal_supervisor`) can quiesce
+///   the boot terminal, which `terminal_supervisor` starts with a control endpoint, until reboot.
 ///
 /// Name: provisional (the lane for milestone 23, 2026-09-26).
 pub const OPERATION_QUIESCE: u64 = 8;

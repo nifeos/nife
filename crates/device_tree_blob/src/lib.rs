@@ -320,7 +320,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
     /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
     /// is the correct lookup. A node deeper than the stack is not matched. See notes/device-tree.md
-    /// ("The parser's bounds").
+    /// ("Finding a node").
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // #address-cells/#size-cells declared by the node at each depth, applying to its children.
         // Depth 0 is the pre-root sentinel; the root is depth 1. Spec defaults are 2 and 1.
@@ -413,8 +413,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
     /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. `compatible` may follow
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
-    /// decoded when the matched node closes. Returns zero regions for a match with no `reg`. See
-    /// notes/device-tree.md ("The parser's bounds").
+    /// decoded when the matched node closes; a matched parent is still answered after its
+    /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
+    /// ("Finding a node").
     pub fn node_reg_compatible(&self, compat: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         const MAX_DEPTH: usize = 16;
         let mut acells = [2u32; MAX_DEPTH];
