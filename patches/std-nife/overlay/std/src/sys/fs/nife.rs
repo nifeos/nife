@@ -17,7 +17,8 @@
 //! (`CREATE`), `truncate` and `File::set_len` (`TRUNCATE`), `read_dir`, `create_dir`,
 //! `remove_file`, `remove_dir` and `rename` (`OPENDIR`, `READDIR`, `MKDIR`, `UNLINK`, `RMDIR`,
 //! `RENAME`), [`copy`], [`Dir`] (`#![feature(dirfd)]`), `remove_dir_all`, `Metadata::modified`
-//! (`GETMTIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SETMTIME_AT`, §112).
+//! (`GETMTIME`, by name only: see [`Mtime`]) and `set_times`/`set_times_nofollow` (`SETMTIME_AT`,
+//! §112).
 
 //! # What stays Unsupported
 //!

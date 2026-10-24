@@ -65,11 +65,11 @@ fn page_frame_va(id: u64) -> u64 {
 
 // --- The socket registry ---------------------------------------------------------------------
 //
-// A small fixed table, one entry per possible socket id, guarded by a spinlock (the same
-// discipline as the heap in `sys/alloc/nife`). It tracks which ids are in use, each open socket's capability, each id's page
-// (minted once per id and kept, so open/close cycles reuse the page without re-mapping an
-// already-mapped VA), a per-TCP-socket residual buffer (bytes net_stack delivered into the frame that a
-// short `read` could not take), and each UDP socket's peer/last destination.
+// A small fixed table, one entry per possible socket id, guarded by a spinlock (the same discipline
+// as the heap in `sys/alloc/nife`). It tracks which ids are in use, each open socket's capability,
+// each id's page (minted once per id and kept, so open/close cycles reuse the page without
+// re-mapping an already-mapped VA), a per-TCP-socket residual buffer (bytes net_stack delivered
+// into the frame that a short `read` could not take), and each UDP socket's peer/last destination.
 
 /// How many sockets this program holds at once. The PAL's own bound, not the wire's: ids are local.
 /// Six, the number the wire allowed before §255, because each id keeps a page minted from the
@@ -690,10 +690,11 @@ impl TcpListener {
 
     /// **`OPERATION_ACCEPT`: block until a peer connects, and take the connection at a second socket id.**
     ///
-    /// A listener and a connection are two objects: net_stack answers `ACCEPT` with the connection's
-    /// own capability, and `accept` files it under a *new* id with that id's page, which the
-    /// listener never had. The listener re-arms inside the same call, so accepting in a loop works.
-    /// **The peer address is `0.0.0.0:0`**: the contract's reply carries no peer (module docs).
+    /// A listener and a connection are two objects: net_stack answers `ACCEPT` with the
+    /// connection's own capability, and `accept` files it under a *new* id with that id's page,
+    /// which the listener never had. The listener re-arms inside the same call, so accepting in a
+    /// loop works. **The peer address is `0.0.0.0:0`**: the contract's reply carries no peer
+    /// (module docs).
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
         let conn = alloc_id().ok_or_else(|| {
             io::const_error!(io::ErrorKind::Other, "too many open sockets (contract limit)")

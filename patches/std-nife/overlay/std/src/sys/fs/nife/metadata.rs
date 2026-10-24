@@ -102,8 +102,8 @@ impl FileAttr {
 /// `GETMTIME` (milestone 47, DECISIONS §112) resolves a **name under a directory handle** and never
 /// takes an open file. `std::fs::metadata(path)` and `DirEntry::metadata` reach a name, so they ask
 /// and keep [`Mtime::Seconds`] or [`Mtime::Refused`]; `File::metadata` and a held `Dir`'s own
-/// metadata have **no name**, so they get [`Mtime::Unnamed`]. Asking by the name a `File` was opened
-/// by would answer for whatever holds that name *now*, the silent degradation DECISIONS §42
+/// metadata have **no name**, so they get [`Mtime::Unnamed`]. Asking by the name a `File` was
+/// opened by would answer for whatever holds that name *now*, the silent degradation DECISIONS §42
 /// forbids. A refused `GETMTIME` fails only `modified()`, never `metadata()`. See
 /// notes/std/file-times.md; a handle-taking verb is proposed in
 /// design/roadmap/0504-an-mtime-for-an-open-file.md.

@@ -21,7 +21,7 @@
 //! `byte_sink_contract::classify` splits the two, and each is routed through std's own seam:
 //!
 //! - **No sink** ([`byte_sink_contract::Sent::NoSink`]) is [`io::ErrorKind::Unsupported`], which
-//!   [`is_ebadf`] accepts, so `io::stdio`'s `handle_ebadf` swallows it and the program keeps running.
+//!   [`is_ebadf`] accepts, so `io::stdio`'s `handle_ebadf` swallows it and the program runs on.
 //! - **A destroyed sink** ([`byte_sink_contract::Sent::Gone`]) is [`io::ErrorKind::BrokenPipe`],
 //!   which `is_ebadf` rejects, so `println!` panics and (panic=abort) the process dies with the
 //!   fault attributed: what a Rust program on Linux does when its reader exits, as `yes | head`

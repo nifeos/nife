@@ -15,7 +15,8 @@
 //!   identity is a syscall-surface decision (DECISIONS §10, §16), not a PAL one.
 //! - **Only `getpid` is nife's**; every other item in `std::process` comes from the shared
 //!   `unsupported` backend, so `Command::spawn` refuses. Spawning by capability is a design fork,
-//!   and the measurement records `gix-command` and `gix-credentials` as the crates that will force it.
+//!   and the measurement records `gix-command` and `gix-credentials` as the crates that will force
+//!   it.
 
 /// This process's identifier, which does not exist, reported as `0`. See the module docs.
 pub fn getpid() -> u32 {

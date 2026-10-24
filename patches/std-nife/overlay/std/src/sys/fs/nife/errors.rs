@@ -34,11 +34,12 @@ pub(super) fn reply(r0: u64) -> io::Result<u64> {
 /// (RedoxFS) does, and §27 maps it at the server boundary and nowhere deeper.
 pub(super) fn from_errno(errno: i32) -> io::Error {
     match errno {
-        // `EPERM` (milestone 47): the capability lacks the right the verb needs, as when a directory
-        // capability lacks `ENUMERATE` or a descent asks for more than the parent holds. It is about
-        // *you*, not the name. Unlike `count_names`' refusals, where no capability designates the
-        // name and no permission was consulted, here the server judged authority, so
-        // `PermissionDenied` is honest. `ReadOnlyFilesystem` is its sibling for the mutating rights.
+        // `EPERM` (milestone 47): the capability lacks the right the verb needs, as when a
+        // directory capability lacks `ENUMERATE` or a descent asks for more than the parent holds.
+        // It is about *you*, not the name. Unlike `count_names`' refusals, where no capability
+        // designates the name and no permission was consulted, here the server judged authority, so
+        // `PermissionDenied` is honest. `ReadOnlyFilesystem` is its sibling for the mutating
+        // rights.
         1 => io::const_error!(
             io::ErrorKind::PermissionDenied,
             "this directory capability does not carry the right that verb needs"

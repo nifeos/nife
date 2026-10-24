@@ -2,9 +2,9 @@
 //! DECISIONS §170).
 //!
 //! Reads the argument page the loader mapped read-only at `rt::ARGS_PAGE` (capability in
-//! `rt::ARGS_SLOT`), in `program_argument_contract`'s layout, generated into this PAL as `argproto`.
-//! Per §170 the arguments are bytes and carry no authority: what a path may reach was fixed before
-//! the program started, by the directory in slot 4 alone.
+//! `rt::ARGS_SLOT`), in `program_argument_contract`'s layout, generated into this PAL as
+//! `argproto`. Per §170 the arguments are bytes and carry no authority: what a path may reach was
+//! fixed before the program started, by the directory in slot 4 alone.
 //!
 //! A program granted no argument page gets no arguments, not even `argv[0]`, and a page that does
 //! not parse whole reads as no arguments too (`program_argument_contract`'s docs say why).

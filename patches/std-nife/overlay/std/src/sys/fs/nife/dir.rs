@@ -123,10 +123,10 @@ impl Dir {
     /// `#![feature(dirfd)]`).
     ///
     /// Refused with `Unsupported` for anything the server minted, the gap [`Dir::open_dir`] and
-    /// [`File::duplicate`] also record: a handle is a token minted for one session, the contract has
-    /// no dup verb, and copying the number would forge a second owner of the handle, including its
-    /// close. The granted directory costs nothing: `proto::ROOT` is a sentinel any number of `Dir`s
-    /// may hold, and its `Drop` closes nothing. `open_dir("")` makes the same split.
+    /// [`File::duplicate`] also record: a handle is a token minted for one session, the contract
+    /// has no dup verb, and copying the number would forge a second owner of the handle, including
+    /// its close. The granted directory costs nothing: `proto::ROOT` is a sentinel any number of
+    /// `Dir`s may hold, and its `Drop` closes nothing. `open_dir("")` makes the same split.
     pub fn duplicate(&self) -> io::Result<Dir> {
         if self.at.0 == proto::ROOT { Ok(Dir::root()) } else { Err(unsupported_err()) }
     }

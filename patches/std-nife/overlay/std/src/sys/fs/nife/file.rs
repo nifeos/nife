@@ -252,10 +252,11 @@ impl File {
     }
 
     /// **Refused**: `SETMTIME_AT` (milestone 47) takes a **name under a directory**, and an open
-    /// file has a handle and no name. Stamping whatever holds the name this file was opened by would
-    /// set the wrong file's time after a rename, a silent wrong answer rather than a refusal
+    /// file has a handle and no name. Stamping whatever holds the name this file was opened by
+    /// would set the wrong file's time after a rename, a silent wrong answer rather than a refusal
     /// ([`Mtime`] has the argument). `std::fs::set_times(path, ..)` is bound and is what a caller
-    /// can use; a handle-taking verb is proposed in design/roadmap/0504-an-mtime-for-an-open-file.md.
+    /// can use; a handle-taking verb is proposed in
+    /// design/roadmap/0504-an-mtime-for-an-open-file.md.
     pub fn set_times(&self, _times: FileTimes) -> io::Result<()> {
         Err(io::const_error!(
             io::ErrorKind::Unsupported,

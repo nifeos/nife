@@ -18,10 +18,10 @@
 //! `SystemRng`). notes/std.md lists the slots.
 
 // **The numbers themselves live in `crates/std_runtime_contract`** (milestone 595 (provisional)),
-// generated into this PAL as `runtimeproto` by `cargo xtask std-src`, so the progenitor, the
-// kernel test harness and this PAL read one file. Every address in it is a row of the user
-// address-space map (`crates/address_space_map`, milestone 206): the three pages are runtime windows, above the net
-// PAL's per-socket frames (0x1000_0000 upward, one page per socket id) and below the initial
+// generated into this PAL as `runtimeproto` by `cargo xtask std-src`, so the progenitor, the kernel
+// test harness and this PAL read one file. Every address in it is a row of the user address-space
+// map (`crates/address_space_map`, milestone 206): the three pages are runtime windows, above the
+// net PAL's per-socket frames (0x1000_0000 upward, one page per socket id) and below the initial
 // ramdisk window (0x2000_0000), and the heap is the map's heap band. That crate's tests pin each
 // number to its band.
 pub use super::runtimeproto::{

@@ -17,7 +17,7 @@ use super::*;
 /// work. `GETMTIME` goes last, so every error this returns comes from the walk, `OPEN` or `FSTAT`;
 /// a refused one surfaces from `modified()` (see [`Mtime`]). The four are not atomic: a name
 /// replaced between `OPEN` and `GETMTIME` reports the new node's time with the old node's size, the
-/// window a Unix program calling `stat` twice has. A directory's size is [`FileAttr`]'s placeholder.
+/// window a Unix program calling `stat` twice has. A directory's size is a placeholder 0.
 pub fn stat(path: &Path) -> io::Result<FileAttr> {
     if !is_reachable() {
         return Err(unsupported_err());
