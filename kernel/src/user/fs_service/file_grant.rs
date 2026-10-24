@@ -11,7 +11,7 @@ use super::*;
 /// round.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct Grant {
-    /// The one name the caretaker will answer for. Must fit [`filesystem_contract::grant::MAX_NAME`].
+    /// The one name the caretaker will answer for. Must fit [`filesystem_contract::grant::WORDS_NAME`].
     pub name: &'static str,
     /// `grant::READ`, or `READ | WRITE`.
     pub rights: u64,
@@ -41,10 +41,6 @@ pub fn start_granted(
         role: client_role,
         arg: client_arg,
     } = grant;
-    assert!(
-        filesystem_contract::grant::fits(name.as_bytes()),
-        "a granted name rides in two argument words; this one does not fit",
-    );
     let (file_ep, file_shared, readiness) = ensure(blk_image, fs_server_image)?;
     // The caretaker's two endpoints and the program's report, from one region the returned
     // holding reclaims, as [`narrow_dir_held`] does for a directory.
@@ -56,7 +52,8 @@ pub fn start_granted(
     let caretaker_ready = endpoint();
     let report = endpoint();
 
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes());
+    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
+        .expect("a granted name rides in two argument words; this one does not fit");
     let spec = filesystem_contract::grant::spec(name.len(), rights);
 
     // The grant (the name and the direction) rides in the caretaker's START arguments, so a

@@ -73,11 +73,11 @@ const MAX_DEPTH: usize = 8;
 const LISTING: usize = 128;
 
 /// The buffer [`sweep`] decodes a **whole set** out of, sized by the contract rather than chosen:
-/// the widest set a grant carries, each name at its longest, as directory entries. It is one frame
-/// at the top of the stack and is never held across the recursion, which is why it can be larger
-/// than [`LISTING`] on a program with four stack pages.
-const SET_LISTING: usize =
-    dirent::record_len(grant::MAX_NAME) * filesystem_contract::nameset::MAX_NAMES;
+/// the widest set a grant carries, a directory entry's header per name and every byte of name the
+/// set may hold. It is one frame at the top of the stack and is never held across the recursion,
+/// which is why it can be larger than [`LISTING`] on a program with four stack pages.
+const SET_LISTING: usize = dirent::record_len(0) * filesystem_contract::nameset::MAX_NAMES
+    + filesystem_contract::nameset::NAME_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
 /// on directories: **each round removes everything it saw and starts again at cursor 0**, because a
@@ -265,7 +265,7 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
 /// **The `-v` line: the name, and nothing else.** `rm(1)`'s `-v` is "showing them as they are
 /// removed", and the default is silence, which is why every call to this is behind the option.
 fn say(name: &[u8], suffix: &[u8]) {
-    let mut out = [0u8; 64];
+    let mut out = [0u8; grant::MAX_NAME + 16];
     let n = pack(&mut out, &[name, suffix, b"\n"]);
     text(&out[..n]);
 }
@@ -281,7 +281,7 @@ fn diagnose(name: &[u8], errno: i32) {
     } else {
         dir::explain(errno).as_bytes()
     };
-    let mut out = [0u8; 96];
+    let mut out = [0u8; grant::MAX_NAME + 96];
     let n = if name.is_empty() {
         pack(&mut out, &[b"rm: ", reason, b"\n"])
     } else {
@@ -292,7 +292,7 @@ fn diagnose(name: &[u8], errno: i32) {
 
 /// Concatenate `parts` into `out`, returning the length. Truncating rather than growing, because
 /// this program has no allocator and a diagnostic that could not be printed is worse than one that
-/// is short.
+/// is short. Each caller's buffer holds a name as long as a grant carries, so a name is never cut.
 fn pack(out: &mut [u8], parts: &[&[u8]]) -> usize {
     let mut n = 0;
     for part in parts {
@@ -338,7 +338,7 @@ fn verdict(status: u64, count: u64) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
-    let mut buf = [0u8; grant::MAX_NAME];
+    let mut buf = [0u8; grant::WORDS_NAME];
     let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is

@@ -20,6 +20,17 @@ pub(super) const INITIAL_RAMDISK_VA: u64 = address_space_map::runtime_window(0x2
 /// notes/system-initializer/budgets.md.
 pub const CHILD_STACK_PAGES: u64 = 12;
 
+/// **Stack pages the shell gets**, more than [`CHILD_STACK_PAGES`], measured with four pages of
+/// headroom: `script/swish-check`'s aarch64 leg passes at seventeen and faults at sixteen, in
+/// `installed/jig rollback`, where a program run by its path has its words designated. A debug
+/// shell keeps a copy of each `Endowment` it passes or returns, and an `Endowment` holds four file
+/// grants whose names may be 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)). The shell is built from the progenitor's own
+/// pages, once a boot, so the pages are not a job's. `pipeline_service`'s `SHELL_EXTRA_STACK` stays
+/// level with this. See notes/system-initializer/budgets.md.
+///
+/// Name: provisional (milestone 946).
+pub const SHELL_STACK_PAGES: u64 = 21;
+
 /// Where a child that declares a clock maps it, read-only. Must match `components/src/date.rs`'s
 /// `CLOCK_VA` and `kernel/src/user/clock_service.rs`.
 pub(super) const CHILD_CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
@@ -77,8 +88,8 @@ pub(super) const JOB_REGION_PAGES: u64 = 48;
 pub(super) const DIR_JOB_REGION_PAGES: u64 = 98;
 
 /// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
-/// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table and a
-/// `grant::MAX_NAME` name buffer).
+/// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table, and in a
+/// `fs_nameset_caretaker` up to two `grant::MAX_NAME` name buffers for a rename).
 pub(super) const CARETAKER_STACK_PAGES: u64 = 4;
 
 /// Where a `fs_subtree_caretaker` and the program it serves both map the FS contract's shared page.

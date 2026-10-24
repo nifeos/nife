@@ -5,12 +5,29 @@ pub const READ: u64 = 1 << 0;
 /// Implies [`READ`]: a writer that cannot read back is a shape nothing has asked for.
 pub const WRITE: u64 = 1 << 1;
 
-/// The longest granted name, in bytes. The name rides in **two `START` argument words** rather
-/// than a frame, so a per-file grant costs no extra page and no extra mapping, and the
-/// caretaker needs nothing mapped before it runs. Sixteen bytes is short, and deliberately so:
-/// it is a demonstrator's limit, not a filesystem's, and lifting it means giving the caretaker
-/// a frame, which is a change to the wiring and not to this contract.
-pub const MAX_NAME: usize = 16;
+/// **The longest granted name, in bytes**: what the shell lets a line name as one file, what a
+/// name set ([`super::nameset`]) carries per name, and what a caretaker compares against. 252, which
+/// is §307 (how long a name may be)'s bound for a program, a package and the files they travel in:
+/// RedoxFS's `DIR_ENTRY_MAX_LENGTH`, the smallest name limit of a filesystem nife installs onto.
+/// calef ruled it on 2026-10-24 (UTC), on milestone 946 (a granted file name can be longer than
+/// sixteen bytes): *"B"*, over 255, Linux's `NAME_MAX`, which would make a 253-byte name grantable
+/// and unstorable on nife's own disk.
+///
+/// A name this long does not fit in a caretaker's `START` words. Those carry at most
+/// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the
+/// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
+/// two words by mistake.
+pub const MAX_NAME: usize = 252;
+
+/// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
+/// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
+/// request's package name ride this way, so they cost no extra page and the process needs nothing
+/// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
+/// answers `None`), never truncated, because a truncated name is a different file.
+///
+/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAX_NAME`]'s "what a
+/// grant can name".
+pub const WORDS_NAME: usize = 16;
 
 /// `EROFS`, the reply to a write through a read-only grant. Chosen over `EACCES` on purpose:
 /// `EACCES` is the Unix answer, "you were denied", which implies a policy that could have said
@@ -27,9 +44,13 @@ pub const ENOTDIR: i32 = 20;
 /// handle goes through.
 pub const HANDLE: u64 = 0;
 
-/// Pack a granted name into the two argument words the caretaker is started with. Names shorter
-/// than [`MAX_NAME`] are zero-padded; longer ones are refused by the caller (see [`fits`]).
-pub const fn pack_name(name: &[u8]) -> (u64, u64) {
+/// **Pack a name into the two argument words a process is started with**, or `None` when it is
+/// empty or longer than [`WORDS_NAME`]. Names shorter than that are zero-padded. `None` rather than
+/// a prefix, so a caller that forgot to check cannot start a caretaker on a different name.
+pub const fn pack_name(name: &[u8]) -> Option<(u64, u64)> {
+    if !fits_words(name) {
+        return None;
+    }
     let mut lo = [0u8; 8];
     let mut hi = [0u8; 8];
     let mut i = 0;
@@ -37,23 +58,31 @@ pub const fn pack_name(name: &[u8]) -> (u64, u64) {
         lo[i] = name[i];
         i += 1;
     }
-    while i < name.len() && i < MAX_NAME {
+    while i < name.len() {
         hi[i - 8] = name[i];
         i += 1;
     }
-    (u64::from_le_bytes(lo), u64::from_le_bytes(hi))
+    Some((u64::from_le_bytes(lo), u64::from_le_bytes(hi)))
 }
 
-/// Unpack a granted name into `buf` (at least [`MAX_NAME`] bytes) and return its length.
-pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; MAX_NAME]) -> usize {
+/// Unpack a name from two argument words into `buf` and return its length, at most
+/// [`WORDS_NAME`]: a length word claiming more is clamped to what two words can hold.
+pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; WORDS_NAME]) -> usize {
     buf[..8].copy_from_slice(&lo.to_le_bytes());
     buf[8..].copy_from_slice(&hi.to_le_bytes());
-    len.min(MAX_NAME)
+    len.min(WORDS_NAME)
 }
 
-/// Whether a name can travel as a per-file grant at all.
+/// Whether a name can be granted at all: one to [`MAX_NAME`] bytes.
 pub const fn fits(name: &[u8]) -> bool {
     !name.is_empty() && name.len() <= MAX_NAME
+}
+
+/// Whether a name fits in two `START` argument words: one to [`WORDS_NAME`] bytes.
+///
+/// Name: provisional (milestone 946), after [`fits`] and [`WORDS_NAME`].
+pub const fn fits_words(name: &[u8]) -> bool {
+    !name.is_empty() && name.len() <= WORDS_NAME
 }
 
 /// Pack the name length and the granted rights into the caretaker's third argument word.
@@ -65,12 +94,12 @@ pub const fn fits(name: &[u8]) -> bool {
 /// ```
 /// use filesystem_contract::grant;
 ///
-/// assert!(grant::fits(b"report.txt"));
-/// let (lo, hi) = grant::pack_name(b"report.txt");
+/// assert!(grant::fits_words(b"report.txt"));
+/// let (lo, hi) = grant::pack_name(b"report.txt").unwrap();
 /// let spec = grant::spec(b"report.txt".len(), grant::READ);
 ///
 /// // What the caretaker unpacks from its three argument words.
-/// let mut buf = [0u8; grant::MAX_NAME];
+/// let mut buf = [0u8; grant::WORDS_NAME];
 /// let n = grant::unpack_name(lo, hi, grant::spec_len(spec), &mut buf);
 /// assert_eq!(&buf[..n], b"report.txt");
 ///
@@ -78,8 +107,10 @@ pub const fn fits(name: &[u8]) -> bool {
 /// assert!(!grant::is_writable(spec));
 /// assert_eq!(grant::EROFS, 30);
 ///
-/// // A name too long to travel in two words is refused by the caller, not truncated on the wire.
-/// assert!(!grant::fits(b"a-name-longer-than-sixteen-bytes"));
+/// // A name too long for two words can still be granted, on a page, but is refused by the packer
+/// // rather than truncated on the wire.
+/// assert!(grant::fits(b"quarterly-report.txt"));
+/// assert!(grant::pack_name(b"quarterly-report.txt").is_none());
 /// ```
 pub const fn spec(len: usize, rights: u64) -> u64 {
     ((len as u64) & 0xff) | (rights << 8)

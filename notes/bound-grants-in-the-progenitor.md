@@ -77,6 +77,10 @@ These are code in the progenitor, and would be built as soon as both answers are
 - Caretaker unless proven otherwise. The progenitor binds a badge only when the note says so
   and a window is free. Any failure (no note, a note it cannot decode, no free window, a `BIND`
   refused) falls back to the caretaker it builds today, and says so on the console once.
+- A set of names is bound and still gets a caretaker. A badge is bound to one directory, all of
+  it, and a set (`spawnproto::NAMESET_BIT`) is what narrows that directory to the names a line
+  designated. So `fs_nameset_caretaker` serves the set over the bound channel, told with an empty
+  name that the bound root is its directory (`client_windows::at_bound_root`, milestone 946 (a granted file name can be longer than sixteen bytes)).
 - Bind before the child holds anything. The progenitor opens the directory on its own unbadged
   channel, sends `BIND`, and only then mints the badged endpoint into the child's table. A badge
   is open (the whole filesystem) until bound, so the order is the safety property.

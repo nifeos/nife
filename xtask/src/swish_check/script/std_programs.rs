@@ -68,6 +68,19 @@ pub(super) const LINES: &[Line] = &[
         "/installed/std-grep needle",
         &["std_grep: .: no directory was granted to search"],
     ),
+    // **A word naming a file past two words' sixteen bytes** (milestone 946 (a granted file name
+    // can be longer than sixteen bytes)). The name rides the grant's set, on a page, so the program
+    // is granted that one file and reads it.
+    line(
+        0,
+        "echo the needle in a long name > the-quarterly-report.txt",
+        &[],
+    ),
+    line(
+        1,
+        "/installed/std-grep needle the-quarterly-report.txt",
+        &["the-quarterly-report.txt:the needle in a long name"],
+    ),
     // **Unmodified `ripgrep` searches what its words name** (milestone 595 (the shell runs a `std`
     // program), fatal risk 1): crates.io's `rg` 14.1.1 as basalt packaged it, unvouched, carrying
     // only the `cargo xtask foreign-note` note. `docs` is granted read-only because a word named

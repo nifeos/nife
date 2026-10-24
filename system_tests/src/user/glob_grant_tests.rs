@@ -97,7 +97,8 @@ fn assert_shell_agreed(v: u64) {
 /// `name` empty means [`filesystem_contract::grant::WHOLE_NAMESPACE`]: the operand is the set, and `rm`
 /// learns it by enumerating the capability it was handed.
 fn run_rm(name: &str, flags: u64) -> (u64, u64) {
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes());
+    // An empty name is the whole namespace, which packs as two zero words.
+    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
     let (report, held) = fs_service::start_granted_set(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),

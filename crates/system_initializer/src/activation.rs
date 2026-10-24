@@ -217,7 +217,7 @@ pub(super) fn activate(
         Some(Activation::Install | Activation::Vouch) => Some(take_frames(spawn, w0, a.own_ut)),
         _ => None,
     };
-    let mut named = [0u8; filesystem_contract::grant::MAX_NAME];
+    let mut named = [0u8; filesystem_contract::grant::WORDS_NAME];
     // A vouch's name follows its frames, which `take_frames` has just taken.
     let named_len = if matches!(verb, Some(Activation::Remove | Activation::Vouch)) {
         let (lo, hi, len) = spawn.receive();

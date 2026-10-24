@@ -133,9 +133,9 @@ pub mod grant;
 /// `components/src/fs_nameset_caretaker.rs`.
 ///
 /// A set does not fit in `START`'s argument words, so it rides in a frame the wiring maps read-only
-/// into the caretaker, and [`nameset::MAX_NAMES`] is the capability's ceiling. A record is one
-/// header byte, bit 7 [`nameset::IS_DIR`] and the low seven the length, then the name; a zero header
-/// ends the set, so a name may not be empty. The caretaker answers `READDIR` from the set, so the
+/// into the caretaker, and [`nameset::MAX_NAMES`] and [`nameset::NAME_BYTES`] are the capability's
+/// ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIR`]), then the name; a zero
+/// length ends the set, so a name may not be empty. The caretaker answers `READDIR` from the set, so the
 /// type is what the directory said when the grant was planned. See notes/glob-grant.md.
 pub mod nameset;
 

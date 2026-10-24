@@ -497,11 +497,13 @@ fn a_program_endowed_a_file_is_refused_when_the_command_names_none() {
 
 #[test]
 fn a_name_that_cannot_travel_as_a_grant_is_refused_at_the_prompt() {
-    // A grant's name rides in two argument words, so a component that does not fit them cannot
-    // travel; `..` designates a directory rather than a file, so it is not a thing to grant.
+    // A component longer than a grant can carry cannot travel; `..` designates a directory rather
+    // than a file, so it is not a thing to grant.
     // Both are refused where they were typed rather than turning into an ENOENT from a server
     // that was asked something meaningless.
-    for line in [&b"wc this-name-is-far-too-long.txt"[..], b"wc .."] {
+    let mut buf = [0u8; 512];
+    let too_long = crate::test_support::with_too_long_name(b"wc ", &mut buf);
+    for line in [too_long, b"wc .."] {
         let Command::Run(r) = parse(line) else {
             panic!()
         };

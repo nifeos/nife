@@ -22,7 +22,7 @@
 //! - A stopped durable session is retired only at its identity's next login.
 //! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
-//! - Identities over `grant::MAX_NAME` (16 bytes) get no subtree: [`mint`] refuses to truncate.
+//! - Identities over `grant::WORDS_NAME` (16 bytes) get no subtree: [`mint`] refuses to truncate.
 //! - A holder that never sends `LOGOUT` wedges the terminal until this process restarts.
 //! - The measured-boot decision is spelled here rather than through `measured_boot::verdict`.
 //! - The audit endpoint proves establishment, not per-request attribution.
@@ -823,9 +823,9 @@ fn rederive(
             record(RederiveSkip::TableFull);
             break;
         };
-        // `Durable` keeps a name of at most `grant::MAX_NAME` bytes, the bound `mint` holds a login
-        // to; the manifest's own bound is wider.
-        if !filesystem_contract::grant::fits(identity) || durables.find(identity).is_some() {
+        // `Durable` keeps a name of at most `grant::WORDS_NAME` bytes, the bound `mint` holds a
+        // login to; the manifest's own bound is wider.
+        if !filesystem_contract::grant::fits_words(identity) || durables.find(identity).is_some() {
             record(RederiveSkip::Identity);
             continue;
         }
@@ -857,7 +857,7 @@ fn rederive(
 /// belongs to, and the four capabilities that let this process hand it back and, later, take it
 /// down. Four slots each, which is what bounds [`DURABLE_SESSIONS`].
 struct Durable {
-    identity: [u8; filesystem_contract::grant::MAX_NAME],
+    identity: [u8; filesystem_contract::grant::WORDS_NAME],
     len: usize,
     /// The user's budget. `user_timetable_keeper` and its timetable are built from regions split off
     /// it, so it refuses `DESTROY` for as long as either lives (DECISIONS §16 (object revocation)).
@@ -888,7 +888,7 @@ impl Durable {
     ) -> Option<Self> {
         let va = DURABLE_PAGE_VA + k as u64 * DURABLE_PAGE_STRIDE;
         let (keeper, page, ready) = open_schedule(own_ut, budget, images, va)?;
-        let mut id = [0u8; filesystem_contract::grant::MAX_NAME];
+        let mut id = [0u8; filesystem_contract::grant::WORDS_NAME];
         id[..identity.len()].copy_from_slice(identity);
         Some(Durable {
             identity: id,
@@ -1169,12 +1169,12 @@ fn store_caretaker(
     name: &str,
 ) -> Option<u64> {
     let name = name.as_bytes();
+    let (lo, hi) = filesystem_contract::grant::pack_name(name)?;
     let narrow_ep = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
     let Ok(ready) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
         cap_delete(narrow_ep);
         return None;
     };
-    let (lo, hi) = filesystem_contract::grant::pack_name(name);
     let spec = filesystem_contract::grant::spec(
         name.len(),
         filesystem_contract::dir::READ | filesystem_contract::dir::DESCEND,
@@ -1285,13 +1285,11 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
 fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u64)> {
     let care = care?;
 
-    // The grant name travels in two `START` argument words, so it is capped at `grant::MAX_NAME`
-    // (16 bytes), below `login_contract::MAX_IDENTITY` (64). `pack_name` silently stops copying at
-    // the 16th byte, which would attenuate to a truncated name two identities could share; refuse
-    // before anything is built.
-    if !filesystem_contract::grant::fits(identity) {
-        return None;
-    }
+    // The grant name travels in two `START` argument words, so it is capped at
+    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAX_IDENTITY` (64). A truncated name
+    // is one two identities could share, so `pack_name` refuses a longer one, and that refusal is
+    // taken before anything is built.
+    let (lo, hi) = filesystem_contract::grant::pack_name(identity)?;
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;
     // As in [`connect`]: an abandoned step gives back its capability slots as well as its memory
@@ -1306,7 +1304,6 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
         return None;
     };
 
-    let (lo, hi) = filesystem_contract::grant::pack_name(identity);
     let spec = filesystem_contract::grant::spec(identity.len(), filesystem_contract::dir::ALL);
 
     // Its whole authority: the file service to attenuate, the endpoint it will serve, one place to

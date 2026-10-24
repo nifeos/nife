@@ -272,6 +272,23 @@ impl Nav {
         Ok((p, target))
     }
 
+    /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
+    /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
+    /// in that directory and so may be as long as a file's ([`nav::MAX_NAME`], milestone 946 (a granted file name can be longer than sixteen bytes)) where
+    /// a directory the shell stands in may not ([`nav::MAX_DIRECTORY_NAME`]). A path ending in `..`
+    /// names a directory, and is validated whole.
+    ///
+    /// Name: provisional (milestone 946).
+    pub(super) fn plan_name_path<'a>(&self, token: &'a [u8]) -> Result<nav::Path<'a>, Say> {
+        let p = nav::path(token).map_err(Say::Refused)?;
+        match p.split_last_component() {
+            Some((lead, _)) => self.holds.resolve_steps(p.is_from_root(), lead),
+            None => self.holds.resolve_path(&p),
+        }
+        .map_err(Say::Refused)?;
+        Ok(p)
+    }
+
     /// **`cd`**: rebind where names resolve. An empty operand is your root, because there is no
     /// `HOME` here and the root is the one distinguished place you have: it is what you were
     /// granted. `cd /` is the same place said out loud, which is what `pwd` has always printed.
@@ -473,7 +490,7 @@ impl Nav {
         if token.is_empty() {
             return Say::NeedsAName;
         }
-        let (p, _) = match self.plan_path(token) {
+        let p = match self.plan_name_path(token) {
             Ok(v) => v,
             Err(s) => return s,
         };
@@ -505,7 +522,7 @@ impl Nav {
         if self.dir.is_none() {
             return Err(Say::NoDirectory);
         }
-        let (p, _) = self.plan_path(token)?;
+        let p = self.plan_name_path(token)?;
         let Some((lead, pattern)) = p.split_last_component() else {
             return Err(Say::Refused(Refused::NotAName));
         };

@@ -15,13 +15,23 @@
 /// walks by hand, and going deeper is [`Refused::TooDeep`] rather than a silently truncated path.
 pub const MAX_DEPTH: usize = 8;
 
-/// The longest single component a name may have, which is [`crate::MAX_FILE_NAME`]: a shell that
-/// could `cd` into a name it cannot grant would be able to reach a place it cannot talk about.
+/// The longest single component a path may have, which is [`crate::MAX_FILE_NAME`]: the last
+/// component of a path can be a file, and a file may be named that long. A component the shell
+/// descends through or stands in is held to [`MAX_DIRECTORY_NAME`] as well ([`Cwd::descend`]).
 pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
+
+/// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::WORDS_NAME`]:
+/// a directory grant names its directory in the caretaker's two `START` words, and a shell that
+/// could `cd` into a directory it cannot grant would be able to reach a place it cannot talk about.
+/// It is also what keeps a [`Cwd`] small, and the shell carries one by value in every
+/// [`crate::Holdings`] and several in an [`crate::Endowment`].
+///
+/// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
+pub const MAX_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
-pub const RENDER_MAX: usize = 1 + MAX_DEPTH * (1 + MAX_NAME);
+pub const RENDER_MAX: usize = 1 + MAX_DEPTH * (1 + MAX_DIRECTORY_NAME);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
@@ -32,6 +42,11 @@ pub enum Refused {
     NotAName,
     /// More components than [`MAX_DEPTH`], or a descent that would take the shell past it.
     TooDeep,
+    /// A directory to stand in, descend through or bind whose name is over
+    /// [`MAX_DIRECTORY_NAME`]. A name that long is a file's, not a place this shell can be.
+    ///
+    /// Name: provisional (milestone 946).
+    DirectoryNameTooLong,
     /// `..` at the root. The clamp, reported rather than silently ignored: at your root there is
     /// nothing above to name, and a shell that said nothing would leave a user believing they had
     /// moved.
@@ -47,8 +62,11 @@ impl Refused {
     /// each says what *is*, never what was denied.
     pub fn message(self) -> &'static str {
         match self {
-            Refused::NotAName => "that is not a name: one component, at most 16 bytes",
+            Refused::NotAName => "that is not a name: one component, at most 252 bytes",
             Refused::TooDeep => "too deep: this shell tracks at most 8 levels below its root",
+            Refused::DirectoryNameTooLong => {
+                "that directory's name is longer than this shell can stand in: at most 16 bytes"
+            }
             Refused::AtYourRoot => "you are at your root; there is nothing above it to name",
         }
     }
@@ -169,6 +187,14 @@ pub fn component_fits(part: &[u8]) -> bool {
         && !part.contains(&0)
 }
 
+/// Whether one component can be a directory this shell stands in: [`component_fits`], and at most
+/// [`MAX_DIRECTORY_NAME`] bytes.
+///
+/// Name: provisional (milestone 946).
+pub fn directory_fits(part: &[u8]) -> bool {
+    component_fits(part) && part.len() <= MAX_DIRECTORY_NAME
+}
+
 /// **Where a shell is, relative to its own root**: the components it descended through, and nothing
 /// above them.
 ///
@@ -177,7 +203,7 @@ pub fn component_fits(part: &[u8]) -> bool {
 /// change what that grant means.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Cwd {
-    names: [[u8; MAX_NAME]; MAX_DEPTH],
+    names: [[u8; MAX_DIRECTORY_NAME]; MAX_DEPTH],
     lens: [u8; MAX_DEPTH],
     depth: usize,
 }
@@ -212,7 +238,7 @@ impl Cwd {
     /// with no directory capability can be.
     pub const fn root() -> Self {
         Cwd {
-            names: [[0; MAX_NAME]; MAX_DEPTH],
+            names: [[0; MAX_DIRECTORY_NAME]; MAX_DEPTH],
             lens: [0; MAX_DEPTH],
             depth: 0,
         }
@@ -228,10 +254,11 @@ impl Cwd {
         self.depth == 0
     }
 
-    /// Record a descent. `false` if the name does not fit or the shell is already as deep as it
-    /// tracks; the caller must not have sent the request in that case.
+    /// Record a descent. `false` if the name does not fit, is longer than a directory's may be
+    /// ([`MAX_DIRECTORY_NAME`]), or the shell is already as deep as it tracks; the caller must not
+    /// have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
-        if self.depth == MAX_DEPTH || !component_fits(name) {
+        if self.depth == MAX_DEPTH || !directory_fits(name) {
             return false;
         }
         self.names[self.depth][..name.len()].copy_from_slice(name);
@@ -253,7 +280,7 @@ impl Cwd {
             return false;
         }
         self.depth -= 1;
-        self.names[self.depth] = [0; MAX_NAME];
+        self.names[self.depth] = [0; MAX_DIRECTORY_NAME];
         self.lens[self.depth] = 0;
         true
     }
@@ -316,6 +343,9 @@ impl Cwd {
                 Step::Down(name) => {
                     if !component_fits(name) {
                         return Err(Refused::NotAName);
+                    }
+                    if !directory_fits(name) {
+                        return Err(Refused::DirectoryNameTooLong);
                     }
                     if !next.descend(name) {
                         return Err(Refused::TooDeep);
@@ -454,7 +484,7 @@ pub const MAX_BINDS: usize = 4;
 /// One name a shell has bound to a position it already reached some other way.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BindEntry {
-    name: [u8; MAX_NAME],
+    name: [u8; MAX_DIRECTORY_NAME],
     name_len: u8,
     pos: Cwd,
 }
@@ -530,7 +560,7 @@ impl Bindings {
     /// Bind `name` to `pos`, a path in the one tree the shell presents. Refuses a name that cannot be a component, one already
     /// bound, or a full table; never overwrites.
     pub fn add(&mut self, name: &[u8], pos: Cwd) -> Result<(), BindRefused> {
-        if !component_fits(name) {
+        if !directory_fits(name) {
             return Err(BindRefused::NotAName);
         }
         if self.lookup(name).is_some() {
@@ -541,7 +571,7 @@ impl Bindings {
             .iter_mut()
             .find(|e| e.is_none())
             .ok_or(BindRefused::TooMany)?;
-        let mut packed = [0u8; MAX_NAME];
+        let mut packed = [0u8; MAX_DIRECTORY_NAME];
         packed[..name.len()].copy_from_slice(name);
         *slot = Some(BindEntry {
             name: packed,
@@ -659,7 +689,11 @@ mod tests {
     fn each_refusal_is_its_own_exact_sentence() {
         assert_eq!(
             Refused::NotAName.message(),
-            "that is not a name: one component, at most 16 bytes",
+            "that is not a name: one component, at most 252 bytes",
+        );
+        assert_eq!(
+            Refused::DirectoryNameTooLong.message(),
+            "that directory's name is longer than this shell can stand in: at most 16 bytes",
         );
         assert_eq!(
             Refused::TooDeep.message(),
@@ -834,8 +868,36 @@ mod tests {
     fn a_component_that_cannot_be_a_name_is_refused_before_anything_is_sent() {
         assert_eq!(path(b""), Err(Refused::NotAName));
         assert_eq!(path(b"."), Err(Refused::NotAName));
-        assert_eq!(path(b"/seventeen-bytes!!"), Err(Refused::NotAName));
-        assert_eq!(path(b"a/seventeen-bytes!!"), Err(Refused::NotAName));
+        let mut long = [b'/'; MAX_NAME + 3];
+        long[1..MAX_NAME + 2].fill(b'n');
+        assert_eq!(
+            path(&long[..MAX_NAME + 2]),
+            Err(Refused::NotAName),
+            "/ and one byte too many"
+        );
+        let mut under = [b'n'; MAX_NAME + 3];
+        under[..2].copy_from_slice(b"a/");
+        assert_eq!(
+            path(&under),
+            Err(Refused::NotAName),
+            "a/ and one byte too many"
+        );
+        // A component as long as a file's name may be is a path, and only standing in it is not.
+        assert!(path(b"a/least_authority_demo").is_ok());
+        let mut cwd = Cwd::root();
+        assert_eq!(
+            cd(&mut cwd, "seventeen-bytes!!"),
+            Err(Refused::DirectoryNameTooLong)
+        );
+        assert_eq!(
+            cd(&mut cwd, "seventeen-bytes!!/a"),
+            Err(Refused::DirectoryNameTooLong)
+        );
+        assert!(
+            cwd.is_root(),
+            "a refused descent leaves the shell where it was"
+        );
+        assert_eq!(cd(&mut cwd, "sixteen-bytes!!!"), Ok(()));
         assert_eq!(path(b"a/b\\c"), Err(Refused::NotAName));
         assert_eq!(path(b"a:b"), Err(Refused::NotAName));
         // Nine components, one more than the shell tracks. Refused rather than truncated: a

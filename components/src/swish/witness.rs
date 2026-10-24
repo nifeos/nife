@@ -853,7 +853,7 @@ fn opened(nav: &Nav, name: &[u8]) -> Option<u64> {
 /// at [`Nav::here`], because the claim being witnessed is about the shell's own resolver. A helper
 /// that walked the path itself would prove that the *witness* can resolve a path.
 fn opened_token(nav: &mut Nav, token: &[u8]) -> Option<(Tree, u64)> {
-    let (p, _) = nav.plan_path(token).ok()?;
+    let p = nav.plan_name_path(token).ok()?;
     let (lead, name) = p.split_last_component()?;
     let w = nav.walk_steps(p.is_from_root(), lead).ok()?;
     let r = nav.name_call_in(w.tree, fs::OPEN, w.handle, name, 0);
