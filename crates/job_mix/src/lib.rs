@@ -23,13 +23,12 @@
 #![deny(missing_docs)]
 
 // **The console markers, which are a contract and not a wording** (milestone 324 (the bench
-// console cannot speak to any of the three boards) part 2).
+// console cannot speak to any of the three boards) part 2): everything from here to `COMPUTE`
+// leaves the machine and is read back by `crates/serial_console` and `cargo xtask job-mix`.
 //
-// Everything below this comment and above `COMPUTE` is text that leaves the machine and is read
-// back by `crates/serial_console` and `cargo xtask job-mix`. They are **stable heads**, on
-// `crates/boot_ladder`'s rule: a matcher keys on the head, which never changes, and the tail
-// carries the numbers and is free to improve, so the fields inside a line are not shared
-// (notes/job-mix/instrument.md, "The console markers are a contract").
+// They are **stable heads**, on `crates/boot_ladder`'s rule: a matcher keys on the head, which
+// never changes, and the tail carries the numbers and is free to improve, so the fields inside a
+// line are not shared (notes/job-mix/instrument.md, "The console markers are a contract").
 //
 // Names provisional (milestone 324): printed and matched, so a contract, and calef names public
 // items. Bare nouns, to match `boot_ladder`'s `BANNER`, `MACHINE`, `TOUR`.
