@@ -51,7 +51,6 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [BUGS entries with no milestone](../bugs-without-milestones/README.md): the survey of limitations that are real future work, by area, and the question of a gate.
 - [Cobble, the mascot](../mascot.md): the project's mascot, drawn by calef's kid.
 - [The system tests and the kernel crate](../system-tests-and-the-kernel-crate.md): what the kernel linked for its tests, the gate that keeps them out, and where the tests go. Name provisional.
-- [The system tests' progenitor-shaped spawn](../progenitor-shaped-spawn.md): why the tests' shared spawn hand-builds its space, which sites keep their own, and why the spawner makes the bind. Name provisional.
 - [The suite's frame budget](../frame-budget.md): what the system tests may leave unreturned, what they legitimately keep, the conventions, and every number the ceiling has been. Name provisional.
 - [The swish-check CI flake, measured](../swish-check-flake.md): two timing-race reds at one gate, counted over 30 days, explained mechanically. Name provisional.
 - [swish-check failures, 2026W40](../swish-check-flake-2026w40.md): the week's 18 failures classified; the echo splice that looked like it survived milestone 342 (the kernel and the `console` server drive one UART from two address spaces) all predates it. Name provisional.

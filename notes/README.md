@@ -66,5 +66,3 @@ area directories), ruled B). Appendices under
 `arm-plan-under-hvf.md`: Name: provisional, minted 2026-10-21 (UTC) by lane/hvf-arm-reach.
 
 `smp.md`: Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.
-
-`progenitor-shaped-spawn.md`: Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06, after the function it explains.

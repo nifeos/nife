@@ -122,8 +122,8 @@ covers it with room.
   `timetable::Registry` holds one per entry. Too small a stack dies with a data abort whose faulting
   address is the stack pointer. That is what a stack overflow looks like from the kernel, and it
   reads like a wild pointer when it is not one.
-- `spawn_timetable_with` does not use the suite's shared progenitor-shaped spawn. Why is in [the
-  progenitor-shaped spawn](../progenitor-shaped-spawn.md).
+- `spawn_timetable_with` does not use the suite's shared progenitor-shaped spawn. Why is in
+  [milestone 794 (one progenitor-shaped spawn for the system tests)](../../design/roadmap/0794-one-progenitor-shaped-spawn-for-the-system-tests.md).
 - The archive is copied into fresh pages rather than shared with the initial ramdisk's, so it costs
   the address space a page each. That is the price of narrowing: no capability in this system names
   "these blocks of that archive", so a narrower endowment is a smaller archive, and a smaller

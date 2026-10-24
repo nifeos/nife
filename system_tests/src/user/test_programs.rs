@@ -137,7 +137,8 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
 /// [`INITIAL_RAMDISK_VA`], puts the budget in slot 0, `report` in slot 1 and `further_caps` after
 /// in order (each named for its failure message), binds `bound_notification` between configure
 /// and start (the only order without a race), and starts with the archive's length in `x1`.
-/// Returns once the program is running. See notes/progenitor-shaped-spawn.md.
+/// Returns once the program is running. The design is milestone 794's roadmap block; the bind's
+/// reason is in notes/system-tests-and-the-kernel-crate.md.
 ///
 /// Name: provisional (milestone 794's lane, 2026-10-16 UTC).
 #[allow(clippy::too_many_arguments)] // the endowment's rights and the two beyond-the-floor extensions are each a real part of the shape
