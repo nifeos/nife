@@ -256,9 +256,10 @@ The process's output side is chosen at spawn by `mode` and nowhere else:
 `MODE_DISPLAY` the sink endpoint is `display_terminal`'s own, answered by one `CALL`, and the
 console's reply endpoint is never granted. The process holds no device in either mode.
 
-Every holder the boot wires is unbadged. Two badged copies of the terminal endpoint exist, and each
-is served an allowlist, so a request added to the contract later is refused on a badged copy until
-somebody decides that reader may send it.
+Every client the boot wires is unbadged. Every copy of the terminal endpoint, unbadged or badged,
+is served an allowlist (`proto::admits`), so a request added to the contract later is refused until
+somebody decides its holder may send it. The unbadged copy is never served the quiesce or the stdin
+read.
 
 - `proto::RAW_ONLY_BADGE`, milestone 709 (a graphical terminal session on the no-keyboard arm holds
   only the raw half of the boot discipline). Its holder, a `graphical_terminal` session reading
@@ -268,3 +269,6 @@ somebody decides that reader may send it.
   resolver). It is a program's standard input and nothing else: it reads the line being typed,
   eight bytes at a time. The unbadged surface never serves that read, so the shell's own lines
   cannot be taken through it.
+- `proto::SUPERVISOR_BADGE`, §232 (the `line_editor` swap contract). `terminal_supervisor` mints
+  it for each quiesce, and it carries `OPERATION_QUIESCE` and nothing else. A quiesce on any other
+  copy is refused, because it would stop the terminal until a `CTL_RESUME` nobody sends.
