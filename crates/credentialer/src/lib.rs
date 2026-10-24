@@ -1,17 +1,13 @@
 //! **Credentials: an identity, and a secret you can check but never read back**
 //! (notes/credentials.md). The pure logic behind the credential service: how a secret becomes a
 //! record, how a presented secret is checked against one, and how a record is encoded. No syscalls
-//! and no allocation, so it builds for the host and every target from one source. The wire contract
-//! is `credential_contract`; the service is `components/src/credentialer.rs`.
-//!
-//! A [`Record`] is an identity, a random 16-byte salt, three cost parameters and a 32-byte
-//! **Argon2id** tag, `Argon2id(secret, salt, cost)`: nothing to decrypt, so recovering a secret
-//! means finding a preimage, which the memory-hard cost prices. There is no read path, as a
-//! property of the API. Argon2id is RFC 9106's recommendation and resists both side channels and
-//! time-memory tradeoffs; it comes from RustCrypto's `argon2` because a password KDF's correctness
-//! is won by exposure (§46 (thin primitives or whole subsystems)), and the tests run the reference
-//! implementation's and RFC 9106's known-answer vectors against the version linked.
-//!
+//! and no allocation. The wire contract is `credential_contract`; the service is
+//! `components/src/credentialer.rs`. A [`Record`] is an identity, a random 16-byte salt, three
+//! cost parameters and a 32-byte **Argon2id** tag (RFC 9106): nothing to decrypt and no read path,
+//! so recovering a secret means finding a preimage, which the memory-hard cost prices. RustCrypto's
+//! `argon2`, run against RFC 9106's known-answer vectors, because a password KDF's correctness is
+//! won by exposure (§46 (thin primitives or whole subsystems); notes/credentials/argon2id.md).
+
 //! Three things a naive verifier would not do:
 //!
 //! 1. **The tag comparison is constant-time** ([`subtle`]), so the tag cannot be recovered a byte
@@ -20,9 +16,11 @@
 //!    which identities exist.
 //! 3. **An unknown identity still costs one full derivation**, against a decoy record whose salt
 //!    and tag come from the entropy service, so membership is not readable from a stopwatch.
+
+//! # BUGS
 //!
-//! Not done: persistence (a [`Store`] dies with its process; secrets at rest are an open question
-//! in notes/credentials.md), rehash when the cost moves, and lockout or rate limiting.
+//! - No persistence: a [`Store`] dies with its process (secrets at rest: notes/credentials.md).
+//! - No rehash when the cost moves, and no lockout or rate limiting.
 //!
 //! Name: ratified 2026-09-13 (calef). It shares `credentialer` with the program because it is that
 //! program's logic lifted out to be host-tested; `credential` was refused for the program on
@@ -102,13 +100,10 @@ pub struct Cost {
 
 impl Cost {
     /// What this tree wires, and it is **below** OWASP's 19 MiB / t=2 recommendation on the memory
-    /// axis, deliberately and with the reason stated rather than left as an absence.
-    ///
-    /// The whole machine under test is 128 MiB of QEMU RAM, the filesystem server alone reserves
-    /// 8 MiB of it, and every derivation here runs under TCG emulation at roughly an order of
-    /// magnitude off native. 4 MiB with three passes keeps a verify inside a second on the slowest
-    /// configuration in the suite while staying genuinely memory-hard: an attacker's GPU still has
-    /// to find 4 MiB per guess, which is where a memory-hard KDF's advantage over PBKDF2 lives.
+    /// axis, deliberately: the machine under test is 128 MiB of QEMU RAM under TCG, and 4 MiB with
+    /// three passes keeps a verify inside a second there while an attacker's GPU still has to find
+    /// 4 MiB per guess, which is where a memory-hard KDF beats PBKDF2
+    /// (notes/credentials/argon2id.md).
     ///
     /// **Raise it on real hardware.** The parameters travel in the record ([`Record::cost`]) rather
     /// than being compiled in, so raising them is a provisioning change.
@@ -128,15 +123,11 @@ impl Cost {
     /// A cost, or `None` if it is one Argon2 (or this crate) will not accept. Checked here rather
     /// than at derivation time so a bad policy fails where it is written.
     ///
-    /// **The bounds are re-checked here rather than left to `Params::new`, and that is not
-    /// belt-and-braces.** `argon2` 0.5.3 evaluates `m_cost < p_cost * 8` *before* it range-checks
-    /// `p_cost`, so a `p_cost` above `u32::MAX / 8` overflows the multiply. In release that wraps
-    /// and the later bound check still returns an error, so the answer is right; in a **debug**
-    /// build, which is what `cargo xtask test` builds the userspace programs as, overflow checks
-    /// are on and it **panics**. A credential service that can be killed by a cost value is a
-    /// denial of service on every login, so the bounds are enforced before the value crosses the
-    /// boundary. Found by this crate's exhaustive record-corruption test, which is the argument
-    /// for exhaustive mutation over a handful of hand-picked cases.
+    /// **The bounds are re-checked here rather than left to `Params::new`**: `argon2` 0.5.3
+    /// evaluates `m_cost < p_cost * 8` before it range-checks `p_cost`, so a huge `p_cost`
+    /// overflows the multiply and **panics** in a debug build, which is what `cargo xtask test`
+    /// builds the userspace programs as. A credential service a cost value can kill is a denial of
+    /// service on every login.
     ///
     /// # Examples
     ///

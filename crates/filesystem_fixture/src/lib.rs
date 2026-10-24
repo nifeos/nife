@@ -3,14 +3,9 @@
 //! so the three programs that touch them agree: the host build (`cargo xtask`, which writes these
 //! into the RedoxFS image with the host tool), the client (which reads and writes them through the
 //! FS server), and the kernel test (which asserts the client's report). Not part of either wire
-//! protocol; a shared constant, like a test vector.
-//!
-//! Moved out of `filesystem_contract` by milestone 886 (the filesystem test fixture moves to its
-//! own crate), which also ruled where the line sits: the protocol words shipping programs send
-//! each other (`READY`, `DESCENT_REFUSED`, and `rm`'s status convention) stayed in
-//! `filesystem_contract`; everything here is test data or a test hook, and nothing that boots
-//! depends on this crate. It is `no_std` and depends on `filesystem_contract` alone
-//! (`throughput::UNIT` is that crate's `fs::TRANSFER_MAX`).
+//! protocol: test data and test hooks only, and nothing that boots depends on it. Its one
+//! dependency is `filesystem_contract`. notes/filesystem-fixture.md has the reasons behind each
+//! shape.
 //!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
 //! `filesystem_test_image`, which names the shipped files but not the verdict words or the
@@ -35,18 +30,13 @@ pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through th
 /// first. Any other value (or silence) fails the test.
 pub const SUCCESS: u64 = 0xF11E_600D;
 
-/// **The shared-frame witness's two files** (milestone 599 (a frame per filesystem client
-/// channel), provisional). Two files at the image root with the **same-length name** and
-/// **distinct contents**, so a substitution shows up as the wrong body rather than a length
-/// mismatch. The name lengths must be equal, because the length a client sends travels in a
-/// register (the caller chooses it) while the name travels in the shared page (any holder of
-/// the frame can rewrite it): the victim sends its own name's length and the attacker's name
-/// must fill exactly that many bytes for the server to resolve it.
-///
-/// The witness has the victim intend [`SHARED_VICTIM_NAME`] and the attacker overwrite the
-/// staged name with [`SHARED_USURPER_NAME`] before the victim calls. A server that read the
-/// victim's own bytes returns [`SHARED_VICTIM_BODY`]; a server that read the attacker's bytes
-/// returns [`SHARED_USURPER_BODY`], which is the escape. See `system_tests/src/user/fs_shared_page_tests.rs`.
+/// **The shared-frame witness's two files** (milestone 599 (a frame per filesystem client channel),
+/// provisional): same-length names and distinct contents, so a substitution shows as the wrong
+/// body. The lengths must be equal because the length a client sends travels in a register while
+/// the name travels in the shared page, which any holder of the frame can rewrite. A server that
+/// read the victim's own bytes returns [`SHARED_VICTIM_BODY`]; one that read the attacker's returns
+/// [`SHARED_USURPER_BODY`], the escape. See `system_tests/src/user/fs_shared_page_tests.rs` and
+/// notes/filesystem-fixture.md.
 ///
 /// Names provisional (this lane's coinage); an architect names files.
 pub const SHARED_VICTIM_NAME: &str = "fs-witness-victim";
@@ -74,33 +64,16 @@ pub const SHARED_ISOLATED: u64 = 0x5991_150A;
 /// See [`SHARED_SUBSTITUTED`]: the open returned neither file's body, so the witness is wired wrong.
 pub const SHARED_UNEXPECTED: u64 = 0x599B_ADDD;
 
-/// **What the durability witness found** (milestone 55), sent as the report's third word by
-/// the in-guest role that runs it.
+/// **What the durability witness found** (milestone 55 (Time Machine: SMB3 with Apple's
+/// extensions)), sent as the report's third word by the in-guest role that runs it. It asks
+/// [`filesystem_contract::fs::SYNC`] twice: the count must be non-zero at the first ask (another
+/// process answered a flush, the end-to-end leg) and must strictly increase between the two (a
+/// device round trip, not a constant). The classes are far apart so a device that cannot flush is
+/// never confused with a flush that never left the server (notes/filesystem-fixture.md).
 ///
-/// The classes are deliberately far apart: "this machine's device cannot flush" and "the flush
-/// never left the server" are a hardware fact and a wiring bug, and a run that confused them
-/// would send somebody chasing the wrong half of the stack.
+/// # BUGS
 ///
-/// **BUGS: nothing produces these verdicts today.** The only role that ran the witness was
-/// `fs_test_client`'s SMB verify role, removed with the SMB implementation on 2026-08-30
-/// (notes/smb.md), and the end-to-end leg it checked (the count already non-zero because
-/// something *above* the guest process had flushed the device) needed a network client to
-/// cause that flush. So [`filesystem_contract::fs::SYNC`] and the block server's `VIRTIO_BLK_T_FLUSH` are
-/// still wired and still correct, and nothing gates them any more. The vocabulary is kept
-/// rather than deleted because the classification is the useful half and re-homing the witness
-/// onto a role that does not need a network is a small piece of work with no design question
-/// in it; see this lane's report.
-///
-/// The witness asks [`filesystem_contract::fs::SYNC`] twice and reads the count each answer carries.
-/// **Two independent things are being checked**, which is why one verdict is not enough:
-///
-/// 1. The count was **already non-zero** when the witness first asked. Nothing in this process
-///    had synced yet, so the only thing that can have moved it is another process answering a
-///    flush. That was the end-to-end leg, and it is the one that cannot be faked from inside
-///    the guest.
-/// 2. The count **strictly increased** between the two calls. That is what separates a real
-///    device round trip from a server that answers a constant, and it is the check that would
-///    have caught the gap this milestone exists to close.
+/// - Nothing produces these verdicts: the role that ran the witness went with SMB (notes/smb.md).
 pub mod durability {
     /// Both checks passed: something above this process had already flushed the device, and
     /// this process's own sync moved the count again. The only passing verdict.
@@ -138,30 +111,19 @@ pub const THROUGHPUT_NAME: &str = "throughput";
 /// its results (`kernel/src/bench.rs`). Two programs agree on these, so they are a crate and not a
 /// constant written twice (CLAUDE.md rule 7).
 pub mod throughput {
-    /// **The transfer unit: the whole file channel, which is the most a single `filesystem_contract`
-    /// request can carry.** Still not a tuning choice *here*: it is
-    /// [`filesystem_contract::fs::TRANSFER_MAX`], so this phase always measures the protocol's own
-    /// ceiling and the tuning lives at the one constant that sets that ceiling.
-    ///
-    /// It was 4096 until milestone 138 step 3, because the region a request moved bytes
-    /// through was one page. A throughput figure here is therefore still "how fast can this
-    /// architecture move one request's worth", and what changed is how much that is. A
-    /// comparison against a system whose client may pass a differently sized buffer is
-    /// comparing two different things, and **that caveat did not go away when the number got
-    /// bigger**; see notes/benchmarks.md.
+    /// **The transfer unit: the whole file channel, the most one `filesystem_contract` request can
+    /// carry.** It is [`filesystem_contract::fs::TRANSFER_MAX`], so this phase measures the
+    /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
+    /// this architecture moves one request's worth, so a comparison against a system whose client
+    /// passes a differently sized buffer compares two different things; see notes/benchmarks.md.
     pub const UNIT: usize = filesystem_contract::fs::TRANSFER_MAX;
 
-    /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, which
-    /// is small for a throughput benchmark and is bounded by the fixture image (16 MiB) rather
-    /// than chosen for statistics: the write phases have to fit beside everything else the
-    /// image carries, and RedoxFS is copy-on-write, so a rewritten block consumes fresh space
-    /// until the old one is freed.
-    ///
-    /// It is the **bytes** that are pinned rather than the transfer count, because milestone
-    /// 138 step 3 made the transfer size a variable and a benchmark that kept the count would
-    /// have moved sixteen times as much data at 64 KiB as at 4 KiB. Two runs of this phase move
-    /// the same file however the requests are shaped, which is what makes a before and an after
-    /// comparable.
+    /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
+    /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
+    /// everything else the image carries, and RedoxFS is copy-on-write, so a rewritten block takes
+    /// fresh space until the old one is freed. The bytes are pinned rather than the transfer count,
+    /// so two runs move the same file however the requests are shaped, and a before and an after
+    /// compare.
     pub(crate) const TOTAL: u64 = 1024 * 1024;
 
     /// Transfers per phase: [`TOTAL`] divided by [`UNIT`]. 256 at one page, 16 at sixteen.
@@ -191,37 +153,20 @@ pub mod throughput {
     pub const RAND_READ: u64 = 3;
     /// Write at those same pseudo-random offsets, in place, over a file that already exists.
     pub const RAND_WRITE: u64 = 4;
-    /// **A read of the first page of a record.** It was added to confirm a model of where the
-    /// milliseconds go, and it refuted it, which is why it is still here.
-    ///
-    /// The prediction was that a read at the *start* of a record would be much cheaper than one
-    /// in the middle: `read_node_inner` asks for the record at
-    /// `BlockLevel::for_bytes(offset_within_record + len)`, which is level 0 at the start and
-    /// level 5 at the end. **It measures the same as the other two read phases, to within 3%.**
-    /// The reason is one level down: `read_record` reads the block the pointer *stores*, and
-    /// only then checks whether that is as large as the level asked for. A fully written record
-    /// is stored at its node's record level, so **a read of an ordinary file fetches the whole
-    /// record**, whatever offset it asked for.
-    ///
-    /// That is a stronger result than the one it replaced, and it is what made the arithmetic in
-    /// notes/benchmarks.md close: at milestone 38's record level a 4 KiB read was 32 block
-    /// reads, flat. **Milestone 138 step 1 took the record level to 1**, so it is now two, and
-    /// the mechanism this phase measures is unchanged: the whole record still comes back.
+    /// **A read of the first page of a record**, kept because it refuted a model of where the
+    /// milliseconds go. A read at a record's start was predicted to be cheaper than one in its
+    /// middle; it measures the same as the other read phases, to within 3%, because `read_record`
+    /// fetches the block the pointer stores, so a read of an ordinary file fetches the whole record
+    /// whatever offset it asked for. notes/filesystem-fixture.md, "The record read", has the
+    /// mechanism.
     pub const RECORD_READ: u64 = 6;
 
-    /// **A record boundary**, which is the property [`RECORD_READ`] needs and the only one:
-    /// the phase reads at multiples of this, and it is meaningful exactly when every multiple
-    /// of it is also a multiple of the store's record size.
-    ///
-    /// 128 KiB satisfies that at every RedoxFS record level from 0 to 5, because each of those
-    /// sizes divides it. That is why the value did not move when milestone 138 took the record
-    /// level from 5 to 1: keeping it makes every figure this phase has ever produced comparable
-    /// with every other, which a value tracking the record size would have destroyed.
-    ///
-    /// **This is the store's number, not the protocol's**, and it used to say so and then add
-    /// that nothing checked it, calling itself "the one soft spot in this module". It is checked
-    /// now: `redoxfs_server` sees both this crate and the vendored engine, and asserts at compile
-    /// time that this value is a whole number of records. See `redoxfs_server/src/block.rs`.
+    /// **A record boundary**, the one property [`RECORD_READ`] needs: the phase reads at multiples
+    /// of this, which is meaningful exactly when each is also a multiple of the store's record
+    /// size. 128 KiB is, at every RedoxFS record level from 0 to 5, so it stays put when the level
+    /// changes and every figure this phase produced stays comparable. **This is the store's number,
+    /// not the protocol's**: `redoxfs_server/src/block.rs` asserts at compile time that it is a
+    /// whole number of records.
     pub const RECORD: u64 = 128 * 1024;
 
     /// **The cost of producing one page of payload**, with no filesystem in it at all.
@@ -298,13 +243,9 @@ pub mod escape {
 /// for a clean verdict of zero.
 pub const VERDICT: u64 = 0xE5_CA9E00;
 
-/// **The subtree milestone 47's directory capability is measured against.**
-///
-/// The shape matters more than the names. `sub` is what gets granted; `other` is its sibling and
-/// exists so "it cannot reach a sibling" is a claim about a directory that is really there and
-/// that the process one hop up the chain really can open, the same reason the per-file
-/// attacker's neighbour is a real file. `deeper` is inside the grant, so a second descent has
-/// somewhere to go and [`filesystem_contract::dir::DESCEND`] has something to withhold.
+/// **The subtree milestone 47 (navigation and naming)'s directory capability is measured against.**
+/// `sub` is granted; `other` is its real sibling, so "it cannot reach a sibling" is about a real
+/// directory; `deeper` gives a second descent somewhere to go (notes/filesystem-fixture.md).
 ///
 /// ```text
 ///   /            motd  scratch  sub/  other/
@@ -422,17 +363,15 @@ pub mod tree {
     /// coincidence of the fixture tree's own shape.
     pub const NAV_BIND_ALIAS: &str = "nav-bound";
 
-    /// **The directory milestone 50's redirection witness works in**, a sibling of [`SUB`] for
-    /// the same reason that one has siblings: a shell that writes files needs somewhere its
-    /// writes cannot be mistaken for another test's, and the root is shared with every test in
-    /// the boot.
+    /// **The directory milestone 50 (pipes and redirection)'s redirection witness works in**, a
+    /// sibling of [`SUB`]: the root is shared with every test in the boot, so a shell that writes
+    /// files needs somewhere its writes cannot be mistaken for another test's. Two files, so `ls >
+    /// out.txt` writes a listing with something in it and the `wc` that counts it counts more than
+    /// its own output's name.
     ///
     /// ```text
     ///   /redir      alpha  beta        <- the redirection witness is granted this
     /// ```
-    ///
-    /// Two files rather than none, so `ls > out.txt` writes a listing with something in it and
-    /// the `wc` that counts it is counting more than the name of its own output file.
     pub const REDIR: &str = "redir";
     /// The first of the two files inside [`REDIR`].
     pub const REDIR_ONE: &str = "alpha";
@@ -441,8 +380,8 @@ pub mod tree {
     /// What both [`REDIR_ONE`] and [`REDIR_TWO`] hold.
     pub const REDIR_BODY: &[u8] = b"CRK50: a file the redirection witness lists\n";
 
-    /// **The subtree the `rm` program is granted** (milestone 47's `rm -r`), a sibling of
-    /// [`SUB`] so a capability to one is provably not a capability to the other.
+    /// **The subtree the `rm` program is granted** (milestone 47's `rm -r`), a sibling of [`SUB`]
+    /// so a capability to one is provably not a capability to the other.
     ///
     /// ```text
     ///   /rmtree                 rm-keep  rm-doomed/     <- the grant is here
@@ -450,10 +389,7 @@ pub mod tree {
     ///   /rmtree/rm-doomed/rm-nested   rm-leaf
     /// ```
     ///
-    /// [`RM_KEEP`] is the control that makes the removal a statement about what `rm` was
-    /// **told** rather than about what it could reach: it sits beside the doomed tree, inside
-    /// the same grant, and the same capability could have taken it. It is still there
-    /// afterwards because nothing named it.
+    /// [`RM_KEEP`] is the control: the grant reaches it, and it stays because nothing named it.
     pub const RMTREE: &str = "rmtree";
     /// A file beside the doomed tree, inside the grant. Nothing names it, so nothing removes it.
     pub const RM_KEEP: &str = "rm-keep";
@@ -479,18 +415,15 @@ pub mod tree {
     /// `rm -f` of it is silence and a zero one, which is the whole of what `-f` means.
     pub const RM_MISSING: &str = "rm-nothing";
 
-    /// **The directory the globbing lane's set grant is planned in**, a sibling of [`RMTREE`]
-    /// so a capability to one is provably not a capability to the other.
+    /// **The directory the globbing lane's set grant is planned in**, a sibling of [`RMTREE`].
     ///
     /// ```text
     ///   /globset            gl-one.txt  gl-two.txt  gl-three.log  gl-dir/
     ///   /globset/gl-dir     gl-inner
     /// ```
     ///
-    /// [`GLOB_PATTERN`] matches exactly [`GLOB_ONE`] and [`GLOB_TWO`]. The other two are the
-    /// controls, and they are two different controls: [`GLOB_MISS`] is a **file that exists,
-    /// sits one directory entry away, and is not in the set**, which is what a set-attenuated
-    /// capability must not be able to name; [`GLOB_DIR`] is a directory, so the type bit
+    /// [`GLOB_PATTERN`] matches exactly [`GLOB_ONE`] and [`GLOB_TWO`]. [`GLOB_MISS`] is a file a
+    /// set-attenuated capability must not name; [`GLOB_DIR`] is a directory, so the type bit
     /// [`filesystem_contract::nameset::IS_DIR`] carries has something to be wrong about.
     pub const GLOBSET: &str = "globset";
     /// The pattern the shell expands, and the whole of what `rm *.txt` designates here. Pinned
@@ -577,23 +510,12 @@ pub mod tree {
     ];
 }
 
-/// **The tree milestone 121 (`ripgrep` on nife: enumeration as a capability) prices a walk
-/// over**, for what the walk costs. A sibling of [`tree::SUB`] in the image root, granted
-/// alone, and written by nothing: every figure the pricing prints is a function of this shape
-/// and of nothing another test left behind.
-///
-/// Three regions, one per cost the milestone separates, so each is a slope over one variable
-/// with the others held still:
-///
-/// ```text
-///   /walk/chain/f  chain/c/f  chain/c/c/f ... chain/c^8/f   one component per level
-///   /walk/wide/n000 .. n127                                 one entry per name
-///   /walk/narrow/n000                                       the one-entry control
-///   /walk/sizes/s4k  s64k  s256k                            one byte per byte
-/// ```
-///
-/// `walk_pricing` (provisional) stages it on a host and walks it on both sides, so the image
-/// builder, the priced program and a host comparison all read the one shape written here.
+/// **The tree milestone 121 (`ripgrep` on nife: enumeration as a capability) prices a walk over**:
+/// a sibling of [`tree::SUB`], granted alone and written by nothing, so every figure the pricing
+/// prints is a function of this shape. One region per cost, each a slope over one variable: `chain`
+/// (a component per level), `wide` (an entry per name), `narrow` (the one-entry control) and
+/// `sizes` (a byte per byte). `walk_pricing` (provisional) stages it on a host and walks it on both
+/// sides; notes/filesystem-fixture.md draws it.
 ///
 /// Names: provisional (2026-09-26, milestone 121's lane). They are met by anyone who lists
 /// the test image, which is calef's to name.
@@ -1157,17 +1079,14 @@ pub mod attrs {
     pub const KIND: u32 = 0x4353_5452;
 }
 
-/// **The on-device crash test's vocabulary** (milestone 37, DECISIONS §34 condition 1).
-///
-/// The host sweep in `redoxfs_server/tests/crash_consistency.rs` proves the property exhaustively
-/// against a reconstructed platter. This is the other half: one crash driven all the way through
-/// the real stack, on its own disk, so the recovery is a real FS-server process mounting a real
-/// image that a real virtio write left half finished.
-///
-/// **Two payloads of the same length, deliberately.** The contract's `WRITE` does not truncate
-/// (DECISIONS §27, four times corrected), so a shorter second payload would leave the first
-/// one's tail behind and "the file is exactly A or exactly B" would stop being a question with
-/// an answer. Equal lengths make the recovered file unambiguous, which is the whole assertion.
+/// **The on-device crash test's vocabulary** (milestone 37 (prove RedoxFS's crash consistency),
+/// DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions) condition 1): one crash
+/// driven through the real stack on its own disk, so the recovery is a real FS-server process
+/// mounting an image a real virtio write left half finished. The host sweep in
+/// `redoxfs_server/tests/crash_consistency.rs` proves the property exhaustively. **The two payloads
+/// are the same length** because the contract's `WRITE` does not truncate (DECISIONS §27 (the
+/// filesystem service: a capability-shaped contract)): a shorter second payload would leave the
+/// first one's tail behind, and "the file is exactly A or exactly B" would have no answer.
 pub mod crash {
     /// The file the crash driver writes. Its own name on its own disk, so nothing this test does
     /// can be confused with the shared fixture disk's `scratch`.
@@ -1198,23 +1117,10 @@ pub mod crash {
 }
 
 /// **The blank disk milestone 57's write half partitions and formats**, and the layout the two
-/// programs and the post-run host check all have to agree about.
-///
-/// Everything here is on **its own disk**, regenerated every run, for milestone 37's reason: a
-/// test that writes a partition table cannot be pointed at a fixture other tests read, or every
-/// one of their results becomes a function of whether this one ran first (DECISIONS §27).
-///
-/// The disk arrives as 64 MiB of zeros with no table on it at all, which is what makes the
-/// refusal cases checkable: a program that was denied entropy and wrote nothing leaves a disk
-/// that still parses as nothing.
-///
-/// ```text
-///   LBA      2048..10239    an EFI system partition (nothing formats it; it is here so the
-///                           table has more than one entry and more than one unique GUID)
-///   LBA     10240..30719    a Linux filesystem partition, likewise
-///   LBA     30720..129023   the nife data partition: 48 MiB, 4096-aligned at both ends,
-///                           and the one `mkfs` formats
-/// ```
+/// programs and the post-run host check agree about. It is its own disk, regenerated every run: a
+/// test that writes a partition table cannot share a fixture other tests read (DECISIONS §27). It
+/// arrives as 64 MiB of zeros with no table, so a program denied entropy that wrote nothing leaves
+/// a disk that still parses as nothing. notes/filesystem-fixture.md, "The blank disk", draws it.
 pub mod blank {
     /// The disk's size in 512-byte logical blocks. 64 MiB, matching the `sgdisk` fixture disk so
     /// the two are comparable at a glance.
@@ -1224,7 +1130,8 @@ pub mod blank {
     pub const LBA: u64 = 512;
 
     /// The EFI system partition: first and last logical block, inclusive. 2048 is the 1 MiB
-    /// alignment every real tool uses.
+    /// alignment every real tool uses. Nothing formats it or [`LINUX`]; they give the table more
+    /// than one entry and more than one unique GUID.
     pub const ESP: (u64, u64) = (2048, 10239);
     /// The Linux filesystem partition.
     pub const LINUX: (u64, u64) = (10240, 30719);

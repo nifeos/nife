@@ -97,10 +97,8 @@ fn the_absolute_probe_names_are_the_relative_ones_rooted() {
 #[test]
 fn the_two_grant_bits_are_distinct() {
     use crate::twodir::*;
-    // The only fixture bit set with no distinctness test of its own, which milestone 326's run
-    // found: five of its six bits could each become zero and nothing in the tree would say so.
-    // Two of them are the structural finding notes/dir-capability.md records (an endpoint is
-    // the boundary), and a witness bit of zero turns that probe into one that always passes.
+    // A witness bit of zero turns its probe into one that always passes. Two of these bits are
+    // the structural finding notes/dir-capability.md records (an endpoint is the boundary).
     let bits = [
         OPENED_A,
         OPENED_B,
@@ -177,22 +175,15 @@ fn the_navigation_bits_are_distinct() {
         ABSOLUTE_REACHED_INNER,
         ABSOLUTE_REACHED_SECRET,
         ABSOLUTE_CLAMPED_AT_ROOT,
-        // These six were added after this list was last touched (touch's create half on
-        // 2026-08-22, its mtime half on 2026-08-24) and neither addition updated it; adding
-        // them now rather than leaving the gap for a seventh.
+        // Every bit `navscape` declares belongs in this list, and nothing checks that a new one is.
         TOUCH_CREATED,
         TOUCH_PRESERVED,
         TOUCH_MTIME_ADVANCED,
         TOUCH_AT_ROUND_TRIPPED,
         TOUCH_NOW_NEEDS_ONLY_WRITE,
         TOUCH_AT_REFUSED_WITHOUT_SETTIME,
-        // And three more the same way (bind, 2026-08-30). **This list has now gone stale
-        // twice**, and the second time it was milestone 326's mutation run that said so rather
-        // than a reader: with nothing covering them, `1 << 29`, `1 << 30` and `1 << 31` could
-        // each become `1 >> n`, which is zero, and a witness bit of zero is a probe that
-        // reports nothing while passing. It is rung four of AGENTS.md's ladder and it keeps
-        // failing as rung four does; see this milestone's report for the mechanism that would
-        // replace it.
+        // With nothing covering them, `1 << 29`, `1 << 30` and `1 << 31` could each become
+        // `1 >> n`, which is zero, and a witness bit of zero reports nothing while passing.
         BIND_REACHED_TARGET,
         BIND_ASCEND_REACHES_REAL_PARENT,
         BIND_STOPS_AT_TRUE_ROOT,

@@ -142,13 +142,8 @@ Now every lock carries a rank, and `lock()` asserts:
 
 > **You may only acquire a lock strictly LOWER than everything you currently hold.**
 
-```
-  50  HEAP, SLAB      the allocators
-       |
-  30  FRAMES, RAM     the physical memory map
-       |
-  10  CONSOLE         the leaf: everyone may take it, it takes nothing
-```
+The ranks in force, and why each sits where it does, are in [the ranks](#the-ranks-and-why-each-sits-where-it-does)
+below.
 
 If every acquisition strictly decreases the rank, a cycle is unrepresentable. Not unlikely.
 Impossible. Look at [deadlock.md](deadlock.md): this destroys condition 4, circular wait,
@@ -181,6 +176,76 @@ So the panic path calls `sync::force_reset_ranks()` alongside `console::force_un
 
 **The bookkeeping is a debugging aid. It must never be the thing that stops us saying what went
 wrong.**
+
+## The ranks, and why each sits where it does
+
+`kernel/src/sync.rs`'s `rank` module holds the numbers. A lock's rank is set by what it must be
+able to take while held and by what holds it.
+
+| rank | lock | why there |
+|---|---|---|
+| 61 | `ADDRESS_SPACES` | A `MAP_INTO` holds it while drawing page tables from the space's region and writing the revocation record. It never takes `IPC_TABLES`; capability grants happen after release. |
+| 60 | `IPC_TABLES` | Above everything that frees, because the reaper drops a dead thread's kernel stack while holding it. Nothing under it allocates (intrusive queues, a static TCB pool), so `schedule()` is safe from the timer interrupt. |
+| 59 | `INBOX` | Placing a thread on a remote core happens under `IPC_TABLES`. A core locks at most one inbox at a time, the target's. |
+| 59 | `KMEM` | It carves and retypes from its region while held, and a kernel stack's `new` and `Drop` run from spawn and the reaper, under `IPC_TABLES`. |
+| 59 | `MAPPINGS` | Recording a mapping retypes a log page from the payer's region while held. Never held with `IPC_TABLES` in either order: the capability sweep and the unmap sweep run one after the other, and the reaper drops address spaces outside `IPC_TABLES` (`finish_switch`). |
+| 58 | `MEMORY_REGION` | Below the 59s, and below `IPC_TABLES` so a syscall with no thread-table business can take it alone. |
+| 57 | `CAPABILITY_TABLE` | One lock per thread, in its TCB page. The order is below. |
+| 56 | `VIRTIO` | Taken from a syscall with no other lock held. The rank records where that syscall sits, not a nesting need. |
+| 55 | `STACK_VA` | A `KernelStack`'s `Drop` runs from the reaper, under `IPC_TABLES`. |
+| 54 | `IOMMU` | A leaf. The DMA domain's page-table frames are allocated before it is taken, so it is never held across an allocation. Below `VIRTIO` because a PCI device is confined from the bring-up path that registers its transport, though the two never nest. |
+| 45 | `KERNEL_MMU` | Below `IPC_TABLES` (a stack's `Drop` unmaps under the reaper) and `STACK_VA` (a stack's `new` maps pages), above the allocators (mapping allocates table frames). |
+| 30 | `PAGE_FRAMES`, `RAM` | The physical memory map. |
+| 20 | `IRQ_CONTROLLER` | The IRQ handler takes it and may print a diagnostic while holding it. |
+| 15 | `ASIDS` | Taken alone at address-space creation and teardown. |
+| 11 to 13 | `RECLAIM_REFUSAL`, `ISA`, `ACPI` | Leaves above the console, because a reader may print while holding one. |
+| 10 | `CONSOLE` | The leaf. A panic prints while holding any lock. |
+
+The three locks at 59 are never nested with one another. Inbox traffic is scheduling, the mapping
+registry is user bookkeeping, and `KMEM` is the kernel buying its own pages. Equal rank refuses the
+nesting, so this is checked rather than hoped.
+
+`IRQ_CONTROLLER` is one rank for two drivers. The GIC on aarch64 and the PLIC on RISC-V are
+compiled for their own ISA only, so they never coexist and need no order between them. `x86_64`
+never takes it: the local APIC's claim is one register read with no shared state.
+
+The capability table's order is what makes a capability lookup cheap:
+
+- The running thread's own lookups (`sched::current_cap`, `grant`, `grant_at`) take its table's
+  lock alone, without `IPC_TABLES`. Taking the global lock there made 41% of lookups wait at four
+  busy cores on radon ([job-mix/null-syscall-under-load.md](job-mix/null-syscall-under-load.md)).
+- Anything that touches another thread's table (an IPC delivering a capability, `CAP_INSERT`, the
+  revocation sweeps) takes it under `IPC_TABLES`. That keeps a capability in transit, or a sweep
+  across every table, atomic against every other cross-table operation.
+- A holder takes nothing. The table is a fixed array of `Copy` entries, so nothing on it
+  allocates, frees or prints. Two tables never nest (equal rank), and `IPC_TABLES` is never taken
+  under one (60 > 57), so an AB-BA between a lookup and a sweep is unrepresentable.
+
+It sits below `MEMORY_REGION` and the 59s not because anything nests them today, but so a holder
+of one of those could still look a capability up. It sits above everything a holder might reach on
+a panic path, which is only `CONSOLE`.
+
+## Why the lock path carries inline hints
+
+`IrqSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only in
+the codegen unit that owns it. Which unit that is depends on a metadata hash Cargo derives partly
+from the host triple. One commit then built two aarch64 kernels 25 KiB of text apart, and
+`script/fastpath-footprint` reported a shrink that was only the hash. With the hint each call site
+gets the same cost decision on every host, checked by building under two metadata seeds that
+split the old way. `#[inline(always)]` was refused there: it pushed
+`memory::init`'s frame past the 4 KiB guard page.
+
+`lock_masked`, the half after masking, is `#[inline(always)]` so `lock` is one call in the gate's
+-O0 build. Split out as a second frame, it cost a riscv64 yield round trip 56 instructions.
+
+The guard's `drop` is `#[inline(always)]`, because every IPC drops one on the hot path and it must
+land in `.text.hot` with its caller. Left to LLVM it was outlined on CI builds of all three ISAs
+and refused by `script/fastpath-footprint`, while a macOS build of the same commit inlined it. A
+local pass of that gate does not show the outlining.
+
+The lock-order panic is out of line and `#[cold]`. Inline, its formatted message cost about 50 bytes
+at every inlined `lock()` site, which made it one of the largest single lines in the fastpath
+closures on all three ISAs.
 
 ## The rules
 
