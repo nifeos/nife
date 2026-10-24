@@ -20,13 +20,11 @@ const MATCHED: [(&[u8], bool); 2] = [
     (tree::GLOB_TWO.as_bytes(), false),
 ];
 
-/// **The two phases are one test**, and the order is load-bearing rather than incidental: the
-/// shell expands the pattern over the fixture as staged, and the second phase then removes what
-/// it matched. Run the other way round, the expansion would find nothing and the agreement would
-/// be an agreement about the empty set.
+/// What a shell shows for `gl-*.txt` is what a set grant takes away: two phases in one test.
 ///
-/// Splitting them into two `#[test_case]`s would make that ordering a property of the harness,
-/// which is exactly the order-coupled fixture DECISIONS §27 spent a day on.
+/// The shell expands the pattern over the fixture as staged, then the second phase removes what
+/// it matched; the other order would agree about the empty set. Two `#[test_case]`s would make
+/// that order a property of the harness, the order-coupled fixture of DECISIONS §27.
 #[test_case]
 fn what_a_shell_shows_is_what_a_set_grant_takes_away() {
     if fs_service::fs_server_image().is_none() {
@@ -62,25 +60,10 @@ fn shell_expanded() -> Option<u64> {
             // reason: nothing on this wire reports what a handle holds.
             arg: filesystem_contract::grant::spec(0, dir::ENUMERATE | dir::DESCEND | dir::READ),
             arg2: 0,
-            // **Four, and the number is a measurement**, as the navigating role's two were.
-            // Two overflowed by 256 bytes, presenting as a data abort on the shell's own `sp`
-            // and then as the 60 s lost-wakeup watchdog, because the test was still waiting for
-            // a report from a process that had died.
-            //
-            // The cost is a name set travelling **by value** through a chain of frames a debug
-            // build does not collapse: the expander holds one, `Expansion` carries one into
-            // `plan`, `designate` returns one, and the `Endowment` that comes back carries one
-            // more. That measurement is also what set `nameset::MAX_NAMES`: sixteen names did
-            // not fit in the four pages this wiring maps, and `CLIENT_EXTRA_STACK`'s note is
-            // right that the answer to that is smaller frames rather than a bigger number.
-            //
-            // **Seven since milestone 154 (a process that holds two directory capabilities)**,
-            // and that is a number rather than a smaller frame, said so: six ran within a few
-            // dozen bytes of the guard, and a `Holdings` that learned where a second tree is
-            // mounted crossed it (a data abort on `sp` inside `nav::path`, under `designate`).
-            // The smaller frame is known: `grant_plan::plan` and the three functions under it
-            // take an ~1 KiB `Holdings` by value, so a debug build keeps a copy in each frame.
-            // Passing it by reference is the fix, and notes/two-trees.md's BUGS records it.
+            // A measurement: six pages ran within a few dozen bytes of the guard once `Holdings`
+            // learned a second tree's mount point. See notes/two-trees.md, "The globbing
+            // witness's stack, measured", and its BUGS for the smaller frame that should replace
+            // the seventh page.
             stack_pages: 7,
         },
     )?;
@@ -123,9 +106,9 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
         fs_service::SetGrant {
             dir: tree::GLOBSET,
             names: &MATCHED,
-            // **`REMOVE` and nothing else.** `rm *.txt` takes names out of one directory; it may
-            // not read them, write them, create beside them or walk under them. Listing the set
-            // is not on this ladder at all, because the caretaker answers that from the grant.
+            // `REMOVE` and nothing else: `rm *.txt` may not read, write, create beside or walk
+            // under its names. Listing the set needs no right; the caretaker answers it from the
+            // grant.
             rights: dir::REMOVE,
             role: filesystem_contract::grant::spec(name.len(), flags),
             arg: lo,
@@ -137,9 +120,8 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
 
     for _ in 0..MAX_MESSAGES {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
-        // The sink contract's end of stream, which is what `rm` ends with since 2026-08-17; the
-        // verdict rides in the two words `OPERATION_EOF` leaves free. The shell phase above still reports
-        // a `VERDICT`, because that one is a witness's bitmap and not a byte stream.
+        // `rm` ends with the sink contract's end of stream, the verdict in the two words
+        // `OPERATION_EOF` leaves free. The shell phase reports a `VERDICT` bitmap instead.
         if w0 == eof() {
             held.release_or_fail("rm's set grant");
             return (w1, w2);

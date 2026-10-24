@@ -108,6 +108,23 @@ both trees and maps one page for both, which is sound because it has one `CALL` 
 first window is never mapped. The progenitor is granted the request endpoint and the pool, as it is
 the filesystem server's, and slices one window per client.
 
+## The globbing witness's stack, measured
+
+The globbing witness in `system_tests/src/user/glob_grant_tests.rs` runs the shell with seven stack
+pages, and each step to that number is a measurement. Two pages overflowed by 256 bytes. That showed
+up as a data abort on the shell's own `sp`, then as the 60 s lost-wakeup watchdog, because the test
+was still waiting for a report from a process that had died. Four pages fit the one-tree shell.
+
+The cost is a name set traveling by value through frames a debug build does not collapse: the
+expander holds one, `Expansion` carries one into `plan`, `designate` returns one, and the returned
+`Endowment` carries one more. The same measurement set `nameset::MAX_NAMES`: sixteen names did not
+fit in four pages, and the answer was smaller frames rather than a bigger stack.
+
+Seven came with this milestone, and it is a number rather than a smaller frame. Six pages ran within
+a few dozen bytes of the guard, and a `Holdings` that learned where a second tree is mounted crossed
+it, with a data abort on `sp` inside `nav::path`, under `designate`. The smaller frame is known, and
+the `Holdings` entry under BUGS below records it.
+
 ## BUGS
 
 - `rm` under a mount point is refused at delivery. A program that hears words is granted its

@@ -14,8 +14,7 @@ use crate::arch::exceptions::{SVC_COUNT, USER_FAULTS};
 /// Forge an ELF64 header by hand, so a test can ask for something no linker would emit.
 ///
 /// A fixed buffer, since the kernel it tests has no heap (milestone 14 phase C): one ELF
-/// header, one program header, sixteen bytes of code. The ELF **names its own load
-/// address**, and this is the file that names the kernel's.
+/// header, one program header, sixteen bytes of code. The ELF names its own load address.
 fn forged_elf(vaddr: u64, flags: u32) -> [u8; 136] {
     forged_elf_sized(vaddr, flags, 16)
 }
@@ -52,19 +51,12 @@ fn forged_elf_sized(vaddr: u64, flags: u32, memsz: u64) -> [u8; 136] {
     out
 }
 
-/// **A binary that asks to be loaded over the kernel.**
+/// An ELF that names the base of the kernel's half as its load address is refused.
 ///
-/// This is the attack. An ELF names its own load address, so a hostile one simply names the
-/// base of the kernel's half and waits to see whether the loader is credulous.
-///
-/// It is refused **by construction, not by a check we remembered to write**: the user
-/// `Mapper` is built with `Half::Low`, and a high address is not a thing it can express. The
-/// same `WrongHalf` guard has been in `paging` since milestone 4, put there because a *host*
-/// test discovered that bits 63:48 are not translated. It has been waiting for this file.
-///
-/// The address is `KERNEL_VA_BASE` rather than a constant, which is what makes this the same
-/// attack on both ISAs: aarch64's kernel half starts at `0xffff_0000_0000_0000` and RISC-V's
-/// Sv39 kernel half at `0xffff_ffc0_0000_0000`, and the loader must refuse either.
+/// The refusal is by construction: the user `Mapper` is built with `Half::Low` and cannot express a
+/// high address (`paging`'s `WrongHalf` guard, there since a host test found bits 63:48 are not
+/// translated). `KERNEL_VA_BASE` rather than a constant makes it one attack on both ISAs: aarch64's
+/// half starts at `0xffff_0000_0000_0000`, RISC-V Sv39's at `0xffff_ffc0_0000_0000`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.elf_loader_tests.an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused.patch`
 #[test_case]
@@ -198,17 +190,11 @@ fn the_initial_ramdisk_holds_a_native_executable() {
     );
 }
 
-/// **The whole of 7c.** A separately compiled binary, arriving in the initial ramdisk, running at
-/// user mode.
+/// A separately compiled binary from the initial ramdisk runs at user mode and checks its image.
 ///
-/// The program checks its own image and speaks with the only two words it has: a syscall if
-/// every expectation about its own memory holds, a trap instruction if not. **No data crosses
-/// the boundary**, because there is no ABI yet and we are not going to invent one by accident.
-///
-/// So a syscall and no fault means: `.text` executed, `.rodata` was readable, `.data` was copied
-/// from the file, `.bss` was zeroed (the file does not contain those bytes), and the stack
-/// worked well enough to recurse eight frames. That is hello's `SELF_CHECK` role, which is the
-/// same source compiled for whichever machine this build is.
+/// hello's `SELF_CHECK` role answers with a syscall if every expectation holds, a trap if not, and
+/// no data crosses the boundary. A syscall and no fault means `.text` ran, `.rodata` read, `.data`
+/// was copied, `.bss` was zeroed (the file lacks those bytes) and the stack recursed eight frames.
 ///
 /// Falsification: unfalsified. Renamed from
 /// `a_real_elf_from_the_initrd_runs_at_el0_and_verifies_itself` on 2026-10-12 (UTC) under calef's
