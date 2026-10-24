@@ -3,11 +3,8 @@ extern crate std;
 use std::vec;
 use std::vec::Vec;
 
-/// Build an ELF64 image by hand, so the tests can lie about anything they like.
-///
-/// **This is the whole reason the parser is a host crate.** Forging a malicious binary is
-/// eleven lines here. Producing one from a real toolchain, getting it into an initial ramdisk,
-/// and booting QEMU to watch it be rejected would be a day's work and a slower test.
+/// Build an ELF64 image by hand, so the tests can lie about anything they like. See
+/// notes/elf/parser.md for why forging here beats booting a real one.
 struct Builder {
     e_type: u16,
     e_machine: u16,
@@ -25,10 +22,8 @@ impl Builder {
     fn new() -> Self {
         Builder {
             e_type: ET_EXEC,
-            // `NATIVE_MACHINE`, not `EM_AARCH64`. Every forgery here is trying to reach some
-            // property past the machine check, so the header has to claim the machine this
-            // build accepts, whichever that is. It read `EM_AARCH64` until milestone 288, which
-            // cost twenty of this module's twenty-five tests on an x86_64 host.
+            // The machine this build accepts, so every forgery reaches the property past the
+            // machine check on any host.
             e_machine: NATIVE_MACHINE,
             class: ELFCLASS64,
             data: ELFDATA2LSB,
@@ -198,15 +193,9 @@ fn memsz_smaller_than_filesz_is_refused() {
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::SegmentTruncated));
 }
 
-/// **A binary for a machine nife does not run at all, caught here rather than as an illegal
-/// instruction at EL0.** SPARC (2), chosen because it is a real `e_machine` value that no arm of
-/// `EXPECTED_MACHINE` will ever take: the number this test used to use was `x86_64`'s, which
-/// stopped being foreign the day `x86_64` became a target (milestone 161).
-///
-/// The number now goes through [`machine_no_nife_build_accepts`] in a `const`, so if SPARC ever
-/// joins `KNOWN_MACHINES` this **fails to compile** instead of asserting something false. That
-/// is milestone 161's repair done by the compiler rather than by the next reader (milestone
-/// 288).
+/// A binary for a machine nife does not run at all is refused. SPARC (2) goes through
+/// [`machine_no_nife_build_accepts`] in a `const`, so if it ever joins `KNOWN_MACHINES` this fails
+/// to compile instead of asserting something false.
 #[test]
 fn a_binary_for_another_machine_is_refused() {
     const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
@@ -215,15 +204,8 @@ fn a_binary_for_another_machine_is_refused() {
     assert_eq!(Elf::parse(&b.build()).err(), Some(Error::WrongMachine));
 }
 
-/// **A binary for either of the *other* nife architectures is refused too.** The check is
-/// symmetric: whichever machine this build accepts, the two it does not are turned away exactly
-/// as an `aarch64` ELF would be by a riscv kernel.
-///
-/// [`FOREIGN_MACHINES`] rather than a written-out pair, and that is the whole point of the test
-/// rather than tidiness. It read `[EM_RISCV, EM_X86_64]` under a doc comment announcing *"these
-/// host tests build with `EXPECTED_MACHINE == EM_AARCH64`"*, which was a statement about one
-/// laptop: on an `x86_64` host it asserted that an `x86_64` binary is refused, the opposite of what
-/// this crate does and must do (milestone 288).
+/// A binary for either of the other nife architectures is refused: the check is symmetric.
+/// [`FOREIGN_MACHINES`] rather than a written-out pair, which would be true only on one host.
 #[test]
 fn a_binary_for_the_other_supported_machine_is_refused() {
     for machine in FOREIGN_MACHINES {
@@ -233,12 +215,10 @@ fn a_binary_for_the_other_supported_machine_is_refused() {
     }
 }
 
-/// **`FOREIGN_MACHINES` is every known machine except this build's**, which the test above
-/// cannot say and does not: it iterates the array and expects each entry refused, and *every*
-/// wrong number is refused. A mutation run of 2026-09-19 (milestone 326) replaced the whole
-/// derivation with `[0; _]` and then with `[1; _]`, and neither was noticed, so an array that
-/// named no architecture at all would have gone on passing a symmetry test that proved nothing
-/// about symmetry. The membership is the property milestone 288 was after.
+/// `FOREIGN_MACHINES` is every known machine except this build's. The test above cannot say so,
+/// since every wrong number is refused: an array naming no architecture (`[0; _]`, `[1; _]`)
+/// survived it in a mutation run (milestone 326 (nobody has been assigned to turn a mutation score
+/// upward)).
 #[test]
 fn foreign_machines_is_every_known_machine_but_this_builds() {
     assert_eq!(FOREIGN_MACHINES.len(), KNOWN_MACHINES.len() - 1);
@@ -261,10 +241,8 @@ fn foreign_machines_derives_the_same_list_at_runtime() {
     assert_eq!(core::hint::black_box(foreign_machines)(), FOREIGN_MACHINES);
 }
 
-/// **The compile-time guard hands back what it was given**, which is the half a caller relies
-/// on: `const EM_SPARC: u16 = machine_no_nife_build_accepts(2)` is only useful if the 2 comes
-/// back. Replacing the function with a constant survived the suite (milestone 326), because
-/// every number it could return is also foreign and the forged header is refused either way.
+/// The compile-time guard hands back what it was given, the half a caller relies on. A constant
+/// return survives every other test, because every number it could return is foreign too.
 #[test]
 fn a_machine_no_build_accepts_is_handed_back_unchanged() {
     const EM_SPARC: u16 = machine_no_nife_build_accepts(2);
@@ -272,12 +250,8 @@ fn a_machine_no_build_accepts_is_handed_back_unchanged() {
     assert_eq!(machine_no_nife_build_accepts(0x3fff), 0x3fff);
 }
 
-/// **And the other half is that it refuses.** The guard exists so that a test naming a machine
-/// that later becomes a target fails the build rather than quietly stopping testing, which is
-/// milestone 161's scar. Its loop bound had two live mutants (`i < len` under `==` and under
-/// `>`), each of which never enters the loop and so never checks anything, and no test could
-/// see the difference because no test ever gave it a machine it should reject. Asserting the
-/// rejection at runtime is the same check the `const` context turns into a build error.
+/// The guard refuses a machine nife runs. Without a runtime rejection, a loop bound mutated so the
+/// loop never runs (`i < len` as `==` or `>`) checks nothing and no test sees it.
 #[test]
 #[should_panic(expected = "some build accepts it")]
 fn a_machine_this_tree_runs_on_is_refused_by_the_guard() {

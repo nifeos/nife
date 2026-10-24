@@ -1,50 +1,27 @@
-//! **Ask the RISC-V machine what it is, once, at boot.**
+//! Ask the RISC-V machine what it is, once, at boot, and refuse one this kernel cannot run on.
 //!
-//! Milestone 60. The decoding is all in [`machine_discovery::riscv64`], which is host-testable; what can only
-//! happen on the machine is here: reading the device tree firmware handed us, asking that firmware
-//! what it implements over SBI, and refusing to continue if the answer is a machine this kernel
-//! cannot run on.
+//! The decoding is host-tested in [`machine_discovery::riscv64`]. Here are the reads only a boot
+//! can make: the device tree, SBI's account of itself, the T-Head vendor probe, and (from
+//! `mmu::init`) the measured `satp.ASID` width. [`init`] runs after `memory::init` and before
+//! `mmu::init`.
 //!
-//! Three sources, in the order they arrive:
-//!
-//! 1. **The device tree** ([`init`]), which is firmware's claim about the silicon.
-//! 2. **SBI** ([`init`] again), which is firmware's claim about itself. `sbi_probe_extension` is
-//!    the only way to know whether the four `ecall`s this kernel makes unconditionally will do
-//!    anything at all.
-//! 3. **The `satp.ASID` probe** ([`record_asid_bits`]), which is a measurement and arrives later,
-//!    because it cannot run until `mmu::init` has installed the real page tables.
-//!
-//! # Where this is called from, and why in that order
-//!
-//! `kernel_main` runs [`init`] after `memory::init` (which needs the device tree first) and before
-//! `mmu::init` (which is what would build tables a refused machine cannot walk). `mmu::init` then
-//! calls [`record_asid_bits`] after its probe, and the boot prints [`print_summary`] once paging is
-//! on, before any of the test, shell or bench branches, so every boot mode reports the machine.
+//! See notes/riscv-port/firmware.md.
 
 use machine_discovery::riscv64::{EID_BASE, Isa, SBI_TABLE, Sbi, SbiExtensions};
 
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
 
-/// The record, written once by [`init`] and read by the boot print and the tests.
-///
-/// `None` until then, so a read before discovery is a panic naming this file rather than a
-/// plausible all-zero machine. The same discipline as `mmu::asid_bits`.
+/// The record, written once by [`init`]. `None` until then, so an early read panics rather than
+/// returning a plausible all-zero machine.
 static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
 
-/// **Discover the machine, and refuse to run on one we cannot.**
-///
-/// `dtb_ptr` is the physical device-tree address firmware left in `a1`, the same pointer
-/// `memory::init` reads, named through the direct map.
+/// Discover the machine from the device tree at physical `dtb_ptr` and from SBI, and record it.
 ///
 /// # Panics
 ///
-/// Deliberately, when the machine is missing something the kernel needs. DECISIONS's truthfulness
-/// habit applied to hardware: a kernel that silently assumed Sv39 on an Sv32 machine, or called
-/// SBI RFENCE on firmware without it, would run degraded and report success. The panic prints what
-/// is missing and stops. **Silence is not a failure**: a tree that does not describe its ISA, or
-/// firmware too old to be asked, is reported as unknown and the boot continues, because the kernel
-/// is demonstrably executing by the time this runs.
+/// When the machine lacks something the kernel needs, after printing what. A tree that does not
+/// describe its ISA, or firmware too old to answer, is reported as unknown and the boot continues.
 pub fn init(dtb_ptr: usize) {
     // SAFETY: the same pointer `memory::init` has already validated the magic of, named through the
     // boot table's direct map because we are running virtual.
@@ -98,36 +75,24 @@ const THEAD_VENDOR_ID: usize = 0x5b7;
 const TH_SXSTATUS_MAEE: u64 = 1 << 21;
 
 /// What [`probe_thead`] found: `0` before it ran, then [`NOT_THEAD`], [`THEAD`] or
-/// [`THEAD_MAE`]. One byte rather than a lock, because `fp::init` reads it on every hart.
+/// [`THEAD_MAE`]. A byte, not a lock, because `fp::init` reads it on every hart.
 static VENDOR: core::sync::atomic::AtomicU8 = core::sync::atomic::AtomicU8::new(0);
 const NOT_THEAD: u8 = 1;
 const THEAD: u8 = 2;
 const THEAD_MAE: u8 = 3;
 
-/// Is this a T-Head hart (C906, C910)? `fp::init` asks, to close `XTheadVector`'s own `VS` field.
-/// False before [`init`], which is the safe default for every caller: a non-T-Head hart must not
-/// touch T-Head's bits.
+/// Whether this is a T-Head hart (C906, C910), for `fp::init`. False before [`init`], the safe
+/// default: a non-T-Head hart must not touch T-Head's bits.
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC).
 pub fn is_thead() -> bool {
     VENDOR.load(core::sync::atomic::Ordering::Relaxed) >= THEAD
 }
 
-/// **Ask whether this is a T-Head hart, and whether it reads memory types out of the page table**
-/// (milestone 89 (Scaleway EM-RV1), step 5). Then refuse a kernel built for the other answer.
+/// Record whether this is a T-Head hart and whether it reads memory types from its page tables
+/// (`th.sxstatus.MAEE`), and panic if the build's `mmu::Format` disagrees, in either direction.
 ///
-/// `mvendorid` comes from SBI (base extension, function 4) because S-mode cannot read it. If it is
-/// T-Head's, `th.sxstatus` exists and its `MAEE` bit says whether firmware turned `XTheadMae` on. The
-/// page-table format is chosen at compile time (`mmu::Format`, the `board_th1520` feature), so this
-/// is a check that the build and the hart agree, and a disagreement is fatal in both directions:
-///
-/// - MAEE on, plain Sv39: every leaf names memory type zero, which T-Head does not define.
-/// - MAEE off, `Sv39Mae`: bits 63:59 are reserved, and a set one is a page fault on the first walk
-///   of the fine tables.
-///
-/// Linux keys the same errata on `mvendorid` with `marchid` and `mimpid` zero; this reads the CSR
-/// instead, because the CSR is the hart's own answer. Whether a C910 permits that read from S-mode
-/// is the T-Head manual's claim and QEMU's model, not yet something silicon here has shown.
+/// `mvendorid` comes from SBI, since S-mode cannot read it. See notes/riscv-port/firmware.md.
 fn probe_thead() {
     const GET_MVENDORID: usize = 4;
     let vendor = sbi_call(EID_BASE, GET_MVENDORID, 0);
@@ -168,16 +133,14 @@ pub fn get() -> Isa {
         .expect("arch::isa::get() before arch::isa::init()")
 }
 
-/// Record the measured `satp.ASID` width. Called by `mmu::init` right after its probe, which is the
-/// earliest moment the number exists: the probe writes the live `satp`, so it needs the real kernel
-/// tables installed first.
+/// Record the measured `satp.ASID` width `bits`, from `mmu::init` right after its probe.
 pub(crate) fn record_asid_bits(bits: usize) {
     if let Some(cpu) = ISA.lock().as_mut() {
         cpu.asid_bits = bits.min(u8::MAX as usize) as u8;
     }
 }
 
-/// The boot line. Two of them: what the silicon is, and what the firmware under it is.
+/// Print the boot lines: what the silicon is, and what the firmware under it is.
 pub(crate) fn print_summary() {
     let cpu = get();
 
@@ -200,9 +163,7 @@ pub(crate) fn print_summary() {
         cpu.asid_bits,
     );
     if cpu.is_heterogeneous() {
-        // The union minus the intersection: what some harts have and others do not. This is the
-        // only line that would tell you the machine is not uniform, and on a JH7110 it is the
-        // difference between "no FPU" and "no FPU on one core".
+        // What some harts have and others lack: on a JH7110, "no FPU on one core".
         print!("; harts differ (");
         for row in &machine_discovery::riscv64::TABLE {
             if cpu.any.contains(row.bit) && !cpu.common.contains(row.bit) {
@@ -245,11 +206,10 @@ pub(crate) fn print_summary() {
     println!();
 }
 
-/// Ask the firmware what it is and what it implements.
+/// Ask the firmware what it is and what it implements, through the SBI base extension.
 ///
-/// Everything here goes through the SBI **base** extension, which is itself the thing that might be
-/// absent: SBI v0.1 predates it. That case is not an error, it is an unanswered question, and
-/// `Sbi::has_answered` is how the rest of the kernel tells the two apart.
+/// Returns `Sbi::default()` when the base extension does not answer (SBI v0.1 predates it), which
+/// `Sbi::has_answered` tells apart from a refusal.
 fn probe_sbi() -> Sbi {
     const GET_SPEC_VERSION: usize = 0;
     const GET_IMPL_ID: usize = 1;
@@ -263,17 +223,14 @@ fn probe_sbi() -> Sbi {
 
     let mut extensions = SbiExtensions::NONE;
     for row in &SBI_TABLE {
-        // `probe_extension` returns zero for absent and an extension-defined nonzero for present.
+        // Zero means absent; present is any extension-defined nonzero.
         if sbi_call(EID_BASE, PROBE_EXTENSION, row.eid) != 0 {
             extensions = extensions.union(row.bit);
         }
     }
 
     Sbi {
-        // The minor number is the low **24** bits and the major is the seven above it, which is not
-        // the split anyone guesses. The first draft here read 16 and 16, so QEMU's `0x0300_0000`
-        // (SBI 3.0) decoded as 0.0, `Sbi::has_answered` said no, and the boot line reported
-        // firmware that had answered perfectly well as silent. Found by printing the raw word.
+        // Minor is the low 24 bits and major the seven above, not 16 and 16: `0x0300_0000` is 3.0.
         spec_major: ((version >> 24) & 0x7f) as u8,
         spec_minor: (version & 0x00ff_ffff) as u32,
         impl_id: sbi_call(EID_BASE, GET_IMPL_ID, 0) as u32,
@@ -282,13 +239,10 @@ fn probe_sbi() -> Sbi {
     }
 }
 
-/// One SBI call, returning the value in `a1` and discarding the error in `a0`.
+/// One SBI base-extension call `eid`/`fid` with `arg0`, returning `a1` and discarding the error.
 ///
-/// Discarding the error is right for exactly these four calls and would be wrong anywhere else: the
-/// base extension's getters cannot fail, and `probe_extension` reports absence in the **value**
-/// (zero) rather than as an error. A firmware that does not implement the base extension at all
-/// returns an error and leaves `a1` alone, which is why [`probe_sbi`] treats a zero spec version as
-/// "did not answer" rather than trusting anything after it.
+/// Right only for the base getters, which cannot fail, and `probe_extension`, which reports absence
+/// as a zero value. A firmware without the base extension leaves `a1` alone.
 fn sbi_call(eid: usize, fid: usize, arg0: usize) -> usize {
     // SAFETY: the base extension's getters and `probe_extension` only report; they change no state
     // in the firmware or in this hart.
@@ -297,26 +251,15 @@ fn sbi_call(eid: usize, fid: usize, arg0: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    //! What the machine said, checked on the machine.
-    //!
-    //! The parsing is proved on the host (`crates/machine_discovery/tests`), so these are the assertions that
-    //! need a real boot: that discovery ran at all, that the two sources agree with what the kernel
-    //! independently knows, and that the measurement did not come back as a plausible zero.
+    //! What the machine said, checked on the machine; the parsing is host-tested in
+    //! `crates/machine_discovery/tests`.
 
     use super::*;
 
-    /// **Discovery ran, and it found a machine that can run us.** The requirement check is what
-    /// `init` would have panicked on, so reaching this test at all is half the assertion; the
-    /// other half is that the record is populated rather than defaulted.
+    /// Discovery ran and found a machine that can run us, with at least one hart describing itself.
     ///
-    /// This used to assert `described == harts`, named "QEMU virt describes every hart it has":
-    /// true on the machine every merge boots, wrong as a general claim. The VisionFive 2 has 5
-    /// `cpu@` nodes and `described == 4` by design (bench, 2026-08-21): the disabled S7 monitor
-    /// core is exactly the hart [`Isa::described`]'s own doc comment says is excluded, "not
-    /// counting disabled harts". A heterogeneous machine failing this assertion was never a
-    /// discovery bug; it was the field doing what it says. The invariant this test actually owes
-    /// is the weaker one: at least one hart described itself, which is what makes `common`
-    /// meaningful at all.
+    /// Not `described == harts`: the VisionFive 2 has five `cpu@` nodes and a disabled S7 core
+    /// [`Isa::described`] does not count.
     #[test_case]
     fn the_machine_described_itself() {
         let cpu = get();
@@ -339,13 +282,9 @@ mod tests {
         assert!(!cpu.missing_requirements().any());
     }
 
-    /// **Every hart that came online is one the device tree described.**
+    /// Every hart that came online through SBI HSM is one the device tree described.
     ///
-    /// Two independent answers to overlapping questions: `cpu@` nodes in the tree, and harts that
-    /// checked in through SBI HSM. Not an equality, deliberately: the kernel starts at most
-    /// `cpu::MAX_CPUS` of them, so a machine with more cores than that is a legitimate
-    /// configuration in which the tree honestly describes harts nobody booted. The direction that
-    /// would be a bug is the other one, a hart running on a machine the tree never mentioned.
+    /// Not an equality: the kernel starts at most `cpu::MAX_CPUS`, so the tree may describe more.
     #[test_case]
     fn every_online_hart_is_one_the_tree_described() {
         assert!(
@@ -354,16 +293,8 @@ mod tests {
         );
     }
 
-    /// **The machine offers at least the address space the kernel takes.**
-    ///
-    /// The default QEMU `virt` CPU declares `mmu-type = "riscv,sv57"` and we run Sv39; that gap is
-    /// visible in every boot's summary line. An earlier version of this test asserted the Sv57 half
-    /// too, and the first cpu-matrix run after it merged proved that half was a claim about one
-    /// QEMU model, not about the machine: `sifive-u54` and `rva22s64` both declare exactly Sv39
-    /// (measured from their boot summaries, 2026-08-03), so "wide enough" is the entire truth on
-    /// both. This milestone's own name is "read the machine instead of assuming it"; the assertion
-    /// that remains is the one every conforming machine must satisfy, and the one a board
-    /// declaring less than Sv39 would fail, which is the day this stops being free.
+    /// The machine declares at least Sv39, the address space the kernel takes. QEMU's default CPU
+    /// declares Sv57 and `sifive-u54` exactly Sv39, so only the floor is asserted.
     #[test_case]
     fn the_declared_mmu_is_wide_enough() {
         let mmu = get().mmu;
@@ -373,20 +304,10 @@ mod tests {
         );
     }
 
-    /// **The measurement made it into the record**, and agrees with `mmu::asid_bits`.
+    /// The ASID measurement reached the record, agrees with `mmu::asid_bits`, and the trust flag
+    /// agrees with it on any width, zero included.
     ///
-    /// The record's copy is written by `mmu::init` after the probe, so a reordering of the boot
-    /// that moved discovery after paging (or the probe before it) would leave a zero here while
-    /// every other test still passed.
-    ///
-    /// This used to assert `>= 8`, which was wrong: RISC-V's `satp.ASID` is WARL and the
-    /// architecture mandates no minimum width (unlike aarch64, which guarantees at least 8 bits).
-    /// The VisionFive 2's U74 hardwires the field to zero (bench, 2026-08-21: the boot summary
-    /// reads `satp.ASID 0 bits measured`), which the probe's own doc comment already named as a
-    /// live possibility, not a hypothetical. Zero implemented bits is not a bug here: it is
-    /// exactly the case `mmu::asid_tagging_is_trusted` exists to detect and defend against, by
-    /// keeping the unconditional `sfence.vma` flush a narrow machine still needs. The invariant
-    /// this test actually owes is that the trust flag agrees with the measurement, on any width.
+    /// A boot reordering that moved discovery after the probe would leave a zero here.
     #[test_case]
     fn the_asid_probe_reached_the_record() {
         let bits = get().asid_bits as usize;
@@ -399,11 +320,9 @@ mod tests {
         );
     }
 
-    /// **The firmware answered, and implements all four extensions the kernel calls.**
+    /// The firmware answered and implements every extension the kernel calls unconditionally.
     ///
-    /// The kernel makes these four `ecall`s unconditionally, so this is not a curiosity: without
-    /// RFENCE a TLB shootdown is an error code nobody reads, and the failure surfaces as a thread
-    /// reading a stale translation on another hart, arbitrarily far from the cause.
+    /// Without RFENCE, for one, a shootdown is an error code nobody reads.
     #[test_case]
     fn the_firmware_implements_what_the_kernel_calls() {
         let sbi = get().sbi;

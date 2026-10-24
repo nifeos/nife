@@ -10,10 +10,11 @@ non-canonical `FS` base and fault in the kernel.
 Expected to fail: "CONFIGURE took a kernel-half thread pointer", which gets `Ok(0)`.
 
 diff --git a/kernel/src/sched/configure.rs b/kernel/src/sched/configure.rs
+index 8aab50a1b..6c1548da8 100644
 --- a/kernel/src/sched/configure.rs
 +++ b/kernel/src/sched/configure.rs
-@@ -160,7 +160,8 @@ pub fn configure_thread_control_block_with_thread_pointer(
- /// a tenet)).
+@@ -168,7 +168,8 @@ pub fn configure_thread_control_block_joining(
+ /// value. The same rule on every architecture (§19 (architectural parity is a tenet)).
  fn is_thread_pointer(value: u64) -> bool {
      use paging::PageFormat;
 -    value == 0 || crate::arch::mmu::Format::is_in_half(paging::Half::Low, value)
