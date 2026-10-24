@@ -132,3 +132,15 @@ capability would let it) answers. |
   shape `design/fatal-risks/README.md` says wants outside eyes anyway.
 - Anything needing hardware this project does not own. MSI confinement stays exactly where milestone
   317 (the interrupt-remapping flags, and where MSI confinement actually lives) left it.
+
+## The in-flight test, and what it leaves untested
+
+`kernel::user::revocation_in_flight_tests` holds the first finding. The claim it guards is row 4 of
+[notes/confinement-claims.md](../confinement-claims.md), DECISIONS §12's "a consumed capability
+cannot be used again", and the region sweep's promise that no capability names a page the allocator
+is about to hand out.
+
+The `PortRange` sweep has a second limb that no test reaches. `ipc_receive_cap` files a delivered
+capability with `CapabilityTable::insert` directly, not through
+`sched::thread_control_block_insert_cap`. A receiver handed a `PortRange` capability that way holds
+it with `Thread::port_range_grant` never set. That direction fails closed.
