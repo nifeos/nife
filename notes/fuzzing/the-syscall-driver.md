@@ -1,5 +1,8 @@
 # Fuzzing: the seeded syscall driver
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06. calef names files. Each
+stem here is named for its content, and calef names files.*
+
 An appendix to [`notes/fuzzing.md`](../fuzzing.md) for
 `system_tests/src/user/syscall_fuzzer_tests.rs`, the driver milestone 752 (a seeded syscall driver
 with a shadow model) built. Its roadmap block,

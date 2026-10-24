@@ -1,5 +1,7 @@
 # How long to run it, and why nobody can tell you
 
+*Name: provisional.*
+
 An appendix to [notes/soak.md](../soak.md), which keeps the conclusion. This file holds the survey
 of 2026-09-03 behind it: seL4, stress-ng, the Linux Test Project, JEDEC, and the literature on
 randomized and stress testing.

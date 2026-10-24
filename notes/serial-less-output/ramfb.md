@@ -1,5 +1,7 @@
 # The boards' screen: `ramfb`, and why it is the other way round
 
+*Name: provisional, for the QEMU device it describes.*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md). It holds how QEMU's `virt`
 boards got a screen on aarch64 and riscv64, the gate that reads it back, and what the first red CI
 run settled.

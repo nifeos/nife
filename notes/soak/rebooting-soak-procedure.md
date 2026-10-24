@@ -1,5 +1,7 @@
 # The rebooting soak on radon: the procedure and its outcomes
 
+*Name: provisional.*
+
 An appendix to [notes/soak.md](../soak.md), following [rebooting-soak.md](rebooting-soak.md), which
 says why the loop exists and what the bench found on 2026-09-04: radon's firmware cannot complete
 the reset. This procedure stands for a board whose firmware can, and its escape check stands for

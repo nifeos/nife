@@ -17,14 +17,4 @@ These files carry the evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `kani-and-fuzzing` Name: provisional.
-- `not-fuzzed` Name: provisional.
-- `why-cargo-fuzz` Name: provisional. Named after the main page's own heading.
-- `three-bugs` Name: provisional. Named after the main page's own heading.
-- `ci-budget` Name: provisional.
-- `elf-seeds` Name: provisional.
-- `the-syscall-driver` Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06.
-  calef names files.
 Each stem here is named for its content, and calef names files.

@@ -1,5 +1,7 @@
 # The program that makes the stick, file by file
 
+*Name: provisional, for the program the appendix describes. calef names files.*
+
 An appendix to [`notes/boot-stick.md`](../boot-stick.md). It holds the design detail behind the doc
 comments in `crates/stick_maker`, which link here.
 

@@ -1,5 +1,7 @@
 # Both directions: block writes, kill-mid-write, and the receive queue
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/dma.md](../dma.md), moved there on 2026-10-11 (UTC) under §212 (a prose
 budget). It records why the validator needed no change for the
 write direction (milestone 32 (a real filesystem) phase 1) or the receive queue (milestone 30 (the

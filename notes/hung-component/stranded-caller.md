@@ -1,5 +1,7 @@
 # The hung component: the caller a hang strands
 
+*Name: provisional.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), whose question 3 it supports.
 Milestone 133 (ending a permanently blocked thread, and deciding who may) lets the region holder end
 a blocked server. Milestone 254 (a caller stranded by a server that died) wakes the callers of a

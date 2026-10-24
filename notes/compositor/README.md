@@ -21,13 +21,4 @@ boundary and the limits. These files carry the evidence its prose budget has no 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `wayland` Name: provisional.
-- `terminal-focus` Name: provisional.
-- `screen-sharing` Name: provisional.
-- `proofs` Name: provisional.
-- `missing-primitive` Name: provisional, after the main page's own heading.
-- `window-tearing` Name: provisional.
-- `arithmetic` Name: provisional.
-- `kernel-wiring` Name: provisional.
+Each stem here is named for its content, and calef names files.

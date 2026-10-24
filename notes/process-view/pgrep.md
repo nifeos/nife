@@ -1,5 +1,7 @@
 # pgrep, and the pkill that cannot exist
 
+*Name: provisional. For the program it describes.*
+
 An appendix to [notes/process-view.md](../process-view.md), which states the conclusion. This is the
 argument, the four answers, and why the pattern is not a name.
 

@@ -1,5 +1,7 @@
 # What the next two clients did with this contract
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/framebuffer-contract.md](../framebuffer-contract.md), moved there on
 2026-10-11 (UTC) under §212 (a prose budget). It records rung two (milestone 33 (a compositor)) and the
 display terminal (milestone 29 (a display terminal)'s text increment), the two clients built after

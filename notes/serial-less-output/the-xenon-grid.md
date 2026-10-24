@@ -1,5 +1,7 @@
 # The grid on xenon's screen
 
+*Name: provisional, for the finding it holds.*
+
 On the one real machine that has run `screen_console`, xenon, the screen shows a regular grid
 instead of text. It was seen on 2026-09-04 and again on 2026-09-17. The cause is in the painting
 path. It is not scrolling, and it is not the halt path.

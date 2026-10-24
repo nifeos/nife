@@ -1,5 +1,7 @@
 # The initial ramdisk archives
 
+*Name: provisional. After what the page describes. calef names files.*
+
 An appendix to [`notes/adding-a-program.md`](../adding-a-program.md): how `xtask/src/archive.rs`
 turns the declared programs into the three initial ramdisks the kernels boot with.
 

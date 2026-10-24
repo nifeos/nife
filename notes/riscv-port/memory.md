@@ -1,5 +1,7 @@
 # riscv64 virtual memory: Sv39, one `satp`, and the device window
 
+*Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.*
+
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/mmu.rs` and its `tests.rs` and `proofs.rs`. The portable page-table
 format is `paging::Sv39` ([notes/page-tables.md](../page-tables.md)). The ASID and shootdown

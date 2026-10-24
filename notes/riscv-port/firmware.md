@@ -1,5 +1,7 @@
 # riscv64 and its firmware: discovery, SBI, exit and reboot
 
+*Name: provisional, minted 2026-10-23 (UTC) by milestone 929's riscv64 lane.*
+
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/isa.rs`, `sbi.rs` and `semihosting.rs`: how the kernel asks the machine
 and its firmware what they are, and how it asks firmware to stop or restart it.

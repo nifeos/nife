@@ -1,5 +1,7 @@
 # The process view: the BUGS list in full
 
+*Name: provisional.*
+
 An appendix to [notes/process-view.md](../process-view.md), whose BUGS section lists each entry in
 one line.
 

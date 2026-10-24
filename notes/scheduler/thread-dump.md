@@ -1,5 +1,7 @@
 # The thread dump, and what each of its fields can claim
 
+*Name: provisional.*
+
 `sched::dump_threads` (`kernel/src/sched/inspection.rs`) prints every thread's scheduler state, the
 rendezvous and notifications with someone waiting, and one line per online core. The test watchdog
 calls it when a run stops making progress ([notes/scheduler.md](../scheduler.md), "The two hang

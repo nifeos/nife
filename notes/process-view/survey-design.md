@@ -1,5 +1,7 @@
 # SURVEY: the selector, placement, membership and the cursor
 
+*Name: ratified 2026-10-18 (calef, "survey-design.md") Refused `survey-method`.*
+
 An appendix to [notes/process-view.md](../process-view.md), which gives the method's signature, its
 rights and its states, and summarizes this page. These are the design arguments behind the rest of
 the method.
