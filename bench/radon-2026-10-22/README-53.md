@@ -18,7 +18,9 @@ from `03fc15894` (this branch with `main` at `2f641c7e2` merged). Each was built
 
 Boot 1's peer was the runbook's `nc` loop. Boot 2's was `53-network-rate-peer.py`, which serves
 the same 100 MiB and samples its socket's `TCP_CONNECTION_INFO`, because the runbook's `tcpdump`
-needs `sudo` and the run had none. Its sender-side time, 73.6 s, runs from accept to close and is
+needs `sudo` and the run had none. It listens only on the address it is given, the one radon
+reaches over the LAN, so reproducing it names that address:
+`python3 53-network-rate-peer.py --bind <this-host's-LAN-address> 53-network-rate-peer.txt`. Its sender-side time, 73.6 s, runs from accept to close and is
 not the rate; radon's own `transfer` line is. notes/designware-ethernet/the-receive-rate.md reads
 the result.
 
