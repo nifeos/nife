@@ -152,7 +152,8 @@ The held screen's first row is the middle of the firmware memory map:
                 0x00007ea8a000..0x00007eab4000  ram
 ```
 
-`uefi-test` gives the system image the PVH runner's devices. A PCI function whose BARs firmware
+`uefi-test` gives both test images the PVH runner's disk and NVMe controller, and the system image its
+GPU and keyboard. A PCI function whose BARs firmware
 placed is milestone 215's second question for xenon; under `-kernel` the kernel places them itself.
 The boot's 300 s bound is a hang detector, the bound `disk_throughput`'s boot uses. In CI the
 `system_tests` boot takes about 156 s at the default scanout and about 190 s at 1120x624, whose

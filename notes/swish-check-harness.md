@@ -150,7 +150,7 @@ slower than CI's arm64 runner also fails, and the answer is a measurement and a 
 
 ## What a leg does after its script
 
-The graphical launch (milestone 632 (graphics on demand), graphics on demand) boots the normal UART system with a
+The graphical launch (milestone 632 (graphics on demand)) boots the normal UART system with a
 virtio-gpu attached. The swish prompt must reach the serial console before anything is typed, which
 asserts the boot stayed minimal. Then the leg types `graphical_terminal`. The shell asks for
 graphics (`spawnproto::GRAPHICS_BIT`), the progenitor builds the session's stack from the devices it
@@ -233,7 +233,7 @@ Several rows pin a shape rather than a value:
   cursor and six identical answers would let a missed line pass as its neighbor.
 
 The second boot's generation numbers skip one. The first boot vouched for a build as generation 4
-and rolled it back (§221 (the boot prompt is the owner's console), the boot prompt is the owner's console). A generation is never rewritten,
+and rolled it back (§221 (the boot prompt is the owner's console)). A generation is never rewritten,
 so the removal is generation 5, and a rollback goes by number ([packages.md](packages.md)'s BUGS), landing on 4. Generation 3 is `greeting`'s
 0.2.0, installed before the vouch, and lists both versions beside `noteless`. The removed program is
 `noteless` rather than `uptime` because §229 (how a bare name at the prompt reaches an installed program) refuses

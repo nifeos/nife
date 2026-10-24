@@ -110,5 +110,4 @@ runs on 2026-10-11 and eight lane runs on patagonia, a shared and busy host. Tha
 `package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`
 on aarch64, and no test reached 30 s. CI's `test` job runs every leg in a median of about 17 minutes,
 against a 25-minute `timeout-minutes` and the budget of milestone 721 (each merge-group CI job has
-a 20-minute budget). A hang costs a run 2.5
-minutes and fails with the test's name. The hang that motivated it is in [scheduler.md](scheduler.md).
+a 20-minute budget). A hang costs a run 2.5 minutes and fails with the test's name. The hang that motivated it is in [scheduler.md](scheduler.md).
