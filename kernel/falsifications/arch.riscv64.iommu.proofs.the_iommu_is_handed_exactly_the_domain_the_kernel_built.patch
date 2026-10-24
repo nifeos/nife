@@ -24,15 +24,15 @@ The sibling harness `no_device_can_reach_another_devices_context` stays green un
 patch: it never builds a context, only locates one.
 
 diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
-index 1fa25c3f7..23131223e 100644
+index 00edbb6c4..1d294b26f 100644
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
-@@ -201,7 +201,7 @@ fn device_context(root: u64, pscid: u16) -> [u64; 8] {
+@@ -152,7 +152,7 @@ fn device_context(root: u64, pscid: u16) -> [u64; 8] {
          DC_TC_V,                          // tc: valid, faults reported (DTF clear)
          0,                                // iohgatp: Bare
          (pscid as u64) << TA_PSCID_SHIFT, // ta
 -        FSC_MODE_SV39 | (root >> 12),     // fsc = iosatp
 +        FSC_MODE_SV39 | ((root >> 12) << 10), // fsc = iosatp
-         0,                                // msiptp: MODE Off (see BUGS above)
+         0,                                // msiptp: MODE Off (notes/riscv-port/iommu.md)
          0,                                // msi_addr_mask
          0,                                // msi_addr_pattern
