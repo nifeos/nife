@@ -1,26 +1,10 @@
-//! **Wiring for the disk tree server** (milestone 834 (ioping on nife and Linux);
-//! `components/src/disk_tree.rs`, `crates/disk_tree`).
+//! Wiring for the disk tree server (`components/src/disk_tree.rs`): the whole NVMe namespace as one
+//! read-only file, the installed system's second mounted tree.
 //!
-//! The disk tree is the installed system's second mounted tree (calef, 2026-10-18 21:36 UTC, "Yes,
-//! read-only at prompt"): the whole NVMe namespace as one read-only file, served with no cache, so a
-//! program at the prompt measures the device. It is the NVMe server's second client beside the
-//! filesystem server, kept apart from it by its own transfer window (calef, 2026-10-18 23:06 UTC,
-//! "Per-client window").
-//!
-//! # What the server holds
-//!
-//! - slot 0: the NVMe request endpoint, `WRITE`, badged
-//!   [`::non_volatile_memory_express::DISK_TREE_WINDOW`], which the NVMe server never writes from;
-//! - slot 1: its own request endpoint, `READ`;
-//! - slot 2: a report endpoint, `WRITE`;
-//! - mapped: that window's pages **read-only** at the block channel's address, and
-//!   `fs::CLIENT_WINDOWS` client windows read/write directly above them. Window 0 is **the file
-//!   service's window 0 frame**, not the pool's own first window: the boot shell holds both trees
-//!   and maps one page for both (`grant_plan::spawnproto::MOUNTED_TREE_SLOT`), which is sound
-//!   because it has one `CALL` in flight. The pool's own first window is never mapped.
-//!
-//! The progenitor is granted the request endpoint and the client-window pool, as it is the
-//! filesystem server's, and slices one window per client out of the pool.
+//! It holds the NVMe request endpoint badged with
+//! [`::non_volatile_memory_express::DISK_TREE_WINDOW`], its own request and report endpoints, that
+//! window read-only, and the client windows. Window 0 is the file service's own window 0 frame. See
+//! notes/two-trees.md, "The disk tree's server".
 //!
 //! Name: provisional (lane `lane/ioping-direct-io`, 2026-10-18 UTC), with the program's.
 
@@ -47,7 +31,7 @@ pub(crate) struct DiskTree {
     pub pool: u64,
 }
 
-/// **Start the disk tree, when this machine has an NVMe disk.** `fs_window_zero` is the physical
+/// Start the disk tree, when this machine has an NVMe disk. `fs_window_zero` is the physical
 /// base of the file service's window 0. `None` without a disk, or when the archive lacks either
 /// program, or when the server could not size the disk: each costs the second tree, not the boot.
 pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {

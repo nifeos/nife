@@ -49,15 +49,9 @@ pub(super) struct Claim {
 /// Split out from the mapping loop so that the failure path can ask the same question the mapping
 /// asked. See [`Claim`].
 pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
-    // 1. **Every RAM region**, not just the low gigabyte the old single-base arithmetic could
-    //    reach.
-    //
-    //    The kernel image's own frames are skipped: on this architecture the image lives at a
-    //    *different* base, so a direct-map entry for those frames would not collide with the
-    //    section mappings below (as it would on the other two ISAs), it would be a second,
-    //    WRITABLE alias of `.text`. W^X that a second mapping undoes is not W^X. Nothing needs
-    //    those frames by physical address anyway: the image is on the frame allocator's forbidden
-    //    list, so they are never handed out.
+    // 1. Every RAM region, except the kernel image's own frames: the image lives at a different
+    //    base, so a direct-map entry for them would be a second, writable alias of `.text`. The
+    //    image is on the allocator's forbidden list, so nothing needs them by physical address.
     let image_lo = memory::image_start();
     let image_hi = memory::image_end();
     for (start, size) in memory::ram_regions() {
@@ -78,13 +72,9 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
-    // 1b. **One deliberate hole inside the excluded image range** (milestone 161's SMP item): the
-    //     AP trampoline's LMA, the gap link-x86_64.ld opens between `.rodata` and `.data` so the
-    //     trampoline's *source* bytes are not `.boot_scratch` or the secondary stacks (both
-    //     runtime-mutated; see that file's comment). It is inside `image_lo..image_hi`, so step 1
-    //     skips it same as `.text`, and it is *between* two mapped sections rather than inside
-    //     either, so neither section's own mapping reaches it either. Nobody's mapping covers it
-    //     unless this does. `ap_boot::prepare` is the one reader, through the direct map.
+    // 1b. The AP trampoline's LMA, the gap link-x86_64.ld opens between `.rodata` and `.data`.
+    //     Step 1 skips it with the image, and neither section's mapping reaches it, so nothing
+    //     covers it unless this does. `ap_boot::prepare` reads it through the direct map.
     each(Claim {
         what: "ap trampoline",
         lo: super::ap_boot::trampoline_lma(),
@@ -93,21 +83,10 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         guarded: false,
     });
 
-    // 5. **The device registers, device-typed (uncacheable), one window each**, and they come
-    //    before the firmware reservations rather than after.
-    //
-    //    **The order is load-bearing and it did not used to be.** The reservation fill is guarded
-    //    and these are not, so whichever runs first decides the memory type of any page both want,
-    //    and only one of the two answers is correct: a cacheable mapping of a device window is a
-    //    write that may sit in a cache line and never reach the device. Naming the windows first
-    //    makes device typing win by construction, rather than by [`firmware_fill_ceiling`] being
-    //    right about where the hole starts. Both now hold; this is the one that holds without
-    //    knowing anything about the machine.
-    //
-    //    The local APIC's address comes from the machine's own MADT when ACPI answered, and falls
-    //    back to the architectural reset default when it did not: `IA32_APIC_BASE` is relocatable,
-    //    and mapping the constant while the hardware is somewhere else would be a page of nothing
-    //    that reads as all-ones.
+    // 5. The device registers, device-typed, one window each, before the firmware reservations:
+    //    the reservation fill is guarded and these are not, so whichever runs first decides a
+    //    shared page's memory type, and a cacheable device window loses writes. The local APIC's
+    //    address is the MADT's when ACPI answered, else the reset default.
     let apic = super::discovery::local_apic_phys().unwrap_or(LOCAL_APIC_PHYS);
     each(Claim {
         what: "local apic",
@@ -117,9 +96,8 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         guarded: false,
     });
 
-    // The IO APIC's own page, from the MADT when ACPI answered and from the architectural default
-    // when it did not, for the same reason the local APIC's is: the address is the machine's to
-    // state, and a machine with two of them puts the second somewhere this constant does not name.
+    // The IO APIC's page, likewise from the MADT when ACPI answered: a machine with two puts the
+    // second somewhere the constant does not name.
     let io_apic = super::discovery::io_apic_phys().unwrap_or(IO_APIC_PHYS);
     each(Claim {
         what: "io apic",
@@ -129,15 +107,10 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         guarded: false,
     });
 
-    // The PCIe windows: bus 0 of the ECAM config space ACPI's MCFG named, and the BAR window the
-    // kernel assigns device registers from (derived from this machine's own memory map and host
-    // bridge; see `memory_mapped_io_window`, milestone 256, which has no ACPI or AML source to read instead).
-    // Same shape as the other two architectures' `memory::pci_regions()` (a device-tree
-    // node there, ACPI's MCFG here, both recorded before this function runs): no window recorded,
-    // no mapping, and every probe in `pci.rs` reports nobody home rather than touching MMIO that
-    // was never confirmed present. The one-bus cap on the ECAM side is the same as the other two
-    // architectures apply and for the same reason: everything QEMU puts on this machine is on bus
-    // 0, and all 256 buses would be 64K leaves describing space that reads all-ones.
+    // The PCIe windows: bus 0 of the ECAM space the MCFG named, and the BAR window
+    // (`memory_mapped_io_window`). No window recorded means no mapping, and `pci.rs` reports nobody
+    // home rather than touching unconfirmed MMIO. One ECAM bus, as on the other two architectures:
+    // everything QEMU puts here is on bus 0.
     if let Some(((ecam, ecam_size), (bar, bar_size))) = memory::pci_regions() {
         each(Claim {
             what: "pci ecam",
@@ -155,13 +128,9 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
-    // VT-d's register files (milestone 161, roadmap item 6), one per unit since milestone 594 (every VT-d unit translates its own devices),
-    // device-typed, each as large as its DRHD's `Size` byte says (one page on every unit met so
-    // far), at the addresses ACPI's DMAR named (`memory::record_vtd_region`, called from `main.rs`
-    // before this function runs). Same shape as the local APIC and IO APIC windows above: no DRHD,
-    // no mapping, and `arch::iommu::init` is simply never called. Without this a DRHD's register
-    // reads fault the instant the fine map replaces the coarse boot map that covered every
-    // physical address indiscriminately; the first version of this driver found that by faulting.
+    // VT-d's register files, one per unit, device-typed, each as large as its DRHD's `Size` byte
+    // says, at the addresses the DMAR named. Without this a DRHD read faults the instant the fine
+    // map replaces the boot map.
     for (base, size) in memory::vtd_regions().into_iter().flatten() {
         each(Claim {
             what: "vt-d registers",
@@ -182,26 +151,12 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
-    // **The screen** (milestone 243), when the boot handoff described one. Device-typed like every
-    // other aperture here, and mapped for the same reason the VT-d window is: the kernel console
-    // has been writing to it through the coarse boot map since before the tour's first line, and
-    // the instant this fine map replaces that one an unmapped framebuffer would fault inside
-    // `println!`, whose fault handler prints. There is no diagnostic that survives that.
-    //
-    // It is the largest window in this function by three orders of magnitude: 1920x1080 is 8 MiB,
-    // which is 2026 leaves. That is the price of a screen and it is paid once.
-    //
-    // **Write-combining, not device-typed** (2026-10-04). Device-typed is strong uncacheable, one
-    // bus transaction per four-byte store, and on xenon the boot console's scrolling swept visibly
-    // down the screen. `Flags::write_combining()` is still device memory to every rule here (pages
-    // rather than blocks, never cached), and selects the PAT entry `arch::x86_64::init` made WC on
-    // every core before this map exists. The console only ever writes it (`screen_console`'s
-    // `PixelSink` has no read), which is the other half: WC reads are as slow as UC ones.
-    //
-    // **An aperture inside a RAM region would be a different problem and is not this one.** On
-    // xenon the aperture sits in the 32-bit MMIO hole, which the firmware's map does not describe;
-    // it is in no RAM region and never was. See this module's BUGS for what a machine that really
-    // did report both would need, and why "map it twice" is not among the options on x86.
+    // The screen, when the handoff described one: the console writes to it through the boot map
+    // from the first line, so an unmapped framebuffer would fault inside `println!`. Mapped
+    // write-combining, which is still device memory to every rule here and selects the PAT entry
+    // `cpu_init` made WC on every core; the console only writes it, and WC reads are as slow as UC
+    // ones. An aperture inside a RAM region is a different problem; see
+    // notes/x86-port/kernel-page-tables.md.
     if let Some((base, size)) = memory::framebuffer() {
         each(Claim {
             what: "framebuffer",
@@ -212,17 +167,11 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
-    // 2. **Memory the loader did not call usable RAM but which is still *memory***: the first
-    //    megabyte (IVT, BDA, EBDA, the BIOS area the ACPI RSDP is scanned out of, and the page
-    //    below 1 MiB a STARTUP IPI's vector will have to name), and the reserved entries carved out
-    //    of DRAM (the ACPI tables, NVS, firmware scratch). Those are read through `phys_to_virt`
-    //    and are in no RAM region, so without this they become arithmetic with no mapping the
-    //    moment the boot map goes.
-    //
-    //    Guarded, because a reserved entry can abut or overlap something step 1 already mapped and
-    //    nothing promises the firmware's list is disjoint. **`AlreadyMapped` is not treated as
-    //    success anywhere**; asking first is what keeps the refusal meaning something everywhere
-    //    else.
+    // 2. Memory the loader did not call usable RAM but which is still memory: the first megabyte
+    //    (IVT, BDA, EBDA, the RSDP scan area, the AP trampoline page) and the reserved entries
+    //    carved out of DRAM (ACPI tables, NVS, firmware scratch), all read through `phys_to_virt`.
+    //    Guarded, since nothing promises the firmware's list is disjoint; `AlreadyMapped` is never
+    //    treated as success.
     firmware_claims(each);
 }
 
@@ -280,17 +229,10 @@ fn firmware_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
-    // **The initial ramdisk, explicitly, regardless of how the memmap classified the bytes it
-    // occupies.** Found 2026-08-25 (decisions §86 (whether an NVMe driver can leave the kernel)'s
-    // VT-d/NVMe data point): attaching an NVMe controller grows the ACPI tables enough that the
-    // memmap's reserved entry immediately above the top of RAM widens to swallow the initial
-    // ramdisk's last few hundred bytes (PVH's loader places it at a fixed offset below the top of
-    // guest memory, sized for a smaller device set than this boot's tables need). The ceiling above
-    // exists to keep this loop out of the MMIO hole, so widening it is not the fix. Claiming the
-    // initial ramdisk's own recorded bounds directly sidesteps the question of which reserved entry
-    // is real backing memory and which is not: `bring_up_memory` already claimed this exact range
-    // as `forbidden` before this runs, so nothing else can be relying on it staying unmapped, and a
-    // guarded claim is idempotent over anything already covered.
+    // The initial ramdisk, by its recorded bounds, however the memmap classified its bytes: the
+    // reserved entry above the top of RAM can widen over the ramdisk's tail. `bring_up_memory`
+    // already claimed the range as forbidden, and a guarded claim is idempotent. See
+    // notes/x86-port/kernel-page-tables.md.
     if let Some((istart, isize)) = memory::initial_ramdisk_region() {
         each(Claim {
             what: "initial ramdisk",

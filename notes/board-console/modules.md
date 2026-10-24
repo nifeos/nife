@@ -2,7 +2,7 @@
 
 An appendix to [notes/board-console.md](../board-console.md). The doc comments in
 `crates/serial_console/src/` state what each item holds and refuses. This page holds the reasons
-behind three of them that the comments link here, plus one reading rule for the lottery.
+behind four of them that the comments link here.
 
 ## Why a sweep point keeps all seven fields
 
@@ -24,8 +24,9 @@ struct that can be diffed against a `job-mix:` line by eye makes such a rename v
 
 `lottery` counts clean cores per draw and prints the rate beside each one. The count summarizes the
 placement census. It does not explain where placement lands; that belongs to §138 (how a saturated
-workload is made to hand threads across cores). If a series shows the rate not following the count, that is the result. The count is
-still the right thing to have measured, which is why the report never prints the tally alone.
+workload is made to hand threads across cores). If a series shows the rate not following the
+count, that is the result. The count is still the right thing to have measured, which is why the
+report never prints the tally alone.
 
 The arrangements radon drew by hand line up with the count: two clean cores gave 342,000 to
 347,000 round trips a second, one gave 184,000 to 188,000, and none gave 23,000.
