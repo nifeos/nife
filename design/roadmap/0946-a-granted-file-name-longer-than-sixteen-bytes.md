@@ -11,52 +11,115 @@ needs_person: no
 ---
 # 946. A granted file name can be longer than sixteen bytes
 
+**IN-PROGRESS, 2026-10-24 (UTC).** Built on aarch64 and gated there by `script/swish-check`; the
+other two legs and the bound itself are what is left ("Needs calef" and "BUGS" below).
+
 *(Title and slug provisional.)*
 
 Raised 2026-10-20 (UTC) by `maintainer/record-2026-10-20`, recording calef's ruling of that day on
 milestone 922 (the demos are packaged in basalt). He kept the ratified `least_authority_demo` rather
 than shortening it: *"B"*. The fix is to lift the limit that refuses the name. calef asked on
-2026-10-24 (UTC) for it to be built; the number 946 was assigned that day at promotion.
+2026-10-24 (UTC) for it to be built.
 
-## The limit
+## What a name may be
 
-`filesystem_contract::grant::MAX_NAME` is 16 bytes. A per-file grant carries its name by value, packed
-into the two argument words the file's caretaker is started with (`grant::pack_name`), so a grant
-costs no extra page and the caretaker needs nothing mapped before it runs. The constant's own
-comment calls it a demonstrator's limit, not a filesystem's, and says lifting it means giving the
-caretaker a frame.
+- **A file's name is at most `filesystem_contract::grant::MAX_NAME`, 255 bytes**, provisional
+  (the question below). `grant_plan::MAX_FILE_NAME` mirrors it, pinned by a host test. It is the
+  last component of a path the shell opens, a name a pattern matched, and a name in a grant's set.
+- **A name that rides two `START` words is at most `grant::WORDS_NAME`, 16 bytes**: a caretaker's
+  directory, `rm`'s operand when it fits, a `login` identity's subtree, an activation message's
+  package or vouched name. `grant::pack_name` answers `None` past it, so nothing truncates.
+  `grant_plan::WORDS_NAME` mirrors it.
+- **A directory the shell stands in, walks through or binds is at most 16 bytes**
+  (`grant_plan::nav::MAX_DIRECTORY_NAME`), because a directory grant names its directory in a
+  caretaker's two words and the shell carries every position by value. A longer one is refused as
+  `Refused::DirectoryNameTooLong`.
+- **A name set carries at most 8 names and 512 bytes of them** (`nameset::MAX_NAMES`,
+  `nameset::NAME_BYTES`): two of the longest names, or eight of 64 bytes. A record is a length
+  byte, a flags byte, then the name. The shell's `NameSet` packs its names into those bytes rather
+  than holding eight slots of 255, and over either bound is the same refusal, never a truncation.
 
-The shell refuses anything longer at the prompt. `grant_plan::MAX_FILE_NAME` mirrors the constant,
-because the shell's parser must not depend on the filesystem contract. `grant_plan`'s tests pin the
-pair (`tests.rs`, and `expand::MAX_NAME` in `planning/tests/operands.rs`). The refusal reads *"that is
-not a name: one component, at most 16 bytes"*.
+## How a long name reaches a program
 
-## Who meets it
+- **A file the shell opens itself**: `wc quarterly-report.txt`, `<`, `>` and `2>`, and a program
+  run by its path. Nothing travels but the shell's own `OPEN`, through the file service's page.
+- **A word a program hears** (§170): the name rides the grant's set, on the page
+  `fs_nameset_caretaker` maps, as every designated name already did.
+- **`rm` with a name over two words**: `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE` and grants the
+  set of that one name, which `rm` sweeps.
+- **Where the file server binds badges** (milestone 606), a grant carrying a set is bound and then
+  served by `fs_nameset_caretaker` over the bound channel, told with an empty name that the bound
+  root is its directory (`client_windows::at_bound_root`). The badge alone would hold the whole
+  directory, and the set is what narrows it.
 
-Anyone with a file whose name is over 16 bytes. A customer's files are not named for this limit:
-`quarterly-report.txt` is 20 bytes and cannot be granted to a program at the prompt. Milestone 922 met
-it with its own program: an installed `least_authority_demo` (20 bytes) cannot be run by its package
-path.
+Reuse: none exists; this is nife's own grant wiring between the shell, the progenitor and a
+caretaker, and no library carries a capability's name by argument words or frame.
 
-## What moves with it
+## Built 2026-10-24 (UTC)
 
-- The caretaker's start: the name moves from two argument words to a frame the caretaker is given,
-  which is a change to the wiring and not to the contract's verbs.
-- `filesystem_contract::nameset::BYTES` is `MAX_NAMES * (1 + grant::MAX_NAME) + 1`, and a set travels
-  by value. `MAX_NAMES` is 8 because sixteen names of 16 bytes overflowed the shell's stack while
-  planning one grant, through four frames a debug build does not collapse. A longer name changes that
-  measurement, so the set's size has to be measured again rather than scaled.
-- `grant_plan::MAX_FILE_NAME` and `expand::MAX_NAME`, with the tests that pin them.
-- The new bound itself: 255 bytes would match `xattr::MAX_NAME` and most filesystems. That number is
-  an architect's call, because the filesystem and the loader share it.
+Lane `milestone/946-granted-file-name-longer-than-sixteen-bytes`.
 
-Reuse: none exists; this is nife's own grant wiring between the shell and a caretaker, the crates
-named above, and no library carries a capability's name by argument words or frame.
+`script/swish-check`'s aarch64 leg types these, and each answers as shown:
+
+- `wc < quarterly-report.txt` and `wc quarterly-report.txt` both print `1 3 19`, and
+  `caps wc quarterly-report.txt` names the 20-byte file as the input.
+- `/installed/std-grep needle the-quarterly-report.txt` prints the line from the 24-byte file its
+  word named.
+- `rm -v rmtree/a-name-longer-than-two-words` removes the 28-byte name, and `ls rmtree | wc` still
+  counts the two entries nothing named.
+- `installed/least_authority_demo 5` is opened by its 20-byte name, its note read and its bytes
+  sent, and the progenitor refuses the line for what the note asks of unvouched bytes. The shell no
+  longer refuses the name.
+
+The shell's stack was measured rather than scaled, on the same leg: twelve pages fault on the
+boot's first pipeline, sixteen in `installed/jig rollback`, seventeen pass both boots. The shell
+gets twenty-one (`system_initializer::SHELL_STACK_PAGES`), the planner is compiled optimized in a
+debug build, and a set holds at most 512 bytes of name. notes/glob-grant/xargs.md ("The bytes a
+set carries") has the numbers. The progenitor's capability peak stays at the 37 that
+`kernel/src/cap.rs` records, on both boots.
+
+## Needs calef
+
+The bound on a granted name, `grant::MAX_NAME`, is an architect's call: the filesystem and the
+loader share it. It is one constant, and the build uses 255.
+
+- **B (recommended): 252**, §307 (how long a name may be)'s bound, which is RedoxFS's
+  `DIR_ENTRY_MAX_LENGTH` (calef, 2026-10-17: *"252 seems fine for now."*). A name of 253 to 255 bytes
+  is grantable under A and unstorable on nife's own disk, which is the "two numbers for one fact"
+  §307 refused.
+- **A: 255**, Linux's `NAME_MAX` and `xattr::MAX_NAME`. The server refuses a 253-byte create, so
+  nothing breaks; a name that long is only refused one step later.
 
 ## Exit
 
 On aarch64, riscv64 and x86_64: a file named with more than 16 bytes is granted at the prompt and read
 by the program it was granted to, and an installed `least_authority_demo` runs by its package path.
+
+## BUGS
+
+- Only the aarch64 leg has run. riscv64 and x86_64 carry the same code and the same script lines,
+  and CI runs them.
+- An installed `least_authority_demo` cannot yet be installed to be run: `jig install demos` is
+  refused while every image packs the program, until milestone 909 (basalt composes the bootable
+  image from its packages). The shell's half of the exit is the `installed/least_authority_demo`
+  line above; the run that squares an integer is milestone 922's exit.
+- A directory's name is at most 16 bytes, so `cd` refuses a longer one and `mkdir` can make a
+  directory the shell cannot then stand in.
+- A package or vouched name is at most 16 bytes, because the activation messages carry it in two
+  words (the proposal below).
+- `fs_file_caretaker` takes its file's name in two words, so it serves a name of at most 16 bytes.
+  No prompt line builds one.
+- A caretaker on a client window that was once bound gets `EBADF` throughout, since `UNBIND` leaves
+  the badge revoked (`client_windows::job_windows`' BUGS). A set grant no longer meets it, because
+  it is bound before its caretaker is built.
+
+## Follow-on
+
+- **Proposed.** A package name longer than sixteen bytes installs and is removed:
+  `design/roadmap/proposals/a-package-name-longer-than-sixteen-bytes-installs-and-is-removed.md`.
+- **Milestone 909.** Taking the demos out of the shipped image is what lets an installed
+  `least_authority_demo` run by its package path.
+- **Recorded.** A directory name over 16 bytes, in BUGS above.
 
 ## Index row
 

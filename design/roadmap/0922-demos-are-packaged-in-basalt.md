@@ -9,10 +9,11 @@ needs_person: no
 ---
 # 922. The demos are packaged in basalt
 
-**PARTIAL, 2026-10-14 (UTC).** basalt builds and publishes `demos`, and `jig` fetches it and
+**PARTIAL, 2026-10-24 (UTC).** basalt builds and publishes `demos`, and `jig` fetches it and
 accepts its digest on all three architectures. The installer then refuses it, because every image
 still carries `least_authority_demo`. Left: running an installed demo, which waits on milestone 909
-and on a granted name longer than 16 bytes ("BUGS" below).
+alone. The shell opens a program by a path whose last component is `least_authority_demo`'s 20
+bytes (milestone 946), so the name no longer stands in the way ("BUGS" below).
 
 *(Minted 2026-10-14 (UTC) by lane `milestone/922-demos-are-packaged-in-basalt`, under §297
 (software reaches a nife system as a package `jig` installs from basalt's index, the kernel
@@ -63,12 +64,10 @@ installed with `jig`)'s pins and publishing.
   `[[bin]]`, so the installer refuses `demos`. An `optional` package leaves the shipped image when
   milestone 909 (basalt composes the bootable image from its packages) composes the image from
   base packages.
-- `least_authority_demo` is 20 bytes, and a path component at the prompt is at most 16 (`grant_plan`
-  refuses it: *"that is not a name: one component, at most 16 bytes"*). An installed copy could
-  not be run by its package path even if it installed. The image's copy runs because a catalog
-  name is not a path. The name stays; it is ratified (calef, 2026-10-20 UTC: "B"). This waits on
-  lifting `filesystem_contract::grant::MAX_NAME`, which `grant_plan::MAX_FILE_NAME` mirrors (the
-  proposal below).
+- Item 2's run line, `packages/demos/0.1.0/least_authority_demo 9`, is not typed, because nothing
+  installs the package for it to run. The name is not what stops it: `script/swish-check` runs the
+  same bytes as `installed/least_authority_demo` (milestone 946), and the shell opens them by that
+  20-byte name and sends them to the progenitor.
 - The package carries the program at basalt's pinned nife commit, so it lags nife's `main` until
   the pin moves.
 
@@ -77,8 +76,11 @@ installed with `jig`)'s pins and publishing.
 - **Milestone 909.** Milestone 909 takes the demos out of the shipped image, since only base
   packages compose it, and the installer then takes `demos`.
 - **Milestone 946.** A granted file name longer than 16 bytes:
-  `design/roadmap/0946-a-granted-file-name-longer-than-sixteen-bytes.md`. Running the installed
-  `least_authority_demo` by its package path waits on it (calef, 2026-10-20 UTC, kept the name).
+  `design/roadmap/0946-a-granted-file-name-longer-than-sixteen-bytes.md`. It lets a path at the
+  prompt end in `least_authority_demo` (calef, 2026-10-20 UTC, kept the name).
+- **Outstanding.** Item 2's second half and the exit: `jig install demos` succeeding and the
+  installed program squaring an integer, checked 2026-10-24 (UTC) against `script/swish-check`'s
+  `after_reboot.rs`, which still expects the installer's refusal. It waits on milestone 909.
 
 ## Index row
 
