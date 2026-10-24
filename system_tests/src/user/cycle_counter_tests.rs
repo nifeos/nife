@@ -21,13 +21,13 @@ fn cycle_counter_image() -> &'static [u8] {
 /// **Milestone 229: a granted thread reads the cycle counter, and an ungranted one is killed for
 /// trying.** Both halves, in one test, because each is the other's control.
 ///
-/// The program reads `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) at EL0. Granted (through
-/// the `#[cfg(test)]` back door `sched::grant_cycle_counter_to_current`; no syscall sets it yet), it
-/// reports; ungranted, milestone 228's closed default traps the read and `USER_FAULTS` counts the
-/// kill. The reported meaning is checked against `expected_cycle_meaning` (milestone 353 (the
-/// aarch64 half of 74), calef's ruling B4 of 2026-10-07 UTC), and the delta of the two reads only
-/// where `el0_cycle_counter_is_known_to_run` (milestone 74 (cycle counters)). Under QEMU the delta
-/// is emulator time. See notes/pmu.md, "What the userspace counter tests assert".
+/// The program reads `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) at EL0. Granted through
+/// the test-only `sched::grant_cycle_counter_to_current` (no syscall sets it yet), it reports;
+/// ungranted, the closed default of milestone 228 (the cycle counters are closed by assumption)
+/// traps the read and `USER_FAULTS` counts the kill. The reported meaning is checked against
+/// `expected_cycle_meaning` (milestone 353 (the aarch64 half of 74), calef's ruling B4 of
+/// 2026-10-07 UTC), and the delta of the two reads only where `el0_cycle_counter_is_known_to_run`
+/// (milestone 74 (cycle counters)). Under QEMU the delta is emulator time. See notes/pmu.md.
 #[test_case]
 fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
     if !crate::arch::timer::is_cycle_counter_grantable() {
@@ -35,11 +35,12 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
     }
 
     // The negative half does not run on x86_64, where `rdtsc` is ambient by DECISIONS 139 part 3
-    // (the stated exception to DECISIONS §19). Nor on an Apple core, which this kernel meets only
-    // under a hypervisor (it does not drive AIC): there an EL0 read of `PMCCNTR_EL0` with
-    // `PMUSERENR_EL0` at zero was answered rather than refused (measured 2026-09-19, milestone
-    // 227's first HVF run), so the outcome is the hypervisor's. `arch::timer::set_cycle_counter_grant`'s
-    // BUGS carries the measurement. The positive half below still runs.
+    // (the stated exception to DECISIONS §19 (architectural parity is a tenet)). Nor on an Apple
+    // core, which this kernel meets only under a hypervisor (it does not drive AIC): there an EL0
+    // read of `PMCCNTR_EL0` with `PMUSERENR_EL0` at zero was answered rather than refused (measured
+    // 2026-09-19, milestone 227's first HVF run), so the outcome is the hypervisor's.
+    // `arch::timer::set_cycle_counter_grant`'s BUGS carries the measurement. The positive half
+    // below still runs.
     #[cfg(target_arch = "aarch64")]
     let under_apple_hypervisor = crate::arch::isa::get().implementer == 0x61;
     #[cfg(target_arch = "riscv64")]

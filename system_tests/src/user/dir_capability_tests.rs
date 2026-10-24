@@ -112,11 +112,12 @@ fn describe_dirscape(v: u64) -> &'static str {
 
 /// **A read-only explorer: it may descend, read and list, and it reaches nothing above itself.**
 ///
-/// Milestone 47's keystone under attack. Holding a capability to `sub`, the attacker tries to name
-/// `motd` (in the parent), `other` and `other/secret` (a sibling) and `..`. All three exist and the
-/// caretaker one hop up could reach each, so every refusal is a fact about the capability. A child
-/// asked for no rights can do nothing, and a child asked for a right this grant lacks is refused
-/// rather than given something smaller (notes/dir-capability/tests-and-stack-usage.md).
+/// The keystone of milestone 47 (navigation and naming) under attack. Holding a capability to
+/// `sub`, the attacker tries to name `motd` (in the parent), `other` and `other/secret` (a sibling)
+/// and `..`. All three exist and the caretaker one hop up could reach each, so every refusal is a
+/// fact about the capability. A child asked for no rights can do nothing, and a child asked for a
+/// right this grant lacks is refused rather than given something smaller
+/// (notes/dir-capability/tests-and-stack-usage.md).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.dir_capability_tests.a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it.patch`
 #[test_case]

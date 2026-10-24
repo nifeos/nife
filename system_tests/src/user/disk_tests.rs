@@ -151,7 +151,8 @@ fn roster_message_names_every_disk(w: &disk_service::Wiring) {
 fn the_disk_surveyor_reads_a_table_gptfdisk_wrote() {
     let Some(w) = disk_service::start(fs_service::blk_server_image(), surveyor_image()) else {
         // No fourth mmio block device: this boot did not build the GPT image. A fact about the
-        // machine, which the final line must carry as a skip (milestone 214,
+        // machine, which the final line must carry as a skip (milestone 214 (a test that prints
+        // "skipping" and returns is counted as passed),
         // design/roadmap/0214-print-and-return-skips.md).
         skip_unless_required!(
             X86_FIXTURES_REQUIRED,
@@ -242,13 +243,14 @@ fn the_roster_is_a_listing_and_not_a_lever() {
 
 /// **A page a driver holds can be taken back; a page it was handed at birth cannot.**
 ///
-/// Milestone 108's claim. A spawn-time mapping (`Spawn::maps`) is recorded nowhere, so
-/// `revoke::revoke_page_frame`, which works off the mapping database, cannot reach it; the roster
-/// is a held `PageFrame` instead. The program maps the frame, reads and reports the first word, and
-/// parks. The kernel checks that word against its own direct-map read of the same page, which says
-/// the mapping was real and of this page. Then it revokes the frame and resumes the program: the
-/// second read faults at that address and "the read landed" never arrives. Against a spawn-time
-/// mapping the second read would return the same word as the first.
+/// The claim of milestone 108 (the drivers move onto frame capabilities). A spawn-time mapping
+/// (`Spawn::maps`) is recorded nowhere, so `revoke::revoke_page_frame`, which works off the mapping
+/// database, cannot reach it; the roster is a held `PageFrame` instead. The program maps the frame,
+/// reads and reports the first word, and parks. The kernel checks that word against its own
+/// direct-map read of the same page, which says the mapping was real and of this page. Then it
+/// revokes the frame and resumes the program: the second read faults at that address and "the read
+/// landed" never arrives. Against a spawn-time mapping the second read would return the same word
+/// as the first.
 #[test_case]
 fn the_roster_can_be_revoked_out_from_under_its_holder() {
     let faults = USER_FAULTS.load(Ordering::Relaxed);

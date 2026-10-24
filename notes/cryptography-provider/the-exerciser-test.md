@@ -50,4 +50,5 @@ cleanly, so the failing assertion's message reaches the sink.
 ## What it does not show
 
 `provider ok` asserts what the provider offers, not that it can talk to anyone. No handshake
-happens. A client speaking TLS 1.3 to a peer is separate work, and milestone 442's block says so.
+happens. A client speaking TLS 1.3 to a peer is separate work, and the block of milestone 442 (a
+crypto provider `rustls` can use on all three bare-metal targets) says so.

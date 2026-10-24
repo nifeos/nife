@@ -114,7 +114,8 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
     // Wait for the one-shot client's reap, which also proves a finished client is not leaked. Its
     // ~20 frames come back asynchronously at reap and would land in the next test's exact
     // free-frame count. The driver never exits, so the target is one thread above the baseline.
-    // Clock-based, not a yield count: on an idle core a yield returns instantly (DECISIONS §28).
+    // Clock-based, not a yield count: on an idle core a yield returns instantly (DECISIONS §28 (SMP
+    // placement)).
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline && sched::thread_count() > threads_before + 1 {
         sched::yield_now();
@@ -130,13 +131,13 @@ fn a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer() {
 /// **The device is refused a framebuffer it was not granted.**
 ///
 /// A virtio-gpu's backing addresses ride inside a command payload, not a descriptor, so no shadow
-/// ring checks them, and §18 keeps the transport from parsing them: the IOMMU is the barrier. A
-/// driver with the honest driver's authority points the device at a frame the kernel left out of
-/// its domain, and the IOMMU must record a fault at that frame. The fault queue is the assertion,
-/// not the response code: QEMU answers a translation failure with a bounce buffer and an OK
-/// (notes/framebuffer-contract/iommu-escape-test.md). The name sorts this first because it resets
-/// the GPU, which would wipe the pictures the host-side scanout check looks for; a reorder fails
-/// that check loudly (notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
+/// ring checks them, and §18 (the PCIe transport: one driver, two buses, the seam in the kernel)
+/// keeps the transport from parsing them: the IOMMU is the barrier. A driver with honest authority
+/// aims the device at a frame outside its domain, and the IOMMU must record a fault there. The
+/// fault queue, not the response code, is the assertion: QEMU answers a translation failure with a
+/// bounce buffer and an OK (notes/framebuffer-contract/iommu-escape-test.md). It sorts first
+/// because it resets the GPU, wiping the pictures the host-side scanout check looks for; a reorder
+/// fails that check loudly (notes/glyphs/terminal-and-proof.md, "Ordering, and what breaks it").
 #[test_case]
 fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -202,14 +203,14 @@ fn a_backing_outside_the_grant_is_refused_by_the_iommu() {
 
 /// **A bitmap font and a VT engine put readable text on the scanout.**
 ///
-/// Milestone 29's remaining increment end to end: a terminal that is a client of the framebuffer
-/// contract. The terminal paints what `video_terminal` says, the kernel reruns the engine over
-/// `video_terminal::script` and compares the scanout frames pixel for pixel, and the host compares
-/// QEMU's `screendump`, the only witness of pixel format and scanout rectangle. The host checker
-/// must reject `video_terminal::script::GREETING_TYPO`. Each part of the script catches a named
-/// failure, and the driver's one report checks that a blank terminal is a defined picture. The name
-/// sorts this between the confinement and pattern tests (notes/glyphs/terminal-and-proof.md,
-/// notes/framebuffer-contract/the-display-tests.md).
+/// The remaining increment of milestone 29 (a display terminal: framebuffer, virtio-gpu, and a
+/// foreign component) end to end: a terminal that is a framebuffer-contract client. The terminal
+/// paints what `video_terminal` says, the kernel reruns the engine over `video_terminal::script`
+/// and compares the scanout frames pixel for pixel, and the host compares QEMU's `screendump`, the
+/// only witness of pixel format and scanout rectangle. The host checker must reject
+/// `video_terminal::script::GREETING_TYPO`. Each part of the script catches a named failure, and
+/// the driver's one report checks that a blank terminal is a defined picture. It sorts between
+/// the confinement and pattern tests (see notes/framebuffer-contract/the-display-tests.md).
 #[test_case]
 fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     let gpu_driver = program("gpu_driver").expect("no gpu_driver program in the initial ramdisk");
@@ -338,16 +339,16 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
     }
 }
 
-/// **A key pressed on a real device becomes the byte a terminal receives** (milestone 29's
-/// input).
+/// **A key pressed on a real device becomes the byte a terminal receives** (milestone 29's input).
 ///
 /// A confined virtio-input driver, behind the GPU's PCIe transport and IOMMU domain, checks the
-/// device ID, posts device-writable event buffers, takes a real key event by interrupt, maps it with
-/// `video_terminal::keymap` and publishes the byte in the compositor's input ring. The host presses
-/// `video_terminal::script::HOST_KEY` with `sendkey`. The driver holds no client endpoint and rings
-/// a content-free doorbell, so it cannot choose who receives a key. From the ring onward is
-/// `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`, at the
-/// seam DECISIONS §33 drew (notes/glyphs/terminal-and-proof.md).
+/// device ID, posts device-writable event buffers, takes a real key event by interrupt, maps it
+/// with `video_terminal::keymap` and publishes the byte in the compositor's input ring. The host
+/// presses `video_terminal::script::HOST_KEY` with `sendkey`. The driver holds no client endpoint
+/// and rings a content-free doorbell, so it cannot choose who receives a key. From the ring onward
+/// is `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`, at
+/// the seam of DECISIONS §33 (the compositor's authority is memory, not messages)
+/// (notes/glyphs/terminal-and-proof.md).
 #[test_case]
 fn a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte() {
     let keyboard_driver =

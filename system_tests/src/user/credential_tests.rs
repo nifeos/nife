@@ -2,10 +2,10 @@ use credential_service as cs;
 
 use super::*;
 
-/// Wire the whole system once: the entropy service, the credential service, and the provisioner
-/// that fills and seals the store. Returns the wiring, the provisioner's report and the service's
-/// readiness report, or `None` when the mmio virtio-rng device is not attached (correct on a bare
-/// board boot, milestone 145). `None` is memoized too, so the failed probe runs once per boot.
+/// Wire the entropy service, the credential service and the provisioner that seals the store.
+/// Returns the wiring, the provisioner's report and the service's readiness report, or a memoized
+/// `None` when no mmio virtio-rng device is attached (milestone 145 (a test that needs hardware the
+/// boot doesn't have can say so)), so a bare board boot probes once.
 ///
 /// Once per boot, because the seal is irreversible: a second provisioner would `CALL` an endpoint
 /// whose receiver is gone and block forever. `login_tests` and `login_user_schedule_tests` share
