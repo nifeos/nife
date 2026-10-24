@@ -216,8 +216,7 @@ path changed. The registry itself is 21,904 bytes of `.bss` at 288 slots.
   primitive. The unmapper stands down when it finds the reader on its own core, and the test picks
   a fresh target, up to 16 times. Sixteen co-placements in a row, or a migration between that check
   and the `UNMAP`, still fail a correct kernel on the guard's "proves nothing about another core's
-  TLB" assertion. The guard fired once on a correct kernel, on the cpu-matrix `rv64` leg of CI run
-  37405717281 (2026-10-06 UTC), on a branch that touched neither the test nor the scheduler.
+  TLB" assertion.
 - The negative control proves the loader, not the boot. It drives the `supervision_protocol` code
   the progenitor builds boot servers with, in a fixture granted its own space the way the kernel
   grants the progenitor's. A boot that wrote into a boot server would kill the progenitor, so the

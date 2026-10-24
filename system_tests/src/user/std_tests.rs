@@ -182,11 +182,11 @@ fn printable(bytes: &[u8]) -> &str {
 /// asserted identically on each ISA (rule 5, §19 (architectural parity is a tenet)).
 ///
 /// A block server brings up the crash test's own disk and an FS server mounts it. The driver writes
-/// payload A, reads it back and reports it acknowledged; its second write walks into the injector,
-/// which tears a block at 2048 bytes and traps with the commit unwritten (the `CUT` word says the
-/// kill was the injector's). A different FS-server process mounts the disk, its readiness sentinel
-/// being the consistency result, and a fresh client reads which payload is there. Either payload
-/// passes; a mixture, a length nobody wrote or the pre-boot contents fail (notes/fs-server.md).
+/// payload A, reads it back and reports it acknowledged; its second write hits the injector, which
+/// tears a block at 2048 bytes and traps with the commit unwritten (`CUT` says the kill was the
+/// injector's). A second FS-server process mounts the disk, its readiness sentinel the consistency
+/// result, and a client reads the payload. Either payload passes; a mixture, a length nobody wrote
+/// or the pre-boot contents fail. See notes/fs-server/crash-consistency.md.
 pub(super) fn assert_a_kill_mid_transaction_recovers(
     blk_image: &'static [u8],
     redoxfs_server_image: &'static [u8],

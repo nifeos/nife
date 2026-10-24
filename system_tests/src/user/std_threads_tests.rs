@@ -1,13 +1,13 @@
 //! Milestone 812 (`std::thread::spawn` runs real threads in one address space)'s exit test, on all
 //! three architectures (§19 (architectural parity is a tenet)).
+//!
 //! The `std_threads` program is ordinary `std` Rust: four threads, an `AtomicU64` and a
 //! `Mutex<u64>` a million increments each, a `thread_local!` per thread, and
-//! `available_parallelism`. It runs here the way a loader that gives a program threads builds it:
-//! a process created around its space, its first thread joined to that process, and the runtime's
-//! fixed slots filled in the process's shared table, the three new ones included (its own process
-//! with `BIND`, its own first thread, its own space). Then its transcript is the verdict.
-//!
-//! The block's second check, `rayon`'s parallel sum, is `std_rayon`, run the same way.
+//! `available_parallelism`. It runs the way a loader that gives a program threads builds it: a
+//! process created around its space, its first thread joined to it, and the runtime's fixed slots
+//! filled in the process's shared table, the three new ones included (its own process with `BIND`,
+//! its own first thread, its own space); its transcript is the verdict. The block's second check,
+//! `rayon`'s parallel sum, is `std_rayon`, run the same way.
 
 use super::*;
 use crate::cap::Rights;

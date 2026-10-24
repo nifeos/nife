@@ -32,9 +32,9 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 
 /// `SEND_CAP`'s rights register cannot widen a right, and a GRANT-less capability cannot be lent.
 ///
-/// From `READ | GRANT`, a mask of `READ | WRITE | GRANT` fails `Delegation::derive`'s subset check;
-/// from `READ | WRITE`, a strict-subset mask of `READ` fails the GRANT gate. Both answer
-/// `NotPermitted` through an endpoint cap with `WRITE`, and no sender is left waiting after each.
+/// From `READ | GRANT`, a mask adding `WRITE` fails `Delegation::derive`'s subset check; from
+/// `READ | WRITE`, `READ` alone fails the GRANT gate. The endpoint cap has `WRITE`, so each
+/// `NotPermitted` is the delegation rule's, not the endpoint gate's; no sender is left waiting.
 ///
 /// Falsification: attested 2026-10-12. On patagonia, aarch64, with the subset check in
 /// `Delegation::derive` patched to `if false && ...`, the run went red by the watchdog, since the

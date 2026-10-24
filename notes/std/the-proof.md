@@ -114,16 +114,15 @@ writer's thread, and each of those is a hang waiting for its first abort.
 
 `std_tests::drain_sink_from` is for a caller that knows the writer's thread (milestone 514 (the HVF
 std listener hangs in some full runs)). Without it, a writer that aborts leaves the reader parked,
-and the suite's watchdog fires a minute later and calls it a lost wakeup. That is how
-`a_std_program_serves_a_granted_listening_port` read on the HVF leg: its panic message had been
-received and nothing printed it. The calling thread binds a notification and arms a timer on it
-every `WRITER_CHECK_MS`. A bound notification ends a `RECEIVE` (§101 (notification objects), the
-`x4 == BOUND` tag), so the receive returns a sink message or a tick. On a tick it asks whether the
-writer's thread still resolves, and a name is generational, so "gone" means gone. It is a poll, not
-an event, because an unsupervised thread's death signals nobody. Making it an event would mean
-spawning the writer supervised, which changes who reaps it. `echo` prints each line as it arrives,
-indented under the test's own line, so the host relay can stamp it on the inbound prober's clock
-(`xtask/src/inbound.rs`). The comparison is made on the bytes either way.
+and the suite's watchdog fires a minute later and calls it a lost wakeup. The calling thread binds a
+notification and arms a timer on it every `WRITER_CHECK_MS`. A bound notification ends a `RECEIVE`
+(§101 (notification objects), the `x4 == BOUND` tag), so the receive returns a sink message or a
+tick. On a tick it asks whether the writer's thread still resolves, and a name is generational, so
+"gone" means gone. It is a poll, not an event, because an unsupervised thread's death signals
+nobody. Making it an event would mean spawning the writer supervised, which changes who reaps it.
+`echo` prints each line as it arrives, indented under the test's own line, so the host relay can
+stamp it on the inbound prober's clock (`xtask/src/inbound.rs`). The comparison is made on the bytes
+either way.
 
 The tick is a wake, and a wake is progress to the suite's lost-wakeup watchdog
 (`testing::watchdog_tick`). So a writer that is alive but stuck runs to the test's own budget (90 s
