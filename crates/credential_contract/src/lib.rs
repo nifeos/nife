@@ -234,8 +234,9 @@ pub const fn is_authenticated(r0: u64) -> bool {
 }
 
 /// The one login the gates share, so several programs agree on an account down to the byte. It is
-/// [MS-NLMP] §4.2.1's published account, so a gate asserts against numbers Microsoft printed. A
-/// fixture, not a deployment: a real share's account must never be these (notes/smb.md's BUGS).
+/// the account section 4.2.1 of [MS-NLMP] publishes, so a gate asserts against numbers Microsoft
+/// printed. A fixture, not a deployment: a real share's account must never be these (notes/smb.md's
+/// BUGS).
 /// See notes/credentials/contract.md.
 pub mod fixture {
     /// The resource the SMB gate's share authenticates against: the name its NTLM key is stored
@@ -246,14 +247,14 @@ pub mod fixture {
     pub const SMB_PASSWORD: &[u8] = b"Password";
     /// The account name bound into the stored key at provisioning time.
     pub const SMB_USER: &[u8] = b"User";
-    /// The domain bound into it. Not uppercased anywhere, which is [MS-NLMP] §3.3.2's asymmetry
-    /// and the detail a reimplementation gets wrong silently.
+    /// The domain bound into it. Not uppercased anywhere, which is the asymmetry of section 3.3.2
+    /// of [MS-NLMP] and the detail a reimplementation gets wrong silently.
     pub const SMB_DOMAIN: &[u8] = b"Domain";
 
-    /// The three people every credential fixture in this tree authenticates (milestone 293), as
-    /// identity and secret pairs rather than parallel arrays, so an insertion cannot pair `bob`
-    /// with `carol`'s password. `carol` has no home subtree in `kernel::user::login_tests`. See
-    /// notes/credentials/contract.md.
+    /// The three people every credential fixture in this tree authenticates (milestone 293 (a role
+    /// that differs only in its credentials is an argument)), as identity and secret pairs rather
+    /// than parallel arrays, so an insertion cannot pair `bob` with `carol`'s password. `carol` has
+    /// no home subtree in `kernel::user::login_tests`. See notes/credentials/contract.md.
     pub const PEOPLE: [(&[u8], &[u8]); 3] = [
         (b"alice", b"correct horse battery staple"),
         (b"bob", b"a different secret entirely"),
@@ -564,8 +565,9 @@ mod proofs {
         match read(&page, w0) {
             None => {}
             Some((identity, secret)) => {
-                // The shifts as literals, the wire format (milestone 211): asserting only
-                // against `id_len` and `secret_len` would prove that `read` used them.
+                // The shifts as literals, the wire format (milestone 211 (a harness that states
+                // its property through the function under test cannot see that function break)):
+                // asserting only against `id_len` and `secret_len` proves that `read` used them.
                 assert!(identity.len() == ((w0 >> 16) & 0xffff) as usize);
                 assert!(secret.len() == (w0 & 0xffff) as usize);
                 assert!(identity.len() == id_len(w0));
