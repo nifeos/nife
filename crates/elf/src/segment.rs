@@ -25,9 +25,10 @@ pub struct Segment<'a> {
     ///
     /// A loader mapping into a fresh address space, such as `kernel/src/user.rs`, wants
     /// [`vaddr`](Self::vaddr) and never this. Every user program here has `paddr == vaddr`; the
-    /// kernel image does not, and no fixed offset relates the two (`kernel/link-x86_64.ld`). A plain
-    /// `u64` until milestone 200 (a virtual address and a physical address stop being the same type).
-    /// See notes/elf.md ("`p_paddr` is not `p_vaddr`, and the trap is that it usually is").
+    /// kernel image does not, and no fixed offset relates the two (`kernel/link-x86_64.ld`). A
+    /// plain `u64` until milestone 200 (a virtual address and a physical address stop being the
+    /// same type). See notes/elf.md ("`p_paddr` is not `p_vaddr`, and the trap is that it usually
+    /// is").
     pub paddr: u64,
 
     /// How much **memory** it occupies. May exceed `data.len()`.

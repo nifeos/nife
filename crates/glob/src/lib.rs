@@ -622,9 +622,9 @@ mod tests {
         let mut checked = 0u64;
         let mut hits = 0u64;
 
-        // Under Miri, every 61st pattern: 61 is prime and not a power of the 9-byte alphabet, so the
-        // sample lands on every length and role, ~44,000 comparisons. The complete enumeration is
-        // native-only; "Miri-clean" means the sample (notes/undefined-behavior.md).
+        // Under Miri, every 61st pattern: 61 is prime and not a power of the 9-byte alphabet, so
+        // the sample lands on every length and role, ~44,000 comparisons. The complete enumeration
+        // is native-only; "Miri-clean" means the sample (notes/undefined-behavior.md).
         let stride: u64 = if cfg!(miri) { 61 } else { 1 };
         for plen in 0..=5usize {
             let combos = (PAT.len() as u64).pow(plen as u32);
@@ -670,11 +670,12 @@ mod tests {
     /// **The worst case over the proof's own domain, measured rather than guessed**: where the
     /// harnesses' `#[kani::unwind]` numbers come from.
     ///
-    /// An unwind bound must exceed the most iterations any loop runs, and one set too high grows the
-    /// formula for nothing. Every outer iteration adds at least one step, so the worst step count is
-    /// a safe bound on iterations. The nine-byte alphabet is sound because the step count depends on
-    /// a byte's syntactic role, not its value. Skipped under Miri: a strided sample can miss the
-    /// pinned argmax (`at_three == 10`) and fail against correct code. See notes/glob/proofs.md.
+    /// An unwind bound must exceed the most iterations any loop runs, and one set too high grows
+    /// the formula for nothing. Every outer iteration adds at least one step, so the worst step
+    /// count is a safe bound on iterations. The nine-byte alphabet is sound because the step count
+    /// depends on a byte's syntactic role, not its value. Skipped under Miri: a strided sample can
+    /// miss the pinned argmax (`at_three == 10`) and fail against correct code. See
+    /// notes/glob/proofs.md.
     #[test]
     #[cfg_attr(
         miri,
@@ -724,13 +725,15 @@ mod tests {
 
     /// **The classic backtracking bomb, at a scale that would settle the question.**
     ///
-    /// `a*a*a*...*b` against a long run of `a` with no `b` makes a recursive matcher try every split
-    /// of the run between the stars. With ten stars and 100,000 bytes this one walks the name a few
-    /// times, and its measured step count is under the [`cost_bound`] computed before the match.
+    /// `a*a*a*...*b` against a long run of `a` with no `b` makes a recursive matcher try every
+    /// split of the run between the stars. With ten stars and 100,000 bytes this one walks the name
+    /// a few times, and its measured step count is under the [`cost_bound`] computed before the
+    /// match.
     #[test]
     fn the_pathological_pattern_stays_inside_its_bound() {
-        // 100,000 bytes native, where a quadratic matcher would show; 2,000 under Miri, which cannot
-        // afford ~4M matcher steps. Both assertions run at both sizes (notes/undefined-behavior.md).
+        // 100,000 bytes native, where a quadratic matcher would show; 2,000 under Miri, which
+        // cannot afford ~4M matcher steps. Both assertions run at both sizes
+        // (notes/undefined-behavior.md).
         const NAME_LEN: usize = if cfg!(miri) { 2_000 } else { 100_000 };
         let name = [b'a'; NAME_LEN];
         let pattern = b"a*a*a*a*a*a*a*a*a*a*b";
@@ -803,9 +806,9 @@ mod tests {
     /// count stays under [`cost_bound`], which a counter stuck at zero satisfies; these say what it
     /// counts, as differences between near-identical matches.
     ///
-    /// The range is asserted twice. At the head of a one-member class `scanned` is 2 and the tail is
-    /// 2, so `+`, `*`, `-` and `/` mutations of `scanned += after_hi - after_lo` agree; one member in
-    /// front of the range separates them.
+    /// The range is asserted twice. At the head of a one-member class `scanned` is 2 and the tail
+    /// is 2, so `+`, `*`, `-` and `/` mutations of `scanned += after_hi - after_lo` agree; one
+    /// member in front of the range separates them.
     #[test]
     fn each_class_feature_costs_its_own_scan() {
         let steps = |p: &[u8], n: &[u8]| match_steps(p, n, Dot::Special).1;
@@ -879,8 +882,8 @@ mod verification {
     use super::*;
 
     /// **Three, measured rather than chosen**: four bytes each passed 3 GB and ten minutes. Three
-    /// reaches `[a]`, `\*a`, a trailing backslash, an unterminated bracket and two stars; `[!a]` and
-    /// `[a-b]` are reached by `a_negated_class_is_the_exact_complement_of_the_class`.
+    /// reaches `[a]`, `\*a`, a trailing backslash, an unterminated bracket and two stars; `[!a]`
+    /// and `[a-b]` are reached by `a_negated_class_is_the_exact_complement_of_the_class`.
     const P: usize = 3;
     const N: usize = 3;
 
@@ -984,8 +987,8 @@ mod verification {
     ///
     /// Under [`Dot::Special`] a name beginning with `.` matches only a pattern beginning with a
     /// literal `.`, and any other name matches identically under both settings. The name is bounded
-    /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`, `\.x`
-    /// and `[.]` are reachable. See notes/glob/proofs.md.
+    /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`,
+    /// `\.x` and `[.]` are reachable. See notes/glob/proofs.md.
     /// Falsification: replayable `crates/glob/falsifications/verification.the_dot_rule_only_touches_names_that_start_with_a_dot.patch`
     #[kani::proof]
     #[kani::unwind(9)]

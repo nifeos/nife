@@ -14,8 +14,8 @@ pub(crate) const EM_X86_64: u16 = 62;
 /// Every `e_machine` nife runs, the one list the host-dependent constants below derive from.
 ///
 /// Adding an architecture is one edit here and one arm of `EXPECTED_MACHINE`; forgetting either
-/// fails the build (see [`FOREIGN_MACHINES`]). Exported for callers with a per-machine obligation of
-/// their own, such as `crates/elf/tests/fuzz_seed.rs`. See notes/elf/parser.md.
+/// fails the build (see [`FOREIGN_MACHINES`]). Exported for callers with a per-machine obligation
+/// of their own, such as `crates/elf/tests/fuzz_seed.rs`. See notes/elf/parser.md.
 pub const KNOWN_MACHINES: [u16; 3] = [EM_AARCH64, EM_RISCV, EM_X86_64];
 
 /// The machine this build accepts, a compile-time fact: each architecture's build, the host test

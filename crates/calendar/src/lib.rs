@@ -709,8 +709,8 @@ impl DateTime {
     /// ```
     ///
     /// Accepts lowercase `t` and `z` and a space for `T` (RFC 3339 §5.6 and its NOTE), and discards
-    /// fractional seconds. Otherwise strict: fixed-width fields, a required offset, no trailing
-    /// bytes. `:60` is [`Error::LeapSecond`]. See notes/calendar.md ("Parsing: RFC 3339, strictly").
+    /// fractional seconds; otherwise strict, and `:60` is [`Error::LeapSecond`]. See
+    /// notes/calendar.md ("Parsing: RFC 3339, strictly").
     pub fn parse_rfc3339(s: &str) -> Result<DateTime, Error> {
         DateTime::parse_rfc3339_bytes(s.as_bytes())
     }
@@ -832,8 +832,8 @@ mod verification {
     const FIRST_DAY: i64 = days_from_civil(MIN_YEAR, 1, 1);
     const LAST_DAY: i64 = days_from_civil(MAX_YEAR, 12, 31);
 
-    /// Any representable `DateTime`, built from six symbolic fields and a symbolic offset, or `None`
-    /// for the field combinations that are not a real date.
+    /// Any representable `DateTime`, built from six symbolic fields and a symbolic offset, or
+    /// `None` for the field combinations that are not a real date.
     ///
     /// Building from fields skips `from_unix` and its expensive division, which is what lets the
     /// text harnesses cover the whole range; every `DateTime` is a valid `Civil` and offset.
@@ -865,8 +865,9 @@ mod verification {
     }
 
     /// A day number always decodes to a date that exists: year in range, month 1..=12, day within
-    /// that month's length in that year, and `Civil::new` accepts it. This stops the bijection above
-    /// from being vacuous; a decoder that consistently invented February 30 would still be one.
+    /// that month's length in that year, and `Civil::new` accepts it. This stops the bijection
+    /// above from being vacuous; a decoder that consistently invented February 30 would still be
+    /// one.
     /// Falsification: replayable `crates/calendar/falsifications/verification.a_day_number_always_decodes_to_a_real_date.patch`
     #[kani::proof]
     fn a_day_number_always_decodes_to_a_real_date() {
@@ -881,8 +882,8 @@ mod verification {
 
     /// The other direction, over every field value there is (February 30, hour 99 and year 10,000
     /// among them). Every combination `Civil::new` accepts survives a trip through its day number,
-    /// and its timestamp lies inside the supported range; `to_unix` multiplies, the cheap direction,
-    /// so the range assertion holds for every representable date.
+    /// and its timestamp lies inside the supported range; `to_unix` multiplies, the cheap
+    /// direction, so the range assertion holds for every representable date.
     /// Falsification: replayable `crates/calendar/falsifications/verification.every_real_date_survives_its_own_day_number.patch`
     #[kani::proof]
     fn every_real_date_survives_its_own_day_number() {
@@ -961,10 +962,10 @@ mod verification {
     /// The seconds round trip: the `86_400` split, and whether the code divides the way a calendar
     /// needs.
     ///
-    /// Bounded to 1968-01-01T00:00:00Z through 1971-12-31T23:59:59Z. The window straddles the epoch,
-    /// so it holds the negative timestamps truncating division gets wrong, a leap day (1968-02-29),
-    /// all twelve month lengths and three year boundaries. The calendar at other years is
-    /// `the_calendar_algorithms_are_mutual_inverses`'s.
+    /// Bounded to 1968-01-01T00:00:00Z through 1971-12-31T23:59:59Z. The window straddles the
+    /// epoch, so it holds the negative timestamps truncating division gets wrong, a leap day
+    /// (1968-02-29), all twelve month lengths and three year boundaries. The calendar at other
+    /// years is `the_calendar_algorithms_are_mutual_inverses`'s.
     /// Falsification: replayable `crates/calendar/falsifications/verification.unix_to_civil_and_back_is_the_identity.patch`
     #[kani::proof]
     fn unix_to_civil_and_back_is_the_identity() {
@@ -1030,9 +1031,10 @@ mod verification {
         assert!(f.len as usize <= FMT_CAP);
     }
 
-    /// The parser never panics on arbitrary bytes, every byte symbolic, at every length up to 26. It
-    /// may return any `Error`, but never index out of bounds, overflow or divide by zero. The input
-    /// is text this program did not write (a `date -s` argument), so this is a security property.
+    /// The parser never panics on arbitrary bytes, every byte symbolic, at every length up to 26.
+    /// It may return any `Error`, but never index out of bounds, overflow or divide by zero. The
+    /// input is text this program did not write (a `date -s` argument), so this is a security
+    /// property.
     /// Falsification: replayable `crates/calendar/falsifications/verification.parse_is_total_on_hostile_bytes.patch`
     #[kani::proof]
     #[kani::unwind(28)]
