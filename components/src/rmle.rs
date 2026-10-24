@@ -16,8 +16,7 @@
 //! | 2 | a report endpoint, `WRITE` | one message, sent right before `exit()` |
 //!
 //! `_start(spec, name_lo, name_hi)`: the filename arrives as `rm` takes one
-//! (`filesystem_contract::grant::{spec, pack_name}`). No listing right; [`load`] opens or creates
-//! only that one name.
+//! (`filesystem_contract::grant::{spec, pack_name}`); no listing right, and [`load`] opens only it.
 
 //! # What real `kilo` has that this does not
 //!
