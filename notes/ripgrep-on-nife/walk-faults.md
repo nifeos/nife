@@ -1,5 +1,7 @@
 # The three faults the prompt walk exposed
 
+*Name: provisional, for the parent's list of the walk's three faults. calef names files.*
+
 An appendix to [`../ripgrep-on-nife.md`](../ripgrep-on-nife.md), holding its "The walk at the
 prompt". The walk ran on 2026-10-07 (UTC) for milestone 121 (`ripgrep` on nife: enumeration as a
 capability, and what the walk costs).

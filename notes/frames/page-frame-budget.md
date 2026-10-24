@@ -1,5 +1,7 @@
 # The page frame budget: what a test boot spends, and what it gets back
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/frames.md](../frames.md), which summarizes it. This is the receipt for the
 failure that misled three milestones. It is written as a budget rather than as a story, because the
 number is the point.

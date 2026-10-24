@@ -20,6 +20,3 @@ behind each summary on it.
 Name: provisional, for the directory and every stem in it. The directory follows the `notes/<stem>/`
 appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named
 for its content. calef names directories and files, and `script/names --unratified` lists each stem.
-
-- `usb-stick-firmware-steps-xenon` Name: ratified 2026-10-18 (calef, "Yes") Refused `stick-firmware-steps`.
-- `network-boot-xenon` Name: ratified 2026-10-18 (calef, "Yes"). Kept: the directory names a boot path, not a machine, so the stem keeps its machine.

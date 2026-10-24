@@ -2,8 +2,8 @@
 
 A module is a file (`helpers/name_census.py`'s `is_module_file`): every `.rs` file under a `src/`
 directory outside vendored code, whether or not anyone wrote its block. So is a document directly
-under `design/`, `notes/` or `briefs/` (`is_top_document`), whose block is its own entry in that
-directory's README, and so is every `pub` item in a module (`pub_items`; constants and statics
+under `design/`, `notes/` or `briefs/` (`is_top_document`), whose block is a paragraph of its own
+opening `Name:`, and so is every `pub` item in a module (`pub_items`; constants and statics
 included, calef 2026-10-18 UTC). That is what lets `script/names` and `script/metrics` count every one, and it
 means a name with no block is visible, so it can be held to something. This holds it, with
 `helpers/file_length_ratchet.py`'s pattern on purpose: a committed list that only shrinks, a
@@ -24,8 +24,8 @@ record. `module_block` for what it holds each module to, `ratchet` for the famil
   file with three unblocked `pub fn new` holds three identical rows.
 - A name with no block beyond what the list holds fails. A new file or a new `pub` item is not on
   the list, so it arrives with its block: `//! Name: provisional, minted <date> (UTC) by <lane>.`
-  at the top of a module, `/// Name: ...` in an item's doc comment, or a README entry for a
-  document, is enough.
+  at the top of a module, `/// Name: ...` in an item's doc comment, or `*Name: ...*` under a
+  document's title, is enough.
 - A row with no unblocked name behind it (the name gained a block, or is gone) fails until it is
   removed, so dead rows cannot accumulate. `--bank` removes them.
 - Against the merge base a row may not be added. A rename moves its rows in the same change: a file
@@ -73,8 +73,8 @@ def remedy(path):
         return ('write `/// Name: provisional, minted <date> (UTC) by <lane>.` as a paragraph of its '
                 'doc comment (design/naming.md)')
     if path.endswith('.md'):
-        return (f'give it an entry in {os.path.dirname(path)}/README.md, a paragraph '
-                f'`` `{os.path.basename(path)}`: Name: provisional, minted <date> (UTC) by <lane>. ``')
+        return ('write `*Name: provisional, minted <date> (UTC) by <lane>.*` as the paragraph under '
+                'its title (design/naming.md)')
     return ('write its block, `//! Name: provisional, minted <date> (UTC) by <lane>.`, at the top '
             'of the file (design/naming.md)')
 

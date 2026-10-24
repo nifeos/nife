@@ -1,9 +1,7 @@
 //! The address-space layout and page budgets: every address a child or the progenitor maps at, each
 //! stack's budget, and the constants each stack's program must agree on. Kept in one file because
 //! its correctness is that entries do not collide, and that is checked by reading them side by
-//! side. Moved out of `lib.rs` unchanged but for visibility by milestone 843 (the system-
-//! initializer crate root is split along its seams), under §279 (the system-initializer crate root
-//! splits into private modules).
+//! side. How each budget was counted is in notes/system-initializer/budgets.md.
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -13,192 +11,110 @@ use super::*;
 /// `kernel::user::INITIAL_RAMDISK_VA`.
 pub(super) const INITIAL_RAMDISK_VA: u64 = address_space_map::runtime_window(0x2000_0000);
 
-/// Stack pages every child the progenitor builds gets, mapped down from `supervision_protocol::CHILD_STACK_VA`.
+/// Stack pages every child the progenitor builds gets, mapped down from
+/// `supervision_protocol::CHILD_STACK_VA`; measured, with four pages of headroom.
 ///
-/// **Twelve since DECISIONS §67**, and every step of that number was measured rather than chosen.
-/// Four overflowed at the first `ls > out.txt`; eight held until `2>` put a **second** `FileOut` on
-/// `run_pipeline`'s frame, each carrying a 256-byte staging buffer by value, and the scripted wiring
-/// faulted twenty-four bytes below its lowest page. Four extra rather than one, because every
-/// previous instance bought exactly enough and the next change found the wall again. The cost is
-/// 48 KiB of address space per child, which is nothing next to a page table.
-///
-/// `kernel::user::pipeline_service`'s `SHELL_EXTRA_STACK` must stay level with this: a test wiring
-/// with less headroom than the boot wiring finds faults the boot does not have
-/// (notes/pipes/the-boot.md).
-/// The kernel cannot depend on this crate (it would drag `user_mode_runtime`'s EL0 syscall stubs in), so that
-/// one is still a number in two places, and this is the one it follows.
+/// `kernel::user::pipeline_service`'s `SHELL_EXTRA_STACK` must stay level with this, or a test
+/// wiring finds faults the boot does not have (notes/pipes/the-boot.md). The kernel cannot depend
+/// on this crate, so that one is a second copy, and it follows this. See
+/// notes/system-initializer/budgets.md.
 pub const CHILD_STACK_PAGES: u64 = 12;
 
 /// Where a child that declares a clock maps it, read-only. Must match `components/src/date.rs`'s
 /// `CLOCK_VA` and `kernel/src/user/clock_service.rs`.
 pub(super) const CHILD_CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
 
-/// Where a child that declares the inert-configuration page maps it, read-only (DECISIONS §111).
-/// Must match `components/src/printenv.rs`'s `CONFIG_VA`. A different address from `std_service.rs`'s
-/// `CONFIG_PAGE_STD`: that std program is spawned by a different wiring entirely (the `-Zbuild-std`
-/// farm's own harness), in its own address space, so there is no collision to avoid, only two
-/// numbers that happen not to need to agree.
+/// Where a child that declares the inert-configuration page maps it, read-only (DECISIONS §111
+/// (inert configuration is a validated page)). Must match `components/src/printenv.rs`'s
+/// `CONFIG_VA`. `std_service.rs`'s `CONFIG_PAGE_STD` is another wiring's, and need not agree.
 pub(super) const CHILD_CONFIG_VA: u64 = address_space_map::pair_page(0x00e0_0000);
 
-/// **Whether the boot prompt's session is handed the machine statistics page** (milestone 126,
-/// DECISIONS §225 part 2). §225 ruled the page granted to every login by default and withholdable
-/// by the machine owner, and this is the owner's switch, in the one file the owner's other
-/// boot-time policy (the run-unvouched capability) already lives in. `false` and the shell never
-/// holds the page, so every `free` prints that it cannot see the machine and `vmstat` refuses,
-/// rather than either printing zeroes.
+/// **Whether the boot prompt's session is handed the machine statistics page**: the owner's
+/// switch for DECISIONS §225 (`free` sees the machine and your share) part 2, which grants the page
+/// by default and lets the owner withhold it. `false` and every `free` says it cannot see the
+/// machine and `vmstat` refuses, rather than printing zeroes.
 ///
-/// **An exception worth marking**: the page already travels with the session
-/// (`spawnproto::MACHINE_BIT`), so a per-login policy is `login` handing each session the page or
-/// not. Nothing hands it to `login` yet; this constant decides for the boot prompt alone.
+/// # BUGS
+///
+/// - It decides for the boot prompt alone; nothing hands the page to `login`.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
 pub const GRANT_MACHINE_PAGE: bool = true;
 
-/// Where a supervised (interruptible) child maps its shared job frame (DECISIONS §24 (interrupting the foreground process)). A pair page
-/// on the address-space map; must match `interrupt_heeder.rs` and
+/// Where a supervised (interruptible) child maps its shared job frame (DECISIONS §24
+/// (interrupting the foreground process)). Must match `interrupt_heeder.rs` and
 /// `interrupt_ignorer.rs`'s `JOB_PAGE_FRAME_VA`.
 pub(super) const CHILD_JOB_PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0030_0000);
 
-/// Pages of untyped split off our own budget and handed the shell (milestone 31), so the shell can
-/// in turn endow the programs it spawns (`run --mem N`) out of a budget that is genuinely *its own*.
-/// The shell shrinks this by N pages per grant; the pages a spawned child pins are not reclaimed in
-/// phase 1, so this is a session budget, not a renewable one. The number is
+/// Pages of untyped split off our own budget and handed the shell, which endows the programs it
+/// spawns (`run --mem N`) from it. A session budget, not a renewable one. The number is
 /// [`spawnproto::SHELL_BUDGET_PAGES`], which the shell reads too.
 pub(super) const SH_BUDGET_PAGES: u64 = spawnproto::SHELL_BUDGET_PAGES;
 
-/// **What the progenitor keeps for itself after the boot servers are up** (milestone 22, the interactive
-/// increment). It pays for one thing: the page tables reaching the loader's scratch window, which
-/// are the progenitor's own mappings and must never come out of a child's region (tearing that region down
-/// would free the progenitor's tables under a window it never unmaps). One L3 covers 512 scratch pages.
-///
-/// **Bounded since milestone 604 (provisional).** The loader's cursor used to climb forever, so this
-/// budget was spent one table per 2 MiB of everything ever built, and ran dry after about 200 MiB of
-/// builds past boot (the block has the arithmetic): about seventy-five `ripgrep`-sized spawns, a
-/// little before the cursor would have reached the initial ramdisk window. Now the cursor wraps
-/// inside `supervision_protocol::SCRATCH_WINDOW`, whose tables cost at most
-/// `supervision_protocol::SCRATCH_TABLE_PAGES` (32) however long the machine runs. The assertion
-/// below keeps that half of this budget spoken for; the other half pays for `job_undertaker`, which
-/// is built out of this region (its image, twelve stack pages, its tables, its address space and
-/// thread), and the tables under `ACTIVATION_FS_VA` and `IMAGE_STAGING_VA`.
+/// **What the progenitor keeps for itself after the boot servers are up**: the page tables
+/// reaching the loader's scratch window, which must never come out of a child's region, and the
+/// building of `job_undertaker`. The scratch window's tables cost at most
+/// `supervision_protocol::SCRATCH_TABLE_PAGES`, and the assertion below keeps that half spoken for.
+/// See notes/system-initializer/budgets.md.
 ///
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_OWN_PAGES`.
 pub const PROGENITOR_RESERVED_PAGES: u64 = 128;
 const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * supervision_protocol::SCRATCH_TABLE_PAGES);
 
 /// **One job's region**: everything a spawned program is made of, so a single reclaim frees all of
-/// it. The biggest program the prompt can spawn is `date` at seven pages, plus
-/// [`CHILD_STACK_PAGES`], a TCB, an address-space root, the intermediate tables for the four windows
-/// a child touches, and the §13 mapping records. Forty was that with room to spare, and it is spent
-/// per *live* job rather than per job ever run.
-///
-/// **Forty-one since 2026-09-26**, and the one is counted rather than chosen. The address-space map
-/// of milestone 206 (a program image has under 896 KiB) put a child's image and stack in the second
-/// gigabyte and left its pair pages in the first, so a child with any window mapped now walks two
-/// gigabyte-level tables where it walked one. The stack's leaf table absorbed the current-CPU page's,
-/// so that is the whole difference. The "room to spare" was not there: the first `x86_64`
-/// `script/swish-check` after the map refused `mdr gate.txt`, whose debug image is 18 pages rather
-/// than `date`'s seven, and `x86_64` also pays three tables for its timebase page.
-///
-/// **Forty-eight since milestone 126 (the `procps` package), and counted the same way.** `top`
-/// gained the machine statistics page, a pair page of its own, and on `x86_64` its debug image is
-/// nineteen pages; at forty-one the progenitor refused to build it ("could not spawn") in the
-/// `x86_64` leg of `script/swish-check`, and at forty-eight that leg passes every line. The pool is
-/// six of these, so the raise costs the job pool forty-two pages.
+/// it. Spent per live job, not per job ever run. Counted from the largest debug image the prompt
+/// spawns, [`CHILD_STACK_PAGES`], a TCB, an address-space root, the tables for the windows a child
+/// touches and the mapping records of §13 (capability revocation and untyped reclamation); see
+/// notes/system-initializer/budgets.md.
 pub(super) const JOB_REGION_PAGES: u64 = 48;
 
 /// **One directory-granted job's region**: the program *and* the `fs_subtree_caretaker` that carries
-/// its grant, plus the two endpoints between them, all out of one carve.
-///
-/// One region rather than two is DECISIONS §92 (a caretaker is supervised by the client it serves)
-/// read through the mechanism of §40 (a supervisor's death is its subtree's death). A caretaker's
-/// serve loop never returns, so it never dies of its own accord; built in a region of its own, that region never
-/// comes home and §16's LIFO rule then pins the region above it too, and six `rm`s would end the
-/// prompt. Built out of the region it serves, it is inside the client's subtree, and the one reclaim
-/// `job_undertaker` already performs ends both. **The two endpoints are retyped from this region too,
-/// and that is load-bearing rather than tidy**: `sched::reap_region_objects` sweeps a region's
-/// endpoints before it looks at its threads, and that sweep is what wakes a caretaker parked in
-/// `RECEIVE` so it can be collected. An endpoint carved from the progenitor's own budget would leave it blocked on
-/// something the teardown never touches, and a blocked thread never reaches the `schedule()` that
-/// spends §16's kill.
-///
-/// **Ninety-six rather than eighty**, and the extra is not slack for its own sake: the caretaker is
-/// a second address space with its own tables and its own stack, and the failure mode of getting it
-/// wrong is `build_child` answering `Err(())` mid-boot-command, which reads at the prompt as "could
-/// not spawn" with no way to tell a small region from an empty pool.
-///
-/// **Ninety-eight since 2026-09-26**: two address spaces, each one gigabyte-level table dearer under
-/// the address-space map, for the reason [`JOB_REGION_PAGES`] gives.
+/// its grant, plus the two endpoints between them, all out of one carve, so the client's one reap
+/// ends both (DECISIONS §92 (a caretaker is supervised by the client it serves), §40 (a
+/// supervisor's death is its subtree's death)). The endpoints must come from this region: the reap
+/// sweeps them, and that is what wakes a caretaker parked in `RECEIVE`. See
+/// notes/system-initializer/children.md and notes/system-initializer/budgets.md.
 pub(super) const DIR_JOB_REGION_PAGES: u64 = 98;
 
-/// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it.
-///
-/// Four rather than [`CHILD_STACK_PAGES`]'s twelve, and it is a measurement of the program rather
-/// than a guess: it has no allocator, no recursion, and one frame that matters, a
-/// `[Option<u64>; 16]` handle table plus a `grant::MAX_NAME` name buffer. Twelve pages per caretaker
-/// would be 32 KiB of a region this crate is already sizing carefully.
+/// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
+/// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table and a
+/// `grant::MAX_NAME` name buffer).
 pub(super) const CARETAKER_STACK_PAGES: u64 = 4;
 
 /// Where a `fs_subtree_caretaker` and the program it serves both map the FS contract's shared page.
 /// Must match `components/src/fs_subtree_caretaker.rs`'s `PAGE_VA` and `components/src/rm.rs`'s.
 ///
-/// One address for both because they are two ends of one contract and neither is the other's parent:
-/// a request travels caretaker-to-server and program-to-caretaker through the same frame, so a
-/// second VA would only be a second name for the same page.
+/// One address for both, because a request travels caretaker-to-server and program-to-caretaker
+/// through the same frame.
 pub(super) const FS_CLIENT_PAGE_VA: u64 = address_space_map::pair_page(0x0060_0000);
 
 /// Where `fs_nameset_caretaker` reads its name set, read-only (milestone 205). Must match that
 /// program's `SET_VA`, as [`FS_CLIENT_PAGE_VA`] matches its `PAGE_VA`.
 pub(super) const NAMESET_PAGE_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
-/// **The job pool.** Six live jobs at once, which is far more than a prompt has ever needed and is
-/// deliberately small: the whole claim of this increment is that a *bounded* budget is enough once
-/// the regions come back, so a budget nobody could exhaust would prove nothing. `script/swish-check`
-/// runs thirteen jobs through it, so widening this silently retires that gate.
-///
-/// **Plus one `std` program's region** (milestone 595 (provisional)), so a `std` job has room of its
-/// own rather than needing every native job before it reclaimed first: it is nearly ten native
-/// regions' worth ([`grant_plan::STD_REGION_PAGES`]), and a pool of 240 would fit it only when
-/// empty. The ratchet above still holds at 630 pages: `script/swish-check` runs more than twenty
-/// jobs, which is well past what the pool could hold without the regions coming back.
+/// **The job pool**: six live native jobs and one `std` program's region
+/// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
+/// through it than it could hold without the regions coming back, so widening it silently retires
+/// that gate. See notes/system-initializer/budgets.md.
 pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION_PAGES;
 
-/// **The image pool**: where a file run by its path, or a package being installed, is staged and
-/// built (milestone 595 (the shell runs a `std` program), 2026-09-27). Provisional name.
-///
-/// Room for the largest image twice (this process's own copy, which §219 has it hash, and the
-/// child's pages) and a `std` program's heap beside it: `grant_plan::image_region_pages` for a
-/// `std` image of [`spawnproto::IMAGE_MAX_PAGES`], plus its staging. About 9.5 MiB of the
-/// progenitor's 48.
-///
-/// **Apart from [`JOBS_BUDGET_PAGES`] on purpose.** That pool is small so that `script/swish-check`
-/// runs more jobs through it than it could hold without the regions coming back; folding 2,400
-/// pages into it would retire that ratchet without saying so. Named programs never carve from this
-/// one, and an image never carves from that one.
+/// **The image pool** (a provisional name), apart from [`JOBS_BUDGET_PAGES`], where an image run by
+/// path or installed is staged and built: the largest image twice (the child's pages, and the copy
+/// §219 (how the shell names an installed program to the spawner) has us hash) and a `std` heap.
 ///
 /// # BUGS
 ///
-/// - **The image is held three times while a child is built**: the shell's frames, this copy, and
-///   the child's pages. Hashing each byte as it is copied into the child would drop this copy and
-///   halve the pool, but it means building the child from the caller's still-mapped frames, and
-///   the tree's one loader would have to learn to hash as it fills. That is more work than the copy,
-///   and the copy is why this pool is twice the image rather than once: a choice made on effort.
-/// - **Reserved, not borrowed.** These pages are set aside at boot whether or not an image ever
-///   runs, as the shell's matching staging pages are.
+/// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
+/// - Reserved at boot, not borrowed, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
     spawnproto::IMAGE_MAX_PAGES,
     grant_plan::StartupContract::Std,
     JOB_REGION_PAGES,
 ) + spawnproto::IMAGE_MAX_PAGES;
 
-/// **Everything the job pool can have built at once fits in the loader's scratch window**, twice
-/// over (milestone 604 (provisional)). Every page the progenitor builds for a job is mapped once in
-/// its own scratch window and stays mapped until the job's region is destroyed, so the window must
-/// hold the whole pool at once, plus an image request's peek pages, beside the boot servers' pages,
-/// which are never given back. Half the window is left for those. They were not measured, and the
-/// sum of every program in the archive is under 2,400 pages of file, so half is generous; a pool
-/// grown past this fails the build here rather than a spawn at run time. The image pool
-/// ([`IMAGE_POOL_PAGES`], milestone 595 (the shell runs a `std` program)) is built through the
-/// same window, so it counts too.
+/// **Everything both pools can have built at once, and an image request's views, fit in half the
+/// loader's scratch window**: a job's pages stay mapped there until its region is destroyed. The
+/// other half is the boot servers', unmeasured; see notes/system-initializer/budgets.md.
 const _: () = assert!(
     JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawnproto::IMAGE_MAX_PAGES
         <= supervision_protocol::SCRATCH_WINDOW_PAGES / 2
@@ -213,35 +129,28 @@ pub(super) const PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS: u64 =
     address_space_map::pair_page(0x0f00_0000);
 
 /// Where the progenitor briefly maps the virtio-rng DMA page, in **its own** address space, to read
-/// [`VIRTIO_DMA_PHYS_OFFSET`] back out before handing the same frame on to entropy. Distinct from
-/// [`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`]. Given up with `UNMAP` the moment the offset is read (milestone 95 (an unmap
-/// primitive), §249 (a running address space stays nameable)); it was mapped for the life of the
-/// boot until then.
+/// [`VIRTIO_DMA_PHYS_OFFSET`] back out before handing the same frame on to entropy. Given up with
+/// `UNMAP` the moment the offset is read (§249 (a running address space stays nameable)).
 pub(super) const RNG_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f10_0000);
 
 /// The DMA region's own physical base, written inside the page itself at its last eight bytes
-/// (`abi::virtio::DMA_PHYS_OFFSET`, which carries the reasoning for exactly this offset). It was a
-/// second copy of the kernel's number until milestone 600 (provisional), on a "no crate the two
-/// could share" argument that `abi` already answered; it became a crate constant when `gpu_driver`
-/// and `keyboard_driver` started reading it too, which made it a contract between peer programs.
+/// (`abi::virtio::DMA_PHYS_OFFSET`, which carries the reasoning for exactly this offset), shared
+/// with the drivers that read it.
 pub(super) const VIRTIO_DMA_PHYS_OFFSET: u64 = abi::virtio::DMA_PHYS_OFFSET;
 
 /// Where entropy maps its own DMA page. Must match `components/src/entropy.rs`'s `DMA_VA`.
 pub(super) const RNG_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 
-/// `entropy.rs`'s own spawn-argument convention (`components/src/entropy.rs`'s `MODE_VIRTIO`): the
-/// kernel's (and now this crate's) shared understanding with the one program it spawns, not a wire
-/// contract between two user programs, so rule 7 does not apply the way it does to `RNG_DMA_VA`.
+/// `components/src/entropy.rs`'s `MODE_VIRTIO`: a spawner's understanding with the one program it
+/// spawns, not a contract between two user programs, so rule 7 does not make it a crate.
 pub(super) const RNG_MODE_VIRTIO: u64 = 0;
 
 // -------------------------------------------------------------------------------------------
-// The network stack (milestone 590 (provisional), the booted system starts its network stack).
+// The network stack (milestone 590 (the booted system starts its network stack)).
 // -------------------------------------------------------------------------------------------
 
 /// Where this process briefly maps the network card's DMA page to read [`VIRTIO_DMA_PHYS_OFFSET`]
-/// back out, [`RNG_DMA_PEEK_VA`]'s twin: given up with `UNMAP` once the offset is read (milestone 95
-/// (an unmap primitive)). Until then this process kept a writable view of the NIC's rings for the
-/// life of the boot.
+/// back out, [`RNG_DMA_PEEK_VA`]'s twin: given up with `UNMAP` once the offset is read.
 pub(super) const NET_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f30_0000);
 
 /// Where `net_stack` maps its DMA page. Must match `components/src/virtio_net_transport.rs`'s `DMA_VA`, the
@@ -249,12 +158,8 @@ pub(super) const NET_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f30_0000
 pub(super) const NET_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 
 /// `net_stack`'s heap budget, in pages: matches
-/// `kernel::user::virtio_service::NET_SERVER_BUDGET_PAGES`,
-/// which carries the measurement (the heap is capped at 96 pages by `net_stack`'s own `HEAP_MAX`,
-/// and the rest is page tables for the heap and for clients' shared frames). Stated on this side for
-/// [`CRED_BUDGET_PAGES`]'s reason: a spawner states the budget it hands, and there is no crate a
-/// kernel constant and a user-mode spawner could share it through that would not be one number
-/// with two readers who both need the comment.
+/// `kernel::user::virtio_service::NET_SERVER_BUDGET_PAGES`, which carries the measurement. A
+/// spawner states the budget it hands; see notes/system-initializer/budgets.md.
 pub(super) const NET_STACK_BUDGET_PAGES: u64 = 128;
 
 /// `net_stack`'s stack, in pages: the kernel harness maps eight extra pages under the one every
@@ -271,9 +176,8 @@ pub(super) const NET_STACK_STACK_PAGES: u64 = 9;
 /// The pull request records no other name considered.
 pub(super) const RESOLVER_BUDGET_PAGES: u64 = 16;
 
-/// `domain_name_resolver`'s stack, in pages, counted whole as [`NET_STACK_STACK_PAGES`] is: the kernel
-/// harness's eight extra (measured: the debug build faulted below three on its first resolve,
-/// 2026-10-06 UTC) and the one every process gets.
+/// `domain_name_resolver`'s stack, in pages, counted whole as [`NET_STACK_STACK_PAGES`] is: the
+/// kernel harness's measured eight extra and the one every process gets.
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
 /// The kernel harness's `name_resolver_tests::RESOLVER_STACK_PAGES` is older; the pull request
@@ -285,9 +189,8 @@ pub(super) const RESOLVER_STACK_PAGES: u64 = 9;
 /// `_start`). [`RNG_MODE_VIRTIO`]'s reasoning.
 pub(super) const NET_STACK_ROLE_SERVER: u64 = 0;
 
-/// `line_editor.rs`'s own spawn-argument convention (`components/src/line_editor.rs`'s `MODE_CONSOLE`):
-/// [`RNG_MODE_VIRTIO`]'s own reasoning, one program over. The pre-milestone-177 wiring: prints
-/// through the console's bespoke two-endpoint protocol.
+/// `components/src/line_editor.rs`'s `MODE_CONSOLE`, for [`RNG_MODE_VIRTIO`]'s reasoning: prints
+/// through the console's two-endpoint protocol.
 pub(super) const LINE_EDITOR_MODE_CONSOLE: u64 = 0;
 /// `line_editor.rs`'s own `MODE_DISPLAY`: the `graphical_terminal` session's wiring, prints through
 /// `display_terminal`'s `OPERATION_WRITE`/one-`CALL` contract instead.
@@ -365,17 +268,11 @@ pub(super) const CRED_BUDGET_PAGES: u64 = 1536;
 /// `kernel::user::credential_service::CRED_STACK_PAGES`, itself a measurement (Argon2id's inner
 /// loop overflows one page) rather than a guess.
 pub(super) const CRED_STACK_PAGES: u64 = 16;
-/// `login`'s own construction budget under a real boot, in pages. Sized for a handful of real
-/// sessions across the boot's whole life (`OWN_UT_PAGES` 128 + `CHANNEL_UT_PAGES` 32, both
-/// `components/src/login.rs`'s own one-time costs, plus `CARETAKER_REGION_PAGES` 64 + `CLIENT_BUDGET_PAGES`
-/// 64 per session that never logs out), not the much larger figure
-/// `kernel::user::login_tests::CONSTRUCTION_PAGES` carries for a whole guest-test suite's worth of
-/// logins against one shared instance.
-///
-/// **Plus one durable session's budget** (milestone 152 (durable delegation)), which `login` splits
-/// at start-up whenever it is handed `user_timetable_keeper` and `timetable`, before it serves anyone. Without it,
-/// 768 pages less `login`'s 128 + 32 + the durable budget is less than nothing, and `login` stopped at
-/// `fail(2)`. Derived from `login_contract::durable::BUDGET_PAGES` so the two cannot drift.
+/// `login`'s own construction budget under a real boot, in pages: its one-time costs and a handful
+/// of sessions (`components/src/login.rs`'s `OWN_UT_PAGES`, `CHANNEL_UT_PAGES`,
+/// `CARETAKER_REGION_PAGES` and `CLIENT_BUDGET_PAGES`), plus the durable session's budget it splits
+/// at start-up, derived from `login_contract::durable::BUDGET_PAGES` so the two cannot drift. See
+/// notes/system-initializer/budgets.md.
 pub(super) const LOGIN_CONSTRUCTION_PAGES: u64 = 768 + login_contract::durable::BUDGET_PAGES;
 /// Extra stack pages `login` needs, beyond the one page `build_child` maps: matches
 /// `kernel::user::login_service::LOGIN_STACK_PAGES`, "sized against `credentialer.rs`'s own lesson"
@@ -392,11 +289,9 @@ pub(super) const CRED_RPT_READY: u64 = 0x_c2ed_0000_0000_0001;
 /// Must match `components/src/identity_provisioner.rs`'s own `RPT_OK`.
 pub(super) const IDP_RPT_OK: u64 = 1;
 
-/// **The demo identity this boot provisions**, once per boot, with a freshly generated password
-/// (see `have_login_stack`'s own block for the reasoning): a role name rather than a specific
-/// family member's, deliberately, because the whole point of a boot-generated credential is that
-/// nothing here has to decide *whose* account this is (`design/roadmap/0049-users-and-attribution.md`'s
-/// own BUGS names this as the reason the generated shape was recommended over a baked-in one).
+/// **The demo identity this boot provisions**, once per boot, with a freshly generated password: a
+/// role name, so nothing here decides whose account it is
+/// (`design/roadmap/0049-users-and-attribution.md`'s BUGS).
 pub(super) const DEMO_IDENTITY: &[u8] = b"operator";
 /// How many raw bytes of entropy the generated password draws. 12 bytes (96 bits) hex-encoded to
 /// [`PASSWORD_HEX_LEN`] printable characters: comfortably past what an online guesser could work

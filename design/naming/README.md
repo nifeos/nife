@@ -10,10 +10,6 @@ provisional, minted 2026-10-17: `--from <index>`, the spelling `jig install` use
 that two indexes offer (milestone 809 (the package client becomes a program)). Naming is calef's;
 `script/names --unratified` lists each stem.*
 
-- `capability-spelling-worklist` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `capability-worklist`.
-- `functions-that-answer-yes-or-no` Name: ratified 2026-10-18 (calef, "Yes"). Refused `boolean-predicates`.
-- `functions-that-answer-yes-or-no-worklist` Name: ratified 2026-10-18 (calef, "Yes"). Refused `boolean-predicates-worklist`.
-
 | Appendix | Former sections |
 |---|---|
 | [programs-scripts-and-directories.md](programs-scripts-and-directories.md) | The rule everything else is a corollary of; Components; Shell builtins; Scripts; Directories |

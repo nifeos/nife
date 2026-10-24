@@ -1,5 +1,8 @@
 # The NTP client's tests: the test server, the witness, and the six kernel tests
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, for the tests of the
+client half.*
+
 An appendix to [`notes/ntp.md`](../ntp.md). It holds what the client's tests substitute and why
 that is honest, and the witness with the false argument once made for it. It also holds the six
 kernel tests, the mutations each was watched fail on, and why one exchange test used to hang alone.

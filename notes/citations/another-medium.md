@@ -1,5 +1,7 @@
 # The same shape in another medium
 
+*Name: provisional. Named after the main page's own heading.*
+
 An appendix to [`notes/citations.md`](../citations.md), which states the conclusion.
 
 Worth naming, because it says what the general defect is and this gate only covers part of it.

@@ -1,5 +1,7 @@
 # Mapping onto this kernel, and the authorization question
 
+*Name: provisional.*
+
 What each shape in the survey would break here, and which held capability could express the right
 to end a blocked thread.
 [`notes/blocked-thread-teardown.md`](../blocked-thread-teardown.md) keeps the conclusions.

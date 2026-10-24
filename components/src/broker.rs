@@ -1,37 +1,12 @@
-//! **The queue broker: the latency ladder's middle rung** (milestone 23, DECISIONS §41).
+//! The queue broker, the latency ladder's opt-in middle rung (milestone 23, DECISIONS §41 (the
+//! endpoint is the broker)).
 //!
-//! The default rung has no process in it at all: a client CALLs a stable endpoint, whoever is
-//! parked in `RECEIVE_CAP` on it answers, and a swap changes who that is. That costs nothing, and it
-//! is what `swapper`'s direct system uses. It has one property a producer may not be able to live
-//! with: while nobody is receiving, a caller **blocks**. Its request is safe (it parks on the
-//! endpoint's own sender queue and the next server drains it), but the caller is stopped until then.
-//!
-//! This program is the answer for a channel that cannot afford that. It stands between a producer
-//! and a backend and takes custody of requests while the backend is away, so the producer's call
-//! always returns:
-//!
-//! ```text
-//!   steady state (backend up)      producer --CALL--> broker --CALL--> backend
-//!                                                            <--reply--
-//!                                           <--reply--                      2 round trips
-//!
-//!   down window (backend gone)     producer --CALL--> broker  [enqueue]
-//!                                           <-ACCEPTED-                     1 round trip, no block
-//! ```
-//!
-//! **The tax is real and it is why this is opt-in.** Interposing a process turns one rendezvous
-//! into two, and the kernel-side `broker_rtt` benchmark prices it against `call_reply` (the same
-//! client and backend with nothing in between). Direct synchronous rendezvous stays the fast path;
-//! this rung is chosen per channel, for channels that cross a lifecycle boundary.
-//!
-//! **The buffer is this process's own memory, and it is bounded.** The kernel does not grow: it
-//! keeps synchronous rendezvous with no allocation, and the queue is userspace policy in a
-//! userspace `.bss`, inside the region this instance was built in. A runaway producer fills it and
-//! gets [`QUEUE_FULL`](hot_swap_contract::QUEUE_FULL) back, which is backpressure as a value the producer can
-//! read rather than a policy hidden inside a server.
-//!
-//! **What it does not do**, stated so the ladder's top rung is not implied: it does not write to
-//! storage, so it does not survive its own crash. That is the durable rung, and it is not built.
+//! It stands between a producer and a backend so the producer's CALL never blocks on a swap:
+//! pass-through when the backend is up (two round trips, the tax `broker_rtt` prices against
+//! `call_reply`), and an immediate `ACCEPTED` with the item held when it is away. The backlog is
+//! bounded and lives in this process's own `.bss`, so the kernel does not grow; a full queue
+//! answers [`QUEUE_FULL`](hot_swap_contract::QUEUE_FULL). It writes nothing to storage and does
+//! not survive its own crash. See notes/live-replacement.md, "The latency ladder".
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `brokerd`.
 //! Refused `brokerd` (the `-d` suffix claims the Unix process model DECISIONS §39 rejects, before a
