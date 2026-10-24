@@ -38,9 +38,9 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
     // (the stated exception to DECISIONS §19 (architectural parity is a tenet)). Nor on an Apple
     // core, which this kernel meets only under a hypervisor (it does not drive AIC): there an EL0
     // read of `PMCCNTR_EL0` with `PMUSERENR_EL0` at zero was answered rather than refused (measured
-    // 2026-09-19, milestone 227's first HVF run), so the outcome is the hypervisor's.
-    // `arch::timer::set_cycle_counter_grant`'s BUGS carries the measurement. The positive half
-    // below still runs.
+    // 2026-09-19, the first HVF run of milestone 227 (a GICv3 driver)), so the outcome is the
+    // hypervisor's. `arch::timer::set_cycle_counter_grant`'s BUGS carries the measurement. The
+    // positive half below still runs.
     #[cfg(target_arch = "aarch64")]
     let under_apple_hypervisor = crate::arch::isa::get().implementer == 0x61;
     #[cfg(target_arch = "riscv64")]
