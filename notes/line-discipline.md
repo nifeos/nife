@@ -106,3 +106,46 @@ the drivers and shell the `WRITE` side, and none of the wiring is in the kernel.
 on
 both ISAs: `help`, `echo`, and `run` drive a worker to completion through the full path
 (input driver → line discipline → console server, and shell → line discipline → console server).
+
+## The graphical terminal: a session over a discipline
+
+`graphical_terminal` is a prompt on the display, launched from the swish prompt rather than started
+at boot (calef's ruling of 2026-09-30, milestone 632 (graphics on demand)). The person at the boot
+prompt delegates the display devices by typing its name. The progenitor then builds `gpu_driver`,
+`display_terminal`, and one of two keystroke sources, and passes the choice in `x0`:
+
+```text
+  arm 0 (a keyboard came):
+    keyboard_driver ──OPERATION_BYTES──► line_editor ──OPERATION_WRITE──► display_terminal ──► screen
+           graphical_terminal ◄──lines── (slot 2)     (slot 1 == slot 2's server)
+
+  arm 1 (no keyboard; the UART is the keystroke source):
+    boot input ──OPERATION_BYTES──► boot line_editor ◄──OPERATION_READRAW── graphical_terminal
+           graphical_terminal ──OPERATION_WRITE──► display_terminal ──► screen
+```
+
+On arm 0 the session's own `line_editor` does the whole job in cooked mode. It paints the prompt,
+echoes each keystroke and hands over the completed line. On arm 1 the program puts the boot
+discipline in raw mode, reads register-only, and paints the echo itself as the bytes arrive, which
+is the shell's own §227 (how Tab reaches the shell) shape. The discipline's cooked echo is bypassed
+in raw mode, so nothing echoes twice.
+
+A session ends on `^C` or on a line reading `quit`. Arm 1 puts the boot discipline back in cooked
+mode on the way out. The shell's §227 fallback, its `BAD_REQUEST` path, takes it back to raw at the
+next prompt, and that covers a session the kernel killed before it could clean up.
+
+The session's authority is the result endpoint (slot 0), an endpoint that prints to the screen
+(slot 1) with the page its server reads, an endpoint that owns the keystrokes (slot 2), and, on arm
+0 only, the page the discipline delivers lines into. It holds no device, no interrupt and no DMA.
+
+Its limits, which `components/src/graphical_terminal.rs` lists as BUGS:
+
+- A session runs no program. Its lines are echoed and nothing else.
+- Arm 1 has no line editing. The only edits are `^C` and retyping.
+- Arm 1 can switch the boot discipline's mode under the shell. Slot 2 on that arm is the boot
+  discipline's endpoint badged `line_editor::proto::RAW_ONLY_BADGE`, under milestone 709 (a
+  graphical terminal session on the no-keyboard arm holds only the raw half of the boot discipline).
+  So a session can neither type nor take a line the boot shell reads, and cannot print to the UART.
+  Flipping the mode while the shell is between reads abandons what the shell had half typed and
+  fails a parked read with `BAD_REQUEST`, which the shell's §227 recovery absorbs. That is a
+  disruption, not authority.
