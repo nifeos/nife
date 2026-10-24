@@ -2,23 +2,12 @@
 //! (every client of a network stack shares its socket numbers), §255 (each socket is its own
 //! capability); names here provisional).
 //!
-//! Until milestone 649 a socket was a small number every client of one `net_stack` shared, so a
-//! second client could send on, read, close or attach a page to another client's socket. Milestone
-//! 800 (a non-Anthropic model attacks the confinement claim)'s fourth outsider pass booted the
-//! sharpest form on all three ISAs, on PR #1798: a squatter that attached its own page at the
-//! number a TFTP client was about to use captured that client's traffic, both directions. That
-//! test was pinned red and opt-in there. These two are its replacement, in the default suite:
-//!
-//! - [`a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic`] runs the
-//!   squatter (`components/src/socket_squatter.rs`, `net_stack`'s role 8) while an honest client
-//!   holds a socket open, and asserts that every way it has to reach that socket is refused, that
-//!   the honest exchange still completes, and that nothing of it lands in the squatter's page.
-//! - [`a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing`] hands a socket from one
-//!   program to another that holds no front door to the stack at all, has the second use it, and
-//!   checks that once it is closed the first program's copy reaches nothing.
-//!
-//! All three architectures, through the `e1000e` every runner attaches, the route
-//! `name_resolver_tests` takes. Each test starts its own stack and gives every region back.
+//! These replace, in the default suite, the squatter test milestone 800 (a non-Anthropic model
+//! attacks the confinement claim)'s fourth outsider pass booted red on PR #1798: a squatter that
+//! attached its own page at the number a TFTP client was about to use captured that client's
+//! traffic, both directions. All three architectures, through the `e1000e` every runner attaches,
+//! the route `name_resolver_tests` takes. Each test starts its own stack and gives every region
+//! back.
 
 use super::*;
 use crate::cap::Rights;
@@ -166,16 +155,12 @@ fn next_report(report: RendezvousId, what: &str) -> [u64; 5] {
 
 /// **A second client of the stack cannot reach a socket another client opened.**
 ///
-/// The honest TFTP client opens its socket, attaches its page, says so, and waits. While that
-/// socket is open, the squatter, holding exactly what an honest client holds, tries everything it
-/// has: its page through the front door (the move that captured the traffic before milestone 649),
-/// each socket operation on the front door, minting a socket's capability itself, re-badging its
-/// own, and its own socket after closing it. Every one must be refused. Then the honest client runs
-/// its exchange, which must complete, and nothing of it may reach the squatter's page.
-///
-/// The name is the one milestone 800 (a non-Anthropic model attacks the confinement claim)'s pinned
-/// red test carried on PR #1798, kept so the record of
-/// that escape leads here.
+/// The honest TFTP client opens its socket, attaches its page, says so, and waits. The squatter
+/// (`components/src/socket_squatter.rs`, `net_stack`'s role 8), holding exactly what an honest
+/// client holds, then tries its page through the front door, each socket operation there, minting
+/// a socket's capability, re-badging its own, and its own socket after closing it. Every one is
+/// refused; the honest exchange then completes, and none of it reaches the squatter's page. The
+/// name is pass 4's pinned red test's on PR #1798, kept so the record of that escape leads here.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic.patch`
 #[test_case]
@@ -200,6 +185,8 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 
     let squatter = spawn_client(NET_ROLE_SQUATTER, Some(stack), &[], &mut held);
     let armed = next_report(squatter, "squatter");
+    // A minted `READ` would block the probe on the stack's endpoint instead of refusing it, so a
+    // squatter that never arms is this test failing.
     assert_eq!(
         armed[0], SQUATTER_ARMED,
         "the squatter did not arm: word {:#x}",
@@ -238,18 +225,11 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 /// **A socket holder cannot receive on its socket capability** (risk 7's fifth outsider pass, new
 /// ground on the §255 (each socket is its own capability) surface).
 ///
-/// The stack mints each socket's capability from a `WRITE | GRANT` copy of its own serve endpoint
-/// (`socket_contract::stack_slots::MINT`), carrying the socket's badge and no `READ`. A copy that
-/// carried `READ` would let its holder run a kernel plain `RECEIVE` or `RECEIVE_CAP` on it and
-/// dequeue the stack's own incoming queue, every other client's request to the stack: the capture
-/// class milestone 649 (every client of a network stack shares its socket numbers) closed, reached
-/// by IPC rather than by the squatted page pass 4 booted. The kernel refuses a receive on a
-/// `READ`-less endpoint (`kernel/src/syscall.rs`), so both are refused at once.
-///
-/// The squatter (role 8) opens a socket of its own and runs both probes on it, reporting the result
-/// in word 2 of its armed report. No victim is needed: the probe is on the squatter's own socket
-/// capability. If the mint carried `READ` the probe would block on the stack's endpoint instead of
-/// being refused, so the squatter would never arm, which this test reads as a failure.
+/// The stack mints each socket's capability from a `WRITE | GRANT` copy of its serve endpoint
+/// (`socket_contract::stack_slots::MINT`), badged and without `READ`, and the kernel refuses a
+/// receive on a `READ`-less endpoint (`kernel/src/syscall.rs`). With `READ`, a plain `RECEIVE` or
+/// `RECEIVE_CAP` would dequeue other clients' requests, milestone 649's capture class by IPC. The
+/// squatter (role 8) runs both probes on its own socket, so no victim is needed.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_socket_holder_cannot_receive_on_its_socket_capability.patch`
 #[test_case]
@@ -331,11 +311,10 @@ fn a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing() {
 /// **A minted socket capability takes no second badge, and a refused forgery disturbs nothing**
 /// (an eighth outsider pass at claim 34).
 ///
-/// The squatter's ten attempts already count a re-badge of its own socket among the refused. This
-/// is the single probe with the answer's shape: the refusal must be `NotPermitted` (the badge rule:
-/// a badge is set once, at the mint, and never changed), and the socket must be undisturbed by the
-/// refused attempt, proven by a `CLOSE` of it answering `REP_OK` afterwards. A second badge for one socket would be a second name for it, and names are
-/// how a stack tells its clients apart.
+/// The squatter's ten attempts count a re-badge of its own socket among the refused; this probe has
+/// the answer's shape. The refusal must be `NotPermitted` (a badge is set once, at the mint), and a
+/// `CLOSE` answering `REP_OK` afterwards proves the socket undisturbed. A second badge for one
+/// socket would be a second name for it, and names are how a stack tells its clients apart.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

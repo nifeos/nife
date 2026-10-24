@@ -2,20 +2,18 @@
 //! (in a capability system the resolver is a grant); §248 (the name resolver is its own confined
 //! program)).
 //!
-//! The kernel plays the spawner: it starts `net_stack` over the `e1000e` NIC, starts
-//! `domain_name_resolver` as a client of that stack, grants one badge the zone `nife.test`, and spawns
-//! `name_resolver_test_client` holding nothing of the resolver but that badged capability. The
-//! client asks about every name in `domain_name_resolution_contract::fixture::CASES` and reports each
-//! reply, and this file judges them. The name server is the runners' `helpers/name-server-peer` at
-//! 10.0.2.9:53, over TCP, because slirp forwards nothing else to a host process.
+//! The kernel plays the spawner. It starts `net_stack` over the `e1000e`, which every runner
+//! attaches (milestone 494 (a driver for the network card a PC actually has)), so one module serves
+//! all three architectures; then `domain_name_resolver` as its client, and
+//! `name_resolver_test_client` holding nothing of the resolver but a badge granted `nife.test`. The
+//! client reports a reply for each name in `fixture::CASES`, and this file judges them. The name
+//! server is `helpers/name-server-peer` at 10.0.2.9:53, over TCP: slirp forwards nothing else.
+
+//! # What a pass is not
 //!
-//! **One module for all three architectures**, over the `e1000e` because every runner attaches one
-//! (milestone 494 (a driver for the network card a PC actually has)), which is what makes this the
-//! first name resolution the x86_64 leg has run.
-//!
-//! What a pass is not: a claim about the UDP path. The gate asks over TCP, the resolver's UDP
-//! exchange is the same `Query` bytes and the same `accept`, and that is proved on the host in
-//! `crates/domain_name_system`; a UDP name server a test owned would have to bind a host port.
+//! A claim about the UDP path. The resolver's UDP exchange is the same `Query` bytes and the same
+//! `accept`, proved on the host in `crates/domain_name_system`; a UDP name server a test owned
+//! would have to bind a host port (notes/name-resolution.md, "Why DNS over TCP in the test").
 
 use domain_name_resolution_contract::fixture::{self, CASES};
 use domain_name_resolution_contract::{
@@ -233,14 +231,10 @@ fn next_report(report: RendezvousId, expecting: usize) -> [u64; 3] {
 /// for its own reason, is denied every name outside the zone without a query, and connects to what
 /// it resolved; a client with no grant gets nothing.**
 ///
-/// The first half is milestone 384's gate: the resolver is a confined program holding a stack
-/// endpoint and an entropy endpoint, the client holds a badged endpoint to it and a stack endpoint,
-/// and the badge's zone decides which names the client may ask about. `example.com` and
-/// `evilnife.test` come back `DENIED`, where a resolver that asked would have got the peer's
-/// `REFUSED` (a `SERVER_ERROR`), which is how this test tells "never asked" from "asked and lost".
-///
-/// The second half is the confinement claim on its own: the same program, with a badge nobody
-/// granted, gets `DENIED` for every name, including the ones the first client resolved.
+/// First half, milestone 384's gate: a confined resolver (stack and entropy endpoints), a client
+/// holding a stack endpoint and a badged one to it, and the badge's zone deciding what it may ask.
+/// `example.com` and `evilnife.test` get `DENIED`, not the peer's `REFUSED` (`SERVER_ERROR`), so
+/// "never asked" shows. Second half, the confinement claim: an ungranted badge is denied all names.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_granted_client_resolves_inside_its_zone_and_nothing_outside_it.patch`
 #[test_case]
@@ -318,15 +312,11 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
 /// **A forgotten badge is denied every name, and the window it held serves the next client**
 /// (milestone 892 (a std program at the prompt holds the network and a resolver)).
 ///
-/// The progenitor at the prompt is a spawner that outlives its clients: every `jig` is a fresh job
-/// with a fresh badge, and the resolver has [`GRANTS_MAX`] windows for its whole life. Before the
-/// forget verb, the ninth `jig` of a boot would have been refused a grant.
-///
-/// Every window but the first is filled with a grant nobody uses, so the forgotten badge's window
-/// is the only free one. The second client therefore lands where the first one's page was mapped,
-/// and resolves only if the forget both freed the grant (or the grant is `Full` and every name
-/// `DENIED`) and gave up the page (or its own page cannot be mapped and every name is
-/// `NOT_ATTACHED`). Meanwhile the first badge, given to a new client, is denied every name.
+/// The progenitor at the prompt outlives its clients: each `jig` gets a fresh badge, and the
+/// resolver has [`GRANTS_MAX`] windows for life. Every window but the first holds an unused grant,
+/// so the second client lands where the first one's page was mapped, and resolves only if the
+/// forget freed the grant (else `Full`, every name `DENIED`) and the page (else `NOT_ATTACHED`).
+/// The first badge, given to a new client, is denied every name.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_forgotten_badge_is_denied_and_its_window_serves_the_next_client.patch`
 #[test_case]
@@ -465,21 +455,11 @@ fn std_resolve_prints(
 /// **A `std` program's `ToSocketAddrs` resolves exactly the zone its resolver badge was granted,
 /// and nothing at all without one** (milestone 801 (packages over the internet), item 3).
 ///
-/// The same resolver, zone and peer as the test above, with the std PAL's `lookup_host` as the
-/// client instead of a native one. With the badge, the zone's name resolves to the peer and a
-/// connection by name echoes; NXDOMAIN reads as `NotFound`; `example.com` reads as
-/// `PermissionDenied`, which only the grant can say, since the peer would have answered `REFUSED`.
-/// Without it, the PAL finds the slot empty and answers `Unsupported` before minting a page.
-///
-/// Failed on CI twice, cause found and fixed 2026-10-13 (UTC). On #1964 (2026-10-12, `thead-c906`)
-/// this test's first lookup answered `NetworkUnreachable`; in run 38357922842 (2026-10-13, riscv64)
-/// the test above answered `loop.nife.test` with `NETWORK`/`CONNECT` after 15 s. The cause: a fresh
-/// `net_stack` handing out a local port the previous test's stack had used moments before, while
-/// slirp still held that 4-tuple in `TIME_WAIT` and dropped the SYN, whose random sequence number
-/// was below the old one. CI logs carry no ports, so that is inferred, not read: starting every
-/// stack at the same port failed 9 of 10 runs (riscv64 and aarch64), each in one of these two
-/// shapes, and a capture showed the dropped SYNs. Ports now follow the boot clock;
-/// `socket_contract::ephemeral` has the capture, the fix and what it still does not cover.
+/// The same resolver, zone and peer as above, through the std PAL's `lookup_host`. With the badge,
+/// the zone's name resolves and a connection by name echoes; NXDOMAIN reads as `NotFound`;
+/// `example.com` reads as `PermissionDenied`, which only the grant can say (the peer says
+/// `REFUSED`). Without it, the PAL finds the slot empty and answers `Unsupported` before minting a
+/// page. A reused port slirp holds in `TIME_WAIT` stalls it (notes/net/the-outbound-gates.md).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant.patch`
 #[test_case]
