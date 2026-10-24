@@ -9,5 +9,3 @@ BUGS. This directory carries the detail its prose budget has no room for.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
-
-- `how-it-is-proven` Name: provisional, after the parent's own heading. calef names files.

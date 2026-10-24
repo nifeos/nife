@@ -227,6 +227,20 @@ handed to a second driver after the first programmed the device. That is a lifet
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.
 
+## What a survey reports
+
+`ROLE_SURVEY` on the test disk of milestone 57 (partitioning and formatting a real drive), a 64 MiB
+image `sgdisk` partitioned:
+
+```text
+roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
+table  : 3 partitions, disk GUID 1A2B3C4D-5E6F-4718-9A0B-C1D2E3F40506
+         1  EFI system    2048..10239
+         2  linux root   10240..30719
+         3  nife data 30720..131038
+backup : agrees with the primary
+```
+
 ## The disk tree: a whole disk as one file, with no cache
 
 `crates/disk_tree` is the pure half of `components/src/disk_tree.rs`, built for milestone 834 (ioping

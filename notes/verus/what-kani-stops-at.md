@@ -1,5 +1,7 @@
 # What Kani actually stops at, measured rather than described
 
+*Name: provisional, after the parent's "What Kani actually stops at".*
+
 An appendix to [`notes/verus.md`](../verus.md). It holds the three throwaway harnesses run against
 `kernel/src` on 2026-09-20 with their verbatim output, and the measurement of how large the
 residue is.

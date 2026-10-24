@@ -1,5 +1,7 @@
 # The cost per crossing: RedLeaf's table, nife's numbers, and Atmosphere's
 
+*Name: provisional. After the parent's "Bet two: the cost per crossing".*
+
 An appendix to [`notes/redleaf.md`](../redleaf.md), under "Bet two: the cost per crossing". It
 holds RedLeaf's Table 1 with its conditions, the caveats on it, the chain of ratios to nife's own
 figures, and Atmosphere's Table 3 from the same group.

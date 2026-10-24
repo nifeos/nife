@@ -1,5 +1,7 @@
 # Bench boots 1 to 14, August 2026
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), beside its BUGS section. It is the
 boot-by-boot record of first silicon and the limitations found on the way.
 

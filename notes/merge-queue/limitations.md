@@ -1,5 +1,7 @@
 # The merge queue's limitations, in full
 
+*Name: provisional.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md), whose BUGS section keeps the short list.
 This is every entry as it was written, sentence-split for the prose limits.
 

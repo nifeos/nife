@@ -1,5 +1,7 @@
 # The toolchain: bare-metal clang, one compiler for two ISAs
 
+*Name: provisional. After the parent's own heading.*
+
 How the C component in [`notes/c-seam.md`](../c-seam.md) is compiled: how clang is found, why one compiler must have both
 backends, and the flags, one of which is load-bearing.
 

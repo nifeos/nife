@@ -16,17 +16,13 @@ pub const ARM: u64 = 0;
 /// one.
 pub const CANCEL: u64 = 1;
 
-/// **Counter ticks in a duration, rounded up**, for a counter running at `hz`: the `n` that
-/// makes `now() + n` a deadline that is never early. Saturates at `u64::MAX` rather than
-/// wrapping, and a saturated deadline is one that never fires, which is the right reading of a
-/// duration too long to represent.
+/// **Counter ticks in a duration, rounded up**, for a counter running at `hz`: the `n` that makes
+/// `now() + n` a deadline that is never early, as `std::thread::sleep` promises. Saturates at
+/// `u64::MAX`, a deadline that never fires, rather than wrapping.
 ///
-/// Rounding up is the point. `std::thread::sleep` promises to sleep *at least* its duration, and
-/// truncating (what the PAL's yield-spin did) could make it one tick short.
-///
-/// Split into whole seconds and a sub-second part so every product fits in 64 bits for any
-/// counter up to 2^34 Hz: `nanos * hz` is under `10^9 * 2^34`, which is under `2^64`. That keeps
-/// the arithmetic in the width the solver can check, and in the width a 64-bit core divides in.
+/// Whole seconds and the sub-second part are multiplied apart, so every product fits in 64 bits
+/// for any counter up to 2^34 Hz (`nanos * hz` is under `10^9 * 2^34`, under `2^64`): the width the
+/// solver can check, and the width a 64-bit core divides in.
 pub const fn counter_ticks_for(secs: u64, nanos: u32, hz: u64) -> u64 {
     const NS: u64 = 1_000_000_000;
     let Some(whole) = secs.checked_mul(hz) else {
