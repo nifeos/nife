@@ -1,32 +1,18 @@
 //! **The entropy contract** (§44 (entropy is a capability), notes/entropy.md): the request and
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
-//! clients, the std PAL and the kernel-side tests.
-//!
-//! ```text
-//!   the virtio-rng device (a Virtio capability, one holder)
-//!             │
-//!   ┌─────────▼────────┐
-//!   │ entropy service  │◄──an endpoint──── a client that may OBTAIN randomness
-//!   └──────────────────┘   (CALL, bytes    and may not reach the device
-//!                           in the reply)
-//! ```
-//!
-//! A client `CALL`s with a byte count and gets the bytes back in the reply words, at most
-//! [`MAX_BYTES`] per round trip. No shared page, against the usual bulk rule: a page shared with a
-//! client is a place the bytes persist and a second party can read, and random bytes are worth
-//! exactly that nobody else has seen them. The `entropy_rtt` benchmark prices the round trips.
-//! Nothing here transforms a byte; without a one-way function any whitening is a reversible
-//! permutation, so the claim stays "these are the device's bytes".
-//!
+//! clients, the std PAL and the kernel-side tests. One process holds the virtio-rng device; a
+//! client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
+//! the reply words, at most [`MAX_BYTES`] per round trip. No shared page, against the usual bulk
+//! rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
+//! transformed, so the claim stays "these are the device's bytes". notes/entropy.md, "The shape"
+//! and "The bytes are the device's bytes", has the argument; the `entropy_rtt` benchmark prices it.
+
 //! # BUGS
 //!
-//! - **An all-zero first draw is read as a dead device**: [`readiness`] condemns the source for the
-//!   boot, wrongly with probability 2^-64 (instruction), 2^-256 (JH7110) or 2^-2048 (virtio). That
-//!   is the right way round: a false "dead" costs one boot's entropy, a false "alive" costs every
-//!   secret derived from it, silently.
-//! - The check is bring-up only: a source that degrades or latches a nonzero answer afterwards is
-//!   not caught here. Continuous health testing is `design/decisions/0137-trng-health-tests.md`'s
-//!   to decide.
+//! - **An all-zero first draw is read as a dead device** ([`readiness`]): wrong with probability
+//!   2^-64 to 2^-2048 by source, and the safe way round (notes/entropy/contract.md).
+//! - The check is bring-up only; continuous health testing is
+//!   `design/decisions/0137-trng-health-tests.md`'s to decide.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `entropy`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -70,12 +56,9 @@ pub const fn want(w0: u64) -> u64 {
 /// first bytes are in hand. ASCII `RNGUP`, so a hex dump of a report reads. A bring-up failure
 /// reports [`DEAD`]` | step` instead, the same shape every driver here uses.
 ///
-/// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**, and
-/// [`readiness`] is what makes it one. A service that finished its register sequence and holds
-/// nothing, or holds a bufferful of zeros, has not met this word's condition and must not send it.
-/// That was a defect rather than a subtlety: on 2026-09-04 the JH7110 backend sent this word on
-/// radon holding zeros off a block whose clock is gated, and only the boot tour's own second look
-/// at the draws caught it (`design/roadmap/0159-jh7110-trng-driver.md`).
+/// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**: a service
+/// holding nothing, or a bufferful of zeros, must not send it, and [`readiness`] is what makes the
+/// claim (notes/entropy/contract.md, "Ready means bytes in hand").
 pub const READY: u64 = 0x_52_4E_47_55_50;
 
 /// **The word a bring-up failure reports instead of [`READY`]**, with the step that failed in its
@@ -103,17 +86,12 @@ pub const fn bringup_failure(step: u64) -> u64 {
 
 /// **Decide what a service may say about itself, given the first bytes it drew.** [`READY`] only
 /// when at least one of them is nonzero; otherwise a [`bringup_failure`] naming which of the two
-/// shared steps failed. Every backend calls this rather than composing the word itself, which is
-/// the whole of the fix for the defect [`READY`]'s doc records.
+/// shared steps failed. Every backend calls this rather than composing the word itself.
 ///
-/// `first` is an iterator rather than a slice because the three backends hold their first bufferful
-/// in three different places: an array from an instruction, an array from a register file, and a
-/// DMA page only volatile reads can see. An empty iterator is "the device gave us nothing", which
-/// is [`STEP_NO_FIRST_BYTES`]; it is not the same answer as a bufferful of zeros, and a bench
-/// session reading a report word needs to be able to tell them apart.
-///
-/// **Refusing an all-zero draw is a correctness claim about a random variable**, and it is made
-/// deliberately: see this crate's `BUGS`.
+/// `first` is an iterator because the three backends hold their first bufferful in three different
+/// places. An empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of
+/// zeros. **Refusing an all-zero draw is a deliberate correctness claim about a random variable**;
+/// see this crate's `BUGS`.
 ///
 /// # Examples
 ///
@@ -153,14 +131,9 @@ pub const NO_ENTROPY: u64 = 0;
 
 /// **Read a reply's first word.** `Some(n)` when the entropy service answered, with `n` the number
 /// of valid low bytes in the second word (0 means [`NO_ENTROPY`]). `None` when the word did not
-/// come from the service at all.
-///
-/// The discrimination is free here, and deliberately so. A count can only ever be `0..=MAX_BYTES`,
-/// while every failure the *kernel* can return from a `CALL` is one of its small negatives
-/// (`abi::Error`, -1 to -8), which read as enormous `u64`s. So a caller holding no entropy
-/// capability sees `None` and can say "this platform cannot do that" without a separate probe.
-/// `filesystem_contract` could not manage this (its errno space collides with the kernel's, a wart
-/// notes/std.md records), and a contract this new has no excuse to inherit the collision.
+/// come from the service at all: every kernel failure from a `CALL` is a small negative
+/// (`abi::Error`, -1 to -8), an enormous `u64`, so a caller holding no entropy capability finds out
+/// without a probe (notes/entropy.md, "One number that could not collide").
 ///
 /// # Examples
 ///
@@ -232,17 +205,11 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 /// **Fill `out` with random bytes, one request at a time, refusing a short answer.** `call` is the
 /// `CALL` on the entropy endpoint: it takes a request word and returns the two reply words.
 ///
-/// `None` if any reply is not a count (the process holds no entropy capability; see [`delivered`])
-/// or delivers fewer bytes than were asked for (the service is dry). On `None` the contents of
-/// `out` are unspecified and must not be used. Asks for [`MAX_BYTES`] at a time and the remainder
-/// last, so sixteen bytes are two round trips.
-///
-/// **The `CALL` is a parameter so this crate stays a contract.** It makes no syscall and depends on
-/// nothing; `user_mode_runtime::entropy::fill` is the wrapper that passes a real `CALL`, and the
-/// refusals are tested here, on the host, against fakes.
-///
-/// The std PAL (`patches/std-nife/overlay/std/src/sys/random/nife.rs`) does not use this: it
-/// accepts a partial count and asks again, and panics where this refuses. Both are deliberate.
+/// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
+/// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
+/// [`MAX_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate makes no
+/// syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts partial
+/// counts instead, deliberately (notes/entropy/contract.md).
 ///
 /// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". std's `_with` suffix, for a function
 /// that takes a closure.
