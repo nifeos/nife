@@ -1087,8 +1087,9 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
 /// nothing leaves the emulator; 10.0.2.3:53 would not do, since slirp NATs it to the host's DNS.
 ///
 /// Sends a read request (opcode 1, `octet`) for the fixture and requires the first data packet:
-/// opcode 3, block 1, the fixture's bytes. The name and body must match what
-/// `helpers/qemu-runner-*.sh` writes into `target/tftp`. See notes/std/the-proof.md.
+/// opcode 3, block 1, the fixture's bytes; the fixture is one short block, so that packet is the
+/// whole file. The name and body must match what `helpers/qemu-runner-*.sh` writes into
+/// `target/tftp`. See notes/std/the-proof.md.
 fn udp_ok(sock: &UdpSocket) -> bool {
     const TFTP_SERVER: &str = "10.0.2.2:69";
     const TFTP_NAME: &[u8] = b"nife";

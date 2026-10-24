@@ -120,6 +120,8 @@ Granted a directory:
   size or a handle number fails. A file nife makes is stamped by the FS server's counter, which
   restarts at each mount, so it reads as early 1970 and only its order means anything. The
   half-second in the time it sets pins truncation, since the wire carries whole seconds.
+  `GETMTIME` works on a directory, and `DirEntry::metadata` asks by name for a directory as for a
+  file, so the listing's entry and the name must report one time.
 - The time refusals each mark a place where a success would be a lie. Reading through an open
   handle is refused because the contract asks by name. Setting through a handle would stamp
   whatever holds the name now. No verb sets an access time, so the mtime beside it must not change
