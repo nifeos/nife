@@ -144,3 +144,8 @@ The `PortRange` sweep has a second limb that no test reaches. `ipc_receive_cap` 
 capability with `CapabilityTable::insert` directly, not through
 `sched::thread_control_block_insert_cap`. A receiver handed a `PortRange` capability that way holds
 it with `Thread::port_range_grant` never set. That direction fails closed.
+
+`kernel::user::spawn_mapping_revocation_tests` holds the second finding, and proves the mapping is
+gone, not that the process faults on it. Walking the page tables is what `crate::revoke`'s own suite
+asserts and what the sweep controls. Demonstrating the fault needs a live process, which
+`user::live_swap_tests` does for the device case, at a whole boot's cost.
