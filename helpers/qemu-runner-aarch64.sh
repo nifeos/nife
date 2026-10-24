@@ -43,7 +43,7 @@ set -e
 # is the only answer and asking for anything else is a mistake worth failing on rather than
 # silently ignoring.
 # NIFE_EL2=1 builds the machine with an EL2 the kernel is started at, which is the closest
-# rehearsal patagonia can give of a real board (milestone 127, the seL4 machine). QEMU's `virt`
+# rehearsal QEMU can give of a real board (milestone 127, the seL4 machine). QEMU's `virt`
 # starts a kernel at EL1 by default; `virtualization=on` gives the machine a hypervisor level and
 # enters the payload there, which is what U-Boot does on the Jetson TX1 with TF-A's BL31 below it.
 # `boot.s` then reads `CurrentEL` and drops itself, and the whole suite runs unchanged.
