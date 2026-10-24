@@ -13,25 +13,18 @@ const ROLE_PIPELINE: u64 = 3;
 const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
 
-/// The budget the shell mints its pipes out of. Each pipeline splits a region off this and
-/// gives it back, so one number covers a script of several lines; it matches `system_initializer`'s grant.
+/// The budget the shell mints its pipes out of. Each pipeline splits a region off this and gives it
+/// back, so one number covers a script of several lines; it matches `system_initializer`'s grant.
 const SH_BUDGET_PAGES: u64 = 128;
 
-/// Pages of stack **below** the one `run` maps. A shell needs more than a hand-sized program
-/// for `spawn_fs_client`'s measured reason, and milestone 50 added an array of planned
-/// endowments to what it carries by value.
-///
-/// **Eleven since DECISIONS §67**, which is the fourth time this symptom has been a stack page
-/// short and the second time it has been `run_pipeline`'s frame. `2>` put a **second** `FileOut`
-/// there, and a `FileOut` carries a 256-byte staging buffer by value because the filesystem's write
-/// unit is a page and the sink contract's is sixteen bytes. Seven pages overflowed by twenty-four
-/// bytes: a data abort one word below the lowest mapped page, mid-script, `far` just under `sp`.
-///
-/// Four extra pages rather than one, deliberately. Every previous instance bought exactly enough and
-/// the next change found the wall again; 16 KiB of address space is not worth a fifth bisect. The
-/// number must stay level with `system_initializer`'s `CHILD_STACK_PAGES`, because a test wiring with
-/// less headroom than the boot wiring finds faults the boot does not have, which is a bug in the
-/// harness rather than a signal (notes/pipes/the-boot.md).
+/// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
+/// `spawn_fs_client`'s measured reason, and milestone 50 added an array of planned endowments it
+/// carries by value. `run_pipeline`'s frame holds two `FileOut`s (`2>`), each with a 256-byte
+/// staging buffer because the filesystem's write unit is a page and the sink contract's sixteen
+/// bytes; seven pages overflowed by twenty-four, as a data abort one word below the lowest mapped
+/// page. Eleven keeps four pages of headroom, since every exact fit met the wall again on the next
+/// change. It must stay level with `system_initializer`'s `CHILD_STACK_PAGES`: a test wiring with
+/// less headroom finds faults the boot does not have (notes/pipes/the-boot.md).
 const SHELL_EXTRA_STACK: usize = 11;
 
 /// What the kernel holds of a scripted shell.
@@ -46,11 +39,9 @@ pub struct Wiring {
 /// same thread and the buffer outlives one call; sized for the whole script with room to spare,
 /// so a transcript that ran long is truncated rather than overrunning.
 ///
-/// **Eight kilobytes since milestone 67**, which folded that milestone's script onto the
-/// redirection witness rather than wiring a seventh shell: every scripted shell here is a live
-/// process whose frames are never reclaimed, and one more put `time_tests` over the frame pool
-/// intermittently. Kernel `.bss` costs no frames, so the longer script is the cheap half of that
-/// trade.
+/// Eight kilobytes because scripts share shells rather than wire more: every scripted shell is a
+/// live process whose frames are never reclaimed, and one more put `time_tests` over the frame
+/// pool intermittently. Kernel `.bss` costs no frames.
 static TRANSCRIPT: spin::Mutex<[u8; 8192]> = spin::Mutex::new([0; 8192]);
 static WRITTEN: AtomicUsize = AtomicUsize::new(0);
 
@@ -58,20 +49,16 @@ static WRITTEN: AtomicUsize = AtomicUsize::new(0);
 /// runs while it is.
 static SCRIPT_RUNNING: AtomicBool = AtomicBool::new(false);
 
-/// **Fail the test the moment a user thread dies under a scripted shell**, instead of a minute later
-/// as a watchdog "lost-wakeup hang".
+/// **Fail the test the moment a user thread dies under a scripted shell**, instead of a minute
+/// later as a watchdog "lost-wakeup hang".
 ///
-/// The real boot reports a killed job to the shell: `job_undertaker` sends `JOB_FAULTED` on the
-/// result endpoint, the shell prints its faulted sentence and destroys the pipe, and the rest of
-/// the line ends. [`spawn_service_stub`] has no undertaker, so here the line's other stages and the shell
-/// wait forever on a stage that will never write (merge-group run 38506029610: `date` killed in
-/// `date | wc`, then sixty seconds of every thread blocked). No script here expects a fault, because
-/// this stub could never have reported one, so any rise in `USER_FAULTS` while a script runs is
-/// the failure, and the kill report above this panic names the thread.
-///
-/// A `yield_now` loop, the shape `wait_for` uses, because the kernel has no timed wait a test can
-/// take. It ends when the transcript is collected, or after `GIVE_UP_SECONDS` if nobody collects
-/// it, so it never outlives the script into a test that faults on purpose.
+/// In the real boot `job_undertaker` sends `JOB_FAULTED` and the shell ends the line;
+/// [`spawn_service_stub`] has no undertaker, so the line's other stages and the shell would wait
+/// forever on a stage that will never write. No script here expects a fault, so any rise in
+/// `USER_FAULTS` while a script runs is the failure, and the kill report above the panic names the
+/// thread. A `yield_now` loop, as the kernel has no timed wait a test can take; it ends when the
+/// transcript is collected or after `GIVE_UP_SECONDS`, so it never outlives the script into a test
+/// that faults on purpose.
 fn watch_for_a_killed_stage() {
     use crate::arch::exceptions::USER_FAULTS;
     const GIVE_UP_SECONDS: u64 = 300;
@@ -103,19 +90,12 @@ pub fn start() -> Option<Wiring> {
 }
 
 /// **The same shell, told to time what it runs** (milestone 86): [`start`]'s four slots plus, when
-/// `clock` is `Some`, a `PageFrame` with **`READ`** at slot 4 and a read-only mapping of it.
-///
-/// The three states this can be started in are the three the shell has to answer for, and they are
-/// three capability tables rather than three code paths:
-///
-/// - `Some(a published page)`: `time` reports a duration.
-/// - `Some(a blank page)`: the frame is there and reads `UNKNOWN`, which is what a reader on a
-///   machine with no believable RTC holds.
-/// - `None`: no capability at all, so no mapping either, and the shell has to answer without
-///   touching the address a clock would have been at.
-///
-/// `READ` and no `GRANT`, matching what the progenitor hands the shell: a witness with wider rights than
-/// the boot wiring would be proving something about a shell nobody runs.
+/// `clock` is `Some`, a `PageFrame` with `READ` at slot 4 and a read-only mapping of it. Three
+/// capability tables, not three code paths: a published page (`time` reports a duration), a blank
+/// page (reads `UNKNOWN`, as on a machine with no believable RTC), and `None` (no capability and no
+/// mapping, so the shell answers without touching the address a clock would be at). `READ` and no
+/// `GRANT`, as the progenitor hands it: a witness with wider rights than the boot wiring would be
+/// proving something about a shell nobody runs.
 pub fn start_timing(clock: Option<u64>) -> Option<Wiring> {
     start_with(ROLE_TIMING, 0, None, clock)
 }
@@ -159,11 +139,11 @@ fn start_with(
         crate::println!("start_with: no swish in the archive");
         return None;
     };
-    // **Kept for the boot, deliberately.** `spawn_service_stub` below is a kernel thread that loops on
-    // `spawn_ep` forever, and nothing ends it, so reclaiming these would turn it into a busy loop
-    // on a stale endpoint. They come from a region of their own so the three pages are charged to
-    // the test that called this, rather than from the kernel's pool, whose 32-page chunk is charged
-    // to whichever later test crosses its boundary.
+    // **Kept for the boot, deliberately.** `spawn_service_stub` below is a kernel thread that loops
+    // on `spawn_ep` forever, and nothing ends it, so reclaiming these would turn it into a busy
+    // loop on a stale endpoint. They come from a region of their own so the three pages are charged
+    // to the test that called this, rather than from the kernel's pool, whose 32-page chunk is
+    // charged to whichever later test crosses its boundary.
     let Some(endpoints) = crate::memory_region::create(3) else {
         crate::println!("start_with: memory_region::create(3) for the endpoints refused");
         return None;
@@ -199,8 +179,8 @@ fn start_with(
         return None;
     }
 
-    // The progenitor first, so a shell that spawns before the service is listening merely blocks in a
-    // rendezvous rather than failing.
+    // The progenitor first, so a shell that spawns before the service is listening merely blocks in
+    // a rendezvous rather than failing.
     if crate::sched::spawn(move || spawn_service_stub(spawn_ep, result)).is_none() {
         crate::println!("start_with: spawn(spawn_service_stub) refused");
         return None;
@@ -221,18 +201,11 @@ fn start_with(
         )
     });
 
-    // **Say why it was refused, instead of handing the caller a bare `None`.**
-    //
-    // This was `})?;` until 2026-08-27, and the silence cost a whole investigation. The only
-    // thing that can refuse this spawn is `sched::MAX_THREADS`, and when the aarch64 suite
-    // reached that ceiling here the test above only ever learned that it had not got a shell.
-    // Same silently-`?`-shaped bug `fs_service::spawn_fs_client` had, and the same fix.
-    //
-    // `dump_threads` goes with the line rather than after it because the table's contents are
-    // the whole diagnosis: a leak and a boot that legitimately wants more threads than the
-    // image allows are indistinguishable from the refusal alone, and telling them apart is
-    // what took two full instrumented runs the first time. See `sched::MAX_THREADS`, whose doc
-    // comment carries the measurement and the coupled constants.
+    // Say why it was refused rather than return a bare `None`: only `sched::MAX_THREADS` can refuse
+    // this spawn.
+    // `dump_threads` goes with the line because the table is the whole diagnosis: a leak and a boot
+    // that legitimately wants more threads are indistinguishable from the refusal alone. See
+    // `sched::MAX_THREADS`, whose doc carries the measurement and the coupled constants.
     if shell.is_none() {
         crate::println!(
             "start_with: spawn(swish) refused; the thread table is full ({} of {} live). \
@@ -310,9 +283,9 @@ fn shell_grants(
     dir: Option<(RendezvousId, u64)>,
     clock: Option<u64>,
 ) -> ([Capability; 6], usize, u64) {
-    // Filled in the order the shell's own constants name, because a `Spawn` fills a capability table from
-    // zero: slot 0 the terminal, 1 the spawn channel, 2 the result channel, 3 the budget, then
-    // whichever of the directory and the clock this wiring has.
+    // Filled in the order the shell's own constants name, because a `Spawn` fills a capability
+    // table from zero: slot 0 the terminal, 1 the spawn channel, 2 the result channel, 3 the
+    // budget, then whichever of the directory and the clock this wiring has.
     let mut grants = [rendezvous_cap(term, Rights::WRITE); 6];
     grants[1] = rendezvous_cap(spawn_ep, Rights::WRITE);
     grants[2] = rendezvous_cap(result, Rights::READ);
@@ -337,9 +310,9 @@ fn shell_grants(
 
 /// **Serve the terminal until the shell says it is finished**, collecting everything it printed.
 ///
-/// One `OPERATION_WRITE` at a time, replied the way the real line discipline replies (the byte count),
-/// because the shell blocks on that reply and a test that answered differently would be testing
-/// a terminal nobody has.
+/// One `OPERATION_WRITE` at a time, replied the way the real line discipline replies (the byte
+/// count), because the shell blocks on that reply and a test that answered differently would be
+/// testing a terminal nobody has.
 pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
     loop {
         let m = crate::sched::ipc_receive_cap(w.term);
@@ -437,19 +410,16 @@ pub fn counts(said: &[u8]) -> (u64, u64, u64) {
     (l, w, b)
 }
 
-/// **The progenitor, as the shell sees it**: the spawn protocol, including milestone 50's two delegated
-/// capabilities.
+/// **The progenitor, as the shell sees it**: the spawn protocol, including milestone 50's two
+/// delegated capabilities.
 ///
-/// The whole of what the operators added is here, and it is small: receive an rendezvous, and put
-/// it where the result rendezvous would have gone. Nothing decides what is behind it, because
-/// nothing here can find out.
-///
-/// **What this fallback does not implement**: a directory grant (`Wiring::directory_grant`, milestone 31 (a capability shell: designation is authorization) phase
-/// 3) and a screen-narrowed tail's completion rendezvous (`Wiring::screen`, DECISIONS §106). Both
-/// need a capability this stub has nothing behind (a file service to attenuate, a fault target to
-/// install), so neither bit is drained off the wire here, and a line that set one would desync the
-/// two sides' shared count of delegated capabilities. No guest test routes either shape through
-/// this path today; both are exercised only against the real progenitor, by `script/swish-check`.
+/// The operators' whole addition is small: receive a rendezvous, and put it where the result
+/// rendezvous would have gone. Nothing decides what is behind it, because nothing here can find
+/// out. Not implemented: a directory grant (`Wiring::directory_grant`, milestone 31 (a capability
+/// shell: designation is authorization) phase 3) and a screen-narrowed tail's completion rendezvous
+/// (`Wiring::screen`, DECISIONS §106). Each needs something this stub lacks, so neither bit is
+/// drained, and a line setting one would desync the shared count of delegated capabilities. Only
+/// `script/swish-check`, against the real progenitor, exercises them.
 fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
     loop {
         let m = crate::sched::ipc_receive(spawn_ep);
@@ -470,18 +440,13 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         } else {
             None
         };
-        // **A declared second stream is received and closed on the child's behalf** (DECISIONS
-        // §67). This wiring grants a child its ordinary slots and nothing at a named one (a `Spawn`
-        // fills from zero and has no way to name slot eight), so `date` here finds an empty
-        // diagnostic slot and says what it has to say in-band, exactly as it did before the second
-        // stream existed. **So this is the fallback path under test**, and the real one is
-        // `script/swish-check`, which runs `user/src/system_initializer.rs`.
-        //
-        // Receiving the capability is what keeps the two sides in lockstep, and closing the stream
-        // is what stops the shell waiting for an end-of-stream from a program that was never handed
-        // the rendezvous. The close goes on **its own thread**, and that is not tidiness: the shell
-        // drains diagnostics only after every stage of the line is spawned, so a blocking send here
-        // would still be waiting when the shell sent the next stage's request, and both would stop.
+        // A declared second stream is received and closed on the child's behalf (DECISIONS §67): a
+        // `Spawn` fills from zero and cannot name slot eight, so `date` here finds an empty
+        // diagnostic slot and reports in-band. This is the fallback path; the real one is
+        // `script/swish-check`, running `user/src/system_initializer.rs`. Receiving keeps the two
+        // sides in lockstep, and closing stops the shell waiting for an end-of-stream. The close
+        // runs on its own thread: the shell drains diagnostics only after every stage is spawned,
+        // so a blocking send here would deadlock against the next stage's request.
         if wiring.diagnostics
             && let Some(ep) = take_rendezvous(spawn_ep)
         {
@@ -503,12 +468,9 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                 // Slot 0 is the output: the result rendezvous, or the sink the shell delegated.
                 // Slot 1 is the input source when there is one. That is the whole difference.
                 let out = sink.unwrap_or(result);
-                // **The argument goes in `arg1`, not `arg0`**, which is where both real inits put
-                // it (`thread_control_block_start(tcb, 0, arg, 0)`) and where `components/src/least_authority_demo.rs` reads it. This
-                // said `arg0` until milestone 86, and nothing failed, because no line in the
-                // pipeline or redirection scripts ever spawned a program that takes one: `date`,
-                // `wc` and `echo` all take none, and `least_authority_demo 9 | wc` is refused at the prompt. The
-                // first script to type `time least_authority_demo 3` got `3*3 = 0` back.
+                // The argument goes in `arg1`, not `arg0`, where both real inits put it
+                // (`thread_control_block_start(tcb, 0, arg, 0)`) and where
+                // `components/src/least_authority_demo.rs` reads it.
                 crate::sched::spawn(move || match source {
                     Some(src) => run(
                         image,
@@ -539,8 +501,9 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
             None => false,
         };
 
-        // A redirected child's answer goes somewhere else, so the shell has nothing to read and
-        // the progenitor owes it an ack. Unredirected, the child's own message is the shell's single read.
+        // A redirected child's answer goes somewhere else, so the shell has nothing to read and the
+        // progenitor owes it an ack. Unredirected, the child's own message is the shell's single
+        // read.
         if wiring.sink {
             crate::sched::ipc_send(
                 result,
@@ -561,8 +524,8 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
 }
 
 /// Take one delegated capability and read the rendezvous out of it. The slot is dropped straight
-/// away: what the progenitor needs is the *name* of the rendezvous, and holding the capability afterwards
-/// would fill a capability table over a long session for nothing.
+/// away: what the progenitor needs is the *name* of the rendezvous, and holding the capability
+/// afterwards would fill a capability table over a long session for nothing.
 fn take_rendezvous(ep: RendezvousId) -> Option<RendezvousId> {
     let m = crate::sched::ipc_receive_cap(ep);
     let slot = m[1];
