@@ -130,6 +130,15 @@ from a comment:
 - The boot tour prints which source the address came from, in words, so a transcript can never
   be read as confirmation of an address nobody on that machine confirmed.
 
+### How a window is found
+
+`discover`, `discover_aon` and `discover_sys` try three spellings, mainline's first, as
+`jh7110_entropy::discover` does. A tree that carries the standardized binding is describing itself
+in that binding's language, so it is the one to believe. The two vendor nodes carry several windows
+and are indexed by `reg-names` rather than by position, because a position that happens to be right
+today is a fact nobody wrote down. `pmic_bus` reads the same way, and one id bound serves both
+trees there because the vendor providers number every domain in one flat space with SYS first.
+
 ## The bench: bringing the TRNG's clocks up on radon
 
 **This has not been done.** radon was powered off and there was no bench session when this was
