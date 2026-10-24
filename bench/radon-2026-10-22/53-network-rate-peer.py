@@ -1,12 +1,21 @@
 """Serve 100 MiB per connection on :9494, like the note's nc loop, and sample the sending
 socket's TCP_CONNECTION_INFO (macOS, no root) every 5 ms: radon's advertised window as this
-side sees it, RTT, and the count of segments radon sent back (its ACKs)."""
-import socket, struct, sys, threading, time
+side sees it, RTT, and the count of segments radon sent back (its ACKs).
+
+    python3 53-network-rate-peer.py --bind <this-host's-LAN-address> 53-network-rate-peer.txt
+
+It listens only on the address --bind names, the one radon reaches over the LAN, never on every
+interface; there is no default."""
+import argparse, socket, struct, threading, time
 
 TCP_CONNECTION_INFO = 0x106
 FMT = "<BBBBIIIIIIIIIIIIIQQQQQQQ"  # struct tcp_connection_info, netinet/tcp.h
 TOTAL = 104857600
-out = open(sys.argv[1], "a")
+ap = argparse.ArgumentParser()
+ap.add_argument("--bind", required=True, metavar="ADDR", help="this host's LAN address")
+ap.add_argument("out", help="file the per-connection record is appended to")
+args = ap.parse_args()
+out = open(args.out, "a")
 
 def info(s):
     b = s.getsockopt(socket.IPPROTO_TCP, TCP_CONNECTION_INFO, struct.calcsize(FMT))
@@ -16,7 +25,7 @@ def info(s):
                 retx=v[19], rxpackets=v[20])
 
 ls = socket.socket(); ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-ls.bind(("0.0.0.0", 9494)); ls.listen(1)
+ls.bind((args.bind, 9494)); ls.listen(1)
 while True:
     c, addr = ls.accept()
     t0 = time.time(); done = [False]; samples = []

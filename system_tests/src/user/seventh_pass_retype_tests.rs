@@ -1,25 +1,16 @@
-//! **A spend-only (GRANT-less) budget narrows a SPLIT child and every RETYPE alike** (milestone
-//! 903 (a seventh outsider pass attacks the confinement claim), fatal risk 7's confinement claim,
+//! A spend-only (GRANT-less) budget narrows a SPLIT child and every RETYPE alike (milestone 903
+//! (a seventh outsider pass attacks the confinement claim), fatal risk 7's confinement claim,
 //! claim 3).
 //!
 //! Claim 3 ("a budget that cannot delegate cannot split itself a child that can") is proved on its
-//! SPLIT side by `capability::split_never_widens_rights`. Its retype side is held by
-//! `confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks`. This module, written by
-//! the seventh pass's reviewer, puts the two sides next to each other in one boot through the real
-//! dispatcher (`syscall::invoke`): the same WRITE-only budget shape is SPLIT and RETYPEd, and both
-//! come back WRITE-only.
-//!
-//! **It was a characterization until milestone 824 (a retype mints no right its budget lacks).**
-//! The pass found `RETYPE` and `RETYPE_OBJ` minting `Rights::ALL` for a frame and for every kernel
-//! object kind, so a holder of a non-delegating budget could lend what it carved: a near miss, the
-//! gap calef ruled on 2026-10-07 (UTC), option (a). The test asserted the gap so that 824 would turn
-//! it red. 824's lane flipped the assertions on 2026-10-12 (UTC) in the same commit as the fix.
-//!
+//! SPLIT side by `capability::split_never_widens_rights` and on its retype side by
+//! `confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks`. This module puts the two
+//! side by side in one boot through `syscall::invoke`: the same WRITE-only budget shape is SPLIT
+//! and RETYPEd, and both come back WRITE-only. One body serves every ISA (DECISIONS §19
+//! (architectural parity is a tenet)).
+
 //! Name: provisional (this pass's lane, 2026-10-12 UTC), for the module and the file; a rename is an
 //! architect's call.
-//!
-//! Cross-ISA: `invoke`, the retype paths and the rights model are portable kernel code, so the same
-//! body runs on each architecture (DECISIONS §19 (architectural parity is a tenet)).
 
 use abi::Error;
 
@@ -48,17 +39,13 @@ fn rights_at(slot: u64) -> Rights {
         .rights
 }
 
-/// **A `WRITE`-only budget's `SPLIT` child is `WRITE`-only, and so is everything a `RETYPE` carves
-/// off the same budget, a page frame and three kernel object kinds alike.**
+/// A `WRITE`-only budget's `SPLIT` child is `WRITE`-only, and so is everything a `RETYPE` carves
+/// off the same budget, a page frame and three kernel object kinds alike.
 ///
-/// The SPLIT step is the positive control and the claim's cited property: a non-delegating budget
-/// cannot carve a delegating child, because `MemoryRegion::SPLIT` mints through `Cap::mint_child`,
-/// which inherits the parent's rights. Since milestone 824 `RETYPE` and `RETYPE_OBJ` mint through
-/// the same function, so the same budget hands back `WRITE` alone.
-///
-/// Shaped so a regression is observable at an assertion, not a hang: nothing here blocks. Each
-/// minted capability is deleted and each region reclaimed, so the suite's frame and region ledgers
-/// are flat across the test.
+/// The SPLIT step is the positive control and the claim's cited property: `MemoryRegion::SPLIT`
+/// mints through `Cap::mint_child`, which inherits the parent's rights, and `RETYPE` and
+/// `RETYPE_OBJ` mint through the same function. Nothing blocks, so a regression fails at an
+/// assertion; every minted capability is deleted and region reclaimed, keeping the ledgers flat.
 ///
 /// Name: provisional. Renamed by milestone 824's lane on 2026-10-12 (UTC) from
 /// `a_grant_less_budget_narrows_a_split_child_but_mints_full_rights_on_every_retype`, which the fix

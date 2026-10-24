@@ -149,8 +149,72 @@ disagrees with the boot core. `script/bench` prints the probe that converts ever
   probe: cycles_per_tick 16.00 (10000226 cycles over 625003 ticks at cntfrq 62500000)
 ```
 
-That line is the emulator's instruction count, not a measurement, and the exact 16 is the tell. On
+That line is the emulator's instruction count, not a measurement, and the exact 16 is the tell.
+Without `-icount`, QEMU-TCG advances the counter in steps of 1000. On
 argon the ratio should be near the core clock over 19.2 MHz and **not** a clean integer.
+
+Every PMU register is banked per core and resets to an architecturally UNKNOWN value (Arm DDI
+0487), so each core assigns them rather than read-modify-writing: a field firmware left set is the
+thing being removed. Linux's `armv8pmu_reset` (`drivers/perf/arm_pmuv3.c`) assigns `PMCR_EL0` the
+same way, and seL4's `arm_init_ccnt` is the same sequence without `LC`. The control registers are
+writable at EL1 once nothing above traps them: `boot.s`'s EL2 drop clears `MDCR_EL2.TPM`, and
+`MDCR_EL3.TPM` is TF-A's. A counter that does not run is this kernel's failure to start it, or a
+secure-world setting it can observe and not change.
+
+### Why `PMCCFILTR_EL0` is zero
+
+Its `P`, `U` and `NSH` bits decide whether cycles at EL1, EL0 and EL2 are counted, and so what every
+cycle number printed means. Zero counts EL1 and EL0 (Secure and Non-secure alike, since `NSK` and
+`NSU` equal them), does not count EL2, and counts EL3 where `MDCR_EL3` permits it at all. It is the
+policy, not a placeholder, for four reasons:
+
+- It is what the other two architectures count. riscv64's counter runs in every mode and `x86_64`'s
+  fixed counter is programmed for rings 0 and 3, so a reader comparing one operation across
+  architectures meets user plus kernel each time. Counting EL0 only would make aarch64 the one
+  architecture whose IPC figures leave out the kernel doing the IPC.
+- It is the only value both readers here run under. `bench::cycle_probe::cycles_per_tick` reads the
+  counter at EL1 and the EL0 grant test reads it at EL0; `P` set stops the first and `U` the second.
+- EL2 runs nothing in this kernel. `boot.s` drops to EL1 and installs no EL2 vectors, so `NSH`
+  matters only under a hypervisor that lets a guest program it.
+- It is a definite value. Matching firmware would make the policy a property of each board's boot
+  chain.
+
+What firmware left is still read before it is overwritten and printed, as evidence for milestone 25
+(cross-OS comparison). seL4's published TX1 figures come from a build that never writes this
+register (`arm_init_ccnt` and libsel4bench's `sel4bench_init` write it only under
+`CONFIG_ARM_HYPERVISOR_SUPPORT`, which the published build leaves off), so they counted whatever the
+TX1's firmware left there. argon runs the same family of firmware, so its first boot answers which
+exception levels seL4's 413 and 426 include. If argon's firmware left `P` set, milestone 25 runs
+nife a second time with the filter matched to seL4's and labels that run.
+
+### Who may read the cycle counter from EL0
+
+`CNTKCTL_EL1.EL0VCTEN` lets EL0 read the coarse virtual counter; `PMUSERENR_EL0` decides whether it
+may also read `PMCCNTR_EL0` and the event counters. The two writes are one decision split across two
+registers by the ISA, so both sit in `timer::init`; on riscv64 the same pair is the `TM` and `CY`
+bits of `scounteren`. `arch::pmu` starts the counter and does not write `PMUSERENR_EL0`, so one file
+owns every write of that register.
+
+`timer::init` writes zero on every core. Every field of the register is an EL0 enable, Arm says
+each resets to an UNKNOWN value, and it is banked per core, so a core that skipped the write would
+run on whatever its firmware left. Linux writes the same zero for the same reason (`arm64: kernel:
+enforce pmuserenr_el0 initialization and restore`). Nothing in the tree reads `PMCCNTR_EL0` from EL0
+unless granted, so zero changes nothing a program was using.
+
+A granted thread (DECISIONS 139 option 4) runs with exactly `CR`, bit 2, set: the field for an EL0
+read of `PMCCNTR_EL0` alone. `EN` would open every PMU register and `ER` the event counters. The
+context switch writes the register only when the value changes, like `mmu::switch_user_root`, and
+caches what it last wrote per core rather than reading it back, because without `FEAT_PMUv3` an
+`mrs` of the register is as UNDEFINED as an `msr`. No `isb` follows the write: the only way back to
+EL0 is the `eret` that ends the return to user, which is context-synchronizing. The grant is accepted
+on a part with no `FEAT_PMUv3` (a manifest is a declaration), and `is_cycle_counter_grantable` lets a
+test say there is nothing to measure.
+
+The closed register is not timing confinement. An ungranted thread can still time itself against
+`CNTVCT_EL0`, and two threads sharing a word build a far finer clock (confinement-claims.md). What
+it buys is that the cheap, accurate instrument is granted rather than ambient. Whether EL0 should
+ever be granted it is the question of milestone 75 (who may read the cycle counter, and by
+what authority).
 
 ### BUGS
 

@@ -82,63 +82,48 @@ const WEDGE_SEQ: u64 = 24;
 /// the kernel's reported fault address against this, which is why both sides name one constant.
 const DEV_VA: u64 = address_space_map::pair_page(0x0310_0000);
 
-/// The console UART's physical address, matching `crate::console`. This is the device the
-/// operator lends, takes back, and lends again.
-///
-/// **Taken from `user::UART_PHYS` rather than spelled again here** (milestone 161). It was a
-/// file-local pair of `cfg` arms, aarch64 and riscv64, which is a copy of a constant that already
-/// existed one module up and which therefore did not compile the day a third architecture arrived.
-/// The module-level one has three arms, and the third is **zero**: x86's COM1 is in the I/O port
-/// space, so there is no page for a device capability to be a mapping of
-/// ([DECISIONS §121](../../../design/decisions/0121-port-io-capability.md), PROPOSED). That zero is
-/// what [`NO_DEVICE_PAGE`] tests for.
+/// The console UART's physical address, matching `crate::console`: the device the operator lends,
+/// takes back, and lends again. Taken from `user::UART_PHYS` (milestone 161 (the x86_64 kernel
+/// port)), whose `x86_64` arm is zero: COM1 is in the I/O port space, so there is no page for a
+/// device capability to map (DECISIONS §121 (what a device capability is when the device has no
+/// page), PROPOSED, `design/decisions/0121-port-io-capability.md`). That zero is what
+/// [`NO_DEVICE_PAGE`] tests for.
 use crate::user::UART_PHYS;
-/// **This whole file needs a device that is a page**, and on one architecture there is not one.
+/// This file needs a device that is a page, and `x86_64` has none.
 ///
-/// The operator lends the console UART, revokes it, and the test's strongest assertion is that the
-/// outgoing instance then **faults inside [`DEV_VA`]**. On x86 there is no UART page to lend, and
-/// the trap worth naming is that lending physical page zero instead would still produce a green
-/// test: the read would return a real-mode interrupt-vector byte and the revoke would still fault.
-/// That is a passing test about nothing. See `hot_swap_contract::probe_device`'s x86 arm, which refuses
-/// for the same reason, and `user::machine_has_no_device_page_for_the_console`, which is the one
-/// definition of the question.
+/// The strongest assertion is that the outgoing instance faults inside [`DEV_VA`] after the revoke.
+/// Lending physical page zero instead would still pass (a real-mode interrupt-vector byte, then a
+/// fault): a passing test about nothing. `hot_swap_contract::probe_device`'s x86 arm refuses for
+/// the same reason; `user::machine_has_no_device_page_for_the_console` is the one definition.
 use crate::user::{NO_UART_PAGE, machine_has_no_device_page_for_the_console};
 
 /// The operator's budget: five instance regions of forty pages plus its own scratch mappings and
 /// their page tables.
 ///
-/// Kept tight on purpose, and it is not merely tidiness. `memory_region::create` takes a **contiguous**
-/// run of frames and the suite runs three of these systems, on top of a dozen earlier tests that
-/// each park a progenitor holding an eight-megabyte region. An over-generous budget here fragments
-/// the frame allocator enough that a *later, unrelated* test cannot get the progenitor's region, which is
-/// how both of this milestone's memory failures surfaced: nowhere near their cause.
+/// Tight on purpose: `memory_region::create` takes a contiguous run, the suite runs several of
+/// these systems beside a dozen tests parking an eight-megabyte progenitor region, and a generous
+/// budget fragments the allocator until a later, unrelated test cannot get its region.
 const SWAPPER_BUDGET_PAGES: u64 = 224;
 
 /// How many reports one run can make before the test gives up waiting for the operator's final
-/// verdict. Generous: the loop stops at `RPT_LOG`, and this is only the tripwire for a run that
-/// never gets there. Raised from 24 with milestone 23's manifest, which adds one `RPT_REFUSED` per
-/// run, from 28 with the hung-component role, which adds three, and from 40 with dependency-aware
-/// orchestration, which adds one `RPT_DEPENDENTS` on the direct and queued channels; a run that
-/// overflows this loses the operator's verdict and fails for the wrong reason.
+/// verdict. Only a tripwire: the loop stops at `RPT_LOG`. 42 is a base of 24, raised to 28 for
+/// milestone 23's manifest (one `RPT_REFUSED` per run), to 40 for the hung-component role (three
+/// more), and to 42 for dependency-aware orchestration (one `RPT_DEPENDENTS` on the direct and
+/// queued channels). A role that adds reports must raise it, or the run loses the operator's
+/// verdict and fails for the wrong reason.
 const MAX_REPORTS: usize = 42;
 
-/// **Spawn the operator the way the kernel spawns the progenitor**, and return the report rendezvous every
-/// process in the run holds a WRITE view of.
+/// Spawn the operator the way the kernel spawns the progenitor, and return the report rendezvous
+/// every process in the run holds a WRITE view of.
 ///
-/// Deliberately the same endowment `spawn_elf_child_builder` gives (the archive read-only at
-/// `INITIAL_RAMDISK_VA`, an untyped in slot 0, a report rendezvous in slot 1), **plus** the one
-/// thing this milestone is about: a device capability in slot 2, `WRITE|GRANT`, exactly as the progenitor gets one at boot. So
-/// what is under test is the operator's choices, not a privileged shortcut.
+/// The endowment is `spawn_elf_child_builder`'s (the archive read-only at `INITIAL_RAMDISK_VA`, an
+/// untyped in slot 0, a report rendezvous in slot 1) plus a `WRITE|GRANT` device capability in slot
+/// 2, as the progenitor gets at boot, so what is tested is the operator's choices.
 fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {
-    // Carved from a region this run owns and reclaims, not from the kernel's own pool:
-    // `sched::create_rendezvous` grows that pool in 32-page chunks it never frees, so every run
-    // costs the suite a page for good and the ledger moves in +32 steps (the `BUGS` on
-    // `testing::SUITE_PAGE_FRAME_BUDGET`). Milestone 633 (an outside agent attacks the confinement
-    // claim) added a ninth run and crossed a chunk boundary, which is how this was found. Four
-    // pages: the report rendezvous, and (milestone 800 (a non-Anthropic model attacks the
-    // confinement claim), fourth pass) the notification and timer that make the operator's un-park
-    // of the plant bounded. The helper cannot make these, which is why the rendezvous arrives
-    // made: the notification and timer are carved from the same region the report line comes from.
+    // From a region this run reclaims, not the kernel's pool, which grows in 32-page chunks it
+    // never frees (the BUGS on `testing::SUITE_PAGE_FRAME_BUDGET`). It holds the report rendezvous
+    // and the notification and timer that bound the operator's un-park of the plant. The helper
+    // cannot make these, which is why the rendezvous arrives made.
     let report_region = crate::memory_region::create(4).expect("no region for the report endpoint");
     let report = sched::create_rendezvous_from(report_region).expect("no report rendezvous");
     let wake = sched::create_notification_from(report_region).expect("no notification for swapper");
@@ -224,9 +209,8 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
         "the operator never reached its final verdict in {MAX_REPORTS} reports",
     );
 
-    // Let the system settle, then prove it has nothing more to say. A parked sender here would
-    // mean something acted after the operator had finished, which is how "the run left nothing
-    // running" is proven without a blocking receive that would hang when the code is right.
+    // A parked sender after settling would mean something acted after the operator finished,
+    // proved without a blocking receive that would hang when the code is right.
     for _ in 0..400 {
         sched::yield_now();
     }
@@ -236,23 +220,11 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
         "the swap system had more to say after the operator's final verdict",
     );
 
-    // **The system reclaims itself**, and this is an assertion rather than housekeeping.
-    //
-    // The operator supervises every child it starts and collects every corpse through its
-    // supervision rendezvous (DECISIONS §32), which returns each instance's region to its budget.
-    // So a reclaim of the budget can only *succeed* if all five of those splits are gone: §16
-    // refuses a region whose children are still carved out of it. Success is the statement that
-    // nothing leaked; the region's page count is the statement that the whole run came back.
-    //
-    // It also has to work, for a reason that has nothing to do with tidiness. `memory_region::create`
-    // takes a **contiguous** run of frames, these tests run three systems, and the first version
-    // of this leaked all three, which fragmented the allocator badly enough that a *later* test
-    // could not get the progenitor's own eight-megabyte region.
-    //
-    // `sched::reclaim_region` rather than `memory_region::destroy` because these regions are *pinned*:
-    // the operator retyped four endpoints and a frame out of its budget. Reclaiming a region
-    // with objects in it is the §16 teardown, and it is the entry point the `MemoryRegion::DESTROY`
-    // syscall uses, so the test cannot succeed down a path userspace could not have taken.
+    // The system reclaims itself, asserted (notes/live-replacement.md, "The system reclaims itself,
+    // and the test asserts it"): §16 refuses a region with children carved out of it, so the
+    // reclaim succeeds only if every collected instance (§32) came home. `sched::reclaim_region`,
+    // the `DESTROY` syscall's entry point, because the budget is pinned by the objects retyped from
+    // it.
     let (_, region_size) =
         crate::memory_region::usage(budget).expect("the operator's budget should exist");
     assert_eq!(
@@ -263,30 +235,19 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
         "the operator's budget would not reclaim: a child region is still carved out of it, so \
          the swap system leaked one of its components",
     );
-    // **The region is gone, and its absence is the measurement.** `reclaim_region` destroys the
-    // region itself, so there is nothing left to ask about usage: `memory_region::usage` returns
-    // `None` once the name is stale. That `None` says more than a frame delta did. §16 (object revocation: reclaim the
-    // objects a process built) refuses to
-    // reclaim a region whose children are still carved out of it, so reaching a stale name at all
-    // means every child was already gone and the whole run, exactly `SWAPPER_BUDGET_PAGES` of it,
-    // went back to the parent. The old assertion read the machine's global free-frame count, which
-    // any neighbouring test's teardown could move; this one cannot be perturbed by anything outside
-    // this region.
+    // A stale name is the measurement: under §16 (object revocation: reclaim the objects a process
+    // built) it means every child was gone and all `SWAPPER_BUDGET_PAGES` went back, and nothing
+    // outside this region can perturb it, as it could a global free-frame count.
     assert!(
         crate::memory_region::usage(budget).is_none(),
         "the operator's budget still exists after reclaim, so its {SWAPPER_BUDGET_PAGES} pages did \
          not go back to the parent",
     );
 
-    // The operator's own address space and TCB are **not** in that budget: the kernel built the
-    // operator the way it builds the progenitor. They come home through the ordinary reaper, which with
-    // per-CPU run queues (DECISIONS §28) runs when the core the operator died on next schedules,
-    // and the boot thread yielding here cannot force that. So this is hygiene, deliberately not
-    // asserted on: what this milestone is responsible for is the swap system's own memory,
-    // which is what the assertion above covers. A `debug_assert!` against a free-frame count
-    // sampled at the top of the run stood here until 2026-08-03 and flaked on CI, because the
-    // only thing that could trip it was an *earlier* test's teardown landing mid-run, which is
-    // nothing this test is responsible for. See the BUGS section of notes/live-replacement.md.
+    // Hygiene, not asserted: the operator's own space and TCB come home through the reaper, which
+    // runs when the core it died on next schedules (DECISIONS §28 (SMP placement)), and a
+    // free-frame assertion here flakes on other tests' teardowns (notes/live-replacement.md's
+    // BUGS).
     let _ = sched::reclaim_region(thread_control_block_region);
     // Last, after every thread that held the report endpoint is gone or going. Hygiene like the
     // line above, for the same reason it is not asserted on.
@@ -304,21 +265,13 @@ fn had_step(msgs: &[[u64; 5]], step: u64) -> bool {
     of_kind(msgs, RPT_STEP).any(|m| m[1] == step)
 }
 
-/// **A component this operator cannot provide for is refused before anything is built**
-/// (milestone 23's component manifest; `crates/capability_plan`, notes/component-manifest.md).
+/// A component this operator cannot provide for is refused before anything is built (milestone
+/// 23's component manifest; `crates/capability_plan`, notes/component-manifest.md).
 ///
-/// Asserted on both channels, because a mechanism that only worked for the one component it was
-/// written against would not be a mechanism. On the direct channel the operator plans the queue
-/// broker's declaration, which names `requests` and `backend`, and that channel routes neither; on
-/// the queued channel it plans the console component's declaration, which names `uart`, and that
-/// channel routes no device. Both are **real manifests against real routing tables**, not fixtures:
-/// each is the other role's component, asked for by a supervisor that genuinely cannot satisfy it.
-///
-/// Two things are asserted, and the second is the one that matters. The refusal is the *typed* one
-/// (a role went unrouted) rather than any old failure, and it arrives **ahead of every build step and
-/// every instance that started**, which is what makes a manifest a request the supervisor may refuse
-/// rather than an instruction it has to carry out half way. A supervisor that discovered the problem
-/// after mapping a page would have already moved authority.
+/// On both channels, each with the other role's real manifest: the direct channel routes neither
+/// of the broker's `requests` and `backend`, the queued one no `uart`. The refusal must be the typed
+/// one (a role went unrouted) and arrive ahead of every build step and started instance, so a
+/// manifest is a request the supervisor may refuse, not an instruction carried out half way.
 fn a_component_the_operator_cannot_provide_for_was_refused_first(msgs: &[[u64; 5]]) {
     let at = msgs.iter().position(|m| m[0] == RPT_REFUSED).expect(
         "the operator never reported a refusal, so nothing shows that an unsatisfiable \
@@ -342,14 +295,12 @@ fn a_component_the_operator_cannot_provide_for_was_refused_first(msgs: &[[u64; 5
     );
 }
 
-/// **The dependency graph a supervisor would compute agrees with what this channel actually ran**
-/// (milestone 23's dependency-aware-orchestration residual; `crates/capability_plan`'s `dependents`).
+/// The dependency graph a supervisor would compute agrees with what this channel ran (milestone
+/// 23's dependency-aware-orchestration residual; `crates/capability_plan`'s `dependents`).
 ///
-/// `swapper` reports one `RPT_DEPENDENTS` per swap target it considers: `w1` = how many live
-/// instances `capability_plan::dependents` returned, `w2` = the first one's id (0 if none). This is
-/// not a report about what the operator *did*; it is the graph's own verdict, computed from
-/// `Requirements::depends_on` before any orchestration step runs, so a mismatch here would mean the
-/// graph and the hand-written sequencing had drifted apart.
+/// One `RPT_DEPENDENTS` per swap target: `w1` how many live instances `dependents` returned, `w2`
+/// the first one's id (0 if none). It is the graph's verdict from `Requirements::depends_on` before
+/// any step runs, so a mismatch means the graph and the hand-written sequencing drifted apart.
 fn the_dependency_graph_matches_what_this_channel_ran(
     msgs: &[[u64; 5]],
     want_len: u64,
@@ -371,12 +322,10 @@ fn the_dependency_graph_matches_what_this_channel_ran(
     );
 }
 
-/// **The flagship: a component is replaced under a client that is talking to it.**
+/// A component is replaced under a client that is talking to it. See notes/live-replacement.md.
 ///
-/// The four steps all happen, in an order the operator chose, and then two independent
-/// witnesses in two address spaces agree that the conversation was unbroken. The client is not
-/// consulted about the swap and the operator is not consulted about the replies; each says only
-/// what it saw.
+/// The four steps happen in an order the operator chose, then two witnesses in two address spaces
+/// agree the conversation was unbroken. Neither is consulted about the other's half.
 #[test_case]
 fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
     if machine_has_no_device_page_for_the_console() {
@@ -505,31 +454,14 @@ fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
     );
 }
 
-/// **The attacker holds a real capability to the stable rendezvous and still cannot be the
-/// server.**
+/// The attacker holds a real capability to the stable rendezvous and still cannot be the server.
 ///
-/// The milestone rests on rendezvous-only naming, and the obvious worry about it is that a name
-/// with no peer in it is a name anybody can answer to. It is not: `SEND` and `RECEIVE` are gated by
-/// different rights on the same object, so the same rendezvous handed out two ways is a one-way
-/// pipe in whichever direction each holder was trusted with. The attacker is endowed with
-/// *exactly* what the honest client holds, so the refusal is about rights and not about
-/// wiring.
-///
-/// **A plant makes this test able to fail rather than hang** (milestone 800 (a non-Anthropic model
-/// attacks the confinement claim), fourth pass). Until it, a `RECEIVE_CAP` the kernel failed to
-/// refuse simply blocked on an empty queue, so the break surfaced as a 60-second watchdog hang
-/// (measured 2026-09-16, milestone 305 (the six kernel confinement rows get a falsification a
-/// machine can replay)): milestone 202 (every confinement test is a ritual until somebody breaks
-/// the confinement)'s wrong-reason red on a third claim. The operator now
-/// retires the replacement first, so nothing ever receives on the endpoint again, then starts the
-/// plant (a `swap_boundary_witness` role that parks a message on it), then the attacker. A let-open
-/// `RECEIVE_CAP` *returns the plant's message*, and the assertion below fires: the attacker's
-/// report carries the marker word rather than the refusal. The operator then drains the plant
-/// itself on the honest kernel, so both programs exit and the run reclaims as before. The
-/// kernel-side twin of this gate is
-/// `confinement_attack_tests::a_write_only_rendezvous_holder_cannot_receive_reap_or_survey`,
-/// which parks its sender by construction and needs no operator; this test carries its own record
-/// so claim 26's cited evidence is not a measurement beside it.
+/// `SEND` and `RECEIVE` take different rights on one object, so a rendezvous handed out two ways is
+/// a one-way pipe; the attacker holds exactly the client's endowment, so the refusal is rights, not
+/// wiring. A plant makes it fail rather than hang (milestone 800 (a non-Anthropic model attacks the
+/// confinement claim), fourth pass): with the replacement retired, a `swap_boundary_witness` parks
+/// a message that a let-open `RECEIVE_CAP` returns as the report's marker word; the operator drains
+/// it otherwise. Claim 26's record, beside its kernel-side twin in `confinement_attack_tests`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.live_swap_tests.a_client_of_the_stable_rendezvous_cannot_become_its_server.patch`
 #[test_case]
@@ -551,17 +483,13 @@ fn a_client_of_the_stable_rendezvous_cannot_become_its_server() {
     );
 }
 
-/// **A confined client cannot drive the server to write past its log, into a device page it was
-/// never granted** (milestone 633 (an outside agent attacks the confinement claim), third pass).
+/// A confined client cannot drive the server to write past its log, into a device page it was
+/// never granted (milestone 633 (an outside agent attacks the confinement claim), third pass).
 ///
-/// The kernel refuses the attacker's `RECEIVE_CAP` (it holds `WRITE`, not `READ`), so it cannot
-/// become the server, which the test above asserts. That is not the whole of claim 26: the server's
-/// `OPERATION_PUT` writes a byte at `LOG_VA + log_base + arg`, with `arg` the client's own word. Until
-/// the third outsider pass found it, nothing bounded `arg`, so a `WRITE`-only client asked for an
-/// offset landing in the device register page the server holds and the client does not, and the
-/// server wrote there and echoed the offset. That was a confused-deputy escape of the demonstrator's
-/// boundary, not a kernel gate failure, booted red on aarch64 and riscv64. `hot_swap_contract::log_put`
-/// now refuses an offset outside the one log page and the server answers `PUT_REFUSED`.
+/// Claim 26's other half: the server's `OPERATION_PUT` writes at `LOG_VA + log_base + arg`, `arg`
+/// being the client's word, so an unbounded `arg` reaches the device page the server holds, a
+/// confused deputy rather than a kernel gate. `hot_swap_contract::log_put` refuses an offset
+/// outside the log page, and the server answers `PUT_REFUSED`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.live_swap_tests.a_confined_client_drives_the_server_to_write_past_its_log.patch`
 #[test_case]
@@ -607,23 +535,15 @@ fn a_confined_client_drives_the_server_to_write_past_its_log() {
     );
 }
 
-/// **The opt-in rung: a producer keeps producing while no backend exists at all.**
+/// The opt-in rung: a producer keeps producing while no backend exists at all.
 ///
-/// The direct rung's down window costs the caller a block: its request is safe (it parks on the
-/// rendezvous's sender queue and the next server drains it) but it is stopped until then. For a
-/// channel that cannot afford that, `broker` takes custody. The price is one extra hop on
-/// every request in the steady state, which is why it is chosen per channel and never by
-/// default; `broker_rtt` in bench/baseline-aarch64.txt is that price.
-///
-/// What this proves that the direct test does not: there is a window here in which the backend
-/// **does not exist** (it was quiesced, it died, and its corpse was collected before the
-/// replacement was built), the producer kept calling through it, and every item it handed over
-/// turns up in the new backend's log, in order.
+/// On the direct rung a caller blocks through the down window; here `broker` takes custody, at
+/// one extra hop per request (`broker_rtt` in bench/baseline-aarch64.txt), so it is chosen per
+/// channel. Unlike the direct test, the backend does not exist for a window (quiesced, dead,
+/// collected), the producer keeps calling, and every item reaches the new backend's log in order.
 #[test_case]
 fn a_producer_never_blocks_on_an_absent_consumer_and_loses_nothing() {
-    // No `NO_UART_PAGE` skip since 2026-09-26: this channel routes no device, so the x86 gap the
-    // direct and hung channels skip on never applied to it. The skip was inherited from the file
-    // rather than from anything this system does.
+    // No `NO_UART_PAGE` skip: this channel routes no device.
     let (msgs, n) = run_swap(ROLE_QUEUED);
     let msgs = &msgs[..n];
 
@@ -631,11 +551,9 @@ fn a_producer_never_blocks_on_an_absent_consumer_and_loses_nothing() {
     // the one that cannot be satisfied, because no device is routed here.
     a_component_the_operator_cannot_provide_for_was_refused_first(msgs);
 
-    // **The one real edge in this milestone's residual.** `broker` declares `depends_on:
-    // &["backend"]`, so the graph names it (id 2) as the sole instance that must be warned before
-    // the backend is swapped, and it is what actually decides whether the broker is warned on this
-    // run rather than the operator's own hard-coded memory of what it built. The warning is §231's
-    // page and signal, which the operator never waits on.
+    // `broker` declares `depends_on: &["backend"]`, so the graph names it (id 2) as the one
+    // instance to warn before the swap, and it decides the warning. The warning is §231's page and
+    // signal, which the operator never waits on.
     the_dependency_graph_matches_what_this_channel_ran(msgs, 1, 2);
 
     let producer = of_kind(msgs, RPT_CLIENT)
@@ -684,7 +602,8 @@ fn a_producer_never_blocks_on_an_absent_consumer_and_loses_nothing() {
 }
 
 // ===============================================================================================
-// Milestone 23's third residual: a component that stops answering **without dying**.
+// Milestone 23 (a capability-routed component OS with live replacement)'s third residual: a
+// component that stops answering **without dying**.
 // ===============================================================================================
 
 /// `abi::survey`'s state codes, unpacked from `RPT_SURVEY` by `hot_swap_contract::survey_counts`'s layout.
@@ -699,34 +618,14 @@ fn survey_awake(w: u64) -> u64 {
     (w & 0xff) + ((w >> 8) & 0xff)
 }
 
-/// **A supervisor notices a component that stops answering without dying, restores the service, and
-/// reclaims the hung component** (milestone 23's third residual; notes/hung-component.md and its
-/// `the-wedge-test.md`, which argues each result).
+/// A supervisor notices a component that stops answering without dying, restores the service, and
+/// reclaims it (milestone 23's third residual; notes/hung-component/the-wedge-test.md argues each).
 ///
-/// A component that merely stops answering produces no death message (DECISIONS §26 (the fault
-/// endpoint)) and no corpse to reap. **Its wedge is silent**: it swallows one request and parks,
-/// and the only message it sends is the ordinary swap trigger a healthy incumbent sends too.
-///
-/// 1. **The operator notices on its own**: its `OPERATION_QUIESCE` goes unanswered within its bound
-///    (milestone 106 (a wait that ends on either the interrupt or the deadline)'s timed wait).
-/// 2. **The domain does not report a hang**: every member `BLOCKED`, none `DEAD`, exactly what a
-///    healthy idle system reads as.
-/// 3. **The reap vocabulary is refused**: `StillAlive` for every member, since §32 (a supervisor may
-///    collect a corpse) authorizes collecting a corpse and a hung component is not one.
-/// 4. **The service is restored with no new authority**, and the client's stream is unbroken.
-/// 5. **The hung component's region comes back while it is still hung**: `DESTROY` after `STARTED`
-///    finishes it in place (milestone 133 (ending a permanently blocked thread, and deciding who
-///    may)), the budget's live-children count falls by one instance, and it leaves no corpse.
-/// 6. **The caller it stranded sees `Gone`** (milestone 254 (a caller stranded by a server that
-///    died)) and asks the replacement again: the composition milestone 133's block argued, run.
-///
-/// On `x86_64` there is no device page (`NO_UART_PAGE`), so the run uses
-/// `ROLE_HUNG_WITHOUT_DEVICE`, the same system with nothing to revoke, and every result but the
-/// take-back holds there unchanged.
-///
-/// **The only clock is the operator's bound, and it is not asserted on.** Against a hung incumbent
-/// any bound is eventually reached; what it decides is whether a healthy incumbent would be
-/// convicted, which is measured in `components/src/swapper.rs` rather than tested here.
+/// The wedge is silent: one swallowed request, no death message (DECISIONS §26 (the fault
+/// endpoint)), no corpse. The six results are the helpers below, from the operator's unanswered
+/// quiesce to the stranded caller's `Gone`. `x86_64` runs `ROLE_HUNG_WITHOUT_DEVICE`, where all but
+/// the take-back hold. The operator's bound is not asserted; whether it would convict a healthy
+/// incumbent is measured in `components/src/swapper.rs`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.live_swap_tests.a_supervisor_notices_a_hung_component_and_reclaims_it.patch`
 #[test_case]
@@ -752,7 +651,9 @@ fn a_supervisor_notices_a_hung_component_and_reclaims_it() {
     the_stranded_caller_sees_gone(client, log);
 }
 
-/// Result 1 of the hung case: the operator's quiesce went unanswered, and it never drained.
+/// Result 1 of the hung case: the operator notices on its own. Its `OPERATION_QUIESCE` went
+/// unanswered within its bound (milestone 106 (a wait that ends on either the interrupt or the
+/// deadline)'s timed wait), and it never drained.
 fn the_operator_noticed_the_hang_on_its_own(msgs: &[[u64; 5]]) {
     let unanswered = of_kind(msgs, RPT_UNANSWERED).next().expect(
         "the operator never reached a hang verdict, so its quiesce was answered or it hung itself",
@@ -792,7 +693,8 @@ fn the_operator_noticed_the_hang_on_its_own(msgs: &[[u64; 5]]) {
     }
 }
 
-/// Result 2 of the hung case: the domain does not report a hang.
+/// Result 2 of the hung case: the domain does not report a hang. Every member is `BLOCKED` and none
+/// `DEAD`, exactly what a healthy idle system reads as.
 fn a_hang_reads_as_an_idle_domain(msgs: &[[u64; 5]]) {
     let survey = of_kind(msgs, RPT_SURVEY)
         .next()
@@ -845,7 +747,8 @@ fn a_hang_reads_as_an_idle_domain(msgs: &[[u64; 5]]) {
     );
 }
 
-/// Result 3 of the hung case: every member refuses to be collected.
+/// Result 3 of the hung case: every member refuses to be collected, `StillAlive`. §32 (a supervisor
+/// may collect a corpse) authorizes collecting a corpse, and a hung component is not one.
 fn no_member_of_a_hung_domain_can_be_collected(msgs: &[[u64; 5]]) {
     let uncollectable = of_kind(msgs, RPT_UNCOLLECTABLE)
         .next()
@@ -865,8 +768,8 @@ fn no_member_of_a_hung_domain_can_be_collected(msgs: &[[u64; 5]]) {
     );
 }
 
-/// Result 4 of the hung case: the service comes back. Returns the client's verdict and the
-/// operator's log, which result 6 reads again.
+/// Result 4 of the hung case: the service comes back with no new authority, and the client's stream
+/// is unbroken. Returns the client's verdict and the operator's log, which result 6 reads again.
 fn the_hung_service_is_restored(msgs: &[[u64; 5]], device: bool) -> (&[u64; 5], &[u64; 5]) {
     for (step, what) in [
         (STEP_BUILT, "build the replacement"),
@@ -937,8 +840,10 @@ fn the_hung_service_is_restored(msgs: &[[u64; 5]], device: bool) -> (&[u64; 5], 
     (client, log)
 }
 
-/// Result 5 of the hung case: the incumbent's region came back, after the service did, and the
-/// incumbent never died.
+/// Result 5 of the hung case: the incumbent's region came back while it was still hung, after the
+/// service did. `DESTROY` after `STARTED` finishes it in place (milestone 133 (ending a permanently
+/// blocked thread, and deciding who may)): the budget's live children fall by one instance, and it
+/// never dies.
 fn the_hung_component_is_reclaimed_while_still_hung(msgs: &[[u64; 5]]) {
     let reclaimed = of_kind(msgs, RPT_RECLAIMED)
         .next()
@@ -978,8 +883,9 @@ fn the_hung_component_is_reclaimed_while_still_hung(msgs: &[[u64; 5]]) {
     );
 }
 
-/// Result 6 of the hung case: the caller the incumbent stranded was freed by the kernel, with
-/// `Gone`, and asked the replacement again.
+/// Result 6 of the hung case: the caller the incumbent stranded was freed by the kernel with `Gone`
+/// (milestone 254 (a caller stranded by a server that died)) and asked the replacement again, the
+/// composition milestone 133's block argued, run.
 fn the_stranded_caller_sees_gone(client: &[u64; 5], log: &[u64; 5]) {
     assert_ne!(
         client[1] & CL_WAS_GONE,
@@ -1007,27 +913,16 @@ fn the_stranded_caller_sees_gone(client: &[u64; 5], log: &[u64; 5]) {
     );
 }
 
-/// **A component's state survives its own replacement, and a replacement that cannot take the state
-/// over does not replace anything** (DECISIONS §209 (state handoff is an opaque blob over a granted frame, and it is optional); the last residual of milestone 23 (a capability-routed component OS with live replacement);
-/// notes/state-handoff.md).
+/// A component's state survives its replacement, and a replacement that cannot take the state
+/// over replaces nothing (DECISIONS §209 (state handoff is an opaque blob over a granted frame, and
+/// it is optional); milestone 23's last residual; notes/state-handoff.md).
 ///
-/// The component keeps a tally of every request it has served and answers each request with it.
-/// The operator tries the swap twice: once against a replacement that only understands a blob layout
-/// nobody wrote, and once against one that understands the incumbent's. Three witnesses, none
-/// consulted by the others:
-///
-/// - **The client**, from its replies. The tally rides in the reply word the other channels use to
-///   echo the sequence number, so `SEQ_ECHOED` holds across all 64 requests **only if no state was
-///   lost**: a replacement that started from zero would answer request 40 with 0.
-/// - **The operator**, from the steps: the refused attempt rolled back and named the layout it
-///   could not read, and the tally the replacement says it absorbed is exactly the tally the
-///   incumbent said it had when it quiesced the second time.
-/// - **The witness page**, byte by byte: one version change, no gap, never backwards.
-///
-/// **This is the one swap system that runs on `x86_64`.** It has no device, because the state is what
-/// is under test, so the x86 gap the other three tests skip on (`NO_UART_PAGE`) does not apply. The
-/// operator is still spawned holding a device capability in slot 2, because `spawn_swapper` gives
-/// every role one; on x86 that capability names physical page zero, and this role never maps it.
+/// The component answers each request with its tally. The swap is tried against a replacement
+/// reading a layout nobody wrote, then one reading the incumbent's. The client's `SEQ_ECHOED` holds
+/// over 64 requests only if no state was lost; the operator's refused attempt rolls back naming the
+/// layout, and the absorbed tally equals the quiesced one; the page shows one version change, no
+/// gap, never backwards. It needs no device, so it runs on `x86_64`, where the slot-2 device
+/// capability `spawn_swapper` grants names physical page zero and is never mapped.
 #[test_case]
 fn a_component_keeps_its_state_across_a_swap_and_a_swap_that_cannot_absorb_it_does_not_commit() {
     let (msgs, n) = run_swap(ROLE_HANDOFF);
@@ -1156,19 +1051,15 @@ fn the_client_and_the_page_saw_the_swap_at(msgs: &[[u64; 5]], absorbed: u64) {
     );
 }
 
-/// **A dependent that is never warned costs its callers latency, not work** (the non-cooperative
+/// A dependent that is never warned costs its callers latency, not work (the non-cooperative
 /// fallback, notes/non-cooperative-fallback.md).
 ///
-/// The queued system, with one change: the dependency graph names `broker` exactly as it does on
-/// the queued channel, and the operator then never warns it, which is what a supervisor
-/// is reduced to when the dependent it must warn does not answer. The backend is swapped anyway.
-/// `broker` stays in pass-through, its forwarded `CALL` parks on the back endpoint's sender queue
-/// for the down window, and the replacement drains it (the argument of DECISIONS §41 (the endpoint
-/// is the broker, and a device is revoked by taking it back), one hop further out).
-///
-/// So the assertions are the queued channel's, with `WAS_BUFFERED` inverted: every request answered
-/// correctly and in order, nothing refused, nothing lost, and **nothing buffered**, which is the
-/// witness that the warning really was absent rather than merely unobserved.
+/// The queued system, with the graph naming `broker` as before and the operator never warning it,
+/// as when a dependent does not answer. `broker` stays in pass-through, its forwarded `CALL` parks
+/// on the back endpoint's sender queue for the down window, and the replacement drains it (DECISIONS
+/// §41 (the endpoint is the broker, and a device is revoked by taking it back), one hop out). The
+/// queued channel's assertions hold with `WAS_BUFFERED` inverted: nothing buffered is the witness
+/// that the warning was absent, not merely unobserved.
 #[test_case]
 fn a_dependent_that_is_never_warned_loses_nothing_and_only_waits() {
     let (msgs, n) = run_swap(ROLE_UNWARNED);

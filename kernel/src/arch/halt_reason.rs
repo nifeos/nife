@@ -5,19 +5,12 @@
 /// **Permission to stop this core for good**, and the only way to call [`halt`](crate::arch::halt) (milestone 720
 /// (provisional)).
 ///
-/// `halt` is `wfi` (or `hlt`) in a loop. On a core whose scheduler is running, the thread that
-/// calls it stays on the run queue, so every time round robin reaches it the core stops until the
-/// next tick with other work ready behind it. On x86_64 that thread was the boot thread after the
-/// hand-over, and the swish-check leg paid seconds a line for it (milestone 628 (the x86_64
-/// swish-check leg costs what the others do), #1487); aarch64 and riscv64 ended their boot threads
-/// the same way. A thread whose work is done leaves with [`crate::sched::exit`] instead, and the
-/// idle thread, which waits only when nothing else can run, takes the core.
+/// `halt` is `wfi` (or `hlt`) in a loop. A thread that calls it under a running scheduler stays on
+/// the run queue and stops its core each time round robin reaches it; a thread whose work is done
+/// leaves with [`crate::sched::exit`] instead, and the idle thread takes the core.
 ///
-/// So the wrong call is made unwritable rather than discouraged. The field is private and the
-/// constructors below are the whole list of who may halt: a panic, a test build, a measurement boot
-/// (a build whose run *is* the halt), and a boot that fails before the scheduler exists. An
-/// ordinary or `shell` build compiles only the first and the last, and the last checks its own
-/// claim. A boot path that reaches for `halt` in such a build does not compile.
+/// The field is private; the constructors below are the whole list of who may halt (a panic, a
+/// test build, a measurement boot, a boot that fails before the scheduler exists).
 ///
 /// Name: ratified 2026-10-03 (calef). Refused `Terminal`, this type's provisional name (milestone
 /// 720's lane), because "terminal" already means the display terminal and the tty across about
