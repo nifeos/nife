@@ -41,8 +41,8 @@ driver discipline, and lets `used.idx` decide when a wakeup is really its own.
 With the WAIT path the fs_server test passes on both ISAs at the 4-core SMP boot, all of the mount's
 interrupt-driven completions landing well inside the 60 s watchdog. QEMU completes virtio-blk
 synchronously inside `NOTIFY` (notes/dma.md), so the interrupt is already pending when the server
-WAITs, and the pending-signal count of milestone 9 (an interrupt becomes a message) returns that
-WAIT at once instead of blocking on an event already over.
+WAITs. The pending-signal count of milestone 9 (an interrupt becomes a message) returns that WAIT at
+once instead of blocking on an event already over.
 
 The runners also order the two mmio disks with care, because QEMU assigns virtio-mmio slots in
 reverse command-line order and the kernel enumerates by ascending slot.
