@@ -193,7 +193,7 @@ pub mod polled_wait {
     //! # BUGS
     //!
     //! - A core is busy while a stream flows, and for a tick after it ends: each look yields, but
-    //!   an idle core does not idle. A NIC interrupt or a timed wait finer than the tick would fix it.
+    //!   an idle core does not idle. A NIC interrupt or a finer timed wait would fix it.
 
     /// What a polled NIC's wait does next.
     ///

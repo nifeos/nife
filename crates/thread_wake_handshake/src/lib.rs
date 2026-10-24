@@ -2,12 +2,12 @@
 //! thread may become runnable. The kernel's `Thread` embeds a [`Handshake`] and calls these
 //! transitions, so loom explores on the host the code the kernel runs.
 //!
-//! Every field is written under `IPC_TABLES`. The races live in the window between a thread marking
-//! itself `Blocked` and its core's `switch_to` saving its context, and each is a rule here: wake
-//! before switch-out ([`Handshake::wake_pending`]), the undelivered wake ([`Handshake::ipc_served`],
-//! [`Handshake::ipc_aborted`]), and a steal racing a switch-out ([`Handshake::switch_in`]'s
-//! tripwire). The queues and the out-of-protocol writes of `state` stay kernel-side. See
-//! notes/scheduler/wake-handshake.md.
+//! Every field is written under `IPC_TABLES`. The races live in the window between a thread
+//! marking itself `Blocked` and its core's `switch_to` saving its context, and each is a rule here:
+//! wake before switch-out ([`Handshake::wake_pending`]), the undelivered wake
+//! ([`Handshake::ipc_served`], [`Handshake::ipc_aborted`]), and a steal racing a switch-out
+//! ([`Handshake::switch_in`]'s tripwire). The queues and out-of-protocol writes of `state` stay
+//! kernel-side. See notes/scheduler/wake-handshake.md.
 
 //! # BUGS
 //!
@@ -129,9 +129,9 @@ pub struct Handshake<W> {
     /// directly by design; the module's BUGS section names the cost.
     pub state: RunState,
 
-    /// Still standing on a CPU, so its saved context is stale. Set by [`switch_in`](Self::switch_in);
-    /// cleared by that core's successor in [`finish_switch`](Self::finish_switch), after the switch
-    /// away has saved this thread's context.
+    /// Still standing on a CPU, so its saved context is stale. Set by
+    /// [`switch_in`](Self::switch_in); cleared by that core's successor in
+    /// [`finish_switch`](Self::finish_switch), once the switch away has saved its context.
     pub on_cpu: bool,
 
     /// A wake arrived while this thread was still switching out. Parked here by

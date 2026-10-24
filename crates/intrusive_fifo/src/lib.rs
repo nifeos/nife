@@ -6,7 +6,7 @@
 //!
 //! 1. A node is on at most one queue until popped; a push consumes its [`Unqueued`] token.
 //! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
-//! 3. The caller serializes all access to a queue and its nodes' links; `&mut self` covers the queue.
+//! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue).
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
 //! `intrusive`, an adjective without its noun; the primary type is `Fifo<T: Node>`.
