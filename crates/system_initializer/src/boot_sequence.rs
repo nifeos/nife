@@ -1,10 +1,8 @@
 //! The boot sequence: `boot`, which builds the interactive system in numbered steps and then
-//! becomes its spawn service, and the last steps it takes before that (what it says before the
-//! prompt, and the undertaker). Moved out of `lib.rs` unchanged but for visibility by milestone 843
-//! (the system-initializer crate root is split along its seams), under §279 (the system-initializer
-//! crate root splits into private modules). `boot` is now split along its steps, by the
-//! long-function paydown lane (2026-10-12 UTC); the building steps and the password helpers are in
-//! `boot_steps`.
+//! becomes its spawn service, and its last steps (what it says before the prompt, and the
+//! undertaker). The building steps and the password helpers are in `boot_steps`. See
+//! notes/trusted-init/interactive-boot.md, "What the boot keeps, and what it says before the
+//! prompt".
 //!
 //! Name: provisional (milestone 843's lane, 2026-10-11 UTC).
 
@@ -24,10 +22,8 @@ use super::*;
 /// # Examples
 ///
 /// A progenitor's whole source, near enough: the endowment is the complete authority of the system
-/// about to exist, which is why its fields are named for what they are. A grant a boot lacks (no
-/// disk, no rng, no GPU, no NIC) is an empty slot that `boot` probes, not a failure. The real
-/// table is `components/src/progenitor.rs`'s. `no_run`, because it only runs at EL0 under
-/// `script/swish-check`.
+/// about to exist. A grant a boot lacks is an empty slot that `boot` probes, not a failure. The real
+/// table is `components/src/progenitor.rs`'s; `no_run`, because it runs only at EL0.
 ///
 /// ```no_run
 /// use system_initializer::{BootEndowment, boot};
@@ -78,9 +74,9 @@ pub fn boot(
     // Vouched above, so these are the measured bytes.
     let td_bytes = fs.read("line_editor").unwrap_or(&[]);
 
-    // `graphical_terminal_grants` ran at the top of this function, before the entropy block: the devices'
-    // caps sit in their kernel-granted slots until the shell's build places them, and nothing
-    // graphical is built here on any boot (milestone 632 (provisional)).
+    // `graphical_terminal_grants` ran in `start_device_services`: the devices' caps sit in their
+    // kernel-granted slots until the shell's build places them, and nothing graphical is built here
+    // on any boot (milestone 632 (graphics on demand)).
     let term = start_terminal_stack(
         g,
         ut,
@@ -104,26 +100,8 @@ pub fn boot(
     start_keystroke_sources(g, ut, &in_elf, term.ep, uart_shape);
     let chan = retype_spawn_channel(ut);
 
-    // 4. The shell: prints and reads lines through the terminal, holds the spawn channel, and holds
-    // its own untyped budget (slot 3) so `run --mem N` grants from memory that is genuinely the
-    // shell's. WRITE lets it SPLIT the budget; GRANT lets it delegate the split to the progenitor. We carve
-    // that budget from our own untyped and hand it over the same way we hand any capability.
-    //
-    // Slot 4 is the filesystem when this boot has one, which is the whole of what `>` and `<` need
-    // (milestone 50, notes/pipes.md): the shell resolves a redirection against it and writes the
-    // file itself. Narrowed to WRITE, which on an endpoint is the right to CALL, and without GRANT,
-    // so the shell can hand it to nobody.
-    //
-    // **And a read-only clock last** (milestone 86), which is what `time <command>` measures with.
-    // It is [`BootEndowment::clock_page`], the same frame this progenitor was granted and hands to a child
-    // whose manifest declares a clock; the shell is simply another holder of a narrowed view. `READ`
-    // and no `GRANT`, deliberately: the shell can read the wall clock and can hand one to nothing it
-    // spawns, so which processes can read the time is still decided by the manifests this crate
-    // reads (DECISIONS §43) rather than by anything typed at a prompt.
-    //
-    // Last in the list, so a boot with no filesystem takes exactly the path it took before this
-    // existed. Its slot therefore moves (4 without a disk, 5 with one), which is why the shell is
-    // *told* the number in `x2`/`a2` instead of assuming one; see swish.rs's `CLOCK_SLOT`.
+    // 4. The shell, holding its own untyped budget so `run --mem N` grants from memory that is the
+    // shell's. Its slots, the filesystem's and the clock's among them, are [`build_shell`]'s.
     let sh_budget = must(memory_region_split(ut, SH_BUDGET_PAGES));
     let w = Wiring {
         g,
@@ -136,27 +114,12 @@ pub fn boot(
     let (shell, sh_clock_slot) = build_shell(&w, &sh_elf, chan, sh_budget);
     finish_shell_endowment(g, shell.tcb, mounted_tree);
 
-    // Free every boot cap the spawn service does not need, so the progenitor's 16-slot capability table has room to
-    // build a supervised child (which holds a job untyped and a job frame while the loader retypes
-    // an address space, frames, and a TCB). The drivers and the shell hold the narrowed copies that matter.
-    //
-    // **Only the input frame, and the two that stay have a reason each.** `term_ep` is still ours to
-    // delegate: the sink adapter below is handed `WRITE` on it, and the drop announcement is a
-    // `CALL` on it. `term_out` is where that announcement stages its bytes. Both go back the moment
-    // their last use is done, and after that this process holds no way to reach the terminal at all.
+    // Free every boot cap the spawn service does not need, so the capability table has room to
+    // build a supervised child. Only the input frame here: `term_ep` is still delegated below (the
+    // sink adapter's `WRITE`, the announcements' `CALL`) and `term_out` stages the announcements.
     cap_delete(term.input);
-    // **The filesystem stays** (milestone 31 phase 3, 2026-08-17). It used to go here, with a
-    // comment saying "the day `rm` is reachable from the prompt, the progenitor keeps the endpoint instead,
-    // because building a `fs_subtree_caretaker` is its job and not the shell's". This is that day.
-    //
-    // Two slots held for the life of the boot, and it is worth being precise about what they buy and
-    // what they cost. They buy the only delivery mechanism a directory grant has: the caretaker must
-    // hold the file service to attenuate it, the shell's copy carries no `GRANT`, and a program
-    // spawned without the capability its command line named would be the worst failure this model
-    // has. They cost two of the progenitor's sixteen capability table slots, permanently, which takes the spawn service's
-    // resting endowment from seven capabilities to nine and its peak from thirteen to fifteen. That
-    // peak is the number to watch: it is a directory-granted spawn, and it is one slot from the wall.
-    // See `spawn_dir_grant`, which counts it.
+    // The file service stays for the life of the boot: a caretaker must hold it to attenuate a
+    // directory grant, and the shell's copy carries no `GRANT` (see the module's note).
     let fs = w.with_fs.then_some(Fs {
         ep: g.fs_ep,
         page: g.fs_page,
@@ -177,10 +140,8 @@ pub fn boot(
 
     start_undertaker(kept.own_ut, &reaper_elf, chan);
 
-    // Role 0 (the prompt), and `arg1` is the rights its directory capability carries. A shell told 0
-    // holds no directory and says so at every verb that would need one. `arg2` is the clock slot
-    // (milestone 86), which moves with whether this boot had a disk, so it is told rather than
-    // assumed.
+    // Role 0 (the prompt), and `arg1` is the rights its directory capability carries; a shell told 0
+    // holds no directory. `arg2` is the clock slot, which moves with whether this boot had a disk.
     must_ok(start_child(shell, 0, fs_rights, sh_clock_slot));
 
     spawn_service(
@@ -224,12 +185,8 @@ fn announce_outcomes(
 ) {
     let term_ep = w.term.ep;
     let refused = &spawnable.refused[..spawnable.refused_n];
-    // **And what the measurement decided** (milestone 104), on the same terms as the line above: a
-    // claim about what the progenitor refuses is worth what the check behind it is worth, and only the progenitor can
-    // run that check. The affirmative line is the load-bearing one. A measured boot's natural bug is
-    // for the check to evaporate when the build step does not run, and a boot that says nothing
-    // looks exactly like a boot that measured everything, so `script/swish-check` reads this
-    // sentence and a boot that stopped measuring fails the gate instead of passing quietly.
+    // What the measurement decided. `script/swish-check` reads this sentence, so a boot that
+    // stopped measuring fails the gate instead of passing quietly.
     let mut buf = [0u8; SENTENCE];
     announce(
         term_ep,
@@ -244,8 +201,8 @@ fn announce_outcomes(
             )
         },
     );
-    // **How directory grants will be delivered on this boot** (milestone 606, rulings D and T1),
-    // said once, so `script/swish-check` can hold the boot to it: a server whose own measured bytes
+    // How directory grants are delivered (milestone 606 (a directory walk costs what it does on
+    // Linux), rulings D and T1), said once for `script/swish-check`: a server whose measured bytes
     // carry the subtree-grants note gets bound badges, and every other boot keeps caretakers.
     if w.with_fs {
         announce(
@@ -257,14 +214,9 @@ fn announce_outcomes(
             },
         );
     }
-    // **The entropy service's own outcome** (DECISIONS §120's 2026-08-26 amendment), said here
-    // rather than where it was decided: `entropy_ready` was set long before this process had a
-    // terminal at all (the whole reason the build happens first, at the top of `boot`; see
-    // that block's own comment), and [`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`] is not mapped into the progenitor's own space until the
-    // line above this one first used it, so nothing earlier in `boot` could `announce`
-    // regardless. Silent when there was nothing to build (no device, or no `entropy` program in
-    // the archive), the same posture the sink adapter and the subtree caretaker already take for a
-    // missing component.
+    // The entropy service's outcome, decided early and said here, once the output page is mapped
+    // (DECISIONS §120 (a QEMU-only virtio-rng stopgap for the interactive boot)). Silent when there
+    // was nothing to build.
     if entropy.ready {
         announce(
             term_ep,
@@ -275,22 +227,15 @@ fn announce_outcomes(
             },
         );
     }
-    // **The network stack's outcome, and the resolver's** (milestones 590 and 892), said here for
-    // `entropy_ready`'s reason; [`announce_network`] has both sentences.
+    // The network stack's outcome and the resolver's, said here for the entropy outcome's reason;
+    // [`announce_network`] has both sentences.
     announce_network(term_ep, network, resolver);
     if login.ready {
         announce_login_credentials(term_ep, &login.password);
     }
-    // **`term_ep` stays past this point now, and `term_out` does not** (milestone 632
-    // (provisional)). A `graphical_terminal` session launched with no virtio keyboard takes its keystrokes
-    // from the boot's own line discipline, in raw mode, and the only process that can grant a
-    // session that endpoint is this one: the shell's copy carries no `GRANT` (deliberately, so
-    // nothing at the prompt can hand the terminal, which also carries `OPERATION_READLINE`, to any
-    // program it likes; that widening is exactly what milestone 50's sink adapter exists to
-    // avoid), and nobody else holds the discipline's endpoint at all. Keeping it is the file
-    // service pair's precedent: the spawn service holds exactly the authority a delivery needs,
-    // `WRITE | GRANT` on an endpoint it never receives on. One resting slot, which the table has
-    // (the peak is inside the login block above, and this capability was live through it anyway).
+    // `term_ep` stays and `term_out` does not: a `graphical_terminal` session with no virtio keyboard
+    // takes keystrokes from the boot's line discipline, and only this process can grant that
+    // endpoint (see the module's note).
     cap_delete(w.term.out);
     // And the window onto the shell's output page, which every line above was staged through and
     // nothing below writes (milestone 95 (an unmap primitive), §249 (a running address space stays
@@ -302,30 +247,9 @@ fn announce_outcomes(
 /// Print the generated login credential, once, before the prompt.
 #[inline(never)]
 fn announce_login_credentials(term_ep: u64, login_password: &[u8; PASSWORD_HEX_LEN]) {
-    // **The generated login credential** (milestone 49's boot-wiring update), said here for
-    // [`entropy_ready`]'s own reason: `login_ready` was decided long before this process had a
-    // terminal. Printed exactly once, before the prompt, the shape a cloud image's generated
-    // first-boot password already takes: this process's own copy was wiped the moment
-    // `identity_provisioner` used it (see that block's own comment), so this line is the only
-    // place the password exists once it scrolls past. Silent when there is no login stack at all
-    // (no entropy, no filesystem, or one of the four programs missing/unvouched), the same posture
-    // every other optional boot component already takes.
-    //
-    // **It used to say `init: login ready` and that was the false half of milestone 233.** The
-    // measurement behind this line is `identity_provisioner` answering `IDP_RPT_OK`: a credential
-    // store exists and it holds this identity and this secret. That is worth reporting and is kept
-    // exactly as it was. What it is not is a statement that the `login` process is alive, and for
-    // an unknown number of weeks it was not: this process started it with no way to reach the
-    // archive it parsed at `_start`, so it faulted before serving anything while this line went on
-    // announcing a service. A reader has no way to tell a sentence's evidence from its wording, so
-    // the wording now names the evidence.
-    //
-    // **Nothing here can honestly claim more, and the claim moved rather than being dropped.**
-    // Knowing `login` survived means `login` saying so, which is a message, an endpoint and a wait
-    // this process does not have, and a boot that blocks on a child's readiness is a boot that
-    // hangs when the child is the thing that is broken. The survival claim lives in
-    // `script/swish-check` instead, which fails the boot if the kernel reported killing any user
-    // thread; see `swish_check_leg`'s own `no user thread was killed` check.
+    // Printed once, before the prompt: this process's own copy was wiped once
+    // `identity_provisioner` used it. The wording names the evidence, `IDP_RPT_OK`, and claims no
+    // more; whether `login` survived is `script/swish-check`'s (see the module's note).
     fn push(buf: &mut [u8; SENTENCE], n: &mut usize, src: &[u8]) {
         for &b in src {
             if *n < SENTENCE {
@@ -351,17 +275,10 @@ fn announce_login_credentials(term_ep: u64, login_password: &[u8; PASSWORD_HEX_L
 /// Step 6: build and start `job_undertaker` out of the progenitor's own budget.
 #[inline(never)]
 fn start_undertaker(own_ut: u64, reaper_elf: &elf::Elf<'static>, chan: SpawnChannel) {
-    // 6. The undertaker, out of what is left of our own budget. Three capabilities and nothing
-    // else: `READ` on the supervision endpoint, so it can free a job's memory and can never spend
-    // it; `WRITE` on the result endpoint, so it can say the one word a job the kernel killed cannot
-    // say for itself (milestone 235 (a command that faults hangs the prompt),
-    // `grant_plan::spawnproto::JOB_FAULTED`); and `WRITE` on a copy
-    // of the spawn endpoint badged `spawnproto::UNDERTAKER_BADGE`, so it can say which job it
-    // reaped (milestone 685 (a job is finished when its memory is back), `spawnproto::reaped`).
-    // `WRITE` without `GRANT` on both: the right to speak on those channels, not to hand them on.
-    //
-    // Slot order is the contract with the program, which names them `DEATHS` (0), `REPORT` (1) and
-    // `SPAWN` (2). The badged copy is a fresh slot of ours, deleted once the build has copied it.
+    // 6. The undertaker, out of what is left of our own budget: `READ` on the supervision endpoint,
+    // `WRITE` on the result endpoint, and `WRITE` on a copy of the spawn endpoint badged
+    // `spawnproto::UNDERTAKER_BADGE` (see the module's note). Slot order is the contract with the
+    // program, which names them `DEATHS` (0), `REPORT` (1) and `SPAWN` (2).
     let reaper_spawn = must(badged(chan.spawn_ep, spawnproto::UNDERTAKER_BADGE));
     let reaper = must(build_child(
         own_ut,
@@ -407,35 +324,29 @@ fn spawn_channels(
         // go straight to the screen, through a process that can do nothing else with them.
         term_sink,
         fs,
-        // **The second mounted tree's service and pool** (milestone 834 (ioping on nife and Linux)), kept for the life of
-        // the boot for `fs`'s reason: a directory grant inside it is built from this copy.
+        // The second mounted tree's service and pool (milestone 834 (ioping on nife and Linux)), kept
+        // for `fs`'s reason: a directory grant inside it is built from this copy.
         disk: mounted_tree.map(|t| Fs {
             ep: t.ep,
             page: t.pool,
         }),
-        // **The client view of the entropy service, if this boot has one** (milestone 111).
-        // The same endpoint the login stack drew its password from, kept rather than dropped,
-        // so a program a *person* types can be endowed randomness the same way `date` is
-        // endowed a clock. `None` here is not a boot failure: it is a `uuid` that says on its
-        // second stream that it holds no entropy capability, which is the true sentence.
+        // The entropy service's client endpoint, kept so a program a person types can be endowed
+        // randomness as `date` is a clock. `None` is not a boot failure.
         entropy: devices.entropy.client,
-        // **The stack's client endpoint, if this boot built one** (milestone 590
-        // (provisional)), `entropy`'s shape one service over.
+        // The network stack's client endpoint, if this boot built one.
         network: devices.network.map(|(stack, ..)| stack),
-        // **The resolver's unbadged endpoint, if this boot started one** (milestone 892).
+        // The resolver's unbadged endpoint, if this boot started one.
         resolver: devices.resolver,
-        // **The reboot object** (milestone 805), kept for the one program that declares it.
+        // The reboot object, kept for the one program that declares it.
         reboot: is_granted(w.g.reboot).then_some(w.g.reboot),
         catalogue: catalog,
         index_sources,
         run_unvouched: kept.run_unvouched,
-        // **The boot line discipline's endpoint, for a `graphical_terminal` session's UART arm** (milestone
-        // 632 (provisional)); see the comment where `term_out` alone is deleted for why this
-        // stays ours. Unused, and unheld, on every boot that builds no session.
+        // The boot line discipline's endpoint, for a `graphical_terminal` session's UART arm; see
+        // where `term_out` alone is deleted. Unused on every boot that builds no session.
         boot_terminal: w.term.ep,
-        // **The `graphical_terminal` session's measured images and the boot's verdict on the devices**
-        // (milestone 632 (provisional)). `held` is false, and the caps are long deleted, on
-        // every boot with no gpu; a `graphical_terminal` request on such a boot is refused below.
+        // The session's measured images and the boot's verdict on the devices. `held` is false on
+        // every boot with no gpu, and a `graphical_terminal` request there is refused.
         screen: devices.screen,
     }
 }

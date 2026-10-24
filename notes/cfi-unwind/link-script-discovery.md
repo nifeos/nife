@@ -1,5 +1,7 @@
 # The link-script discovery, and what was tried
 
+*Name: provisional. After the parent's own heading.*
+
 [`notes/cfi-unwind.md`](../cfi-unwind.md) says the CFI was being thrown away at link time, and where
 the section now goes. This is the account of how that was found, the two placements that failed, and
 the measurement that shows the one that worked costs the boot image nothing.

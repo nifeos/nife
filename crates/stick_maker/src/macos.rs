@@ -1,26 +1,16 @@
 //! **macOS: disks from `diskutil`, erasing with `diskutil eraseDisk`.**
 //!
-//! `diskutil` is in every macOS install and is Apple's supported interface to Disk Arbitration from
-//! a script, so this module shells out to it and reads its `-plist` output (see `plist.rs` for why
-//! the plist and not the table). This file is the pure half, [`assemble`], tested against documents
-//! captured from a real machine; `host/macos.rs` is the half that runs the tool.
-//!
+//! `diskutil` is Apple's supported scripting interface to Disk Arbitration, in every install, so
+//! this module reads its `-plist` output (`plist.rs` says why not the table). This file is the pure
+//! half, [`assemble`], tested against captured documents; `host/macos.rs` runs the tool. See
+//! notes/boot-stick/the-program.md, "macOS".
+
 //! # BUGS
 //!
-//! - **The flash-stick fixture is synthesized**, because no stick was attached when the fixtures
-//!   were captured; its file says so in its first line. The two USB hard disks and the disk image
-//!   are real captures.
-//! - **`diskutil eraseDisk` on a physical stick has not been run by this program.** It was run on
-//!   file-backed disks only (`hdiutil attach`), which is the one place this lane was allowed to
-//!   erase anything. Apple documents the same command for both.
-//! - **Every stick `diskutil eraseDisk ... MBR` makes has MBR disk signature `0x00000000`**
-//!   (measured on two file-backed disks, 2026-10-06 UTC; see the crate documentation). So Linux
-//!   gives every such stick's partition the same `PARTUUID`, `00000000-01`. A firmware boot entry
-//!   that names the partition by its MBR signature alone cannot tell two of them apart. The FAT32
-//!   volume ids do differ. nife looks nothing up by either, and `diskutil` has no option to set the
-//!   signature. Writing one ourselves means opening the raw device, which needs root for a real
-//!   stick, and the macOS path is built to need none. Linux's `sfdisk` draws a random signature for
-//!   a new `label: dos` (libfdisk's behavior, read rather than run here).
+//! - **The flash-stick fixture is synthesized**; its first line says so.
+//! - **`diskutil eraseDisk` has run only on file-backed disks**, never on a physical stick.
+//! - **Every stick `diskutil eraseDisk ... MBR` makes has MBR disk signature `0x00000000`**, so
+//!   Linux gives each the `PARTUUID` `00000000-01`; see the note's GUID section.
 
 use std::path::PathBuf;
 

@@ -1,5 +1,8 @@
 # The second sweep, 2026-09-03: the 22 `PARTIAL` blocks
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, after the parent's "The
+second sweep, 2026-09-03: `PARTIAL`". calef names files.*
+
 The evidence behind [`notes/follow-on-work.md`](../follow-on-work.md)'s section "The second sweep,
 2026-09-03: `PARTIAL`, and why it is the harder half". The parent keeps the argument, the result and
 the eighth word, `Outstanding.`; this file keeps the case that minted milestone 252 (nobody re-reads

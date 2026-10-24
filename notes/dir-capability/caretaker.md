@@ -1,5 +1,7 @@
 # The subtree caretaker: why it checks nothing, the verb table, and one frame
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/dir-capability.md](../dir-capability.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the detail of `fs_subtree_caretaker` behind the main page's
 structural finding.
@@ -80,3 +82,20 @@ assertion: each server is parked inside its blocking announcement until somebody
 nothing it serves can be answered first. `fs_service::start_granted_dir` now drains the service,
 waits for the caretaker's own sentinel, and only then spawns the confined program.
 `fs_file_caretaker` had the same latent bug and took the same three lines.
+
+## A refused descent, and the verbs that destroy
+
+The caretaker's startup `OPENDIR` can fail, and the failure is answered rather than trapped. The
+waiter on its report endpoint is the progenitor, which serves every command the prompt runs and has
+no second thread. A caretaker that died before answering would leave the progenitor parked in
+`RECEIVE` and the whole machine with it, and `rm nosuchdir/x` is an ordinary thing to type. So a
+refused descent sends `filesystem_contract::DESCENT_REFUSED` with the errno, and the caretaker
+exits. It does not serve: it holds no narrowed handle, and serving anyway would mean answering from
+`fs::ROOT`, which is the whole directory it was meant to attenuate. What the prompt then says about
+the cause is in [limitations.md](limitations.md).
+
+The destructive verbs are forwarded like every other verb. The FS server resolves the name under the
+handle the caretaker substituted, and that handle carries whatever `REMOVE` the grant carried. A
+recursive `rm -r` is one request per name, and nothing in the caretaker loops, so it cannot remove
+more per request than the client named. The same table that decides dispatch also zeroes the length
+field for a verb whose length counts nothing, which stops a client smuggling a length into it.

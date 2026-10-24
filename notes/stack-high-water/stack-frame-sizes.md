@@ -1,5 +1,7 @@
 # What one frame costs, statically (2026-08-13)
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `frame-cost`.*
+
 An appendix to [notes/stack-high-water.md](../stack-high-water.md), which summarizes it. It is the
 other half of the instrument: the watermark measures depth at run time, and this measures each
 function's frame at build time.

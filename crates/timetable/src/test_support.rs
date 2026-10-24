@@ -1,6 +1,5 @@
 //! **What more than one layer's tests lean on**: the shipped document, a way to read what a writer
-//! wrote, and a scheduler holding a clock. Split out of the crate root's tests by milestone 877
-//! (the timetable crate root is split along its seams).
+//! wrote, and a scheduler holding a clock.
 //!
 //! Name: provisional (milestone 877, 2026-10-12).
 

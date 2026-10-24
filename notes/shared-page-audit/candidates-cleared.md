@@ -1,5 +1,7 @@
 # Shared-page audit: candidates cleared, and why each is safe
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/shared-page-audit.md](../shared-page-audit.md), which lists these in one
 paragraph.
 

@@ -1,5 +1,7 @@
 # Shared-page audit: findings 4, 5 and 7, the compositor
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+
 An appendix to [notes/shared-page-audit.md](../shared-page-audit.md), the tree's second security
 audit (2026-08-04). The parent states the lens and its four questions: (a) the window, (b) what can
 land in it, (c) the corrupted state, (d) whether it is reachable. Its honest summary has every

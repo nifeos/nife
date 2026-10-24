@@ -3,15 +3,9 @@
 //! id, and its owner decides who touches it. `std` gives each thread one, and
 //! `cargo xtask std-src` generates this file into `std` as `sys/alloc/nife/allocation_cache.rs`.
 //!
-//! **One thread owns a cache, never a CPU.** Without `rseq`, a thread preempted mid-pop hands its
-//! core, and a per-CPU list, to another thread, so a per-CPU list needs an atomic on every operation.
-//! A per-thread cache needs none. `notes/std/allocation.md` has the argument and the measurement.
-//!
-//! A class is a block size on a 16-byte grid ([`GRID`]), up to [`LARGEST`]. Only requests aligned
-//! to at most the grid are cached. Every block of a class comes from the heap, and goes back to it,
-//! under one layout, [`class_layout`], so blocks of a class are fungible: any one serves any request
-//! of its class. That holds only if the owner never hands the heap a cached-size request under its
-//! own layout, cache or no cache, which is what [`heap_layout`] is for.
+//! A class is a block size on a 16-byte grid ([`GRID`]) up to [`LARGEST`], under one heap layout,
+//! [`class_layout`]; the owner sends the heap cached sizes only under [`heap_layout`]. See
+//! `notes/std/allocation.md` for why one thread owns a cache and why blocks of a class are fungible.
 //!
 //! # Examples
 //!

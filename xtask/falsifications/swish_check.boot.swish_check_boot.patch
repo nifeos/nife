@@ -19,8 +19,8 @@ it) probes with a real request, and the table in notes/packages/running-unvouche
 same defect for entropy and the network, each turned red by hand once (commit b555bfb3d). This
 record is the one of the three that can be replayed.
 
-The hunk's context cites milestone 126 (the `procps` package: who else is running, and who is allowed
-to ask), which introduced the process domain.
+The process domain came with milestone 126 (the `procps` package: who else is running, and who is
+allowed to ask).
 
 Expected to fail: the `installed/unvouched` line wants `domain: refused (no capability at slot 7)`
 and `slots held: 0 1 2\n`, and the child reports `domain: REACHED` and `slots held: 0 1 2 7`.
@@ -30,16 +30,13 @@ its phases): the sweep found this patch no longer compiled, because the vouch de
 of `spawn_service` into `resolve`, and `Wants::of` had no `unvouched` in scope to believe. The
 same defect, threaded through today's shape: `resolve` carries `unvouched` on `Resolved`,
 `spawn_job` passes it, and an unvouched image's domain request is believed exactly as before. Red
-again at `installed/unvouched` on aarch64, same sentence. The re-cut hunk's context carries two
-older records: milestone 31 (a capability shell: designation is authorization), whose phase 3
-moved the region split, and §92 (a caretaker is supervised by the client it serves), the
-supervision that split serves.
+again at `installed/unvouched` on aarch64, same sentence. The hunk's context cites §92 (a caretaker is supervised by the client it serves), the supervision
+the region split serves.
 
 diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initializer/src/spawn_loop.rs
-index 157497d14..dc449396b 100644
 --- a/crates/system_initializer/src/spawn_loop.rs
 +++ b/crates/system_initializer/src/spawn_loop.rs
-@@ -275,6 +275,7 @@ struct Resolved {
+@@ -249,6 +249,7 @@ struct Resolved {
      image_digest: Option<measured_boot::Digest>,
      verb: [u8; grant_plan::MAX_VERB],
      verb_len: Option<usize>,
@@ -47,24 +44,19 @@ index 157497d14..dc449396b 100644
  }
  
  impl Resolved {
-@@ -300,14 +301,14 @@ struct Wants {
- 
- impl Wants {
-     /// Read each declaration from the program's own manifest, never from the request.
+@@ -277,9 +278,9 @@ impl Wants {
+     /// Read each declaration from the program's own manifest, never from the request: a person
+     /// designates none of these, so no bit on the wire carries them. See
+     /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
 -    fn of(manifest: Option<grant_plan::Manifest>) -> Wants {
 +    fn of(manifest: Option<grant_plan::Manifest>, unvouched: bool) -> Wants {
-         // Read from the program's own declaration, not from the request: a clock is not something
-         // the command line can designate, so there is no bit on the wire for it (`Manifest::clock`).
          let wants_clock = manifest.is_some_and(|m| m.clock);
-         // Same reasoning, one authority over (milestone 126): a **process domain** is not something
-         // a person designates either. There is no /proc to name and no pid space to scan, so what a
-         // program may see is decided here, by which supervision endpoint the progenitor puts in its capability table.
 -        let wants_domain = manifest.is_some_and(|m| m.domain);
 +        let wants_domain = manifest.is_some_and(|m| m.domain) || unvouched;
-         // `clock`'s twin again: the inert-configuration page is the progenitor's to endow, not something a
-         // command line can designate, so there is no bit on the wire for it either
-         // (`Manifest::configuration`).
-@@ -809,6 +810,7 @@ impl Service<'_> {
+         let wants_config = manifest.is_some_and(|m| m.configuration);
+         let wants_entropy = manifest.is_some_and(|m| m.entropy);
+         let wants_network = manifest.is_some_and(|m| m.network);
+@@ -714,6 +715,7 @@ impl Service<'_> {
              image_digest,
              verb,
              verb_len,
@@ -72,12 +64,12 @@ index 157497d14..dc449396b 100644
          }
      }
  
-@@ -881,7 +883,7 @@ impl Service<'_> {
+@@ -786,7 +788,7 @@ impl Service<'_> {
      ) {
          let own_ut = self.c.own_ut;
          let manifest = job.manifest;
 -        let wants = Wants::of(manifest);
 +        let wants = Wants::of(manifest, job.unvouched);
-         // **A region of its own, split first now** (milestone 31 phase 3). It used to be split
-         // just before the build; a directory grant needs it earlier, because the caretaker is
-         // built out of the **same** region as the program it serves. That is DECISIONS §92's
+         // The region comes before any grant: a directory grant's caretaker is built from the same
+         // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
+         let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);

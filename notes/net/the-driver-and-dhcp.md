@@ -106,3 +106,32 @@ kernel confines by DMA. The kernel knows nothing about DHCP.
 
 DHCP is itself UDP, so smoltcp's UDP path over our NIC is exercised end to end by this test. What is
 not yet built is the client-facing socket contract that lets *other* processes use the stack.
+
+## What `virtio_net_transport` takes from the device on trust, and what it copies
+
+A receive completion carries two 32-bit values the device wrote into the used ring: the descriptor
+`id` and the byte count `total`. Neither is trusted (notes/shared-page-audit.md, finding 6). The
+IOMMU and `crates/direct_memory_access_validator` confine where the device may touch. They say
+nothing about what it may say, and the used ring sits inside the driver's own DMA page, which the
+device is entitled to write.
+
+An unchecked `id` walks `rx_buf(id) = 0x400 + id * 0x2C0` out of the one-page DMA region. At
+`id = 4` it is already past the page. Near 1.5 million it lands on the process's heap, so a lying
+device could have the driver copy its own memory into a frame and hand it to smoltcp, which may put
+it on the wire. An unchecked `total` reads past the buffer and asks the allocator for up to 4 GiB.
+Neither needs a race; the device only has to lie once.
+
+So `rx_take` fails closed. A completion naming a buffer never posted is consumed and dropped, and a
+count larger than a buffer is truncated to the buffer, as `entropy.rs` clamps its own length. The
+dropped completion's buffer is not re-posted, because a bogus `id` does not say which buffer it
+was. Each lie costs one receive buffer. That is the right trade: a device that lies has already
+stopped being a network card.
+
+The DMA-page layout (`RX_DESC` to `TX_USED`, at a 0x200 stride) restates the validator's
+`DESC_OFF`, `AVAIL_OFF`, `USED_OFF` and `RING_BLOCK` as literals. The kernel aliases those
+constants, while `entropy.rs` and `crates/virtio`'s own net driver spell the same numbers again.
+Nothing checks the copies against the crate. Consuming the constants takes a `components` to
+`direct_memory_access_validator` dependency edge, which is a §46 (thin primitives or whole
+subsystems) decision. Milestone 410 (six copies of the shared-frame accessors) priced that edge on
+2026-10-16 (UTC) and did not take it. The same pricing left the driver's `r8`, `w8` and sibling
+aliases in place: each is a one-line forward over `MappedWindow` with no arithmetic of its own.
