@@ -4,18 +4,11 @@
 
 use super::*;
 
-/// **A sync is a write-side authority, and a read-only capability may not ask for one**
-/// (milestone 55).
-///
-/// The rights question here is not obvious and the answer is argued at `filesystem_contract::fs::SYNC`,
-/// so what this pins is the choice rather than a mechanism: a sync is an *action on the
-/// device*, and a device flush stalls the queue for every client of the image. Letting a
-/// read-only holder ask would hand it a lever on everybody else's write latency for no
-/// purpose, because a holder with nothing written has nothing to make durable.
-///
-/// It also pins the shape: **either kind of handle**, file or directory, because the answer is
-/// about the storage rather than about the node, which is `STATFS`'s rule and the reason this
-/// goes through `node_at` rather than `file_at`.
+/// A sync is a write-side authority, and a read-only capability may not ask for one (milestone
+/// 55). This pins the choice argued at `filesystem_contract::fs::SYNC`: a device flush stalls the
+/// queue for every client, and a holder with nothing written has nothing to make durable. It also
+/// pins the shape: either kind of handle, because the answer is about the storage, which is
+/// `STATFS`'s rule and why this goes through `node_at` rather than `file_at`.
 #[test]
 fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)

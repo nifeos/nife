@@ -1,45 +1,29 @@
-//! **What the server remembers between requests, for as long as nothing has changed**
-//! (milestone 606 (a directory walk costs what it does on Linux), provisional number).
+//! What the server remembers between requests, for as long as nothing has changed (milestone 606
+//! (a directory walk costs what it does on Linux), provisional number).
 //!
-//! A walk asks the same questions of the same directories over and over: list `wide`, then open
-//! `wide/n000` (find `wide` in the grant, find `n000` in `wide`), then `wide/n001`, and so on. Before
-//! this, every one of those went to RedoxFS, and RedoxFS answers each by walking its node tree from
-//! the root, five blocks deep, hashing every block it touches. `walk_model` measured it: 1,259
-//! requests and 6.4 ms of server time per warm walk on an M-series core, of which seahash was 40%
-//! and block copies most of the rest. A Unix kernel answers the same questions from its dentry and
-//! page caches. This is those two caches, sized for a server with an 8 MiB heap:
+//! The dentry and page caches a Unix kernel answers a walk from, sized for an 8 MiB heap:
 //!
-//! - **a directory's listing**, sorted and filtered exactly as `READDIR` sends it, with each
-//!   child's node and whether it is a directory. `READDIR` pages come from it, and `OPEN` and
-//!   `OPENDIR` look names up in it by binary search instead of `find_node`. A listing is only
-//!   memoized whole, so a name it does not hold is a name the directory does not hold.
-//! - **a name found one at a time**, in a directory nobody listed: what `OPEN` and `OPENDIR`
-//!   learned from `find_node`, so opening `etc/motd` twice asks RedoxFS once. Only names that
-//!   exist are kept; a miss asks again.
-//! - **a small file's bytes**, read whole on first `READ` and served from memory after. `FSTAT`
-//!   answers from it too.
-//!
+//! - a directory's listing, sorted and filtered as `READDIR` sends it, with each child's node and
+//!   kind. `READDIR` pages come from it and `OPEN` and `OPENDIR` binary-search it instead of
+//!   `find_node`. It is kept whole, so a name it lacks is a name the directory lacks.
+//! - a name found one at a time in a directory nobody listed. Only names that exist are kept.
+//! - a small file's bytes, read whole on first `READ`. `FSTAT` answers from them too.
+
 //! # The one rule that keeps it correct
 //!
-//! The server is the only writer of its image, and every verb that changes the image goes through
-//! [`crate::Server`]'s `change` (which forgets everything) or `change_file` (which forgets one file's
-//! bytes). Read-only verbs go through `look`, and a verb added later has to say which it is. The
-//! one exception is `close`, whose comment says why freeing an unlinked node needs no forgetting. Forgetting everything on a namespace change is coarse
-//! on purpose: it makes invalidation one line with nothing to get wrong, and a namespace change is
-//! rare next to the reads a walk issues.
-//!
+//! Every verb that changes the image goes through [`crate::Server`]'s `change` (which forgets
+//! everything) or `change_file` (which forgets one file's bytes), and read-only verbs go through
+//! `look`; a verb added later has to say which it is. The one exception is `close`, whose comment
+//! says why. See notes/fs-server/caches-and-io.md and notes/walk-cost.md.
 
 //! # BUGS
 //!
-//! - **Coarse.** One `mkdir` anywhere forgets every listing everywhere. A workload that creates
-//!   files while it walks (a build writing objects beside the sources it reads) gets the uncached
-//!   cost back after every create. Per-directory invalidation is the refinement, and it is only
-//!   worth its extra rules once something measures that workload.
-//! - **No eviction policy.** When either budget is full the whole of that half is dropped and
-//!   refilled. That is correct and bounded; it is not an LRU, and a working set larger than the
-//!   budget thrashes.
-//! - **Bytes, not pages.** A file is memoized whole or not at all, up to [`FILE_MAX`]. A large file
-//!   is read through RedoxFS every time, as before.
+//! - Coarse: one `mkdir` anywhere forgets every listing everywhere, so a workload that creates
+//!   files while it walks gets the uncached cost back after every create. Per-directory
+//!   invalidation is the refinement, once something measures that workload.
+//! - No eviction policy: a full budget drops that whole half and refills it, so a working set
+//!   larger than the budget thrashes.
+//! - Bytes, not pages: a file is memoized whole, up to [`FILE_MAX`], or not at all.
 //!
 //! Name: provisional 2026-09-26 (milestone 606's lane); calef names modules.
 
