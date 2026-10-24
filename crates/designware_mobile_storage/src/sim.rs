@@ -1,29 +1,12 @@
-//! **A simulated controller with a card behind it**, for the host tests.
-//!
-//! Nothing emulates this controller: QEMU has no `DW_mshc` model for any RISC-V machine, and the
-//! one `dw_mmc`-shaped device QEMU does have (on some Arm boards) is not reachable from the
-//! machines this tree boots. So the tests run the real driver against this, and the bench step is
-//! what checks this against silicon. What it models is the contract the driver relies on, as the
-//! databook and OpenBSD's driver describe it, and no more:
-//!
-//! - `CTRL`'s reset bits clear themselves one read after they are set;
-//! - a write to `CMD` with the start bit either loads the clock (and clears the bit) or runs the
-//!   command against the card, sets the response words and `RINTSTS` (`CD`, plus `RTO` when
-//!   nothing answered), and clears the bit;
-//! - a data phase moves through a FIFO of `depth` words: reads fill it from the card and raise
-//!   `RXDR`, writes drain it to the card and raise `TXDR`, and the end raises `DTO` (and `ACD`
-//!   after a multi-block transfer, the automatic CMD12);
-//! - `STATUS` reports the FIFO's fill and, for a few reads after a write, data busy.
-//! - a read with the card read threshold (`CARDTHRCTL`) enabled above the FIFO's size ends at
-//!   once with `FRUN` and `DTO`, the word radon's controller gave for it.
-//! - with the IDMAC selected in `CTRL` and enabled in `BMOD`, the FIFO's other end is [`Memory`]:
-//!   the walk starts at `DBADDR`, loads each descriptor, suspends with `DU` on one it does not own,
-//!   stops with `FBE` on an address outside memory, moves its buffer, closes it (clears `OWN`,
-//!   raises `RI` or `TI` unless `DIC`), and stops after `LD` or follows `CH`. A read's last words
-//!   reach memory after `DTO`, as on silicon, so the driver must wait for the descriptor too.
-//!
-//! Time is one microsecond per call to `now_us`, so every deadline is reached in a bounded number
-//! of polls and a test that would hang on silicon fails here instead.
+//! A simulated controller with a card behind it, for the host tests. QEMU has no `DW_mshc` model
+//! for any RISC-V machine (its one `dw_mmc`-shaped device, on some Arm boards, is unreachable from
+//! the machines this tree boots), so the tests run the real driver against this and the bench step
+//! checks this against silicon. It models only the contract the driver relies on, as the databook
+//! and OpenBSD describe it: self-clearing `CTRL` resets, the `CMD` start bit, a FIFO raising
+//! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS` fill and busy, `CARDTHRCTL` above the FIFO ending in
+//! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
+//! `DTO`. Time is one microsecond per `now_us` call, so a test that would hang on silicon fails
+//! here. Each modeled behavior is listed in notes/designware-mobile-storage/driver.md.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
