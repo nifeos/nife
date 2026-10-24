@@ -1,5 +1,7 @@
 # The compositor: the scene, the clips and the composite
 
+*Name: provisional.*
+
 This appendix to [`notes/compositor.md`](../compositor.md) carries the reasoning behind
 `crates/compositor`'s arithmetic. The crate's doc comments state what each item does and link here.
 

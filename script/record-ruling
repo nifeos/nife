@@ -127,13 +127,15 @@ printf '%s\n' "$body" | gh "$kind" comment "$num" --repo "$repo" --body-file - >
 echo "record-ruling: ruling posted on #$num"
 [ -n "$partial" ] && exit 0
 
-# One edit, so the queue never shows the item half-swapped. Remove only what is present: `gh` refuses
-# to remove a label the item does not carry.
+# The REST labels endpoints, not `gh pr edit`: that reads the pull request's Projects (classic) cards,
+# and GitHub's deprecation error for them fails the whole edit. Add before removing, so a failure in
+# between leaves both labels, which architect-ruled-clears-hold.yml finishes, and never neither.
 labels="$(gh api "repos/$repo/issues/$num" --jq '.labels[].name')" || labels=""
-set -- --add-label architect-ruled
-[ -n "$held" ] && set -- "$@" --add-label held-by-lane
-printf '%s\n' "$labels" | grep -qx needs-architect && set -- "$@" --remove-label needs-architect
-gh "$kind" edit "$num" --repo "$repo" "$@" >/dev/null || true
+set -- -f 'labels[]=architect-ruled'
+[ -n "$held" ] && set -- "$@" -f 'labels[]=held-by-lane'
+gh api "repos/$repo/issues/$num/labels" "$@" >/dev/null || true
+printf '%s\n' "$labels" | grep -qx needs-architect &&
+	{ gh api -X DELETE "repos/$repo/issues/$num/labels/needs-architect" >/dev/null || true; }
 
 after="$(gh api "repos/$repo/issues/$num" --jq '.labels[].name')" || after=""
 if printf '%s\n' "$after" | grep -qx needs-architect || ! printf '%s\n' "$after" | grep -qx architect-ruled ||

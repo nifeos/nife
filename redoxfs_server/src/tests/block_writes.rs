@@ -159,19 +159,12 @@ fn a_write_after_a_reopen_of_a_previously_written_image_does_not_loop() {
     assert_eq!(&buf[..n], &p2[..], "boot-2 write did not read back");
 }
 
-/// **The mechanism behind the "cross-boot second-mount write failure", and it is not a filesystem
-/// bug at all** (fix/redoxfs-second-mount). There is no TRUNCATE verb, so a write shorter than the
-/// file leaves the previous write's tail in place. That is correct behaviour, and it is what the
-/// contract offers today, but it is sharp: a test that writes N bytes and then compares a
-/// *whole-file* read against those N bytes passes only if the file was not already longer.
-///
-/// That is exactly what happened. One boot's client left a 64-byte payload in `scratch`; the next
-/// boot's `std::fs` test wrote its 61-byte pattern and asserted the whole file equalled it, got 64
-/// bytes back, and panicked in the write block. It looked like "a second mount of a used image
-/// fails its write", and three rounds chased a filesystem bug that was never there. The write
-/// succeeded every time.
-///
-/// The byte counts here are the real ones so the arithmetic is legible rather than abstract.
+/// A write shorter than the file leaves the previous write's tail in place: correct behavior, and
+/// the mechanism behind the "cross-boot second-mount write failure" (fix/redoxfs-second-mount). One
+/// boot's client left a 64-byte payload in `scratch`; the next boot's `std::fs` test wrote 61 bytes,
+/// compared the whole file against them and got 64 back. The write succeeded every time
+/// (notes/fs-server/write-path-history.md). `TRUNCATE` is what replaces a file's contents. The byte
+/// counts here are the real ones, so the arithmetic is legible.
 #[test]
 fn a_shorter_write_does_not_truncate_and_that_is_what_broke_across_boots() {
     let mut srv = server_with(&[("scratch", b"(placeholder)")]);

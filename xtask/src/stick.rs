@@ -1,21 +1,22 @@
 //! **The stick: every architecture's boot file, and the program that writes them** (DECISIONS §157).
 //!
+//! The order inside each payload is the seal: the archive first (it writes the measurement manifest
+//! the kernel compiles in), then the kernel, then the loader embedding both, whose build
+//! (`uefi_loader/build.rs`) refuses a pair the kernel does not vouch for. `stick_maker` embeds only
+//! finished loaders, so nothing downstream can pair a kernel with the wrong archive. See
+//! notes/boot-stick.md.
+//!
+//! Names: `stick` and `stick-boot` are provisional (this lane, 2026-09-19), in the family of
+//! `uefi-image` and `uefi-boot`, naming what they make and what they check.
+
+//! # EXAMPLES
+//!
 //! ```text
 //! cargo xtask stick                        # target/stick/EFI/BOOT/*.EFI, and stick_maker for this host
 //! cargo xtask stick --host x86_64-unknown-linux-musl --host x86_64-pc-windows-gnu
 //! cargo xtask stick-boot                   # boot target/stick under all three UEFI firmwares
 //! cargo xtask acpi-boot                    # the aarch64 payload alone, booted with acpi=on
 //! ```
-//!
-//! **The order inside each payload is the seal, and it is not re-derived here.** For every
-//! architecture the archive is packed first, which writes the measurement manifest the kernel
-//! compiles in, then the kernel is built, then the loader embeds both, and the loader's own build
-//! (`uefi_loader/build.rs`) refuses a pair the kernel does not vouch for. `stick_maker` then embeds
-//! only those finished files. Nothing downstream of a loader can pair a kernel with the wrong
-//! archive, because nothing downstream handles a kernel or an archive at all.
-//!
-//! Names: `stick` and `stick-boot` are provisional (this lane, 2026-09-19), in the family of
-//! `uefi-image` and `uefi-boot`, naming what they make and what they check.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -131,20 +132,8 @@ fn payload_aarch64() -> bool {
 /// loader is linked as a static PIE for `riscv64imac-unknown-none-elf` and converted.
 ///
 /// The kernel is the **`board`** build, the one radon runs (`script/board-image`), because the
-/// stick is for the bench as well as for QEMU, and the tour it runs is the same on both: the
-/// feature changes how a test run exits, which a tour never does. `stick-boot` proves it boots
-/// under QEMU's EDK2.
-///
-/// The link arguments, each for a reason:
-/// - `-pie --no-dynamic-linker`: a position-independent image with no interpreter, because the
-///   firmware loads it wherever it likes.
-/// - `-z notext`: the prebuilt `core` for this target is not PIC, so its vtables in `.rodata`
-///   need load-time relocations; the firmware applies them before a single instruction runs.
-/// - `-z separate-loadable-segments`: every segment page-aligned, so each becomes a PE section.
-/// - `--image-base=0x1000`: the first page is the PE headers'.
-/// - `--entry=efi_main`: the PE entry point.
-///
-/// A separate target directory, so these flags never touch the kernel's riscv64 build artifacts.
+/// stick is for the bench as well as for QEMU; the feature changes only how a test run exits,
+/// which a tour never does. `stick-boot` proves it boots under QEMU's EDK2.
 fn payload_riscv64() -> bool {
     if !initial_ramdisk_riscv()
         || !cargo_profiled(&[
@@ -163,6 +152,12 @@ fn payload_riscv64() -> bool {
         .join(format!("target/{RISCV_TARGET}/{}/kernel", profile_dir()))
         .display()
         .to_string();
+    // A separate target directory, so these flags never touch the kernel's riscv64 artifacts.
+    // `-pie --no-dynamic-linker`: the firmware loads the image wherever it likes. `-z notext`: the
+    // prebuilt `core` is not PIC, so its `.rodata` vtables need load-time relocations, which the
+    // firmware applies before the first instruction. `-z separate-loadable-segments`: each segment
+    // page-aligned, so each becomes a PE section. `--image-base=0x1000`: the first page is the PE
+    // headers'. `--entry=efi_main`: the PE entry point.
     let target_dir = workspace_root().join("target/uefi-riscv64");
     let rustflags = "-C relocation-model=pie -C link-arg=-pie -C link-arg=--no-dynamic-linker \
                      -C link-arg=-znotext -C link-arg=-zseparate-loadable-segments \
@@ -425,25 +420,15 @@ fn verdict_failed(transcript: &str) -> Option<&str> {
     Some(line[at..].trim_end())
 }
 
-/// **The aarch64 stick, booted with ACPI and no device tree** (milestone 578 (an ACPI discovery path for aarch64)): the state every
-/// aarch64 cloud machine is in, since SBBR forbids it a tree, and the one the loader meets by
-/// writing a tree from the tables (§278 (an ACPI machine reaches the aarch64 kernel as a device tree the loader writes)). `stick-boot` boots `acpi=off`, so without this the path
-/// every rented Arm machine would take was proved only by a transcript run by hand.
-///
-/// It builds the aarch64 payload alone, release like the stick, rather than requiring `cargo xtask
-/// stick`'s three payloads and host program, which this boot never reads. Beside [`BOOTED`] it
-/// asserts the loader's own ACPI line, so a firmware that went back to offering a device tree
-/// cannot pass it by booting the other path.
-///
-/// It boots twice, once per GIC. QEMU's default is the GICv2 with a `GICv2m` frame; the second is
-/// `gic-version=3`, the GIC every aarch64 cloud machine has and the only `virt` with an ITS under
-/// TCG, where it asserts the loader's GICv3 and ITS lines (the MADT's types 0x0E and 0x0F read
-/// out of the tables QEMU wrote).
-///
-/// **The second boot is from the cloud boot disk** ([`crate::cloud_image`]), not the stick
-/// directory: the same file on a GPT disk this tree wrote, which is what a person imports into
-/// Oracle. So the disk is booted by every run of this gate rather than only by the person who
-/// uploads it.
+/// **The aarch64 stick, booted with ACPI and no device tree** (milestone 578 (an ACPI discovery
+/// path for aarch64)), as every aarch64 cloud machine is; the loader writes a tree from the tables
+/// (§278 (an ACPI machine reaches the aarch64 kernel as a device tree the loader writes)). Builds
+/// the aarch64 payload alone, release like the stick; `stick-boot` boots `acpi=off`. Asserts
+/// [`BOOTED`] and the loader's ACPI line, so a firmware offering a tree cannot pass by booting the
+/// other path. Boots twice: the stick directory on QEMU's default GICv2 with a `GICv2m` frame, then
+/// the cloud boot disk ([`crate::cloud_image`]) a person imports into Oracle, so every run boots it,
+/// with `gic-version=3` (the only `virt` with an ITS under TCG), asserting the loader's GICv3 and
+/// ITS lines (MADT types 0x0E and 0x0F). See notes/boot-stick/device-tree-handover.md.
 ///
 /// Name: provisional (milestone 578's lane, 2026-10-19 UTC), in the family of `stick-boot` and
 /// `uefi-boot`, naming the description it boots from.

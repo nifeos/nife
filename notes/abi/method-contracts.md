@@ -223,4 +223,4 @@ one for the first 401 pages of a run and one for the 74 after them. A pool's hol
 maps it into the client, and deletes the slice. A slice never names pages outside its source's run
 and carries the source's rights, which the holder narrows further when it delegates.
 
-*Name: provisional. calef names files.*
+*Name: provisional. Named for what the crate's doc comments state. calef names files.*

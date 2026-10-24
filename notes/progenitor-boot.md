@@ -1,5 +1,7 @@
 # Booting the progenitor: the boot capability set
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.*
+
 The kernel's last act at boot is `user::boot_progenitor` (`kernel/src/user/progenitor_boot.rs`). It
 loads the progenitor, measures it, builds its address space, grants it a fixed table of
 capabilities and starts it. From those capabilities and nothing else, `crates/system_initializer`

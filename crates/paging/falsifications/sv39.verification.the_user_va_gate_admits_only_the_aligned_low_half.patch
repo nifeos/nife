@@ -20,12 +20,11 @@ this one function has three independent proofs over it. The `aarch64` and `x86_6
 records break it in two other ways; the three patches are not copies.
 
 diff --git a/crates/paging/src/page_format.rs b/crates/paging/src/page_format.rs
-index 476dfcac4..86f6ccd7d 100644
 --- a/crates/paging/src/page_format.rs
 +++ b/crates/paging/src/page_format.rs
-@@ -39,7 +39,7 @@ pub enum Half {
- ///
- /// Generic over the format so the split lands at the right bit for the running architecture.
+@@ -40,7 +40,7 @@
+ /// assert_eq!(PAGE_SIZE, 4096);
+ /// ```
  pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
 -    F::is_in_half(Half::Low, va) && va.is_multiple_of(PAGE_SIZE)
 +    !F::is_in_half(Half::High, va) && va.is_multiple_of(PAGE_SIZE)

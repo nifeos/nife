@@ -1,16 +1,11 @@
-//! **The right-aligned number writer three table-printing programs share.** `write_right` prints a
-//! `u64` right-aligned in a column of the given width, and never cuts a number wider than its
-//! column: the digits decide the width when they outrun it. `write_signed` prints an `i64` with
-//! its sign, for an error code quoted inside a sentence. Milestone 793 (one crate for the
-//! right-aligned number writer three programs each copy) lifted the pair out of `free`, `vmstat`
-//! and `slabtop`, which had each carried the same copy since milestone 126 (the `procps`
-//! package); the duplication was found by triaging mutation survivors, because one mutant
-//! of this function lived, untested, in all three.
-//!
-//! Output goes to the caller's `&mut dyn FnMut(&[u8])`, the seam every program here writes its
-//! report through, and the writer holds no state, so a fourth table-printing program depends on
-//! this crate instead of copying it a fourth time.
-//!
+//! **The right-aligned number writer three table-printing programs share** (`free`, `vmstat` and
+//! `slabtop`; milestone 793 (one crate for the right-aligned number writer three programs each
+//! copy)). `write_right` prints a `u64` right-aligned in a column of the given width, and never
+//! cuts a number wider than its column: the digits decide the width when they outrun it.
+//! `write_signed` prints an `i64` with its sign, for an error code quoted inside a sentence. Output
+//! goes to the caller's `&mut dyn FnMut(&[u8])`, the seam every program here writes its report
+//! through, and the writer holds no state.
+
 //! # EXAMPLES
 //!
 //! ```text
@@ -19,14 +14,14 @@
 //! write_right(u64::MAX, 0, out) // "18446744073709551615": width 0 means no padding
 //! write_signed(-3, out)         // "-3"
 //! ```
-//!
+
 //! # BUGS
 //!
-//! - A `width` above 24 pads to 24 and no further: the buffer is `u64::MAX`'s twenty digits plus
-//!   four spaces, fixed. No column in `free`, `vmstat` or `slabtop` is that wide.
-//! - The unpadded decimal writers that predate this crate (`swish`'s `write_num`, `pgrep`'s) are
-//!   the same digit loop without the column; whether they become `write_right` calls at width `0`
-//!   is no one's milestone yet.
+//! - A `width` above 24 pads to 24 and no further (twenty digits plus four spaces, fixed); no
+//!   column in `free`, `vmstat` or `slabtop` is that wide.
+//! - The unpadded writers that predate this crate (`swish`'s `write_num`, `pgrep`'s) are the same
+//!   digit loop without the column; whether they become `write_right` calls at width `0` is no
+//!   one's milestone yet.
 //!
 //! Name: provisional (milestone 793, 2026-10-15 UTC), for calef's naming pass. Considered and set
 //! aside: `padnum` (floated in the block; abbreviates `num`, and reads as a verb phrase),

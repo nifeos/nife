@@ -1,5 +1,7 @@
 # Per-file grants: the verb table, the caretaker, the proof and the cost
 
+*Name: provisional, after the parent's heading.*
+
 An appendix to [notes/grant-expression.md](../grant-expression.md), moved there on 2026-10-11
 (UTC) under §212 (a prose budget). The main page keeps the mechanism and its rules; this is
 the evidence behind each.

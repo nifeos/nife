@@ -4,30 +4,24 @@
 
 use super::*;
 
-/// **A directory's listing as `READDIR` sends it**: every child but the attribute store, sorted by
-/// name so a cursor means the same thing across calls, each with its node and whether it is a
-/// directory.
+/// A directory's listing as `READDIR` sends it: every child but the attribute store, sorted by
+/// name so a cursor means the same thing across calls, each with its node and kind.
 ///
 /// # BUGS
 ///
-/// - **Every child costs a node read**, because the record carries
-///   [`filesystem_contract::dirent::IS_DIR`] and a RedoxFS directory entry does not store the
-///   child's type: `read_tree` of each child is how this learns it. Measured by milestone 121
-///   (`ripgrep` on nife: enumeration as a capability) on 2026-09-26: listing 128 files cost 43 to
-///   85 us per entry under HVF. Since milestone 606 the listing is memoized ([`Memo`]), so the
-///   cost is paid once per directory until something changes, not once per listing.
+/// - Every child costs a node read, because a RedoxFS directory entry does not store the child's
+///   type and the record carries [`filesystem_contract::dirent::IS_DIR`]. Milestone 121 (`ripgrep`
+///   on nife: enumeration as a capability) measured 43 to 85 us per entry under HVF on 2026-09-26;
+///   since milestone 606 (a directory walk costs what it does on Linux) the [`Memo`] pays it once
+///   per directory until something changes.
 pub(crate) fn list<D: Disk>(
     tx: &mut Transaction<D>,
     dir: TreePtr<Node>,
 ) -> Result<Vec<memo::Child>> {
     let mut children = Vec::new();
     tx.child_nodes(dir, &mut children)?;
-    // **The attribute store is not part of the namespace** (milestone 57 (extended attributes)).
-    // Filtered here, before
-    // any cursor is applied, so the cursor still counts what the client can see; a filter applied
-    // after `skip` would make one entry vanish at whichever offset the store happened to sort to.
-    // `check_component` refuses the name on the way in, so this is the other half of the same rule
-    // rather than a second one.
+    // The attribute store is not part of the namespace (milestone 57 (extended attributes)). It is
+    // filtered before any cursor applies, so the cursor counts only what the client can see.
     let mut out = Vec::with_capacity(children.len());
     for entry in &children {
         let Some(name) = entry.name() else { continue };

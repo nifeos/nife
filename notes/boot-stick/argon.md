@@ -1,5 +1,7 @@
 # The boot stick at argon's bench
 
+*Name: provisional, for the parent's argon bench check. calef names files.*
+
 An appendix to [`notes/boot-stick.md`](../boot-stick.md), holding its argon bench check. Nothing
 here has been run.
 

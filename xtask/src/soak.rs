@@ -1,5 +1,6 @@
-//! The sustained runs under QEMU: the multicore soak (milestone 219) and the multi-tasking
-//! job mix (milestone 168).
+//! The sustained runs under QEMU: the multicore soak (milestone 219 (the boot tour ends and the
+//! kernel halts, so there is nothing to soak)) and the multi-tasking job mix (milestone 168 (a
+//! multi-tasking workload benchmark)).
 //!
 //! Both return their own exit codes rather than a bool, because a rehearsal that cannot say
 //! *how* it failed is not a rehearsal.
@@ -22,23 +23,13 @@ use crate::{
 /// **The QEMU rehearsal of milestone 168's multi-tasking workload sweep.** Boot a
 /// `--features job_mix` kernel, echo its lines, stop when it says it is done, and kill it.
 ///
-/// **This is a rehearsal and not the measurement**, and the distinction is the milestone's whole
-/// gate. Under TCG the magnitudes are fiction (no caches are modelled) and under HVF the host
-/// scheduler is underneath every guest thread; the number DECISIONS §96 is waiting for is taken on
-/// radon, by `notes/job-mix.md`'s procedure. What this proves is that the workload runs, that the
-/// sweep completes, and that the output is the shape the bench evening will read.
-///
-/// **The judging is `serial_console`'s**, not this function's (milestone 324 (the bench console
-/// cannot speak to any of the three boards), part 2), which is the same move `soak_test` below
-/// already made and for the same reason: a second reader drifts from the bench-side one the first
-/// time either changes, and the cheapest way for two things to agree is for there to be one of
-/// them. What stood here instead was a loop over `starts_with("job-mix")` with no timeout at all,
-/// so a sweep that wedged mid-subrun hung this command forever and a finished sweep and a dead one
-/// shared an exit status. That is the limitation the lane of milestone 168 (a multi-tasking workload
-/// benchmark) filed and milestone 324's part 2 names.
-///
-/// The kernel parks in `wfi` rather than exiting, so the host side owns the process and tears it
-/// down; that half is `run_bench`'s and is unchanged. See `script/job-mix`.
+/// Returns `script/board-console`'s exit statuses, judged by `serial_console` (milestone 324 (the
+/// bench console cannot speak to any of the three boards), part 2), so a sweep that wedges
+/// mid-subrun ends with status 2 rather than hanging. This is a rehearsal, not the measurement: TCG
+/// models no caches and HVF puts the host scheduler under every guest thread, so the number
+/// DECISIONS §96 (process kernel or event kernel, and how to decide it) waits for is taken on radon
+/// by `notes/job-mix.md`'s procedure. It proves the workload runs, the sweep completes and the
+/// output has the shape the bench evening reads. See `script/job-mix`.
 pub(crate) fn job_mix_sweep() -> ExitCode {
     use std::time::Duration;
 
@@ -51,17 +42,12 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // is too generous costs a slow failure where one that is too tight costs a wrong answer.
         total: Duration::from_secs(600),
         until: Some(Stage::SweepDone),
-        // **Sized against a subrun, not against a heartbeat**, which is the one way a sweep is
-        // harder to watch than a soak. `kernel/src/soak.rs` beats on the wall clock every five
-        // seconds whatever it is doing, so fifteen is three missed beats. A sweep speaks only when
-        // a subrun ends, and the longest is the top of `job_mix::TASK_SWEEP`: measured at
-        // 249,234,771 ticks on a 62.5 MHz counter, which is 4.0 seconds, in the capture at
+        // Sized against a subrun, not a heartbeat: a sweep speaks only when a subrun ends. The
+        // longest, the top of `job_mix::TASK_SWEEP`, measured 249,234,771 ticks on a 62.5 MHz
+        // counter (4.0 s, QEMU aarch64, 2026-09-19) in the capture
         // `crates/serial_console/tests/fixtures/captured/qemu-2026-09-19-aarch64-job-mix-medians.log`.
-        // Sixty seconds is fifteen times that, which is headroom for a slower host and still names
-        // a wedge inside a minute. It was twenty times a 2.6-second subrun until milestone 168
-        // took twenty-one repeats of a seven-kind mix instead of three of a five-kind one, which
-        // is the margin being spent by a change nowhere near this line. Overridable, because the
-        // number is a default rather than an agreement.
+        // Sixty seconds is fifteen times that and still names a wedge inside a minute. A default,
+        // so overridable.
         quiet_after: Some(Duration::from_secs(60)),
         // Nothing this kernel prints after `job-mix: done` can change the verdict: it halts. The
         // settle window exists for the measured-boot refusal that arrives *after* the awaited rung,
@@ -70,7 +56,7 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         // An emulator has no firmware prologue to climb; see `boot_check`'s note.
         board: &serial_console::board::EMULATOR,
     };
-    // `--hvf` and `--release` (added 2026-09-19 for the HVF cross-check in notes/job-mix.md): the
+    // `--hvf` and `--release` (for the HVF cross-check in notes/job-mix.md): the
     // two flags the tree already spells this way, `run`'s and `bench`'s, rather than new ones. HVF
     // is aarch64 on an Apple host only, and release is what `script/board-image` builds for radon,
     // so the cross-check runs the optimisation level the board does.
@@ -155,9 +141,8 @@ pub(crate) fn job_mix_sweep() -> ExitCode {
         }
     };
     report_sweep(&session, &log_path);
-    // **The same five statuses `script/board-console` returns**, computed by the same code. `2` is
-    // new here and it is part 2's whole point: a sweep that spoke and then stopped is a hang, where
-    // before this it was indistinguishable from one that finished.
+    // The same five statuses `script/board-console` returns, computed by the same code: `2` is a
+    // sweep that spoke and then stopped, a hang, distinct from one that finished.
     ExitCode::from(u8::try_from(session.exit_code()).unwrap_or(4))
 }
 
@@ -286,15 +271,8 @@ fn kernel_leg(command: &str, arch: &str) -> Option<(&'static str, &'static str, 
                 initial_ramdisk_path(),
             )
         }),
-        // **`mkdisk` here too, not only on aarch64** (found 2026-09-19 by the lane that closed
-        // milestone 168's sampling hole): the riscv64 runner refuses a `NIFE_DISK` naming a missing
-        // file, so on a fresh worktree `--arch riscv64` died before the kernel printed a line, and
-        // it only ever passed on a checkout where an aarch64 run had made the image first. The
-        // sweep reads no disk; the runner's own check is what needs it.
-        //
-        // Found again 2026-09-25 by milestone 592 (radon's cold reboot dies in OpenSBI's PMIC
-        // write)'s lane, whose fresh worktree failed `soak-test --reboot --arch riscv64` with
-        // `starts=0` before the kernel printed a line.
+        // `mkdisk` here too: the riscv64 runner refuses a `NIFE_DISK` naming a missing file, so
+        // a fresh worktree dies before the kernel prints a line. The run itself reads no disk.
         "riscv64" => (mkdisk() && initial_ramdisk_riscv()).then(|| {
             (
                 RISCV_TARGET,
@@ -333,11 +311,9 @@ fn qemu_command(
         profile_dir()
     ));
     cmd.env("NIFE_INITIAL_RAMDISK", initial_ramdisk);
-    // **No disk on `x86_64`**, `boot_check`'s fix applied here (found 2026-09-25 by milestone 593,
-    // provisional number, in a fresh worktree). `host::cargo` exports a `NIFE_DISK` naming a file
-    // only `mkdisk` writes, only the aarch64 leg above calls `mkdisk`, and the `x86_64` runner treats
-    // a named but missing disk as fatal. So `--arch x86_64` passed only in a checkout where some
-    // earlier command had left the image behind. The soak reads no disk.
+    // No disk on `x86_64`: `host::cargo` exports a `NIFE_DISK` naming a file only `mkdisk`
+    // writes, and the `x86_64` runner treats a named but missing disk as fatal. The run reads no
+    // disk.
     if arch == "x86_64" {
         cmd.env_remove("NIFE_DISK");
     }
@@ -379,9 +355,8 @@ fn start_qemu(
 ///
 /// **The children first, then the wrapper**, the same order and for the same reason as `run_bench`:
 /// `helpers/qemu-runner-x86_64.sh` runs QEMU as a plain foreground child rather than `exec`-ing into
-/// it, so killing the wrapper alone orphans the emulator. Found on 2026-09-01 by an x86 soak that
-/// returned 0 and left a `qemu-system-x86_64` behind holding this pipe. The other two runners
-/// `exec`, so `pkill -P` finds nothing there and costs one process.
+/// it, so killing the wrapper alone orphans the emulator, which keeps holding this pipe. The other
+/// two runners `exec`, so `pkill -P` finds nothing there and costs one process.
 fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
     let _ = Command::new("pkill")
         .args(["-9", "-P", &child.id().to_string()])
@@ -391,21 +366,15 @@ fn stop_qemu(child: &mut std::process::Child, sink: &mut impl std::io::Write) {
     let _ = sink.flush();
 }
 
-/// **The QEMU half of milestone 219's sustained run.** Boot a `--features soak_test` kernel, watch it
-/// with the same recogniser and the same policy `script/board-console` points at a real board, and
-/// return the same exit statuses.
+/// **The QEMU half of milestone 219's sustained run.** Boot a `--features soak_test` kernel (or the
+/// variant a switch names), watch it with the recogniser and policy `script/board-console` points at
+/// a real board, and return the same exit statuses, 4 for arguments or a build.
 ///
-/// One recogniser, two sources, is the whole design. The alternative was a QEMU-side checker of its
-/// own, and it would have drifted from the board-side one the first time either changed; milestone
-/// 219's block is explicit that the workload and the console must agree about what a hang is, and
-/// the cheapest way for two things to agree is for there to be one of them.
-///
-/// What this adds over `serial_console` is only what a board does not need: building the kernel and
-/// the archive, starting QEMU, and killing it afterwards. See `script/soak-test`.
-///
-/// Named for the command rather than for the workload (milestone 297): this function *is*
-/// `script/soak-test`, where `BootProgress::soak` one crate over reports on the workload, which is
-/// still a soak and keeps that spelling.
+/// One recogniser for both sources, so the workload and the console agree about what a hang is, as
+/// milestone 219's block requires; this adds only building, starting QEMU and killing it. Named for
+/// the command rather than the workload (milestone 297 (`soak` becomes `soak-test`)): this *is*
+/// `script/soak-test`, where `BootProgress::soak` one crate over keeps the workload's spelling. See
+/// `script/soak-test` and notes/soak.md.
 pub(crate) fn soak_test() -> ExitCode {
     use std::time::Duration;
 
@@ -705,19 +674,13 @@ fn report_beat(beat: &serial_console::progress::SoakBeat) {
 
 /// **Did the machine actually come back?** Milestone 249's proof under QEMU, for `soak-test --reboot`.
 ///
-/// The rebooting soak's claim is not that `arch::reboot` was called, or even that it did not
-/// return: it is that the machine reset and booted this kernel again. So the only passing outcome is
-/// the soak's own start line appearing **a second time, after** a `rebooting now` line, which QEMU
-/// can only produce by resetting the machine and loading `-kernel` again. A reset that hung in
+/// Passes only on the soak's start line appearing a second time, after a `rebooting now` line,
+/// which QEMU produces only by resetting the machine and loading `-kernel` again. A reset hung in
 /// firmware, a guest that printed its reset line and stopped, and a QEMU that exited on the reset
-/// all fail here, which is the difference this test exists to draw.
-///
-/// It reads the stream itself rather than going through `serial_console::watch`, because that
-/// recogniser judges one boot and treats a second banner as the story starting over; teaching it
-/// multi-boot runs is `serial_console::lottery`'s job on a real capture, not this proof's.
-///
-/// Exit statuses follow `soak-test`'s: 0 came back, 1 the kernel said the reset failed or panicked,
-/// 2 the deadline passed first, 3 QEMU's output ended.
+/// all fail. It reads the stream itself because `serial_console::watch` judges one boot and treats a
+/// second banner as a fresh start; multi-boot captures are `serial_console::lottery`'s job. Returns
+/// 0 came back, 1 the kernel said the reset failed or panicked, 2 the deadline passed first, 3
+/// QEMU's output ended.
 fn second_boot(
     stdout: std::process::ChildStdout,
     sink: &mut impl std::io::Write,
@@ -812,19 +775,13 @@ fn console_lines(stdout: std::process::ChildStdout) -> std::sync::mpsc::Receiver
 /// **Milestone 593's two proofs under QEMU q35**: the watchdog resets a wedged kernel, and it never
 /// resets a healthy one. Provisional number.
 ///
-/// **`--wedge`** passes on three facts in order. The watchdog armed. The kernel announced its
-/// deliberate wedge. Then the soak's start line appeared a second time, milestone 249's "it came
-/// back" criterion, and that second boot reported `SECOND_TO_STS` set. The last fact is what makes
-/// it this watchdog's reset rather than any reset: the chipset sets that bit only on a second
-/// timeout, and nothing else in QEMU's reset path touches it.
-///
-/// **`--watchdog`** passes when `window` has elapsed since the watchdog armed with one boot and no
-/// failure, and at least one pet reported a count below its reload value. That last condition is
-/// the difference between a watchdog that was petted and one that was never counting: a halted TCO
-/// reads its reload value forever, and a run that passed on it would prove nothing.
-///
-/// Exit statuses follow `soak-test`'s: 0 proven, 1 the kernel said something that disproves it, 2
-/// the deadline passed first, 3 QEMU's output ended.
+/// `--wedge` passes on three facts in order: the watchdog armed, the kernel announced its wedge, and
+/// the soak's start line appeared again (milestone 249's "it came back") with that boot reporting
+/// `SECOND_TO_STS` set, which the chipset sets only on a second timeout and nothing else in QEMU's
+/// reset path touches. `--watchdog` passes when `window` has elapsed since arming with one boot, no
+/// failure, and a pet that read its count below the reload value; a halted TCO reads its reload
+/// value forever. Returns 0 proven, 1 disproved by the kernel, 2 the deadline passed first, 3
+/// QEMU's output ended.
 fn watchdog_verdict(
     stdout: std::process::ChildStdout,
     sink: &mut impl std::io::Write,

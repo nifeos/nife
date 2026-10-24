@@ -92,10 +92,9 @@ pub(crate) fn write_attrs<D: Disk>(
         Err(e) => return Err(e),
     };
     tx.write_node(ptr, 0, blob, now, 0)?;
-    // **Then shrink to exactly the new length.** A write does not truncate, so a blob that got
-    // shorter would leave the previous one's tail behind and the reader would walk records nobody
-    // wrote. That is DECISIONS §27's four-times-corrected failure met again, and here it would
-    // present as corrupted attributes rather than as a longer file.
+    // Then shrink to exactly the new length: a write does not truncate, and a shorter blob would
+    // leave the old tail for the reader to walk (DECISIONS §27 (the filesystem service: a
+    // capability-shaped contract)'s failure).
     tx.truncate_node(ptr, blob.len() as u64, now, 0)?;
     Ok(())
 }
@@ -120,23 +119,13 @@ pub(crate) fn purge_attrs<D: Disk>(tx: &mut Transaction<D>, node_id: u32) -> Res
     }
 }
 
-/// **Take the store directory away with the last blob in it**, so a filesystem that holds no
+/// Take the store directory away with the last blob in it, so a filesystem that holds no
 /// attributes is indistinguishable from one that never held any.
 ///
-/// This used to be a recorded limitation (notes/xattr.md), on the grounds that noticing an empty
-/// directory costs a walk. It does not: `remove_node` with `MODE_DIR` **already** refuses a
-/// directory that still has entries, with `ENOTEMPTY`, so the engine's own check is the emptiness
-/// test and there is nothing to enumerate. Asking it and accepting the refusal costs one lookup on
-/// the removals that emptied a blob, inside the transaction that emptied it.
-///
-/// The reason to bother is the recovery side rather than the byte. `redoxfs_host extract` copies the
-/// store out with the tree, so a leftover empty `.nife-attrs` would land in somebody's recovered
-/// Documents folder as a directory nothing explains. A store that disappears when the last attribute
-/// does never gets there.
-///
-/// `ENOENT` is tolerated for the same reason it is everywhere else here (another transaction in the
-/// same commit may have taken it), and every other error is propagated, because a store that failed
-/// to be removed for an unknown reason is not a store known to be gone.
+/// `remove_node` with `MODE_DIR` refuses a non-empty directory with `ENOTEMPTY`, so the engine's
+/// check is the emptiness test and costs one lookup. `ENOENT` is tolerated too; every other error is
+/// propagated, because a store that failed to be removed is not a store known to be gone. See
+/// notes/fs-server/the-core.md.
 pub(crate) fn drop_store_if_empty<D: Disk>(tx: &mut Transaction<D>) -> Result<()> {
     match tx.remove_node(TreePtr::root(), xattr::STORE_DIR, Node::MODE_DIR) {
         Ok(_) => Ok(()),

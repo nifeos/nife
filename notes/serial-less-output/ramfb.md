@@ -1,5 +1,7 @@
 # The boards' screen: `ramfb`, and why it is the other way round
 
+*Name: provisional, for the QEMU device it describes.*
+
 An appendix to [`notes/serial-less-output.md`](../serial-less-output.md). It holds how QEMU's `virt`
 boards got a screen on aarch64 and riscv64, the gate that reads it back, and what the first red CI
 run settled.
@@ -95,6 +97,16 @@ of the shape `components/src/compositor.rs`'s `flush` has, one step further out.
 `screen::is_kernel_memory` answers by address range rather than by a flag on the screen, so it
 stays true for a framebuffer from anywhere. Milestone 157's U-Boot aperture lies outside the kernel
 image and passes.
+
+## The `fw_cfg` wire format
+
+`fw_cfg` is the channel firmware reads the E820 map and ACPI tables through, and QEMU's
+`docs/specs/fw_cfg.rst` specifies it. QEMU, Linux, EDK2 and U-Boot all spell it `fw_cfg`, so a reader
+arriving from that spec is in the right place in `crates/firmware_configuration`. `ramfb` is a
+write-only file, and only `fw_cfg`'s DMA interface can write, so the crate speaks the DMA interface
+and not the port pair. Every multi-byte field is big-endian, including on the little-endian
+machines this tree runs on. That is the mistake the crate exists to make impossible, so every
+encoder takes native values and returns bytes, never a struct anybody could `transmute`.
 
 ## BUGS
 

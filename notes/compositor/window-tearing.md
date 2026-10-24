@@ -1,5 +1,7 @@
 # A window can tear too
 
+*Name: provisional.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), whose limits list states the conclusion.
 
 A window can tear too, and the reason is sharper than the screenshot's (milestone 43 (a second

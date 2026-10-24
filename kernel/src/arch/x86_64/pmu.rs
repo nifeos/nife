@@ -1,31 +1,10 @@
-//! **Unhalted core cycles, `x86_64`.** [`super::timer::now()`] is `rdtsc`, so a cycle probe that
-//! read the TSC would divide one counter by itself and print an exact `1.00` on every part. The
-//! TSC is invariant, a good clock and not a cycle counter. This module reads
-//! `IA32_PERF_FIXED_CTR1`, `CPU_CLK_UNHALTED.CORE`: cycles the core ran, at its actual frequency,
-//! not counting halts, the quantity aarch64's `PMCCNTR_EL0` and riscv64's SBI PMU cycle counter
-//! give.
-//!
-//! It creates no authority: the counter is read with `rdmsr` in ring 0, and `CR4.PCE` stays clear,
-//! so `rdpmc` from ring 3 still faults. (The TSC is already ambient, per §139 (who may read the cycle
-//! counter).)
-//!
-//! Intel SDM Volume 3B, "Architectural Performance Monitoring": `CPUID` leaf `0x0A` gives the
-//! version (fixed counters from 2) and the fixed counters' count and width;
-//! `IA32_FIXED_CTR_CTRL` (`0x38D`) enables counter 1 for ring 0 and ring > 0; `IA32_PERF_GLOBAL_CTRL`
-//! (`0x38F`) is the master switch, and a counter enabled in only one of the two counts nothing;
-//! `IA32_PERF_FIXED_CTR1` (`0x30A`) is the counter. The leaf is checked before any MSR, since
-//! `rdmsr` on an unimplemented MSR is a `#GP` with no recovery; QEMU without its `pmu` property
-//! reports version 0 and [`init`] stops there.
-//!
-//! A counter is checked before it is believed: one unmoved across a timed spin is stuck, and one
-//! whose delta equals the TSC's bit for bit is the clock wearing a hat. **It never falls back to
-//! the TSC**: [`cycles`] answers `None` and the caller prints the reason.
+//! Unhalted core cycles, `x86_64`: `IA32_PERF_FIXED_CTR1`, not the TSC ([`super::timer::now()`]).
+//! Read by `rdmsr` in ring 0 with `CR4.PCE` clear (§139 (who may read the cycle counter)); a stuck
+//! or TSC-aliased counter is refused, and [`cycles`] answers `None`. See notes/pmu.md.
 //!
 //! # BUGS
-//!
-//! - Never read on silicon; xenon is the machine that would (design/roadmap/0309-x86-64-core-cycles.md).
-//! - The in-step check is exact equality, so a hypervisor aliasing the two with an offset passes and
-//!   prints `1.00`; a tolerance band would refuse a real core pegged at its base frequency.
+//! - Never read on silicon (design/roadmap/0309-x86-64-core-cycles.md).
+//! - The in-step check is exact: a hypervisor aliasing the two with an offset passes as `1.00`.
 //! - Boot CPU only: a secondary that never ran [`init`] reads zero.
 //! - The counter runs for the whole boot, read only as a difference.
 //! - `IA32_PERF_GLOBAL_CTRL` is read-modify-written, preserving firmware's bits.
@@ -46,11 +25,9 @@ const IA32_PERF_GLOBAL_CTRL: u32 = 0x38F;
 /// Counter 1's enable field in [`IA32_FIXED_CTR_CTRL`]: bits 4 and 5, "count in ring 0" and "count
 /// in ring > 0".
 ///
-/// **Both rings, deliberately.** The quantity the other two architectures report is cycles the core
-/// ran, without regard to privilege, and a counter that stopped at the ring boundary would make
-/// `x86_64`'s number mean something different from theirs, which is the exact confusion milestone 309
-/// exists to remove. Enabling ring 3 *counting* is not ring 3 *access*: reading still needs `rdmsr`,
-/// or `rdpmc` with `CR4.PCE` set, and this kernel sets neither. See this module's header.
+/// Both rings, so the number means what the other two architectures' does: cycles the core ran,
+/// whatever the privilege. Counting ring 3 is not ring 3 access, which needs `rdmsr` or `rdpmc`
+/// with `CR4.PCE` set, and this kernel does neither.
 const FIXED_CTR1_BOTH_RINGS: u64 = 0b11 << 4;
 
 /// Counter 1's field, all four bits, for masking it out before the enable is written.
@@ -68,16 +45,10 @@ const PERFMON_VERSION_WITH_FIXED_COUNTERS: u32 = 2;
 /// Fixed counter **1** is the second one, so a part must report at least this many.
 const FIXED_COUNTERS_NEEDED: u32 = 2;
 
-/// **Why there is or is not a usable cycle counter**, as one value, decided once by [`init`].
-///
-/// The same vocabulary `arch::riscv64::pmu::CycleCounter` carries, and for the same reason: "no
-/// counter" has several distinguishable causes, they want different fixes, and the machine where
-/// that matters is one nobody can attach a debugger to. The members differ because the mechanisms
-/// differ; the discipline of building the answer into the boot line rather than telling a reader to
-/// go and add a print is the part that carries across.
-///
-/// Ordered so the discriminant is the stored value and `Unknown` is zero, which is what an
-/// unreached [`init`] leaves behind.
+/// Why there is or is not a usable cycle counter, decided once by [`init`]. The vocabulary of
+/// `arch::riscv64::pmu::CycleCounter`: each cause wants a different fix, and the boot line is the
+/// only diagnostic on a machine nobody can attach a debugger to. The discriminant is the stored
+/// value, and `Unknown` is zero, what an unreached [`init`] leaves.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub(crate) enum CycleCounter {
@@ -123,17 +94,13 @@ static PERFMON_VERSION: AtomicU32 = AtomicU32::new(0);
 static CHECK_CYCLES: AtomicU64 = AtomicU64::new(0);
 static CHECK_TSC: AtomicU64 = AtomicU64::new(0);
 
-/// **Find the architectural fixed cycle counter, enable it, check it is counting something of its
-/// own, and remember whether to believe it.**
+/// Find the architectural fixed cycle counter, enable it, check it counts something of its own,
+/// and record whether to believe it.
 ///
-/// Called once from `bring_up_machine` (`kernel/src/boot.rs`), after `timer::init_frequency` has
-/// calibrated the TSC: the checks below need a clock to spin against, and the clock they spin against is
-/// the very counter they are checking the answer is not. Silent and harmless on a part with no
-/// performance monitoring: [`cycles`] then answers `None` forever, which is the honest answer and
-/// not an error.
-///
-/// Every way of failing is recorded in [`outcome`] and printed by [`print_summary`], because on the
-/// machine where this matters nobody can attach a debugger.
+/// Called once from `bring_up_machine` (`kernel/src/boot.rs`), after `timer::init_frequency`: the
+/// check spins against the TSC, the counter the answer must not be. On a part with no performance
+/// monitoring [`cycles`] answers `None` forever. Every outcome is in [`outcome`] and printed by
+/// [`print_summary`].
 pub fn init() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     COUNTER_BITS.store(0, Ordering::Relaxed);
@@ -167,11 +134,8 @@ pub fn init() {
         return;
     }
 
-    // Enable, in the order the SDM requires: the per-counter control first, then the master
-    // switch. A counter enabled in only one of the two counts nothing and reports no error, which
-    // is exactly the failure the `Stuck` outcome below would then (correctly, but uselessly)
-    // report.
-    //
+    // The per-counter control first, then the master switch, as the SDM orders; a counter enabled
+    // in only one counts nothing and reports no error.
     // SAFETY: `CPUID` leaf 0x0A reported architectural performance monitoring version >= 2 with at
     // least two fixed-function counters, which is precisely the SDM's statement that these three
     // MSRs are implemented. The values written enable counting and change nothing else: the
@@ -187,10 +151,8 @@ pub fn init() {
         write_msr(IA32_PERF_GLOBAL_CTRL, global | GLOBAL_CTRL_FIXED_CTR1);
     }
 
-    // Does it count, and does it count something of its own? One window, both questions, because
-    // they are the same two reads. The window is the TSC's, which is the one clock this kernel has
-    // here that does not depend on the answer: short enough not to be felt in a boot, long enough
-    // that any real core has run through millions of cycles.
+    // One window answers both questions, does it count and on its own, timed by the TSC: the one
+    // clock here that does not depend on the answer.
     let ticks = check_window_ticks();
     let (c0, t0) = (read_counter(), super::timer::now());
     while super::timer::now().wrapping_sub(t0) < ticks {
