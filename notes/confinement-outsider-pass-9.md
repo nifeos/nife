@@ -162,9 +162,10 @@ adds to the suite. They share one shape.
 
 Most reduce a hostile program to the kernel operations it would issue, driven through the real
 dispatcher (`syscall::invoke`) the way a program's `svc` or `ecall` reaches it. The ELF tests call
-the loader `exec` uses, and the EL0, port and supervision tests boot real ring-3 children. Nothing
-blocks: no test issues a `SEND`, `RECEIVE` or `CALL` with no peer, and `SLICE`, `BADGE`, `REAP` and
-`SURVEY` do not park. So a regression is red at an assertion rather than a watchdog hang. Every
+the loader `exec` uses, and the EL0, port and supervision tests boot real ring-3 children. No thread
+parks without a peer that later arrives: the revocation tests' sender and the port tests' children
+park by design and are always met, and `SLICE`, `BADGE`, `REAP` and `SURVEY` do not park. So a
+regression is red at an assertion rather than a watchdog hang. Every
 capability is deleted and every region reclaimed, so the suite's frame and region ledgers are flat
 across each module.
 

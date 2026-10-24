@@ -78,16 +78,15 @@ fn entropy() -> Option<crate::sched::RendezvousId> {
     Some(w.request)
 }
 
-/// Whether this machine has no source of unguessable bytes for the client's nonce, checked before
-/// any test that needs a complete exchange: the client refuses the network without one
-/// (`without_entropy_the_client_refuses_rather_than_guessing`), the convention `disk_tests`,
-/// `credential_tests` and `entropy_tests` share. x86_64 is the case today: its runner attaches no
-/// virtio-rng (notes/x86-port.md), where both QEMU `virt` boards have one on mmio.
+/// Whether this machine has no source of unguessable bytes for the client's nonce, which the client
+/// refuses the network without (`without_entropy_the_client_refuses_rather_than_guessing`), as in
+/// `disk_tests`, `credential_tests` and `entropy_tests`. x86_64's runner attaches no virtio-rng
+/// (notes/x86-port.md); both QEMU `virt` boards have one on mmio.
 ///
-/// It goes through [`entropy`], never `ensure` directly, and that is load-bearing: the first
-/// `ensure` caller gets the service's `ready` endpoint, the service announces itself with a
-/// blocking send, and a discarded `Wiring` parks it in its startup for good, so the client blocks
-/// in `call(ENTROPY, ...)` and this reads as "the test server never saw a request".
+/// It goes through [`entropy`], never `ensure` directly: the first `ensure` caller gets the
+/// service's `ready` endpoint, which the service sends on, blocking, so a discarded `Wiring` parks
+/// it for good and the client blocks in `call(ENTROPY, ...)` ("the test server never saw a
+/// request"). A whole-suite run hides this, because `entropy_tests` sorts first and drains `ready`.
 fn machine_has_no_entropy() -> bool {
     entropy().is_none()
 }

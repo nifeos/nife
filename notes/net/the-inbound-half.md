@@ -148,22 +148,18 @@ proved by construction rather than by assertion.
 
 ## What else rides the inbound gate's spawn
 
-`a_host_process_connects_to_the_guest_and_is_answered` is one test with stage codes, not several,
-and the codes stand in for the names the others would have had. When it was written, a second net
-server cost a region nothing reclaimed, and the boot had none to spare (`virtio::MAX_DEVICES`). A net
-service has been reclaimable since 2026-08-16 (notes/frames.md), and splitting the test is a change
-of its own, with its own argument.
+`a_host_process_connects_to_the_guest_and_is_answered` is one test with stage codes, and the codes
+stand in for the names separate tests would have. A second net server once cost a region nothing
+reclaimed (`virtio::MAX_DEVICES`); a net service is reclaimable (notes/frames.md), so splitting the
+test is possible, as a change with its own argument.
 
-The UDP bind grant (milestone 55's stack half) rides the same spawn for the same memory reason. The
-lane that built it measured it: a twelfth net server died as `Unmappable(OutOfPageFrames)` in an
-unrelated later test. After the accept rounds the client binds a port outside `udp_bind_grant`, which
-is refused, then the granted one, which binds and is exclusive. The spawn's word carries both
-grants, so the composed packing is what the machine exercises.
-
-`LISTEN_DENIED` is a distinct answer from `LISTEN_IN_USE` because the two call for opposite
-responses from a client: no other port helps the first, and retrying helps the second.
+The UDP bind grant (milestone 55's stack half) rides the same spawn for the same memory reason,
+measured: a twelfth net server died as `Unmappable(OutOfPageFrames)` in an unrelated later test.
+After the accept rounds the client binds a port outside `udp_bind_grant`, which is refused, then the
+granted one, which binds and is exclusive. The spawn's word carries both grants, so the composed
+packing is what the machine exercises.
 
 Nothing in the suite checks that a datagram addressed to a joined multicast group is accepted, or
-that a multicast `SENDTO` reaches the wire. The multicast DNS responder carried both checks, and it is
-gone (notes/mdns.md). The source endpoint a UDP `RECEIVE` reports is still proved, by the TFTP
+that a multicast `SENDTO` reaches the wire. Those checks belonged to the multicast DNS responder,
+which is retired (notes/mdns.md). The source endpoint a UDP `RECEIVE` reports is proved by the TFTP
 exchange (stage codes 0xE046 and 0xE047).

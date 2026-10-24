@@ -456,10 +456,10 @@ fn std_resolve_prints(
 /// and nothing at all without one** (milestone 801 (packages over the internet), item 3).
 ///
 /// The same resolver, zone and peer as above, through the std PAL's `lookup_host`. With the badge,
-/// the zone's name resolves and a connection by name echoes; NXDOMAIN reads as `NotFound`;
-/// `example.com` reads as `PermissionDenied`, which only the grant can say (the peer says
-/// `REFUSED`). Without it, the PAL finds the slot empty and answers `Unsupported` before minting a
-/// page. A reused port slirp holds in `TIME_WAIT` stalls it (notes/net/the-outbound-gates.md).
+/// the name resolves and a connection by name echoes; NXDOMAIN is `NotFound`; `example.com` is
+/// `PermissionDenied`, which only the grant can say (the peer says `REFUSED`). Without it, the PAL
+/// finds the slot empty and answers `Unsupported` before minting a page. A port slirp holds in
+/// `TIME_WAIT` would stall it; ports follow the boot clock (notes/net/the-outbound-gates.md).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant.patch`
 #[test_case]

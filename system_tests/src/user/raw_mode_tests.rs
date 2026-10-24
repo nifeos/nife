@@ -406,10 +406,10 @@ fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
 /// (a graphical terminal session on the no-keyboard arm holds only the raw half of the boot
 /// discipline), fatal risk 7's confinement claim).
 ///
-/// A keyboardless `graphical_terminal` session reads the boot discipline raw through a copy badged
-/// [`line_editor::proto::RAW_ONLY_BADGE`], served only `OPERATION_RAWMODE` and `OPERATION_READRAW`,
-/// so it cannot queue a line the boot shell runs. Its cooked `ls\r` is refused, the unbadged reader
-/// gets exactly the driver's later line, other requests are refused, and the raw half still works.
+/// A keyboardless `graphical_terminal` session reads the boot discipline through a copy badged
+/// [`line_editor::proto::RAW_ONLY_BADGE`], served only `OPERATION_RAWMODE` and `OPERATION_READRAW`.
+/// Its cooked `ls\r` is refused, the unbadged reader gets exactly the driver's later line, other
+/// requests are refused, and the raw half still works, so a terminal refusing everything fails.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.raw_mode_tests.a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them.patch`
 #[test_case]
