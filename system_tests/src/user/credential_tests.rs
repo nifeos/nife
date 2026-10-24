@@ -2,32 +2,16 @@ use credential_service as cs;
 
 use super::*;
 
-/// Wire the whole system once: the entropy service, the credential service, and the
-/// provisioner that fills and seals the store. Returns the wiring, the provisioner's report,
-/// and the service's readiness report.
+/// Wire the whole system once: the entropy service, the credential service, and the provisioner
+/// that fills and seals the store. Returns the wiring, the provisioner's report and the service's
+/// readiness report, or `None` when the mmio virtio-rng device is not attached (correct on a bare
+/// board boot, milestone 145). `None` is memoized too, so the failed probe runs once per boot.
 ///
-/// Once per boot, because the seal is irreversible: a second provisioner would `CALL` an
-/// endpoint whose receiver is gone and block forever, which is the correct behaviour and a
-/// terrible test.
-///
-/// **The readiness message is taken here and not in the test that asserts on it**, which cost a
-/// hang to learn. A `SEND` on this kernel's endpoints is a rendezvous: it blocks until somebody
-/// receives. The credential service sends its readiness word between the seal and the serve
-/// loop, so a test that let a client `CALL` before draining that message would find a service
-/// that had not reached its serve loop, and the whole boot would deadlock with a sender and a
-/// caller both waiting on nobody. The entropy service does not show this because its wiring
-/// receives immediately.
-/// **`pub(super)` since milestone 54's identity item**, when the SMB gate needed the same sealed
-/// store: its adapter authenticated a real NTLMv2 session against this service, so that test
-/// calls this to get the verify endpoint. Calling it from either place is safe in either order,
-/// which is what the once-per-boot latch below is for; what would not be safe is a *second*
-/// wiring, and there is no way to ask for one.
-///
-/// Returns `None` if the mmio virtio-rng device this depends on is not attached (milestone 145:
-/// correct on a bare board boot with no `NIFE_RNG`-equivalent). The `None` result is itself
-/// memoized alongside the success case, so a board boot's first caller pays for the failed probe
-/// once and every later caller gets the same answer immediately rather
-/// than retrying a device that is not coming.
+/// Once per boot, because the seal is irreversible: a second provisioner would `CALL` an endpoint
+/// whose receiver is gone and block forever. `login_tests` and `login_user_schedule_tests` share
+/// this sealed store, and the latch makes every caller safe in any order. The readiness message is
+/// drained here, before any client `CALL`: the service sends it between the seal and its serve
+/// loop, and an undrained `SEND` deadlocks the boot (notes/credentials/what-is-proven.md).
 pub(super) fn provisioned() -> Option<(cs::Wiring, [u64; 3], [u64; 3])> {
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     // Plain atomics rather than a lock or a `Once`: the only writer is the test thread, and
@@ -224,32 +208,19 @@ fn the_same_endowment_cannot_write_the_store() {
     assert_eq!(r[0], cs::RPT_DONE, "the attacker did not report");
     let codes = r[1];
 
-    // **`PUT` gets MISMATCH, not MALFORMED, and that is the model working.** `provision::PUT`
-    // and `verify::VERIFY` are both opcode 1: the two spaces are independent because the
-    // *endpoint* gives a number its meaning. So what the attacker actually sent was a verify of
-    // an identity and a secret, and the honest answer is no. There was never a privileged
-    // request to refuse. This assertion was written expecting MALFORMED and the machine
-    // corrected it, which is worth recording here rather than quietly renumbering the opcodes
-    // to make the mistake more legible: renumbering would imply the service distinguishes a
-    // forbidden opcode from an unknown one, and it does not.
+    // `PUT` gets MISMATCH, not MALFORMED: `provision::PUT` and `verify::VERIFY` are both opcode 1,
+    // and the endpoint gives a number its meaning, so the attacker sent a verify of an identity
+    // nobody provisioned. The opcodes stay unrenumbered: renumbering would imply the service tells
+    // a forbidden opcode from an unknown one, and it does not.
     assert_eq!(
         cs::nth(codes, 0),
         credential_contract::MISMATCH,
         "a PUT on the verify endpoint is a verify of an identity nobody provisioned, so the \
          answer must be MISMATCH; codes {codes:#018x}",
     );
-    // **`SEAL` is MALFORMED again**, and the round trip is worth keeping rather than tidying.
-    // This assertion expected MALFORMED for as long as the verify endpoint served one opcode.
-    // Milestone 65 gave it a second, `NTLM_PROOF`, at number 2, which is `provision::SEAL`'s
-    // number, and an attacker's `SEAL` started reading as an NTLM proof for a resource nobody
-    // provisioned, whose honest answer is MISMATCH. That opcode was removed on 2026-08-30 with the
-    // SMB implementation (notes/smb.md) and the answer went back to MALFORMED.
-    //
-    // Recorded rather than renumbered, then and now, because the collision was not a coincidence
-    // to be tidied away: it is what "the endpoint gives a number its meaning" *looks like* when a
-    // space grows and shrinks. Adding an opcode on one endpoint silently changed what a word meant
-    // on the other, and nothing broke, because a word arriving at a serve loop never carried
-    // authority in the first place.
+    // `SEAL` is opcode 2, which the verify endpoint does not serve, so MALFORMED. Its answer moves
+    // whenever the verify space grows or shrinks, and nothing breaks, because a word arriving at a
+    // serve loop never carried authority (notes/credentials/what-is-proven.md).
     assert_eq!(
         cs::nth(codes, 1),
         credential_contract::MALFORMED,
