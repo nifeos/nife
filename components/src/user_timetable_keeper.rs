@@ -11,7 +11,7 @@
 
 //! # Capability contract (`login_contract::user_timetable_keeper`)
 //!
-//! - [`READY`], `WRITE`: one readiness or failure word, and at the end [`contract::STOPPED`].
+//! - [`READY`], `WRITE`: one readiness or failure word, and at the end `contract::STOPPED`.
 //! - [`BUDGET`], `WRITE | GRANT`: the timetable, its jobs and both endpoints are built from it;
 //!   `GRANT` because the timetable is handed a split of it.
 //! - [`PAGE`], `WRITE`: the registration page, retyped by `login` from this process's own
