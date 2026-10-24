@@ -27,7 +27,8 @@ handle's rights.
 
 The table is per server, not per client. Two clients sharing an endpoint share these handles, and a
 rights-carrying handle attenuates only its holder. The handle is the authority and the endpoint is
-the boundary. Confining a program to a subtree is therefore a caretaker process holding the wider
+the boundary. For the same reason `READDIR` keeps no snapshot per client, so a name added or
+removed between two pages of one walk can be seen twice or missed. Confining a program to a subtree is therefore a caretaker process holding the wider
 endpoint (`components/src/fs_subtree_caretaker.rs`), or a badge bound by ruling D
 ([notes/walk-cost.md](../walk-cost.md)).
 
