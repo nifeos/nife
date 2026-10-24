@@ -1,20 +1,22 @@
 ---
-status: PROPOSED
+status: IN-PROGRESS
 raised: 2026-10-20
+branch: milestone/946-granted-file-name-longer-than-sixteen-bytes
+promoted_from: a-granted-file-name-longer-than-sixteen-bytes
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A granted file name can be longer than sixteen bytes
+# 946. A granted file name can be longer than sixteen bytes
 
 *(Title and slug provisional.)*
 
 Raised 2026-10-20 (UTC) by `maintainer/record-2026-10-20`, recording calef's ruling of that day on
 milestone 922 (the demos are packaged in basalt). He kept the ratified `least_authority_demo` rather
-than shortening it: *"B"*. The fix is to lift the limit that refuses the name. Not started: under
-calef's 2026-10-19 rule it is proposed, not built now.
+than shortening it: *"B"*. The fix is to lift the limit that refuses the name. calef asked on
+2026-10-24 (UTC) for it to be built; the number 946 was assigned that day at promotion.
 
 ## The limit
 
@@ -55,3 +57,9 @@ named above, and no library carries a capability's name by argument words or fra
 
 On aarch64, riscv64 and x86_64: a file named with more than 16 bytes is granted at the prompt and read
 by the program it was granted to, and an installed `least_authority_demo` runs by its package path.
+
+## Index row
+
+A customer's files are not named for a demonstrator's limit: a name like `quarterly-report.txt`
+can be granted at the prompt and read by the program it was granted to, and a package's program
+named over sixteen bytes runs by its path.

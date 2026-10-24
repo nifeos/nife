@@ -76,8 +76,8 @@ installed with `jig`)'s pins and publishing.
 
 - **Milestone 909.** Milestone 909 takes the demos out of the shipped image, since only base
   packages compose it, and the installer then takes `demos`.
-- **Proposed.** A granted file name longer than 16 bytes:
-  `design/roadmap/proposals/a-granted-file-name-longer-than-sixteen-bytes.md`. Running the installed
+- **Milestone 946.** A granted file name longer than 16 bytes:
+  `design/roadmap/0946-a-granted-file-name-longer-than-sixteen-bytes.md`. Running the installed
   `least_authority_demo` by its package path waits on it (calef, 2026-10-20 UTC, kept the name).
 
 ## Index row
