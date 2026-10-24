@@ -1,47 +1,26 @@
-//! **Reading a screen the way [`super::watch`] reads a wire** (milestone 243).
+//! **Reading a screen the way [`super::watch`] reads a wire.**
 //!
 //! On a machine with no serial port nife's console is a framebuffer (`screen_console`). This turns
-//! a *picture* of that framebuffer back into the text written into it, so everything in
-//! [`super::progress`] applies unchanged.
-//!
-//! # Why this is possible at all, and is not optical character recognition
-//!
-//! [`bitmap_font`] is a constant table of monochrome 7x8 glyphs, so the picture a character
-//! produces is a pure function of the character. Reading it back is therefore an exact table
-//! lookup rather than a guess: **a cell either matches a glyph bit for bit or it matches nothing**,
-//! with no threshold to tune. A firmware splash decodes to nothing, which is the correct answer.
-//!
-//! - Under QEMU, `cargo xtask uefi-boot` asks the emulator for a screendump and reads the tour off
-//!   it. That gates the whole framebuffer path on every run: the loader's `LocateProtocol`, the
-//!   byte order, the stride, the mapping surviving `mmu::init`, and the glyphs.
-//! - The graphical `swish-check` leg reads the display terminal's live, typed screen back with
-//!   [`decode_exact`], this module's parse and grid with the cell drawn by the caller's own font
-//!   (milestone 377 (two screendump decoders, in two crates, reading the same font) merged the
-//!   decoder that leg used to carry in `xtask`). There is no picture of a live session to predict,
-//!   so the leg searches the rows this returns for what it typed.
-//! - On a machine nobody can attach a cable to, a **photograph of the screen** is not this: it is
-//!   not pixel-aligned and it is not a screendump. Turning one into text is a different problem
-//!   this module does not solve, and `notes/serial-less-output.md` says so where a reader meets it.
-//!
+//! a screendump of it back into the text written into it, so [`super::progress`] applies
+//! unchanged. [`bitmap_font`] is a constant table of 7x8 glyphs, so a cell matches a glyph bit for
+//! bit or matches nothing: an exact lookup, not optical character recognition. `cargo xtask
+//! uefi-boot` reads the tour off a QEMU screendump with [`read`], and the graphical `swish-check`
+//! leg reads the display terminal with [`decode_exact`]. A photograph of a screen is a different
+//! problem; `notes/serial-less-output.md` records it. See notes/board-console/modules.md.
+
 //! # BUGS
 //!
-//! - **Trailing blanks are trimmed and leading ones are not.** A framebuffer console pads every row
-//!   to the full width with background; leading blanks are the indentation the boot tour uses.
-//! - **A cell that matches no glyph reads as `?`**, not as an error. A screen is a picture and part
-//!   of it may be something else entirely (a logo, half a character at the right edge).
-//! - **Several characters share a glyph in a 7x8 font.** The lookup returns the first match in
-//!   alphabet order, so a font with a duplicate would silently prefer the earlier character. Nothing
-//!   currently checks `bitmap_font` for duplicate glyphs.
-//! - **A scheme whose ink is not the brighter of its two colours reads as `?`.** The decoder splits
-//!   ink from paper at their per-channel midpoint ([`ink_thresholds`]); the console's scheme is
-//!   [`INK`] on [`PAPER`] and the display terminal's is `video_terminal::Attr::DEFAULT`'s. A
-//!   dark-ink-on-light-paper scheme classifies every pixel backwards and decodes to a grid of `?`.
+//! - **Trailing blanks are trimmed and leading ones are not**: a framebuffer pads every row with
+//!   background, and leading blanks are the boot tour's indentation.
+//! - **A cell that matches no glyph reads as `?`**, not as an error (a logo, half a character).
+//! - **Characters sharing a glyph decode as the first in alphabet order**, and nothing checks
+//!   `bitmap_font` for duplicate glyphs.
+//! - **A scheme whose ink is not the brighter colour decodes to a grid of `?`**: ink and paper
+//!   split at their per-channel midpoint ([`ink_thresholds`]).
 
 /// What `screen_console` paints ink with, as one 24-bit RGB triplet: its own
-/// [`screen_console::ScreenConsole::FOREGROUND`], converted. The value was a hand-copied `0xc8`
-/// with its equality asserted in `xtask` until the dependency that made the question moot
-/// arrived (2026-10-04): the console's reader taking the color from the crate that paints is
-/// the same argument that brought that dependency in.
+/// [`screen_console::ScreenConsole::FOREGROUND`], converted, so the reader takes its color from
+/// the crate that paints.
 pub(crate) const INK: [u8; 3] = rgb(screen_console::ScreenConsole::FOREGROUND);
 
 /// What it paints background with: [`screen_console::ScreenConsole::BACKGROUND`].
@@ -175,14 +154,10 @@ pub struct Screendump {
 /// **Turn a screendump drawn in `ink` on `paper` back into its rows of text**, decoding each
 /// cell against `alphabet` at `scale`, and reading `?` where nothing in the alphabet matches.
 ///
-/// The bitmap-font decoder (milestone 377): [`read`] is it with this crate's console scheme, the
-/// painter's own scale and every printable character. The display terminal draws anti-aliased
-/// cells, which [`decode_exact`] reads instead.
-///
-/// `scale` is how many screen pixels wide one font pixel was painted: `1` for a terminal that
-/// draws 1:1, and for [`read`] whatever `screen_console::ScreenConsole::scale_for` says the
-/// console chose. Zero panics on the divide, which is the right answer for a caller that
-/// cannot say how its picture was drawn.
+/// [`read`] is this with the console's scheme, the painter's own scale and every printable
+/// character; anti-aliased cells need [`decode_exact`]. `scale` is how many screen pixels wide one
+/// font pixel was painted (`screen_console::ScreenConsole::scale_for` for [`read`]), and zero
+/// panics on the divide.
 ///
 /// # Errors
 ///
@@ -257,11 +232,9 @@ fn decode_rows(
 /// cell reads as the first byte of `alphabet` whose `draw(ch, x, y)`, a `0x00RRGGBB` word for
 /// pixel `(x, y)` of the cell, equals every pixel the dump holds there, and as `?` otherwise.
 ///
-/// For a picture whose glyphs are not monochrome, such as the display terminal's anti-aliased
-/// `glyph_atlas` cells, where [`decode`]'s ink-against-paper threshold has nothing to separate. The
-/// caller passes the drawing function the guest painted with, so a match is the guest's own
-/// pixels, not a resemblance. `scale` is [`decode`]'s: each cell pixel was painted as a
-/// scale-by-scale block, and its top-left screen pixel is the one compared.
+/// For glyphs that are not monochrome, such as `glyph_atlas`'s anti-aliased cells; the caller
+/// passes the function the guest painted with. `scale` is [`decode`]'s, and the top-left screen
+/// pixel of each block is the one compared.
 ///
 /// # Errors
 ///
