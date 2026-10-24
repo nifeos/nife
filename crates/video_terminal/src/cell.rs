@@ -216,17 +216,10 @@ impl Attr {
     /// The `(foreground, background)` colours this rendition actually paints with, as
     /// `0x00RRGGBB` words. One place, so the cursor and the SGR path cannot disagree about what any
     /// flag means. In order:
-    ///
-    /// 1. **Bold** changes nothing here: it is a face (see [`Attr`]).
-    /// 2. **Dim** moves the foreground halfway to the background, channel by channel, in sRGB. The
-    ///    midpoint is xterm's choice of amount. sRGB rather than linear light on purpose: dim asks
-    ///    for half the *apparent* brightness, and the linear-light midpoint of white and black is
-    ///    sRGB 188, which reads as barely dimmed. Linear light is right for anti-aliased coverage
-    ///    (increment 4), where the question is how much physical light a partly covered pixel emits.
-    /// 3. **Reverse** swaps the two.
-    /// 4. **Invisible** paints the foreground in the (post-reverse) background, so the text is
-    ///    there to copy and not there to see. Last, so the block cursor (which is reverse toggled on
-    ///    a cell) still shows on a concealed cell rather than vanishing with its text.
+    /// bold changes nothing (it is a face, see [`Attr`]); dim moves the foreground halfway to the
+    /// background per channel in sRGB; reverse swaps the two; invisible paints the foreground in
+    /// the post-reverse background, last, so the block cursor still shows on a concealed cell.
+    /// Why sRGB is in notes/video-terminal.md, "Rendering".
     pub const fn colours(self) -> (u32, u32) {
         let (mut f, mut b) = (self.fg.resolve(), self.bg.resolve());
         if self.has(DIM) {

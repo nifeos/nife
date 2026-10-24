@@ -1,5 +1,7 @@
 # The scheduler's two diagnostic instruments: the event rings and the canary
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+
 `kernel/src/sched.rs` declares two instruments built for first silicon, when a hang on a board had
 to be diagnosed from a serial log alone. Both module names are provisional. Both are compiled out of
 `--features bench` builds, which get no-op twins with the same functions

@@ -1,9 +1,7 @@
 //! **A process's own lifetime**: yielding, exiting, trapping on a failed check, and the panic
 //! handler every program declares with one macro.
 //!
-//! Cut out of `lib.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/files-over-1500, for §282
-//! (when a file is split, the parent becomes an index); the crate root re-exports every public
-//! item, so each keeps its path.
+//! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
 //! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
@@ -14,10 +12,9 @@ use crate::syscall::trap6;
 /// Give up the CPU (`SYS_YIELD`). Returns when the scheduler runs this thread again; if another
 /// thread is ready, control goes there and back, which is one context-switch round trip.
 ///
-/// Through [`trap6`] like every other syscall, for the reason its doc gives: the kernel writes its
-/// result into `x0`/`a0`/`rdi` on the way out of a yield too. And not `nomem`: while this thread
-/// is away, others run and write memory it shares with them, so a yield is a point where memory
-/// changes, which is what a caller spinning on a shared word with `yield_now` relies on.
+/// Not `nomem`: while this thread is away others write memory it shares with them, which a caller
+/// spinning on a shared word with `yield_now` relies on. Through [`trap6`], because the kernel
+/// writes its result into `x0`/`a0`/`rdi` on the way out of a yield too.
 pub fn yield_now() {
     // SAFETY: SYS_YIELD gives up the CPU and comes back; it reads no argument and touches no
     // memory of this thread's own.
@@ -34,41 +31,16 @@ pub fn exit() -> ! {
     }
 }
 
-/// **Die where the mistake was.** Raise a breakpoint the kernel turns into a fault, so the process
-/// is killed rather than allowed to limp on.
+/// **Die where the mistake was.** Raise a breakpoint (`brk #0`, `ebreak`, `ud2`) the kernel turns
+/// into a fault, which reports `EVENT_FAULT` to a supervisor where [`exit`] reports `EVENT_EXIT`
+/// (§26 (the fault endpoint)), so a panic must take this path. The trailing spin only satisfies
+/// `-> !`; calling `exit` would make an impossible return look like a clean death.
 ///
-/// This is the other way a program can end, and the difference from [`exit`] is not a spelling.
-/// `exit` reports `EVENT_EXIT` to a supervisor and this reports `EVENT_FAULT`
-/// (`kernel/src/sched.rs`, DECISIONS §26), so a supervised child that traps is legible as having
-/// failed and one that exits is not. A panic must take this path or it lies about what happened.
-///
-/// The instruction differs per architecture and `x86_64`'s is not the obvious one: `brk #0` on
-/// aarch64, `ebreak` on riscv64, **`ud2`** on `x86_64`. See that arm for why its breakpoint
-/// instruction cannot be used from ring 3.
-///
-/// The trailing spin never runs. It is here for the same reason [`exit`]'s is, to satisfy `-> !`
-/// if the trap ever came back, and it spins rather than calling `exit` on purpose: `exit` would
-/// turn an impossible situation into a clean-looking death, which is precisely the confusion the
-/// paragraph above exists to prevent.
-///
-/// A verb, which is right for a function here: `send`, `receive`, `reap` and `exit` are all verbs, and
-/// the naming tenet's noun rule is about crates, programs and modules rather than about the things
-/// they do.
+/// A verb, like `send`, `receive`, `reap` and `exit`: the naming tenet's noun rule is about crates,
+/// programs and modules, not the things they do.
 ///
 /// # BUGS
-///
-/// **The fault line names this function and nothing else, so every trap in a program looks
-/// identical.** The kernel prints the faulting `pc`, and the `pc` of a trap is always the
-/// breakpoint instruction below: one address per program, shared by every caller. A program with
-/// forty `must(...)` sites that dies at one of them reports the same line whichever it was. Found
-/// the hard way by milestone 230, whose whole first day was spent working out *which* call in
-/// `crates/system_initializer` had failed, from a fault line that could not say. The return address
-/// is right there in `x30` (aarch64), `ra` (riscv64), or on the stack (`x86_64`) at the moment the
-/// kernel takes the fault, and printing it beside `pc` would have answered the question in one
-/// boot. That is a change to the three `arch/*/exceptions.rs` fault printers rather than to this
-/// crate, so it is a milestone of its own; until it exists, the workaround that worked is to make
-/// the failure a *data* abort at an address derived from the return address, since `far` is
-/// printed and carries whatever you fault on.
+/// - Every trap prints the same fault line (one `pc`); notes/user-mode-runtime.md has the fix.
 pub fn trap() -> ! {
     #[cfg(target_arch = "aarch64")]
     // SAFETY: `brk` traps; the kernel turns a trap from userspace into a kill. The options promise
@@ -109,19 +81,11 @@ pub fn trap() -> ! {
     }
 }
 
-/// Require that `ok` holds, or die on the line that does not.
-///
-/// The one way a nife program says "no". There is no error value to return, and limping past a
-/// failed check turns a detected mistake into an undetected one. A failed check must be
-/// indistinguishable from a broken program, because it is one, and dying where the mistake was is
-/// the only way to say that: [`trap`], at the call.
-///
-/// Every program leans on this shape. Before it lived here, each wrote the same three lines out by
-/// hand, and the copies had already drifted on what saying no meant; the panic handler ends in
-/// [`trap`] too, so the drift changed the path and not the instruction.
+/// Require that `ok` holds, or die on the line that does not. The one way a nife program says
+/// "no": there is no error value to return, and limping past a failed check turns a detected
+/// mistake into an undetected one, so this [`trap`]s at the call.
 ///
 /// # Examples
-///
 /// ```ignore
 /// require(reply == 0);
 /// require(frame >= 0);
@@ -144,14 +108,8 @@ pub fn require(ok: bool) {
 /// **The panic handler every nife program wants**, as a macro so it stays per-final-binary.
 ///
 /// Write `user_mode_runtime::panic_handler!();` once at the top level of a binary and it expands to a
-/// `#[panic_handler]` that calls [`trap`].
-///
-/// # Why a macro and not a plain item in this crate
-///
-/// A `#[panic_handler]` is per-final-binary: a library that defined one would force it on every
-/// binary that links the library. A macro defines nothing until a binary asks, and a program with
-/// its own handler does not invoke it. The *trap* still belongs in this crate, the one place in
-/// userspace that names the two ABIs, rather than hand-rolled with `unsafe` in every binary.
+/// `#[panic_handler]` that calls [`trap`]. A library that defined the handler would force it on
+/// every binary that links the library; a macro defines nothing until a binary asks.
 ///
 /// # Examples
 ///
@@ -168,7 +126,6 @@ pub fn require(ok: bool) {
 /// ```
 ///
 /// # BUGS
-///
 /// It takes no arguments and ignores the `PanicInfo`, because a program with no console cannot
 /// print one. A program that *can* print (it holds a terminal endpoint) and wants the message on
 /// the way down still writes its own handler; this macro is the default, not a mandate.
