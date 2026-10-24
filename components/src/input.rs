@@ -1,29 +1,12 @@
-//! Console **input**, at EL0: the raw receive driver (milestone 19f.4, raw since milestone 28).
+//! Console input, at EL0: the raw UART receive driver (step 4 of milestone 19f (run a real
+//! workload), raw since milestone 28 (a solid terminal: the line discipline as a component)).
 //!
-//! The receive half of a terminal, reduced to what a driver actually is: own the UART's receive
-//! side and its interrupt, and forward every byte that arrives. It assembles nothing, echoes
-//! nothing, and interprets nothing; the editing, echo, and line assembly that used to live here
-//! moved to the line discipline component (`line_editor`), where Unix keeps them too (a UART driver
-//! feeds the tty layer; it is not the tty layer). What remains is the irreducible driver loop:
-//! WAIT on the interrupt, clear it at the device, drain the FIFO, hand the bytes on, ACK.
-//!
-//! Bytes travel packed in the words of an `OPERATION_BYTES` CALL (up to 8 per message, the terminal
-//! contract's driver half; see notes/terminal-contract.md). A keystroke is one byte and control
-//! flow, not bulk data, so the words-in-registers path fits §10's rule; a paste drains in
-//! 8-byte messages, and the CALL's rendezvous is the flow control that keeps a fast sender from
-//! outrunning the discipline.
-//!
-//! Its whole authority: WRITE on the terminal endpoint (slot 0), the RX interrupt capability (slot
-//! 1), and the device the machine gives it. On aarch64/riscv64 that is the UART registers mapped
-//! device-typed; **on x86 (milestone 299 (the x86 port-range capability: the serial console
-//! becomes a userspace driver)) it is a `PortRange` capability for COM1's ports** (slot 2), which
-//! the TSS I/O bitmap reads rather than this program invoking it. It cannot print, spawn, or read
-//! what anyone else typed. No role selector; the syscall runtime comes from
-//! `user_mode_runtime`.
-//!
-//! The arch-specific part is the UART register layout, in the `uart` module below (aarch64 PL011,
-//! RISC-V NS16550 by memory, x86 16550 by port I/O). The loop is one `_start` on all three: x86's
-//! polled twin went with milestone 505 (an x86_64 input driver that never lets the core idle).
+//! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
+//! interpreting nothing. Bytes travel up to 8 per `OPERATION_BYTES` `CALL`
+//! (notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
+//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`IRQ`]) and the device: the
+//! UART registers mapped device-typed on aarch64 and riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
+//! capability: the serial console becomes a userspace driver)). See notes/uart.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -53,14 +36,10 @@ const IRQ: u64 = 1; // WAIT / ACK the receive interrupt
 /// IMSC, an explicit interrupt-clear register ICR). RISC-V's has an NS16550 (byte registers,
 /// data-ready and transmit-holding-empty in the Line Status Register, RX interrupt enabled in IER,
 /// and the RX interrupt is cleared by *reading* the received byte, so there is nothing to clear).
-// Migrated onto `tock_registers` (milestone 139 round 5): every register offset checked at
-// compile time instead of asserted by a hand-written comment, matching
-// `kernel/src/drivers/pl011.rs`'s own idiom for the identical hardware. The RISC-V module below
-// stays on plain volatile access, for the reason `kernel/src/drivers/ns16550.rs`'s own module doc
-// gives: the NS16550's register *stride* is a runtime value (QEMU spaces its emulated registers
-// one byte apart; the JH7110's real hardware spaces them four bytes apart, `reg-shift = <2>`),
-// which `register_structs!`'s compile-time-fixed layout cannot express. The PL011 has no such
-// knob, so it is the one half of this file the macro actually fits.
+// The PL011 half uses `tock_registers`, as `kernel/src/drivers/pl011.rs` does, so every offset is
+// checked at compile time. The RISC-V half stays on volatile access because the NS16550's register
+// stride is a runtime value (QEMU spaces registers one byte apart, the JH7110 four, `reg-shift =
+// <2>`), which `register_structs!`'s fixed layout cannot express.
 #[cfg(target_arch = "aarch64")]
 mod uart {
     use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
@@ -264,41 +243,29 @@ mod uart {
     }
 }
 
-/// Forward wire bytes forever. No arguments: a standalone binary.
-///
-/// **Interrupt-driven on all three architectures**: WAIT on the receive interrupt, clear it at
-/// the device, drain the FIFO, hand the bytes on, ACK. Until milestone 505 (an x86_64 input driver
-/// that never lets the core idle) x86 had a polled twin, `loop { drain(); yield_now(); }`. A thread
-/// that always yields is always runnable, so the run queue was never empty and the idle loop never
-/// ran on that core: QEMU sat at 99 to 100% of a host core at an idle prompt (76 CPU-seconds in 78
-/// wall-seconds, measured by milestone 182 (x86_64's own interactive-boot entry point)), and the
-/// capability-slot gauge the idle loop prints never moved past the hand-over.
+/// Forward wire bytes forever, interrupt-driven on all three architectures: wait on the receive
+/// interrupt, clear it at the device, drain the FIFO, hand the bytes on, acknowledge. `uart_shape`
+/// is riscv64's register shape (`abi::uart`); the other arguments are unused. A polled loop would
+/// never let the core idle; the measurement is in notes/uart.md.
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     #[cfg(target_arch = "riscv64")]
     uart::set_shape(uart_shape);
     #[cfg(not(target_arch = "riscv64"))]
     let _ = uart_shape;
-    // Drain anything already in the FIFO by POLLING, before arming the interrupt: input piped in at
-    // boot is sitting in the FIFO already, and the first interrupt after arming can race with it.
-    // This narrows the window but does NOT close it. A line burst-piped into QEMU during the few
-    // instructions between the driver starting and this drain running can still lose its leading
-    // character. A real user typing after the prompt never hits it, and every line after the first is
-    // interrupt-driven and intact. Fully closing it needs the driver armed before any input arrives.
+    // Drain by polling before arming: input piped in at boot is already in the FIFO. This narrows
+    // the race with the first interrupt and does not close it; a line burst-piped into QEMU before
+    // this drain runs can lose its first character (notes/uart.md).
     drain();
     uart::arm_rx_interrupt();
 
     loop {
         interrupt_wait(IRQ);
-        // **Clear, then drain, never the other way round.** QEMU's PL011 raises its receive
-        // interrupt only when the FIFO goes from empty to one byte (`read_trigger` is 1), and
-        // `ICR` lowers it whatever the FIFO holds. Cleared after the drain, a byte that lands
-        // between the drain's last empty check and the clear has its interrupt wiped while it
-        // sits in the FIFO, and every byte behind it lands on a non-empty FIFO and raises
-        // nothing: input stops for good. A line longer than the 16-byte FIFO arrives in two
-        // pieces, so every such line opens that window (`script/swish-check --input-race`).
-        // Cleared first, a byte that arrives after the drain's last check leaves the interrupt
-        // raised, and the next wait returns at once.
+        // Clear, then drain, never the other way round. QEMU's PL011 raises its receive interrupt
+        // only when the FIFO goes from empty to one byte (`read_trigger` is 1), and `ICR` lowers it
+        // whatever the FIFO holds, so a clear after the drain can wipe the interrupt of a byte that
+        // landed in between, and input stops for good. A line longer than the 16-byte FIFO opens
+        // that window (`script/swish-check --input-race`).
         uart::clear_interrupt(); // PL011: ICR; 16550: nothing, reading RBR clears it
         drain();
         hold_after_drain();
