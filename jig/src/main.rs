@@ -1,5 +1,15 @@
 //! **`jig`, the package manager** (milestone 809 (the package client becomes a program)).
 //!
+//! The client of the progenitor's installer endpoint (DECISIONS §270 (a package manager holds an
+//! installer endpoint, not the spawn endpoint)); the progenitor stays the installer (DECISIONS §208
+//! (installing a package is granting it, and the installed programs are versioned)). `jig` fetches
+//! a package itself, so the progenitor parses no network input, and sends it only if it is the one
+//! asked for and the catalog vouches for its digest (`package_archive::installable_as`). `update`
+//! fetches the image's index over HTTPS, pinned to the root the image names (milestone 801 (packages
+//! over the internet)), and keeps a copy later lookups consult first. notes/packages/jig.md has what
+//! each verb holds, how an install and an `update` travel, and the BUGS.
+
+//! # SYNOPSIS
 //! ```text
 //! jig update                   fetch the image's index over HTTPS and keep a copy of it
 //! jig list                     the packages the index copy offers, or else the image's catalog
@@ -9,34 +19,7 @@
 //! jig remove <package>         a new generation without the package's programs
 //! jig rollback                 the generation below the live one becomes live
 //! ```
-//!
-//! **`update` and the index copy** (milestone 801 (packages over the internet), item 6 of
-//! milestone 809): the image names its index's addresses and the root their TLS must chain to
-//! (`package_index::Sources`, at `std_runtime_contract::INDEX_SOURCES_PAGE`). `update` fetches
-//! the index from the first that answers, pinned to that root, keeps this architecture's lines,
-//! and writes them to `package_index::IMAGE_INDEX_COPY` in the index store, the directory the
-//! owner's console grants at `std_runtime_contract::FS_DIR_SLOT`. After that a name is looked up
-//! in the copy first, fetched from the entry's locations or the repository's own `targets/` over
-//! HTTPS, and judged by the entry's digest; the progenitor installs it on the same copy's word
-//! (ruling I2). Before any `update`, a name is looked up in the image's catalog and fetched from
-//! the LAN package source, as since milestone 198 (a package manager)'s rung 3a.
-//!
-//! The verbs are apt's where apt has one (calef, 2026-10-10 (UTC): "Lets use apt's verbs.";
-//! design/naming/command-line-rulings.md). A word with a `/` in it is a file, by the prompt's rule
-//! for a command word (DECISIONS §219 (how the shell names an installed program to the spawner)).
-//!
-//! The progenitor stays the installer (DECISIONS §208 (installing a package is granting it, and the
-//! installed programs are versioned)) and checks every package against its own copy of the catalog.
-//! This is the client. It asks on an installer endpoint that serves install, remove and rollback
-//! and nothing else (DECISIONS §270 (a package manager holds an installer endpoint, not the spawn
-//! endpoint)), with `spawnproto`'s activation request unchanged. It fetches a package itself, so
-//! the progenitor parses no network input, and checks it before sending: it must be the package
-//! asked for, and the catalog must vouch for its digest (`package_archive::installable_as`).
-//!
-//! The package is read into one run of this program's pages and handed over a page at a time with
-//! `abi::page_frame::SLICE`, so the buffer and the frames are the same memory. notes/packages/jig.md
-//! has what each verb holds, how an install travels, and the BUGS.
-//!
+
 //! Name: ratified 2026-10-06 (calef). See `grant_plan::Program::Jig`.
 
 use std::io::{ErrorKind, Read, Write};

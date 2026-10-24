@@ -1,41 +1,27 @@
 //! **Published test vectors, run on nife, through the crates a `rustls` crypto provider is made
 //! of**, for milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets).
 //!
-//! DECISIONS §196 (nife carries TLS: `rustls` for the protocol, and a crypto provider we make
-//! work) ruled that the provider is work rather than a purchase. `script/crypto-probes` measures
-//! that it builds and links; this measures that it computes the right number here, by running.
-//!
-//! That matters more than usual because `x86_64-unknown-nife` sets `+soft-float` and switches off
-//! every SSE level, so `sha2`, `polyval`, `poly1305` and `curve25519-dalek` run their portable
-//! fallbacks under this compiler, target specification and `std`. And the `rand_core` draw below is
-//! the only thing in the tree that exercises `entropy_backend`'s `getrandom` 0.2 hook end to end.
-//!
-//! Every expected value is **transcribed from the specification that publishes it**, named beside
-//! it, never taken from running the code. **If a vector fails, do not adjust the vector**: check
-//! the transcription against the specification, or the implementation is wrong on this target,
-//! which is what this program exists to find.
-//!
+//! `script/crypto-probes` measures that the provider builds and links; this measures that it
+//! computes the right number here. On `x86_64-unknown-nife` (`+soft-float`, no SSE) `sha2`,
+//! `polyval`, `poly1305` and `curve25519-dalek` run their portable fallbacks, and the `rand_core`
+//! draw is the only end-to-end exercise of `entropy_backend`'s `getrandom` 0.2 hook. Every expected
+//! value is transcribed from the specification named beside it. **If a vector fails, do not adjust
+//! the vector**: check the transcription, or the implementation is wrong on this target.
+//! notes/cryptography-provider.md ("What runs, as opposed to what builds") has the table.
 
 //! # BUGS
-//!
-//! - **This does not speak TLS.** It asks this tree's provider what it can negotiate; no handshake,
-//!   no certificate, no network.
-//! - **The coverage is the algorithms a TLS 1.3 handshake uses**, with no ECDSA or RSA signature
-//!   vector, so certificate verification is unexercised here.
-//! - **A crate that picks its implementation by asking the CPU is a hazard on
-//!   `x86_64-unknown-nife`.** `chacha20` compiles and then executes an AVX2 instruction in ring 3,
-//!   where this target has no SSE or AVX state, and dies with `vector 6 (invalid opcode)`.
-//!   `--cfg chacha20_force_soft` (in `.cargo/config.toml`) is the fix; in general, run-time feature
-//!   detection and this target disagree and nothing warns.
-//! - **A vector proves the answer, not the manner.** Nothing measures timing, so a fallback that is
-//!   correct and not constant-time passes.
-//! - **`cargo xtask test` builds it for every leg it boots**
+//! - **No TLS handshake, no network, no ECDSA or RSA vector**: only the two pinned chains verify.
+//! - **Expiry is never exercised**: the chains verify at `CAPTURED_AT`, not at "now".
+//! - **CPU feature detection and `x86_64-unknown-nife` disagree, silently**: `chacha20` ran AVX2 in
+//!   ring 3 (`vector 6 (invalid opcode)`) until `.cargo/config.toml` set `--cfg
+//!   chacha20_force_soft`.
+//! - **A vector proves the answer, not the manner**: a fallback that is not constant-time passes.
+//! - `cargo xtask test` builds it for every leg it boots
 //!   (`helpers/build-cryptography-exerciser.sh`, milestone 855 (the TLS graph enters the gated
 //!   build)); the kernel test skips only in a boot that did not build it.
 
 // `entropy_backend` defines `getrandom`'s two custom-backend symbols and nothing references them
-// from Rust, so an rlib nobody names is not linked. Same shape as a panic handler. See that
-// crate's docs for the hour this cost the first time.
+// from Rust, so an rlib nobody names is not linked. Same shape as a panic handler.
 use entropy_backend as _;
 
 use aes_gcm::aead::{Aead, KeyInit, Payload};
@@ -69,14 +55,14 @@ fn check(name: &str, got: &[u8], want_hex: &str) {
 }
 
 
-/// **When the pinned chains were captured**, as seconds since the Unix epoch: 2026-09-20 00:00 UTC.
+/// The instant the pinned chains are verified at, as seconds since the Unix epoch: 2026-09-16
+/// 00:00 UTC. The chains were captured on 2026-09-20; any instant inside both chains' validity
+/// serves.
 ///
-/// A fixed instant rather than the clock, and that is a deliberate trade with a cost. These are
-/// real certificates with real expiry dates (2026-10-31 and 2026-11-07), so verifying them against
-/// "now" would turn this test red on a Tuesday for a reason that has nothing to do with this
-/// system. Pinning the instant makes the assertion historical: these bytes verified at this time,
-/// which is what a signature test should say. **It also means expiry is never exercised here**,
-/// which is recorded in this program's `BUGS`.
+/// A fixed instant rather than the clock: these are real certificates that expire (2026-10-31 and
+/// 2026-11-07), and verifying against "now" would turn this test red for a reason unrelated to this
+/// system. The assertion is historical, these bytes verified at this time, so expiry is never
+/// exercised (`BUGS`).
 const CAPTURED_AT: u64 = 1_789_516_800;
 
 /// Walk one chain, returning webpki's own verdict.
@@ -121,14 +107,9 @@ fn verify_chain(what: &str, leaf: &[u8], intermediate: &[u8], root: &[u8], dns: 
 }
 
 fn main() {
-    // **Say what went wrong, and leave through the front door.** With `panic = "abort"` a panic
-    // runs this hook and then executes a trap, so the process never reaches the runtime's
-    // `cleanup` and never sends the sink's end-of-stream marker. The kernel-side reader blocks on
-    // that marker, so without this hook every byte the program printed, **including the panic
-    // message**, is sent and never read: the transcript looks empty and the test hangs.
-    //
-    // Milestone 442's lane spent hours reading that as "the program dies before its first line".
-    // It does not. It dies saying exactly why, into an endpoint nobody is still reading.
+    // With `panic = "abort"` a panic runs this hook and then traps, so the runtime's `cleanup`
+    // never sends the sink's end-of-stream marker. The kernel-side reader blocks on that marker, so
+    // without this hook everything printed, the panic message included, is never read.
     std::panic::set_hook(Box::new(|info| {
         println!("PANIC {info}");
         // Exiting rather than falling through to the trap: `process::exit` runs `cleanup`, which
@@ -230,14 +211,9 @@ fn record_layer_ciphers() {
         "0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf",
     );
 
-    // Poly1305 on its own, RFC 8439 section 2.5.2. Withdrawn on 2026-09-19 as an unexplained
-    // silent abort; restored on 2026-09-20 once the panic hook above made the abort speak, at
-    // which point it said the vector had failed and printed both values.
-    //
-    // **`compute_unpadded`, not `update_padded`, and that was the whole bug.** `update_padded`
-    // zero-fills the last partial block, which is what the AEAD construction does to its
-    // ciphertext and additional data, and is not what section 2.5.2's standalone example does to
-    // its 34-byte message. The vector was right and the crate was right; the call was wrong.
+    // Poly1305 on its own, RFC 8439 section 2.5.2. `compute_unpadded`, not `update_padded`:
+    // `update_padded` zero-fills the last partial block, as the AEAD construction does, and the
+    // section's standalone example does not pad its 34-byte message.
     {
         use poly1305::universal_hash::KeyInit as _;
         let key = hex(

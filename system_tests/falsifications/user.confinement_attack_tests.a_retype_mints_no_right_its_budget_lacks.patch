@@ -11,13 +11,12 @@ Expected to fail: `assert_eq!` "a GRANT-less budget RETYPEd a frame carrying rig
 red at exactly that assertion on aarch64.
 
 diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_region.rs
-index a29098864..91fdb0988 100644
 --- a/kernel/src/syscall/memory_region.rs
 +++ b/kernel/src/syscall/memory_region.rs
-@@ -168,7 +168,10 @@ pub(super) fn memory_region_retype(
-     // leak into anyone else's budget.
-     // `mint_child`, `SPLIT`'s inheriting mint and the one `split_never_widens_rights` proves: the
-     // intersection of the budget's rights with `Rights::ALL` is the budget's rights.
+@@ -120,7 +120,10 @@
+     // The run is non-empty by construction (`retype_pages` never returns zero).
+     let count = core::num::NonZeroU64::new(count).ok_or(Error::OutOfMemory)?;
+     // `mint_child`, the inheriting mint `split_never_widens_rights` proves.
 -    let slot = sched::grant(capability.mint_child(Object::PageFrame(phys, count)))
 +    let slot = sched::grant(Capability {
 +        rights: Rights::ALL,

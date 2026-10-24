@@ -1,26 +1,18 @@
 //! **`pmap`: what a process's mappings are when there is no `/proc/pid/maps`**
 //! (notes/process-view.md). The program's logic, lifted out to run on the host;
-//! `components/src/pmap.rs` is the syscall and the two output streams.
-//!
-//! The listing is a capability, not an ambient file behind bolted-on ptrace checks: this crate is
-//! handed a function that reads one mapping, backed by `abi::address_space::LIST` on an endowed
-//! address-space capability, so it cannot widen the space or learn that another exists. `LIST` needs
-//! `ENUMERATE`, where `MAP_INTO` needs `WRITE`: the authority to look, apart from the authority to
-//! shape, as §114 (`pmap` gets its listing) ruled, the split `ps` has. The three answers are
-//! `ps`'s (mappings, an empty space, a refusal), and [`collect`] takes the whole listing into the
-//! caller's buffer before anything prints, for `ps`'s reasons.
-//!
+//! `components/src/pmap.rs` is the syscall and the two output streams. It is handed a function that
+//! reads one mapping through `abi::address_space::LIST`, which needs `ENUMERATE` where `MAP_INTO`
+//! needs `WRITE` (§114 (`pmap` gets its listing)), so it cannot widen the space or learn that
+//! another exists. [`collect`] takes the whole listing before anything prints, and the answers are
+//! `ps`'s three. See notes/process-view/address-space-enumeration.md.
+
 //! # BUGS
 //!
-//! - One row per page, with no range or size column: `LIST` walks the revocation log, which records
-//!   pages and nothing about adjacency.
+//! - One row per page, no range or size: `LIST` walks the revocation log, which has no adjacency.
 //! - A `DeviceFrame` mapping reads as `rw-`; the flags carry no device bit this crate can see.
-//! - A resumed cursor can land on a log slot recycled for an unrelated mapping, since a log entry
-//!   carries no generation (`kernel::revoke::list_mapping`).
-//! - Nothing at the prompt can grant this program an address space: there is no manifest field
-//!   for one and no wiring in `system_initializer`. Since §249 (a running address space stays
-//!   nameable) a builder can keep a copy, so the gap is the wiring and the design for handing a
-//!   view to a third party. `kernel::user::pmap_tests` proves the program against a real space.
+//! - A resumed cursor can land on a recycled log slot: a log entry carries no generation.
+//! - Nothing at the prompt grants this program an address space (no manifest field, no wiring),
+//!   though since §249 (a running address space stays nameable) a builder can keep a copy.
 //!
 //! Name: ratified 2026-08-23 (calef): the name every reader knows, shared with
 //! `components/src/pmap.rs` as one thing split at the IO boundary.

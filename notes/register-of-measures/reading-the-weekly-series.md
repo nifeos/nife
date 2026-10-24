@@ -105,7 +105,7 @@ rather than trailing ten blank cells.
 The workflow runs daily on a GitHub runner with a fresh checkout. It cannot see the session records
 the cost columns are measured from, and no workflow ever will: those records live under
 `~/.claude/projects/` on the machine the lanes ran on. So machine effort is captured by a person
-running `script/effort --update` on patagonia and committing the result. That is rung four of
+running `script/effort --update` on that machine and committing the result. That is rung four of
 `AGENTS.md`'s ladder, and rung four is where this tree's failures live.
 
 Two mechanisms stand behind it, because it can die in two different ways:

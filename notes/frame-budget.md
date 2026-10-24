@@ -2,9 +2,10 @@
 
 *Name provisional. Until 2026-10-09 (UTC) this account lived in `kernel/src/testing.rs`'s doc
 comment on `SUITE_PAGE_FRAME_BUDGET`, accumulating a dated entry per raise. Milestone 862
-(comments state the constraint as it is now) moved it here. The constraint and the conventions
-stay at the constant; the findings stay here; the measurement narratives went to that move's
-commit message, where `git blame` finds each entry's own commit too.*
+(comments state the constraint as it is now) moved it here. The constraint stays at the constant;
+the conventions and the findings are here, and the constant's doc comment links this page. The
+measurement narratives went to that move's commit message, where `git blame` finds each entry's own
+commit too.*
 
 `SUITE_PAGE_FRAME_BUDGET` is what the whole system-test suite may leave unreturned, in frames,
 checked once at the end of the run by `report_frame_ledger`. The gate's other half,
@@ -41,6 +42,15 @@ Measured conclusions, undated; each row's number is the reading that established
   divergence and the `caretaker_teardown` local flake's run-to-run spread.
 - Raising or lowering it is a decision, not a formality: read the `[that test kept N frames]` lines
   the run prints, find who grew or shrank, and be able to say why.
+
+## Image size moves the number too
+
+Part of the residue is program image size, not any test's memory. Each of `c_seam_tests`' three
+confiner spawns keeps a space sized by `c_confiner`'s loadable segments, 15 pages in a debug build.
+Spaces that map the whole initial ramdisk keep revocation-log pages sized by it, so a larger archive
+moves this number too. A change that grows a program can therefore move it by a few frames with no
+leak behind it; the `[that test kept N frames]` lines and the programs' segment pages tell the two
+apart.
 
 ## Every number it has been
 

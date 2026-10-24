@@ -117,7 +117,7 @@ The build is therefore four pieces, and it is a lane rather than an evening:
 aarch64 has E3's sled already, and DECISIONS §19 (architectural parity) wants the chain on both
 ISAs, so argon can run E5 later against its 48 KiB L1i.
 
-## Step 0, on patagonia
+## Step 0, on the build machine
 
 The code does not exist, so `LINES` and `STRIDE` below stand in for whatever the build lane names
 its two variables, and `fastpath_exec` for its feature.

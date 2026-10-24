@@ -1,9 +1,11 @@
-//! Build orchestration for nife.
+//! Build orchestration for nife: a Rust binary on the *host* for what does not fit `cargo build`
+//! (a custom target, a linker script, QEMU's flags), in Rust rather than a Makefile because it
+//! composes. See DECISIONS §7 (testing: QEMU harness and host-testable crates).
 //!
-//! A normal Rust binary that runs on the *host*. Building a kernel means a custom
-//! target, a linker script, and driving QEMU with the right flags, none of which fits
-//! neatly into `cargo build`. This beats a Makefile because it's Rust and it composes.
-//! See DECISIONS §7.
+//! `run` and `test` do not invoke QEMU themselves: cargo runs `helpers/qemu-runner-aarch64.sh`
+//! through the runner setting in `.cargo/config.toml`, so the QEMU flags live in one place.
+
+//! # Commands
 //!
 //!     cargo xtask run      boot the kernel (the milestone tour), print to this terminal
 //!     cargo xtask shell    boot straight to the interactive shell (add --hvf for the real core)
@@ -16,11 +18,6 @@
 //!     cargo xtask board-console  read the serial console of a real board, log it, stop on a deadline
 //!                                (and, under --stop, send the one byte that ends a rebooting soak)
 //!     cargo xtask board-script   write the U-Boot script that boots the board without a person at its prompt
-//!
-//! Note that `run` and `test` do NOT invoke QEMU themselves. They just call cargo,
-//! which invokes `helpers/qemu-runner-aarch64.sh` via the runner setting in
-//! `.cargo/config.toml`. That script is the single source of truth for how the kernel
-//! gets booted, so there is exactly one place to get the QEMU flags wrong.
 
 use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};

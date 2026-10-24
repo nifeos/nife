@@ -4,11 +4,12 @@
 //! second customer possible). DECISIONS §195 (a reviewed recipe vouches for a package) puts a
 //! package's digest in a version-controlled recipe changed by human review; this turns such a
 //! recipe into the one archive file DECISIONS §197 (a package is one archive file) rules a package
-//! is. nife cannot build software, so a package is produced here, on a host with a
-//! cross-toolchain, and a recipe names an architecture: three triples, three packages.
-//!
+//! is, on a host with a cross-toolchain, since nife cannot build software. A recipe names an
+//! architecture: three triples, three packages. A recipe with no `digest` key builds and prints the
+//! digest to paste in; one whose `digest` disagrees with the bytes fails, because the reviewed line
+//! decides whether the bytes may run.
+
 //! # EXAMPLES
-//!
 //! ```text
 //! $ cargo xtask package packages/uptime.recipe.toml
 //! uptime 0.1.0 aarch64, 2 members, 4600 bytes
@@ -18,10 +19,6 @@
 //! digest sha256:9f2c...4b  (recorded in the recipe, and it matches)
 //! package: PASS
 //! ```
-//!
-//! A recipe with no `digest` key builds and prints the digest to paste in; one whose `digest`
-//! disagrees with the bytes fails, because the reviewed line decides whether the bytes may run.
-//!
 
 //! # The recipe format
 //!
@@ -49,16 +46,15 @@
 //! checkout. An unknown key is refused, so a misspelt `digest` cannot pass review as a recipe that
 //! records none. The parser is the host-only `toml` crate; the target reads the image's catalog
 //! (`name sha256:<hex>` lines, below), never a recipe.
-//!
 
 //! # BUGS
 //!
 //! - **It builds nothing.** A `program` whose ELF is not in `target/` is an error naming the file,
-//!   not a cargo invocation, so the tool cannot hide which binary it packed.
-//! - **The catalog is a file in `target/` and an archive entry**, not a repository index. §195's
-//!   per-source trust needs a catalog per source; the image's own is the only source there is.
-//! - **A recipe cannot say where its source came from**: no upstream URL or tarball digest,
-//!   because the only packages built here come from this repository.
+//!   so the tool cannot hide which binary it packed.
+//! - **The catalog is a file in `target/` and an archive entry**, not a repository index; §195's
+//!   per-source trust needs one per source, and the image's own is the only source there is.
+//! - **A recipe cannot say where its source came from**: every package built here comes from this
+//!   repository.
 //!
 //! Installing a fetched package happens on the target; see notes/packages.md.
 
@@ -186,8 +182,8 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
         // **A program is packed stripped**, the same bytes the image packs (`read_stripped`).
         // Unstripped, `uptime` was 881,152 bytes against a job region of 40 pages (160 KiB): an
         // installed program is bytes something on the target must read into memory to build a
-        // process from, and debug sections nobody on the target reads would have cost more than the
-        // program. Found by rung 3a's consumer lane, 2026-09-24.
+        // process from, and debug sections nobody on the target reads would cost more than the
+        // program.
         let content = match source {
             Source::Program(_) | Source::StdProgram(_) => {
                 crate::inspect::read_stripped(&path.display().to_string())
@@ -269,11 +265,9 @@ fn write_out(root: &std::path::Path, built: &Built) -> Result<PathBuf, String> {
 ///
 /// This is DECISIONS §195's "the image's measured table becomes the first source" made literal: the
 /// catalogue goes into the initial ramdisk archive *before* the measurement table is computed, so
-/// the kernel's trust root vouches for the catalogue and the catalogue vouches for the package. A
-/// package fetched over plain HTTP is then checked against a digest that never crossed the network.
-///
-/// It also means every archive build runs the producer end to end, which is the gate
-/// notes/packages.md's BUGS said nothing ran.
+/// the kernel's trust root vouches for the catalogue and the catalogue for the package, and a
+/// package fetched over plain HTTP is checked against a digest that never crossed the network.
+/// Every archive build therefore runs the producer end to end.
 pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
     let root = workspace_root();
     let dir = root.join("packages");
@@ -320,28 +314,16 @@ pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
     Ok(catalogue)
 }
 
-/// **The image's index sources** (milestone 801 (packages over the internet)): the text
-/// `package_index::Sources` reads, packed as `package_index::SOURCES_ENTRY` above the measurement
-/// table, as the catalog is, so the kernel's trust root vouches for where the image says its index
-/// is and which root that index's TLS must chain to.
+/// **The image's index sources** (milestone 801 (packages over the internet)), packed as
+/// `package_index::SOURCES_ENTRY` above the measurement table: the trust root vouches for them.
 ///
-/// **Two texts, chosen by `NIFE_INDEX_SOURCES`.** Unset or `test`, the image names the test peer:
-/// `helpers/tls-peer`, which every runner forwards at 10.0.2.9:8443 and which presents a chain for
-/// `basalt.test` from the committed test authority. Every check boots that one, because no check
-/// may depend on a host outside the runner. `basalt` names the production hosts instead,
-/// `package_index::BASALT_SOURCES`: `basalt.nifeos.org`, served by GitHub Pages, then
-/// `basalt.crickertech.com`, both pinned to ISRG Root X1 (§250 (an image names its distribution's package index); calef's 2026-10-12 (UTC)
-/// ruling on where it is served). One text, not both: `package_index::Sources` holds one root, and
-/// the two hosts chain to different ones. Milestone 909 (basalt composes the bootable image from
-/// its packages) is where basalt asks for `basalt` on the images it publishes. Anything else is
-/// refused rather than read as `test`, so a typo cannot ship a test image as a real one.
-///
-/// The address after the test host is there because a guest under QEMU's slirp asks the host's
-/// resolver, which knows no `.test` name: milestone 892 (a std program at the prompt holds the
-/// network and a name resolver) measured it.
-///
-/// The variable `NIFE_INDEX_SOURCES` and its two values are provisional names, minted 2026-10-13
-/// (UTC) by lane `lane/basalt-on-pages-and-releases`.
+/// `NIFE_INDEX_SOURCES` unset or `test` names the test peer ([`test_index_sources`]), which every
+/// check boots (no check may reach outside the runner). `basalt` names
+/// `package_index::BASALT_SOURCES`, `basalt.nifeos.org` then `basalt.crickertech.com`, pinned to
+/// ISRG Root X1 (§250 (an image names its distribution's package index)). One text, as `Sources`
+/// holds one root; anything else is refused, so a typo cannot ship a test image as a real one. The
+/// variable and its two values are provisional names, minted 2026-10-13 (UTC) by lane
+/// `lane/basalt-on-pages-and-releases`.
 pub(crate) fn image_index_sources() -> Result<String, String> {
     match std::env::var("NIFE_INDEX_SOURCES").as_deref() {
         Err(std::env::VarError::NotPresent) | Ok("test") => test_index_sources(),
@@ -353,7 +335,11 @@ pub(crate) fn image_index_sources() -> Result<String, String> {
     }
 }
 
-/// The test peer's sources, pinned to the committed test authority.
+/// The test peer's sources, pinned to the committed test authority: `helpers/tls-peer`, which every
+/// runner forwards at 10.0.2.9:8443 and which presents a chain for `basalt.test`. The address
+/// follows the name because a guest under QEMU's slirp asks the host's resolver, which knows no
+/// `.test` name, as milestone 892 (a std program at the prompt holds the network and a name
+/// resolver) measured.
 fn test_index_sources() -> Result<String, String> {
     let root = workspace_root().join("pinned_tls_client/fixtures/pinned-root.der");
     let der =

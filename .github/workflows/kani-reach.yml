@@ -16,7 +16,7 @@ name: kani reach
 # here rather than on a laptop, per AGENTS.md's memory ceiling (never a mutation sweep beside lanes).
 #
 # `ubuntu-24.04-arm`, because `cargo kani -p kernel` compiles the host's `arch/` subtree, so the
-# kernel row proves `arch/aarch64/` here as it does on patagonia. The riscv64 and x86_64 kernel
+# kernel row proves `arch/aarch64/` here as it does on an Apple Silicon Mac. The riscv64 and x86_64 kernel
 # harnesses are not in this measurement; see the note.
 
 on:

@@ -1,36 +1,34 @@
 //! `cargo xtask bench [--riscv|--x86] --restamp`: carry an icount floor across a nightly bump
 //! without re-saving it, when an A/B on this machine proves the compiler did not move it.
 //!
-//! **What it does.** Builds and runs the bench leg twice on one machine, first under the nightly
-//! the floor's `# toolchain:` line names and then under the pin in `rust-toolchain.toml`, on the
-//! same tree. icount is deterministic per binary, so any difference between the two runs is the
-//! compiler's and nothing else's. If every row moved less than [`ROW_BOUND_PCT`] and every row's
-//! cumulative move since the last `--save` stays under [`CUMULATIVE_BOUND_PCT`], it rewrites the
-//! `# toolchain:` line to the pin and adds one `# why:` line carrying what it measured. **It never
-//! writes a floor number.** Otherwise it changes nothing and exits non-zero, and the table it
-//! prints (and writes to `--report <file>`) is what a person starts from.
+//! It builds and runs the bench leg twice on one machine and tree, under the nightly the floor's
+//! `# toolchain:` line names and then under the pin in `rust-toolchain.toml`; icount is
+//! deterministic per binary, so any difference is the compiler's. If every row moved less than
+//! [`ROW_BOUND_PCT`] and every row's cumulative move since the last `--save` stays under
+//! [`CUMULATIVE_BOUND_PCT`], it rewrites `# toolchain:` to the pin and adds one `# why:` line.
+//! **It never writes a floor number.** Otherwise it changes nothing and exits non-zero, and the
+//! table it prints (and writes to `--report <file>`) is where a person starts.
+
+//! # The ruling
 //!
-//! **The ruling** (calef, 2026-09-26 UTC, on #1336, milestone 598 (a nightly bump restamps the
-//! floors it proves it did not move)): option 4 of that proposal, with both bounds as written here.
-//! It overturns the part of the 2026-09-21 refusal that required a person on every bump, and keeps
-//! the part that mattered: a floor number still moves only by a person's `--save`, so a nightly that
-//! makes the kernel slower still spends tripwire headroom against numbers somebody read, and the cap
-//! stops a run of small moves from being absorbed unseen. `# toolchain:` now means "the nightly these
-//! numbers were last proven valid for", not "the nightly that produced them".
+//! calef, 2026-09-26 UTC, on #1336: option 4 of milestone 598 (a nightly bump restamps the floors
+//! it proves it did not move), with both bounds as written here. A floor number still moves only by
+//! a person's `--save`, so a slower nightly spends tripwire headroom against numbers somebody read,
+//! and the cap stops a run of small moves being absorbed unseen. `# toolchain:` means "the nightly
+//! these numbers were last proven valid for", not "the nightly that produced them".
 //!
 //! `--restamp` is a provisional name (this lane's), as is this module's.
+
+//! # BUGS
 //!
-//! BUGS
-//!
-//! - The A/B covers what the bench leg builds with the pinned toolchain. Userspace built through the
-//!   patched std farm (the std programs) is packed into both runs identically if it exists, so any
-//!   compiler term there is invisible to this. No bench row is known to depend on it.
-//! - The term is measured on whatever machine runs this (CI's `x86_64` runner, in the bump workflow),
-//!   and applied to floors recorded on another (patagonia). On #1335 the two hosts read the same
-//!   tree up to 0.6% apart; the claim here is that the *ratio* between two nightlies travels, which
-//!   is a claim and not a measurement.
-//! - The cumulative term is read back from the last restamp's `# why:` line, rounded to three
-//!   decimals of a percent. Rounding error across fifty restamps is far below the 2% cap.
+//! - The A/B covers what the bench leg builds with the pinned toolchain. The std programs built
+//!   through the farm are packed identically into both runs, so a compiler term there is invisible;
+//!   no bench row is known to depend on one.
+//! - The term is measured on one machine (CI's `x86_64` runner, in the bump workflow) and applied
+//!   to floors recorded on another (patagonia); that the ratio between nightlies travels is a
+//!   claim, not a measurement.
+//! - The cumulative term is read back from the last `# why:` line, rounded to three decimals of a
+//!   percent, which across fifty restamps is far below the 2% cap.
 
 use crate::bench::{pinned_nightly, take_last_run, today_utc};
 use crate::host::{flag_value, workspace_root};

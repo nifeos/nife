@@ -1,5 +1,5 @@
 Provisional name. What a maintainer session does before it briefs anything. You have just opened
-a session, on patagonia or in a cloud container, and you do not yet know what happened while nobody
+a session, on your machine or in a cloud container, and you do not yet know what happened while nobody
 was here. Do the work; do not ask questions.
 
 Why a brief. The two clauses below (the watchers, and reading the queue for what they already
@@ -215,7 +215,7 @@ The two that run in Actions, healthy:
 Five minutes apart is the cadence. Read the gaps, not only the conclusions: three green runs an hour
 old is a stopped watcher wearing a green badge.
 
-The one that stays on your machine, alive (real output shape, patagonia):
+The one that stays on your machine, alive (real output shape, from the maintainer's Mac):
 
     $ launchctl list | grep nife
     -	0	org.nifeos.at-risk

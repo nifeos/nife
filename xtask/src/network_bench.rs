@@ -7,6 +7,8 @@
 //! slirp `guestfwd`. The rehearsal must print a lease in slirp's network, the full 8 MiB, the
 //! preflight before the verdict, and `verdict LEASED-AND-MEASURED`; anything else fails the
 //! command. **The rate it prints is QEMU's and means nothing about a NIC.**
+
+//! # Flags
 //!
 //! `--stage-only` builds and stages without booting, the night-of use. `--peer a.b.c.d:port` bakes
 //! the LAN peer into the image (it has no other way to learn one); without it the rehearsal's
