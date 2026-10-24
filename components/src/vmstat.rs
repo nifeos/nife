@@ -4,7 +4,7 @@
 //! One read of the machine statistics page and one of the ambient monotonic counter, for the
 //! per-second rates. `crates/vmstat` decides the columns and says which upstream ones have no
 //! subject here and why.
-//!
+
 //! # Capability contract
 //!
 //! | slot | what | why |
@@ -15,7 +15,7 @@
 //!
 //! No clock and no budget: the seconds are `user_mode_runtime::monotonic_nanos`, which every
 //! process holds (`uptime`'s finding), and `vmstat` says nothing about "yours".
-//!
+
 //! # EXAMPLES
 //!
 //! ```text
@@ -24,7 +24,7 @@
 //!     r       free      total     in     cs busy  id
 //!     1     110592     131072    104     35   12  88
 //! ```
-//!
+
 //! # BUGS
 //!
 //! `crates/vmstat`'s: no interval (milestone 106 (a wait that ends on either the interrupt or the deadline)), and `busy` is `us` and `sy` together.

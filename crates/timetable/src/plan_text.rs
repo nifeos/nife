@@ -1,9 +1,8 @@
 //! **The plan, in words**: what `caps` would have said, said before anything fires, and the audit
 //! of the archive a timetable was handed against what its plan will build.
 //!
-//! Moved out of the crate root unchanged by milestone 877 (the timetable crate root is split along
-//! its seams), as §294 (the timetable crate root splits into private modules) lays out; the root
-//! re-exports every public item at its old path.
+//! The crate root re-exports every public item, as §294 (the timetable crate root splits into
+//! private modules) lays out.
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
@@ -14,17 +13,10 @@ use crate::{Admission, NANOS_PER_SEC, Registry, Schedule, recurrence};
 /// **Write the whole registered plan**: one block per entry, saying when it fires and the complete
 /// authority its child will hold, or why it will not fire at all.
 ///
-/// This is the milestone's claim in the form a person meets it. Milestone 31 made the shell able to
-/// print a command's endowment **before** spawning anything (`caps least_authority_demo 7`); this prints the same
-/// decision for every entry in a schedule, at registration, before the first tick. On Unix there is
-/// nothing to print: a crontab line's authority is its user's, which no tool can enumerate and no
-/// line chose.
-///
-/// It is not `swish::write_preview`, and the reason is the prose rather than the logic. Every
-/// sentence that renderer writes names *the shell* ("split from this shell's budget", "this shell's
-/// result endpoint"), and a scheduler is a different principal with a different budget; reusing it
-/// would print sentences that are false about the process doing the printing. What must not drift is
-/// the **decision**, and that cannot, because both callers get theirs from `grant_plan::plan`.
+/// What `caps least_authority_demo 7` prints at the prompt (milestone 31 (a capability shell:
+/// designation is authorization)), for every entry, at registration, before the first tick. Not
+/// `swish::write_preview`, whose sentences name the shell's own budget and endpoints and would be
+/// false about a scheduler; the decision cannot drift, since both get it from `grant_plan::plan`.
 ///
 /// # Examples
 ///
@@ -155,8 +147,7 @@ fn write_grant(e: &Endowment, command: &[u8], report: bool, out: &mut dyn FnMut(
         out(&buf[..n]);
         out(b"\n");
     }
-    // The line that is the whole milestone. It is not decoration: a reader of a crontab has no way
-    // to write the equivalent sentence, because on Unix the answer is "whatever that user can do".
+    // The line a crontab cannot write: on Unix the answer is "whatever that user can do".
     out(b"      and nothing else: no clock, no disk, no console, no network\n");
 }
 
@@ -166,20 +157,11 @@ fn write_grant(e: &Endowment, command: &[u8], report: bool, out: &mut dyn FnMut(
 
 /// **What the archive a timetable was handed carries, measured against what its plan will build.**
 ///
-/// [`Registry::programs`] says which programs a document will ever start, and it says so before the
-/// first tick. That number is only worth printing next to the other one: how many programs the
-/// *capability* this process holds can actually reach. A scheduler handed the whole initial ramdisk
-/// has a plan naming one program and an archive reaching fifty-seven, and nothing in the plan says
-/// so.
-///
-/// This is the sentence that says so, and it is here rather than in the program because it is a
-/// comparison rather than a print: the program contributes the names it can see, this decides what
-/// they mean, and a host test pins the wording.
-///
-/// **It measures, it does not enforce.** A wider archive is a fact about the spawn site, and a
-/// scheduler cannot narrow its own endowment; what it can do is say out loud how wide it is. That
-/// asymmetry is the same one [`Unbacked`](crate::Unbacked) has: the fix is a decision somebody makes at the spawn
-/// site, not an edit to the document.
+/// [`Registry::programs`] is what the plan will start; the program feeds in the names its archive
+/// capability reaches, and this compares the two so a host test pins the sentence. **It measures,
+/// it does not enforce**: a scheduler cannot narrow its own endowment, so as with
+/// [`Unbacked`](crate::Unbacked) the fix is at the spawn site. See
+/// notes/scheduled-execution/archive-narrowing.md.
 ///
 /// # Examples
 ///
@@ -291,20 +273,12 @@ mod tests {
     use crate::test_support::{REFERENCE, shown};
     use crate::{Held, SHIPPED_HELD, parse};
 
-    /// **The plan's rendering, in the units and the widths a reader meets.** The test below prints
-    /// one plan and asserts substrings of it, which left three families of mutant alive until the
-    /// 2026-09-19 run found them, and the shape is the same in all three: the schedule column is a
-    /// 32-byte space-filled buffer emitted as `buf[..n.max(12)]`, so a wrong length is invisible
-    /// for any schedule that fits in twelve columns, and a branch nothing renders is a branch
-    /// nothing checks.
-    ///
-    /// - **The millisecond branch was never rendered.** Every plan in the tests uses seconds or
-    ///   minutes, so `nanos / (NANOS_PER_SEC / 1000)` could become `%` or either `/` a `*`.
-    /// - **The length arithmetic was never observed**, because `30s` and `1m` are short. A
-    ///   seven-digit interval pushes past the column, where `6 + len` under `-` underflows and
-    ///   `n += unit.len()` under `-=` truncates the text and under `*=` pads it.
-    /// - **`e.mem_pages > 0` and `e.arg != 0` were only ever seen true.** An entry with neither is
-    ///   what proves the lines are omitted rather than always printed.
+    /// **The plan's rendering, in the units and the widths a reader meets.** The schedule column is
+    /// a 32-byte space-filled buffer emitted as `buf[..n.max(12)]`, so a wrong length hides in any
+    /// schedule under twelve columns. So this renders the millisecond branch, a seven-digit
+    /// interval that pushes past the column (where `6 + len` and `n += unit.len()` show), and an
+    /// entry with neither `mem_pages` nor `arg`, which proves those lines are omitted, not always
+    /// printed.
     #[test]
     fn the_plan_prints_milliseconds_long_intervals_and_the_absent_grants() {
         let doc = parse(
@@ -368,29 +342,20 @@ mod tests {
 
     /// **The endowment a spawn site hands over, measured against the plan it can compute.**
     ///
-    /// The whole point of [`Registry::programs`] being computable at registration is that the spawn
-    /// site can narrow what it hands over to exactly that set. This is the check that says whether
-    /// it did, and the two sentences are what a reader meets on the console: one for an archive that
-    /// reaches nothing beyond the plan, one for the whole initial ramdisk.
-    ///
-    /// **This test is also the mechanism behind a written list in another file**, which is why the
-    /// first assertion names `least_authority_demo` and `memory_grant_depleter` rather than counting to two.
-    /// `system_tests/src/user/timetable_tests.rs` builds the narrowed archive from a `PLANNED_PROGRAMS`
-    /// list it does not compute, because computing it there means a `Registry` on a kernel stack and
-    /// a `Registry` is 21632 bytes against a 4096-byte guard page (`script/stack-frame-check`). So
-    /// the plan is computed **here**, on the host, in milliseconds, and a document edited without
-    /// that list being edited fails right here. Change the shipped document's admitted set and this
-    /// assertion is the first thing that goes red; keep them in step and nothing else has to
-    /// remember.
+    /// The two sentences a reader meets on the console: an archive reaching nothing beyond the
+    /// plan, and the whole initial ramdisk. **This test also holds a written list in another file
+    /// equal to the plan**, so its first assertion names the programs rather than counting them:
+    /// `system_tests/src/user/timetable_tests.rs`'s `PLANNED_PROGRAMS` cannot be computed there (a
+    /// `Registry` is 21632 bytes against a 4096-byte guard page), and a document edited without it
+    /// fails here. See notes/scheduled-execution/archive-narrowing.md.
     #[test]
     fn the_archive_a_timetable_holds_is_measured_against_what_it_will_build() {
         let doc = parse(REFERENCE).expect("the shipped document parses");
         let reg = Registry::register(&doc, SHIPPED_HELD);
 
-        // The shipped document admits `least_authority_demo` twice and `memory_grant_depleter` once (the `--mem 4` line,
-        // backed by `SHIPPED_HELD`) and refuses everything else, so its plan is two programs
-        // however many entries name either. Asserted **by name**, because a spawn site in another
-        // crate carries this same set as a written list and this is what keeps it true.
+        // The shipped document admits `least_authority_demo` twice and `memory_grant_depleter` once
+        // (the `--mem 4` line, backed by `SHIPPED_HELD`) and refuses the rest: two programs, named,
+        // because another crate's spawn site carries this set as a written list.
         assert_eq!(
             reg.programs(),
             1 << Program::LeastAuthorityDemo.id() | 1 << Program::MemoryGrantDepleter.id(),
@@ -399,8 +364,8 @@ mod tests {
         );
         assert_eq!(Audit::of(&reg).planned(), 2);
 
-        // Narrowed to the plan: what the spawn site hands over after milestone 129's second
-        // stratum. `least_authority_demo`, `memory_grant_depleter`, and nothing else.
+        // Narrowed to the plan: what the spawn site hands over. `least_authority_demo`,
+        // `memory_grant_depleter`, and nothing else.
         let mut narrow = Audit::of(&reg);
         narrow.saw("least_authority_demo");
         narrow.saw("memory_grant_depleter");
@@ -412,10 +377,8 @@ mod tests {
             "timetable: the archive it holds carries exactly the 2 programs its plan names\n",
         );
 
-        // The whole initial ramdisk: what it used to be handed. Every program the plan refused is
-        // still an image this process could load, which is authority no line in the document asked
-        // for. `date` is the sharpest case, because the document names it and registration refused
-        // it.
+        // The whole initial ramdisk: every program the plan refused is still an image this process
+        // could load. `date` is the sharpest case, named by the document and refused.
         let mut wide = Audit::of(&reg);
         for name in [
             "least_authority_demo",
