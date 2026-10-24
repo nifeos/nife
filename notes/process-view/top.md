@@ -1,5 +1,7 @@
 # `top`
 
+*Name: provisional. For the program it describes.*
+
 An appendix to [the process view](../process-view.md). `crates/top` is the program's logic and
 `components/src/top.rs` is its syscalls and output streams.
 

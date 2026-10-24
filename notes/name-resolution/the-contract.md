@@ -1,5 +1,7 @@
 # The resolver's contract: three parties, one endpoint
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-crates-17.*
+
 An appendix to [Name resolution](../name-resolution.md). `crates/domain_name_resolution_contract`
 holds what the resolver, its clients and their spawner agree on, under §248 (the name resolver is
 its own confined program). Three parties share the resolver's endpoint, each with a different

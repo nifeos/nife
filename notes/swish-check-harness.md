@@ -1,5 +1,9 @@
 # How swish-check reads what the shell answered
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-xtask-04. The stem names the program,
+`script/swish-check`, and the part of it the page covers: the host side that types the script and
+reads the transcript back.*
+
 `cargo xtask swish-check` boots the whole system, types each row of its script at the swish prompt
 over the UART, and checks what came back. The code is `xtask/src/swish_check/`. This page carries the
 design behind its readers, its timeouts and the shape of its assertions. The flake history and its
