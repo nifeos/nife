@@ -1,29 +1,12 @@
 //! **The construction sub-server: process building, and nothing else** (milestone 22 phase B.2).
 //!
-//! Where the progenitor's process-construction authority went. It holds one untyped budget (WRITE only, so it
-//! may spend memory but never lend it), a request channel, and **one program image** copied into its
-//! address space by `root_supervisor`. It does not hold the initial ramdisk, so "build me program
-//! X" is not a thing that can be asked of it: the only program it can name is the one it was
-//! handed.
-//!
-//! Each instance is built in its **own region** split off the budget, which keeps one instance's
-//! corpse from pinning another's memory. A LIFO reap returns the pages to this budget (§16's
-//! return-of-pages), so a restart loop is not a leak.
-//!
-//! **It does not hold the instance regions** (DECISIONS §32). It used to keep each region capability
-//! for its whole life, because reaping meant `MemoryRegion::DESTROY` and the supervisor could not do that
-//! without construction authority, so the spawner had to reap on request. §32 put the reap on the
-//! supervision endpoint, so the capability's only remaining purpose was gone and it is deleted as
-//! soon as the child is started. Nothing in the tree now holds a capability to a *live* instance's
-//! memory, and the pages still come home when the supervisor collects the corpse.
-//!
-//! The honest note on what that gives up: nothing, today. A hung instance (livelocked, never dying)
-//! was already unreclaimable, because the reap only ever happened on a supervisor's request and a
-//! supervisor's requests only ever followed a death message. §32 records that case as the watchdog
-//! case and deliberately leaves it open.
-//!
-//! It is not the supervisor. It never reads a fault message and it holds no policy; it answers
-//! requests in the order they arrive. See notes/trusted-init.md.
+//! It holds one untyped budget (WRITE only, so it may spend memory but never lend it), a request
+//! channel, and one program image `root_supervisor` copied into its address space, but no initial
+//! ramdisk, so the only program it can build is the one it was handed. Each instance gets its own
+//! region split off the budget, so one corpse cannot pin another's memory, and the region
+//! capability is deleted once the child starts (§32). The supervisor's reap returns the pages LIFO,
+//! so a restart loop is not a leak. It reads no fault message, holds no policy and answers requests
+//! in arrival order. See notes/trusted-init/supervision-tree.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
@@ -78,19 +61,13 @@ pub extern "C" fn _start(_a0: u64, image_len: u64, _a2: u64) -> ! {
 }
 
 /// Build one instance in its own region, endowed with a report endpoint and its supervision endpoint,
-/// started with `attempt` in its second argument register.
+/// started with `attempt` in its second argument register; `false` on any refusal.
 ///
-/// **`label` is stamped on the supervision capability, not handed to the child** (milestone 105 (the two
-/// forks), DECISIONS §148 (resolves by asking the kernel) as amended 2026-10-04). We mint a badged copy of our supervision endpoint, insert
-/// that copy in the child's fault slot, and delete ours. `START` consumes the slot, the kernel keeps
-/// the badge, and it comes back to the supervisor with the child's death message. The child holds
-/// no capability carrying it and is started with nothing but `attempt`, so it cannot learn which
-/// label it has, and a label is not a thing it could lie about.
-///
-/// We keep nothing afterwards, and there is nothing left for us to keep: the TCB capability is not
-/// the thread (dropping it leaves the thread running), and since §32 the region capability is not the
-/// reap either. The supervisor collects the corpse through its supervision endpoint, and these pages
-/// come back to this budget when it does.
+/// `label` is stamped on a badged copy of our supervision endpoint that goes in the child's fault
+/// slot, so the kernel hands it back with the child's death message, and the child, started with
+/// nothing but `attempt`, can neither learn it nor lie about it (DECISIONS §148 (resolves by asking
+/// the kernel) as amended 2026-10-04). We keep nothing afterwards: the TCB capability is not the
+/// thread, and the region capability is not the reap (§32). See notes/trusted-init/supervision-tree.md.
 fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
     let labelled = badge(CHILDFAULT, label);
     if labelled < 0 {
