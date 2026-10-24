@@ -1,53 +1,23 @@
 //! **A TLS client that trusts one root for one host name, and nothing else**, for milestone 501
 //! (a TLS client that speaks to one pinned peer).
 //!
-//! DECISIONS §196 (nife carries TLS) clause 4 rules the shape: *"the package client holds one root
-//! or one pinned key for the one source it talks to"*, not a system trust store, because a store
-//! has to be updated independently of the system and the thing that updates it is the package
-//! manager. §250 (an image names its distribution's package index) names the pair: ISRG Root X1,
-//! for `basalt.nifeos.org`. This crate is that shape in types.
-//!
-//! # The pin is the only way in
-//!
-//! A [`Session`] is made from a [`PinnedPeer`] and nothing else, and a `PinnedPeer` is exactly one
-//! host name and exactly one root. There is no root store in this API to add a second root to, no
-//! verifier to swap, and no "accept anyway" switch, so a caller cannot widen what the client
-//! trusts without changing this crate. That is the strongest rung this tree has (CLAUDE.md's
-//! ladder: make the wrong state unrepresentable), and it is cheap here because `rustls` already
-//! refuses everything outside the roots it is given.
-//!
-//! What the client checks, and where each check lives:
-//!
-//! | check | done by |
-//! |---|---|
-//! | the chain ends at the pinned root | `rustls-webpki`, against a store holding one anchor |
-//! | each signature in the chain | `cryptography_provider`'s verification algorithms |
-//! | the leaf names the host asked for | `rustls-webpki` |
-//! | the server holds the leaf's key | `rustls`, over the handshake transcript |
-//! | the certificates are in date | `rustls-webpki`, against `std`'s clock: see `BUGS` |
-//! | TLS 1.3 and nothing older | `cryptography_provider` offers no TLS 1.2 suite at all |
-//!
-//! It does not buy integrity of a package: under §195 (a reviewed recipe vouches for a package) a
-//! package's digest decides whether its bytes may run, over any transport. TLS here protects the
-//! index, where the digests come from, and keeps the path from learning what was asked for.
-//!
+//! A [`Session`] is made only from a [`PinnedPeer`], one host name and one root: there is no root
+//! store to add to, no verifier to swap and no "accept anyway" switch. TLS 1.3 only, through
+//! `cryptography_provider`. The shape is §196 (nife carries TLS) clause 4's, one root for the one
+//! source, and the pair is §250 (an image names its distribution's package index)'s: ISRG Root X1
+//! for `basalt.nifeos.org`. A package's integrity is its digest's under §195 (a reviewed recipe
+//! vouches for a package), not TLS's. See notes/packages/pinned-tls.md for each check and who
+//! makes it.
 
 //! # BUGS
 //!
-//! - **Certificate expiry is checked against whatever `std` says the time is**, and on nife that
-//!   is the clock service's page, which no stranger's machine can vouch for (milestone 501's block).
-//!   A machine whose clock is far wrong refuses a good chain as not yet valid or expired, and one
-//!   whose clock is held back accepts an expired one. Failing closed on the first is right; the
-//!   second is the open half.
-//! - **No rotation story.** When the pinned root is retired, every image carrying it stops
-//!   reaching its index. ISRG Root X1's certificate in `roots/` is valid until 2035-06-04, and the
-//!   chains served today reach it through cross-signatures that end sooner: see
-//!   `PinnedPeer::basalt_index`.
-//! - **One request per connection**, HTTP/1.0, `Content-Length` required. [`Session::fetch`]
-//!   reports a redirect; only [`listed`] follows one, on a new session with its own pin.
-//! - **The caller connects the stream.** Turning a name into an address is
-//!   `components/src/domain_name_resolver.rs`'s, and the name verified here is whatever the pin says,
-//!   never what the resolver used.
+//! - Certificate expiry is checked against `std`'s clock, which nobody can vouch for; a clock
+//!   held back accepts an expired chain (notes/packages/pinned-tls.md).
+//! - No rotation story: when the pinned root is retired, every image carrying it loses its index.
+//!   See `PinnedPeer::basalt_index`.
+//! - One request per connection, HTTP/1.0, `Content-Length` required; only [`listed`] follows a
+//!   redirect, on a new session with its own pin.
+//! - The caller connects the stream, and the name verified is the pin's, never the resolver's.
 
 use std::io::{self, Read, Write};
 use std::sync::Arc;
@@ -77,10 +47,9 @@ pub const ISRG_ROOT_X1_SHA256: [u8; 32] = [
 /// that the signed index may name it for a listed location; it is never a root for an index host.
 ///
 /// Read 2026-10-13 (UTC) from macOS's `SystemRootCertificates.keychain` and compared byte for byte
-/// with `http://crt.sectigo.com/SectigoPublicServerAuthenticationRootE46.crt`: identical. Its public
-/// key is the one in the cross-signed E46 `github.com` sends, and its certificate says it is valid
-/// from 2021-03-22 to 2046-03-21. [`SECTIGO_ROOT_E46_SHA256`] is its fingerprint, which a test
-/// recomputes.
+/// with `http://crt.sectigo.com/SectigoPublicServerAuthenticationRootE46.crt`: identical. Its key is
+/// the cross-signed E46's that `github.com` sends; valid 2021-03-22 to 2046-03-21. A test recomputes
+/// [`SECTIGO_ROOT_E46_SHA256`].
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
 pub const SECTIGO_ROOT_E46: &[u8] =
@@ -104,16 +73,10 @@ pub struct PinnedPeer {
 }
 
 impl PinnedPeer {
-    /// Pin `root_der` (one certificate, DER) as the only root for `host_name`.
-    ///
-    /// Refuses a host name that is not a DNS name (an IP address is legal for TLS and is not what
-    /// a pin names here) and a root that does not parse as a trust anchor.
-    ///
-    /// # Examples
-    ///
-    /// A test pins its own root, which is how `tests/peer.rs` and `pinned_tls_exerciser` reach
-    /// `helpers/tls-peer`:
-    ///
+    /// Pin `root_der` (one certificate, DER) as the only root for `host_name`. Refuses a host name
+    /// that is not a DNS name (an IP address is legal for TLS and is not what a pin names here) and
+    /// a root that does not parse as a trust anchor. A test pins its own root, as `tests/peer.rs`
+    /// and `pinned_tls_exerciser` do to reach `helpers/tls-peer`:
     /// ```
     /// let root = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures/pinned-root.der")).unwrap();
     /// let peer = pinned_tls_client::PinnedPeer::new("basalt.test", &root).unwrap();
@@ -211,10 +174,8 @@ pub struct Session<S: Read + Write> {
 }
 
 impl<S: Read + Write> Session<S> {
-    /// Run the handshake to completion over `stream`, refusing any peer the pin does not admit.
-    ///
-    /// Completing here, rather than lazily on the first write as `rustls::Stream` would, is what
-    /// lets a caller time the handshake apart from the transfer and see a refusal as a refusal.
+    /// Run the handshake to completion over `stream`, refusing any peer the pin does not admit;
+    /// not lazily, so a caller can time it apart from the transfer (notes/packages/pinned-tls.md).
     ///
     /// # Examples
     ///
@@ -327,23 +288,12 @@ pub struct Reply {
 /// **A package's bytes from a location the index listed, through at most one redirect** (calef's
 /// C2, ruled *"a"* on #2048, 2026-10-12 UTC; `notes/packages/the-index-format.md`, question C).
 ///
-/// A GitHub Release asset's download URL is on `github.com`, which chains to Sectigo Root E46, and
-/// it answers `302` with a signed URL on `release-assets.githubusercontent.com`, which chains to
-/// ISRG Root X1. So a fetch from a listed location is up to two hops, and each is held to what the
-/// ruling says:
-///
-/// | hop | its root | its address |
-/// |---|---|---|
-/// | the listed location | the one the signed index named for it, among those the image carries (`package_index::Sources::root_for`) | Q1's check: every resolved address public, and only those dialed |
-/// | the one redirect | the index's own root (X1 in production), whatever the first hop's was | Q1's check again, on the new host |
-/// | a second redirect | refused, never followed | |
-///
-/// The redirect must be an absolute `https://` URL (`package_index::Location::redirect`). Nothing
-/// here decides whether the bytes are authentic: the caller judges them by the index's digest, as
-/// it judges bytes from anywhere.
-///
-/// `jig` and `package_fetch_exerciser` both fetch through `listed::fetch`, so the boot test that proves
-/// the refusals proves `jig`'s path, not a copy of it.
+/// The listed hop is pinned to the root the signed index named for it, among those the image
+/// carries (`package_index::Sources::root_for`). The one redirect, an absolute `https://` URL
+/// (`package_index::Location::redirect`), is pinned to the index's own root (X1 in production),
+/// whatever the first hop's was; a second is refused. Every hop dials only what Q1's check passed.
+/// The caller judges the bytes by the index's digest. `jig` and `package_fetch_exerciser` both use
+/// `listed::fetch`, so the boot test proves `jig`'s path (notes/packages/pinned-tls.md).
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`, with
 /// everything in it.

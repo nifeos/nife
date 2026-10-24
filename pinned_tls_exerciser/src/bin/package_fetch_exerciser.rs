@@ -2,39 +2,20 @@
 //! (UTC) on #1884**, for milestone 801 (packages over the internet), items 1, 3 and 4.
 //!
 //! `system_tests/src/user/package_index_tests.rs` starts it holding the network, a clock, entropy
-//! and a resolver badge granted the root zone, as `jig`'s is (Q5). It then:
-//!
-//! | line | what it proves |
-//! |---|---|
-//! | `index unreachable at gone.basalt.test` | the image's first address is lost, so it tries the second (Q2) |
-//! | `index ok ... from basalt.test` | the backup resolved by name, TLS 1.3 to the pinned root, the index read from `/<channel>/metadata/` (Q4) |
-//! | `passed over https://packages.basalt.test...` | a listed location resolving to a private address is refused (Q1) |
-//! | `fetched greeting-... from basalt.test's targets` | the repository's own copy is the fallback, admitted by the index's digest |
-//! | `refused uptime-...: NotCataloged` | a repository copy with one byte flipped: only the digest can tell |
-//! | `refused nosuch: not in the index` | nothing is fetched for a name the index does not list |
-//! | `passed over https://rebind.basalt.test...` then `fetched rebound-... from basalt.test's targets` | the twin listed under the rebinding name: the client dials only the public address its check passed, never the private one a second resolution would name (milestone 871 (a sixth outsider pass attacks the confinement claim)) |
-//! | `redirect releases: fetched greeting-... via releases.basalt.test` | one redirect under the root the location names, admitted by the digest (calef's C2 on #2048) |
-//! | `redirect <probe>: refused: ...` | an unnamed root, an uncarried root, a second redirect, a private address, a host off the index's root |
-//!
-//! The probes call `pinned_tls_client::listed::fetch`, as `jig` does, judging addresses with
-//! [`stand_in_public`]: slirp reaches no public address (a `guestfwd` outside 10.0.2.0/24 is
-//! refused), so the peer at 10.0.2.9 stands in. Every other fetch uses `public_address`.
-//!
-//! It installs nothing: installing from an index is milestone 809 (the package client becomes a
-//! program)'s `jig`. Under slirp every listed location is private, so taking bytes from one is
-//! proved only by `package_index`'s host tests.
+//! and a resolver badge granted the root zone, as `jig`'s is (Q5), and checks each line it prints:
+//! the index's fallback address (Q2), a private listed location passed over (Q1), the digest's
+//! refusals, the rebinding twin (milestone 871 (a sixth outsider pass attacks the confinement
+//! claim)) and the redirect probes (calef's C2 on #2048), which go through `listed::fetch` as `jig`
+//! does. It installs nothing. notes/packages/pinned-tls.md has the line-by-line table.
 //!
 //! Name: provisional 2026-10-09 (UTC), milestone 801's lane, `pinned_tls_exerciser`'s shape.
-//!
+
 //! # BUGS
 //!
-//! - The fix is a type at the listed path and a test at the rest. A listed location's addresses
-//!   come only from `package_index::Location::check`, but nothing stops a future caller from
-//!   resolving the name again and handing [`get`] the fresh answer. What catches that is
-//!   `package_index_tests`' rebinding assertion, falsified on all three architectures.
-//! - Under slirp the fixed client dials the checked public address, 192.0.2.1, for real: a SYN
-//!   leaves the emulator for RFC 5737 documentation space, and the net server's connect gives up
-//!   within its 15 s bound. That is the honest cost of connecting where the check approved.
+//! - Only a test guards the rebinding fix outside the listed path: a caller could resolve again
+//!   and hand [`get`] the fresh answer; `package_index_tests`' rebinding assertion catches it.
+//! - Under slirp the client dials the checked public address, 192.0.2.1 (RFC 5737), for real, and
+//!   waits out the net server's 15 s connect bound.
 
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
