@@ -1,5 +1,7 @@
 # What a capability can name
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.*
+
 `kernel/src/cap.rs` is the kernel's half of the capability model: the set of nouns a process can
 be handed, the capability table's size, and the checks that keep the kernel's rights vocabulary and
 the ABI's in step. The table itself is `crates/capability`, which is pure logic. The model is §10

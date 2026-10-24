@@ -1,5 +1,7 @@
 # Two seams only the test kernel has
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.*
+
 `kernel/src/delegation_pause.rs` and `kernel/src/retype_fault.rs` let a system test force an
 interleaving or a failure that timing alone would make rare. This note carries the design their
 module doc comments link to. Both are named provisionally.

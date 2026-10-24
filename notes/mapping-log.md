@@ -1,5 +1,7 @@
 # The mapping log: how revocation finds every mapping
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.*
+
 `kernel/src/revoke.rs` keeps a record of every mapping of an untyped-derived page, and the
 capability each mapping was made under. Reclamation and `PageFrame::REVOKE` both read it. This note
 carries the design the file's doc comments link to. The rulings are §13 (capability revocation and

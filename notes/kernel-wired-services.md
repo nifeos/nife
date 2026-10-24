@@ -1,5 +1,7 @@
 # The services the kernel wires
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.*
+
 `kernel/src/user.rs` is the index of the kernel's user-mode code, and most of its children are the
 wiring of one confined service each. The kernel's part is the same every time: allocate the frames,
 mint the endpoints, hand each process a `Spawn` literal, and know nothing about what the processes
