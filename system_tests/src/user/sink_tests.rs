@@ -323,8 +323,8 @@ fn a_program_cannot_tell_what_its_output_slot_holds() {
     crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// A dead reader ends the writer, and a missing one does not: the one behavior change of milestone
-/// 50 (pipes and redirection: one sink protocol), asserted by value on all three outcomes.
+/// A dead reader ends the writer, and a missing one does not: the one behavior change of
+/// milestone 50 (pipes and redirection: one sink protocol), asserted on all three outcomes.
 ///
 /// A sink that stays classifies `Ok`. A sink whose region this test reclaims after a few messages
 /// (§16 (object revocation)) classifies `Gone` from a blocked `SEND`, as in `yes | head`. An empty
