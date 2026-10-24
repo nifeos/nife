@@ -19,9 +19,9 @@ use crate::channel::put_page;
 /// holds two `fs_subtree_caretaker`s, slot 0 labeled `a` (the fixture's `sub`) and slot 1 labeled
 /// `b` (`other`), per `start_granted_two_dirs` in `kernel/src/user/fs_service/two_dirs.rs`.
 ///
-/// It proves the block's deliverable: `/a/inner` and `/b/secret` resolve through
-/// [`grant_plan::nav::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused by
-/// `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
+/// It proves the block's deliverable: `/a/inner` and `/b/secret` (its `/a/x` and `/b/y`) resolve
+/// through [`grant_plan::nav::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused
+/// by `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
 /// through the other's endpoint, asked directly of each (notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {
     use filesystem_fixture::twodir as t;

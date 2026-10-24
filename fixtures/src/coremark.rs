@@ -3,10 +3,10 @@
 //! It runs the CoreMark-derived kernel in `crates/coremark` (a linked-list sort, a small-matrix
 //! multiply and a state machine) for a fixed iteration count, so the run's CRC is a fixed value
 //! (`coremark::PINNED_CRC_64`) that init and the kernel test check. It times itself with
-//! `user_mode_runtime::now` and SENDs `[crc, ticks, freq]` on slot 0, its one capability. Under HVF
-//! the ticks are real nanoseconds; under TCG they are icount fiction, and only the CRC is
-//! meaningful. The compute is a portable crate so the identical code also runs on macOS and Linux
-//! (notes/benchmarks.md).
+//! `user_mode_runtime::now` and SENDs `[crc, ticks, freq]` on slot 0, its one capability, so the
+//! receiver computes iterations per second without a second syscall. Under HVF the ticks are real
+//! nanoseconds; under TCG they are icount fiction, and only the CRC means anything. The compute is
+//! a portable crate, so the identical code runs on macOS and Linux too (notes/benchmarks.md).
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63) as a proper noun, EEMBC's industry benchmark. It
 //! shares its crate's name for the reason DECISIONS §63 gives: the crate is the logic, the program
