@@ -60,3 +60,27 @@ It catches a stuck post-processing stage, not a degraded ring oscillator that ke
 Neither the datasheet nor the driver documents an SP 800-90B-class test. Whether this project
 needs one before trusting these bytes for anything security-shaped is undecided. It is an
 architect's call, and no section in `design/decisions/` records it yet.
+
+## The driver's own choices
+
+`components/src/jh7110_entropy.rs` polls `ISTAT` rather than taking PLIC line 30. A wrong interrupt
+binding fails silently, as a hang. A wrong poll bound fails loudly, as `NO_ENTROPY`. Switching to
+the interrupt once the board confirms the binding is reversible.
+
+It draws the first 32 bytes before it reports, and the bytes decide the readiness word. A device
+whose clock is gated reads as zeros, and an all-zero first generation reports
+`STEP_FIRST_ALL_ZERO`. That device is then refused for the rest of the boot. A client only ever
+sees a reply, so a service that reported dead and went on serving its zero buffer would hand those
+zeros out as randomness to everyone not watching the handshake. A device that answered with nothing
+is not refused. It has told the truth at every step, `take` answers `NO_ENTROPY` while it stays
+dry, and it recovers by itself if it starts answering.
+
+The readiness message has a fixed layout. Word 0 is the verdict. Word 1 holds the byte count, and
+in its high half the `STAT` read right after the bring-up writes. Word 2 is always
+`(STAT << 32) | ISTAT`, read at report time, whatever word 0 says. An all-zero pair says the
+register window read as nothing: a gated clock, a reset still asserted, or a base that is not the
+TRNG. A nonzero `STAT` with `SEEDED` clear says the device is alive and seeding did not finish.
+
+One question about the bytes is open. `MODE.R256` has never been read back on silicon. If radon's
+`STAT.R256`, in word 1's high half, reads clear, the upper four `RAND` words are not device output
+and only 16 bytes per generation may be served. One line of a bench transcript closes it.
