@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Captured with diskutil info -plist on the development Mac, 2026-09-19; trimmed to the keys stick_maker reads, volume names scrubbed. The internal SSD. -->
+<!-- Shaped from a diskutil info -plist capture, 2026-09-19; trimmed to the keys stick_maker reads, with identifiers, names and sizes replaced by neutral values. Every flag, bus, content type and filesystem is as captured. The internal SSD. -->
 <plist version="1.0">
 <dict>
 	<key>BusProtocol</key>
@@ -10,11 +10,11 @@
 	<key>Ejectable</key>
 	<false/>
 	<key>IORegistryEntryName</key>
-	<string>APPLE SSD AP0512Z Media</string>
+	<string>Internal SSD Media</string>
 	<key>Internal</key>
 	<true/>
 	<key>MediaName</key>
-	<string>APPLE SSD AP0512Z</string>
+	<string>Internal SSD</string>
 	<key>OSInternalMedia</key>
 	<false/>
 	<key>Removable</key>
@@ -24,11 +24,11 @@
 	<key>RemovableMediaOrExternalDevice</key>
 	<false/>
 	<key>Size</key>
-	<integer>500277792768</integer>
+	<integer>500000000000</integer>
 	<key>SolidState</key>
 	<true/>
 	<key>TotalSize</key>
-	<integer>500277792768</integer>
+	<integer>500000000000</integer>
 	<key>VirtualOrPhysical</key>
 	<string>Unknown</string>
 	<key>WholeDisk</key>
