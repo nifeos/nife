@@ -38,7 +38,8 @@
 //! - **Only ASCII**, like everything else `screen_console` draws.
 //! - **It puts a 36,000-byte `screen_console::Cells` on the firmware's stack** for two lines that
 //!   never scroll. UEFI promises an x64 application at least 128 KiB of stack (recalled from the
-//!   specification, not re-read); a `static` would avoid it at the price of `unsafe` shared state.
+//!   specification's calling-convention section, not re-read); a `static` would avoid it at the
+//!   price of `unsafe` shared state.
 
 use machine_discovery::framebuffer::Framebuffer;
 use screen_console::{Cells, PixelSink, ScreenConsole};

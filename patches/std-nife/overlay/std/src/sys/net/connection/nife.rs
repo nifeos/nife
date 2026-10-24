@@ -33,9 +33,12 @@
 //! # BUGS
 //!
 //! - **One operation per socket at a time is assumed, not enforced.** The shared frame is not
-//!   locked, a design from before std threads; two threads using one socket at once (a read and a
-//!   write through a shared `&TcpStream`) can overwrite each other's bytes in its frame.
-//! nothing on the wire.
+//!   locked, a design from before std threads. Two threads on one socket can collide: two writers
+//!   overwrite each other's payload, a read and a write trample the frame, two readers can each
+//!   take one `RECEIVE` reply and read back the other's segment, and two UDP `send_to` calls share
+//!   the destination header, so a datagram can go to the other thread's address. Only a program
+//!   holding the process capability (to spawn) and sharing one socket by `Arc` or `&` is exposed:
+//!   `try_clone` refuses with `Unsupported`. notes/std/net.md has the account.
 
 #![allow(dead_code)]
 

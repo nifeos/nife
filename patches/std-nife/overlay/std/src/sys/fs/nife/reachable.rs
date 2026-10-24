@@ -45,7 +45,7 @@ pub(crate) fn is_reachable() -> bool {
 /// -1 is the server's `dir::EPERM` (milestone 122): every entry point checks [`is_reachable`]
 /// first, so a kernel `NoSuchSlot` cannot follow, and reading -1 as "no capability" would report a
 /// withheld right as "this platform cannot do that", the silent degradation DECISIONS §42 forbids.
-/// The fix is a tag or an offset in the reply word, a contract change (notes/std/fs-descent.md).
+/// The fix is a tag or an offset in the reply word, a contract change (notes/std/fs.md).
 ///
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
 /// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate rule

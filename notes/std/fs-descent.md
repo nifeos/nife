@@ -81,8 +81,8 @@ Knowing what the parent carries is the awkward part, because the contract has no
 "attenuate to whatever you have" and no verb reporting a handle's rights. The common case is one
 message: ask for `dir::ALL`, and a full-rights grant answers with the handle. A narrowed grant
 answers `EPERM`, and the PAL then finds out what is there by asking for one right at a time, one
-message per bit of `dir::ALL` (seven today). It does so at most once per `Dir::open`, because every hop after the first descends from a
-parent whose rights are now known. That probe is a workaround, not a design. The fix is a sentinel
+message per bit of `dir::ALL` (seven today). It does so at most once per `Dir::open`, because every
+hop after the first descends from a parent whose rights are now known. That probe is a workaround, not a design. The fix is a sentinel
 in `OPENDIR`'s rights word meaning "the parent's, whatever they are", which is a wire-format change
 and therefore not a lane's to make.
 

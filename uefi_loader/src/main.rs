@@ -26,10 +26,10 @@
 //!
 //! - **Secure Boot must be off**: nothing signs this image (notes/turning-secure-boot-off.md).
 //! - **The kernel is embedded rather than loaded from the filesystem**, so it rebuilds with it.
-//! - **Nothing validates the UEFI tables' header CRCs**: the firmware is the trust root here.
-//! - **Nothing verifies what it hands over at boot**: the trust boundary is the build (`build.rs`).
+//! - **Nothing checks the UEFI table CRCs or what it hands over**: firmware and build are trusted.
 //! - **AP bring-up under UEFI is proved on OVMF only** (milestone 195 (finish the UEFI boot path)).
-//! - **The `hvm_start_info` command line holds only the screen** (milestone 243 (no serial port)).
+//! - **The command line is what this binary decided** (`handoff::cmdline`: screen, slot key,
+//!   `boot_slot::medium::NVME`, `SCREEN_HOLD`); nothing reads a configuration file off the stick.
 //! - **The screen is taken as the firmware left it**, and aarch64 and riscv64 do not hand it over.
 //! - **A `PixelBitMask` or `PixelBltOnly` adapter gets no screen** on `x86_64`; the loader says so.
 

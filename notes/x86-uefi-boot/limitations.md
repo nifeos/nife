@@ -61,10 +61,17 @@ list. This is every entry as it was written, sentence-split for the prose limits
   boot, and there is nothing to check it against that is not also the firmware.
 - Nothing verifies what the loader hands over at boot. `build.rs` does refuse to embed an archive the
   kernel does not vouch for, which is the one check that matters at build time.
-- The `hvm_start_info` command line carries exactly one thing (milestone 243 (a machine with no
-  serial port)): where the screen is.
-  Nothing reads a configuration file off the stick, so anything on that line is something the loader
-  decided.
+- The `hvm_start_info` command line carries only what the loader decided. Nothing reads a
+  configuration file off the stick. `handoff::cmdline` writes up to four words, and `CMDLINE_LEN`
+  adds them up: the screen (milestone 243 (a machine with no serial port)), the boot slot key and
+  digit, `boot_slot::medium::NVME`, and `SCREEN_HOLD` under the `screen_hold` feature.
+  [loader-design.md](loader-design.md) has each word's contract.
 - The screen is taken as the firmware left it. On aarch64 and riscv64 it is not handed over at all:
   those kernels learn about a display from the device tree, and the firmware's GOP framebuffer is not
   in it.
+- AP bring-up under UEFI is proved on OVMF and nowhere else (milestone 195 (finish the UEFI boot
+  path)); `uefi_loader/src/arch/x86_64` has the detail.
+- A `PixelBitMask` or `PixelBltOnly` adapter gets no screen on `x86_64`. A `PixelBltOnly` adapter has
+  no linear framebuffer, only a boot-services `Blt` call that is gone by the time the kernel runs. A
+  `PixelBitMask` adapter describes its channels by masks `machine_discovery::framebuffer` cannot
+  express. The loader says so before it hands over.

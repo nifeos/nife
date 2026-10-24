@@ -86,6 +86,15 @@ port does not follow its id, and reopening one does not reuse the port it had.
 - One operation per socket at a time is assumed, not enforced. The registry is behind a spinlock,
   but a socket's shared frame is not locked: only the running operation touches it between its own
   `CALL`s. That held while a std process had one thread. Under `std::thread` (see
-  [threads](threads.md)), two threads using one socket at once, a read and a write through a shared
-  `&TcpStream`, can overwrite each other's bytes in the frame. Distinct sockets have distinct frames
-  and do not collide.
+  [threads](threads.md)), two threads using one socket at once collide in its frame:
+  - Two writers overwrite each other's payload, because `write` puts the bytes in the frame and
+    then `CALL`s.
+  - A read and a write trample each other, because `read` `CALL`s and then copies out.
+  - Two readers can each take one `RECEIVE` reply and read back each other's segment.
+  - Two UDP `send_to` calls share the frame's destination header, so a datagram can go to the
+    other thread's address.
+
+  Distinct sockets have distinct frames and do not collide. Only a program that holds the process
+  capability, and so can spawn, and that shares one socket through `Arc` or `&` is exposed.
+  `try_clone` refuses with `Unsupported`, so the usual split of a reader and a writer on two
+  handles fails loudly rather than racing. The fix is a per-socket lock around each frame exchange.
