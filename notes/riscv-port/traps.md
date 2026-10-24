@@ -1,5 +1,8 @@
 # The riscv64 trap path
 
+*Name: provisional, minted 2026-10-23 (UTC) by the riscv64 lane of milestone 929 (comments in the
+Linux style across first-party Rust).*
+
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
 `kernel/src/arch/riscv64/exceptions.rs` and `irq.rs`, the S-mode analog of aarch64's `VBAR` table
 and `ESR` decode. The portable side is [notes/exceptions.md](../exceptions.md).

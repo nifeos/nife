@@ -36,7 +36,6 @@ work that page points at but does not need to carry whole.
 
 *Name: provisional, minted 2026-09-26 (UTC) by the lane for milestone 129 (scheduled execution), for the directory and every
 stem in it. `calendar-grammar-g5` was minted the same day by the lane `proposal/129-calendar-grammar`. Naming is calef's; `script/names --unratified` lists each stem.*
-
 - `archive-narrowing` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for
   the parent's "Where the set is computed, and why not at the spawn site". calef names files.
 - `next-after-proofs` Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for

@@ -1,5 +1,7 @@
 # Device details: an appendix to notes/progenitor-boot.md
 
+*Name: provisional. For what two device starters must get right. calef names files.*
+
 ## The entropy refusal
 
 No instruction, or a first draw of all zeros (`entropy_contract::readiness`), and the instruction

@@ -1,5 +1,7 @@
 # radon's boot lottery: the rebooting soak's draws
 
+*Name: provisional.*
+
 *An appendix to [`notes/soak.md`](../soak.md), for milestone 249 (the boot lottery is sampled by a
 person walking to the board). It holds the distribution that milestone's proof asks for, read off
 the captures already in `bench/`, beside the nine hand-drawn boots in

@@ -1,5 +1,7 @@
 # The shadow descriptor ring, and the two gaps that led to it
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/dma.md](../dma.md), moved there on 2026-10-11 (UTC) under §212 (a prose
 budget). It records the two features that defeated the in-place
 check, the race that remained, and how the shadow ring closes both.

@@ -1,5 +1,8 @@
 # The timetable crate: the detail behind its doc comments
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-10, for the detail behind
+`crates/timetable`'s doc comments. calef names files.*
+
 An appendix of [scheduled execution](../scheduled-execution.md). It holds the facts that
 `crates/timetable`'s doc comments point at and have no room to carry. Each section names the module
 it serves.

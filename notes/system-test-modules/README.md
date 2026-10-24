@@ -14,8 +14,4 @@ not fit a doc comment.
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for the test file it explains, and calef names files.
-
-- `address-space-tests` Name: provisional. After `system_tests/src/user/address_space_tests.rs`.
-- `compositor-tests` Name: provisional. After `system_tests/src/user/compositor_tests.rs`.
-- `confined-fuzzer-tests` Name: provisional. After `system_tests/src/user/confined_fuzzer_tests.rs`.
+Each stem here is named for the test file it explains, and calef names files.

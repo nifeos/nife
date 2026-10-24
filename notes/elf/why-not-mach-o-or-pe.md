@@ -1,5 +1,8 @@
 # Why don't macOS and Windows use ELF?
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, after the parent's
+"Why don't macOS and Windows use it?". calef names files.*
+
 An appendix to [`notes/elf.md`](../elf.md). It holds the history of Mach-O and PE, why an
 executable format is frozen early, and the punchline that UEFI firmware boots PE.
 

@@ -1,3 +1,7 @@
+*Name: provisional, minted 2026-10-23 (UTC) by maintainer/brief-run-a-milestone-wide. "Wide" means
+many lanes on one milestone at once; "run a fleet" was considered and names the agents rather than
+the milestone.*
+
 **Provisional name.** Run one large milestone across many concurrent lanes. You hold the maintainer
 role, the milestone's work divides into many independent pull requests (a paydown, a sweep, a
 rename across the tree), and you mean to run them at once rather than one after another. Do the

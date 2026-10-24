@@ -34,3 +34,4 @@ Each stem below is named for its content, and calef names files.
 - `what-is-left-of-milestone-23` Name: ratified 2026-10-18 (calef: "Approve both").
 - `examples` Name: provisional. For the parent's Rust EXAMPLES. calef names files.
 - `terminal-supervisor-bound` Name: provisional. After the program and the bound it measures.
+Each stem here is named for its content, and calef names files.

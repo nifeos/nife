@@ -1,5 +1,7 @@
 # The RISC-V port's incremental plan, step by step
 
+*Name: provisional. After the brief's own example of a name for content.*
+
 An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). Each step was a provable, committable piece, and each is recorded here with the boot line that proved it and the bugs it surfaced.
 

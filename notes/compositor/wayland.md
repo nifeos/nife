@@ -1,5 +1,7 @@
 # The compositor and Wayland
 
+*Name: provisional.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), which states the conclusion.
 
 That is the difference in kind from Wayland, and worth stating precisely because Wayland is the prior

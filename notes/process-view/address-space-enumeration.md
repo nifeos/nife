@@ -1,5 +1,7 @@
 # `pmap`, and `ENUMERATE` extended to the address-space object
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `pmap-listing`.*
+
 An appendix to [notes/process-view.md](../process-view.md), which summarizes it. The pricing of
 `pmap` from the prompt is a separate page, [pmap.md](pmap.md).
 

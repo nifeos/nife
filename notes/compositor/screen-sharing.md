@@ -1,5 +1,7 @@
 # The capture client is the screen-sharing case
 
+*Name: provisional.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), which states the conclusion.
 
 A capture client shows the other side of the same coin. It holds a read-only mapping of the screen

@@ -1,5 +1,7 @@
 # The crate's modules: the reasons behind their doc comments
 
+*Name: provisional, named for its content.*
+
 The detail behind the doc comments in `crates/globally_unique_identifier_partition_table`, for
 [`notes/globally-unique-identifier-partition-table.md`](../globally-unique-identifier-partition-table.md).
 Each section names the module it serves.

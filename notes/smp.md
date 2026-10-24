@@ -1,5 +1,7 @@
 # Bringing up the other cores
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-smp-memory.*
+
 `kernel/src/smp.rs` reads which cores the machine has, starts the ones it can, and turns each into
 a scheduler participant. DECISIONS §11 (SMP: per-CPU run queues, message-based migration) is the
 design; §28 (SMP placement: two random choices at spawn, message-shaped stealing) is the load
