@@ -7,6 +7,9 @@ budget has no room for.
 
 - [`the-proofs.md`](the-proofs.md): every Kani harness over the crate with what it quantifies over
   and its time, why the CRC harnesses are bounded, and why two harnesses took the shape they did.
+- [`the-modules.md`](the-modules.md): the reasons behind the modules' doc comments (the two CRC
+  implementations, the header's declared size, type and unique GUIDs, where to read, Miri and the
+  sweeps), and the commands that regenerate the fixtures.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/`
 beside `notes/X.md`. calef names directories.*
@@ -14,3 +17,4 @@ beside `notes/X.md`. calef names directories.*
 The stem below is named for its content, and calef names files.
 
 - `the-proofs` Name: provisional.
+- `the-modules` Name: provisional, named for its content.

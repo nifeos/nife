@@ -5,7 +5,8 @@
 
 use super::*;
 
-/// One IPC rendezvous: two intrusive wait queues and the pending-signal count.
+/// One IPC rendezvous: two intrusive wait queues and the pending-signal count. At most one queue
+/// is non-empty at any time. See `notes/inter-process-communication.md`.
 ///
 /// # Examples
 ///
@@ -51,43 +52,29 @@ pub struct Rendezvous<T: Node> {
     pub(crate) receivers: Fifo<T>,
     /// Async signals that arrived with nobody waiting. Drained by the next receive, never lost.
     pub(crate) pending: u32,
-    /// **This rendezvous carries a hardware interrupt, so it takes no message** (DECISIONS §101 (notification objects),
-    /// amended 2026-09-26: calef's ruling B). Set once by [`bind_to_interrupt`](Self::bind_to_interrupt)
-    /// and never cleared. While it is set, [`send`](Self::send) answers [`Send::Refused`] and
-    /// touches nothing, so the only thing a receiver here can ever be handed is a
-    /// [`signal`](Self::signal). That is what makes an interrupt's `w0 = 1` unforgeable by rule
-    /// rather than by nobody having been handed a `WRITE` capability.
+    /// This rendezvous carries a hardware interrupt, so it takes no message. Set once by
+    /// [`bind_to_interrupt`](Self::bind_to_interrupt) and never cleared; while it is set,
+    /// [`send`](Self::send) answers [`Send::Refused`] (§101 (notification objects), as amended).
     ///
-    /// It sits in the padding after `pending`, so the object did not grow.
-    ///
-    /// Name: provisional (milestone 603 (provisional), an interrupt's rendezvous refuses every
-    /// send): calef names public items, and this is read through the public methods.
+    /// Name: provisional (milestone 603 (an interrupt's endpoint refuses every send)): calef names
+    /// public items, and this is read through the public methods.
     pub(crate) bound_to_interrupt: bool,
 }
 
-/// What a [`send`](Rendezvous::send) decided.
-///
-/// **Every verdict that leaves the sender off a queue hands its token back** (milestone 139 (drive
-/// the unsafe count down), round 10), and the one that queues it does not. That is the whole of
-/// what moved here: the variants and their meanings are the ones they always were.
+/// What a [`send`](Rendezvous::send) decided. Every verdict that leaves the sender off a queue
+/// hands its token back, and the one that queues it does not.
 pub enum Send<T> {
     /// A receiver was waiting: rendezvous with this one (its token, since it has left the receiver
     /// queue), and the sender does not join a queue (its token, second).
     Rendezvous(Unqueued<T>, Unqueued<T>),
     /// Nobody was waiting: the sender is now queued on this rendezvous, holding its token.
     Blocked,
-    /// **The rendezvous carries an interrupt and takes no message** (see
+    /// The rendezvous carries an interrupt and takes no message (see
     /// [`bind_to_interrupt`](Rendezvous::bind_to_interrupt)). Nothing was queued and no receiver
-    /// was taken: the rendezvous is exactly as it was. The caller turns this into an error and must
+    /// was taken, and the sender's token comes back. The caller turns this into an error and must
     /// not block.
     ///
-    /// A variant rather than a check at each call site, so that every path that deposits into a
-    /// rendezvous (the kernel has four today: `SEND`, `SEND_CAP`, `CALL`, and a §26 (the fault endpoint) death message)
-    /// is made to say what it does here by the compiler, and a fifth cannot forget to.
-    ///
-    /// Name: provisional (milestone 603 (provisional)): calef names public items.
-    ///
-    /// Carries the sender's token back, since nothing was queued.
+    /// Name: provisional (milestone 603): calef names public items.
     Refused(Unqueued<T>),
 }
 
@@ -168,20 +155,18 @@ impl<T: Node> Rendezvous<T> {
         }
     }
 
-    /// **Make this the rendezvous a hardware interrupt is delivered to, for good** (DECISIONS §101,
-    /// ruling B). From now on every [`send`](Self::send) is [`Send::Refused`]; [`signal`](Self::signal)
-    /// and [`receive`](Self::receive) are unchanged. One-way: there is no unbind, because the kernel has
-    /// none (`sched::bind_irq` only ever overwrites a route), and a rendezvous that once carried an
-    /// interrupt is safer left refusing than reopened to senders a driver does not expect.
+    /// Make this the rendezvous a hardware interrupt is delivered to, for good. Every later
+    /// [`send`](Self::send) is [`Send::Refused`]; [`signal`](Self::signal) and
+    /// [`receive`](Self::receive) are unchanged. There is no unbind, because the kernel has none.
     ///
-    /// Name: provisional (milestone 603 (provisional)): calef names public items.
+    /// Name: provisional (milestone 603): calef names public items.
     pub fn bind_to_interrupt(&mut self) {
         self.bound_to_interrupt = true;
     }
 
     /// Whether [`bind_to_interrupt`](Self::bind_to_interrupt) has been called on this rendezvous.
     ///
-    /// Name: provisional (milestone 603 (provisional)): calef names public items.
+    /// Name: provisional (milestone 603): calef names public items.
     pub fn is_bound_to_interrupt(&self) -> bool {
         self.bound_to_interrupt
     }
@@ -208,11 +193,9 @@ impl<T: Node> Rendezvous<T> {
         (self.senders.len(), self.receivers.len(), self.pending)
     }
 
-    /// **Empty both wait queues, handing every blocked thread back to `f`** (object revocation): the
-    /// rendezvous is about to be destroyed, so each waiter is popped off here, token and all (which
-    /// is what lets `f` re-queue it onto a run queue), and the caller wakes it with an error. After
-    /// this both queues are empty, so [`is_idle`](Self::is_idle) holds and the one-queue invariant
-    /// trivially does.
+    /// Empty both wait queues, handing every blocked thread to `f` with its token, for object
+    /// revocation. The caller wakes each one with an error. Afterwards [`is_idle`](Self::is_idle)
+    /// holds.
     pub fn drain_waiters(&mut self, mut f: impl FnMut(Unqueued<T>)) {
         while let Some(w) = self.senders.pop_front() {
             f(w);
@@ -222,26 +205,12 @@ impl<T: Node> Rendezvous<T> {
         }
     }
 
-    /// **Take one specific sender back off the queue**, returning its token if it was there.
+    /// Take one specific sender back off the queue, returning its token if it was there.
     ///
-    /// The one operation an intrusive `Fifo` deliberately does not offer (arbitrary remove), needed
-    /// here for one reason: a **corpse** can be a queued sender. A supervised thread that dies with
-    /// nobody in `RECEIVE` parks on its supervision rendezvous's sender queue with the death message in
-    /// its mailbox (DECISIONS §26 implementation note 2), and its supervisor may then reap it
-    /// (§32's rendezvous reap, or §16's `DESTROY`) *without* having collected the message. Freeing a
-    /// TCB that is still linked into a queue leaves a dangling pointer the next `receive` would follow,
-    /// so the reap has to unlink it first.
-    ///
-    /// Expressed as drain-and-repush over `pop_front`/`push_back` rather than as a `Fifo::remove`,
-    /// which keeps the "one link, no arbitrary remove" contract intact in the queue itself: the cost
-    /// is O(queued senders) on a teardown path, and the queue's own proved invariants are the only
-    /// ones in play. FIFO order among the survivors is preserved.
-    ///
-    /// **Safe since milestone 139's round 10.** `victim` is compared by pointer and never
-    /// dereferenced, and every *other* queued sender is re-pushed with the token its own pop just
-    /// handed back, so nothing here asks the caller to promise anything. The removal is one of the
-    /// three places a token comes from (a pop, a removal, thread creation): the victim's is
-    /// returned, which is what lets the caller requeue or free it knowing it is on no queue.
+    /// For reaping a corpse parked as a sender, which must be unlinked before its TCB is freed.
+    /// `victim` is compared by pointer and never dereferenced. The survivors keep their FIFO order,
+    /// and the cost is the queue's length. See `notes/inter-process-communication.md` ("Taking a
+    /// thread back off a queue").
     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Fifo<T> = Fifo::new();
         let mut found = None;
@@ -256,24 +225,10 @@ impl<T: Node> Rendezvous<T> {
         found
     }
 
-    /// **Take one specific receiver back off the queue**, returning its token if it was there. The
-    /// twin of [`remove_sender`](Self::remove_sender), and the same drain-and-repush for the same
-    /// reason.
-    ///
-    /// It exists for milestone 133: `MemoryRegion::DESTROY` ends a resident thread that is
-    /// permanently `Blocked`, and the commonest such thread is a server parked in `RECEIVE` on a
-    /// rendezvous that belongs to somebody else. Its TCB is linked here, so the region's reclaim
-    /// has to unlink it before freeing the page the TCB sits on, exactly as a corpse on a
-    /// supervision rendezvous's sender queue does.
-    ///
-    /// **Why both twins rather than one `remove` taking a queue**, which was the tidier shape and
-    /// was refused: the caller would then have to name the queue, and naming it means trusting the
-    /// victim's recorded [`WaitRole`](crate) to say which one it is. The kernel's `CALL` caller
-    /// that met no server is recorded as a `Reply` and *is* on the sender queue, so the role is a
-    /// diagnostic rather than the fact. Two pointer-compared removes let the caller ask both
-    /// queues and believe neither.
-    ///
-    /// Safe, for [`remove_sender`](Self::remove_sender)'s reason.
+    /// Take one specific receiver back off the queue, returning its token if it was there. The
+    /// twin of [`remove_sender`](Self::remove_sender), for a region teardown that ends a thread
+    /// blocked in `RECEIVE` here. The kernel asks both queues, because a thread's recorded wait
+    /// role does not say which queue holds it.
     pub fn remove_receiver(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Fifo<T> = Fifo::new();
         let mut found = None;
@@ -289,18 +244,11 @@ impl<T: Node> Rendezvous<T> {
     }
 
     /// A sender `me` arrives. Rendezvous with a waiting receiver if there is one, otherwise `me`
-    /// joins the sender queue (and the caller should block it). On a rendezvous that carries an
-    /// interrupt, neither: [`Send::Refused`], with nothing touched.
-    ///
-    /// The refusal is tested first, before a receiver is popped, because the receiver on an
-    /// interrupt's rendezvous is the driver, and handing it a sender's words is the forgery.
-    ///
-    /// **Safe since milestone 139's round 10**: `me` is the sender's [`Unqueued`] token, so the
-    /// "valid and on no queue" the caller used to promise here is the token's to carry. (The
-    /// kernel's discipline behind the token: `me` is the running thread, its token sits on its own
-    /// TCB (`thread::Thread::own_token`) until this call takes it, and a thread queued here is
-    /// `Blocked`, which the reaper never touches.)
+    /// joins the sender queue and the caller blocks it. On a rendezvous that carries an interrupt,
+    /// [`Send::Refused`] with nothing touched.
     pub fn send(&mut self, me: Unqueued<T>) -> Send<T> {
+        // Before a receiver is popped: the receiver here is the driver, and handing it a sender's
+        // words is the forgery the refusal exists to stop.
         if self.bound_to_interrupt {
             Send::Refused(me)
         } else if let Some(receiver) = self.receivers.pop_front() {
@@ -313,7 +261,7 @@ impl<T: Node> Rendezvous<T> {
 
     /// A receiver `me` arrives. Drain a pending signal first (never lose one behind a later
     /// sender), then collect a queued sender, otherwise `me` joins the receiver queue (and the
-    /// caller should block it). Safe, for [`send`](Self::send)'s reason.
+    /// caller should block it).
     pub fn receive(&mut self, me: Unqueued<T>) -> Receive<T> {
         if self.pending > 0 {
             self.pending -= 1;
@@ -328,7 +276,7 @@ impl<T: Node> Rendezvous<T> {
 
     /// An async signal arrives. Wake a waiting receiver (returned, already dequeued), or count it
     /// for the next receive. **Not a rendezvous:** it never joins the sender queue and is never
-    /// lost. Safe: signalling queues nothing.
+    /// lost.
     ///
     /// # Examples
     ///

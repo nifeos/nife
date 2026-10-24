@@ -65,8 +65,9 @@ slot, because the shell is reading the result endpoint while the holder runs.
 
 ## The run-unvouched capability is a message
 
-The capability is granted without `GRANT`, so its holder cannot pass it on, and the kernel refuses
-to delegate a capability that lacks `GRANT`. What a holder can do with a `WRITE`-only endpoint is
+The capability is granted without `GRANT`, so its holder cannot pass it on (§219 (how the shell
+names an installed program to the spawner)'s recorded limitation 2), and the kernel refuses to
+delegate a capability that lacks `GRANT`. What a holder can do with a `WRITE`-only endpoint is
 send on it. The progenitor holds the only `READ` on that endpoint and takes one message from it, at
 a fixed point in a request that claimed it. A message there came from a holder, because nothing else
 can reach the endpoint. It is sent after every delegated capability, so the progenitor knows the

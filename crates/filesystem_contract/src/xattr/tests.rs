@@ -361,18 +361,12 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
 // host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
 // where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
 
-/// **A record wider than the contract is refused when a blob is rewritten, not carried
-/// forward.**
+/// **A record wider than the contract is refused when a blob is rewritten, not carried forward.**
 ///
-/// [`xattr::store::set`] and [`xattr::store::remove`] re-emit every record they did not touch,
-/// and those lengths come off the **blob** rather than from a caller the entry points
-/// bounds-checked. A record's value length is a `u16`, so a torn or forged blob reaches 65535
-/// where [`xattr::MAX_VALUE`] is 3072, and the only thing standing between that and a rewritten
-/// blob nobody can read back is `write_record`'s own limit.
-///
-/// Nothing exercised it before, because every other test here builds its blobs through `set`,
-/// whose `E2BIG` fires first. The mutation run found it as a `||` that could become `&&` with
-/// the whole suite still green.
+/// [`xattr::store::set`] and [`xattr::store::remove`] re-emit every untouched record with lengths
+/// read off the blob, not from a bounds-checked caller. A value length is a `u16`, so a torn or
+/// forged blob reaches 65535 where [`xattr::MAX_VALUE`] is 3072, and `write_record`'s own limit is
+/// all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
 #[test]
 fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
     use xattr::store::{self, RECORD_HEADER};

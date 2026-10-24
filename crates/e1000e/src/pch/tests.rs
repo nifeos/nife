@@ -1,6 +1,4 @@
-//! The module's host tests, moved out of `mod.rs` on 2026-10-12 (UTC) by lane
-//! maintainer/mutation-triage-2026w42, so the module root stays an index under §282 (when a file is
-//! split, the parent becomes an index) as its tests grow.
+//! The module's host tests.
 
 use super::*;
 

@@ -1,10 +1,6 @@
 //! **The root pointer and the root table**: the RSDP, found by scanning for a string, and the
 //! RSDT or XSDT it points at, whose entries are every other table's physical address.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
@@ -115,24 +111,10 @@ pub fn root_entry(body: &[u8], index: usize, entries_are_64_bit: bool) -> Option
     })
 }
 
-/// Machine-checked proofs over the ACPI tables (DECISIONS §14, milestone 319).
-///
-/// These tables are the x86 boot path's untrusted input, and on 2026-09-17 they stopped being
-/// hypothetical: xenon, a Dell workstation, booted nife and this code parsed a real MADT, MCFG
-/// and DMAR written by firmware that had never heard of it (`bench/xenon-2026-09-17/`). Until then
-/// every table this parser had seen was one QEMU wrote for it.
-///
-/// **Two of the ACPI harnesses were false when they were written**, which is the answer to why a
-/// crate with 41 hand-written tests wanted a prover: both defects are in arithmetic over a field a
-/// test would have had to think to write down, and neither is reachable from any table QEMU emits.
-/// `dmar`'s `the_dmar_fixed_part_decodes_without_arithmetic_overflow` and `mcfg`'s
-/// `an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus` have the details.
-///
-/// **What is deliberately not here**: the whole-table walk from the RSDP down through the XSDT,
-/// which needs a symbolic pointer into memory this crate never holds, and is the same wall
-/// `crates/device_tree_blob` records for the structure-block token loop. The leaves and the two
-/// self-describing entry walks are what bounded model checking can reach, so they are what is
-/// proved.
+/// Machine-checked proofs over the ACPI tables, the x86 boot path's untrusted input (milestone
+/// 319). The leaves and the two self-describing entry walks are what bounded model checking can
+/// reach; the whole-table walk from the RSDP needs a symbolic pointer into memory this crate never
+/// holds. Milestone 319 records the two defects these harnesses found.
 ///
 /// Names: provisional (milestone 319 (the crate that parses firmware had no proofs)). An architect
 /// names things.
@@ -144,18 +126,10 @@ mod verification {
     /// harness here is linear in this, so it is the whole cost knob.
     const N: usize = 36;
 
-    /// **An RSDP is accepted only when its bytes sum to zero**, for every 36-byte input rather than
-    /// for the handful of corruptions a test can write down.
-    ///
-    /// This is the crate's one genuinely security-shaped claim, and `acpi`'s header says why: the
-    /// RSDP is found by **scanning memory for an eight-byte string**, so the checksum is the only
-    /// thing between a coincidence and a physical address the kernel will follow. The hand-written
-    /// tests flip one byte in the short range and one in the extended range; this quantifies over
-    /// every byte pattern, including the ones where a second error cancels the first.
-    ///
-    /// Could plausibly have been false: checking the checksum over `bytes.len()` rather than over
-    /// `RSDP_V1_LEN`, or after the revision branch instead of before it, both pass every test in
-    /// this file and both let a 20-byte structure through unchecked.
+    /// **An RSDP is accepted only when its bytes sum to zero**, for every 36-byte input. The RSDP
+    /// is found by scanning memory for a string, so the checksum is all that stands between a
+    /// coincidence and an address the kernel follows. Checking over `bytes.len()` rather than
+    /// `RSDP_V1_LEN`, or after the revision branch, passes every test and lets 20 bytes through.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.root.verification.an_rsdp_is_accepted_only_when_its_bytes_sum_to_zero.patch`
     #[kani::proof]
     fn an_rsdp_is_accepted_only_when_its_bytes_sum_to_zero() {
@@ -174,19 +148,10 @@ mod verification {
         }
     }
 
-    /// **The root table's entry count and its entry reader agree, exactly.**
-    ///
-    /// These are two functions doing the same arithmetic in two directions:
-    /// [`root_entry_count`] divides the body length by the pointer width to say how many entries
-    /// there are, and [`root_entry`] multiplies an index by that width to reach one. The kernel
-    /// trusts the first to bound a loop over the second, so a disagreement at the last entry is
-    /// either a table silently half-walked or a `None` the caller reads as the end of the list.
-    /// This proves the boundary is in the same place in both, for every length and index, at both
-    /// pointer widths.
-    ///
-    /// Could plausibly have been false: `root_entry_count`'s `saturating_sub` and `root_entry`'s
-    /// `checked_add` were written for different reasons at different times, and the `+ 1` that
-    /// makes an inclusive count out of an exclusive bound has to be absent from exactly one of them.
+    /// **The root table's entry count and its entry reader agree, exactly**, for every length and
+    /// index at both pointer widths. The kernel bounds a loop over [`root_entry`] by
+    /// [`root_entry_count`], so a disagreement at the last entry half-walks a table or ends it
+    /// early. The `+ 1` that makes an inclusive count must be absent from exactly one of them.
     /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.root.verification.the_root_tables_entry_count_and_its_entry_reader_agree.patch`
     #[kani::proof]
     fn the_root_tables_entry_count_and_its_entry_reader_agree() {

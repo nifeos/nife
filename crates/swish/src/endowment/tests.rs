@@ -170,8 +170,7 @@ fn a_clock_is_one_row_and_it_says_the_shell_cannot_pass_it_on() {
     let lower = shown(|o| write_holdings(128, Holdings::default(), Some(4), None, o));
     assert!(lower.contains("cap 4  frame     clock"), "{lower}");
 
-    // And a shell granted none says what is missing and what it costs, rather than leaving a
-    // reader to wonder why `time` refuses.
+    // And a shell granted none says what is missing.
     let without = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
     assert!(without.contains("was\n     granted none"), "{without}");
     assert!(without.contains("nothing to measure with"), "{without}");

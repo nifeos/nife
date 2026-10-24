@@ -10,7 +10,7 @@ use crate::*;
 
 #[test]
 fn a_bare_program_name_spawns_it() {
-    // What `run least_authority_demo 9` used to say. The name is the command; the manifest places the 9.
+    // The name is the command; the manifest places the 9.
     let Command::Run(r) = parse(b"least_authority_demo 9") else {
         panic!("not an invocation")
     };
@@ -46,8 +46,7 @@ fn least_authority_demo_needs_an_integer_argument() {
 
 #[test]
 fn least_authority_demo_refuses_a_memory_grant_whichever_side_the_flag_is_typed() {
-    // `--mem` survives the grammar change as an ordinary flag, and with the verb gone it reads
-    // where a Unix user would type it: after the command name. Both spellings are the same
+    // `--mem` is an ordinary flag after the command name, and both placements are the same
     // grant, so both must reach the same refusal.
     for line in [
         &b"least_authority_demo 3 --mem 8"[..],
@@ -143,8 +142,8 @@ fn unknown_program_is_refused_by_name() {
         panic!()
     };
     assert_eq!(plan(&r, Holdings::default()), Err(Refusal::NoSuchProgram));
-    // A mistyped builtin lands here too, now that the first word is either a builtin or a
-    // program, so the line has to point at both halves of what the prompt understands.
+    // A mistyped builtin lands here too, since the first word is a builtin or a program, so the
+    // line points at both halves of what the prompt understands.
     let Command::Run(r) = parse(b"hlep") else {
         panic!()
     };
@@ -155,10 +154,8 @@ fn unknown_program_is_refused_by_name() {
 
 #[test]
 fn a_bare_unplaceable_token_is_still_refused() {
-    // **The safety property the `file:` prefix was credited with, proven without it.** The old
-    // note argued the prefix stopped a stray word from becoming a capability transfer. It did
-    // not: the manifest did. `least_authority_demo 5 extra` has no slot for `extra` because least_authority_demo declares
-    // `FileGrantDeclaration::Forbidden`, so nothing is granted and the prompt says why.
+    // A stray word does not become a capability transfer: `least_authority_demo 5 extra` has no
+    // slot for `extra` because its manifest declares `FileGrantDeclaration::Forbidden`.
     let Command::Run(r) = parse(b"least_authority_demo 5 extra") else {
         panic!()
     };
@@ -194,10 +191,8 @@ fn the_manifest_refuses_a_file_to_a_program_that_declares_none() {
 
 #[test]
 fn an_unknown_flag_never_reaches_the_file_position() {
-    // The one thing a designator prefix genuinely bought: a token that is *shaped* like a flag
-    // must not fall through into a grant. A shell that read `--secret` as a file name would
-    // turn a typo into a capability transfer, which is the failure the prefix was defending
-    // against, so the defence stays where it actually applies.
+    // A token shaped like a flag must not fall through into a grant: reading `--secret` as a file
+    // name would turn a typo into a capability transfer.
     let Command::Run(r) = parse(b"wc --secret report.txt") else {
         panic!()
     };
@@ -347,10 +342,8 @@ const TAKES_ARG_AND_READS: Manifest = Manifest {
 
 #[test]
 fn a_bare_name_is_the_grant_and_the_manifest_is_the_direction() {
-    // The headline: naming a file IS the grant, and the direction comes from the manifest, not
-    // from anything typed. `wc report.txt` reads; the identical line against a writing program
-    // writes. That opposite-authority-same-syntax pair is exactly why `file:` came out: it
-    // decorated the half that was already visible.
+    // Naming a file is the grant, and the direction comes from the manifest, not from anything
+    // typed: the same line reads against a reading program and writes against a writing one.
     let Command::Run(r) = parse(b"wc report.txt") else {
         panic!()
     };
@@ -403,9 +396,8 @@ fn a_file_whose_name_is_all_digits_is_still_a_file() {
 
 #[test]
 fn positionals_fill_the_manifest_slots_in_the_order_typed() {
-    // The integer first, then the name, for a program that declares both. This is the shape
-    // milestone 47 deferred rather than designed, so pin the behaviour it does have: the order
-    // is the order, and swapping the tokens is a refusal rather than a surprise grant.
+    // The integer first, then the name, for a program that declares both: the order is the order,
+    // and swapping the tokens is a refusal rather than a surprise grant.
     let Command::Run(r) = parse(b"stamp 7 report.txt") else {
         panic!()
     };
@@ -434,19 +426,12 @@ fn positionals_fill_the_manifest_slots_in_the_order_typed() {
     );
 }
 
-/// **An argument and an input stream compose today, with no widening owed.** Milestone
-/// 117's fifth stranger left `notes/adding-a-program.md`'s `BUGS` section unsure whether this
-/// combination "needs `ProgramArgumentDeclaration`'s widening" the way `FileGrantDeclaration` + `InputDeclaration` genuinely does
-/// (see the comment above the input operand in [`plan_against_with`]): two bare names cannot
-/// both self-classify, but an integer argument and a bare-name input feed can, because `arg`
-/// is numeric-shaped and consumes a fixed earlier position before `input`'s fallback ever
-/// looks at what remains. This test is the check: the line composes exactly the way
-/// [`positionals_fill_the_manifest_slots_in_the_order_typed`] shows `arg` and `file` composing,
-/// and the one thing actually missing is that no shipped program declares the combination, so
-/// `crates/swish`'s preview sweep never exercises it (see that crate's
-/// `the_arg_line_follows_the_manifest_for_every_program`, which hard-codes a single-operand
-/// line and only fails on this shape because it forgets the input operand, not because the
-/// combination is refused).
+/// **An argument and an input stream compose by fixed order, with no widening owed.** The integer
+/// argument takes position 0 before the input operand's fallback looks at what remains, as
+/// [`positionals_fill_the_manifest_slots_in_the_order_typed`] shows `arg` and `file` composing.
+/// No shipped program declares the combination, so `crates/swish`'s
+/// `the_arg_line_follows_the_manifest_for_every_program` never types it. See
+/// notes/grant-expression/grant-plan-crate.md ("Planning").
 #[test]
 fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
     let Command::Run(r) = parse(b"nth 21 report.txt") else {
@@ -627,9 +612,8 @@ fn a_name_is_resolved_against_the_shells_position_at_grant_time() {
 
 #[test]
 fn the_no_such_capability_refusal_is_about_what_the_shell_holds() {
-    // Phase 1 hardcoded this refusal, which was true then and would have quietly become a lie.
-    // The same command line must read as "you hold nothing that could grant this" in a shell
-    // that was granted no directory, and as a real grant in one that was.
+    // The same command line reads as "you hold nothing that could grant this" in a shell granted
+    // no directory, and as a real grant in one that was.
     let Command::Run(r) = parse(b"wc report.txt") else {
         panic!()
     };
@@ -662,10 +646,8 @@ fn the_no_such_capability_refusal_is_about_what_the_shell_holds() {
             .message()
             .contains("no such capability")
     );
-    // And it is reached only through a manifest that declares a file. Nothing in the static
-    // table declares one, so the same *line* is refused for its name before a file is ever
-    // considered. (`wc` used to be the name this line typed, and milestone 50 shipped a `wc`,
-    // which is why it is spelled with a name nothing will ever claim.)
+    // It is reached only through a manifest that declares a file. Nothing in the static table
+    // declares one, so the same line is refused for its name, which nothing will ever claim.
     let Command::Run(named) = parse(b"nosuchprog report.txt") else {
         panic!()
     };

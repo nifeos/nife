@@ -31,14 +31,11 @@ unsafe fn mint(n: &mut N) -> Unqueued<N> {
     unsafe { Unqueued::new(NonNull::from(n)) }
 }
 
-/// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one
-/// waiter), and a symbolic pending count. Safe now: the waiters arrive as tokens, so "valid,
-/// distinct and unqueued" is what they are rather than what this function asks for. A token
-/// that is not queued is dropped, which strands its node and nothing else.
+/// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one waiter), a
+/// symbolic pending count and a symbolic interrupt binding. A token that is not queued is dropped,
+/// which strands its node and nothing else.
 fn seed(e: &mut Rendezvous<N>, sender: Unqueued<N>, receiver: Unqueued<N>) {
     e.pending = kani::any();
-    // Symbolic too, so every harness covers a rendezvous that carries an interrupt as well as
-    // one that does not, including one bound after a sender had already queued.
     e.bound_to_interrupt = kani::any();
     match kani::any::<u8>() {
         0 => e.senders.push_back(sender),
@@ -93,15 +90,8 @@ fn signal_preserves_the_invariant() {
 }
 
 /// **A send rendezvouses exactly when a receiver was waiting**, and with exactly *that*
-/// receiver, else blocks. So a message is never dropped, a sender never blocks past a ready
-/// receiver, and the rendezvous partner is the queued thread and no other.
-///
-/// Unless the rendezvous carries an interrupt (DECISIONS §101 (notification objects), ruling
-/// B, 2026-09-26): then the send is refused and changes nothing. Folded into this harness rather
-/// than given its own, because it is the same decision's other branch. Removing the refusal
-/// from `send` turns this red at both `!bound` assertions, checked 2026-09-26 by
-/// milestone 603 (an interrupt's endpoint refuses every send); the replayable record below is
-/// the older defect, since the convention holds one patch per harness.
+/// receiver, else blocks. On a rendezvous bound to an interrupt (§101 (notification objects)), the
+/// send is refused and changes nothing; removing the refusal turns both `!bound` assertions red.
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.send_rendezvous_iff_a_receiver_waited.patch`
 #[kani::proof]
 fn send_rendezvous_iff_a_receiver_waited() {
@@ -138,17 +128,9 @@ fn send_rendezvous_iff_a_receiver_waited() {
 }
 
 /// **A caller's token comes back exactly when its node did not join a queue, and it is the
-/// caller's own.** The obligation milestone 139's round 10 created: the kernel files the token
-/// a `send` or `receive` hands back onto the calling thread's TCB (`sched::hold_token`), so a
-/// verdict that returned the *partner's* token in the caller's place would leave the running
-/// thread holding a token for a thread that is about to be queued by its waker, which is two
-/// tokens for one node and the
-/// double-queue this type exists to make impossible. And a verdict that queued the caller and
-/// also returned its token would be the same defect from the other side.
-///
-/// So for both operations, over every seeded state: the verdict that holds no token for the
-/// caller is exactly the one that grew the caller's queue, and every other verdict hands back a
-/// token naming the caller and leaves the caller's queue as it was.
+/// caller's own.** For both operations over every seeded state, the verdict that holds no token
+/// for the caller is the one that grew the caller's queue, and every other verdict hands back the
+/// caller's token. The kernel files that token on the running thread's TCB (`sched::hold_token`).
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.a_token_comes_back_exactly_when_its_node_did_not_queue.patch`
 #[kani::proof]
 fn a_token_comes_back_exactly_when_its_node_did_not_queue() {
@@ -181,34 +163,12 @@ fn a_token_comes_back_exactly_when_its_node_did_not_queue() {
 }
 
 /// **Taking a waiter back off a queue preserves the one-queue invariant**, for either queue and
-/// whether or not the victim was ever there.
+/// whether or not the victim was there, and a hit returns the victim's token.
 ///
-/// Milestone 133 needed [`remove_receiver`](Rendezvous::remove_receiver) and asks both removes
-/// on every victim, because the kernel's recorded wait role and the queue that actually holds
-/// the thread genuinely disagree for a `CALL` caller that met no server. So the interesting
-/// case is not the hit, it is the **miss**: a drain-and-repush over a queue the victim is not
-/// on rebuilds that queue from nothing and must put it back exactly as it was. A version that
-/// dropped the survivors, or left both queues non-empty, would break the invariant every other
-/// proof in this module rests on.
-///
-/// **This one needs a loop bound, and the two facts behind that are worth the paragraph**,
-/// because every other harness in this module is unbounded and finishes in a tenth of a
-/// second. The first shape of it ran both removes twice each and CBMC was still working after
-/// **seventeen minutes**; with `unwind(3)` and a single symbolic remove it takes 0.2 seconds.
-///
-/// The bound is sound rather than a shortcut: Kani checks the unwinding assertion, so a loop
-/// that needed a fourth iteration would **fail** this proof rather than pass it quietly, and
-/// `seed` queues at most one waiter, so two is the most a drain-and-repush can take. What the
-/// bound costs is exactly what `seed` already costs everywhere in this module: the proof is
-/// over a rendezvous holding at most one waiter, and a queue of many is argued rather than
-/// proved.
-///
-/// **One remove per run, chosen symbolically, rather than the four the kernel makes**, and
-/// nothing is lost by that: the removes share no state between calls, each reading one queue
-/// and writing it back, so proving one over an arbitrary seeded rendezvous covers a sequence.
-///
-/// Since milestone 139's round 10 a hit returns the victim's token, so the harness also checks
-/// that a returned token names the victim: the kernel frees or requeues the node it names.
+/// The miss matters most: the kernel asks both removes on every victim, and a drain over a queue
+/// the victim is not on must rebuild it exactly. `unwind(3)` is sound because `seed` queues at
+/// most one waiter and Kani checks the unwinding assertion. See
+/// `notes/inter-process-communication.md` ("The rendezvous harnesses").
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.removing_a_waiter_preserves_the_invariant.patch`
 #[kani::proof]
 #[kani::unwind(3)]
@@ -258,17 +218,11 @@ fn receive_drains_a_pending_signal_first() {
     }
 }
 
-/// **A collected sender is forgotten by the rendezvous.** The rendezvous half of the one-shot
-/// Reply guarantee (DECISIONS §12): a `CALL`er queues as a sender and blocks; when a server's
-/// receive collects it, the pop is destructive, so afterwards the rendezvous holds no name for
-/// the caller in either queue and no later receive can produce it again. From that moment the
-/// kernel-minted Reply capability is the *only* name for the blocked caller anywhere, and the
-/// capability side (consume-on-use, proved in `crates/capability`) makes that name single-use.
-///
-/// One waiter covers the general case here as everywhere in this module, plus one fact the
-/// queue cannot see: a blocked thread cannot run, so it cannot enqueue itself a second time.
-/// Stated through emptiness (the decision core's own vocabulary; a membership scan would hand
-/// the solver an unbounded loop for no added meaning).
+/// **A collected sender is forgotten by the rendezvous**: the rendezvous half of the one-shot
+/// Reply of §12 (Call/Reply IPC). After a receive collects a sender, neither queue names it and no
+/// later receive can produce it again, so the Reply capability is the only name for the caller.
+/// One waiter covers the general case, because the decision depends only on whether a queue is
+/// empty. Separately, a blocked thread cannot run, so it cannot queue itself a second time.
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.a_collected_sender_is_forgotten.patch`
 #[kani::proof]
 fn a_collected_sender_is_forgotten() {
