@@ -112,11 +112,12 @@ impl NameCopy {
 
 /// Reject anything that is not a single path component, with `EINVAL`.
 ///
-/// Our contract's rule, enforced here rather than in the vendored engine, whose `check_name`
-/// passes `/`, `.` and `..` (notes/fs-server.md). It also refuses `\`, `:` and the attribute
-/// store's directory name, in every directory, so attributes are never reachable as ordinary bytes
-/// (DECISIONS §34's amendment); [`Server::read_dir`] does not list it either. `EINVAL` because such
-/// a name is not expressible here. See notes/fs-server/the-core.md.
+/// Our contract's rule, enforced here rather than in the vendored engine, whose `check_name` passes
+/// `/`, `.` and `..` (notes/fs-server.md). It also refuses `\`, `:` and the attribute store's
+/// directory name, in every directory, so attributes are never reachable as ordinary bytes
+/// (DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions)'s amendment);
+/// [`Server::read_dir`] does not list it either. `EINVAL` because such a name is not expressible
+/// here. See notes/fs-server/the-core.md.
 pub(crate) fn check_component(name: &str) -> Result<()> {
     // What a name is anywhere is `subtree_scope`'s (ruling D); what RedoxFS adds is this server's.
     if !subtree_scope::is_name(name.as_bytes())

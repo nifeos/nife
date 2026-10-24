@@ -27,10 +27,10 @@ handle's rights.
 
 The table is per server, not per client. Two clients sharing an endpoint share these handles, and a
 rights-carrying handle attenuates only its holder. The handle is the authority and the endpoint is
-the boundary. For the same reason `READDIR` keeps no snapshot per client, so a name added or
-removed between two pages of one walk can be seen twice or missed. Confining a program to a subtree is therefore a caretaker process holding the wider
-endpoint (`components/src/fs_subtree_caretaker.rs`), or a badge bound by ruling D
-([notes/walk-cost.md](../walk-cost.md)).
+the boundary. For the same reason `READDIR` keeps no snapshot per client, so a name added or removed
+between two pages of one walk can be seen twice or missed. Confining a program to a subtree is
+therefore a caretaker process holding the wider endpoint (`components/src/fs_subtree_caretaker.rs`),
+or a badge bound by ruling D ([notes/walk-cost.md](../walk-cost.md)).
 
 ### Closing
 
@@ -55,7 +55,8 @@ Each verb's refusal says which kind of fact it is:
   write through a read-only one is `EROFS`, `fs_file_caretaker`'s answer and a fact about the
   capability.
 - A missing `ENUMERATE` is `EPERM` rather than an empty listing. An empty listing would be a false
-  statement about the directory, and DECISIONS §42 says a verb not offered fails loudly.
+  statement about the directory, and DECISIONS §42 (a filesystem declares what it offers and must be
+  truthful) says a verb not offered fails loudly.
 - Every right is checked before the name is resolved, so a capability that may not act cannot use
   the verb to find out whether a name exists.
 
@@ -164,10 +165,10 @@ freed id and nothing else learns that a node died.
 
 The server has no real-time clock. `clock` is a logical counter that every mutating verb advances
 and stamps. `SETMTIME`'s "now" is that counter, so two touches in sequence observe increasing times,
-which is what a staleness check depends on. It need not agree with a wall clock. `SETMTIME` needs only
-`WRITE`, because the value is one the server observed. `SETMTIME_AT` needs `SETTIME` as well,
-because the value is the caller's assertion about history (§112). It takes any value: an implausible
-history is the same authority as a surprising one.
+which is what a staleness check depends on. It need not agree with a wall clock. `SETMTIME` needs
+only `WRITE`, because the value is one the server observed. `SETMTIME_AT` needs `SETTIME` as well,
+because the value is the caller's assertion about history (§112 (`touch`'s two behaviors need two
+rights)). It takes any value: an implausible history is the same authority as a surprising one.
 
 A read passes atime 0, so it never advances the node's access time and never copies the node on
 write.
@@ -184,7 +185,8 @@ mutation runs in one transaction, so an attribute and its file reach the platter
 - A blob longer than `xattr::store::MAX_BYTES` is `EIO`, never a partial read of a file the layer did
   not write.
 - A write is followed by a truncate to the new length. A write does not truncate, and a shorter blob
-  would otherwise leave the old tail for the reader to walk (DECISIONS §27's failure).
+  would otherwise leave the old tail for the reader to walk (the failure DECISIONS §27 (the
+  filesystem service: a capability-shaped contract) records).
 - An empty blob removes the file, so "no file" and "no attributes" stay one statement.
 - The store directory goes with its last blob. `remove_node` with `MODE_DIR` already refuses a
   non-empty directory, so the engine's check is the emptiness test and costs one lookup.

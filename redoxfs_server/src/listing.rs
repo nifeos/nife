@@ -12,7 +12,8 @@ use super::*;
 /// - Every child costs a node read, because a RedoxFS directory entry does not store the child's
 ///   type and the record carries [`filesystem_contract::dirent::IS_DIR`]. Milestone 121 (`ripgrep`
 ///   on nife: enumeration as a capability) measured 43 to 85 us per entry under HVF on 2026-09-26;
-///   since milestone 606 the [`Memo`] pays it once per directory until something changes.
+///   since milestone 606 (a directory walk costs what it does on Linux) the [`Memo`] pays it once
+///   per directory until something changes.
 pub(crate) fn list<D: Disk>(
     tx: &mut Transaction<D>,
     dir: TreePtr<Node>,

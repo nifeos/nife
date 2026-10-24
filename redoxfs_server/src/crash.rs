@@ -12,8 +12,8 @@
 //! A workload runs once against [`Recording`], whose ordered write log is exactly what the device
 //! saw. Each crash is then the pristine image plus a prefix or a mutilation of that log
 //! ([`Damage`]). For a device with no reordering that is the crash, not an approximation, and every
-//! fault point starts from a byte-identical image (DECISIONS §27 records what a harness that leaves
-//! state behind between runs costs).
+//! fault point starts from a byte-identical image: DECISIONS §27 (the filesystem service: a
+//! capability-shaped contract) records what a harness that leaves state behind between runs costs.
 
 //! # The negative control lives here too
 //!

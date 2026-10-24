@@ -48,8 +48,9 @@ impl<D: Disk> Server<D> {
     ///
     /// `FileSystem::open` scans all 256 header-ring slots and keeps the newest whose seahash checks
     /// out, whatever `cleanup` is: that scan is the crash recovery. `cleanup: true` only releases
-    /// the nodes nothing points at and commits, so a mount does not leak. `tests/crash_consistency.rs`
-    /// measures the recovery; see [`crate::crash`], DECISIONS §34 and
+    /// the nodes nothing points at and commits, so a mount does not leak.
+    /// `tests/crash_consistency.rs` measures the recovery; see [`crate::crash`], DECISIONS §34
+    /// (RedoxFS is the primary filesystem, on three conditions) and
     /// notes/fs-server/crash-consistency.md. The server never uses the creation APIs, which are
     /// std-gated and stay host-side.
     pub fn open(disk: D) -> Result<Self> {
@@ -79,7 +80,7 @@ impl<D: Disk> Server<D> {
     /// [`dir::EISDIR`] for a directory ([`Server::open_dir`] is that verb), and `ENOENT` if there is
     /// no such entry or the directory carries neither [`dir::READ`] nor [`dir::WRITE`]: a holder
     /// that may not reach a name must not learn it is there. The file handle inherits the
-    /// directory's read and write bits and cannot widen them (milestone 47).
+    /// directory's read and write bits and cannot widen them (milestone 47 (navigation and naming)).
     pub fn open_file_at(&mut self, handle: u32, name: &NameCopy) -> Result<u32> {
         self.open_file_path(handle, name, 0)
     }
@@ -116,9 +117,10 @@ impl<D: Disk> Server<D> {
     ///
     /// The child's rights are `parent & requested`, and [`Rights::attenuate`] is the only way this
     /// crate makes a non-root rights set, so no descendant carries a right its parent lacked.
-    /// `EPERM` if the grant would be smaller than the request (DECISIONS §42: no silent
-    /// degradation). Needs [`dir::DESCEND`] on the parent, whose absence answers `ENOENT`, so a
-    /// holder that may not walk in cannot map what is there.
+    /// `EPERM` if the grant would be smaller than the request (DECISIONS §42 (a filesystem declares
+    /// what it offers and must be truthful): no silent degradation). Needs [`dir::DESCEND`] on the
+    /// parent, whose absence answers `ENOENT`, so a holder that may not walk in cannot map what is
+    /// there.
     pub fn open_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
         // A relative path (milestone 606, ruling A): every directory before the last is a descent
         // asking for `DESCEND | requested`, the shape the hop-by-hop walk sends.
@@ -249,7 +251,8 @@ impl<D: Disk> Server<D> {
     ///
     /// `EEXIST` if `name` exists, and nothing is created: create is create, not create-or-open,
     /// because silently opening an existing file makes a partly-working write look like a working
-    /// one (§27). `check_component` rejects a path rather than walking one.
+    /// one (§27 (the filesystem service: a capability-shaped contract)). `check_component` rejects
+    /// a path rather than walking one.
     pub fn create_file(&mut self, name: &NameCopy) -> Result<u32> {
         self.create_file_at(filesystem_contract::fs::ROOT as u32, name)
     }
@@ -395,8 +398,8 @@ impl<D: Disk> Server<D> {
     /// # BUGS
     ///
     /// - Directory handles are not registered open, so a handle to the removed directory names
-    ///   whichever directory next takes its id, with its rights: a reach outside the grant
-    ///   (milestone 633, read not run). See notes/fs-server/the-core.md.
+    ///   whichever directory next takes its id, with its rights, outside the grant (milestone 633
+    ///   (an outside agent attacks the confinement claim), read not run; notes/fs-server/the-core.md).
     pub fn rmdir(&mut self, handle: u32, name: &NameCopy) -> Result<()> {
         let name = name.component()?;
         let (parent, rights) = self.dir_at(handle)?;

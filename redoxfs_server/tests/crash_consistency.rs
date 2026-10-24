@@ -1,7 +1,7 @@
 //! **Is RedoxFS actually crash consistent?** (milestone 37, DECISIONS §34 condition 1)
 //!
-//! §34 made RedoxFS the primary filesystem on three conditions, and the first was that crash
-//! consistency stop being a claim taken from the upstream design description. See
+//! §34 (RedoxFS is the primary filesystem, on three conditions) set three conditions, and the first
+//! was that crash consistency stop being a claim taken from the upstream design description. See
 //! notes/fs-server/crash-consistency.md.
 
 //! # The property, stated so it can fail
@@ -17,7 +17,8 @@
 //!
 //! Every fault point starts from a byte-identical clone of one in-memory image, built in this
 //! process by `FileSystem::create` and never written to, so nothing carries between iterations or
-//! runs (DECISIONS §27 records the day a fixture one run mutated and another asserted on cost).
+//! runs (DECISIONS §27 (the filesystem service: a capability-shaped contract) records the day a
+//! fixture one run mutated and another asserted on cost).
 
 //! # The controls
 //!
@@ -182,14 +183,14 @@ struct Recorded {
 
 /// Build the fixture and run the workload once, recording every block write. Each step attacks a
 /// shape a crash is likely to catch out, in a real client's order:
-///
 /// 1. an overwrite of an existing file;
 /// 2. a shorter overwrite, leaving the old tail (DECISIONS §27), so a torn recovery is visible;
 /// 3. the `TRUNCATE` that removes it, a change to the file's shape rather than its bytes;
 /// 4. a `CREATE`, which extends a directory;
 /// 5. a 160 KiB write, over RedoxFS's 128 KiB record, so one operation is forty block writes;
 /// 6. a 60 KiB shrink of it, which frees records; 7. an overwrite, so the biggest is not last;
-/// 8. a `RENAME`, changing two entries at once (§42): "neither" and "both" fail the sweep.
+/// 8. a `RENAME`, changing two entries at once (§42 (a filesystem declares what it offers and must
+///    be truthful)): "neither" and "both" fail the sweep.
 fn record_workload() -> Recorded {
     // The fixture, built the way the running system's is: the host tool creates the filesystem and
     // puts the files in, and the server only ever opens it.
@@ -252,11 +253,12 @@ fn record_workload() -> Recorded {
         .expect("operation 8");
     mark(&mut srv, &mut states, 8);
 
-    // Operations 9 to 12 are the attribute ones (milestone 57), interleaved with a write to the
-    // same file: an attribute and its file live in different files on the platter, and a recovery
-    // holding one change without the other never existed and fails the sweep. 9 creates the store
-    // and the node's first blob (two creations in one commit), 11 grows the blob, and 12 shrinks
-    // it, the path that must truncate afterwards (DECISIONS §27, notes/xattr.md).
+    // Operations 9 to 12 are the attribute ones (milestone 57 (partitioning and formatting a real
+    // drive, and extended attributes)), interleaved with a write to the same file: an attribute and
+    // its file live in different files on the platter, and a recovery holding one change without
+    // the other never existed and fails the sweep. 9 creates the store and the node's first blob
+    // (two creations in one commit), 11 grows the blob, and 12 shrinks it, the path that must
+    // truncate afterwards (DECISIONS §27, notes/xattr.md).
     srv.set_xattr(
         h,
         b"user.DOSATTRIB",

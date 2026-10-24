@@ -36,9 +36,9 @@ const _: () = {
     // the ceiling the two `BlockTrait::empty` guards enforce, a separate constant.
     assert!(redoxfs::RECORD_LEVEL <= redoxfs::RECORD_LEVEL_MAX);
 
-    // The file channel is a whole number of blocks (milestone 138 step 3): a channel ending part
-    // way through a block would make the last chunk of every full-channel request partial, the
-    // repeat-write bug's shape.
+    // The file channel is a whole number of blocks (milestone 138 (close the read gap) step 3): a
+    // channel ending part way through a block would make the last chunk of every full-channel
+    // request partial, the repeat-write bug's shape.
     assert!(filesystem_contract::fs::TRANSFER_MAX.is_multiple_of(BLOCK));
     assert!(filesystem_contract::fs::TRANSFER_MAX >= BLOCK);
 };
@@ -99,7 +99,7 @@ impl<T: BlockIo> Disk for BlockDisk<T> {
 /// A direct-mapped, write-through cache of single-block reads (milestone 138 step 2). Each slot
 /// holds at most one `(block number, block bytes)` pair, chosen by `block % capacity`; a collision
 /// evicts, which is safe because a miss falls through to the disk. A slot's 4 KiB is allocated the
-/// first time something lands in it (milestone 606), so a server pays only for what it touched.
+/// first time something lands in it, so a server pays only for what it touched.
 /// Why not an LRU, and the heap sizes, are in notes/fs-server/caches-and-io.md.
 struct BlockCache {
     slots: Vec<Option<alloc::boxed::Box<Slot>>>,

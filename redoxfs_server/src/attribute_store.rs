@@ -93,7 +93,8 @@ pub(crate) fn write_attrs<D: Disk>(
     };
     tx.write_node(ptr, 0, blob, now, 0)?;
     // Then shrink to exactly the new length: a write does not truncate, and a shorter blob would
-    // leave the old tail for the reader to walk (DECISIONS §27).
+    // leave the old tail for the reader to walk (DECISIONS §27 (the filesystem service: a
+    // capability-shaped contract)'s failure).
     tx.truncate_node(ptr, blob.len() as u64, now, 0)?;
     Ok(())
 }

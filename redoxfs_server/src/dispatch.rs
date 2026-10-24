@@ -3,7 +3,8 @@
 //! The serve loop's dispatch, in the library so a host fuzz target
 //! (`fuzz/fuzz_targets/redoxfs_server_session.rs`) and host tests drive the code the running server
 //! runs. The binary keeps the IO, including the two edges [`ServeEdges`] reaches: the device flush
-//! behind [`filesystem_contract::fs::SYNC`] and milestone 37's count of `WRITE` requests.
+//! behind [`filesystem_contract::fs::SYNC`] and the `WRITE` count of milestone 37 (prove RedoxFS's
+//! crash consistency).
 //!
 //! Names: `handle`, `ServeEdges` and this module's are provisional, minted by the fuzz lane
 //! (`lane/fuzz-service-handlers`) on 2026-10-04 (UTC); an architect names things.
@@ -84,9 +85,10 @@ impl<D: Disk> Server<D> {
             Ok(h) => h,
             Err(e) => return (reply_err(e.errno), 0),
         };
-        // Two clamps (milestone 138 step 3): a reply length this server chooses stays inside the one
-        // page every client maps, and only `READ` and `WRITE`, whose length the client chooses, may
-        // use the whole channel. See `filesystem_contract::fs::TRANSFER_PAGES`.
+        // Two clamps (milestone 138 (close the read gap) step 3): a reply length this server
+        // chooses stays inside the one page every client maps, and only `READ` and `WRITE`, whose
+        // length the client chooses, may use the whole channel. See
+        // `filesystem_contract::fs::TRANSFER_PAGES`.
         let len = fs::req_len(w0).min(BLOCK);
         let bulk_len = fs::req_len(w0).min(fs::TRANSFER_MAX);
         let offset = w1;
@@ -158,8 +160,9 @@ impl<D: Disk> Server<D> {
                 Ok(name) => self.create_file_at(handle, &name).map(|h| h as i64),
                 Err(e) => Err(e),
             },
-            // The verbs that hand back authority (milestone 47), in OPEN's shape. The second word
-            // is the rights asked for the child, which the server intersects with the parent's.
+            // The verbs that hand back authority (milestone 47 (navigation and naming)), in OPEN's
+            // shape. The second word is the rights asked for the child, which the server intersects
+            // with the parent's.
             fs::OPENDIR | fs::MKDIR => match NameCopy::copy_in(&window[..len]) {
                 Ok(name) if code == fs::OPENDIR => {
                     self.open_dir(handle, &name, offset).map(|h| h as i64)
@@ -204,8 +207,9 @@ impl<D: Disk> Server<D> {
             ..
         } = *request;
         match code {
-            // Extended attributes (milestone 57): the handle is the node the attribute is on, not
-            // a parent, since an attribute has no name to resolve.
+            // Extended attributes (milestone 57 (partitioning and formatting a real drive, and
+            // extended attributes)): the handle is the node the attribute is on, not a parent,
+            // since an attribute has no name to resolve.
             fs::GETXATTR => self.get_xattr_request(handle, len, window),
             // Name then value on the page, the value's length and type code in the second word; an
             // overrun is `EINVAL`, because clipping a value stores something nobody wrote.
@@ -216,9 +220,10 @@ impl<D: Disk> Server<D> {
             fs::REMOVEXATTR => self.remove_xattr(handle, &window[..len]).map(|()| 0),
             // The new size rides in the second word: `len` is clamped to one page and would cap it.
             fs::TRUNCATE => self.truncate(handle, offset).map(|()| 0),
-            // Durability (milestone 55): the rights check is the core's, the flush is the edge's.
-            // The block server's reply (a flush count, or a negative errno) passes through
-            // unmapped, the one exception to mapping errors once (notes/fs-server/caches-and-io.md).
+            // Durability (milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)): the
+            // rights check is the core's, the flush is the edge's. The block server's reply (a
+            // flush count, or a negative errno) passes through unmapped, the one exception to
+            // mapping errors once (notes/fs-server/caches-and-io.md).
             fs::SYNC => self.sync_permitted(handle).map(|()| edges.sync()),
             // A record in the channel, `r0` its length: three u64s do not fit a reply word, and
             // encoding here keeps the core's verbs free of the wire's layout.
@@ -227,8 +232,9 @@ impl<D: Disk> Server<D> {
                     .map(|n| n as i64)
                     .ok_or(Error::new(EINVAL))
             }),
-            // The mtime verbs (milestone 47's `touch`; DECISIONS §112), in UNLINK's shape. The
-            // rights split lives in [`Server::mtime`] and its two siblings.
+            // The mtime verbs (milestone 47's `touch`; DECISIONS §112 (`touch`'s two behaviors need
+            // two rights)), in UNLINK's shape. The rights split lives in [`Server::mtime`] and its
+            // two siblings.
             fs::GETMTIME => match NameCopy::copy_in(&window[..len]) {
                 Ok(name) => self.mtime(handle, &name).map(|t| t as i64),
                 Err(e) => Err(e),
