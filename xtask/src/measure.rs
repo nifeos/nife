@@ -11,39 +11,16 @@ use std::path::PathBuf;
 
 use crate::host::workspace_root;
 
-/// The archive entries the kernel itself may enter as the boot program. Everything else in the
-/// archive is loaded by the progenitor, in userspace, so it is not part of the kernel's trust root.
+/// The archive entries the kernel itself may enter as the boot program, held in
+/// `sealed_pair::BOOT_PROGRAMS` so `uefi_loader/build.rs` and the card checker (milestone 223) read
+/// one copy. Everything else is loaded by the progenitor, outside the kernel's trust root.
 ///
-/// **`progenitor` is on every list** (milestone 266): one first process, one name, on all three
-/// boards. Before that the entry was called `init` and meant a different binary depending on the
-/// architecture, and this table was where that showed.
-///
-/// **The six ELF child builders are on every list too, and they are not boot programs in the
-/// ordinary sense.** They are milestone 19d (run a real workload)'s and 19e's userspace parents,
-/// and `spawn_elf_child_builder` enters each directly; `trust::require` refuses any entry the trust
-/// root does not name. A kernel that could enter a program it never measured would be the hole
-/// measured boot exists to close, so the entry is here rather than the check being relaxed there.
-///
-/// **It stopped being per-architecture at milestone 295, and took its `arch` parameter with it.**
-/// riscv64 and `x86_64` used to add `builder`, milestone 20 (a portable HAL)'s richer initial
-/// ramdisk demo, because the RISC-V boot tour entered it directly to prove that userspace composes
-/// the system; calef retired that program on 2026-09-14 once milestone 268 (every architecture
-/// boots the same way) made the default riscv64 boot hand over to the progenitor, which makes the
-/// same claim at a larger scale. So the kernel enters the same seven programs on every board, and
-/// a trust root that differed by architecture is one fewer thing for a reader to hold.
-///
-/// The parameter went rather than being kept for a future divergence, because an argument nothing
-/// reads is a claim that something varies when nothing does. `write_measure_manifest` still takes
-/// an `arch` and still writes one manifest per architecture; if a board's list ever needs to differ
-/// again, the parameter comes back at that point with a reason attached. The absent-name path below
-/// it is the one that was already written for lists that differ, and it is kept.
-///
-/// **The list itself moved to `sealed_pair::BOOT_PROGRAMS`**, for milestone 223 (read a card and say whether its kernel and archive match).
-/// It was written out here and
-/// again in `uefi_loader/build.rs`, and a third copy was about to be written in the card checker.
-/// A reader of a kernel image has to know which names its trust root can hold, so the list belongs
-/// where all three of them can reach it; this function stays because the manifest writer below is
-/// its one caller here and because this block is where the list's reasons are recorded.
+/// `progenitor` is on it (milestone 266): one first process, one name. So are the six ELF child
+/// builders, milestone 19d (run a real workload)'s and 19e's userspace parents:
+/// `spawn_elf_child_builder` enters each directly and `trust::require` refuses an entry the trust
+/// root does not name, since a kernel entering a program it never measured is the hole measured
+/// boot closes. The list is the same on every architecture (milestone 295);
+/// `write_measure_manifest` still writes a manifest per architecture.
 pub(crate) fn boot_programs() -> &'static [&'static str] {
     &sealed_pair::BOOT_PROGRAMS
 }
@@ -54,26 +31,16 @@ fn measure_manifest_path(arch: &str) -> PathBuf {
     workspace_root().join(format!("target/init-measure-{arch}.txt"))
 }
 
-/// **The table the progenitor measures its own loads against** (milestone 104), packed as an ordinary archive
-/// entry under [`measured_boot::PROGRAM_MEASUREMENTS`].
+/// **The table the progenitor measures its own loads against** (milestone 104), packed as an
+/// archive entry under [`measured_boot::PROGRAM_MEASUREMENTS`]. `files` is the archive's entries;
+/// returns the table's text.
 ///
-/// One line per program, in the same `name sha256:<hex>` format the kernel's manifest uses, because
-/// there is one format and one parser (`measured_boot::manifest_entries`). Every entry in the
-/// archive is measured except the table itself, which cannot contain its own digest; that includes
-/// the boot programs the kernel already measures, which costs nothing and means a reader does not
-/// have to know which side of the boundary a name falls on to find it here.
-///
-/// **Sorted**, so the table is a function of the archive's contents and not of the order the packer
-/// happened to list them in. An unsorted table would rewrite itself, and therefore relink the
-/// kernel, whenever somebody reordered the file list for readability.
-///
-/// **Why this is an archive entry rather than something compiled into the progenitor.** The kernel's own trust
-/// root is compiled into the kernel image, which works because the kernel is not in the archive it
-/// measures. The progenitor is. Generating a table of its siblings into its own binary would mean building
-/// userspace, measuring it, and building userspace again, with a "and nothing else changed in the
-/// second build" invariant holding up the whole chain. Packing the table beside the programs and
-/// letting the kernel's trust root name it buys the same guarantee with a one-pass build: the
-/// kernel vouches for the table exactly as it vouches for the progenitor.
+/// One `name sha256:<hex>` line, in the kernel manifest's format and parser
+/// (`measured_boot::manifest_entries`), for every entry, boot programs included, but the table
+/// itself, which cannot hold its own digest. Sorted, so reordering the file list does not rewrite
+/// the table and relink the kernel. An archive entry, not compiled into the progenitor, because the
+/// progenitor is in the archive it measures: the kernel's trust root names the table instead, which
+/// keeps the build one pass.
 pub(crate) fn measurement_table(files: &[(&str, &[u8])]) -> String {
     let mut lines: Vec<String> = files
         .iter()
@@ -124,9 +91,8 @@ pub(crate) fn write_measure_manifest(arch: &str, image: &[u8]) -> bool {
         let Some(bytes) = fs.read(name) else {
             // Not every archive has to carry every boot program. A name that is absent simply
             // gets no measurement, and the kernel refuses to enter a program it has no measurement
-            // for, so nothing is quietly waved through. No list differs today (milestone 295 took
-            // `builder` off riscv64's and `x86_64`'s, which was the one that did); this is kept
-            // because the lists are allowed to differ and a `None` here must not be a panic.
+            // for, so nothing is quietly waved through. No list differs today; the lists are
+            // allowed to, and a `None` here must not be a panic.
             continue;
         };
         let digest = measured_boot::sha256(bytes);
