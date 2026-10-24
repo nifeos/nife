@@ -82,3 +82,21 @@ enumerate, not a better tool for domains that are not. Two places it decided the
 Both directions of the cross-check are pinned as non-vacuous. 15,956 of the 2,657,200 pairs match,
 asserted, because an agreement test between two matchers that both said "no" to everything would
 pass.
+
+## What each harness's shape costs
+
+These are the measurements behind the shape of the harnesses in `crates/glob/src/lib.rs`, which
+link here.
+
+- Totality and the cost bound are separate harnesses. `cost_bound` is three saturating 64-bit
+  multiplies, and a bit-blasting model checker is bad at multiplication: `network_time_protocol`
+  measured about four times the work per bit of operand ([ntp.md](../ntp.md)). Composed with a
+  match loop unrolled twenty times over two symbolic lengths, one harness passed 3 GB and was
+  killed. Split out, the multiply sits next to a smaller unrolling.
+- The bracket expression scanned in two loops, one for the closing `]` and one for membership,
+  ran one harness for twelve minutes on 3.5 GB before it was killed.
+- The dot-rule harness runs the match loop twice, so its cost is double the others'. At a
+  three-byte name it took 279 seconds, more than the rest of the crate together. Two bytes state
+  the rule completely: empty, `.`, `.x`, `x` and `xy` are every case a first-byte predicate has.
+- The unwind-bound enumeration is about 1.8 million `match_steps` runs. Under Miri that is an hour
+  of interpreter for a property about a formula rather than memory, so it is skipped there.
