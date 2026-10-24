@@ -77,3 +77,37 @@ Between the 2026-10-06 scrape (320 `system_tests`, 129.0 s) and these runs (391 
 - About 22 s of the 56 s is unattributed. The named modules net to about +34 s: +20, +15 and +7 for the modules above, less the 8 s fall. The two login modules net to zero. The rest is spread across the other modules and visible in none.
 - Thirty runs span 24 hours. They share runner pool conditions that a different day may not. The `rva23s64` model's median is 9 s above its siblings, though its fastest run (183.6 s) matches them, so some of its runs are slow and the record does not say why.
 - The x86_64 suite varies most. Its suite phase ranged from 105 s to 139 s. The riscv64 suite ranged from 183 s to 205 s.
+
+## How the record is taken
+
+`xtask/src/time_record.rs` writes the record. The child's stdout passes through byte for byte as it
+arrives, and each whole line is stamped. Four phases are cut from the stamps. `build` runs from the
+spawn to the guest's first line, which is cargo building the image and QEMU starting. `boot` runs to
+the runner's `running` line, `suite` to `test result:`, and `exit` to the child's exit. A phase whose
+end marker never came is left out rather than guessed.
+
+The record is whole when every test announced on a `test <path> ... ` line has a time line, every
+time line names such a test, and their count is the `running` line's.
+
+The clock check compares the guest's sum of per-test times with the host's span for the same tests.
+On x86_64 the guest's clock is a TSC calibrated once at boot. Milestone 571 (the x86 boot
+calibrates the TSC once, and can be wrong by 4x) found it fragile, and nothing else in the tree
+would notice. The span holds every test body plus the overhead
+between tests: the name, the frame ledger's charge, and the reports after the last one. So the sum
+sits below the span and exceeds it only on a fast clock. Under TCG the guest's counter follows the
+host's clock and stops when the VM stops, so it cannot honestly run ahead. The upper slack covers
+the host's stamp landing a pipe read late. Half the span, the lower bound, is far below any measured
+share and far above a 4x error. Its three seconds of absolute slack keep a short image (137 kernel
+unit tests in about six seconds on riscv64) from failing on fixed costs. A repeated run is not
+judged, because the runner scans the frame bitmap twice between runs.
+
+The host watchdog ends a boot 60 s past the running test's guest budget. The guest's ceiling fires
+on the first tick past its budget, prints the test's name and a thread dump, and exits; 60 s leaves
+that exit room, with margin for a guest clock a little behind the host's. Boot and exit get the
+default budget plus the grace, 150 s, and the slowest of either in CI on 2026-10-11 was 1.8 s. The
+slowest honest test in about 27,000 per-test records was 20.5 s, measured over three merge-group CI
+runs on 2026-10-11 and eight lane runs on patagonia, a shared and busy host. That test was
+`package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest`
+on aarch64, and no test reached 30 s. CI's `test` job runs every leg in a median of about 17 minutes,
+against a 25-minute `timeout-minutes` and the budget of milestone 721 (each merge-group CI job has
+a 20-minute budget). A hang costs a run 2.5 minutes and fails with the test's name. The hang that motivated it is in [scheduler.md](scheduler.md).
