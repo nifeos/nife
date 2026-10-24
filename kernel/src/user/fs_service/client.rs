@@ -1,9 +1,7 @@
-//! **Spawning a client of the service**, and the two waits that order a client after the
+//! Spawning a client of the service, and the two waits that order a client after the
 //! servers and caretakers it depends on.
 //!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! See notes/fs-server/kernel-wiring.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -17,35 +15,18 @@ pub(super) const CLIENT_EXTRA_STACK: usize = 8;
 
 /// The pages a granted client's endpoints are retyped from: its caretaker's two, the program's
 /// report, and one spare. One page per endpoint, so a grant's whole wiring goes back with one
-/// region (milestone 608 (kernel tests give back their rendezvous points)).
+/// region.
 pub(super) const GRANT_ENDPOINT_PAGES: u64 = 4;
 
 /// Spawn one client holding exactly a file-service endpoint, a report endpoint and its view of
 /// the shared page. Returns the client's thread.
 ///
-/// `report` is the caller's, so the caller decides where it lives: a granted client's comes out
-/// of the region its caretaker's endpoints do, and goes back with them (milestone 608).
+/// `role`, `arg` and `arg2` are the client's three `START` words. `report` is the caller's, so a
+/// granted client's comes out of the region its caretaker's endpoints do and goes back with them.
 ///
-/// `extra_stack` is pages **below** the single one `run` maps. The hand-written `fs_test_client` roles
-/// need none: they hold a handle and a small buffer. The navigating shell (milestone 47's
-/// commands) needs some, and the number is a measurement rather than a guess: with none it
-/// overflowed by 192 bytes, which presented as a data abort on its own `sp` and then as the
-/// 60-second lost-wakeup watchdog, because the kernel test was still waiting for a report from a
-/// process that had died. A shell carries a path stack (eight levels of name), a parsed path,
-/// and a listing buffer, all by value, so 4 KiB is genuinely tight for it. Same discipline as
-/// the FS server's stack (DECISIONS §27): sized by what it did, not by what looks generous.
-///
-/// **Milestone 50 moved it again, the same way.** `Endowment` grew a sink and a source, each of
-/// which can carry a whole `FileGrant`, and the shell now holds one endowment per pipeline
-/// stage; four extra pages overflowed by 48 bytes at the same `sp` and with the same symptom.
-/// Recorded because it will happen a third time: the shell's stack is sized by the largest value
-/// `grant_plan` hands it, so a field added there is a page needed here.
-/// `pub(super)` (rather than private, its shape before milestone 152) so a sibling test module can
-/// spawn a client with a nonzero `extra_stack` directly, bypassing [`start`]'s convenience wrapper
-/// (which hardcodes `0`): milestone 152's schedule-store roles needed more than the one-page
-/// default, found short under `script/test`'s own aarch64 run (a data abort at the stack's guard
-/// page). Those roles went with `session_reviver` on 2026-09-27; the granted-directory spawners
-/// below still pass their callers' stack pages through it.
+/// `extra_stack` is pages below the one `run` maps, at most [`CLIENT_EXTRA_STACK`]. A shell's need
+/// tracks the largest value `grant_plan` hands it; an overflow presents as a data abort on `sp`,
+/// then the 60-second lost-wakeup watchdog. See notes/fs-server/kernel-wiring.md.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_fs_client(
     client_image: &'static [u8],
@@ -67,9 +48,8 @@ pub(crate) fn spawn_fs_client(
             phys: 0,
             flags: Flags::user_data(),
         }; FILE_PAGES + CLIENT_EXTRA_STACK];
-        // The whole channel, because this is the spawn the throughput benchmark comes through and
-        // a client may not ask for more than it mapped (`filesystem_contract::fs::TRANSFER_PAGES`). It costs
-        // fifteen extra page-table entries against the same frames, not fifteen extra frames.
+        // The whole channel: the throughput benchmark comes through here, and a client may not ask
+        // for more than it mapped (`filesystem_contract::fs::TRANSFER_PAGES`).
         let n = map_channel(&mut maps, FILE_VA_CLIENT, file_shared, FILE_PAGES);
         for (k, m) in maps[n..n + extra_stack].iter_mut().enumerate() {
             m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
@@ -80,9 +60,7 @@ pub(crate) fn spawn_fs_client(
             Spawn {
                 arg0: role,
                 arg1: arg,
-                // A third word, because the `rm` program is started the way a **grant** is
-                // (`filesystem_contract::grant`): a spec word and two words of name. Every other client
-                // here takes a role and one number and leaves this zero.
+                // `rm` is started as a grant is (`filesystem_contract::grant`); others pass zero.
                 arg2,
                 grants: &[
                     rendezvous_cap(file_ep, Rights::WRITE), // slot 0: CALL the FS server
@@ -123,7 +101,7 @@ pub fn start(
     Some((readiness, report))
 }
 
-/// **Drain the FS service's two readiness sentinels**, which is a sequencing act and not only an
+/// Drain the FS service's two readiness sentinels, which is a sequencing act and not only an
 /// assertion.
 ///
 /// Both servers announce with a blocking `SEND`, so each is parked inside its own announcement
@@ -153,28 +131,13 @@ pub fn wait_for_service(readiness: Readiness) {
     );
 }
 
-/// **Wait for a caretaker's startup request to have been answered, before the program it
-/// confines exists at all.**
+/// Wait for a caretaker's startup request to have been answered, before the program it confines
+/// exists at all.
 ///
-/// This is a correction, and the bug it fixes is worth stating where it was made rather than
-/// only in the note. All three processes share **one frame** (the module comment above argues
-/// that is sound because every request on both hops is a blocking `CALL`, so the client is
-/// parked inside its own call for the whole time the caretaker is using the page). That
-/// argument holds once the caretaker is serving. It does not hold at **startup**, where the
-/// caretaker stages the granted name in the page and then blocks in a `CALL` to the FS server:
-/// a confined program that already exists writes its own first name over that page, and the FS
-/// server resolves whatever it finds there.
-///
-/// It is not even a race in the common case. When this call is the one that wires the service,
-/// the FS server is parked inside its readiness `SEND`, so the caretaker's descent cannot be
-/// answered until [`wait_for_service`] drains it, and the client has that whole window to
-/// clobber the page. The caretaker then dies (it will not serve a hole) and its client blocks
-/// forever on a call nobody will answer, which is how this presented: a userspace `ebreak`
-/// followed by the 60 s lost-wakeup watchdog. It passed on aarch64 and failed on riscv, which
-/// is the shape of a timing bug and was one.
-///
-/// The fix is ordering, not a second page: drain the service, wait for the caretaker's own
-/// sentinel, and only then spawn the confined program.
+/// The FS server, the caretaker and the client share one frame. At startup the caretaker stages
+/// the granted name there and blocks in a `CALL`; a client that already existed could write over
+/// it, and the FS server would resolve whatever it found. So: drain the service, wait for this
+/// sentinel, then spawn the client. See notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(super) fn wait_for_caretaker(caretaker_ready: RendezvousId) {
     assert_eq!(

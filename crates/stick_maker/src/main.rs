@@ -1,4 +1,5 @@
-//! `stick_maker`: write nife's boot files to a USB stick or SD card.
+//! `stick_maker`: write nife's boot files to a USB stick or SD card. This file hands
+//! `stick_maker::cli::run` the real machine and terminal. See notes/boot-stick.md.
 //!
 //! ```text
 //! stick_maker                      # find the removable disks, ask which, confirm, write
@@ -7,9 +8,6 @@
 //! stick_maker --disk disk7 --yes   # no questions: copy onto disk7's FAT volume
 //! stick_maker --disk disk7 --erase # no questions: erase disk7 if it is not FAT, then copy
 //! ```
-//!
-//! The program is `stick_maker::cli::run`; this file hands it the real machine and terminal. See
-//! notes/boot-stick.md.
 
 use std::process::ExitCode;
 

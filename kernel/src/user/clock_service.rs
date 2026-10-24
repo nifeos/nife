@@ -4,9 +4,8 @@ use crate::sched::RendezvousId;
 
 /// Where the service expects its two mappings. Must match components/src/clock.rs.
 ///
-/// `CLOCK_VA` is public because it is the address the **set** authority lives at, and milestone
-/// 51's NTP tests aim a write there from a process that holds no such mapping. An attack on an
-/// address nobody uses would prove nothing.
+/// `CLOCK_VA` is public because the set authority lives there, and the NTP tests aim a write at it
+/// from a process that holds no such mapping.
 pub const CLOCK_VA: u64 = address_space_map::pair_page(0x00c0_0000);
 const RTC_VA: u64 = address_space_map::pair_page(0x00d0_0000);
 
@@ -16,26 +15,19 @@ pub struct Wiring {
     pub report: RendezvousId,
     /// The propose endpoint. A holder of `WRITE` here may ask; it may not tell.
     pub propose: RendezvousId,
-    /// The clock page's **physical** frame, so a reader can be given a read-only mapping of it
+    /// The clock page's physical frame, so a reader can be given a read-only mapping of it
     /// (and so the kernel's own tests can read it through the direct map).
     pub page_phys: u64,
     /// Which RTC the machine turned out to have, one of `clock_contract::rtc`.
     pub kind: u64,
 }
 
-/// **Does this machine have an RTC at all?** (milestone 161; `x86_64`'s CMOS answer is milestone
-/// 176/DECISIONS §130.)
+/// Does this machine have an RTC at all?
 ///
-/// `memory::rtc_region()` is the device tree's answer, and both QEMU `virt` boards give one (a
-/// PL031 on aarch64, a Goldfish on riscv64). `x86_64` never populates it (its RTC is the CMOS at I/O
-/// ports `0x70`/`0x71`, which has no page for a device capability to be a mapping of, and
-/// DECISIONS §121 keeps that port range kernel-resident rather than granted), so this asks the
-/// kernel's own CMOS reader instead of the device tree there: a `None` means the machine gave a
-/// reading this kernel could not make into a real calendar date, not that nobody looked.
-///
-/// Here rather than in a test module because four of them ask the same question, and it is asked
-/// **before** [`start`] rather than of the [`Wiring::kind`] it returns: a test that skipped after
-/// spawning the service would leave its frames charged to a run that did not happen.
+/// Elsewhere the device tree answers (`memory::rtc_region()`); on `x86_64` the kernel's own CMOS
+/// reader does, since that RTC is I/O ports the kernel keeps (§121 (what a device capability is
+/// when the device has no page)), and no answer means a reading it could not make into a date. A
+/// test asks before [`start`], so a skip leaves no service's frames charged to it.
 pub fn machine_has_no_rtc() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
@@ -56,8 +48,7 @@ pub const NO_RTC: &str = "this machine has no working real-time clock (no RTC bi
 
 /// Wire and spawn the clock service.
 pub fn start(image: &'static [u8]) -> Wiring {
-    // Zeroed, which is also the honest starting state: a page nobody has published to reads as
-    // `state::UNKNOWN` rather than as 1970 (clock_contract's `a_zeroed_page_reads_as_unknown`).
+    // Zeroed: a page nobody has published to reads as `state::UNKNOWN`, not as 1970.
     let page_phys = crate::memory::alloc_zeroed()
         .expect("no frame for the clock page")
         .addr();
@@ -70,15 +61,13 @@ pub fn start(image: &'static [u8]) -> Wiring {
 /// The pages [`start_in`] retypes from its region: the clock page and the two endpoints.
 pub const REGION_PAGES: u64 = 3;
 
-/// **[`start`], with everything it builds retyped from `region`**, and the service's thread
-/// beside the wiring, so a caller can hand it all back (milestone 801 (packages over the
-/// internet), which found every std program a test started leaving a clock service behind).
+/// [`start`], with everything it builds retyped from `region`, and the service's thread beside
+/// the wiring, so a caller can hand it all back.
 ///
 /// The service blocks in `RECEIVE` on `propose`, which lives in `region`, so reclaiming the region
 /// is what wakes it to spend an armed kill: `Holding`'s ordinary case. Reclaim it only once
 /// nothing else reads the clock page, which is in the region too.
 pub fn start_in(image: &'static [u8], region: u64) -> (Wiring, crate::thread::ThreadId) {
-    // Zeroed by the retype, which `start`'s comment says is the honest starting state.
     let page_phys = crate::memory_region::retype_page(region).expect("no clock page in the region");
     let report = crate::sched::create_rendezvous_from(region).expect("no report endpoint");
     let propose = crate::sched::create_rendezvous_from(region).expect("no propose endpoint");
@@ -93,12 +82,9 @@ fn spawn_with(
 ) -> (Wiring, crate::thread::ThreadId) {
     let rtc = crate::memory::rtc_region();
 
-    // `kind`/`seed`: which RTC (if any) the machine has, and, on x86_64 only, the wall clock the
-    // kernel already read from it. Everywhere else the driver in `components/src/clock.rs` maps and
-    // polls its own register, so `seed` there is unused and stays 0. On x86_64 there is no
-    // register to map (`rtc_region()` is always `None`: DECISIONS §121 keeps CMOS's ports
-    // kernel-resident, never a capability), so the *kernel* reads it here, once, and hands the
-    // answer across as data instead (DECISIONS §130, option 3; milestone 176's piece 2).
+    // On x86_64 there is no RTC register to map, so the kernel reads the CMOS once and hands the
+    // wall clock over as `seed` (§130 (how the kernel-resident CMOS RTC reaches the userspace clock
+    // service), option 3); elsewhere the driver polls its own.
     #[cfg(target_arch = "x86_64")]
     let (kind, seed) = match crate::arch::rtc::read_unix_nanos() {
         Some(nanos) => (clock_contract::rtc::CMOS, nanos),
@@ -107,10 +93,9 @@ fn spawn_with(
     #[cfg(not(target_arch = "x86_64"))]
     let (kind, seed) = (rtc.map_or(clock_contract::rtc::NONE, |(_, _, k)| k), 0u64);
 
-    // Two mappings, or one on a machine with no RTC. The device page is mapped and no
-    // `DeviceFrame` capability is granted, exactly as the console server's UART is: the service
-    // drives the registers and never delegates them onward, and §41's take-back revocation
-    // reaches an address-space mapping whether or not a capability table slot names it too.
+    // The RTC page is mapped with no `DeviceFrame` capability, as the console's UART is: the
+    // service never delegates it, and §41 (a device is revoked by taking it back)'s revocation
+    // reaches the mapping either way.
     let mut maps = [
         Mapping {
             va: CLOCK_VA,
@@ -169,7 +154,7 @@ impl Wiring {
     }
 
     /// Wall-clock nanoseconds as a reader would compute them: the page's offset plus the
-    /// ambient monotonic counter. 0 when the machine does not know.
+    /// monotonic counter. 0 when the machine does not know.
     pub fn wall_nanos(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
