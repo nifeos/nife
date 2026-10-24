@@ -11,25 +11,12 @@ use std::process::{Command, ExitCode};
 // board-console (milestone 216)
 // ---------------------------------------------------------------------------
 
-/// Open a real board's serial console, log every byte, and stop on a deadline.
-///
-/// The engine is `crates/serial_console`; this is argument parsing and a report, deliberately, for
-/// the reason every host-logic crate in this tree exists: the interesting half is a recogniser
-/// over text, and a recogniser wants a thousand host tests in milliseconds, not a board.
-///
-/// It returns an [`ExitCode`] of its own rather than the `bool` the rest of `main` uses, because
-/// this command has four answers and not two: reached, announced a failure, went quiet, ran out.
-/// A caller scripting a bench run wants to tell those apart, and squeezing them into
-/// success/failure is exactly the loss of information the milestone is about.
 /// **Read a finished capture of many boots and print what the lottery drew** (milestone 249).
 ///
-/// `serial_console::lottery` is the whole of the logic and has the tests; this reads a file and
-/// prints. Two exit statuses only, and they are not the watcher's four: this is an analysis of a
-/// log that has already happened, so there is no board to have gone quiet.
-///
-/// `0` even when a series is short or a draw is unjudged, because those are results and the report
-/// says so in words. `4` only when the file cannot be read, which is the same code the watcher
-/// gives an argument it cannot use.
+/// `serial_console::lottery` is the logic and has the tests; this reads a file and prints. `0`
+/// even when a series is short or a draw is unjudged, because the report says so in words; `4`
+/// only when the file cannot be read, the code the watcher gives an argument it cannot use. There
+/// is no board to have gone quiet, so the watcher's other codes do not arise.
 fn board_console_tally(path: &std::path::Path) -> ExitCode {
     let log = match std::fs::read_to_string(path) {
         Ok(text) => text,
@@ -50,12 +37,9 @@ fn board_console_tally(path: &std::path::Path) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// **Read a finished soak capture into the defect curve's exposure row.** Milestone 225 (run the
-/// soak on radon, argon and xenon) built it for milestone 201 (is multicore reliability
-/// converging).
-///
-/// `serial_console::exposure` is the logic and has the tests, including one that reads radon's
-/// eight-hour log back into the E4 row a person wrote by hand. This parses `<log>` and the three
+/// **Read a finished soak capture into the defect curve's exposure row** (milestone 225 (run the
+/// soak on radon, argon and xenon), for milestone 201 (is multicore reliability converging)).
+/// `serial_console::exposure` is the logic and has the tests. This parses `<log>` and the three
 /// columns no console line carries, and prints a row per boot that soaked.
 ///
 /// Exit statuses keep the watcher's meanings where they overlap: `0` every soaked boot is clean,
@@ -145,6 +129,12 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
     }
 }
 
+/// Open a real board's serial console, log every byte, and stop on a deadline (milestone 216).
+///
+/// The engine is `crates/serial_console`, a recogniser over text with host tests; this is argument
+/// parsing and a report. Returns one of four exit codes, not a `bool`, because a scripted bench run
+/// needs to tell apart reached, announced a failure, went quiet and ran out
+/// (`serial_console::watch`'s `exit_code`).
 pub(crate) fn board_console() -> ExitCode {
     use std::io::Write;
 
@@ -671,39 +661,23 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 }
 
 // ===========================================================================================
-// The board's boot script (milestone 218).
-//
-// The VisionFive 2 cannot boot this kernel from an `extlinux.conf`. With no `fdt` line in the
-// label, U-Boot's pxe path hands `bootm` no device tree at all, and RISC-V's `boot_prep_linux`
-// refuses rather than guessing: `Device tree not found or missing FDT support`, then
-// `### ERROR ### Please RESET the board ###`, which is a `hang()` that only the reset button
-// clears. Captured on the board 2026-09-01;
-// crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log is the
-// transcript, and it is evidence about U-Boot rather than about this kernel: the payload never ran.
-//
-// So the card carries a U-Boot script instead. `scan_dev_for_scripts` sources it, and it issues
-// exactly the commands a person types at the `StarFive #` prompt today, which is the sequence the
-// same day's successful boot proves (vf2-2026-09-01-manual-boot.log). Nothing about the boot
-// changes; only who types it. See notes/visionfive2.md.
+// The board's boot script (milestone 218). The VisionFive 2 cannot boot this kernel from an
+// `extlinux.conf`: with no `fdt` line, U-Boot's pxe path hands `bootm` no device tree, and RISC-V's
+// `boot_prep_linux` refuses with a `hang()` only the reset button clears
+// (crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-extlinux-refused.log). So the card
+// carries a script `scan_dev_for_scripts` sources, issuing the commands a person types at the
+// `StarFive #` prompt (vf2-2026-09-01-manual-boot.log). See notes/visionfive2.md.
 // ===========================================================================================
 
-/// The script the board runs, verbatim.
+/// The script the board runs, verbatim: the manual sequence of notes/visionfive2.md, every line
+/// proven on silicon, with two edits that each remove a dependency. The load device comes from the
+/// variables `boot_a_script` sets before sourcing it (`devtype`, `devnum`, `distro_bootpart`), and
+/// the archive's length is stashed under our own name as soon as `load` reports it, so a later
+/// command that sets `filesize` cannot change what `booti` is told.
 ///
-/// **Every line of this is a line already proven on silicon.** It is the manual sequence from
-/// notes/visionfive2.md with two edits, both of which remove a dependency rather than add one:
-/// the load device comes from the variables distro boot has already set for the script it is
-/// running (`boot_a_script` sets `devtype`, `devnum` and `distro_bootpart` before sourcing this),
-/// and the archive's length is stashed under a name of ours the moment `load` reports it, so that
-/// a later command which happens to set `filesize` cannot change what `booti` is told.
-///
-/// Two addresses stay literal because they are choices rather than discoveries, and
-/// notes/visionfive2.md carries the arithmetic for both: `0x8600_0000` for the device tree, inside
-/// the kernel's boot gigapage 2 and clear of both the image and `kernel_comp_addr_r`, and
-/// `0x9000_0000` for the archive, clear of the moved tree.
-///
-/// **No `#` comment lines, deliberately.** U-Boot's parser is a cut-down hush and this file is the
-/// one thing that has to work with nobody watching, so it uses only verbs the bench transcript
-/// already shows working. The explanation lives here instead.
+/// The device tree's `0x8600_0000` and the archive's `0x9000_0000` are choices; the note has the
+/// arithmetic. No `#` comment lines: U-Boot's parser is a cut-down hush, so the script uses only
+/// verbs the bench transcript shows working.
 const BOARD_BOOT_SCRIPT: &str = "\
 echo nife: boot.scr is driving this boot, milestone 218
 load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /nife-vf2.img
@@ -725,24 +699,11 @@ const BOARD_ARCHIVE_ADDR: &str = "0x90000000";
 /// This machine's own private IPv4 addresses, paired with the interface each sits on, in the order
 /// the host's tool lists them.
 ///
-/// **There is deliberately no address constant anywhere in this tree**, and that is milestone 256's
-/// lesson applied one layer out: `192.168.8.216` was true on the evening the network boot was
-/// proved by hand, it is checked by nobody afterwards, and a DHCP lease can move it. So the address
-/// baked into a card is the address of the machine that wrote the card, read off that machine at
-/// the moment it writes it, and the script echoes it at boot so the console log says what the card
-/// expects before anything depends on it.
-///
-/// **Why not ask the routing table.** The obvious trick, a connected UDP socket whose local address
-/// the kernel picks from the route, was written first and was wrong on the only machine that
-/// matters: patagonia's default route belongs to a Tailscale interface, so every probe answered
-/// `100.75.22.70`, a CGNAT address on a network radon cannot reach. Interfaces are enumerated
-/// instead and anything not in RFC 1918 space is dropped, because the board is on a private LAN by
-/// construction.
-///
-/// **More than one is normal and is not an error.** patagonia has two addresses on the bench LAN
-/// (`en0` and a USB adapter), and either serves TFTP equally well because the server binds every
-/// interface. The first is taken and all of them are printed, so an operator who needs the other
-/// one can see that it exists and pass `--server`.
+/// No address constant exists in this tree: a card carries the address of the machine that wrote
+/// it, read at that moment, and the script echoes it at boot. Interfaces are enumerated rather than
+/// asking the routing table, because a VPN's default route answers an address the board cannot
+/// reach; anything outside RFC 1918 is dropped. Several are normal: the first is taken and all are
+/// printed, so `--server` can pick another. See notes/visionfive2/network-boot.md.
 fn host_private_addresses() -> Vec<(String, std::net::Ipv4Addr)> {
     // BSD/macOS first, then iproute2, because the bench machine is the Mac and CI is Ubuntu.
     if let Some(out) = host_tool_output("ifconfig", &[]) {
@@ -814,42 +775,15 @@ fn parse_ip_addr_addresses(text: &str) -> Vec<(String, std::net::Ipv4Addr)> {
     keep_private(found)
 }
 
-/// **The network-first script, with the card underneath it** (milestone 257).
+/// **The network-first script, with the card underneath it** (milestone 257). The two `load` lines
+/// of [`BOARD_BOOT_SCRIPT`] become `dhcp` plus two `tftpboot` lines, with the card's copy as the
+/// fallback; `fdt addr`, `fdt move` and `booti` are byte for byte milestone 218's.
 ///
-/// The two `load` lines of [`BOARD_BOOT_SCRIPT`] become `dhcp` plus two `tftpboot` lines, and the
-/// card's own copy stays as the fallback. `fdt addr`, `fdt move` and `booti` are byte for byte what
-/// milestone 218 already emits, which is why the 2026-09-04 bench proof of the network path is
-/// evidence about this script and not only about the commands.
-///
-/// **Why the card is still in here at all.** A card written once and left in the board is only an
-/// improvement if it survives the network going away. A cable out of the hub, a router rebooting,
-/// a lease that does not arrive: each of those turns a card that only knows about TFTP into a board
-/// that boots nothing, and the fix is a walk to the bench with a card reader, which is the exact
-/// cost this milestone exists to remove. So the network is an optimisation over the card rather
-/// than a replacement for it.
-///
-/// **The shape, and why it is this shape.** U-Boot's parser is a cut-down hush and nothing here has
-/// been watched running on the board, so the structure is deliberately the dullest one that can
-/// express a fallback: one state variable, `if cmd; then` and `fi`, nesting never deeper than two,
-/// and no `else` anywhere. A chain of guards costs a few more lines than nested branches and has
-/// fewer parser features between us and a board that boots.
-///
-/// **Nothing is loaded twice from two places.** The kernel and the archive are one measured pair
-/// (`script/board-image` says so at length), so a network transfer that gets the kernel and loses
-/// the archive falls all the way back and takes BOTH from the card. Half a pair boots to
-/// `MEASURED BOOT REFUSED`, which is the gate working, and it would be working on a fault we built.
-///
-/// **`autoload no`** because bare `dhcp` in U-Boot means "get an address **and** TFTP the bootfile
-/// from the server DHCP names", not "get an address". Without it the board fetches from whatever the
-/// DHCP server advertises, which on a home network is the router; radon did exactly that on
-/// 2026-09-05, reported `TFTP from server 192.168.8.1` and then `TFTP server died`, and because
-/// `dhcp` returns failure when its autoload fails, the whole network branch was skipped and the card
-/// fallback fired. The boot looked like a clean fallback and was a bug. The line was in the manual
-/// sequence that proved this path on 2026-09-04 and was left out of the transcript the script was
-/// written from, which is why no test could have caught it: every test stubbed `dhcp`.
-///
-/// **`netretry no`** so that a network that is not there fails in seconds instead of retrying while
-/// nobody is watching. That is the whole difference between a fallback and a hang.
+/// The kernel and archive are one measured pair, so a transfer that loses either takes both from
+/// the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP names, and `netretry
+/// no` makes a missing network fail in seconds rather than hang. The shape is deliberately dull
+/// (one state variable, `if cmd; then` and `fi`, nesting at most two, no `else`) because U-Boot's
+/// hush has not been watched running it. See notes/visionfive2/network-boot.md.
 fn board_network_boot_script(server: &str) -> String {
     let archive = BOARD_ARCHIVE_ADDR;
     format!(
@@ -925,15 +859,10 @@ const IH_COMP_NONE: u8 = 0;
 
 /// Wrap `script` in a legacy U-Boot script image, the thing `mkimage -T script` produces.
 ///
-/// Written here rather than shelled out to `mkimage` because `mkimage` is a host package this
-/// project does not otherwise need, and a build step that works on the machine that has it and
-/// fails on the machine that does not is exactly the newcomer trap AGENTS.md's third principle
-/// names. The format is 64 bytes and two CRCs, so writing it costs less than requiring it.
-///
-/// The CRC is `globally_unique_identifier_partition_table`'s, which is the tree's one definition of
-/// IEEE CRC-32 and is Kani-proved equal to its own bitwise form. Reaching into the partition-table
-/// crate for it reads oddly and is still the right call: a second copy of a checksum is a second
-/// place to be wrong.
+/// Written here rather than shelled out because `mkimage` is a host package this project does not
+/// otherwise need, and the format is 64 bytes and two CRCs. The CRC is
+/// `globally_unique_identifier_partition_table`'s, the tree's one definition of IEEE CRC-32,
+/// Kani-proved equal to its bitwise form: a second copy of a checksum is a second place to be wrong.
 fn uboot_script_image(name: &str, script: &str) -> Vec<u8> {
     // A script image's payload is a size table, then the text. `source` reads the first u32 as the
     // script's length and skips two u32s to reach the bytes (u-boot `cmd/source.c`), so one script
@@ -1216,15 +1145,11 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
 
     /// The network-first script obeys the same vocabulary rule, plus the two it needs of its own.
     ///
-    /// **`;` is a command separator in hush**, so a stray one inside an `echo` would run the rest of
-    /// the line as a command. The card script forbids the character outright; this one cannot,
-    /// because `if cmd; then` is how a branch is written, so the rule becomes positional: the only
-    /// `;` on any line is the one immediately before `then`.
-    ///
-    /// **Nesting never goes deeper than two and there is no `else`.** Nothing here has been watched
-    /// running on the board, and every parser feature between us and a booting kernel is a place
-    /// for it to fail with nobody at the bench. The guard is on the shape rather than the outcome,
-    /// which is the same posture the card script's test takes.
+    /// `;` separates commands in hush, so a stray one in an `echo` would run the rest of the line.
+    /// The card script forbids it outright; this one cannot, because `if cmd; then` is how a branch
+    /// is written, so the only `;` on any line is the one just before `then`. Nesting never goes
+    /// deeper than two and there is no `else`: the guard is on the shape, not the outcome, as the
+    /// card script's test is.
     #[test]
     fn the_network_script_stays_inside_a_deliberately_dull_shape() {
         let script = board_network_boot_script("10.1.2.3");
@@ -1295,23 +1220,15 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
         assert!(!BOARD_BOOT_SCRIPT.contains("if "));
     }
 
-    /// **The fallback, actually taken.**
+    /// **The fallback, actually taken**: the generated script under `/bin/sh`, with the six U-Boot
+    /// verbs stubbed as shell functions whose exit status the test chooses. The constructs it uses
+    /// are common to hush and POSIX `sh`.
     ///
-    /// The board is not available to this test and will not be, so the branch is exercised where it
-    /// can be: `if cmd; then ... fi`, `test x${v} = xy` and `${v}` expansion are all common to
-    /// U-Boot's hush and POSIX `sh`, so the generated script runs under `/bin/sh` with the six
-    /// U-Boot verbs stubbed as shell functions whose exit status the test chooses.
-    ///
-    /// **What this proves and what it does not.** It proves the control flow: which loads are
-    /// attempted in which order, that a network failure reaches the card, that a half-transfer
-    /// takes BOTH halves from the card rather than mixing a pair, and that `booti` is handed the
-    /// archive length the load that actually happened reported. It proves nothing at all about
-    /// whether U-Boot's parser accepts the file, because `sh` is not hush. That one is still owed
-    /// to a bench session and the block's BUGS says so.
-    ///
-    /// `tftp_fails_at` is a call number rather than a status, because the interesting failure is
-    /// the SECOND transfer: the kernel arrives and the archive does not, which is how a pair gets
-    /// mixed. A single status could not express it.
+    /// It proves the control flow (which loads run in which order, that a network failure reaches
+    /// the card, that a half-transfer takes both halves from the card, that `booti` gets the length
+    /// of the load that happened) and nothing about whether hush accepts the file; the block's BUGS
+    /// says so. `tftp_fails_at` is a call number because the interesting failure is the second
+    /// transfer.
     fn run_under_sh(script: &str, dhcp: i32, tftp_fails_at: i32, load: i32) -> String {
         let preamble = format!(
             "\
