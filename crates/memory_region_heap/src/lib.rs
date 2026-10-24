@@ -1,6 +1,5 @@
-//! The untyped-backed heap: a [`GlobalAlloc`] for userspace that maps pages out of the process's
-//! own untyped capability, so `alloc` is paid from its budget (milestone 27 (Rust `std` on the
-//! native ABI)). A program declares it in its own source (see notes/heap.md):
+//! The untyped-backed heap, a [`GlobalAlloc`] paid from the process's own untyped capability
+//! (milestone 27 (Rust `std` on the native ABI)). A program declares it (see notes/heap.md):
 //!
 //! ```ignore
 //! #[global_allocator]
