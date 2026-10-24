@@ -1,4 +1,4 @@
-//! The compositor: one screen, several mutually distrusting clients (milestone 33).
+//! The compositor: one screen, several mutually distrusting clients (milestone 33 (a compositor)).
 //!
 //! It is `gpu_driver`'s client exactly as `painter` was, and holds only: slot 0, a report
 //! endpoint; slot 1, the display endpoint (WRITE, `gfx FLUSH(damage)`); slot 2, the doorbell

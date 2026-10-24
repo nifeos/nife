@@ -1,12 +1,12 @@
 //! `date`: print the wall-clock time (notes/date.md, notes/clock.md, notes/calendar.md).
 //!
 //! It reads the clock page, adds the ambient counter, formats with `calendar` and sends the bytes.
-//! It holds the page read-only, so it cannot set the clock (§43). An unknown clock is an answer: it
-//! reads the state word before the offset and names the cause on [`DIAG_SLOT`], so `date >
-//! when.txt` on a clockless machine leaves the file empty. Every complaint is sent, and that stream
-//! closed, before a byte of output: the reader drains it first, so interleaving would block a send
-//! nobody hears. `a0` is the [`Format`] (`FMT_*`, `0` is `Human`), `a1` a signed UTC offset in
-//! minutes (there is no tzdata), and `a2` non-zero adds the clock's provenance line.
+//! It holds the page read-only, so it cannot set the clock (§43 (reading the clock is a page)). An
+//! unknown clock is an answer: it reads the state word first and names the cause on [`DIAG_SLOT`],
+//! so `date > when.txt` on a clockless machine leaves the file empty. Every complaint is sent, and
+//! that stream closed, before a byte of output: the reader drains it first, so interleaving would
+//! block a send nobody hears. `a0` is the [`Format`] (`FMT_*`, `0` is `Human`), `a1` a signed UTC
+//! offset in minutes (there is no tzdata), and `a2` non-zero adds the clock's provenance line.
 
 //! # BUGS
 //!

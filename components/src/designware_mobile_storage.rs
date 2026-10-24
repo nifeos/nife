@@ -1,13 +1,13 @@
 //! radon's SD/MMC block server: `filesystem_contract::blk` over the JH7110's `DesignWare` Mobile
-//! Storage Host Controller, from EL0 (milestone 53; notes/designware-mobile-storage.md).
-//!
-//! The driver is the `designware_mobile_storage` crate; this file is its register window and serve
-//! loop. It holds only what `kernel/src/user/designware_mobile_storage_service.rs` gives it: one
-//! device page of the controller at `serve::REGISTER_VA` (the kernel ungates the shared clock
-//! generator, DECISIONS §86), the transfer region at `serve::TRANSFER_VA`, the request (slot 0)
-//! and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth. It does no
-//! DMA, but its page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as confined
-//! as its own code (milestone 261's position). It holds no other device and no clock generator.
+//! Storage Host Controller, from EL0 (milestone 53 (the board's own peripherals: network and
+//! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
+//! same name; this file is its register window and serve loop. It holds only what
+//! `kernel/src/user/designware_mobile_storage_service.rs` gives it: the controller's register page
+//! at `serve::REGISTER_VA` (the kernel ungates the shared clock generator, §86 (whether an NVMe
+//! driver can leave the kernel)), the transfer region at `serve::TRANSFER_VA`, the request (slot
+//! 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth. No DMA,
+//! but that page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as confined as its
+//! own code, the position of milestone 261 (the NVMe driver leaves the kernel).
 
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept, paired with its crate as
 //! `non_volatile_memory_express` is. He considered `designware_sd_storage` and `sd_and_emmc_storage`,

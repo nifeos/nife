@@ -1,13 +1,13 @@
-//! The clock service, sole owner of the RTC and the wall clock's offset (DECISIONS §43).
+//! The clock service, sole owner of the RTC and the wall clock's offset (DECISIONS §43 (reading
+//! the clock is a page, setting it is a page you may write, proposing is an endpoint)).
 //!
-//! Its whole authority is placed before it runs: the propose endpoint (slot 0, RECEIVE), a report
-//! endpoint (slot 1, WRITE), the clock page read/write, and the RTC's registers as a device
-//! mapping. A compromised clock service is a machine that believes the wrong time, no more. It
-//! stamps the page [`clock_contract::state::UNKNOWN`], reads the RTC once (the driver the device
-//! tree names in `a0`, or on `x86_64` the kernel's CMOS reading in `a1`, DECISIONS §121, §130),
-//! publishes only a plausible reading (DECISIONS §42's no-silent-degradation rule), then serves
-//! proposals judged by `clock_contract::policy`. Readers never call it; setting is a page write.
-//! See notes/clock.md, "Three authorities".
+//! Its whole authority is the propose endpoint (slot 0, RECEIVE), a report endpoint (slot 1,
+//! WRITE), the clock page read/write and the RTC's registers. A compromised clock service is a
+//! machine that believes the wrong time, no more. It stamps the page `UNKNOWN`, reads the RTC once
+//! (the driver the device tree names in `a0`, or on `x86_64` the kernel's CMOS reading in `a1`,
+//! §121 (x86 port I/O), §130 (the CMOS RTC reaches the userspace clock service)), publishes only a
+//! plausible reading (§42 (a filesystem must be truthful)'s no-silent-degradation rule), then
+//! serves proposals judged by `clock_contract::policy`. See notes/clock.md, "Three authorities".
 
 //! Name: ratified 2026-09-14 (calef, working the unratified worklist), confirming milestone 63's
 //! name table (design/roadmap/0063-name-spellings.md). Introduced 2026-07-30. Milestone 63 argues

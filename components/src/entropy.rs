@@ -393,7 +393,8 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
     }
 }
 
-/// **The instruction backend** (milestone 162): RDSEED on `x86_64`, RNDRRS on aarch64. Either can
+/// **The instruction backend** (milestone 162 (real hardware entropy on x86_64 and
+/// aarch64)): RDSEED on `x86_64`, RNDRRS on aarch64. Either can
 /// run dry under load, and then the answer is `NO_ENTROPY`, never the DRBG sibling; on-die
 /// conditioning is part of each instruction's contract and is not a DRBG. A module of the one
 /// program that uses it rather than a crate. **Provisional**, flagged for an architect: a second
@@ -402,7 +403,7 @@ mod instr {
     /// How many times to retry a transient "no data this cycle" result before giving up.
     ///
     /// Both instructions draw from the conditioned source, not a DRBG, so underflow under load is
-    /// expected. Intel's DRNG Software Implementation Guide (rev. 2.2, §5.3.1.2) tells an
+    /// expected. Intel's DRNG Software Implementation Guide (rev. 2.2, section 5.3.1.2) tells an
     /// "asynchronous application" to give up after "somewhere between 1 and 100" retries, and one
     /// serialized request queue makes the high end free. ARM's text for `RNDR`/`RNDRRS` ("if the
     /// instruction cannot return a genuine random number in a reasonable period of time") reads as

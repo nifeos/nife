@@ -43,8 +43,9 @@ const REPORT: u64 = 0;
 const DISPLAY: u64 = 1;
 /// Slot 2, an untyped: the budget its surface mapping's page tables come out of.
 const BUDGET: u64 = 2;
-/// The surface, one `PageFrame` capability naming the whole run (DECISIONS §102): RAM frames the
-/// size of the covered aperture, shared with the client, which maps it itself.
+/// The surface, one `PageFrame` capability naming the whole run (DECISIONS §102 (a Frame names a
+/// run of pages)): RAM frames the size of the covered aperture, shared with the client, which maps
+/// it itself.
 const SURFACE_FRAME: u64 = 3;
 
 /// Where this driver maps the surface. Its choice: it holds the frames. 2 MiB-aligned for the

@@ -1,22 +1,22 @@
 //! The display terminal: the terminal contract's IPC half (notes/terminal-contract.md) served
-//! against a grid and a font, on a screen it does not own (milestone 29; notes/glyphs.md).
+//! against a grid and a font, on a screen it does not own (milestone 29 (a display terminal)).
 //!
 //! One binary, two wirings chosen by `arg0`, neither holding a device: [`MODE_DISPLAY`] holds rung
 //! one's display endpoint and the scanout (`painter`'s authority) and presents with `FLUSH`;
 //! [`MODE_WINDOW`] holds rung two's doorbell and one window's control page and surface (`window`'s).
 //! Its whole world is a report endpoint, one endpoint to present through, the one it serves (slot
 //! 2), an application's output page and its own pixels: no device, interrupt, DMA authority,
-//! physical address, or way to name another client's anything. Started with a control endpoint
-//! (`video_terminal::component::CONTROL`) it can be replaced live; that module has the exchange.
+//! physical address, or way to name another client's anything. With a control endpoint
+//! (`video_terminal::component::CONTROL`) it can be replaced live. See notes/glyphs.md.
 
 //! # One endpoint, and why input does not ring the doorbell
 //!
-//! With one wait point (DECISIONS §33), output and keystrokes share the served endpoint, told apart
-//! by opcode; an application holding it can forge a keystroke into its own terminal and gains
-//! nothing. In [`MODE_WINDOW`] the compositor delivers a keystroke by `CALL`ing this process, so
-//! answering one by ringing the doorbell would deadlock; the input source's own `COMMIT` shows it.
-//! `OPERATION_WRITE` does ring, since its blocked caller is the application. See
-//! notes/glyphs/terminal-and-proof.md.
+//! With one wait point (§33 (the compositor's authority is memory, not messages)), output and
+//! keystrokes share the served endpoint, told apart by opcode; an application holding it can forge
+//! a keystroke into its own terminal and gains nothing. In [`MODE_WINDOW`] the compositor delivers
+//! a keystroke by `CALL`ing this process, so ringing the doorbell in answer would deadlock; the
+//! input source's own `COMMIT` shows it. `OPERATION_WRITE` does ring, since its blocked caller is
+//! the application. See notes/glyphs/terminal-and-proof.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `vterm`. Refused `vterm` (an
 //! abbreviation), `text_console` (`console` is already a program) and `video_terminal` for the
@@ -64,7 +64,8 @@ const _: () = assert!(OUT_PAGE_FRAME == SURFACE_FRAME + 1);
 /// Where the scanout goes. In [`MODE_DISPLAY`] this process holds the frames and picks the address;
 /// in [`MODE_WINDOW`] the compositor's wiring maps it here.
 ///
-/// The scanout run is up to 900 page frames (4 MiB from `SURFACE_VA`, DECISIONS §102), so
+/// The scanout run is up to 900 page frames (4 MiB from `SURFACE_VA`, DECISIONS §102 (a Frame
+/// names a run of pages)), so
 /// `OUT_VA` and `CTL_VA` sit clear of it; one inside it would be refused by `PageFrame::MAP` as
 /// already mapped. The 2 MiB alignment keeps the run in as few page-table windows as possible
 /// (`display_service::MAP_BUDGET_PAGES`'s comment has the arithmetic).

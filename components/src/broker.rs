@@ -1,4 +1,5 @@
-//! The queue broker, the latency ladder's opt-in middle rung (milestone 23, DECISIONS §41).
+//! The queue broker, the latency ladder's opt-in middle rung (milestone 23, DECISIONS §41 (the
+//! endpoint is the broker)).
 //!
 //! It stands between a producer and a backend so the producer's CALL never blocks on a swap:
 //! pass-through when the backend is up (two round trips, the tax `broker_rtt` prices against

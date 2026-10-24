@@ -196,7 +196,8 @@ bumps in one day is a different signal from one every few milestones.
 
 ## What a survey reports
 
-`ROLE_SURVEY` on the milestone 57 test disk, a 64 MiB image `sgdisk` partitioned:
+`ROLE_SURVEY` on the test disk of milestone 57 (partitioning and formatting a real drive), a 64 MiB
+image `sgdisk` partitioned:
 
 ```text
 roster : 7 devices, 5 virtio-mmio, 1 virtio-pci, 1 nvme
