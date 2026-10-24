@@ -11,10 +11,10 @@ const MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-watchdog-mainli
 const QEMU_RISCV64_VIRT: &[u8] =
     include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
 
+/// The binding radon's firmware uses is not mainline's, and its clocks and resets come from two
+/// different provider nodes. Missing either would leave the watchdog unfound or gated.
 #[test]
 fn radons_vendor_node_gives_the_window_and_all_four_lines_through_clkgen_and_rstgen() {
-    // The binding radon's firmware uses is not mainline's, and its clocks and resets come from two
-    // different provider nodes. Missing either would leave the watchdog unfound or gated.
     let tree = device_tree_blob::DeviceTreeBlob::from_bytes(RADON).unwrap();
     let found = discover(&tree).unwrap().unwrap();
     assert_eq!((found.base, found.size), (0x1307_0000, 0x1_0000));
@@ -49,17 +49,17 @@ fn mainlines_node_names_the_same_lines_through_syscrg() {
     );
 }
 
+/// No constant fallback: the soak must say NOT ARMED here rather than store to 0x1307_0000.
 #[test]
 fn qemus_virt_board_has_no_watchdog_and_nothing_is_invented() {
-    // No constant fallback: the soak must say NOT ARMED here rather than store to 0x1307_0000.
     let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
     assert_eq!(discover(&tree).unwrap(), None);
 }
 
+/// A write before the unlock is silently dropped by the block, and a sequence that ends
+/// unlocked leaves the timer open to any stray store.
 #[test]
 fn every_sequence_unlocks_first_and_locks_last() {
-    // A write before the unlock is silently dropped by the block, and a sequence that ends
-    // unlocked leaves the timer open to any stray store.
     for seq in [
         &arm_sequence(7)[..],
         &pet_sequence(7)[..],
@@ -129,10 +129,10 @@ fn the_longest_reset_is_about_357_seconds_and_longer_is_refused() {
     assert_eq!(load_for(0, CORE_CLOCK_HZ), None);
 }
 
+/// The failure the measurement exists for: a gated core clock reads a frozen count, and arming
+/// it would print ARMED over a timer that can never fire.
 #[test]
 fn a_halted_or_reloaded_counter_measures_zero_and_is_refused() {
-    // The failure the measurement exists for: a gated core clock reads a frozen count, and arming
-    // it would print ARMED over a timer that can never fire.
     assert_eq!(measured_hz(5_000, 5_000, 400_000, 4_000_000), 0);
     assert_eq!(measured_hz(5_000, 6_000, 400_000, 4_000_000), 0);
     assert!(!rate_agrees(0, CORE_CLOCK_HZ));
@@ -148,10 +148,10 @@ fn a_counter_on_the_oscillator_agrees_and_one_on_half_of_it_does_not() {
     assert!(!rate_agrees(at(1_200_000), CORE_CLOCK_HZ));
 }
 
+/// Comparing a sequence against `RELOCK` cannot catch a `RELOCK` that writes the key itself,
+/// which would leave the watchdog unlocked after every sequence.
 #[test]
 fn relocking_writes_something_other_than_the_key() {
-    // Comparing a sequence against `RELOCK` cannot catch a `RELOCK` that writes the key itself,
-    // which would leave the watchdog unlocked after every sequence.
     let Access::Write { offset, value } = disarm_sequence()[2] else {
         panic!("the last access is not a store");
     };
@@ -159,24 +159,24 @@ fn relocking_writes_something_other_than_the_key() {
     assert_ne!(value, UNLOCK_KEY);
 }
 
+/// `STARFIVE_WDT_EN_SHIFT 0` and `STARFIVE_WDT_JH7110_RST_EN_SHIFT 1`. With the reset bit
+/// wrong, the arm sequence sets nothing that resets and the wedge is never recovered.
 #[test]
 fn the_control_bits_are_linuxs_enable_at_bit_0_and_reset_at_bit_1() {
-    // `STARFIVE_WDT_EN_SHIFT 0` and `STARFIVE_WDT_JH7110_RST_EN_SHIFT 1`. With the reset bit
-    // wrong, the arm sequence sets nothing that resets and the wedge is never recovered.
     assert_eq!((CONTROL_ENABLE, CONTROL_RESET_ENABLE), (0b01, 0b10));
 }
 
+/// At a 1 Hz clock, `2 * u32::MAX` seconds is exactly a full register.
 #[test]
 fn the_largest_count_the_register_holds_is_accepted() {
-    // At a 1 Hz clock, `2 * u32::MAX` seconds is exactly a full register.
     let full = 2 * u64::from(u32::MAX);
     assert_eq!(load_for(full, 1), Some(u32::MAX));
     assert_eq!(load_for(full + 2, 1), None);
 }
 
+/// A counter on a faster clock than the count assumes resets early, before the soak has stalled.
 #[test]
 fn a_counter_running_fast_is_refused_too() {
-    // A counter on a faster clock than the count assumes resets early, before the soak has stalled.
     assert!(!rate_agrees(2 * CORE_CLOCK_HZ, CORE_CLOCK_HZ));
     assert!(!rate_agrees(
         CORE_CLOCK_HZ + CORE_CLOCK_HZ / 10,

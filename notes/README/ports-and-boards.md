@@ -16,6 +16,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [How much of the ARM plan runs under HVF](../arm-plan-under-hvf.md): seL4 against nife on one Apple core, the guest's CPU features, and the SMMUv3. Name provisional.
 - [The VisionFive 2: first silicon](../visionfive2.md): radon's board facts, boot paths and bench runbook.
 - [Programming a clock and a reset line, for the first time](../jh7110-clock-and-reset.md).
+- [The JH7110 watchdog](../jh7110-watchdog.md): how the block counts twice before it resets, and the sources read. Name provisional.
 - [Reading a board, without a person watching it](../board-console.md): how `script/board-console` reads a board's serial boot unattended.
 - [Pricing milestone 342 (the kernel and the console server drive one UART from two address spaces)](../kernel-console-arbitration-pricing.md): whether argon, radon and xenon have a second usable UART, and what a kernel/console-server arbitration option costs in a panic.
 - [The boot ladder](../boot-ladder.md): the boot markers every architecture prints, in order.
