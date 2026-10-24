@@ -1,5 +1,7 @@
 # Isolation without an MMU, and what each version costs
 
+*Name: provisional.*
+
 An appendix to [`notes/target-hardware.md`](../target-hardware.md), whose requirement 0 is an MMU.
 It records the alternatives to that requirement and why none is being taken.
 

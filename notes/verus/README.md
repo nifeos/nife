@@ -20,11 +20,4 @@ budget has no room for. All of it was read or run on 2026-09-20.
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `sources` Name: provisional, for the source table it holds.
-- `what-kani-stops-at` Name: provisional, after the parent's "What Kani actually stops at".
-- `what-verus-is` Name: provisional, after the parent's own heading.
-- `atmospheres-trusted-base` Name: provisional, for the trusted computing base it quotes.
-- `proof-effort` Name: provisional, after the parent's "The number that decides it: proof effort".
-- `examples` Name: provisional, for the parent's EXAMPLES section.
+Each stem here is named for its content, and calef names files.

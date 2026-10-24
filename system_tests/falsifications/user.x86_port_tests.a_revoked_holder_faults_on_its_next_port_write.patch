@@ -36,10 +36,10 @@ the same lines, moved out of `kernel/src/sched.rs` into `kernel/src/sched/capabi
 the same and only the path and line numbers differ.
 
 diff --git a/kernel/src/sched/capabilities.rs b/kernel/src/sched/capabilities.rs
-index cd75c6fdd..c7f90352c 100644
+index 017d6613c..b1bf4a655 100644
 --- a/kernel/src/sched/capabilities.rs
 +++ b/kernel/src/sched/capabilities.rs
-@@ -182,12 +182,6 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
+@@ -147,12 +147,6 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
              if matches!(t.outgoing_cap, Some(c) if c.object == target) {
                  t.outgoing_cap = None;
              }
@@ -50,5 +50,5 @@ index cd75c6fdd..c7f90352c 100644
 -                t.port_range_grant = None;
 -            }
          }
-         // Reach the TSS of **every** core that might already hold the revoked bitmap, before
-         // releasing the lock (milestone 315). Clearing the cached grant above is not enough on a
+         // Inside the lock: every TSS bitmap writer holds `IPC_TABLES`, so the revocation NMI
+         // cannot land inside `install_port_grant` and no core can install a grant this sweep

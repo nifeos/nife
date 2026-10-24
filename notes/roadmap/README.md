@@ -17,11 +17,5 @@ it.
 under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-The stems below were minted the same day by the same lane. Each is named for its content, and calef
+The stems here were minted the same day by the same lane. Each is named for its content, and calef
 names files.
-
-- `vocabulary-history` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `the-retired-index` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `why-not-issues` Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.
-- `effort` Name: provisional, minted 2026-10-13 (UTC) by lane/prose-cap-notes-c, after the
-  parent's "Effort".

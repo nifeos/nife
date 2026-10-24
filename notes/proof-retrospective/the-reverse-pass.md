@@ -1,5 +1,8 @@
 # What the proofs did catch, and the reverse pass
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/sixth-ten-longest-notes, after the parent's own
+heading.*
+
 The corpus in [`notes/proof-retrospective.md`](../proof-retrospective.md) is a list of escapes. This
 is the other half, and it is the reason that note's finding is amber. Then comes the reverse pass,
 the question that keeps a study of proofs from being able only to confirm.

@@ -1,5 +1,7 @@
 # What each specification actually says
 
+*Name: provisional. After the parent's "What each specification actually says". calef names files.*
+
 An appendix of [can a userspace process hold a timer?](../timer-capability.md). The parent keeps the
 verdict per architecture. This file keeps the working: the register fields, the specification text
 quoted, and the tree's own code each verdict rests on. It is the "full working, with the

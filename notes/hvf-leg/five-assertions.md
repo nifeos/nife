@@ -1,5 +1,7 @@
 # The HVF leg: five assertions about "has it happened yet"
 
+*Name: provisional. After the parent's own heading.*
+
 An appendix to [`notes/hvf-leg.md`](../hvf-leg.md). It records the five tests the physical core
 found, from milestone 81 (an HVF leg: the test suite on the physical core) on 2026-08-04, how each
 was fixed, and the settle windows the leg makes weaker rather than flakier.

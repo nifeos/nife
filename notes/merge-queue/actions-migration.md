@@ -1,5 +1,7 @@
 # How the watchers run: in Actions, as `nife-smelter[bot]`
 
+*Name: provisional.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md), which keeps the table of workflows. This
 file holds the move of 2026-09-24 in full: what it bought, the premise tested before anything was
 written, what a person must run on patagonia, and what was lost.

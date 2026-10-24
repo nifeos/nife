@@ -1,5 +1,7 @@
 # The test suite on silicon, 2026-08-21
 
+*Name: ratified 2026-10-18 (calef, "Approve all").*
+
 An appendix to [notes/visionfive2.md](../visionfive2.md), beside its BUGS section. It records
 boot 15 onward, when the `#[test_case]` suite first ran on the board.
 

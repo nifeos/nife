@@ -27,3 +27,4 @@ Each stem below is named for its content, and calef names files.
 - `elf-seeds` Name: provisional.
 - `the-syscall-driver` Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-06.
   calef names files.
+Each stem here is named for its content, and calef names files.

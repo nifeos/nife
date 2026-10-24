@@ -17,12 +17,12 @@ holds under this defect, because the `dead` path is untouched; it is the first
 assertion, the one comparing the two liveness values, that catches it.
 
 diff --git a/crates/capability/src/lib.rs b/crates/capability/src/lib.rs
-index dcd2cbb5..7f0cfae3 100644
+index d65bed7d..612fd281 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
-@@ -198,14 +198,11 @@ pub enum Reap {
- /// same answer. Only once the relationship is established does the liveness answer differ, because
- /// only then is the distinction the holder's business.
+@@ -167,14 +167,11 @@ pub enum Reap {
+ /// The supervision check comes first, so a live stranger and a stale name give the same answer;
+ /// liveness is disclosed only inside the relationship.
  pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -> Reap {
 +    if !dead {
 +        return Reap::StillAlive;

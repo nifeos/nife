@@ -12,7 +12,4 @@ evidence its prose budget has no room for.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `benchmarks` Name: provisional. After the main page's own heading.
-- `print-opcode` Name: provisional. After the opcode it is about.
+Each stem here is named for its content, and calef names files.
