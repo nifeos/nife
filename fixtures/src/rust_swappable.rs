@@ -1,21 +1,19 @@
 //! **The swappable component, version 1: the incumbent** (milestone 23, DECISIONS §41).
 //!
-//! A console-shaped server. It owns a device (the UART's registers), it serves one stable endpoint,
-//! and it holds nothing else it could reach the rest of the system with. What makes it interesting
-//! is not what it does but that it can be taken out from under its client while the client is
-//! talking to it.
+//! A console-shaped server that owns a device (the UART's registers), serves one stable endpoint,
+//! and can be taken out from under its client mid-conversation.
 //!
-//! Its whole authority is four capabilities and two pages, and every one of them was placed by
-//! `swapper` before this program ran: the stable service endpoint (READ), a report endpoint (WRITE),
-//! the operator's coordination channel (WRITE), the operator's post-revoke poke (READ), the shared
-//! log page (read/write), and the device's registers. No initial ramdisk, no budget, no way to
-//! build anything. A compromised instance is a bad console and nothing else.
+//! The serving loop in `swap.rs` is shared byte for byte with
+//! [`c_swappable`](../c_swappable/index.html), the replacement; only the function that computes an
+//! answer differs (Rust here, C there), which makes the milestone's claim about the component
+//! rather than the harness. See notes/live-replacement.md.
+
+//! # What it holds
 //!
-//! The serving loop is in `swap.rs` and is shared byte for byte with
-//! [`c_swappable`](../c_swappable/index.html), the replacement. The *only* difference between the
-//! two programs is the function that computes a request's answer: this one is Rust, that one is C.
-//! That is deliberate, and it is what makes the milestone's claim about the component rather than
-//! about the harness.
+//! Four capabilities and two pages, all placed by `swapper` before it ran: the stable service
+//! endpoint (READ), a report endpoint (WRITE), the operator's coordination channel (WRITE) and
+//! post-revoke poke (READ), the shared log page (read/write), and the device's registers. No
+//! initial ramdisk, no budget: a compromised instance is a bad console and nothing else.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 61), replacing `conx`. Refused `conx`, whose
 //! expansion is recorded nowhere in this tree; that absence is one of the two cases the naming

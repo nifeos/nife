@@ -57,17 +57,13 @@ fn xattr_remove(handle: u64, name: &[u8]) -> i64 {
     call(FILE, fs::req(fs::REMOVEXATTR, handle, name.len() as u64), 0).0 as i64
 }
 
-/// **The extended-attribute witness** (milestone 57): everything the layer claims, attempted against
-/// the real FS server over the real contract, reported as a bitmap the kernel test asserts exactly.
+/// The extended-attribute witness (milestone 57): every claim of the layer, attempted against the
+/// real FS server, returned as a bitmap the kernel test asserts exactly.
 ///
-/// It is a bitmap rather than a chain of `check`s for the reason every other witness in this
-/// program is one: a trapped client tells the waiting test only that something went wrong, and the
-/// interesting failure here is *which* claim broke. A layer that dropped type codes, a store keyed
-/// on a path instead of a node, and a purge that never ran each fail a different bit.
-///
-/// It cleans up after itself. Its attribute is removed from `scratch` and the two files it makes are
-/// unlinked, so the image it leaves behind differs from the one it found by the store directory
-/// alone, which the host tool is expected to show (notes/host-recovery.md).
+/// A bitmap names which claim broke: dropped type codes, a store keyed on a path rather than a
+/// node, and a purge that never ran each fail a different bit. It removes its attribute from
+/// `scratch` and unlinks the two files it makes, so the image differs only by the store directory,
+/// which the host tool is expected to show (notes/host-recovery.md). See notes/xattr.md.
 pub(crate) fn attr_witness(scratch: u64) -> u64 {
     let mut v = 0u64;
     let mut buf = [0u8; 512];

@@ -1,17 +1,14 @@
-//! **`std::thread` on nife: real threads in one address space** (milestone 812
-//! (`std::thread::spawn` runs real threads in one address space); §269 (how threads share a
-//! process), as calef ruled it on pull request #1892).
+//! **`std::thread` on nife** (milestone 812 (`std::thread::spawn` runs real threads in one address
+//! space); §269 (how threads share a process), as calef ruled it on pull request #1892).
 //!
-//! A spawned thread is a TCB retyped from the heap's region, joined to this program's own process
-//! through `ThreadControlBlock::CONFIGURE` with the process capability in
-//! `runtimeproto::PROCESS_SLOT` (which carries `BIND`). It runs on a stack from the heap, shares the
-//! capability table, the space and every lock, and has its own thread pointer, set at `CONFIGURE`,
-//! naming its own block (`sys::thread_local::key::nife`). It ends with `SYS_EXIT_THREAD`, which
-//! clears the word its joiner waits on only once it has left its stack for good.
-//!
-//! A program given no process capability cannot spawn: `Thread::new` answers `Unsupported`, which
-//! is what every nife program answered before 812.
-//!
+//! A spawned thread is a TCB retyped from the heap's region, joined to this program's process by
+//! `ThreadControlBlock::CONFIGURE` with the capability in `runtimeproto::PROCESS_SLOT` (which
+//! carries `BIND`). It runs on a heap stack, shares the capability table, the space and every lock,
+//! and has its own thread pointer naming its own block (`sys::thread_local::key::nife`). It ends
+//! with `SYS_EXIT_THREAD`, which clears the word its joiner waits on only once it has left its
+//! stack for good. A program given no process capability cannot spawn: `Thread::new` answers
+//! `Unsupported`.
+
 //! # BUGS
 //!
 //! - **A spawned thread's stack has no guard page.** It is heap memory, so an overflow writes into

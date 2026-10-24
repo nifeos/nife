@@ -2,46 +2,24 @@
 //! client's binary by milestone 290; notes/ntp.md).
 //!
 //! The peer `components/src/network_time_client.rs` is tested against. It holds `READ` on the
-//! endpoint the client holds `WRITE` on, and it speaks the same socket contract
-//! (`crates/socket_contract/src/lib.rs`) `net_stack` does, so the client cannot tell it apart from the
-//! real stack.
-//!
-//! # What the substitution is worth, and why it survives being a separate binary
-//!
-//! **The client's network path is one endpoint capability.** Substituting the peer at that
-//! capability boundary runs the client's **real, unmodified code**: there is no test hook, no
-//! conditional, and nothing in the client that knows which of the two it is talking to. That
-//! property comes from the boundary, not from co-location, which is why milestone 290 could lift
-//! this out of the client's binary and change nothing about what it proves.
-//!
-//! What the pair proves: the socket-contract glue (minting a frame, delegating it, the destination
-//! header, `SENDTO`/`RECEIVE` framing), that the 48 bytes on the wire are a well-formed NTPv4 client
-//! packet addressed to port 123, that the nonce is unpredictable, that a reply failing
-//! `Query::accept` moves nothing, and that an accepted sample becomes a *proposal* the clock
-//! service judges.
-//!
-//! What it does not prove: that smoltcp, UDP, IPv4 and the NIC carry those bytes. Milestone 30's
-//! socket-contract tests prove that path with a real datagram. Nor does it prove anything about a
-//! real internet time server: nothing in QEMU's slirp answers UDP 123, and pointing the gate at a
-//! public server would make it depend on somebody else's network.
-//!
+//! endpoint the client holds `WRITE` on and speaks the socket contract
+//! (`crates/socket_contract/src/lib.rs`) `net_stack` does, so the client cannot tell it from the
+//! real stack and runs its real, unmodified code: the client's network path is one endpoint
+//! capability. What the pair proves (the socket glue, a well-formed NTPv4 packet, an unpredictable
+//! nonce, a rejected reply moving nothing, a sample becoming a proposal) and does not (smoltcp, the
+//! NIC, a real time server) is in notes/ntp/the-client-tests.md.
 
 //! # The wiring, and the one report
 //!
-//! `a0` selects an [`srv`] variant, `a1` is the wall-clock nanoseconds it claims to have. **The
-//! kernel supplies the claimed time** because this process holds no clock capability of its own,
-//! which keeps every test's expectation an exact number rather than a window.
+//! `a0` selects an [`srv`] variant; `a1` is the wall-clock nanoseconds it claims, supplied by the
+//! kernel because this process holds no clock, so every expectation is an exact number. Four slots:
+//! the report endpoint, `READ` on the socket endpoint, an untyped budget to map the client's frame,
+//! and the socket endpoint again with `WRITE | GRANT`, from which it mints the socket it hands the
+//! client on `OPEN` (§255 (each socket is its own capability)). With no entropy or propose
+//! endpoint, it visibly cannot reach the clock. It reports once, after the first request, and that
+//! `send` blocks until the test drains it; one per request would deadlock once nobody drained.
 //!
-//! Four slots and no more: the report endpoint, `READ` on the socket endpoint, an untyped budget
-//! to map the client's frame, and the socket endpoint again with `WRITE | GRANT`, which the socket
-//! it hands the client on `OPEN` is minted from, as `net_stack` mints one (§255 (each socket is
-//! its own capability)). It holds no entropy capability and no propose endpoint, so a
-//! reader can see from the endowment alone that it cannot reach the clock.
-//!
-//! It reports **once**, after the first request it sees, and that `send` blocks until the test
-//! drains it: a report per request would deadlock the exchange the moment nobody was draining, and
-//! one is all the assertions need.
-//!
+
 //! Name: ratified 2026-09-14 (calef, milestone 290), his own words, lifted out of the `ntp` binary's
 //! `ROLE_SERVER`. **The directory is half the name**: milestone 175 drew the line between
 //! `components/` (what a distribution ships because somebody wants its function) and `fixtures/`

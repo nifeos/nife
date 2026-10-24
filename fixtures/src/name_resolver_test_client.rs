@@ -1,16 +1,13 @@
 //! **A client of the name resolver, and nothing more** (milestone 384 (in a capability system the
 //! resolver is a grant)).
 //!
-//! It asks the resolver about every name in `domain_name_resolution_contract::fixture::CASES`, in order,
-//! and reports each reply as it gets it; the kernel's test judges them
+//! It asks the resolver about every name in `domain_name_resolution_contract::fixture::CASES`, in
+//! order, and reports each reply; the kernel's test judges them
 //! (`system_tests/src/user/name_resolver_tests.rs`). Then, given a network, it connects to the
-//! address the first name resolved to and checks an echo comes back: a name it did not know the
-//! address of, carried to a connection, which is what resolving it was for.
-//!
-//! It is the shape milestone 801 (packages over the internet)'s package client will have: a badged
-//! capability to a resolver that answers for one zone, a capability to the stack, and no way to look
-//! up anything outside the zone whatever its code does.
-//!
+//! address the first name resolved to and checks an echo comes back. It has the shape milestone 801
+//! (packages over the internet)'s package client will have: a badged capability to a resolver that
+//! answers for one zone, a capability to the stack, and no way to look outside the zone.
+
 //! # What it holds
 //!
 //! | slot | what | rights |
@@ -19,7 +16,7 @@
 //! | 1 | the resolver's endpoint, badged by the spawner | `WRITE` |
 //! | 2 | an untyped budget: its resolver page and its socket page | |
 //! | 3 | `net_stack`'s `Stack` endpoint, when `arg0` is `fixture::WITH_NETWORK` | `WRITE` |
-//!
+
 //! # What it reports
 //!
 //! One message per case, `(case index, the reply's outcome word, the first address)`, then

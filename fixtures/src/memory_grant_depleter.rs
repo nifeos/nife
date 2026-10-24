@@ -1,22 +1,14 @@
 //! `memory_grant_depleter`: a program that spends exactly the memory it was granted, and reports
-//! how much.
+//! how much (milestone 31 (a capability shell: designation is authorization), phase 1).
 //!
-//! Milestone 31 phase 1. This is what makes `memory_grant_depleter --mem N` *real* rather than
-//! parsed-and-ignored. The shell splits `N` pages off its own untyped budget and delegates that
-//! untyped to this program (init inserts it at slot 1); the program then maps pages out of it, one
-//! at a time, until the budget is exhausted, and reports the count on its result endpoint (slot 0).
-//!
-//! The number it reports *is* the authority the command line handed it. Grant more, it maps more;
-//! grant nothing, and it holds no untyped at slot 1 at all, so its very first `MAP` returns
-//! `NoSuchSlot` and it reports zero. There is no ambient pool to fall back on: a nife process
-//! spends the budget it was given and not one page more.
-//!
-//! One honest detail, recorded rather than hidden: an `N`-page untyped does not yield `N` mapped
-//! data pages. Reaching a fresh virtual address needs page-table pages, and those come from the
-//! same untyped (the kernel allocates nothing on a process's behalf, DECISIONS §10). So the
-//! reported count is `N` minus the handful of pages the tables cost. That the count tracks `N`, and
-//! collapses to zero with no grant, is the proof the budget is real.
-//!
+//! It makes `memory_grant_depleter --mem N` real. The shell splits `N` pages off its own untyped
+//! budget and delegates them (init inserts the untyped at slot 1); this program maps pages out of
+//! it one at a time until it is exhausted and reports the count on slot 0. With no grant slot 1 is
+//! empty, the first `MAP` returns `NoSuchSlot`, and it reports zero: there is no ambient pool. The
+//! count is `N` minus the page-table pages, which come from the same untyped (the kernel allocates
+//! nothing on a process's behalf, DECISIONS §10 (process model: capability-based, microkernel)).
+//! See notes/grant-expression/memory-grant.md.
+
 //! # What this program holds
 //!
 //! - slot 0: the result endpoint (SEND: report the page count).

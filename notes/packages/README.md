@@ -12,6 +12,7 @@ of users who may run new code (§221 (the boot prompt is the owner's console)), 
 and the two programs that prove it under QEMU, are [pinned-tls.md](pinned-tls.md). The index
 format survey is
 [the-index-format.md](the-index-format.md). A package with several programs is [several-programs.md](several-programs.md).
+What the package-only test programs print at the prompt is [the-test-programs.md](the-test-programs.md).
 Four candidate containers for a package (NIFEPKG2, tar, and each compressed with zstd), measured
 for size, reader code, tooling and what each forces, are in
 [container-format-measurements.md](container-format-measurements.md).

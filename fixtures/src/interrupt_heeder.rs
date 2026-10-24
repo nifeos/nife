@@ -1,20 +1,17 @@
 //! The interrupt heeder: a long-running job that heeds the cooperative interrupt (DECISIONS §24).
 //!
-//! It works forever, one small unit at a time, and between units it reads a single word in a page
-//! it shares with the shell: the interrupt flag. When the shell sets it (on the first `^C`), this
-//! program cleans up, records that it stopped gracefully, and exits. This is the cooperative tier
-//! of DECISIONS §24 made visible: the first `^C` asks the job to stop, and a job that listens does.
-//!
-//! Why a shared word and not an endpoint: a running computation cannot poll an endpoint (there is
-//! no non-blocking receive) and cannot block on one without stalling the work the user wants to
-//! interrupt. So the signal is memory this program reads with a plain load between units. See
-//! `grant_plan::job_page_frame` and notes/grant-expression.md.
-//!
+//! It works forever in small units, and between units it reads the interrupt flag, one word in a
+//! page it shares with the shell. When the shell sets it (on the first `^C`), the program cleans
+//! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
+//! foreground process) made visible. The flag is shared memory and not an endpoint because a
+//! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
+//! one without stalling its work. See `grant_plan::job_page_frame` and notes/grant-expression.md.
+
 //! # What it holds
 //!
 //! - the shared job frame, mapped read/write at [`JOB_PAGE_FRAME_VA`] (init maps it; the shell
 //!   holds the other view). It reads [`job_page_frame::INTERRUPT`] and writes the rest. No
-//!   capabilities: it touches only this page and exits. Its whole authority is one shared page.
+//!   capabilities: its whole authority is one shared page.
 //!
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist). Refused `heeder` (it never
 //! said what it heeds, and the answer, §24's cooperative interrupt flag, was not in the name). Its
