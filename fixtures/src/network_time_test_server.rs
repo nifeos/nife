@@ -104,9 +104,10 @@ const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
 // the first request the client makes, before any access through `SHARED_FRAME` (milestone 139 (drive the unsafe count down)).
 static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 
+user_mode_runtime::program_entry!(start);
+
 /// `a0` selects an [`srv`] variant, `a1` is the wall-clock time in nanoseconds this server claims.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(variant: u64, claimed_nanos: u64) -> ! {
+fn start(variant: u64, claimed_nanos: u64, _arg2: u64) -> ! {
     server(variant, claimed_nanos)
 }
 

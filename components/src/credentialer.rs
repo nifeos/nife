@@ -89,8 +89,9 @@ const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     HEAP.init(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     let cost = Cost::DEFAULT;

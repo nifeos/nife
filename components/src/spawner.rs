@@ -38,8 +38,9 @@ const IMAGE_VA: u64 = address_space_map::runtime_window(0x3000_0000);
 /// tables, and its TCB. A debug build of a tiny program is a handful of pages.
 const INSTANCE_PAGES: u64 = 48;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, image_len: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, image_len: u64, _a2: u64) -> ! {
     // SAFETY: root_supervisor mapped `image_len` bytes of program image read-only at IMAGE_VA.
     let image = unsafe { core::slice::from_raw_parts(IMAGE_VA as *const u8, image_len as usize) };
     let Ok(elf) = elf::Elf::parse(image) else {

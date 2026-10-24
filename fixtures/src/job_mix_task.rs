@@ -315,12 +315,13 @@ fn run_job(job: u8, seed: u64, code_frame: u64) -> Result<(u64, u64), Refused> {
     Ok((value, 0))
 }
 
+user_mode_runtime::program_entry!(start);
+
 /// The task's entry.
 ///
 /// `x0` is the role, `x1` this task's index, and `x2` its seed. The supervisor gives every task a
 /// distinct index and a distinct seed, so no two tasks walk the mix in the same order.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, index: u64, seed: u64) -> ! {
+fn start(role: u64, index: u64, seed: u64) -> ! {
     if role == job_mix::ROLE_ECHO {
         loop {
             let req = receive_request(job_mix::SLOT_SERVE);

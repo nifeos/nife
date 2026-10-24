@@ -465,8 +465,9 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     exit();
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // **The DMA region is ours to place** (milestone 108): one `PageFrame` capability naming the
     // whole [`DMA_PAGE_FRAMES`]-page run (DECISIONS §102), mapped read/write out of our own budget
     // in one `MAP` call. Before either role, because the rings live in the first page of it and the

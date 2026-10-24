@@ -72,8 +72,9 @@ impl Queue {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut q = Queue {
         items: [0; CAPACITY],
         head: 0,

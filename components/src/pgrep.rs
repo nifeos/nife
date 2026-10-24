@@ -54,13 +54,14 @@ const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 
+user_mode_runtime::program_entry!(start);
+
 /// `a1` is the state mask, in `grant_plan::spawnproto`'s integer-argument position: the progenitor starts every
 /// child `start_child(child, 0, arg, 0)`, so the endowment's `arg` is the second register and the first
 /// is always zero. Zero means every state (`pgrep::Selector::from_wire`), which is what a shell that
 /// cannot spell a selector sends and is why an unfiltered `pgrep` prints the whole domain rather than
 /// nothing.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, a1: u64, _a2: u64) -> ! {
+fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
     HAS_DIAG.store(is_granted(DIAG_SLOT), Ordering::Relaxed);
 
     // **Walk first, filter second, complain third, print fourth.** DECISIONS §67's reader drains

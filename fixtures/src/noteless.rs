@@ -42,8 +42,9 @@ const OUT: u64 = 0;
 /// The line. The gate asserts it, so a copy of any program the image carries could not print it.
 const LINE: &[u8] = b"noteless: installed, and carrying no manifest note\n";
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut rest = LINE;
     while !rest.is_empty() {
         let (w0, w1, w2, n) = byte_sink_contract::pack(rest);

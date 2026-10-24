@@ -43,8 +43,9 @@ fn digest_in_c(seq: u64) -> u64 {
     unsafe { cx_digest(seq) }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(a0: u64, log_base: u64, a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(a0: u64, log_base: u64, a2: u64) -> ! {
     hot_swap_contract::start(hot_swap_contract::V2, digest_in_c, a0, log_base, a2)
 }
 

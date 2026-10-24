@@ -35,8 +35,9 @@ const REQUEST: u64 = 0;
 /// Slot 1 receives the ack; the server sends it there.
 const REPLY: u64 = 1;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     loaded_image_check::verify(user_mode_runtime::trap);
 
     // These cannot fail: this program is only ever spawned WITH the console, so `print` holds its

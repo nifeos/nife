@@ -21,8 +21,9 @@ const REPORT: u64 = 0;
 /// Must match `device_child_builder`'s `CHILD_UART_VA`, where it maps the registers.
 const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // The four PrimeCell ID bytes live at 0xFF0, 0xFF4, 0xFF8 and 0xFFC and read 0x0D, 0xF0, 0x05
     // and 0xB1.
     // SAFETY: the builder mapped the UART, device-typed, at UART_VA before starting us; these are

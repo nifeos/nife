@@ -30,11 +30,12 @@ const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
 
 capability_manifest_note::carry!(MANIFEST, zones = &["", "nife.test"]);
 
+user_mode_runtime::program_entry!(start);
+
 /// The entry point, reached only if the refusal at the prompt breaks; it then says so.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(b"dialer: RAN, though no grant of the network is recorded\n");
     send(OUT, byte_sink_contract::eof(), 0, 0);
     exit();

@@ -664,6 +664,23 @@ fi
 rm -f "/tmp/nife-rule-1.$$"
 echo "rule 1: no asm outside kernel/src/arch/"
 
+# A program enters through `user_mode_runtime::program_entry!`, never a hand-written `_start`. On
+# x86_64 the kernel enters a thread with `rsp % 16 == 0` and the psABI promises `rsp % 16 == 8`, so
+# a plain `extern "C" fn _start` misplaces every 16-byte-aligned local; the macro's one-`call` shim
+# is the fix (notes/user-mode-runtime.md, "Entering a process"). `loaded_image_check` proves the
+# alignment at run time for one program; this holds every other one to the same entry. `$$` for
+# the reason rule 1 gives above.
+echo "==> programs enter through program_entry!"
+if git grep -nE 'extern "C" fn _start' -- 'components/src' 'fixtures/src' 'redoxfs_server/src' \
+    > "/tmp/nife-program-entry.$$" 2>/dev/null; then
+    echo "lint: a program writes its own _start; use user_mode_runtime::program_entry!(start):" >&2
+    cat "/tmp/nife-program-entry.$$" >&2
+    rm -f "/tmp/nife-program-entry.$$"
+    exit 1
+fi
+rm -f "/tmp/nife-program-entry.$$"
+echo "program entry: every program enters through program_entry!"
+
 # Rule 5's interface half (lane lint-arch-parity, 2026-10-08). arch/mod.rs re-exports one port
 # flat, so the interface portable code calls is only the set of names it happens to use, and
 # nothing held the three ports to that set. The clippy passes above catch a missing item only in a

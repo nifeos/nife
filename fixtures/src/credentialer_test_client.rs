@@ -124,8 +124,9 @@ const SHARES: [Share; 3] = [
 const IMPOSTOR: &[u8] = b"impostor";
 const IMPOSTOR_SECRET: &[u8] = b"let me in";
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     match role {
         ROLE_PROVISIONER => provisioner(),
         ROLE_ATTACKER => attacker(),

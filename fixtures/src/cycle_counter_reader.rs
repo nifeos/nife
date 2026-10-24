@@ -42,8 +42,9 @@ use user_mode_runtime::{cycle_reading, exit, send, yield_now};
 
 const REPORT: u64 = 0;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let first = cycle_reading();
     yield_now();
     let second = cycle_reading();

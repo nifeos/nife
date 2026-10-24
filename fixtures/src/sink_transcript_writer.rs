@@ -59,13 +59,14 @@ const SINK: u64 = 0;
 /// Where the classification and the byte total go.
 const REPORT: u64 = 1;
 
+user_mode_runtime::program_entry!(start);
+
 /// Write the transcript `repeat` times, or forever if `repeat` is 0, and report how the last
 /// `SEND` classified plus how many bytes got through.
 ///
 /// A clean finish announces end of stream; a failed one does not, because there is nothing left to
 /// announce it to.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(repeat: u64, _a1: u64, _a2: u64) -> ! {
+fn start(repeat: u64, _a1: u64, _a2: u64) -> ! {
     let mut total = 0u64;
     let mut rounds = 0u64;
     let mut last = byte_sink_contract::Sent::Ok;

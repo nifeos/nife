@@ -72,8 +72,9 @@ fn die(code: u64) -> ! {
     exit();
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(size: u64, layout: u64, offset: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(size: u64, layout: u64, offset: u64) -> ! {
     // The geometry arrived in registers from the kernel; it is checked here rather than believed,
     // because a geometry that does not close would have this process storing past its own mapping.
     let Some(aperture) = Aperture::from_words(size, layout) else {

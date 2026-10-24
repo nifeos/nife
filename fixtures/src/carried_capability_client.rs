@@ -21,8 +21,9 @@ const ENDPOINT: u64 = 0;
 const REPORT: u64 = 1;
 const PROBE_WORD: u64 = 0x5EC0_0C47;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let mut verdict = 0;
     let (r0, _, carried) = call_receiving(ENDPOINT, 0, 0);
     if let Some(slot) = carried

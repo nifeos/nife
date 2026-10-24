@@ -53,8 +53,9 @@ const ANSWERED_OTHERWISE: u64 = 1 << 2;
 /// The reserve is exactly what a `display_terminal` swap takes, the largest swap there is.
 const _: () = assert!(display::SWAP_PAGES == s::SWAP_RESERVE_PAGES);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, lengths: u64, swap: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, lengths: u64, swap: u64) -> ! {
     if mode == MODE_STAND_IN {
         stand_in()
     }

@@ -17,6 +17,10 @@ inside the process, and why it fails the way it does.
   forgot them would leave whatever the frame allocator handed over.
 - The stack survives eight frames of recursion, so `sp` was set to real, writable memory with room
   under it.
+- A 16-byte-aligned local is 16-byte aligned, so the program entered with the stack its ABI
+  promises. On `x86_64` a plain `extern "C" fn _start` fails this, which is why every program
+  enters through `user_mode_runtime::program_entry!` (notes/user-mode-runtime.md, "Entering a
+  process").
 
 None of this needs a capability. Every byte it reads belongs to the process already, which is why
 the milestone-7 test spawns the self-checker with no authority at all.

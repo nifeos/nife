@@ -199,8 +199,9 @@ fn generate() -> Option<[u8; 32]> {
     None
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Put the block in a known state before asking it for anything, then seed it. `init` returns
     // what `STAT` read back, which is the one snapshot taken before any generation has happened
     // and so the only one that can say whether `MODE.R256` took.

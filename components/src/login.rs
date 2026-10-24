@@ -193,8 +193,9 @@ const DURABLE_PAGE_STRIDE: u64 = 0x1_0000;
 /// already running finishes first, and a scheduled job is short-lived by design.
 const END_WAIT_SECS: u64 = 5;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(caretaker_len: u64, table_len: u64, schedule_len: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(caretaker_len: u64, table_len: u64, schedule_len: u64) -> ! {
     // First, before anything is allocated: see [`HOLDS_RUN_UNVOUCHED`].
     HOLDS_RUN_UNVOUCHED.store(
         user_mode_runtime::is_granted(RUN_UNVOUCHED),

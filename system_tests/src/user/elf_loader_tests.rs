@@ -195,9 +195,11 @@ fn the_initial_ramdisk_holds_a_native_executable() {
 /// hello's `SELF_CHECK` role (one source, built for this machine) answers with a syscall if every
 /// expectation holds, a trap if not, and no data crosses the boundary. A syscall and no fault means
 /// `.text` ran, `.rodata` read, `.data` was copied, `.bss` was zeroed (the file lacks those bytes)
-/// and the stack recursed eight frames.
+/// and the stack recursed eight frames, entered with the alignment its ABI promises.
 ///
-/// Falsification: unfalsified. Renamed from
+/// Falsification: on 2026-10-24 (UTC), `image_self_checker` built with a plain
+/// `extern "C" fn _start` instead of `user_mode_runtime::program_entry!` failed this on `x86_64`,
+/// through `loaded_image_check`'s alignment check. Renamed from
 /// `a_real_elf_from_the_initrd_runs_at_el0_and_verifies_itself` on 2026-10-12 (UTC) under calef's
 /// ruling B on #1998; the body is unchanged and nobody has yet broken it to watch it fail.
 #[test_case]

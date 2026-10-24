@@ -32,6 +32,8 @@
 // a crate, so this file needs no dead-code allow under §38 (a suppression is scoped to an item
 // and carries a reason).
 
+user_mode_runtime::program_entry!(start);
+
 /// `a0` says whether the operator endowed us with a device, and `a1` where our entries start in the
 /// shared witness page. Both come from the operator, because both are facts about the wiring rather
 /// than about this program: the incumbent on the direct channel owns a UART, the backend behind the
@@ -42,8 +44,7 @@
 /// notes/component-manifest.md gives: a manifest declares authority, and this carries none. A
 /// component lied to about it misbehaves rather than escaping, which is precisely what the hung
 /// channel wants it to do.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(a0: u64, log_base: u64, a2: u64) -> ! {
+fn start(a0: u64, log_base: u64, a2: u64) -> ! {
     hot_swap_contract::start(
         hot_swap_contract::V1,
         hot_swap_contract::digest,

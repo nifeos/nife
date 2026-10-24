@@ -273,8 +273,9 @@ fn paint(n: usize, damage: Rect, committed: &[bool]) {
     flush(damage);
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(windows: u64, focusable: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(windows: u64, focusable: u64, _arg2: u64) -> ! {
     let n = windows as usize;
     let focusable = focusable as usize;
     if n > SCENE.len() || n > compositor::MAX_WINDOWS || focusable > n {

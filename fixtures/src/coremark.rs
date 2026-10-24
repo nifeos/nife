@@ -24,8 +24,9 @@ use user_mode_runtime::{cntfrq, exit, now, send};
 /// The endpoint init grants us (slot 0): we SEND `[crc, ticks, freq]` here, then exit.
 const RESULT: u64 = 0;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_x0: u64, _x1: u64, _x2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     let start = now();
     let crc = coremark::run(coremark::PINNED_ITERS);
     let ticks = now().wrapping_sub(start);

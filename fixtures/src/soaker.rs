@@ -71,12 +71,13 @@ const ROLE_WAITER: u64 = 3;
 // uses lands inside that page.
 const PAGE: MappedWindow = unsafe { MappedWindow::new(soak_page::VA, mapped_window::PAGE) };
 
+user_mode_runtime::program_entry!(start);
+
 /// The soaker's entry.
 ///
 /// `x0` is the role, `x1` the worker index (which slot of the shared page is this one's), and `x2`
 /// the seed for the jitter. The kernel gives every worker a distinct index and a distinct seed.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, index: u64, seed: u64) -> ! {
+fn start(role: u64, index: u64, seed: u64) -> ! {
     let index = index as usize;
     let rounds_at = soak_page::rounds(index);
     let mismatches_at = soak_page::mismatches(index);

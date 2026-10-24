@@ -59,8 +59,9 @@ const RESOLVER_PAGE: MappedWindow = unsafe { MappedWindow::new(RESOLVER_VA, PAGE
 // SAFETY: as above.
 const SOCKET_PAGE: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE) };
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
     // A page the resolver refuses (no grant for this badge) is deleted on its side; this client
     // cannot tell, and does not need to: every resolve then answers DENIED, which is the claim.
     if !attach(RESOLVER, RESOLVER_VA, request(OPERATION_ATTACH_PAGE_FRAME)) {

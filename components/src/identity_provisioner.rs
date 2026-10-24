@@ -74,8 +74,9 @@ pub const RPT_CRED_FAILED: u64 = 4;
 /// treat as a refusal.
 const EEXIST: i32 = 17;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(id_len: u64, secret_len: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(id_len: u64, secret_len: u64, _a2: u64) -> ! {
     // SAFETY: forwarded from REQ_WINDOW's own contract; staged by the caller with the identity and
     // secret this run provisions.
     let req_page = unsafe { REQ_WINDOW.as_slice() };
