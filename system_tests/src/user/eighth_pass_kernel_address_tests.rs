@@ -1,15 +1,12 @@
 //! **A user program cannot read the kernel through its other addresses either** (an eighth
 //! outsider pass at the confinement claim, claim 21).
 //!
-//! The cited test reads one kernel static through its link-time virtual address. This module aims
-//! the same `kernel_test_subject` at two further kernel views of kernel memory that a real attacker
-//! would reach for first: the kernel's own code (a function pointer, the text half) and the
-//! **direct map** (the kernel's writable alias of physical memory, where the same sentinel page
-//! appears a second time). The claim is per-ISA (§19 (architectural parity is a tenet)), so both
-//! targets are driven on every architecture the suite boots.
-//!
-//! The precondition asserts each target is mapped for the kernel (`mmu::translate`), so a refusal
-//! to fault cannot hide behind "the address was unmapped anyway".
+//! The cited test reads one kernel static at its link-time address. This module aims the same
+//! `kernel_test_subject` at kernel text and at the **direct map**, the kernel's writable alias of
+//! physical memory, on every architecture whose walk names one (§19 (architectural parity is a
+//! tenet)). A precondition asserts each target is mapped for the kernel (`mmu::translate`), so a
+//! refusal to fault cannot hide behind "the address was unmapped anyway". See
+//! notes/confinement-claims/the-eighth-pass-tests.md.
 
 use super::test_programs::{a_kernel_address, kernel_test_subject_image, spawn_bare};
 use super::*;
@@ -31,22 +28,11 @@ fn is_read_fault(kind: UserFault) -> bool {
 
 /// **The `kernel_test_subject`, aimed at kernel text and at the direct map, faults on both.**
 ///
-/// Three targets in one boot: the sentinel static (the cited test's, kept so this module's faults
-/// cannot all be about a mapping unique to this file), a function in the kernel's text, and the
-/// direct-map alias of the sentinel's own physical page. The last is the sharpest: the page is the
-/// very one the cited test proves unreadable at its link-time address, and the direct map is the
-/// kernel's other name for it.
-///
-/// The observation is the `kernel_test_subject`'s death plus the recorded fault, read with bounded
-/// retries because `last_user_fault` is one global slot on a loaded machine: an unrelated user
-/// thread's non-page fault records itself with address 0 and can overwrite the record between the
-/// fault and the read. A retry re-spawns and re-reads; the escape signal is different and
-/// unambiguous, being a `kernel_test_subject` that never dies because its read never faulted.
-///
-/// The fault kind is `Permission(Read)` or `Translation(Read)`: the two table layouts (the page
-/// present but supervisor-only, and the page absent from the low half entirely) split across
-/// targets and ISAs, and what the claim requires is that each read was stopped as a read at the
-/// exact address handed in.
+/// Targets: the cited sentinel static, a kernel text function, and the direct-map alias of the
+/// sentinel's own page where the kernel's walk names one. Bounded retries read the fault, because
+/// `last_user_fault` is one global slot another thread's fault can overwrite; an escape is a
+/// subject that never dies. The claim is each read stopped as a read at the exact address, as
+/// `Permission(Read)` or `Translation(Read)` depending on the table layout.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
