@@ -265,7 +265,9 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
 /// **The `-v` line: the name, and nothing else.** `rm(1)`'s `-v` is "showing them as they are
 /// removed", and the default is silence, which is why every call to this is behind the option.
 fn say(name: &[u8], suffix: &[u8]) {
-    lines(&[name, suffix, b"\n"]);
+    let mut out = [0u8; grant::MAX_NAME + 16];
+    let n = pack(&mut out, &[name, suffix, b"\n"]);
+    text(&out[..n]);
 }
 
 /// **A diagnostic, which is not behind an option**: a failure is a line plus a non-zero exit,
@@ -279,19 +281,30 @@ fn diagnose(name: &[u8], errno: i32) {
     } else {
         dir::explain(errno).as_bytes()
     };
-    if name.is_empty() {
-        lines(&[b"rm: ", reason, b"\n"]);
+    let mut out = [0u8; grant::MAX_NAME + 96];
+    let n = if name.is_empty() {
+        pack(&mut out, &[b"rm: ", reason, b"\n"])
     } else {
-        lines(&[b"rm: ", name, b": ", reason, b"\n"]);
-    }
+        pack(&mut out, &[b"rm: ", name, b": ", reason, b"\n"])
+    };
+    text(&out[..n]);
 }
 
-/// Send `parts` one after another as framed text. The stream is bytes, so a line needs no buffer
-/// to be whole, and a name as long as a grant carries is printed whole rather than cut to fit one.
-fn lines(parts: &[&[u8]]) {
+/// Concatenate `parts` into `out`, returning the length. Truncating rather than growing, because
+/// this program has no allocator and a diagnostic that could not be printed is worse than one that
+/// is short. Each caller's buffer holds a name as long as a grant carries, so a name is never cut.
+fn pack(out: &mut [u8], parts: &[&[u8]]) -> usize {
+    let mut n = 0;
     for part in parts {
-        text(part);
+        for &b in *part {
+            if n == out.len() {
+                return n;
+            }
+            out[n] = b;
+            n += 1;
+        }
     }
+    n
 }
 
 /// Send a line as framed text, 16 bytes per message: the std PAL's stdout framing, which `date`

@@ -11,8 +11,9 @@ needs_person: no
 ---
 # 946. A granted file name can be longer than sixteen bytes
 
-**IN-PROGRESS, 2026-10-24 (UTC).** Built on aarch64 and gated there by `script/swish-check`; the
-other two legs and the bound itself are what is left ("Needs calef" and "BUGS" below).
+**IN-PROGRESS, 2026-10-24 (UTC).** Built, and gated by `script/swish-check` on aarch64 and x86_64.
+Left: the riscv64 leg, which CI runs, the bound itself ("Needs calef"), and the installed demo,
+which waits on milestone 909 ("BUGS").
 
 *(Title and slug provisional.)*
 
@@ -59,7 +60,7 @@ caretaker, and no library carries a capability's name by argument words or frame
 
 Lane `milestone/946-granted-file-name-longer-than-sixteen-bytes`.
 
-`script/swish-check`'s aarch64 leg types these, and each answers as shown:
+`script/swish-check`'s aarch64 and x86_64 legs type these, and each answers as shown:
 
 - `wc < quarterly-report.txt` and `wc quarterly-report.txt` both print `1 3 19`, and
   `caps wc quarterly-report.txt` names the 20-byte file as the input.
@@ -76,7 +77,9 @@ boot's first pipeline, sixteen in `installed/jig rollback`, seventeen pass both 
 gets twenty-one (`system_initializer::SHELL_STACK_PAGES`), the planner is compiled optimized in a
 debug build, and a set holds at most 512 bytes of name. notes/glob-grant/xargs.md ("The bytes a
 set carries") has the numbers. The progenitor's capability peak stays at the 37 that
-`kernel/src/cap.rs` records, on both boots.
+`kernel/src/cap.rs` records, on both boots. The timetable, which holds an `Endowment` per entry,
+was measured the same way: `login_user_schedule_tests` faults at 52 pages and passes at 56, and
+`timetable::contract::STACK_PAGES` is 60, with the crate compiled optimized in a debug build.
 
 ## Needs calef
 
@@ -97,8 +100,8 @@ by the program it was granted to, and an installed `least_authority_demo` runs b
 
 ## BUGS
 
-- Only the aarch64 leg has run. riscv64 and x86_64 carry the same code and the same script lines,
-  and CI runs them.
+- The riscv64 leg has not run here (no `qemu-system-riscv64` on the machine that built this). It
+  carries the same code and script lines, and CI runs it.
 - An installed `least_authority_demo` cannot yet be installed to be run: `jig install demos` is
   refused while every image packs the program, until milestone 909 (basalt composes the bootable
   image from its packages). The shell's half of the exit is the `installed/least_authority_demo`
