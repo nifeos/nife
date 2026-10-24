@@ -38,7 +38,7 @@
 //! - **The phases are host wall time on a shared runner**, so one run is a premise check and not a
 //!   baseline. Milestone 808's daily record takes medians.
 //! - **`build` includes QEMU's start-up**, under a second against tens of seconds of cargo.
-
+//!
 //! Name: provisional (milestone 807's lane, 2026-10-07 UTC), the module, the `time-summary`
 //! subcommand, the `NIFE_TIME_RECORD` variable and the file's default name alike. §254 left every
 //! name in this design to a separate ratification.
