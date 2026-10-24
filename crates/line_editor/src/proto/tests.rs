@@ -44,8 +44,8 @@ fn the_two_start_bits_are_distinct_low_bits() {
     assert_eq!(proto::START_ABSORB, 2);
 }
 
-/// **Only the supervisor's badge admits a quiesce, and it admits nothing else** (DECISIONS §232:
-/// "only a supervisor sends it"). An unbadged copy is what the shell, `login` and the input driver
+/// **Only the supervisor's badge admits a quiesce, and it admits nothing else** (DECISIONS §232
+/// (the `line_editor` swap contract): "only a supervisor sends it"). An unbadged copy is what the shell, `login` and the input driver
 /// hold; a quiesce honored from one of them stops the terminal until a supervisor that never
 /// asked says `CTL_RESUME`, which on a boot is never.
 #[test]
