@@ -1,0 +1,26 @@
+# A bare-metal guest that counts memory reorderings QEMU's multi-threaded TCG lets a guest see.
+# Its own workspace: it is built for two bare-metal targets with its own link scripts and has no
+# dependencies. See notes/benchmarks/host-reordering-under-tcg.md.
+# Name: provisional, minted 2026-10-24 (UTC) by maintainer/measure-arm64-host-reordering.
+[package]
+name = "host_reordering_litmus"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "host_reordering_litmus"
+path = "src/main.rs"
+test = false
+bench = false
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 2
+debug = false
+
+[workspace]

@@ -1,16 +1,10 @@
-//! **The IDT and the trap path, `x86_64`.** The third implementation of the arch contract aarch64
-//! states with `VBAR_EL1` and RISC-V with `stvec`.
+//! The IDT and the trap path, `x86_64`: the arch contract aarch64 states with `VBAR_EL1` and
+//! RISC-V with `stvec`.
 //!
-//! The shape of the difference is worth naming, because it is what the assembly beside this file
-//! exists to paper over. aarch64 has one vector base and sixteen 128-byte slots the hardware picks
-//! between; RISC-V has one entry point and a cause register. x86 has 256 independent entry points
-//! and tells the handler nothing, so the vector number has to be manufactured by having 256
-//! different stubs (trap.s), and ten of the 32 architectural exceptions push an extra word the other
-//! 246 vectors do not.
-//!
-//! What the rest of the kernel sees through this module is the same four things it sees on the
-//! other two: a [`TrapFrame`], counters it can assert on, the last user fault, and an `init` that
-//! makes faults reportable instead of fatal.
+//! x86 has 256 entry points and tells the handler nothing, so trap.s manufactures the vector with
+//! one stub per vector, and ten of the 32 exceptions push an error code the other 246 vectors do
+//! not. The kernel sees a [`TrapFrame`], counters it can assert on, the last user fault, and an
+//! `init` that makes faults reportable. See notes/x86-port/traps.md.
 
 use core::cell::SyncUnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
@@ -67,24 +61,13 @@ const _: () = {
 };
 
 impl TrapFrame {
-    /// The syscall number the caller passed.
+    /// The syscall number the caller passed: `rax`, following Linux.
     ///
-    /// **`rax`, following Linux**, and that choice is worth stating because it is the one place a
-    /// third architecture could gratuitously invent a third convention. The tree's shape is one
-    /// number register plus six argument registers, with argument 0 doubling as the return
-    /// (aarch64: `x8` + `x0`..`x5`; RISC-V: `a7` + `a0`..`a5`). Applying that shape to `x86_64`'s own
-    /// `syscall` convention gives `rax` + `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`.
-    ///
-    /// **`r10` rather than `rcx` is not a preference**, it is the instruction: `syscall` overwrites
-    /// `rcx` with the return address and `r11` with the caller's RFLAGS, so the fourth argument
-    /// cannot ride in the C ABI's fourth register. Every `x86_64` kernel makes the same substitution
-    /// for the same reason.
-    ///
-    /// **Ratified as DECISIONS §124** (2026-08-24). It was written here provisionally, because a
-    /// syscall ABI is a boundary rather than a habit (DECISIONS §10, §16) and is exactly the kind of
-    /// decision the "move fast on what can be undone" tenet calls expensive; it is now settled, and
-    /// it is **spoken**: every hand-assembled program in `user::x86_programs` reaches
-    /// `crate::syscall::dispatch` through these accessors, from ring 3, under the scheduler.
+    /// The arguments are `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`, argument 0 doubling as the
+    /// return: the tree's one number register plus six (aarch64 `x8` + `x0`..`x5`, RISC-V `a7` +
+    /// `a0`..`a5`). `r10` stands in for `rcx` because `syscall` overwrites `rcx` with the return
+    /// address and `r11` with RFLAGS. The ABI is §124 (the x86-64 syscall ABI); see
+    /// notes/x86-port/traps.md.
     pub(crate) fn syscall_nr(&self) -> u64 {
         self.rax
     }
@@ -120,17 +103,11 @@ impl TrapFrame {
     /// Build the frame that drops a brand-new thread to ring 3 at `entry` on `user_sp`, with `args`
     /// in the first three argument registers.
     ///
-    /// The privilege change is carried entirely by the selectors: `iretq` returns to the ring named
-    /// by the low two bits of the CS it pops, and pops SS:RSP too because it is changing ring. That
-    /// is the whole mechanism, and it is why the GDT's layout in `segments.rs` is load-bearing.
-    ///
-    /// `rflags` is `IF | 0x2`. Bit 1 reads as one on every x86 since the 8086 and a frame without
-    /// it is malformed; `IF` set is what keeps a tight-loop user thread preemptible, the same
-    /// intent as RISC-V's SPIE and aarch64's DAIF = 0.
-    ///
-    /// Note what is **not** set: `IOPL` stays 0, so a ring-3 program may not touch the I/O space at
-    /// all, and the TSS's I/O permission bitmap is empty (segments.rs). That is the only correct
-    /// answer while there is no capability shape for a port (DECISIONS §121).
+    /// The selectors carry the privilege change: `iretq` returns to the ring in the low two bits
+    /// of the CS it pops (the GDT layout in `segments.rs`). `rflags` is `IF | 0x2`: bit 1 always
+    /// reads as one, and `IF` keeps a looping user thread preemptible. `IOPL` stays 0, so ring 3
+    /// reaches a port only through the TSS's I/O permission bitmap, which a port capability fills
+    /// (§121 (x86 port I/O); `segments.rs`).
     #[allow(dead_code)]
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
         const RFLAGS_IF: u64 = 1 << 9;
@@ -236,24 +213,14 @@ unsafe extern "C" {
     static ISR_STUBS: [u64; 256];
 }
 
-/// **How many interrupts became a message to a userspace endpoint**: the trap handler took one,
+/// How many interrupts became a message to a userspace endpoint: the trap handler took one,
 /// `sched::irq_route` found an endpoint bound to it, and `sched::irq_notify` was called. The
-/// portable counter every architecture's interrupt tests read, and it now means on this
-/// architecture what it has always meant on the other two.
+/// portable counter every architecture's interrupt tests read.
 ///
-/// **It used to count the local APIC timer, the reschedule IPI, and device vectors nothing had
-/// claimed.** That was a divergence rather than a richer number, and it made every portable test
-/// that reads this counter weaker here than elsewhere: an assertion that a *device's* completion
-/// reached the kernel was satisfied by a timer tick landing in the same window, so on `x86_64` those
-/// tests passed for the wrong reason whenever a tick obliged. That is not what *caused*
-/// `user::tests::a_userspace_driver_reads_a_file_over_the_pcie_transport` to flake (it sampled its
-/// baseline after the driver was already spawned, and both were fixed together), but it is why the
-/// flake was rare instead of constant, and why fixing the sample alone would have been a widening
-/// rather than a fix. See notes/load-sensitive-assertions.md for the whole account.
-///
-/// Nothing lost a number to this. Timer ticks are counted by `arch::timer::ticks()` and printed by
-/// the bring-up tour from there; an unclaimed device vector is counted by [`DEVICE_IRQS`] and, when
-/// there was nothing to route it to, by [`SPURIOUS_IRQS`].
+/// The timer, the reschedule IPI and unclaimed device vectors are not counted, so a tick cannot
+/// satisfy a test waiting for a device's completion (notes/load-sensitive-assertions.md). Ticks are
+/// `arch::timer::ticks()`; a device vector is [`DEVICE_IRQS`], and one with no route
+/// [`SPURIOUS_IRQS`].
 pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
 
 /// **How many interrupts arrived with nothing to route them to.** A spurious interrupt is normal on
@@ -322,11 +289,10 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
     unsafe { core::ptr::read_volatile(&raw const (*frame).rip) }
 }
 
-/// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
-/// stack that [`user_pc`] reads. The thread's return to user mode restores it from there, so this is
-/// how the kernel hands a blocked or trapped user thread a result word that is not one of the five
-/// its syscall path writes. The death message's label uses it, in argument register 5, so that only
-/// the death path pays: DECISIONS §148 (resolves by asking the kernel), as amended 2026-10-04.
+/// Write argument register `i` of a thread's saved user frame, the one [`user_pc`] reads. The
+/// return to user mode restores it, so this hands a trapped user thread a word its syscall path
+/// does not write; the death message's label rides in register 5 (§148 (resolves by asking the
+/// kernel), as amended 2026-10-04).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
@@ -348,17 +314,11 @@ unsafe extern "C" {
     fn user_return(frame: *mut TrapFrame) -> !;
 }
 
-/// Drop to ring 3 by loading `frame` and `iretq`ing into it. The x86 side of the userspace-entry
-/// seam (the counterpart of aarch64's `enter_user` and RISC-V's).
+/// Drop to ring 3 by loading `frame` and `iretq`ing into it; the counterpart of aarch64's and
+/// RISC-V's `enter_user`. The frame's CS names the ring (see [`TrapFrame::for_user_entry`]).
 ///
-/// **The privilege change is carried entirely by the frame**, which is the piece of x86 worth
-/// stating plainly: `iretq` returns to the ring named by the low two bits of the CS it pops, and
-/// pops SS:RSP as well because it is changing ring. There is no "return to user" instruction and no
-/// mode bit to set; there is one instruction that pops a context, and the context says which ring.
-///
-/// **`#[inline(always)]` is load-bearing**, exactly as on the other two architectures: the frame
-/// sits at the top of the caller's own kernel stack, so a real call frame pushed here could land on
-/// top of it. Inlining makes the caller tail-jump to `user_return` with no push.
+/// `#[inline(always)]` is load-bearing: the frame sits at the top of the caller's kernel stack, and
+/// a call frame pushed here could land on it. Inlined, the caller tail-jumps to `user_return`.
 ///
 /// # Safety
 /// `frame` must be a correctly-built, writable [`TrapFrame`] at the top of the current thread's
@@ -366,13 +326,8 @@ unsafe extern "C" {
 /// next trap can be pushed onto (`segments::set_kernel_stack`).
 #[inline(always)]
 pub unsafe fn enter_user(frame: *mut TrapFrame) -> ! {
-    // **Refuse to enter ring 3 with no entry point**, for the reason the RISC-V twin carries at
-    // length: a thread dispatched with `rip == 0` fetches its first instruction from address 0,
-    // page-faults, and dies, and whatever it was supposed to serve then never answers. That is a
-    // lost-wakeup hang arbitrarily far from the cause; this converts it into a loud failure that
-    // carries its own evidence. The comparison is a load and a branch on a frame this function
-    // already touches, so nothing is pushed over the frame at the top of this stack.
-    //
+    // A thread entered with `rip == 0` faults at address 0 and dies, a hang far from its cause, so
+    // panic instead. A load and a branch push nothing over the frame at the top of this stack.
     // SAFETY: the caller's contract says `frame` is a valid, writable `TrapFrame`.
     let rip = unsafe { (*frame).rip };
     if rip == 0 {
@@ -399,18 +354,12 @@ fn entered_user_with_no_entry_point(user_sp: u64) -> ! {
     )
 }
 
-/// Unmask external interrupts at the controller.
-///
-/// **Nothing to do on this architecture, and that is a real difference rather than a stub.** RISC-V
-/// has a second gate, `sie.SEIE`, that has to be opened before an external interrupt can be
-/// delivered even with `sstatus.SIE` set. x86 has one gate, `RFLAGS.IF`, which
-/// `arch::interrupts::enable` owns. What is *per source* here is the IO APIC's mask bit, which
-/// `irq::enable` clears when it arms a line, and the local APIC's Task Priority Register, which
-/// `irq::init_local_apic` sets to zero so no priority class is dropped.
+/// Unmask external interrupts at the controller, which on x86 is nothing: its one gate is
+/// `RFLAGS.IF` (`arch::interrupts::enable`), where RISC-V also has `sie.SEIE`. The per-source masks
+/// are the IO APIC's (`irq::enable`) and the TPR, which `irq::init_local_apic` zeroes.
 ///
 /// # Panics
-/// If the local APIC is not up. An empty function that silently succeeded before the controller
-/// exists would let a caller believe interrupts are unmasked when nothing can deliver one.
+/// If the local APIC is not up, so no caller believes interrupts unmasked when nothing can deliver.
 pub(crate) fn enable_external() {
     assert!(
         super::irq::is_local_apic_ready(),
@@ -418,31 +367,18 @@ pub(crate) fn enable_external() {
     );
 }
 
-/// **Whether [`IDT`] has been built yet.** Guards the one write every core used to make
-/// unconditionally, back when there was only ever one core to make it (milestone 161's SMP item).
+/// Whether [`IDT`] has been built. The first core to swap it to true builds the table, once.
 static IDT_BUILT: AtomicBool = AtomicBool::new(false);
 
 /// Install the IDT on this CPU.
 ///
-/// Every vector gets a gate, including the 224 that no hardware currently drives: an IDT entry that
-/// is not present makes an unexpected vector a **general protection fault** whose error code is the
-/// vector, which is a second puzzle stacked on the first. A present gate that prints "vector 87,
-/// unexpected" is strictly more informative and costs 4 KiB.
+/// Every vector gets a present gate, so an unexpected vector reports itself instead of raising a
+/// general protection fault. The NMI, the double fault and the machine check switch to per-core
+/// IST stacks (`super::ist`); every other vector pushes on the stack it found.
 ///
-/// Three entries switch stacks through the TSS's IST: the NMI, the double fault and the machine
-/// check, each to a per-core stack of its own (`super::ist`, whose header says why each of them
-/// cannot trust the `rsp` it interrupted). Every other vector pushes on the stack it found.
-///
-/// **The table itself is built at most once, by whichever core gets here first** (in practice
-/// always the boot core: `smp::bring_up_secondaries` never starts a second core before its own
-/// `arch::init` has long since returned). Every core still calls this and every core still `lidt`s
-/// its own IDTR (`lidt` names a per-core register, not shared state), but a secondary rewriting 256
-/// already-correct gate descriptors used to be harmless only because nothing else was running.
-/// **Fixed, milestone 161's SMP item:** the boot core keeps interrupts enabled across
-/// `bring_up_secondaries` (its own timer must keep ticking), so a secondary's rewrite loop used to
-/// race the boot core's live interrupt delivery reading the SAME table; a torn read of one gate
-/// descriptor mid-write is a spurious or garbled trap on the boot core, not a compile error, which
-/// is exactly the shape of bug this file's own comments elsewhere warn does not announce itself.
+/// The table is built once, by the first core here (the boot core), and every core `lidt`s its
+/// own IDTR. A secondary rebuilding it would race the boot core's live interrupt delivery, which
+/// stays enabled across `bring_up_secondaries`. See notes/x86-port/traps.md.
 pub fn init() {
     if !IDT_BUILT.swap(true, Ordering::AcqRel) {
         // SAFETY: guarded by the swap above, so at most one core ever runs this loop, and it runs
@@ -470,18 +406,11 @@ pub fn init() {
     }
 }
 
-/// **Prove the trap path round-trips**, by taking a breakpoint and returning from it.
+/// Prove the trap path round-trips by taking a breakpoint and returning from it.
 ///
-/// Returns how many breakpoints were caught **during this call**, which the boot tour prints. The
-/// same shape as the RISC-V and aarch64 twins, and it earns its place for the same reason: an IDT
-/// that is installed but whose return path is wrong produces a kernel that runs fine until the
-/// first real fault and then vanishes, and there is no other cheap moment to find that out.
-///
-/// **It returned the cumulative count until milestone 268**, which read the same as the other two
-/// right up until something called it twice: the tour calls it once during bring-up and
-/// `self_test::run` calls it again a few hundred lines later, and the second call reported `2`.
-/// Harmless here (both tests are `>= 1`) and exactly the shape of bug that is not harmless in a
-/// counter somebody later compares for equality, so the three now answer the same question.
+/// Returns how many breakpoints were caught during this call, not in total, as the RISC-V and
+/// aarch64 twins do; the tour and `self_test::run` each call it. An IDT whose return path is wrong
+/// runs until the first real fault and then vanishes, and this is the cheap moment to find out.
 pub(crate) fn self_test() -> usize {
     let before = BRK_COUNT.load(Ordering::Relaxed);
     // SAFETY: `int3` raises vector 3, which the IDT above routes to the common handler. The handler
@@ -536,17 +465,14 @@ const _: () = {
     );
 };
 
-/// The `RFLAGS` bits cleared on every `syscall`, named one at a time because each is a hazard
-/// rather than tidiness.
+/// The `RFLAGS` bits cleared on every `syscall`, each a hazard.
 ///
-/// `IF` (9) is the important one: clearing it makes `syscall` arrive with interrupts masked exactly
-/// as an interrupt gate does, so the handler cannot be re-entered before it has a stack. `TF` (8)
-/// would single-step the kernel on behalf of a user debugger. `DF` (10) must be clear on entry to
-/// any System V function, and a user program is free to leave it set. `IOPL` (13:12) is the
-/// all-or-nothing I/O gate, and a value inherited from ring 3 is not one the kernel chose. `NT` (14)
-/// changes what `iret` means. `RF` (16) suppresses instruction breakpoints. `AC` (18) turns
-/// unaligned kernel accesses into faults, which is a user-settable bit that has been a real
-/// privilege-escalation lever elsewhere.
+/// `IF` (9) masks interrupts on entry, as an interrupt gate does, so the handler cannot be
+/// re-entered before it has a stack. `TF` (8) would single-step the kernel for a user debugger.
+/// `DF` (10) must be clear on entry to a System V function. `IOPL` (13:12) inherited from ring 3 is
+/// not the kernel's choice. `NT` (14) changes what `iret` means. `RF` (16) suppresses instruction
+/// breakpoints. `AC` (18) suspends SMAP for ring-0 accesses, a known privilege-escalation lever
+/// (this kernel leaves SMAP off; `cpu_init.rs`).
 const SYSCALL_FLAG_MASK: u64 = (1 << 8)      // TF
     | (1 << 9)                               // IF
     | (1 << 10)                              // DF
@@ -564,22 +490,11 @@ const _: () = assert!(
     "a real IDT vector would be ambiguous here"
 );
 
-// **Point the `syscall` path's kernel stack at `top`, on this core.** DELETED 2026-09-30 by the
-// CI-warnings lane: swish-check's x86_64 leg warned this setter and its only caller
-// (`segments::set_kernel_stack`) were never used in any configuration, because `isr_restore` in
-// trap.s writes this slot (`SYSCALL_KERNEL_RSP_OFF`, reached `gs`-relatively through
-// `cpu::PerCpu::x86_trap`; see `super::global_asm!`'s substitution) and `TSS.RSP0` together on
-// every return to ring 3, the first one included. The two-writes-in-step property these doc
-// blocks sold ("a trap and a `syscall` cannot name different stacks") lives there now; this
-// comment stays so a reader grepping for the old name finds where the job went. It had been
-// per-CPU since the SMP item of milestone 161 (the x86_64 kernel port), after starting as one flat
-// `static mut` every CPU raced.
-/// **Program the four MSRs that make `syscall` work**, once per CPU, at boot.
+/// Program the four MSRs that make `syscall` work, once per CPU, at boot. The `syscall` path's
+/// kernel stack is not among them: `isr_restore` in trap.s sets it with `TSS.RSP0`.
 ///
-/// Order matters in one place: `SCE` is enabled last, so the instruction becomes legal only after
-/// the address it jumps to and the flags it clears are already in place. The reverse order leaves a
-/// window in which a `syscall` would jump to whatever `IA32_LSTAR` happened to hold, which on a cold
-/// machine is zero.
+/// `SCE` is enabled last, so the instruction is legal only once its target and flag mask are in
+/// place; otherwise a `syscall` could jump to whatever `IA32_LSTAR` held, zero on a cold machine.
 ///
 /// # Safety
 /// Must be called with the GDT installed (the selectors this writes index it) and before anything
@@ -603,21 +518,12 @@ unsafe extern "C" {
     fn x86_syscall_entry();
 }
 
-/// **The one Rust function every `syscall` reaches**, called by `x86_syscall_entry` with a pointer
-/// to the [`TrapFrame`] it built. The `syscall` twin of [`x86_trap_handler`].
-///
-/// It hands straight to the portable dispatcher, which reads the number and the arguments through
-/// `TrapFrame::{syscall_nr, arg, set_arg}` and so never names an x86 register. That is the whole
-/// point of those accessors, and this function is where the third architecture cashes them in.
+/// The Rust function every `syscall` reaches, with the [`TrapFrame`] `x86_syscall_entry` built;
+/// the twin of [`x86_trap_dispatch`]. The dispatcher reads it only through `TrapFrame`'s accessors.
 ///
 /// # BUGS
-/// **The return is an `iretq`, not a `sysretq`.** `sysret` is the faster half of the instruction
-/// pair and this port does not use it yet, deliberately: it returns to whatever `rcx` holds without
-/// checking that the address is canonical, and a non-canonical `rcx` faults **in ring 0 on the
-/// user's stack**, which is the shape of CVE-2012-0217 and needs an explicit canonicality check and
-/// an `iretq` fallback to use safely. Sharing `isr_restore` costs some tens of cycles per syscall
-/// and buys one return path with one `swapgs` rule. Worth revisiting with a benchmark rather than an
-/// argument, once there is a syscall-heavy workload on this architecture to measure.
+/// The return is `iretq`, not `sysretq`, which faults in ring 0 on the user's stack for a
+/// non-canonical `rcx` (CVE-2012-0217). See notes/x86-port/traps.md.
 ///
 /// # Safety
 /// Called only from `x86_syscall_entry`, which has just constructed a complete [`TrapFrame`] at the
@@ -683,14 +589,11 @@ unsafe extern "C" {
     fn dispatch_on_interrupt_stack(frame: *mut TrapFrame, top: u64) -> bool;
 }
 
-/// **The outer half of the trap path, and the half that stays on the interrupted stack.**
+/// The outer half of the trap path, which stays on the interrupted stack: it picks the stack the
+/// handler runs on, then runs the deferred `schedule()`, as on the other two architectures.
 ///
-/// The third implementation of a split the other two architectures already have, and it exists for
-/// exactly their reason: it picks the stack the handler runs on, and it runs the deferred
-/// `schedule()` afterwards. `schedule()` parks this thread's `rsp` in its `Context` and resumes it
-/// there later, so it may only be called on a stack that belongs to the thread; calling it from the
-/// per-CPU interrupt stack would park a per-CPU address in a thread and the thread would resume on
-/// bytes the next interrupt had already spent. See `kernel/src/interrupt_stack.rs`.
+/// `schedule()` parks this thread's `rsp` in its `Context`, so it runs only on a stack the thread
+/// owns, never the per-CPU interrupt stack. See `kernel/src/interrupt_stack.rs`.
 ///
 /// # Safety
 /// Called only from `isr_common`, which has just constructed a complete [`TrapFrame`] at the
@@ -703,10 +606,7 @@ pub(crate) unsafe extern "C" fn x86_trap_dispatch(frame: *mut TrapFrame) {
     let from_user = unsafe { (*frame).cs } & 3 == 3;
     let top = crate::interrupt_stack::top_for_trap(from_user);
     let deferred_switch = if top == 0 {
-        // The common case, and it must not pay for the uncommon one: the other two ports measured
-        // 8.6 instructions per syscall for routing every trap through the trampoline to do a stack
-        // move that does not happen.
-        //
+        // No trampoline here: the other ports measured 8.6 instructions per syscall for it.
         // SAFETY: the caller's contract; forwarded unchanged.
         unsafe { x86_trap_body(frame) }
     } else {
@@ -743,77 +643,39 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             BRK_COUNT.fetch_add(1, Ordering::Relaxed);
             false
         }
-        // **A thread asked for the FP unit for the first time**
-        // (milestone 447 (a thread's vector registers are its own)). Vector 7 is `#NM`,
-        // "device not available", which `CR0.TS` raises on the first FP or SSE instruction a thread
-        // executes. Enabling is the whole handler: `#NM` is a fault, so `rip` already points at the
-        // instruction that trapped and the `iret` re-executes it with the unit open.
-        //
-        // **This is the bit LazyFP was about** (CVE-2018-3665), and `crate::fp`'s header says why
-        // using it this way is not that: `TS` answers "has this thread ever wanted the unit", and
-        // the registers themselves are always either the running thread's or the initial state.
-        //
-        // Like the other two architectures' arms it serves ring 0 as well as ring 3, because every
-        // userspace target in `targets/` is soft-float and milestone 447's concurrency proof is
-        // therefore written as kernel threads.
-        //
-        // `enable_for_current` returning false means there is no thread to record it against;
-        // falling through to the handler below is better than an `iret` that retakes the same fault
-        // forever.
+        // `#NM`: `CR0.TS` traps a thread's first FP or SSE instruction (milestone 447 (a thread's
+        // vector registers are its own)). It is a fault, so the `iret` re-executes the instruction
+        // with the unit open; `crate::fp` has why this is not LazyFP. Ring 0 takes it too. With no
+        // thread to record against, fall through rather than retake the fault forever.
         7 if crate::fp::enable_for_current() => false,
 
-        // The local APIC timer. Counted, then acknowledged below with every other interrupt.
-        //
-        // **Record and defer** (DECISIONS §9): `on_tick` marks a reschedule due and this function
-        // returns `true`, so the switch happens in `x86_trap_dispatch`, one frame out, on the
-        // interrupted thread's own stack. Doing it here would be doing it mid-handler with the
-        // local APIC not yet told we are done.
+        // The local APIC timer. Record and defer (§9 (locking)): `on_tick` marks a reschedule due,
+        // and the switch happens in `x86_trap_dispatch` on the thread's own stack, after the EOI.
         v if v == super::irq::TIMER_VECTOR as u64 => {
             super::timer::tick();
             crate::sched::on_tick();
-            // Not counted in ROUTED_IRQS: nothing routed this to a driver. It used to be, and
-            // the cost was that a tick could answer a test asking whether a *device's* completion
-            // had arrived. `timer::ticks()` is the count of these.
             super::irq::end_of_interrupt();
             true
         }
-        // A reschedule IPI from another CPU (`irq::send_reschedule`). It carries two meanings, as
-        // aarch64's reschedule SGI does: the sender may have handed us a thread through our inbox,
-        // or an idle CPU may be asking us for work. Both are served, and the deferred `schedule()`
-        // at the caller runs whatever arrived.
-        //
-        // Unreachable today: there is one CPU, and every `send_reschedule` caller in `sched` is
-        // guarded by "the target is another core". It is here rather than under the catch-all
-        // because the catch-all would call it spurious, which it is not.
+        // A reschedule IPI (`irq::send_reschedule`): the sender may have put a thread in our inbox,
+        // or an idle CPU may want work. Both are served, and the deferred `schedule()` runs
+        // whatever arrived. Not a routed interrupt, and not spurious.
         v if v == super::irq::RESCHEDULE_VECTOR as u64 => {
             crate::sched::drain_inbox();
             crate::sched::serve_steal_request();
-            // Not counted in ROUTED_IRQS, for the timer arm's reason: this is the kernel talking
-            // to itself, not an interrupt becoming a driver's message.
             super::irq::end_of_interrupt();
             true
         }
-        // **A self-directed interrupt, and it becomes a message.** This is the one delivery path
-        // that is real on this architecture today, and it is aarch64's case rather than RISC-V's:
-        // the local APIC delivers a vector to its own CPU on demand, through the ICR, the IRR, the
-        // ISR and an EOI, so the interrupt is the hardware's rather than a function call wearing a
-        // handler's name. aarch64 proves the same property with a software-generated interrupt;
-        // RISC-V, which can raise nothing at all, has to assert its console UART's line instead.
-        //
-        // **The intid here is the vector number**, which is the whole of the x86 naming rule and is
-        // worth stating because `irq::enable` takes a *legacy IRQ* instead: a local APIC source is
-        // named by the vector it raises (there is no line and no controller input to name), and a
-        // device line is named by the legacy IRQ the MADT resolves to a GSI. The two domains cannot
-        // collide, because legacy IRQs are 0..15 and these vectors are 0x22 and 0x23.
+        // A self-directed interrupt, which becomes a message; the local APIC delivers it through
+        // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy IRQ
+        // (0..15), so the two cannot collide. See notes/x86-port/traps.md.
         v if v == super::irq::SELF_TEST_VECTOR as u64
             || v == super::irq::SELF_TEST_VECTOR_B as u64 =>
         {
             match crate::sched::irq_route(v as u32) {
                 Some(ep) => {
                     ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                    // Nothing to mask: a self-IPI is edge-delivered and one-shot, so there is no
-                    // asserted line to hold off until a driver quiets it. That is the same reason
-                    // aarch64's `quiet_test_irq` for an SGI is empty.
+                    // Nothing to mask: a self-IPI is one-shot, with no asserted line to hold off.
                     crate::sched::irq_notify(ep);
                 }
                 None => {
@@ -823,20 +685,10 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::irq::end_of_interrupt();
             true
         }
-        // **A PCI function's MSI-X message, and it becomes a driver's wakeup** (milestone 215).
-        //
-        // This is the arm that makes a userspace device driver possible on this architecture, and
-        // it is short for a reason worth stating rather than hiding: an MSI vector IS its intid
-        // (`irq::MSI_VECTOR_BASE`), because the device writes the vector straight to the local
-        // APIC and there is no controller input in between to name it by. So the inversion the
-        // arm below still owes for an IO APIC line does not exist here; `sched::irq_route` can be
-        // asked with the vector the CPU just took.
-        //
-        // Nothing is masked, exactly as for the self-IPI above and for aarch64's SGI: an MSI is a
-        // posted write that already happened, so there is no asserted line to hold off until the
-        // driver quiets its device. The driver's `Irq::ACK` is correspondingly a no-op
-        // (`irq::enable`), and the used-ring loop in `crates/virtio` is what actually decides a
-        // request is complete.
+        // A PCI function's MSI-X message, which becomes a driver's wakeup (milestone 215 (a PCI
+        // function's interrupt reaches nothing on x86_64)). An MSI vector is its intid
+        // (`irq::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted write that already
+        // happened, so the driver's `Irq::ACK` is a no-op.
         v if super::irq::is_msi_vector(v) => {
             match crate::sched::irq_route(v as u32) {
                 Some(ep) => {
@@ -851,20 +703,11 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::irq::end_of_interrupt();
             true
         }
-        // A device line, routed by the IO APIC's redirection table onto a vector this kernel chose
-        // (irq::GSI_VECTOR_BASE plus the line's redirection index; milestone 308, and it was plus
-        // the GSI until then), **and it becomes a driver's message** (milestone 505 (an x86_64
-        // input driver that never lets the core idle)), as on the other two architectures.
-        //
-        // `irq::intid_of_vector` turns the vector back into the intid that armed it, which is the
-        // number a driver bound; subtraction alone gives the redirection index, and an index is not
-        // a legacy IRQ (that function's table has why). COM1's receive line, legacy IRQ 4, is the
-        // line this was built for: the input driver waits on it rather than polling the port.
-        //
-        // `irq::disable` holds a level-triggered line off until the driver's ACK re-arms it
-        // (`irq::enable`); an edge-triggered line, COM1's among them, is left live, because an IO
-        // APIC drops an edge that arrives while its entry is masked. A line nothing has bound (the
-        // tour's PIT) is counted and acknowledged, as every device vector was before.
+        // A device line on `irq::GSI_VECTOR_BASE` plus its redirection index, which becomes a
+        // driver's message (milestone 505 (an x86_64 input driver that never lets the core idle)).
+        // `irq::intid_of_vector` recovers the intid a driver bound. `irq::disable` holds off only a
+        // level-triggered line: an IO APIC drops an edge that arrives while its entry is masked. A
+        // line nothing bound is counted and acknowledged.
         v if super::irq::is_device_vector(v) => {
             DEVICE_IRQS.fetch_add(1, Ordering::Relaxed);
             let routed = super::irq::intid_of_vector(v)
@@ -893,11 +736,8 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::irq::end_of_interrupt();
             true
         }
-        // An architectural exception taken **in ring 3**: the user program's fault, not the
-        // kernel's. Recorded rather than fatal, which is the difference the whole privilege
-        // boundary exists to make. Only vectors below 32 reach here; a device interrupt that
-        // happened to land while a user program was running was already handled above, because an
-        // interrupt is not the interrupted program's fault.
+        // An exception taken in ring 3 is the program's fault, recorded rather than fatal. Only
+        // vectors below 32 reach here: an interrupt during user code was handled above.
         vector if frame.cs & 3 == 3 => user_fault(frame, vector),
         // Everything below 32 is an architectural exception, and every one of them is fatal here.
         vector => fatal_exception(frame, vector),
@@ -933,21 +773,12 @@ fn fatal_exception(frame: &TrapFrame, vector: u64) -> ! {
     panic!("unhandled x86_64 exception: vector {vector} ({name})");
 }
 
-/// **The NMI, double fault and machine check land here**, on their own IST stacks, called from
-/// `isr_paranoid` with the kernel's GS base already in `IA32_GS_BASE` (trap.s's header has how,
-/// and `super::ist`'s has why these three).
+/// The NMI, double fault and machine check land here on their own IST stacks, from `isr_paranoid`
+/// with the kernel's GS base loaded (trap.s has how, `super::ist` why these three).
 ///
-/// None of the three may reach the deferred `schedule()` or the per-CPU interrupt stack, which is
-/// why this is not [`x86_trap_dispatch`]. An NMI's target is often mid-critical-section with
-/// interrupts masked, and switching threads under it would be a far larger surprise than the
-/// interrupt itself. The other two do not return at all. And a context switch from an IST stack
-/// would park a per-core address in a thread, the rule `crate::interrupt_stack`'s header states
-/// for its own stacks.
-///
-/// **A machine check is fatal from either ring.** It is the hardware reporting its own failure, not
-/// the interrupted program's, so it never takes the user-fault path that kills a thread and
-/// switches away; that path would also be the context switch from an IST stack this function
-/// exists to avoid. Recovering from a correctable machine check is not built.
+/// None may reach the deferred `schedule()`: an NMI often lands in a critical section, the other
+/// two never return, and a switch from an IST stack parks a per-core address in a thread. A machine
+/// check is fatal from either ring, being the hardware's failure; recovery is not built.
 ///
 /// # Safety
 /// Called only from `isr_paranoid`, which has just built a complete [`TrapFrame`] at the address it
@@ -961,13 +792,9 @@ pub(crate) unsafe extern "C" fn x86_paranoid_dispatch(frame: *mut TrapFrame) {
         fatal_exception(frame, frame.vector);
     }
 
-    // The NMI handler's one rule (`super::ist`'s header, "Nesting"): nothing in it takes an
-    // exception that returns, so only its own `iretq` unblocks NMIs and a second NMI never lands
-    // on this stack while the first is live. If one ever has, the hardware frame below us is the
-    // second NMI's, written over the first's, and the interrupted `rsp` it recorded is inside this
-    // same stack. Returning through that would resume the first NMI's handler with garbage, so the
-    // check panics here. It asks the stack's address rather than `cpu::id()` so that it holds even
-    // if the GS base is wrong.
+    // Only this handler's own `iretq` may unblock NMIs (`super::ist`, "Nesting"). A nested NMI's
+    // frame overwrites the first's and records an `rsp` inside this stack, and returning would
+    // resume garbage. The check reads the stack address, not `cpu::id()`, to hold with a bad GS.
     if super::ist::is_on_an_nmi_stack(frame.rsp) {
         panic!(
             "nested NMI: interrupted rsp {:#x} is on an NMI stack, so an exception inside the NMI \
@@ -984,29 +811,17 @@ pub(crate) unsafe extern "C" fn x86_paranoid_dispatch(frame: *mut TrapFrame) {
     }
 }
 
-/// **A ring-3 thread faulted: record what happened, say so, and kill it.**
+/// A ring-3 thread faulted: record what happened, say so, and kill it, so a driver bug is a crashed
+/// process and not a dead machine (§10 (process model)).
 ///
-/// The third implementation of the seam that makes "a driver bug is a crashed process, not a dead
-/// machine" (DECISIONS §10) true on this architecture. Until roadmap item 4 this arm recorded the
-/// fault and then panicked, because there was no scheduler and so no thread to kill; it is what a
-/// scheduler turns into a real teardown.
-///
-/// **This never returns**, exactly as the other two ports' twins do not: `sched::fault` delivers the
-/// death to a supervisor if this thread had one and otherwise takes the unsupervised path, and
-/// either way it switches to somebody else and does not come back. `isr_restore` is never reached,
-/// the `iretq` never happens, and the user program is simply not resumed. The kernel stack we are
-/// standing on is freed by the next thread (the reaper), because a thread cannot free the stack it
-/// is standing on.
+/// Never returns: `sched::fault` delivers the death to a supervisor or takes the unsupervised path,
+/// and switches away for good, so `isr_restore` never runs. The next thread (the reaper) frees the
+/// kernel stack this runs on.
 fn user_fault(frame: &TrapFrame, vector: u64) -> ! {
     let (fault, address) = classify_user_fault(vector, frame.error_code);
 
-    // **The record first, the counter last, and the counter's store is the release.** Every test
-    // that reads this record finds it by watching `USER_FAULTS` rise and then calling
-    // [`last_user_fault`], so the counter is the publication flag for the record and must be
-    // written after it. Both other ports carry the same fix and the same comment; this port was
-    // written with the counter first, which is a race a passing test cannot see (the reader gets
-    // either an earlier fault's record, or on the boot's first fault a zero that reads as "nothing
-    // faulted").
+    // The record first and the counter last, its store the release: a test watches `USER_FAULTS`
+    // rise and then calls [`last_user_fault`], so the counter publishes the record.
     LAST_USER_FAULT_ADDRESS.store(address, Ordering::Relaxed);
     LAST_USER_FAULT.store(fault.encode(), Ordering::Relaxed);
     USER_FAULTS.fetch_add(1, Ordering::Release);
@@ -1038,18 +853,11 @@ fn user_fault(frame: &TrapFrame, vector: u64) -> ! {
     crate::sched::fault(frame.rip, address);
 }
 
-/// **What the hardware walked for a user page fault, level by level, beside the root this thread's
-/// own space has.** The error code says a page was not present, and not why: whether the live `CR3`
-/// was somebody else's, or the thread's own tables had lost the entry, and if so at which level and
-/// what was written there instead. merge-group run 38506029610 killed `date` mid-pipeline on a
-/// fetch from text it had just executed, and the report could say none of that (the BUGS entry
-/// "A user thread can lose the translation of its own text" in `notes/riscv-tlb-shootdown.md`).
-///
-/// Each table is printed with whether its frame is allocated now: a table the walk still reaches
-/// through a frame the allocator calls free was handed back while linked. The thread's own root
-/// comes from `sched::thread_space_root`, which only a `system_tests` build has, so a shipping
-/// kernel prints the walk and leaves the comparison out. Out of line and cold, so the trap path
-/// pays nothing until a thread dies.
+/// Print what the hardware walked for a user page fault, level by level, beside the thread's own
+/// root: whether the live `CR3` was another space's, or where the thread's tables lost the entry.
+/// Each table says whether its frame is allocated now, so one freed while linked shows. The own
+/// root is a `system_tests` build's only (`sched::thread_space_root`). Cold, so the trap path pays
+/// nothing until a thread dies.
 #[cold]
 #[inline(never)]
 fn report_walk(address: u64) {
@@ -1087,27 +895,12 @@ fn report_walk(address: u64) {
     crate::println!("      walk ends: {:?}", walk.end());
 }
 
-/// **Turn an x86 exception into the portable [`UserFault`] both other architectures already
-/// state.**
+/// Turn an x86 exception into the portable [`UserFault`].
 ///
-/// The page fault's error code is the interesting half, and x86 is the *most* forthcoming of the
-/// three about it: aarch64 is told the fault class in `ESR_EL1`, RISC-V has to derive it by walking
-/// the tables (see its `user_fault`), and here the CPU pushes a word saying so outright.
-///
-/// | Bit | Set means |
-/// |---|---|
-/// | 0 (`P`) | the page **was** present, so this is a permission refusal rather than a missing map |
-/// | 1 (`W/R`) | the access was a write |
-/// | 2 (`U/S`) | the access came from ring 3 |
-/// | 3 (`RSVD`) | a reserved bit was set in some entry of the walk |
-/// | 4 (`I/D`) | the access was an instruction fetch |
-///
-/// The `P` bit is what separates [`UserFault::Permission`] from [`UserFault::Translation`], and that
-/// distinction is the one worth having: a permission fault means the hardware **found** the page,
-/// read its bits, and said no.
-///
-/// Anything that is not a page fault is [`UserFault::Other`] at the faulting instruction, matching
-/// what the other two report for an illegal instruction or a misaligned access.
+/// A page fault's error code states the class (notes/x86-port/traps.md has its bits). Bit 0 (`P`)
+/// set means the page was present and the hardware refused it, [`UserFault::Permission`] rather
+/// than [`UserFault::Translation`]; bit 1 is a write and bit 4 an instruction fetch. Any other
+/// exception is [`UserFault::Other`], as the other two report an illegal instruction.
 fn classify_user_fault(vector: u64, error_code: u64) -> (UserFault, u64) {
     use crate::arch::UserFaultAccess;
 

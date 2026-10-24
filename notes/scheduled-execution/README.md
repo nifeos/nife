@@ -24,6 +24,8 @@ work that page points at but does not need to carry whole.
 - [next-after-proofs.md](next-after-proofs.md): why `next_after` snaps onto the beat rather than
   counting periods, and why phase preservation is tested rather than proved. Moved from the parent
   under §212, 2026-10-11 (UTC).
+- [durable-store.md](durable-store.md): how boot-time re-derivation finds the schedules to
+  restore, through a manifest rather than a directory listing.
 - [the-crate.md](the-crate.md): the detail behind `crates/timetable`'s doc comments: the four
   answers by example, why registration's control word lives in the page, and how the phase is
   sampled.

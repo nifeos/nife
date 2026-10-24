@@ -43,6 +43,7 @@ cargo fmt --manifest-path tools/redoxfs_host/Cargo.toml "$@"
 # The atlas generator (milestone 142 (a text display good enough that people use it instead of a
 # GUI)) is its own workspace for the same reason.
 cargo fmt --manifest-path tools/glyph_atlas_generator/Cargo.toml "$@"
+cargo fmt --manifest-path tools/host_reordering_litmus/Cargo.toml "$@"
 
 # redoxfs_server is a third workspace, for the same reason, and it was missed when this script was fixed
 # on 2026-07-31: `--all` does not cross a workspace boundary, and naming one of the two outliers

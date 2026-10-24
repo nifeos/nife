@@ -22,14 +22,11 @@ pub(crate) const CAP_WRITE_COMBINE: u64 = 1 << 6;
 ///
 /// # BUGS
 ///
-/// **W^X is a property of the constructors, not of the encoders.** None of the three `leaf_entry`
-/// implementations refuses a `Flags` carrying both `CAP_WRITE` and an exec bit; they encode what
-/// they are given. The only thing standing between a caller and a W+X leaf is that no `pub`
-/// constructor builds one and `from_caps` is `pub(crate)`. The `nothing_is_both_writable_and_executable`
-/// test walks the constructors it knows and does not iterate `write_combining`. So the claim in
-/// `notes/confinement-claims.md` row 11 holds for every mapping the kernel makes today and would
-/// not survive a new in-crate constructor that got it wrong. A refusal (or a `debug_assert!`) in
-/// each encoder would move it one rung up.
+/// **W^X is a property of the constructors, not of the encoders.** No `leaf_entry` refuses a
+/// `Flags` with both `CAP_WRITE` and an exec bit; no `pub` constructor builds one and `from_caps`
+/// is `pub(crate)`, and `nothing_is_both_writable_and_executable` does not iterate
+/// `write_combining`. So `notes/confinement-claims.md` row 11 would not survive a new in-crate
+/// constructor that got it wrong; a refusal or `debug_assert!` in each encoder would hold it.
 ///
 /// # Examples
 ///
@@ -82,17 +79,11 @@ impl Flags {
 
     /// **A framebuffer for the kernel: device memory whose writes may be combined.**
     ///
-    /// Everything [`device`](Self::device) is (never cached, never executable, never in a block
-    /// larger than a page), plus permission for the CPU to gather neighbouring stores into one
-    /// burst and post it later. That is wrong for a register, where every store is a command, and
-    /// it is the whole difference for a screen: on xenon on 2026-10-04 the boot console's 8 MB
-    /// aperture, mapped strong-uncacheable, took one bus transaction per four-byte pixel.
-    ///
-    /// **A request, which a format may answer with plain device memory.** `x86_64` honours it
-    /// (PAT entry 1, programmed to write-combining by `arch::x86_64::init`); aarch64 and Sv39
-    /// encode it exactly as `device()`, which is correct and slower, and neither has a screen
-    /// that is a device aperture today (their `ramfb` is RAM). A reader must therefore not
-    /// expect [`is_write_combining`](Self::is_write_combining) to survive a round trip there.
+    /// Everything [`device`](Self::device) is, plus leave for the CPU to gather neighbouring
+    /// stores into one burst: wrong for a register, and the whole difference for a screen, where
+    /// strong-uncacheable costs one bus transaction per four-byte pixel. A request: `x86_64`
+    /// honours it (PAT entry 1), while aarch64 and Sv39 encode it as `device()`, so
+    /// [`is_write_combining`](Self::is_write_combining) does not survive a round trip there.
     ///
     /// Name: provisional (the console-scroll lane, 2026-10-04).
     pub const fn write_combining() -> Self {
@@ -133,7 +124,7 @@ impl Flags {
     }
 
     /// **[`write_combining`](Self::write_combining) for a driver at user level**: a userspace
-    /// framebuffer driver's view of its aperture (`framebuffer_driver`, 2026-10-04). Everything
+    /// framebuffer driver's view of its aperture (`framebuffer_driver`). Everything
     /// [`user_device`](Self::user_device) is, plus permission to gather stores, and the same
     /// caveat: only `x86_64` honours the request. Name: provisional (the screen terminal lane).
     pub const fn user_write_combining() -> Self {

@@ -1,44 +1,21 @@
 //! **What a subtree grant can reach, decided in one place a server links and a prover checks**
 //! (milestone 606 (a directory walk costs what it does on Linux), calef's ruling D, 2026-09-27).
 //!
-//! A subtree grant used to be enforced by a process: `fs_subtree_caretaker` sat between the client
-//! and the filesystem server, held the only endpoint that named the server, and kept the client's
-//! handles in a table of its own. Ruling D lets an eligible server do that itself, keyed on the
-//! badge milestone 599 (a frame per filesystem client channel) put on `RECEIVE_CAP`, and saves the
-//! caretaker's round trip. The ruling's terms are what this crate is for:
-//!
-//! - **One shared crate.** Every eligible server resolves every path through [`walk`] and every
-//!   handle through [`admit`], so there is one implementation of confinement to read and prove,
-//!   not one per filesystem.
-//! - **Proven with Kani.** The harnesses at the bottom state the properties as properties: a step
-//!   is one name, a walk never widens, a walk never follows a symbolic link or crosses a mount, and
-//!   a bound badge reaches its own root and the handles it minted and nothing else, ever again.
-//! - **It owns the hard cases.** `..`, symbolic links, hard links and mount crossings are decided
-//!   here and not in the server:
-//!   - `..` and `.` are never names ([`is_name`]), so a path can only go down.
-//!   - A symbolic link is never followed, on the way or at the end ([`Kind::Symlink`]). A server
-//!     that wants links followed inside a grant is asking for a policy this crate does not have.
-//!   - A mount point is never crossed ([`Kind::MountPoint`]). A grant is one filesystem.
-//!   - A hard link is a second name for a file, and a file reached by a name inside the grant is
-//!     inside the grant. That is the Unix rule and it is the right one for a subtree grant, whose
-//!     authority is over names. A directory has no hard links in any filesystem that is eligible.
-//!
-//! Caretakers stay the default. A server is eligible only when it is memory-safe and routes every
-//! path and every handle through here, and the progenitor chooses per mount from what the
-//! filesystem's package declares.
-//!
+//! An eligible server confines a client itself, keyed on the badge milestone 599 (a frame per
+//! filesystem client channel) put on `RECEIVE_CAP`, instead of through `fs_subtree_caretaker`.
+//! Every eligible server resolves every path through [`walk`] and every handle through [`admit`].
+//! The Kani harnesses at the bottom prove that a step is one name, a walk never widens, follows a
+//! symbolic link or crosses a mount, and a bound badge reaches only its own root and the handles it
+//! minted, ever after. `..` and `.` are never names ([`is_name`]), and a file reached by a hard link
+//! inside the grant is inside it. See notes/walk-cost.md, which covers the hard cases.
 
 //! # BUGS
 //!
-//! - **A badge is a window and a grant at once.** Under §230 (badged endpoint capabilities) a badge
-//!   is the index of the client's staging window, and this crate binds a grant to that same index.
-//!   A revoked badge must not be handed to a new client while its old holder is alive, or the old
-//!   holder reaches the new grant. The progenitor's window pool releases a window at reap, which
-//!   is after the holder is dead; nothing here can check that.
-//! - **The proof is bounded.** Paths are proved up to [`PROOF_PATH`] bytes and binding tables of
-//!   [`PROOF_BADGES`] badges over [`PROOF_OPERATIONS`] operations. The functions have no loops whose
-//!   behaviour changes past those bounds, which is the argument that the bound is enough; it is an
-//!   argument, not a proof.
+//! - A badge is a window and a grant at once (§230 (badged endpoint capabilities)): a revoked badge
+//!   handed to a new client while its old holder lives reaches the new grant. The progenitor frees
+//!   a window only at reap, after the holder is dead; nothing here can check that.
+//! - The proof is bounded ([`PROOF_PATH`], [`PROOF_BADGES`], [`PROOF_OPERATIONS`]); that no loop
+//!   behaves differently past the bounds is an argument, not a proof.
 //!
 //! Name: provisional 2026-09-27 (milestone 606's lane, ruling D). calef names crates.
 

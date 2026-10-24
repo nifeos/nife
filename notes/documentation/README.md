@@ -5,8 +5,8 @@ installed, how search works, the examples, every live limitation and what comes 
 carry the evidence its prose budget has no room for.
 
 - [`corpus-test.md`](corpus-test.md): what `every_character_survives` catches (a dropped image
-  path, a table cell lost to an unescaped pipe) and what it cannot see (a page rendered wrongly
-  but completely).
+  path, a table cell lost to an unescaped pipe), what it cannot see (a page rendered wrongly
+  but completely), and why it runs 4,000 columns wide and natively only.
 - [`underscore-terms.md`](underscore-terms.md): the index writer and reader disagreeing on what a
   word is, and why the fix joins only the underscore.
 - [`apropos-builtin.md`](apropos-builtin.md): why search is a shell builtin, the worked example,
