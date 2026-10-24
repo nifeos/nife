@@ -1,5 +1,5 @@
-//! The delegation demo, the half that takes (milestone 10); the other half is
-//! `delegation_granter`.
+//! The delegation demo, the half that takes (milestone 10 (a shell at EL0, and processes spawned
+//! on command)); the other half is `delegation_granter`.
 //!
 //! Holds the channel (slot 0), a report endpoint (slot 1), and a loopback endpoint (slot 2) it
 //! uses only to *attempt* re-delegation. It reports on three things: the capability arrives, it

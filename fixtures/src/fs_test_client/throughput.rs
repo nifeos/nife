@@ -14,7 +14,8 @@ use user_mode_runtime::{call, exit, now, require, send};
 
 use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, read};
 
-/// The filesystem throughput benchmark (milestone 38, DECISIONS §34 condition 2): six self-timed
+/// The filesystem throughput benchmark (milestone 38, DECISIONS §34 (RedoxFS is the primary
+/// filesystem, on three conditions) condition 2): six self-timed
 /// phases over one file, each reported as `[ticks, transfers, phase]`, which the bench boot prints
 /// as `fs_seq_write`, `fs_seq_read`, `fs_rand_read`, `fs_record_read`, `fs_rand_write` and
 /// `fs_payload_fill`.

@@ -1,13 +1,14 @@
-//! An ordinary program that wants to print (milestone 8). It owns no UART and cannot reach one: it
-//! writes its text into a page it shares with the console server (`components/src/console.rs`)
-//! and sends the length over an endpoint. That is the whole of printing in this system.
+//! An ordinary program that wants to print (milestone 8 (the console driver leaves the kernel)).
+//! It owns no UART and cannot reach one: it writes its text into a page it shares with the console
+//! server (`components/src/console.rs`) and sends the length over an endpoint.
 //!
-//! IPC carries control and shared memory carries data (DECISIONS §10), so the kernel never sees,
-//! copies or validates the bytes, and the confused deputy milestone 7d defended against cannot
-//! arise. It checks its own image first ([`loaded_image_check`]) and kills itself if any part is
-//! wrong, which lets `a_user_client_moves_data_through_shared_memory` assert on the absence of a
-//! fault as well as on the bytes.
-//!
+//! IPC carries control and shared memory carries data (DECISIONS §10 (process model)), so the
+//! kernel never sees, copies or validates the bytes, and the confused deputy that milestone 7d
+//! (user mode: EL0, capabilities, the ELF loader, and IPC) defended against cannot arise. It checks
+//! its own image first ([`loaded_image_check`]) and kills itself if any part is wrong, which lets
+//! `a_user_client_moves_data_through_shared_memory` assert on the absence of a fault as well as on
+//! the bytes.
+
 //! Name: provisional (milestone 291). This was `hello`'s `PRINTING` role, number 2. Follows the
 //! `*_test_client` shape the tree already uses for a fixture that drives a real service
 //! (`fs_test_client`, `login_test_client`, `credentialer_test_client`, `socket_test_client`).

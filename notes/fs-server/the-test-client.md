@@ -37,11 +37,12 @@ only the other holds witnesses, with two live caretakers, the finding
 
 ## Every attempt targets something that exists
 
-A refusal of a name that does not exist proves nothing. The neighbor file, `motd` in the parent
-and `other/secret` in a sibling are all on the image, one directory entry from the caretaker, which
-could open any of them on any request it liked. Milestone 33's attacker was handed a real
-neighboring client's address for the same reason. The write probe targets the one file the attacker
-may read, since refusing a write to a file it cannot even name would prove nothing.
+A refusal of a name that does not exist proves nothing. The neighbor file, `motd` in the parent and
+`other/secret` in a sibling are all on the image, one directory entry from the caretaker, which
+could open any of them on any request it liked. The attacker of milestone 33 (a compositor: one
+screen, mutually distrusting clients) was handed a real neighboring client's address for the same
+reason. The write probe targets the one file the attacker may read, since refusing a write to a file
+it cannot even name would prove nothing.
 
 The name-set witness asks its naming question with `READ`, where `rm`'s witness already asks it with
 `REMOVE`. Teaching `fs_nameset_caretaker` the attribute verbs closed an attribute gap, and opening a
@@ -67,9 +68,10 @@ pins some bytes from outside the guest.
 
 The crash driver reports after its first acknowledged write, then issues a second write into a
 server told to die inside it. Blocking IPC has no "your server is gone" reply, so the driver never
-returns. That is the open item DECISIONS §27 records. The fault endpoint of §26, wired into a
-supervision tree, is the mechanism that would turn it into a message. The blocked thread costs no
-CPU, and the kernel test waits on this client for nothing after the first report.
+returns. That is the open item DECISIONS §27 (the filesystem service) records. The fault endpoint of
+§26 (the fault endpoint), wired into a supervision tree, is the mechanism that would turn it into a
+message. The blocked thread costs no CPU, and the kernel test waits on this client for nothing after
+the first report.
 
 ## The shared-frame victim forces the ordering
 

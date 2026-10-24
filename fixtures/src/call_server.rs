@@ -1,6 +1,7 @@
-//! The Call/Reply server (milestone 12): holds `RECEIVE` on a request endpoint (slot 0) and a
-//! report endpoint (slot 1), answers one caller it was never individually wired to, then tries the
-//! reply capability a second time and reports that the kernel refused.
+//! The Call/Reply server (milestone 12 (Call/Reply IPC: a one-shot reply capability)): holds
+//! `RECEIVE` on a request endpoint (slot 0) and a report endpoint (slot 1), answers one caller it
+//! was never individually wired to, then tries the reply capability a second time and reports that
+//! the kernel refused.
 //!
 //! The kernel mints the reply capability at the call, naming the caller, and consumes it on first
 //! use, so nothing the server holds outlives the one answer it owed; a pre-wired reply rendezvous

@@ -1,11 +1,11 @@
-//! The confiner: builds a C component, supervises it and checks from outside that it stayed
-//! confined (milestone 36, DECISIONS §31). Three roles, fused on purpose; notes/c-seam.md has why.
+//! The confiner of a C component (milestone 36 (a foreign-language component, seam first),
+//! DECISIONS §31 (the foreign-language seam)): three roles, fused on purpose; see notes/c-seam.md.
 //!
 //! 1. Builder: splits a region off its budget per instance and lays `c_shim` out in it, so a single
-//!    `MemoryRegion::DESTROY` reaps a whole instance (§16 object revocation).
+//!    `MemoryRegion::DESTROY` reaps a whole instance (§16 (object revocation)).
 //! 2. Supervisor: holds the component's supervision endpoint (§26), receives each death as a
-//!    five-word message, reaps through it (§32) and decides whether to restart. The kernel
-//!    relaunches nothing.
+//!    five-word message, reaps through it (§32 (a supervisor may collect a corpse without being
+//!    able to build one)) and decides whether to restart. The kernel relaunches nothing.
 //! 3. Checker: holds the witness pages in its own address space, so "nothing outside the grant
 //!    changed" is asserted from the other side of an MMU boundary.
 

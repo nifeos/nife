@@ -1,11 +1,12 @@
-//! The Rust shell around a C component (milestone 36, DECISIONS §31): it holds every capability,
-//! makes every syscall, and hands the C nothing but a pointer and a length.
+//! The Rust shell around a C component (milestone 36 (a foreign-language component, seam first),
+//! DECISIONS §31 (the foreign-language seam)): it holds every capability, makes every syscall, and
+//! hands the C nothing but a pointer and a length.
 //!
 //! The C has never seen a capability slot, so it cannot widen the kernel's syscall surface (rule 3,
-//! DECISIONS §4), and it can corrupt memory inside a grant this shell already had and nothing else.
-//! Its `malloc` is milestone 27's [`MemoryRegionHeap`] on slot 1, the region this instance was
-//! built in, so a C leak exhausts only this instance and the `MemoryRegion::DESTROY` that reaps the
-//! corpse reclaims the heap too. See notes/c-seam.md.
+//! DECISIONS §4 (kernel shape)), and it can corrupt memory inside its grant and nothing else. Its
+//! `malloc` is the [`MemoryRegionHeap`] of milestone 27 (Rust `std` on the native ABI) on slot 1,
+//! the region this instance was built in, so a C leak exhausts only this instance and the
+//! `MemoryRegion::DESTROY` that reaps the corpse reclaims the heap too. See notes/c-seam.md.
 
 //! # What this shell is endowed with
 //!

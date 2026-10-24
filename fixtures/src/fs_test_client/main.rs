@@ -1,4 +1,5 @@
-//! The FS-service client (milestone 32 phase 2): opens files through a granted directory
+//! The FS-service client (milestone 32 (a real filesystem: RedoxFS behind a capability FS server)
+//! phase 2): opens files through a granted directory
 //! capability and proves the stack end to end.
 //!
 //! It holds an endpoint to the FS server and nothing that names the server, the block server or

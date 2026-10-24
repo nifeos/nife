@@ -151,9 +151,10 @@ fn read_the_granted_file(granted: &str, writable: bool) -> u64 {
 fn probe_attributes(writable: bool) -> u64 {
     let mut verdict = 0u64;
     let mut buf = [0u8; 128];
-    // 6. **Extended attributes** (milestone 61). An attribute is part of what a file *is*, so a
-    //    capability that may read the file may read what is attached to it, and one that may not
-    //    write it may not change them. Three probes, and the middle one is the sharp one.
+    // 6. **Extended attributes** (milestone 61 (the caretakers: one verb table)). An attribute is
+    //    part of what a file *is*, so a capability that may read the file may read what is attached
+    //    to it, and one that may not write it may not change them. Three probes, and the middle one
+    //    is the sharp one.
     //
     //    A listing works through **either** direction, because it is a read. Zero attributes is a
     //    successful listing (`r0` = 0), so this distinguishes "forwarded and there were none" from

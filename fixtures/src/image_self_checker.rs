@@ -1,5 +1,5 @@
-//! A program that checks its own image and then exits (milestone 7): the "a real ELF ran and
-//! verified itself" fixture.
+//! A program that checks its own image and then exits (milestone 7 (user mode: EL0, capabilities,
+//! the ELF loader, and IPC)): the "a real ELF ran and verified itself" fixture.
 //!
 //! It needs no capabilities and no shared memory, so `kernel::user::tests` spawns it bare; its one
 //! syscall, a yield, is authority over itself. The kernel test reads the absence of a fault plus

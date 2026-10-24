@@ -1,4 +1,5 @@
-//! Revoking a frame across the boundary (milestone 13).
+//! Revoking a frame across the boundary (milestone 13 (capability revocation and untyped
+//! reclamation)).
 //!
 //! Holds a memory region (slot 0) and a report endpoint (slot 1). It retypes a page, maps it, then
 //! `REVOKE`s it: the kernel unmaps the page and deletes every capability to it, this process's own

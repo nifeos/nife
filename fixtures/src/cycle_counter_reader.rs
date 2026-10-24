@@ -1,13 +1,13 @@
-//! A thread reading the CPU's cycle counter from user mode (milestone 229).
+//! A thread reading the CPU's cycle counter from user mode (milestone 229 (build the cycle-counter
+//! grant)).
 //!
-//! Reads the counter twice through `user_mode_runtime::cycle_reading`, the shared function calef's
-//! ruling B4 (2026-10-07 UTC) designed, and reports
-//! [`capability_witness_contract::CYCLE_COUNTER_WORD`], the difference, and what they count (an
-//! `abi::cycle_counter::CycleMeaning` as its word). It holds a report endpoint (slot 0) and nothing
-//! else: the grant is not a capability but a property of this thread, which the context switch
-//! writes into a system register before the thread runs. Without it the read is an EL0 access
-//! `PMUSERENR_EL0` (aarch64) or `scounteren` (riscv64) forbids, which traps and kills the thread
-//! with nothing sent; the kernel-side test runs this both ways and asserts each outcome.
+//! Reads the counter twice through `user_mode_runtime::cycle_reading` (calef's ruling B4,
+//! 2026-10-07 UTC) and reports [`capability_witness_contract::CYCLE_COUNTER_WORD`], the difference,
+//! and what they count (an `abi::cycle_counter::CycleMeaning` as its word). It holds a report
+//! endpoint (slot 0) and nothing else: the grant is a property of this thread, which the context
+//! switch writes into a system register before it runs. Without it the EL0 read is one
+//! `PMUSERENR_EL0` (aarch64) or `scounteren` (riscv64) forbids, which traps and kills the thread;
+//! the kernel-side test runs this both ways and asserts each outcome.
 
 //! # Why two reads
 //!

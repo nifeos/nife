@@ -249,16 +249,17 @@ rather than an implementation detail. DECISIONS §26's phase-B block already rec
 
 ## The confiner since §32
 
-`c_confiner` now reaps through the supervision endpoint each death arrives on
-(`user_mode_runtime::reap`, DECISIONS §32), and it deletes an instance's region capability as soon
-as the child starts. Its supervisor role holds nothing that reaches a live instance's memory.
+`c_confiner` reaps through the supervision endpoint each death arrives on
+(`user_mode_runtime::reap`, DECISIONS §32 (a supervisor may collect a corpse without being able
+to build one)), and it deletes an instance's region capability as soon as the child starts. Its
+supervisor role holds nothing that reaches a live instance's memory.
 
 The program still holds a full construction budget, because it is also the builder: it splits a
 region per instance and lays `c_shim` out in it, and §32 does not touch construction. The bundling
-§31 recorded was two things, and only one of them was the reap. Split builder and supervisor into
-two processes and the supervisor would hold nothing but endpoints, which is what milestone 22's
-`sub_server_supervisor` does. They stay fused here so the requirement is visible in one program
-rather than behind an IPC hop.
+§31 (the foreign-language seam) recorded was two things, and only one of them was the reap. Split
+builder and supervisor into two processes and the supervisor would hold nothing but endpoints, which
+is what the `sub_server_supervisor` of milestone 22 (trusted init) does. They stay fused here so the
+requirement is visible in one program rather than behind an IPC hop.
 
 ## Honest caveats: what a spike does not prove
 
