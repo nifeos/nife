@@ -15,27 +15,14 @@ use user_mode_runtime::{call, exit, send};
 
 use crate::channel::{FILE, REPORT, get_page, put_page, put_page_at};
 
-/// **The attacker against a per-file grant** (milestone 31 phase 2). Spawned holding a *narrowed*
-/// endpoint: not the directory capability, but the file caretaker's, which designates exactly one
-/// file read-only. Its job is to try everything that would make that sentence false, and to report
-/// which attempts got through as a bitmap (`fixture::escape`).
+/// The attacker against a per-file grant (milestone 31 phase 2): holds the file caretaker's
+/// endpoint, which designates one file, and reports which escapes got through (`fixture::escape`).
 ///
-/// **It is its own negative control, which is why it reports a bitmap and not a pass.** Run against
-/// a read-only grant, every bit must be clear. Run against a read/write grant of the same shape,
-/// `WROTE` and `TRUNCATED` must be **set** and everything else clear. Without that second run the
-/// first proves very little: a caretaker that refused every request would pass it, and so would a
-/// grant that reached nothing at all.
-///
-/// **What makes the attempts real.** Each one is against something that exists and that the process
-/// one hop up the chain can genuinely reach: the neighbour file is on the image, one directory
-/// entry away, and the caretaker could open it on any request it liked. Milestone 33's attacker was
-/// handed a real neighbouring client's address rather than a fictional one for exactly this reason,
-/// and milestone 36 used two witnesses for the reason the paragraph above gives.
-///
-/// `writable` also selects *which* file is granted, and that is a fixture constraint rather than a
-/// design one: the writable run damages what it is given, so it is given `scratch` (whose contents
-/// the gate's post-run host check pins, and which this restores as its last write) rather than
-/// `motd`, which two other tests compare byte for byte.
+/// It is its own negative control: with `writable` false every bit must be clear, and with it true
+/// `WROTE` and `TRUNCATED` must be set and the rest clear. `writable` also picks the file: the
+/// writable run gets `scratch`, which the post-run host check pins and which it restores as its
+/// last write, never `motd`, which two other tests compare byte for byte. Each attempt targets
+/// something real that the caretaker could open. See notes/fs-server/the-test-client.md.
 pub(crate) fn attacker(writable: bool) -> ! {
     let mut verdict = 0u64;
     let mut buf = [0u8; 128];
@@ -164,18 +151,13 @@ fn read_the_granted_file(granted: &str, writable: bool) -> u64 {
 fn probe_attributes(writable: bool) -> u64 {
     let mut verdict = 0u64;
     let mut buf = [0u8; 128];
-    // 6. **Extended attributes** (milestone 61). Before it, all three caretakers answered
-    //    `EOPNOTSUPP` to all four verbs, so a program behind a per-file grant could not reach its
-    //    own file's attributes. That was uniform and honest and still a capability the confined
-    //    program should have had: an attribute is part of what a file *is*, so a capability that may
-    //    read the file may read what is attached to it, and one that may not write it may not change
-    //    them.
-    //
-    //    Three probes, and the middle one is the sharp one.
+    // 6. **Extended attributes** (milestone 61). An attribute is part of what a file *is*, so a
+    //    capability that may read the file may read what is attached to it, and one that may not
+    //    write it may not change them. Three probes, and the middle one is the sharp one.
     //
     //    A listing works through **either** direction, because it is a read. Zero attributes is a
     //    successful listing (`r0` = 0), so this distinguishes "forwarded and there were none" from
-    //    "refused", which the old behaviour could not.
+    //    "refused".
     let (l, _) = call(FILE, fs::req(fs::LISTXATTR, grant::HANDLE, 0), 0);
     if (l as i64) < 0 {
         verdict |= escape::GRANTED_ATTRS_FAILED;

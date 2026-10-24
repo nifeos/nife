@@ -14,19 +14,14 @@ use user_mode_runtime::{exit, require, send};
 
 use crate::channel::{REPORT, get_page, open, read, write};
 
-/// **The crash driver** (milestone 37): write one payload and get an acknowledgement, then write the
-/// next one into a server that has been told to die partway through it.
+/// The crash driver (milestone 37): writes one payload and gets it acknowledged, then writes the
+/// next into a server told to die partway through it.
 ///
-/// It reports after the acknowledged write, because that report is the thing the property depends
-/// on: "payload A was acknowledged" is what makes losing it a failure rather than a permitted
-/// outcome. Then it issues the second write and **never returns from it**, because the server dies
-/// inside the request and blocking IPC has no "your server is gone" reply.
-///
-/// That permanent block is not an oversight, it is the open item DECISIONS §27 and notes/fs-server.md
-/// already record: a client of a dead server waits forever, and §26's fault endpoint wired into a
-/// supervision tree (milestone 23) is the mechanism that would turn it into a message. This test
-/// exhibits it rather than working around it; the thread is `Blocked`, so it costs no CPU, and the
-/// kernel test does not wait on this client for anything after the first report.
+/// It reports after the acknowledged write, because "payload A was acknowledged" is what makes
+/// losing it a failure rather than a permitted outcome. It never returns from the second write: a
+/// client of a dead server blocks forever, the open item DECISIONS §27 and notes/fs-server.md
+/// record. The kernel test waits on nothing after the first report. See
+/// notes/fs-server/the-test-client.md.
 pub(crate) fn crash_driver() -> ! {
     use fixture::crash;
     let h = open(crash::NAME);

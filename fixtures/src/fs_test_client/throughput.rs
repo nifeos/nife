@@ -14,44 +14,15 @@ use user_mode_runtime::{call, exit, now, require, send};
 
 use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, read};
 
-/// **The filesystem throughput benchmark** (milestone 38, DECISIONS §34 condition 2). Six phases
-/// over one file, each self-timed and reported home as `[ticks, transfers, phase]`: sequential
-/// write, sequential read, random read, a record-aligned read, random write, and the client's own
-/// payload cost. The bench boot turns those into the `fs_seq_write` / `fs_seq_read` /
-/// `fs_rand_read` / `fs_record_read` / `fs_rand_write` / `fs_payload_fill` lines and into MiB/s.
+/// The filesystem throughput benchmark (milestone 38, DECISIONS §34 condition 2): six self-timed
+/// phases over one file, each reported as `[ticks, transfers, phase]`, which the bench boot prints
+/// as `fs_seq_write`, `fs_seq_read`, `fs_rand_read`, `fs_record_read`, `fs_rand_write` and
+/// `fs_payload_fill`.
 ///
-/// **What one transfer is, and why that is the whole story.** One `filesystem_contract` request moves at most
-/// `fs::TRANSFER_MAX` bytes, because the payload travels through the region the client shares with
-/// the server. That was one page until milestone 138 step 3 and is sixteen now, so a phase here is
-/// `UNIT` per request and the throughput is the request rate times `UNIT`. A Linux program reading
-/// the same file would use a 64 KiB or 1 MiB buffer and pay one syscall for it; **that difference
-/// is a property of this protocol, not of the measurement**, and it is still the first thing
-/// notes/benchmarks.md says next to the numbers. It got smaller; it did not go away.
-///
-/// **The bytes moved per phase are held constant** (`tp::TOTAL`, 1 MiB) rather than the transfer
-/// count, so a run at one page and a run at sixteen move the same file and their MiB/s figures are
-/// a before and an after rather than two unrelated numbers.
-///
-/// **Why the write phase comes first.** It creates the file, so it is the only phase that pays
-/// allocation, and the read phases have something laid out by the server under test rather than by
-/// the host tool. It is also the reason there is no separate "create" number.
-///
-/// **What a write here promises, which decides what it compares against.** Every `filesystem_contract` write
-/// goes through one RedoxFS transaction that commits to the header ring before the reply, so the
-/// filesystem's own state is durable per request the way `O_DSYNC` makes ext4's; but no device
-/// flush is issued unless a client asks for one (`filesystem_contract::fs::SYNC`), so the bytes sit where
-/// `O_DIRECT` alone leaves them. This sits **between** Linux's two, and notes/benchmarks.md prints
-/// both rather than picking one.
-///
-/// **The offsets are drawn from a fixed seed**, so "random" means the same sequence on every run
-/// and two runs are comparable. They are page-aligned and inside the file, so a random read never
-/// hits EOF and a random write never extends the file: the random phases measure placement, not
-/// growth.
-///
-/// A read phase's timed loop issues nothing but the `CALL`: the bytes are never copied out, because
-/// a client that shares a page with its server can use them where they land, which is one copy
-/// fewer than a Unix `read(2)`. A write phase's loop repaints the page first, and has to; see the
-/// comment on the payload below.
+/// One request moves at most `fs::TRANSFER_MAX` bytes (`UNIT`), and each phase moves `tp::TOTAL`
+/// whatever `UNIT` is. The write phase runs first because it creates the file. Random offsets come
+/// from a fixed seed, page-aligned and inside the file. A read loop issues only the `CALL`; a write
+/// loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
 pub(crate) fn throughput() -> ! {
     use fixture::throughput as tp;
 

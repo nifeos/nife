@@ -23,23 +23,15 @@ const SHARE_STAGED: u64 = 0x0599_57A6;
 /// The attacker's word back to the victim: "I have overwritten the staged name; call now".
 const SHARE_OVERWROTE: u64 = 0x0599_09E2;
 
-/// **The shared-frame witness's victim** (milestone 599, provisional).
+/// The shared-frame witness's victim (milestone 599, provisional): stages its own name while the
+/// attacker, holding the same frame, rewrites the page before the server reads it.
 ///
-/// It stages its own name, and would open exactly that name were it the only writer of the page.
-/// The attacker holds the same frame, so between this client staging its name and the server
-/// reading it, the attacker rewrites the page. This role forces that ordering deterministically
-/// with a two-message handshake rather than relying on a race, because the property under test is
-/// not "does the race fire" but "can a second holder of the frame change the bytes the server
-/// resolves for this client's call". The server has no way to tell whose bytes it read.
-///
-/// The report's first word is the verdict: [`fixture::SHARED_SUBSTITUTED`] when the body read back
-/// is the attacker's file, [`fixture::SHARED_ISOLATED`] when it is this client's own (what
-/// milestone 599's fix makes true), or [`fixture::SHARED_UNEXPECTED`] on any other outcome.
-///
-/// `window` is this client's channel window (`a1`): the victim **mints its own badged endpoint** for
-/// it with `abi::rendezvous::BADGE`, which is what exercises the mint syscall end to end (the
-/// attacker gets a pre-badged endpoint from the wiring instead, so the test covers both shapes). It
-/// then calls through the badged slot, so the server reads the victim's own window.
+/// A two-message handshake forces that ordering. The first report word is
+/// [`fixture::SHARED_SUBSTITUTED`] (the body read back is the attacker's file),
+/// [`fixture::SHARED_ISOLATED`] (its own, what milestone 599's fix makes true) or
+/// [`fixture::SHARED_UNEXPECTED`]. `window` (`a1`) is its channel window: it mints its own badged
+/// endpoint with `abi::rendezvous::BADGE` and calls through it, while the attacker's comes
+/// pre-badged from the wiring. See notes/fs-server/the-test-client.md.
 pub(crate) fn share_victim(window: u64) -> ! {
     let victim = fixture::SHARED_VICTIM_NAME.as_bytes();
     // Mint a badged view of the FS endpoint naming our window, and call through it from here on.

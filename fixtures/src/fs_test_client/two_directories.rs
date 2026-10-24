@@ -15,27 +15,14 @@ use user_mode_runtime::{call, exit, send};
 
 use crate::channel::put_page;
 
-/// **The two-directory witness** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md).
+/// The two-directory witness (milestone 154, design/roadmap/0154-multi-directory-namespace.md):
+/// holds two `fs_subtree_caretaker`s, slot 0 labeled `a` (the fixture's `sub`) and slot 1 labeled
+/// `b` (`other`), per `start_granted_two_dirs` in `kernel/src/user/fs_service/two_dirs.rs`.
 ///
-/// It holds two `fs_subtree_caretaker`s at once, one at capability table slot 0 and one at slot 1
-/// (`kernel/src/user/fs_service/two_dirs.rs`'s `start_granted_two_dirs` convention, which the kernel test wiring this role
-/// follows). It is told nothing about either grant beyond that ordering; the kernel test wires
-/// slot 0 to the fixture's `sub` (labeled `a`) and slot 1 to `other` (labeled `b`), and this
-/// program only ever learns that through the labels it was compiled to use.
-///
-/// It proves the roadmap block's own deliverable, in its own words:
-/// - `/a/inner` and `/b/secret` (the milestone's `/a/x` and `/b/y`) both resolve, through
-///   [`grant_plan::nav::TwoRoots`]'s pure resolution and then a real `OPEN` on the caretaker the
-///   resolution named.
-/// - `/a/../b` is refused **before any request is sent**: `TwoRoots::resolve` returns an error,
-///   the same way a single grant's `..` at its own root already does, so the witness never even
-///   asks slot 1's caretaker for anything.
-/// - **Neither caretaker's tree is reachable through the other's endpoint**, checked directly by
-///   asking slot 0 for the name that only exists in grant B's subtree, and slot 1 for the name
-///   that only exists in grant A's, which is the structural finding notes/dir-capability.md
-///   already argues (the endpoint is the boundary), witnessed here with two live caretakers
-///   rather than inferred from one.
+/// It proves the block's deliverable: `/a/inner` and `/b/secret` resolve through
+/// [`grant_plan::nav::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused by
+/// `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
+/// through the other's endpoint, asked directly of each (notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {
     use filesystem_fixture::twodir as t;
     use fixture::tree;
