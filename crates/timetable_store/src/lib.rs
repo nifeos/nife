@@ -145,9 +145,9 @@ fn strip_comment(line: &str) -> &str {
 /// (`login_contract::with_listed`, the same format).
 ///
 /// A fixed buffer, because this crate is `no_std` with no `alloc`, as `timetable::write_plan` is.
-/// `None` if `names` will not fit
-/// [`MAX_IDENTITIES`], any one name is longer than [`MAX_IDENTITY_LEN`], or the rendered document is
-/// wider than `buf`; otherwise `Some(bytes written)`.
+/// `None` if `names` will not fit [`MAX_IDENTITIES`], any one name is longer than
+/// [`MAX_IDENTITY_LEN`], or the rendered document is wider than `buf`; otherwise
+/// `Some(bytes written)`.
 ///
 /// # Examples
 ///

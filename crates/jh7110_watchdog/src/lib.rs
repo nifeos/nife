@@ -12,7 +12,8 @@
 
 //! # BUGS
 //!
-//! - Only a board tests the reset: QEMU has no model of this block (milestone 593's bench step).
+//! - Run on one board, netbooted only (milestone 593's bench step, 2026-10-22); a reset back into a
+//!   card boot is unseen. QEMU has no model of this block, so only a board tests the reset.
 //! - No reset-cause register is known, so a second boot cannot say the watchdog ended the first.
 //! - The core clock's rate is the clock driver's, not the tree's; [`rate_agrees`] checks it.
 //!

@@ -37,7 +37,8 @@ All were read on 2026-10-20 (UTC).
 ## Limits
 
 - QEMU has no model of this block. CI exercises the arithmetic, the sequences and the tree query,
-  and only a board can test the reset itself. Milestone 593's bench step is that test.
+  and only a board can test the reset itself. Run on one board, netbooted only (milestone 593's
+  bench step, 2026-10-22); a reset back into a card boot is unseen.
 - No evidence of a watchdog reset survives it that this crate knows of. The x86_64 TCO has
   `SECOND_TO_STS`, but no JH7110 source read here names a reset-cause register. So a second boot
   cannot say the watchdog ended the first, only that it came back in the expected window.
