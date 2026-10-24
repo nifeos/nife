@@ -1,14 +1,12 @@
 //! PCI configuration space: the decode logic, and none of the MMIO. ECAM addressing, walking a
-//! config space for devices, sizing a BAR, finding the virtio vendor capabilities, all over
+//! config space for devices, sizing a BAR and finding the virtio vendor capabilities, all over
 //! read/write closures on `(bdf, offset)`: the kernel passes volatile accessors into the mapped
-//! ECAM window and the tests pass an array, the inversion `validate_and_shadow` uses and the reason
-//! this is host-testable.
+//! ECAM window and the tests pass an array, which is why this is host-testable. See notes/pcie.md.
 //!
-//! A function is addressed by **BDF** (bus, device, function) and has 4 KB of **configuration
-//! space** (ECAM: a flat window, `(bus << 20) | (dev << 15) | (fn << 12)`). The first 64 bytes are
-//! the standard header: vendor and device id, command and status, class, the **BARs** (where the
-//! function's register blocks live), and the capability list pointer, whose **vendor
-//! capabilities** carry what virtio-modern needs. See notes/pcie.md.
+//! A function is addressed by **BDF** (bus, device, function) and has 4 KB of configuration space
+//! at `(bus << 20) | (dev << 15) | (fn << 12)` in the flat ECAM window. Its first 64 bytes are the
+//! standard header: ids, command and status, class, the **BARs** (where its register blocks live)
+//! and the capability list pointer, whose vendor capabilities carry what virtio-modern needs.
 //!
 //! Name: ratified 2026-09-18 (calef, §154 (the acronym test is whether the phrase is spoken)):
 //! nobody says "peripheral component interconnect", so it stays `pci`. Refused
@@ -249,28 +247,10 @@ impl BusQueue {
 /// numbers) but not descended into, because reading an unmapped bus is a fault rather than a
 /// finding.
 ///
-/// # Why a walk and not a scan (milestone 320)
-///
-/// Until this milestone the kernel scanned bus 0 alone and the two `virt` boards never noticed,
-/// because QEMU hangs everything off the root complex. The first real machine this port met put its
-/// NVMe controller behind a PCIe root port, so `find_nvme_device` searched a bus the disk was never
-/// on and the confinement test *skipped* rather than failed.
-///
-/// The obvious repair is to scan every bus the firmware's MCFG describes, and it was refused. A
-/// flat scan over a range ACPI happens to state is the same species of assumption that produced the
-/// bug: it is right until a machine numbers its buses differently, and it issues configuration
-/// reads to bus numbers no bridge on the machine decodes. What every real operating system does
-/// instead is read the topology from the only place it is recorded, which is the bridges
-/// themselves. That answer also costs less: a machine with two populated buses is two buses of
-/// probing rather than a hundred and twenty-eight.
-///
-/// # Termination
-///
-/// A bridge's bus numbers come from firmware, so they can name anything at all, including a bus
-/// already visited or the bridge's own. The walk is a breadth-first queue over a 256-bit visited
-/// set, so **each bus is scanned at most once** and a cycle in the bus numbering terminates
-/// instead of recursing. There is no recursion and no allocation: the queue is a 256-byte array,
-/// which is every bus number that exists.
+/// A bridge's bus numbers come from firmware and can name anything, a visited bus or its own
+/// included, so the walk is a breadth-first queue over a 256-bit visited set: **each bus is scanned
+/// at most once**, a cycle terminates, and nothing recurses or allocates (the queue is a 256-byte
+/// array). See notes/pcie.md, "More than one bus (milestone 320)", for why it walks the bridges.
 pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn FnMut(Function)) {
     let ceiling = ceiling.min(256);
     if ceiling == 0 {
@@ -682,17 +662,13 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
     None
 }
 
-/// The INTx swizzle on QEMU's `virt` boards: the legacy interrupt pin of the function at device
-/// `d` using pin `p` (1=INTA..4=INTD) lands on PLIC/GIC input `base + ((d + p - 1) % 4)`. This is
-/// the standard bridge swizzle the PCI spec prescribes for a flat bus, and QEMU's generic ECAM
-/// bridge implements exactly it; this crate's `tests/qemu_virt_dtb.rs` cross-checks this formula
-/// against the machine's own `interrupt-map`, so if a future board routes differently the host
-/// tests say so before the kernel misroutes an interrupt.
+/// The INTx swizzle on QEMU's `virt` boards: the function at device `d` using legacy pin `p`
+/// (1=INTA..4=INTD) lands on PLIC/GIC input `base + ((d + p - 1) % 4)`, the bridge swizzle the PCI
+/// spec prescribes for a flat bus, which QEMU's generic ECAM bridge implements.
+/// `tests/qemu_virt_dtb.rs` holds it against the machine's own `interrupt-map`, so a board that
+/// routes differently fails a host test. See notes/pcie.md, "INTx".
 ///
 /// # Examples
-///
-/// The swizzle spreads devices and pins across interrupt inputs; wrong, it misroutes an interrupt to
-/// a device that will never acknowledge it.
 ///
 /// ```
 /// use pci::intx_irq;
@@ -718,19 +694,13 @@ pub fn intx_irq(base: u32, dev: u8, pin: u8) -> u32 {
 /// The 32-bit non-prefetchable memory window from a PCI host bridge's `ranges` property, as
 /// `(cpu_base, size)`. `None` when no entry qualifies, or the property is not the standard shape.
 ///
-/// `ranges` is the property's raw bytes: big-endian cells in the standard PCI layout (child
-/// `#address-cells = 3`, parent `#address-cells = 2`, `#size-cells = 2`, so seven cells per
-/// entry). The first child cell (`phys.hi`) carries the space code at bits 25:24 (0b01 IO,
-/// 0b10 32-bit memory, 0b11 64-bit memory) and prefetchability at bit 30; the rest are the
-/// 64-bit PCI address, CPU address, and size. This takes the first 32-bit non-prefetchable
-/// memory entry, which is the window the kernel assigns BARs from (kernel/src/pci.rs).
-///
-/// An entry whose PCI and CPU addresses differ is skipped rather than translated, on purpose:
-/// the kernel's BAR assigner writes one number into both the BAR register and its own page
-/// tables, so a translated window is one it cannot yet honor, and refusing it here is honest
-/// where handing back a CPU address the bridge would not decode from a BAR is not. Both QEMU
-/// `virt` boards state identity windows. A ragged length (not a multiple of seven cells) means
-/// the node is not the shape this parser knows, and the answer is `None` rather than a guess.
+/// `ranges` is big-endian cells, seven per entry (child `#address-cells = 3`, parent 2,
+/// `#size-cells = 2`). `phys.hi` carries the space code at bits 25:24 (0b01 IO, 0b10 32-bit
+/// memory, 0b11 64-bit memory) and prefetchability at bit 30; then come the 64-bit PCI address, CPU
+/// address and size. The first 32-bit non-prefetchable entry is the window kernel/src/pci.rs
+/// assigns BARs from. An entry whose PCI and CPU addresses differ is skipped, not translated: the
+/// BAR assigner writes one number into both the BAR and its page tables (both QEMU `virt` boards
+/// state identity windows). A ragged length returns `None` rather than a guess.
 pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
     const ENTRY: usize = 7 * 4;
     if ranges.is_empty() || !ranges.len().is_multiple_of(ENTRY) {
@@ -761,19 +731,13 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
 
 /// Machine-checked proofs (`script/verify`; notes/verification.md).
 ///
-/// This crate's input comes from a DEVICE: a hostile or broken PCI function can return any
-/// bytes at all through the config-space closures, and the decode runs in the kernel. So the
-/// properties proved are the hostile-input ones: the walks are total (no device response can
-/// panic them) and structurally bounded (a cycle in a capability list terminates).
-///
-/// [`walk`] is the one function here that indexes an array by something a device said, and
-/// [`BusQueue`] is that array, so the proof is of the indexing. No fixture test can establish it:
-/// a fixture exercises the bus numbers it was written with, and the question is about every
-/// sequence firmware could have written. The scan loops themselves are bounded by literals and are
-/// deliberately not proved, because unrolling 256 buses of 32 devices is not something a bounded
-/// model checker finishes and the queue's bound already settles the only thing in them that a
-/// device controls. `enumerate` has no proof of its own because it is [`walk`] with a field
-/// dropped.
+/// A hostile or broken PCI function can return any bytes through the config-space closures, and
+/// the decode runs in the kernel, so the properties proved are the hostile-input ones: the walks
+/// are total and a cycle in a capability list terminates. [`BusQueue`], which [`walk`] indexes by
+/// what a device said, is proved for every sequence firmware could write, which no fixture can
+/// show. The scan loops are bounded by literals and not proved: a bounded model checker does not
+/// finish unrolling 256 buses of 32 devices, and the queue's bound settles the only part a device
+/// controls. `enumerate` is [`walk`] with a field dropped, so it has no proof of its own.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -867,17 +831,13 @@ mod verification {
     }
 
     /// **The bus queue never runs off the end of its array, whatever firmware wrote in the
-    /// bridges.** This is the one array in this crate indexed by a value a device supplied, and the
-    /// bound on it is not local: `enqueue` writes `queue[tail]` and nothing there checks `tail`
-    /// against 256.
+    /// bridges.** The bound is not local: `enqueue` writes `queue[tail]` and nothing there checks
+    /// `tail` against 256.
     ///
-    /// **Proved as an invariant rather than by pushing 256 times**, which matters: the loop version
-    /// of this harness needed an unwind past three hundred and did not finish in twenty minutes,
-    /// and `script/verify` runs every harness in this tree. The invariant is
-    /// `tail == the number of set bits in seen`, which bounds `tail` at 256 because there are 256
-    /// bits. [`BusQueue::from_the_root`] establishes it (one bit, `tail` of one) and this proves
-    /// `enqueue` preserves it **from any reachable state at all**, which is a stronger statement
-    /// than any number of iterations from the initial one.
+    /// Proved as the invariant `tail == the number of set bits in seen`, which bounds `tail` at
+    /// 256: [`BusQueue::from_the_root`] establishes it and this proves `enqueue` preserves it from
+    /// any reachable state. A harness pushing 256 times needed an unwind past three hundred and
+    /// did not finish in twenty minutes.
     /// Falsification: replayable `crates/pci/falsifications/verification.the_bus_queue_stays_inside_its_array_on_any_firmware.patch`
     #[kani::proof]
     fn the_bus_queue_stays_inside_its_array_on_any_firmware() {

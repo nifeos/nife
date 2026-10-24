@@ -2,9 +2,7 @@
 //! manifest in an ELF note) and DECISIONS §219 (how the shell names an installed program to the
 //! spawner) option D): the manifest a note declares, the vouch applied to it, and what an image
 //! request can carry. The shell calls these to preview and the progenitor to decide, so the two
-//! cannot differ. Moved out of the crate's root unchanged by milestone 809 (the package client
-//! becomes a program), when the root outgrew §266 (a Rust source file stays under 2,000 lines)'s
-//! ratchet; the root re-exports every item at its old path.
+//! cannot differ. The crate root re-exports every item.
 
 use crate::{
     DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration, InputDeclaration,
@@ -82,23 +80,14 @@ pub enum Vouch {
 
 /// **Whether an image request can deliver what `m` declares**, today.
 ///
-/// An image travels as a plain line (DECISIONS §219 option D's first cut): the request words carry
-/// an argument and a `--mem` count, and the progenitor endows the pages and endpoints a manifest
-/// names on its own. Nothing else is on that wire yet. So a manifest that needs a file, a
-/// directory, an input, an option, a supervised job, a declared second stream or a silent output
-/// is refused at the prompt and again at the progenitor, rather than run without what it said it
-/// needs. `spawnproto`'s BUGS carries each.
-///
-/// **A `std` image is carried when it hears words, and only then** (milestone 205 (how a foreign
-/// program is told what to do)): `StartupContract::Std` and [`ProgramArgumentDeclaration::Words`] go together or not at all.
-/// The progenitor sizes an image's region before its frames arrive, so before it can read the note,
-/// and the one thing the request tells it is whether an argv follows (`spawnproto::PROGRAM_ARGUMENTS_BIT`). Tying
-/// the two makes that bit the region's size: [`image_hears_words`]. A `std` image also declares no
-/// memory grant or domain, which is what the `std` layout can hold.
-///
-/// **The network is carried and then judged by the vouch** ([`image_manifest`]): unvouched bytes'
-/// ask grants nothing, as every unvouched ask does, and vouched bytes' ask is refused
-/// ([`ImageRefusal::NetworkNotGranted`]) because no owner's grant of it is recorded.
+/// An image travels as a plain line (DECISIONS §219 option D's first cut): an argument and a
+/// `--mem` count, the progenitor endowing what the manifest names. A manifest that needs a file,
+/// a directory, an input, an option, a supervised job, a second stream or a silent output is
+/// refused here and again at the progenitor (`spawnproto`'s BUGS). A `std` image is carried when
+/// it hears words and only then, with no memory grant or domain: the progenitor sizes its region
+/// from the argv bit before it can read the note ([`image_hears_words`], milestone 205 (how a
+/// foreign program is told what to do)). The network is carried and judged by the vouch
+/// ([`image_manifest`]).
 pub fn image_can_carry(m: &Manifest) -> bool {
     let std = m.startup == StartupContract::Std;
     matches!(m.output, OutputDeclaration::Bytes | OutputDeclaration::Words)
@@ -142,16 +131,12 @@ pub const fn image_hears_words(m: &Manifest) -> bool {
 /// what their note declared (`None` for no note) and what the installed-programs table says of
 /// them ([`Vouch`]).
 ///
-/// Vouched bytes get what they declare, because the digest that vouched covers the note: a person
-/// who installed the package installed its manifest. The network is the exception: the owner
-/// grants it apart, so vouched bytes asking for it are refused
-/// ([`ImageRefusal::NetworkNotGranted`]) unless a `grant` line gives it them. A grant gives
-/// nothing the note did not ask for. Unvouched bytes get [`UNVOUCHED_MANIFEST`]
-/// whatever they declare (§219: a note from bytes nobody vouched for grants nothing), and are
-/// refused if the declaration asks for anything a command line would have designated, since the
-/// shell has already bound the line against it.
-///
-/// The shell calls this to preview (`caps`) and the progenitor to decide, so the two cannot differ.
+/// Vouched bytes get what they declare, because the digest that vouched covers the note. The
+/// network is the exception: the owner grants it apart, so vouched bytes asking for it are refused
+/// ([`ImageRefusal::NetworkNotGranted`]) unless a `grant` line gives it, and a grant gives nothing
+/// the note did not ask for. Unvouched bytes get [`UNVOUCHED_MANIFEST`] whatever they declare
+/// (§219: a note from bytes nobody vouched for grants nothing), and are refused if it asks for
+/// anything a command line would have designated, since the shell has bound the line against it.
 pub fn image_manifest(declared: Option<Manifest>, vouch: Vouch) -> Result<Manifest, ImageRefusal> {
     let declared = declared.unwrap_or(NO_NOTE_MANIFEST);
     if !image_can_carry(&declared) {

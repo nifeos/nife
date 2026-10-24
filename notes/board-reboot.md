@@ -34,6 +34,26 @@ The code is in `kernel/src/arch/aarch64/mod.rs`, `kernel/src/arch/x86_64/reset.r
 `kernel/src/arch/riscv64/semihosting.rs`. The FADT parser is
 `machine_discovery::acpi::parse_fadt_reset`, with a host test.
 
+### Why x86_64 tries its routes in that order
+
+A PC has no one firmware call that owns its power, the way PSCI does on aarch64 or SBI SRST on
+RISC-V. It has three reset mechanisms of different vintages, so `arch::x86_64::reset::reboot` tries
+them strongest first. The FADT's reset register comes first because firmware vouches for it. On
+every Intel chipset this project has seen it names port `0xCF9` anyway, and a machine that puts it
+elsewhere is exactly the machine on which the `0xCF9` guess is wrong. `0xCF9` is the chipset's Reset
+Control register, written `0x02` (system reset) then `0x0E`. Bit 3, full reset, makes the platform
+drop power to the rails briefly rather than only pulling the CPU's reset line. That matters on a
+board whose firmware does not survive a warm reset, which is radon's lesson. The 8042 keyboard
+controller's pulse, `0xFE` to port `0x64`, is the oldest route and the one a platform with nothing
+else is most likely to emulate. Each route gets a tenth of a second before the next is tried, and
+nothing halts, because the caller still has a running machine to report on.
+
+Since milestone 805 (`reboot` at the prompt) the route also runs on a machine holding a filesystem
+open, through the reboot object (`kernel/src/reboot.rs`). Nothing in `reset.rs` quiesces devices
+first: a reset through `0xCF9` cuts off a DMA engine mid-transfer with everything else, which is
+the point of a cold reset. What makes it safe is that `reboot` syncs the writable filesystem before
+it invokes the object, so the block servers are idle, and nothing else writes persistent storage.
+
 ## What QEMU proves
 
 `script/soak-test --reboot --arch <arch>` passes only on a second boot. The soak's start line must
@@ -88,8 +108,10 @@ Its limits, which its `BUGS` lists one line each:
 
 - The proof is in no CI gate. Each leg takes over two minutes, because the window is the board's
   own 120 seconds. A regression is found when somebody runs it.
-- On `x86_64` only attempt 1 has run. q35 offers the FADT route, so the `0xCF9` and 8042 fallbacks
-  have compiled and never executed.
+- On `x86_64` only attempt 1 has run. q35 offers the FADT route (`0xCF9 <- 0x0F`), so the `0xCF9`
+  and 8042 fallbacks have compiled and never executed. A QEMU proof of either needs a machine whose
+  FADT does not offer that route, and no runner here starts one. Whether xenon's `0xCF9` full reset
+  brings it all the way back through firmware to a netboot is the bench's first question.
 - The aarch64 `smc` conduit has never executed. QEMU's PSCI answers on `hvc`. `smc` is argon's.
 - A memory-space FADT reset register is not attempted. No machine here uses one.
 - Nothing has run on any board.

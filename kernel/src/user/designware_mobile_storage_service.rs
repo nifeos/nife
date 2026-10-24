@@ -1,17 +1,11 @@
-//! **radon's SD/MMC block server's wiring** (milestone 53 (the board's own peripherals: network
-//! and storage on real silicon)), in milestone 261 (the NVMe driver leaves the kernel)'s shape.
+//! radon's SD/MMC block server's wiring. The kernel ungates the controller's clocks and releases
+//! its reset, then hands a process one device-typed page of the controller, the transfer region,
+//! two endpoints and the window of the card it may serve;
+//! `components/src/designware_mobile_storage.rs` has what it holds and is refused. See
+//! notes/designware-mobile-storage.md.
 //!
-//! The kernel keeps the admin plane: it ungates the controller's clocks and releases its reset in
-//! the shared SYS clock generator, then hands a process one device-typed page of the controller,
-//! the transfer region it will share with its client, two endpoints, and the window of the card it
-//! may serve. Everything else, the card included, is the process's to bring up:
-//! `components/src/designware_mobile_storage.rs` has what it holds and what it is refused.
-//!
-//! **The booted system does not start it yet**, although it may ([`PROVEN_ON_SILICON`]). Its one
-//! caller is the `storage_bench` boot, which starts it over a window it chose from the card's own
-//! partition table and reads and writes through it the way the FS server would. What the booted
-//! system's block server serves on radon is a USB drive (§260 (radon's block server serves a USB
-//! drive)), not this card.
+//! Its one caller is the `storage_bench` boot. On radon the booted system's block server serves a
+//! USB drive (§260 (radon's block server serves a USB drive)), not this card.
 
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::serve::{Handoff, REGISTER_VA, TRANSFER_VA, Window};
@@ -21,7 +15,7 @@ use super::*;
 use crate::cap::{Rights, rendezvous_cap};
 use crate::sched::RendezvousId;
 
-/// **Whether the booted system may start this server.** True: a `storage_bench` boot on radon
+/// Whether the booted system may start this server. True: a `storage_bench` boot on radon
 /// read and wrote through it on 2026-10-22 (UTC), `verdict READ-OK 10960 KiB/s, WRITE-VERIFIED
 /// sectors 2040..2048 (were zero), restored, EL0 block server served`
 /// (`bench/radon-2026-10-22/53-storage-write.log`, notes/designware-mobile-storage.md's runbook).
@@ -51,7 +45,7 @@ pub(crate) enum NotStarted {
     BadHandoff,
 }
 
-/// **Start a block server on `slot`, serving `window`.**
+/// Start a block server on `slot`, serving `window`.
 ///
 /// # Errors
 ///

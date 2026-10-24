@@ -1,66 +1,46 @@
-//! **A per-directory grant** (milestone 47 (navigation and naming)): the root directory capability,
-//! a subtree caretaker that narrows it, and the program confined to that subtree.
-//!
-//! Cut out of `fs_service.rs` unchanged by lane `maintainer/last-three-over-2000`, which left
-//! the parent an index (§282 (when a file is split, the parent becomes an index)) and under §266
-//! (a Rust source file stays under 2,000 lines).
+//! A per-directory grant: the root directory capability, a subtree caretaker that narrows it, and
+//! the program confined to that subtree. See notes/dir-capability.md.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
 
 use super::*;
 
-/// **Wire a per-directory grant and the program confined to it** (milestone 47,
-/// notes/dir-capability.md). The same three-process shape [`start_granted`] wires, one rung up:
+/// A per-directory grant and the program confined to it, as [`start_granted_dir`] wires them: the
+/// FS server, an `fs_subtree_caretaker` narrowing the image root to one subtree, and the program,
+/// which holds only the caretaker's endpoint.
 ///
-/// ```text
-///   FS server ──file IPC──► fs_subtree_caretaker ──narrowed file IPC──► the confined program
-///            (the image root)         (one subtree, one rights set)
-/// ```
-///
-/// The caretaker holds the root directory capability and the confined program holds an endpoint
-/// to the caretaker and **nothing that names the FS server**, which is what makes "it cannot
-/// reach the parent directory or a sibling" a statement about its capability table rather than about a
-/// branch. That argument is `fs_file_caretaker`'s, and it is load-bearing here for an extra
-/// reason: the FS server's handle table is per *server*, so a rights-carrying handle on its own
-/// would not confine a program that could still name [`filesystem_contract::fs::ROOT`].
-///
-/// `rights` is a [`filesystem_contract::dir`] mask. It is what the caretaker *asks* for; the FS server
-/// intersects it with the root's and refuses if the answer is smaller, so a wiring that asked
-/// for more than exists fails at the caretaker's first request rather than silently serving
-/// less.
+/// The FS server's handle table is per server, so a rights-carrying handle alone would not confine
+/// a program that could still name [`filesystem_contract::fs::ROOT`]. See
+/// notes/fs-server/kernel-wiring.md.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub struct DirGrant {
     /// The directory the caretaker descends into, one component under the image root. Must fit
     /// [`filesystem_contract::grant::MAX_NAME`].
     pub name: &'static str,
-    /// The [`filesystem_contract::dir`] rights the subtree capability is to carry.
+    /// The [`filesystem_contract::dir`] rights the caretaker asks for. The FS server intersects
+    /// them with the root's and refuses if the answer is smaller, so asking for more than exists
+    /// fails at the caretaker's first request.
     pub rights: u64,
     /// The confined program's `arg0` (its role) and `arg1`.
     pub role: u64,
     pub arg: u64,
-    /// Its `arg2`. Zero for every client that takes a role and a number; the `rm` program is
-    /// started with a **grant's** three words instead (a spec and two of name), so it uses all
-    /// three and its "role" word is the spec.
+    /// Its `arg2`. Zero for every client but `rm`, which is started with a grant's three words (a
+    /// spec and two of name), its "role" word being the spec.
     pub arg2: u64,
     /// Stack pages beyond the one `run` maps, for a confined program that needs them. The
     /// hand-written attacker needs none; a shell does (see [`spawn_fs_client`]).
     pub stack_pages: usize,
 }
 
-/// **Wire the filesystem and hand back the root directory capability**, for a boot rather than
-/// for a test (milestone 50).
+/// Wire the filesystem and hand back the root directory capability: the entry point the
+/// interactive boot uses.
 ///
-/// This is the one entry point the interactive boot uses. It brings up the block server and the
-/// FS server, drains both readiness sentinels (so the service is *running* and not merely
-/// spawned by the time the progenitor exists), and returns `(the file-service endpoint, the physical frame
-/// its clients map)`. `None` means no RedoxFS disk is attached to this run, which is the normal
-/// case for a plain `cargo xtask run`, and every caller treats it as "this boot has no
-/// filesystem" rather than as an error.
-///
-/// The endpoint **is** the directory capability (DECISIONS §27), rooted at the image root. A
-/// boot hands it to the shell unnarrowed on purpose: it is the machine's own prompt, and the
-/// interesting confinement claims are about what the shell then hands to the programs it spawns.
+/// It brings up the block server and the FS server and drains both readiness sentinels, so the
+/// service is running before the progenitor exists. Returns `(the file-service endpoint, the
+/// physical frame its clients map)`; the endpoint is the directory capability at the image root
+/// (§27 (the filesystem service)), handed to the shell unnarrowed. `None` means no RedoxFS disk is
+/// attached, the normal case for a plain `cargo xtask run`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn root_directory(
     blk_image: &'static [u8],
@@ -71,14 +51,9 @@ pub fn root_directory(
     Some((file_ep, file_shared))
 }
 
-/// **Wire a subtree caretaker and hand back the narrowed capability**, without spawning
-/// whatever is going to hold it.
-///
-/// [`start_granted_dir`]'s first half, split out because milestone 50's redirection witness is
-/// a shell that holds a directory **and** a terminal, a spawn channel and a budget, so its
-/// client half is nothing like [`spawn_fs_client`]'s. What it shares with every other confined
-/// program is exactly what is here: a caretaker between it and the FS server, and the page they
-/// both map.
+/// Wire a subtree caretaker for `name` with `rights` and hand back the narrowed capability,
+/// without spawning whatever is going to hold it: [`start_granted_dir`]'s first half, for a client
+/// unlike [`spawn_fs_client`]'s.
 ///
 /// Returns `(narrow_ep, file_shared)`, with both handshakes already drained for
 /// [`wait_for_caretaker`]'s reason, so a caller may spawn its client the moment this returns.
@@ -104,15 +79,11 @@ pub fn narrow_dir(
     Some((narrow_ep, file_shared))
 }
 
-/// [`narrow_dir`], **with a caretaker the caller can end** (milestone 121 (`ripgrep` on nife:
-/// enumeration as a capability)).
+/// [`narrow_dir`], with a caretaker the caller can end, and a report endpoint for the program.
 ///
 /// [`narrow_dir`]'s caretaker parks in `RECEIVE` on an endpoint no region owns, so it lives for the
-/// boot. That is fine for a test that grants one directory and was a frame-ledger failure for one
-/// that grants two more: the aarch64 suite ran out of page frames three tests later. Here both
-/// endpoints come out of a region of their own, `display_service`'s shape and for its reason,
-/// and the returned [`super::holding::Holding`] reclaims that region, which wakes the caretaker to
-/// die.
+/// boot. Here the endpoints come out of a region of their own, and the returned
+/// [`super::holding::Holding`] reclaims it, which wakes the caretaker to die.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn narrow_dir_held(
     blk_image: &'static [u8],
@@ -121,10 +92,8 @@ pub fn narrow_dir_held(
     name: &'static str,
     rights: u64,
 ) -> Option<(RendezvousId, u64, RendezvousId, super::holding::Holding)> {
-    // Three endpoints, a page each, and one spare: the caretaker's two, and the program's stdout.
-    // All three live in the region so that one reclaim returns every endpoint this grant made. The
-    // kernel's rendezvous registry is a fixed 512 and the suite runs close to it: two endpoints a
-    // walk test left live were enough to exhaust it in `uuid_tests` on 2026-09-27.
+    // The caretaker's two endpoints and the program's stdout, so one reclaim returns them all: the
+    // kernel's rendezvous registry is a fixed 512 and the suite runs close to it.
     let ep_region = crate::memory_region::create(GRANT_ENDPOINT_PAGES)
         .expect("no endpoint region for a caretaker");
     let endpoint =
@@ -190,14 +159,15 @@ fn spawn_caretaker(
     })
     .expect("could not spawn the subtree caretaker");
 
-    // Both handshakes before the client exists. See [`wait_for_caretaker`]: this is the call
-    // that found the bug, because a caretaker whose descent is answered only after the service
-    // is drained gives its client an unbounded window to write over the staged name.
+    // Both handshakes before the client exists, for [`wait_for_caretaker`]'s reason.
     wait_for_service(readiness);
     wait_for_caretaker(caretaker_ready);
     Some((file_shared, tid))
 }
 
+/// Wire `grant`: a subtree caretaker and the program confined to it, whose slot 0 is a directory
+/// capability for one subtree.
+///
 /// Returns the confined program's report endpoint and the [`super::holding::Holding`] that hands
 /// back the caretaker, the program and every endpoint the grant made. Release it once the last
 /// report is read: the caretaker serves until it is killed, so a grant nobody releases is a
@@ -221,8 +191,6 @@ pub fn start_granted_dir(
     let (narrow_ep, file_shared, report, mut held) =
         narrow_dir_held(blk_image, fs_server_image, caretaker_image, name, rights)?;
 
-    // The confined program. Its slot 0 looks exactly like a directory capability from inside,
-    // and is one: the same protocol, the same page, a namespace of one subtree.
     held.add_thread(spawn_fs_client(
         client_image,
         narrow_ep,

@@ -279,19 +279,10 @@ fn expanded(pattern: &[u8]) -> Result<expand::NameSet, Refusal> {
     e.finish()
 }
 
-/// **The headline, at the level a shell can check it: what `echo *.txt` shows is exactly what
-/// `rm *.txt` transfers.**
-///
-/// The two halves are a separate claim each, and only together do they mean anything:
-///
-/// 1. the planner grants **the set the expander produced**, unnarrowed, unreordered and with
-///    nothing added, so nothing between the display and the transfer can edit the authority;
-/// 2. the set is **not** everything in the directory, which is what makes claim 1 more than
-///    "the grant is the directory".
-///
-/// The other half of the demonstration is in the guest, where the shell derives the two
-/// independently over a real `READDIR` and compares them (`kernel::user::glob_grant_tests`).
-/// This is the part that can be checked in milliseconds.
+/// **What `echo *.txt` shows is exactly what `rm *.txt` transfers.** The planner grants the set the
+/// expander produced, unnarrowed, unreordered and with nothing added, and that set is not
+/// everything in the directory. The guest half compares the two over a real `READDIR`
+/// (`system_tests::user::glob_grant_tests`).
 #[test]
 fn what_echo_shows_is_what_rm_would_transfer() {
     let shown = expanded(b"*.txt").expect("the pattern matches two of these names");

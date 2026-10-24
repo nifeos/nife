@@ -23,9 +23,9 @@ spelling `u` and no `s`.
 diff --git a/crates/machine_discovery/src/riscv64.rs b/crates/machine_discovery/src/riscv64.rs
 --- a/crates/machine_discovery/src/riscv64.rs
 +++ b/crates/machine_discovery/src/riscv64.rs
-@@ -888,10 +888,7 @@ fn strip_base_prefix(value: &[u8]) -> &[u8] {
- /// Only the run before the first `_` is scanned, so `_s`-prefixed multi-letter extensions
- /// (`_sstc`, `_svadu`, `_sdtrig`, all in QEMU's string today) can never read as a bare `s`.
+@@ -841,10 +841,7 @@ fn strip_base_prefix(value: &[u8]) -> &[u8] {
+ /// Only the run before the first `_` is scanned, so `_sstc` never reads as a bare `s`. See
+ /// `notes/visionfive2/hart-roster-stops.md`.
  pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
 -    let single_letters = strip_base_prefix(value)
 -        .split(|&b| b == b'_')
