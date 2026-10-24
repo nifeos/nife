@@ -1,11 +1,10 @@
 //! **The operator: replace a running component under a talking client** (milestone 23,
 //! DECISIONS §41).
 //!
-//! An unprivileged process: the kernel has no notion of a component or a swap, and supplies only
-//! endpoints that name no peer (§12), a death message (§26), a reap that needs no construction
-//! authority (§32), and revocation (§13, §16, and §41's device take-back). The entry role picks the
-//! system (`hot_swap_contract`'s `ROLE_*`). The swap's five steps and their order are in
-//! notes/live-replacement.md, and each role's design in notes/live-replacement/the-operator.md.
+//! An unprivileged process: the kernel has no notion of a component or a swap, and what it does
+//! supply is listed in notes/live-replacement/the-operator.md with each role's design. The entry
+//! role picks the system (`hot_swap_contract`'s `ROLE_*`). The swap's five steps and their order
+//! are in notes/live-replacement.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39, landed by milestone 46), replacing `swapd`.
 //! Refused `swapd` (the `-d` claim).
@@ -436,9 +435,10 @@ fn report_dependents(
 // state was not absorbed does not commit.
 // ===============================================================================================
 
-/// **The swap, for a component that declared a handoff page** (§209): no device, one handoff frame
-/// routed to every instance and never read here, replacements on a `control` endpoint distinct from
-/// the incumbent's, and a commit only on a replacement's `NOTE_ABSORBED`. A replacement that refuses
+/// **The swap, for a component that declared a handoff page** (§209 (state handoff is an opaque
+/// blob over a granted frame, and it is optional)): no device, one handoff frame routed to every
+/// instance and never read here, replacements on a `control` endpoint distinct from the
+/// incumbent's, and a commit only on a replacement's `NOTE_ABSORBED`. A replacement that refuses
 /// exits and is collected, which returns its region, and the incumbent resumes with the state it
 /// never lost. See notes/live-replacement/the-operator.md.
 fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
@@ -1024,8 +1024,8 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     expect_note(w.note, hot_swap_contract::NOTE_SWAP_NOW, 80);
 
     // Step 2, bounded: nothing in the trigger says the incumbent has stopped, so the drain is
-    // asked as on the direct channel with a deadline (milestone 106's timed wait). No answer
-    // within the bound means hung.
+    // asked as on the direct channel with a deadline (milestone 106 (a wait that ends on either the
+    // interrupt or the deadline)). No answer within the bound means hung.
 
     let bound = cntfrq() * QUIESCE_BOUND_MS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {

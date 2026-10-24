@@ -42,8 +42,9 @@ pub(super) const ROLE_TWO_TREES: u64 = 6;
 /// rights that capability was granted, 0 for none. Told rather than asked, because nothing on that
 /// wire reports what a handle carries and `OPENDIR` refuses a request wider than the parent, so a
 /// guess of `dir::ALL` could not `cd` (notes/shell-navigation.md). **`x2` carries the clock slot**
-/// (milestone 86), or [`NO_CLOCK`]: the slot moves with what else the boot granted, and a probe of
-/// the wrong number would map some other object as a clock. See [`CLOCK_SLOT`].
+/// (milestone 86 (`time`: the shell times a command)), or [`NO_CLOCK`]: the slot moves with what
+/// else the boot granted, and a probe of the wrong number would map some other object as a clock.
+/// See [`CLOCK_SLOT`].
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(role: u64, arg: u64, clock: u64) -> ! {
     CLOCK_SLOT.store(clock, core::sync::atomic::Ordering::Relaxed);

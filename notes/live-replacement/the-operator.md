@@ -57,7 +57,7 @@ in a live conversation rather than at a moment picked by counting yields.
 
 Before the drain, the operator asks the dependency graph who depends on the target among the live
 instances. On the direct channel the answer is a real empty set, because nothing declares `console`
-in its `depends_on`. `CLIENT` is a pure consumer and never needs telling, by §41's sender-queue
+in its `depends_on`. `CLIENT` is a pure consumer and never needs telling, by the sender-queue argument of §41 (the endpoint is the broker, and a device is revoked by taking it back)
 argument (`capability_plan::Requirements::depends_on`'s doc comment). On the queued channel the
 broker's manifest declares `depends_on: &["backend"]`, and the two-instance registry checked against
 `capability_plan::dependents` decides whether the broker is warned. The operator never waits for a
@@ -109,7 +109,7 @@ is an opaque blob over a granted frame, and it is optional):
 - The incumbent is retired only after the replacement says it absorbed the state. Before that,
   nothing has committed.
 - A replacement that refuses leaves nothing behind. It never received a request; it exits, and the
-  reap returns its region, so the new grant is revoked by §16's machinery with no rollback of its
+  reap returns its region, so the new grant is revoked by the machinery of §16 (object revocation: reclaim the objects a process built) with no rollback of its
   own. The incumbent is told to resume, holding the state it never lost.
 
 ## The hung incumbent
@@ -121,10 +121,11 @@ will never cooperate (milestone 133 (ending a permanently blocked thread, and de
 The replacement and the stand-in that carries the bounded quiesce are both built ahead, since a hung
 component gives the operator no drain to hide a build behind.
 
-What the supervisor can see is two negative results. `abi::rendezvous::SURVEY` (milestone 126) shows
+What the supervisor can see is two negative results. `abi::rendezvous::SURVEY` (milestone 126 (the `procps` package)) shows
 every member `BLOCKED` and none `DEAD`, which is also what a healthy idle system looks like.
 `Rendezvous::REAP` on every member is refused `StillAlive`, and that is the supervisor's whole
-vocabulary over its domain since §32. Asking about every member rather than the suspect is easier,
+vocabulary over its domain since §32 (a supervisor may collect a corpse without being able to
+build one). Asking about every member rather than the suspect is easier,
 because a survey returns tids and nothing that says which is which, and it is the stronger claim.
 The verdict comes from the clock, not from this view.
 

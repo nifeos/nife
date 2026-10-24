@@ -67,7 +67,8 @@ pub extern "C" fn _start(_a0: u64, image_len: u64, _a2: u64) -> ! {
 /// slot, so the kernel hands it back with the child's death message, and the child, started with
 /// nothing but `attempt`, can neither learn it nor lie about it (DECISIONS §148 (resolves by asking
 /// the kernel) as amended 2026-10-04). We keep nothing afterwards: the TCB capability is not the
-/// thread, and the region capability is not the reap (§32). See notes/trusted-init/supervision-tree.md.
+/// thread, and the region capability is not the reap (§32 (a supervisor may collect a corpse
+/// without being able to build one)). See notes/trusted-init/supervision-tree.md.
 fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
     let labelled = badge(CHILDFAULT, label);
     if labelled < 0 {

@@ -497,8 +497,10 @@ impl Nav {
     /// **Expand one pattern token against the directory its leading path names**: the only function
     /// that turns a pattern into names, for `echo` (which prints the set) and the grant planner
     /// (which grants it) alike, so the expansion you see is the grant. It needs `ENUMERATE` and
-    /// nothing more (DECISIONS §47), and a shell that may not enumerate gets the server's `EPERM`
-    /// rather than a quietly empty set, which would be `§42`'s silent degradation.
+    /// nothing more (DECISIONS §47 (a directory capability carries six rights, and a child can
+    /// never exceed its parent)), and a shell that may not enumerate gets the server's `EPERM`
+    /// rather than a quietly empty set, which would be the silent degradation §42 (a filesystem
+    /// declares what it offers and must be truthful) forbids.
     pub(super) fn expand(&mut self, token: &[u8]) -> Result<NameSet, Say> {
         if self.dir.is_none() {
             return Err(Say::NoDirectory);

@@ -562,7 +562,7 @@ fn tftp_on_socket() -> ! {
     }
 
     // The DATA's source endpoint, which `RECEIVE` reports in the frame header: the gateway, from a
-    // real port. Not pinned to 69, since TFTP answers from a transfer-id port (RFC 1350 §4).
+    // real port. Not pinned to 69, since TFTP answers from a transfer-id port (RFC 1350, section 4).
     let (src_ip, src_port) = (SHARED_FRAME.dst_ip(), SHARED_FRAME.dst_port());
     if src_ip != GW_IP {
         done(0xE046); // the reported source is not the server that answered
@@ -750,8 +750,8 @@ fn serve_one_inbound(base: u64) {
     }
 }
 
-/// **The UDP bind grant's refusals** (milestone 55), inside the accept test's spawn (see
-/// [`tcp_accept_inbound`]). A port outside the grant is `LISTEN_DENIED`, the capability answer that
+/// **The UDP bind grant's refusals** (milestone 55 (Time Machine: SMB3 with Apple's extensions,
+/// and mDNS)), inside the accept test's spawn (see [`tcp_accept_inbound`]). A port outside the grant is `LISTEN_DENIED`, the capability answer that
 /// no retry helps; a granted port binds, and asking for it again collides. The spawn word also
 /// carries the TCP listen grant, so this exercises the composed word. Nothing proves multicast
 /// (notes/net/the-test-clients.md).

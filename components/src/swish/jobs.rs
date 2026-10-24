@@ -297,7 +297,7 @@ static WATCH_NOTIFICATION: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 /// either the interrupt or the deadline)), rather than a `yield`: ten milliseconds between looks,
 /// 100 wakes a second, each a page read and a `CALL` for the `^C` count. A watch that wakes only
 /// when the job ends or `^C` arrives needs both to signal a notification this shell waits on, which
-/// is milestone 103's (`^C` stops spinning: the shell's interrupt watch, blocking).
+/// is milestone 103 (`^C` stops spinning: the shell's interrupt watch, blocking).
 /// `grant_plan::COOP_GRACE_TICKS` counts loop iterations, so its 200 are two seconds of wall time.
 fn watch_pause() {
     use core::sync::atomic::Ordering::Relaxed;

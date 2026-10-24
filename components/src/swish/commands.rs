@@ -26,9 +26,10 @@ pub(super) fn builtin(nav: &mut Nav, cmd: &[u8], each: &mut dyn FnMut(&[u8], boo
     }
 }
 
-/// **Read one typed line and run the commands on it** (milestone 67, notes/swish-language.md): the
-/// outermost thing the prompt calls. It cuts the line on `;`, `&&` and `||` and hands each segment
-/// to [`dispatch`], so a segment is a whole command line and nothing under here learned a grammar.
+/// **Read one typed line and run the commands on it** (milestone 67 (`swish` the language: quoting,
+/// sequencing, and exit status), notes/swish-language.md): the outermost thing the prompt calls. It
+/// cuts the line on `;`, `&&` and `||` and hands each segment to [`dispatch`], so a segment is a
+/// whole command line and nothing under here learned a grammar.
 ///
 /// A connector carries one bit and no capability: each segment is planned from scratch, and the
 /// line is cut here, above [`pipeline`](fn@pipeline), so each segment's pipeline region is its own
@@ -106,9 +107,10 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
         refused();
         return swish::write_untimed(Untimed::NothingToTime, &mut print);
     }
-    // A duration needs no clock (§72): across a command the wall clock's offset cancels, and
-    // `monotonic_nanos` is ambient (the kernel opened the counter to EL0) and cannot be stepped.
-    // So `time` cannot be refused; a capability gates wall-clock identity, which is `date`'s.
+    // A duration needs no clock (§72 (`time` needs no clock: duration is ambient, wall-clock
+    // identity is authority)): across a command the wall clock's offset cancels, and
+    // `monotonic_nanos` is ambient (the kernel opened the counter to EL0) and cannot be stepped. So
+    // `time` cannot be refused; a capability gates wall-clock identity, which is `date`'s.
     let start = monotonic_nanos();
 
     dispatch(nav, tail);

@@ -17,7 +17,7 @@ including the one authority no token designates: the clock a manifest such as `d
 ## Walking a path across two trees
 
 A path is resolved as a path before anything is opened, and then opened one `OPENDIR` at a time from
-the root of the tree that serves it. That is milestone 154's one-tree presentation in one place. `..`
+the root of the tree that serves it. That is milestone 154 (a process that holds two directory capabilities)'s one-tree presentation in one place. `..`
 from a mount point is its parent in the first tree, because that is what the path says, and a path
 through the mount point is opened on the second tree's endpoint and no other. A bound name misdirects
 a path and cannot manufacture a boundary, since `..` past it is the same arithmetic a direct walk
