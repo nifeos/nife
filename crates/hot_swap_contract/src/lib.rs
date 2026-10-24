@@ -764,13 +764,11 @@ pub fn probe_device() -> u64 {
 /// compiles for the third architecture rather than because there is something here to read.
 ///
 /// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
-/// `user::UART_PHYS` is **zero**, the marker for
-/// DECISIONS §121 (what a device capability is when the device has no page: x86 port I/O),
-/// PROPOSED, in `design/decisions/0121-port-io-capability.md`. The
-/// live-swap fixture `skip!()`s here (`system_tests/src/user/live_swap_tests.rs`): reading `DEV_VA`
-/// anyway would map physical page zero, read an IVT byte and still fault on revoke, a green test
-/// about nothing. The value is never observed, and is not `0` because a quiet line status register
-/// could return that.
+/// `user::UART_PHYS` is **zero**, the marker for DECISIONS §121 (what a device capability is when
+/// the device has no page: x86 port I/O), PROPOSED. `system_tests/src/user/live_swap_tests.rs`
+/// `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an IVT byte and
+/// still fault on revoke, a green test about nothing. The value is never observed, and is not `0`
+/// because a quiet line status register could return that.
 #[cfg(target_arch = "x86_64")]
 pub fn probe_device() -> u64 {
     u64::MAX
