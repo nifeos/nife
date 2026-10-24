@@ -82,16 +82,16 @@ TSC on x86_64), so compare a row across its own line only.
 
 | | before | after | change |
 |---|---|---|---|
-| aarch64 `keyboard_up` | 45,998 | 57,616 | +25.3% |
+| aarch64 `keyboard_up` | 45,998 | 57,624 | +25.3% |
 | aarch64 `keyboard_event`, per press | 2,107 | 2,345 | +11.3% |
-| riscv64 `keyboard_up` | 2,803 | 4,374 | +56.0% |
+| riscv64 `keyboard_up` | 2,803 | 4,375 | +56.1% |
 | riscv64 `keyboard_event`, per press | 341 | 380 | +11.4% |
-| x86_64 `keyboard_up` | 544,406 | 656,956 | +20.7% |
-| x86_64 `keyboard_event`, per press | 32,978 | 36,751 | +11.4% |
+| x86_64 `keyboard_up` | 544,406 | 657,046 | +20.7% |
+| x86_64 `keyboard_event`, per press | 32,978 | 36,616 | +11.0% |
 
 What the numbers mean:
 
-- A key press costs about 11% more on every architecture, about 240 aarch64 ticks or 3,800
+- A key press costs 11% more on every architecture, about 240 aarch64 ticks or 3,800
   instructions. The path is the same in syscalls: one `NOTIFY` per re-posted buffer and one
   interrupt acknowledgment per drain, as before. The difference is the crate's own work in an
   unoptimized build: the free list, the `Result` plumbing, the bounds checks and its atomics on
@@ -100,8 +100,8 @@ What the numbers mean:
   sites come along) and loading it is inside the row; how much of the difference that is was not
   separated. Bring-up happens once per boot.
 - Both rows were identical across two aarch64 runs of the hand-written driver. riscv64 moved by
-  one tick between runs. x86_64's `keyboard_event` moved by 0.4% between two runs of the same
-  driver, so read its row to about half a percent.
+  one to four ticks between runs. x86_64's `keyboard_event` moved by 0.4% between two runs of
+  either driver, so read its row to about half a percent.
 - Code lines (blank and comment lines removed): `keyboard_driver.rs` went from 252 to 207, and
   `confined_virtio`, which 948 to 950 can share, is 257. The ring walking the
   driver no longer holds is the crate's, under its upstream tests and users.
