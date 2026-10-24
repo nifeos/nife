@@ -88,8 +88,8 @@ pub(crate) fn place_archive(services: &BootServices) -> Result<Option<(u64, u64)
 /// **The removable-media path the firmware found this image at**, which is the path its own file is
 /// still at.
 ///
-/// One constant rather than a decoded device path, and the trade is recorded in
-/// [`place_boot_file`]'s own comment.
+/// One constant rather than a decoded device path; notes/x86-uefi-boot/loader-design.md records the
+/// trade.
 #[cfg(target_arch = "x86_64")]
 pub(crate) const BOOT_FILE_PATH: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
 
@@ -109,41 +109,16 @@ pub(crate) const BOOT_FILE_MAX: u64 = 64 * 1024 * 1024;
 #[cfg(target_arch = "x86_64")]
 const FILE_POSITION_END: u64 = u64::MAX;
 
-/// **Read this loader's own file off the volume it was started from, and place it for the kernel.**
-///
-/// Milestone 198 (a package manager, and the trivial install that makes a second customer
-/// possible)'s rung 2a, and the problem it solves is one nobody had written down until
-/// milestone 515 (a stick that puts itself on the machine's disk)
-/// looked: **the running system does not have its own file.** This loader places the kernel's
-/// segments and hands the archive over as a module, and then the PE file that contained both is
-/// gone. An installer has to write that file to the disk's EFI system partition, and it cannot be
-/// put inside the archive, because the file *contains* the archive.
-///
-/// So the file is read here, while the firmware is still up and can read a FAT volume in one call,
-/// and handed over as a second module. It costs two protocols and one allocation, and it keeps the
-/// property that matters most: **the kernel and the archive travel as a set**, because they travel
-/// as the single file that already seals them together (`uefi_loader/build.rs`'s
-/// `refuse_an_unsealed_pair`). An installer that copied one and not the other would produce a disk
-/// that halts at `MEASURED BOOT REFUSED`, and there is no way to express that mistake here.
-///
-/// **A failure is not a boot failure.** Every return of `None` says so on the console and carries
-/// on; what is lost is the ability to install, which is not what this stick is for on most boots.
+/// **Read this loader's own file off the volume it was started from, and place it for the kernel**
+/// as a second module (milestone 198's rung 2a): the running system has no other copy, and the
+/// archive cannot carry the file that contains it. So kernel and archive travel as the one file
+/// that seals them (`build.rs`'s `refuse_an_unsealed_pair`). A failure costs the ability to
+/// install, not the boot: a `None` says so and carries on (notes/x86-uefi-boot/loader-design.md).
 ///
 /// # BUGS
-///
-/// - **The path is a constant**, not the image's own `loaded_image::Protocol::file_path`. Turning a device
-///   path into text needs `EFI_DEVICE_PATH_TO_TEXT_PROTOCOL` and a parser, and every boot this
-///   milestone is about is the removable-media fallback path, which is the constant. A loader
-///   started from some other path on the volume reads the wrong file or none, and says so.
-/// - **x86_64 only.** The device-tree architectures hand the kernel a tree rather than a module
-///   list, and `/chosen` has one initial ramdisk and no second slot; adding one is its own piece
-///   of work. The trivial install of §157 (a trivial install is a web page, a USB drive, and
-///   packages) is a PC, so this is where it is needed first. The gap is real, it is why rung 2a
-///   is an x86_64 claim, and it is priced in
-///   `design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md`.
-/// - **The file is read whole into RAM**, about 9 MiB for the tour build. Streaming it to the disk
-///   instead would mean keeping a firmware file handle past `ExitBootServices`, which there is no
-///   such thing as.
+/// - **The path is a constant**, not `loaded_image::Protocol::file_path`: the fallback path only.
+/// - **x86_64 only**: `/chosen` has one initial ramdisk and no second module (milestone 568).
+/// - **The file is read whole into RAM**, about 9 MiB for the tour build.
 #[cfg(target_arch = "x86_64")]
 pub(crate) fn place_boot_file(
     handle: Handle,

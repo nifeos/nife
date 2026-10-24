@@ -1,54 +1,31 @@
 //! **A device tree for a machine that has none**: the ACPI tables an aarch64 server describes
 //! itself with, written out as the flattened tree this kernel already reads.
 //!
-//! # Why this shape, and not the other one
-//!
-//! The `x86_64` half of this loader hands the kernel an ACPI root pointer and the kernel reads the
-//! tables itself. Mirroring that here would mean a second discovery path through
-//! `kernel/src/memory.rs`, `smp.rs`, `console.rs` and `arch/aarch64/`, every one of which asks the
-//! device tree today, **and a change to what the loader and the kernel agree on across the
-//! handoff**: `x0` is the physical address of a device tree blob (Linux's arm64 boot protocol, which
-//! `boot.s` cites and U-Boot's `booti` meets). That is a wire format, and wire formats are decided
-//! by an architect rather than by a lane.
-//!
-//! So this takes the other road, which costs one module and changes nothing anybody agreed on: the
-//! loader reads the tables while the firmware is still alive and **writes the tree the kernel would
-//! have been handed**. The kernel boots on an ACPI machine without knowing that ACPI exists.
-//!
-//! **This is a translation and it loses information**, which is the honest reason the firmware's own
-//! device tree stays first in the aarch64 loader's own order when a machine offers both. See BUGS.
-//!
+//! Handing the kernel an ACPI root pointer, as `x86_64` does, would mean a second discovery path
+//! through `kernel/src/memory.rs`, `smp.rs`, `console.rs` and `arch/aarch64/`, and a change to the
+//! handoff's wire format (`x0` is a device tree blob, Linux's arm64 boot protocol, which `boot.s`
+//! cites), which is an architect's call. So the loader reads the tables while the firmware is alive
+//! and **writes the tree the kernel would have been handed**. The translation loses information,
+//! which is why the firmware's own tree stays first in the aarch64 loader's order (see BUGS).
+
 //! # Tested by the reader, not by inspection
 //!
 //! Every test below decodes what this writes with `crates/device_tree_blob` and the
 //! `machine_discovery` decoders the **kernel** uses (`gic::discover`, `cpu_list::CpuList`,
 //! `aarch64::Psci`, `interrupt_id::of_node`, `DeviceTreeBlob::memory_regions`), so the writer and
-//! the readers cannot drift apart without a host test failing in milliseconds. That is the rule
-//! `handoff.rs` and `device_tree_patch.rs` already follow.
-//!
+//! the readers cannot drift apart without a host test failing in milliseconds.
 
-//! # BUGS
+//! # BUGS (the full accounts are in notes/device-tree.md)
 //!
-//! - **No PCI.** An ECAM window is in the MCFG, but a PCI node also needs `ranges` (the 32-bit and
-//!   64-bit BAR windows) and an `interrupt-map`, and on an ACPI machine both of those live in the
-//!   DSDT's `_CRS` and `_PRT`, which are AML. So no `pci-host-ecam-generic` node is written at all,
-//!   `memory::pci_regions()` answers `None`, and the boot takes the same path it takes on the
-//!   JH7110, which has no such node either. A bus that is there is invisible.
-//! - **No virtio-mmio, no `fw_cfg`, no ITS.** Same reason for the first two (QEMU describes them in
-//!   AML). The MADT's ITS entry is decoded and the loader prints it, but no node is written:
-//!   `machine_discovery::gic` reads none and the kernel drives no ITS (milestone 317 (the
-//!   interrupt-remapping flags, and where MSI confinement actually lives)). A node nothing reads
-//!   would be output no host test can check against a reader.
-//! - **The memory map is the UEFI one, merged.** Runtime-services and ACPI regions are excluded, so
-//!   the kernel will not hand out the tables it was described by, and conventional plus
-//!   boot-services plus loader memory is offered as RAM. That is the same set the firmware's own
-//!   device tree offers, which is why it is not narrower.
-//! - **Register block sizes are architectural, not stated.** The MADT gives a GIC distributor's
-//!   address and never its length, because the GIC architecture fixes the frame at 64 KiB. The same
-//!   goes for the GICv2 CPU interface and the PL011's page. A machine whose frames are elsewhere
-//!   would need this told rather than assumed, and nothing here would notice.
-//! - **One `/memory` node per merged run, capped at [`MAX_RAM`].** A machine with more runs than
-//!   that is described short, and nothing says so.
+//! - **No PCI**: a PCI node's `ranges` and `interrupt-map` live in AML (`_CRS`, `_PRT`), so no
+//!   `pci-host-ecam-generic` node is written and a bus that is there is invisible.
+//! - **No virtio-mmio, no `fw_cfg`** (QEMU describes them in AML), **and no ITS node**: the MADT's
+//!   ITS is printed, but the kernel drives no ITS (milestone 317).
+//! - **The memory map is the UEFI one, merged**, with runtime-services and ACPI regions excluded.
+//! - **Register block sizes are architectural, not stated** (the GIC's 64 KiB frames, the PL011's).
+//! - **One `/memory` node per merged run, capped at [`MAX_RAM`]**; more runs are described short.
+
+//! # Names
 //!
 //! Names in this module are **provisional** (2026-09-23): the module, [`Machine`], [`Cpu`],
 //! [`Uart`], [`build`] and the root node's `compatible` string all name things a reader meets, and

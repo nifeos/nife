@@ -160,6 +160,30 @@ failure, so every limitation here is a limitation on the boot path specifically.
 `crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two, hand-built rather than
 fuzzer-minimized, so a reader meets the attack next to the code.
 
+## A tree written from ACPI: what it loses
+
+`uefi_loader/src/device_tree_from_acpi.rs` writes a device tree for an aarch64 machine that offers
+only ACPI, and its BUGS keep one line per loss. The full accounts:
+
+- No PCI. An ECAM window is in the MCFG, but a PCI node also needs `ranges` (the 32-bit and 64-bit
+  BAR windows) and an `interrupt-map`. On an ACPI machine both live in the DSDT's `_CRS` and `_PRT`,
+  which are AML. So no `pci-host-ecam-generic` node is written at all, `memory::pci_regions()`
+  answers `None`, and the boot takes the path it takes on the JH7110, which has no such node either.
+- No virtio-mmio and no `fw_cfg`, for the same reason: QEMU describes them in AML.
+- No ITS node. The MADT's ITS entry is decoded and the loader prints it, but `machine_discovery::gic`
+  reads none and the kernel drives no ITS (milestone 317 (the interrupt-remapping flags, and where
+  MSI confinement actually lives)). A node nothing reads would be output no host test can check
+  against a reader.
+- The memory map is the UEFI one, merged. Runtime-services and ACPI regions are excluded, so the
+  kernel will not hand out the tables it was described by. Conventional, boot-services and loader
+  memory is offered as RAM, the same set the firmware's own device tree offers.
+- Register block sizes are architectural, not stated. The MADT gives a GIC distributor's address and
+  never its length, because the GIC architecture fixes the frame at 64 KiB. The same goes for the
+  GICv2 CPU interface and the PL011's page. A machine whose frames differ would need this told
+  rather than assumed, and nothing here would notice.
+- One `/memory` node per merged run, capped at `MAX_RAM`. A machine with more runs than that is
+  described short, and nothing says so.
+
 ---
 
 *Add to this file as new device tree concepts come up.*
