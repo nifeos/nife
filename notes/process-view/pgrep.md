@@ -83,6 +83,19 @@ typed it, and the mask is what the program is handed. That is the same move `rm 
 recursion flag becomes *rights* on the granted capability rather than text in an argument. It is
 the shape this system keeps arriving at: the boundary carries authority, not strings.
 
+## The zero on the wire
+
+`Selector::from_wire` is the one place zero is generous, and the asymmetry with `Selector::of` is
+deliberate. A program is started with its registers zeroed by whoever did not think about them:
+`system_initializer` starts every child `start_child(child, 0, arg, 0)`, and the shell leaves `arg`
+at zero for a program whose `ProgramArgumentDeclaration` is `Forbidden`. So "nobody said" has to
+mean "no filter", or `pgrep` would print nothing at the prompt and look broken.
+
+A pattern that matched no state must not collapse into the same value. That would turn a selector
+naming nothing into a selector naming everything, the one direction to be wrong in that a monitor
+cannot recover from. So `Selector::from_pattern` goes through `Selector::of` and can return
+`Selector::NONE`, which `Selection::write_diagnostics` reports as its own sentence.
+
 ## The limitation that shaped it, which is a property of the boundary
 
 Nothing in this system delivers bytes from a command line to a program. `Endowment::program_argument` is one

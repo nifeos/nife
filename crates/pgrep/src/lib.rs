@@ -1,38 +1,17 @@
 //! **`pgrep`: a domain names its members, and that is all naming buys you** (notes/process-view.md).
 //! This is the filter, lifted out so it runs on the host; `components/src/pgrep.rs` is the syscall
 //! and the output. It takes a finished [`ps::Survey`] from [`ps::collect`] rather than walking,
-//! because two implementations of `SURVEY`'s resume protocol could disagree.
-//!
-//! **There is no `pkill`, and the ABI is why.** A survey returns a tid, a tid is a name, and
-//! [`abi::thread_control_block`] has no `DESTROY`: killing a child is `DESTROY` on the region it was
-//! built from, held by whoever spawned it (§24 (interrupting the foreground process)). Nothing this
-//! program prints carries authority over what it printed.
-//!
-//! Four answers, kept apart because Unix collapses the last two into "prints nothing, exits 1":
-//!
-//! | what happened | output stream | diagnostics |
-//! |---|---|---|
-//! | members matched | their tids, one per line | silent |
-//! | the domain has members, none matched | nothing | `pgrep: none of the 3 ...` |
-//! | the domain is empty | nothing | `pgrep: this domain holds no processes` |
-//! | the walk was refused | nothing | `pgrep: this endpoint may be sent to, but not looked at ...` |
-//!
-//! The refusal wording is [`ps::Survey::complaint`]'s, so the two programs cannot drift. With no
-//! process names in this system, the pattern matches a member's run state (`pgrep dead`,
-//! `pgrep 'r*'`), and [`Selector::from_pattern`] resolves it into a bitmask before it crosses a
-//! process boundary, so the program is handed a mask rather than text.
-//!
+//! because two implementations of `SURVEY`'s resume protocol could disagree. It tells four answers
+//! apart (matched, none matched, an empty domain, a refusal), and its pattern matches a member's
+//! run state, resolved by [`Selector::from_pattern`] into a bitmask before it crosses a process
+//! boundary. There is no `pkill`: a tid carries no authority. See notes/process-view/pgrep.md.
+
 //! # BUGS
 //!
-//! - The selector cannot be typed at the prompt: a command line delivers capabilities and a few
-//!   words, never bytes, so the shipped `pgrep` is `pgrep '*'` until `ProgramArgumentDeclaration` gains positional
-//!   arguments.
-//! - It is glob, not an extended regex (no regex engine here, §46 (thin primitives or whole
-//!   subsystems)), so `pgrep 'r*'` works and `pgrep 'r.*'` does not; matched with
-//!   `glob::Dot::Ordinary`, since a state name is not a filename.
+//! - The selector cannot be typed at the prompt, so the shipped `pgrep` is `pgrep '*'`.
+//! - It is glob (`glob::Dot::Ordinary`), not an extended regex: `pgrep 'r.*'` does not work.
 //! - No exit status: "nothing matched" is a diagnostic sentence, since `exit` takes no code.
-//! - "none of the N processes" counts the domain as this walk saw it; a member born mid-walk is not
-//!   in it.
+//! - "none of the N processes" counts the domain as this walk saw it, not members born mid-walk.
 //! - The survey cursor must never be exposed here: it leaks thread-table density.
 //!
 //! Name: ratified 2026-08-23 (calef): upstream's name, shared with `components/src/pgrep.rs` as
@@ -92,19 +71,12 @@ impl Selector {
         Selector(mask & state::EVERY)
     }
 
-    /// **The mask as a spawner delivers it, where zero means every state.**
-    ///
-    /// This is the one place zero is generous, and the asymmetry with [`of`](Selector::of) is
-    /// deliberate. A program is started with its registers zeroed by whoever did not think about
-    /// them (`system_initializer` starts every child `start_child(child, 0, arg, 0)` and the shell
-    /// leaves `arg` at zero for a program whose `ProgramArgumentDeclaration` is `Forbidden`), so "nobody said" has to
-    /// mean "no filter" or `pgrep` would print nothing at the prompt and look broken.
-    ///
-    /// A **pattern** that matched no state must not collapse into the same value, because that
-    /// would turn a selector naming nothing into a selector naming everything: the one direction to
-    /// be wrong in that a monitor cannot recover from. So [`from_pattern`](Selector::from_pattern)
-    /// goes through [`of`](Selector::of) and can return [`NONE`](Selector::NONE), which
-    /// [`Selection::write_diagnostics`] reports as its own sentence.
+    /// **The mask as a spawner delivers it, where zero means every state.** A program starts with
+    /// its registers zeroed by whoever did not think about them, so "nobody said" means no filter.
+    /// A pattern that matched no state does not collapse into this zero:
+    /// [`from_pattern`](Selector::from_pattern) goes through [`of`](Selector::of) and can return
+    /// [`NONE`](Selector::NONE), which [`Selection::write_diagnostics`] reports as its own sentence.
+    /// See notes/process-view/pgrep.md, "The zero on the wire".
     pub const fn from_wire(mask: u64) -> Selector {
         if mask == 0 {
             Selector::EVERY
@@ -273,9 +245,8 @@ impl Selection<'_> {
             return;
         }
         if self.matched == 0 {
-            // **The fourth answer.** Upstream cannot say this: `pgrep` there prints nothing and
-            // exits 1 whether the pattern missed or the caller could not look, so a monitor cannot
-            // tell an idle machine from a closed door.
+            // Upstream exits 1 silently both here and on a refusal; this sentence tells an idle
+            // machine from a closed door.
             out(b"pgrep: none of the ");
             write_num(self.rows.len() as u64, out);
             out(b" processes in this domain are ");
