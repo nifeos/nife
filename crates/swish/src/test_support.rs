@@ -9,8 +9,7 @@ use std::vec::Vec;
 
 use crate::*;
 
-/// Run a renderer and collect what it wrote. Every test reads the shell's own output,
-/// which is the thing that used to need a booted kernel and a terminal to see at all.
+/// Run a renderer and collect what it wrote, so a test reads the shell's own output.
 pub(crate) fn shown(f: impl FnOnce(&mut dyn FnMut(&[u8]))) -> String {
     let mut buf: Vec<u8> = Vec::new();
     f(&mut |b| buf.extend_from_slice(b));

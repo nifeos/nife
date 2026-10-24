@@ -1,32 +1,13 @@
 use super::*;
 
-/// The nanosecond bound this harness proves the round trip over. **Not the whole range, and the
-/// reason is measured rather than assumed.**
+/// The nanosecond bound this harness proves the round trip over: 2^16, not the whole range.
 ///
-/// A bit-blasting model checker is bad at multiplication, and this property is two of them
-/// composed. On this machine, with kissat, `ticks_to_nanos(nanos_to_ticks(n)) == n` over
-/// symbolic `n`:
-///
-/// | bound | solver time |
-/// |---|---|
-/// | 2^16 | 9 s |
-/// | 2^20 | 212 s |
-/// | 2^30 (the real range) | killed at 10 minutes, twice |
-///
-/// Roughly four times the work per bit, so the full range is out of reach by about five orders
-/// of magnitude. Restating the division by its defining inequality (`t*d <= x < (t+1)*d`, which
-/// replaces a division circuit with a shift-and-add one) did not help, which is what identified
-/// the multiplication rather than the division as the cost.
-///
-/// **So this harness is a bounded proof and the full claim is proved elsewhere, exhaustively.**
-/// The domain is only 10^9 values, and checking every one of them by running the code takes
-/// 0.6 s ([`super::tests::every_nanosecond_survives_the_round_trip`]). That is a *complete*
-/// verification of this function, stronger than any bounded solver result, and it is the answer
-/// whenever a domain is small enough to enumerate. Kani earns its place on the properties whose
-/// domains are not: 2^64 wire values, 2^384 packets.
-///
-/// What the bounded harness still buys is the low corner, where the classic bug lives: 1 ns is
-/// 4.29 ticks, and an implementation that truncates instead of rounding turns it into 0.
+/// The property is two multiplications composed, which a bit-blasting model checker handles badly:
+/// with kissat, 2^16 takes 9 s, 2^20 takes 212 s, and 2^30 was killed at 10 minutes, twice. The
+/// full claim is proved by running the code on all 10^9 values in 0.6 s
+/// ([`super::tests::every_nanosecond_survives_the_round_trip`]); this harness guards the low
+/// corner, where 1 ns is 4.29 ticks and truncating instead of rounding turns it into 0. See
+/// notes/ntp/what-is-proved.md.
 const PROVED_NANOS: u64 = 1 << 16;
 
 /// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NANOS`].
@@ -45,13 +26,9 @@ fn nanoseconds_survive_the_fixed_point() {
 /// covers the era-0 branch, the era-1 branch, and the boundary between them in one proof. All
 /// 4.2 billion of them, in a third of a second, because this half is addition.
 ///
-/// It asserts the *seconds* component; the nanosecond component is the exhaustive sweep named on
-/// [`PROVED_NANOS`]. The two together are the whole `from_unix`/`to_unix` identity, and the
-/// composition is sound because the two halves cannot interfere: `from_unix` builds
-/// `(seconds << 32) | ticks` with `ticks < 2^32`, so the fields occupy disjoint bits, and
-/// `to_unix` reads each back through its own accessor. That is three lines of the source rather
-/// than an assumption. (It was also a harness, briefly; proving it costs the same intractable
-/// multiplication, for a fact the type layout already gives.)
+/// It asserts the seconds; the nanoseconds are the sweep named on [`PROVED_NANOS`]. The halves
+/// compose because `from_unix` builds `(seconds << 32) | ticks` with `ticks < 2^32`, disjoint
+/// bits that `to_unix` reads back through separate accessors.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_era_pivot_is_exact_over_the_window.patch`
 #[kani::proof]
 fn the_era_pivot_is_exact_over_the_window() {

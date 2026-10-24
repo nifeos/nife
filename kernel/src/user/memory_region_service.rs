@@ -2,9 +2,8 @@ use super::*;
 use crate::cap::{Rights, memory_region_cap, rendezvous_cap};
 use crate::sched::RendezvousId;
 
-/// **The program this wires**, `fixtures/src/memory_region_depleter.rs`. It was role 7 of the
-/// `hello` multiplexer until milestone 291 and took its role selector in `x0`; it is its own
-/// binary now and reads nothing from `x0` at all.
+/// The program this wires, `fixtures/src/memory_region_depleter.rs`, which reads nothing from
+/// `x0`.
 pub fn depleter_image() -> &'static [u8] {
     program("memory_region_depleter").expect("no memory_region_depleter program in the archive")
 }
@@ -14,10 +13,9 @@ pub fn depleter_image() -> &'static [u8] {
 /// allocation is the untyped itself; everything the process maps afterward spends that, not the
 /// allocator.
 ///
-/// **The `ThreadId` is returned because this process does not exit.** It reports its result and then
-/// spins, deliberately, so that the free-frame count its caller reads is the measurement's
-/// rather than a teardown's. That makes it a thread only the caller can end, and a caller that
-/// drops the name has leaked a spinning thread onto every test that runs after it.
+/// The `ThreadId` is returned because this process does not exit: it reports and then spins, so
+/// the free-frame count its caller reads is the measurement's, not a teardown's. A caller that
+/// drops it leaks a spinning thread onto every later test.
 pub fn start(
     image: &'static [u8],
     pages: u64,

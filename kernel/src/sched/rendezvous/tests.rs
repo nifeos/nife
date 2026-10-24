@@ -1,6 +1,6 @@
 //! Tests for rendezvous: blocking send and receive, call and reply, the reply capability, and what
-//! a revoked or reclaimed rendezvous does to the threads parked on it. Moved from `sched`'s own
-//! tests by milestone 840 (the scheduler file is split along its seams), bodies unchanged.
+//! a revoked or reclaimed rendezvous does to the threads parked on it. See
+//! notes/scheduler/rendezvous.md.
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC).
 
@@ -8,11 +8,10 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use crate::sched::tests::{spin_until, wait_for};
 
-/// **A thread blocked on an rendezvous wakes with an error when the rendezvous is revoked.** Rather
-/// than refuse the reclaim (the old safe subset) or strand the waiter, revocation drains the
-/// rendezvous's wait queue, marks each waiter aborted, and wakes it: the reclaim *succeeds*, and the
-/// woken thread's blocking IPC reports the rendezvous is gone (`take_ipc_aborted`) instead of
-/// returning a message it never received. This is the richer semantic, folded into the IPC core.
+/// **A thread blocked on a rendezvous wakes with an error when the rendezvous is revoked.**
+/// Revocation drains the wait queue, marks each waiter aborted and wakes it: the reclaim succeeds,
+/// and the woken thread's blocking IPC reports the rendezvous gone (`take_ipc_aborted`) instead of
+/// returning a message it never received.
 #[test_case]
 fn a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked() {
     static ABORTED: AtomicBool = AtomicBool::new(false);
@@ -31,18 +30,8 @@ fn a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked() {
     })
     .expect("spawn a waiter");
 
-    // **The waiter must be queued on the rendezvous before the reclaim**, or there is nothing to
-    // wake and the test passes on a fiction. This used to be one `yield_now()`, on the premise
-    // (written when the machine was single core, stale since DECISIONS §28 scattered placement)
-    // that yielding hands this core to the waiter. It does not: the waiter is on another core,
-    // and a yield here only says *this* core had nothing else to do.
-    //
-    // Milestone 81 is where that came due. Under TCG the round-robin between vCPUs made one
-    // yield enough often enough to look deliberate; on the physical core under HVF the four
-    // vCPUs are four host threads running at once, this core's yield returns in nanoseconds,
-    // and the reclaim ran before the waiter had ever been scheduled ("the revoked waiter never
-    // woke"). Same defect the milestone-78 family had, found by a *faster* machine rather than
-    // a loaded one: a yield count is not a duration in either direction.
+    // The waiter must be queued on the rendezvous before the reclaim, or there is nothing to
+    // wake. Waited on, not yielded for: the waiter is on another core.
     assert!(
         wait_for(|| crate::sched::rendezvous_waiting_receivers(ep) == 1),
         "the waiter never blocked on the rendezvous, so the reclaim had nothing to wake",
@@ -65,10 +54,8 @@ fn a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked() {
     );
 }
 
-/// How many threads are parked awaiting a reply *through* `ep`. Test support for milestone
-/// 254, and it cannot be asked of the rendezvous itself, which is the entire defect: a `CALL`
-/// caller whose request was taken is linked on no queue, so `debug_counts` cannot see it and
-/// only `wait_on` still records that it is waiting.
+/// How many threads are parked awaiting a reply through `ep`. The rendezvous itself cannot say: a
+/// `CALL` caller whose request was taken is linked on no queue, so only `wait_on` records it.
 fn reply_parked_callers(ep: super::RendezvousId) -> usize {
     let guard = super::IPC_TABLES.lock();
     let Some(sched) = guard.as_ref() else {
@@ -84,7 +71,7 @@ fn reply_parked_callers(ep: super::RendezvousId) -> usize {
 }
 
 /// How many live `Reply` capabilities anywhere in the machine still name `caller`: the sweep's
-/// own assertion (milestone 254). `outgoing_cap` counts too, because a caller that met no
+/// own assertion. `outgoing_cap` counts too, because a caller that met no
 /// server rides its own reply capability there awaiting a `RECEIVE_CAP` hand-off, and a live one
 /// left in that slot is the same forgery one step earlier.
 fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
@@ -110,23 +97,13 @@ fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
 }
 
 /// **A caller whose rendezvous is torn down mid-`CALL` returns `Gone` rather than blocking for
-/// the life of the machine** (milestone 254), and **the stale reply capability the server was
-/// still holding is gone before the caller can run again.**
+/// the life of the machine**, and the stale reply capability the server held is gone before the
+/// caller can run again.
 ///
-/// This test hung before milestone 254. `Error::Gone` reached a rendezvous's *wait queues*, and
-/// the server here has already collected the request, so the caller left those queues at the
-/// rendezvous: `drain_waiters` walked straight past it and `ipc_reply` was the only thing left
-/// that could wake it. `a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked`,
-/// two tests up, is the case that always worked, and the difference between them is exactly one
-/// collected message.
-///
-/// **The second assertion is the one that matters**, and a version of this test carrying only
-/// the first would pass while the kernel was strictly worse than before it. Waking a
-/// reply-parked caller is what lets it enter a second `CALL` with an unconsumed `Reply` still
-/// naming it, and `Object::Reply` carries a generational thread name with no call identity, so
-/// the server's held capability would answer the *next* conversation. `current_cap` is the same
-/// lookup `abi::reply::REPLY` does before it reaches `ipc_reply`, so a capability that is gone
-/// here is a reply that cannot be sent at all.
+/// The server has collected the request, so the caller is on no wait queue; that one collected
+/// message is the difference from the revoked-waiter test. The second assertion matters most: a
+/// woken caller with a live Reply still naming it could be answered in its next conversation.
+/// `current_cap` is the lookup `abi::reply::REPLY` makes, so a capability gone here cannot reply.
 #[test_case]
 fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() {
     static COLLECTED: AtomicBool = AtomicBool::new(false);
@@ -207,7 +184,7 @@ fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() 
     );
 }
 
-/// **A server that dies frees the callers it will never answer** (milestone 254), which is
+/// **A server that dies frees the callers it will never answer**, which is
 /// QNX Neutrino's headline behaviour: *"if the server thread fails, exits, or disappears, the
 /// client thread becomes READY, with `MsgSend()` indicating an error"*. The trigger here is
 /// `depart` rather than the rendezvous teardown above, and the rendezvous outlives the server,
@@ -275,6 +252,11 @@ fn a_server_that_exits_frees_the_caller_it_never_answered() {
     );
 }
 
+/// **A wake with nothing delivered must not complete a parked receiver's `RECEIVE`.** A `Blocked`
+/// IPC thread becomes `Ready` only by the hand that completed its rendezvous (message staged,
+/// signal counted, or abort flagged). An undelivered wake is refused, the receiver stays parked
+/// and linked on the wait queue, and a real sender still reaches it afterwards. See
+/// notes/scheduler/undelivered-wake-gate.md.
 #[test_case]
 fn a_wake_without_delivery_cannot_complete_a_parked_receive() {
     static GOT: AtomicU64 = AtomicU64::new(u64::MAX);
@@ -291,7 +273,7 @@ fn a_wake_without_delivery_cannot_complete_a_parked_receive() {
     })
     .expect("spawn receiver");
 
-    // Queued on the rendezvous, not "probably scheduled by now" (the milestone-81 lesson).
+    // Queued on the rendezvous, not "probably scheduled by now".
     assert!(
         wait_for(|| crate::sched::rendezvous_waiting_receivers(ep) == 1),
         "the receiver never parked on the rendezvous"
@@ -335,13 +317,10 @@ fn a_wake_without_delivery_cannot_complete_a_parked_receive() {
     crate::sched::reclaim_region(region).expect("test region would not reclaim");
 }
 
-/// **A reply only wakes a caller that awaits one** (boot 8's observe-and-strand guard). A
-/// `Reply` capability names a tid, not a wait state. `ipc_reply` used to deliver to any
-/// `Blocked` thread with that tid: invoked against a thread parked as an ordinary rendezvous
-/// receiver (a stale reply whose CALL was long since aborted, with the caller re-parked
-/// elsewhere), it clobbered the mailbox and woke the thread messageless while its TCB was
-/// still linked on the rendezvous's wait queue. Same strand as the test above, reached through
-/// the one wake site addressed by tid rather than by rendezvous.
+/// **A reply only wakes a caller that awaits one.** A `Reply` capability names a tid, not a wait
+/// state; delivered to a thread parked as an ordinary receiver, it would clobber the mailbox and
+/// wake the thread messageless while its TCB is still linked on the wait queue. The test above's
+/// strand, through the one wake site addressed by tid.
 #[test_case]
 fn a_reply_to_a_thread_parked_as_a_receiver_is_dropped() {
     static GOT: AtomicU64 = AtomicU64::new(u64::MAX);
@@ -473,10 +452,7 @@ fn a_sender_blocks_until_a_receiver_arrives() {
         "wrong message received"
     );
 
-    // Clock-bounded, not yield-bounded: see `wait_for`. This one has evidence rather than a
-    // theory behind it: under eight spinning host processes it failed here on `rv64` on
-    // 2026-08-04, because fifty yields on an idle core are microseconds and the sender was on
-    // a vCPU the host had descheduled.
+    // Clock-bounded, not yield-bounded: see `wait_for`.
     assert!(
         wait_for(|| SENT_RETURNED.load(Ordering::SeqCst)),
         "the sender never woke after its message was taken",
@@ -681,16 +657,9 @@ fn a_reply_reaches_the_caller_that_called() {
 
 /// The kernel's rendezvous supply grows past one chunk, and a retired chunk's endpoints keep working.
 ///
-/// This exists because `KERNEL_EP_PAGES` used to be a ceiling that grew with the *test suite*
-/// rather than the system, so every few merges someone hit a panic telling them to raise a
-/// constant for a reason no single branch had caused. Growth on demand retires that, and this test
-/// is what keeps it retired.
-///
-/// Creating `KERNEL_EP_CHUNK_PAGES + 1` endpoints crosses a chunk boundary wherever in the current
-/// chunk we happen to start, so the carve-a-new-chunk path is exercised rather than assumed. The
-/// second assertion is the one that matters more: an rendezvous minted *before* the transition must
-/// still resolve afterwards, which is what proves that forgetting a filled chunk's handle
-/// (deliberate, see the field's doc comment) does not orphan the endpoints living in it.
+/// `KERNEL_EP_CHUNK_PAGES + 1` endpoints cross a chunk boundary wherever the current chunk starts,
+/// so the carve path is exercised. The second assertion matters more: a rendezvous minted before
+/// the transition still resolves, so forgetting a filled chunk's handle orphans nothing.
 #[test_case]
 fn the_kernels_rendezvous_supply_grows_past_one_chunk() {
     let mut names = [0u64; super::KERNEL_EP_CHUNK_PAGES as usize + 1];

@@ -2,16 +2,9 @@
 //! **NVMe queue mechanics, as pure logic** (notes/non-volatile-memory-express.md): everything an
 //! NVMe driver computes and nothing it touches. The register file, the doorbells and the queues'
 //! DMA memory are the kernel's (`kernel/src/non_volatile_memory_express.rs`, a thin volatile layer
-//! over this), so the queue logic is host-testable and Kani-reachable (rule 7).
-//!
-//! The protocol in one paragraph (NVMe 1.4, chapters 4 and 5): the driver builds 64-byte
-//! **commands** in a **submission queue** (a ring in driver-owned DMA memory), then writes the
-//! ring's new tail to that queue's **doorbell register**; the controller does the work and writes
-//! 16-byte **completions** into the paired **completion queue**, each carrying a **phase tag** that
-//! flips every lap, which tells a fresh completion from a stale one with no shared index; the
-//! driver writes the completion queue's new head to its own doorbell. Queue pair 0 is the **admin**
-//! queue, created by registers at reset; every other pair is created by admin commands. Data moves
-//! through **PRPs**, physical page pointers in the command.
+//! over this), so the queue logic is host-testable and Kani-reachable (rule 7). The protocol
+//! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
+//! admin queue and PRPs) is the note's "How the protocol works, in one sitting".
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)); kept
 //! as the crates.io name (#1806).
@@ -252,8 +245,7 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
         Some((base, 0))
     } else if end <= 2 * page_size {
         // The second pointer is the next page boundary after base, offset-free by construction.
-        // Checked: a base in the last page of the address space has no next boundary, and Kani
-        // found exactly that overflow in this line's first draft (`+` for `checked_add`).
+        // Checked: a base in the last page of the address space has no next boundary.
         Some((base, (base & !(page_size - 1)).checked_add(page_size)?))
     } else {
         None // would need a PRP list
@@ -491,32 +483,22 @@ impl IdentifyNamespace {
 // ---------------------------------------------------------------------------------------------
 // The split between an admin plane and a data plane (milestone 261 (the NVMe driver leaves the kernel), DECISIONS §86 (whether an NVMe driver can leave the kernel) option 2a).
 //
-// Everything above this line is indifferent to who runs it. Everything below exists because the
-// two halves of an NVMe driver now live in two privilege levels: the admin plane (reset, the
-// admin rings, IDENTIFY, Create I/O Queue) stays in the kernel because it is the authority to say
-// where a ring lives, and the data plane (build a command, ring a doorbell, watch a phase tag)
-// runs as an unprivileged process. The kernel tells the process the few facts it cannot discover,
-// and this is where those facts are packed, unpacked and bounds-checked, so the prover reaches
-// them rather than the volatile shell that carries them.
+// The admin plane (reset, the admin rings, IDENTIFY, Create I/O Queue) stays in the kernel, the
+// authority over where a ring lives; the data plane (build a command, ring a doorbell, watch a
+// phase tag) runs as an unprivileged process. Below, the few facts the kernel tells it are
+// packed, unpacked and bounds-checked where the prover reaches them. See
+// notes/non-volatile-memory-express.md, "The driver left the kernel, 2026-09-17".
 // ---------------------------------------------------------------------------------------------
 
-/// **The largest `CAP.DSTRD` a one-page doorbell mapping can serve**, and the reason it is a
-/// refusal rather than an assumption.
+/// **The largest `CAP.DSTRD` a one-page doorbell mapping can serve**, a refusal rather than an
+/// assumption.
 ///
-/// Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so the stride scales the doorbell *file*, not
-/// just the gap. An EL0 data plane mapped one page of BAR0 (DECISIONS §86's option 2a) names
-/// queues 0 and 1, whose highest doorbell is index 3, so the file fits that page exactly while
-/// `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is `DSTRD <= 8`. `CAP`'s field is four bits
-/// wide, so 9 through 15 are values a controller may legitimately report and this wiring cannot
-/// serve.
-///
-/// **Found by Kani, not by reading** (milestone 261). The first version of
-/// `an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page` asserted the containment and
-/// the prover produced `DSTRD = 15` in under a second: queue 1's submission tail lands at
-/// `0x41000`, a quarter of a megabyte past the mapped window. Nothing in QEMU could have found it
-/// (it reports 0), and the failure on a real controller would have been a volatile write outside
-/// the one window this process is allowed, caught by `MappedWindow`'s bounds check as a panic in
-/// the disk driver rather than as a diagnosis.
+/// Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so the stride scales the doorbell *file*. The
+/// EL0 data plane's one page of BAR0 (DECISIONS §86's option 2a) names queues 0 and 1, up to
+/// doorbell index 3, so it fits while `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is
+/// `DSTRD <= 8`. `CAP`'s four-bit field lets a controller report 9 to 15, which this refuses.
+/// Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a quarter of a
+/// megabyte past the mapped window, and QEMU reports 0. See the note's BUGS.
 pub const MAX_DSTRD: u32 = 8;
 
 /// **How many transfer windows the EL0 server keeps, one per client** (milestone 834 (ioping on nife and Linux); calef ruled
@@ -585,32 +567,22 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
 /// runs, with the victim frame's physical address in the next `u64`. The EL0 server reads it first
 /// thing; a real boot's transfer buffer is zeroed (`alloc_contiguous_zeroed`), so the magic never
-/// matches and the server serves.
-///
-/// It lives here, not beside either half, because the kernel binary writes it and the EL0 server
-/// binary reads it: rule 7's case for a constant two programs must agree on. Milestone 261's
-/// Outstanding item (milestone 202 (every confinement test is a ritual until somebody breaks the
-/// confinement and watches it fail)'s convention) is the only caller; the role it selects is the
-/// NVMe twin of `block_driver`'s two virtio attacker roles. Named provisionally.
-///
-/// Behind the `confinement_attackers` feature, so a shipped server cannot even name it.
+/// matches. The kernel writes it and the EL0 server reads it, so it lives here (rule 7). Its one
+/// caller is milestone 261's Outstanding item (milestone 202 (every confinement test is a ritual
+/// until somebody breaks the confinement and watches it fail)'s convention), the NVMe twin of
+/// `block_driver`'s two virtio attacker roles. Named provisionally. Behind the
+/// `confinement_attackers` feature, so a shipped server cannot even name it.
 #[cfg(feature = "confinement_attackers")]
 pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
 
-/// **What the admin plane tells the data plane at spawn**, and the whole of it.
+/// **What the admin plane tells the data plane at spawn**, and the whole of it: the physical base,
+/// because PRP fields carry physical addresses and a process knows virtual ones; the geometry,
+/// because reading it means IDENTIFY, the admin authority this split withholds; and the doorbell
+/// stride, because it lives in `CAP`, on the register page the process is not mapped.
 ///
-/// A process knows virtual addresses; PRP fields carry physical ones, so the physical base has to
-/// be told (`components/src/entropy.rs` says the same thing about its descriptors). The geometry
-/// is told rather than read because reading it means IDENTIFY, which is an admin command, which is
-/// the authority this split exists to withhold. And the doorbell stride is told because it lives
-/// in `CAP`, in the controller register page this process is deliberately not mapped.
-///
-/// **Three `u64`s because a spawn carries three scalars** (`kernel/src/user/entry.rs`'s `Spawn`),
-/// which is the constraint that shaped the packing rather than any property of NVMe. This is the
-/// kernel's own convention with the one program it spawns, not a contract between two user
-/// programs, so rule 7 does not apply to it; it lives here anyway because packing that is written
-/// twice is packing that can disagree with itself, and because a Kani round trip is cheaper than
-/// trusting two hand-written shift expressions to be inverses.
+/// **Three `u64`s because a spawn carries three scalars** (`kernel/src/user/entry.rs`'s `Spawn`).
+/// It is the kernel's own convention with the one program it spawns, so rule 7 does not apply,
+/// but it lives here so the packing is written once and a Kani round trip checks its inverse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// `CAP.DSTRD`, for [`doorbell`]'s arithmetic.

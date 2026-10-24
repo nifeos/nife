@@ -1,9 +1,5 @@
 //! Test fixtures more than one table's tests use, and the one test that reads four tables.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::dmar::{DMAR_FIXED_LEN, DRHD_FIXED_LEN};

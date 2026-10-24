@@ -1,41 +1,22 @@
 //! **The AMD-Vi driver: AMD's IOMMU, in front of the PCIe bus.** VT-d's counterpart on an AMD
-//! machine, behind the same calls the portable seam makes (`attach`, `scope_of`, `is_active`,
-//! `take_fault`, `for_each_reserved_region`), which [`super::iommu`] hands over whenever a unit
-//! here is up. Formats are from AMD document 48882 revision 2.62; QEMU (`hw/i386/amd_iommu.c`,
-//! 11.1.1) is the only AMD-Vi this has run on, and notes/amd-vi.md tables where it diverges.
+//! machine, behind the same calls the portable seam makes, which [`super::iommu`] hands over
+//! whenever a unit here is up. Formats are from AMD document 48882 revision 2.62; QEMU 11.1.1 is
+//! the only AMD-Vi this has run on.
 //!
-//! AMD-Vi is driven through memory, like the SMMUv3 and the RISC-V IOMMU: one device table (a
-//! 256-bit entry per 16-bit device id), a command ring the unit consumes, and an event log it
-//! writes. Invalidation is a command followed by a polled `COMPLETION_WAIT`. No cache maintenance
-//! is needed, by specification: the device table is snooped while `Control.Coherent` is 1 (its
-//! reset value, never cleared), walks while an entry's `SD` is 0 (always here), and the command
-//! ring always.
-//!
-//! **Default deny.** `init` fills every entry with [`blocked_dte`] before enabling the unit: four
-//! levels rooted at one all-zero table, no read or write, so undeclared DMA is target-aborted and
-//! logged as `IO_PAGE_FAULT`. That entry is also the quarantine of §163 (where a confined device's
-//! IOMMU fault is delivered), which [`quarantine`] writes. Not the specification's simpler `Mode` 0
-//! entry with `IR` = `IW` = 0: QEMU treats every `Mode` 0 entry as pass-through, so it would block
-//! on silicon and pass everything under test. `init` also clears firmware's exclusion range
-//! ([`clear_exclusion_range`]) and invalidates every entry one command at a time, since QEMU
-//! translates a device only once `INVALIDATE_DEVTAB_ENTRY` names it.
-//!
+//! Default deny: `init` fills every device table entry with [`blocked_dte`] before enabling the
+//! unit, and the same entry is the quarantine of §163 (where a confined device's IOMMU fault is
+//! delivered). See notes/amd-vi.md, which holds the design, QEMU's differences and the detail
+//! of each BUGS entry.
+
 //! # BUGS
-//!
-//! - QEMU confines nothing without `dma-remap=on` (the runner sets it), writes no address into
-//!   event records ([`take_fault`] reports `None`), and records `devfn` without the bus.
+//! - QEMU confines nothing without `dma-remap=on`, writes no fault address, and drops the bus.
 //! - At enable, a stale cached entry can be used until the invalidations run, as on Linux.
-//! - Interrupt remapping is never enabled (`IV` clear), as with VT-d.
-//! - No fault interrupt: only tests drain the event log, until milestone 102 (what a confined
-//!   device's fault reaches).
-//! - A type 20h IVMD is added to every domain but pre-attaches no device; no IVMD has ever run.
+//! - Interrupt remapping is never enabled, and no fault interrupt exists; only tests drain the log.
+//! - A type 20h IVMD joins every domain but pre-attaches no device; no IVMD has ever run.
 //! - Domain ids are never reused; past 65,535 attaches a boot panics.
-//! - Nothing revokes a device's domain in production, and a re-attach leaks the old tables
-//!   (`kernel/src/iommu.rs`), the same gap every IOMMU driver here has at the seam.
+//! - Nothing revokes a device's domain in production, and a re-attach leaks the old tables.
 //! - The exclusion clear is half proved under QEMU, which ignores those registers.
-//! - Two devices behind one alias cannot both work: the second attach blocks the alias, loudly.
-//!   [`attach`] assumes an alias is served by its device's unit and tracks at most
-//!   [`MAX_ALIASES`] per unit, failing closed past that.
+//! - Two devices behind one alias cannot both work, and at most [`MAX_ALIASES`] are tracked.
 //! - The root is checked against the 52-bit field, not the unit's real address width.
 
 use machine_discovery::acpi::ivrs::{IvrsUnits, MAX_IVHDS};
@@ -300,20 +281,6 @@ impl Unit {
         d
     }
 
-    /// Point device table entry `id` at `dte` and, once the unit reads commands, make it forget
-    /// both the entry and every translation it cached under the entry's **previous** domain. The
-    /// caller syncs.
-    ///
-    /// **The second half was found by the DMA-escape test, not by reading.** Section 2.4.2 says
-    /// `INVALIDATE_DEVTAB_ENTRY` "does not invalidate translation cache entries, since they may be
-    /// in use by other devices sharing the same `DomainID`", and that software should invalidate the
-    /// domain when it is not shared. Without that, QEMU's model (whose IOTLB is keyed by device
-    /// id and page, not by domain: `amdvi_iotlb_lookup`) kept serving a virtio disk the read and
-    /// write mapping an earlier test's domain had given it for a frame the allocator then handed
-    /// out as the escape test's victim: the device read the victim through the stale entry, and
-    /// the only fault logged was its next access, at address 0. Silicon tags its caches by domain
-    /// id, so the stale entry would be unreachable there, but the old domain's entries would sit
-    /// in the cache until evicted; invalidating them is right on both.
     /// **Which device's DMA entry `id` translates**, or `None` when it is blocked (or past the
     /// table, where the hardware target-aborts).
     fn holder(&self, id: u32) -> Option<u32> {
@@ -356,6 +323,10 @@ impl Unit {
         self.set_entry(id, dte);
     }
 
+    /// Point device table entry `id` at `dte` and, once the unit reads commands, make it forget
+    /// both the entry and every translation it cached under the entry's previous domain (section
+    /// 2.4.2: `INVALIDATE_DEVTAB_ENTRY` alone leaves the translation cache). The caller syncs. See
+    /// notes/amd-vi.md.
     fn set_entry(&mut self, id: u32, dte: [u64; 4]) {
         if id >= self.entries {
             return;
@@ -418,25 +389,14 @@ impl core::fmt::Display for ExclusionFound {
     }
 }
 
-/// **Switch off the unit's exclusion range, and say what it was** (provisional milestone 767).
+/// **Switch off the unit's exclusion range, and say what it was** (provisional milestone 767
+/// (AMD-Vi hardening before the first AMD boot)).
 ///
-/// An exclusion range is a window of device addresses the unit does not translate: with `Allow` set
-/// in the Exclusion Base register, every device's access inside `[base, limit]` goes straight to
-/// memory, untranslated and unchecked, whatever its device table entry says (section 3.3.1, MMIO
-/// 0020h and 0028h; section 2.1.4.4 for translation requests into the range). Firmware sets one to keep a region it DMAs into reachable,
-/// and nothing clears it at reset. So a range left in force would be a hole in this driver's
-/// default deny that no entry it writes can close, and it is the one way a device could pass this
-/// driver untranslated. Both registers are zeroed, `ExEn` and `Allow` with them.
-///
-/// A range the firmware still needs is not lost: an IVMD with `ExclusionRange` set is mapped into
-/// the named devices' domains as a read-write identity region instead, as Linux does (the IVRS
-/// decoder's BUGS). A range set with no IVMD naming it is firmware's alone, and the boot line says
-/// it was cleared, in capitals.
-///
-/// **What QEMU decides here: nothing is excluded.** QEMU 11.1.1 stores both registers and never
-/// reads them back into translation (`amdvi_handle_excllim_write` records the limit; no walk
-/// consults `excl_allow` or `excl_enable`), and its firmware sets no range. So under QEMU this
-/// function is proved to write the registers and nothing more; only silicon shows the effect.
+/// Inside an enabled exclusion range every device's access goes to memory untranslated, whatever
+/// its entry says (section 3.3.1, MMIO 0020h and 0028h), and nothing clears it at reset. Both
+/// registers are zeroed, `ExEn` and `Allow` with them. A range an IVMD names is mapped into its
+/// devices' domains instead, as Linux does. QEMU 11.1.1 never consults these registers, so under
+/// QEMU this is proved to write them and nothing more. See notes/amd-vi.md.
 fn clear_exclusion_range(unit_base: u64) -> ExclusionFound {
     let found = ExclusionFound {
         base: r64(unit_base, EXCLUSION_BASE),
@@ -544,7 +504,7 @@ fn enable(u: &mut Unit) {
     u.enabled = true;
 
     // Every entry, by name: the specification's way to make the unit reload one, and the only
-    // way QEMU's model turns a device's translation on at all (this module's BUGS).
+    // way QEMU's model turns a device's translation on at all (notes/amd-vi.md's BUGS).
     for id in 0..u.entries {
         u.invalidate_entry(id);
     }
@@ -589,11 +549,11 @@ pub fn init(ivrs: &IvrsUnits) {
     let mut done = 0u32;
     for r in ivrs.unity_regions() {
         if r.first == 0 && r.last == 0xffff {
-            continue; // type 20h: see this module's BUGS
+            continue; // type 20h: see the BUGS in the AMD-Vi note
         }
         for id in r.first..=r.last {
             if done == 256 {
-                break; // a bound, not a rule: see BUGS on IVMDs
+                break; // a bound, not a rule: see the AMD-Vi note's BUGS on IVMDs
             }
             if let Ok(Some((i, _))) = ivrs.owner_index(id) {
                 crate::iommu::confine(id as u32, &[]);
@@ -664,18 +624,12 @@ fn entries_of(rid: u32) -> (u32, Option<u32>) {
 
 /// **Confine device `rid` to the domain rooted at `root`** (an [`paging::x86_64::AmdVi`] table
 /// the portable seam built), in the unit the IVRS says serves it, and make that unit forget what
-/// it cached. The entries written are every one [`entries_of`] names: the device's own and its
-/// alias's, which is where a device behind a PCIe-to-PCI bridge is actually translated; Linux
-/// writes both (`clone_aliases`, from memory). A device no unit serves gets no entry, as on VT-d.
+/// it cached. It writes every entry [`entries_of`] names: the device's own and its alias's, where a
+/// device behind a PCIe-to-PCI bridge is translated. A device no unit serves gets no entry.
 ///
-/// **An alias already held by another device is never shared** (provisional milestone 767 (AMD-Vi
-/// hardening before the first AMD boot)). Two functions behind one bridge reach the unit under one
-/// id, so the unit cannot tell their DMA apart and no pair of entries can confine them separately.
-/// Before 767 the second attach silently moved the first device's aliased DMA into the second's
-/// domain. Now the attach fails closed: every entry either device's DMA arrives under is set to the
-/// blocked entry, and the boot prints the pair in capitals. Both devices stop doing DMA, which is
-/// the honest outcome for a pair this kernel cannot confine apart; giving such a pair one shared
-/// domain on purpose is an alias group, recorded in BUGS.
+/// An alias already held by another device is never shared (provisional milestone 767 (AMD-Vi
+/// hardening before the first AMD boot)): the attach fails closed, setting every entry either
+/// device's DMA arrives under to the blocked entry, and the boot prints the pair in capitals.
 pub fn attach(rid: u32, root: u64) {
     let Some(i) = owner_index(rid) else {
         return;
@@ -1100,16 +1054,11 @@ mod tests {
     }
 
     /// **A firmware exclusion range does not survive `set_up`**: every unit's Exclusion Base and
-    /// Limit read zero after boot, and [`clear_exclusion_range`] zeroes a range the test plays
-    /// firmware and sets, reporting what it found (provisional milestone 767).
-    ///
-    /// **What QEMU decides here, and it is most of it.** QEMU 11.1.1 stores the limit register and
-    /// silently drops every write to the base register (`amdvi_mmio_write` has no case for MMIO
-    /// 0020h, so it reads zero whatever is written), and no walk consults either. So under QEMU
-    /// this proves the limit half of the programming and that the boot left both zero; the base
-    /// half, `ExEn` and `Allow` included, and the effect on a device's DMA are only provable on
-    /// silicon. The range written is the last 4 KiB of the 52-bit address space, which no machine
-    /// backs with memory, so on silicon the moment between the write and the clear excludes nothing.
+    /// Limit read zero after boot, and [`clear_exclusion_range`] zeroes a range the test sets as
+    /// firmware would (provisional milestone 767 (AMD-Vi hardening before the first AMD boot)).
+    /// QEMU 11.1.1 drops every write to the base register, so under QEMU this proves the limit half
+    /// and that the boot left both zero; the base half and the effect on DMA need silicon. The
+    /// range is the last 4 KiB of the 52-bit space, which no machine backs. See notes/amd-vi.md.
     ///
     /// Falsification: replayable `kernel/falsifications/arch.x86_64.amd_vi.tests.a_firmware_exclusion_range_is_cleared.patch`
     #[test_case]

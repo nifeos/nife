@@ -1,31 +1,12 @@
 //! **What a bare word at the prompt runs** (milestone 47 (navigation and naming), DECISIONS §229
 //! (how a bare name at the prompt reaches an installed program), B2).
 //!
-//! A word with a `/` in it is a path and always means that file; that is decided before anything
-//! here is asked. A word without one is a builtin, a program the image carries, or the live
-//! installed-programs table's default for that name, found with `installed_programs::lookup`, which reads the
-//! generation's default pointer and then the row it names, and so never answers with an owner's
-//! vouch. Since milestone 614 (two installed versions of one program, each runnable, and a caller
-//! granted the one it needs), ruling 3, that pointer is what "the newest install" means: every
-//! install of a program moves it, so the bare word means what it always meant while the other
-//! versions stay live beside it. There is no search order. A name that is both the image's and an
-//! installed package's is refused, naming both, because either choice would be a guess. Install
-//! refuses an image program's name (§229, calef's ruling of 2026-09-27), so the pair arises only
-//! when a later base adds a name a package already holds.
-//!
-//! **Two words select a version** (milestone 614, ruling 4). `program@version` is an explicit ask:
-//! the table's row for that program at that version, or nothing, and the image's claim on the bare
-//! name does not reach it, because the word is not the contested name. And a **version set**
-//! ([`crate::jig_versions`]) selects among the live versions for the bare word: the nearest
-//! `.jig-versions` file at or above the working directory, asdf-style, read by the caller and
-//! handed in. A set can only select among installed versions, so when it names a version that is
-//! not live, the default runs and the result carries a [`Notice`], which the spawn line prints:
-//! `uptime 0.2.0 (.jig-versions asks for 0.1.0)`.
-//!
-//! The shell reads the live table on each line that needs it, rather than caching it. It is two
-//! small file reads, against a spawn that builds a whole process, and a table the shell never
-//! caches cannot be stale.
-//!
+//! A word without a `/` is a builtin, a program the image carries, or the live installed-programs
+//! table's default for that name ([`resolve`]); a name that is both the image's and installed is
+//! refused, naming both. `program@version` asks for one row, and a version set
+//! ([`crate::jig_versions`]) selects among the live versions, with a [`Notice`] when it cannot.
+//! The table is read on every line that needs it. See notes/shell/the-swish-crate.md, "What a bare
+//! word runs".
 
 //! # EXAMPLES
 //!
@@ -42,19 +23,9 @@
 //!
 //! # BUGS
 //!
-//! - Only a plain line runs an installed program by its bare name, as only a plain line runs one by
-//!   its path (notes/packages.md's BUGS). A bare installed name in a pipeline is refused as a
-//!   program this image does not carry.
-//! - A table that cannot be read resolves nothing, so an installed program's bare name is then
-//!   refused as unknown and an image program runs without the collision check. The progenitor's
-//!   rule is the same: a table it cannot read vouches for nothing. A version set that cannot be
-//!   read selects nothing, which is harmless for the same reason in reverse.
-//! - **The both-names refusal is proven on the host only.** No boot gate reaches it:
-//!   `script/swish-check` cannot install a package named after an image program (§229,
-//!   2026-09-27), and no gate boots a second base that adds a name. It reaches a machine the first
-//!   time a base update under §235 (the OS is built and updated from packages) adds a program
-//!   some installed package already provides; a gate that boots such a base is what would cover
-//!   it.
+//! - Only a plain line runs an installed program by its bare name (notes/packages.md's BUGS).
+//! - A table that cannot be read resolves nothing, so the collision check is then skipped.
+//! - **The both-names refusal is proven on the host only**; no boot gate reaches it.
 //!
 //! Name: provisional, milestone 47's bare-name lane, 2026-09-26.
 
@@ -180,10 +151,8 @@ pub fn write_divergence(word: &[u8], notice: &Notice, out: &mut dyn FnMut(&[u8])
 /// (`installed_programs::lookup`), refined by the set when it names the program; `program@version` is
 /// an explicit ask and answers only that row.
 pub fn resolve(word: &[u8], image: bool, table: Option<&str>, set: Option<&str>) -> Bare {
-    // **The explicit ask first**: `@` is reserved for it, so a word with one and two halves is
-    // never a program name. Not found is [`Bare::Unknown`], the same answer as any word this shell
-    // cannot run; the image's claim on the bare name does not apply, because this word is not the
-    // bare name.
+    // The explicit ask first: `@` is reserved for it, so this word is not the contested bare name
+    // and the image's claim does not apply. Not found is [`Bare::Unknown`].
     if let Ok(ask) = core::str::from_utf8(word)
         && let Some((program, version)) = ask.split_once('@')
         && !program.is_empty()
@@ -216,9 +185,8 @@ pub fn resolve(word: &[u8], image: bool, table: Option<&str>, set: Option<&str>)
     if image {
         return Bare::Both(path);
     }
-    // **The version set selects among live versions** (ruling 4). Asking for one that is live runs
-    // it; asking for one that is not leaves the default under the caller's feet, with the notice
-    // that says both, because a cloned repository can ask but cannot run uninstalled bytes.
+    // A set selects only among live versions: a cloned repository can ask, but cannot run
+    // uninstalled bytes, so a version that is not live leaves the default and the notice.
     if let Some(name) = name
         && let Some(set) = set
         && let Some(asked) = jig_versions::entry(set, name)

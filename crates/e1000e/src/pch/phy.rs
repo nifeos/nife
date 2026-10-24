@@ -1,33 +1,11 @@
 //! **Reaching the PHY: MDIO through `MDIC`, under the software/firmware semaphore** (milestone 494
 //! (a driver for the network card a PC actually has)).
 //!
-//! Ported from FreeBSD's Intel shared code, read on 2026-10-05 from `sys/dev/e1000/` on FreeBSD's
-//! `main` (the last commit touching `e1000_ich8lan.c` was 46cf612d, 2026-08-30):
-//!
-//! - [`read_mdic`] and [`write_mdic`]: `e1000_read_phy_reg_mdic`, `e1000_write_phy_reg_mdic`
-//!   (`e1000_phy.c`). The 82574L uses the same register, so QEMU proves this layer too.
-//! - [`Swflag`]: `e1000_acquire_swflag_ich8lan`, `e1000_release_swflag_ich8lan`
-//!   (`e1000_ich8lan.c`).
-//! - [`read()`] and [`write()`]: `__e1000_read_phy_reg_hv`, `__e1000_write_phy_reg_hv`,
-//!   `e1000_get_phy_addr_for_hv_page` and `e1000_set_page_igp` (`e1000_phy.c`), the paged access
-//!   every PCH PHY register above page 0 needs.
-//! - [`reset_blocked`], from `e1000_check_reset_block_ich8lan`.
-//!
-//! What a caller cannot get wrong: every paged access takes a [`Swflag`], and the only way to hold
-//! one is [`Swflag::acquire`]. FreeBSD's "assumes the semaphore is already acquired" comments are
-//! the type system here.
-//!
-//! Divergences, each deliberate:
-//!
-//! - **No retry mechanism.** FreeBSD retries an MDIC transaction only on Meteor Lake and later
-//!   (`current_retry_counter` is 2 from `e1000_pch_mtp`, 0 below it). Every part this crate claims
-//!   is Sunrise Point, where the count is 0, so one attempt is FreeBSD's behaviour exactly.
-//! - **Two page ranges refused rather than ported**: page 800 (the host wakeup page, its own
-//!   address/data opcode protocol, `e1000_access_phy_wakeup_reg_bm`) and pages 1 to 767 (the 82577
-//!   and 82578 debug registers, `e1000_access_phy_debug_regs_hv`). Nothing in [`super::sequence`]
-//!   addresses either; only an NVM-supplied LCD configuration word could, and that returns
-//!   [`Error::PageNotPorted`] rather than writing somewhere unexamined.
-//!
+//! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares, so QEMU proves this
+//! layer too. [`read()`] and [`write()`] are the paged access every PCH PHY register above page 0
+//! needs, and each takes a [`Swflag`], which only [`Swflag::acquire`] makes. A page this port does
+//! not carry (800, or 1 to 767) is [`Error::PageNotPorted`]. The FreeBSD sources and the two
+//! deliberate divergences are in notes/e1000e/the-i219-port.md, "The PHY layer".
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

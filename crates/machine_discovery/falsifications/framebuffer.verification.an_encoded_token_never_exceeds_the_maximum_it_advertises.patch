@@ -21,12 +21,12 @@ Expected to fail: the bounds check inside `encode`'s `put` closure, on a base ne
 diff --git a/crates/machine_discovery/src/framebuffer.rs b/crates/machine_discovery/src/framebuffer.rs
 --- a/crates/machine_discovery/src/framebuffer.rs
 +++ b/crates/machine_discovery/src/framebuffer.rs
-@@ -154,7 +154,7 @@ impl Framebuffer {
-     /// One byte of headroom is not slack, it is a trap for whoever adds a field, and a wire format
-     /// that overflows its own buffer fails at the boundary between two programs where it is hardest
-     /// to see. Raised in the same change as the rename rather than left for the next person.
+@@ -85,7 +85,7 @@ impl Framebuffer {
+     /// with their commas, and a four-character order. Rounded up rather than derived, so nothing
+     /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
+     /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
 -    pub const MAX_LEN: usize = 72;
 +    pub const MAX_LEN: usize = 62;
  
-     /// How many bytes one row of pixels occupies, and the last byte the console may touch.
+     /// How many bytes the console may touch: `stride * height`.
      ///
