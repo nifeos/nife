@@ -3,12 +3,10 @@
 //! about to load against a trust root `kernel/build.rs` compiles into its image, and refuses to
 //! enter userspace on a mismatch (DECISIONS §14 (the project's direction)).
 //!
-//! The hash is SHA-256, written here: collision- and preimage-resistant, about a hundred lines with
-//! no dependency, allocation or unsafe. calef ruled on 2026-10-22 (UTC), "Keep our SHA-256.", on
-//! milestone 784 (reuse what the tree wrote)'s question of which of §46 (thin primitives or whole
-//! subsystems)'s rules wins: `sha2` stays out of the measured-boot trusted base. The build and the
-//! kernel both hash through this crate, and the tests are the published FIPS 180-4 vectors. See
-//! notes/trusted-init/measured-boot.md.
+//! The hash is SHA-256, about a hundred lines with no dependency, allocation or unsafe: `sha2`
+//! stays out of the trusted base (calef, 2026-10-22 UTC, "Keep our SHA-256.", on milestone 784
+//! (reuse what the tree wrote) and §46 (thin primitives or whole subsystems)). The tests are the
+//! published FIPS 180-4 vectors. See notes/trusted-init/measured-boot.md.
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `measure`. Refused `measure` (a verb,
 //! and generic enough to name almost anything). "Measured boot" is the standard term for boot-time
