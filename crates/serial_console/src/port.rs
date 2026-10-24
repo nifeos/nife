@@ -1,56 +1,11 @@
 //! **Finding the board's serial port and putting it in the right mode**, with no dependency.
 //!
-//! # Why `stty` and not a serial crate
-//!
-//! Configuring a UART is one `tcsetattr` call, and the two ordinary ways to make it from Rust are
-//! the `serialport` crate or `libc` plus the `termios` struct by hand. Both are new dependencies in
-//! the shipping graph, and §46 (thin primitives or whole subsystems; we write everything in
-//! between) makes taking one a decision rather than a convenience; this is a lane, and a lane does
-//! not take that decision. `stty(1)` makes the same
-//! call, is in every base system, and has been since the 1970s. The price is a process spawn per
-//! session and a diagnostic that is a program's stderr rather than an `errno`, which is a fair
-//! trade for a tool that runs once a boot.
-//!
-//! If this ever needs to *write* to the board with flow control, or set a non-standard baud, the
-//! trade changes and the dependency is worth proposing. It does not need either today.
-//!
-//! # The ordering that is not arbitrary, and the thing it cost somebody
-//!
-//! **Open the device first, then run `stty` on it, then check that the speed took.** Opening a
-//! macOS `cu` device resets its termios towards the driver's default, so a configuration made
-//! before the read descriptor exists is undone by the open that follows it. Holding the descriptor
-//! is also what keeps the setting alive: it reverts when the last user closes.
-//!
-//! **This is not a theory.** calef's first capture of the VisionFive 2 on 2026-09-01 was pure
-//! garbage, because it configured the port with `stty` and then ran `cat`, and `cat`'s open put
-//! the device back to the default rate. It looks exactly like a wiring fault or a bad adapter,
-//! which is the runbook's second triage row, and it cost a power cycle to diagnose.
-//!
-//! So the read-back below is a gate rather than a nicety: it asks the device what speed it is
-//! actually at and says so loudly when the answer is not 115200. An invisible wrong baud produces
-//! plausible-looking bytes and sends the next person chasing hardware; a stated one takes a
-//! second to fix.
-//!
-//! **The residual hazard, stated rather than hidden.** Because the configuration is a separate
-//! process rather than a `tcsetattr` on our own descriptor, any *other* process that opens this
-//! device mid-session can put it back to the default, and nothing here would notice. That is the
-//! honest cost of having no dependency, and it is the case that would justify taking one.
-//!
-
-//! # `O_NONBLOCK`
-//!
-//! Not used, and the reason is that it would be redundant here. Its job would be to stop a silent
-//! board hanging the tool in `read`, and `watch` already guarantees that structurally by doing the
-//! read on a worker thread while the deadline runs on a channel timeout. That guarantee holds even
-//! when the `stty` above fails outright, which `O_NONBLOCK` on its own would not: a non-blocking
-//! read returns immediately, but only a deadline decides when to stop asking.
-//!
-//! # And why `cu.` rather than `tty.`
-//!
-//! On macOS `/dev/tty.*` is the dial-in side and blocks in `open` until carrier detect asserts,
-//! which a three-wire console cable never does. That is the classic way a serial tool hangs before
-//! printing anything at all, and it hangs in `open`, where no deadline of ours has started yet.
-//! `/dev/cu.*` is the call-out side and opens immediately.
+//! [`open`] opens a `/dev/cu.*` device, runs `stty` on it, then reads the speed back, in that
+//! order: opening a macOS `cu` device resets its termios, and the setting reverts when the last
+//! holder closes. The dial-in `/dev/tty.*` side blocks in `open` until carrier detect, which a
+//! three-wire cable never asserts. `stty(1)` stands in for a serial crate, and `O_NONBLOCK` is not
+//! used because `watch` reads on a worker thread; notes/board-console/design.md has why, and the
+//! hazard left over.
 
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
@@ -173,18 +128,14 @@ const DEVICE_FLAG: &str = if cfg!(target_os = "linux") {
 
 /// Open the port and put it in raw mode at [`BAUD`], in that order.
 ///
-/// Returns the open descriptor and whatever the configuration had to say. A configuration failure
-/// is **reported, not fatal**: an adapter whose driver refuses one of these flags still delivers
-/// bytes, and a tool that refused to log them would be worse than one that logs them with a
-/// warning attached. The read timeout is only ever belt to `watch`'s braces, so losing it costs
-/// nothing but a spinning worker thread.
+/// Returns the open descriptor and the configuration's complaint, if any. A configuration failure
+/// is reported, not fatal: an adapter whose driver refuses a flag still delivers bytes, and the
+/// read timeout only spares `watch`'s worker a spin.
 ///
 /// # Errors
 ///
-/// If the device cannot be opened. That is the one genuinely fatal case, and its usual causes are
-/// an adapter that was unplugged, a `/dev/tty.*` path (see this module's header), and another
-/// program already holding the port.
-///
+/// If the device cannot be opened: an unplugged adapter, a `/dev/tty.*` path, or another program
+/// holding the port.
 /// # Examples
 ///
 /// Watch a board boot, with the default policy's cap:
@@ -431,7 +382,7 @@ mod tests {
     /// every base system this crate's header claims for it (that is the whole argument for
     /// calling it rather than taking a dependency), so an argument it cannot possibly accept is
     /// a real, portable way to make it fail without a device: this is not asserting on the
-    /// exact wording (that varies by OS, per this module's header), only that the returned
+    /// exact wording (that varies by OS), only that the returned
     /// status and stderr are `stty`'s own and not a placeholder standing in for them.
     #[test]
     fn stty_runs_the_real_program_and_hands_back_what_it_actually_said() {
@@ -511,15 +462,10 @@ mod tests {
 
     /// **The open path, against something a host actually has.**
     ///
-    /// A regular file is not a serial port, and this test does not pretend otherwise: what it
-    /// exercises is that `open` opens what it was given, that a device `stty` cannot configure
-    /// produces a *complaint* rather than a failure, and that the descriptor it hands back reads
-    /// the bytes that are there. That last one is checked against the real 2026-09-01 capture, so
-    /// the whole path from `port::open` to a recognised boot runs in a host test.
-    ///
-    /// What no host test can reach is whether `tcsetattr` actually took, since nothing here is a
-    /// tty. That was checked by hand against the CH343 dongle (9600 before, 115200 while held,
-    /// reverting on exit) and is what `confirm_speed` gates at runtime.
+    /// A regular file is not a serial port: this checks that `open` opens what it was given, that
+    /// a device `stty` cannot configure yields a complaint rather than a failure, and that the
+    /// descriptor reads the real 2026-09-01 capture. Whether `tcsetattr` took is beyond any host
+    /// test (notes/board-console/design.md); `confirm_speed` gates it at runtime.
     #[test]
     fn open_hands_back_a_readable_descriptor_and_a_complaint_it_can_survive() {
         let captured = include_bytes!("../tests/fixtures/captured/vf2-2026-09-01-manual-boot.log");

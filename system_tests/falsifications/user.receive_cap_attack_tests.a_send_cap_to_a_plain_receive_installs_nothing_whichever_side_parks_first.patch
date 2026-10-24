@@ -42,7 +42,7 @@ diff --git a/kernel/src/sched/rendezvous.rs b/kernel/src/sched/rendezvous.rs
 index c59bccd96..e25735c9b 100644
 --- a/kernel/src/sched/rendezvous.rs
 +++ b/kernel/src/sched/rendezvous.rs
-@@ -538,24 +538,9 @@ pub(super) fn ipc_send_cap_from(
+@@ -485,20 +485,9 @@ pub(super) fn ipc_send_cap_from(
                  hold_token(me);
                  let receiver = hold_token(receiver);
                  let (r, caps) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
@@ -55,13 +55,9 @@ index c59bccd96..e25735c9b 100644
 -                    // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
 -                    r.cap_delivered = true;
 -                } else {
--                    // **A plain RECEIVE takes no capability** (§246 (a plain `RECEIVE` never takes
--                    // a capability), PROVISIONAL number; calef's ruling A, 2026-10-04 UTC). The data
--                    // word arrives and the copy is dropped, the same five words `ipc_receive`
--                    // returns when it collects this sender parked (milestone 633). Until the ruling
--                    // this arm installed into any parked receiver's table, so a server draining a
--                    // child's output lost a slot per delegation, on this arrival order only. The
--                    // sender keeps its own copy: `SEND_CAP` narrows a copy, never the source.
+-                    // A plain RECEIVE takes no capability (§246 (a plain `RECEIVE` never takes a
+-                    // capability), PROVISIONAL number): the data word arrives, the copy is dropped,
+-                    // and the sender keeps its own.
 -                    r.mailbox = [data, 0, 0, badge, 0];
 -                }
 +                let slot = deliver_capability(caps, capability);
