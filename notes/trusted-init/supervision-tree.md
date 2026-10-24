@@ -118,10 +118,10 @@ to build one) and §148 as amended 2026-10-04.
   either way, because a reap only follows a death message. §32 records that case as the watchdog
   case and leaves it open.
 - The supervisor reaps its own children on the endpoint it already holds, and the pages go to the
-  spawner's budget, because the spawner owns the region (§13 (capability revocation and untyped reclamation)). It can free its children's memory
-  and cannot spend it. The kernel stamps the dead thread's tid on the death message, and §32
-  authorizes that tid relative to the endpoint it arrived on, so the spawner issues no instance
-  handle.
+  spawner's budget, because the spawner owns the region (§13 (capability revocation and untyped
+  reclamation)). It can free its children's memory and cannot spend it. The kernel stamps the dead
+  thread's tid on the death message, and §32 authorizes that tid relative to the endpoint it arrived
+  on, so the spawner issues no instance handle.
 - The supervisor tells its two children apart by label. A tid says which thread died, not which of
   its children it was. The spawner stamps each child's supervision capability with a label the
   supervisor chose (`SUB_SERVER_LABELS`), and the kernel hands the label back beside the death

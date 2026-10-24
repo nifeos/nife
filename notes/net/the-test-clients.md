@@ -48,10 +48,10 @@ into the 60 s watchdog.
 
 The TFTP round trip is the gating UDP test because libslirp answers TFTP itself (`tftp=` on the
 netdev), so neither the request nor the reply leaves the emulator. It also checks the source
-endpoint a `RECEIVE` reports. The port is not pinned to 69: section 4 of RFC 1350 has the server answer from a
-transfer-id port of its choosing, so asserting 69 would pin a libslirp detail. The ACK goes to that
-reported port, which ends the transfer; without it the server retransmits its DATA at a closed
-socket while the next test brings the NIC up.
+endpoint a `RECEIVE` reports. The port is not pinned to 69: section 4 of RFC 1350 has the server
+answer from a transfer-id port of its choosing, so asserting 69 would pin a libslirp detail. The ACK
+goes to that reported port, which ends the transfer; without it the server retransmits its DATA at a
+closed socket while the next test brings the NIC up.
 
 `UDP_GRANTED_PORT` is 5354 rather than 5353 because 5353 is multicast DNS's port, held by a second
 client of this stack until that responder was retired ([notes/mdns.md](../mdns.md)). Nothing in the

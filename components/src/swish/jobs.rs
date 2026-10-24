@@ -27,11 +27,12 @@ use super::*;
 const JOB_UNTYPED_PAGES: u64 = 32;
 /// The range a supervised job's shared frame is mapped into, in our own space, one page per job.
 ///
-/// It must stay clear of every fixed window this shell has, [`OUT_VA`] and [`FS_VA`] among them: the
-/// assertion in `wiring.rs` holds that, and the `interrupt_heeder` line in `script/swish-check`
-/// runs a supervised job. 16 MiB up is a pair page on the address-space map (milestone 206 (a
-/// program image has under 896 KiB)), clear of the image window at 64 MiB, with a 2 MiB-aligned
-/// table's worth of pages under it: the first job costs one page-table page and the next 511 none.
+/// It must stay clear of every fixed window this shell has, [`OUT_VA`] and [`FS_VA`] among them:
+/// the assertion in `wiring.rs` holds that, and the `interrupt_heeder` line in
+/// `xtask/src/swish_check/script/interrupts.rs` runs a supervised job. 16 MiB up is a pair page on
+/// the address-space map (milestone 206 (a program image has under 896 KiB)), clear of the image
+/// window at 64 MiB, with a 2 MiB-aligned table's worth of pages under it: the first job costs one
+/// page-table page and the next 511 none.
 pub(super) const JOBFRAME_WINDOWS: core::ops::Range<u64> =
     0x0000_0000_0100_0000..0x0000_0000_0120_0000;
 

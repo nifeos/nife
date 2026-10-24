@@ -750,11 +750,11 @@ fn serve_one_inbound(base: u64) {
     }
 }
 
-/// **The UDP bind grant's refusals** (milestone 55 (Time Machine: SMB3 with Apple's extensions,
-/// and mDNS)), inside the accept test's spawn (see [`tcp_accept_inbound`]). A port outside the grant is `LISTEN_DENIED`, the capability answer that
-/// no retry helps; a granted port binds, and asking for it again collides. The spawn word also
-/// carries the TCP listen grant, so this exercises the composed word. Nothing proves multicast
-/// (notes/net/the-test-clients.md).
+/// **The UDP bind grant's refusals** (milestone 55 (Time Machine: SMB3 with Apple's extensions, and
+/// mDNS)), inside the accept test's spawn (see [`tcp_accept_inbound`]). A port outside the grant is
+/// `LISTEN_DENIED`, the capability answer that no retry helps; a granted port binds, and asking for
+/// it again collides. The spawn word also carries the TCP listen grant, so this exercises the
+/// composed word. Nothing proves multicast (notes/net/the-test-clients.md).
 fn udp_bind_half() {
     match open(OPERATION_BIND_UDP, LISTENER, UDP_DENIED_PORT) {
         LISTEN_DENIED => {}

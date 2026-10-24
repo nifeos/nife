@@ -1,12 +1,12 @@
 //! **The construction sub-server: process building, and nothing else** (milestone 22 phase B.2).
 //!
 //! It holds one untyped budget (WRITE only, so it may spend memory but never lend it), a request
-//! channel, and one program image `root_supervisor` copied into its address space, but no initial
-//! ramdisk, so the only program it can build is the one it was handed. Each instance gets its own
-//! region split off the budget, so one corpse cannot pin another's memory, and the region
-//! capability is deleted once the child starts (§32). The supervisor's reap returns the pages LIFO,
-//! so a restart loop is not a leak. It reads no fault message, holds no policy and answers requests
-//! in arrival order. See notes/trusted-init/supervision-tree.md.
+//! channel, and one program image `root_supervisor` copied into its address space, and no initial
+//! ramdisk, so it can build only that image. Each instance gets its own region split off the
+//! budget, so one corpse cannot pin another's memory, and the region capability is deleted once the
+//! child starts (§32). The supervisor's reap returns the pages LIFO (the return-of-pages of §16
+//! (object revocation)), so a restart loop is not a leak. It reads no fault message, holds no
+//! policy and answers requests in arrival order. See notes/trusted-init/supervision-tree.md.
 //!
 //! Name: ratified 2026-07-30 (calef, DECISIONS §39), among the names recorded there as always
 //! right.
