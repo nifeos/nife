@@ -7,7 +7,7 @@
 //! its supervisor hears; `DESTROY` and a destroyed region end every member; and each refusal the
 //! contract states is made. One stub per ISA for each program, so the same claims hold on all three
 //! (§19 (architectural parity is a tenet)).
-//!
+
 //! # BUGS
 //!
 //! - **A killed member runs on until its next preemption**, the §16 (object revocation) amendment's
@@ -230,12 +230,11 @@ fn try_join(
 /// **Two threads of one process share its space, its capability table and a futex.**
 ///
 /// The waiter (`futex_tests`' program) and the waker run in one space, and the futex word is one
-/// word of it. The capability both pass to `WAIT` and `WAKE` is slot 0, which this test inserted
-/// once, through the waiter's TCB: the waker can name it only because the table is the process's.
-/// The waker wakes the waiter, then ends itself with `SYS_EXIT_THREAD`, and the process goes on
-/// with one member. `DESTROY` then ends that member too, and the space goes with the process.
-///
-/// It is also the first user-to-user futex handoff in the tree: `futex_tests`' waker is the kernel.
+/// word of it. Both pass slot 0 to `WAIT` and `WAKE`, inserted once through the waiter's TCB: the
+/// waker can name it only because the table is the process's. The waker wakes the waiter (a
+/// user-to-user handoff, where `futex_tests`' waker is the kernel), then ends itself with
+/// `SYS_EXIT_THREAD`, and the process goes on with one member. `DESTROY` then ends that member
+/// too, and the space goes with the process.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.process_tests.two_threads_of_one_process_share_its_space_its_table_and_a_futex.patch`
 #[test_case]

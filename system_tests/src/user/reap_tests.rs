@@ -57,19 +57,14 @@ fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
 
 /// **`reap`, retried while the corpse is still standing on its own kernel stack.**
 ///
-/// The refusal these tests race is transient and one context switch wide, and every test here is
-/// built to lose it. `depart` publishes a supervised thread `Dead` and parks it on its supervision
-/// rendezvous *before* it reaches `switch_to`, so the instant a test sees the death message or the
-/// parked sender, the corpse is still executing. `reap_region_objects` refuses to unmap a stack a
-/// core is standing on, and answers `NotPermitted`.
+/// The refusal these tests race is transient, one context switch wide, and every test here loses
+/// it by design. `depart` publishes a supervised thread `Dead` and parks it on its supervision
+/// rendezvous before it reaches `switch_to`, so when a test sees the death message or the parked
+/// sender the corpse is still executing, and `reap_region_objects` refuses to unmap a stack a core
+/// stands on (`NotPermitted`). See notes/stack/kernel-stack-freed-under-its-owner.md and milestone
+/// 124 (a thread is born where it lives).
 ///
-/// Until 2026-08-17 it did not refuse, and freed the stack instead: four CI panics over five days,
-/// every one reported as `*** KERNEL STACK OVERFLOW ***` with no stack overflowing. See
-/// notes/stack/kernel-stack-freed-under-its-owner.md, and the block of milestone 124 (a thread is
-/// born where it lives).
-///
-/// A test that means "this reap is refused for good" keeps calling [`reap`] and asserting on the
-/// answer; this is only for the ones that mean "this reap succeeds".
+/// A test meaning "refused for good" calls [`reap`] and asserts on it; this is for "it succeeds".
 fn reap_when_settled(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut answer = reap(slot, tid);
     super::wait_for(|| {
@@ -403,16 +398,12 @@ fn reap_refuses_a_recycled_thread_id_rather_than_the_wrong_thread() {
 /// **Reaping a corpse whose death message was never collected leaves the rendezvous clean.**
 ///
 /// A supervised thread that dies with nobody in `RECEIVE` parks on its supervision rendezvous's
-/// sender queue holding the message (§26 implementation note 2). Nothing requires a supervisor
-/// to collect that message before reaping: it can be told the tid by its builder, or simply
-/// choose not to read. So the reap has to unlink the corpse from that queue before freeing its
-/// TCB, or the supervisor's next `RECEIVE` follows a pointer into a recycled page.
-///
-/// This was reachable before §32 too, through `MemoryRegion::DESTROY`; every existing caller happened
-/// to receive first, so it never fired. `rendezvous::REAP` makes it easy to reach, which is how it
-/// was found. `crates/inter_process_communication`'s `remove_sender` is the fix, and the second
-/// half of this test (a fresh child's death arriving normally on the same rendezvous) is what proves
-/// the queue is genuinely intact rather than merely counted right.
+/// sender queue holding the message (§26 implementation note 2). A supervisor need not collect it
+/// before reaping (its builder may tell it the tid), so the reap unlinks the corpse from that queue
+/// before freeing its TCB, or the next `RECEIVE` follows a pointer into a recycled page.
+/// `crates/inter_process_communication`'s `remove_sender` does the unlink, for
+/// `MemoryRegion::DESTROY` as for `REAP`. The second half (a fresh child's death arriving normally
+/// on the same rendezvous) proves the queue intact, not merely counted right.
 #[test_case]
 fn reaping_an_uncollected_corpse_leaves_no_ghost_on_the_rendezvous() {
     let (budget, rendezvous_region) = arena();
