@@ -66,11 +66,9 @@ refused, folded into the same `DENIED` a wrong password gets.
 Two bounds came with that change, and both still hold. An identity longer than
 `filesystem_contract::grant::WORDS_NAME` (16 bytes) cannot get a per-identity subtree in this slice
 at all, though `login_contract::MAX_IDENTITY` (64 bytes) would otherwise accept it. The grant
-name travels in two `START` argument words, not a frame, and `mint` refuses rather than truncate
-a name that two identities agreeing on their first 16 bytes would silently share (a collision
-hazard, not merely a usability one): `grant::pack_name` answers `None` for it. Lifting it means a
-frame for the subtree caretaker's directory name, which milestone 946 (a granted file name can be
-longer than sixteen bytes) gave a file's name and not a directory's. And the
+name travels in two `START` argument words. `grant::pack_name` refuses rather than truncate a
+name two identities agreeing on their first 16 bytes would share. Lifting it means a frame for the
+subtree caretaker's directory name. And the
 unprovisioned-subtree fold is a considered answer, not the accident of reusing the fold. A caller
 must not be able to tell "your identity has no home" from "your password is wrong" by comparing
 outcomes across attempts. That would let a caller probe which identities are provisioned without

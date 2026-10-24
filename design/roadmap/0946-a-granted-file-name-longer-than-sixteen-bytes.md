@@ -24,31 +24,31 @@ than shortening it: *"B"*. The fix is to lift the limit that refuses the name. c
 
 ## What a name may be
 
-- **A file's name is at most `filesystem_contract::grant::MAX_NAME`, 255 bytes**, provisional
+- A file's name is at most `filesystem_contract::grant::MAX_NAME`, 255 bytes, provisional
   (the question below). `grant_plan::MAX_FILE_NAME` mirrors it, pinned by a host test. It is the
   last component of a path the shell opens, a name a pattern matched, and a name in a grant's set.
-- **A name that rides two `START` words is at most `grant::WORDS_NAME`, 16 bytes**: a caretaker's
+- A name that rides two `START` words is at most `grant::WORDS_NAME`, 16 bytes: a caretaker's
   directory, `rm`'s operand when it fits, a `login` identity's subtree, an activation message's
   package or vouched name. `grant::pack_name` answers `None` past it, so nothing truncates.
   `grant_plan::WORDS_NAME` mirrors it.
-- **A directory the shell stands in, walks through or binds is at most 16 bytes**
+- A directory the shell stands in, walks through or binds is at most 16 bytes
   (`grant_plan::nav::MAX_DIRECTORY_NAME`), because a directory grant names its directory in a
   caretaker's two words and the shell carries every position by value. A longer one is refused as
   `Refused::DirectoryNameTooLong`.
-- **A name set carries at most 8 names and 512 bytes of them** (`nameset::MAX_NAMES`,
+- A name set carries at most 8 names and 512 bytes of them (`nameset::MAX_NAMES`,
   `nameset::NAME_BYTES`): two of the longest names, or eight of 64 bytes. A record is a length
   byte, a flags byte, then the name. The shell's `NameSet` packs its names into those bytes rather
   than holding eight slots of 255, and over either bound is the same refusal, never a truncation.
 
 ## How a long name reaches a program
 
-- **A file the shell opens itself**: `wc quarterly-report.txt`, `<`, `>` and `2>`, and a program
+- A file the shell opens itself: `wc quarterly-report.txt`, `<`, `>` and `2>`, and a program
   run by its path. Nothing travels but the shell's own `OPEN`, through the file service's page.
-- **A word a program hears** (§170): the name rides the grant's set, on the page
+- A word a program hears (§170): the name rides the grant's set, on the page
   `fs_nameset_caretaker` maps, as every designated name already did.
-- **`rm` with a name over two words**: `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE` and grants the
+- `rm` with a name over two words: `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE` and grants the
   set of that one name, which `rm` sweeps.
-- **Where the file server binds badges** (milestone 606), a grant carrying a set is bound and then
+- Where the file server binds badges (milestone 606), a grant carrying a set is bound and then
   served by `fs_nameset_caretaker` over the bound channel, told with an empty name that the bound
   root is its directory (`client_windows::at_bound_root`). The badge alone would hold the whole
   directory, and the set is what narrows it.
@@ -126,6 +126,6 @@ by the program it was granted to, and an installed `least_authority_demo` runs b
 
 ## Index row
 
-A customer's files are not named for a demonstrator's limit: a name like `quarterly-report.txt`
+A customer's files are not named for a demonstrator's limit. A name like `quarterly-report.txt`
 can be granted at the prompt and read by the program it was granted to, and a package's program
 named over sixteen bytes runs by its path.

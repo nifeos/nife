@@ -214,13 +214,11 @@ should be able to answer for every capability rather than a flag on one verb.
   the navigating role on both ISAs; what is missing is a boot that wires an FS service into the
   interactive system, which is a wiring change and not a change here.
 - The shell tracks 8 levels, and a directory it stands in or walks through is named in at most 16
-  bytes (`nav::MAX_DIRECTORY_NAME`, which is `filesystem_contract::grant::WORDS_NAME`). Both are
-  `grant_plan::nav`'s constants: the path stack is an array because this program has no allocator,
-  and a directory grant names its directory in a caretaker's two `START` words (a name that could be
-  `cd`'d into but not granted would be a place you can reach and cannot talk about). A file, the
-  last component of a path, may be named in up to 255 bytes (`nav::MAX_NAME`, milestone 946). A
-  longer directory name is `DirectoryNameTooLong` and deeper is `TooDeep`, both refused rather than
-  truncated, because a truncated path names a different directory.
+  bytes (`nav::MAX_DIRECTORY_NAME`, `grant::WORDS_NAME`). The path stack is an array because this
+  program has no allocator. A directory grant names its directory in a caretaker's two `START`
+  words, and a name you could `cd` into but not grant would be a place you cannot talk about. A
+  file, the last component, may be 255 bytes (`nav::MAX_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)). A longer directory
+  name is `DirectoryNameTooLong` and deeper is `TooDeep`, refused rather than truncated.
 - `ls` reads a directory in rounds of 256 bytes and re-reads it per round, so a name added or
   removed mid-listing can be seen twice or missed. That is `READDIR`'s own caveat
   ([dir-capability.md](dir-capability.md)), inherited rather than added.

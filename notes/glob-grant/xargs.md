@@ -23,19 +23,19 @@ the bound came down instead of the cap going up.
 
 ## The bytes a set carries
 
-A name may be 255 bytes (milestone 946), and eight slots of 255 would make every set, and every
-`Endowment` holding one, cost eight times what ordinary names need, through the same four frames.
-So a set has a second bound, `nameset::NAME_BYTES`: 512 bytes of name, all its names together, two
-of the longest or eight of 64. The shell's `NameSet` packs its names into those bytes, so a copy is
-544 bytes where eight slots of 255 would be 2,072. Over either bound is `Refusal::TooManyNames`,
-and a batch is cut at whichever bound it meets first: everything a batch leaves out sorts after
-everything it keeps, so the next batch, resuming after its last name, skips nothing.
+A name may be 255 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)).
+Eight slots of 255 would make every set cost eight times what ordinary names need. So a set has a
+second bound, `nameset::NAME_BYTES`: 512 bytes of name, all its names together. That is two of the
+longest names, or eight of 64. The shell's `NameSet` packs its names into those bytes. A copy is
+544 bytes, where eight slots of 255 would be 2,072. Over either bound is `Refusal::TooManyNames`.
+A batch is cut at whichever bound it meets first. Everything it leaves out sorts after everything
+it keeps, so the next batch skips nothing.
 
-What the shell's stack then needed was measured, not scaled, on `script/swish-check`'s aarch64
-leg on 2026-10-24 (UTC), by booting the same tree with the shell's stack set to each size. The
-twelve pages every child gets fault on the boot's first pipeline, sixteen fault in `installed/jig
-rollback`, and seventeen pass both boots. The growth is the file grants an `Endowment` holds, each
-with a name of up to 255 bytes, more than the set. Two things were done about it, in this order:
+The shell's stack was then measured, not scaled. On 2026-10-24 (UTC), `script/swish-check`'s
+aarch64 leg booted the same tree with the shell's stack at each size. Twelve pages fault on the
+boot's first pipeline. Sixteen fault in `installed/jig rollback`. Seventeen pass both boots. The
+growth is mostly the file grants an `Endowment` holds, each with a name of up to 255 bytes. Three
+things answer it:
 
 | change | where | effect |
 |---|---|---|
@@ -43,9 +43,9 @@ with a name of up to 255 bytes, more than the set. Two things were done about it
 | a set packed, and no name kept to cut a batch | `grant_plan::expand` | `Expander` and `NameSet` copies in `Nav::expand` |
 | the shell's own stack, 21 pages | `system_initializer::SHELL_STACK_PAGES` | seventeen measured and four of headroom |
 
-The eight names stand: they are what a set costs in names, and the bytes are what it costs in
-stack. Frame sizes were read from the debug `swish`'s disassembly, summing each function's `sub
-sp` instructions, against the same build of the branch point.
+The eight names stand. They are what a set costs in names, and the bytes are what it costs in
+stack. Frame sizes come from the debug `swish`'s disassembly. Each is the sum of a function's `sub
+sp` instructions, set beside the same build of the branch point.
 
 ## The sweep
 

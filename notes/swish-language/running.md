@@ -95,12 +95,11 @@ shapes cannot be delivered, and each is refused with nothing spawned rather than
   (`filesystem_contract::grant::WORDS_NAME`, which `pack_name` refuses past), because the caretaker
   is told its directory packed into two words.
 
-A file name that does not fit those two words is delivered, not refused (milestone 946 (a granted
-file name can be longer than sixteen bytes)). `dir_grant` tells `rm` `grant::WHOLE_NAMESPACE`
-instead of a name and grants the set of that one name, which [`set_page`] writes on the page a
-words grant's set uses. The progenitor builds `fs_nameset_caretaker` for it, as it does for any set,
-and where the file server binds badges it puts the caretaker in front of the bound one, because a
-badge is bound to the whole directory and the set is what narrows it.
+A file name that does not fit those two words is delivered, not refused (milestone 946 (a granted file name can be longer than sixteen bytes)). `dir_grant`
+tells `rm` `grant::WHOLE_NAMESPACE` instead of a name and grants the set of that one name, which
+`set_page` writes on the page a words grant's set uses. The progenitor builds
+`fs_nameset_caretaker` for it, as for any set. Where the file server binds badges, the caretaker
+sits in front of the bound badge, which is bound to the whole directory.
 
 ## The plain request
 

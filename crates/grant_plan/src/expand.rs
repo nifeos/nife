@@ -136,6 +136,9 @@ impl NameSet {
     }
 
     /// The bytes of name the set holds, all its names together.
+    ///
+    /// Name: provisional, minted 2026-10-24 (UTC) by lane
+    /// `milestone/946-granted-file-name-longer-than-sixteen-bytes`.
     pub fn name_bytes(&self) -> usize {
         self.start(self.n)
     }
