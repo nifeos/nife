@@ -6,14 +6,14 @@ use core::hint::spin_loop;
 use core::sync::atomic::Ordering;
 
 use crate::cores::{CORES, PAIRS, REORDERS, SAMPLES, barrier, scale};
-use crate::{arch, console, message_passing as mp, store_buffering as sb};
+use crate::{arch, console, message_passing as mp, spin_lock, store_buffering as sb};
 
 struct Test {
     name: &'static str,
     ordering: &'static str,
     /// True when Rust's memory model forbids the outcome counted.
     forbidden: bool,
-    /// Messages for MP; for SB the samples the cores report.
+    /// Messages for MP; for SB and LOCK the samples the cores report.
     messages: Option<u64>,
     run: fn(usize),
 }
@@ -70,6 +70,20 @@ const TESTS: &[Test] = &[
         messages: None,
         run: sb::test::<{ sb::FENCED }>,
     },
+    Test {
+        name: "LOCK",
+        ordering: "release-unlock",
+        forbidden: true,
+        messages: None,
+        run: spin_lock::test::<true>,
+    },
+    Test {
+        name: "LOCK",
+        ordering: "relaxed-unlock",
+        forbidden: false,
+        messages: None,
+        run: spin_lock::test::<false>,
+    },
 ];
 
 #[cfg(target_arch = "aarch64")]
@@ -102,7 +116,8 @@ extern "C" fn litmus_main(id: usize) -> ! {
         let iterations = t.messages.unwrap_or(samples);
         let ppm = reorders * 1_000_000 / iterations.max(1);
         console::line(format_args!(
-            "RESULT arch={ARCH} test={} ordering={} forbidden={} iterations={iterations}              samples={samples} observed={reorders} per_million={ppm} ms={ms}",
+            "RESULT arch={ARCH} test={} ordering={} forbidden={} iterations={iterations} \
+             samples={samples} observed={reorders} per_million={ppm} ms={ms}",
             t.name, t.ordering, t.forbidden
         ));
         if t.forbidden && reorders != 0 {

@@ -7,10 +7,11 @@ name: host-reordering
 # **Temporary, and scoped to one lane's branch** (maintainer/measure-arm64-host-reordering,
 # 2026-10-24 UTC). It measures whether an aarch64 CI host shows a guest memory reorderings an
 # x86_64 host does not: the litmus guest in tools/host_reordering_litmus, then the kernel suite's
-# aarch64 and riscv64 legs with every kernel spinlock's unlock weakened to Relaxed. Two jobs per
-# host (the litmus guest, the weakened suite), the same steps on both, each bounded at 20 minutes. It fires only on a push to that branch that
-# touches the measurement, never on a pull request or the merge queue, and is removed before the
-# pull request is ready. See notes/benchmarks/host-reordering-under-tcg.md.
+# aarch64 and riscv64 legs with every kernel spinlock weakened by
+# tools/host_reordering_litmus/weaken-spin.sh. Two jobs per host (the litmus guest, the weakened
+# suite), the same steps on both, each bounded at 20 minutes. It fires only on a push to that
+# branch that touches the measurement, never on a pull request or the merge queue, and is removed
+# before the pull request is ready. See notes/benchmarks/host-reordering-under-tcg.md.
 on:
   push:
     branches: [maintainer/measure-arm64-host-reordering]
@@ -35,7 +36,7 @@ jobs:
           - part: litmus
             args: 60 none 0
           - part: suite
-            args: 0 release 840
+            args: 0 both 840
     timeout-minutes: 25
     steps:
       - name: Start the job wall-time clock
