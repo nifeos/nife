@@ -1,28 +1,19 @@
 //! Fuzz the package fetch's HTTP response reader with arbitrary bytes, cut into arbitrary reads.
 //!
-//! **Why this target exists.** `crates/http_response` runs in the progenitor on bytes that came off
-//! the network, and it runs **before** the package digest check: nothing has vouched for a byte it
-//! reads. The digest decides whether a package may run, but it cannot stop a head that panics the
-//! reader, and a panic in the progenitor is the prompt going away. notes/packages.md recorded the
-//! missing target as a BUGS entry when milestone 198 (a package manager, and the trivial install
-//! that makes a second customer possible) landed the reader in its rung 3a.
+//! `crates/http_response` runs in the progenitor on network bytes **before** the package digest
+//! check, so a head that panics it takes the prompt away (milestone 198 (a package manager, and the
+//! trivial install that makes a second customer possible)). The request writer, `get_request`, is
+//! exercised as well: whatever host and path the fuzzer picks, a request the writer accepts has
+//! exactly one blank line, at its end, so no header can be smuggled.
+
+//! # What is asserted, beyond "it returned"
 //!
-//! **Two properties, not only "it returned".** notes/fuzzing.md's BUGS section points out that three
-//! of the older targets assert nothing, and that the one with a real property is the one that found a
-//! silent bug. This reader has a property that is cheap to state and easy to get wrong:
-//!
-//! 1. **How the reads fall does not change the answer.** A socket hands back whatever it has, so the
-//!    same response cut at different places must give the same status, the same body bytes and the
-//!    same verdict. The first input byte picks the read size, and the rest is fed once whole and
-//!    once in reads of that size. An error must be the same error either way, except that the
-//!    split reader may already have handed back some body before a `BodyTooLong`, which is what the
-//!    crate documents.
-//! 2. **The body is never more than was declared, and is always the tail of the read it came in.**
-//!    A body slice that is not a suffix of its own input would mean the head leaked into the body,
-//!    and a hash over it would be a hash over the wrong bytes.
-//!
-//! The request writer, `get_request`, is exercised as well: whatever host and path the fuzzer picks,
-//! a request the writer accepts has exactly one blank line, at its end, so no header can be smuggled.
+//! 1. **How the reads fall does not change the answer.** The first input byte picks a read size;
+//!    the rest is fed whole and in reads of that size, which must give the same status, body and
+//!    verdict. An error must be the same error, except that the split reader may already have
+//!    handed back body before a `BodyTooLong`, as the crate documents.
+//! 2. **The body is never more than was declared, and is always the tail of the read it came in**,
+//!    so the head never leaks into a body that is then hashed.
 
 #![no_main]
 

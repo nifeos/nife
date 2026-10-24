@@ -1,19 +1,11 @@
 //! Fuzz the package **round trip**: write a package, parse it back, verify every member.
 //!
-//! DECISIONS §197 (a package is one archive file) accepted a cost out loud when it chose a
-//! container: *"the reader owes a fuzz target and the Kani treatment `crates/nifefs` and
-//! `crates/elf` already carry."* This is that debt's first half, and it is deliberately the
-//! round-trip shape rather than a `package_archive_parse` sibling, for the reason
-//! `nifefs_roundtrip` gives at length: the parser's totality is what a Kani harness proves, and
-//! what no harness of that shape can prove is that the writer and the reader agree.
-//!
-//! **The property.** For any set of (name, bytes) the writer accepts, the file it produces parses,
-//! holds exactly that many members, reads each name back byte-identical, and passes its own digest
-//! check. A package that fails the last one would be a package a verifier refuses for no reason a
-//! user could act on, which is the quietest way for a trust mechanism to become noise.
-//!
-//! **Structured input, not bytes**, again for `nifefs_roundtrip`'s reason: byte mutation would
-//! spend the budget on files the writer never writes.
+//! §197 (a package is one archive file) owed the reader *"a fuzz target and the Kani treatment
+//! `crates/nifefs` and `crates/elf` already carry."* This is the target, in `nifefs_roundtrip`'s
+//! round-trip shape. **The property:** for any set of (name, bytes) the writer accepts, the file
+//! parses, holds exactly that many members, reads each name back byte-identical, and passes its own
+//! digest check; failing the last would make a verifier refuse a package for no reason a user could
+//! act on. The input is structured, for `nifefs_roundtrip`'s reason.
 
 #![no_main]
 

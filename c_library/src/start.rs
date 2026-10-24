@@ -1,16 +1,12 @@
 //! How a C program starts on nife (milestone 835 (a C library, stage 1: files, clock and memory)).
 //!
-//! relibc starts a program from `crt0`: it reads `argc`, `argv` and `envp` off the initial stack,
-//! sets up TLS through its dynamic linker, runs the init arrays and calls `main`. None of that is
-//! seeded. A nife program is entered at `std`'s `_start` (notes/std.md), which sets up `std`'s
-//! runtime and calls a Rust `main`; this module is what that Rust `main` calls to become the C
-//! program. The words the program was given come from `std::env::args_os`, which reads nife's
-//! argument page (milestone 205 (how a foreign program is told what to do)), and the environment
-//! from `std::env::vars_os`.
-//!
-//! The C program's own `main` is renamed at build time (`helpers/build-c-program.sh` passes the
-//! object through `llvm-objcopy --redefine-sym main=nife_c_main`), because the Rust program has a
-//! `main` of its own: the one `std`'s `_start` calls. The source is not touched.
+//! relibc's `crt0` is not seeded. A nife program is entered at `std`'s `_start` (notes/std.md),
+//! which sets up `std`'s runtime and calls a Rust `main`; [`run`] is what that `main` calls to
+//! become the C program. Its words come from `std::env::args_os`, which reads nife's argument page
+//! (milestone 205 (how a foreign program is told what to do)), and its environment from
+//! `std::env::vars_os`. The C `main` is renamed `nife_c_main` at build time
+//! (`helpers/build-c-program.sh`, `llvm-objcopy --redefine-sym`), because the Rust program has a
+//! `main` of its own; the source is not touched.
 
 use alloc::ffi::CString;
 use alloc::vec::Vec;

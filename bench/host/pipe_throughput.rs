@@ -1,28 +1,10 @@
 //! One-way pipe **throughput** on the host OS, and the host side of nife's
 //! `sink_throughput` bench (milestone 50, notes/pipes.md).
 //!
-//! `bench/host/ipc_rtt.rs` measures a round trip, which is latency. This measures the other thing a
-//! pipeline does: bytes moving one way, which is what `a | b` is when `a` has a lot to say. Two
-//! **processes** (fork, so the bytes cross an address-space boundary exactly as ours do), one pipe,
-//! producer writes and consumer reads until end of file.
-//!
-//! # It measures the same pipe twice, and only one of the two is apples to apples
-//!
-//! nife's pipe is an endpoint and nothing else: sixteen bytes per rendezvous, and the producer
-//! **cannot run ahead**, because there is no buffer for it to run ahead into. Unix's pipe has a
-//! 64 KiB buffer, so a Unix producer writes until the buffer fills and only then blocks.
-//!
-//! Comparing our sixteen-byte lockstep against a 64 KiB-write Unix pipe would be measuring the
-//! buffer, and comparing it against a sixteen-byte-write Unix pipe would be pretending nobody would
-//! ever use a bigger write. Both are worth knowing and they answer different questions, so both are
-//! printed:
-//!
-//! - **`pipe_16`**: sixteen-byte writes, the same message size we move. The gap to our number is the
-//!   cost of *our* mechanism at *their* granularity, which is the honest head-to-head.
-//! - **`pipe_64k`**: 64 KiB writes, what a real Unix program does. The gap to `pipe_16` is what
-//!   batching buys on Unix, and it is the size of the prize a buffering component would be chasing.
-//!
-//! Native numbers are statistical (a shared desktop underneath), so take a median of a few runs.
+//! Two forked processes and one pipe: the producer writes until end of file and the reader times
+//! it. The same pipe is measured twice. `pipe_16` writes sixteen bytes, the size nife's lockstep
+//! endpoint moves, and is the honest head-to-head; `pipe_64k` writes 64 KiB, as a Unix program
+//! does, and its gap to `pipe_16` is what buffering buys. notes/benchmarks/host-programs.md has why.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O bench/host/pipe_throughput.rs -o /tmp/pipe_throughput && /tmp/pipe_throughput
