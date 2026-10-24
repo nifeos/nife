@@ -1,24 +1,12 @@
-//! **A program that asks for the network and two resolver zones, and is refused them**
-//! (milestone 892 (a std program at the prompt holds the network and a resolver)).
+//! A program that asks for the network and two resolver zones, and is refused them (milestone 892
+//! (a std program at the prompt holds the network and a resolver)).
 //!
 //! The package is `dialer` (`packages/dialer.recipe.toml`). Its manifest note is version 2
 //! (`capability_manifest_note`'s zoned layout): the network, the zone `nife.test`, and the root
 //! zone. Installing it lists those asks; nothing records a grant of them yet, so the installed
-//! program is refused the network at the prompt and never runs:
-//!
-//! ```text
-//! $ cd downloads
-//! $ jig install ./dialer.nifepkg
-//!   dialer asks for:
-//!     reaches the network (connects out)
-//!     looks up names in nife.test
-//!     LOOKS UP ANY NAME AT ALL (the root zone)
-//!   none of these is granted: no owner's grant is recorded at install yet
-//!   installed; generation 11 is live
-//! $ dialer
-//!   refused: its manifest asks for the network, and no owner's grant of the network is recorded for it among the installed programs
-//! ```
-//!
+//! program is refused the network at the prompt and never runs.
+//! notes/packages/the-test-programs.md has the transcript.
+
 //! # BUGS
 //!
 //! - Its body is reached only if the refusal breaks; it then says so and holds nothing else.

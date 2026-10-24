@@ -1,8 +1,5 @@
 //! **Loading an image**: checking an ELF against the image band, mapping its segments and the
-//! timebase page, and finding a program in the initial ramdisk.
-//!
-//! Cut out of `user.rs` unchanged by milestone 872 (the kernel's user-mode file is split along its
-//! seams), which left the parent an index.
+//! timebase page, and finding a program in the initial ramdisk. See notes/user-address-spaces.md.
 //!
 //! Name: provisional (milestone 872's lane, 2026-10-11 UTC; §281 (the kernel's user-mode file
 //! splits into child modules of `user`)).
@@ -27,12 +24,9 @@ pub enum LoadError {
     Unmappable(MapError),
 
     /// **It does not fit the address-space map's image band**: too large, which names the image's
-    /// end and the stack's base, or linked somewhere else entirely (milestone 206, DECISIONS §171 (where a program image starts)
-    /// option A). Refused before a page is mapped. Until 2026-09-26 an image too large for its band
-    /// was reported as `Unmappable(AlreadyMapped)` from the first stack page it collided with, which
-    /// named an overlap and not a size, and nobody hitting it learned what was wrong.
-    ///
-    /// Its `Display` is the sentence; the boot prints that rather than the `Debug` form.
+    /// end and the stack's base, or linked somewhere else entirely (milestone 206, DECISIONS §171
+    /// (where a program image starts) option A). Refused before a page is mapped. Its `Display` is
+    /// the sentence the boot prints.
     Misplaced(address_space_map::ImagePlacement),
 }
 
@@ -68,36 +62,20 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
 
 /// Parse an ELF, build an address space, and put it in memory. Do **not** run it.
 ///
-/// Split out from [`run`] on purpose: this is the part that can fail, so it is the part a test can
-/// call without dying (`run` diverges into the new process, or into `exit`).
+/// `image` is the ELF, and `windowed` is how many pages the caller will map into the new space
+/// itself (zero for none). Returns the space and the entry point, or the [`LoadError`] that refused
+/// the image. Split from [`run`] because this is the part that can fail, and a test can call it
+/// without dying.
 ///
-/// **`windowed` is how many pages the caller is about to map into the new space itself**, and a
-/// caller that maps nothing passes zero.
-///
-/// **A `Spawn::maps` page is not free**, and since 2026-09-21 it is less free than it was: it costs
-/// a share of an intermediate table and, now that `map_physical` records, a share of a log page,
-/// both out of this space's own region. `AS_OVERHEAD`'s sixteen pages absorb that for the handful
-/// of pages most callers map and do not absorb it for the two that map thousands: the progenitor's
-/// archive window, which pays for itself at its own call site, and the installer's copy of the boot
-/// file, which did not and could not, because it goes through [`run`] and [`run`] had nowhere to
-/// put the number.
-///
-/// So the accounting is done **here**, from `spawn.maps` itself, rather than asked of every caller.
-/// That is AGENTS.md's ladder read downward: a budget a caller must remember to widen is a budget
-/// that is wrong the first time somebody maps a bigger window, and the failure it produces is an
-/// `OutOfPageFrames` panic in a spawn three frames away from anything that mentions memory.
-///
-/// What is charged is the cost **above** [`WINDOW_IN_OVERHEAD`], for the reason recorded there: a
-/// handful of mapped pages has always been paid for out of `AS_OVERHEAD`'s margin, and charging it
-/// twice costs a frame per process forever.
+/// Mapped windows cost table and log pages out of this space's own region, so the budget charges
+/// `windowed` here, less [`WINDOW_IN_OVERHEAD`], rather than asking each caller to widen it. See
+/// notes/user-address-spaces.md.
 pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadError> {
     let elf = Elf::parse(image).map_err(LoadError::NotLoadable)?;
     check_image_band(&elf)?;
 
-    // The budget, counted from the file before anything is carved: every segment's pages, plus
-    // one for the stack, plus what the caller's own windows will cost. (AS_OVERHEAD covers the
-    // tables for everything else.) A binary that lies about its size simply exhausts its own
-    // region and fails to map, spending nobody else's memory.
+    // Counted from the file before anything is carved: a binary that lies about its size exhausts
+    // its own region and fails to map, spending nobody else's memory.
     let content: u64 = elf
         .segments()
         .map(|seg| {
@@ -118,15 +96,9 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
         .map_new(USER_STACK_VA, Flags::user_data())
         .map_err(LoadError::Unmappable)?;
 
-    // The timebase page, from milestone 161 (the kernel port) and its `cntfrq` follow-up,
-    // widened to riscv64 on 2026-09-21: the
-    // one number `user_mode_runtime::now()` needs on an architecture with no `CNTFRQ_EL0` to read it
-    // from. `x86_64` measures it; `riscv64` reads it out of the device tree, which is privileged
-    // knowledge a process has no way to reach. `map_physical` does not
-    // spend `content`'s budget (only the intermediate table pages it walks come from the space's
-    // own region, the same as every `Spawn::maps` entry `run()` applies below), so this needs no
-    // extra accounting here. Unconditional, the same "grant is unconditional, a zeroed page reads
-    // as unknown" shape `boot_clock_page` already uses: see `timebase_page_phys`'s own docs.
+    // The timebase page: `user_mode_runtime::now()`'s rate where there is no `CNTFRQ_EL0` to read
+    // (`x86_64` measures it, `riscv64` reads it from the device tree). Mapped rather than carved,
+    // so it spends none of `content`.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
     if let Some(phys) = timebase_page_phys() {
         space
@@ -142,24 +114,12 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
     Ok((space, elf.entry()))
 }
 
-/// **The timebase page's one physical frame**, computed and written once, then reused for
-/// every process `load` maps it into. The frequency the kernel measured (`x86_64`) or read from the
-/// device tree (`riscv64`)
-/// does not change while the machine runs, so one frame mapped read-only into every address space
-/// is correct rather than merely convenient: there is only ever one true answer to publish.
+/// **The timebase page's one physical frame**, written once and mapped read-only into every process
+/// on `x86_64` and `riscv64`, since the rate does not change while the machine runs. aarch64 needs
+/// none: `CNTFRQ_EL0` is architected and open to EL0.
 ///
-/// **aarch64 has no such frame and needs none**: `CNTFRQ_EL0` is architected, the kernel opens it to
-/// EL0, and a register the machine itself states cannot go stale between the kernel reading it and
-/// a process reading it.
-///
-/// `None` only if the frame allocator is out of memory (propagated by `load` as the same
-/// `OutOfFrames` a segment that would not fit reports; this is not a bad-program condition, so it
-/// is not a panic). If [`crate::arch::timer::frequency_checked`] has not resolved yet (never
-/// observed: `init_frequency` runs early in both boot tours, well before the first call to
-/// `load`), the frame is allocated anyway and left zeroed, which [`counter_frequency_contract::TimebasePage::hz`]
-/// reads as "unknown" rather than a fabricated rate; that keeps every process's layout
-/// identical regardless of boot order, the same reason `boot_clock_page` hands out a zeroed page
-/// when there is no `clock` program to ask.
+/// `None` only if the frame allocator is out of memory. If the rate has not resolved yet the frame
+/// stays zeroed, which [`counter_frequency_contract::TimebasePage::hz`] reads as unknown.
 #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
 fn timebase_page_phys() -> Option<u64> {
     use core::sync::atomic::{AtomicU64, Ordering};
@@ -170,14 +130,9 @@ fn timebase_page_phys() -> Option<u64> {
         return Some(cached);
     }
 
-    // `alloc_zeroed`, not `alloc`: only the first 16 bytes of this frame are written below, and
-    // the WHOLE frame is then mapped read-only into every process on this architecture. An
-    // unzeroed frame would carry whatever its last owner left in it across that boundary. Found
-    // 2026-09-21 by the lane that built the current-CPU page on this function's shape.
+    // `alloc_zeroed`: only the first bytes are written, and the whole frame is mapped into every
+    // process on this architecture.
     let phys = crate::memory::alloc_zeroed()?.addr();
-    // `phys_to_virt` is a plain address computation (a `const fn`, no memory access), so nothing
-    // below this line needs a safety comment for naming `dst`; the comments that follow cover the
-    // two places `dst` is actually written through.
     let dst = mmu::phys_to_virt(phys) as *mut u8;
     match crate::arch::timer::frequency_checked() {
         Some(hz) => {
@@ -187,10 +142,7 @@ fn timebase_page_phys() -> Option<u64> {
             // `FRAME_SIZE`, so the copy does not run past it.
             unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), dst, bytes.len()) };
         }
-        // Not yet measured: leave the frame zeroed (retype_page-equivalent frames from
-        // `memory::alloc` are not guaranteed pre-zeroed the way `Untyped::retype_page` promises,
-        // so this writes zero explicitly rather than assuming it).
-        //
+        // Not yet measured: the frame stays zero, which reads as unknown.
         // SAFETY: as the `Some` arm above: `dst` names a freshly allocated, exclusively owned
         // frame, and `PAGE_BYTES` is far under `FRAME_SIZE`.
         None => unsafe { core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_BYTES) },
@@ -200,25 +152,12 @@ fn timebase_page_phys() -> Option<u64> {
     Some(phys)
 }
 
-/// Map the timebase page into `space`, if this process needs one built directly rather
-/// than through [`load`]. Several kernel-side functions build a top-level process's own
-/// `AddressSpace` by hand instead of calling `load` ([`spawn_elf_child_builder`], and every
-/// `spawn_<program>`-shaped test harness that hands a narrowed archive to a named program:
-/// `timetable_tests::spawn_timetable`, `authority_tests`' `root_supervisor` spawn,
-/// `c_seam_tests::spawn_confiner`, `login_service`, `live_swap_tests`' `swapper` spawn), because
-/// each wants a narrower or differently-shaped world than a generic `load` call builds. `load`'s
-/// own unconditional mapping never reaches any of them, and each one found this the same way:
-/// **empirically**, as an unmapped-read page fault the first time something in that process
-/// called `user_mode_runtime::cntfrq` (`timetable`'s own scheduling logic was the one that actually found
-/// this; `load`'s coverage alone left every one of these kernel-built processes unmapped and it
-/// took a real `script/test --arch x86_64` run, not a reading of the call graph, to find them
-/// all). Factored out once here rather than copied into each, per CLAUDE.md rule 7's reasoning
-/// one level down: this is kernel-internal, not shared with a second *binary*, but the six call
-/// sites are exactly the "same lines three times" shape that rule exists to prevent.
+/// Map the timebase page into `space`, for a process the kernel builds by hand rather than through
+/// [`load`].
 ///
-/// **`riscv64` joined this path on 2026-09-21** and inherited every one of those call sites at
-/// once, rather than rediscovering them one page fault at a time, which is what the factoring above
-/// bought: there was one function to widen and one `cfg` per site to change.
+/// [`spawn_elf_child_builder`] and the test harnesses that hand a narrowed archive to one program
+/// build their spaces this way, and `load`'s own mapping reaches none of them. One function, so
+/// every such site maps the page the same way; see notes/user-address-spaces.md.
 #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
 pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
     if let Some(phys) = timebase_page_phys() {
@@ -232,15 +171,12 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
     Ok(())
 }
 
-/// Lay an ELF's loadable segments into `space`, honouring their permissions exactly (milestone 19d
-/// factored this out of `load` so [`spawn_elf_child_builder`] shares it; the progenitor's userspace
-/// loader mirrors it). A read-only segment gets `user_rodata`, not `user_data`: a loader that
-/// widens permissions is a loader you cannot reason about. `.bss` is free because `map_new` zeroes
-/// every page.
+/// Lay an ELF's loadable segments into `space`, honouring their permissions exactly; the
+/// progenitor's userspace loader mirrors it. A read-only segment gets `user_rodata`, not
+/// `user_data`, and `.bss` is free because `map_new` zeroes every page.
 pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError> {
-    // Every kernel path that lays out an image comes through here, so the map is enforced here as
-    // well as early in [`load`] (which checks before it sizes a region, so a huge image is told it
-    // is too large rather than that memory ran out).
+    // Enforced here as well as in [`load`], which checks before it sizes a region so a huge image
+    // is told it is too large rather than that memory ran out.
     check_image_band(elf)?;
     for seg in elf.segments() {
         let flags = if seg.is_executable() {

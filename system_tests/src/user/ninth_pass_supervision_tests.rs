@@ -1,29 +1,11 @@
 //! **A foreign endpoint cannot reap or survey a child it does not supervise** (a ninth outsider
 //! pass at the confinement claim, claims 6, 7, 8 and 9).
 //!
-//! The suite proves these properties with pure logic (`capability::reap_decision`,
-//! `survey_includes`) and drives `REAP`/`SURVEY` refusals for a *WRITE-only* holder of the right
-//! endpoint (`confinement_attack_tests`). What it did not have is a holder of the *wrong* endpoint:
-//! a supervisor of its own children trying to act on a child that reports to someone else. That is
-//! the adversary a `ps`-like tool becomes if the scope check is by rights rather than by
-//! relationship, and it is what this module boots.
-//!
-//! A real ring-3 child (`supervision_tests::REPORT_STUB`, the same hand-assembled program the
-//! supervision suite uses) is spawned supervised by one endpoint. A second, unrelated endpoint is
-//! then held with `READ | ENUMERATE`, every right a supervisor needs, and used to attack:
-//!
-//! - `REAP` through the foreign endpoint answers `NotSupervised` (claim 6): a supervisor cannot
-//!   collect a corpse it does not supervise, even holding `READ`.
-//! - `REAP` of a made-up tid through the foreign endpoint answers the *same* `NotSupervised`
-//!   (claim 7): a real-but-foreign child and a tid that never existed are indistinguishable from
-//!   the foreign endpoint, so a refusal discloses nothing about the stranger.
-//! - `SURVEY` through the foreign endpoint answers `DONE` with no entry (claim 8): the view shows
-//!   exactly the endpoint's own children, and the foreign child is not among them.
-//! - The positive controls, through the *real* supervision endpoint: `SURVEY` returns an entry
-//!   (not `DONE`), and `REAP` collects the corpse (claim 9, the view and the reap are one domain).
-//!
-//! The reap and the survey are refused and permitted by the *same relationship*, which is claim 9:
-//! the foreign endpoint is refused both, the owning endpoint is granted both.
+//! The suite proves these with pure logic (`capability::reap_decision`, `survey_includes`) and
+//! drives `REAP`/`SURVEY` refusals for a `WRITE`-only holder of the right endpoint
+//! (`confinement_attack_tests`). This boots a holder of the wrong endpoint: a supervisor of its own
+//! children acting on a child that reports elsewhere, the adversary a `ps`-like tool becomes if the
+//! scope check is by rights rather than by relationship.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and the
 //! function. Cross-ISA: the supervision relationship, `reap_decision` and `survey_includes` are
@@ -49,10 +31,10 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// **A holder of an unrelated supervision endpoint cannot reap or survey another endpoint's child,
 /// and the two operations are refused and permitted by the same relationship.**
 ///
-/// Nothing in the attack half blocks: `REAP` and `SURVEY` do not park. The positive `REAP` uses a
-/// settle-retry (`supervision_tests`/`reap_tests` explain the one-context-switch window where a
-/// just-dead corpse is still standing on its own kernel stack and the reclaim answers
-/// `NotPermitted`).
+/// A real ring-3 child (`supervision_tests::REPORT_STUB`, the supervision suite's hand-assembled
+/// program) reports to one endpoint. An unrelated endpoint holding `READ | ENUMERATE`, every right
+/// a supervisor needs, is refused both; the owning endpoint is granted both (claim 9). Nothing in
+/// the attack half blocks: `REAP` and `SURVEY` do not park.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -146,7 +128,9 @@ fn a_foreign_endpoint_cannot_reap_or_survey_a_child_it_does_not_supervise() {
          (claim 9)",
     );
 
-    // And REAP through the real supervisor collects the corpse, once it has settled off its stack.
+    // And REAP through the real supervisor collects the corpse, retried across the one context
+    // switch in which a just-dead corpse still stands on its own kernel stack and the reclaim
+    // answers `NotPermitted` (`supervision_tests` and `reap_tests` explain the window).
     let mut reaped = call(owner, abi::rendezvous::REAP, child, 0, 0);
     super::wait_for(|| {
         if reaped != Err(Error::NotPermitted) && reaped != Err(Error::StillAlive) {

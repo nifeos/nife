@@ -1,14 +1,12 @@
-//! **The Call/Reply server**, milestone 12.
+//! The Call/Reply server (milestone 12 (Call/Reply IPC: a one-shot reply capability)): holds
+//! `RECEIVE` on a request endpoint (slot 0) and a report endpoint (slot 1), answers one caller it
+//! was never individually wired to, then tries the reply capability a second time and reports that
+//! the kernel refused.
 //!
-//! Holds `RECEIVE` on a request endpoint (slot 0) and a report endpoint (slot 1). It answers one
-//! caller it was never individually wired to, then proves the reply capability is one-shot by
-//! trying to use it a second time and reporting that the kernel refused.
-//!
-//! That refusal is the property a pre-wired reply rendezvous cannot give you. The reply capability
-//! is minted by the kernel at the moment of the call, names the caller, and is consumed on first
-//! use; nothing the server holds outlives the one answer it owed.
-//!
-//! The other half is `call_client`; the wiring is `system_tests/src/user/call_service.rs`.
+//! The kernel mints the reply capability at the call, naming the caller, and consumes it on first
+//! use, so nothing the server holds outlives the one answer it owed; a pre-wired reply rendezvous
+//! cannot give that. The other half is `call_client`; the wiring is
+//! `system_tests/src/user/call_service.rs`.
 //!
 //! Name: ratified 2026-09-15 (calef, this header). Ratified as `call_reply_server`; was provisional
 //! `call_server` (milestone 291); qualified to the `call_reply` stem (the round-trip benchmark's

@@ -2,27 +2,20 @@
 //! (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
 //! process) fork 4).
 //!
-//! What a user program's thread-local storage hangs off is one register per thread: `TPIDR_EL0`,
-//! `tp`, the `FS` base. The kernel now holds a value per thread, takes the first from `CONFIGURE`'s
-//! sixth argument register, changes it through `ThreadControlBlock::SET_THREAD_POINTER`, and
-//! installs it at every switch. These tests prove that from user mode, on all three architectures,
-//! with one hand-written program per ISA that reads the word its thread pointer names.
-//!
-//! **Why the program reads memory through the register rather than the register itself.** `x86_64`
-//! keeps `CR4.FSGSBASE` off (§269), so ring 3 cannot read its `FS` base, only address through it.
-//! `fs:[0]`, `[TPIDR_EL0]` and `0(tp)` are the one observation all three can make alike (§19
-//! (architectural parity is a tenet)).
-//!
+//! The kernel holds one value per thread, takes the first from `CONFIGURE`'s sixth argument
+//! register, changes it through `ThreadControlBlock::SET_THREAD_POINTER`, and installs it at every
+//! switch. One hand-written program per ISA proves it from user mode on all three architectures by
+//! reading the word its thread pointer names (`fs:[0]`, `[TPIDR_EL0]`, `0(tp)`), not the register:
+//! `x86_64` keeps `CR4.FSGSBASE` off (§269), so ring 3 can only address through its `FS` base. See
+//! notes/thread-pointer.md.
+
 //! # BUGS
 //!
-//! - **Each thread here has its own address space**, because two threads cannot share one until
-//!   the join is built (it waits on calef's ruling on pull request #1892). The spaces are laid out
-//!   identically, so a thread reading another thread's pointer reads the other thread's word, and
-//!   the test would see it. What this cannot show is two threads of one space; the milestone's exit
-//!   test does.
-//! - **Nothing pins the spinners to one core.** The test starts more spinners than the machine has
-//!   cores, so at least two must share one and be switched between, but which two is the
-//!   scheduler's choice, and a one-core boot puts them all together.
+//! - **Each thread here has its own address space**, laid out identically, so a thread reading
+//!   another's pointer reads the other's word and the test sees it. Two threads of one space are
+//!   the milestone's exit test's to show.
+//! - **Nothing pins the spinners to one core.** More spinners than cores means at least two share
+//!   one, but which two is the scheduler's choice, and a one-core boot puts them all together.
 
 use abi::Error;
 
@@ -140,16 +133,11 @@ fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
 
 /// **Every thread reads through its own thread pointer, however the threads are switched**, and
 /// both ways of giving a thread its pointer work: `CONFIGURE`'s sixth register for the even
-/// spinners, and the spinner's own `SET_THREAD_POINTER` on itself for the odd ones.
-///
-/// Twice as many spinners as the kernel has cpu ids, all running at once, so at least two share a
-/// core and are switched between by the timer, and each ORs what it reads into a sticky result. At
-/// the end spinner `i` must hold exactly `1 << i`. A thread pointer that leaked across a switch
-/// shows as a foreign bit; one that never arrived shows as the poison bit (a self-setter whose set
-/// did not take reads word 63) or as no bit at all.
-///
-/// Before this milestone the kernel never touched these registers: on aarch64 every program saw
-/// the last value any program on its core wrote, on `x86_64` every `FS` base was zero.
+/// spinners, the spinner's own `SET_THREAD_POINTER` on itself for the odd ones. Twice as many
+/// spinners as the kernel has cpu ids run at once, so at least two share a core and are switched
+/// by the timer, and each ORs what it reads into a sticky result. At the end spinner `i` must hold
+/// exactly `1 << i`: a pointer that leaked across a switch shows as a foreign bit, one that never
+/// arrived as the poison bit (a self-setter whose set did not take reads word 63) or as no bit.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.thread_pointer_tests.each_thread_reads_through_its_own_thread_pointer.patch`
 #[test_case]

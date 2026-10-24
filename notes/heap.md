@@ -257,6 +257,24 @@ is reused rather than leaked. One real bug found by the machine on the way: `loa
 KiB stack page. BTreeMap plus the `assert!` fmt machinery overflow it (a data abort one word below
 the stack), so the spawn maps three extra stack pages.
 
+## The `memory_region_heap` crate's contract
+
+The crate is the policy around talc's core: a spinlock, a committed-range cursor and grow on
+demand. It uses talc's `Manual` source, because growing is a syscall that can fail on a budget, so
+the retry lives in the crate, beside the cap. It is a crate of its own because `talc` brings
+`alloc` into a program's crate graph (through `allocator-api2`), and a graph with `alloc` in it
+must name a global allocator. Only a program that names the crate links it, so a program with no
+heap links no allocator.
+
+- Which untyped slot pays is the program's convention with its parent. No untyped, no heap.
+- `DEFAULT_BASE` (1 GiB) starts `address_space_map::HEAP`, the band the address-space map keeps for
+  a heap and nothing else.
+- `max_bytes` caps growth, so a leak exhausts the heap visibly before it eats the budget the
+  program builds children from. `MAP`'s `OutOfMemory` is the hard ceiling either way, and it is
+  reported as an allocation failure. Allocating before `init` fails the same way.
+- A spinlock is enough because the holder is always scheduled again to release it under this
+  kernel's preemptive scheduler. It is not efficient under real contention.
+
 ---
 
 *Add to this file as new allocator concepts come up.*

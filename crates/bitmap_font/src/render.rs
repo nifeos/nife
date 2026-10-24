@@ -5,19 +5,13 @@
 
 use super::*;
 
-/// **The rows of the glyph for `ch`**, top row first, bit 0 the leftmost pixel.
+/// The rows of the glyph for `ch`, top row first, bit 0 the leftmost pixel.
 ///
-/// `'\u{00}'..='\u{7f}'` come from the drawn table in [`glyphs`]; the control codes in there are
-/// blank, which is correct because a terminal never puts a control code in a cell (the VT engine
-/// consumes them). Every other `char` draws [`MISSING`], including the whole of Unicode past basic
-/// latin: this font's repertoire did not grow with this signature, only its input type did.
-///
-/// **`char`, not `u8`, since milestone 142's UTF-8 increment.** This font still covers basic latin
-/// only, so a decoded non-ASCII `char` has nothing to draw and correctly gets [`MISSING`]; what
-/// changed is that a multi-byte UTF-8 sequence now decodes to *one* `char` and occupies *one* cell
-/// (drawn as the missing-glyph box) rather than being fed byte-by-byte and drawing a run of wrong
-/// pictures, one per byte. Recorded as the honest remaining limit in notes/glyphs.md: a real
-/// repertoire needs a real font, not a signature change.
+/// `'\u{00}'..='\u{7f}'` come from the drawn table in [`glyphs`], whose control codes are blank
+/// because a terminal never puts one in a cell (the VT engine consumes them). Every other `char`,
+/// all of Unicode past basic latin, draws [`MISSING`], so a decoded multi-byte UTF-8 sequence takes
+/// one cell as one box rather than a run of wrong pictures. A real repertoire needs a real font
+/// (notes/glyphs/bitmap-font.md).
 ///
 /// # Examples
 ///
@@ -84,12 +78,10 @@ pub fn is_ink(ch: char, x: u32, y: u32) -> bool {
     glyph(ch)[y as usize] >> x & 1 != 0
 }
 
-/// **The colour a cell shows at `(x, y)`**: `fg` where the glyph has ink, `bg` where it does not.
-///
-/// This is the whole of glyph rendering, and it is a pure function on purpose. The terminal calls it
-/// to paint, the kernel test calls it to predict, and the host-side scanout check calls it to grade
-/// what QEMU is actually displaying, so none of the three can be wrong in a way the others agree
-/// with.
+/// The color a cell shows at `(x, y)`: `fg` where the glyph has ink, `bg` where it does not. The
+/// whole of glyph rendering, pure on purpose: the terminal paints with it, the kernel test predicts
+/// with it and the host-side scanout check grades QEMU's display with it, so none of the three can
+/// be wrong in a way the others agree with.
 ///
 /// # Examples
 ///

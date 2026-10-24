@@ -191,16 +191,10 @@ pub fn hand_over(
 fn reserve_ap_page(table: &SystemTable, services: &BootServices) {
     // A STARTUP IPI names a physical PAGE below 1 MiB (`vector << 12`), so `arch::x86_64::ap_boot`
     // copies its real-mode trampoline to a fixed low address that `kernel/link-x86_64.ld` picks at
-    // link time (`AP_TRAMPOLINE_PHYS`). Until milestone 195 this loader never mentioned that page,
-    // and secondary cores under firmware therefore worked or did not by luck: OVMF happens to leave
-    // the first 640 KiB conventional, and a firmware that did not would have been discovered by a
-    // core that started executing something else's bytes in real mode.
-    //
-    // **A refusal is not fatal, and that asymmetry is deliberate.** A single-core boot on a machine
-    // whose firmware wants this page is far more useful than no boot at all, and the kernel brings
-    // up secondaries only when it is asked to. So this says what it found and carries on; the
-    // person at the bench gets the one line that explains why `smp: 1 core(s) online` on a machine
-    // with eight.
+    // link time (`AP_TRAMPOLINE_PHYS`), and the firmware must not be using it. **A refusal is not
+    // fatal**: a single-core boot beats no boot, and the kernel brings up secondaries only when
+    // asked, so this says what it found (the one line that explains `smp: 1 core(s) online` on a
+    // machine with eight) and carries on.
     let granted = boot_services::allocate_pages(
         services,
         ALLOCATE_ADDRESS,
@@ -426,20 +420,14 @@ fn write_start_info(
 /// **The last word anything says before the kernel exists** (milestone 243's early-boot half):
 /// clear the screen and paint one sentence, after `ExitBootServices`.
 fn paint_last_word(screen: Option<Framebuffer>) {
-    // From `ExitBootServices` to the kernel's own `attach_screen` nothing can speak on a machine
-    // with no serial port: the firmware's console is gone, the kernel's is not up, and a fault in
-    // between (the trampoline below, `boot.s`'s 32-bit half, the page tables, the long-mode jump)
-    // is a triple fault and a silent reset with no IDT to catch it. That window cannot be
-    // *narrated*, because the code in it is 32-bit and has no idea where the screen is. It can be
-    // **bounded**, which is what this does: the screen is cleared and given one sentence, so the
-    // five things a person at a monitor can be looking at are distinguishable rather than four of
-    // them being one black rectangle. `uefi_loader::screen` has the ladder, and so does
-    // notes/serial-less-output.md.
-    //
-    // Painted AFTER `ExitBootServices` on purpose: before it the screen is the firmware's console
-    // and writing the aperture underneath it would race the firmware's own scrolling. The aperture
-    // survives that call, which is the founding observation of milestone 243 (a machine with no
-    // serial port): what ends is the firmware's *console*, not the *display*.
+    // From `ExitBootServices` to the kernel's `attach_screen` nothing can speak on a machine with
+    // no serial port, and a fault in between is a silent triple fault. The window cannot be
+    // narrated (its code is 32-bit and knows no screen), but it can be bounded: the screen is
+    // cleared and given one sentence, so the five things a person at a monitor can be looking at
+    // are told apart (`uefi_loader::screen` has the ladder, as does notes/serial-less-output.md).
+    // Painted AFTER `ExitBootServices`: before it the screen is the firmware's console and writing
+    // underneath would race its scrolling, and the aperture survives the call (milestone 243 (a
+    // machine with no serial port)): what ends is the firmware's *console*, not the *display*.
     if let Some(screen) = screen
         && let Some(span) = screen.span()
     {
@@ -521,18 +509,15 @@ fn find_rsdp(table: &SystemTable) -> Option<u64> {
     fallback
 }
 
-/// **Ask the firmware where the screen is** (milestone 243).
+/// **Ask the firmware where the screen is** (milestone 243): one `LocateProtocol` call and three
+/// field reads. It does **not** set a video mode: the firmware already chose one that works on this
+/// monitor, and a mode set here would have to be told to the kernel through the same channel
+/// anyway.
 ///
-/// One `LocateProtocol` call and three field reads. It deliberately does **not** set a video mode:
-/// the firmware has already chosen one that works on this monitor, and a mode set here would be a
-/// mode the kernel has to be told about through the same channel anyway.
-///
-/// `None` on every unhappy answer, and they are all the same answer to the caller: no protocol, a
-/// null `mode` or `info`, a `PixelBltOnly` adapter (which has no linear framebuffer at all, only a
-/// boot-services `Blt` call that is gone by the time the kernel runs), a `PixelBitMask` adapter
-/// (whose channels are described by masks `machine_discovery::framebuffer` cannot express), or a
-/// geometry whose arithmetic does not close. A machine with no screen is the `OptiPlex`, and it is
-/// not an error.
+/// `None` on every unhappy answer: no protocol, a null `mode` or `info`, a `PixelBltOnly` adapter
+/// (no linear framebuffer, only a boot-services `Blt` call gone by the time the kernel runs), a
+/// `PixelBitMask` adapter (masks `machine_discovery::framebuffer` cannot express), or a geometry
+/// whose arithmetic does not close. A machine with no screen is the `OptiPlex`, and not an error.
 fn find_screen(services: &BootServices) -> Option<Framebuffer> {
     let mut interface: *mut core::ffi::c_void = ptr::null_mut();
     let mut guid = graphics_output::PROTOCOL_GUID;
