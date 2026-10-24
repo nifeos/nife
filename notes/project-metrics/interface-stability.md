@@ -8,44 +8,46 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_contract` | 247 | 12 | 284 | 459 | 122 | 111 (91%) |
-| `grant_plan` | 202 | 343 | 277 | 1107 | 192 | 158 (82%) |
-| `installed_programs` | 77 | 59 | 77 | 94 | 35 | 30 (86%) |
-| `globally_unique_identifier_partition_table` | 63 | 3 | 91 | 281 | 42 | 33 (79%) |
-| `login_contract` | 22 | 66 | 30 | 91 | 38 | 37 (97%) |
-| `package_archive` | 19 | 38 | 19 | 129 | 27 | 20 (74%) |
-| `socket_contract` | 17 | 37 | 20 | 80 | 38 | 35 (92%) |
-| `line_editor` | 14 | 37 | 15 | 140 | 47 | 39 (83%) |
-| `component_plan` | 13 | 12 | 16 | 138 | 37 | 31 (84%) |
-| `hot_swap_contract` | 12 | 13 | 20 | 126 | 54 | 53 (98%) |
-| `abi` | 11 | 67 | 41 | 183 | 124 | 115 (93%) |
-| `graphics_contract` | 10 | 2 | 19 | 33 | 33 | 33 (100%) |
-| `compositor` | 9 | 4 | 19 | 99 | 38 | 31 (82%) |
-| `credential_contract` | 8 | 5 | 36 | 70 | 37 | 34 (92%) |
-| `current_cpu_contract` | 6 | 6 | 6 | 19 | 20 | 10 (50%) |
-| `byte_sink_contract` | 5 | 10 | 7 | 48 | 32 | 32 (100%) |
-| `capability_manifest_note` | 4 | 56 | 4 | 78 | 30 | 22 (73%) |
-| `clock_contract` | 3 | 2 | 6 | 54 | 32 | 29 (91%) |
-| `entropy_contract` | 3 | 3 | 4 | 18 | 26 | 24 (92%) |
-| `std_runtime_contract` | 3 | 11 | 3 | 28 | 19 | 18 (95%) |
-| `nifefs` | 2 | 0 | 9 | 41 | 44 | 32 (73%) |
-| `measured_boot` | 2 | 24 | 2 | 65 | 26 | 21 (81%) |
-| `counter_frequency_contract` | 1 | 0 | 2 | 15 | 19 | 16 (84%) |
-| `environment_contract` | 1 | 0 | 2 | 44 | 14 | 13 (93%) |
-| `capability_witness_contract` | 1 | 11 | 1 | 14 | 21 | 18 (86%) |
+| `filesystem_contract` | 248 | 12 | 285 | 459 | 126 | 112 (89%) |
+| `grant_plan` | 202 | 343 | 277 | 1107 | 216 | 164 (76%) |
+| `installed_programs` | 77 | 59 | 77 | 94 | 37 | 31 (84%) |
+| `globally_unique_identifier_partition_table` | 72 | 3 | 100 | 281 | 49 | 37 (76%) |
+| `login_contract` | 22 | 66 | 30 | 91 | 42 | 40 (95%) |
+| `package_archive` | 19 | 38 | 19 | 129 | 30 | 22 (73%) |
+| `socket_contract` | 17 | 37 | 20 | 80 | 41 | 36 (88%) |
+| `hot_swap_contract` | 16 | 13 | 24 | 126 | 61 | 56 (92%) |
+| `line_editor` | 16 | 39 | 17 | 142 | 55 | 44 (80%) |
+| `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
+| `abi` | 11 | 67 | 41 | 183 | 126 | 116 (92%) |
+| `graphics_contract` | 10 | 2 | 19 | 33 | 36 | 35 (97%) |
+| `compositor` | 9 | 4 | 19 | 99 | 41 | 33 (80%) |
+| `credential_contract` | 8 | 5 | 36 | 70 | 42 | 35 (83%) |
+| `current_cpu_contract` | 6 | 6 | 6 | 19 | 22 | 10 (45%) |
+| `byte_sink_contract` | 5 | 10 | 7 | 48 | 33 | 32 (97%) |
+| `capability_manifest_note` | 4 | 56 | 4 | 78 | 32 | 22 (69%) |
+| `clock_contract` | 3 | 2 | 6 | 54 | 34 | 30 (88%) |
+| `entropy_contract` | 3 | 3 | 4 | 18 | 27 | 24 (89%) |
+| `std_runtime_contract` | 3 | 11 | 3 | 28 | 21 | 19 (90%) |
+| `nifefs` | 2 | 0 | 9 | 41 | 48 | 35 (73%) |
+| `measured_boot` | 2 | 24 | 2 | 65 | 32 | 23 (72%) |
+| `counter_frequency_contract` | 1 | 0 | 2 | 15 | 20 | 16 (80%) |
+| `environment_contract` | 1 | 0 | 2 | 44 | 15 | 13 (87%) |
+| `capability_plan` | 1 | 0 | 1 | 0 | 5 | 4 (80%) |
+| `capability_witness_contract` | 1 | 11 | 1 | 14 | 23 | 19 (83%) |
 | `program_argument_contract` | 1 | 0 | 1 | 29 | 0 | 0 |
-| `supervision_protocol` | 0 | 6 | 22 | 70 | 60 | 52 (87%) |
-| `elf` | 0 | 0 | 3 | 82 | 48 | 38 (79%) |
+| `supervision_protocol` | 0 | 6 | 22 | 70 | 65 | 56 (86%) |
+| `elf` | 0 | 0 | 3 | 82 | 50 | 39 (78%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `address_space_map` | 0 | 0 | 0 | 42 | 0 | 0 |
 | `allocation_cache` | 0 | 20 | 0 | 20 | 0 | 0 |
-| `boot_slot` | 0 | 4 | 0 | 52 | 16 | 12 (75%) |
+| `boot_slot` | 0 | 4 | 0 | 52 | 17 | 12 (71%) |
 
 ## What broke in 2026W43
 
-Read at `43a2d16e1f9b` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `fd2a9d793284` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
+> - `capability_plan`: crate renamed `component_plan -> capability_plan`
 > - `compositor`: changed `MAX_SURFACE_BYTES`
 > - `compositor`: changed `SCENE`
 > - `compositor`: changed `SCREEN_H`
@@ -54,6 +56,16 @@ Read at `43a2d16e1f9b` against the week before. Each line is one removed or chan
 > - `current_cpu_contract`: changed `PAGE_BYTES`
 > - `current_cpu_contract`: changed `build_page`
 > - `current_cpu_contract`: changed `build_page_allowing`
+> - `filesystem_contract`: changed `verb::TABLE`
+> - `globally_unique_identifier_partition_table`: changed `guid::Uuid`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::APPLE_APFS`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::APPLE_HFS_PLUS`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::EFI_SYSTEM`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::LINUX_FILESYSTEM`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::MICROSOFT_BASIC_DATA`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::NIFE_BOOT`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::NIFE_DATA`
+> - `globally_unique_identifier_partition_table`: changed `guid::types::UNUSED`
 > - `grant_plan`: changed `ImageRefusal`
 > - `grant_plan`: changed `Manifest`
 > - `grant_plan`: changed `UNVOUCHED_MANIFEST`
@@ -67,7 +79,11 @@ Read at `43a2d16e1f9b` against the week before. Each line is one removed or chan
 > - `graphics_contract`: changed `SURFACE_BYTES`
 > - `graphics_contract`: changed `SURFACE_PAGE_FRAMES`
 > - `graphics_contract`: changed `WIDTH`
+> - `hot_swap_contract`: changed `BACKEND`
+> - `hot_swap_contract`: changed `BROKER`
 > - `hot_swap_contract`: changed `CLIENT`
+> - `hot_swap_contract`: changed `CONSOLE`
+> - `hot_swap_contract`: changed `STATEFUL_BACKEND`
 > - `installed_programs`: removed `CURRENT`
 > - `installed_programs`: removed `CURRENT_STAGED`
 > - `installed_programs`: removed `DIRECTORY`
@@ -136,4 +152,6 @@ Read at `43a2d16e1f9b` against the week before. Each line is one removed or chan
 > - `installed_programs`: removed `with_entries`
 > - `installed_programs`: removed `with_entry`
 > - `installed_programs`: removed `without_package`
+> - `line_editor`: changed `component::CONSOLE`
+> - `line_editor`: changed `component::DISPLAY`
 > - `std_runtime_contract`: changed `SLOTS`
