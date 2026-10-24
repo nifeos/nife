@@ -1,24 +1,18 @@
 //! **Which disks this program may touch, and what it would do to each.**
 //!
-//! Every host describes its disks differently (`diskutil` on macOS, sysfs on Linux, drive letters
-//! on Windows), and each host module turns its description into a [`Disk`]. Everything after that
-//! is here and host-independent, which is the point: the rule that decides whether a disk may be
-//! written is one function, [`refusal`], tested once, rather than three rules that can drift.
+//! Each host module turns its own description of its disks into a [`Disk`]; from there on all is
+//! host-independent, so whether a disk may be written is one function, [`refusal`], tested once.
 //!
-//! # The rule, and why it is the removable-media bit
+//! A disk is offered only when its media is removable: the SCSI removable-media bit, read as
+//! macOS's `RemovableMedia`, Linux's `/sys/block/<dev>/removable` (or an `SD` card type on the MMC
+//! bus) and Windows' `DRIVE_REMOVABLE`. "External" or "USB" is not enough: a USB hard disk is both
+//! and is not removable (`tests/fixtures/macos/usb-*-info.plist`). See notes/boot-stick.md,
+//! "Which disks it will touch, and the measurement that decided it".
+
+//! # BUGS
 //!
-//! **A disk is offered only when its media is removable**: the SCSI removable-media bit (RMB) a USB
-//! flash stick or an SD card reader sets, which macOS reports as `RemovableMedia`, Linux as
-//! `/sys/block/<dev>/removable` (or an `SD` card type on the MMC bus), and Windows as
-//! `DRIVE_REMOVABLE`. It is the same bit read three ways.
-//!
-//! "External" or "USB" is not enough, and a USB hard disk, which is where backups usually live, is
-//! the proof. It reports `Internal = false` and `BusProtocol = USB`, and it reports
-//! `RemovableMedia = false` (`tests/fixtures/macos/usb-*-info.plist`, captured from two such disks).
-//! A rule keyed on the bus would offer a backup disk for erasing; this one never lists it.
-//!
-//! **The cost is stated rather than hidden**: a few flash sticks sold as "fixed disks" (some models
-//! built for Windows To Go) clear the bit and are not offered. See the crate's BUGS.
+//! - A flash stick sold as a "fixed disk" (some built for Windows To Go) clears the bit and is not
+//!   offered.
 
 use std::path::PathBuf;
 

@@ -68,6 +68,7 @@ the three ceilings below, are in [design/tenets/lane-count.md](../../../design/t
 - The real ceilings are elsewhere, and they are worth naming so they are decided rather than
   discovered: the attention to read reports and resolve conflicts, the token budget, and runner
   concurrency.
+- Running one milestone across many lanes at once: [`briefs/run-a-milestone-wide.md`](../../../briefs/run-a-milestone-wide.md).
 
 The second ceiling is memory, and it is independent of the collision surface. So: at most one full
 `script/verify` at a time on this machine, and never a mutation sweep beside lanes. When two lanes

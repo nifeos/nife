@@ -1,16 +1,7 @@
 //! **The version set** (milestone 614 (two installed versions of one program, each runnable, and a
-//! caller granted the one it needs), ruling 4; the capability's name is provisional, as the ruling
-//! says): a committed file of `<program> <version>` lines a project carries, named [`FILE`], which
-//! selects, for each program it names, among the versions already installed.
-//!
-//! The file holds version strings, because people write it; it is resolved to digests through the
-//! live table at activation, so enforcement stays digest-authoritative one layer down (ruling 1).
-//! That is also why nothing here validates much: a version set vouches for nothing and can run
-//! nothing. It selects among rows the table already answers for, so a cloned repository can *ask*
-//! and still cannot install or run uninstalled bytes. The shell consults the nearest set at or
-//! above the working directory, asdf-style, on calef's usability ruling; that walk is over
-//! directories for one file name, not over program names, and DECISIONS §229 (how a bare name at
-//! the prompt reaches an installed program) stands: one answer per name, no search order.
+//! caller granted the one it needs), ruling 4): [`FILE`], a project's `<program> <version>` lines,
+//! which select among installed versions and vouch for nothing. See
+//! notes/shell/the-swish-crate.md, "The version set".
 //!
 //! # EXAMPLES
 //!
@@ -22,12 +13,8 @@
 //!
 //! # BUGS
 //!
-//! - **First line wins, silently.** A set that names a program twice is a project's own
-//!   contradiction, and the resolution is order, which a reader may not expect. Nothing here
-//!   refuses, because a version set vouches for nothing: the worst a contradictory line can do is
-//!   select a version the table answers for anyway.
-//! - **The dev tool that installs what a set asks for is not built** (ruling 4's follow-on): a
-//!   set naming an uninstalled version can only ever produce the divergence notice.
+//! - **First line wins, silently**, when a set names a program twice.
+//! - **The dev tool that installs what a set asks for is not built** (ruling 4's follow-on).
 //!
 //! Name: ratified 2026-10-07 (calef, §258 (names for two installed versions of one program)),
 //! following the file it reads. Refused `versions` (the file's refused name). Minted as

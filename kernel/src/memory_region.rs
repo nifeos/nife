@@ -1,52 +1,12 @@
-//! Memory regions. **The kernel stops allocating.**
-//!
-//! Milestone 11, and DECISIONS §10's deliberately-deferred third axis. The idea, from seL4:
-//! the kernel does not own a pool it hands out from. Instead a process holds a capability to a
-//! chunk of raw memory (a `MemoryRegion`, `capability::Object::MemoryRegion`), and to get a page it
-//! **retypes** part of that memory into the thing it wants. The kernel is a bookkeeper: it advances a watermark and hands
-//! back a physical address. It calls no allocator.
-//!
-//! # What this buys, and the one number that proves it
-//!
-//! After a process is handed its untyped, **the kernel's free-frame count does not move while the
-//! process allocates.** Every page the process maps comes out of its own untyped, carved once at
-//! the start. A process cannot make the kernel allocate, so it cannot exhaust kernel memory: it
-//! can only run out of *its own* budget, and when it does, the retype fails and the kernel is
-//! untouched. That is the astonishing property, and `notes/memory-regions.md` shows the flat frame count.
-//!
-//! # Where the boundary sits now (updated across milestone 14)
-//!
-//! Milestone 11 converted the memory a process **asks for** (`MemoryRegion::MAP` pages) to untyped.
-//! Milestone 14 phase B.4 converted the memory a process **is made of**: `exec` carves one
-//! region per process and the address space's root, tables, and image pages are all retyped
-//! from it, so teardown is [`destroy`] and the whole budget returns in one call. The kernel's
-//! own objects went fixed instead of untyped-backed (TCBs in a static pool, endpoints in a
-//! fixed table; notes/thread-control-block.md records why retype earns nothing while the kernel is the only
-//! payer). What remains heap-backed is the revocation database, phase C's work.
-//!
-
-//!
-//! # Where the bookkeeping lives (milestone 135)
-//!
-//! The table itself, and every decision taken over it, is `crates/memory_regions`: host-testable, Kani-
-//! proved for the arithmetic, and searched by loom for the racing case (`script/interleaving-check`).
-//! What stays here is what a crate a model checker can run must not have, which is the I/O: the
-//! frame allocator, the direct map, the revoke, and the lock. The division is not tidiness. The
-//! double free at `crates/frames/src/lib.rs:315` was a *protocol* bug, and a protocol that lives in
-//! a `no_std` kernel module is reachable by neither of this project's two verification tools.
+//! Memory regions (milestone 11 (untyped memory, and the number that proves the kernel stops
+//! allocating)): a process retypes its own region into the pages and objects it wants, so the
+//! kernel's free-frame count does not move while it allocates. The table and its decisions are
+//! `crates/memory_regions`; this module is the I/O: the frame allocator, the direct map, the
+//! revoke and the lock. See notes/memory-regions.md.
 //!
 //! # BUGS
-//!
-//! **`Error::OutOfMemory` collapses three unrelated causes into one code** (milestone 153). `SPLIT`
-//! returns it when the caller's own untyped budget is exhausted, when the caller's capability table is full,
-//! or when [`MAX_REGIONS`] itself is exhausted; `RETYPE_OBJ` collapses a different pair the same
-//! way (see each method's own doc comment in `crates/abi`). The first two are facts about the
-//! caller; the third is a fact about every other live region on the machine, which the caller had
-//! no part in causing and cannot fix locally. A caller, or a person debugging one, cannot currently
-//! tell which is true. **Declined for now (DECISIONS §119), for want of a customer**: no caller is
-//! confused by this today, and §119 records non-binding guidance (new cause-specific `Error`
-//! variants, the shape `crates/timetable`'s own `Unbacked`/`Refusal` split and POSIX's
-//! `EMFILE`/`ENFILE` both already use) for whoever eventually has one.
+//! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
+//! `OutOfMemory`'s three causes is declined for want of a customer)); see the note.
 
 pub use memory_regions::ObjectKind;
 use memory_regions::{PageUse, RegionTable};
@@ -55,39 +15,16 @@ use page_frames::{FRAME_SIZE, PageFrame};
 use crate::memory;
 use crate::sync::{IrqSafeMutex, rank};
 
-/// The most untyped regions that can be live **at once**. Object revocation made region slots
-/// reusable (the table is generational), so this bounds concurrent regions, not creations over the
-/// kernel's lifetime the way the old count-based table did. A system that runs workloads which come
-/// and go can create regions without end, as long as no more than this many live at a time.
+/// The most untyped regions that can be live **at once**. Slots are reused (the table is
+/// generational), so this bounds concurrent regions, not creations over the kernel's lifetime.
 ///
-/// # The ledger: what holds regions at the peak
-///
-/// Read this before raising or lowering the constant. Every suite run prints the peak on its
-/// `regions:` line, with the test during which it was set. Measured 2026-09-26 by milestone 601
-/// (the region table prints its peak):
-///
-/// | architecture | peak | spare | live when the first test starts | live after the last |
-/// |---|---|---|---|---|
-/// | aarch64 | **225** | 31 | 1 | 222 |
-/// | riscv64 | **224** | 32 | 1 | 221 |
-/// | `x86_64` | **125** | 131 | 1 | 122 |
-///
-/// The table is nearly empty at boot: almost every region live at the peak is one an earlier test
-/// left behind (on aarch64, `ntp_tests` 39 and `login_tests` 33 lead, then the compositor, file
-/// service and date stacks), and the peak is a few above that residue. A full table refuses quietly
-/// (a `--mem` split hangs).
-/// `design/roadmap/0676-the-ntp-and-login-tests-give-their-regions-back.md` is the work to account
-/// for the residue.
-///
-/// **No gate, deliberately.** As with `sched::MAX_THREADS`, a climbing peak is usually a boot doing
-/// more; a gate needs the held list the frame ledger has (`notes/frames.md`), and nothing states
-/// what is permanent for regions yet.
+/// Read the ledger of what holds regions at the peak, in notes/memory-regions.md, before raising or
+/// lowering it. A full table refuses quietly, and there is no gate.
 pub(crate) const MAX_REGIONS: usize = 256;
 
 /// **The most regions that were ever live at once on this boot**, the instrument that makes
-/// [`MAX_REGIONS`] a measured number rather than a felt one. `sched::PEAK_THREADS`'s twin, built
-/// for the same reason: a full table is refused in whichever test happens to ask next, and by then
-/// every earlier reading is gone.
+/// [`MAX_REGIONS`] a measured number: a full table is refused in whichever test asks next, and by
+/// then every earlier reading is gone. `sched::PEAK_THREADS`'s twin.
 ///
 /// Updated under the `REGIONS` lock on the two paths that can grow the table, [`create`] and
 /// [`split`], so it never races. `fetch_max` rather than a compare-store, for `PEAK_THREADS`'s
@@ -106,11 +43,10 @@ pub(crate) fn peak_region_count() -> usize {
     PEAK_REGIONS.load(core::sync::atomic::Ordering::Relaxed)
 }
 
-/// The untyped regions (`crates/memory_regions`, notes/generational-names.md). Generational, which is the
-/// reuse the old fixed count-based array lacked: reclaiming a region removes it, which bumps its
-/// slot's generation, so every `MemoryRegion` capability minted for that region stops resolving
-/// (stale-safe, the same machinery as Tids and endpoint names), and the slot is reused by the next
-/// `create`. What an `Object::MemoryRegion` capability carries is the generational `u64` name.
+/// The untyped regions (`crates/memory_regions`, notes/generational-names.md). Generational:
+/// reclaiming a region bumps its slot's generation, so every `MemoryRegion` capability minted for
+/// it stops resolving, and the slot is reused. An `Object::MemoryRegion` capability carries the
+/// generational `u64` name.
 ///
 /// **Page units inside, byte addresses outside.** The crate is `FRAME_SIZE`-agnostic on purpose, so
 /// every conversion happens here, at the boundary where the constant is already in scope.
@@ -140,19 +76,12 @@ pub fn create(pages: u64) -> Option<u64> {
     name
 }
 
-/// **Carve `pages` off `parent`'s unspent budget into a new child untyped region**, and return its
-/// name. seL4's untyped-retype-into-untyped: the subdivision that lets a spawner give each child
-/// its own independently-reclaimable region. The parent's watermark advances by `pages` (the run is
-/// spent from it, bump-only as ever) and its live-child count rises, so it can no longer be
-/// destroyed; the child is an ordinary region over that run. `None` if the parent is unknown,
-/// exhausted (`pages` beyond its remaining budget), asks for zero, or the region table is full.
+/// **Carve `pages` off `parent`'s unspent budget into a new child region**, and return its name.
+/// The parent's watermark advances and it cannot be destroyed while the child lives. `None` if the
+/// parent is unknown or exhausted, `pages` is zero, or the region table is full.
 ///
-/// **Return-of-pages (DECISIONS §16):** a child destroyed at the top of the parent's watermark
-/// (the LIFO case, which a spawn-then-reap loop always is) gives its pages *back* to the parent's
-/// budget, so a split parent is not committed for its lifetime. A child freed out of order leaves a
-/// hole until no child above it is live, and then the hole comes back with the last of them
-/// (`RegionTable::return_to_parent`, since 2026-10-03 UTC; before that, until the parent itself was
-/// destroyed). A carve still only bumps, so a hole under a live child is not reused meanwhile.
+/// A child destroyed at the top of the parent's watermark gives its pages back (DECISIONS §16
+/// (object revocation)); one freed out of order leaves a hole until no child above it is live.
 ///
 /// **A split refused for a full table still bumps the parent**, and the parent can then never be
 /// reclaimed: `RegionTable::split`'s `# BUGS` entry has the consequence and a reproduction, and
@@ -201,8 +130,7 @@ pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
     if crate::retype_fault::fails_now() {
         return None;
     }
-    // Released at the semicolon, as it always was for one page: zeroing is a memory touch of the
-    // whole run and has no business happening under the region lock.
+    // Released at the semicolon: zeroing the whole run must not happen under the region lock.
     let page = REGIONS.lock().retype_run(region, requested)?;
     let count = memory_regions::retype_pages(requested);
     let phys = page * FRAME_SIZE;
@@ -282,51 +210,25 @@ pub fn region_bounds(region: u64) -> Option<(u64, u64)> {
 /// Clear a region's object pin, **after** its objects have been torn down. Object revocation
 /// (`sched::reclaim_region`): reap the objects with `IPC_TABLES`, unpin, then [`destroy`].
 ///
-/// This is deliberately separate from [`destroy`], and the split is not cosmetic. Tearing down a TCB
-/// needs `IPC_TABLES`; [`destroy`] must never take `IPC_TABLES`, because it is reachable from
-/// `AddressSpace::Drop`, which already runs under the reaper's `IPC_TABLES` (see [`destroy`]'s note). So
-/// the `IPC_TABLES`-taking reap is one call, and the `IPC_TABLES`-free `unpin` + `destroy` are the next.
+/// Separate from [`destroy`] because [`destroy`] must never take `IPC_TABLES`: it is reachable from
+/// `AddressSpace::Drop`, which already runs under it. See notes/memory-regions.md.
 pub fn unpin(region: u64) {
     REGIONS.lock().unpin(region);
 }
 
-/// Return a region's whole backing to the frame allocator, **safely** (milestone 13). The name goes
-/// with it: its slot's generation is bumped, so every `MemoryRegion` capability minted for this region
-/// stops resolving and the slot is reused by the next `create`/[`split`]. (An older line here said
-/// the slot stays and indices are stable; that stopped being true when regions became generational,
-/// and the sentence outlived the fact.)
+/// Return a region's whole backing, **safely**: a root's pages to the frame allocator, a child's to
+/// its parent. The name goes with it, and its slot is reused by the next `create` or [`split`].
 ///
-/// # This was a tripwire, and revocation is what disarmed it
-///
-/// It used to be unused on purpose, because reclaiming a region while a peer still maps one of its
-/// frames dangles that mapping onto memory the allocator can hand out again: a use-after-free. The
-/// safety of the whole system rested on retyped frames being **spend-only, never reused**, so a
-/// surviving peer mapped valid, non-reused memory (notes/capability-lifecycle.md, notes/teardown.md).
-///
-/// That precondition is now *met* rather than assumed. Before freeing anything, this revokes every
-/// mapped page in the region (revoke.rs, §13): each is unmapped from every address space that held
-/// it and every `PageFrame` capability to it is deleted. So "no live mapping survives" replaces
-/// "spend-only, never reused", and returning the pages to the allocator is safe. `REGIONS` is
-/// released before the revoke so revocation can take `IPC_TABLES` (a higher rank) without
-/// inverting the order.
-///
-/// # The claim, and why it is one call
-///
-/// `RegionTable::claim_for_destroy` decides and removes the name in **one borrow**, so at most one
-/// caller ever reaches the free loop below for a given region. This used to be two hold of the
-/// region lock with a gap between them, and the gap was a real double free rather than an
-/// untidiness: two callers with a name for one region (an owner's `MemoryRegion::DESTROY` and a
-/// supervisor's `rendezvous::REAP`, both landing in `sched::reclaim_region`) could each pass the
-/// refusal check, each release the lock, and each run the free loop over the same pages. It
-/// surfaced once in 45 loaded runs on riscv64 (notes/object-revocation.md). The fix landed as pull
-/// request #316; milestone 135 moved it into the crate so `script/interleaving-check` searches every
-/// interleaving of it rather than the tree arguing it from lock discipline.
+/// Refused, doing nothing, for a pinned region, one with live children, or a name another caller
+/// already claimed. Every mapped page is revoked first (§13 (capability revocation and untyped
+/// reclamation)), so no peer is left mapping a returned
+/// page. `RegionTable::claim_for_destroy` decides and removes the name in one borrow, so at most
+/// one caller frees a region's pages. Takes `REGIONS`, releasing it before the revoke takes
+/// `IPC_TABLES`. See notes/memory-regions.md.
 pub fn destroy(region: u64) {
-    // The guard is a temporary of this `let` statement, so `REGIONS` is released at the semicolon,
-    // **before** the revoke below. That order is load-bearing rather than incidental: revocation
-    // takes `IPC_TABLES`, a higher rank, and holding `REGIONS` across it would invert the
-    // order and trip the rank checker. The pre-#316 code said the same thing with an explicit
-    // `drop`; the claim says it with a shorter borrow.
+    // The guard is a temporary of this `let`, so `REGIONS` is released at the semicolon, before
+    // the revoke: revocation takes `IPC_TABLES`, a higher rank, and holding `REGIONS` across it
+    // would invert the order.
     let Some(claim) = REGIONS.lock().claim_for_destroy(region) else {
         return; // refused (pinned, or has live children), or a racing caller already won
     };

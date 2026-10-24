@@ -1,8 +1,6 @@
 //! **Batching at the bound** (milestone 109 (`xargs`: batching a grant too large to hand over)):
 //! [`Sweep`], [`write_sweep`] and [`write_batch`].
 //!
-//! Moved out of the crate root by milestone 884 (the shell logic crate is split along its seams).
-//!
 //! Name: provisional (milestone 884, 2026-10-12 UTC), for calef's naming pass.
 
 use super::*;
@@ -10,11 +8,8 @@ use super::*;
 /// **The account of a batched line**: how many batches ran, how many names they designated, and
 /// whether anything stopped the sweep.
 ///
-/// It exists because a batched line is **one command with a partial effect**, which is a thing no
-/// unbatched line here can be, and the only honest way to report one is to say where the boundary
-/// fell. A sweep that stopped is a *prefix* of the match, which a person can hold in their head and
-/// resume from; a sweep that carried on past a failure would be an arbitrary subset, and the user
-/// could not tell which names it was.
+/// A batched line is one command with a partial effect, so its report says where the boundary
+/// fell: a sweep that stopped is a prefix of the match, which a person can resume from.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Sweep {
     /// Batches that ran.
@@ -40,9 +35,7 @@ impl Sweep {
 
 /// Write the sweep's account.
 ///
-/// **The failing case says what was not attempted.** Unix's `xargs` carries on after a failed
-/// invocation; here the shell printed each batch's set before it ran, so it names the boundary,
-/// and batch four never runs after batch three failed.
+/// A stop names what was not attempted: unlike Unix's `xargs`, no batch runs after one fails.
 ///
 /// ```
 /// use swish::{Sweep, write_sweep};
@@ -96,8 +89,7 @@ pub fn write_sweep(s: &Sweep, out: &mut dyn FnMut(&[u8])) {
             batches(s.batches, out);
             out(b", and nothing after them was attempted\n");
         }
-        // **One batch prints nothing**, deliberately: `xargs` over a match that fits is the line the
-        // user would have typed without it, and a footer under it would be noise claiming an event.
+        // One batch prints nothing: it is the line the user would have typed without `xargs`.
         None if s.batches == 1 => {}
         None => {
             out(b"  ");

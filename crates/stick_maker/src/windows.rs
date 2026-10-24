@@ -1,26 +1,17 @@
 //! **Windows: drives from the Win32 volume functions; erasing is described, not performed.**
 //!
-//! Windows names volumes by drive letter, and `GetDriveTypeW` answers `DRIVE_REMOVABLE` from the
-//! same removable-media bit the other two hosts read. A USB hard disk answers `DRIVE_FIXED`, so it is
-//! refused by the one rule in `disk.rs` without anything Windows-specific. The four functions used
-//! are in `kernel32`, which every Windows process already links, so they are declared here by hand
-//! rather than through a bindings crate (DECISIONS §46).
-//!
-//! This file is the pure half, [`disk_from`], tested on every host; `host/windows.rs` is the half
-//! that calls Windows.
-//!
+//! `GetDriveTypeW` answers `DRIVE_REMOVABLE` from the same removable-media bit the other hosts
+//! read, and a USB hard disk answers `DRIVE_FIXED`, so `disk.rs`'s one rule refuses it. The four
+//! `kernel32` functions are declared by hand rather than through a bindings crate (§46 (thin
+//! primitives or whole subsystems)). This file is the pure half, [`disk_from`], tested on every
+//! host; `host/windows.rs` calls it. See notes/boot-stick/the-program.md, "Windows".
+
 //! # BUGS
 //!
-//! - **None of this has run on Windows.** It cross-compiles for `x86_64-pc-windows-gnu`, and the
-//!   pure half is tested on the development Mac; the four calls into `kernel32` have not executed.
-//! - **Erasing is not automated on Windows, deliberately.** A stick that is not FAT gets the
-//!   `diskpart` steps printed, with the disk to select left for the person to confirm by size in
-//!   `list disk`. Automating it needs the drive-letter-to-disk-number mapping
-//!   (`IOCTL_STORAGE_GET_DEVICE_NUMBER`), and destructive code that has never run once on the host it
-//!   targets is the one thing this program should not ship. Promote it when a Windows machine can
-//!   run it against a VHD (`diskpart`'s `create vdisk`), which is that host's file-backed disk.
-//! - **FAT32 through `format` stops at 32 GB**, which is Windows' own limit and not FAT32's. The
-//!   printed steps therefore create a 1 GB partition, which the boot files fit in many times over.
+//! - **None of this has run on Windows**; the four calls into `kernel32` have not executed.
+//! - **Erasing is not automated**, by choice: the `diskpart` steps are printed, because destructive
+//!   code that has never run on its host must not ship. The note says what would promote it.
+//! - **FAT32 through `format` stops at 32 GB**, so the printed steps create a 1 GB partition.
 //! - **A drive letter is a volume, not a disk**, so a stick with two partitions appears twice.
 
 use std::path::PathBuf;

@@ -1,24 +1,15 @@
 //! **The GTDT**: an Arm machine's architected timers and their interrupts.
 //!
-//! Moved out of `acpi.rs` unchanged but for visibility by milestone 875 (the ACPI table
-//! parser is split along its seams), under §293 (the ACPI table parser splits into one private
-//! module per table).
-//!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
 use super::*;
 
-/// **The Generic Timer Description Table** (signature `GTDT`), which is where an Arm machine states
-/// the architected timer's interrupts.
+/// The Generic Timer Description Table (signature `GTDT`): the interrupts of an Arm machine's
+/// architected timers, each with its flags.
 ///
-/// x86 has no counterpart: its timers are the HPET and the local APIC, both described elsewhere. On
-/// a device-tree machine the same facts are the `arm,armv8-timer` node's `interrupts` property, and
-/// the two describe the same four timers in the same order, which is what makes a tree writer able
-/// to carry one into the other.
-///
-/// **A GSIV is an absolute INTID**, not a bank-relative number: the virtual timer's 27 here is the
-/// same 27 the GIC delivers, where the device tree spells it `<1 11 ...>` (PPI 11, and PPIs start
-/// at 16). Converting between the two is the writer's job, not this parser's.
+/// Each GSIV is an absolute INTID, not bank-relative: the virtual timer's 27 is the device tree's
+/// `<1 11 ...>` (PPI 11). Converting is a tree writer's job, not this parser's. See
+/// `notes/machine-discovery.md` ("ACPI").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Gtdt {
     /// The secure EL1 timer's interrupt, and its flags. A kernel at EL1 non-secure never takes it.

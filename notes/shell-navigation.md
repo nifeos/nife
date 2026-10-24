@@ -199,14 +199,6 @@ should be able to answer for every capability rather than a flag on one verb.
 
 ## BUGS
 
-- **A namespace is one root, so `bind` is still not built.** `/` names the single directory
-  capability a process holds, which is the whole of what an absolute path can mean until a process
-  can hold **two**. DECISIONS §50 chose namespace composition over stored paths and left the
-  mechanism unbuilt. What this half found is that the missing piece is not the mount table. (A bind
-  entry is a `nav::Cwd`, which is a value, costs no capability slot and cannot name above the root
-  by construction.) It is the **endowment**: nothing in this system grants a second directory
-  capability to one process, so a union would have exactly one member. See milestone 47's block for
-  what a second grant costs.
 - There is still no environment, and `PATH` is still a closed enum. `/` answers "where", and
   nothing answers "what may I run" or "what was I configured with". Both need something to arrive
   at spawn that nothing on the wire carries today.
