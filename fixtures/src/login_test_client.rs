@@ -2,33 +2,31 @@
 //! identity, secret)`, the last two indices into [`credential_contract::fixture::PEOPLE`]. So
 //! `(ALICE, WRONG)` is the honest program presenting a secret that is nobody's, and a refusal is
 //! tested on the honest path. Each behaviour constant ([`LOGIN`] through [`EMPTY_SCHEDULE`])
-//! documents its own flow; the properties they share:
+//! documents its own flow. Session teardown and freeing the terminal are independent acts
+//! ([`HOLD_TERMINAL`]). See notes/login.md.
+
+//! # What every behaviour shares
 //!
 //! - After any refusal ([`login_contract::DENIED`], [`login_contract::NO_TERMINAL`]) nothing
-//!   follows, so a run never calls `RECEIVE_CAP`, which would block forever. An identity with no
-//!   subtree is refused identically to a wrong secret (§117 (a principal's subtree is named by its
-//!   identity string)).
-//! - A run that succeeds uses what it received: a directory read through the caretaker, the file
-//!   service's frame mapped for that read, and a page retyped from the delegated budget. A
-//!   capability that arrived but does not work fails only this.
-//! - Two identities' correct logins must yield two distinct caretaker endpoints, the channel-shaped
-//!   attribution of §109 (attribution is a channel property); [`WRITE_MARKER`] and [`READ_MARKER`]
-//!   prove two identities land in isolated subtrees and one identity's two sessions in the same.
-//! - Session teardown and freeing the terminal are independent acts ([`HOLD_TERMINAL`]).
-//!
+//!   follows, so a run never blocks in `RECEIVE_CAP`. An identity with no subtree is refused as a
+//!   wrong secret is (§117 (a principal's subtree is named by its identity string)).
+//! - A run that succeeds uses what it received (a caretaker directory read, the file service's
+//!   frame, a page retyped from the budget), so a capability that arrived broken fails.
+//! - Two identities' logins yield distinct caretaker endpoints (§109 (attribution is a channel
+//!   property)); [`WRITE_MARKER`] and [`READ_MARKER`] prove two identities land in isolated
+//!   subtrees and one identity's two sessions in the same.
+
 //! # Capability contract
 //!
-//! - slot 0: the front-door request endpoint, `WRITE`; it only ever carries
+//! - slot 0: the front-door request endpoint, `WRITE`, carrying only
 //!   [`login_contract::connect_word`] and, for [`FREE_TERMINAL`], [`login_contract::logout_word`].
 //! - slot 1: the front-door result endpoint, `READ`: [`login_contract::CONNECTED`], then a private
-//!   request endpoint, a private result endpoint and a staging page, on which the login happens.
-//! - slot 2: a report endpoint, `WRITE`.
-//! - slot 3: a small `MemoryRegion`, `WRITE`, for the page tables of mapping the staging page
-//!   (`kernel::user::login_service::CLIENT_SCRATCH_UT_PAGES`).
-//! - `a0` the behaviour, `a1` the identity, `a2` the secret: the same index for the person's own,
-//!   [`credential_contract::fixture::WRONG`] for nobody's, [`credential_contract::fixture::NONE`]
-//!   for none.
-//!
+//!   request endpoint, a private result endpoint and the staging page the login happens on.
+//! - slot 2: a report endpoint, `WRITE`; slot 3: a small `MemoryRegion`, `WRITE`, for the staging
+//!   page's page tables (`kernel::user::login_service::CLIENT_SCRATCH_UT_PAGES`).
+//! - `a2`, the secret, is the person's own index, [`credential_contract::fixture::WRONG`] for
+//!   nobody's, or [`credential_contract::fixture::NONE`] for none.
+
 //! # BUGS
 //!
 //! - The credential travels as indices because nothing can hand a `no_std` program a string it was
@@ -301,11 +299,9 @@ pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
     let (verdict, extra, _) = receive(priv_result);
 
     if verdict != login_contract::OK {
-        // `login_contract`'s own promise: nothing follows a refusal. Reporting here, rather than
-        // attempting `RECEIVE_CAP`, is the check that the promise holds; a service that sent a fourth
-        // message anyway would leave the *next* login's first `RECEIVE_CAP` reading this one's leftover
-        // word instead of blocking as it should, which is exactly the kind of protocol desync a
-        // client that blindly tried to receive here would hide rather than catch.
+        // Nothing follows a refusal (`login_contract`). Reporting rather than attempting
+        // `RECEIVE_CAP` is the check: a stray fourth message would desync the next login's first
+        // `RECEIVE_CAP`, and a client that tried to receive here would hide that.
         done(verdict, 0, 0);
     }
 
@@ -339,11 +335,9 @@ pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
         flags |= prove_run_unvouched(behaviour, ru);
     }
 
-    // **Prove the terminal, before anything else touches `budget`/`region`.** `send` on a plain
-    // rendezvous only returns once a receiver is actually matched
-    // (`crates/inter_process_communication`'s own model), so this blocks until the kernel test's
-    // own `sched::ipc_receive(w.term_ep)` catches it -- a stronger proof than `RECEIVE_CAP` alone, which
-    // would pass even for a capability naming a dead or wrong object.
+    // Prove the terminal before anything else touches `budget`/`region`. `send` on a plain
+    // rendezvous returns only once a receiver matched, so this blocks until the kernel test's
+    // `sched::ipc_receive(w.term_ep)` takes it, which a dead or wrong object would never do.
     if behaviour == HOLD_TERMINAL {
         send(term_ep, TERM_MAGIC, 0, 0);
         flags |= F_TERM_WORKS;
@@ -380,20 +374,13 @@ pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
         flags |= hold_pending_work(budget);
     }
 
-    // **`LOGOUT` destroys `budget` before `region`, and the order is load-bearing, not a
-    // style choice.** `mint()` splits both from `login`'s own `CONSTRUCTION_UT`, `region` first and
-    // `budget` second (`components/src/login.rs`), so `budget` sits at the top of `CONSTRUCTION_UT`'s
-    // watermark and `region` sits below it. `crates/regions`' own `return_to_parent` only un-bumps
-    // a parent's watermark for a child freed at the *top* of it (LIFO, the same rule §16's object
-    // revocation and `job_undertaker`'s pool already live under); a child freed out of order leaves
-    // its pages a stranded hole that does not come back until the parent itself is destroyed. Get
-    // this backwards (as an earlier version of this file did) and `MemoryRegion::DESTROY` still succeeds
-    // on both calls, so every flag below still sets, but `CONSTRUCTION_UT`'s reusable capacity never
-    // recovers: `kernel::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory`
-    // starved a *later*, unrelated test in this suite of real login attempts before this ordering was
-    // fixed, which is exactly the anti-oracle failure `login_contract::DENIED`'s own fold exists to
-    // prevent (a real password silently answered as though it were wrong). See `login_contract`'s own
-    // module docs on the fourth capability for the client-facing version of this note.
+    // `budget` is destroyed before `region`: `mint()` (`components/src/login.rs`) splits `region`
+    // then `budget` off `CONSTRUCTION_UT`, and `crates/regions`' `return_to_parent` reclaims a
+    // child only from the top of its parent's watermark (LIFO, as §16's object revocation does).
+    // Reversed, both `DESTROY`s still succeed and every flag sets, but the pages stay a stranded
+    // hole until `CONSTRUCTION_UT` itself goes, and later tests starve into the anti-oracle failure
+    // `login_contract::DENIED` guards against (a real password answered as wrong); see
+    // `caretaker_teardown_reclaims_a_full_session_worth_of_memory` and `login_contract`'s docs.
     if (behaviour == LOGOUT
         || behaviour == HOLD_TERMINAL
         || behaviour == PRESENT_RUN_UNVOUCHED
@@ -413,15 +400,10 @@ pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
     };
     flags |= directory_flags;
 
-    // **`LOGOUT` deliberately does not also free the terminal here.** `login`'s own thread is
-    // blocked inside `send(AUDIT, ...)` (a blocking rendezvous) until the *caller* drains it, which
-    // happens after this behaviour's report, not before; sending `login_contract::logout_word` from inside
-    // this behaviour and waiting for its answer here would deadlock against that (its own report
-    // would never arrive, because `login` cannot get back to `RECEIVE(REQUEST)` to answer the logout
-    // until the caller has already drained `AUDIT`, which it does *after* waiting for this report).
-    // A caller that also wants the terminal freed does that itself, after draining `AUDIT` --
-    // `kernel::user::login_tests::free_terminal`, used exactly this way by
-    // `caretaker_teardown_reclaims_a_full_session_worth_of_memory`.
+    // `LOGOUT` must not also free the terminal: `login` is blocked in `send(AUDIT, ...)` until the
+    // caller drains it, which the caller does only after this report, so waiting here for a logout
+    // answer would deadlock. The caller frees it after draining `AUDIT`
+    // (`kernel::user::login_tests::free_terminal`).
     done(RPT_OK, flags, hint);
 }
 
@@ -450,10 +432,6 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
         // DECISIONS §117's own proof: which subtree did this login actually land in? Only the
         // `WRITE_MARKER`/`READ_MARKER` do this; `LOGIN` stops at proving what it received.
         match behavior {
-            // **One arm where there were two.** `alice`'s and `bob`'s halves of this proof
-            // differed only in the name written into the marker, and that name is the identity
-            // this run authenticated as, which it now holds as an argument rather than as a
-            // second copy of the same fact in a second match arm.
             WRITE_MARKER => {
                 if write_marker(dir_ep, identity) {
                     flags |= F_MARKER_WRITTEN;
@@ -478,11 +456,8 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
                 // quotes it in the failure message.
                 hint = waited_micros();
             }
-            // `HOLD_TERMINAL` shares the teardown but not the wait report (see the module
-            // docs: freeing the session's memory and freeing the terminal are two independent
-            // acts, and this behavior deliberately only does the first). It keeps the identity
-            // hint every other behavior puts in the third word, so the wait report stays
-            // `LOGOUT`'s alone, exactly as that comment above claims.
+            // `HOLD_TERMINAL` shares the teardown but not the wait report: it keeps the identity
+            // hint every other behavior puts in the third word.
             HOLD_TERMINAL => flags |= teardown_directory(dir_ep, region),
             // Torn down as `HOLD_TERMINAL` is, and for a measured reason: left standing, its
             // caretaker lived for the rest of the suite and a later, unrelated test
@@ -754,60 +729,24 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
 
 /// **How long [`destroy_with_retry`] waits for a refusal to clear, in seconds of counter time.**
 ///
-/// A watchdog, deliberately, and not a rate: it is set so far above what the wait actually costs
-/// that only a region which will *never* come down can reach it. Measured on 2026-08-27, an
-/// eight-core Mac under TCG, ten logouts per run, 70 waits over seven full-suite runs:
-///
-/// | condition | worst single wait |
-/// |---|---|
-/// | quiet host, aarch64 | 12.8 ms |
-/// | one-minute load average 13 to 29, aarch64 | 44.3 ms |
-/// | one-minute load average 27 to 47, riscv64 | **126.4 ms** |
-///
-/// The tail grows with contention, which is the whole reason this is not a two-digit number: five
-/// seconds is 40x the worst of those. **Only a failing run ever pays it**, because the loop returns
-/// the moment the region comes down, and the test that drives this stops at its first bad logout, so
-/// the worst a wedged caretaker costs is this twice (the budget and the region) against the
-/// harness's 90 s per-test ceiling. That is the trade: a red run takes ten seconds to arrive and
-/// says which of the two things happened, instead of arriving in eight milliseconds and being wrong.
+/// A watchdog, not a rate: the loop returns the moment the region comes down, so only a failing run
+/// pays it, at most twice (the budget and the region) against the harness's 90 s per-test ceiling.
+/// Measured on 2026-08-27 (an eight-core Mac under TCG, ten logouts per run, 70 waits over seven
+/// full-suite runs), the worst single wait was 12.8 ms on a quiet aarch64 host, 44.3 ms at a
+/// one-minute load average of 13 to 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x
+/// the worst.
 const DESTROY_WAIT_SECS: u64 = 5;
 
-/// **`MemoryRegion::DESTROY` on `ut`, retried until the region actually becomes destroyable.** Used
-/// on both the fourth delegated capability (the caretaker's construction region) and the third (the
-/// client's own budget, already held with `WRITE` by every behaviour): `login_contract::OK`'s doc, on
-/// the fourth capability, name the one transient refusal the *caretaker's* region can give
-/// (mid-`forward` to the file service, blocked on an endpoint the region does not own, at the exact
-/// instant `DESTROY` is attempted; that window closes on its own). The budget has no such window:
-/// nothing else is ever running in it, so its own `DESTROY` is expected to succeed on the first
-/// attempt, and this loop costs it nothing to share.
+/// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.
 ///
-/// # Why this is a clock and not a count of attempts
-///
-/// It was `for _ in 0..64 { destroy; yield }` until 2026-08-27, which is
-/// notes/load-sensitive-assertions.md's family in one line: **a yield count is not a duration.**
-/// What the refusal is waiting on is a timer tick. `sched::reap_region_objects` refuses while the
-/// caretaker is still live and *arms* DECISIONS §16's kill on it, and the kill lands at that
-/// thread's next preemption, so the wait is a tick period (10 ms at 100 Hz) rather than a number of
-/// syscalls. A `yield_now` that finds work on this core returns in ~130 us, so sixty-four of them
-/// can elapse in 8 ms and give up **before the tick that does the work arrives**; a `yield_now`
-/// that finds none parks until the next tick, and then two attempts are enough. Which of the two
-/// happens is a scheduling outcome the host decides, which is why the old form passed quiet, passed
-/// CI, and failed at about 2x oversubscription. Measured, both shapes, in one run: 23, 36, 2, then
-/// 64-and-refused, at 130 to 300 us per attempt.
-///
-/// So the loop waits on the property (the region genuinely coming down) and bounds itself with
-/// [`DESTROY_WAIT_SECS`] of counter time.
+/// For the caretaker's region, whose one transient refusal `login_contract::OK` names, and this
+/// client's budget. A clock, not an attempt count: the refusal clears when §16's armed kill lands
+/// at a tick (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
 ///
 /// # BUGS
 ///
-/// **The bound is wall clock, which is the unit milestone 62 argues against**, and it is used here
-/// because the better one is not reachable from a process. That milestone re-denominated
-/// `smp.rs`'s migration drain in *delivered timer ticks* precisely because a counter deadline keeps
-/// running while the guest is descheduled; userspace has no delivered-tick counter (`user_mode_runtime::now`
-/// is the raw counter and nothing publishes the kernel's per-core tick count), so what makes this
-/// safe is the 40x margin above rather than the unit. The margin is what would have to be
-/// re-measured if the wait ever grew. Giving a process a delivered-tick reading is an ABI addition
-/// and therefore an architect's call, not a lane's.
+/// The bound is wall clock, which milestone 62 argues against, because a process cannot read
+/// delivered ticks; [`DESTROY_WAIT_SECS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
     let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
     let started = user_mode_runtime::now();
