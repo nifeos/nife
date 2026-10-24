@@ -158,10 +158,23 @@ Four more kinds are read by marker (2026-09-24), in the same grammar:
 - `item`: a `/// Name:` paragraph in the doc of a function, constant, type, field or variant.
 - `module`: a `//! Name:` block in a Rust file that is not a crate root or a program.
 - `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75.
-- `document`: a README paragraph opening `` `stem` Name: ``, else the directory's block.
+- `document`: a paragraph of the document opening `Name:`, else the directory's block.
 
 A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item is
 not tracked and never fails.
+
+A document's block is an italic paragraph directly under its title, `*Name: provisional, minted
+<date> (UTC) by <lane>.*`, the shape a directory's README already gives its own (calef, 2026-10-24
+UTC). Adding a note then touches the note and one index line, and no lane appends to a shared
+README. It is a paragraph rather than frontmatter for four reasons. `script/names` already parses
+the paragraph, in every kind. A refusal is prose with backticks and parentheses, which YAML would
+have to quote. GitHub renders frontmatter as a table above the title, where this reads as a line.
+And no note carries frontmatter, where dozens already carried this paragraph.
+
+Until the sweep after milestone 929, `script/names` also reads a README paragraph opening
+`` `stem` Name: `` as that document's block, so pull requests opened before this rule keep passing.
+Where both exist it reads the two together and fails statuses that disagree.
+`helpers/document_name_migrate.py --apply` moves them, and `--check` counts what is left.
 
 The refusals are the valuable half. A refused name is visible nowhere else, and the person who most
 needs it is the one about to propose it again.

@@ -12,6 +12,8 @@ page stays short while the list grows. Naming conventions are a rule rather than
 
 To add a note, add one line to the area page that fits, in the shape of the lines already there.
 The area pages sit one directory down, so the link is `../your-note.md`. Keep the line short; commentary belongs in the note.
+The note's name goes in the note, as `*Name: provisional, minted <date> (UTC) by <lane>.*` under its
+title ([design/naming.md](../design/naming.md)), never on this page.
 `script/lint` fails if a `notes/*.md` file has no line on this page or on an area page. A new area
 gets its own page under `notes/README/` and a line in the list below.
 A new *collection* of notes, several that belong together as in `notes/coes/`, gets a directory with its own
