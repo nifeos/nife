@@ -2,10 +2,7 @@
 //! amounts to, and the cursor-move sequences its echo writes. The crate docs say what it does and
 //! does not do.
 //!
-//! Cut out of `lib.rs` unchanged by milestone 878 (the line editor's inline modules move to their
-//! own files), which left the crate root an index (§282 (when a file is split, the parent becomes
-//! an index)). The fields `handoff` saves and restores are `pub(super)`: as a private field of the
-//! crate root they were visible to the same modules.
+//! The fields `handoff` saves and restores are `pub(super)` so that it can reach them.
 //!
 //! Name: provisional (milestone 878's lane, 2026-10-12 UTC; §295 (the line editor's crate root
 //! splits into module files)), for the module and the file.

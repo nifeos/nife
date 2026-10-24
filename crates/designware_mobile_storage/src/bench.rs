@@ -1,16 +1,11 @@
-//! **The bench step's two halves, as logic**: the read-only probe and the scratch write test.
-//!
-//! These are the sequences `kernel/src/storage_bench.rs` runs on radon. They live here so the
-//! order of operations, which is the safety argument, is tested on a host rather than first tried
-//! on the card radon boots from:
-//!
-//! - [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first
-//!   partition's boot sector, and times a sequential read from the start of that partition. It
-//!   sends no command that writes.
-//! - [`scratch_write`] writes only inside [`Mbr::scratch`]'s range, the gap before the first
-//!   partition, and only after reading what is there; it writes a pattern, reads it back, writes
-//!   the original back and reads that back too. A card it cannot find a gap on is refused, not
-//!   written.
+//! The bench step's two halves, as logic: the read-only probe and the scratch write test that
+//! `kernel/src/storage_bench.rs` runs on radon, here so their order of operations, which is the
+//! safety argument, is tested on a host rather than first tried on the card radon boots from.
+//! [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
+//! boot sector and times a sequential read from its start; it sends no command that writes.
+//! [`scratch_write`] writes only inside [`Mbr::scratch`]'s range, after reading what is there: a
+//! pattern, read back, then the original, read back too. A card with no gap is refused, not
+//! written.
 
 use crate::host::{Host, Registers};
 use crate::idmac::DirectMemoryAccessRegion;

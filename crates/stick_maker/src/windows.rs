@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn a_usb_hard_disk_and_the_system_drive_are_refused() {
-        let backups = disk_from('F', DRIVE_FIXED, "Backups", "NTFS", 3_000_000_000_000, None);
+        let backups = disk_from('F', DRIVE_FIXED, "Backups", "NTFS", 2_000_000_000_000, None);
         assert_eq!(
             refusal(&backups, Policy::default()),
             Some(Refusal::FixedMedia)

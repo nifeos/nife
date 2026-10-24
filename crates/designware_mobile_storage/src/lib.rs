@@ -1,11 +1,11 @@
 #![cfg_attr(not(test), no_std)]
-//! **The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic**: radon's microSD
-//! slot and eMMC socket (notes/designware-mobile-storage.md). The whole driver sits behind
+//! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: radon's microSD slot
+//! and eMMC socket (notes/designware-mobile-storage.md). The whole driver sits behind
 //! [`host::Registers`], a window and a clock; `kernel/src/designware_mobile_storage.rs` implements
 //! it over a mapped window and nothing more, so every sequence is tested against `sim` on a host.
 //! [`jh7110`] has the evidence for the part and the board's constants. Modules: [`regs`],
 //! [`command`], [`host`], [`idmac`], [`card`], [`sd`], [`partition`], [`bench`](mod@bench), [`serve`].
-//!
+
 //! Adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 (register map, reset, clock, bus
 //! width, command flags and the polled FIFO transfer; identification after its `sdmmc_mem.c`),
 //! under the ISC license, whose notice must be kept. GPL sources (Linux, U-Boot, the device trees)
@@ -27,9 +27,8 @@
 //! ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //! OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //! ```
-//!
+
 //! # BUGS
-//!
 //! - The polled path has read radon's card; the IDMAC path has run only against `sim`, and the
 //!   note's bench step measures it.
 //! - The IDMAC moves at most its region's data pages per command and copies once each way

@@ -126,7 +126,7 @@ pub fn refusal(disk: &Disk, policy: Policy) -> Option<Refusal> {
 ///
 /// **Exact mount points for the directories a system is mounted AT, prefixes only for the two
 /// trees whose every mount is the system's.** A volume mounted at `/home` holds everyone's home
-/// directories; one mounted at `/home/calef/stick` is somebody's stick, and so is one under the
+/// directories; one mounted at `/home/someone/stick` is somebody's stick, and so is one under the
 /// macOS temporary directory (`/var/folders/...`), which is where this crate's tests mount theirs.
 fn holds_the_system(volume: &Volume) -> bool {
     let Some(mount) = &volume.mount else {
@@ -243,20 +243,20 @@ mod tests {
 
     fn stick() -> Disk {
         Disk {
-            id: "disk8".into(),
-            description: "SanDisk Ultra".into(),
-            size: 30_752_636_928,
+            id: "disk6".into(),
+            description: "Generic USB Flash".into(),
+            size: 32_000_000_000,
             bus: "USB".into(),
             internal: false,
             removable_media: true,
             disk_image: false,
             volumes: vec![Volume {
-                id: "disk8s1".into(),
+                id: "disk6s1".into(),
                 label: "NIFE".into(),
                 filesystem: Filesystem::Fat,
                 mount: Some("/Volumes/NIFE".into()),
                 free: Some(30_000_000_000),
-                size: 30_752_636_928,
+                size: 32_000_000_000,
             }],
         }
     }
@@ -272,7 +272,7 @@ mod tests {
     fn a_usb_hard_disk_is_never_offered() {
         let disk = Disk {
             removable_media: false,
-            description: "WD My Book 1140".into(),
+            description: "Generic USB Hard Disk".into(),
             ..stick()
         };
         assert_eq!(refusal(&disk, Policy::default()), Some(Refusal::FixedMedia));
@@ -304,8 +304,8 @@ mod tests {
             );
         }
         for mount in [
-            "/media/calef/NIFE",
-            "/home/calef/stick",
+            "/media/someone/NIFE",
+            "/home/someone/stick",
             "/var/folders/xy/T/stick",
         ] {
             let mut disk = stick();
@@ -361,7 +361,7 @@ mod tests {
     fn the_roomiest_fat_volume_wins() {
         let mut disk = stick();
         let mut second = disk.volumes[0].clone();
-        second.id = "disk8s2".into();
+        second.id = "disk6s2".into();
         second.free = Some(40_000_000_000);
         disk.volumes.push(second);
         assert_eq!(plan(&disk, 1, |_| 0), Plan::Copy { volume: 1 });
@@ -370,7 +370,7 @@ mod tests {
     #[test]
     fn sizes_read_like_the_label() {
         assert_eq!(human_size(512), "512 B");
-        assert_eq!(human_size(30_752_636_928), "30.8 GB");
+        assert_eq!(human_size(32_000_000_000), "32.0 GB");
         assert_eq!(human_size(10_158_080), "10.2 MB");
     }
 
@@ -382,7 +382,7 @@ mod tests {
     fn equal_room_keeps_the_first_volume() {
         let mut disk = stick();
         let mut second = disk.volumes[0].clone();
-        second.id = "disk8s2".into();
+        second.id = "disk6s2".into();
         disk.volumes.push(second);
         assert_eq!(plan(&disk, 1, |_| 0), Plan::Copy { volume: 0 });
     }

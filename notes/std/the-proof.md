@@ -77,3 +77,54 @@ what it wired, and the hand-written client's test and the `std::fs` test share o
 whichever runs first receives the two readiness sentinels (each is sent once) and the other sees
 `None` and skips those assertions. That keeps the two tests order-independent, which matters because
 nothing guarantees which of them the harness runs first.
+
+## What the offline transcript's lines guard
+
+`std_tests::a_whole_std_program_runs_on_the_native_abi` grants a heap, a stdout endpoint, a clock
+and a configuration page. Several lines of its transcript guard a call that once compiled and then
+killed the program, so a test that only checked for no crash would have passed:
+
+- `wall clock ok` (milestone 51 (wall-clock time)): `SystemTime::now()` reached a real time through
+  a read-only page and the ambient counter, inside the clock service's sanity window, not 1970 plus
+  uptime.
+- `config seeded` (milestone 47 (navigation and naming), DECISIONS §111 (inert configuration is a
+  read-only page)): the kernel assembled the inert-configuration page
+  (`std_service::start_on_full`, `CONFIG_SLOT`, `CONFIG_PAGE_STD`) and `pal::nife::init` read back
+  exactly `TZ`, `LANG` and `TERM`.
+- `env ok` (milestone 64 (enough `std` to run somebody else's crate)): `std::env::vars()` returns,
+  holds exactly the three seeded keys, and `set_var` takes.
+- `paths ok`: `temp_dir` is the granted directory and `TMPDIR` steers it, a path list survives a
+  join and a split, and `current_dir`, `current_exe` and `home_dir` still refuse.
+- `entropy ok` (milestone 56 (secrets, credentials, and the entropy to make them safe)):
+  `std::random` reached a virtio-rng device through one endpoint, and two draws differ.
+- `exiting through process::exit`, and the two assertions after the transcript: `std::process::exit`
+  ends the program as an exit, not a trap. `sys/exit.rs` is not a `sys/<module>/mod.rs` backend, so
+  `cargo xtask std-aborts` is what finds such fall-throughs.
+
+## How the tests read a std program's stream
+
+`std_tests::drain_sink` is the one decoder for every sink in the suite. It ends only on the sink's
+end-of-stream marker, which the runtime's `cleanup` sends after `main` returns. A program that
+panics under `panic = "abort"` traps instead. Every byte it printed, the panic message included,
+reaches the endpoint and is never read. The caller blocks until the watchdog fires, and the
+transcript reads as empty, which is indistinguishable from a program that never started. A program
+can work around it with a panic hook that prints and then calls `process::exit`, as
+`cryptography_exerciser` does. `drain_sink` stays for callers whose starter does not hand back the
+writer's thread, and each of those is a hang waiting for its first abort.
+
+`std_tests::drain_sink_from` is for a caller that knows the writer's thread (milestone 514 (the HVF
+std listener hangs in some full runs)). Without it, a writer that aborts leaves the reader parked,
+and the suite's watchdog fires a minute later and calls it a lost wakeup. The calling thread binds a
+notification and arms a timer on it every `WRITER_CHECK_MS`. A bound notification ends a `RECEIVE`
+(§101 (notification objects), the `x4 == BOUND` tag), so the receive returns a sink message or a
+tick. On a tick it asks whether the writer's thread still resolves, and a name is generational, so
+"gone" means gone. It is a poll, not an event, because an unsupervised thread's death signals
+nobody. Making it an event would mean spawning the writer supervised, which changes who reaps it.
+`echo` prints each line as it arrives, indented under the test's own line, so the host relay can
+stamp it on the inbound prober's clock (`xtask/src/inbound.rs`). The comparison is made on the bytes
+either way.
+
+The tick is a wake, and a wake is progress to the suite's lost-wakeup watchdog
+(`testing::watchdog_tick`). So a writer that is alive but stuck runs to the test's own budget (90 s
+by default) and is reported as a livelock, where without the tick the watchdog would trip at 60 s.
+The dump that follows names the stuck thread either way.
