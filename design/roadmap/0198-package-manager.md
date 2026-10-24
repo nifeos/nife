@@ -19,9 +19,9 @@ package manager, is complete. The rung table below maps every rung to its milest
 Two milestones keep it PARTIAL. Milestone 801 (packages over the internet) has one open criterion,
 the run on xenon's installed system, which waits on milestone 494's bench boot and a fresh install.
 Milestone 802 (the trivial install) waits on milestones 242, 400, 515, 801 and 809 and on calef's
-act of publication. Through 802 it also waits on milestone 809 (`jig`), whose items 7 and 8
-wait on milestone 849 (a package declares what it needs at run time), NOT-STARTED, and on a
-milestone for §306's authority list that nobody has proposed yet. Each of those is calef's hands or
+act of publication. Through 802 it also waits on milestone 809 (`jig`). Its items 7 and 8 wait
+on milestone 849 (a package declares what it needs at run time), NOT-STARTED, and on an unproposed
+milestone for §306 (the web's authority list is a package and a capability). Each of those is calef's hands or
 a lane of its own; none is work this block can do.
 
 Under §159 (only a new kernel needs a reboot), a package update needs no reboot; a kernel update
