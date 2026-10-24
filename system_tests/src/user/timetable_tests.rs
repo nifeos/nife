@@ -23,8 +23,8 @@ const FIRES: u64 = 4;
 /// A number a spawn site **states** rather than inherits, which is `supervision_protocol`'s own rule
 /// (`CHILD_STACK_PAGES`: "a builder that silently inherits somebody else's stack size finds faults
 /// that builder does not have"). The timetable's working set is the plan itself, a kilobyte of
-/// `grant_plan::Endowment` per `timetable::Registry` entry. Too few pages die with a data abort at
-/// the stack pointer, a stack overflow that reads like a wild pointer. See
+/// `grant_plan::Endowment` per `timetable::Registry` entry. Eight pages died with a data abort at the
+/// stack pointer, a stack overflow that reads like a wild pointer. See
 /// notes/scheduled-execution/the-guest-tests.md.
 const TIMETABLE_STACK_PAGES: u64 = 48;
 

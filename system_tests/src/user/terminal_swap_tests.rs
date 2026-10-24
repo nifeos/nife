@@ -6,8 +6,8 @@
 //! flush. The test plays the input driver and a line-mode reader, as `raw_mode_service` does, and
 //! holds the swap endpoint a real boot gives the installer (milestone 198 (a package manager, and
 //! the trivial install), not built). It proves the whole §209 (state handoff is an opaque blob over
-//! a granted frame, and it is optional) swap: a half-typed line is finished after it, history is
-//! recalled after it, and the reader parked across it is handed back and asks again.
+//! a granted frame, and it is optional) swap: a half-typed line is finished and history recalled
+//! after it, and the reader parked across it is handed back and asks again.
 
 //! # The hung terminal
 //!
