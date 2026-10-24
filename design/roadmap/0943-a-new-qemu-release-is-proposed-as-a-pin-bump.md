@@ -22,8 +22,8 @@ person re-records the floors it moves.
 
 ## The gap
 
-`.qemu-version` pins the emulator every gate and benchmark runs under. §81 (dependency upgrades)
-calls it a reproducibility pin that a commit raises on purpose, because the benchmarks are icount
+`.qemu-version` pins the emulator every gate and benchmark runs under. §81 (a dependency stays
+upgradable; we suppress churn, never the upgrade) calls it a reproducibility pin that a commit raises on purpose, because the benchmarks are icount
 instruction counts and a different QEMU legitimately moves them. Nothing tells anyone that a
 raise is available. `.github/workflows/toolchain-bump.yml` proposes a Rust nightly every day, and
 no job does the same for QEMU. A new stable release, and the fixes in it, reach this tree only when
