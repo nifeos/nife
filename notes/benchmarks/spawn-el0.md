@@ -98,7 +98,7 @@ Moving the page to the last page of the first gigabyte puts it under L1 and L2 t
 own segments already paid for. The mapping then buys one L3 instead of three: 741 ticks per spawn
 instead of 1,245. Sharing the L3 too would mean sitting in the same 2 MiB as a program's own
 segments, a collision hazard rather than a saving, so that is where it stops.
-`crates/current_cpu_contract::PAGE_VA` carries the reasoning beside the number.
+[notes/current-cpu-page.md](../current-cpu-page.md) carries the reasoning for the address.
 
 ### What this does to the published figure
 
