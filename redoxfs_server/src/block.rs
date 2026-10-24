@@ -12,9 +12,9 @@ pub const BLOCK: usize = 4096;
 
 /// How many blocks [`CachedDisk`] holds in the EL0 server, here rather than in the binary so a
 /// host test measures the cache the device runs. 256 blocks, 1 MiB at most, allocated as they
-/// fill: the smallest size that holds the walk fixture's 207-block metadata working set (milestone
-/// 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`). A larger tree
-/// wants more. See notes/fs-server/caches-and-io.md.
+/// fill: the smallest size that holds the walk fixture's 207-block metadata working set
+/// (milestone 606 (a directory walk costs what it does on Linux), `examples/walk_replay.rs`). A
+/// larger tree wants more. See notes/fs-server/caches-and-io.md.
 pub const CACHE_SLOTS: usize = 256;
 
 /// The wire-to-store assertions, here because this is the one place in the tree that sees both
