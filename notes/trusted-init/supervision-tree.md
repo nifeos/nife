@@ -1,5 +1,7 @@
 # Phase B.2: shrinking what a broken progenitor can do
 
+*Name: provisional.*
+
 An appendix to [notes/trusted-init.md](../trusted-init.md), which summarizes it.
 
 B.1 settled *what bytes the progenitor is*. B.2 is the other half: what a compromised progenitor can still reach.

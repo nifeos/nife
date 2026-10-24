@@ -15,8 +15,4 @@ since. These files carry the phases in full.
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `supervision-tree` Name: provisional.
-- `interactive-boot` Name: provisional.
-- `chain-past-the-progenitor` Name: provisional.
+Each stem here is named for its content, and calef names files.

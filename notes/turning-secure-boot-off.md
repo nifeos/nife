@@ -1,5 +1,7 @@
 # Turning Secure Boot off, before booting the nife stick on a PC
 
+*Name: provisional, minted 2026-10-18 (UTC) by maintainer/500-secure-boot-ruled.*
+
 This is the first instruction of the trivial-install page (milestone 802 (the trivial install that
 makes a second customer possible), rung 4), written so the page can carry it as it stands. Milestone
 500 (a stick that boots with Secure Boot on, or a page that says how to turn it off) holds the

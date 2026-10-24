@@ -1,5 +1,7 @@
 # The system-test modules: what each proves, and why it is shaped that way
 
+*Name: provisional, minted 2026-10-24 (UTC) by comments/929-system_tests-01.*
+
 `system_tests/src/user.rs` declares every module of the whole-system suite, and each declaration's
 doc comment says in a few lines what the module proves. This note holds the reasoning those doc
 comments link to: why a test is shaped the way it is, and what it would miss if it were shaped any

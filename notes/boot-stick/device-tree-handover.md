@@ -1,5 +1,7 @@
 # How the device tree reaches the kernel on aarch64 and riscv64, measured
 
+*Name: provisional, for the handover the appendix measures. calef names files.*
+
 An appendix to [`notes/boot-stick.md`](../boot-stick.md). It holds the four steps the loader takes
 to hand the kernel a device tree, and the transcripts under EDK2. It also holds the ACPI case: how
 EDK2 on aarch64 hid the tree, and how the loader now writes one from the ACPI tables.

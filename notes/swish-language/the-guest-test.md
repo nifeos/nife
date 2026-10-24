@@ -1,5 +1,7 @@
 # What the `swish` language's guest test proves, on both ISAs
 
+*Name: provisional, after the parent's "What the guest test proves". calef names files.*
+
 An appendix to [`notes/swish-language.md`](../swish-language.md). It holds the wiring the test
 shares with `redirection_tests`, the memory finding that made it share rather than add a role, and
 the four pairs of assertions.

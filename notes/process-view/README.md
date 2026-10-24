@@ -33,3 +33,4 @@ Each stem below is named for its content, and calef names files.
 - `limitations` Name: provisional.
 - `remaining-procps-programs` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `what-is-left`.
 - `the-ps-crate` Name: provisional. For the crate whose doc comments link it.
+Each stem here is named for its content, and calef names files.

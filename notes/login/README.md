@@ -16,3 +16,7 @@ siting default, `notes/X/` beside `notes/X.md`. calef names directories.*
 - `budgets-and-reclamation` Name: provisional, minted 2026-10-24 (UTC) by the same lane, for its
   content. calef names files.
 - `contract` Name: provisional, for the crate whose comments link it.
+*Name: provisional, minted 2026-10-24 (UTC) by the milestone 929 (comments in the Linux style across first-party Rust) lane
+comments/929-components-02.
+The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside `notes/X.md`.
+calef names directories.*

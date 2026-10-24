@@ -1,5 +1,8 @@
 # The aarch64 port: what `kernel/src/arch/aarch64/` decides
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-aarch64. Named for its siblings
+`riscv-port.md` and `x86-port.md`.*
+
 aarch64 is the first architecture, so it has no port story the way [riscv-port.md](riscv-port.md)
 and [x86-port.md](x86-port.md) do. This note holds the design behind the files in
 `kernel/src/arch/aarch64/` that no subsystem note already carries. Their doc comments link the

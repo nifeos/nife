@@ -1,20 +1,11 @@
 //! **The socket contract's shared frame, as a value** (milestone 410 (six copies of the
-//! shared-frame accessors)): one mapped page laid out by [`socket_contract`], with the header
-//! fields and the payload reachable as methods over offsets instead of as per-program accessor
-//! functions over absolute addresses. Every access is bounds-checked, because every access goes
-//! through [`MappedWindow`](crate::mapped_window::MappedWindow).
-//!
-//! The frame's address is genuinely per-program: each address space maps its own copy wherever
-//! its own image leaves room, and the two sides of the contract share the layout, never the
-//! address. So the type is constructed with its base, and nothing here names one.
-//!
-//! The type is here rather than in `crates/socket_contract`, beside the offsets it reads,
-//! because it is built on [`MappedWindow`](crate::mapped_window::MappedWindow), which cannot
-//! compile for the host, and `socket_contract`'s wire format is host-tested: a dependency from
-//! that crate to this one would drag it out of the host pass, whose exclusion set the tree
-//! derives rather than maintains. This crate is already excluded everywhere, and its opt-in
-//! modules are the §94 (what may live in a library) shape, as [`super::mapped_window`] is.
-//!
+//! shared-frame accessors)): one mapped page laid out by [`socket_contract`], its header fields
+//! and payload reached as methods over offsets, each bounds-checked through
+//! [`MappedWindow`](crate::mapped_window::MappedWindow). Each program maps its own frame wherever
+//! its image leaves room, so the type is constructed with its base. It lives here rather than in
+//! `crates/socket_contract` because `MappedWindow` cannot compile for the host and that crate's
+//! wire format is host-tested. See notes/user-mode-runtime.md.
+
 //! ```no_run
 //! use user_mode_runtime::socket_frame::Frame;
 //!
@@ -30,7 +21,7 @@
 //! FRAME.payload_write(b"nife");
 //! FRAME.set_len(4);
 //! ```
-//!
+
 //! Name: provisional (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
 //! `SharedFrame`, which doubles a word `socket_contract`'s docs already put on "frame"; over
 //! `PageFrame`, which names the kernel object a frame is minted from rather than the layout read

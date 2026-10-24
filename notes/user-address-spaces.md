@@ -1,5 +1,7 @@
 # User address spaces in the kernel
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-user-boot.*
+
 A user address space is `user::AddressSpace` (`kernel/src/user/address_space.rs`), and the registry
 that names every one of them is `kernel/src/user/address_space_registry.rs`. `kernel/src/user/loader.rs`
 builds a space from an ELF. This note carries the design those files' doc comments link to: who

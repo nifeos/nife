@@ -1,5 +1,7 @@
 # IRQ affinity: spreading device lines off core 0
 
+*Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
+
 An appendix to [notes/interrupts.md](../interrupts.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). It is the record of fix/irq-delivery (2026-07-29), the PLIC parity work and the
 `std_net` hang that turned out not to be an interrupt bug.

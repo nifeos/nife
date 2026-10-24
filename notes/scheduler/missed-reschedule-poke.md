@@ -1,5 +1,7 @@
 # A second lost wakeup: the missed reschedule poke (closed)
 
+*Name: provisional.*
+
 An appendix to [notes/scheduler.md](../scheduler.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). It is the full record of the missed-SGI bug of 2026-08-28: the dump, the fix and the proof.
 

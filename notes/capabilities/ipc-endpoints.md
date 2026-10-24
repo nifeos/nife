@@ -1,5 +1,7 @@
 # Milestone 7e: IPC, and the scheduler learning to wait
 
+*Name: provisional.*
+
 An appendix to [`notes/capabilities.md`](../capabilities.md). It is the record of milestone 7e, which added endpoints.
 
 7d gave a process one thing it could do to a capability: invoke a `Console` and have the kernel

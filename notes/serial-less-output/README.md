@@ -21,13 +21,4 @@ and BUGS. These files carry the arguments and detail its prose budget has no roo
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `framebuffer-handoff-choices` Name: ratified 2026-10-18 (calef: "Approve all five").
-- `the-alternatives` Name: provisional, after the parent's "What the alternatives cost".
-- `the-shell-on-the-screen` Name: provisional, after the parent's "The shell on the screen, too".
-- `ramfb` Name: provisional, for the QEMU device it describes.
-- `the-early-boot-window` Name: provisional, after the parent's "The window between the firmware and
-  the kernel".
-- `the-xenon-grid` Name: provisional, for the finding it holds.
-- `the-screen-console` Name: provisional, for the crate it describes.
+Each stem here is named for its content, and calef names files.

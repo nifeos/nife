@@ -1,8 +1,6 @@
 //! **Devices**: interrupt wait and acknowledge, the reboot object, and x86 port I/O.
 //!
-//! Cut out of `lib.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/files-over-1500, for §282
-//! (when a file is split, the parent becomes an index); the crate root re-exports every public
-//! item, so each keeps its path.
+//! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
 //! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
@@ -47,15 +45,11 @@ pub fn reboot(slot: u64) -> i64 {
 
 /// **Write one byte to an x86 I/O port** (milestone 299). Not a syscall: `out` is an instruction,
 /// and a ring-3 program may execute it exactly when it holds a `PortRange` capability naming `port`,
-/// which the kernel enforces through the TSS I/O permission bitmap (DECISIONS §121, reversed
-/// 2026-09-15). A program that executes this against a port it does not hold takes a general
-/// protection fault, which its supervisor sees as a fault message; there is no page table to catch
-/// a wrong guess, so the caller must know it holds the port.
-///
-/// The one thing in userspace besides the syscall wrappers that names a machine instruction, and it
-/// is here for the same reason `in`/`out` live under `kernel/src/arch/x86_64/port.rs`: an
-/// instruction belongs with the code that knows the ISA, so a driver writes `outb(0x3F8, b)` rather
-/// than its own `asm!`.
+/// which the kernel enforces through the TSS I/O permission bitmap (§121 (what a device capability
+/// is when the device has no page: x86 port I/O)). A port it does not hold raises a general
+/// protection fault, which its supervisor sees as a fault message; no page table catches a wrong
+/// guess. Here rather than in each driver because an instruction belongs with the code that knows
+/// the ISA.
 #[cfg(target_arch = "x86_64")]
 pub fn outb(port: u16, val: u8) {
     // SAFETY: `out` has no memory effect and no flag effect; `nostack` holds. The caller promises it

@@ -83,18 +83,13 @@ impl CellRect {
 
 /// **What changed since the last [`Vt::take_damage`]: cells that changed, and rows that moved.**
 ///
-/// A scroll is not a change to any cell; it is a change to *where the cells are*. Reporting it as
-/// a whole-grid rectangle (which is what this engine did before the paint path learned to move
-/// pixels, 2026-09-30) forces every consumer to re-render a screen it already holds the pixels
-/// of, and on the `x86_64` swish leg that re-render, per scrolled line, was most of 321 s
-/// (`notes/benchmarks/icount-tick-scales.md`, the swish-check row). So the report is two fields,
-/// with an invariant a painter can hang a fast path on:
+/// A scroll is not a change to any cell; it is a change to *where the cells are*, so the report
+/// is two fields with an invariant a painter can hang a fast path on:
 ///
 /// > Move your picture up `scrolled` cell rows, then render `rect`; the result is the grid.
 ///
-/// A consumer that cannot move pixels (a test comparing a whole surface, a caller with no
-/// framebuffer) uses [`Damage::repaint_rect`], which folds the scroll back into the whole-grid
-/// box the old report gave.
+/// A consumer that cannot move pixels uses [`Damage::repaint_rect`]. Why, measured, is in
+/// notes/video-terminal.md, "Damage: what changed, and what moved".
 ///
 /// Name: provisional (the paint-path lane, 2026-09-30). `Damage` rather than `CellDamage`
 /// because it is the one report this engine makes and the scroll half is not measured in cells

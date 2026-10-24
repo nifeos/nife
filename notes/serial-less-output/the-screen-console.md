@@ -1,5 +1,7 @@
 # The screen console's design, type by type
 
+*Name: provisional, for the crate it describes.*
+
 A page beside [`notes/serial-less-output.md`](../serial-less-output.md). It holds the reasoning
 behind `crates/screen_console`'s types, whose doc comments link here. Why the console is not
 `video_terminal` is in [`framebuffer-handoff-choices.md`](framebuffer-handoff-choices.md).

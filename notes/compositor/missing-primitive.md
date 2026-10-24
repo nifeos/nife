@@ -1,5 +1,7 @@
 # The primitive this rung wants: what would change
 
+*Name: provisional, after the main page's own heading.*
+
 An appendix to [`notes/compositor.md`](../compositor.md), which states the conclusion.
 
 What would change if the primitive existed, in either of its two forms (a wait-any / poll on several

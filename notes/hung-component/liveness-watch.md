@@ -1,5 +1,7 @@
 # The hung component: the shape of a liveness watcher
 
+*Name: provisional. Named after the provisional program name the note proposes.*
+
 An appendix to [`notes/hung-component.md`](../hung-component.md), whose question 1 draws the
 three-party diagram: a watcher holding `ENUMERATE`, a supervisor holding `READ`, and a builder
 holding the region. This records why that shape beats a watchdog that can kill, and the provisional

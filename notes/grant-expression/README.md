@@ -21,11 +21,4 @@ for.
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
 beside `notes/X.md`. calef names directories.*
 
-Each stem below is named for its content, and calef names files.
-
-- `two-words` Name: provisional, after the parent's heading.
-- `memory-grant` Name: provisional.
-- `per-file-grants` Name: provisional, after the parent's heading.
-- `clock-grant` Name: provisional.
-- `grant-plan-crate` Name: provisional, after the crate it covers.
-- `spawn-protocol` Name: provisional, after `grant_plan::spawnproto`'s own heading.
+Each stem here is named for its content, and calef names files.

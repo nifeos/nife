@@ -1,5 +1,7 @@
 # The boot self-test's checks: what each proves, and why it is built that way
 
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+
 `kernel/src/self_test.rs` runs the second rung of the boot ladder. [boot-ladder.md](boot-ladder.md)
 has the contract: the verdict line, `absent`, the board profiles, and why a failure prints and the
 boot carries on. This note carries the design of the checks themselves, which the module's doc

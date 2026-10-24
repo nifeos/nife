@@ -1,5 +1,7 @@
 # Milestone 7d: the syscall surface, and refusing to be a deputy
 
+*Name: provisional. After the parent's own heading.*
+
 An appendix to [`notes/capabilities.md`](../capabilities.md). It is the record of milestone 7d (user mode: EL0, capabilities, the ELF loader, and IPC), when the decision (§10) became code.
 
 The decision (§10) is now code. Three things landed: an ABI that is one artifact, a capability
