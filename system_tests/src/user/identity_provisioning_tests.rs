@@ -9,16 +9,13 @@ use super::*;
 /// later verify, and its other three checks (a wrong password, an unknown identity, another
 /// identity's password against this one) are unaffected by which store they run against.
 ///
-/// **Taken from `credential_contract::fixture` rather than matched to it by hand** (milestone 293 (a role that differs only in its credentials is an argument)).
-/// The comment that used to sit here said this suite had *chosen* `alice`/`correct horse battery
-/// staple` to line up with a constant in a fixture program, which is a coupling with nothing holding
-/// it: the next person to edit either copy would have had no way to know the other existed.
+/// Taken from `credential_contract::fixture` rather than matched to it by hand (milestone 293 (a
+/// role that differs only in its credentials is an argument)), so the two cannot drift apart.
 const IDENTITY: &[u8] =
     credential_contract::fixture::PEOPLE[credential_contract::fixture::ALICE as usize].0;
 /// The same identity as a `&str`, because `fs_service::narrow_dir` names a path component rather
-/// than a credential. **Derived rather than re-typed** (milestone 293): a second spelling of the
-/// same name is the exact shape this milestone spent its diff removing, and a `const` conversion
-/// means the two cannot be made to disagree at all rather than merely being checked.
+/// than a credential. Derived rather than re-typed (milestone 293), so the two spellings cannot
+/// disagree at all.
 const IDENTITY_STR: &str = match core::str::from_utf8(IDENTITY) {
     Ok(s) => s,
     Err(_) => panic!("the roster's identity is not UTF-8, so it cannot name a directory"),
@@ -49,23 +46,14 @@ fn redoxfs_server_image() -> &'static [u8] {
     program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk")
 }
 
-/// **Wire a fresh entropy service, a fresh (unsealed) credential service, and the file service, then
-/// run `identity_provisioner` against the fresh store twice** before sealing it: once for a new
-/// identity, and once more for the same identity, to capture the tool's own report on a genuine
-/// duplicate. Both reports are memoized alongside the wiring, once per boot.
+/// Wire fresh entropy, an unsealed credential service and the file service, then run
+/// `identity_provisioner` twice before sealing: a new identity, then the same one again, for the
+/// tool's report on a genuine duplicate. Memoized with the wiring, once per boot.
 ///
-/// **Deliberately its own store, not `credential_tests::provisioned()`'s.** That fixture is sealed
-/// by the time it returns (its own doc: "the seal is irreversible... a second provisioner would
-/// `CALL` an endpoint whose receiver is gone and block forever") and already holds six of six
-/// slots, so there is no open provision endpoint left for this milestone's own tool to be the first
-/// real caller of. This suite needs the store *before* anyone has sealed it, which no existing
-/// fixture offers.
-///
-/// Both provisioning attempts happen inside this one-time setup, against `w.provision_page_frame`
-/// (`cs::Wiring::provision_page_frame`, added by this milestone: `credential_service` used to look this
-/// up through a global shared by every instance, and this suite is the first caller to need a
-/// second, independent one in the same boot). `w.verify_page_frame` is carried past setup too, in
-/// [`Wired`]'s own `cs` field, because `credential_service::client` reads it directly.
+/// Its own store, not `credential_tests::provisioned()`'s, which is sealed (irreversibly) and full
+/// by the time it returns. Both attempts use `cs::Wiring::provision_page_frame`, this instance's
+/// own; `verify_page_frame` is carried past setup in [`Wired`]'s `cs` field, because
+/// `credential_service::client` reads it directly.
 fn wired() -> Option<Wired> {
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     static DONE: AtomicBool = AtomicBool::new(false);
@@ -104,9 +92,8 @@ fn wired() -> Option<Wired> {
                 IDENTITY,
                 SECRET,
             );
-            // Attempt two: the same identity again, before anyone has sealed the store. The subtree
-            // this second attempt's `MKDIR` finds is the first attempt's own (`EEXIST`, tolerated),
-            // so this isolates the credential half's own duplicate refusal.
+            // Attempt two: the same identity, unsealed. Its `MKDIR` finds attempt one's subtree
+            // (`EEXIST`, tolerated), isolating the credential half's duplicate refusal.
             let r_b = ips::provision(
                 prov_image,
                 w.provision,
@@ -117,12 +104,9 @@ fn wired() -> Option<Wired> {
                 DUPLICATE_SECRET,
             );
 
-            // Seal now, the way a real operator would once every identity for this boot is in:
-            // `credentialer_test_client`'s provisioner role fills its own three people and three
-            // shares and then seals. `alice` is already there from attempt one above, so that
-            // role's own `PUT` for it is refused too (uninteresting here; not asserted), and
-            // `bob`/`carol`/the three shares fill the rest of this six-slot store before the
-            // seal that this suite's own verification step below depends on.
+            // Seal, as an operator would: the provisioner role fills `bob`, `carol` and three
+            // shares (its `PUT` for `alice` is refused, not asserted) and seals the six-slot store
+            // the verification below depends on.
             let cli = program("credentialer_test_client")
                 .expect("no credentialer_test_client program in the initial ramdisk");
             cs::provisioner(cli, &w);
@@ -162,11 +146,8 @@ fn wired() -> Option<Wired> {
             ready: v(0),
             verify: v(1),
             provision: v(2),
-            // Carried across the memoization boundary because `credential_service::client` now
-            // reads it directly (milestone 155's own fix to that module): a hardcoded 0 here once
-            // looked harmless and was not, the first time this file shipped. `provision_page_frame` truly
-            // is dead past setup (`ips::provision` is never called again after the seal above), so
-            // it is the one field this struct does not bother carrying.
+            // `credential_service::client` reads this directly, so it must not be 0.
+            // `provision_page_frame` is dead past the seal, so it is not carried.
             verify_page_frame: v(7),
             provision_page_frame: 0,
         },
@@ -175,12 +156,10 @@ fn wired() -> Option<Wired> {
     })
 }
 
-/// **The headline: a fresh identity gets a working credential and a real, descendable subtree, from
-/// one tool invocation.** Two independent proofs, neither of which the tool's own report could fake:
-/// a real `VERIFY` against what was `PUT` (`credentialer_test_client`'s `ROLE_HONEST`, reused
-/// unmodified because this suite provisions the roster's first person), and a real subtree caretaker whose descent succeeds (`fs_service::narrow_dir`, which
-/// asserts rather than returning `None` on a refused descent, so a subtree that was not actually
-/// created fails this test loudly rather than silently).
+/// A fresh identity gets a working credential and a real, descendable subtree from one tool
+/// invocation. Neither proof is the tool's own report: a real `VERIFY` against what was `PUT`
+/// (`credentialer_test_client`'s `ROLE_HONEST`), and a subtree caretaker whose descent succeeds
+/// (`fs_service::narrow_dir` asserts on a refused descent, so a missing subtree fails loudly).
 #[test_case]
 fn provisioning_creates_a_working_credential_and_a_real_subtree() {
     if fs_service::fs_server_image().is_none() {
@@ -207,9 +186,7 @@ fn provisioning_creates_a_working_credential_and_a_real_subtree() {
 
     let caretaker = program("fs_subtree_caretaker")
         .expect("no fs_subtree_caretaker program in the initial ramdisk");
-    // `narrow_dir` asserts a successful descent internally (`wait_for_caretaker`); reaching this
-    // line at all is the proof the subtree is real. See this program's own module docs on why a
-    // panic here is the correct failure mode for this suite, matching every other filesystem test.
+    // `narrow_dir` asserts the descent (`wait_for_caretaker`), so reaching here proves the subtree.
     let (_, _, _, held) = fs_service::narrow_dir_held(
         fs_service::blk_server_image(),
         redoxfs_server_image(),
@@ -221,14 +198,11 @@ fn provisioning_creates_a_working_credential_and_a_real_subtree() {
     held.release_or_fail("the caretaker over the provisioned subtree");
 }
 
-/// **A genuine duplicate is refused, and nothing already there is disturbed.** The second attempt
-/// inside `wired()`'s setup reused `alice`, the identity the first attempt already provisioned; its
-/// `MKDIR` found the subtree already there (`EEXIST`, tolerated, per this tool's own module docs)
-/// and its credential `PUT` was refused as a duplicate (`credentialer::Store::put`'s own rule: "a duplicate
-/// identity is refused"). This test asserts both halves of that outcome, and that the *original*
-/// credential from attempt one still verifies afterward, which is the property the whole ordering
-/// argument in `identity_provisioner.rs`'s module docs is for: a failed second attempt must not cost
-/// the first one anything.
+/// A genuine duplicate is refused, and nothing already there is disturbed. The second attempt
+/// reused `alice`: its `MKDIR` found the subtree (`EEXIST`, tolerated) and its `PUT` was refused
+/// (`credentialer::Store::put`: "a duplicate identity is refused"). Asserted: both halves, and that
+/// attempt one's credential still verifies, the property `identity_provisioner.rs`'s ordering
+/// argument exists for.
 #[test_case]
 fn a_duplicate_identity_is_refused_without_disturbing_the_original() {
     if fs_service::fs_server_image().is_none() {
