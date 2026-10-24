@@ -1,32 +1,18 @@
 //! **Linux: disks from sysfs, filesystems from udev, erasing with `sfdisk` and `mkfs.vfat`.**
 //!
-//! Every fact the offer rule needs is a file under `/sys/block`, readable without root:
-//! `removable` is the SCSI removable-media bit, `device/type` says `SD` for an SD card on the MMC
-//! bus (whose `removable` is 0 even though the card comes out), and the canonical path of the
-//! device says whether it hangs off a USB controller. Mounts come from `/proc/self/mounts`, and a
-//! filesystem that is not mounted is named by udev's database in `/run/udev/data`, which is also
-//! readable without root. So listing needs no privileges and no tool; only erasing does.
-//!
-//! This file is the pure half: [`assemble`] takes the three roots as arguments, so the tests build a
-//! small fake sysfs rather than needing a Linux machine. `host/linux.rs` is the half that runs
-//! `sfdisk`, `mkfs.vfat` and `mount`.
-//!
+//! Every fact the offer rule needs is readable without root: `/sys/block` for the removable bit, an
+//! SD card's `device/type` (its `removable` is 0 though the card comes out) and the USB path;
+//! `/proc/self/mounts` for mounts; udev's `/run/udev/data` for an unmounted filesystem. Only
+//! erasing needs privileges. This is the pure half: [`assemble`] takes the three roots as
+//! arguments, so tests use a fake sysfs. `host/linux.rs` runs `sfdisk`, `mkfs.vfat` and `mount`.
+//! See notes/boot-stick/the-program.md, "Linux".
+
 //! # BUGS
 //!
-//! - **None of this has run on Linux.** The binary cross-compiles and the pure half is tested on
-//!   the development Mac against a synthetic sysfs; discovery, mounting and erasing have not
-//!   executed on a Linux kernel. The layouts read here are the kernel's documented ABI
-//!   (Documentation/ABI/stable/sysfs-block) and udev's database format, which is recalled rather
-//!   than read against a live system.
-//! - **Free space is not known before copying** (no `statvfs` without a dependency), so a FAT
-//!   volume that is too full is discovered by the copy failing, which leaves the previous files in
-//!   place (see `write.rs`) and says so.
-//! - **Erasing needs root and two tools**: `sfdisk` (util-linux, on every distribution) and
-//!   `mkfs.vfat` (dosfstools, on every desktop install and absent from some minimal ones). The
-//!   program says which package to install when one is missing.
-//! - **A system without udev** (some containers, Alpine with mdev) cannot name an unmounted
-//!   partition's filesystem, so an unmounted FAT stick there is offered for erasing rather than
-//!   copying. Mounting it first avoids that.
+//! - **None of this has run on Linux**; the pure half is tested against a synthetic sysfs.
+//! - **Free space is not known before copying**; a full volume fails the copy, keeping old files.
+//! - **Erasing needs root, `sfdisk` and `mkfs.vfat`** (dosfstools); the program names the package.
+//! - **Without udev** an unmounted FAT stick is offered for erasing; mounting it first avoids that.
 
 use std::fs;
 use std::path::{Path, PathBuf};
