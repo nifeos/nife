@@ -27,7 +27,7 @@
 //! - Nothing reads the backup table when the primary fails to parse.
 //! - An image started from a slot has no boot file, so it cannot install onto a second disk, and
 //!   [`booted_from_nvme`] assumes NVMe without looking.
-//! - x86_64 only: a device-tree machine has nowhere for a boot file (milestone 568).
+//! - x86_64 only: milestone 568 (the boot file has nowhere to go on a device-tree machine).
 
 use core::ffi::c_void;
 use core::ptr::{self, NonNull};

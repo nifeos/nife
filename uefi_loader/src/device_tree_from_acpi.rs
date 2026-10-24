@@ -20,7 +20,7 @@
 //! - **No PCI**: a PCI node's `ranges` and `interrupt-map` live in AML (`_CRS`, `_PRT`), so no
 //!   `pci-host-ecam-generic` node is written and a bus that is there is invisible.
 //! - **No virtio-mmio, no `fw_cfg`** (QEMU describes them in AML), **and no ITS node**: the MADT's
-//!   ITS is printed, but the kernel drives no ITS (milestone 317).
+//!   ITS is printed, but the kernel drives no ITS (milestone 317 (the interrupt-remapping flags)).
 //! - **The memory map is the UEFI one, merged**, with runtime-services and ACPI regions excluded.
 //! - **Register block sizes are architectural, not stated** (the GIC's 64 KiB frames, the PL011's).
 //! - **One `/memory` node per merged run, capped at [`MAX_RAM`]**; more runs are described short.

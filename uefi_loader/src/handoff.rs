@@ -5,7 +5,8 @@
 //! `machine_discovery::x86_64` and consumed by `arch::x86_64::machine`. So this loader synthesises
 //! an `hvm_start_info` rather than inventing a UEFI handoff, and the kernel cannot tell which
 //! loader started it: one structure, one decoder, one set of tests, and no second boot path to
-//! diverge on hardware nobody can attach a debugger to (milestone 87; notes/x86-uefi-boot.md).
+//! diverge on hardware nobody can attach a debugger to (milestone 87 (the x86_64 bare-metal
+//! machine); notes/x86-uefi-boot.md).
 
 //! # This module is the *writer* for `machine_discovery::x86_64`'s *reader*
 //!
@@ -15,10 +16,11 @@
 
 //! # BUGS
 //!
-//! - **`EfiLoaderData` is reported as reserved and stays that way** (milestone 195 did not reclaim
-//!   it): it holds the `hvm_start_info`, its memory map, the module list, the archive and the
-//!   kernel image, so reclaiming it would let the allocator hand out the map it is reading. The
-//!   cost is each one's page padding, measured at two memory sizes in notes/x86-uefi-boot.md.
+//! - **`EfiLoaderData` is reported as reserved and stays that way** (milestone 195 (finish the UEFI
+//!   boot path) did not reclaim it): it holds the `hvm_start_info`, its memory map, the module
+//!   list, the archive and the kernel image, so reclaiming it would let the allocator hand out the
+//!   map it is reading. The cost is each one's page padding, measured at two memory sizes in
+//!   notes/x86-uefi-boot.md.
 //! - **The map is passed through in firmware order, neither sorted nor coalesced.** UEFI promises
 //!   neither, and `machine_discovery::x86_64`'s own `BUGS` records that its consumer is where such
 //!   a check belongs.
@@ -111,7 +113,7 @@ pub struct StartInfo {
     pub memmap_entries: u32,
     /// **Where the NUL-terminated boot command line is**, or 0 when there is nothing to say. It
     /// carries `machine_discovery::framebuffer`'s description of the screen the firmware was
-    /// drawing on (milestone 243), which is what keeps a machine with no serial port from being
+    /// drawing on (milestone 243 (a machine with no serial port)), so such a machine is not
     /// silent, and the other words [`cmdline`] lists. A command line rather than a new structure
     /// field, deliberately: `hvm_start_info` is Xen's format, versioned by Xen, and an appended
     /// field is a fork of somebody else's layout that looks exactly like the real thing to whoever

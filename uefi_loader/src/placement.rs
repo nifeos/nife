@@ -109,15 +109,15 @@ pub(crate) const BOOT_FILE_MAX: u64 = 64 * 1024 * 1024;
 #[cfg(target_arch = "x86_64")]
 const FILE_POSITION_END: u64 = u64::MAX;
 
-/// **Read this loader's own file off the volume it was started from, and place it for the kernel**
-/// as a second module (milestone 198's rung 2a): the running system has no other copy, and the
+/// **Read this loader's own file off its volume and place it for the kernel** as a second module
+/// (milestone 198 (a package manager), rung 2a): the running system has no other copy, and the
 /// archive cannot carry the file that contains it. So kernel and archive travel as the one file
 /// that seals them (`build.rs`'s `refuse_an_unsealed_pair`). A failure costs the ability to
 /// install, not the boot: a `None` says so and carries on (notes/x86-uefi-boot/loader-design.md).
 ///
 /// # BUGS
 /// - **The path is a constant**, not `loaded_image::Protocol::file_path`: the fallback path only.
-/// - **x86_64 only**: `/chosen` has one initial ramdisk and no second module (milestone 568).
+/// - **x86_64 only**: a device tree's `/chosen` has one initial ramdisk and no second module.
 /// - **The file is read whole into RAM**, about 9 MiB for the tour build.
 #[cfg(target_arch = "x86_64")]
 pub(crate) fn place_boot_file(

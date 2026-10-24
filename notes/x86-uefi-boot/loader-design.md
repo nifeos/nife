@@ -41,7 +41,8 @@ caller could apply:
 So `elf::Segment` carries `p_paddr` beside `p_vaddr` (milestone 196 (a physical address on
 `elf::Segment`)), and `uefi_loader/src/image.rs` places each segment by it. The loader reads the
 kernel with `Elf::parse` and its whole validation battery, which the x86_64 image passes because its
-trampoline's code and data ship as separate segments (milestone 208).
+trampoline's code and data ship as separate segments (milestone 208 (the x86_64 kernel image ships
+an RWX segment)).
 
 The other trap the physical span has to survive is `NOLOAD`. `.boot_scratch` (the boot page tables)
 and the two per-CPU stack areas arrive as `PT_LOAD` segments with `p_filesz == 0` and a real
@@ -74,7 +75,7 @@ Its limits, in full:
 - It is x86_64 only. The device-tree architectures hand the kernel a tree rather than a module list,
   and `/chosen` has one initial ramdisk and no second slot. The trivial install of §157 (a trivial
   install is a web page, a USB drive, and packages) is a PC, so this is where it was needed first.
-  Milestone 568 prices the gap.
+  Milestone 568 (the boot file has nowhere to go on a device-tree machine) prices the gap.
 - The file is read whole into RAM, about 9 MiB for the tour build. Streaming it to the disk would
   need a firmware file handle that outlives `ExitBootServices`, and there is no such thing.
 
