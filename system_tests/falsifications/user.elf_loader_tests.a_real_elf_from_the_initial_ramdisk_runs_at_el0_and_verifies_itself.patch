@@ -1,0 +1,26 @@
+Falsifies `system_tests::user::elf_loader_tests::a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself`.
+
+Architecture: x86_64
+
+The defect is a program entered without the stack its ABI promises: `image_self_checker` writes
+its own `extern "C" fn _start` instead of `user_mode_runtime::program_entry!`. The kernel enters
+with `rsp % 16 == 0`, the psABI expects 8, and `loaded_image_check`'s alignment check traps before
+the program's syscall. aarch64 and riscv64 push nothing on a call, so the same edit is harmless
+there and this record names x86_64 alone.
+
+diff --git a/fixtures/src/image_self_checker.rs b/fixtures/src/image_self_checker.rs
+index ec952cd45..934ae8605 100644
+--- a/fixtures/src/image_self_checker.rs
++++ b/fixtures/src/image_self_checker.rs
+@@ -21,9 +21,8 @@
+ #![allow(missing_docs)]
+ #![no_main]
+ 
+-user_mode_runtime::program_entry!(start);
+-
+-fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
++#[unsafe(no_mangle)]
++pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+     loaded_image_check::verify(user_mode_runtime::trap);
+ 
+     // One syscall that needs no capability at all, to prove we reached EL0 and can trap back in.

@@ -197,11 +197,11 @@ fn the_initial_ramdisk_holds_a_native_executable() {
 /// `.text` ran, `.rodata` read, `.data` was copied, `.bss` was zeroed (the file lacks those bytes)
 /// and the stack recursed eight frames, entered with the alignment its ABI promises.
 ///
-/// Falsification: on 2026-10-24 (UTC), `image_self_checker` built with a plain
-/// `extern "C" fn _start` instead of `user_mode_runtime::program_entry!` failed this on `x86_64`,
-/// through `loaded_image_check`'s alignment check. Renamed from
+/// Falsification: replayable `system_tests/falsifications/user.elf_loader_tests.a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself.patch`
+///
+/// Renamed from
 /// `a_real_elf_from_the_initrd_runs_at_el0_and_verifies_itself` on 2026-10-12 (UTC) under calef's
-/// ruling B on #1998; the body is unchanged and nobody has yet broken it to watch it fail.
+/// ruling B on #1998.
 #[test_case]
 fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
     let svc = SVC_COUNT.load(Ordering::Relaxed);

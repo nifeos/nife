@@ -8,11 +8,6 @@
 //! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
 //! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
 //! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
-//!
-//! # BUGS
-//!
-//! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`, so a
-//!   lying device stops the keyboard. It could do that anyway by staying silent.
 
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
@@ -23,6 +18,11 @@
 //!
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
+
+//! # BUGS
+//!
+//! - A used-ring entry naming a buffer this driver never posted ends it with `E_COMPLETION`, so a
+//!   lying device stops the keyboard. It could do that anyway by staying silent.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks
