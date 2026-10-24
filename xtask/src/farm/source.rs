@@ -1,10 +1,8 @@
 //! **`std-src`**: materialize the patched std source as a farm and link it as this worktree's
 //! toolchain.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -12,18 +10,15 @@
 use super::*;
 
 /// **Materialize the patched std toolchain** (milestone 27 (Rust `std` on the native ABI)), linked
-/// as [`toolchain_name`].
+/// as [`toolchain_name`]. Returns whether the farm is built and linked.
 ///
-/// build-std reads std's source from the sysroot of the rustc it invokes, so a patched std means
-/// a toolchain whose sysroot IS patched. We hardlink-clone the real nightly (`cp -al`, near-zero
-/// disk since blocks are shared) so rustc resolves *this* directory as its sysroot, copy
-/// `bin/rustc` and the driver dylib for real (see [`unlink_sysroot_anchors`]), then replace the
-/// `src` subtree with a real (independent-inode) copy and patch that copy: the overlay PAL files,
-/// the ABI/heap crates generated verbatim, and a `target_os = "nife"` arm inserted into std's
-/// `cfg_select!` dispatchers. The real toolchain is never touched.
-///
-/// Idempotent: a stamp of all inputs guards the rebuild, so a warm farm (and its build-std cache)
-/// survives across runs and only a PAL change forces std to recompile.
+/// build-std reads std's source from the sysroot of the rustc it invokes, so the farm is a clone of
+/// the real nightly (`cp -al`, sharing blocks) whose rustc anchors are real copies
+/// ([`unlink_sysroot_anchors`]) and whose `src` subtree is a real copy, patched: the overlay PAL
+/// files, the ABI/heap crates generated verbatim, and a `target_os = "nife"` arm in std's
+/// `cfg_select!` dispatchers. The real toolchain is never touched. A stamp of all inputs guards the
+/// rebuild, so a warm farm and its build-std cache survive across runs. See notes/std.md, "The
+/// toolchain: build-std against a patched rust-src".
 pub(crate) fn std_src() -> bool {
     let stamp = std_inputs_stamp();
     let stamp_file = farm_dir().join(".nife-stamp");
@@ -135,15 +130,13 @@ pub(super) fn is_sysroot_anchor(rel: &Path) -> bool {
 /// Replace the hard links to `bin/rustc` and `lib/librustc_driver-*` in a freshly `cp -al`ed farm
 /// with real, independent-inode copies.
 ///
-/// **Why these two are copies and the rest stay hard links.** A hard link is one inode with two
-/// names, and when rustc asks the OS where its driver was loaded from, macOS can answer with the
-/// *other* name: the pinned nightly's. rustc then reports the nightly as its sysroot and the build
-/// uses unpatched std, which fails in std's `cfg_select!` dispatchers. Measured on 2026-10-03 and
-/// 2026-10-06: `rustc --print sysroot` through the rustup proxy named the nightly in 1 run of 8,
-/// and every time under `cargo xtask std-exerciser`; with real copies of these two files it named
-/// the farm in 30 runs of 30. See notes/std/caveats.md, "`cargo xtask` through the rustup proxy
-/// built against unpatched std". The copies cost about 90 MB per farm (nightly-2026-10-06); the
-/// rest of `lib`, libLLVM at 140 MB among it, is located by path and keeps sharing blocks.
+/// A hard link is one inode with two names, and macOS can report the driver's load path under the
+/// pinned nightly's name, so rustc takes the nightly as its sysroot and builds unpatched std.
+/// Measured on 2026-10-03 and 2026-10-06: through the rustup proxy `rustc --print sysroot` named
+/// the nightly in 1 run of 8, and every time under `cargo xtask std-exerciser`; with real copies,
+/// the farm in 30 of 30. The copies cost about 90 MB per farm (nightly-2026-10-06); the rest of
+/// `lib`, libLLVM at 140 MB among it, is found by path and keeps sharing blocks. See
+/// notes/std/caveats.md, "`cargo xtask` through the rustup proxy built against unpatched std".
 pub(super) fn unlink_sysroot_anchors(farm: &Path) -> std::io::Result<()> {
     for dir in ["bin", "lib"] {
         for e in std::fs::read_dir(farm.join(dir))? {

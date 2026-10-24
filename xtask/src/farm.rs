@@ -16,26 +16,19 @@ use crate::host::{capture, run, workspace_root};
 /// name is [`toolchain_name`]'s. Provisional, minted 2026-10-10 (UTC) by lane
 /// maintainer/per-worktree-toolchain; calef has not ruled on it.
 ///
-/// **Each worktree links its own name, and none links the bare `nife-dev`.** Until 2026-10-10 every
-/// worktree linked one name, `nife-dev`, and `rustup toolchain link` is one symlink per user
-/// account, so `script/test` in any lane took the name from every other. Three false alarms that
-/// day alone; before that, a pruned worktree left the shared name dangling for the whole machine
-/// (2026-07-31), and a mid-run relink compiled one lane's std out of another's farm (2026-08-18).
-/// Builds had already moved to naming the farm by path (`RUSTUP_TOOLCHAIN=<farm>`, 2026-09-27), so
-/// the shared name was kept only for people typing `+nife-dev`, and it still cost every lane a
-/// relink. A name per worktree keeps the convenience and removes the thing two lanes could fight
-/// over. The legacy `nife-dev` link is never written, read for a build, or deleted here: lanes cut
-/// before this change still relink it until they rebase, and it is the maintainer's to remove once
-/// they have (briefs/merge-and-cleanup.md).
+/// Each worktree links its own name, and none links the bare `nife-dev`: `rustup toolchain link` is
+/// one symlink per user account, so a shared name is one that lanes take from each other. The
+/// legacy `nife-dev` link is never written, read for a build, or deleted here; removing it is the
+/// maintainer's (briefs/merge-and-cleanup.md). See notes/std.md, "Each worktree has its own
+/// toolchain name".
 const TOOLCHAIN_PREFIX: &str = "nife-dev-";
 
 /// Bump to force every farm to rebuild after a change to the patch logic itself (not the inputs).
 const STD_SRC_PATCH_VERSION: u32 = 15;
 
-// **The verbs and their helpers, one child each** (2026-10-12 UTC, for §266 (a Rust source file
-// stays under 2,000 lines) and §282 (when a file is split, the parent becomes an index)). Each
-// child takes `use super::*`; the names other modules call keep their `crate::farm::` paths through
-// the re-exports below. The three constants above are the handful every child reads.
+// The verbs and their helpers, one child each (§282 (when a file is split, the parent becomes an
+// index)). Each child takes `use super::*`; the names other modules call keep their `crate::farm::`
+// paths through the re-exports below. The constants above are the handful every child reads.
 mod aborts;
 mod exerciser;
 mod generate;

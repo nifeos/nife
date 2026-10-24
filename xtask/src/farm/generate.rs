@@ -1,30 +1,24 @@
 //! **The modules generated into std verbatim** from host-tested crates, and the doc-example strip
 //! and module inlining that copy needs.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
 use super::*;
 
-/// Remove `# Examples` sections from the doc comments of a file about to be copied into the patched
-/// std sysroot.
+/// Remove `# Examples` sections from the doc comments of `body`, a file about to be copied into the
+/// patched std sysroot, and return the rest.
 ///
-/// A doctest in one of these crates says `use entropy_contract::...`, and in the copy there is no such
-/// crate: the file arrives as `sys/pal/nife/entropyproto.rs`, an inner module of `std`. So the
-/// example is *false* in its destination, in the specific way milestone 68 cares about, which is
-/// that it teaches a reader of the PAL something that is not true of the code they are reading.
-/// Nothing runs std's doctests here, so this is a documentation fix rather than a build fix; it is
-/// done at the copy because the alternative is refusing the workspace crates real examples, and the
-/// workspace is where the example is checked.
-///
-/// Prose and `text` blocks survive: this drops a `# Examples` heading and everything under it, up to
-/// the next heading at the same level or the end of the doc block. Fence state is tracked, so a
-/// hidden doctest line (`# use ...`) inside a code block is not mistaken for that next heading.
+/// A doctest there says `use entropy_contract::...`, but the copy is an inner module of `std`
+/// (`sys/pal/nife/entropyproto.rs`), so the example would teach a PAL reader something false
+/// (milestone 68). Nothing runs std's doctests, so this fixes documentation, not the build, and the
+/// workspace crates keep their examples where they are checked. A `# Examples` heading goes with
+/// everything under it, up to the next heading at the same level or the end of the doc block;
+/// prose and `text` blocks elsewhere survive. Fence state is tracked, so a hidden doctest line
+/// (`# use ...`) inside a code block is not mistaken for that next heading.
 pub(super) fn strip_doc_examples(body: &str) -> String {
     let mut out: Vec<&str> = Vec::new();
     let mut skipping = false;
@@ -78,35 +72,34 @@ pub(super) fn std_generate_modules() -> bool {
             farm_std_src().join("sys/alloc/nife/allocation_cache.rs"),
         ),
         // The net_stack socket-contract wire format, verbatim, so the net PAL cannot drift from the
-        // server it talks to (same discipline as the ABI and heap crates above).
+        // server it talks to.
         (
             root.join("crates/socket_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/netproto.rs"),
         ),
         // The FS-service wire protocol (DECISIONS §27), so `std::fs`'s PAL cannot drift from the
-        // server it opens files through. Same discipline as the three above.
+        // server it opens files through.
         (
             root.join("crates/filesystem_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/fsproto.rs"),
         ),
         // The wall-clock contract (DECISIONS §43), so the time PAL reads the clock page with the
-        // same seqlock and the same layout the clock service publishes it with. Same discipline as
-        // the four above; this one matters more than most, because a drift here would be a torn
-        // read of a timestamp rather than a compile error.
+        // same seqlock and the same layout the clock service publishes it with. A drift here would
+        // be a torn read of a timestamp rather than a compile error.
         (
             root.join("crates/clock_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/clockproto.rs"),
         ),
         // The entropy contract (DECISIONS §44), so the random PAL packs its requests and reads its
-        // replies exactly the way the entropy service serves them. Same discipline as the five
-        // above; a drift here would be a program reading the wrong bytes as a key.
+        // replies exactly the way the entropy service serves them. A drift here would be a program
+        // reading the wrong bytes as a key.
         (
             root.join("crates/entropy_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/entropyproto.rs"),
         ),
         // The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS
         // §111), so `sys/env`'s seeding reads the config page with the same layout and the same
-        // validated domains whoever assembles a page uses. Same discipline as the six above.
+        // validated domains whoever assembles a page uses.
         (
             root.join("crates/environment_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/envproto.rs"),
@@ -119,8 +112,8 @@ pub(super) fn std_generate_modules() -> bool {
         ),
         // The byte-sink contract (milestone 50), so `println!`'s framing and the classification of
         // a failed SEND are one definition shared with every sink and with the kernel-side tests.
-        // Same discipline as the six above, and the one that would hurt most to get wrong: a drift
-        // in `GONE` would be a program that keeps printing into a pipe whose reader has exited.
+        // A drift in `GONE` would be a program that keeps printing into a pipe whose reader has
+        // exited.
         (
             root.join("crates/byte_sink_contract/src/lib.rs"),
             farm_std_src().join("sys/pal/nife/sinkproto.rs"),
