@@ -1,45 +1,14 @@
-//! **The keyboard driver** (milestone 29's input): a confined userspace virtio-input driver that
-//! turns key events into the bytes a terminal understands.
+//! The keyboard driver (the input of milestone 29 (a display terminal: framebuffer, virtio-gpu, and
+//! a foreign component)): a confined userspace virtio-input driver that turns key events into the
+//! bytes a terminal understands.
 //!
-//! ```text
-//!   MODE_RING (rung two, a compositor scene):
-//!   virtio-input ──virtio (PCIe, behind the IOMMU)──► keyboard_driver ──the input ring──► compositor
-//!    (a keyboard)                                      │                (shared memory)
-//!                                                      └──doorbell COMMIT──► "look at the surfaces"
-//!
-//!   MODE_DIRECT (milestone 177, option A: the boot's single-terminal case):
-//!   virtio-input ──virtio──► keyboard_driver ──OPERATION_BYTES, one CALL──► line_editor
-//! ```
-//!
-//! Its whole authority:
-//!
-//! - slot 0, a **report** endpoint: how it tells its spawner it came up;
-//! - slot 1, an **`Irq`**: the device's event interrupt;
-//! - slot 2, a **`Virtio`**: the confined transport, and the only way it can reach the device;
-//! - slot 3, **[`OUT`]**: the compositor's doorbell (WRITE) in [`MODE_RING`], `line_editor`'s served
-//!   endpoint (WRITE) in [`MODE_DIRECT`], chosen by `arg0` as `display_terminal`'s `PRESENT` slot is;
-//! - mapped: its own DMA page, and in [`MODE_RING`] only, the **input ring** it shares with the
-//!   compositor and nobody else.
-//!
-//! No key repeat of its own (the device sends repeats and [`video_terminal::keymap`] honors them),
-//! no LEDs, no layout switching, no mouse or tablet (a `virtio-tablet-pci` presents the same PCI id,
-//! recorded in `crates/pci`), and no configuration-space query. See notes/glyphs.md.
-//!
+//! `arg0` picks where the bytes go. In [`MODE_RING`] they go into the input ring it shares with the
+//! compositor, and that mapping is its power to type (DECISIONS §33 (the compositor's authority is
+//! memory, not messages)): the doorbell it rings is content-free, and focus is the compositor's
+//! decision. In [`MODE_DIRECT`], for a boot with one terminal, it holds one fixed `CALL` capability
+//! to `line_editor` and sends the UART driver's [`line_editor::proto::OPERATION_BYTES`] framing:
+//! narrower authority, not looser. See notes/line-discipline.md and notes/glyphs.md.
 
-//! # Two modes, chosen at spawn
-//!
-//! In [`MODE_RING`] this driver's power to inject a keystroke is the **mapping of the input ring**
-//! (DECISIONS §33 (the compositor's authority is memory, not messages)), which no client has; the
-//! doorbell every client holds is content-free, so ringing it cannot type a character. The driver holds no client's endpoint and cannot choose who receives
-//! what it types: focus is the compositor's decision.
-//!
-//! In [`MODE_DIRECT`], for a boot with exactly one terminal, there is no second window to misdirect
-//! a keystroke to (design/roadmap/0177-graphical-interactive-boot.md). The driver holds one fixed
-//! `CALL` capability to `line_editor`'s served endpoint, granted at spawn, and sends every keystroke
-//! there in the [`line_editor::proto::OPERATION_BYTES`] framing `components/src/input.rs`'s UART
-//! driver uses. That is narrower authority than [`MODE_RING`], not looser: one capability, fixed by
-//! whoever built this process.
-//!
 //! Name: ratified 2026-08-27 (calef), renamed from `kbd` (never ratified) to match the
 //! `<device>_driver` shape of `block_driver` and `gpu_driver`.
 
@@ -55,12 +24,15 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::virtio::virtio_ring_barrier;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 
-/// Capability slots, by convention with `kernel/src/user/keyboard_service.rs`.
+/// Capability slots, by convention with `kernel/src/user/keyboard_service.rs`. Slot 0, the report
+/// endpoint: how this driver tells its spawner it came up.
 const REPORT: u64 = 0;
+/// Slot 1, an `Irq`: the device's event interrupt.
 const IRQ: u64 = 1;
+/// Slot 2, a `Virtio`: the confined transport, and the only way this driver can reach the device.
 const VIRTIO: u64 = 2;
-/// The compositor's doorbell in [`MODE_RING`]; `line_editor`'s served endpoint in [`MODE_DIRECT`].
-/// See the module note.
+/// Slot 3, held `WRITE`: the compositor's doorbell in [`MODE_RING`], `line_editor`'s served
+/// endpoint in [`MODE_DIRECT`], chosen by `arg0` as `display_terminal`'s `PRESENT` slot is.
 const OUT: u64 = 3;
 
 /// `arg0`: the compositor-mediated wiring (rung two), ring-and-doorbell. The default, and the only
@@ -71,6 +43,7 @@ const MODE_DIRECT: u64 = 1;
 
 /// Where the kernel maps this driver's DMA page and the compositor's input ring.
 const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
+/// The input ring, mapped in [`MODE_RING`] only and shared with the compositor and nobody else.
 const RING_VA: u64 = address_space_map::pair_page(0x0000_0000_0082_0000);
 
 // SAFETY: the wiring maps one page read/write at DMA_VA before this program runs (milestone 139).
@@ -100,8 +73,8 @@ const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // feature bit 33 (behind an IOMMU)
 
 const VIRTQ_DESC_F_WRITE: u16 = 2;
 
-/// The virtio device type this driver will talk to. Checked, not assumed: rung one found the PCI
-/// transport synthesizing a device id nobody had verified, and the fix was for a driver to look.
+/// The virtio device type this driver will talk to. Checked, not assumed: the PCI transport
+/// synthesizes the device id, and a driver that looks cannot program another device's queues.
 const VIRTIO_ID_INPUT: u32 = 18;
 
 /// The event queue. virtio-input has a second (status) queue for LEDs, which this driver never sets
@@ -217,11 +190,9 @@ pub extern "C" fn _start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     if mode != MODE_RING && mode != MODE_DIRECT {
         die(E_MODE);
     }
-    // **Where the page is, read out of the page** (milestone 600 (provisional)): whoever built this
-    // process wrote the DMA page's physical base into its own tail (`abi::virtio::DMA_PHYS_OFFSET`,
-    // well past `EVENT_BASE`'s eight records), because the progenitor, which builds this driver on
-    // the real boot, holds the page as a capability and knows no physical address. It used to
-    // arrive in `x1`.
+    // Where the page is, read out of the page (milestone 600 (provisional)): the progenitor holds
+    // the page as a capability and knows no physical address, so whoever built this process wrote
+    // the base into its tail (`abi::virtio::DMA_PHYS_OFFSET`, past `EVENT_BASE`'s eight records).
     // SAFETY: the page is mapped read/write at `DMA_VA` before `_start` runs (the spawner's `maps`),
     // and the offset is inside it.
     let direct_memory_access_phys =
@@ -266,9 +237,8 @@ fn bring_up_device() {
     if mr(MAGIC) != 0x7472_6976 {
         die(E_MAGIC);
     }
-    // **Check what we are talking to.** Rung one found the PCI transport answering every driver's
-    // `DeviceID` read with a hardcoded 2, and it found it because the GPU driver was the first that
-    // looked. A keyboard driver that skipped this would happily program a disk's queues.
+    // Check what we are talking to: a keyboard driver that skipped this would happily program a
+    // disk's queues.
     if mr(DEVICE_ID) != VIRTIO_ID_INPUT {
         die(E_DEVICE_ID);
     }
@@ -357,16 +327,10 @@ impl Events {
             let slot = (self.seen % QSIZE) as u64;
             // used-ring element: { u32 id; u32 len }.
             let id = r32(EQ_USED + 4 + slot * 8) as usize;
-            // **`id` is a 32-bit value the DEVICE wrote** (notes/shared-page-audit.md, finding 6).
-            // The IOMMU and `crates/direct_memory_access_validator` confine where the device may
-            // *touch*, not what it may *say*, and the used ring is inside this driver's own DMA
-            // page, which the device is entitled to write. Unchecked,
-            // `event_buf(id) = 0x400 + id * 8` leaves the one-page region at `id = 462` and reads
-            // this process's own memory as a keystroke.
-            //
-            // Consume and drop a completion naming a buffer we never posted, without re-posting
-            // it: a bogus `id` does not say which buffer it was, and a device that lies about its
-            // own ring has stopped being a keyboard.
+            // `id` is a 32-bit value the device wrote (notes/shared-page-audit.md, finding 6): the
+            // IOMMU confines where the device may touch, not what it may say, and unchecked
+            // `event_buf(id)` leaves the page at `id = 462`. A completion naming a buffer never
+            // posted is dropped, not re-posted: a bogus `id` does not say which buffer it was.
             if id >= EVENTS {
                 self.seen = self.seen.wrapping_add(1);
                 continue;
