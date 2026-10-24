@@ -60,7 +60,8 @@ pub const BAD_REQUEST: u64 = u64::MAX;
 // **Opt-in per channel, never the default.** A producer speaks the same `OPERATION_PUT` on the
 // front endpoint and gets the backend's own reply or `ACCEPTED` (the broker took custody). Control
 // travels in band, as `OPERATION_QUIESCE` does, because a second endpoint would need a wait-any
-// primitive the kernel deliberately does not have (DECISIONS §26.5).
+// primitive the kernel deliberately does not have (DECISIONS §26.5, in §26 (the fault endpoint:
+// thread death becomes a message a supervisor holds)).
 // ===========================================================================================
 
 /// **The broker's warning, which it is never asked to acknowledge** (DECISIONS §231 (a swap's warning
@@ -763,7 +764,8 @@ pub fn probe_device() -> u64 {
 ///
 /// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
 /// `user::UART_PHYS` is **zero**, the marker for
-/// [DECISIONS §121](../../../design/decisions/0121-port-io-capability.md) (PROPOSED). The
+/// [DECISIONS §121](../../../design/decisions/0121-port-io-capability.md) (what a device capability
+/// is when the device has no page: x86 port I/O; PROPOSED). The
 /// live-swap fixture `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an
 /// IVT byte and still fault on revoke, a green test about nothing. The value is never observed, and
 /// is not `0` because a quiet line status register could return that.
