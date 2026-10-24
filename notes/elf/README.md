@@ -7,6 +7,8 @@ budget has no room for.
 
 - [`why-not-mach-o-or-pe.md`](why-not-mach-o-or-pe.md): why macOS and Windows use other formats,
   and the punchline that UEFI boots PE, with a correction dated 2026-10-11.
+- [`loaded-image-check.md`](loaded-image-check.md): what a program's check of its own loaded image
+  catches, and why it traps.
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/seventh-ten-longest-notes, which split the
 parent under §212 (a prose budget). The directory follows §212's siting default, `notes/X/` beside
