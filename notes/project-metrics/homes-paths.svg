@@ -14,18 +14,14 @@
 <text class="mut" x="20" y="44" font-size="11">packaged or not; unclaimed is a gate failure and should never draw</text>
 <line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
 <text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
-<line class="grid" x1="64" y1="279.7" x2="650.0" y2="279.7" stroke-width="1"/>
-<text class="mut" x="56" y="282.7" font-size="10" text-anchor="end">1</text>
-<line class="grid" x1="64" y1="235.3" x2="650.0" y2="235.3" stroke-width="1"/>
-<text class="mut" x="56" y="238.3" font-size="10" text-anchor="end">2</text>
+<line class="grid" x1="64" y1="257.5" x2="650.0" y2="257.5" stroke-width="1"/>
+<text class="mut" x="56" y="260.5" font-size="10" text-anchor="end">2</text>
 <line class="grid" x1="64" y1="191.0" x2="650.0" y2="191.0" stroke-width="1"/>
-<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">3</text>
-<line class="grid" x1="64" y1="146.7" x2="650.0" y2="146.7" stroke-width="1"/>
-<text class="mut" x="56" y="149.7" font-size="10" text-anchor="end">4</text>
-<line class="grid" x1="64" y1="102.3" x2="650.0" y2="102.3" stroke-width="1"/>
-<text class="mut" x="56" y="105.3" font-size="10" text-anchor="end">5</text>
+<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">4</text>
+<line class="grid" x1="64" y1="124.5" x2="650.0" y2="124.5" stroke-width="1"/>
+<text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">6</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
-<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">6</text>
+<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">8</text>
 <text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W34</text>
 <text class="mut" x="93.3" y="308.0" font-size="9" text-anchor="middle">not<tspan x="93.3" dy="10">measured</tspan><title>2026W34: not measured</title></text>
 <text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W35</text>
@@ -36,26 +32,26 @@
 <text class="mut" x="269.1" y="308.0" font-size="9" text-anchor="middle">not<tspan x="269.1" dy="10">measured</tspan><title>2026W37: not measured</title></text>
 <text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
 <text class="mut" x="327.7" y="308.0" font-size="9" text-anchor="middle">not<tspan x="327.7" dy="10">measured</tspan><title>2026W38: not measured</title></text>
-<rect class="seg s0" x="367.0" y="247.0" width="38.7" height="77.0"><title>2026W39, home undecided: 1.7</title></rect>
-<path class="seg s1" d="M367.0,247.0 V208.3 Q367.0,204.3 371.0,204.3 H401.6 Q405.6,204.3 405.6,208.3 V247.0 Z"><title>2026W39, home provisional: 1.0</title></path>
+<rect class="seg s0" x="367.0" y="266.3" width="38.7" height="57.7"><title>2026W39, home undecided: 1.7</title></rect>
+<path class="seg s1" d="M367.0,266.3 V238.2 Q367.0,234.2 371.0,234.2 H401.6 Q405.6,234.2 405.6,238.2 V266.3 Z"><title>2026W39, home provisional: 1.0</title></path>
 <text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="386.3" y="199.3" font-size="10" text-anchor="middle">2.7</text>
-<rect class="seg s0" x="425.6" y="236.3" width="38.7" height="87.7"><title>2026W40, home undecided: 2.0</title></rect>
-<path class="seg s1" d="M425.6,236.3 V192.6 Q425.6,188.6 429.6,188.6 H460.2 Q464.2,188.6 464.2,192.6 V236.3 Z"><title>2026W40, home provisional: 1.1</title></path>
+<text class="fg val" x="386.3" y="229.2" font-size="10" text-anchor="middle">2.7</text>
+<rect class="seg s0" x="425.6" y="258.2" width="38.7" height="65.8"><title>2026W40, home undecided: 2.0</title></rect>
+<path class="seg s1" d="M425.6,258.2 V226.4 Q425.6,222.4 429.6,222.4 H460.2 Q464.2,222.4 464.2,226.4 V258.2 Z"><title>2026W40, home provisional: 1.1</title></path>
 <text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="444.9" y="183.6" font-size="10" text-anchor="middle">3.1</text>
-<rect class="seg s0" x="484.2" y="200.9" width="38.7" height="123.1"><title>2026W41, home undecided: 2.8</title></rect>
-<path class="seg s1" d="M484.2,200.9 V126.8 Q484.2,122.8 488.2,122.8 H518.8 Q522.8,122.8 522.8,126.8 V200.9 Z"><title>2026W41, home provisional: 1.8</title></path>
+<text class="fg val" x="444.9" y="217.4" font-size="10" text-anchor="middle">3.1</text>
+<rect class="seg s0" x="484.2" y="231.7" width="38.7" height="92.3"><title>2026W41, home undecided: 2.8</title></rect>
+<path class="seg s1" d="M484.2,231.7 V177.1 Q484.2,173.1 488.2,173.1 H518.8 Q522.8,173.1 522.8,177.1 V231.7 Z"><title>2026W41, home provisional: 1.8</title></path>
 <text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="503.5" y="117.8" font-size="10" text-anchor="middle">4.5</text>
-<rect class="seg s0" x="542.8" y="182.7" width="38.7" height="141.3"><title>2026W42, home undecided: 3.2</title></rect>
-<path class="seg s1" d="M542.8,182.7 V84.5 Q542.8,80.5 546.8,80.5 H577.4 Q581.4,80.5 581.4,84.5 V182.7 Z"><title>2026W42, home provisional: 2.3</title></path>
+<text class="fg val" x="503.5" y="168.1" font-size="10" text-anchor="middle">4.5</text>
+<rect class="seg s0" x="542.8" y="218.0" width="38.7" height="106.0"><title>2026W42, home undecided: 3.2</title></rect>
+<path class="seg s1" d="M542.8,218.0 V145.4 Q542.8,141.4 546.8,141.4 H577.4 Q581.4,141.4 581.4,145.4 V218.0 Z"><title>2026W42, home provisional: 2.3</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="562.1" y="75.5" font-size="10" text-anchor="middle">5.5</text>
-<rect class="seg s0" x="601.4" y="172.5" width="38.7" height="151.5"><title>2026W43, home undecided: 3.4</title></rect>
-<path class="seg s1" d="M601.4,172.5 V69.8 Q601.4,65.8 605.4,65.8 H636.0 Q640.0,65.8 640.0,69.8 V172.5 Z"><title>2026W43, home provisional: 2.4</title></path>
+<text class="fg val" x="562.1" y="136.4" font-size="10" text-anchor="middle">5.5</text>
+<rect class="seg s0" x="601.4" y="203.8" width="38.7" height="120.2"><title>2026W43, home undecided: 3.6</title></rect>
+<path class="seg s1" d="M601.4,203.8 V125.3 Q601.4,121.3 605.4,121.3 H636.0 Q640.0,121.3 640.0,125.3 V203.8 Z"><title>2026W43, home provisional: 2.5</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="620.7" y="60.8" font-size="10" text-anchor="middle">5.8</text>
+<text class="fg val" x="620.7" y="116.3" font-size="10" text-anchor="middle">6.1</text>
 <rect class="s1" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">home provisional</tspan></text>
 <rect class="s0" x="672" y="83" width="11" height="11" rx="2"/>

@@ -15,8 +15,8 @@ rather than kept as a table.
 
 The list is not filtered per architecture. Several programs cannot do their job everywhere.
 `console`, `input` and `keyboard_driver` need port I/O that a ring-3 process cannot reach on
-`x86_64` (DECISIONS §121 (what a device capability is when the device has no page)). `serial_driver`
-drives riscv64's UART, and `jh7110_entropy` is radon's. They are packed anyway. An archive entry
+`x86_64` (DECISIONS §121 (what a device capability is when the device has no page)). `jh7110_entropy`
+is radon's. They are packed anyway. An archive entry
 costs a directory slot and some bytes, nothing spawns a program by accident, and the tests that
 would spawn one `skip!()` with the reason. A filter per architecture would put the same fact in a
 second place, where it could disagree with the first.

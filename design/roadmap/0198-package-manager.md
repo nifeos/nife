@@ -15,6 +15,15 @@ and closes when both do. It keeps the top slot of principle 1's customer path. I
 package manager, and the trivial install that makes a second customer possible. Rung 3a, the
 package manager, is complete. The rung table below maps every rung to its milestone.
 
+**Outstanding** (checked against the tree 2026-10-24 UTC): nothing inside this block's own rung.
+Two milestones keep it PARTIAL. Milestone 801 (packages over the internet) has one open criterion,
+the run on xenon's installed system, which waits on milestone 494's bench boot and a fresh install.
+Milestone 802 (the trivial install) waits on milestones 242, 400, 515, 801 and 809 and on calef's
+act of publication. Through 802 it also waits on milestone 809 (`jig`). Its items 7 and 8 wait
+on milestone 849 (a package declares what it needs at run time), NOT-STARTED, and on an unproposed
+milestone for §306 (the web's authority list is a package and a capability). Each of those is calef's hands or
+a lane of its own; none is work this block can do.
+
 Under §159 (only a new kernel needs a reboot), a package update needs no reboot; a kernel update
 does.
 
@@ -25,8 +34,8 @@ container's price. Rung 3a's consumer half is built: the image carries a package
 serves the package over plain HTTP, and `net_stack`'s client accepts it only by the image's digest,
 on aarch64 and riscv64. The table §208 (installing is granting) versions is in
 `crates/installed_programs`. Run by digest and the installer are built under §219 (how the shell names
-an installed program to the spawner): `package install`, `remove` and `rollback` at the prompt,
-across a reboot, on all three architectures. `package install <name>` fetches over the booted
+an installed program to the spawner): `jig install`, `remove` and `rollback` at the prompt (milestone
+809), across a reboot, on all three architectures. `jig install <name>` fetches over the booted
 system's network on all three (x86_64 over the `e1000e`), and `greeting`, which no image carries,
 runs on all three. So does §219's gate D2: a session holding the run-unvouched capability runs bytes
 nobody vouched for. §221 (the boot prompt is the owner's console) adds `vouch`, and the owner's list
@@ -63,14 +72,14 @@ claim about PCs, and each rung's last exit criterion is that second machine.
 
 | Rung | Ships | Exit criterion a stranger could check | Milestones and proposals on it |
 |---|---|---|---|
-| **1a. A prompt from a stick, on xenon, over serial** | Nothing new: the pieces are built | xenon boots `\EFI\BOOT\BOOTX64.EFI` from a FAT32 stick, `$` appears on the serial console, and `echo hello` answers; transcript filed under `bench/` | 87 (BUILT), 299 (BUILT: the x86 prompt over serial, proven under QEMU), 182 (PARTIAL: its third `swish-check` leg), 243 |
+| **1a. A prompt from a stick, on xenon, over serial** | Nothing new: the pieces are built | xenon boots `\EFI\BOOT\BOOTX64.EFI` from a FAT32 stick, `$` appears on the serial console, and `echo hello` answers; transcript filed under `bench/` | **BUILT 2026-10-21** (`bench/xenon-2026-10-21/boot-to-prompt.log`: from the stick, `echo hello` answers on serial); 87, 299, 182 and 243, all BUILT |
 | **1b. The prompt on the screen** | A pre-set-framebuffer driver behind the framebuffer contract | Under OVMF, `serial_console::screen` reads `$` back off the framebuffer; on xenon, the prompt is on the monitor and a serial keystroke echoes there | [400](0400-the-shell-on-the-firmware-screen.md) (PARTIAL: built and gated under OVMF, xenon outstanding; found by this lane); shares its driver with 157 |
-| **1c. A USB keyboard** | xHCI, enumeration, HID boot protocol | xenon with a monitor and a USB keyboard, no serial cable: `echo hello` | 242 (NOT-STARTED), which closes 192 (PARTIAL) |
+| **1c. A USB keyboard** | xHCI, enumeration, HID boot protocol | xenon with a monitor and a USB keyboard, no serial cable: `echo hello` | 242 (PARTIAL), which closes 192 (PARTIAL) |
 | **1d. A PC that is not xenon** | Nothing new if 1a to 1c hold | The same stick on one fleet machine reaches `$` at its own keyboard and monitor | [milestone 802](0802-the-trivial-install.md), with 243's fleet |
 | **2a. Installed onto a disk, under QEMU** | An installer; the boot mounting the nife partition off NVMe | OVMF boots the stick image with an empty NVMe attached; the installer names the disk, asks, partitions, formats and copies; the machine reboots **with the stick detached**, reaches `$`, and reads back a file written before the reboot. One `cargo xtask` gate | **BUILT 2026-09-21** (#1056, `notes/installing.md`; re-run green 2026-10-03); [milestone 515](0515-the-installer-a-stick-runs-to-put-itself-on-the-disk.md) is PARTIAL on the bench half |
 | **2b. Installed onto xenon's disk** | The bench half | The 2a sequence on xenon's Micron 2450, photographed, stick removed before the second boot | **BUILT 2026-10-04** (`bench/xenon-2026-10-04/`; needs #1636; [milestone 515](0515-the-installer-a-stick-runs-to-put-itself-on-the-disk.md) criterion 2 has the caveats) |
 | **3a. A package over the LAN, under QEMU** | The package client this milestone is; a host-side recipe that produces a package; a small HTTP client | A package absent from the image is fetched from a host on the same network over plain HTTP, verified by digest, installed onto the running system, run, still present after a reboot, and removed | this block; all three rulings it needed are in (§195, §197, §208). **Producer half BUILT 2026-09-23** (`crates/package_archive`, `cargo xtask package`, `packages/uptime.recipe.toml`, notes/packages.md). Fetch and verify built 2026-09-24 (`helpers/package-http-peer`, `crates/http_response`, a QEMU test on aarch64 and riscv64); **run by digest and the installer built 2026-09-26** on all three architectures; x86_64 fetches since 2026-10-05. No TLS, since §195's digest decides whether bytes may run |
-| **3b. The network card xenon has** | An Intel I219 (`e1000e` family) driver in 261's shape | Under QEMU `-device e1000e` behind `intel-iommu`, milestone 30 (the network stack as a confined component)'s DHCP and TCP gates pass through the new driver; on xenon, a lease from the house router and a measured transfer | [a-driver-for-the-network-card-a-pc-actually-has.md](0494-a-driver-for-the-network-card-a-pc-actually-has.md) (new) |
+| **3b. The network card xenon has** | An Intel I219 (`e1000e` family) driver in 261's shape | Under QEMU `-device e1000e` behind `intel-iommu`, milestone 30 (the network stack as a confined component)'s DHCP and TCP gates pass through the new driver; on xenon, a lease from the house router and a measured transfer | [milestone 494](0494-a-driver-for-the-network-card-a-pc-actually-has.md) (PARTIAL: built under QEMU, xenon's bench boot outstanding) |
 | **3c. Over the internet** | Name resolution; HTTPS; §250's index | From xenon's installed system, a package fetched through `basalt.nifeos.org`'s index by host name, verified and installed | [milestone 801](0801-packages-over-the-internet.md) |
 | **4. The web page** | A published release and a page | A stranger with a PC, a USB stick and no prior knowledge follows the page to rung 3c's result; the stranger harness (`notes/stranger-test.md`) runs against the **download**, not the build | [milestone 802](0802-the-trivial-install.md); calef's act |
 
@@ -122,6 +131,10 @@ page goes up, and the Secure Boot and publication rulings, are milestone 802 (th
 These cover rung 3a only: this block's other rungs carry their own exit criteria in the table above,
 and the rungs that are calef's acts are named there rather than here.
 
+- **Outstanding.** This block's closure, which is milestones 801 and 802 and, through 802,
+  milestone 809's items 7 and 8 (milestone 849 and an authority-list milestone not yet proposed).
+  Checked 2026-10-24 (UTC) by reading each block's status and Follow-on and the swish-check script
+  (`xtask/src/swish_check/script/after_reboot.rs`, every `jig` line): rung 3a has no open item.
 - **Done.** §221 closed the `activation/` write hole (notes/packages/vouching.md).
 - **Done.** §219 was ruled 2026-09-26 and its request, gate D2 and the unvouched-child
   confinement claim built (notes/packages/running-unvouched.md).
@@ -190,7 +203,7 @@ and the rungs that are calef's acts are named there rather than here.
 
 calef, 2026-08-30: no third party sees nife until there is a package manager and a trivial
 install, and he wants both early, to make our own lives easier. This block is the package manager. It is the one archive file §197 ruled a package is, `cargo xtask package` turning a reviewed recipe
-into one, and a fetch over plain HTTP verified by digest. It is also `package install`, `remove` and `rollback` at
+into one, and a fetch over plain HTTP verified by digest. It is also `jig install`, `remove` and `rollback` at
 the prompt across a reboot (§208, §219), on all three architectures since 2026-10-05. Split on
 2026-10-06 so other milestones can depend on a single rung: packages over the internet are
 milestone 801, and the trivial install a stranger follows is milestone 802.

@@ -80,9 +80,7 @@
 <text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
 <text class="fg val" x="503.5" y="67.8" font-size="10" text-anchor="middle">11803</text>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<path class="seg s0" d="M601.4,324.0 V274.4 Q601.4,270.4 605.4,270.4 H636.0 Q640.0,270.4 640.0,274.4 V324.0 Z"><title>2026W43, kernel/: 2519</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="620.7" y="265.4" font-size="10" text-anchor="middle">2519</text>
 <text class="mut" x="20" y="368" font-size="10">caps in 2026W43: kernel/ 20, crates/ 40, components/ 40, system_tests/ 40, xtask/ 40, every other directory at most 40</text>
 <rect class="s5" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">every other directory</tspan></text>
