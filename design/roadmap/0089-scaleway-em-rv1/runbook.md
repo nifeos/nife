@@ -20,7 +20,7 @@ Every step below is calef's, because it spends money or acts on his Scaleway acc
 2. Check stock and price:
    `scw baremetal offer list zone=fr-par-2 subscription-period=hourly name=EM-RV1-C4M16S128-A`.
    If it is out of stock, stop here.
-3. On patagonia: `script/board-image --th1520`, which writes four files under `target/board/`.
+3. On your machine: `script/board-image --th1520`, which writes four files under `target/board/`.
 
 ### Step 1: Rent, and read the machine (about an hour)
 

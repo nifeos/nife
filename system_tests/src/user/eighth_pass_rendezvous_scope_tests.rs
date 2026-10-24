@@ -2,23 +2,11 @@
 //! stranger's liveness is invisible through either** (an eighth outsider pass at the confinement
 //! claim, claims 6, 7, 8 and 9).
 //!
-//! The four claims are proved on pure logic in the host crate (`reap_is_permitted_only_to_the_
-//! supervising_rendezvous`, `a_stranger_reveals_nothing_about_its_liveness`, `a_survey_shows_
-//! exactly_the_endpoints_own_children`, `the_view_and_the_reap_have_the_same_scope`) and driven
-//! through the real dispatcher by the reap and survey tests. This module attacks them as one
-//! cross-domain forger would: a *fully privileged* supervisor of its own domain (READ and
-//! ENUMERATE, every right a legitimate supervisor holds) reaches sideways at another domain's
-//! members, alive and dead, through `REAP` and `SURVEY`, and the attack's observable is whether
-//! any answer differs from the same probe aimed at its own domain's members.
-//!
-//! The liveness attack is the one worth naming. A refusal that said `StillAlive` for a live
-//! stranger and `NotSupervised` for a dead one would leak a stranger's liveness through an
-//! endpoint the stranger's builder never named, which is claim 7 broken without a single right
-//! being gained. The test asserts the two refusals are the same error word for word.
-//!
-//! Nothing blocks: every probe is non-blocking or aimed at a settled state, so a regression is red
-//! at an assertion. Cross-ISA: the reap decision and the survey walk are portable kernel code
-//! (DECISIONS §19 (architectural parity is a tenet)).
+//! The host crate proves the four on logic, and the reap and survey tests drive them. Here a fully
+//! privileged supervisor of its own domain (READ and ENUMERATE) reaches sideways at another
+//! domain's live and dead members through `REAP` and `SURVEY`. A live and a dead stranger must get
+//! the same refusal, or liveness leaks (claim 7). Nothing blocks. Cross-ISA (DECISIONS §19
+//! (architectural parity is a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
 
 use abi::Error;
 
@@ -55,14 +43,10 @@ fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
 /// **A supervisor holding every right its own domain grants still cannot collect another domain's
 /// corpse, and a stranger's liveness changes no answer.**
 ///
-/// The attacker holds READ and ENUMERATE on its own rendezvous, the full legitimate supervisor's
-/// grant. Through the real dispatcher it reaps at another domain's live member and at that domain's
-/// dead one. Both must answer `NotSupervised`, the same error for the living stranger and the dead
-/// one: a difference would be a liveness oracle through an endpoint the stranger's builder never
-/// named (claim 7), and either one succeeding would be a corpse collected outside the supervising
-/// rendezvous (claim 6). The positive control is the attacker reaping its own domain's corpse
-/// through the same capability, which is what makes the sideways refusals the domain check
-/// talking.
+/// Holding READ and ENUMERATE on its own rendezvous, the attacker reaps another domain's live and
+/// dead members. Both must answer `NotSupervised`, the same error: a difference is a liveness
+/// oracle (claim 7), and a success is a corpse collected outside its supervisor (claim 6). Reaping
+/// its own domain's corpse through the same capability is the control.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -119,14 +103,10 @@ fn a_supervisor_cannot_reap_across_domains_and_a_strangers_liveness_is_invisible
 /// **A domain's view is exactly its own members, dead ones included, and every member the view
 /// shows is a member the reap may collect, and nothing else is.**
 ///
-/// One domain holds a live member (blocked in a send) and a dead one (a settled corpse), another
-/// holds a live stranger, a third holds nothing. The view of the first domain, driven by the real
-/// program's real loop (`ps::collect`) through the real dispatcher, must report exactly its two:
-/// the corpse may not vanish early and the stranger may not appear. The empty domain must answer
-/// with an empty, complete walk rather than a refusal. Then the domain equality (claim 9): each
-/// tid the view showed is one the same rendezvous's `REAP` answers for, with the live member
-/// answering `StillAlive` and the dead one collectable, while the stranger, which no view showed,
-/// is refused.
+/// One domain holds a live and a dead member, another a live stranger, a third nothing.
+/// `ps::collect` through the real dispatcher must show exactly the first domain's two, and the empty
+/// domain a complete empty walk. Claim 9: each tid shown answers that rendezvous's `REAP` (live
+/// `StillAlive`, dead collectable), and the stranger, which no view showed, is refused.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.

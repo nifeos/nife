@@ -55,6 +55,7 @@ themselves. The last column is this milestone's result.
 | 33 | No `WRITE`, no x86_64 port I/O | Milestone 768 (provisional) | `kernel::user::x86_port_tests::a_read_only_port_capability_must_not_grant_port_output` | [yes](../system_tests/falsifications/user.x86_port_tests.a_read_only_port_capability_must_not_grant_port_output.patch) |
 | 34 | A program reaches only the sockets it holds; a socket moves only by its capability | §255 (each socket is its own capability) | `kernel::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic`, `a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing` | yes: [the squatter](../system_tests/falsifications/user.net_confinement_tests.a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic.patch), [the hand-off](../system_tests/falsifications/user.net_confinement_tests.a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing.patch) |
 | 35 | A listed location never reaches a private or link-local address, and the address dialed is the one the check passed | milestone 801 (packages over the internet), calef's Q1 on #1884; milestone 871 (a sixth outsider pass attacks the confinement claim) | `kernel::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest` | yes: [connecting by name again](../system_tests/falsifications/user.package_index_tests.a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest.patch), the rebinding escape |
+| 36 | A terminal's client cannot stop it: a supervised terminal takes `OPERATION_QUIESCE` only through its supervisor's badged copy | §232 (the `line_editor` swap contract), `line_editor::proto::SUPERVISOR_BADGE` | `kernel::user::terminal_quiesce_tests::a_quiesce_from_anyone_but_the_supervisor_is_refused_and_the_terminal_serves_on`, `terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor`; `line_editor::proto::tests::only_the_supervisor_badge_admits_a_quiesce` | yes: [`line_editor`](../system_tests/falsifications/user.terminal_quiesce_tests.a_quiesce_from_anyone_but_the_supervisor_is_refused_and_the_terminal_serves_on.patch), [`display_terminal`](../system_tests/falsifications/user.terminal_display_swap_tests.a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor.patch), 2026-10-24 |
 
 Every row carries a replayable record, fatal risk 7's second criterion.
 
@@ -128,6 +129,38 @@ This pass assumed each claim false and went looking. Two findings, both fixed:
 Eight other attacks held, from recycled TCB slots to FP register leaks.
 [`confinement-claims/adversarial-pass-2026-09-21.md`](confinement-claims/adversarial-pass-2026-09-21.md)
 has every attack, what each fix does not settle, and what the pass could not reach.
+
+## What `RECEIVE_CAP` hands back
+
+`RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP` when the message
+carried none. A `CALL` server reads it as the slot of its one-shot `Reply`. No consumer in the tree
+checks the kind of object in that slot, and no ABI call would let one, as the audit by milestone 613
+(a system log service: the in-memory half) on PR #1494 found. So a word in `x1` that names a real
+slot without a delivery is authority. The worst case is `net_stack`, which
+any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `cap_delete(x1)`
+with no guard, so a chosen slot deletes one of the server's own capabilities.
+
+`system_tests/src/user/receive_cap_attack_tests.rs` holds the property on every arrival order.
+
+- The receive side writes `NO_CAP` unless a capability was installed for this delivery
+  (`Thread::cap_delivered`, `kernel/src/sched.rs`). That covers a plain `SEND`, an interrupt
+  signal and a death message reaching a parked `RECEIVE_CAP`. An `ipc_send` drops its words
+  straight into a parked receiver's mailbox, which is why the receiver-first order is the one at
+  risk. For the interrupt and the death message the word is the kernel's, not a sender's, so the
+  hazard there is order-dependence and a fail-open default rather than a chosen value.
+- `cap_delivered` does not cover the sender-first order. There `ipc_receive_cap`'s `FromSender`
+  path takes `Thread::outgoing_cap` unconditionally. So a delegation must never stay staged after a
+  plain `RECEIVE` collects its sender, or the sender's next plain `SEND` hands it to whoever
+  receives there.
+- A plain `RECEIVE` never takes a capability (§246 (a plain `RECEIVE` never takes a capability)). A
+  server that drains output with plain `RECEIVE` and never reads `x1` (swish, `wc`, `mdr`, the
+  terminal sink) would otherwise lose one of its 32 slots per delegation.
+- `x4 == REPLY_DELIVERED` tells a `CALL` server its Reply from a delegation (§245 (a `CALL` server
+  tells a Reply from a delegation)). Without the tag a server deletes the Reply as a delegation and
+  its caller is never answered, or answers a delegated rendezvous and parks for good.
+
+The throwaway attack programs that first drove the plain-`SEND` escape under QEMU are described in
+`design/roadmap/0634-*.md`.
 
 ## BUGS
 

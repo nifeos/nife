@@ -79,10 +79,10 @@ The grammar `diskutil` emits is eight element types and five character entities,
 Apple's DTD. Correctness is whether it reads what `diskutil` wrote, and the captured fixtures
 answer that.
 
-The two USB hard disks and the disk image in the fixtures are real captures. The flash stick is
-synthesized, because no stick was attached when they were captured. `diskutil eraseDisk` has been
-run by this program only on file-backed disks (`hdiutil attach`), never on a physical stick; Apple
-documents the same command for both.
+The two USB hard disks and the disk image in the fixtures are real captures, with identifiers,
+names and sizes made neutral. The flash stick is synthesized, because no stick was attached when
+they were captured. `diskutil eraseDisk` has been run by this program only on file-backed disks
+(`hdiutil attach`), never on a physical stick; Apple documents the same command for both.
 
 ## Linux
 

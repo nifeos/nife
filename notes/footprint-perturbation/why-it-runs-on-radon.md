@@ -1,5 +1,7 @@
 # Why the experiments moved to radon, and what the PMU adds
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `background`.*
+
 An appendix to [notes/footprint-perturbation.md](../footprint-perturbation.md). It holds why this page
 exists, the three obstacles that kept E1, E3 and E4 off the board, the static footprint table, and
 what the riscv64 half of milestone 74 (cycle counters) adds and cannot see.

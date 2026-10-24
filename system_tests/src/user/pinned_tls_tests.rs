@@ -2,19 +2,12 @@
 //! milestone 501 (a TLS client that speaks to one pinned peer).
 //!
 //! Milestone 442 (a crypto provider `rustls` can use on all three bare-metal targets) proved the
-//! provider's primitives on all three architectures and stopped short of a handshake: no peer, no
-//! socket, no client. This is the handshake. `pinned_tls_exerciser` is a `std` program that runs
-//! `pinned_tls_client` through `std::net` and `net_stack` to `helpers/tls-peer`, which slirp runs
-//! once per connection at 10.0.2.9:8443 and which is OpenSSL through Python's `ssl`.
-//!
-//! **One NIC for all three architectures, the `e1000e`**, which every runner attaches and which is
-//! the family of xenon's card, so the parity claim is the same code path on each and not three
-//! similar ones. The virtio NICs would have served aarch64 and riscv64 and left x86_64 to a
-//! second path.
-//!
-//! **Skips only where the program was not built**, on `cryptography_tests`' terms: `cargo xtask
-//! test` runs `helpers/build-pinned-tls-exerciser.sh` for every leg it boots since milestone 855
-//! (the TLS graph enters the gated build), so `script/test` and CI run this.
+//! provider's primitives with no handshake; this is the handshake. `pinned_tls_exerciser` runs
+//! `pinned_tls_client` through `std::net` and `net_stack` to `helpers/tls-peer`, OpenSSL through
+//! Python's `ssl`, which slirp runs per connection at 10.0.2.9:8443. Every runner attaches the
+//! `e1000e` (the family of xenon's card), so parity is one code path; virtio would have left x86_64
+//! a second. It skips only where the program was not built, as `cryptography_tests` does, and
+//! `cargo xtask test` builds it per leg (milestone 855 (the TLS graph enters the gated build)).
 
 use super::*;
 

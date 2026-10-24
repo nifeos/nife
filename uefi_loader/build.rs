@@ -15,17 +15,12 @@ use std::{env, fs};
 /// **Refuse to embed a kernel beside an archive it does not vouch for.**
 ///
 /// The kernel compiles in the SHA-256 of each archive entry it will enter (`kernel/build.rs`'s
-/// trust root) and halts at `MEASURED BOOT REFUSED` on a mismatch. That halt has reached a bench
-/// twice (radon on 2026-08-15, xenon on 2026-09-17), both times because a kernel and an archive from
-/// different builds were put side by side. This loader is the last place the two meet before they
-/// become one file, so this is where the mismatch stops being expressible: the build fails, with the
-/// entry named, instead of producing a boot file that halts.
-///
-/// **The comparison itself lives in `sealed_pair`**, built for milestone 223 (read a card and say whether its kernel and archive match),
-/// which is where a card checker asks the same
-/// question about files it did not build. It used to be written out here, and a second copy of a
-/// measured-entry list is exactly the thing that goes stale without anybody noticing: a kernel that
-/// grew a third boot program would have been vouched for by a check that had never heard of it.
+/// trust root) and halts at `MEASURED BOOT REFUSED` on a mismatch, which has reached a bench twice
+/// (radon on 2026-08-15, xenon on 2026-09-17) from a kernel and an archive of different builds.
+/// This loader is the last place the two meet before they become one file, so the build fails here
+/// with the entry named. The comparison is `sealed_pair`'s, built for milestone 223 (read a card
+/// and say whether its kernel and archive match), so a card checker and this build share one
+/// measured-entry list rather than two that drift.
 fn refuse_an_unsealed_pair(kernel_path: &str, initial_ramdisk_path: &str) {
     let kernel = fs::read(kernel_path).unwrap_or_else(|e| panic!("cannot read {kernel_path}: {e}"));
     let archive = fs::read(initial_ramdisk_path)

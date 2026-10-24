@@ -2,9 +2,10 @@
 
 *Name provisional. Until 2026-10-09 (UTC) this account lived in `kernel/src/testing.rs`'s doc
 comment on `SUITE_PAGE_FRAME_BUDGET`, accumulating a dated entry per raise. Milestone 862
-(comments state the constraint as it is now) moved it here. The constraint and the conventions
-stay at the constant; the findings stay here; the measurement narratives went to that move's
-commit message, where `git blame` finds each entry's own commit too.*
+(comments state the constraint as it is now) moved it here. The constraint stays at the constant;
+the conventions and the findings are here, and the constant's doc comment links this page. The
+measurement narratives went to that move's commit message, where `git blame` finds each entry's own
+commit too.*
 
 `SUITE_PAGE_FRAME_BUDGET` is what the whole system-test suite may leave unreturned, in frames,
 checked once at the end of the run by `report_frame_ledger`. The gate's other half,
@@ -42,6 +43,15 @@ Measured conclusions, undated; each row's number is the reading that established
 - Raising or lowering it is a decision, not a formality: read the `[that test kept N frames]` lines
   the run prints, find who grew or shrank, and be able to say why.
 
+## Image size moves the number too
+
+Part of the residue is program image size, not any test's memory. Each of `c_seam_tests`' three
+confiner spawns keeps a space sized by `c_confiner`'s loadable segments, 15 pages in a debug build.
+Spaces that map the whole initial ramdisk keep revocation-log pages sized by it, so a larger archive
+moves this number too. A change that grows a program can therefore move it by a few frames with no
+leak behind it; the `[that test kept N frames]` lines and the programs' segment pages tell the two
+apart.
+
 ## Every number it has been
 
 | date (UTC) | measured | set to | cause |
@@ -76,3 +86,4 @@ Measured conclusions, undated; each row's number is the reading that established
 | 2026-10-19 | 24,197 | 24,229 | milestone 142 (a text display good enough that people use it): scanout 924x344 to 1120x624 (311 to 683 frames). The four tests that hold the kernel's display DMA region while they run each keep 372 to 383 more than main's CI run (the surface's growth); compositor tests about 4 more each (four-page windows), the focus test 22. Net +432 over 23,765. aarch64 only; riscv64 on the next run |
 | 2026-10-19 | 24,251 / 24,248 | 24,283 | a process's region now pays for recording the `PageFrame` runs it is granted (`user::entry::run_with`): spaces that outlive their tests and hold a run keep its log pages, about 5 more for each compositor test and 30 to 40 for the login and credential services. Both paths measured |
 | 2026-10-20 | 24,267 / 24,290 | 24,322 | milestone 142 increment 5: `display_terminal` draws three more faces, so its image loads 16 more pages, and every terminal the suite keeps holds one. Against main's merge-group run (24,221 / 24,238) on riscv64: `display_tests`' terminal +15, `compositor_tests`' focus test's two window terminals +32, the rest one-frame noise and a 23-frame swap between `date_tests`. CI measured, both paths; riscv64 is the tighter |
+| 2026-10-24 | 24,325 / 24,339 | 24,371 | nightly-2026-10-23, no tree change: rust-lang/rust#162535 has `derive(Debug)` on a fieldless enum call `Formatter::debug_c_like_enum_write_str`, whose `names[start..]`, `split(' ')` and `unwrap()` link `core`'s string-slice panic path, `<char as Debug>` and the unicode tables, about 7.5 KiB per program. 17 programs grow 1 to 3 loadable pages on each path (31 pages aarch64, 30 riscv64); `c_confiner`, `root_supervisor`, `swish` and `login` are the ones kept spaces hold. The same tree on nightly-2026-10-22 measured 24,312 / 24,317. Both paths measured locally |

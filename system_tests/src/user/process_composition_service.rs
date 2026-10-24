@@ -25,19 +25,16 @@ pub struct Witness {
     pub budget: u64,
 }
 
-/// Spawn the witness; returns its verdict line and what it holds.
+/// Spawn the witness (`fixtures/src/process_composition_witness.rs`); returns its verdict line and
+/// what it holds.
 ///
-/// It was role 19 of the `hello` multiplexer until milestone 291 (thirty-one programs wearing one
-/// name) and is `fixtures/src/process_composition_witness.rs` now.
-///
-/// **Its endowment is the progenitor's shape**, which is `builder`'s: the archive read-only at
-/// `INITIAL_RAMDISK_VA` with its length in `x1`, a memory region in slot 0 and a report line in
-/// slot 1. The region is the **lending** budget, every right, and has been since milestone 824
-/// (a retype mints no right its budget lacks): the witness endows its child's slot 0 through
-/// `CAP_INSERT`, which gates on `GRANT`, so after 824 an endowing budget must carry `GRANT`
-/// itself, which is what `memory_region_lending_capability` mints. The report line is `WRITE`
-/// only, narrower than the progenitor's `WRITE|GRANT`, because the witness reports and never
-/// delegates the line.
+/// Its endowment is the progenitor's shape, which is `builder`'s: the archive read-only at
+/// `INITIAL_RAMDISK_VA` with its length in `x1`, a memory region in slot 0, and a `WRITE`-only
+/// report line in slot 1, narrower than the progenitor's `WRITE|GRANT` because the witness never
+/// delegates it. The region is the lending budget, every right: the witness endows its child's slot
+/// 0 through `CAP_INSERT`, which gates on `GRANT`, and milestone 824 (a retype mints no right its
+/// budget lacks) means the budget must carry `GRANT` itself, as `memory_region_lending_capability`
+/// mints it.
 pub fn wire() -> Witness {
     let report_region = crate::memory_region::create(1).expect("no region for the report line");
     let report = crate::sched::create_rendezvous_from(report_region).expect("no report rendezvous");

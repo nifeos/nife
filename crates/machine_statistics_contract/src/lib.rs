@@ -3,41 +3,18 @@
 //!
 //! One read-only page the kernel keeps its machine-wide counters in: physical frames, and per core
 //! the ticks spent busy and idle, the context switches, the interrupts taken and the run queue.
-//! `free` reads the memory line, `vmstat` reads all of it, and `top`'s summary reads the run queue
-//! and the busy share. This crate is the one definition of where each word lives, so the kernel
-//! (the one writer) and every reader agree through a dependency rather than two copies of an
-//! offset (AGENTS.md rule 7).
-//!
-//! # A page, not a method, and not ambient
-//!
-//! §225 ruled the shape: the figures arrive in a page somebody was granted, so an owner can
-//! withhold them, and they are read with a load rather than a crossing. Nothing makes the page
-//! reachable by default. The progenitor holds the kernel's only capability to it and maps it into a
-//! child whose manifest declares `machine`, the same way it hands `date` the clock.
-//!
-//! # The kernel writes the counters in place
-//!
-//! There is no refresh to schedule. Each word is an `AtomicU64` the kernel updates where the event
-//! happens: a tick bumps its core's busy or idle count and samples its run queue, the frame
-//! allocator stores the free count after each change. The one copy is the switch count: the
-//! context switch counts into its own core's private block, and that core's tick stores the total
-//! here. Every per-core word has exactly one writer, the core it describes, and each core's words sit in
-//! their own 64-byte line, so no two cores ever write the same cache line.
-//!
-//! So a reader sees each word as it was a moment ago, and **the words are not a consistent snapshot
-//! of each other**, the bargain `/proc/stat` makes too: a seqlock would put a store and a fence on
-//! the kernel's hottest path for a consistency no reader of these figures needs.
-//!
+//! This crate is the one definition of where each word lives, so the kernel (the one writer) and
+//! every reader agree through a dependency (AGENTS.md rule 7). The page is granted, never ambient.
+//! Each word is an `AtomicU64` the kernel updates in place, one writer per word, so **the words are
+//! not a consistent snapshot of each other**. See notes/machine-statistics.md.
 
 //! # BUGS
 //!
-//! - `busy` is not split into user and system time: the tick knows which thread was running, not
-//!   which privilege level it interrupted. So `vmstat` prints `us` and `sy` as one.
+//! - `busy` is not split into user and system time, so `vmstat` prints `us` and `sy` as one.
 //! - The context-switch count is exact but up to one tick old, because the tick publishes it.
-//! - The run queue is sampled once per tick per core, so it is up to one tick stale, and a core
-//!   that has stopped ticking (a parked core) keeps its last sample.
-//! - There is no swap counter, because nife does not page out. There is no page cache or block
-//!   I/O counter either: the filesystem and the block driver are userspace programs.
+//! - The run queue is sampled once per tick per core; a parked core keeps its last sample.
+//! - There is no swap, page-cache or block I/O counter: nife does not page out, and the filesystem
+//!   and the block driver are userspace programs.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table), for the crate and for "the machine statistics
 //! page". §225 called it the machine memory page; it carries the scheduler's counters too, because
@@ -75,11 +52,8 @@ const _: () = assert!(
 /// address-space map (`address_space_map::pair_page`): the progenitor and the one child it builds
 /// agree on it, the way they agree on the clock page's address.
 ///
-/// Chosen before milestone 206 (a program image has under 896 KiB) moved every image and stack to
-/// the second gigabyte, when this was the last page of the 2 MiB block a child's program and stack
-/// shared, so it cost a spawn no page-table frame. Under the map it costs what any pair page does,
-/// which `system_initializer`'s `JOB_REGION_PAGES` already counts. The number stayed because calef
-/// had ratified it and nothing collides with it.
+/// Under the map it costs what any pair page does, which `system_initializer`'s
+/// `JOB_REGION_PAGES` counts. Why this address is in notes/machine-statistics.md.
 ///
 /// Ratified 2026-09-27 (calef, #1360's table).
 pub const PAGE_VA: u64 = address_space_map::pair_page(0x005F_F000);

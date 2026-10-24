@@ -1,5 +1,7 @@
 # Interleavings: what was modeled, crate by crate
 
+*Name: provisional.*
+
 An appendix to [notes/interleaving.md](../interleaving.md), which summarizes it. The parent has the
 survey, the counts and a table of all five crates. This page has each crate's harnesses, how each
 was falsified, and its bounds.
@@ -22,6 +24,10 @@ calls it rather than keeping a copy of the protocol. That is the same Phase-2 mo
 | `a_take_sees_everything_the_thief_wrote_before_claiming` | the release/acquire pairing publishes what preceded the claim (loom's `UnsafeCell` turns "visible" into a checked fact rather than an argument) |
 | `a_relaxed_pairing_publishes_nothing` | **the falsification**, `#[should_panic]`: the same handshake with relaxed orderings must fail, and if it ever stops failing we want to hear about it |
 | `a_stale_load_reading_costs_a_round_and_nothing_more` | §28's gossip claim, that a thief reads its victim's load relaxed and possibly stale on purpose: the interleaving where the victim drains between the load and the claim costs a wasted round and nothing else |
+
+Everything else on the steal path is under a lock. The compare-exchange and the swap are lifted
+into the crate because they are the kind of protocol that is right on total store order and wrong
+on the weakly ordered ISAs this project runs on.
 
 ## `crates/clock_contract`, the second protocol
 
@@ -120,6 +126,21 @@ holding one. Three harnesses:
 A fourth, scratch-only harness encoded the OLD two-flag spelling against the exclusion model, and
 loom falsified it on the first run. That is the falsification discipline the
 `thread_wake_handshake` section above describes, applied to a protocol that was actually broken.
+
+The state word's transitions, as the crate's guards make them:
+
+```text
+           arm()                    drop(ArmGuard)
+DISARMED ─────────► ARMING ──────────────────────► ARMED ◄──┐
+   ▲                  ▲                              │      │ drop(CheckGuard)
+   │ disarm()         │ arm()                        │      │
+   │                  │              try_check()     ▼      │
+   └───────────────── ARMED ◄──────────────────── CHECKING ─┘
+```
+
+`try_check` answers `None` when it cannot take the gate, and the caller knows which it got: the
+timer tick shrugs, and a caller that needs a completed pass loops. What a divergence means is the
+kernel's business, not the gate's.
 
 ## `crates/memory_regions`, the untyped region claim (2026-08-18)
 

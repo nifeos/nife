@@ -1,29 +1,18 @@
 //! **The counter frequency page**: how many [`user_mode_runtime::now`](../user_mode_runtime/fn.now.html)
-//! ticks make a second, on the architectures with no register that says so. aarch64 reads
-//! `CNTFRQ_EL0` and maps no page. `x86_64`'s TSC rate comes from `CPUID` leaf `0x15` or is
-//! measured, and `riscv64`'s is `/cpus/timebase-frequency` in a device tree no process can read:
-//! either way the kernel learns it once, at boot. This crate is the page's one definition, so the
-//! kernel (the one writer) and `user_mode_runtime::cntfrq` (every reader) cannot drift on its
-//! layout or address, as `clock_contract` does for the wall clock. A hardcoded rate is not an
-//! answer: radon's `time` CSR runs at 4 MHz, not QEMU's 10 MHz (calef, 2026-09-21: "the program
-//! only returns accurate numbers").
-//!
-//! Every process that calls `now` needs the rate, with no capability to ask for, so the page is
-//! mapped unconditionally: by `kernel::user::load` and `kernel::user::map_timebase_page` for spaces
-//! the kernel builds, and by `supervision_protocol::build_child_space`, where the parent writes a
-//! fresh page from its own `user_mode_runtime::cntfrq_checked` reading. A parent that does not know
-//! the rate writes zeroes, and [`TimebasePage::hz`] reads that as `None`, never a fabricated rate.
-//! The kernel writes the page once before mapping it read-only, so no seqlock is needed.
-//!
+//! ticks make a second, on the architectures with no register that says so (aarch64 reads
+//! `CNTFRQ_EL0` and maps no page). The kernel learns the rate once at boot and writes the page
+//! once before mapping it read-only into every process, so no seqlock is needed; a child space's
+//! page is written by its parent, and an unknown rate is zeroes, read as `None`. This crate is the
+//! page's one definition for every writer and `user_mode_runtime::cntfrq`. See
+//! notes/benchmarks/counter-frequency-and-calibration.md, "The page and its bounds".
+
 //! # BUGS
 //!
-//! - The TSC is assumed invariant (`CPUID.80000007H:EDX[8]` is not checked, as in
-//!   `arch::x86_64::timer`); a part that changes its TSC rate leaves every process reading a stale
-//!   number. QEMU's TSC is invariant.
-//! - A process spawned another way (the hand-built demo spaces that run raw machine code) has no
-//!   page, and [`user_mode_runtime::cntfrq`](../user_mode_runtime/fn.cntfrq.html) there faults on
-//!   the unmapped read. That is deliberate: dying says the rate is unknown, a plausible number
-//!   would not. A new spawn path must map the page or not link anything that calls `cntfrq`.
+//! - The TSC is assumed invariant (`CPUID.80000007H:EDX[8]` is not checked); a part that changes
+//!   its rate leaves every process reading a stale number. QEMU's TCG does not advertise the bit;
+//!   notes/tsc-under-tcg.md measures the rate it does keep.
+//! - A process spawned another way (the hand-built demo spaces) has no page, and
+//!   [`user_mode_runtime::cntfrq`](../user_mode_runtime/fn.cntfrq.html) there faults, on purpose.
 //! - The rate is read once per process, so a later, better number could not reach it.
 //!
 //! Name: ratified 2026-10-18 (calef): "ratify `counter_frequency_contract` and fix the docs". The stem
@@ -38,20 +27,11 @@
 /// unpadded, the same shape `clock_contract::MAGIC` and `environment_contract::MAGIC` use.
 pub const MAGIC: [u8; 8] = *b"TIMEBAS1";
 
-/// **The slowest counter this tree will believe**, 100 kHz.
-///
-/// Every rate check in this tree used to validate against *zero* and nothing else: aarch64 asserted
-/// `freq > 0`, riscv64 asserted `hz > 0`, and `x86_64`'s PIT calibration had no band at all. A
-/// firmware that reports 1 Hz, or a calibration that returns garbage because the host descheduled
-/// the vCPU mid-measurement, passes all three and then poisons every number derived from it,
-/// silently, which is the failure this whole file exists to prevent one layer up.
-///
-/// **The bound is deliberately far below anything real**, because a false refusal on somebody's
-/// silicon is worse than the failure it prevents: it turns a machine that would have run into a
-/// machine that will not boot. The slowest counter in this tree's world is radon's 4 MHz `time`
-/// CSR; the 32.768 kHz watch crystal is the slowest thing anyone drives a timer from anywhere, and
-/// 100 kHz sits above it on purpose, because nothing here is a watch. Anything under this is a
-/// measurement that failed, not a part that is slow.
+/// **The slowest counter this tree will believe**, 100 kHz. Far below anything real, because a
+/// false refusal on somebody's silicon turns a machine that would have run into one that will not
+/// boot: radon's 4 MHz `time` CSR is the slowest counter here, and 100 kHz sits above the 32.768
+/// kHz watch crystal on purpose. Anything under it is a failed measurement, not a slow part. See
+/// notes/benchmarks/counter-frequency-and-calibration.md, "The page and its bounds".
 pub const MIN_PLAUSIBLE_HZ: u64 = 100_000;
 
 /// **The fastest counter this tree will believe**, 100 GHz, and the same reasoning as
@@ -64,9 +44,9 @@ pub const MAX_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 /// Is `hz` a rate a real machine could plausibly have? See [`MIN_PLAUSIBLE_HZ`] and
 /// [`MAX_PLAUSIBLE_HZ`] for where the bounds come from and why they are so wide.
 ///
-/// One definition rather than three, because a band copied into each architecture's timer is a band
-/// that drifts: the kernel's aarch64, riscv64 and `x86_64` boot paths all call this, at the point
-/// each first learns its number.
+/// One definition rather than three: a band copied into each architecture's timer drifts, so the
+/// kernel's aarch64, riscv64 and `x86_64` boot paths all call this where each first learns its
+/// number.
 ///
 /// # Examples
 ///
@@ -90,37 +70,12 @@ const OFF_HZ: usize = OFF_MAGIC + 8;
 pub const PAGE_BYTES: usize = OFF_HZ + 8;
 
 /// **The fixed virtual address `kernel::user::load` maps this page at**, in every `x86_64` and
-/// every `riscv64` process. Both sides of the page (the kernel's writer,
-/// `user_mode_runtime::cntfrq`'s reader) agree on
-/// this number through this crate rather than through two copies of a magic constant (CLAUDE.md
-/// rule 7).
-///
-/// **`riscv64` gets its own address, because Sv39's low half is not big enough for this one.**
-/// `x86_64` splits at bit 47 and the value below sits comfortably inside the low half; RISC-V under
-/// Sv39 splits at bit 38 (`crates/paging/src/sv39.rs`), so every address at or above
-/// `0x40_0000_0000` is not a user address at all and a mapping at the `x86_64` value would be
-/// refused rather than merely unusual. See the `riscv64` arm's own comment for where its number
-/// comes from.
-///
-/// **Deliberately far above every other low-half address this tree hands out.** When this was
-/// sited, every program's ELF loaded at `0x40_0000`, its stack sat at `0x50_0000`, and individual
-/// test fixtures mapped their own extra windows in the low few megabytes above them (a first
-/// attempt at `0x60_0000` collided with `fixtures/src/window.rs`'s own `CTL_VA`, which a full-suite
-/// run under `script/test --arch x86_64` caught as `AlreadyMapped`). Because this page is mapped
-/// **unconditionally into every `x86_64` process** rather than opted into by one program's own
-/// wiring, it could not share that convention's address space at all: any low-MiB address might be
-/// exactly what some future program's own segments or some future fixture's own window wants.
-///
-/// **That collision is why `crates/address_space_map` exists** (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option
-/// D). Under the map, `0x60_0000` is a pair page by definition and a page like this one belongs in
-/// the map's `PROCESS_PAGES`, beside the stack, where it would share the stack's page tables
-/// instead of paying for three of its own. It has not moved there: this file is generated into
-/// std's PAL, so the move is a farm rebuild and a benchmark re-baseline, and it is recorded in the
-/// map's roadmap block as the next step rather than folded into the change that drew the map. The
-/// test module pins that it stays above every band on the map meanwhile. `0x0000_7000_0000_0000` sits at seven-eighths of the low half's own ceiling
-/// (`x86_64`'s `SPLIT_SHIFT` is 47, so the low half is every address under `0x0000_8000_0000_0000`;
-/// see `crates/paging/src/x86_64.rs`), leaving roughly 26 TiB of headroom below the boundary and
-/// none of this tree's other conventions anywhere near it.
+/// every `riscv64` process, shared by the kernel's writer and `user_mode_runtime::cntfrq` through
+/// this crate (CLAUDE.md rule 7). `riscv64` has its own, because Sv39's low half ends at
+/// `0x40_0000_0000`. This one sits at seven-eighths of `x86_64`'s low half, far above every band
+/// the tree hands out, because the page is mapped into every process unconditionally; it belongs
+/// in `address_space_map::PROCESS_PAGES` and has not moved there. See notes/address-space-map.md,
+/// "The counter frequency page's address".
 #[cfg(not(target_arch = "riscv64"))]
 pub const PAGE_VA: u64 = 0x0000_7000_0000_0000;
 

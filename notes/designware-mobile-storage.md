@@ -27,7 +27,8 @@ is SDHCI-compatible and has a different register map. Which release this one is 
 wide its FIFO is (`HCON`) are the first two things the bench step reads. On radon both slots read
 `VERID 0x5342290a` (release 2.90a) and `HCON 0x00c43cc1`: a 32-bit FIFO, 32 words deep, the kind
 this driver moves (Results, below).
-`crates/designware_mobile_storage/src/jh7110.rs` carries the node-by-node evidence.
+[`designware-mobile-storage/driver.md`](designware-mobile-storage/driver.md) carries the
+node-by-node evidence.
 
 ## What was reused, and what was not
 
@@ -102,9 +103,9 @@ the board boots from QSPI flash, which is how radon is set up (DIP switches both
 
 About fifteen minutes, three boots, and the card is never removed. radon's card was written once
 with `--tftp` (milestone 257 (boot radon over the network)), so each boot is a build and a power
-cycle. Do these on patagonia, in this branch's worktree.
+cycle. Do these on the Mac radon's UART goes into, in this branch's worktree.
 
-Before you start. radon's DIP switches on QSPI (both low), the UART on patagonia, the Ethernet
+Before you start. radon's DIP switches on QSPI (both low), the UART on that Mac, the Ethernet
 cable in the port U-Boot netboots over. radon's card asks for a stale server address and an old
 archive name; notes/designware-ethernet.md's bench step says what to type at U-Boot and what to
 serve until the card is rewritten. In a second terminal, leave the TFTP server running:

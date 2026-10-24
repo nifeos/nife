@@ -1,19 +1,12 @@
 use super::*;
 use crate::arch::mmu;
 
-/// **A run that fails partway through leaves nothing mapped** (milestone 142's review, MAJOR
-/// 2), driven through the real `MAP_INTO` handler.
+/// **A run that fails partway through leaves nothing mapped**, driven through the real `MAP_INTO`
+/// handler: after the error, page 0 is not mapped and the squatter's page still is.
 ///
-/// The regression: the pre-§102 single-page path rolled back on failure, and the widening
-/// narrowed that rollback to the one page that failed. So a three-page run whose second page
-/// could not be mapped returned `BadPointer` with its first page mapped and recorded, and the
-/// caller had no method to ask which. Silent partial state is worse than a refusal, and this is
-/// the assertion that says so: after the error, page 0 is not mapped.
-///
-/// The failure is injected by occupying the run's middle virtual address first, so the loop's
-/// second iteration takes `AlreadyMapped`. That is the cheapest deterministic mid-run failure
-/// available; an exhausted page-table budget would do it too, and would depend on arithmetic
-/// about region sizes that has drifted before.
+/// The run's middle virtual address is occupied first, so the loop's second iteration takes
+/// `AlreadyMapped`: the cheapest deterministic mid-run failure, and one that depends on no
+/// arithmetic about region sizes.
 #[test_case]
 fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let mut trap = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
@@ -72,9 +65,8 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
         "the rollback unmapped a page the failed call never mapped",
     );
 
-    // Give everything back, so the free-frame baseline later tests measure is undisturbed. The
-    // space's region is pinned by its root page, so it comes back through `reclaim_region`
-    // (which reaps the space itself) rather than through `destroy`.
+    // The space's region is pinned by its root page, so it comes back through `reclaim_region`,
+    // which reaps the space, not through `destroy`.
     let _ = sched::delete_current_cap(space_slot);
     let _ = sched::delete_current_cap(frame_slot);
     let _ = sched::reclaim_region(space_region);
@@ -257,8 +249,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
         !child.rights.allows(Rights::GRANT),
         "escalation: a GRANT-less untyped split into a GRANT-bearing child",
     );
-    // Because it lacks GRANT it cannot be delegated: SEND_CAP and CAP_INSERT both refuse without
-    // it (the exact gate at syscall.rs lines ~143 and ~319), so the child is non-transferable.
+    // Without GRANT it cannot be delegated: `SEND_CAP` and `CAP_INSERT` both refuse.
     assert!(
         !child.rights.allows(Rights::GRANT),
         "a spend-only child must be un-delegatable",
@@ -282,9 +273,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
         panic!("SPLIT must mint an untyped");
     };
 
-    // Clean up: reclaim children (LIFO top of each parent) then parents, and drop the cap slots,
-    // so the test returns every frame it borrowed and leaves the test thread's capability table as it found
-    // it (the free-frame baseline that later tests measure against).
+    // Children before parents: each child is the top of its parent's watermark.
     sched::reclaim_region(child_region).expect("reclaim the spend-only child");
     sched::reclaim_region(spend_only_region).expect("reclaim the spend-only parent");
     sched::reclaim_region(root_child_region).expect("reclaim the root child");

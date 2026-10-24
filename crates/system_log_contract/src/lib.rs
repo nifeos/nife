@@ -1,40 +1,18 @@
 //! **The system log's wire contracts**: milestone 613 (a system log service: the in-memory half),
-//! for §242 (a system log).
+//! for §242 (a system log). Three things two programs agree on (AGENTS.md rule 7):
 //!
-//! Three things two programs agree on, so by AGENTS.md rule 7 one crate rather than copies:
+//! - [`record`]: F3, the binary record, the transport and never the stored form (§242, Question 3).
+//! - [`control`]: what the spawner that minted a writer's badge tells the service about it, through
+//!   the unbadged intake capability, which only the spawner holds.
+//! - [`read`]: how a reader asks for records, and the shared page they land in as JSONL.
 //!
-//! - [`record`]: **F3**, the binary record. A 32-byte header the service (or, from milestone 342
-//!   (the kernel and the `console` server drive one UART from two address spaces), the kernel)
-//!   writes, then up to [`record::TEXT_MAX`] bytes of text. It is the transport, never
-//!   the stored form: the service converts it to one JSON object per line before storing it
-//!   (§242, Question 3 as ruled).
-//! - [`control`]: what the spawner that minted a writer's badge tells the service about it (which
-//!   program, which user, which stream), sent through the **unbadged** intake capability, which is
-//!   what makes the spawner the only one who can say it.
-//! - [`read`]: how a reader asks for records and where they land: a page shared with the service,
-//!   one per reader, filled with whole JSONL lines.
-//!
-//! What a *writer* sends is not here. A writer speaks the byte sink (`crates/byte_sink_contract`),
-//! whose first word's spare bits carry a severity and a body kind since §242 amended it; that is
-//! the whole point of the shape, because a program that already prints can be given the log
-//! instead of a terminal and change nothing.
-//!
-//! # Attribution, and why the writer cannot lie about it
-//!
-//! Every field of a record but the text is filled by the service from the badge on the capability
-//! the writer invoked. The kernel stamps that badge (`abi::rendezvous::BADGE`, §230 (badged
-//! endpoint capabilities)), and the spawner that minted it registers what it means. A writer holds
-//! a badged copy, so it can neither send as badge 0 (the spawner's control channel) nor as anybody
-//! else.
-//!
+//! A writer speaks the byte sink (`crates/byte_sink_contract`), not this crate. See
+//! notes/system-log.md, "Attribution".
+
 //! # BUGS
 //!
-//! - **Badges are 32 bits here, and the kernel's are 64.** The control words pack a badge into the
-//!   low half of one word beside an opcode and a field. A spawner minting past `u32::MAX` would
-//!   have its registration refused rather than truncated ([`control::badge_fits`]). No spawner in
-//!   the tree comes near it; recorded because the narrowing is a choice, not a fact of the kernel.
-//! - **A name is at most [`control::NAME_MAX`] bytes.** Longer program names are cut at the
-//!   registration, so a JSONL reader sees the prefix. Every program in the archive fits today.
+//! - Badges are 32 bits here, and the kernel's are 64: [`control::badge_fits`] refuses the rest.
+//! - A name is at most [`control::NAME_MAX`] bytes, and a longer one is cut at registration.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". A wire contract for the system log.
 
@@ -78,7 +56,8 @@ pub mod severity {
     }
 }
 
-/// **F3, the binary record** (§242, Question 4): a fixed header, then text.
+/// **F3, the binary record** (§242, Question 4): a fixed header, then text. The header plus
+/// [`record::TEXT_MAX`] is 256 bytes, Zircon's debuglog record's total.
 ///
 /// | bytes | field | written by |
 /// |---|---|---|
@@ -90,8 +69,6 @@ pub mod severity {
 /// | 26..28 | `len`, the text's length | the service |
 /// | 28 | `kind`, the body kind (`byte_sink_contract::KIND_TEXT`) | the writer's framing bits |
 /// | 29..32 | zero | reserved, and refused when not zero |
-///
-/// The header plus [`record::TEXT_MAX`] is 256 bytes, Zircon's debuglog record's total.
 pub mod record {
     /// The header's length. F1's 32 bytes with one spare byte spent on `kind`.
     pub const HEADER_LEN: usize = 32;
@@ -265,13 +242,10 @@ pub mod control {
     }
 }
 
-/// **How a reader reads.** The reader `SEND`s [`read::OPERATION_READ`] with a cursor on the intake
-/// endpoint through its own badged copy; the service fills that badge's window with whole JSONL
-/// lines and signals the reader's notification. The reader waits on the notification, never the
-/// service on the reader: a reader that stops reading cannot hold up a writer (§242's "dropping
-/// rather than letting a writer wait").
-///
-/// The window, one page:
+/// **How a reader reads**: it `SEND`s [`read::OPERATION_READ`] and a cursor through its own badged
+/// copy, and the service fills that badge's one-page window, laid out below, with whole JSONL lines
+/// and signals the reader's notification. A reader that stops reading cannot hold up a writer
+/// (§242's "dropping rather than letting a writer wait").
 ///
 /// | bytes | field |
 /// |---|---|
@@ -336,35 +310,21 @@ pub mod read {
     }
 }
 
-/// **The kernel's ring, as the kernel and the log service share it** (milestone 342 (the kernel
-/// and the `console` server drive one UART from two address spaces), calef's ruling F of
-/// 2026-10-03 UTC on pull request #1498).
-///
-/// Three things cross the boundary, and none is a pointer or a method:
-///
-/// - **The ring**: [`PAGES`](kernel_ring::PAGES) frames the kernel writes and the log service maps
-///   read-only. A header (`MAGIC`, the next sequence number, the fallback count), then
-///   [`SLOTS`](kernel_ring::SLOTS) fixed slots of one F3 record each ([`record`]): record *s* lives
-///   in slot `s % SLOTS`.
-/// - **The cursor page**: one frame the log service writes and the kernel reads through its direct
-///   map. Word 0 is the next sequence number the service has not yet consumed, or
-///   [`DETACHED`](kernel_ring::DETACHED) until a drainer first writes it.
-/// - **A notification** the kernel signals (bit [`NOTIFY_BIT`](kernel_ring::NOTIFY_BIT)) after it
-///   appends.
-///
-/// Every word is an `AtomicU64`, so neither side ever reads memory the other is writing without an
-/// atomic: a slot is a seqlock whose sequence word is the record's own `seq`. The writer stores
-/// [`BUSY`](kernel_ring::BUSY) there, then the body, then the `seq`; a reader that sees the same
-/// `seq` before and after its copy has a record nobody touched, and anything else is
-/// [`Read::Overwritten`](kernel_ring::Read::Overwritten).
-///
-/// # BUGS
-///
-/// - **63 records, not the 180 lines §242 (a system log) sized 16 KiB for.** Fixed 256-byte slots
-///   are what make a lock-free reader one comparison instead of a walk; a byte-packed ring would
-///   hold a whole xenon boot. Lines written before a drainer attaches went to the UART directly as
-///   well, so what the small ring costs is history in the log, never a line on the console.
 pub mod kernel_ring {
+    //! **The kernel's ring, as the kernel and the log service share it** (milestone 342 (the
+    //! kernel and the `console` server drive one UART from two address spaces), calef's ruling F of
+    //! 2026-10-03 UTC on pull request #1498): the ring of [`SLOTS`] F3 records the kernel writes, a
+    //! cursor page the service writes, and a notification the kernel signals.
+    //!
+    //! Every word is an `AtomicU64`, and a slot is a seqlock whose sequence word is the record's
+    //! `seq`: the writer stores [`BUSY`], then the body, then the `seq`, and a reader that sees the
+    //! same `seq` before and after its copy has a record nobody touched. See notes/system-log.md,
+    //! "The kernel ring".
+
+    //! # BUGS
+    //!
+    //! - 63 records, not the 180 lines §242 (a system log) sized 16 KiB for; notes/system-log.md.
+
     use core::sync::atomic::{AtomicU64, Ordering, fence};
 
     use super::record::{Header, TEXT_MAX};
@@ -568,18 +528,11 @@ pub mod kernel_ring {
 /// **The log service's side of the console** (milestone 342 (the kernel and the `console` server
 /// drive one UART from two address spaces)): how a kernel line reaches the terminal whole.
 ///
-/// The log service `SEND`s a kernel line to the console's request endpoint in sixteen-byte chunks,
-/// each first word [`OPERATION_KERNEL_LINE`](console::OPERATION_KERNEL_LINE) with the count in the low bits, the
-/// byte-sink packing with a different opcode. The console's own client sends a byte count there,
-/// which never has a top byte, so the two are told apart by the word alone, and the console never
-/// acknowledges a kernel chunk (its acknowledgement belongs to the client that is waiting for it).
-///
-/// [`Inserter`](console::Inserter) is what the console does with them, and the reason the splice
-/// cannot happen: a kernel line is written only at the start of a terminal line. Arriving mid-line
-/// (a prompt, an echo being typed) it is queued, and goes out the moment the terminal's own writing
-/// reaches a line end. If none comes, the log service sends [`OPERATION_FLUSH`](console::OPERATION_FLUSH) after a
-/// short wait, and the console puts the queued lines on a line of their own and redraws the partial
-/// line under them.
+/// The log service sends a kernel line in sixteen-byte chunks, each first word
+/// [`OPERATION_KERNEL_LINE`](console::OPERATION_KERNEL_LINE) with the count in the low bits, which
+/// the console never acknowledges. [`Inserter`](console::Inserter) writes a kernel line only at
+/// the start of a terminal line, and [`OPERATION_FLUSH`](console::OPERATION_FLUSH) forces queued
+/// lines out. See notes/system-log.md, "Kernel lines on the console".
 pub mod console {
     /// A chunk of a kernel line: `OPERATION_KERNEL_LINE << 56 | count`, bytes in the next two words.
     pub const OPERATION_KERNEL_LINE: u64 = 0x4b;

@@ -1,21 +1,6 @@
-//! The search index: one byte layout, agreed between the builder that runs on the host and the
-//! reader that runs confined.
-//!
-//! # Why an index, and why it is built on the host
-//!
-//! **Enumeration is authority**: a viewer that can list a directory can discover what it was not
-//! given, so the reader is not handed one to list. "What pages exist" is computed by a builder
-//! where there are no constraints and shipped as a file, as Unix's `mandb` does.
-//!
-//! # The one property the layout is designed for
-//!
-//! **A reader holds one 4 KiB page and never more.** A client of the file contract shares exactly
-//! one frame with the FS server, and a shell that had to buffer a whole index would need a memory
-//! grant to search. So every section starts on a page boundary and every record divides 4096
-//! evenly: **a reader with one page in hand never sees half a record**, and a lookup is a binary
-//! search over pages costing `ceil(log2(term pages)) + 1` page reads.
-//!
-//! # Layout
+//! The search index: one byte layout shared by the host builder and the confined reader. A reader
+//! holds one 4 KiB page and never more, so every section starts on a page boundary and every record
+//! divides 4096 evenly. The worked example is on `build`. See notes/documentation.md, "Searchable".
 //!
 //! ```text
 //!   page 0            header (below), rest zero
@@ -23,28 +8,17 @@
 //!   term_off          term records, 32 bytes each, 128 per page, sorted by term bytes
 //!   post_off          postings, 4 bytes each, 1024 per page, grouped by term
 //! ```
-//!
-//! The worked example lives on the `build` function, because it needs the `builder` feature.
-//!
 
 //! # BUGS
 //!
-//! - **A term is truncated to [`TERM_MAX`] bytes**, so two identifiers that agree in their first 24
-//!   characters share a posting list and a query for either finds both.
-//! - **Terms are ASCII-folded and split on anything that is not a letter or a digit**, so
-//!   `filesystem_contract` indexes as `filesystem` and `protocol`, and a search for it finds pages
-//!   that mention either, as `apropos` does.
-//! - **There is no phrase search, and a result names a page, not a line**: the index stores no
-//!   positions, because the reader has no memory to spend on them. Ranking divides a term's count by
-//!   the page's [`Page::tokens`] (`score`), so a short dense page outranks a long passing mention;
-//!   [`Found::count`] is still the raw count. A heading mention and a passing one rank alike.
-//! - **A version mismatch is refused, not migrated.** [`Header::parse`] rejects any shard whose
-//!   [`VERSION`] is not this reader's. Every shard is a build artifact of `cargo xtask manual`, so
-//!   format and reader ship together; a shard from elsewhere is the day to revisit this.
-//! - **A search keeps [`RESULTS_MAX`] results and counts the rest.** [`Ranked::offered`] reports
-//!   the total, so a caller can say "16 of 43".
-//! - **A search answer names pages, never grants them.** A result carries a *name*
-//!   ([`Found::location`]), and reading the page is a separate act backed by whoever holds the store.
+//! - A term is truncated to [`TERM_MAX`] bytes, so long identifiers can share a posting list.
+//! - Terms are ASCII-folded and split on any byte that is not a letter or digit; an
+//!   underscore-joined name is also indexed whole.
+//! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
+//! - A shard whose [`VERSION`] is not this reader's is refused, not migrated; a shard from
+//!   elsewhere is the day to revisit this.
+//! - A search keeps [`RESULTS_MAX`] results and counts the rest ([`Ranked::offered`]).
+//! - A search answer names pages, never grants them ([`Found::location`]).
 
 /// The page size the whole layout is built around: the frame a client shares with the FS server.
 pub const PAGE: usize = 4096;
@@ -54,19 +28,10 @@ pub const MAGIC: [u8; 8] = *b"CRKRMAN1";
 
 /// **The layout version, in bytes 8..12 of the header.**
 ///
-/// The builder has written this since phase 1 and nothing read it until phase 2, which is the
-/// shape AGENTS.md calls a foot gun: a version field nobody checks is a field that cannot do the
-/// one thing it exists for. A shard whose version is not this one is [`Error::BadVersion`], and
-/// the reader stops rather than reading a record layout it does not know. See `BUGS` for what
-/// that costs.
-///
-/// **2 (2026-08-22): a page record grew a `tokens` field**, the page's total token count, spent
-/// out of the six bytes [`PAGE_REC`] already held spare (`notes/documentation.md`'s "where this goes
-/// next" priced this at exactly one division and no format growth; it is four of the six). It is
-/// what lets ranking divide by document length instead of counting raw occurrences. A version-1
-/// shard has no such field, so the bump is real rather than ceremonial: every shard in the tree
-/// is a build artifact regenerated by `cargo xtask manual`, so there is nothing to migrate, only
-/// a reader that must not guess.
+/// A shard whose version is not this one is [`Error::BadVersion`], and the reader stops rather
+/// than read a record layout it does not know. Version 2's page record carries [`Page::tokens`],
+/// which ranking divides by. Every shard is a build artifact of `cargo xtask manual`, so a
+/// mismatch is refused, not migrated.
 pub const VERSION: u32 = 2;
 
 /// **The directory the store is installed in**, relative to the root of whatever directory
@@ -98,7 +63,8 @@ pub const POST_REC: usize = 4;
 pub const PATH_MAX: usize = 72;
 /// The longest page title an index can carry.
 pub const TITLE_MAX: usize = 48;
-/// The longest term an index stores; longer ones are truncated to it.
+/// The longest term an index stores; longer ones are truncated to it, so two identifiers that
+/// agree in their first 24 bytes share a posting list.
 pub const TERM_MAX: usize = 24;
 
 /// What went wrong reading an index.
@@ -258,25 +224,15 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAX]) -> usize {
 }
 
 /// Split text into terms the way the builder does: runs of ASCII letters and digits, folded to
-/// lower case, truncated to [`TERM_MAX`], and dropped if shorter than two characters.
+/// lower case, truncated to [`TERM_MAX`], and dropped if shorter than two characters (a posting
+/// list per letter answers no question anybody asks a manual).
 ///
-/// A one-character term is dropped because it costs a posting list per letter of the alphabet and
-/// answers no question anybody asks a manual.
+/// An underscore-joined name is also one term: `line_editor` yields `line`, `editor` and
+/// `lineeditor`, which is what [`normalize`] makes of the query. Only the underscore joins. See
+/// notes/documentation/underscore-terms.md.
 ///
-/// # An underscore-joined name is also one term, and it has to be
-///
-/// `line_editor` yields `line`, `editor` **and** `lineeditor`, and the third one is not a nicety.
-/// [`normalize`] drops every non-alphanumeric byte, so a reader who types `line_editor` looks up
-/// `lineeditor`; a tokeniser that only split on the underscore would never have written that term,
-/// and the lookup could not match however many pages said it. The two halves of this module
-/// disagreed about exactly that until 2026-08-18, and `a_query_folds_the_way_the_text_did` asserted
-/// they agreed while testing only a word with no underscore in it.
-///
-/// **Only the underscore joins.** This repository writes `snake_case` identifiers in running prose
-/// constantly (`filesystem_contract`, `grant_plan`, `terminal_sink_caretaker`), so they are the names a reader
-/// most wants to search for, and the underscore is unambiguous here in a way the hyphen is not:
-/// joining across `-` would manufacture a term out of every hyphenated phrase in the corpus. The
-/// renderer narrowed emphasis for the same reason and records it in its own `BUGS`.
+/// BUGS: folding is ASCII only and every other byte splits, so a search for `filesystem` also
+/// finds every page that says `filesystem_contract`.
 pub fn tokens(text: &[u8], mut f: impl FnMut(&[u8])) {
     let mut buf = [0u8; TERM_MAX];
     let mut n = 0;
@@ -472,12 +428,11 @@ pub const RESULTS_MAX: usize = 16;
 /// `count <= tokens` in the honest case and the ratio never exceeds [`SCORE_SCALE`] itself.
 const SCORE_SCALE: u64 = 1_000_000;
 
-/// **Term frequency over document length, the one division `notes/documentation.md` priced this at.**
+/// **Term frequency over document length.** `page_tokens` is clamped to at least one, so a page
+/// recorded as empty cannot divide by zero in a `no_std` reader.
 ///
-/// `page_tokens` is clamped to at least one so a term cannot score as infinitely dense on a page
-/// the builder recorded as empty (which should not happen, since a page contributing zero tokens
-/// contributes no postings either, but the clamp costs nothing and a divide by zero is not a
-/// trap worth leaving in a `no_std` reader).
+/// BUGS: the index stores no positions, because the reader has no memory to spend on them, so
+/// there is no phrase search and a heading mention ranks like a passing one.
 fn score(count: u16, page_tokens: u32) -> u32 {
     let denom = (page_tokens as u64).max(1);
     ((count as u64 * SCORE_SCALE) / denom).min(u32::MAX as u64) as u32
@@ -487,7 +442,8 @@ fn score(count: u16, page_tokens: u32) -> u32 {
 ///
 /// It holds **copies** rather than borrows, and that is what makes a merge across shards possible
 /// at all: each shard is opened, searched and closed in turn, and a result borrowed from the page
-/// buffer would name bytes that the next shard's first read overwrites.
+/// buffer would name bytes that the next shard's first read overwrites. It names a page and
+/// grants nothing: reading the page is a separate act, backed by whoever holds the store.
 #[derive(Clone, Copy)]
 pub struct Found {
     location: [u8; LOCATION_MAX],
@@ -513,11 +469,8 @@ pub struct Found {
 impl Found {
     /// **Where a reader can open this page**, as a name they can type: `<STORE_DIR>/<bundle>/<page>`.
     ///
-    /// Computed by the searcher from the shard it opened, **not** read out of the index. That is
-    /// deliberate and it is why no byte of the layout changed for this: the party doing the search
-    /// already knows which bundle it is inside, so a shard that also carried the installed location
-    /// would be storing a fact its only reader can derive, and storing it twice is a chance for the
-    /// two to disagree.
+    /// Computed by the searcher from the shard it opened, not read out of the index: the searcher
+    /// already knows its bundle, and a fact stored twice can disagree with itself.
     pub fn location(&self) -> &[u8] {
         &self.location[..self.location_len as usize]
     }
@@ -636,19 +589,13 @@ impl Ranked {
 
 /// **Search one shard**, offering every page that mentions `term` into `into`.
 ///
-/// This is the single point at which the writer and the reader are proved to agree, and it is why
-/// it lives here rather than in either caller: `cargo xtask manual <term>` on the host and the
-/// shell's `apropos` at the prompt run **this function**, over the same bytes, through the same
-/// one-page-at-a-time [`Pages`]. Only the IO differs.
+/// `cargo xtask manual <term>` on the host and the shell's `apropos` both run this function over
+/// the same bytes, through the same one-page-at-a-time [`Pages`], so it is where the writer and
+/// the reader are proved to agree.
 ///
-/// A term nothing mentions is `Ok(())` with nothing offered, because "no page says that" is an
-/// answer rather than a failure. An [`Err`] means the shard is not one.
-///
-/// # Memory
-///
-/// Constant, and small: one page buffer at a time inside [`lookup`], [`postings`] and
-/// [`page_record`], never two, plus a sixteen-posting batch on this frame. A term mentioned by more
-/// pages than that is read in batches rather than needing a bigger array.
+/// Returns `Ok(())` with nothing offered for a term nothing mentions, and an [`Err`] when the
+/// shard is not one. Memory is one page buffer at a time inside [`lookup`], [`postings`] and
+/// [`page_record`], plus a sixteen-posting batch on this frame.
 pub fn search(
     bundle: &[u8],
     term: &[u8],

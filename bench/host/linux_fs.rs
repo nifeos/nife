@@ -1,35 +1,11 @@
 //! **The ext4 side of milestone 38's filesystem-throughput comparison.** Built as a static aarch64
-//! binary and booted as PID 1 in a one-file initramfs under QEMU-HVF, on the *same* M-series core,
-//! at the *same* virtualization tier, through the *same* virtio-blk-device model and the *same*
-//! raw host image file as nife's own bench boot. It mounts a scratch ext4 disk, runs the four
-//! phases `filesystem_fixture::throughput` defines, prints them, and powers the machine off (it is
-//! PID 1: exiting would panic the kernel).
-//!
-//! # What it measures, and why there are two variants of everything
-//!
-//! nife's FS server holds no **data** cache: a record body is always a virtio round trip (batched
-//! since milestone 138 step 4, but never answered from memory), and every write is its own RedoxFS
-//! transaction that commits before the reply. It does hold a small **metadata** cache since step 2
-//! (`redoxfs_server::CachedDisk`, 64 blocks, ~257 KiB): a repeated read of the same file's tree spine
-//! answers from memory rather than a second round trip, which is why `fs_read` (a repeated read of
-//! one small inline file) is no longer comparable to a cold read the way it was when this file's
-//! comment last described it as cacheless. The phases this file runs are dominated by record
-//! bodies, which the metadata cache never touches, so the comparison below is still the honest one
-//! for what it measures; it would not be for a workload that mostly reopens hot metadata. Linux is
-//! the opposite by default in both dimensions: the page cache absorbs data reads and writeback
-//! absorbs writes, and a 1 MiB file fits in it entirely.
-//!
-//! So a single ext4 number would answer a question nobody asked. This runs each phase twice:
-//!
-//! - **buffered**: ordinary `open`/`pread`/`pwrite`. What a Linux program actually gets, and the
-//!   number to quote when someone asks how fast Linux is.
-//! - **direct**: `O_DIRECT` for reads, `O_DIRECT | O_DSYNC` for writes. No page cache, and a write
-//!   is durable before it returns. That is the closest thing Linux has to what our path does on
-//!   every single request, and it is the only one of the two that is apples to apples.
-//!
-//! Both still enjoy one thing we do not: the host's own page cache under QEMU, since the drive is
-//! attached `cache=writeback` (QEMU's default, and what the nife runner uses). That is matched
-//! rather than removed, which is the point of running at the same tier.
+//! binary and booted as PID 1 in a one-file initramfs under QEMU-HVF, on the same M-series core and
+//! tier, through the same virtio-blk-device model and raw host image file as nife's own bench boot.
+//! It mounts a scratch ext4 disk, runs the four phases `filesystem_fixture::throughput` defines in
+//! each variant, prints them, and powers the machine off (it is PID 1: exiting would panic the
+//! kernel). The variants are buffered, `O_DIRECT`, `O_DIRECT | O_DSYNC`, `O_DIRECT` at 64 KiB and
+//! the raw device. Only `O_DIRECT` is apples to apples with nife, which caches no data and commits
+//! every write; notes/benchmarks/host-programs.md has why each exists.
 //!
 //! Build static and boot it with `sh bench/host/run_linux_fs.sh`.
 
@@ -105,20 +81,15 @@ fn next_offset(state: &mut u64, unit: usize) -> i64 {
     ((x % BLOCKS) * unit as u64) as i64
 }
 
-/// One run of the four phases against `path`. Prints four lines.
+/// One run of the four phases against `path` in `unit`-byte transfers, printing four lines tagged
+/// `tag`.
 ///
-/// `direct` adds `O_DIRECT` (no page cache) and `dsync` adds `O_DSYNC` (the write is durable on the
-/// medium before it returns). The two are separate because **nife sits between them**: the FS
-/// server puts every write through a RedoxFS transaction that commits to the header ring before it
-/// replies, so there is no dirty state anywhere above the device, but it issues no
-/// `VIRTIO_BLK_T_FLUSH` unless a client asks for one (`filesystem_contract::fs::SYNC`, milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)). So
-/// `direct` alone is the closest analogue for where the bytes are, and `direct` plus `dsync` is the
-/// closest analogue for the metadata commit, and quoting only one of them would be picking the
-/// answer.
-///
-/// `path` under `/dev` is treated as a raw block device: nothing is unlinked and nothing is
-/// created. That variant is the floor both filesystems stand on, which is the number that says how
-/// much of either one's cost is the filesystem and how much is virtio under HVF.
+/// `direct` adds `O_DIRECT` (no page cache) and `dsync` adds `O_DSYNC` (durable on the medium
+/// before the write returns). nife sits between the two: its FS server commits each write's RedoxFS
+/// transaction before replying but sends no `VIRTIO_BLK_T_FLUSH` unless a client asks
+/// (`filesystem_contract::fs::SYNC`, milestone 55 (Time Machine: SMB3 with Apple's extensions, and mDNS)).
+/// A `path` under `/dev` is the raw block device: nothing is unlinked or created, and the result
+/// is the floor under both filesystems. notes/benchmarks/host-programs.md has the reasoning.
 fn phases(path: &[u8], tag: &str, direct: bool, dsync: bool, unit: usize) {
     let is_dev = path.starts_with(b"/dev/");
     let extra = if direct { O_DIRECT } else { 0 } | if dsync { O_DSYNC } else { 0 };
@@ -148,12 +119,9 @@ fn phases(path: &[u8], tag: &str, direct: bool, dsync: bool, unit: usize) {
     let seq_write = t.elapsed().as_nanos() as f64 / BLOCKS as f64;
     unsafe { close(fd) };
 
-    // **Let the write phase finish before the read phases start**, outside anybody's window. Linux
-    // has background work after a write returns even when the write was `O_DSYNC` (jbd2 checkpoints
-    // the journal, and in the buffered variant there is a whole file of dirty pages), and a read
-    // phase that ran into it would be timing the previous phase. nife needs no equivalent and gets
-    // none: RedoxFS commits inside the request, so when the reply arrives there is nothing left
-    // running. The asymmetry is in Linux's favour, which is the direction to err in.
+    // Let Linux's work after the write phase (jbd2's checkpoint even under `O_DSYNC`, a file of
+    // dirty pages when buffered) finish outside the read phases' windows. nife has none to wait for:
+    // RedoxFS commits inside the request.
     unsafe {
         sync();
         usleep(250_000);
@@ -216,7 +184,7 @@ fn phases(path: &[u8], tag: &str, direct: bool, dsync: bool, unit: usize) {
 
 /// **Insert one kernel module by path.** Alpine's `virt` kernel keeps ext4 in `modloop-virt`
 /// rather than building it in, so a one-file initramfs that just calls `mount("ext4", ...)` gets
-/// ENODEV. `run_linux_fs.sh` lifts the five modules out of that squashfs and this loads them, in
+/// ENODEV. `run_linux_fs.sh` lifts the seven modules out of that squashfs and this loads them, in
 /// dependency order, before anything else happens.
 ///
 /// A failure is reported and not fatal: `crc32c_generic` is already built in on some
@@ -253,8 +221,7 @@ fn main() {
         assert!(r == 0, "mount devtmpfs failed, errno {}", errno());
     }
     // The disk driver and ext4, with their dependencies, in the order modprobe would have chosen.
-    // `virtio_blk` is a module in this kernel too, which is why the second version of this file
-    // still could not find /dev/vda after ext4 loaded cleanly.
+    // `virtio_blk` is a module in this kernel too, so /dev/vda exists only after it loads.
     for m in [
         b"/mods/virtio_mmio.ko\0".as_slice(),
         b"/mods/virtio_blk.ko\0".as_slice(),
@@ -281,19 +248,12 @@ fn main() {
     phases(b"/mnt/throughput\0", "buffered", false, false, UNIT);
     phases(b"/mnt/throughput\0", "direct", true, false, UNIT);
     phases(b"/mnt/throughput\0", "direct_dsync", true, true, UNIT);
-    // **What our 4 KiB cap costs, priced on the other system.** A `filesystem_contract` request carries at
-    // most one page because the payload travels through one shared page, so nife has no choice
-    // about the unit; a Linux program has, and would take 64 KiB without thinking about it. This
-    // row is the same ext4, the same flags and the same total bytes, with the unit a real program
-    // would use, and the gap to `direct` is the size of the prize a multi-page transfer would be
-    // chasing. It is the `pipe_16` / `pipe_64k` split bench/host/pipe_throughput.rs already draws
-    // for the same reason.
+    // The same ext4, flags and total bytes at the 64 KiB unit a Linux program would take; its gap
+    // to `direct` prices the 4 KiB unit (notes/benchmarks/host-programs.md).
     phases(b"/mnt/throughput\0", "direct_64k", true, false, 64 * 1024);
-    // The floor: the same four phases straight at the virtio disk, no filesystem in the way, so the
-    // same device, the same host image file and the same accelerator with everything above the
-    // block layer removed. It goes **last and after an unmount**, because it writes over the first
-    // megabyte of the disk and that is the ext4 the phases above were using. The image is rebuilt
-    // by `run_linux_fs.sh` on every run, so destroying it here costs nothing.
+    // The floor, straight at the virtio disk. It goes last and after an unmount, because it writes
+    // over the first megabyte of the disk, which is the ext4 above; `run_linux_fs.sh` rebuilds the
+    // image on every run.
     unsafe {
         sync();
         let r = umount(c"/mnt".as_ptr() as *const u8);

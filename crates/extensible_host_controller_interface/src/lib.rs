@@ -1,25 +1,15 @@
 #![no_std]
-//! **xHCI, as pure logic** (notes/usb.md): everything a USB host controller driver computes, with
-//! nothing it touches. The kernel finds and confines the register file and DMA memory
+//! **xHCI, as pure logic**: everything a USB host controller driver computes, with nothing it
+//! touches. The kernel finds and confines the register file and DMA memory
 //! (`kernel/src/extensible_host_controller_interface.rs`) and the EL0 driver drives them
-//! (`components/src/usb_keyboard_driver.rs`); this is the arithmetic between, the NVMe split again.
+//! (`components/src/usb_keyboard_driver.rs`); this is the arithmetic between.
 //!
-//! The protocol in one paragraph (xHCI 1.2, chapters 4 and 6). **This is the first controller in
-//! the tree whose data structures the device walks on its own.** The driver lays out, in memory
-//! the controller reads by DMA, a *device context base address array* (one pointer per device
-//! slot), a *command ring*, an *event ring* with its segment table, and one *transfer ring* per
-//! endpoint. Every ring is an array of 16-byte **TRBs** (transfer request blocks) with a **cycle
-//! bit** in each: the producer writes TRBs carrying its current cycle, the consumer accepts a TRB
-//! only while the bit matches its own, and both flip at the end of the ring, where a producer ring
-//! carries a **link TRB** back to its start. The driver rings a **doorbell** to say a ring has new
-//! work; the controller writes **events** to the event ring and raises an interrupt.
-//!
-//! [`regs`] and [`Capabilities`] name the registers; [`register_window`] decides **which pages of
-//! the register file a confined driver is mapped**, the confinement this crate makes checkable;
-//! [`Handoff`] packs the spawn words; [`dma`] is the DMA region's layout; [`Trb`], [`Event`],
-//! [`ProducerRing`] and [`EventRing`] are the ring discipline; [`context`] holds slot and endpoint
-//! contexts; [`port`] is the port status register, whose write-one-to-clear bits are a trap.
-//!
+//! [`regs`] and [`Capabilities`] name the registers; [`register_window`] decides which register
+//! pages a confined driver is mapped; [`Handoff`] packs the spawn words; [`dma`] is the DMA
+//! region's layout; [`Trb`], [`Event`], [`ProducerRing`] and [`EventRing`] are the ring discipline
+//! (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and endpoint contexts; [`port`] is the port
+//! status register. See notes/usb.md, "The rings and the cycle bit".
+
 //! # BUGS
 //!
 //! - One page size: [`dma`] assumes 4 KiB (`PAGESIZE` bit 0), and the driver refuses otherwise.

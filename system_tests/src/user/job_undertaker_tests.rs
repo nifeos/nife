@@ -185,18 +185,14 @@ fn without_a_collector_a_bounded_job_pool_runs_out() {
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 
-/// **The claim: a bounded job pool is enough, because `job_undertaker` gives every region back.**
+/// A bounded job pool is enough, because `job_undertaker` gives every region back.
 ///
-/// Twelve jobs through a pool with room for three. Each one is built in a region split off the pool
-/// and born supervised (§26's spawn-slot convention); it runs, reports, and exits; and the pool comes
-/// all the way back to zero before the next one is split. Nothing in this test collects anything: the
-/// collecting is done by an unprivileged process holding one endpoint capability and no memory at
-/// all, exactly as it is at the interactive prompt.
-///
-/// **Which budget the pages land in is the assertion, not that the corpse went away.** A reap that
-/// quietly credited the collector, or that freed the corpse and stranded its memory, would leave the
-/// pool committed and fail at the first `pool_came_back`. The last two assertions close the other
-/// half: the returned pages are genuinely spendable again rather than un-bumped bookkeeping.
+/// Twelve jobs through a pool with room for three, each split off the pool, born supervised (§26
+/// (the fault endpoint)'s spawn-slot convention), run and exited, the pool back to zero before the
+/// next. The collector is an unprivileged process with one endpoint and no memory, as at the
+/// prompt. The assertion is which budget the pages land in: a reap crediting the collector, or
+/// stranding the memory, fails the first `pool_came_back`; the last two assert the pages are
+/// spendable again.
 #[test_case]
 fn job_undertaker_returns_every_finished_job_to_the_pool() {
     let pool = crate::memory_region::create(POOL_PAGES).expect("no job pool");
@@ -244,20 +240,14 @@ fn job_undertaker_returns_every_finished_job_to_the_pool() {
     held.release_or_fail("job_undertaker");
 }
 
-/// **The reap protocol** (milestone 685 (a job is finished when its memory is back), calef's
-/// ruling of 2026-10-06 UTC, option A): after a job exits, the real `job_undertaker` collects it
-/// and then tells the progenitor, on its copy of the spawn endpoint badged
-/// `spawnproto::UNDERTAKER_BADGE`, `spawnproto::reaped(label, tid)`, where the label is the badge
-/// the builder put on the job's supervision capability. And the job's file-service window comes
-/// free on that message and not before, through the same `grant_plan::job_windows::Windows` the
-/// progenitor keeps.
+/// The reap protocol (milestone 685 (a job is finished when its memory is back), calef's ruling of
+/// 2026-10-06 UTC, option A).
 ///
-/// Half of confinement claim 24's proof (fatal risk 7's criterion (a)): this is the booted half,
-/// on every ISA; `grant_plan::job_windows`'s host test is the rule itself.
-///
-/// The region's return is asserted at the message, and it is the message's meaning, but no
-/// falsification here reaches it: an undertaker that announced before collecting would still
-/// collect before this thread ran again on one core. The replayable one breaks the label.
+/// After collecting a job, `job_undertaker` sends `spawnproto::reaped(label, tid)` (label: the job's
+/// supervision badge) on its `UNDERTAKER_BADGE` endpoint; the job's window frees on that message,
+/// not before (`grant_plan::job_windows::Windows`). The booted half of confinement claim 24 (fatal
+/// risk 7's criterion (a)); the host test is the rule. The replayable falsification breaks the
+/// label; none reaches the region's return, which an early announcement still meets on one core.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.job_undertaker_tests.job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free.patch`
 #[test_case]

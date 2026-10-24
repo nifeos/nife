@@ -1,33 +1,17 @@
 //! **A TLS 1.3 handshake on nife, with a peer that is not ours, trusting one pinned root**, for
 //! milestone 501 (a TLS client that speaks to one pinned peer).
 //!
-//! `cryptography_exerciser` proved the provider's primitives compute what their specifications say
-//! and stopped, deliberately, short of a handshake: there was no peer, no socket and no client.
-//! This program is the rest. It connects through `std::net` to `helpers/tls-peer` (Python's `ssl`,
-//! which is OpenSSL, run by slirp at 10.0.2.9:8443 once per connection), and asks four things of
-//! the same pin:
-//!
-//! | line | what it proves |
-//! |---|---|
-//! | `handshake ok ...` | a TLS 1.3 handshake completes here, through this tree's provider |
-//! | `index ok ...` | a body arrives intact through the record layer |
-//! | `bulk ok ...` | 256 KiB, many records, the pattern checked byte for byte |
-//! | `refused stranger.test: unknown issuer` | a good chain from another root is refused: the pin |
-//! | `refused elsewhere.test: not valid for name` | the pinned root's chain for another name is refused |
-//!
-//! A client that refused everything would print both refusals, and one that accepted everything
-//! would print the first three; only a client that does what the pin says prints all five.
-//!
-//! The `cost` lines are milestone 501's measurement, and they are printed rather than asserted,
-//! because a number that changes with the host running QEMU is not a pass or a fail.
-//!
+//! It connects through `std::net` to `helpers/tls-peer` (OpenSSL, run by slirp at 10.0.2.9:8443
+//! per connection) and prints five lines: a handshake, an index body, 256 KiB of bulk, and two
+//! refusals, a chain from another root and the pinned root's chain for another name. Only a client
+//! that does what the pin says prints all five. The `cost` lines are milestone 501's measurement,
+//! printed rather than asserted because they vary with the host. See notes/packages/pinned-tls.md.
+
 //! # BUGS
 //!
-//! - **The pinned root is the test authority, not ISRG Root X1.** Nothing in a gate can reach
-//!   the internet, so `pinned_tls_client`'s host tests are where X1 meets a real Let's Encrypt
-//!   chain, and those need the internet too (`cargo test -- --ignored`).
-//! - The timings are QEMU's, under TCG on the host that ran it: an upper bound on nothing and a
-//!   comparison between architectures only on one host and one run.
+//! - The pinned root is the test authority, not ISRG Root X1: no gate reaches the internet, so X1
+//!   meets a real chain only in `pinned_tls_client`'s ignored host tests.
+//! - The timings are QEMU's under TCG on one host, comparable across architectures only there.
 
 // `entropy_backend` defines `getrandom`'s custom-backend symbols and nothing references them from
 // Rust, so an rlib nobody names is not linked. See that crate's docs.

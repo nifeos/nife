@@ -3,17 +3,12 @@
 //!
 //! Walk one supervision domain with `abi::rendezvous::SURVEY`, filter it, then say what matched on
 //! one stream and what went wrong on the other. The walk is `crates/ps` and the filter is
-//! `crates/pgrep`, both host-tested; what lives here is the syscall and the two sinks.
-//!
-//! # There is no `pkill`
-//!
-//! On Unix `kill(pid)` turns a **name** into an **action**, so anything that can find a process can
-//! end it. Here **a domain names its members and does not act on them** (calef, 2026-08-17). This
-//! program holds a supervision endpoint carrying `abi::rights::ENUMERATE` and nothing else, and no
-//! method turns a tid into authority over its thread: `abi::thread_control_block` has no
-//! `DESTROY`, and killing a live child is `abi::memory_region::DESTROY` on the region it was built
-//! from, which its spawner holds (DECISIONS §24 (interrupting the foreground process)). So
-//! `caps pgrep` prints a scope and there is no `caps pkill` to print beside it.
+//! `crates/pgrep`, both host-tested; what lives here is the syscall and the two sinks. There is no
+//! `pkill`: a domain names its members and does not act on them (calef, 2026-08-17), and no method
+//! turns a tid into authority over its thread (notes/process-view/pgrep.md has the argument and
+//! the examples at the prompt).
+
+//! # Capability contract
 //!
 //! | slot | what | why |
 //! |---|---|---|
@@ -23,33 +18,12 @@
 //!
 //! **Exactly `ps`'s three.** No memory grant, file, directory or clock, and no argument a person
 //! could type widens any of it.
-//!
 
-//! # EXAMPLES
-//!
-//! ```text
-//! $ pgrep
-//! 5
-//! 9
-//! $ pgrep | wc            the domain, counted, and no /proc was read to make it
-//! $ pgrep > names.txt     the names land in the file
-//! $ caps pgrep            the scope, printed before anything is spawned
-//! ```
-//!
-//! And the two answers Unix's `pgrep` cannot tell apart (both "print nothing and exit 1"):
-//!
-//! ```text
-//! $ pgrep      pgrep: none of the 2 processes in this domain are dead
-//! $ pgrep      pgrep: this process holds no process-domain capability
-//! ```
-//!
 //! # BUGS
 //!
 //! - **At this prompt it always prints every member**: the selector arrives in a register the
-//!   shell cannot set (`crates/pgrep`'s `BUGS`), so `pgrep` here is `pgrep '*'`, and the filter is
-//!   exercised by `kernel::user::survey_tests`.
-//! - **`pgrep` names itself**, as `running`, because it is a member of the domain it was spawned
-//!   into, the same as Unix's `pgrep` without `-x`.
+//!   shell cannot set (`crates/pgrep`'s `BUGS`), so `pgrep` here is `pgrep '*'`.
+//! - **`pgrep` names itself**, as `running`, the same as Unix's `pgrep` without `-x`.
 //! - **A tid is a name and not a handle, so the answer goes stale**, and there is no operation to
 //!   aim at a stale tid.
 //!
@@ -90,13 +64,9 @@ pub extern "C" fn _start(_a0: u64, a1: u64, _a2: u64) -> ! {
     HAS_DIAG.store(is_granted(DIAG_SLOT), Ordering::Relaxed);
 
     // **Walk first, filter second, complain third, print fourth.** DECISIONS §67's reader drains
-    // diagnostics to end-of-stream before it reads a byte of output, and a survey cannot know its
-    // complaints up front (the domain may be refused on the first call or vanish on the tenth).
-    // "Nothing matched" needs the count as well, so the filter runs before the second stream too.
-    //
-    // The buffer is this program's, sized at `MAX_ROWS`, which is the kernel's whole thread table:
-    // even a `pgrep` handed the widest grant this system can express has room for every row, so
-    // truncation is unreachable rather than handled. Two kilobytes on a twelve-page stack.
+    // diagnostics to end-of-stream before it reads a byte of output, and neither the complaints nor
+    // "nothing matched" (which needs the count) is known until the walk ends. `MAX_ROWS` is the
+    // kernel's whole thread table, so truncation is unreachable: 2 KiB on a twelve-page stack.
     let mut rows = [ps::Row::default(); ps::MAX_ROWS];
     let walked = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
     let found = pgrep::select(&walked, pgrep::Selector::from_wire(a1));
@@ -141,12 +111,6 @@ fn write_on(slot: u64, bytes: &[u8]) {
 }
 
 // Nothing here should panic: `ps::collect` is total for every reader and `pgrep::select` only reads
-// the rows it returned. A fault the kernel turns into a kill is the honest signal if one ever does.
-//
-// **This was hand-rolled with two architecture arms and lost that signal on the third.** Neither
-// `cfg` matched on x86_64, so control fell to a spin loop and a panicking `pgrep` burned a thread
-// forever instead of dying, which is the opposite of what the paragraph above promises. The macro
-// expands to a handler over `user_mode_runtime::trap`, whose arms cover all three ISAs and whose x86_64 one
-// carries the measured argument for `ud2` over `int3`. This was the last hand-rolled handler left
-// outside `user_mode_runtime` after milestone 130 swept forty-eight of them.
+// the rows it returned. A fault the kernel turns into a kill is the honest signal if one ever does,
+// and the macro's handler over `user_mode_runtime::trap` gives that signal on all three ISAs.
 user_mode_runtime::panic_handler!();

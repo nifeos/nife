@@ -1,28 +1,17 @@
 //! **The inert-configuration contract** (§111 (inert configuration is a read-only page)): the
 //! read-only page that carries `TZ`, `LANG` and `TERM` into a process, defined once for whoever
-//! assembles it (init, or a kernel test harness) and whoever reads it (the `std` PAL). Of Unix's
-//! environment, names are the namespace's and secrets are endpoints (§41 (the endpoint is the
-//! broker)); this is the inert third, a page a process is granted with `READ` or is not.
-//!
-//! **Validated, because a capability governs reach, not meaning**: once a value is bytes on a page,
-//! nothing can tell a password from a timezone. So a value must parse as a member of a known-safe
-//! [`domain`] to reach the page at all, enforced by [`PageBuilder`]'s setters before the page
-//! exists: an API key does not parse as `America/Los_Angeles`.
-//!
-//! The page is assembled once in a private buffer and only then mapped read-only, so unlike the
-//! clock page it needs no seqlock. [`MAGIC`] is checked first, so a zeroed or foreign frame answers
-//! `None` for every key rather than inventing a locale nobody chose.
-//!
+//! assembles it (init, or a kernel test harness) and whoever reads it (the `std` PAL). A value must
+//! parse as a member of a known-safe [`domain`] to reach the page, enforced by [`PageBuilder`]'s
+//! setters, because once a value is bytes on a page nothing can tell a password from a timezone.
+//! The page is assembled before it is mapped read-only, so it needs no seqlock, and [`MAGIC`] is
+//! checked first, so a zeroed or foreign frame answers `None`. See notes/env-config.md.
+
 //! # BUGS
 //!
-//! - The domains are curated and short: [`domain::KNOWN_TZ`], [`domain::KNOWN_LANG`] and
-//!   [`domain::KNOWN_TERM`] are not the IANA, glibc or terminfo lists, which would be a dependency
-//!   decision (§46 (thin primitives or whole subsystems)). They grow on demand.
+//! - The domains are curated and short, not the IANA, glibc or terminfo lists, which would be a
+//!   dependency decision (§46 (thin primitives or whole subsystems)). They grow on demand.
 //! - Every domain member fits its field's cap by construction; [`PageBuilder::build`] truncates if
 //!   that ever breaks, and a host test fails the suite first.
-//! - No `grant_plan::Manifest` field declares wanting the page yet, so only the kernel- and
-//!   std-PAL-side wiring is built (proven by `std_exerciser`), not a shell-facing grant or `caps`
-//!   preview.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `env_proto` to spell out the contraction;
 //! `_contract` per calef's 2026-10-18 ruling.
@@ -268,10 +257,8 @@ fn read_field(page: &[u8], len_off: usize, data_off: usize) -> Option<&str> {
     core::str::from_utf8(&page[data_off..data_off + n]).ok()
 }
 
-/// **The inert-configuration page**, as seen through one process's read-only mapping of it.
-///
-/// See the crate's own docs for why this needs no seqlock: the page has exactly one writer, and
-/// that writer finishes before the page has a second reader.
+/// **The inert-configuration page**, as seen through one process's read-only mapping of it. It
+/// needs no seqlock: the page has exactly one writer, which finishes before it has a second reader.
 ///
 /// # Examples
 ///

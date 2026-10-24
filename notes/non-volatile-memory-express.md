@@ -212,6 +212,19 @@ XpressRICH root complex is a different host bridge (no `pci-host-ecam-generic` n
 board-side follow-up, and this driver is written to need only a working enumeration and a BAR from
 it.
 
+## The DMA escape test
+
+[`non-volatile-memory-express/the-dma-escape-test.md`](non-volatile-memory-express/the-dma-escape-test.md)
+carries the test that aims a confined server's controller outside its region, and its attacker
+role.
+
+## The client windows
+
+Each client stages in the transfer window its badge names (milestone 834 (ioping on nife and
+Linux)). A client maps only its own window, and the server answers one request at a time, so two
+clients staging at once touch different pages. A badge no client was given is refused before
+anything is staged.
+
 ## BUGS
 
 - What the driver does not withhold ("What it does not withhold", above): the IOMMU bounds the *controller* to a

@@ -10,7 +10,7 @@ text it reads and what it leaves to whoever launches. Its commands are in
 
 ## The rules both launches keep
 
-- The pair. One pass by GLM 5.3 and one by Claude Fable, both on patagonia, each in a container
+- The pair. One pass by GLM 5.3 and one by Claude Fable, both on one Mac, each in a container
   inside podman's Linux VM (calef, 2026-10-14 UTC). Claude's cloud runner is not used: it cannot pin
   the model and read it back before the attack, or resume the session for the completion round.
 - One commit. Both launches take the same `--commit`, a full main SHA, and each pass's note names
@@ -39,7 +39,7 @@ reviewers get it. Its selftest assembles both prompts from this file and fails i
 the text changes shape. A changed word changes every later pass's prompt, so passes compare row for
 row only within one wording.
 
-### GLM 5.3 on patagonia
+### GLM 5.3 on a Mac
 
 ```sh
 runner_text() {

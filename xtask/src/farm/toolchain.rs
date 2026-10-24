@@ -1,10 +1,8 @@
 //! **The farm and this worktree's toolchain link**: where the farm lives, the toolchain name it
 //! is linked under, and the sweep of links that point nowhere.
 //!
-//! Cut out of `farm.rs` unchanged on 2026-10-12 (UTC) by lane maintainer/near-ceiling-splits, for
-//! §266 (a Rust source file stays under 2,000 lines) and §282 (when a file is split, the parent
-//! becomes an index). What was private to `farm` is `pub(super)` here, which reaches the same
-//! modules.
+//! A child of `farm` (§282 (when a file is split, the parent becomes an index)): what was private
+//! to `farm` is `pub(super)` here, which reaches the same modules.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.

@@ -1,5 +1,8 @@
 # Lookup tables, and the one line nothing covers
 
+*Name: provisional. After the parent's "Four lookup tables, and why none of them is a `match`".
+calef names files.*
+
 An appendix of [ISA discovery](../isa-discovery.md). It holds two code-shape decisions in
 `crates/machine_discovery` that a reader editing the crate needs and a reader of the discovery
 design does not.

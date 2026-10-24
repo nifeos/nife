@@ -1,5 +1,7 @@
 # What the tests prove, from inside and outside the guest, and the stack measured
 
+*Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `tests-and-stack`.*
+
 An appendix to [notes/dir-capability.md](../dir-capability.md), moved there on 2026-10-11 (UTC)
 under §212 (a prose budget). It holds the attacker runs, the host-side check of the image, and the
 FS server's stack before and after `RENAME`.
@@ -52,6 +54,15 @@ that reaches nothing. `GRANTED_ACCESS_FAILED` fires when the thing it *should* b
 work, so a capability that reaches nothing reports itself rather than passing as perfectly confined.
 `ENUMERATED_A_STRANGER` catches a listing that contains a name from outside the grant. A listing is a
 rendering of authority, and a stranger in one is an escape even though nothing was opened.
+
+### The name-set run
+
+A fourth test runs the third caretaker, `fs_nameset_caretaker`, which inspects a name on every
+request. The subtree caretaker is covered by the three runs above, and the per-file caretaker by
+its own attacker. The name-set test grants one name inside `sub` and leaves `deeper` out. Its
+witness holds `dir::READ`, which `rm`'s own witness does not, so the naming question is asked
+through verbs `rm` never sends. It must still read and set the attributes of the one file the set
+names.
 
 ## And from outside the guest entirely
 

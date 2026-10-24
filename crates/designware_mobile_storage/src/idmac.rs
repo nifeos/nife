@@ -1,20 +1,12 @@
-//! **The internal DMA controller (IDMAC)**: the controller walks a chain of descriptors in memory
-//! and moves a data phase between its FIFO and RAM itself, so the CPU copies each byte once in
-//! cached memory rather than once a word over MMIO.
-//!
-//! The region is one page of descriptors followed by the data pages, one descriptor per data page,
-//! so a transfer is at most as many pages as the region has. Reads land in the data pages and are
-//! copied out; writes are copied in first. The CPU never touches the FIFO. Between transfers the
-//! controller is in the polled state [`Host::reset`] leaves: every transfer arms the IDMAC, and
-//! every transfer, finished or failed, stops and resets it before returning, so no engine is left
-//! walking a chain the caller has already reused. See notes/designware-mobile-storage.md.
-//!
-//! The sequence follows the databook's IDMAC programming model as OpenBSD's `dwmmc_dma_setup` and
-//! Linux's `dw_mci_idmac_start_dma` use it (Linux read for hardware facts only): reset the IDMAC,
-//! point `DBADDR` at the chain, select it in `CTRL`, enable it in `BMOD`, then send the command.
-//! Completion is polled, like everything here: `RINTSTS` for the card's side and the last
-//! descriptor's `OWN` bit for the memory side, since a read's `DTO` can land while the IDMAC
-//! still has words to write.
+//! The internal DMA controller (IDMAC): it moves a data phase between the FIFO and RAM by walking a
+//! descriptor chain, so the CPU copies each byte once in cached memory, not word by word over MMIO.
+//! The region is a page of descriptors, then data pages, one descriptor each, so a transfer is at
+//! most the region's pages; reads are copied out, writes in. Every transfer arms the IDMAC from the
+//! polled state [`Host::reset`] leaves and, finished or failed, stops and resets it, so no engine
+//! walks a chain the caller reused. The databook's sequence, as OpenBSD's `dwmmc_dma_setup` and
+//! Linux's `dw_mci_idmac_start_dma` use it: reset the IDMAC, point `DBADDR` at the chain, select it
+//! in `CTRL`, enable it in `BMOD`, send the command. Polled completion: `RINTSTS` for the card, the
+//! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
 //! Name: provisional (milestone 53 (the board's own peripherals)'s IDMAC lane, 2026-10-22 UTC).
 //! The databook's own name for the engine, as `regs` names its registers.

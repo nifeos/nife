@@ -123,8 +123,8 @@ A confirmed slot spends nothing, so an ordinary boot of a settled machine writes
 
 ## Which failures this catches, and which it does not
 
-The table is in `uefi_loader/src/chooser.rs` beside the code and is repeated here because it is what
-somebody deciding whether to trust this needs:
+`uefi_loader/src/chooser.rs` links this table, because it is what somebody deciding whether to
+trust this needs:
 
 | failure | caught | by what |
 |---|---|---|
@@ -232,6 +232,29 @@ Charging the full window would put a frame into every long-lived process's regio
 never uses, sixty-eight of them, to pay for a window one caller has, and the frame ledger fails
 that. What a caller owes is the cost above what `AS_OVERHEAD`'s margin was already providing, which is
 `WINDOW_IN_OVERHEAD` and its reasoning at the arithmetic.
+
+## The rollback gate's BUGS, in full
+
+The `BUGS` in `xtask/src/rollback.rs` are one line each. Here is what stands behind them.
+
+- The gate writes the upgrade itself, because nothing in this tree writes an upgrade to a running
+  machine yet. The bytes and attribute bits go through the same `crates/boot_slot` and
+  `globally_unique_identifier_partition_table` code the installer uses.
+- The upgrade gets one try, not three. The policy is the same at any count, and
+  `cargo test -p boot_slot` covers the counting.
+- The power cut comes at the handoff, not during the table write. A machine interrupted between the
+  chooser's four block writes is not covered, and `uefi_loader/src/chooser.rs`'s `BUGS` says so.
+
+## The chooser's BUGS, in full
+
+`uefi_loader/src/chooser.rs` keeps one line per entry. The longer accounts:
+
+- A power cut during the chooser's four block writes can leave the two copies disagreeing.
+  `parse` then refuses the table, and the chooser's own image boots. Untested.
+- The writes go primary-first, so for a moment neither copy parses. `ROLE_CONFIRM` writes
+  backup-first, which leaves a consistent copy throughout. Reordering is untested either way.
+- An image started from a slot has no boot file, because its `DeviceHandle` is null. So it cannot
+  install onto a second disk, and `booted_from_nvme` assumes NVMe without looking.
 
 ## See also
 

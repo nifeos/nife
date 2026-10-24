@@ -1,26 +1,10 @@
 //! **The byte-sink contract**: one framing for *write these bytes there*, so a writer cannot tell
-//! what is underneath its output.
-//!
-//! **A sink is a `Rendezvous` capability with `WRITE`, and nothing else**: no shared page and no
-//! acknowledgement channel. Redirection is putting a different capability in a slot, and a sink
-//! that needed a page at an agreed address would turn that into a spawn-time negotiation. So the
-//! payload rides in registers, up to [`INLINE_MAX`] bytes in two words with the opcode and length
-//! in the first (the three-word fastpath, notes/abi.md).
-//!
-//! **`SEND`, not `CALL`**: a reply could only say "all of them", at a round trip on the hottest path
-//! in the system. `SEND` blocks until a receiver takes the message, so the rendezvous is the flow
-//! control, and a pipe's reader is an ordinary program that only receives.
-//!
-//! [`Sent`] tells a writer the one thing it must know. [`Sent::NoSink`]: the slot is empty, so this
-//! program has no output destination and writing into the void is correct. [`Sent::Gone`]: the sink
-//! existed and was destroyed (§16 (object revocation)), so **the writer must end**. That is `SIGPIPE` as a
-//! return code: the writer is making a syscall on a capability the kernel can see is dead.
-//!
-//! Deliberately not carried: a per-write error code (a sink that cannot accept bytes destroys its
-//! receiving end, so the writer learns that the sink is over and not why, as with `EPIPE`; a sink
-//! whose failures matter is a service with a `CALL` protocol), types (typed pipelines are a separate
-//! fork, design/roadmap/0050-pipes-and-redirection.md), and seeking, truncating, re-reading or stat:
-//! a sink appends, so `> report.txt` hands a program strictly less than a Unix fd 1.
+//! what is underneath its output. A sink is a `Rendezvous` capability with `WRITE` and nothing
+//! else: up to [`INLINE_MAX`] bytes ride in registers with the opcode and length in the first word
+//! (the three-word fastpath, notes/abi.md), sent with `SEND`, whose rendezvous is the flow control.
+//! [`Sent::NoSink`] means the slot is empty and writing into the void is correct; [`Sent::Gone`]
+//! means the sink was destroyed (§16 (object revocation)) and **the writer must end**, `SIGPIPE`
+//! as a return code. No per-write error, no types, no seeking. See notes/sink-protocol.md.
 //!
 //! Name: ratified 2026-08-23 (calef) as `byte_sink_proto`, renamed from `sink_proto` to match "the
 //! byte-sink contract"; `_contract` per calef's 2026-10-18 ruling.
@@ -144,17 +128,13 @@ pub fn pack(bytes: &[u8]) -> (u64, u64, u64, usize) {
 }
 
 /// **Where a bytes message's severity rides**: bits 39:32 of the first word, which the framing left
-/// unused (the count is bits 31:0 and the opcode bits 63:56).
-///
-/// §242 (a system log) amended this contract here rather than giving a log writer a
-/// framing of its own, so the one sink shape stays one shape: a terminal, a pipe and a file read
-/// the count through [`len`] and never see these bits, and only the system log looks. The field
-/// holds the syslog level **plus one** (RFC 5424's eight levels, 0 emergency to 7 debug), so that 0
-/// keeps meaning what every writer that predates this already sends: *not set*. A sink that cares
-/// infers a level from the stream instead (diagnostics warns, ordinary output informs, §242).
-///
-/// The width (eight bits for a three-bit level) and the plus-one encoding are milestone 613 (a
-/// system log service)'s, and provisional: §242 ruled the bits, not their layout.
+/// unused (the count is bits 31:0 and the opcode bits 63:56). §242 (a system log) amended this
+/// contract rather than giving a log writer its own framing: a terminal, a pipe and a file read the
+/// count through [`len`] and never see these bits. The field holds the syslog level plus one (RFC
+/// 5424's 0 emergency to 7 debug), so 0 still means not set, and a sink that cares then infers a
+/// level from the stream (diagnostics warns, ordinary output informs, §242). The width and the
+/// plus-one encoding are milestone 613 (a system log service)'s, and provisional: §242 ruled the
+/// bits, not their layout.
 pub const SEVERITY_SHIFT: u32 = 32;
 
 /// **Where a bytes message's body kind rides**: bits 47:40 of the first word. §242's F3 record

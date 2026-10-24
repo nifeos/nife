@@ -9,21 +9,13 @@ use crate::archive::initial_ramdisk_path;
 use crate::disk::disk_path;
 use crate::{TARGET, profile_dir};
 
-/// The ELF path of a named binary the `user` package builds (milestone 19f.2+): `hello`, `least_authority_demo`,
-/// `console`, and so on. `initial_ramdisk_aarch64` packs each into the archive under that same name
-/// (milestone 266 (one progenitor) retired the one exception, which packed `hello` under the entry
-/// `init` on aarch64).
+/// The absolute ELF path of the binary `name` the `user` package builds (milestone 19f (run a real
+/// workload), from 19f.2): `hello`, `least_authority_demo`, `console`, and so on, each of which
+/// `initial_ramdisk_aarch64` packs into the archive under that same name.
 ///
-/// **The path is ABSOLUTE, and that is not fussiness.** Cargo runs the runner script with the
-/// working directory set to the **package** dir for `cargo test` and the workspace root for
-/// `cargo run`. A relative path therefore resolved under `cargo run` and silently did not under
-/// `cargo test`, so the tests booted with no initial ramdisk at all and the one that noticed was
-/// the one that panicked.
-///
-/// That lesson was written on a `user_elf()` helper that computed this same path for `hello`
-/// alone, and was `bin_elf("hello")` in every respect but the comment. Milestone 130 folded it in
-/// when `initial_ramdisk_aarch64` stopped needing a special case for `init`; the warning belongs
-/// here, where every caller reads it, rather than on the one caller that happened to earn it.
+/// **The path is absolute** because cargo runs the runner script from the package directory for
+/// `cargo test` and from the workspace root for `cargo run`. A relative path resolved under one and
+/// silently not under the other, and the tests booted with no initial ramdisk at all.
 pub(crate) fn bin_elf(name: &str) -> String {
     workspace_root()
         .join(format!("target/{TARGET}/{}/{name}", profile_dir()))
@@ -31,15 +23,13 @@ pub(crate) fn bin_elf(name: &str) -> String {
         .to_string()
 }
 
-/// The repo root, from the *compile-time* location of this crate, so it does not depend on
-/// whatever directory cargo happens to hand us.
+/// The repo root: the parent of xtask's manifest directory, as cargo reports it at run time, so it
+/// does not depend on whatever working directory cargo hands us.
 pub(crate) fn workspace_root() -> std::path::PathBuf {
-    // Runtime, not env!: the compile-time form bakes the absolute path into the binary, and a
-    // cached xtask built before the checkout moved (the 2026-08-15 cricker-os -> nife rename)
-    // then aims every path it computes, the farm, the initial ramdisks, the images, at a directory
-    // that no longer exists. Cargo sets the variable at run time for every cargo-invoked binary,
-    // and that one is always the live path. The render test in crates/documentation had the same
-    // bug the same day; if a third place grows this pattern, it is worth a lint.
+    // Runtime, not env!: the compile-time form bakes the absolute path into the binary, so a
+    // cached xtask built before the checkout moved aims every path it computes (the farm, the
+    // initial ramdisks, the images) at a directory that no longer exists. Cargo sets the variable
+    // at run time for every binary it invokes, and that one is always the live path.
     let manifest =
         std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR for xtask");
     std::path::Path::new(&manifest)
@@ -68,6 +58,12 @@ pub(crate) fn flag_value(name: &str) -> Option<String> {
     None
 }
 
+/// Locate an LLVM tool inside the rustup sysroot.
+///
+/// These ship with the `llvm-tools` component, which `rust-toolchain.toml` pins. We
+/// do NOT use the `rust-objdump` / `rust-objcopy` wrappers, because those require a
+/// separate `cargo install cargo-binutils` that nothing else in the project needs,
+/// and its absence produces a confusing "command not found" rather than a real error.
 pub(crate) fn llvm_tool(name: &str) -> Option<String> {
     let sysroot = capture("rustc", &["--print", "sysroot"])?;
     let verbose = capture("rustc", &["-vV"])?;

@@ -1,16 +1,10 @@
 //! Context-switch latency on the host OS, lmbench's `lat_ctx`, and the host side of nife's EL0
 //! `ctx_switch` bench (notes/benchmarks.md, milestone 25).
 //!
-//! A context switch cannot be timed directly on a stock OS: there is no "yield to that specific
-//! process" call. lmbench isolates it by subtraction. A two-process pipe round trip is two context
-//! switches plus two pipe passes (a `write` and a `read` each). A self-pipe pass, one process writing
-//! a byte and reading it straight back, is a pipe pass with **no** switch. So:
-//!
-//!   one context switch  =  round_trip / 2  -  self_pipe_pass
-//!
-//! The subtraction is approximate (the blocking `read` in the round trip is a touch heavier than the
-//! non-blocking one in the self-pipe, which slightly inflates the result), which is why lmbench and
-//! this note treat it as a derived number, not a measured one.
+//! No stock OS can time a switch directly, so it is derived by lmbench's subtraction: one switch is
+//! `round_trip / 2 - self_pipe_pass`. The round trip crosses two processes over two pipes; the
+//! self-pipe pass writes a byte and reads it back in one process, with no switch. The result is a
+//! derived number with a known bias, recorded in notes/benchmarks/host-programs.md.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O bench/host/ctx_switch.rs -o /tmp/ctx_switch && /tmp/ctx_switch

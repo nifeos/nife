@@ -1,5 +1,7 @@
 # The HVF leg: semihosting is not answered, and what that looks like
 
+*Name: provisional.*
+
 An appendix to [`notes/hvf-leg.md`](../hvf-leg.md). It records what milestone 81 (an HVF leg: the
 test suite on the physical core) measured about ARM semihosting under HVF on QEMU 11.0.2, and how
 the host ends the run instead.

@@ -62,10 +62,11 @@ pub extern "C" fn _start(mode: u64, lengths: u64, swap: u64) -> ! {
 }
 
 /// **The stand-in: one `CALL` the supervisor cannot make itself**, because it has to be able to
-/// stop waiting for the answer. Its whole authority is `WRITE` on the endpoint it quiesces and on
-/// the supervisor's notification. A hung incumbent leaves it blocked here until the supervisor
-/// destroys its region, which finishes it in place and unlinks its request from the endpoint's
-/// queue (milestone 133 (ending a permanently blocked thread, and deciding who may)).
+/// stop waiting for the answer. Its whole authority is `WRITE` on the endpoint it quiesces, badged
+/// `proto::SUPERVISOR_BADGE`, and on the supervisor's notification. A hung incumbent leaves it
+/// blocked here until the supervisor destroys its region, which finishes it in place and unlinks
+/// its request from the endpoint's queue (milestone 133 (ending a permanently blocked thread, and
+/// deciding who may)).
 fn stand_in() -> ! {
     let (q, _) = user_mode_runtime::call(
         STAND_IN_TERMINAL,
@@ -644,8 +645,15 @@ impl Supervisor<'_> {
         let Ok(region) = supervision_protocol::memory_region_split(d.bay, s::STAND_IN_PAGES) else {
             fail()
         };
-        let granted = [(served, abi::rights::WRITE), (d.wake, abi::rights::WRITE)];
-        let Ok(child) = supervision_protocol::build_child(
+        // The stand-in calls through a copy badged `SUPERVISOR_BADGE`, the only one the terminal
+        // takes a quiesce on. Minted per quiesce and dropped once the stand-in holds its own, so
+        // no slot is spent at rest.
+        let badged = match user_mode_runtime::badge(served, proto::SUPERVISOR_BADGE) {
+            slot if slot >= 0 => slot as u64,
+            _ => fail(),
+        };
+        let granted = [(badged, abi::rights::WRITE), (d.wake, abi::rights::WRITE)];
+        let built = supervision_protocol::build_child(
             s::BUDGET,
             region,
             &d.own,
@@ -655,9 +663,9 @@ impl Supervisor<'_> {
                 stack_pages: STAND_IN_STACK_PAGES,
                 ..ChildEndowment::new(Retention::Nothing)
             },
-        ) else {
-            fail()
-        };
+        );
+        delete_capability(badged);
+        let Ok(child) = built else { fail() };
 
         let bound = cntfrq() * s::QUIESCE_BOUND_MS / 1000;
         let started = now();

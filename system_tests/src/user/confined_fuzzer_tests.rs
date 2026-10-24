@@ -2,41 +2,24 @@
 //! `fixtures/src/confined_syscall_fuzzer.rs` is an EL0 program that draws one syscall at a time
 //! from a seed and makes it through the real trap entry. This conductor spawns two endowed fuzzers
 //! (`ROLE_A`, `ROLE_B`) and a witness (`ROLE_WITNESS`), steps each with `GO_STEP` on its slot 0,
-//! and after every completed call checks that nothing escaped. The oracle is the conductor's; the
-//! generator never interprets an answer, so a wrong one cannot steer it.
-//!
-//! - **The table diff.** A slot may empty freely, but may fill only by `RETYPE_OBJ` (the object's
-//!   page in the fuzzer's own region), `BADGE` (the same object, restamped), `SLICE` (a sub-run of
-//!   a held frame at its rights, from one holding `GRANT`), or `RECEIVE_CAP` (a
-//!   delegation this conductor watched leave a sender, no wider and same badge, or the `Reply` of a
-//!   parked caller). Any other fill, a plain `RECEIVE` included, is an escape.
-//! - **The delegation ledger** records each parked `SEND_CAP`, marks it dead on revocation, and
-//!   drops it when its sender returns; a fill naming a dead or unknown one is an escape (#1525).
-//! - **Register truth.** After `RECEIVE_CAP`, `x1` names the slot that filled or is `NO_CAP`, and
-//!   `x4` carries `REPLY_DELIVERED` exactly for a `Reply`.
-//! - **The badge.** Everything drained off the server endpoint carries a fuzzer's badge or one it
-//!   minted under the conductor's eye; badge 0 is the #1494 shape.
-//! - **The witness** holds only slot 0, which is never named, so every `SYS_INVOKE` must fail.
-//! - **The page oracle.** Every mapping lies in the spawned pages or the 32-page playground, whose
-//!   frames lie in granted regions or the two gift frames.
-//!
-//! A call that blocks is served, keyed on the parked thread's observed state, never on timing:
-//! sends drained, receives released, `CALL`s answered, the notification signalled. Only a call that
-//! neither completes nor parks serviceably is a finding. The seed is the reproducer:
-//! `NIFE_CONFINED_FUZZ_SEEDS=<first>:<count>` replaces the committed list at build time.
-//!
+//! and after every completed call checks that nothing escaped: the table diff, the delegation
+//! ledger, register truth, the badge, the witness and the page oracle. The oracle is the
+//! conductor's, so a wrong answer cannot steer the generator. A call that blocks is served, keyed
+//! on the parked thread's state, never on timing. The seed is the reproducer:
+//! `NIFE_CONFINED_FUZZ_SEEDS=<first>:<count>` replaces the committed list at build time. Each
+//! oracle's rule is in notes/system-test-modules/confined-fuzzer-tests.md.
+
 //! # BUGS
 //!
-//! - Interrupt and death deliveries are unreachable (no fuzzer can bind an interrupt or hold a
-//!   supervision channel), and this protocol closes the fuzzer-to-fuzzer arrival orders, so four
-//!   recorded falsifications cannot redden it; `receive_cap_attack_tests` keeps those records.
+//! - Interrupt and death deliveries are unreachable and fuzzer-to-fuzzer arrival orders are
+//!   closed, so four recorded falsifications (in `receive_cap_attack_tests`) cannot redden it.
 //! - `GO` (slot 0) is never fuzzed, and no thread or timer is made (retypes are rewritten to a
 //!   rendezvous to keep the seed the reproducer), so those methods are out of reach.
 //! - Badges are checked only on the server endpoint; copies minted from the shared one are unknown.
 //! - A stale capability whose object no longer resolves is not judged; every fill still is.
 //! - A delegation taken by an already-parked receiver is judged at the next quiet point, one step
 //!   late.
-//!
+
 //! Name: provisional, as are the fixture's and the protocol crate's.
 
 use abi::Error;
@@ -298,19 +281,11 @@ fn strip_badge(obj: Object) -> Object {
 
 impl Conductor {
     /// Serve fuzzer `x`, which is blocked somewhere that is not its GO, with one
-    /// [`sched::conductor_move`]: an operation that can never park the conductor, which is the
-    /// whole discipline here. Three separate suite hangs came from check-then-act services around
-    /// the blocking IPC primitives: on four cores, the party the check saw can be gone by the act,
-    /// and a parked conductor is a dead suite (the kernel is fine, every fuzzer is parked on its
-    /// GO, and nobody is left to wake the judge).
-    ///
-    /// **Only the stepped fuzzer is ever served**, which is also what makes the audit tractable:
-    /// at every quiet point each fuzzer is parked on its GO and only the stepped fuzzer makes
-    /// calls, so the one thread that can be blocked mid-call is the one being served.
-    ///
-    /// **Any rendezvous or notification, not only the conductor's.** A fuzzer retypes endpoints
-    /// and notifications of its own out of its region and parks on them; each such park is
-    /// legitimate kernel behavior, and the conductor releases every one the same way.
+    /// [`sched::conductor_move`]: an operation that can never park the conductor. A check-then-act
+    /// service around a blocking IPC primitive races on four cores (the party checked can be gone
+    /// by the act), and a parked conductor is a dead suite. Only the stepped fuzzer is ever served:
+    /// at every quiet point the others are parked on their GO. Any rendezvous or notification is
+    /// released, not only the conductor's, since a fuzzer parks on objects it retyped itself.
     fn serve(&mut self, x: usize) -> bool {
         let Some((State::Blocked, Some(wait))) = disposition(self, x) else {
             return false; // still running, or between states: yield and look again
@@ -954,12 +929,9 @@ impl Conductor {
                 && (0..FUZZERS).all(|y| !completed(self, y))
             {
                 // The second conjunct is the race: the stepped fuzzer can park *between* the
-                // collect pass at the top of this loop and the all-parked check right here, in
-                // which case the first conjunct alone would return with a completed, uncollected
-                // step. Its effects (a SPLIT child, a delegation spent) would then be judged
-                // against the fuzzer's *next* call, which was this suite's one-in-ten flake:
-                // the conductor's own history ring caught the conductor skipping the judgment
-                // (2026-10-06 UTC).
+                // collect pass at the top of this loop and this check, and returning then would
+                // judge its completed step's effects (a SPLIT child, a delegation spent) against
+                // its *next* call.
                 return;
             }
             if !parked_on_go(self, x) {
@@ -1285,13 +1257,11 @@ fn park_and_take_baselines(c: &mut Conductor) {
     for x in 0..FUZZERS {
         let parked = wait_for(|| parked_on_go(c, x));
         assert!(parked, "fuzzer {x} never parked on its conductor channel");
-        // A failure here was seen once (rva23s64, merge group run 38142134083, 2026-10-11
-        // UTC) and is not yet understood; the `BUGS` section of milestone 779's block
-        // (design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the
-        // two hypotheses. The message reads the state again at the failure to say which: a
-        // fuzzer that is not live (or not parked on GO) means the waiter counted on GO was
-        // not this fuzzer or it died after parking; a live fuzzer parked on GO with no space
-        // means it lost its space while counted as waiting.
+        // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
+        // confined process can reach)'s block
+        // (design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the two
+        // hypotheses, and the message re-reads the state to say which: a fuzzer not live or not
+        // parked on GO, or a live fuzzer parked on GO that lost its space.
         let Some(root) = sched::thread_space_root(c.fuzzers[x].tid) else {
             panic!(
                 "a live fuzzer has a space root: fuzzer {x} (tid {:?}, seed {:#x}) has none; \

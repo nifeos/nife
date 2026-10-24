@@ -28,5 +28,3 @@ the parent's Results row points to it.
 *Name: provisional, for the directory and every stem in it. Naming is an architect's;
 `script/names --unratified` lists each stem. Each stem is named for its content, and
 `instrument-change-2026-09-19` is dated like `radon-2026-10-04`.*
-
-- `spawn-job-miscompiled-yield` Name: ratified 2026-10-18 (calef, "Approve as a group"). Refused `spawn-destroy-gone`.

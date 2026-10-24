@@ -1,5 +1,7 @@
 # `helpers/lane-claim-check.sh`, in full
 
+*Name: provisional. After the script it documents.*
+
 An appendix to [notes/merge-queue.md](../merge-queue.md). It holds what the claim check watches,
 the three false positives designed out of it, why its clock runs from the branch's birth, and why
 it is a report and not a gate.

@@ -1,45 +1,32 @@
-//! **The FS-server core: RedoxFS behind a capability-shaped file service** (milestone 32 phase 2).
+//! The FS-server core: RedoxFS behind a capability-shaped file service (milestone 32 phase 2).
 //!
-//! This is the sans-IO heart of the FS server, in the `line_editor` spirit: the filesystem logic
-//! with no IPC and no device in it, so it is host-tested in milliseconds against a real RedoxFS
-//! image and only the wiring needs QEMU. The EL0 binary (this crate's `el0` build) wraps a
-//! [`Server`] in the block-IPC [`redoxfs::Disk`] and the file-service serve loop; everything the
-//! filesystem actually *does* lives here.
-//!
+//! The sans-IO filesystem logic, with no IPC and no device in it, so it is host-tested in
+//! milliseconds against a real RedoxFS image and only the wiring needs QEMU. The EL0 binary wraps a
+//! [`Server`] in the block-IPC [`redoxfs::Disk`] and the file-service serve loop. See
+//! notes/fs-server.md, notes/fs-server/the-core.md and notes/fs-server/caches-and-io.md.
+
 //! # The contract, capability-shaped from birth
 //!
-//! A [`Server`] is opened **bound to one directory** ([`Server::open`] binds the RedoxFS root).
-//! Every name a client presents is resolved *under a directory handle*: there is no absolute path,
-//! no `..` escape, no global namespace. In the running system the client reaches this server only by
-//! holding an endpoint the server reads on, and that endpoint IS the directory capability; a client
-//! without it can open nothing. A successful open returns a **handle**, a small integer this server
-//! minted and will validate against its own table, which is itself a capability: forging one is
-//! meaningless because the server honors only the handles it issued. See notes/fs-server.md.
-//!
+//! A [`Server`] is opened bound to one directory ([`Server::open`] binds the RedoxFS root), and
+//! every name a client presents is resolved under a directory handle: no absolute path, no `..`
+//! escape, no global namespace. The endpoint the server reads on is the directory capability; a
+//! client without it can open nothing. A handle is a small integer this server minted and validates
+//! against its own table, so forging one is meaningless.
+
 //! # The directory capability (milestone 47)
 //!
-//! The bound directory is [`filesystem_contract::fs::ROOT`], handle 0, an ordinary entry in the same table, so
-//! every name-taking verb names a directory rather than resolving against a hidden field. A
-//! directory handle carries a [`filesystem_contract::dir::Rights`] set, [`Server::open_dir`] hands back a
-//! handle to a child, and a child's rights are the parent's intersected with what was asked for.
-//! **That intersection is the only constructor for a non-root rights set**, so no descendant can
-//! carry a right its ancestor lacked, at any depth, without a check anyone could forget. A file
-//! handle inherits its directory's read and write bits, so what may be done to a file was decided
-//! when the directory was granted. See notes/dir-capability.md.
-//!
-//! **What this table is not.** It is per *server*, not per client, so two clients sharing one
-//! endpoint share these handles and a rights-carrying handle attenuates only its holder. The handle
-//! is the authority; the **endpoint** is the boundary. Confining a program to a subtree is
-//! therefore still a caretaker process holding the wider endpoint
-//! (`components/src/fs_subtree_caretaker.rs`), for exactly the reason `fs_file_caretaker` is one.
-//!
+//! The bound directory is [`filesystem_contract::fs::ROOT`], handle 0, an ordinary table entry. A
+//! directory handle carries a [`filesystem_contract::dir::Rights`] set, and [`Server::open_dir`]
+//! gives a child the parent's rights intersected with the request. That intersection is the only
+//! constructor for a non-root rights set, so no descendant carries a right its ancestor lacked. A
+//! file handle inherits its directory's read and write bits. The table is per server, not per
+//! client, so the endpoint is the boundary. See notes/dir-capability.md.
 
 //! # The error boundary
 //!
 //! Every method here returns `syscall::error::Result`, RedoxFS's own error type, unmapped. The
-//! translation to the wire (a negated errno, `filesystem_contract::reply_err`) happens once, in the serve loop
-//! at the process boundary, and nowhere else. Keeping the core in RedoxFS's error vocabulary is what
-//! makes that rule enforceable: there is no ABI type in here to leak.
+//! translation to the wire (a negated errno, `filesystem_contract::reply_err`) happens once, at the
+//! process boundary, and nowhere else: there is no ABI type in here to leak.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -84,21 +71,16 @@ use syscall::error::{
 
 use crate::memo::Memo;
 
-/// **The largest end a file may have, in bytes**: every record the engine's node tree can address,
-/// at the smallest record (one block). A write ending past it, or a truncate growing past it, is
+/// The largest end a file may have, in bytes: every record the engine's node tree can address, at
+/// the smallest record (one block). A write ending past it, or a truncate growing past it, is
 /// refused `EFBIG` before the engine sees it.
 ///
 /// # BUGS
 ///
-/// **This bound was written for an upstream defect.** `redoxfs::NodeLevel::new` admitted
-/// `12 * 256^4` level-4 records where `NodeLevelData::level4` holds 8 pointers, so a record offset
-/// in that band indexed past the array and the engine panicked, which in this server is a dead
-/// server (found by the `redoxfs_server_session` fuzz target, 2026-10-04 UTC). The root fix, `12`
-/// to `8` in `vendor/redoxfs/src/node.rs`, is a pin divergence taken by #1606
-/// (`lane/redoxfs-level4`); this bound is kept beside it because it answers `EFBIG` at the
-/// boundary rather than an engine `ERANGE` deep in a transaction. It is conservative: a file with
-/// 8 KiB records (every file this build creates) could address twice this, and no image this
-/// system serves comes within a factor of a million of either.
+/// - Written for an upstream defect whose root fix is a pin divergence (#1606, level 4's `12` to
+///   `8` in `vendor/redoxfs/src/node.rs`); kept so the boundary answers `EFBIG`, not `ERANGE`. Every
+///   file this build creates has 8 KiB records, which could address twice it, and no image comes
+///   within a factor of a million. See notes/fs-server/the-core.md.
 pub const MAX_FILE_END: u64 =
     (128 + 64 * 256 + 32 * 256 * 256 + 16 * 256 * 256 * 256 + 8 * 256 * 256 * 256 * 256)
         * BLOCK as u64;

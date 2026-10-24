@@ -1,18 +1,14 @@
 //! EL0 microbenchmarks, measured the lmbench way (the cross-OS primitive suite, milestone 21+).
 //!
-//! The kernel-side benchmarks in `kernel/src/bench.rs` measure path length *inside* the kernel: the
-//! bench threads are kernel threads calling `sched::` directly, so they never pay the EL0->EL1 trap.
-//! lmbench measures from userspace, trap included, so to compare nife to lmbench we have to
-//! measure from **here**, at EL0, self-timing a loop of real `svc` syscalls. That is this program.
+//! The kernel threads of `kernel/src/bench.rs` never pay the EL0->EL1 trap; lmbench measures from
+//! userspace, trap included, so this program self-times loops of real `svc` syscalls at EL0.
+//! Spawned by the bench boot, it times each primitive with `user_mode_runtime::now` (the virtual
+//! counter, EL0-readable since milestone 19e (run a real workload)) and SENDs `[ticks, iters]` on
+//! slot 0, so the icount baseline gates it and `--real` gives its magnitude. Five primitives: null
+//! syscall, context switch, IPC round trip, page map, and spawn, which reclaims each child's region
+//! (`MemoryRegion::DESTROY`). See notes/benchmarks/cross-os-primitives.md.
 //!
-//! It is spawned by the bench boot (`kernel/src/bench.rs`), self-times each primitive with
-//! `user_mode_runtime::now` (the virtual counter, EL0-readable since milestone 19e), and SENDs `[ticks, iters]`
-//! home on the one endpoint it was granted (slot 0). The bench boot prints it in the same
-//! machine-readable line the rest of the harness uses, so the icount baseline gates it and `--real`
-//! gives its true magnitude. Five primitives: null syscall, context switch, IPC round trip, page
-//! map, and spawn. Spawn is the whole reason object revocation was built: the loop reclaims each
-//! child's region (`MemoryRegion::DESTROY`) so it can repeat.
-//!
+
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `elbench`, and it is the name that
 //! forced `nifefs`'s `NAME_LEN` from 24 to 32. The raise was taken first and on its own merits,
 //! deliberately, because choosing a worse name to fit a limit and raising a limit because a name

@@ -8,7 +8,7 @@
 //! hardware.
 //!
 //! A failed lookup, parse or build reports word 0.
-//!
+
 //! # BUGS
 //!
 //! The child is loaded unmeasured (notes/trusted-init.md). Only aarch64's kernel test runs this

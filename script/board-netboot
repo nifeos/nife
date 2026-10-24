@@ -132,8 +132,8 @@ def private_addresses():
     """Every RFC 1918 address on this machine, which is what the board could fetch from.
 
     Read off the interfaces rather than out of the routing table, for the reason
-    `cargo xtask board-script` records at length: patagonia's default route belongs to a
-    Tailscale interface, and the address it hands back is one radon has no path to.
+    `cargo xtask board-script` records at length: a default route can belong to a Tailscale
+    interface, and the address it hands back is one radon has no path to.
     """
     for command in (["ifconfig"], ["ip", "-4", "-o", "addr", "show"]):
         try:

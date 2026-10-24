@@ -70,20 +70,14 @@ pub(crate) fn say_hex(table: &SystemTable, value: u64) {
 
 /// **Say which memory the firmware is already using inside a range it refused** (milestone 195).
 ///
-/// `AllocatePages(AllocateAddress)` reports one status and no address, so on its own it cannot
-/// distinguish "your kernel is too big for this machine" from "your kernel overlaps a firmware
-/// volume". This walks the map the firmware would have handed over anyway and prints every
-/// descriptor in the way that is not free RAM, with its type number as the UEFI specification
-/// numbers them (`r_efi::efi::CONVENTIONAL_MEMORY` and its siblings).
-///
-/// It runs only on the failure path, so the allocation it makes cannot disturb the map key
-/// `ExitBootServices` later checks: there is no later on this path.
+/// `AllocatePages(AllocateAddress)` reports one status and no address, so on its own it cannot tell
+/// "your kernel is too big" from "your kernel overlaps a firmware volume". This prints every map
+/// descriptor in the range that is not free RAM, with its UEFI type number
+/// (`r_efi::efi::CONVENTIONAL_MEMORY` and its siblings). It runs only on the failure path, so its
+/// allocation cannot disturb the map key `ExitBootServices` later checks: there is no later.
 ///
 /// # BUGS
-///
-/// - **A firmware too broken to report a memory map prints nothing here**, and the caller's own
-///   sentence is then all the reader gets. That is the honest floor: there is no second source for
-///   this information.
+/// - **A firmware too broken to report a memory map prints nothing here**: no second source.
 pub(crate) fn say_conflict(table: &SystemTable, services: &BootServices, start: u64, end: u64) {
     let Some((bytes, descriptor_size)) = boot_services::memory_map_size(services) else {
         return;

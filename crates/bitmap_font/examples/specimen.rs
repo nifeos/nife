@@ -1,55 +1,19 @@
-//! **A specimen sheet for an 8-pixel-wide bitmap font**: the same text, in every font, so two of
-//! them can be compared by looking rather than by reading a table of byte counts.
-//!
-//! The crate is a pure function from `(byte, x, y)` to ink, so the picture can be *printed*, and a
-//! font choice becomes something a person can look at.
-//!
-//! Run it on what ships:
-//!
-//! ```text
-//! cargo run -p bitmap_font --example specimen
-//! ```
-//!
-//! Or on a candidate, in any of the four formats a bitmap font arrives in. GNU Unifont `.hex`
-//! (`CODEPOINT:BITS`, one glyph per line), Adobe `.bdf` (what Terminus, Spleen and most X11 bitmap
-//! fonts ship as), the `.art` format this tool also reads, which is a `#`/`.` picture per glyph and
-//! is the only sane way to *author* one by hand, and a raw character-generator ROM (`.rom`/`.bin`),
-//! which is the format a font arrived in before it was a file:
-//!
-//! ```text
-//! cargo run -p bitmap_font --example specimen -- --font unscii-8.hex --name unscii-8
-//! cargo run -p bitmap_font --example specimen -- --font ter-u16n.bdf --name terminus-16
-//! cargo run -p bitmap_font --example specimen -- --font bench/font-options/hand-drawn-8x8.art
-//! cargo run -p bitmap_font --example specimen -- --font 81-146a.bin --name kaypro-ii
-//! ```
-//!
-//! **Give `--font` more than once and the fonts are drawn interleaved**, sample line by sample
-//! line, with the name in a left gutter: the eye cannot compare across a scroll. `--metrics` prints
-//! the table row for `notes/glyphs.md` instead of asserting the numbers.
-//!
-//! ```text
-//! cargo run -p bitmap_font --example specimen -- --metrics \
-//!     --font 81-146a.bin --name kaypro-ii --font gohufont-14.bdf --name gohufont-14
-//! ```
-//!
-//! Two rendering modes, and both are needed for different questions. Half blocks (the default) show
-//! the font at roughly its real aspect ratio, because a terminal cell is about twice as tall as it
-//! is wide and one half block is therefore about square; that is the mode for "does this look
-//! good". `--dots` prints one character per pixel, which is the mode for "what exactly is in this
-//! glyph", and it is the format the crate's own doctest uses to pin the bit order.
-//!
+//! A specimen sheet for an 8-pixel-wide bitmap font: the same text in every font given, so fonts
+//! are compared by looking. `cargo run -p bitmap_font --example specimen` draws what ships;
+//! `--font PATH [--name NAME]` loads a candidate as Unifont `.hex`, BDF `.bdf`, the `.art` picture
+//! or a raw character-generator ROM (`.rom`/`.bin`), and a repeated `--font` draws the fonts
+//! interleaved line by line with each name in a left gutter. `--metrics` prints the font's row for
+//! the table in `notes/glyphs.md`. Half blocks (the default) show the font at about its real aspect
+//! ratio; `--dots` prints one character per pixel, the format the crate's doctest pins the bit
+//! order with. See notes/glyphs/bitmap-font.md.
 
 //! # BUGS
 //!
-//! Half-block output is only faithful if the terminal reading it renders U+2580 and U+2584 at full
-//! cell height with no gap. Most do; a few add antialiasing that makes strokes look softer than the
-//! font is. `--dots` has no such dependency and disagreeing with it is the tie-breaker.
-//!
-//! The `.hex` reader takes the low byte of each row and ignores 16-pixel-wide glyphs, because this
-//! crate's cell is 8 wide. A 16-wide font loaded here shows its left half, which looks like a
-//! clipped font rather than an error. The `.bdf` reader clips the same way, and it reads only
-//! the bitmap: `SWIDTH`, `DWIDTH` and the property block are ignored, which is right for a
-//! fixed-pitch cell and wrong for anything else.
+//! - Half-block output is faithful only where the terminal renders U+2580 and U+2584 at full cell
+//!   height with no gap; `--dots` has no such dependency and is the tie-breaker.
+//! - The `.hex` and `.bdf` readers take the low byte of each row, so a 16-wide font shows its left
+//!   half and looks clipped rather than refused. The `.bdf` reader ignores `SWIDTH`, `DWIDTH` and
+//!   the property block, which is right for a fixed-pitch cell and wrong for anything else.
 //!
 //! Name: provisional (this lane, bench/font-options). "Specimen" is the printing trade's word
 //! for exactly this sheet, which is the guard rail the naming tenet keeps, but the name is an
@@ -334,35 +298,16 @@ fn parse_art(text: &str, name: &str) -> Font {
     }
 }
 
-/// A raw **character-generator ROM**, which is the format a bitmap font arrived in before it was a
-/// file: a chip on the video board, addressed by character code and scanline, whose data lines feed
-/// a shift register directly. There is no header and no metadata, so everything below is either
-/// derived from the bytes or is a fact about the machine's wiring, and the two are marked apart.
-///
-/// Three things are derived from the bytes, and each is checkable by looking at the ROM:
-///
-/// - **The used half.** A 2K part often carries a 1K font, and the unused half is uniform. Kaypro's
-///   `81-146a` is blank for its first 1024 bytes because the hardware selects that half during
-///   blanking, so the leading uniform 1K-aligned blocks are skipped.
-/// - **Rows per glyph**, which is then the used length over 128.
-/// - **Inversion.** A font is mostly paper, so if most bits in the used region are set, the part
-///   stores ink as zero. MAME says the same thing declaratively with `ROMREGION_INVERT`.
-///
-/// One thing is a fact about the wiring and is only **inferred** here: how many of the eight data
-/// lines reach the shift register. If the top bits are paper in every byte of the font, they are
-/// not connected, and the glyph is the remaining span plus one blank gutter column on each side.
-/// That gutter is Kaypro's (`kaypro_v.cpp` shifts out `0`, five bits, `0`), not a universal truth.
+/// A raw character-generator ROM: a chip on the video board addressed by character code and
+/// scanline, with no header. The used half, the rows per glyph and the inversion are derived from
+/// the bytes; which data lines reach the shift register is inferred (paper in every byte means not
+/// connected), with Kaypro's one-column gutter each side. See notes/glyphs/bitmap-font.md.
 ///
 /// # BUGS
-///
-/// The gutter is assumed to be one column on each side, because that is what the one machine this
-/// was written against does. A chargen wired with two blank columns, or with the glyph left-aligned
-/// rather than right-aligned, comes out at the wrong pitch and looks loose rather than wrong, which
-/// is the hardest kind of error to see. Pass `--advance` to override it.
-///
-/// Rows are assumed to be contiguous per glyph, low address is the top scanline, and the code point
-/// is the ROM index. A machine whose video RAM permutes the code (Kaypro's own `chr ^ 0x80`, which
-/// is what puts its font in the second half) is handled by the used-half skip and by nothing else.
+/// - A chargen whose gutter is not one column each side comes out at the wrong pitch and looks
+///   loose rather than wrong; pass `--advance`.
+/// - Rows are assumed contiguous, top scanline first, code point the ROM index; a permuted code
+///   (Kaypro's `chr ^ 0x80`) is handled only by the used-half skip.
 fn parse_chargen(bytes: &[u8], name: &str, advance_override: Option<usize>) -> Font {
     // Skip leading 1K blocks that carry no picture at all.
     let mut start = 0;
@@ -487,19 +432,14 @@ fn dots(font: &Font, text: &str) -> String {
     out
 }
 
-/// What the shapes measure, over the 52 letters: the row of the table in `notes/glyphs.md`.
-///
-/// Ink per letter is weight. The two sigmas are consistency, which is what the eye reads as rhythm
-/// rather than as any one glyph: the left-edge sigma says whether the letters start in the same
-/// place, and the width sigma whether they are the same size. Cap, x-height and descender are the
-/// vertical proportions, with the baseline taken from the bottom of `x` and the descender counted
-/// as the rows a `g` reaches below it.
+/// What the shapes measure over the 52 letters: the row of the table in `notes/glyphs.md`. Ink per
+/// letter is weight; the left-edge and width sigmas are consistency, what the eye reads as rhythm;
+/// cap, x-height and descender are the vertical proportions, with the baseline at the bottom of `x`
+/// and the descender the rows a `g` reaches below it.
 ///
 /// # BUGS
-///
-/// A font whose `x` or `g` is missing reports a baseline of zero and a nonsense descender rather
-/// than refusing, because every candidate so far draws all 94 printable positions and a font that
-/// does not is already disqualified by the `printable_drawn` column.
+/// - A font missing `x` or `g` reports a baseline of zero and a nonsense descender rather than
+///   refusing; such a font is already out on the `printable_drawn` column.
 fn metrics(font: &Font) -> String {
     let letters: Vec<u8> = (b'A'..=b'Z').chain(b'a'..=b'z').collect();
     let extent = |byte: u8| -> Option<(usize, usize, usize, usize, usize)> {
@@ -647,9 +587,8 @@ fn main() {
             .collect()
     };
 
-    // The gutter carries the font's name on the first row of its block, so two fonts can be read
-    // adjacently without a heading between every pair of lines. Comparison is the whole point: a
-    // specimen in a section of its own is an inventory, not a comparison.
+    // The gutter carries the font's name on the first row of its block, so two fonts read
+    // adjacently without a heading between every pair of lines.
     let gutter = fonts
         .iter()
         .map(|f| f.name.chars().count())
