@@ -1,8 +1,6 @@
 //! **What a leg does after its script**: keystrokes over the monitor, the reboot phase, the
-//! graphical terminal's launch, and the `rg` walk.
-//!
-//! Cut out of `swish_check.rs` unchanged by milestone 847 (the swish-check harness is split
-//! along its seams).
+//! graphical terminal's launch, and the `rg` walk. See notes/swish-check-harness.md, "What a leg
+//! does after its script".
 //!
 //! Name: provisional (milestone 847's lane, 2026-10-11 UTC; §280 (the swish-check harness
 //! splits into submodules, with its script in one)).
@@ -12,40 +10,23 @@ use std::time::{Duration, Instant};
 
 use super::*;
 
-/// **The graphical launch, folded into the plain legs' boots** (milestone 632 (graphics on
-/// demand)). The boot is the **normal UART system on every boot**, and graphics
-/// is *launched*: this leg types `graphical_terminal` at the swish prompt and verifies what the
-/// launched session puts on the screen, read back with a `screendump`.
+/// **How the graphical launch's one key press reaches the session** (milestone 632 (graphics on
+/// demand)). [`swish_check_boot`] boots the normal UART system with a virtio-gpu, and
+/// [`launch_graphical_terminal`] types `graphical_terminal`, then presses one key and requires its
+/// echo on the screen.
 ///
-/// 1. [`swish_check_boot`] boots the normal system with a virtio-gpu attached, reading the UART
-///    transcript: the swish prompt must appear on the serial console before anything is typed,
-///    the assertion that the boot stayed minimal.
-/// 2. [`launch_graphical_terminal`] types `graphical_terminal` over the UART. The shell asks
-///    (`spawnproto::GRAPHICS_BIT`), the progenitor builds the session's stack from the devices it
-///    holds, and the session prints its own `$ ` prompt on the screen.
-/// 3. It presses one key and requires its echo on the screen: a real round trip through a line
-///    discipline and the session's own echo.
-///
-/// [`Keystrokes::Device`] attaches a virtio-keyboard and presses a key with the QEMU monitor's
-/// `sendkey`. [`Keystrokes::Serial`] attaches **no** keyboard and types the same byte down the
-/// UART, the configuration every target machine has (milestone 192 (a keyboard on real silicon)'s
-/// option A, at launch): the session reads the boot's line discipline raw, the shell's own §227
-/// (how Tab reaches the shell) shape, and paints the echo itself. Neither the screen nor the
-/// session can tell which source a byte came by, so a change that made it matter turns exactly one
-/// run red.
-///
-/// **Any `$ ` prompt on the screen is the proof**: a capability-slot collision anywhere in the
-/// session's build (the shell's held grants, the progenitor receiving them, the children built from
-/// one region, the session's own table) fails in total silence. It looks for `$ ` anywhere in the
-/// decoded grid, not at a predicted row, and `$ a` after the key press proves the keystroke's
-/// round trip. There is no known picture to compare against, so this proves the launch, less than
-/// [`swish_check_leg`] proves of a boot.
+/// Neither the screen nor the session can tell which variant a byte came by, so a change that made
+/// it matter turns exactly one run red. Any `$ ` on the screen is the proof, since a
+/// capability-slot collision anywhere in the session's build fails in total silence. See
+/// notes/swish-check-harness.md, "What a leg does after its script".
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Keystrokes {
     /// A virtio-input device, pressed with the monitor's `sendkey`. Milestone 177.
     Device,
-    /// The guest's own UART, typed down the child's stdin (`-serial stdio`). Milestone 192,
-    /// option A, and the only source any of the three real machines has.
+    /// The guest's own UART, typed down the child's stdin (`-serial stdio`), with no keyboard
+    /// attached. Milestone 192 (a keyboard on real silicon), option A, and the only source any of
+    /// the three real machines has: the session reads the boot's line discipline raw, the shell's
+    /// own §227 (how Tab reaches the shell) shape, and paints the echo itself.
     Serial,
 }
 
@@ -61,18 +42,15 @@ fn firmware_marker(arch: &str) -> Option<&'static str> {
 }
 
 /// **Type `reboot` and see the machine come back** (milestone 805 (`reboot` at the prompt), the
-/// phase that ends every architecture's first boot). It writes a file, types `reboot`, and asks
-/// for, in order:
-///
+/// phase ending each leg's first boot). It writes a file, types `reboot`, and asks for, in order:
 /// - `reboot`'s own report that its sync was answered (the block server's count of completed
 ///   `blk::FLUSH`es, through its sync-only capability), before the kernel's first `reboot:` line;
 /// - the kernel's attempt line, and no refusal;
 /// - the firmware's line where there is firmware ([`firmware_marker`]);
 /// - a second prompt banner, then `wc reboot.txt` answering `1 3 18`.
 ///
-/// Every error names the step, prefixed `reboot phase:`, so a red leg says it was the reboot and
-/// not a scripted line. The read-back cannot fail for want of a sync under QEMU, which outlives a
-/// guest reset with its host cache intact; the sync line is the evidence the sync happened.
+/// Every error is prefixed `reboot phase:`. The sync line is the sync's evidence, since under QEMU
+/// the host cache outlives a guest reset and the read-back cannot fail for want of one.
 pub(super) fn reboot_phase(
     arch: &str,
     stdin: &mut std::process::ChildStdin,
@@ -151,10 +129,8 @@ impl RebootPhase<'_> {
     const READ_LINE: &str = "wc reboot.txt";
     // `survives a reboot` and its newline: 18 bytes, 3 words, 1 line.
     const READ_ANSWER: &str = "1 3 18";
-    // Without the `reboot:` prefix on purpose. The shell draws its next prompt once `reboot`'s
-    // report has ended, while the kernel writes these lines straight to the UART, so the prompt can
-    // land inside the kernel's first line: merge group 37554001967 (2026-10-07 UTC) read
-    // "reboo$t:  the kernel was asked to restart the machine" on riscv64. The tail is the claim.
+    // Without the `reboot:` prefix on purpose: the shell's next prompt can land inside the
+    // kernel's line ("reboo$t:  the kernel was..."). The tail is the claim.
     const KERNEL_ASKED: &str = "the kernel was asked to restart the machine";
     const KERNEL_REFUSED: &str = "every reset route was refused";
     const SYNCED: &str = "reboot: filesystem synced";
@@ -239,23 +215,14 @@ impl RebootPhase<'_> {
     }
 }
 
-/// **The screendump decoded back into rows of text, in the terminal's own scheme.**
+/// **The screendump decoded back into rows of text, in the terminal's own scheme**: the font
+/// `glyph_atlas::REGULAR` at `video_terminal`'s cell, drawn 1:1 (what `Vt::pixel` paints and
+/// [`super::super::scanout`] grades), in `video_terminal::Attr::DEFAULT`'s colors.
 ///
 /// The decoder is `serial_console::screen::decode_exact` (milestone 377 (two screendump decoders,
-/// in two crates, reading the same font), which deleted this leg's own `parse_ppm`,
-/// `decode_cell` and `scanout_rows`); what this call site contributes is the
-/// three things that belong to the leg and not to a decoder:
-///
-/// - **The geometry assertion `scanout_rows` used to carry**, kept here where it belongs: this
-///   leg grades the graphical terminal's own surface, and a scanout of any other size is a
-///   `SET_SCANOUT` bug, not a near miss. `Err` rather than a full grid of `?`s, so a wrong-sized
-///   dump is skipped and the next poll tries again, exactly as before the merge.
-/// - **The colors**: `video_terminal::Attr::DEFAULT`'s, read from that crate so the scheme
-///   stays the terminal's own choice rather than a constant copied here.
-/// - **The font**: `glyph_atlas::REGULAR` at `video_terminal`'s cell, drawn 1:1, the same function
-///   `Vt::pixel` paints with and [`super::super::scanout`]'s exact text check grades.
-///
-/// The alphabet is the caller's: this leg only ever searches for what it itself types.
+/// in two crates, reading the same font)). `alphabet` is the caller's, which searches only for what
+/// it typed. `Err` for a scanout that is not the surface's size, a `SET_SCANOUT` bug rather than a
+/// near miss, so the next poll tries again.
 fn screen_rows(
     bytes: &[u8],
     alphabet: &[u8],
@@ -282,8 +249,8 @@ fn screen_rows(
     Ok(screen)
 }
 
-/// **Launch `graphical_terminal` from the prompt a boot is sitting at, and read the screen**
-/// (the second and third steps of [`Keystrokes`]'s doc). Called by [`swish_check_boot`] once its
+/// **Launch `graphical_terminal` from the prompt a boot is sitting at, read the screen, and press
+/// one key** through either [`Keystrokes`] source. Called by [`swish_check_boot`] once its
 /// script has finished and the prompt is back, on a boot that has a virtio-gpu attached; `sock` is
 /// that gpu's monitor socket, which `screendump` reads. `Ok` carries the sentence to print.
 pub(super) fn launch_graphical_terminal(
@@ -339,12 +306,8 @@ pub(super) fn launch_graphical_terminal(
     };
     eprintln!("swish-check ({arch}, graphical): session prompt found: {before:?}");
 
-    // The one keystroke, the same key (and the same reason) the kernel test's own keyboard test
-    // uses: `video_terminal::script::HOST_KEY` is the one definition of which key, so a driver
-    // that mapped the evdev code wrong fails in exactly one place instead of two. The serial arm
-    // sends the same key as the byte it already is, since a UART carries no scancode for a keymap
-    // to get wrong; `HOST_KEY_BYTE` is that byte, defined beside `HOST_KEY` so the two spellings
-    // of one key cannot drift.
+    // `HOST_KEY` is the kernel keyboard test's key too, so a wrong evdev mapping fails in one
+    // place. A UART carries no scancode, so the serial arm sends `HOST_KEY_BYTE`, defined beside it.
     match keystrokes {
         Keystrokes::Device => sendkey(sock, video_terminal::script::HOST_KEY),
         Keystrokes::Serial => stdin
@@ -403,11 +366,8 @@ pub(super) fn launch_graphical_terminal(
 }
 
 /// **`bytes` as text, holding back a character the read cut in two.** A pipe read ends wherever the
-/// 1024-byte buffer fills, so a multi-byte character can straddle two reads, and decoding each read
-/// alone turned the halves into two replacement characters: `§` arrived as `��` in one line of
-/// `rg`'s walk on 2026-10-07 (milestone 121), the only one of 349 that differed from the host's.
-/// An incomplete sequence at the end waits in `split` for the next read; bytes that are invalid
-/// anywhere else are still replaced, as before.
+/// 1024-byte buffer fills, so a multi-byte character can straddle two reads. An incomplete sequence
+/// at the end waits in `split` for the next read; bytes invalid anywhere else are replaced.
 pub(super) fn whole_characters(split: &mut Vec<u8>, bytes: &[u8]) -> String {
     split.extend_from_slice(bytes);
     let keep = match std::str::from_utf8(split) {
@@ -435,30 +395,18 @@ pub(super) const RG_WALK_PREVIEW: &str = "caps rg BUGS crates";
 /// the directory is on the disk only beside `rg`.
 pub(super) const RG_WALK_CD: &str = "cd /search";
 
-/// **How long [`RG_WALK_LINE`] may take**, typed to prompt-back, on every leg (milestone 121,
-/// 2026-10-07 UTC). Measured on patagonia with other lanes building (load 15 to 60):
-///
-/// | leg | the walk | load average |
-/// |---|---:|---:|
-/// | aarch64, HVF | 14.9 s, 54.1 s | 24, 38 |
-/// | riscv64, TCG | 40.8 s | about 20 |
-/// | `x86_64`, TCG | 345.8 s, 432.1 s | 15 to 20 |
-///
-/// Ten minutes covers the slowest with room, and a hang still reports inside one CI job. Why the
-/// emulated `x86_64` leg is eight to twenty times the others is not measured; the likeliest cost is
-/// the one [`SWISH_CHECK_X86_LINE_SECS`] names, the screen path painting each of 349 lines through
-/// TCG. CI's legs are measured in milestone 121's block (lane milestone/121-rg-ci).
+/// **How long [`RG_WALK_LINE`] may take**, typed to prompt-back, on every leg (milestone 121
+/// (`ripgrep` on nife)). The slowest measured walk was 432.1 s, emulated `x86_64` on patagonia
+/// under load on 2026-10-07 UTC; ten minutes covers it with room, and a hang still reports inside
+/// one CI job. The table, and why `x86_64` is slower, are in notes/swish-check-harness.md, "The
+/// `rg` walk".
 pub(super) const RG_WALK_SECS: u64 = 600;
 
-/// **How long any other line naming `rg` may take** (the three milestone 595 typed, and its `caps`).
-/// Loading a 2.8 MiB image is most of it: under the same load those lines took 3.8 to 30.1 s on
-/// aarch64 and up to 38.7 s on `x86_64`, so the shared 30 s bound failed them on two legs before
-/// this. Where the time goes inside a spawn of that size is not measured (milestone 121's BUGS).
-///
-/// The two lines that install `rg` from basalt and run it (milestone 810 (`ripgrep` is packaged
-/// in basalt and installed with `jig`)) take it too: fetching 2.8 MiB over software TLS under TCG
-/// took 21.0 s on aarch64, 28.7 s on riscv64 and 46.1 s on x86_64 under TCG, on patagonia under
-/// load (2026-10-12 UTC).
+/// **How long any other line naming `rg` may take**, the install from basalt included. Loading
+/// or fetching a 2.8 MiB image is most of it: up to 38.7 s to load and 46.1 s to fetch on `x86_64`
+/// under TCG on patagonia, so the shared 30 s bound is too short. Where the time goes inside a
+/// spawn of that size is not measured (milestone 121's BUGS). The figures and their dates are in
+/// notes/swish-check-harness.md, "The `rg` walk".
 pub(super) const RG_LINE_SECS: u64 = 90;
 
 /// **Whether `rg`'s answer at the prompt is the host's answer**, as a set of lines: every line the
@@ -526,10 +474,9 @@ pub(super) fn swish_check_answer<'a>(
     let echo = format!("$ {line}\n");
     let at = from + transcript[from..].find(&echo)? + echo.len();
     let rest = &transcript[at..];
-    // The answer runs to the next prompt, which is always at the start of a line, and `rest` begins
-    // at one because the echo consumed its own newline. So a command that printed nothing has an
-    // empty answer rather than swallowing the line after it, which is the case `>` and `>>` are
-    // and which the first version of this got wrong.
+    // The answer runs to the next prompt, always at a line start, and `rest` begins at one because
+    // the echo consumed its newline. So a silent command (`>`, `>>`) has an empty answer rather
+    // than swallowing the line after it.
     let end = if rest.starts_with("$ ") {
         0
     } else {

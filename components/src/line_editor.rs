@@ -140,21 +140,12 @@ pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
             // delegation)).
             continue;
         };
-        // A badged copy of this endpoint is served an allowlist, so a request added to the
-        // contract later is refused until somebody decides a reader may send it: `RAW_ONLY_BADGE`
-        // only the raw half (milestone 709 (a graphical terminal session on the no-keyboard arm
-        // holds only the raw half of the boot discipline)), `STDIN_BADGE` only the line being typed
-        // (milestone 892 (a std program at the prompt holds the network and a resolver)). The
-        // unbadged surface never serves that read. See notes/line-discipline.md.
-        let op = proto::operation(w0);
-        let allowed = match badge {
-            0 => op != proto::OPERATION_READ_LINE_BYTES,
-            proto::RAW_ONLY_BADGE => {
-                matches!(op, proto::OPERATION_RAWMODE | proto::OPERATION_READRAW)
-            }
-            proto::STDIN_BADGE => op == proto::OPERATION_READ_LINE_BYTES,
-            _ => false,
-        };
+        // Every copy of this endpoint is served an allowlist by its badge, so a request added to
+        // the contract later is refused until somebody decides its holder may send it. The
+        // unbadged copy is the clients', and is never served a quiesce or the stdin read;
+        // `SUPERVISOR_BADGE` carries only the quiesce (§232 (the `line_editor` swap contract)).
+        // `proto::admits` holds the table. See notes/line-discipline.md.
+        let allowed = proto::admits(badge, proto::operation(w0));
         if !allowed {
             reply(slot, proto::BAD_REQUEST, 0);
             continue;
@@ -191,8 +182,9 @@ struct Terminal {
     resuming_line: bool,
     /// The control endpoint's slot, named by the second start argument, `0` when no supervisor
     /// that can replace this instance built it (milestone 23 (a capability-routed component OS with
-    /// live replacement)). With one, `OPERATION_QUIESCE` answers any parked read with `FLAG_RETRY`,
-    /// replies, and waits for `CTL_RESUME` or `CTL_QUIT`; without one, it is refused.
+    /// live replacement)). With one, `OPERATION_QUIESCE` on a `proto::SUPERVISOR_BADGE` copy
+    /// answers any parked read with `FLAG_RETRY`, replies, and waits for `CTL_RESUME` or
+    /// `CTL_QUIT`. Without one, or on any other copy, it is refused.
     control: u64,
     /// The start flags (`proto::START_ABSORB`, `proto::START_HANDOFF`).
     start: u64,
@@ -274,8 +266,8 @@ impl Terminal {
                 reply(slot, len as u64, 0);
             }
             proto::OPERATION_QUIESCE if self.control == 0 => {
-                // No control endpoint means nobody could ever tell us to resume: honouring this
-                // would leave a dead terminal. Every boot-built terminal today is this case.
+                // Only a `proto::SUPERVISOR_BADGE` copy reaches here. With no control endpoint
+                // nobody could tell us to resume, so honoring it would leave a dead terminal.
                 reply(slot, proto::BAD_REQUEST, 0);
             }
             proto::OPERATION_QUIESCE => self.quiesce(slot),

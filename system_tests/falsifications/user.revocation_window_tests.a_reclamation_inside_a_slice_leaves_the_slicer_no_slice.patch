@@ -24,10 +24,10 @@ code, so one patch serves every leg.
 diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
 --- a/kernel/src/syscall/page_frame.rs
 +++ b/kernel/src/syscall/page_frame.rs
-@@ -140,9 +140,10 @@
-     // own, and a reclamation sweep could delete the run between it and the filing, leaving a slice
-     // of pages the allocator was about to reuse (`sched::Delegation`). The source that matters is the
-     // one standing when the slice is filed.
+@@ -107,9 +107,10 @@
+ pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, Error> {
+     // The source is read under the table lock the slice is filed under, so no reclamation sweep
+     // falls between the read and the filing (`sched::Delegation`).
 +    let src = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
@@ -36,7 +36,7 @@ diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
          let Object::PageFrame(phys, count) = src.object else {
              return Err(Error::WrongObject);
          };
-@@ -158,7 +159,8 @@
+@@ -125,7 +126,8 @@
          }
          let base = phys + first * page_frames::FRAME_SIZE;
          Ok(crate::cap::page_frame_run_cap(base, len, src.rights))

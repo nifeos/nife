@@ -1,21 +1,18 @@
 //! **`std_reach`: an installed `std` program that holds the network and a resolver because the
 //! owner granted them at install** (milestone 892 (a std program at the prompt holds the network
-//! and a resolver)).
-//!
-//! `script/swish-check` installs it as the package `reach` and answers `jig install`'s question
-//! `y`, so the installed-programs table records a `grant` line for the network and one for the zone
-//! `nife.test`. Run at the prompt, it then connects by address to the runner's echo peer, through
-//! `std::net`, and looks up a name outside its zone, which the resolver refuses itself before it
-//! sends a packet. Neither needs a name server the runner cannot provide:
+//! and a resolver)). `script/swish-check` installs it as `reach`, granting the network and the
+//! zone `nife.test`; at the prompt it connects by address to the echo peer and looks up a name
+//! outside its zone, which the resolver refuses without sending a packet. Without the grant the
+//! prompt refuses it by name of the network; with the network and no resolver the lookup reads
+//! `Unsupported`.
+
+//! # EXAMPLES
 //!
 //! ```text
 //! $ reach
 //! reach: echo ok
 //! reach: lookup example.com: PermissionDenied
 //! ```
-//!
-//! Without the grant the prompt refuses it before it runs, by name of the network. With the
-//! network and no resolver, the lookup would read `Unsupported`.
 //!
 //! Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 

@@ -100,6 +100,21 @@ The shell narrows for `caps` and the progenitor for the endowment, each reading 
 word. The progenitor reads it off the argv page and refuses the spawn if the child's copy says
 otherwise.
 
+## `update` and the index copy
+
+The image names its index's addresses and the root their TLS must chain to (`package_index::Sources`,
+at `std_runtime_contract::INDEX_SOURCES_PAGE`). This is item 6 of milestone 809. `update` fetches the
+index from the first address that answers, pinned to that root, and keeps this architecture's lines.
+It writes them to `package_index::IMAGE_INDEX_COPY` in the index store, the directory the owner's
+console grants at `std_runtime_contract::FS_DIR_SLOT`.
+
+After that, a name is looked up in the copy first. The package is fetched from the entry's locations,
+or from the repository's own `targets/`, over HTTPS, and judged by the entry's digest. The progenitor
+installs it on the same copy's word (ruling I2). Before any `update`, a name is looked up in the
+image's catalog and fetched from the LAN package source, as since milestone 198 (a package
+manager)'s rung 3a. A command word with a `/` in it is a file, by the prompt's rule for a command
+word (§219 (how the shell names an installed program to the spawner)).
+
 ## How an install travels
 
 `jig` reads the package into one run of its own pages: from the file, or from the package source

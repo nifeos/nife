@@ -6,9 +6,6 @@
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):
 //!   rustc -O bench/host/null_syscall.rs -o /tmp/null_syscall && /tmp/null_syscall
-//!
-//! The rest of the host harness (context switch and IPC round trip, over two *processes* to match
-//! our measurement, plus lmbench and sel4bench) is the remaining milestone-25 work.
 
 use std::time::Instant;
 

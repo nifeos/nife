@@ -94,22 +94,10 @@ pub(crate) fn parse_table<'a>(
 
 /// Say so when a volume opened as a whole file turns out to have a partition table on it.
 ///
-/// **This is not a hypothetical, and finding it out corrected the milestone's own premise**
-/// (2026-08-04). `FileSystem::open` scans blocks 0..65536 for a valid header, so handing it a
-/// partitioned device does not fail: it finds whatever filesystem lies in the first 256 MiB of the
-/// disk and opens that. Three things are wrong with letting that stand silently, and none of them
-/// is fixed by the scan being clever:
-///
-/// - **It reads a partition nobody named.** On a disk with two RedoxFS volumes it takes the lower
-///   one, and a recovery that read the wrong partition looks exactly like a recovery that worked.
-/// - **It stops at 256 MiB.** A data partition further out is invisible, which is every real disk
-///   with an ESP and a root partition ahead of it.
-/// - **It sizes the engine from the whole device**, so the allocator believes it owns bytes that
-///   belong to other partitions. Harmless while every path here is read-only, and a corruption
-///   waiting for the day one is not.
-///
-/// A warning rather than a refusal: the bytes do come back, and a tool that refused to read a disk
-/// it *can* read would be the wrong answer at 2am. The line tells you what actually happened.
+/// `FileSystem::open` scans blocks 0..65536 for a header, so a partitioned device opens whatever
+/// filesystem lies in its first 256 MiB: perhaps a partition nobody named, never one further out,
+/// and with the allocator sized from the whole device. A warning rather than a refusal, because the
+/// bytes do come back. See notes/host-recovery/devices-and-partitions.md.
 pub(crate) fn warn_if_partitioned(file: &File, path: &Path) {
     let Ok(head) = read_head(file, path) else {
         return;

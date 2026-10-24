@@ -1,26 +1,12 @@
 //! Fuzz the ELF loader's front half with arbitrary bytes.
 //!
-//! **Why this target exists.** `crates/elf` is the only parser in the tree that *loads what it
-//! parses*. Everything else answers a question about some bytes; this one hands the kernel a list of
-//! (vaddr, memsz, flags, data) tuples that become page-table entries in a fresh address space. It is
-//! also the parse with the widest supply of hostile inputs, because "run this binary" is a thing a
-//! user asks for by name.
-//!
-//! **What it adds over the Kani proofs.** The crate's own doc comment says it plainly: the harnesses
-//! prove `check_segment_bounds`, the leaf arithmetic, total and in-bounds for every field
-//! combination, and the whole-parse totality proof **did not return**. An O(n^2) overlap loop over
-//! up to 64 program headers, unrolled 64 deep against symbolic slice offsets, is past what the
-//! solver can do at a useful input size, and that is written up in notes/verification.md rather than
-//! hidden. So the crate has a proved leaf and an unproved shell, and the shell is what this reaches:
-//! the header-count and table-size arithmetic, the entry-point check, the overlap loop, and the
-//! `segments()` iterator a caller drives after `parse` returns.
-//!
-//! **The machine check is a compile-time constant** (`EXPECTED_MACHINE`), so a host fuzz build
-//! accepts ELFs for the host's own machine, which is what that machine's kernel accepts. The builds
-//! for the other two differ in exactly that one `u16`, so the paths past it are the same paths.
-//! `fuzz/seeds/elf_parse/` therefore holds one seed per machine and this build gets past the check
-//! on exactly one of them; see `crates/elf/tests/fuzz_seed.rs`, which fails if that count is ever
-//! zero.
+//! `crates/elf` is the only parser that loads what it parses: its (vaddr, memsz, flags, data) tuples
+//! become page-table entries. Kani proves the leaf, `check_segment_bounds`, and the whole-parse
+//! totality proof did not return (notes/verification.md). This reaches the unproved shell: the
+//! header-count and table-size arithmetic, the entry-point check, the overlap loop, and the
+//! `segments()` iterator. `EXPECTED_MACHINE` is a compile-time constant, so a host build accepts
+//! the host's machine only; `fuzz/seeds/elf_parse/` holds one seed per machine, and
+//! `crates/elf/tests/fuzz_seed.rs` fails if none matches (notes/fuzzing/elf-seeds.md).
 
 #![no_main]
 

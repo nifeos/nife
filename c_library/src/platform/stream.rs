@@ -1,24 +1,20 @@
 //! Pipes, `socketpair` and `poll` inside one process (milestone 836 (a C library, stage 2:
 //! threads)).
 //!
-//! A threaded C program talks to itself through descriptors: hackbench's thread mode passes every
-//! message over a `pipe` or a `socketpair(AF_UNIX, SOCK_STREAM)`, and waits on one with `poll`.
-//! nife's kernel has no pipe object, and none is needed for this: both ends live in one process,
-//! so a pipe is a byte queue in that process's memory behind a lock, and a socket pair is two of
-//! them crossed. Nothing here reaches outside the process or makes a system call; blocking is
-//! `std`'s `Condvar`, which on nife is the kernel futex (`notes/futex.md`).
-//!
-//! `poll` waits on a process-wide generation counter that every change to a pipe advances, so one
-//! sleeping `poll` is woken by a change to any pipe and rescans. That is a broadcast where a
-//! kernel would wake only the interested, and it is cheap only while pipes are few.
-//!
+//! A threaded C program talks to itself through descriptors (hackbench's thread mode passes every
+//! message over a `pipe` or a `socketpair(AF_UNIX, SOCK_STREAM)` and waits with `poll`). Both ends
+//! live in one process, so a pipe is a byte queue in its memory behind a lock and a socket pair is
+//! two of them crossed. Nothing here makes a system call; blocking is `std`'s `Condvar`, the kernel
+//! futex on nife (`notes/futex.md`). `poll` waits on a process-wide generation counter that every
+//! pipe change advances, so one sleeping `poll` wakes for any pipe and rescans.
+
 //! # BUGS
 //!
-//! - **A pipe cannot leave the process.** There is no `fork` to inherit one and no spawn that
-//!   passes one (milestone 838 (a C library: `posix_spawn`, and no fork)); a pipe between two
-//!   processes needs a kernel or server object this is not.
+//! - **A pipe cannot leave the process.** No `fork` inherits one and no spawn passes one
+//!   (milestone 838 (a C library: `posix_spawn`, and no fork)).
 //! - **No `SIGPIPE`.** A write with no reader left answers `EPIPE` and raises nothing.
-//! - **`poll` wakes for every pipe's change**, not only the ones it watches (above).
+//! - **`poll` wakes for every pipe's change**, not only the ones it watches: cheap only while
+//!   pipes are few.
 //! - **`AF_UNIX` stream pairs only.** `SOCK_DGRAM` and `SOCK_SEQPACKET` pairs are refused, and
 //!   every other socket call is stage 3's (milestone 837 (a C library, stage 3: sockets)).
 //!

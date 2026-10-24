@@ -1,36 +1,21 @@
 //! **The gauges the kernel prints into a transcript, taken out as it arrives** (`script/swish-check`).
 //! The progenitor-stack and capability-slot gauges speak from the kernel's idle loop, between a
 //! prompt and the next line's echo, and every reader in [`super`] assumes those two are adjacent.
-//! Moved out of `swish_check.rs` unchanged by milestone 809 (the package client becomes a program),
-//! when that file outgrew §266 (a Rust source file stays under 2,000 lines)'s ratchet.
+//! See notes/swish-check-harness.md, "The gauges".
 
 #[allow(unused_imports)]
 use super::*;
 
-/// **Takes the kernel's progenitor stack gauge out of the transcript as it arrives**, and keeps it.
+/// **Takes the kernel's progenitor-stack and capability-slot gauges out of the transcript as it
+/// arrives**, and keeps each with the offset it was removed at.
 ///
-/// The gauge (`kernel::progenitor_stack`) speaks from the idle loop once the stack's mark has been
-/// still for a while, and on a healthy boot that is shortly after a command's prompt has come back.
-/// So it lands between `$ ` and the next line's echo, and every reader in this file assumes those
-/// two are adjacent: the first version with the gauge in it waited thirty seconds for a prompt that
-/// had already been printed, then read `echo hello world | wc` as having answered nothing. Rather
-/// than teach each reader about a third writer, the gauge never reaches them.
-///
-/// **Streaming, and prefix-stable on purpose.** The reader thread sees the UART in arbitrary
-/// chunks, so a gauge line can arrive in pieces, and the waits below take `seen.len()` as a cursor
-/// into text that is still growing. So this never emits text it might later want back: a tail that
-/// could be the start of a gauge line is held until it either is one (and is dropped, newline and
-/// all) or is not (and is emitted). What is emitted is only ever appended to.
-///
-/// It removes the kernel's line only when the kernel's line is whole. A gauge a userspace writer
-/// shuffled into is left in place, which fails the run in the way any shuffle does.
-///
-/// **The capability-slot gauge is taken out too** (2026-10-02 (UTC), milestone 152's lane). It
-/// speaks from the same idle loop once its own mark settles, and until then it always had settled
-/// before the first prompt. Milestone 152 moved the peak into the login block's tail, so the line
-/// landed after the first `$ ` and the gate waited thirty seconds for a prompt that had already
-/// been printed, reporting `the prompt never came back` for a shell that was waiting to be typed
-/// at. Its check reads the raw transcript, which still carries it.
+/// Both land between `$ ` and the next line's echo, which every reader assumes are adjacent, so
+/// the gauges never reach them. Streaming and prefix-stable: the waits use the output's length as
+/// a cursor into growing text, so a tail that could start a gauge line is held until it is one
+/// (dropped, newline and all) or is not (emitted), and output is only ever appended to. Only a
+/// whole kernel line is removed; a gauge a userspace writer shuffled into is left and fails the
+/// run. The raw transcript keeps both gauges for their own checks. See
+/// notes/swish-check-harness.md, "The gauges".
 pub(super) struct GaugeFilter {
     pending: String,
     needles: &'static [&'static str],
@@ -269,10 +254,8 @@ pub(super) fn strip_one_gauge(text: &str) -> Option<String> {
                 out.push(chars[start + offset]);
             }
         }
-        // The kernel ends its line with a newline, and when the gauge was spliced into an echo that
-        // newline lands after the gauge's last word, splitting the echo in two (`echo h` and
-        // `ello world | wc` in #1377's riscv64 run of 2026-10-03). A newline right where the gauge
-        // ended is the kernel's, so it goes with the gauge.
+        // A newline right where the gauge ended is the kernel's, so it goes with the gauge;
+        // left behind, it splits the echo the gauge was spliced into.
         let rest = if chars.get(end) == Some(&'\n') {
             end + 1
         } else {
@@ -283,28 +266,15 @@ pub(super) fn strip_one_gauge(text: &str) -> Option<String> {
     })
 }
 
-/// **Interim measure for §175 (where the kernel's own output goes once userspace owns the
-/// console), ruled 2026-09-27 to go through a ring a log service drains, and not yet built.**
-/// Takes a gauge's own characters out of a transcript
-/// even when a second writer spliced them in one at a time, rather than as the whole line
-/// [`GaugeFilter`] above assumes. That assumption held until #1371's CI run, where the
-/// progenitor-stack gauge landed character-by-character inside the shell's own echo of
-/// `package install`, producing `package   proinstgenitor sall tack: 31528 of 49152 bytes at
-/// peak, 17624 spare`: no contiguous `"progenitor stack:"` was ever there for `GaugeFilter` to
-/// find, `swish_check_leg`'s exact search for `"package install\n"` never matched either, and the
-/// run failed with "the prompt never echoed `package install`", a false report of a hung shell.
-/// The same race hit #1420 and is not particular to one command; anything typed while a gauge
-/// happens to print can be shuffled the same way.
+/// **Takes a gauge's own characters out of `text` even when a second writer spliced them in one at
+/// a time**, and returns everything else exactly where it was.
 ///
-/// Same asymmetry [`find_marker`] relies on: interleaving can destroy a known string, never
-/// manufacture one, so matching the gauge's own words (numbers as wildcards, since their values
-/// are not known ahead of time) has no false positives worth the name. Unlike `find_marker`, which
-/// only answers "is it there", this deletes just the matched characters and hands back everything
-/// else exactly where it was, because the caller needs the *rest* of the stream back in a shape its
-/// own exact-match waits can still recognize.
-///
-/// Remove once §175 is built: a kernel that no longer writes the UART directly once userspace owns
-/// it has nothing left here to splice.
+/// Interim, until §175 (where the kernel's own output goes once userspace owns the console) is
+/// built: a kernel that no longer writes the UART directly has nothing left here to splice.
+/// Interleaving can destroy a known string but never manufacture one, so matching the gauge's own
+/// words (numbers as wildcards) has no false positives worth the name. Unlike [`find_marker`], this
+/// deletes the matched characters, so the caller's exact-match waits still recognize the rest. See
+/// notes/swish-check-harness.md, "The gauges".
 pub(super) fn degauge(text: &str) -> String {
     let mut out = text.to_string();
     // Bounded rather than "until none found": a gate must not hang on a text that somehow keeps
@@ -318,27 +288,16 @@ pub(super) fn degauge(text: &str) -> String {
     out
 }
 
-/// **Takes out the prompt lines the console drew a second time beneath a gauge** (2026-10-04 UTC,
-/// the noteless flake, `notes/swish-check-flake.md`). `filtered` is [`GaugeFilter`]'s output and
-/// `gauges` the offsets it removed lines at.
+/// **Takes out the prompt lines the console drew a second time beneath a gauge.** `filtered` is
+/// [`GaugeFilter`]'s output and `gauges` the offsets it removed lines at.
 ///
-/// A kernel line that reaches the console mid-line waits for the line to end. If it is still
-/// waiting when the system log service's flush timer fires (`components/src/system_log.rs`'s
-/// `FLUSH_NANOS`), the console writes a line end, the kernel line, and the partial line again
-/// (`system_log_contract::console::Inserter::flush`), which is milestone 342 (the kernel and the `console` server drive one UART from two address spaces, and nothing arbitrates)'s design and what a
-/// person at the terminal should see. With the gauge taken out, a flush that fell after the echo
-/// of a typed line's last character and before the echo of its Enter leaves `$ line\n$ line\n`,
-/// and [`swish_check_answer`] read the first copy as a command that printed nothing.
-///
-/// Only an exact copy is removed: the line ending at a gauge's offset, starting `$ `, followed at
-/// that offset by the same line and its line end. A flush that fell mid-typing leaves a prefix
-/// (`$ pack\n$ packages/...\n`), which every reader already handles, and is left as it is. The one
-/// shape this could mistake for a redraw is a line typed twice in a row whose first run printed
-/// nothing, and `no_script_types_a_silent_line_twice_in_a_row` keeps every script free of it.
-///
-/// **Only gauges are taken out of the redraw's queue.** Another kernel line flushed above a redraw
-/// stays in the transcript and fails the line it lands in, loudly, which is the right default for a
-/// line nothing here expects.
+/// A flush between a typed line's last echo and its Enter leaves `$ line\n$ line\n`, and
+/// [`swish_check_answer`] would read the first copy as silent. Only an exact copy is removed: the
+/// `$ ` line ending at a gauge's offset, followed there by the same line and its line end. A prefix
+/// redraw (`$ pack\n$ packages/...\n`) and any other kernel line stay.
+/// `no_script_types_a_silent_line_twice_in_a_row` keeps every script free of the one shape this
+/// could mistake for a redraw. See notes/swish-check-flake.md, "The noteless signature", and
+/// notes/swish-check-harness.md.
 pub(super) fn without_redraws(filtered: &str, gauges: &[(usize, String)]) -> String {
     let mut cuts: Vec<(usize, usize)> = Vec::new();
     let mut offsets: Vec<usize> = gauges.iter().map(|(at, _)| *at).collect();

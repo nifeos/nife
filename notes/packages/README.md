@@ -17,6 +17,9 @@ and each compressed with zstd), measured for size, reader code, tooling and what
 Container Initiative (OCI) registry artifact, as Homebrew does on ghcr.io, is
 [oci-artifacts-measurements.md](oci-artifacts-measurements.md). The distribution's name, basalt,
 and the names refused for it are in [basalt.md](basalt.md).
+[over-the-internet.md](over-the-internet.md). The pinned TLS client those fetches speak through,
+and the two programs that prove it under QEMU, are [pinned-tls.md](pinned-tls.md). The index
+format survey is
 [the-index-format.md](the-index-format.md). A package with several programs is [several-programs.md](several-programs.md).
 What the package-only test programs print at the prompt is [the-test-programs.md](the-test-programs.md).
 Four candidate containers for a package (NIFEPKG2, tar, and each compressed with zstd), measured

@@ -100,5 +100,5 @@ already handing out leases. A second DHCP server on it is an outage for everyone
 stays right. A tool that cannot speak DHCP at all cannot get that wrong.
 
 python3 is also already what ten `script/` entry points are written in. So this asks nothing new of
-anybody's machine, while `brew install dnsmasq` does. Port 69 binds without root on patagonia
+anybody's machine, while `brew install dnsmasq` does. Port 69 binds without root on macOS
 (checked 2026-09-04, rechecked 2026-09-05), so there is no `sudo` in the runbook.

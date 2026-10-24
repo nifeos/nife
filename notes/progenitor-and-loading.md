@@ -222,6 +222,11 @@ workload) stopped, with nothing running in the space it built, while
 sequence from the kernel's side. The gap was a join rather than a hole, and the block of milestone
 295 (retire `components/src/builder.rs`) carried it as its handoff until 404 closed it.
 
+## One program and one grant table on every architecture
+
+[`progenitor-and-loading/one-program-every-architecture.md`](progenitor-and-loading/one-program-every-architecture.md)
+carries why `components/src/progenitor.rs` is one program with one `GRANTS` table and no `cfg`.
+
 ## What is not here yet
 
 **Resolved since this was written.** The kernel's own pre-init service wiring is gone: §28 retired

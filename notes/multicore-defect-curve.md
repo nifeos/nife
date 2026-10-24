@@ -46,7 +46,7 @@ without re-running anything:
 |---|---|
 | `id` | `E` plus a number, never reused |
 | `start (UTC)` | date and time of power-on, UTC; the zone of any source time is converted, and a guess is marked `~` |
-| `machine` | a board name (`radon`, `argon`, `xenon`), or `hvf` for patagonia's physical cores. QEMU and loom rows do not belong here: they are not the silicon this risk is about |
+| `machine` | a board name (`radon`, `argon`, `xenon`), or `hvf` for an Apple Silicon Mac's physical cores. QEMU and loom rows do not belong here: they are not the silicon this risk is about |
 | `arch` | `aarch64`, `riscv64`, `x86_64` |
 | `cores` | cores online, from the boot's own `smp:` line |
 | `build` | the commit SHA the image was built from |

@@ -90,8 +90,8 @@ Do not re-sign, re-compress or rename anything. A mirror that changes a byte bre
 
 ## Verify
 
-- From patagonia: `curl -sI http://<address>:<port>/lab/metadata/timestamp.json` returns 200 once
-  step 3 has run, and 404 before.
+- From another machine on the LAN: `curl -sI http://<address>:<port>/lab/metadata/timestamp.json`
+  returns 200 once step 3 has run, and 404 before.
 - A request for a path outside `/lab/` returns 404.
 - After a sync, `readlink /srv/nife/lab/current` names the newest directory, and the log line says
   pass.

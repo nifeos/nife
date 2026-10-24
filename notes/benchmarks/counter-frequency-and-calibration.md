@@ -2,6 +2,32 @@
 
 *An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the riscv64 hardcoded counter rate and the x86 TSC calibration that was wrong by up to 12x, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
+## The page and its bounds
+
+`crates/counter_frequency_contract` defines the page that tells a process how many counter ticks
+make a second where no register says so. `x86_64`'s TSC rate comes from `CPUID` leaf `0x15` or is
+measured, and `riscv64`'s is `/cpus/timebase-frequency` in a device tree no process can read.
+Either way the kernel learns it once, at boot. A hardcoded rate is not an answer: radon's `time`
+CSR runs at 4 MHz, not QEMU's 10 MHz.
+
+Every process that calls `now` needs the rate, with no capability to ask for, so the page is mapped
+unconditionally. `kernel::user::load` and `kernel::user::map_timebase_page` map it into the spaces
+the kernel builds. `supervision_protocol::build_child_space` maps it too, and there the parent
+writes a fresh page from its own `user_mode_runtime::cntfrq_checked` reading. A parent that does
+not know the rate writes zeroes, and `TimebasePage::hz` reads that as `None`, never a fabricated
+rate. A process spawned another way has no page, and `cntfrq` faults on the unmapped read. That is
+deliberate: dying says the rate is unknown, and a plausible number would not. A new spawn path
+must map the page or not link anything that calls `cntfrq`.
+
+`is_plausible` bounds the rate at both ends. A rate checked against zero alone passes a firmware
+that reports 1 Hz, or a calibration that returns garbage because the host descheduled the vCPU
+mid-measurement, and that number then poisons everything derived from it. The bounds are
+deliberately wide, because a false refusal on somebody's silicon is worse than the failure it
+prevents. The slowest counter in this tree's world is radon's 4 MHz `time` CSR. The 32.768 kHz
+watch crystal is the slowest thing anyone drives a timer from, and the 100 kHz floor sits above it
+on purpose, because nothing here is a watch. The 100 GHz ceiling is generous by two orders of
+magnitude, to catch a division that went the wrong way rather than to police hardware.
+
 ## 2026-09-21: the userspace counter frequency was a constant on riscv64, and what it did not reach
 
 `user_mode_runtime::cntfrq` returned a hardcoded `10_000_000` on riscv64 from the port until this

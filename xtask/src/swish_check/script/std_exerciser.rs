@@ -29,19 +29,13 @@ pub(super) const LINES: &[Line] = &[
             "cap 8  frame     args",
         ],
     ),
-    // **Every phrase is a slot or a page landing where `std` looks for it**, which is why the
-    // transcript is the test: the program asserts rather than prints wherever the answer is not
-    // deterministic, and panics (a fault this gate fails on) when one is missing. `vec sum` is the
-    // heap at slot 0; that anything prints at all is stdout at slot 1; the two `honestly
-    // unsupported` lines are slots 4 and 2 left empty, so there is no ambient filesystem or network
-    // to fall back on; `wall clock ok` is slot 5 and the page at `CLOCK_PAGE`; `entropy ok` is slot
-    // 6; `config seeded` is slot 7 and the page at `CONFIG_PAGE`, read before `main`; and the last
-    // line is `process::exit` reaching the supervisor as an exit rather than a fault. The stack is
-    // the one thing with no phrase of its own: too little of it is a fault partway through.
-    //
-    // **`args [...]` is milestone 205 (how a foreign program is told what to do)'s** (DECISIONS §170 (how a foreign program is told what to do)): the shell wrote the line's words onto a
-    // page, the progenitor copied it into the child's region at slot 8, and `std::env::args_os()`
-    // read it back, `argv[0]` first and the quoted phrase as one word with its quotes off.
+    // **Every phrase is a slot or a page landing where `std` looks for it**; the program panics
+    // when one is missing. `vec sum` is the heap (slot 0); any output is stdout (1); the two
+    // `honestly unsupported` lines are slots 4 and 2 left empty; `wall clock ok` is slot 5 and
+    // `CLOCK_PAGE`; `entropy ok` is 6; `config seeded` is 7 and `CONFIG_PAGE`, read before `main`;
+    // the last line is `process::exit` reaching the supervisor as an exit. The stack has no phrase.
+    // `args [...]` is DECISIONS §170 (how a foreign program is told what to do): the words reach
+    // slot 8, and `args_os()` reads `argv[0]` first and the quoted phrase as one word.
     line(
         1,
         "std_exerciser one 'two words'",

@@ -48,11 +48,11 @@ EXAMPLES
 
 BUGS
 
-- It is a guard against accident, not a boundary against a hostile session. Every session on
-  patagonia runs as calef's macOS user, so any of them can read the App key from the keychain and
-  mint the `maintainer` scope, and can read calef's own `gh` login and SSH key the same way. The
-  `lane` default keeps Administration out of a lane's hands unless the lane asks for it by name,
-  in the command, where a reader sees it.
+- It is a guard against accident, not a boundary against a hostile session. Every session on a
+  developer machine runs as that machine's user, so any of them can read the App key from the
+  keychain and mint the `maintainer` scope, and can read the user's own `gh` login and SSH key the
+  same way. The `lane` default keeps Administration out of a lane's hands unless the lane asks
+  for it by name, in the command, where a reader sees it.
 - The permission sets below are a request. GitHub refuses one the App does not hold (HTTP 422),
   loudly, so widening the App must come before switching a scope on; and nothing here notices if
   somebody widens the App further in the web UI.
@@ -61,7 +61,7 @@ BUGS
 - The selftest sets `PYTHONDONTWRITEBYTECODE=1` for everything it runs, because the macOS CLT 3.9
   interpreter writes `__pycache__` bytecode into the sandbox HOME it is handed and the "home and
   working directory untouched" check must judge what this script keeps, not the interpreter's
-  litter (a host where `python3` is CLT 3.9, like patagonia, cannot pass without it).
+  litter (a host where `python3` is CLT 3.9, like a stock macOS host, cannot pass without it).
 """
 
 import base64
