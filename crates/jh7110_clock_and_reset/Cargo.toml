@@ -2,23 +2,31 @@
 name = "jh7110_clock_and_reset"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "StarFive JH7110 clock and reset generator logic: register offsets, bring-up plans and both device trees' bindings"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# Name: PROVISIONAL (milestone 220's lane, 2026-09-04). `crg` is the JH7110's own word for the
-# thing, not an abbreviation this project coined: both device trees that describe this chip spell
-# the blocks `syscrg`, `stgcrg` and `aoncrg` (mainline's `starfive,jh7110-stgcrg` compatible, the
-# vendor U-Boot's `reg-names = "syscrg", "stgcrg", ...`), so it is the AGENTS.md "standard term a
-# reader already knows from outside" case rather than the `capsh`/`uheap` case. Chip-qualified for
-# the reason `jh7110_entropy` is: a bare `crg` would name almost anything. no architect has ratified it;
-# see src/lib.rs and `script/names`.
-#
-# no_std for the kernel, std for host tests, the same rule-7 pure-logic split `jh7110_entropy` uses:
-# this crate owns register offsets, bit positions, the bring-up plan and the DTB discovery query.
-# No unsafe code and no raw pointer in here; the volatile MMIO is kernel/src/drivers/jh7110_clock_and_reset.rs.
+# no_std for a kernel, std for host tests. This crate owns register offsets, bit positions, the
+# bring-up plans and what each of the JH7110's two device trees calls the controllers. No unsafe
+# code and no raw pointer in here; the volatile MMIO is the caller's.
 
 [dependencies]
 device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

@@ -2,22 +2,31 @@
 name = "jh7110_entropy"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "StarFive JH7110 true random number generator logic: registers, the success decision and both device trees' bindings, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# Name: PROVISIONAL (milestone 159's lane, 2026-08-24). Chip-qualified and unambiguous rather than
-# generic (`trng` alone would be the "generic word that could name almost anything" AGENTS.md
-# warns off), the same reasoning that keeps `non_volatile_memory_express` and `pci` named for the spec rather than for
-# "storage" or "bus". no architect has ratified it; see src/lib.rs for the full note and script/names.
-#
-# no_std for the driver, std for host tests, the §7 pure-logic split `pci` and `non_volatile_memory_express` already use:
-# this crate owns register offsets, bit decode, and the DTB discovery query only. No unsafe code
-# and no raw pointer anywhere in here; the volatile MMIO access is the future driver's job, in
-# whichever program ends up holding the `DeviceFrame` capability (rule 2: a driver is handed a base
-# address and knows nothing else).
+# no_std for a driver, std for host tests. This crate owns the register offsets, the bit decode
+# and what each of the JH7110's two device trees calls the block. No unsafe code and no raw pointer
+# anywhere in here; the volatile MMIO access is the caller's job, given the register base.
 
 [dependencies]
 device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
