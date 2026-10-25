@@ -133,7 +133,7 @@ asked to make the citation ratchet ignore moved lines, matched every added line 
 switched the ratchet off, and the gate it had disabled then said green (the
 [qwen3-coder bake-off](model-comparison/2026-09-27-qwen3-coder-bakeoff.md)). So the script now locks
 the gate. It refuses a round whose commits touch the gate machinery (`script/`, `helpers/`,
-`.github/`, `.cargo/`, the lint and format configs, `design/prose-baseline.tsv`) unless the brief
+`.github/`, `.cargo/`, the lint and format configs, the two prose baselines) unless the brief
 names the file on a `Gate target:` line. It then runs the gates in a throwaway worktree at the
 lane's committed HEAD, so an uncommitted edit cannot reach the verdict either. Of the two options,
 refusing the edit and judging from a clean copy, this does both. Each misses what the other catches:

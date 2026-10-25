@@ -103,7 +103,7 @@ brief_text=$(cat "$brief")
 base_commit=$(cd "$worktree" && git rev-parse HEAD)
 
 # The gate machinery: everything `script/lint` and `script/citations` execute or read to decide.
-GATE_PATHS="script/ helpers/ .github/ .cargo/ clippy.toml deny.toml rustfmt.toml _typos.toml rust-toolchain.toml design/prose-baseline.tsv"
+GATE_PATHS="script/ helpers/ .github/ .cargo/ clippy.toml deny.toml rustfmt.toml _typos.toml rust-toolchain.toml design/prose-baseline.tsv design/passive-baseline.tsv"
 gate_targets=$(sed -n 's/^Gate target:[[:space:]]*\([^[:space:]]*\).*$/\1/p' "$brief")
 judge=""
 cleanup() { [ -n "$judge" ] && git -C "$worktree" worktree remove --force "$judge" >/dev/null 2>&1; judge=""; }
