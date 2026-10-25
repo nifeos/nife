@@ -484,6 +484,8 @@ if mode and not mode.startswith("-"):
         print(f"{r['kind']} {r['name']}  ({r['path']})")
         if r.get("rule"):
             print(f"  ratified {r['date']} by rule ({r['rule']})")
+        if r.get("record"):
+            print(f"  recorded with its crate's names, outside the crate, at {r['record']}")
         print(f"  {r['text']}\n")
     for bad, r in refused_hits:
         print(f"REFUSED for {r['kind']} {r['name']}  ({r['path']})")
