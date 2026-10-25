@@ -8,9 +8,9 @@
 //! of bounds, and what it accepts has its regions in order inside the volume.
 //!
 //! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`Volume`] and notes/file-allocation-table.md).
+//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`] and notes/file-allocation-table.md).
 //! A name that is not 8.3 gets VFAT long-name entries ahead of a `~1` alias (see `long_name.rs`).
-//! A volume below [`MIN_CLUSTERS`] is refused, because the specification types a volume by its
+//! A volume below [`FAT32_MIN_CLUSTERS`] is refused, because the specification types a volume by its
 //! data clusters.
 
 //! # BUGS
@@ -24,11 +24,9 @@
 //! - A FAT32 layout under 65525 clusters (which `mkfs.fat -F 32` makes with a warning) is refused,
 //!   because Linux reads it as FAT32 and the specification as FAT16.
 //! - Not crash-atomic and no journal, which is FAT.
-//!
-//! Name: ratified 2026-10-07 (calef, #1806): FAT spelled out as the tree's acronym rule asks;
-//! permanent once published.
 
 mod boot_sector;
+pub mod efi_system_partition;
 mod long_name;
 mod sector;
 mod volume;
@@ -36,6 +34,6 @@ mod volume;
 pub use boot_sector::{BootSector, FatType, ParseError, ReadError, RootDirectory};
 pub use sector::{SectorDevice, SectorSize};
 pub use volume::{
-    BOOT_CLUSTER, CLUSTER, CLUSTER_SECTORS, EFI_CLUSTER, Error, FATS, FILE_CLUSTER, MIN_CLUSTERS,
-    RESERVED_SECTORS, ROOT_CLUSTER, SECTOR, Volume,
+    CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MIN_CLUSTERS, LayoutError, RESERVED_SECTORS,
+    ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,
 };

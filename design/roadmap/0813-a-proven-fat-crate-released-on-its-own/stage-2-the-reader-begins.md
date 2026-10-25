@@ -38,11 +38,13 @@ The evidence:
 #1803's macOS images are 64 MiB each and are not in the tree, and no macOS host was at hand, so
 this stage reads no macOS-made boot sector. Stage 4 reads both images to their hashes.
 
-## Names minted, all provisional
+## Names
 
 The crate's sources carry no `Name:` blocks, because the crate publishes on its own and its
-sources cite nothing of this tree. The provenance lives here instead. Each name is provisional,
-minted on 2026-10-25 (UTC) by `813-stage-2-boot-sector`, and calef has named none of them.
+sources cite nothing of this tree. The ruling of 2026-10-25 (UTC) ratified every name below and
+refused `tables` for `BootSector::table_count`. The record is
+[file-allocation-table-names.md](../0857-crates-released-on-their-own/file-allocation-table-names.md).
+Why each was chosen:
 
 | name | why this one |
 |---|---|

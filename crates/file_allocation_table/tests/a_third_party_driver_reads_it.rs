@@ -22,7 +22,7 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::{SECTOR, Volume};
+use file_allocation_table::{SECTOR_BYTES, VolumeLayout};
 
 /// The file the volume carries. Not a round number, so a length the writer got wrong by a cluster
 /// cannot pass by accident.
@@ -52,13 +52,13 @@ fn the_hosts_own_fat_driver_reads_the_long_name_back() {
 
 /// Write the volume to `path`, returning the file's bytes.
 fn write_image(path: &Path) -> Vec<u8> {
-    let volume = Volume::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, NAME)
+    let volume = VolumeLayout::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, NAME)
         .expect("700 MiB is a FAT32 volume");
     let mut image = std::fs::File::create(path).expect("create the image");
-    let mut sector = [0u8; SECTOR];
+    let mut sector = [0u8; SECTOR_BYTES];
     for index in 0..volume.metadata_sectors() {
         assert!(
-            volume.sector(index, &mut sector),
+            volume.fill_sector(index, &mut sector),
             "sector {index} is metadata"
         );
         image.write_all(&sector).expect("write a metadata sector");
@@ -68,12 +68,12 @@ fn write_image(path: &Path) -> Vec<u8> {
     // reads back wrong everywhere rather than in one place.
     let body: Vec<u8> = (0..FILE_LEN).map(|i| (i % 251) as u8).collect();
     image.write_all(&body).expect("write the file");
-    let tail = volume.file_sectors() * SECTOR as u64 - FILE_LEN;
+    let tail = volume.file_sectors() * SECTOR_BYTES as u64 - FILE_LEN;
     image
         .write_all(&vec![0u8; tail as usize])
         .expect("pad the last cluster");
     image
-        .set_len(TOTAL_SECTORS * SECTOR as u64)
+        .set_len(TOTAL_SECTORS * SECTOR_BYTES as u64)
         .expect("size the image");
     body
 }

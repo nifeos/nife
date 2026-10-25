@@ -7,9 +7,6 @@
 //! fails silently, as a volume that lists `BOOTRI~1.EFI` and boots nothing; `verification.rs`
 //! proves the checksum and the run's layout for every name. notes/file-allocation-table.md, "Long
 //! names", has the run's padding and how the host's driver checks it.
-//!
-//! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
-//! for the thing the specification calls a long name. calef has not named it.
 
 /// The most UCS-2 units a long name holds.
 pub(crate) const MAX_UNITS: usize = 255;

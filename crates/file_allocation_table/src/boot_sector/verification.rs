@@ -4,8 +4,6 @@
 //! The parse is straight-line code with no loop, so every harness covers every sector, not a
 //! bounded family of them. The thresholds below are written as the specification's literals
 //! rather than the crate's constants, so a wrong constant cannot prove itself right.
-//!
-//! Name: provisional.
 
 use super::*;
 
@@ -21,8 +19,8 @@ fn what_the_parse_accepts_lies_inside_the_volume() {
     };
     let total = u64::from(boot.total_sectors());
     let tables_end = u64::from(boot.reserved_sectors())
-        + u64::from(boot.tables()) * u64::from(boot.table_sectors());
-    assert!(boot.reserved_sectors() >= 1 && boot.tables() >= 1 && boot.table_sectors() >= 1);
+        + u64::from(boot.table_count()) * u64::from(boot.table_sectors());
+    assert!(boot.reserved_sectors() >= 1 && boot.table_count() >= 1 && boot.table_sectors() >= 1);
     let data_start = match boot.root_directory() {
         RootDirectory::Region {
             first_sector,
