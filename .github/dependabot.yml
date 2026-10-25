@@ -1,6 +1,12 @@
 # Dependabot keeps dependencies current by opening PRs, which CI then checks. Two ecosystems:
 # the Rust crates (Cargo) and the GitHub Actions the workflow pins. See
 # https://docs.github.com/code-security/dependabot.
+#
+# No entry sets `cooldown`, on purpose (decided 2026-10-25 UTC): Dependabot's default waits 3 days
+# after a release before proposing a version update, and a security update skips the wait. Never
+# close one of these pull requests to block a version, since Dependabot then stops proposing it
+# without any trace in this file; label it `bump-blocked` beside a `BUGS` entry instead.
+# notes/dependency-updates.md has the whole practice, and who merges which bump.
 version: 2
 updates:
   # --- Rust dependencies (the workspace root Cargo.toml / Cargo.lock) --------------------------
