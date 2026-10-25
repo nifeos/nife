@@ -45,6 +45,9 @@ needs.
   [notes/skills/worktree-commits/SKILL.md](notes/skills/worktree-commits/SKILL.md).
 - Before you run QEMU by hand, or after a session that did, read
   [notes/skills/qemu-hygiene/SKILL.md](notes/skills/qemu-hygiene/SKILL.md).
+- At the start of a top-level session, and before you put a question or a report to an architect,
+  read [notes/skills/working-with-the-architect/SKILL.md](notes/skills/working-with-the-architect/SKILL.md).
+  It holds how to bring a decision and how to report, and why every edit goes to a lane.
 
 ## Three principles, and what makes each one hold
 
