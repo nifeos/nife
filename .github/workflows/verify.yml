@@ -266,7 +266,7 @@ jobs:
       # `save-if`: no rust-cache entry is saved from a merge group, since no later run can restore
       # it. The measurement is at ci.yml's first rust-cache step and in
       # notes/actions-cache-budget-2026-10-07.md.
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           save-if: ${{ github.event_name != 'merge_group' }}
       # **Not cached, on a measurement** (2026-10-07 UTC, lane/cache-kani, after calef's "We should
@@ -491,7 +491,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           save-if: ${{ github.event_name != 'merge_group' }}
       # Not cached; the `prove` job's comment has the measurement.
