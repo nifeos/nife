@@ -141,9 +141,9 @@ jobs:
         id: covtool
         if: steps.day.outputs.coverage == 'true'
         continue-on-error: true  # outcome: re-raised
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # cargo-llvm-cov
+        uses: taiki-e/install-action@a4d3f3f761dcd95cce1b72cb61cb6d1963438177 # cargo-llvm-cov
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.day.outputs.coverage == 'true' && steps.covtool.outcome == 'success'
 
       - name: Measure host-crate coverage

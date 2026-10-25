@@ -39,7 +39,7 @@ cd "$(dirname "$0")/.."
 #
 # The service targets come after the parsers (proposal #1592 part a): each replays a session of
 # requests against a server built on the host and checks a confinement rule, not only "no panic".
-targets="device_tree_blob_walk elf_parse globally_unique_identifier_partition_table http_response_feed domain_name_system_reply nifefs_roundtrip package_archive_roundtrip redoxfs_server_session system_log_session compositor_session"
+targets="device_tree_blob_walk elf_parse globally_unique_identifier_partition_table file_allocation_table_boot_sector http_response_feed domain_name_system_reply nifefs_roundtrip package_archive_roundtrip redoxfs_server_session system_log_session compositor_session"
 
 usage() {
     cat <<'EOF'
@@ -60,6 +60,7 @@ while [ $# -gt 0 ]; do
             echo "device_tree_blob_walk  device tree, parsed at boot from firmware bytes"
             echo "elf_parse            ELF64 headers, and the loader maps what it parses"
             echo "globally_unique_identifier_partition_table  GUID partition table, off a disk somebody else formatted"
+            echo "file_allocation_table_boot_sector  a FAT boot sector, off a stick somebody else formatted"
             echo "http_response_feed  a package fetch's HTTP head, off the network and before the digest check"
             echo "domain_name_system_reply  a name server's reply: no address is believed that the answer does not carry"
             echo "nifefs_roundtrip  the archive writer and reader agree (a property, not a panic)"
@@ -112,6 +113,8 @@ for target in $targets; do
         device_tree_blob_walk) set -- "$@" crates/device_tree_blob/tests/fixtures ;;
         globally_unique_identifier_partition_table)
             set -- "$@" crates/globally_unique_identifier_partition_table/tests/fixtures ;;
+        file_allocation_table_boot_sector)
+            set -- "$@" crates/file_allocation_table/tests/fixtures ;;
         domain_name_system_reply) set -- "$@" crates/domain_name_system/tests/fixtures ;;
     esac
 

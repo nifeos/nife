@@ -45,6 +45,7 @@ import re
 
 import name_crossings
 import name_provenance
+import name_release
 import name_rules
 
 # Where a program's file lives. `user/src/` is only in history: milestone 175 (split `user/`:
@@ -361,13 +362,23 @@ def census(paths, read, british=None):
             british = []
     paths = sorted(paths)
     problems, records, missing = [], [], 0
+    # A release-track crate whose names are ratified keeps its record outside its shipped files,
+    # and none of its blocks is read (helpers/name_release.py). Every other crate is unchanged.
+    release, bad = name_release.in_force(paths, read)
+    problems.extend(bad)
+    released = tuple(f"crates/{crate}/" for crate in release)
     surfaces, pathset = _surfaces(paths, read)
+    surfaces = [s for s in surfaces if not (s[0] == "crate" and s[2].startswith(released))]
     surface_files = {path for kind, _n, path, _p in surfaces
                      if kind in ("crate", "program", "module")}
     markdown = [p for p in paths if p.endswith(".md") and p.startswith(("design/", "notes/",
                                                                          "briefs/"))]
     docs, missing, unblocked_docs = _document_records(markdown, pathset, read, problems)
-    rust, unblocked = _rust_records(paths, read, surface_files, problems)
+    rust, unblocked = _rust_records([p for p in paths if not p.startswith(released)], read,
+                                    surface_files, problems)
+    found, bad, absent = name_release.apply(release, paths, read, is_module_file, pub_items)
+    problems.extend(bad)
+    missing += absent
     unblocked += unblocked_docs
     for kind, name, path, text, what, legacy in [r + (False,) for r in rust] + docs:
         status, date, refused, problem = name_provenance.classify(text)
@@ -414,6 +425,8 @@ def census(paths, read, british=None):
         records.append({"kind": kind, "name": name, "path": path, "status": status, "date": date,
                         "refused": refused, "text": text,
                         "owner": _includer(kind, path, paths, read)})
+
+    records.extend(found)
 
     # **Names a rule covers are ratified, and cite the rule** (calef, 2026-10-17 UTC). Applied after
     # the blocks are read, so a covered name's own block still prints beside the rule.

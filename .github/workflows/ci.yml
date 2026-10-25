@@ -1375,7 +1375,7 @@ jobs:
       # to 3.7 minutes; without `shared-key`, because the three build different graphs and a shared
       # entry would only overwrite itself (calef, #1814, 2026-10-07 UTC). See
       # notes/actions-cache-budget-2026-10-07.md.
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           save-if: ${{ github.event_name != 'merge_group' }}
       # cargo-machete (unused dependencies) and typos (spelling), both new gates in script/lint.
@@ -1829,7 +1829,7 @@ jobs:
       - name: Read the pinned cargo-deny version
         id: deny
         run: echo "version=$(cat .cargo-deny-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+      - uses: taiki-e/install-action@a4d3f3f761dcd95cce1b72cb61cb6d1963438177 # v2.87.30
         with:
           tool: cargo-deny@${{ steps.deny.outputs.version }}
       # The published .crate tarballs script/vendor-verify hashes. Keyed on the pin files, so
@@ -1960,7 +1960,7 @@ jobs:
 
       - name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+      - uses: taiki-e/install-action@a4d3f3f761dcd95cce1b72cb61cb6d1963438177 # v2.87.30
         with:
           tool: cargo-llvm-cov
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
