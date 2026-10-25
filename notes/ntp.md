@@ -271,6 +271,7 @@ Milestone 402, `design/roadmap/0402-a-service-report-nobody-is-obliged-to-drain.
   correctness requirement: `Instant` is never in the write path, so a step cannot perturb monotonic
   time.
 - No NTS and no MAC, as the crate half of this file records at length.
-- No `init` endowment. Nothing in the interactive boot runs the NTP client; the tests wire it.
-  Ambient time synchronization would be ambient authority, and which process may propose a time
-  should be as visible as which process may reach the network.
+- A boot whose clock is `UNKNOWN` runs the client once, from the progenitor, announced like the
+  resolver (calef, 2026-10-25 UTC;
+  [the proposal](../design/roadmap/proposals/radons-booted-system-runs-jig.md)). Until that is
+  built, nothing in the interactive boot runs it; the tests wire it.
