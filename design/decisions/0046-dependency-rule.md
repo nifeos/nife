@@ -212,9 +212,9 @@ unchanged. The reasons for the names are in
 
 ## The kernel's bar, 2026-10-25
 
-Ruled 2026-10-25 (UTC) by calef, on anvil: *"I like your proposal."* Then: *"Yes, write the
-amendment."* It began with a question about `device_tree_blob`: why do we have it, if a crate does
-the job? The answer was rule 3, and calef asked whether rule 3 holds up.
+Ruled 2026-10-25 (UTC). It replaces rule 3's blanket for the kernel with a bar that a candidate can
+pass or fail. The question that raised it was why the tree writes `device_tree_blob` when a crate
+does the job, and the only answer was rule 3.
 
 ### Why the kernel clause changed
 
@@ -227,8 +227,9 @@ since nothing outside nife implements either. The kernel clause is different.
   parsers of what firmware and boot media hand the kernel: the device tree, ACPI tables, ELF images.
 - Those parsers are where the 2026-10-04 reason is strongest. Exposure buys trust, and the
   bugs that hurt a parser are the inputs nobody thought of.
-- The kernel already links three crates (`spin`, `aarch64-cpu`, `tock-registers`), which a blanket
-  "write it" cannot explain.
+- The kernel already links four crates, which a blanket "write it" cannot explain: `spin`,
+  `aarch64-cpu` and `tock-registers`, and on x86_64 `uuid`, which arrives through `boot_slot` and
+  `globally_unique_identifier_partition_table`.
 - "Touches the kernel" was never defined. Milestone 784 read it as anything the kernel uses for
   more than shared constants, which is wider than the rule's words.
 
@@ -238,7 +239,8 @@ every take is still an architect's ruling.
 
 ### The bar
 
-The kernel may take a crate off the verification path when the crate meets all of these. The block or pull request that proposes it shows each one.
+The kernel may take a crate off the verification path when the crate meets all of these. The block
+or pull request that proposes it shows each one.
 
 1. It builds `no_std` on all three kernel targets, and it needs no allocator or uses the kernel's.
 2. If it parses input, it survives ours: the tree's fixtures and fuzz corpus for that input, with no
@@ -249,12 +251,15 @@ The kernel may take a crate off the verification path when the crate meets all o
    on it. If a claim rests on it and its structure defeats Kani, rule 1 decides and we write.
 5. It stays upgradable, under §81 (a dependency stays upgradable).
 
-The three crates the kernel links pass on the record: each is a thin architectural primitive with
-no parser and a small graph. Nothing here changes the ABI, capabilities or the verification path.
+The four crates the kernel links pass on the record. `spin`, `aarch64-cpu` and `tock-registers` are
+thin architectural primitives with no parser and a small graph. `uuid` builds `no_std` with default
+features off and depends on nothing. The kernel only builds identifiers from bytes the partition
+table crate has already reordered, and calls its text parser nowhere outside tests. Nothing here
+changes the ABI, capabilities or the verification path.
 
 ### Still open
 
-These details are calef's, and each comes to him on its own:
+These details stay open, and each gets its own ruling:
 
 - whether a procedural macro or build script may sit in the kernel's build graph (`zerocopy-derive`
   is the case that raised it);
