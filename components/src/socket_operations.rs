@@ -50,9 +50,7 @@ pub(crate) fn udp_sendto(
     };
     let dst = read_dst(window);
     let mut buf = vec![0u8; len];
-    for (i, b) in buf.iter_mut().enumerate() {
-        *b = window.r8(OFF_PAYLOAD + i as u64);
-    }
+    window.copy_to_slice(OFF_PAYLOAD, &mut buf);
     if sockets
         .get_mut::<udp::Socket>(sk.handle)
         .send_slice(&buf, dst)
@@ -114,9 +112,7 @@ pub(crate) fn sock_receive(
             Err(_) => 0,
         }
     };
-    for (i, &b) in buf[..n].iter().enumerate() {
-        window.w8(OFF_PAYLOAD + i as u64, b);
-    }
+    window.copy_from_slice(OFF_PAYLOAD, &buf[..n]);
     window.w16(OFF_LEN, n as u16);
     n as u64
 }
@@ -336,9 +332,7 @@ pub(crate) fn tcp_send(
         return REP_ERR;
     };
     let mut buf = vec![0u8; len];
-    for (i, b) in buf.iter_mut().enumerate() {
-        *b = window.r8(OFF_PAYLOAD + i as u64);
-    }
+    window.copy_to_slice(OFF_PAYLOAD, &mut buf);
     let sent = sockets
         .get_mut::<tcp::Socket>(sk.handle)
         .send_slice(&buf)

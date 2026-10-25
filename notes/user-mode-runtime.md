@@ -130,6 +130,13 @@ word-at-a-time loop at opt-level 0 costs a call, a bounds check and a volatile a
 because no reference is formed. What a peer or device reads afterwards is ordered by the fence and
 the call the caller makes to publish the bytes, as for its volatile writes.
 
+`copy_to_slice` and `copy_from_slice` move a block between the window and ordinary memory, for the
+same reason: `net_stack` moves every received byte through a DMA buffer and a socket's frame, and
+at opt-level 0 a byte loop through `r8` and `w8` set radon's network rate
+([notes/designware-ethernet/the-receive-rate.md](designware-ethernet/the-receive-rate.md)). Each
+checks the range once, then copies without volatile access, with a compiler fence on both sides so
+the copy stays between the caller's ownership read, its barrier and its doorbell.
+
 `as_slice` and `as_mut_slice` serve a caller that hands the whole page to a parser or serializer.
 They return an ordinary reference, not a volatile access, as every migrated call site already did.
 The callers get exclusive access from the protocol's turn-taking: one side stages the page, then

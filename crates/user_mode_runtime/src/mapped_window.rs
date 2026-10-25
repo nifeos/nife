@@ -145,6 +145,51 @@ impl MappedWindow {
         }
     }
 
+    /// **Copy `out.len()` bytes starting at offset `off` into `out`**, with one bounds check for
+    /// the whole range rather than one per byte.
+    ///
+    /// Not volatile, as [`copy_within`](Self::copy_within) is not. A compiler fence on each side
+    /// keeps the copy where the caller put it among its volatile accesses and barriers, so a
+    /// driver that reads a descriptor's ownership bit, then [`doorbell_barrier`], then this,
+    /// reads the buffer after the bit. A peer or device writing the range during the copy makes
+    /// the result a mix of old and new bytes; the caller's protocol rules that out. See
+    /// notes/user-mode-runtime.md.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
+    /// [`slice::copy_from_slice`] seen from the slice's side.
+    pub fn copy_to_slice(&self, off: u64, out: &mut [u8]) {
+        self.check(off, out.len() as u64);
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+        // SAFETY: `off .. off + out.len()` is inside the window (checked above), which `new`'s
+        // caller promised is mapped readable; `out` is an exclusive borrow of ordinary memory, so
+        // the two ranges cannot overlap.
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                (self.base + off) as *const u8,
+                out.as_mut_ptr(),
+                out.len(),
+            );
+        }
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// **Copy `src` to offset `off`**, with one bounds check for the whole range. Not volatile,
+    /// fenced against the compiler on each side, as [`copy_to_slice`](Self::copy_to_slice).
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
+    /// [`slice::copy_from_slice`].
+    pub fn copy_from_slice(&self, off: u64, src: &[u8]) {
+        self.check(off, src.len() as u64);
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+        // SAFETY: `off .. off + src.len()` is inside the window (checked above), which `new`'s
+        // caller promised is mapped writable; `src` is a shared borrow of ordinary memory, which
+        // this process's own window cannot alias while it is borrowed.
+        unsafe {
+            core::ptr::copy_nonoverlapping(src.as_ptr(), (self.base + off) as *mut u8, src.len());
+        }
+        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+    }
+
     /// The whole window as an ordinary byte slice, for a parser or serializer. **Not volatile**:
     /// the compiler may assume nothing else touches the bytes while the reference is alive.
     ///
