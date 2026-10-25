@@ -7,11 +7,15 @@ An appendix to [notes/x86-uefi-boot.md](../x86-uefi-boot.md), which keeps the su
 procedure milestone 260 (boot xenon over the network) built, for the machine of milestone 87 (the
 x86_64 bare-metal machine), written to be followed rather than interpreted.
 
-It was built by milestone 260, rehearsed on patagonia, and never yet run on xenon. Everything below
-except the two firmware settings and the router edit has been exercised end to end under OVMF
-(`script/netboot-rehearsal`). It ran against the same `script/board-netboot` that will serve xenon,
-with the DHCP answers parsed out of the same `bench/xenon-netboot/dnsmasq.conf` calef is about to
-apply.
+It was built by milestone 260 and has never yet run on xenon. Everything below except the two
+firmware settings and the router edit is exercised end to end under OVMF by
+`script/netboot-rehearsal`, which CI runs on every pull request (`script/ci-build
+netboot-rehearsal`, in the `boot-check` job). It runs against the same `script/board-netboot` that
+will serve xenon, with the DHCP answers parsed out of the same `bench/xenon-netboot/dnsmasq.conf`
+the router carries.
+
+Steps 1 and 2 are done: calef set both firmware settings on 2026-10-04 (UTC), and the router took the
+four lines the same day. Step 3 and the record after it are what is left.
 
 ## Why bother
 
@@ -58,7 +62,9 @@ password is set.
 
 ## Step 2: the router, once
 
-`bench/xenon-netboot/dnsmasq.conf` is the whole of it, each line explained. `dhcp-boot` names
+`bench/xenon-netboot/dnsmasq.conf` is the whole of it, each line explained. On the house router all
+four lines went into `/etc/dnsmasq.conf` directly, inside a marked block, and the UCI form below was
+not used. That is the form to repeat after a reflash. `dhcp-boot` names
 patagonia at `.138` (reserved 2026-10-04; was `.216`).
 
 On OpenWRT, through UCI (survives a reboot):
@@ -100,12 +106,14 @@ six cases and takes under a second.
 On the serving Mac, two commands in two terminals:
 
 ```console
-$ cargo xtask uefi-image                        # every time the kernel changes
+$ cargo xtask uefi-image --release              # every time the kernel changes
 $ script/board-netboot --root target/esp        # in the other terminal, while you work
 ```
 
-Then power xenon on. There is no third step and no copy. Every later boot is `cargo xtask uefi-image`
-and a power cycle. The file the firmware fetches is the same file the stick procedure copies, at the
+Then power xenon on. There is no third step and no copy. Every later boot is `cargo xtask uefi-image
+--release` and a power cycle. Release is the profile every image for a machine is built in, and
+the one CI rehearses. It is also less than half the debug image's size (8,180,736 against
+21,778,944 bytes on 2026-10-24), which matters at a real wire's TFTP rate. The file the firmware fetches is the same file the stick procedure copies, at the
 same path, staged once.
 
 ## What you should see, in order
@@ -146,6 +154,22 @@ same path, staged once.
 3. Then `nife uefi_loader: milestone 87` on the video output, and the boot tour after it, identical
    to the stick path from here on. The loader carries the kernel and the archive inside itself, so
    nothing after the transfer knows or cares where the image came from.
+
+## Step 4: the record, which is what closes milestone 260
+
+Nothing is proven until it is written down, and these four things are what a lane needs to mark the
+milestone BUILT:
+
+1. A photograph of xenon's screen showing the `nife self-test:` verdict line, taken with no stick or
+   disk of nife's in any port. A second photograph of the empty ports makes "no removable media"
+   checkable rather than asserted.
+2. The `board-netboot` terminal's `done, N bytes in T s (R KiB/s)` line, copied as text. It is the
+   first real-wire rate for a UEFI client, and it goes beside radon's 428 KiB/s in milestone 260's
+   BUGS.
+3. Whether the firmware sent option 93 as 7 or 9. The router's log shows it when `log-dhcp` is on;
+   otherwise say it was not captured.
+4. While setup is open anyway, photographs of the `Integrated NIC` page, so `notes/xenon-firmware.md`
+   can cite image numbers for the two settings where it now says "photos owed".
 
 ## If it does not
 
