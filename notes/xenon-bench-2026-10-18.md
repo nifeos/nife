@@ -3,7 +3,9 @@
 *Name: provisional, minted 2026-10-18 (UTC) by lane `lane/xenon-bench-2026-10-18`, after
 `notes/xenon-bench-2026-10.md`; naming is an architect's.*
 
-One evening at xenon, not yet scheduled; the file takes the evening's date when it is. calef ruled
+One evening at xenon, not yet scheduled; the file takes the evening's date when it is.
+
+calef ruled
 on 2026-10-24 (UTC) that milestone 260's network boot runs on this evening, beside milestone 494's
 bench boot, the fresh install and milestone 801's xenon leg. The steps go in this order, because
 each needs the one before:
@@ -151,10 +153,10 @@ Success is `board-netboot`'s `done, N bytes in T s (R KiB/s)` line, then the ker
 self-test:` line and `$` on serial and on the monitor. The runbook's failure table covers every
 other ending. A failure here costs only milestone 260; go on to step 4.
 
-Record, from the runbook's step 4: a photograph of the screen's `nife self-test:` line, one of the
-empty ports, the `done` line as text, whether option 93 was 7 or 9 (from the router's log if
-`log-dhcp` is on), and photographs of the `Integrated NIC` setup page. With those, milestone 260
-can be marked BUILT.
+Record what the runbook's step 4 lists: photographs of the screen's `nife self-test:` line and of
+the empty ports, and the `done` line as text. Add whether option 93 was 7 or 9, from the router's
+log if `log-dhcp` is on, and photographs of the `Integrated NIC` setup page. With those, milestone
+260 can be marked BUILT.
 
 ## Step 4: the fresh install, then a boot from the disk
 

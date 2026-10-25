@@ -4,7 +4,7 @@ raised: 2026-10-24
 milestone_dependencies: 53, 801
 decision_dependencies: unwritten
 machine_requirements: riscv64 silicon with a wired network on the internet
-specific_machine: radon
+specific_machine: radon (801's riscv64 leg is ruled to run on it, and its TRNG and NIC are JH7110 parts)
 needs_person: yes
 ---
 # radon's booted system runs `jig`: entropy, a disk and the time
@@ -44,8 +44,8 @@ From `bench/radon-2026-10-22/53-ordinary-and-reboot.log`, `script/board-image --
    health-test claim) is `PROPOSED`; it blocks a claim about these bytes, not their use.
 2. A disk the file server can mount. §260 (radon's block server serves a USB drive) puts radon's
    persistent filesystem behind milestones 163, 242 and 859. Until then, a bench image can carry a
-   blank RedoxFS image in its archive (made host-side by `tools/redoxfs_host`, as every fixture is),
-   and the kernel can serve it from RAM through a small block server answering
+   blank RedoxFS image in its archive, made host-side by `tools/redoxfs_host` as every fixture is.
+   The kernel can serve it from RAM through a small block server answering
    `filesystem_contract::blk`, the way the NVMe and MSHC servers do. The archive entry is the
    switch, so no CI boot changes. Nothing survives a power cycle, and the bench note says what that
    leaves unproven.
@@ -72,6 +72,11 @@ A does not settle NTS (`notes/ntp.md` keeps that a separate fork). An Oracle A1 
 same gap, and may close it without this ruling: its firmware has a clock the loader can read before
 it exits boot services
 ([the A1 proposal](an-aarch64-cloud-instance-drives-its-pcie-devices.md)).
+
+Reuse: everything but the RAM block server exists. The TRNG's service is milestone 159's, the
+resolver 892's, `network_time_client` 290's, the RedoxFS image tool and server milestone 32's. The
+block server is about a hundred lines over `filesystem_contract::blk`, modeled on
+`virtio::run_blk_server`; no RAM-disk server exists in the tree to take.
 
 ## Exit criteria
 

@@ -4,7 +4,7 @@ raised: 2026-10-24
 milestone_dependencies: 578, 801
 decision_dependencies: none
 machine_requirements: aarch64 SBBR cloud firmware with virtio over PCIe
-specific_machine: an Oracle Cloud Ampere A1 instance
+specific_machine: oracle-a1 (an Oracle Cloud Ampere A1 instance; calef ruled 801's aarch64 leg onto it on 2026-10-24 UTC)
 needs_person: yes
 ---
 # An aarch64 cloud instance drives its PCIe devices, so `jig` runs on it
@@ -43,6 +43,10 @@ with `pcie : none`:
 
 If the A1 offers no entropy device, the instance has no source nife can use, and where a cloud
 guest's entropy comes from becomes a question for calef. This proposal does not guess at it.
+
+Reuse: the virtio drivers, the PCIe transport and the SMMU seam exist and run in the kernel
+harness; the work is description and wiring. AML interpretation for `_PRT` is the part with a
+choice: a crate such as `acpi`'s AML half, or MSI-X, which needs no AML. Unsurveyed.
 
 ## Exit criteria
 

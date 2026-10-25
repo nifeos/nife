@@ -8,9 +8,9 @@ silicon on three machines. This is the riscv64 leg's bench step, an appendix to
 [jig.md](jig.md). The procedure's form is notes/designware-ethernet.md's "calef's bench step on
 radon".
 
-**It cannot pass yet.** radon's ordinary image has the NIC, a lease and `jig`, but no entropy at
-the prompt, so no resolver and no TLS; no file service, so nowhere to keep the index copy or an
-install; and no wall clock to check a certificate's dates. The proposal
+It cannot pass yet. radon's ordinary image has the NIC, a lease and `jig`. It has no entropy at
+the prompt, so no resolver and no TLS. It has no file service, so nowhere to keep the index copy
+or an install, and no wall clock to check a certificate's dates. The proposal
 [radon's booted system runs `jig`](../../design/roadmap/proposals/radons-booted-system-runs-jig.md)
 is that work, and the wall clock waits on a ruling of calef's there. Step A below runs on today's
 tree and records which gap bites first; step B is the leg itself, once the proposal is built.
@@ -82,8 +82,8 @@ UTC); `jig list` after `update` shows it on the board.
 It proves the fetch end to end on riscv64 silicon: a name resolved through the lease's server, TLS
 pinned to ISRG Root X1 on radon's own NIC, the digest check, and the progenitor installing on the
 index copy's word. It does not prove that radon keeps an install. The RAM disk is gone at the next
-power cycle or `reboot`, so a second boot starts with no generation, and radon's persistent disk
-stays §260's USB drive. 801's riscv64 leg is the fetch, so this is enough to close it; a later
+power cycle or `reboot`, so a second boot starts with no generation. radon's persistent disk stays
+§260's USB drive. 801's riscv64 leg is the fetch, so this is enough to close it; a later
 boot-to-boot claim belongs to the USB drive's milestones.
 
 ## Recording
