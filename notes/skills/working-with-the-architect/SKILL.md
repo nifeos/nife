@@ -10,7 +10,7 @@ description: >-
   (they/them), that a record states a decision and its date without quoting the decider, which
   machine names may appear in public text, and what needs an architect versus
   what agents merge on standing authority. Points to the decisions and maintainer skills and §88
-  rather than restating them.
+  (`needs-architect` as a required check) rather than restating them.
 ---
 
 # Working with the architect
