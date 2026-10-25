@@ -1,0 +1,60 @@
+name: host-reordering
+
+# **Temporary, and scoped to one lane's branch** (lock-crate, 2026-10-25 UTC). It reruns the LOCK
+# measurement of notes/benchmarks/host-reordering-under-tcg.md with the kernel's lock now
+# `crates/spin_lock`: the litmus guest in tools/host_reordering_litmus on an aarch64 and an x86_64
+# CI host, twice each, the same steps on both, bounded at 25 minutes. It fires only on a push to that branch
+# that touches the measurement, never on a pull request or the merge queue, and is removed before
+# the pull request is ready.
+on:
+  push:
+    branches: [lock-crate]
+    paths:
+      - "tools/host_reordering_litmus/**"
+      - "crates/spin_lock/**"
+      - ".github/workflows/host-reordering.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: host reordering (${{ matrix.part }} ${{ matrix.attempt }}, ${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04-arm, ubuntu-24.04]
+        part: [litmus]
+        attempt: [1, 2]
+        include:
+          - part: litmus
+            args: 60 none 0
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+      - run: tools/host_reordering_litmus/measure.sh ${{ matrix.args }}
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: host-reordering-${{ matrix.part }}-${{ matrix.attempt }}-${{ matrix.runner }}
+          path: target/host-reordering/
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
