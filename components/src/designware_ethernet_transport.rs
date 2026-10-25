@@ -27,9 +27,9 @@ use driver_process_contract::designware_ethernet::{
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
-// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VIRTUAL_ADDRESS, and
-// the controller's DMA page device-typed at DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, before `_start` runs
-// (`designware_ethernet_service`).
+// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at
+// DATA_PLANE_VIRTUAL_ADDRESS, and the controller's DMA page device-typed at
+// DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, before `_start` runs (`designware_ethernet_service`).
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.

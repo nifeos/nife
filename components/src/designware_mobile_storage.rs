@@ -3,11 +3,13 @@
 //! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
 //! `kernel/src/user/designware_mobile_storage_service.rs` gives it: the controller's register page
-//! at `driver_process_contract::designware_mobile_storage::REGISTER_VIRTUAL_ADDRESS` (the kernel ungates the shared clock generator, §86 (whether an NVMe
-//! driver can leave the kernel)), the transfer region at `driver_process_contract::designware_mobile_storage::TRANSFER_VIRTUAL_ADDRESS`, the request (slot
-//! 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth. No DMA,
-//! but that page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as confined as its
-//! own code, the position of milestone 261 (the NVMe driver leaves the kernel).
+//! at `driver_process_contract::designware_mobile_storage::REGISTER_VIRTUAL_ADDRESS` (the kernel
+//! ungates the shared clock generator, §86 (whether an NVMe driver can leave the kernel)), the
+//! transfer region at
+//! `driver_process_contract::designware_mobile_storage::TRANSFER_VIRTUAL_ADDRESS`, the request
+//! (slot 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth.
+//! No DMA, but that page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as
+//! confined as its own code, the position of milestone 261 (the NVMe driver leaves the kernel).
 
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept, paired with its crate as
 //! `non_volatile_memory_express` is. He considered `designware_sd_storage` and `sd_and_emmc_storage`,
@@ -60,8 +62,9 @@ struct Page;
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < regs::WINDOW_USED);
-        // SAFETY: the spawner maps one device-typed page of the controller at REGISTER_VIRTUAL_ADDRESS before
-        // `_start` runs, and every offset the crate passes is a word-aligned register in it.
+        // SAFETY: the spawner maps one device-typed page of the controller at
+        // REGISTER_VIRTUAL_ADDRESS before `_start` runs, and every offset the crate passes is a
+        // word-aligned register in it.
         unsafe {
             core::ptr::read_volatile((REGISTER_VIRTUAL_ADDRESS + u64::from(offset)) as *const u32)
         }
@@ -84,8 +87,9 @@ impl Registers for Page {
 }
 
 fn transfer() -> &'static mut [u8] {
-    // SAFETY: the spawner maps `blk::TRANSFER_BLOCKS` pages read/write at TRANSFER_VIRTUAL_ADDRESS before
-    // `_start` runs; this process is single-threaded, so this is the only reference at a time.
+    // SAFETY: the spawner maps `blk::TRANSFER_BLOCKS` pages read/write at TRANSFER_VIRTUAL_ADDRESS
+    // before `_start` runs; this process is single-threaded, so this is the only reference at a
+    // time.
     unsafe {
         core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAX)
     }

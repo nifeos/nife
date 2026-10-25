@@ -39,8 +39,9 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 /// (`user_mode_runtime::tick_hz`), so the sleep lasts up to 10 ms whatever this says.
 pub(crate) const POLL_MS: u64 = 1;
 
-// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VIRTUAL_ADDRESS,
-// and one device-typed page at each queue VA, before `_start` runs (`e1000e_service`).
+// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at
+// DATA_PLANE_VIRTUAL_ADDRESS, and one device-typed page at each queue VA, before `_start` runs
+// (`e1000e_service`).
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
