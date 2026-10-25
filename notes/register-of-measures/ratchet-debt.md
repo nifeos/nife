@@ -23,6 +23,9 @@ week's commit.
 | `writing-standards.csv` | `writing_over_median` | documents whose median sentence is over 20 words |
 | | `writing_over_longest` | documents whose longest sentence is over 40 words |
 | | `writing_over_bold` | documents with more than 4 bold spans per 1,000 words |
+| `passive-voice.csv` | `passives_total` | passive constructions in the prose of every document |
+| | `passive_prose_words` | the prose words they sit in |
+| | `passives_per_1000` | the first over the second, per 1,000 words |
 | `comment-blocks.csv` | `comment_block_files_over_cap` | Rust files holding a comment block over 40 lines |
 | | `comment_blocks_over_cap` | the blocks themselves, which is what a baseline row counts |
 | | `comment_block_excess_lines` | each such block's lines past 40, summed |
@@ -52,6 +55,16 @@ disagree about a file:
 - §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks
   and `vendor/`. The ceiling is read from the week's own `helpers/line_citations.py`, so the chart
   draws the ceiling that week's gate held.
+
+## Passive voice
+
+`passive-voice.csv` and its two charts answer calef's ask of 2026-10-25 (UTC), "a metric graph of
+the passive voice in the tree so that we can drive it down over time". `passive_voice_counts` sums
+`prose_ratchet.measured`'s `passives` and `prose_words` over the same scope, so the chart counts what
+the gate counts. Every document counts, the short and the exempted too, and the rate pools the
+words rather than averaging documents. `--backfill-measure passive-voice` filled every week from
+2026W29. The file, its columns and its charts are provisional, minted by
+milestone/952-a-passive-voice-ratchet.
 
 ## Counted from the tree, exemptions included
 

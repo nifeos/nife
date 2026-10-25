@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="380" viewBox="0 0 860 380" role="img" aria-label="Passive constructions in the prose">
+<style>
+  .bg{fill:#ffffff} .fg{fill:#1f2328} .mut{fill:#59636e} .grid{stroke:#d1d9e0}
+  .seg{stroke:#ffffff;stroke-width:1}
+  .val{paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round}
+  .s0{fill:#2a78d6}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117} .fg{fill:#e6edf3} .mut{fill:#9198a1} .grid{stroke:#30363d}
+    .seg{stroke:#0d1117} .val{stroke:#0d1117} .s0{fill:#3987e5}}
+  text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+</style>
+<rect class="bg" width="860" height="380"/>
+<text class="fg" x="20" y="26" font-size="16" font-weight="600">Passive constructions in the prose</text>
+<text class="mut" x="20" y="44" font-size="11">helpers/passive_voice.py over helpers/prose_ratchet.py's scope and prose; a document under the 200-word floor or exempted counts</text>
+<line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
+<text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="64" y1="279.7" x2="650.0" y2="279.7" stroke-width="1"/>
+<text class="mut" x="56" y="282.7" font-size="10" text-anchor="end">5000</text>
+<line class="grid" x1="64" y1="235.3" x2="650.0" y2="235.3" stroke-width="1"/>
+<text class="mut" x="56" y="238.3" font-size="10" text-anchor="end">10000</text>
+<line class="grid" x1="64" y1="191.0" x2="650.0" y2="191.0" stroke-width="1"/>
+<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">15000</text>
+<line class="grid" x1="64" y1="146.7" x2="650.0" y2="146.7" stroke-width="1"/>
+<text class="mut" x="56" y="149.7" font-size="10" text-anchor="end">20000</text>
+<line class="grid" x1="64" y1="102.3" x2="650.0" y2="102.3" stroke-width="1"/>
+<text class="mut" x="56" y="105.3" font-size="10" text-anchor="end">25000</text>
+<line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
+<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">30000</text>
+<path class="seg s0" d="M74.0,324.0 V269.9 Q74.0,265.9 78.0,265.9 H108.6 Q112.6,265.9 112.6,269.9 V324.0 Z"><title>2026W34, passive constructions: 6553</title></path>
+<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="93.3" y="260.9" font-size="10" text-anchor="middle">6553</text>
+<path class="seg s0" d="M132.6,324.0 V260.8 Q132.6,256.8 136.6,256.8 H167.2 Q171.2,256.8 171.2,260.8 V324.0 Z"><title>2026W35, passive constructions: 7577</title></path>
+<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="151.9" y="251.8" font-size="10" text-anchor="middle">7577</text>
+<path class="seg s0" d="M191.2,324.0 V230.0 Q191.2,226.0 195.2,226.0 H225.8 Q229.8,226.0 229.8,230.0 V324.0 Z"><title>2026W36, passive constructions: 11055</title></path>
+<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="210.5" y="221.0" font-size="10" text-anchor="middle">11055</text>
+<path class="seg s0" d="M249.8,324.0 V225.3 Q249.8,221.3 253.8,221.3 H284.4 Q288.4,221.3 288.4,225.3 V324.0 Z"><title>2026W37, passive constructions: 11588</title></path>
+<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="269.1" y="216.3" font-size="10" text-anchor="middle">11588</text>
+<path class="seg s0" d="M308.4,324.0 V191.9 Q308.4,187.9 312.4,187.9 H343.0 Q347.0,187.9 347.0,191.9 V324.0 Z"><title>2026W38, passive constructions: 15353</title></path>
+<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="327.7" y="182.9" font-size="10" text-anchor="middle">15353</text>
+<path class="seg s0" d="M367.0,324.0 V154.3 Q367.0,150.3 371.0,150.3 H401.6 Q405.6,150.3 405.6,154.3 V324.0 Z"><title>2026W39, passive constructions: 19592</title></path>
+<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="386.3" y="145.3" font-size="10" text-anchor="middle">19592</text>
+<path class="seg s0" d="M425.6,324.0 V143.3 Q425.6,139.3 429.6,139.3 H460.2 Q464.2,139.3 464.2,143.3 V324.0 Z"><title>2026W40, passive constructions: 20835</title></path>
+<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="444.9" y="134.3" font-size="10" text-anchor="middle">20835</text>
+<path class="seg s0" d="M484.2,324.0 V116.3 Q484.2,112.3 488.2,112.3 H518.8 Q522.8,112.3 522.8,116.3 V324.0 Z"><title>2026W41, passive constructions: 23877</title></path>
+<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="503.5" y="107.3" font-size="10" text-anchor="middle">23877</text>
+<path class="seg s0" d="M542.8,324.0 V109.6 Q542.8,105.6 546.8,105.6 H577.4 Q581.4,105.6 581.4,109.6 V324.0 Z"><title>2026W42, passive constructions: 24632</title></path>
+<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="562.1" y="100.6" font-size="10" text-anchor="middle">24632</text>
+<path class="seg s0" d="M601.4,324.0 V84.6 Q601.4,80.6 605.4,80.6 H636.0 Q640.0,80.6 640.0,84.6 V324.0 Z"><title>2026W43, passive constructions: 27447</title></path>
+<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="620.7" y="75.6" font-size="10" text-anchor="middle">27447</text>
+<rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
+<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">passive constructions</tspan></text>
+</svg>

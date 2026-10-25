@@ -508,6 +508,10 @@ MEASURES = [
     # File, column and chart names provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics;
     # notes/register-of-measures/ratchet-debt.md defines them.
     ('writing-standards', ['writing_over_median', 'writing_over_longest', 'writing_over_bold']),
+    # §213 rule 6 (calef, 2026-10-25 UTC: "a metric graph of the passive voice in the tree so that
+    # we can drive it down over time"), by `passive_voice_counts` below. File, column and chart
+    # names provisional, minted 2026-10-25 (UTC) by milestone/952-a-passive-voice-ratchet.
+    ('passive-voice', ['passives_total', 'passive_prose_words', 'passives_per_1000']),
     ('comment-blocks', ['comment_block_files_over_cap', 'comment_blocks_over_cap',
                         'comment_block_excess_lines']),
     # Milestone 929's counts, per directory, at the cap and ceiling that week's baseline holds
@@ -1673,18 +1677,41 @@ def _prose_documents(tree):
             yield path, text
 
 
+def _measured_documents(tree):
+    """[(path, measure)] for every document in the prose scope, measured once per tree, since
+    `writing_standards` and `passive_voice_counts` both read it."""
+    if not hasattr(tree, 'prose_measured'):
+        tree.prose_measured = [(path, prose_ratchet.measured(path, text))
+                               for path, text in _prose_documents(tree)]
+    return tree.prose_measured
+
+
 def writing_standards(tree):
     """Documents over each of the three limits of §213 (writing standards), as
     `prose_ratchet.over` judges them: median sentence over 20 words, longest over 40, bold over 4
     per 1,000 words. The 200-word floor is the gate's. A document over two limits counts in both columns. A `writing-standards` exception
     marker excuses a document at the gate and not here."""
     counts = {'writing_over_median': 0, 'writing_over_longest': 0, 'writing_over_bold': 0}
-    for path, text in _prose_documents(tree):
-        over = prose_ratchet.over(prose_ratchet.measured(path, text))
+    for _path, measured in _measured_documents(tree):
+        over = prose_ratchet.over(measured)
         counts['writing_over_median'] += 'median' in over
         counts['writing_over_longest'] += 'longest' in over
         counts['writing_over_bold'] += 'bold_lead' in over
     return counts
+
+
+def passive_voice_counts(tree):
+    """Passive constructions across the prose scope, by `prose_ratchet.measured`, which counts them
+    with `helpers/passive_voice.py` (§213 rule 6): the total, the prose words they sit in, and the
+    rate per 1,000 words that the gate's limit of 2 is written in. A document under the gate's
+    200-word floor, or carrying a `writing-standards` exception, counts here: the chart shows the
+    debt, and the gate decides what passes."""
+    passives = words = 0
+    for _path, measured in _measured_documents(tree):
+        passives += measured['passives']
+        words += measured['prose_words']
+    return {'passives_total': passives, 'passive_prose_words': words,
+            'passives_per_1000': round(1000.0 * passives / words, 2) if words else ''}
 
 
 def comment_block_debt(tree):
@@ -2038,7 +2065,7 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
                  harnesses(tree),
                  unsafe_census(tree), unsafe_trust_census(tree),
                  fatal_risks_colors(tree), coe_action_counts(tree),
-                 writing_standards(tree), comment_block_debt(tree),
+                 writing_standards(tree), passive_voice_counts(tree), comment_block_debt(tree),
                  comment_debt_by_directory(tree), line_citation_debt(tree),
                  homes(tree), crate_release_cells(tree)):
         row.update(part)
@@ -2732,6 +2759,8 @@ def comment_caps_note(rows, weeks):
         week_label(weeks[-1]), caps, _number(row['comment_cap_other']))
 
 
+PASSIVE_LIMIT = prose_ratchet.PASSIVE_PER_1000
+
 CHARTS = [
     ('milestones.svg', 'Milestones by status, and proposals waiting for a number',
      'the blocks in design/roadmap/ (design/roadmap.md before the one-file-per-milestone split); '
@@ -2856,6 +2885,13 @@ CHARTS = [
      [('median sentence over 20 words', 'writing_over_median'),
       ('longest sentence over 40 words', 'writing_over_longest'),
       ('bold over 4 per 1,000 words', 'writing_over_bold')], 1.0, None, 'writing_over_longest'),
+    ('passive-voice.svg', 'Passive constructions in the prose',
+     'helpers/passive_voice.py over helpers/prose_ratchet.py\'s scope and prose; a document under '
+     'the 200-word floor or exempted counts',
+     [('passive constructions', 'passives_total')], 1.0, None, None),
+    ('passive-voice-rate.svg', 'Passive constructions per 1,000 words of prose',
+     'the same count over the same prose words; the line is the limit a new document meets',
+     [('per 1,000 words', 'passives_per_1000')], 1.0, (PASSIVE_LIMIT, 'limit'), None),
     ('comment-blocks.svg', 'Rust files with a comment block over 40 lines',
      'helpers/comment_block_ratchet.py\'s measure, over every .rs file outside vendor/; the '
      'chart below is the same debt in lines',
