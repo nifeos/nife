@@ -63,7 +63,7 @@ pki_types = { package = "rustls-pki-types", version = "1", default-features = fa
 # crate that actually depends on `sha2` has no way to ask for the soft implementation, and on
 # `x86_64-unknown-nife` the SIMD one does not compile at all.
 sha2 = { version = "0.10", default-features = false, features = ["force-soft"] }
-hmac = { version = "0.12", default-features = false }
+hmac = { version = "0.13", default-features = false }
 hkdf = { version = "0.12", default-features = false }
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
 poly1305 = { version = "0.8", default-features = false }
