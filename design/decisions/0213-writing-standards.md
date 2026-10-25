@@ -10,8 +10,8 @@ ratified_by: calef
 The rules, ratified by calef on 2026-09-23 (UTC) unless marked: a median sentence of 20 words or
 fewer, no sentence over 40 words, and 4 or fewer bold spans per 1,000 words. Rule 4 is a review
 question, and rule 5 is §298's, carried here. Rule 6, ratified 2026-10-25, holds new prose to 2
-passive constructions per 1,000 words. The ratchet is the enforcement, and two proposed rules stay
-dropped.
+passive constructions per 1,000 words. Rule 7, ratified 2026-10-25, spells out contractions. The
+ratchet is the enforcement, and two proposed rules stay dropped.
 
 His words, which are the whole brief:
 
@@ -92,7 +92,7 @@ that can be counted should be counted, rather than written as advice and left to
 ## The standard
 
 Rules 1 to 3 and rule 6 carry numbers. The fourth is the most valuable and no machine can check
-it. The fifth has a phrase gate under it, and review does the rest.
+it. The fifth has a phrase gate under it, and review does the rest. The seventh has no gate.
 
 1. A document's median sentence is 20 words or fewer. The corrected corpus median is exactly 20, so
    the tree already sits on Amazon's 15-to-20 standard, and the proposal's 25 was a floor set above
@@ -119,6 +119,9 @@ it. The fifth has a phrase gate under it, and review does the rest.
    and an old document's passive count only falls (calef, 2026-10-25 UTC).
    [`passive-voice.md`](0213-writing-standards/passive-voice.md) has the ruling, the measure and
    the two options refused.
+7. Spell out contractions: "do not", "it is", "cannot" (ratified 2026-10-25 UTC). This covers notes,
+   roadmap blocks, decisions, pull request bodies and commit messages. A quotation keeps its
+   source's words. No gate counts contractions yet, so review holds this one.
 
 ### A label that opens a line becomes a heading
 
