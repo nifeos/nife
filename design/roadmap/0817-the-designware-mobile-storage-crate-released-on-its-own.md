@@ -136,6 +136,11 @@ cite this tree: 5 `milestone N`, 4 tree paths, 2 `§N`, 2 provenance blocks and 
 
 `script/names` reports the name `designware_mobile_storage` ratified (checked 2026-10-25).
 
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
+citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map`,
+`filesystem_contract` and `device_tree_blob` are still path dependencies, so the copy does not
+build; the second half of the cut removes them.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

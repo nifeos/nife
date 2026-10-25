@@ -140,6 +140,10 @@ lines cite this tree: 22 `milestone N`, 4 tree paths, 4 provenance blocks and 2 
 `script/names` reports the name `jh7110_clock_and_reset` ratified (checked 2026-10-25). The
 device-tree walks, whose names were provisional, left the crate on 2026-10-25.
 
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, the build passes
+on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
+ratification pass. With Kani it fails only for want of harnesses.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

@@ -129,6 +129,11 @@ N`, 5 tree paths, 2 `§N`, 2 provenance blocks and 1 naming calef.
 
 `script/names` reports the name `designware_ethernet` ratified (checked 2026-10-25).
 
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
+citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map`
+and `device_tree_blob` are still path dependencies, so the copy does not build; the second half of
+the cut removes them.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

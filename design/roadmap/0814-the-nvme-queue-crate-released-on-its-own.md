@@ -131,6 +131,10 @@ calef and 1 provenance block.
 
 `script/names` reports the name `non_volatile_memory_express` ratified (checked 2026-10-25).
 
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, the build passes
+on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
+ratification pass. With Kani, every harness proves and every falsification patch fails its harness.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

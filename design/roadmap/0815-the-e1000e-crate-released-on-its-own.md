@@ -124,6 +124,10 @@ Release step 2's cut is what fixes that. Beyond manifest and files, 23 lines cit
 
 `script/names` reports the name `e1000e` ratified (checked 2026-10-25).
 
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
+citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map` is
+still a path dependency, so the copy does not build; the second half of the cut removes it.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
