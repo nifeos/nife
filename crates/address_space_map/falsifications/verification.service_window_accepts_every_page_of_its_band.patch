@@ -1,0 +1,21 @@
+Falsifies `address_space_map::verification::service_window_accepts_every_page_of_its_band`.
+
+The defect: `service_window` checks the wrong band, `HEAP`, the copy-and-paste slip three
+near-identical functions invite.
+
+Expected to fail: the harness's claim that no allowed address reaches `service_window`'s asserts;
+Kani reports "a service window must lie in SERVICE_WINDOWS" reachable.
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..f2393e8b9 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -181,7 +181,7 @@ pub const fn service_window(va: u64) -> u64 {
+         "a service window must be page aligned"
+     );
+     assert!(
+-        SERVICE_WINDOWS.contains(va),
++        HEAP.contains(va),
+         "a service window must lie in SERVICE_WINDOWS (address_space_map)"
+     );
+     va

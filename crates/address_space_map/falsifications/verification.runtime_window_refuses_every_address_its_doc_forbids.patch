@@ -1,0 +1,21 @@
+Falsifies `address_space_map::verification::runtime_window_refuses_every_address_its_doc_forbids`.
+
+The defect: `runtime_window` checks only the band's start, so an aligned address in the heap, the
+image or anywhere above is returned as a runtime window.
+
+Expected to fail: the harness reaches `refused_inputs_never_reach_here` (an unwinding failure, not a
+panic), so Kani reports "encountered failures other than panics".
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..e1d60e4f6 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -167,7 +167,7 @@ pub const fn runtime_window(va: u64) -> u64 {
+         "a runtime window must be page aligned"
+     );
+     assert!(
+-        RUNTIME_WINDOWS.contains(va),
++        va >= RUNTIME_WINDOWS.start,
+         "a runtime window must lie in RUNTIME_WINDOWS (address_space_map)"
+     );
+     va

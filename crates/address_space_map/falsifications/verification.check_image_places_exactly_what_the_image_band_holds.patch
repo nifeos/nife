@@ -1,0 +1,20 @@
+Falsifies `address_space_map::verification::check_image_places_exactly_what_the_image_band_holds`.
+
+The defect: `Band::holds` treats the band's end as exclusive for `end` too, so an image that fills
+the image band exactly is refused, and as outside the band rather than as too large.
+
+Expected to fail: the harness's `assert_eq!(check_image(start, end), expected)`, at `end = IMAGE.end`.
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..8895744a1 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -44,7 +44,7 @@ impl Band {
+ 
+     /// Does the whole of `[start, end)` lie inside the band? An empty or inverted range does not.
+     pub const fn holds(&self, start: u64, end: u64) -> bool {
+-        start < end && start >= self.start && end <= self.end
++        start < end && start >= self.start && end < self.end
+     }
+ }
+ 

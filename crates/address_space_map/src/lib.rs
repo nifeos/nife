@@ -1,7 +1,7 @@
 //! **The user address-space map**: which band of a process's low half holds what, the same on all
 //! three architectures (§171 (where a program image starts), option D).
 //!
-//! The bands tile `[0, 2 GiB)` with no gap (a host test holds that); above 2 GiB only the timebase
+//! The bands tile `[0, 2 GiB)` with no gap (a `const` assert holds that, and Kani proves it per address); above 2 GiB only the timebase
 //! page (`counter_frequency_contract::PAGE_VA`) is assigned. A new page goes in the first band that
 //! fits, asked in the order the note gives, and a pair page is checked at compile time by
 //! [`pair_page`]. The image band ends at 2 GiB because `x86_64` builds with `code-model: small`
@@ -268,36 +268,69 @@ pub const fn check_image(start: u64, end: u64) -> Result<(), ImagePlacement> {
     }
 }
 
+/// The bit at which each architecture's user half ends, so every user address is below `1 << shift`:
+/// aarch64 48, `x86_64` 47, `riscv64` under Sv39 38. Restated from `crates/paging`
+/// (`PageFormat::SPLIT_SHIFT`), which this crate does not depend on.
+const LOW_HALF_SPLIT_SHIFTS: [(&str, u32); 3] = [("aarch64", 48), ("x86_64", 47), ("riscv64", 38)];
+
+// The map's shape, checked where every consumer compiles it: the bands tile
+// `[0, CODE_MODEL_CEILING)` in `BANDS` order, each non-empty and page aligned at both ends, which is
+// what makes them disjoint and ordered; and the ceiling is a user address on all three
+// architectures. `verification.rs` proves the same map per address with Kani.
+const _: () = {
+    let mut at = 0;
+    let mut i = 0;
+    while i < BANDS.len() {
+        let band = BANDS[i].1;
+        assert!(
+            band.start == at,
+            "a band does not start where the band below it ends"
+        );
+        assert!(band.start < band.end, "a band is empty");
+        assert!(
+            band.start.is_multiple_of(PAGE),
+            "a band does not start on a page"
+        );
+        assert!(
+            band.end.is_multiple_of(PAGE),
+            "a band does not end on a page"
+        );
+        at = band.end;
+        i += 1;
+    }
+    assert!(
+        at == CODE_MODEL_CEILING,
+        "the bands do not end at the code-model ceiling"
+    );
+    let [(_, aarch64), (_, x86_64), (_, riscv64)] = LOW_HALF_SPLIT_SHIFTS;
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> aarch64 == 0,
+        "the map reaches past aarch64's user half"
+    );
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> x86_64 == 0,
+        "the map reaches past x86_64's user half"
+    );
+    assert!(
+        (CODE_MODEL_CEILING - 1) >> riscv64 == 0,
+        "the map reaches past riscv64's user half"
+    );
+};
+
 // The derived constants, checked where every consumer compiles them.
 const _: () = assert!(IMAGE_BASE.is_multiple_of(2 * 1024 * 1024));
 const _: () = assert!(STACK_TOP_PAGE >> 21 == CURRENT_CPU_PAGE >> 21);
-const _: () = assert!(IMAGE.end <= CODE_MODEL_CEILING);
+const _: () = assert!(STACK.contains(STACK_TOP_PAGE) && STACK_TOP_PAGE.is_multiple_of(PAGE));
+const _: () = assert!(STACK_TOP_PAGE - (MAX_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
+const _: () =
+    assert!(PROCESS_PAGES.bytes() == 16 * PAGE && PROCESS_PAGES.contains(CURRENT_CPU_PAGE));
+
+#[cfg(kani)]
+mod verification;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// Sv39's low half is the smallest of the three: every user address sits under
-    /// `0x40_0000_0000` there (`crates/paging/src/sv39.rs`).
-    const SV39_LOW_HALF_END: u64 = 0x40_0000_0000;
-
-    #[test]
-    #[allow(clippy::assertions_on_constants)]
-    fn the_bands_tile_the_first_two_gigabytes_in_order_with_no_gap() {
-        let mut at = 0;
-        for (name, band) in BANDS {
-            assert_eq!(
-                band.start, at,
-                "{name} does not start where the band below it ends"
-            );
-            assert!(band.end > band.start, "{name} is empty");
-            assert_eq!(band.start % PAGE, 0, "{name} is not page aligned");
-            assert_eq!(band.end % PAGE, 0, "{name} does not end on a page");
-            at = band.end;
-        }
-        assert_eq!(at, CODE_MODEL_CEILING);
-        assert!(CODE_MODEL_CEILING <= SV39_LOW_HALF_END);
-    }
 
     /// **The linker script and the map agree**, which is the one thing a reader of either most
     /// needs to be true. The script is parsed, not grepped for a spelling, so a reformatted line
