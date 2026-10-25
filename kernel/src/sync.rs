@@ -143,20 +143,15 @@ fn lock_order_violation(rank: u32, held: u32) -> ! {
 /// Every lock in the kernel should be one of these. Keep the critical section short: interrupts are
 /// off for the whole of it (DECISIONS §9).
 pub struct IrqSafeMutex<T> {
-    inner: spin::Mutex<T>,
+    inner: spin_lock::SpinLock<T>,
     rank: u32,
 }
-
-// SAFETY: same reasoning as any mutex. The lock provides the exclusion.
-unsafe impl<T: Send> Sync for IrqSafeMutex<T> {}
-// SAFETY: as for `Sync` directly above: the lock provides the exclusion.
-unsafe impl<T: Send> Send for IrqSafeMutex<T> {}
 
 impl<T> IrqSafeMutex<T> {
     /// Make a lock of `rank`, from [`rank`], holding `value`.
     pub const fn new(rank: u32, value: T) -> Self {
         Self {
-            inner: spin::Mutex::new(value),
+            inner: spin_lock::SpinLock::new(value),
             rank,
         }
     }
@@ -244,7 +239,7 @@ pub(crate) fn lock_found<'a, T>(
 }
 
 pub struct IrqSafeGuard<'a, T> {
-    guard: ManuallyDrop<spin::MutexGuard<'a, T>>,
+    guard: ManuallyDrop<spin_lock::SpinLockGuard<'a, T>>,
     irqs_were_enabled: bool,
     previous_rank: u32,
 }

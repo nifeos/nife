@@ -777,7 +777,7 @@ dependencies = [
  "screen_console",
  "soak_page",
  "socket_contract",
- "spin",
+ "spin_lock",
  "std_runtime_contract",
  "system_log_contract",
  "test_times",
@@ -1209,10 +1209,11 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
-name = "spin"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0134f9043ed38b087ac4f7d4af44c79e2c9e5094421fe3164f435ce585953b10"
+name = "spin_lock"
+version = "0.1.0"
+dependencies = [
+ "loom",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -1380,7 +1381,7 @@ dependencies = [
  "pmap",
  "ps",
  "socket_contract",
- "spin",
+ "spin_lock",
  "std_runtime_contract",
  "system_log_contract",
  "timetable",

@@ -21,6 +21,7 @@ crates = [
     "memory_corruption_canary_gate",
     "memory_regions",
     "thread_wake_handshake",
+    "spin_lock",
     "work_steal_slot",
     "direct_memory_access_validator",
     "firmware_configuration",

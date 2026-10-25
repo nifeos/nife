@@ -159,7 +159,7 @@ struct Conductor {
     relay: u64,
 }
 
-static CONDUCTOR: spin::Mutex<Conductor> = spin::Mutex::new(Conductor {
+static CONDUCTOR: spin_lock::SpinLock<Conductor> = spin_lock::SpinLock::new(Conductor {
     world: World {
         conductor_region: 0,
         own: [0; 2],

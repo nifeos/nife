@@ -101,8 +101,8 @@ exclude_re = [
     "verification::",
     "proofs::",
 
-    # The loom models: 5 `mod interleavings` blocks (clock_contract, memory_corruption_canary_gate,
-    # memory_regions, thread_wake_handshake, work_steal_slot), every one behind
+    # The loom models: 6 `mod interleavings` blocks (clock_contract, memory_corruption_canary_gate,
+    # memory_regions, spin_lock, thread_wake_handshake, work_steal_slot), every one behind
     # `#[cfg(all(test, loom))]`, so `cargo test` never compiles them and a mutant there always
     # "survives". Exactly the case above wearing different clothes, and found the same way:
     # milestone 326's triage of the 2026-09-14 census reported `Reached::mark` and `Reached::assert`
@@ -115,7 +115,7 @@ exclude_re = [
     # **Helper functions in a host test module, which cargo-mutants skips everywhere else in this
     # tree and does not skip here.** The tool already declines to mutate anything under a plain
     # `#[cfg(test)]`, so a helper like `calendar`'s `fields` yields no mutant at all (measured:
-    # `cargo mutants -p calendar --list` has 395 entries and none of them is `tests::*`). The five
+    # `cargo mutants -p calendar --list` has 395 entries and none of them is `tests::*`). The six
     # loom crates write their host module as `#[cfg(all(test, not(loom)))]` instead, because the
     # loom model is the other half of the same `test` cfg, and the tool's skip does not recognise
     # the compound form: `memory_corruption_canary_gate`'s deadline helper came back MISSED for
