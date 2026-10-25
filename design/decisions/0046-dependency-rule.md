@@ -7,8 +7,9 @@ ratified_by: calef
 
 # 46. Thin primitives or whole subsystems; we write everything in between
 
-(two amendments below: 2026-07-31 distinguishes taking from vendoring, and 2026-10-04 makes taking
-the default outside the kernel and the crates Kani proves.)
+(three amendments below: 2026-07-31 distinguishes taking from vendoring, 2026-10-04 makes taking
+the default outside the kernel and the crates Kani proves, and 2026-10-25 gives the kernel a bar in
+place of a blanket.)
 
 Decided 2026-07-30 (calef), after the calendar crate made the absence of a rule visible. The
 practice was already unanimous and written down nowhere, which is the state that produces an
@@ -46,8 +47,10 @@ never write. Nothing in between. Everything in between is written here.
 2. Is it a whole subsystem we would never write? Then take it, vendored, under §34's conditions.
    RedoxFS and smoltcp are the model: a filesystem and a TCP/IP stack are each larger than the thesis
    they would serve, and confining them is the thesis.
-3. Does it touch the kernel, the ABI, or a capability? Then write it. Rules 1 through 3 exist so
-   that surface stays ours and stays narrow.
+3. Does it touch the ABI or a capability? Then write it: nothing outside nife implements either.
+   Does the kernel link it? Then write it, unless a candidate clears the kernel's bar (below) and an
+   architect rules to take it. Until 2026-10-25 (UTC) this clause said "write it" for anything the
+   kernel touched; "The kernel's bar, 2026-10-25" says why it changed.
 4. Otherwise, prefer writing when the specification is complete and checkable, and prefer
    depending when correctness is won by *exposure* rather than by reading the spec.
 
@@ -131,7 +134,8 @@ This amendment applies it more widely.
 
 Writing stays the default for:
 
-- the kernel (`kernel/`), and anything that touches the ABI or a capability (rule 3, unchanged);
+- anything that touches the ABI or a capability (rule 3);
+- the kernel (`kernel/`) and what it links, unless a candidate clears the kernel's bar below;
 - a crate whose Kani harnesses are listed in `script/verify` because of a claim the system rests on.
   Adding harnesses to code that could have been taken does not put it on the verification path
   after the fact. The block has to argue the claim.
@@ -205,3 +209,58 @@ packages on 2026-10-06 (UTC), and it is now milestone 756 (`process-tools`, `cor
 `disk-tools` are the first code to leave this repository). The rule this section applies to them is
 unchanged. The reasons for the names are in
 [notes/package-boundaries.md](../../notes/package-boundaries.md).
+
+## The kernel's bar, 2026-10-25
+
+Ruled 2026-10-25 (UTC) by calef, on anvil: *"I like your proposal."* Then: *"Yes, write the
+amendment."* It began with a question about `device_tree_blob`: why do we have it, if a crate does
+the job? The answer was rule 3, and calef asked whether rule 3 holds up.
+
+### Why the kernel clause changed
+
+Rule 3 never said why the kernel writes its own. Its ABI and capability clauses need no reason,
+since nothing outside nife implements either. The kernel clause is different.
+
+- It overlaps rule 1 wherever rule 1 is strong. `paging` and `capability` are ours because claims
+  rest on them, and rule 1 already says so.
+- Where it adds anything, it covers kernel code off the verification path. That is mostly the
+  parsers of what firmware and boot media hand the kernel: the device tree, ACPI tables, ELF images.
+- Those parsers are where the 2026-10-04 reason is strongest. Exposure buys trust, and the
+  bugs that hurt a parser are the inputs nobody thought of.
+- The kernel already links three crates (`spin`, `aarch64-cpu`, `tock-registers`), which a blanket
+  "write it" cannot explain.
+- "Touches the kernel" was never defined. Milestone 784 read it as anything the kernel uses for
+  more than shared constants, which is wider than the rule's words.
+
+The concern the clause was reaching for is real. Every crate the kernel links runs with full
+privilege and joins its trusted code. So the bar below is higher than the userland default, and
+every take is still an architect's ruling.
+
+### The bar
+
+The kernel may take a crate off the verification path when the crate meets all of these. The block or pull request that proposes it shows each one.
+
+1. It builds `no_std` on all three kernel targets, and it needs no allocator or uses the kernel's.
+2. If it parses input, it survives ours: the tree's fixtures and fuzz corpus for that input, with no
+   panic, hang or out-of-range read.
+3. Its dependency graph is small. `Cargo.lock` pins every crate in it, and `deny.toml` and
+   `script/supply-chain` gate each one like any other dependency.
+4. Either we can write the Kani harnesses its claims need against its public API, or no claim rests
+   on it. If a claim rests on it and its structure defeats Kani, rule 1 decides and we write.
+5. It stays upgradable, under §81 (a dependency stays upgradable).
+
+The three crates the kernel links pass on the record: each is a thin architectural primitive with
+no parser and a small graph. Nothing here changes the ABI, capabilities or the verification path.
+
+### Still open
+
+These details are calef's, and each comes to him on its own:
+
+- whether a procedural macro or build script may sit in the kernel's build graph (`zerocopy-derive`
+  is the case that raised it);
+- what "small" means as a number;
+- whether a crate's own `unsafe` blocks count against it.
+
+The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in milestone
+784 (reuse what the tree wrote).
+
