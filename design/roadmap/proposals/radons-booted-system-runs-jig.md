@@ -73,8 +73,10 @@ same gap, and may close it without this ruling: its firmware has a clock the loa
 it exits boot services
 ([the A1 proposal](an-aarch64-cloud-instance-drives-its-pcie-devices.md)).
 
-Reuse: everything but the RAM block server exists. The TRNG's service is milestone 159's, the
-resolver 892's, `network_time_client` 290's, the RedoxFS image tool and server milestone 32's. The
+Reuse: everything but the RAM block server exists. The TRNG's service is milestone 159 (a real
+hardware entropy source: the JH7110's TRNG)'s, the resolver 892's, `network_time_client` 290's,
+and the RedoxFS tool and server milestone 32 (a real filesystem: RedoxFS behind a capability FS
+server)'s. The
 block server is about a hundred lines over `filesystem_contract::blk`, modeled on
 `virtio::run_blk_server`; no RAM-disk server exists in the tree to take.
 
@@ -89,6 +91,6 @@ block server is about a hundred lines over `filesystem_contract::blk`, modeled o
 
 ## BUGS
 
-- The RAM disk is a stand-in. Milestone 801's riscv64 leg on it proves the fetch, the digest check
+- The RAM disk is a stand-in. Milestone 801 (packages over the internet)'s riscv64 leg on it proves the fetch, the digest check
   and the installer on radon's own NIC, not that radon keeps an install.
 - None of the three items has been built, so the predictions above are readings of the tree.

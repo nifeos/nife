@@ -83,7 +83,7 @@ It proves the fetch end to end on riscv64 silicon: a name resolved through the l
 pinned to ISRG Root X1 on radon's own NIC, the digest check, and the progenitor installing on the
 index copy's word. It does not prove that radon keeps an install. The RAM disk is gone at the next
 power cycle or `reboot`, so a second boot starts with no generation. radon's persistent disk stays
-§260's USB drive. 801's riscv64 leg is the fetch, so this is enough to close it; a later
+§260 (radon's block server serves a USB drive)'s USB drive. 801's riscv64 leg is the fetch, so this is enough to close it; a later
 boot-to-boot claim belongs to the USB drive's milestones.
 
 ## Recording
@@ -101,5 +101,5 @@ here and a line in milestone 801's block.
 
 - Step B depends on a switch that does not exist yet, and its exact spelling comes with the
   proposal's build.
-- The DesignWare port moves 14.3 Mbit/s (milestone 53), so a large package takes a while; `ioping`
+- The DesignWare port moves 14.3 Mbit/s (milestone 53 (the board's own peripherals)), so a large package takes a while; `ioping`
   is small.
