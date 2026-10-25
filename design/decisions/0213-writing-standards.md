@@ -276,3 +276,6 @@ then a document whose budget is spent on markup records that in its own `BUGS` s
 - This section meets its own three numbers, which tests that they are livable in a document carrying
   numbers and citations. It does not test them on a note explaining a mechanism, and that is the
   longer half of the tree.
+- Rule 7 has no gate. On 2026-10-25 the tree's Markdown held about 600 contractions, and nothing
+  counts them. They stay until a contraction count joins the prose ratchet beside the passive count,
+  or a sweep removes them.
