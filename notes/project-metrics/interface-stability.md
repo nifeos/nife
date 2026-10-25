@@ -8,11 +8,11 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_contract` | 248 | 12 | 285 | 459 | 126 | 112 (89%) |
-| `grant_plan` | 202 | 343 | 277 | 1107 | 216 | 164 (76%) |
+| `filesystem_contract` | 253 | 15 | 290 | 462 | 131 | 115 (88%) |
+| `grant_plan` | 206 | 349 | 281 | 1113 | 222 | 168 (76%) |
 | `installed_programs` | 77 | 59 | 77 | 94 | 37 | 31 (84%) |
 | `globally_unique_identifier_partition_table` | 72 | 3 | 100 | 281 | 49 | 37 (76%) |
-| `login_contract` | 22 | 66 | 30 | 91 | 42 | 40 (95%) |
+| `login_contract` | 22 | 66 | 30 | 91 | 44 | 42 (95%) |
 | `package_archive` | 19 | 38 | 19 | 129 | 30 | 22 (73%) |
 | `socket_contract` | 17 | 37 | 20 | 80 | 41 | 36 (88%) |
 | `hot_swap_contract` | 16 | 13 | 24 | 126 | 61 | 56 (92%) |
@@ -44,7 +44,7 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 ## What broke in 2026W43
 
-Read at `fd2a9d793284` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `65cd57a0c752` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
 > - `capability_plan`: crate renamed `component_plan -> capability_plan`
@@ -56,6 +56,11 @@ Read at `fd2a9d793284` against the week before. Each line is one removed or chan
 > - `current_cpu_contract`: changed `PAGE_BYTES`
 > - `current_cpu_contract`: changed `build_page`
 > - `current_cpu_contract`: changed `build_page_allowing`
+> - `filesystem_contract`: changed `grant::MAX_NAME`
+> - `filesystem_contract`: changed `grant::pack_name`
+> - `filesystem_contract`: changed `nameset::BYTES`
+> - `filesystem_contract`: changed `nameset::IS_DIR`
+> - `filesystem_contract`: changed `nameset::iter`
 > - `filesystem_contract`: changed `verb::TABLE`
 > - `globally_unique_identifier_partition_table`: changed `guid::Uuid`
 > - `globally_unique_identifier_partition_table`: changed `guid::types::APPLE_APFS`
@@ -67,11 +72,15 @@ Read at `fd2a9d793284` against the week before. Each line is one removed or chan
 > - `globally_unique_identifier_partition_table`: changed `guid::types::NIFE_DATA`
 > - `globally_unique_identifier_partition_table`: changed `guid::types::UNUSED`
 > - `grant_plan`: changed `ImageRefusal`
+> - `grant_plan`: changed `MAX_FILE_NAME`
 > - `grant_plan`: changed `Manifest`
 > - `grant_plan`: changed `UNVOUCHED_MANIFEST`
+> - `grant_plan`: changed `expand::MAX_NAME`
 > - `grant_plan`: changed `image::ImageRefusal`
 > - `grant_plan`: changed `image::image_manifest`
 > - `grant_plan`: changed `image_manifest`
+> - `grant_plan`: changed `nav::MAX_NAME`
+> - `grant_plan`: changed `nav::Refused`
 > - `graphics_contract`: changed `HEIGHT`
 > - `graphics_contract`: changed `NO_MISMATCH`
 > - `graphics_contract`: changed `PIXELS`
