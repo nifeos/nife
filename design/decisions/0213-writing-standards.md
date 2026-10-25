@@ -119,8 +119,8 @@ it. The fifth has a phrase gate under it, and review does the rest.
    and an old document's passive count only falls (calef, 2026-10-25 UTC).
    [`passive-voice.md`](0213-writing-standards/passive-voice.md) has the ruling, the measure and
    the two options refused.
-7. Spell out contractions: "do not", "it is", "cannot" (ratified 2026-10-25 UTC), in commit
-   messages and pull request bodies too. A quotation keeps its source's words.
+7. Spell out contractions ("do not", "it is", "cannot") in prose, commit messages and pull request
+   bodies. A quotation keeps its source's words. Ratified 2026-10-25 (UTC).
 
 ### A label that opens a line becomes a heading
 
