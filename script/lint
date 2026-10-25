@@ -2919,6 +2919,9 @@ fi
 #    the one that was read. It names the line and which of four things is wrong with it.
 "$(dirname "$0")/names" --check
 python3 helpers/name_rules.py --selftest
+# A release-track crate whose names are ratified keeps their record outside its shipped files, and
+# `script/names --check` above reads it there (helpers/name_release.py's header is the manual).
+python3 helpers/name_release.py --selftest
 # The sweep that moves a document's block out of its README into the document, and the census's
 # reading of both homes while it runs (helpers/document_name_migrate.py's header). `--check` fails a
 # README that holds a document's block again, which lanes cut before the rule kept doing after the
