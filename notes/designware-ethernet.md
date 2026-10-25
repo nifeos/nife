@@ -161,6 +161,7 @@ network-bench: coherence : Coherent (rx des3 0x30000084, ...)
 network-bench: link      : 1000 Mbit/s full duplex, NNNN ms after autonegotiation restarted
 network-bench: dhcp      : leased 192.168.8.x
 network-bench: transfer  : N bytes in T s = R Mbit/s
+network-bench: receive   : N calls, B bytes each on average, F full; I us inside a call and O us between calls, on average
 network-bench: verdict LEASED-AND-MEASURED
 ```
 
@@ -217,10 +218,11 @@ Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
 
 ## BUGS
 
-- **14.3 Mbit/s on a gigabit link.** radon advertises 4 to 5 KiB of its 16 KiB receive window at
-  a 2 ms round trip, so the reader on radon drains its buffer slower than the wire fills it.
-  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the measurement; what
-  drains it slowly is not yet found.
+- **14.3 Mbit/s on a gigabit link, measured before the copies were bulk.** radon advertises 4 to
+  5 KiB of its 16 KiB receive window at a 2 ms round trip, because `net_stack`, a debug build on
+  radon, empties its buffer one 4,088-byte call at a time through byte loops.
+  [`the-receive-rate.md`](designware-ethernet/the-receive-rate.md) has the QEMU reproduction, the
+  fix and the bench step that measures it on radon; no radon boot has run it yet.
 - **One board.** The Results rows are three boots, on one board, with one cable. Every other test
   runs against the crate's simulation, which is this tree's reading of OpenBSD and the register
   header, not the device; QEMU has no model of this controller.
