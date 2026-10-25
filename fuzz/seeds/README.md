@@ -13,6 +13,7 @@ tree**, committed for their own reasons and tested by their own tests:
 |---|---|---|
 | `device_tree_blob_walk` | `crates/device_tree_blob/tests/fixtures/` | three real device trees, dumped from the boards we boot |
 | `globally_unique_identifier_partition_table` | `crates/globally_unique_identifier_partition_table/tests/fixtures/` | two real disks, formatted by `sgdisk` and by Apple's Disk Utility |
+| `file_allocation_table_boot_sector` | `crates/file_allocation_table/tests/fixtures/` | six boot sectors dosfstools' `mkfs.fat` formatted: FAT12, FAT16 and FAT32, at 512 and 4096 bytes |
 | `elf_parse` | here | the three files below, because nothing else in the tree is a small ELF |
 | `domain_name_system_reply` | `crates/domain_name_system/tests/fixtures/` | three real replies captured from 1.1.1.1: two A records, a CNAME chain with compression, and NXDOMAIN |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |

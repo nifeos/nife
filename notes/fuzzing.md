@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: four when this note was written, seven parsers now, plus three service targets that
+system: eight parsers, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -14,8 +14,8 @@ tests.
 
 This project has over 100 Kani harnesses <!--count-at-least:kani-harnesses-->
 across more than 20 crates <!--count-at-least:harness-crates-->, and DECISIONS §14 (the project's
-direction) says the proofs are the thesis. Adding a fuzzer only earns its place if it answers a question the proofs
-cannot, so that is the first thing to settle.
+direction) says the proofs are the thesis. A fuzzer earns its place only by answering a question the proofs
+cannot.
 
 Kani is exhaustive inside a bound. `kani::any()` is every value at once, the program becomes a
 formula, and `UNSATISFIABLE` means no input breaks the property. That is a stronger claim than any
@@ -53,7 +53,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Seven parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -62,6 +62,7 @@ implies coverage the project does not have.
 | `device_tree_blob_walk` | firmware (QEMU, OpenSBI, a board's ROM) | parsed before anything else exists, on both ISAs, from a pointer in a register; a panic here is a kernel that cannot boot and cannot say why. Kani reaches the leaf readers and not the walkers. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
+| `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
 | `domain_name_system_reply` | a name server, or anyone who can forge its reply | a reply that panics takes name resolution down, and one that slips past `Query::accept` sends a client to the wrong host. Kani covers the name decoder, not `accept`; see notes/name-resolution.md. |
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
