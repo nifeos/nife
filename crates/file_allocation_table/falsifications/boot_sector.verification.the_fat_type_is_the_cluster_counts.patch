@@ -6,10 +6,10 @@ Its table holds 12-bit entries and the reader would decode them 16 bits at a tim
 Expected to fail: the harness's `assert!((4085..65525).contains(&clusters))`.
 
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
-index 551e94595..7780e57a0 100644
+index 9dc607eda..f428da782 100644
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -9,7 +9,7 @@
+@@ -11,7 +11,7 @@
  use crate::sector::{SectorDevice, SectorSize};
  
  /// The cluster count below which a volume is FAT12, by the specification's rule.

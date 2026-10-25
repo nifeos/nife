@@ -8,10 +8,10 @@ the volume on the disk.
 Expected to fail: the harness's `assert!(data_end <= total)`.
 
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
-index 551e94595..218e72d0d 100644
+index 9dc607eda..139304a2b 100644
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -246,7 +246,7 @@ impl BootSector {
+@@ -264,7 +264,7 @@ impl BootSector {
          let root_first = u64::from(reserved_sectors) + u64::from(tables) * u64::from(table_sectors);
          let first_data_sector = root_first + root_sectors;
          let data_sectors = u64::from(total_sectors)

@@ -7,10 +7,10 @@ reads its entry from past the table's end, out of the next table or the root reg
 Expected to fail: the harness's `assert!((u64::from(boot.clusters()) + 2) * bits <= held)`.
 
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
-index 551e94595..57d7d5226 100644
+index 9dc607eda..175924473 100644
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -271,7 +271,7 @@ impl BootSector {
+@@ -289,7 +289,7 @@ impl BootSector {
              return Err(ParseError::TooManyClusters);
          }
          // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.
