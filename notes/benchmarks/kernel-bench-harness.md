@@ -103,6 +103,35 @@ isolates the cost of having no buffer, and with 64 KiB writes, which is what Uni
 first is apples to apples. The producer holds `WRITE` and nothing else, as the left of a shell `|`
 does.
 
+### `ipc_rtt_el0_cycles`: the round trip in cycles, read rather than converted
+
+A build with `cycle_counter_grant` beside `bench` grants the `ipc_rtt_el0` client the cycle counter
+(the per-thread grant of §139 (who may read the cycle counter)) and has it read the counter across the same timed loop. Two
+probe lines follow the row, which does not change:
+
+```
+bench: ipc_rtt_el0 10643349 5000
+bench-probe: ipc_rtt_el0_cycles 35696.65 per round trip (178483253 cycles over 5000 iters; 15.99 per tick across the same 11155207 ticks)
+bench-probe: ipc_rtt_el0_cycles_means core cycles at EL0 and EL1 (PMCCNTR_EL0, PMCCFILTR_EL0 0)
+```
+
+That is aarch64 under TCG, so every figure in it is the emulator's. It is the number milestone 101
+(the L4 calibration) wants from a board, because `cycles_per_tick` times `ipc_rtt_el0` assumes the
+core's clock held still between two windows, and this reads one window. The per-tick figure is the
+check: it should match `cycles_per_tick`, and where it does not, the core changed frequency between
+them and this line is the one to believe.
+
+- On radon: `script/board-image --bench --extra-features cycle_counter_grant`. Under HVF:
+  `script/bench --real --extra-features cycle_counter_grant`. The icount gate never builds it, so
+  the baseline does not move.
+- It refuses, and says why, when more than one core is online, since the counters are per core
+  and the client may move. It also refuses an aarch64 core with no running `PMCCNTR_EL0`, and a
+  riscv64 hart whose kernel counter is not the `cycle` CSR. The last is the one firmware could leave unreadable from
+  U-mode, and a granted read that traps would leave the bench boot waiting forever.
+- The client's report says what it counted, and the second line prints that meaning as the client
+  sent it.
+- `script/lint` compiles the pair on aarch64 and riscv64, since neither feature alone builds it.
+
 ## The filesystem rows
 
 Every filesystem row is `--real --smp` only. Each is device- and interrupt-driven, interrupt timing

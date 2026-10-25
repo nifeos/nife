@@ -60,19 +60,12 @@ list reaches the distribution through basalt's pin of nife.
 | # | Criterion | Evidence |
 |---|---|---|
 | 1 | The two drivers are compared on correctness and interrupt handling, and the comparison is recorded | The comparison, above |
-| 2 | The losing side is retired, or the winning side gets a starter | `serial_driver` is out of `components/Cargo.toml`, `packages/drivers.package.toml` and the tree; `git grep serial_driver` outside history records and this block finds only §241's floor table (BUGS) |
+| 2 | The losing side is retired, or the winning side gets a starter | `serial_driver` is out of `components/Cargo.toml`, `packages/drivers.package.toml` and the tree; `git grep serial_driver` outside history records and this block finds nothing; §241's floor table dropped it too |
 | 3 | The tree builds and the gates pass without it | this pull request's `script/lint` and CI |
-
-## BUGS
-
-- DECISIONS §241 (a threadbare base)'s floor table still lists `serial_driver` among the owner's
-  console programs, and its note says the floor lists it for every architecture. A lane does not
-  edit `design/decisions/`, so the section keeps a program that no longer exists until an integrator
-  amends it. `input` is already in that row.
 
 ## Follow-on
 
-- **Recorded.** §241's floor table names the retired program (BUGS).
+- **Done.** §241 (a threadbare base)'s floor table no longer names the retired program: nifeos/nife#2695.
 
 ## Index row
 

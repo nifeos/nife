@@ -91,7 +91,7 @@ store and what repairs it.
 |---|---|
 | kernel | Nothing else can roll back a bad kernel; see the next section. |
 | `progenitor` | The kernel's one measured program. It reads the activation set and is the installer. |
-| `console`, `input`, `line_editor`, `terminal_supervisor`, `serial_driver` | The owner's console (§221 (the boot prompt is the owner's console)), which is where repair happens. |
+| `console`, `input`, `line_editor`, `terminal_supervisor` | The owner's console (§221 (the boot prompt is the owner's console)), which is where repair happens. |
 | `swish` | The prompt that holds the `package` verbs. |
 | `job_undertaker` | Required today: without it the job pool fills and the prompt stops spawning. |
 | `block_driver`, `non_volatile_memory_express`, `redoxfs_server` | Reading the store at all. |
@@ -252,5 +252,4 @@ P5 and P1 were blocked on the first ruling; both now build against the floor as 
   disk and are not covered by Secure Boot. See Trust.
 - `credentialer` cannot be restarted without a way to reprovision its sealed store, so under every
   option it updates at a boot.
-- The floor lists `serial_driver` and `non_volatile_memory_express` for every architecture, as the
-  archive does. A per-architecture floor is P8's to decide.
+- The floor lists `non_volatile_memory_express` for every architecture, as the archive does. A per-architecture floor is P8's to decide.
