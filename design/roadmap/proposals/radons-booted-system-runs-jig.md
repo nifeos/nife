@@ -52,23 +52,19 @@ From `bench/radon-2026-10-22/53-ordinary-and-reboot.log`, `script/board-image --
 3. The wall clock. TLS checks a certificate's dates against the clock page, and radon's reads
    `UNKNOWN`. Which process may set the time at boot is calef's, below.
 
-## Needs calef: where a machine with no RTC gets the time
+## Ruled: a machine with no RTC fetches the time once at boot
 
-`notes/ntp.md` refuses an `init` endowment for the NTP client: ambient time synchronization would be
-ambient authority, as visible as reaching the network. So the choice is a decision, not a
-lane's.
+calef chose A on 2026-10-25 (UTC): "A". The progenitor runs `network_time_client` once at boot,
+when the clock is `UNKNOWN` and the boot has a network, entropy and a resolver, and announces it
+like the resolver. The server is the lease's (DHCP option 42), else one pool name the image's
+sources carry. The client already holds only a proposal right; the service bounds what it may
+change. `notes/ntp.md` records the endowment.
 
-- A (recommended). The progenitor runs `network_time_client` once at boot, when the clock is
-  `UNKNOWN` and the boot has a network, entropy and a resolver, and announces it like the
-  resolver. The server is the lease's (DHCP option 42), else one pool name the image's sources
-  carry. The client already holds only a proposal right; the service bounds what it may change.
-- B. A build-time floor: the clock service starts at the image's build date when there is no RTC.
-  It needs no network, but a certificate issued after the build is "not yet valid", so a Let's
-  Encrypt chain breaks an image within about two months.
-- C. The owner sets the time at the console, through a verb that proposes it to the clock service.
-  Honest and manual, and every radon boot then needs a person before `jig update`.
+Refused: a build-time floor for the clock. A certificate issued after the build reads as "not yet
+valid", so a Let's Encrypt chain breaks an image within about two months. Also refused: setting the
+time by hand at the console, because every radon boot would then need a person before `jig update`.
 
-A does not settle NTS (`notes/ntp.md` keeps that a separate fork). An Oracle A1 instance has the
+The ruling does not settle NTS (`notes/ntp.md` keeps that a separate fork). An Oracle A1 instance has the
 same gap, and may close it without this ruling: its firmware has a clock the loader can read before
 it exits boot services
 ([the A1 proposal](an-aarch64-cloud-instance-drives-its-pcie-devices.md)).
