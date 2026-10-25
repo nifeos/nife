@@ -356,6 +356,17 @@ opt-level = 2
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with
 # `wrapping_*` and a reason.
+# smoltcp, optimized even in a debug build (milestone 53 (the board's own peripherals: network and
+# storage on real silicon)). `script/board-image` packs debug programs (milestone 797 (release
+# userspace in board images)), so `net_stack` on radon runs smoltcp unoptimized: a checksum, a
+# segment's trip through the assembler and the ring buffer, per frame, at opt-level 0. On QEMU's
+# `e1000e` with debug programs this alone moved the drain from 22.9 to 70.3 Mbit/s once the copies
+# were bulk (notes/designware-ethernet/the-receive-rate.md has the table). It is a third-party
+# crate nobody here steps through, and no job-mix or soak program links it, so no radon baseline
+# that 797 guards moves.
+[profile.dev.package.smoltcp]
+opt-level = 2
+
 [profile.release]
 overflow-checks = true
 
