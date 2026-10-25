@@ -109,7 +109,7 @@ Each crate has an escape hatch, and nothing discovers it for you:
 | `chacha20` | `--cfg chacha20_backend="soft"`, and it is not like the others: see below |
 
 Every one is a `--cfg` in `cryptography_exerciser/.cargo/config.toml` and its copy in
-`pinned_tls_exerciser`'s. A cfg a crate does not recognise is ignored silently, so a major that
+`pinned_tls_exerciser`'s. A crate ignores a cfg it does not recognize, silently, so a major that
 renames one restores the SIMD path: read each crate's `check-cfg` list when its major moves.
 
 ### The one that does not fail at build time, and cost most of a day
@@ -270,7 +270,7 @@ three architectures, and the milestone's own list is finished.
   reader meets it.
 - `rsa` is 0.10.0-rc.19, pinned with `=`, and its `encoding` feature brings `pkcs1` 0.8.0-rc.5.
   No released `rsa` shares the graph's `digest` 0.11 traits, and 0.9.10 would double eleven crates.
-  Move to 0.10.0 when it is released; re-argue by 2027-01-31.
+  Move to 0.10.0 when upstream releases it; re-argue by 2027-01-31.
 - **A vector proves the answer, not the manner.** Nothing measures timing, so a portable fallback
   that is correct and not constant-time passes every line. On x86_64 the fallbacks are exactly what
   runs, and constant-time behavior is the property §46 says is bought by exposure and not by a
