@@ -10,9 +10,11 @@ notes/interface-stability.md; this header is the manual for the program.
     python3 helpers/interface_stability.py --table      # this week's cells, printed, nothing written
     python3 helpers/interface_stability.py --selftest   # fixtures only, no git, no cargo; script/lint
 
-It writes `notes/project-metrics/interface-stability.csv` and nothing else. `script/metrics` draws
-the chart, the generated line on notes/project-metrics.md and the per-crate appendix from that file
-and never recomputes a cell of it (its INTERFACE_FIELDS are carried the way coverage is).
+It writes `notes/project-metrics/interface-stability.csv`, the per-crate and per-package CSVs
+beside it, and the appendix `notes/project-metrics/interface-stability.md`, and nothing else.
+`script/metrics` draws the chart and the generated line on notes/project-metrics.md from the first
+and never recomputes a cell of it (its INTERFACE_FIELDS are carried the way coverage is). The
+per-package co-change cells need only git, so every run restates them for every week.
 
 **Why this builds when `script/metrics` may not.** The public API is read from rustdoc's JSON
 output (`--output-format json`, on the pinned nightly), which needs `cargo doc` over a copy of each

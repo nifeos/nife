@@ -1818,6 +1818,12 @@ def interface_line(rows):
     commits = total('interface_contract_commits')
     crossing = total('interface_contract_commits_crossing')
     share = '; %d%% co-change' % round(100.0 * crossing / commits) if commits else ''
+    # The per-package figure §235's Fork 3 amendment asked for: commits touching a package that
+    # also touch code outside it, each commit once. Per package in the appendix.
+    packaged = total('interface_package_commits')
+    if packaged:
+        share += ', %d%% across packages' % round(
+            100.0 * total('interface_package_commits_crossing') / packaged)
     unmeasured = max(int(rows[w].get('interface_crates_unmeasured') or 0) for w in recent)
     gap = '; %d crates unread' % unmeasured if unmeasured else ''
     # Short on purpose: the page is a deck with a 3,000-word budget and 7 words of headroom when

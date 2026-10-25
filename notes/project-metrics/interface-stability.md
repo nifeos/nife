@@ -44,7 +44,7 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 ## What broke in 2026W43
 
-Read at `65cd57a0c752` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `671918fd7c59` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
 > - `capability_plan`: crate renamed `component_plan -> capability_plan`
@@ -164,3 +164,54 @@ Read at `65cd57a0c752` against the week before. Each line is one removed or chan
 > - `line_editor`: changed `component::CONSOLE`
 > - `line_editor`: changed `component::DISPLAY`
 > - `std_runtime_contract`: changed `SLOTS`
+
+## Co-change per package
+
+Every package in `packages/`, 2026W29 to 2026W43, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one (§235, Fork 3).
+
+| package | commits | crossing | touching another | crossing, mass excluded | most often with |
+|---|---:|---:|---:|---:|---|
+| `kernel` | 1839 | 966 (53%) | 776 (42%) | 49% | `contracts` (295) |
+| `contracts` | 1031 | 692 (67%) | 633 (61%) | 62% | `kernel` (295) |
+| `host-tools` | 817 | 571 (70%) | 476 (58%) | 65% | `kernel` (233) |
+| `system-tests` | 459 | 253 (55%) | 245 (53%) | 50% | `kernel` (110) |
+| `init` | 405 | 342 (84%) | 336 (83%) | 80% | `contracts` (118) |
+| `fixtures` | 346 | 273 (79%) | 263 (76%) | 71% | `kernel` (73) |
+| `runtime` | 267 | 221 (83%) | 199 (75%) | 76% | `kernel` (62) |
+| `boot` | 209 | 145 (69%) | 132 (63%) | 60% | `host-tools` (49) |
+| `display` | 195 | 130 (67%) | 122 (63%) | 57% | `kernel` (39) |
+| `drivers` | 181 | 135 (75%) | 124 (69%) | 65% | `kernel` (45) |
+| `swish` | 147 | 133 (90%) | 128 (87%) | 87% | `contracts` (61) |
+| `network` | 112 | 91 (81%) | 88 (79%) | 75% | `init` (28) |
+| `redoxfs` | 111 | 78 (70%) | 74 (67%) | 51% | `contracts` (15) |
+| `terminal` | 106 | 88 (83%) | 86 (81%) | 76% | `init` (31) |
+| `login` | 98 | 81 (83%) | 79 (81%) | 68% | `contracts` (17) |
+| `timetable` | 95 | 67 (71%) | 63 (66%) | 55% | `init` (15) |
+| `process-tools` | 84 | 68 (81%) | 64 (76%) | 65% | `init` (10) |
+| `time` | 60 | 56 (93%) | 54 (90%) | 86% | `init` (10) |
+| `filesystem` | 43 | 38 (88%) | 37 (86%) | 78% | `contracts` (9) |
+| `core-tools` | 42 | 38 (90%) | 38 (90%) | 75% | `process-tools` (4) |
+| `jig` | 28 | 23 (82%) | 23 (82%) | 64% | `fixtures` (6) |
+| `c-library` | 26 | 16 (62%) | 12 (46%) | 50% | `system-tests` (3) |
+| `entropy` | 26 | 25 (96%) | 25 (96%) | 91% | `display` (7) |
+| `disk-tools` | 23 | 23 (100%) | 23 (100%) | 100% | `contracts` (2) |
+| `cryptography` | 20 | 18 (90%) | 16 (80%) | 87% | `fixtures` (8) |
+| `rmle` | 19 | 16 (84%) | 16 (84%) | 50% | `contracts` (2) |
+| `system_installer` | 15 | 15 (100%) | 15 (100%) | 100% | `init` (4) |
+| `demos` | 13 | 12 (92%) | 12 (92%) | 50% | `fixtures` (1) |
+| `mdr` | 4 | 4 (100%) | 4 (100%) | 100% | `contracts` (2) |
+
+## Co-change per release-track crate
+
+Each crate a per-crate release milestone names (`helpers/crate_release.py`), on its own: crossing is code outside the crate's directory, and touching another is another Cargo package. Least crossing first, mass changes excluded; every crate is a row in the CSV.
+
+| crate | commits | crossing | touching another | crossing, mass excluded |
+|---|---:|---:|---:|---:|
+| `e1000e` | 19 | 10 (53%) | 9 (47%) | 36% |
+| `designware_mobile_storage` | 28 | 15 (54%) | 13 (46%) | 46% |
+| `extensible_host_controller_interface` | 17 | 10 (59%) | 10 (59%) | 46% |
+| `designware_ethernet` | 13 | 8 (62%) | 7 (54%) | 50% |
+| `file_allocation_table` | 22 | 14 (64%) | 11 (50%) | 53% |
+| `jh7110_entropy` | 37 | 30 (81%) | 29 (78%) | 65% |
+| `jh7110_clock_and_reset` | 32 | 25 (78%) | 24 (75%) | 68% |
+| `non_volatile_memory_express` | 44 | 39 (89%) | 36 (82%) | 83% |
