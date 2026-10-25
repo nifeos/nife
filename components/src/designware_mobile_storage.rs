@@ -3,8 +3,8 @@
 //! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
 //! `kernel/src/user/designware_mobile_storage_service.rs` gives it: the controller's register page
-//! at `serve::REGISTER_VA` (the kernel ungates the shared clock generator, §86 (whether an NVMe
-//! driver can leave the kernel)), the transfer region at `serve::TRANSFER_VA`, the request (slot
+//! at `driver_process_contract::designware_mobile_storage::REGISTER_VIRTUAL_ADDRESS` (the kernel ungates the shared clock generator, §86 (whether an NVMe
+//! driver can leave the kernel)), the transfer region at `driver_process_contract::designware_mobile_storage::TRANSFER_VIRTUAL_ADDRESS`, the request (slot
 //! 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth. No DMA,
 //! but that page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as confined as its
 //! own code, the position of milestone 261 (the NVMe driver leaves the kernel).
@@ -30,8 +30,10 @@
 
 use designware_mobile_storage::host::{Host, Registers};
 use designware_mobile_storage::sd::{self, Card};
-use designware_mobile_storage::serve::{Handoff, REGISTER_VA, TRANSFER_VA};
 use designware_mobile_storage::{command as c, regs};
+use driver_process_contract::designware_mobile_storage::{
+    Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS,
+};
 use filesystem_contract::blk;
 use user_mode_runtime::{exit, receive_request, reply, send};
 
@@ -58,16 +60,21 @@ struct Page;
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < regs::WINDOW_USED);
-        // SAFETY: the spawner maps one device-typed page of the controller at REGISTER_VA before
+        // SAFETY: the spawner maps one device-typed page of the controller at REGISTER_VIRTUAL_ADDRESS before
         // `_start` runs, and every offset the crate passes is a word-aligned register in it.
-        unsafe { core::ptr::read_volatile((REGISTER_VA + u64::from(offset)) as *const u32) }
+        unsafe {
+            core::ptr::read_volatile((REGISTER_VIRTUAL_ADDRESS + u64::from(offset)) as *const u32)
+        }
     }
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(offset < regs::WINDOW_USED);
         // SAFETY: as `read`.
         unsafe {
-            core::ptr::write_volatile((REGISTER_VA + u64::from(offset)) as *mut u32, value);
+            core::ptr::write_volatile(
+                (REGISTER_VIRTUAL_ADDRESS + u64::from(offset)) as *mut u32,
+                value,
+            );
         }
     }
 
@@ -77,9 +84,11 @@ impl Registers for Page {
 }
 
 fn transfer() -> &'static mut [u8] {
-    // SAFETY: the spawner maps `blk::TRANSFER_BLOCKS` pages read/write at TRANSFER_VA before
+    // SAFETY: the spawner maps `blk::TRANSFER_BLOCKS` pages read/write at TRANSFER_VIRTUAL_ADDRESS before
     // `_start` runs; this process is single-threaded, so this is the only reference at a time.
-    unsafe { core::slice::from_raw_parts_mut(TRANSFER_VA as *mut u8, blk::TRANSFER_MAX) }
+    unsafe {
+        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAX)
+    }
 }
 
 user_mode_runtime::program_entry!(start);

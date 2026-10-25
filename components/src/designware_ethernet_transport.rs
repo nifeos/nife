@@ -21,16 +21,20 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::process::{DATA_PLANE_VA, DMA_PAGE_VA};
 use designware_ethernet::{DataPlane, Handoff, MAX_FRAME, Region, Tails, layout, regs};
+use driver_process_contract::designware_ethernet::{
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
+};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
-// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VA, and
-// the controller's DMA page device-typed at DMA_PAGE_VA, before `_start` runs
+// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VIRTUAL_ADDRESS, and
+// the controller's DMA page device-typed at DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, before `_start` runs
 // (`designware_ethernet_service`).
-const PLANE: MappedWindow = unsafe { MappedWindow::new(DATA_PLANE_VA, layout::PAGES * PAGE) };
+const PLANE: MappedWindow =
+    unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
-const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_PAGE_VA, PAGE) };
+const DMA: MappedWindow =
+    unsafe { MappedWindow::new(DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;

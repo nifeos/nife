@@ -28,7 +28,9 @@
 
 use alloc::vec::Vec;
 
-use e1000e::process::{DATA_PLANE_VA, RX_QUEUE_VA, TX_QUEUE_VA};
+use driver_process_contract::e1000e::{
+    DATA_PLANE_VIRTUAL_ADDRESS, RX_QUEUE_VIRTUAL_ADDRESS, TX_QUEUE_VIRTUAL_ADDRESS,
+};
 use e1000e::{DataPlane, Handoff, MAX_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
@@ -37,13 +39,14 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 /// (`user_mode_runtime::tick_hz`), so the sleep lasts up to 10 ms whatever this says.
 pub(crate) const POLL_MS: u64 = 1;
 
-// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VA,
+// SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at DATA_PLANE_VIRTUAL_ADDRESS,
 // and one device-typed page at each queue VA, before `_start` runs (`e1000e_service`).
-const PLANE: MappedWindow = unsafe { MappedWindow::new(DATA_PLANE_VA, layout::PAGES * PAGE) };
+const PLANE: MappedWindow =
+    unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
-const RX_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VA, PAGE) };
+const RX_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 // SAFETY: as above.
-const TX_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VA, PAGE) };
+const TX_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;

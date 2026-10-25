@@ -889,8 +889,6 @@ crates/designware_ethernet/src/jh7110.rs::GMAC0_BASE
 crates/designware_ethernet/src/jh7110.rs::GMAC0_SYSCON_OFFSET
 crates/designware_ethernet/src/jh7110.rs::GMAC1_BASE
 crates/designware_ethernet/src/jh7110.rs::Syscon
-crates/designware_ethernet/src/jh7110.rs::discover
-crates/designware_ethernet/src/jh7110.rs::discover_aon_syscon
 crates/designware_ethernet/src/jh7110.rs::interface
 crates/designware_ethernet/src/jh7110.rs::select_rgmii
 crates/designware_ethernet/src/layout.rs
@@ -936,9 +934,6 @@ crates/designware_ethernet/src/motorcomm.rs::link_from_status
 crates/designware_ethernet/src/motorcomm.rs::mbps
 crates/designware_ethernet/src/motorcomm.rs::read_ext
 crates/designware_ethernet/src/motorcomm.rs::write_ext
-crates/designware_ethernet/src/process.rs
-crates/designware_ethernet/src/process.rs::DATA_PLANE_VA
-crates/designware_ethernet/src/process.rs::DMA_PAGE_VA
 crates/designware_ethernet/src/proofs.rs
 crates/designware_ethernet/src/regs.rs
 crates/designware_ethernet/src/regs.rs::CHAN_CUR_RX_DESC
@@ -1019,7 +1014,6 @@ crates/designware_mobile_storage/src/jh7110.rs::SDIO0_BASE
 crates/designware_mobile_storage/src/jh7110.rs::SDIO1_BASE
 crates/designware_mobile_storage/src/jh7110.rs::Slot
 crates/designware_mobile_storage/src/jh7110.rs::WINDOW_SIZE
-crates/designware_mobile_storage/src/jh7110.rs::discover
 crates/designware_mobile_storage/src/jh7110.rs::role
 crates/designware_mobile_storage/src/partition.rs
 crates/designware_mobile_storage/src/partition.rs::Entry
@@ -1057,17 +1051,6 @@ crates/designware_mobile_storage/src/sd.rs::identify
 crates/designware_mobile_storage/src/sd.rs::in_range
 crates/designware_mobile_storage/src/sd.rs::read_blocks
 crates/designware_mobile_storage/src/sd.rs::write_blocks
-crates/designware_mobile_storage/src/serve.rs
-crates/designware_mobile_storage/src/serve.rs::Handoff
-crates/designware_mobile_storage/src/serve.rs::REGISTER_VA
-crates/designware_mobile_storage/src/serve.rs::ROLE
-crates/designware_mobile_storage/src/serve.rs::SECTORS_PER_BLOCK
-crates/designware_mobile_storage/src/serve.rs::TRANSFER_VA
-crates/designware_mobile_storage/src/serve.rs::Window
-crates/designware_mobile_storage/src/serve.rs::blocks
-crates/designware_mobile_storage/src/serve.rs::pack
-crates/designware_mobile_storage/src/serve.rs::translate
-crates/designware_mobile_storage/src/serve.rs::unpack
 crates/designware_mobile_storage/src/sim.rs
 crates/designware_mobile_storage/src/sim.rs::Fault
 crates/designware_mobile_storage/src/sim.rs::Sim
@@ -1389,10 +1372,6 @@ crates/e1000e/src/pch/ulp.rs
 crates/e1000e/src/pch/ulp.rs::done
 crates/e1000e/src/pch/ulp.rs::release
 crates/e1000e/src/pch/ulp.rs::request
-crates/e1000e/src/process.rs
-crates/e1000e/src/process.rs::DATA_PLANE_VA
-crates/e1000e/src/process.rs::RX_QUEUE_VA
-crates/e1000e/src/process.rs::TX_QUEUE_VA
 crates/e1000e/src/proofs.rs
 crates/e1000e/src/regs.rs
 crates/e1000e/src/regs.rs::CTRL
