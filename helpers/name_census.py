@@ -201,9 +201,73 @@ def pub_items(text):
     return out
 
 
-def _rust_records(paths, read, surface_files, problems):
+def is_sidecar(path):
+    """True for a names sidecar: `names.md` in a milestone's appendix directory (`_sidecars`)."""
+    return path.startswith("design/roadmap/") and path.endswith("/names.md")
+
+
+def _sidecars(paths, pathset, read, problems):
+    """`{source path: {"module": block or None, "items": [(name, block)]}}` from every sidecar.
+
+    **A crate that ships on its own keeps its `Name:` blocks beside its milestone** (milestone 857,
+    crates released on their own). Such a crate's files may cite nothing of this tree, so a block
+    at the name would fail `script/crate-standalone`, and moving the block nowhere would drop the
+    name from this census and grow the module-block ratchet. A sidecar holds them instead, in a
+    file the crate does not ship: `design/roadmap/<milestone>/names.md`, one paragraph per name,
+    opening with the name's repository path in backticks and then its block:
+
+        `crates/e1000e/src/lib.rs` Name: ratified 2026-10-07 (calef, #1806). ...
+        `crates/e1000e/src/pch.rs` Name: provisional, minted ...
+        `crates/e1000e/src/pch.rs::Generation` Name: provisional, minted ...
+
+    A path alone is the file's own block: the crate's for its `lib.rs`, the module's otherwise. A
+    path and `::name` is an item's. A block is that one paragraph. Each key must name a file that
+    exists and, for an item, an item that file declares, so a sidecar cannot outlive its code.
+    """
+    out = {}
+    for side in sorted(p for p in paths if is_sidecar(p)):
+        seen = set()
+        for number, _last, para in name_provenance.markdown_paragraphs(read(side) or ""):
+            m = name_provenance._MD_STEM.match(para)
+            if m is None:
+                if re.match(r"^[*_]*Name:", para):
+                    problems.append(f"{side}:{number}: a sidecar block opens with the name's path in "
+                                    f"backticks, then `Name:`")
+                continue
+            key, block = m.group(1).strip(), m.group(2).strip()
+            path, _sep, item = key.partition("::")
+            if key in seen:
+                problems.append(f"{side}:{number}: `{key}` has a second block, which nothing reads")
+                continue
+            seen.add(key)
+            if path not in pathset or not path.endswith(".rs"):
+                problems.append(f"{side}:{number}: `{path}` is not a Rust file in this tree")
+                continue
+            entry = out.setdefault(path, {"module": None, "items": [], "sidecar": side})
+            if item:
+                entry["items"].append((item, block))
+            else:
+                entry["module"] = block
+    return out
+
+
+def declared(text, name):
+    """`(what, line)` for the first item, field or variant named `name` in `text`, else `(None, 0)`."""
+    for number, line in enumerate(text.split("\n"), 1):
+        m = name_provenance._ITEM.match(line)
+        if m and m.group(2) == name:
+            return name_provenance.ITEM_KINDS[m.group(1)], number
+        for kind, rx in (("field", name_provenance._FIELD), ("variant", name_provenance._VARIANT)):
+            m = rx.match(line)
+            if m and m.group(1) == name and not line.lstrip().startswith("//"):
+                return kind, number
+    return None, 0
+
+
+def _rust_records(paths, read, surface_files, problems, sidecars=None):
     """`(records, unblocked)`: every item and module block, and every module and `pub` item with none."""
     out, unblocked = [], []
+    sidecars = sidecars or {}
     for rel in paths:
         if not rel.endswith(".rs") or rel.startswith(("vendor/", "patches/")):
             continue
@@ -214,9 +278,21 @@ def _rust_records(paths, read, surface_files, problems):
         # Matched by name within the file, as a multiset: a `pub fn new` in each of three impls is
         # three items, and a block on one of them leaves two.
         items = collections.Counter(pub_items(text) if is_module_file(rel) else [])
+        side = sidecars.get(rel, {})
+        for name, block in side.get("items", ()):
+            what, line = declared(text, name)
+            if what is None:
+                problems.append(f"{side['sidecar']}: `{rel}::{name}` names no item in {rel}")
+                continue
+            out.append(("item", name, f"{rel}:{line}", block, what))
+            if items[name] > 0:
+                items[name] -= 1
+        side_module = side.get("module") if module else None
         if ("Name:" not in text and "Provisional name" not in text
                 and "Name provisional" not in text):
-            if module:
+            if side_module is not None:
+                out.append(("module", _module_stem(rel), rel, side_module, "module"))
+            elif module:
                 unblocked.append(rel)
             unblocked.extend(f"{rel}::{name}" for name in items.elements())
             continue
@@ -248,14 +324,23 @@ def _rust_records(paths, read, surface_files, problems):
             problems.append(f"module in {rel}: a line reads as a provenance header and is not the "
                             f"block that was read, because {STRAY_WHY[why]}\n      {line.strip()}")
         found = name_provenance.block(text, "//!")
+        if found is not None and side_module is not None:
+            problems.append(f"module in {rel}: a `Name:` block in the file and another in "
+                            f"{side['sidecar']}; keep one")
+        if found is None:
+            found = side_module
         if found is not None:
-            stem = os.path.splitext(os.path.basename(rel))[0]
-            if stem in ("mod", "lib", "main"):
-                stem = os.path.basename(os.path.dirname(rel))
-            out.append(("module", stem, rel, found, "module"))
+            out.append(("module", _module_stem(rel), rel, found, "module"))
         elif module:
             unblocked.append(rel)
     return out, unblocked
+
+
+def _module_stem(rel):
+    stem = os.path.splitext(os.path.basename(rel))[0]
+    if stem in ("mod", "lib", "main"):
+        stem = os.path.basename(os.path.dirname(rel))
+    return stem
 
 
 def _document_block(path, stem, legacy, read, problems):
@@ -367,7 +452,8 @@ def census(paths, read, british=None):
     markdown = [p for p in paths if p.endswith(".md") and p.startswith(("design/", "notes/",
                                                                          "briefs/"))]
     docs, missing, unblocked_docs = _document_records(markdown, pathset, read, problems)
-    rust, unblocked = _rust_records(paths, read, surface_files, problems)
+    sidecars = _sidecars(paths, pathset, read, problems)
+    rust, unblocked = _rust_records(paths, read, surface_files, problems, sidecars)
     unblocked += unblocked_docs
     for kind, name, path, text, what, legacy in [r + (False,) for r in rust] + docs:
         status, date, refused, problem = name_provenance.classify(text)
@@ -387,6 +473,12 @@ def census(paths, read, british=None):
             missing += 1
             continue
         text = name_provenance.block(source, prefix)
+        side = sidecars.get(path, {}).get("module") if kind == "crate" else None
+        if text is not None and side is not None:
+            problems.append(f"{kind} {name}: a `Name:` block in {path} and another in "
+                            f"{sidecars[path]['sidecar']}; keep one")
+        elif text is None:
+            text = side
         # Reported whether or not the block parsed: a file with no readable block is exactly the
         # file whose unreadable one is worth pointing at.
         problems.extend(_stray_problems(kind, name, path, prefix, source))
