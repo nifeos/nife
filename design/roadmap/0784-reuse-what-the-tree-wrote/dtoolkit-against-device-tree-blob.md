@@ -9,8 +9,8 @@ Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.m
 `no_std`, no `alloc` for reading). I measured on 2026-10-25 at base `e865d8838`, on a Linux x86_64
 build host shared with other lanes, with the pinned nightly of that date, and added no dependency.
 [dtoolkit-probe.sh](dtoolkit-probe.sh) generates every probe outside the tree, and its mode names
-the section it feeds. [The candidate reports](dtoolkit-upstream-reports.md) hold what this page
-would send upstream; nobody has filed any.
+the section it feeds. [The reports](dtoolkit-upstream-reports.md) hold the three bugs this page
+sent upstream, filed as google/dtoolkit#101, #102 and #103.
 
 ## What a candidate has to do here
 
@@ -231,10 +231,10 @@ What contributing means changes. Today `dtoolkit` cannot replace ours in the ker
 Linux trees over a name's length and walks a deep tree in quadratic time. It would add ten crates
 and two proc macros to a kernel graph that holds four and no proc macro, and it breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything in between) rule 3
 keeps the kernel's parser ours regardless, so none of this argues for a switch; it says what to
-send. Three bug reports, drafted in [the candidate reports](dtoolkit-upstream-reports.md), each
-waiting on calef: the name-length refusal, the quadratic walk, and `Display`'s panic. Then the
-four harnesses above, which hold on its code, the hostile corpus as fuzz seeds, and a CI job for its fuzz
-target. Each needs the CLA signed first.
+send. Three bug reports, now filed ([the reports](dtoolkit-upstream-reports.md)): the name-length
+refusal, the quadratic walk, and `Display`'s panic. Then the four harnesses above, which hold on its
+code, the hostile corpus as fuzz seeds, and a CI job for its fuzz target. Each of those is code, so
+each needs the CLA signed first.
 
 If calef later wants the kernel's parser gone, the gate is a release that reads long names and
 walks in linear time, after the 0.5 API settles. Even then the policy stays ours, about 300 lines.
