@@ -57,7 +57,7 @@ amendment's exemption). The crates: `paging` (2,866 lines, 36 Kani), `capability
 Kani-proved and outside the kernel, keep unless a proof is no longer worth having. The crates, with lines and Kani proofs: `calendar`
 (1,089, 11), `timetable` (2,884, 10), `globally_unique_identifier_partition_table` (2,219, 9),
 `elf` (1,173, 8, also kernel), `network_time_protocol` (684, 7). Also `glob` (650, 6), `capability_plan`
-(1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel),
+(1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel; [measured](0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md), [reports](0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md)),
 `credential_contract` (322, 3), `filesystem_contract` (2,636, 3), `package_archive` (677, 2),
 `capability_manifest_note` (607, 2), `nifefs` (354, 2).
 
