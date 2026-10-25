@@ -159,6 +159,8 @@ impl MappedWindow {
     /// [`slice::copy_from_slice`] seen from the slice's side.
     pub fn copy_to_slice(&self, off: u64, out: &mut [u8]) {
         self.check(off, out.len() as u64);
+        // PAIR: no other fence. Compiler-only: keeps the copy after the caller's preceding
+        // volatile accesses and barrier; the hardware ordering is the caller's doorbell_barrier.
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
         // SAFETY: `off .. off + out.len()` is inside the window (checked above), which `new`'s
         // caller promised is mapped readable; `out` is an exclusive borrow of ordinary memory, so
@@ -170,6 +172,8 @@ impl MappedWindow {
                 out.len(),
             );
         }
+        // PAIR: no other fence. Compiler-only: keeps the copy before the caller's following
+        // volatile accesses, doorbell_barrier or IPC that publishes the bytes.
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 
@@ -180,6 +184,8 @@ impl MappedWindow {
     /// [`slice::copy_from_slice`].
     pub fn copy_from_slice(&self, off: u64, src: &[u8]) {
         self.check(off, src.len() as u64);
+        // PAIR: no other fence. Compiler-only: keeps the copy after the caller's preceding
+        // volatile accesses and barrier; the hardware ordering is the caller's doorbell_barrier.
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
         // SAFETY: `off .. off + src.len()` is inside the window (checked above), which `new`'s
         // caller promised is mapped writable; `src` is a shared borrow of ordinary memory, which
@@ -187,6 +193,8 @@ impl MappedWindow {
         unsafe {
             core::ptr::copy_nonoverlapping(src.as_ptr(), (self.base + off) as *mut u8, src.len());
         }
+        // PAIR: no other fence. Compiler-only: keeps the copy before the caller's following
+        // volatile accesses, doorbell_barrier or IPC that publishes the bytes.
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 
