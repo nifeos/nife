@@ -245,26 +245,26 @@ or pull request that proposes it shows each one.
 1. It builds `no_std` on all three kernel targets, and it needs no allocator or uses the kernel's.
 2. If it parses input, it survives ours: the tree's fixtures and fuzz corpus for that input, with no
    panic, hang or out-of-range read.
-3. Its dependency graph is small, and the graph includes every procedural macro and build script it
-   pulls in (`zerocopy-derive` raised the case). `Cargo.lock` pins every crate in it, and
-   `deny.toml` and `script/supply-chain` gate each one like any other dependency. Unsafe code that
-   a macro generates counts as the crate's own.
-4. Either we can write the Kani harnesses its claims need against its public API, or no claim rests
-   on it. If a claim rests on it and its structure defeats Kani, rule 1 decides and we write.
+3. Its dependency graph is small: it adds at most three new crates compiled into the kernel, its
+   own crate included, as `cargo tree -e normal` counts them for each kernel target. Build-time
+   crates (procedural macros, build scripts and what they pull in) have no cap, and the proposal
+   lists each one. `Cargo.lock` pins every crate in the graph, build-time ones included, and
+   `deny.toml` and `script/supply-chain` gate each one like any other dependency.
+4. Its proposal lists the crate's `unsafe`: the count and location of its hand-written blocks, and
+   the unsafe code its macros generate, which counts as the crate's own. For each, it names what
+   checks it, upstream (Kani, Miri, fuzzing, a published soundness policy) or here. No cap applies.
+   Any `unsafe` that a claim in nife rests on, we prove ourselves: either we can write the Kani
+   harnesses its claims need against its public API, or no claim rests on it. If a claim rests on
+   it and its structure defeats Kani, rule 1 decides and we write.
 5. It stays upgradable, under §81 (a dependency stays upgradable).
 
-The four crates the kernel links pass on the record. `spin`, `aarch64-cpu` and `tock-registers` are
-thin architectural primitives with no parser and a small graph. `uuid` builds `no_std` with default
-features off and depends on nothing. The kernel only builds identifiers from bytes the partition
-table crate has already reordered, and calls its text parser nowhere outside tests. Nothing here
-changes the ABI, capabilities or the verification path.
-
-### Still open
-
-These details stay open, and each gets its own ruling:
-
-- what "small" means as a number;
-- whether a crate's own `unsafe` blocks count against it.
+The four crates the kernel links meet conditions 1, 2, 3 and 5 on the record, and none adds more
+than three crates on any target. `spin`, `aarch64-cpu` and `tock-registers` are thin architectural
+primitives with no parser. `uuid` builds `no_std` with default features off and depends on nothing.
+The kernel only builds identifiers from bytes the partition table crate has already reordered, and
+calls its text parser nowhere outside tests. None of the four has the listing of `unsafe` that
+condition 4 asks for, since they predate it; a proposal that touches one of them writes it. Nothing
+here changes the ABI, capabilities or the verification path.
 
 The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in
 milestone 784 (reuse what the tree wrote).
