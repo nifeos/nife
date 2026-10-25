@@ -247,12 +247,13 @@ The first two were the ones asserted against TomTom in 2009 and upheld on reexam
 predate 1995, so none can still be in force. FAT12, FAT16 and FAT32 themselves date from 1977 to
 1996. The search was for the known Microsoft families, not a freedom-to-operate opinion.
 
-## Open: the oracle's pin
+## Follow-on
 
-The pin of rust-fatfs as a dev-dependency waits on calef, and stage 3 needs it.
-[The stage 2 appendix](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
-gives three options. Its recommendation is `lamfat = "=0.4.3"` from crates.io, with a
-`nifeos/rust-fatfs` fork pinned by `rev` as the alternative.
+- **Outstanding.** Stages 3 to 9. Checked 2026-10-25 (UTC): `crates/file_allocation_table/src/`
+  holds the boot-sector reader and the `mkfs`, and nothing reads a table, a directory or a file.
+- **Outstanding.** The oracle's pin of rust-fatfs as a dev-dependency waits on calef, and stage 3
+  needs it. [The stage 2 appendix](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
+  gives three options and recommends `lamfat = "=0.4.3"` from crates.io.
 
 ## BUGS
 

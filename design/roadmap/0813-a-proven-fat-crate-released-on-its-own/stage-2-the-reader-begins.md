@@ -8,21 +8,21 @@ oracle's dev-dependency pin, which this stage did not need and stage 3 does.
 
 - `SectorDevice`, the sector interface. A caller states a `SectorSize` (512, 1024, 2048 or 4096)
   and implements `read_sector(index, buffer)`, where `buffer` is always one sector. It names no
-  nife type, no capability and no partition: a volume inside a partition is read through an
-  implementation that offsets the index. A blanket implementation covers `&mut D`.
+  nife type, no capability and no partition: a caller reads a volume inside a partition through
+  an implementation that offsets the index. A blanket implementation covers `&mut D`.
 - `BootSector::parse`, over any byte slice, reading only bytes 0 to 511. It requires the signature
   and the jump, checks every BPB field a later read depends on, and refuses with a `ParseError`
   that names the field. What it accepts has its regions in order inside its own sector count, at
   least one cluster, and a table entry for every cluster.
-- The FAT type by cluster count, per Microsoft's specification, with the type string never read. A
-  BPB whose layout contradicts its count is refused. The case met in the field is the FAT32 layout
+- The FAT type by cluster count, per Microsoft's specification, never by the type string. The
+  parse refuses a BPB whose layout contradicts its count. The case met in the field is the FAT32 layout
   under 65525 clusters that `mkfs.fat -F 32` makes with a warning; Linux reads it as FAT32 and the
   specification as FAT16, so no answer here can agree with both.
 - `BootSector::read`, which reads sector 0 through a device and refuses a volume whose sector size
   is not the device's.
-- FAT32's pointers into the reserved region (`FSInfo`, the backup boot sector) are kept only when
-  they name a reserved sector. Otherwise they read as `None` instead of refusing the volume, which
-  is what Linux does with a bad `FSInfo` number.
+- The parse keeps FAT32's pointers into the reserved region (`FSInfo`, the backup boot sector)
+  only when they name a reserved sector. Otherwise they read as `None` instead of refusing the
+  volume, which is what Linux does with a bad `FSInfo` number.
 
 The evidence:
 
@@ -46,8 +46,8 @@ minted on 2026-10-25 (UTC) by `813-stage-2-boot-sector`, and calef has named non
 
 | name | why this one |
 |---|---|
-| `SectorDevice` | the thing the caller supplies is a device addressed by sector. `BlockDevice`, the word `embedded-sdmmc` and `hadris-fat` use, was set aside: FAT's unit is the sector, and this tree's own block protocol is a different thing |
-| `SectorSize` | the four sizes the specification permits, as an enum so a wrong size cannot be represented |
+| `SectorDevice` | the caller supplies a device it addresses by sector. Not `BlockDevice`, the word `embedded-sdmmc` and `hadris-fat` use: FAT's unit is the sector, and this tree's own block protocol is a different thing |
+| `SectorSize` | the four sizes the specification permits, as an enum, so no wrong size exists to pass |
 | `BootSector` | the specification's name for sector 0 |
 | `FatType` | the specification's term ("FAT type"). `Fat12`, `Fat16` and `Fat32` keep Microsoft's spelling, as a name arriving across somebody else's format does |
 | `RootDirectory` | where the root lives: a region on FAT12 and FAT16, a cluster on FAT32 |
@@ -57,7 +57,7 @@ minted on 2026-10-25 (UTC) by `813-stage-2-boot-sector`, and calef has named non
 ## Open: the oracle's pin (needs calef, before stage 3)
 
 calef's #2580 ruling keeps rust-fatfs as the test oracle, outside the base graph, and 813 says the
-pin is a dependency ruling. Stage 2 needed no oracle: a boot sector is checked against another
+pin is a dependency ruling. Stage 2 needed no oracle: its tests check a boot sector against another
 tool's output, and `mkfs.fat` supplied it. Stage 3 reads FAT entries that rust-fatfs wrote, so it
 needs the pin first. In every option the oracle is a `[dev-dependencies]` line of this crate
 only. It never enters a binary that boots.
@@ -68,7 +68,8 @@ only. It never enters a binary that boots.
   standalone crate's own CI resolves it the same way. The risk is trusting a third party's copy of
   upstream, which a test oracle can bear: a wrong oracle fails tests, it does not ship.
 - **B. A `nifeos/rust-fatfs` fork pinned by `rev`** to upstream's main-line commit `38b3a795`
-  (2026-10-16), as §305 (git dependencies on the nifeos organization only) allows. Provenance runs
+  (2026-10-16), as §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)
+  allows. Provenance runs
   straight to upstream's own commit. It costs a repository someone with the organization's rights
   must create and keep, and cargo drops a version-less dev-dependency when the crate publishes.
 - **C. No linked oracle.** Read back with tools run as processes: `fsck.fat` or `fsck_msdos`, and
