@@ -5,10 +5,9 @@ job a reader arrives with.*
 
 This page says what to do with a pull request that moves a dependency: a Dependabot bump, a
 toolchain or Kani bump, or a vendored pin raised by `script/vendor-watch`. The rules here took
-effect on 2026-10-25 (UTC). The design behind them, and the parts still to build, are in the
-proposal
-[every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits](../design/roadmap/proposals/every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md).
-§81 (a dependency stays upgradable) is the rule they serve, and §46 (thin primitives or whole
+effect on 2026-10-25 (UTC).
+[A proposal](../design/roadmap/proposals/every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md)
+holds the design behind them and the parts still to build. §81 (a dependency stays upgradable) is the rule they serve, and §46 (thin primitives or whole
 subsystems) decides what we take in the first place.
 
 ## What notices a new release
@@ -36,8 +35,9 @@ and the same for `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-
 lines without a path. On 2026-10-25 they were `spin`, `aarch64-cpu`, `tock-registers` and `uuid`.
 
 - A minor or patch bump of such a crate merges once the pull request carries the kernel-class
-  evidence: a delta review of the crate's own diff between the two versions, the icount table and
-  the boot file size against `main`, and §46's kernel bar rechecked for the new version.
+  evidence. That means a delta review of the crate's own diff between the two versions, and the
+  icount table and boot file size against `main`. It also means §46's kernel bar, rechecked for the
+  new version.
 - A major bump of such a crate carries `needs-architect`.
 - A package new to the kernel's graph is a take, not a bump, and carries `needs-architect` under
   §46.
