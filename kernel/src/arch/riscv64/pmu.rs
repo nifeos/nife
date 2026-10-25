@@ -199,6 +199,19 @@ pub(crate) fn cycles() -> Option<u64> {
     read_csr(CYCLE_CSR.load(Ordering::Relaxed) as u16)
 }
 
+/// Whether the counter [`init`] started is the `cycle` CSR (0xc00) itself, the one a granted
+/// U-mode `rdcycle` reads. A `Running` outcome on that CSR means this hart read it from S-mode, so
+/// firmware left `mcounteren.CY` set and a granted U-mode read will not trap.
+///
+/// The bench boot's `ipc_rtt_el0_cycles` probe asks before it grants, because a granted read that
+/// traps kills the client and leaves the bench boot waiting forever for its report.
+///
+/// Name: provisional (the lane for milestone 101 (the L4 calibration), 2026-10-24 UTC).
+#[cfg(all(feature = "bench", feature = "cycle_counter_grant"))]
+pub(crate) fn counts_through_the_cycle_csr() -> bool {
+    outcome() == CycleCounter::Running && CYCLE_CSR.load(Ordering::Relaxed) == 0xc00
+}
+
 /// How wide the counter is, in bits, or `None` when there is none.
 pub(crate) fn cycle_counter_width() -> Option<u32> {
     if outcome() != CycleCounter::Running {

@@ -24,9 +24,10 @@ token first, falls through to `github.token`, and prints which rung it took.
 `TOOLCHAIN_BUMP_PAT` on the transferred repository and asked what other developers would need
 (answer: nothing, and that answer is what surfaced this).
 
-What is left is the provisional secret names (see Follow-on), and the agent sessions. Since
-2026-10-07 (UTC) the mechanism that moves a session onto the App is built, opt-in and inert until
-calef widens the App and installs its key on patagonia (`notes/session-identity.md`). The App secrets are no longer
+What is left is the agent sessions. Since 2026-10-07 (UTC) the mechanism that moves a session onto
+the App is built, opt-in and inert until calef widens the App and installs its key on patagonia
+(`notes/session-identity.md`). On 2026-10-24 (UTC) he ruled to run those steps himself soon (see
+Follow-on). The secret names were ratified the same day. The App secrets are no longer
 organization-level; see the 2026-10-03 line under the Done items below.
 
 In brief. The toolchain-bump workflow authenticates as a fine-grained personal access token
@@ -192,10 +193,10 @@ expiry from an outage into a fifteen-minute procedure someone can run without re
   whose name block holds the date, the ratifier and the five refusals (`nife automation`, `dynamo`,
   `mantle`, `lodestone`, `cobble`).
 
-- **Outstanding.** The two secret names, `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`, are still
-  provisional, as is `notes/automation-identity.md`. They were deliberately not renamed to match
-  `smelter`: a rename is a naming decision with extra steps, and nothing is blocked by leaving them.
-  Checked 2026-09-23: both appear only in `toolchain-bump.yml`, this block and that note.
+- **Done.** The two secret names, `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`, ratified as-is by
+  calef on 2026-10-24 (UTC): *"Ratify as-is"*. They name the role, not the App, so they survive a
+  rename of the App. Recorded by nifeos/nife#2695 here and in `notes/automation-identity.md`, whose
+  own name stays provisional. No workflow comment called them provisional.
 
 - **Done.** On 2026-10-03 (UTC) calef deleted the organization-level Actions secrets
   `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY` from `nifeos`. The App's ID and key now exist only
@@ -221,7 +222,9 @@ expiry from an outage into a fifteen-minute procedure someone can run without re
   steps and the kill switch. calef ruled the four forks on #1828 on 2026-10-07 (UTC): opted-in
   sessions author as `nife-smelter[bot]`. One App with `lane` and `maintainer` scopes. Installed
   on All repositories in `nifeos`. His classic token left as it is, with confinement recorded as
-  the fix in that note's BUGS.
+  the fix in that note's BUGS. Ruled and scheduled, no longer waiting on a decision (calef,
+  2026-10-24 UTC: *"Do the steps soon"*): he runs the five steps of that note's "Switching it on"
+  himself. Then a lane trials one session, and only after it wires the harnesses.
 
 - **Done.** The second deliverable (attribution) needs nothing further from a lane. The interim
   `**Lane:**` convention is in `AGENTS.md` and applied; `toolchain-bump.yml` now computes that line
