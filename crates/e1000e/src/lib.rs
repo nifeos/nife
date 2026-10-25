@@ -11,11 +11,11 @@
 //! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name QEMU's
 //! `-device e1000e` and Linux's driver directory use, kept across their interface
 //! (design/naming.md, the acronym test). Milestone 815 (proven Intel e1000e ring logic, released on
-//! its own) publishes it. The argument its minting lane gave: PROVISIONAL (milestone 494's lane,
-//! 2026-10-04). `e1000e` is the family name QEMU's `-device e1000e` and Linux's driver directory
-//! both use, so it arrives across somebody else's interface (design/naming.md, the acronym test's
-//! second paragraph). An architect may prefer a name for what it is rather than whose driver it
-//! resembles.
+//! its own) publishes it. The argument its minting lane gave: PROVISIONAL (the lane of milestone
+//! 494 (a driver for the network card a PC actually has), 2026-10-04). `e1000e` is the family name
+//! QEMU's `-device e1000e` and Linux's driver directory both use, so it arrives across somebody
+//! else's interface (design/naming.md, the acronym test's second paragraph). An architect may
+//! prefer a name for what it is rather than whose driver it resembles.
 
 //! # BUGS
 //!

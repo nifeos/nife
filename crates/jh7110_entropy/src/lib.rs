@@ -9,10 +9,11 @@
 //! [`Outcome::Lockup`]. None of it has run on silicon.
 //!
 //! Name: ratified 2026-09-13 (calef); kept as the crates.io name (calef, 2026-10-07 UTC, #1806).
-//! The argument its minting lane gave (milestone 159's lane, 2026-08-24): chip-qualified and
-//! unambiguous rather than generic, since `trng` alone would be a generic word that could name
-//! almost anything, the same reasoning that keeps `non_volatile_memory_express` and `pci` named for
-//! the specification rather than for "storage" or "bus".
+//! The argument its minting lane gave (the lane of milestone 159 (a real hardware entropy source:
+//! the JH7110's TRNG), 2026-08-24): chip-qualified and unambiguous rather than generic, since
+//! `trng` alone would be a generic word that could name almost anything, the same reasoning that
+//! keeps `non_volatile_memory_express` and `pci` named for the specification rather than for
+//! "storage" or "bus".
 
 //! # Sources
 //!

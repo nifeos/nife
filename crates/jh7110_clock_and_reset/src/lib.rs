@@ -28,13 +28,14 @@
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `jh7110_crg`; kept as the crates.io name (#1806).
-//! The argument when the name `jh7110_crg` was minted (milestone 220's lane, 2026-09-04): `crg` is
-//! the JH7110's own word for the thing, not an abbreviation this project coined: both device trees
-//! that describe this chip spell the blocks `syscrg`, `stgcrg` and `aoncrg` (mainline's
-//! `starfive,jh7110-stgcrg` compatible, the vendor U-Boot's `reg-names = "syscrg", "stgcrg", ...`),
-//! so it is the AGENTS.md "standard term a reader already knows from outside" case rather than the
-//! `capsh`/`uheap` case. Chip-qualified for the reason `jh7110_entropy` is: a bare `crg` would name
-//! almost anything.
+//! The argument when the name `jh7110_crg` was minted (the lane of milestone 220 (this kernel
+//! drives no clock or reset controller, and the first real device will need one), 2026-09-04):
+//! `crg` is the JH7110's own word for the thing, not an abbreviation this project coined: both
+//! device trees that describe this chip spell the blocks `syscrg`, `stgcrg` and `aoncrg`
+//! (mainline's `starfive,jh7110-stgcrg` compatible, the vendor U-Boot's `reg-names = "syscrg",
+//! "stgcrg", ...`), so it is the AGENTS.md "standard term a reader already knows from outside" case
+//! rather than the `capsh`/`uheap` case. Chip-qualified for the reason `jh7110_entropy` is: a bare
+//! `crg` would name almost anything.
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
 /// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).

@@ -8,10 +8,11 @@
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): the databook's name for the part, spelled out as §154
 //! (the acronym test is whether the phrase is spoken) asks; permanent on first publication. The
-//! argument the minting lane gave: PROVISIONAL (milestone 53's storage lane, 2026-10-06 UTC). The
-//! Synopsys databook's own name for the part, spelled out as `designware_ethernet` (the same lane's
-//! network half) spells its own. An architect may prefer `designware_mmc` (Linux's `dw_mmc`) or a
-//! name for what it does rather than whose IP it is.
+//! argument the minting lane gave: PROVISIONAL (the storage lane of milestone 53 (the board's own
+//! peripherals: network and storage on real silicon), 2026-10-06 UTC). The Synopsys databook's own
+//! name for the part, spelled out as `designware_ethernet` (the same lane's network half) spells
+//! its own. An architect may prefer `designware_mmc` (Linux's `dw_mmc`) or a name for what it does
+//! rather than whose IP it is.
 
 //! Adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 (register map, reset, clock, bus
 //! width, command flags and the polled FIFO transfer; identification after its `sdmmc_mem.c`),
