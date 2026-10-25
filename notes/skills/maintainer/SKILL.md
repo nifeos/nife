@@ -60,9 +60,8 @@ does too. "Too small for a lane" is the failure, not an exception. The session i
 conversation: while it works by hand, the architect cannot talk to it and the lanes sit idle. It
 reads, looks things up, writes briefs and records rulings in the conversation.
 
-A lane that carries an architect's ruling may edit `design/decisions/` to record it. The
-[developer lane](../developer-lane/SKILL.md) says a developer never edits `design/decisions/`; the
-two disagree, and the conflict is an architect's to resolve.
+A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
+the [developer lane](../developer-lane/SKILL.md) sets.
 
 ## Dependency bumps
 
