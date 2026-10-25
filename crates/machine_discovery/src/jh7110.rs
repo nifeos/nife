@@ -15,4 +15,5 @@
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the chip whose
 //! peripherals it finds, beside `plic`, `gic` and the other readers here. calef has not named it.
 
+pub mod clock_and_reset;
 pub mod entropy;

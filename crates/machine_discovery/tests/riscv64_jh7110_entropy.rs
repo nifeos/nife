@@ -56,5 +56,8 @@ fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {
 /// verifies, so this is a claim about the tree this project runs.
 #[test]
 fn discover_finds_nothing_on_qemus_virt_board() {
-    assert_eq!(discover(&tree(QEMU_RISCV64_VIRT)).expect("no parse error"), None);
+    assert_eq!(
+        discover(&tree(QEMU_RISCV64_VIRT)).expect("no parse error"),
+        None
+    );
 }

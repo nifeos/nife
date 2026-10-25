@@ -24,6 +24,11 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   one per crate"*.
 - Fork 4: *"the release workflow refuses to publish unless the proof job is green."* His word:
   *"Yes"*. The other release rules are forks 1 to 3 and 6, applied in *Release* below.
+- The cut, 2026-10-25 (UTC), choosing option A of the lane crates-stand-alone: *"A seems like the
+  obvious choice"*. The crates take plain values, every device-tree walk moves to nife's side, and
+  nife's process layout leaves the device crates. He accepted the refinement with *"Yes"*: what
+  each of the JH7110's two trees calls a block stays in the crate as data and small decoders, and
+  only the walk moves.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -37,17 +42,20 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   them. The note's
   "publish with the DesignWare pair" also predates the one-milestone-per-crate ruling.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is codebase rule 2
-  (a driver gets what it needs passed in). `discover`, `discover_aon`, `discover_sys` and
-  `pmic_bus` take a `DeviceTreeBlob`. The caller passes the register regions and the bus's
-  specifiers instead, and the queries move to the kernel side, which already depends on
-  `device_tree_blob`.
+  (a driver gets what it needs passed in), and the crate now depends on nothing. It holds each
+  tree's spellings (`STG_WINDOW`, `AON_WINDOW`, `SYS_WINDOW`, `PMIC_COMPATIBLES`) and decoders over
+  raw property values (`Found::from_regions`, `PmicBus::from_bus`, `DevicePlan::from_specifiers`,
+  which take a phandle lookup from the caller). The walks (`discover`, `discover_aon`,
+  `discover_sys`, `pmic_bus`) are `machine_discovery::jh7110::clock_and_reset`'s, with their
+  fixtures, and `jh7110_watchdog` builds its own `DevicePlan`.
 - Its consumers, all in `kernel/src/`: `drivers/jh7110_clock_and_reset.rs` (the volatile shell),
   `designware_ethernet.rs`, `user/designware_mobile_storage_service.rs`, `user/entropy_service.rs`,
   `reboot.rs`, `memory.rs`, `lib.rs`, `storage_bench.rs` and `network_bench.rs`, plus
   `system_tests/src/user/entropy_tests.rs`.
-- Two public functions here still carry provisional `Name:` blocks (`discover_sys`, after milestone
-  53 (the board's own peripherals: network and storage on real silicon), and `pmic_bus`). The crate
-  name is ratified; those are not, and their names become permanent with the crate.
+- The crate name is ratified. The decoders and the newly public spellings carry provisional
+  `Name:` blocks (in [names.md](0819-the-jh7110-clock-and-reset-crate-proven-and-released-on-its-own/names.md)),
+  and their names become permanent with the crate. `discover_aon` and `discover_sys` left the crate
+  with the walk, so their provisional names no longer bind it.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
@@ -133,16 +141,15 @@ README, `LICENSE-MIT` or `LICENSE-APACHE`. Those hold for all nine crates. It do
 has no harness to run. A test reads a fixture from outside the crate. Beyond manifest and files, 32
 lines cite this tree: 22 `milestone N`, 4 tree paths, 4 provenance blocks and 2 naming calef.
 
-Name: `jh7110_clock_and_reset` is ratified today (`script/names`, checked 2026-10-11). Two of its
-public functions, `discover_aon` and `discover_sys`, are not; the cut moves the device-tree queries
-out of the crate, which settles both.
+`script/names` reports the name `jh7110_clock_and_reset` ratified (checked 2026-10-25). The
+device-tree walks, whose names were provisional, left the crate on 2026-10-25.
 
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
-  or nife error enum in a public signature. A reviewer judges this; no script can. Known today: The
-  four `discover` functions and `pmic_bus` take a `DeviceTreeBlob`, and two still carry provisional
-  names.
+  or nife error enum in a public signature. A reviewer judges this; no script can. Known today: the
+  decoders take raw property bytes and a phandle lookup generic over the caller's error type, and
+  their names are provisional.
 
 ## Exit
 
@@ -160,6 +167,29 @@ falsification patch makes it fail. No crate publishes without Kani harnesses cov
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
 
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0819-the-jh7110-clock-and-reset-crate-proven-and-released-on-its-own/names.md).
+
+- The crate doc: the volatile shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`, and the
+  story is `notes/jh7110-clock-and-reset.md`.
+- `Step::SelectParent`, `AON`, `GMAC0_SYS_BRING_UP`, `GMAC0_AON_BRING_UP`, `SYSCLK_SDIO0_AHB`,
+  `SDIO_BRING_UP` and `Report::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
+  (the board's own peripherals: network and storage on real silicon).
+- `STG_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
+  thing here, and what stops it".
+- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `IcClkWords`, `COMPATIBLE_SYSCRG` and the direct reset
+  write's banner: milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write, and the kernel
+  sets that write up). Its option B is the direct write, and its 2026-10-10 bench put radon in its
+  outcome table's fourth row.
+- `SYSRST_I2C5_APB`: every source for the reset line is in milestone 592's block.
+- `StandardMode` and `PMIC_RESET_REG`: the vendor U-Boot tree milestone 592 pinned, and its block's
+  reading of the PMIC register.
+- `src/tests.rs`: the tests left `lib.rs` on 2026-10-12 (UTC), by lane
+  maintainer/near-ceiling-splits, to keep the root under §266 (a Rust source file stays under two
+  thousand lines).
+
 ## BUGS
 
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
@@ -167,8 +197,9 @@ its own assertion, replayable in the crate's own repository with stock Kani.
   and on milestone 610's per-package co-change column.
 - The four properties are this lane's proposal, read from the code, not a ruling. A lane writing
   them may find a better set and says so in its pull request.
-- The device-tree fixtures (`tests/fixtures/*.dts`) are excerpts of the mainline and vendor JH7110
-  trees. Their licenses were not checked here; record each before `cargo package` ships them.
+- The device-tree fixtures are excerpts of the mainline and vendor JH7110 trees. They moved to
+  `crates/machine_discovery/tests/fixtures/` with the walk, so the crate ships none; their licenses
+  were not checked.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 

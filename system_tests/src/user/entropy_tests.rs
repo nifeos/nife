@@ -130,7 +130,7 @@ fn the_jh7110_backend_refuses_to_wire_where_there_is_no_jh7110() {
 
 /// No clock-and-reset window is mapped on a machine that is not a JH7110 (milestone 220).
 ///
-/// `jh7110_clock_and_reset::discover` always produces an address, falling back to `0x1023_0000`,
+/// `machine_discovery::jh7110::clock_and_reset::discover` always produces an address, falling back to `0x1023_0000`,
 /// so an unconditional caller would store there on every board; `memory::init` records the window
 /// only when the tree names a JH7110, and this pins it. The failure is silent: a boot fault nobody
 /// would blame on the clock driver. QEMU's `virt` has no clock or reset controller, so CI runs

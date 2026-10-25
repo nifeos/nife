@@ -11,11 +11,9 @@ categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 
 # no_std for a kernel, std for host tests. This crate owns register offsets, bit positions, the
-# bring-up plans and what each of the JH7110's two device trees calls the controllers. No unsafe
-# code and no raw pointer in here; the volatile MMIO is the caller's.
-
-[dependencies]
-device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
+# bring-up plans and what each of the JH7110's two device trees calls the controllers. It reads no
+# device tree and depends on nothing: the caller finds the node and hands over its properties. No
+# unsafe code and no raw pointer in here; the volatile MMIO is the caller's.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

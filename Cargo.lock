@@ -702,9 +702,6 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_clock_and_reset"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "jh7110_entropy"
@@ -854,6 +851,7 @@ name = "machine_discovery"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",
+ "jh7110_clock_and_reset",
  "jh7110_entropy",
 ]
 

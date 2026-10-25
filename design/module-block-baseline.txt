@@ -2694,7 +2694,6 @@ crates/jh7110_clock_and_reset/src/lib.rs::Step
 crates/jh7110_clock_and_reset/src/lib.rs::TRNG_BRING_UP
 crates/jh7110_clock_and_reset/src/lib.rs::clock_divider
 crates/jh7110_clock_and_reset/src/lib.rs::clock_offset
-crates/jh7110_clock_and_reset/src/lib.rs::discover
 crates/jh7110_clock_and_reset/src/lib.rs::every_reset_released
 crates/jh7110_clock_and_reset/src/lib.rs::has_clocks_running
 crates/jh7110_clock_and_reset/src/lib.rs::i2c5_ic_clk
@@ -2702,7 +2701,6 @@ crates/jh7110_clock_and_reset/src/lib.rs::is_clock_enabled
 crates/jh7110_clock_and_reset/src/lib.rs::is_deasserted
 crates/jh7110_clock_and_reset/src/lib.rs::one_based_div
 crates/jh7110_clock_and_reset/src/lib.rs::plan
-crates/jh7110_clock_and_reset/src/lib.rs::pmic_bus
 crates/jh7110_clock_and_reset/src/lib.rs::reset_bit
 crates/jh7110_clock_and_reset/src/lib.rs::standard_mode_100k
 crates/jh7110_clock_and_reset/src/lib.rs::was_already_up

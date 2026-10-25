@@ -4,7 +4,7 @@
  * The watchdog **as radon's own U-Boot describes it** (milestone 593 (a wedged kernel resets
  * itself), provisional). NOT a dump from the board: transcribed 2026-10-20 (UTC) from StarFive's
  * U-Boot `JH7110_VisionFive2_devel` arch/riscv/dts/jh7110.dtsi, the tree family radon's boot.scr
- * hands the kernel (crates/jh7110_clock_and_reset/tests/fixtures/jh7110-pmic-bus-radon.dts says
+ * hands the kernel (crates/machine_discovery/tests/fixtures/jh7110-pmic-bus-radon.dts says
  * how). Numbers are written out because the vendor headers are not vendored here:
  * JH7110_DSKIT_WDT_CLK_WDT 123, JH7110_DSKIT_WDT_CLK_APB 122, RSTN_U0_DSKIT_WDT_APB 109,
  * RSTN_U0_DSKIT_WDT_CORE 110.

@@ -24,9 +24,12 @@ crates = [
     "work_steal_slot",
     "direct_memory_access_validator",
     "firmware_configuration",
-    "jh7110_clock_and_reset",
     "jh7110_watchdog",
 ]
+# `jh7110_clock_and_reset` names the JH7110 clock controllers' spellings and decodes their
+# properties; the device-tree walk in `machine_discovery` (contracts) reads the tree with them and
+# fills in its types. Two packages link it, so it is an interface.
+interfaces = ["jh7110_clock_and_reset"]
 
 [[exception]]
 date = 2026-09-27
