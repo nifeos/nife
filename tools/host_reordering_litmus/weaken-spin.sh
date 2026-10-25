@@ -1,41 +1,27 @@
 #!/bin/sh
-# weaken-spin.sh: points the workspace's `spin` 0.12.3 at a copy with weakened orderings, so the
-# kernel suite runs with every IrqSafeMutex (kernel/src/sync.rs wraps spin::Mutex) broken.
+# weaken-spin.sh: weakens the orderings of the kernel's lock, `crates/spin_lock`, in place, so the
+# kernel suite runs with every IrqSafeMutex (kernel/src/sync.rs wraps spin_lock::SpinLock) broken.
 #
-#   release  the guard's unlock store is Relaxed instead of Release
-#   both     that, and the lock's compare-exchange is Relaxed instead of Acquire
+#   release  the unlock store is Relaxed instead of Release (the guard's drop and force_unlock)
+#   both     that, and the lock's compare-exchanges are Relaxed instead of Acquire on success
 #
-# It edits Cargo.toml and Cargo.lock in place; it is for a throwaway checkout (a CI job), never a
+# It edits crates/spin_lock/src/lib.rs in place; it is for a throwaway checkout (a CI job), never a
 # lane worktree's committed state. See notes/benchmarks/host-reordering-under-tcg.md.
 set -eu
 cd "$(dirname "$0")/../.."
 variant="${1:?usage: weaken-spin.sh release|both}"
-cargo fetch --quiet
-src="$(find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -maxdepth 2 -type d -name spin-0.12.3 | head -1)"
-[ -n "$src" ] || { echo "weaken-spin: spin-0.12.3 is not in the registry" >&2; exit 1; }
-dst=target/weakened-spin
-rm -rf "$dst"
-mkdir -p target
-cp -R "$src" "$dst"
-chmod -R u+w "$dst"
-f="$dst/src/mutex/spin.rs"
-grep -q 'self.inner.lock.store(false, Ordering::Release);' "$f"
-sed -i.bak 's/self.inner.lock.store(false, Ordering::Release);/self.inner.lock.store(false, Ordering::Relaxed);/' "$f"
-grep -q 'self.inner.lock.store(false, Ordering::Relaxed);' "$f"
+f=crates/spin_lock/src/lib.rs
+grep -q 'self.locked.store(false, ordering);' "$f"
+sed -i.bak 's/self.locked.store(false, ordering);/let _ = ordering; self.locked.store(false, Ordering::Relaxed);/' "$f"
+grep -q 'self.locked.store(false, Ordering::Relaxed);' "$f"
 if [ "$variant" = both ]; then
-    grep -q 'Ordering::Acquire, Ordering::Relaxed' "$f"
-    sed -i.bak 's/compare_exchange\(_weak\)\{0,1\}(false, true, Ordering::Acquire, Ordering::Relaxed)/compare_exchange\1(false, true, Ordering::Relaxed, Ordering::Relaxed)/' "$f"
-    grep -q 'Ordering::Relaxed, Ordering::Relaxed' "$f"
-    if grep -q 'Ordering::Acquire, Ordering::Relaxed' "$f"; then
-        echo "weaken-spin: an Acquire compare-exchange survived the edit" >&2
+    grep -q '(false, true, Ordering::Acquire, Ordering::Relaxed)' "$f"
+    sed -i.bak 's/(false, true, Ordering::Acquire, Ordering::Relaxed)/(false, true, Ordering::Relaxed, Ordering::Relaxed)/' "$f"
+    if grep -q 'Ordering::Acquire' "$f"; then
+        echo "weaken-spin: an Acquire survived the edit" >&2
         exit 1
     fi
 fi
 rm -f "$f.bak"
-awk '{ print } /^\[patch\.crates-io\]$/ { print "spin = { path = \"target/weakened-spin\" }" }' \
-    Cargo.toml > Cargo.toml.weakened
-mv Cargo.toml.weakened Cargo.toml
-grep -q '^spin = { path = "target/weakened-spin" }$' Cargo.toml
 echo "weaken-spin: $variant; the orderings left in the lock are:"
-grep -n 'Ordering::' "$f" | grep -v '^.*//' | grep -v SeqCst
-cargo update --quiet -p spin@0.12.3 2>/dev/null || true
+grep -n 'Ordering::' "$f" | grep -v '^[0-9]*: *//' | grep -v '^[0-9]*: *use '
