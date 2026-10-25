@@ -9,8 +9,7 @@
 //! submodule per crate, so codebase rule 2 holds: a driver gets what it needs passed in. See
 //! `notes/machine-discovery.md`.
 //!
-//! The ruling is calef's, 2026-10-25 (UTC), recorded in milestone 857 (crates released on their
-//! own).
+//! Ruled 2026-10-25 (UTC), recorded in milestone 857 (crates released on their own).
 //!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the chip whose
 //! peripherals it finds, beside `plic`, `gic` and the other readers here. calef has not named it.

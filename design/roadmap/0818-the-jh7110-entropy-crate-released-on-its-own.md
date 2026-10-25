@@ -23,11 +23,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   as of today) [...] Names are ratified now and permanent on first publication."* His words: *"Yes,
   one per crate"*.
 - The release rules are forks 1 to 4 and 6 of the same pull request, applied in *Release* below.
-- The cut, 2026-10-25 (UTC), choosing option A of the lane crates-stand-alone: *"A seems like the
-  obvious choice"*. The crates take plain values, every device-tree walk moves to nife's side, and
-  nife's process layout leaves the device crates. He accepted the refinement with *"Yes"*: what
-  each of the JH7110's two trees calls a block stays in the crate as data and small decoders, and
-  only the walk moves.
+- Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
+  the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
 
 ## What exists, checked 2026-10-07 (UTC)
 

@@ -77,15 +77,12 @@ record of what was weighed, and its heading says how it was ruled.
 
 No per-crate milestone is minted by this block. They come from the reviews below.
 
-- The cuts, ruled on 2026-10-25 (UTC), choosing option A of the lane crates-stand-alone: *"A seems
-  like the obvious choice"*. The release crates take plain values (a register base and size, and a
-  small settings type), and every device-tree walk moves to nife's side. nife's driver-process
-  layout and block server leave the device crates for the programs that drive them. calef then
-  accepted a refinement with *"Yes"*: what each of the JH7110's two device trees calls a block
-  (compatible strings, node names, property differences) stays in the crate as data and small
-  decoders. Its README documents the differences, and only the walk moves. The walks live in
-  `machine_discovery::jh7110`, which is why `jh7110_entropy` and `jh7110_clock_and_reset` became
-  package interfaces.
+- Ruled 2026-10-25 (UTC): the crates take plain values (a register base and size, and a small
+  settings type), and the device-tree walk moves to nife. The knowledge of the vendor and mainline
+  JH7110 trees (compatible strings, node names, property differences) stays in each crate as data
+  and decoders, documented in its README. nife's driver-process layout and block server leave the
+  device crates for the programs that drive them. The walks live in `machine_discovery::jh7110`,
+  so `jh7110_entropy` and `jh7110_clock_and_reset` became package interfaces.
 
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
