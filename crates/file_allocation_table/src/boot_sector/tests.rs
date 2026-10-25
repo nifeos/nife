@@ -141,6 +141,7 @@ fn a_64_mib_volume_mkfs_fat_formatted_is_fat32_with_its_reserved_pointers() {
     let boot = parse(FAT32_64M).unwrap();
     assert_eq!(boot.fat_type(), FatType::Fat32);
     assert_eq!(boot.clusters(), 129_022);
+    assert_eq!(boot.reserved_sectors(), 32);
     assert_eq!(boot.root_directory(), RootDirectory::Cluster(2));
     assert_eq!(boot.first_data_sector(), 32 + 2 * 1009);
     assert_eq!(boot.fs_info_sector(), Some(1));
