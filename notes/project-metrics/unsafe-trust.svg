@@ -78,8 +78,8 @@
 <path class="seg s3" d="M542.8,85.8 V76.9 Q542.8,72.9 546.8,72.9 H577.4 Q581.4,72.9 581.4,76.9 V85.8 Z"><title>2026W42, boot chain (uefi_loader): 73</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="562.1" y="67.9" font-size="10" text-anchor="middle">1416</text>
-<rect class="seg s0" x="601.4" y="191.9" width="38.7" height="132.1"><title>2026W43, kernel (trusted base): 745</title></rect>
-<rect class="seg s1" x="601.4" y="108.9" width="38.7" height="83.0"><title>2026W43, userspace (confined): 468</title></rect>
+<rect class="seg s0" x="601.4" y="191.7" width="38.7" height="132.3"><title>2026W43, kernel (trusted base): 746</title></rect>
+<rect class="seg s1" x="601.4" y="108.9" width="38.7" height="82.8"><title>2026W43, userspace (confined): 467</title></rect>
 <rect class="seg s2" x="601.4" y="104.6" width="38.7" height="4.3"><title>2026W43, shared (both, unresolved): 24</title></rect>
 <path class="seg s3" d="M601.4,104.6 V92.1 Q601.4,88.1 605.4,88.1 H636.0 Q640.0,88.1 640.0,92.1 V104.6 Z"><title>2026W43, boot chain (uefi_loader): 93</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>

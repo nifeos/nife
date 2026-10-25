@@ -260,14 +260,14 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W43,elf,0,0,2,1
 2026W43,entropy_contract,0,0,1,0
 2026W43,environment_contract,0,0,2,0
-2026W43,filesystem_contract,1,0,4,1
+2026W43,filesystem_contract,6,3,9,4
 2026W43,globally_unique_identifier_partition_table,9,0,7,4
-2026W43,grant_plan,6,25,34,16
+2026W43,grant_plan,10,31,40,20
 2026W43,graphics_contract,7,0,5,4
 2026W43,hot_swap_contract,5,0,8,4
 2026W43,installed_programs,68,22,12,8
 2026W43,line_editor,2,23,16,11
-2026W43,login_contract,0,0,4,3
+2026W43,login_contract,0,0,6,5
 2026W43,measured_boot,0,0,6,2
 2026W43,nifefs,0,0,4,3
 2026W43,package_archive,0,0,3,2
