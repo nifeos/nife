@@ -147,8 +147,8 @@ replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0815-the-e1000e-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, the crate doc: milestone 494 (a driver for the network card a PC actually has)
   wrote the crate. Its design is `notes/e1000e.md`, and `notes/e1000e/the-i219-port.md` says where

@@ -1,5 +1,8 @@
 //! **The volume**: its layout constants, the arithmetic that sizes the table and places each
 //! cluster, and the sectors a caller writes. The crate root re-exports what is public here.
+//!
+//! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
+//! for the volume this crate lays out. calef has not named it.
 
 use crate::long_name::{self, LongName};
 
@@ -73,6 +76,10 @@ pub enum Error {
     /// The file name is neither an 8.3 short name nor a long name a VFAT entry may carry: empty,
     /// over 255 units, outside the Basic Multilingual Plane, holding a control character or one of
     /// `" * / : < > ? \ |`, or ending in a space or a period.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by
+    /// milestone/560-a-long-file-name-or-riscv64-cannot-be-installed, for the refusal a short name
+    /// alone used to be. calef has not named it.
     NameRefused,
     /// The file does not fit in the clusters the volume has left after its directories.
     FileTooBig,

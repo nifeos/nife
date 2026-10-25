@@ -305,26 +305,6 @@ def selftest():
          [b.split(' was added')[0] for b in problems(files, tree, tree, base, (), was.get, retyped.get)]
          == [f'{BASELINE}: x/src/b.rs::f']),
     ]
-    # A crate that ships alone keeps its blocks in a sidecar beside its milestone (name_census).
-    tree_files = {
-        'crates/a/src/lib.rs': 'pub fn f() {}\n',
-        'crates/a/src/b.rs': 'pub fn g() {}\npub fn h() {}\n',
-        'design/roadmap/0001-a/names.md':
-            '# Names\n\n`crates/a/src/lib.rs` Name: provisional, minted 2026-10-25.\n\n'
-            '`crates/a/src/b.rs` Name: provisional, minted 2026-10-25.\n\n'
-            '`crates/a/src/b.rs::g` Name: provisional, minted 2026-10-25.\n\n'
-            '`crates/a/src/b.rs::gone` Name: provisional, minted 2026-10-25.\n',
-    }
-    recs, probs, _miss, unblocked = name_census.census(list(tree_files), tree_files.get)
-    kinds = {(r['kind'], r['name']) for r in recs}
-    cases += [
-        ('a sidecar block counts for the crate, the module and the item',
-         {('crate', 'a'), ('module', 'b'), ('item', 'g')} <= kinds),
-        ('names a sidecar does not cover stay unblocked',
-         sorted(unblocked) == ['crates/a/src/b.rs::h', 'crates/a/src/lib.rs::f']),
-        ('a sidecar key that names no item is a problem',
-         any('crates/a/src/b.rs::gone' in p for p in probs)),
-    ]
     msg = problems(set(m('a', 'new')), m('new'), collections.Counter())[0]
     cases.append(('the failure names the file and the block to write',
                   'x/src/new.rs' in msg and '//! Name: provisional' in msg))

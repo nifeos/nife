@@ -50,8 +50,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `reboot.rs`, `memory.rs`, `lib.rs`, `storage_bench.rs` and `network_bench.rs`, plus
   `system_tests/src/user/entropy_tests.rs`.
 - The crate name is ratified. The decoders and the newly public spellings carry provisional
-  `Name:` blocks (in [names.md](0819-the-jh7110-clock-and-reset-crate-proven-and-released-on-its-own/names.md)),
-  and their names become permanent with the crate. `discover_aon` and `discover_sys` left the crate
+  `Name:` blocks, and their names become permanent with the crate. `discover_aon` and `discover_sys` left the crate
   with the walk, so their provisional names no longer bind it.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
@@ -166,8 +165,8 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0819-the-jh7110-clock-and-reset-crate-proven-and-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - The crate doc: the volatile shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`, and the
   story is `notes/jh7110-clock-and-reset.md`.

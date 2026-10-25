@@ -155,8 +155,8 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0814-the-nvme-queue-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, the crate doc: the design is in notes/non-volatile-memory-express.md, and the
   protocol walk-through is its section "How the protocol works, in one sitting".

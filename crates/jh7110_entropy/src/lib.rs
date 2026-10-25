@@ -7,6 +7,12 @@
 //! register window and does the volatile reads. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is
 //! set (NetBSD's rule), and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is
 //! [`Outcome::Lockup`]. None of it has run on silicon.
+//!
+//! Name: ratified 2026-09-13 (calef); kept as the crates.io name (calef, 2026-10-07 UTC, #1806).
+//! The argument its minting lane gave (milestone 159's lane, 2026-08-24): chip-qualified and
+//! unambiguous rather than generic, since `trng` alone would be a generic word that could name
+//! almost anything, the same reasoning that keeps `non_volatile_memory_express` and `pci` named for
+//! the specification rather than for "storage" or "bus".
 
 //! # Sources
 //!
@@ -228,6 +234,9 @@ pub const ISTAT_ALL: u32 =
 /// as a fallback compatible (the JH8100 reuses the same TRNG IP), which is out of scope: this
 /// crate names the JH7110's own string only, never the fallback, so it says nothing about a `SoC`
 /// it has no board for.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, made public when the
+/// device-tree walk left the crate. The binding's own word for the property it holds.
 pub const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
 
 /// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control tree
@@ -245,6 +254,9 @@ pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,trng";
 /// Both spellings, in the order a caller should try them: mainline's first. A tree that carries
 /// the standardized binding is describing itself in that language, and that is the one to
 /// believe.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone: both spellings, in the
+/// order to try them.
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE, COMPATIBLE_VENDOR];
 
 /// Where a tree says the TRNG is: the register window's physical base and size (from `reg`), and
@@ -278,8 +290,14 @@ pub struct Discovered {
 
 /// Decode a node's `interrupts` property to the PLIC line, \[binding\]'s single big-endian cell.
 /// `None` when the property is shorter than one cell.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the property it
+/// decodes.
 pub fn interrupt(value: &[u8]) -> Option<u32> {
-    value.get(0..4).and_then(|b| b.try_into().ok()).map(u32::from_be_bytes)
+    value
+        .get(0..4)
+        .and_then(|b| b.try_into().ok())
+        .map(u32::from_be_bytes)
 }
 
 /// Decode a node's `status` property: `true` when it is absent (`None`, since the device-tree
@@ -290,6 +308,9 @@ pub fn interrupt(value: &[u8]) -> Option<u32> {
 /// The value is a NUL-terminated string in the tree, so both the terminated and the unterminated
 /// forms are matched rather than trimmed: a four-way `matches!` says exactly which byte strings
 /// count, where a trim would have to decide what an empty or multi-string value means.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the `Discovered`
+/// field it fills.
 pub fn status_okay(value: Option<&[u8]>) -> bool {
     value.is_none_or(|v| matches!(v, b"okay\0" | b"ok\0" | b"okay" | b"ok"))
 }
@@ -580,7 +601,10 @@ mod tests {
     #[test]
     fn the_interrupt_is_the_first_big_endian_cell() {
         assert_eq!(interrupt(&[0, 0, 0, 30]), Some(30));
-        assert_eq!(interrupt(&[0, 0, 1, 2, 0xff, 0xff, 0xff, 0xff]), Some(0x102));
+        assert_eq!(
+            interrupt(&[0, 0, 1, 2, 0xff, 0xff, 0xff, 0xff]),
+            Some(0x102)
+        );
         assert_eq!(interrupt(&[0, 0, 30]), None);
         assert_eq!(interrupt(&[]), None);
     }
@@ -588,7 +612,10 @@ mod tests {
     /// Mainline's spelling is tried first, and the two spellings are the two trees' own.
     #[test]
     fn both_trees_spellings_in_mainline_first_order() {
-        assert_eq!(COMPATIBLES, [&b"starfive,jh7110-trng"[..], &b"starfive,trng"[..]]);
+        assert_eq!(
+            COMPATIBLES,
+            [&b"starfive,jh7110-trng"[..], &b"starfive,trng"[..]]
+        );
     }
 
     /// **No byte is ever served twice**, across as many refills as it takes to drain several

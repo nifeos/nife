@@ -153,8 +153,8 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0816-the-designware-ethernet-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, the crate root: the design lives in `notes/designware-ethernet.md`.
 - `src/data_plane.rs`, `DataPlane`: `notes/designware-ethernet/the-hardware.md` explains the

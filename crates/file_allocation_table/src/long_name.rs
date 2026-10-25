@@ -7,6 +7,9 @@
 //! fails silently, as a volume that lists `BOOTRI~1.EFI` and boots nothing; `verification.rs`
 //! proves the checksum and the run's layout for every name. After the name's last unit comes one
 //! `0x0000`, then `0xFFFF` to the end of the entry, unless the name fills its last entry exactly.
+//!
+//! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
+//! for the thing the specification calls a long name. calef has not named it.
 
 /// The most UCS-2 units a long name holds.
 pub(crate) const MAX_UNITS: usize = 255;

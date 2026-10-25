@@ -1,5 +1,7 @@
 //! **The rings and their descriptors**: how big each ring and buffer is, the descriptor bits the
 //! driver writes and reads, and what a receive descriptor says.
+//!
+//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 pub(crate) const PAGE: u64 = 4096;
 

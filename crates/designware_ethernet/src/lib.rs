@@ -7,6 +7,11 @@
 //! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`) and `ytphy` (`sys/dev/mii/ytphy.c`), whose JH7110 path
 //! reads `starfive,tx-use-rgmii-clk`; FreeBSD's `eqos` was a cross-check, and GPL sources gave
 //! hardware facts only, no code.
+//!
+//! Name: ratified 2026-10-07 (calef, #1806): Synopsys's name, spelled out per §154 (the acronym
+//! test). The argument its minting lane gave: PROVISIONAL (milestone 53 (the board's own
+//! peripherals: network and storage on real silicon)'s lane, 2026-10-06 UTC); the manifest pointed
+//! to this paragraph for the argument and the alternative an architect may prefer.
 
 //! The ISC license requires this notice:
 //!

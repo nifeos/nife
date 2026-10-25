@@ -162,8 +162,8 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0818-the-jh7110-entropy-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - The crate doc: the sources behind its `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels,
   with the bring-up order and health testing, are `notes/entropy/jh7110-trng.md`; the driver

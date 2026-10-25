@@ -104,6 +104,8 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 }
 
 /// What the IDMAC's half of the read-only probe found.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IdmacReport {
     /// The first transfer's bytes are the polled host's for the same blocks.
@@ -123,6 +125,8 @@ pub struct IdmacReport {
 /// # Errors
 ///
 /// The read that failed.
+///
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     r: &ReadReport,
@@ -236,6 +240,8 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
 /// **A register window that remembers how full the FIFO got**: every `STATUS` read updates the
 /// highest fill seen and counts the reads that found the FIFO full. It answers the multi-block
 /// read diagnosis: whether the polled CPU falls behind the card.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 pub struct Watch<R: Registers> {
     inner: R,
     /// The highest `STATUS` FIFO count seen since the last [`Watch::clear`].
@@ -246,6 +252,8 @@ pub struct Watch<R: Registers> {
 
 impl<R: Registers> Watch<R> {
     /// Watch `inner`.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
     pub const fn new(inner: R) -> Self {
         Self {
             inner,
@@ -255,6 +263,8 @@ impl<R: Registers> Watch<R> {
     }
 
     /// Start counting again.
+    ///
+    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
     pub fn clear(&mut self) {
         self.max_fill = 0;
         self.full_reads = 0;
@@ -281,6 +291,8 @@ impl<R: Registers> Registers for Watch<R> {
 }
 
 /// One multi-block read of the matrix: its card clock, length, outcome and what the FIFO did.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MatrixRow {
     /// The card clock asked for, in Hz.
@@ -302,8 +314,12 @@ pub struct MatrixRow {
 }
 
 /// The card clocks the matrix reads at: the transfer rate and two halvings of it.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 pub const MATRIX_HZ: [u32; 3] = [sd::TRANSFER_HZ, sd::TRANSFER_HZ / 2, sd::TRANSFER_HZ / 4];
 /// The `CMD18` lengths the matrix reads, in blocks.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
@@ -313,6 +329,8 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 /// # Errors
 ///
 /// Identification failing, which ends the matrix; a failed read is a row, not an error.
+///
+/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 pub fn read_matrix<R: Registers>(
     host: &mut Host<Watch<R>>,
     bus_width: u8,

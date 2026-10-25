@@ -153,8 +153,8 @@ repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0820-the-xhci-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, the crate doc: the ring design is in notes/usb.md, "The rings and the cycle bit".
 - `src/window.rs`, `register_window`: notes/usb.md, "The register window".

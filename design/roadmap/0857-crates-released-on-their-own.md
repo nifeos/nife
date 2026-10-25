@@ -99,10 +99,8 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
   builds and tests it on stable for the host and its targets. It refuses this tree's citations and
   provenance, requires a README, both license files and a `rust-version`, and replays the
   falsifications. It runs while the crate is still here.
-- Provenance. A crate that ships on its own keeps its `Name:` blocks in a sidecar beside its
-  milestone, `design/roadmap/<milestone>/names.md`, one paragraph per name keyed by its path.
-  `script/names` and the module-block ratchet read each paragraph as if it sat at the name, so the
-  crate's source cites nothing and no name loses its record. Each milestone's section "What the
+- Provenance. Ruled 2026-10-25 (UTC): crate and item names are ratified before a crate breaks
+  out, and its `Name:` blocks stay in its source until then. Each milestone's section "What the
   crate no longer cites" keeps every other link the source carried.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual

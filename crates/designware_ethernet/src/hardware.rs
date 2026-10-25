@@ -1,4 +1,6 @@
 //! **What the data plane needs from the hardware**, so the simulator can stand in for the MAC.
+//!
+//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 /// **The controller's register window, as a driver reaches it.** The kernel's implementation is a
 /// pair of volatile accesses into the direct map; the tests' is `sim`. Offsets are bytes from the

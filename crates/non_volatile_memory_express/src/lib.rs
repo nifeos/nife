@@ -4,6 +4,9 @@
 //! (a thin volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol (NVMe 1.4, chapters 4 and 5:
 //! submission and completion queues, doorbells, the phase tag, the admin queue and PRPs) is what
 //! this crate implements, and no more of it.
+//!
+//! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)); kept
+//! as the crates.io name (#1806).
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
@@ -503,15 +506,23 @@ pub const MAX_DSTRD: u32 = 8;
 /// The clients are a fixed set the kernel wires, one window each, so there is no pool and nothing
 /// to hand back: [`FILESYSTEM_WINDOW`], [`INSTALLER_WINDOW`] and [`DISK_TREE_WINDOW`]. A new client
 /// gets a new constant and this count grows by one; each window costs 64 KiB of the DMA region.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const CLIENT_WINDOWS: usize = 3;
 
 /// The unbadged window: the filesystem server, and every kernel-side caller of the request endpoint.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const FILESYSTEM_WINDOW: u64 = 0;
 /// `system_installer`'s window, whether it is installing or confirming a boot slot beside a live
 /// filesystem server.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const INSTALLER_WINDOW: u64 = 1;
 /// The read-only disk tree's window, a program that reads the namespace
 /// beside a live filesystem server.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const DISK_TREE_WINDOW: u64 = 2;
 
 /// **Whether a window's client may write the disk.** The disk tree's may not: it serves a read-only
@@ -523,6 +534,8 @@ pub const DISK_TREE_WINDOW: u64 = 2;
 /// assert!(can_write(FILESYSTEM_WINDOW));
 /// assert!(!can_write(DISK_TREE_WINDOW));
 /// ```
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const fn can_write(window: u64) -> bool {
     window != DISK_TREE_WINDOW
 }
@@ -536,6 +549,8 @@ pub const fn can_write(window: u64) -> bool {
 /// assert_eq!(client_window(DISK_TREE_WINDOW), Some(2));
 /// assert_eq!(client_window(CLIENT_WINDOWS as u64), None);
 /// ```
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const fn client_window(badge: u64) -> Option<usize> {
     if badge < CLIENT_WINDOWS as u64 {
         Some(badge as usize)

@@ -165,6 +165,9 @@ pub fn classify(o: &Observation) -> Verdict {
 }
 
 /// Whether the transmit descriptor was handed back, for a report line.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-question-shapes. Refused
+/// `transmit_completed` (a participle alone reads as a getter).
 pub const fn is_transmit_complete(o: &Observation) -> bool {
     o.tx_des3 & TDES3_OWN == 0
 }

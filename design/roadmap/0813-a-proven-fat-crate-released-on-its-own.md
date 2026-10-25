@@ -247,8 +247,8 @@ predate 1995, so none can still be in force. FAT12, FAT16 and FAT32 themselves d
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
-`Name:` blocks are in [names.md](0813-a-proven-fat-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, crate doc: why an installer needs a FAT writer was `notes/installing.md`. The read
   half was milestone 140 (mount a drive this system did not create), and the doc now says

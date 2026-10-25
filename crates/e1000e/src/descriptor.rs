@@ -1,5 +1,7 @@
 //! **The queues and their descriptors**: where each queue's registers and rings sit, how big they
 //! are, and what a descriptor's status says.
+//!
+//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 

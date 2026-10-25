@@ -7,6 +7,9 @@
 //! ahead of a `~1` alias (see `long_name.rs`).
 //! A volume below [`MIN_CLUSTERS`] is refused, because the specification types a volume by its
 //! data clusters, and the data area is rounded up to start on a cluster boundary.
+//!
+//! Name: ratified 2026-10-07 (calef, #1806): FAT spelled out as the tree's acronym rule asks;
+//! permanent once published.
 
 //! # BUGS
 //!

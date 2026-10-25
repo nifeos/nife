@@ -253,7 +253,10 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     let crg = machine_discovery::jh7110::clock_and_reset::discover(dtb).ok();
-    let has_trng = matches!(machine_discovery::jh7110::entropy::discover(dtb), Ok(Some(_)));
+    let has_trng = matches!(
+        machine_discovery::jh7110::entropy::discover(dtb),
+        Ok(Some(_))
+    );
     if let Some(found) = crg
         && (found.from_tree || has_trng)
     {

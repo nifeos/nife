@@ -8,6 +8,10 @@
 //! region's layout; [`Trb`], [`Event`], [`ProducerRing`] and [`EventRing`] are the ring discipline
 //! (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and endpoint contexts; [`port`] is the port
 //! status register.
+//!
+//! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: xHCI expanded per §154
+//! (the acronym test is whether the phrase is spoken). Too long for a program name, so the program
+//! is `usb_keyboard_driver`.
 
 //! # BUGS
 //!

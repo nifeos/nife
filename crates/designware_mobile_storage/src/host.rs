@@ -194,6 +194,8 @@ impl<R: Registers> Host<R> {
 
     /// **Move every later data phase through the IDMAC**, over a region [`Idmac::new`] checked.
     /// The controller's state carries over: a card identified by the polled host stays selected.
+    ///
+    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     #[must_use]
     pub fn with_idmac<D: DirectMemoryAccessRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
         Host {

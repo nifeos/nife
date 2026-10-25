@@ -159,8 +159,8 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 ## What the crate no longer cites
 
-The crate's source cites nothing of this tree, so this section keeps the links it carried. Its `Name:`
-blocks are in [names.md](0817-the-designware-mobile-storage-crate-released-on-its-own/names.md).
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
 `src/serve.rs` keeps its own citations until it moves into nife.
 
 - `Cargo.toml`, the package comment: the `no_std` and host-test split is the pure-logic split of

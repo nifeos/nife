@@ -7,6 +7,15 @@
 //! A ring's base and tail share a page ([`regs`]), so the IOMMU is the whole DMA confinement; the
 //! process holds only [`RX_QUEUE_PAGE`] and [`TX_QUEUE_PAGE`]. The register facts come from Linux's
 //! `regs.h` and `hw.h` for the 82574L and from FreeBSD's Intel shared code for the I219 ([`pch`]).
+//!
+//! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name QEMU's
+//! `-device e1000e` and Linux's driver directory use, kept across their interface
+//! (design/naming.md, the acronym test). Milestone 815 (proven Intel e1000e ring logic, released on
+//! its own) publishes it. The argument its minting lane gave: PROVISIONAL (milestone 494's lane,
+//! 2026-10-04). `e1000e` is the family name QEMU's `-device e1000e` and Linux's driver directory
+//! both use, so it arrives across somebody else's interface (design/naming.md, the acronym test's
+//! second paragraph). An architect may prefer a name for what it is rather than whose driver it
+//! resembles.
 
 //! # BUGS
 //!

@@ -1,4 +1,6 @@
 //! **The register window**: which pages of the BAR the driver is mapped, and why a layout is refused.
+//!
+//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
