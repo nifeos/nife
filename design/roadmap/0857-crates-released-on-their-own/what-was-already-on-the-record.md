@@ -2,8 +2,8 @@
 
 <!-- writing-standards: exception. Marked 2026-10-25 (UTC) by lane crates-stand-alone. Reason: this text moved verbatim out of milestone 857's block, where the passive baseline held it, to keep that block under its word cap; rewording a record while moving it would change what it says. -->
 
-An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md):
-the earlier rulings the forks had to respect.
+An appendix of [milestone 857 (crates released on their
+own)](../0857-crates-released-on-their-own.md): the earlier rulings the forks had to respect.
 
 Milestone 39 (repository structure for a loosely-coupled OS) answered a narrower form of this on
 2026-07-31. It found that `cargo publish -p` works from a workspace, so publishing needs no split. It

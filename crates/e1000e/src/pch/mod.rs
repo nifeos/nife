@@ -43,8 +43,8 @@
 
 //! # BUGS
 //!
-//! - **It has run on silicon once, with no cable.** Otherwise it is proven only against `sim`, which
-//!   is this crate's reading of FreeBSD and not the device.
+//! - **It has run on silicon once, with no cable.** Otherwise it is proven only against `sim`,
+//!   which is this crate's reading of FreeBSD and not the device.
 //! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
 //!   up and then loses frames points here first.
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).

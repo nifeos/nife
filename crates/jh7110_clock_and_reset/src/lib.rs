@@ -317,8 +317,9 @@ pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 /// the ten `i2c read: write daddr 36 to` lines in radon's 2026-09-04 log.
 pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 
-/// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first, then reset, for [`TRNG_BRING_UP`]'s reason: Linux's reset driver warns that
-/// a deassert against a gated clock "might otherwise hang forever".
+/// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
+/// then reset, for [`TRNG_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
+/// gated clock "might otherwise hang forever".
 pub(crate) const PMIC_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
@@ -342,8 +343,9 @@ pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
 /// `JH7110_SYSRST_SDIO1_AHB`: the microSD controller's one reset. Bit 1 of the word at `0x300`.
 pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 
-/// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then slot 1 (the microSD slot): both clocks mainline's node names, then its reset,
-/// in [`TRNG_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
+/// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
+/// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
+/// [`TRNG_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
 /// radon's U-Boot has already brought the microSD controller up to load the boot script, and the
 /// bench step reads whether it left it that way before it walks the plan.
@@ -397,8 +399,8 @@ pub struct PmicBus {
     steps: [Step; MAX_PMIC_BUS_STEPS],
     len: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
-    /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a bench transcript must carry, for
-    /// [`Found::from_tree`]'s reason.
+    /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
+    /// bench transcript must carry, for [`Found::from_tree`]'s reason.
     pub from_tree: bool,
     /// Which PMIC `compatible` was found, or `None` when the tree names no known PMIC.
     pub pmic: Option<&'static [u8]>,
@@ -409,8 +411,8 @@ pub struct PmicBus {
     /// True when the bus named more usable steps than [`MAX_PMIC_BUS_STEPS`].
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
-    /// tree states it. The direct reset write needs it; a plan without one (the constant fallback, or a
-    /// tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
+    /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
+    /// or a tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
     pub controller: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
     /// trees. `None` when the tree names no known PMIC at all.

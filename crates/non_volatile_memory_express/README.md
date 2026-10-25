@@ -37,7 +37,9 @@ makes that harness fail at its own assertion, which shows the proof checks somet
 ## Usage
 
 ```rust
-use non_volatile_memory_express::{doorbell, prp_pair, Command, Completion, CqState, Doorbell, SqState};
+use non_volatile_memory_express::{
+    doorbell, prp_pair, Command, Completion, CqState, Doorbell, SqState,
+};
 
 let mut sq = SqState::new(64);
 let mut cq = CqState::new(64);

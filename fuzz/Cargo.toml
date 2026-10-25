@@ -65,6 +65,7 @@ nifefs = { path = "../crates/nifefs" }
 device_tree_blob = { path = "../crates/device_tree_blob" }
 domain_name_system = { path = "../crates/domain_name_system" }
 elf = { path = "../crates/elf" }
+file_allocation_table = { path = "../crates/file_allocation_table" }
 globally_unique_identifier_partition_table = { path = "../crates/globally_unique_identifier_partition_table" }
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
@@ -117,6 +118,13 @@ bench = false
 [[bin]]
 name = "globally_unique_identifier_partition_table"
 path = "fuzz_targets/globally_unique_identifier_partition_table.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "file_allocation_table_boot_sector"
+path = "fuzz_targets/file_allocation_table_boot_sector.rs"
 test = false
 doc = false
 bench = false

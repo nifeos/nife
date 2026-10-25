@@ -365,7 +365,8 @@ pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
 /// Lay the eight `RAND` words out as 32 bytes, little-endian, word 0 first: `RAND0`'s low byte is
 /// byte 0. There is no cryptographic transform here: without a one-way function, any reshuffling
 /// would change the bytes without adding unpredictability an attacker could not undo. Conditioning,
-/// if a caller wants it, belongs to the caller's entropy pool. This is data movement, not conditioning.
+/// if a caller wants it, belongs to the caller's entropy pool. This is data movement, not
+/// conditioning.
 pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     for (i, word) in rand.iter().enumerate() {
@@ -715,8 +716,8 @@ mod tests {
     ///
     /// A transcription check: the constants came off \[trm\]'s tables by hand, and a bit copied to
     /// the wrong line, or a `<<` turned `>>` that takes a bit to zero, passes every test that does
-    /// not name the bit it exercises. A mutation sweep found fifteen survivors of that shape. A duplicated bit inside one register is
-    /// the copy-and-paste mistake the table invites.
+    /// not name the bit it exercises. A mutation sweep found fifteen survivors of that shape. A
+    /// duplicated bit inside one register is the copy-and-paste mistake the table invites.
     #[test]
     fn every_named_bit_is_the_bit_the_datasheet_names() {
         // One row per named bit: (register, name, bit index, constant). The indices are \[trm\]'s
@@ -778,8 +779,8 @@ mod tests {
     /// **[`ISTAT_ALL`] is five distinct bits**, which is what makes the write-1-to-clear an
     /// acknowledgement of exactly the bits this crate can name rather than a `!0` that swallows
     /// whatever else the block latched. Disjointness is the reason it may be written with either
-    /// `|` or `^`, which a mutation sweep had to argue for four surviving mutants and would rather a
-    /// reader could simply check.
+    /// `|` or `^`, which a mutation sweep had to argue for four surviving mutants and would rather
+    /// a reader could simply check.
     #[test]
     fn the_clear_mask_is_every_named_istat_bit_and_nothing_else() {
         assert_eq!(ISTAT_ALL.count_ones(), 5, "{ISTAT_ALL:#010x}");
@@ -798,8 +799,8 @@ mod tests {
     /// returns.
     ///
     /// Every pass of the gather loop must make progress (refill, copy, advance cursor and count);
-    /// break one and the call never answers. A mutation sweep found four such mutants, each of which
-    /// hung the suite, so this test runs `take` under a deadline.
+    /// break one and the call never answers. A mutation sweep found four such mutants, each of
+    /// which hung the suite, so this test runs `take` under a deadline.
     #[test]
     fn take_returns_rather_than_spinning() {
         assert_eq!(

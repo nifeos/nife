@@ -1,9 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 //! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports.
 //!
-//! Everything the driver's two halves compute and nothing either touches. A kernel half
-//! brings the controller and PHY up, measures DMA coherence and starts the DMA; a network-stack
-//! half fills descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
+//! Everything the driver's two halves compute and nothing either touches. A kernel half brings the
+//! controller and PHY up, measures DMA coherence and starts the DMA; a network-stack half fills
+//! descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
 //! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`) and `ytphy` (`sys/dev/mii/ytphy.c`), whose JH7110 path
 //! reads `starfive,tx-use-rgmii-clk`; FreeBSD's `eqos` was a cross-check, and GPL sources gave
 //! hardware facts only, no code.

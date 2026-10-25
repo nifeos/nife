@@ -126,7 +126,8 @@ in the copy, and each falsification patch, applied with `-p3`, turns its harness
 manifest and files only, plus 12 lines citing this tree: 5 `milestone N`, 3 `§N`, 2 naming calef, 1
 tree path and 1 provenance block.
 
-`script/names` reports the name `extensible_host_controller_interface` ratified (checked 2026-10-25).
+`script/names` reports the name `extensible_host_controller_interface` ratified (checked
+2026-10-25).
 
 Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, the build passes
 on all four targets, and the only citations left sit in `Name:` blocks, which stay until the

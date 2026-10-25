@@ -1,0 +1,21 @@
+Falsifies `address_space_map::verification::service_window_refuses_every_address_its_doc_forbids`.
+
+The defect: `service_window` treats its band as closed at the top, so the first page of the image
+band, `0x6000_0000`, is returned as a service window.
+
+Expected to fail: the harness reaches `refused_inputs_never_reach_here` (an unwinding failure, not a
+panic), so Kani reports "encountered failures other than panics".
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..7c4b745cf 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -181,7 +181,7 @@ pub const fn service_window(va: u64) -> u64 {
+         "a service window must be page aligned"
+     );
+     assert!(
+-        SERVICE_WINDOWS.contains(va),
++        SERVICE_WINDOWS.contains(va) || va == SERVICE_WINDOWS.end,
+         "a service window must lie in SERVICE_WINDOWS (address_space_map)"
+     );
+     va
