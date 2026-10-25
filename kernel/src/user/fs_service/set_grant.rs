@@ -10,6 +10,13 @@ use super::*;
 /// (`components/src/fs_nameset_caretaker.rs`'s `SET_VA`).
 const SET_VA_CARETAKER: u64 = 0x0000_0000_0070_0000;
 
+/// Stack pages the caretaker gets beyond the one `run` maps: the progenitor's
+/// `CARETAKER_STACK_PAGES` (4), so this wiring runs it on the stack it gets in a booted system.
+/// One page is not enough. The caretaker copies the whole set, `nameset::BYTES`, onto its stack
+/// before serving, and its first request ran off the page once `program_entry!` put a frame
+/// under `start`.
+const CARETAKER_EXTRA_STACK: usize = 3;
+
 /// A set grant: [`DirGrant`]'s shape, narrowed to the names in a set within one directory.
 ///
 /// A set does not fit in `START` registers, so it is encoded into a frame of its own, mapped
@@ -55,10 +62,6 @@ pub fn start_granted_set(
         arg2: client_arg2,
         stack_pages,
     } = grant;
-    assert!(
-        filesystem_contract::grant::fits(dir.as_bytes()),
-        "a granted directory's name rides in two argument words; this one does not fit",
-    );
     let (file_ep, file_shared, readiness) = ensure(blk_image, fs_server_image)?;
     // From one region the returned holding reclaims, as [`start_granted`]'s are. The set's own
     // frame is not in it: the caretaker maps that page, and a mapped page is freed only after its
@@ -83,10 +86,31 @@ pub fn start_granted_set(
         core::ptr::copy_nonoverlapping(encoded.as_ptr(), mmu::phys_to_virt(set_phys) as *mut u8, n);
     };
 
-    let (lo, hi) = filesystem_contract::grant::pack_name(dir.as_bytes());
+    let (lo, hi) = filesystem_contract::grant::pack_name(dir.as_bytes())
+        .expect("a granted directory's name rides in two argument words; this one does not fit");
     let spec = filesystem_contract::grant::spec(dir.len(), rights);
 
     let caretaker = crate::sched::spawn(move || {
+        let mut maps = [Mapping {
+            va: 0,
+            phys: 0,
+            flags: Flags::user_data(),
+        }; 2 + CARETAKER_EXTRA_STACK];
+        maps[0] = Mapping {
+            va: FILE_VA_CLIENT,
+            phys: file_shared,
+            flags: Flags::user_data(),
+        };
+        // Read-only: a writable set would let the caretaker widen its own grant.
+        maps[1] = Mapping {
+            va: SET_VA_CARETAKER,
+            phys: set_phys,
+            flags: Flags::user_rodata(),
+        };
+        for (k, m) in maps[2..].iter_mut().enumerate() {
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.phys = page_frame();
+        }
         run(
             caretaker_image,
             Spawn {
@@ -98,19 +122,7 @@ pub fn start_granted_set(
                     rendezvous_cap(narrow_ep, Rights::READ), // slot 1: serve the narrowed capability
                     rendezvous_cap(caretaker_ready, Rights::WRITE), // slot 2: readiness, once
                 ],
-                maps: &[
-                    Mapping {
-                        va: FILE_VA_CLIENT,
-                        phys: file_shared,
-                        flags: Flags::user_data(),
-                    },
-                    // Read-only: a writable set would let the caretaker widen its own grant.
-                    Mapping {
-                        va: SET_VA_CARETAKER,
-                        phys: set_phys,
-                        flags: Flags::user_rodata(),
-                    },
-                ],
+                maps: &maps,
             },
         )
     })

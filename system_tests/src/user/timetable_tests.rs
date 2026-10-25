@@ -26,7 +26,7 @@ const FIRES: u64 = 4;
 /// `grant_plan::Endowment` per `timetable::Registry` entry. Eight pages died with a data abort at the
 /// stack pointer, a stack overflow that reads like a wild pointer. See
 /// notes/scheduled-execution/the-guest-tests.md.
-const TIMETABLE_STACK_PAGES: u64 = 48;
+const TIMETABLE_STACK_PAGES: u64 = 60;
 
 /// The line `components/src/timetable.rs` prints when the plan is complete and it is about to arm. The
 /// test reads the plan up to it, which is what lets one endpoint carry the plan, the summary and

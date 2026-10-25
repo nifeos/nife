@@ -38,6 +38,18 @@ pub(super) const LINES: &[Line] = &[
     // subtree were inside the same capability and are still there, because nothing named them.
     // Eleven bytes of `rm-doomed/` and eight of `rm-keep`, newlines included.
     line(1, "ls rmtree | wc", &["2 2 19"]),
+    // **A name longer than `rm`'s two argument words** (milestone 946 (a granted file name can be
+    // longer than sixteen bytes)). Its operand cannot ride `rm`'s `START` words, so the shell grants
+    // a set of that one name and tells `rm` to remove what it can see; the progenitor puts a
+    // nameset caretaker in front of the bound badge, which is bound to the whole directory. So the
+    // `ls` after it is the claim: the other two entries are still there.
+    line(0, "echo gone > rmtree/a-name-longer-than-two-words", &[]),
+    line(
+        1,
+        "rm -v rmtree/a-name-longer-than-two-words",
+        &["a-name-longer-than-two-words"],
+    ),
+    line(1, "ls rmtree | wc", &["2 2 19"]),
     // **The one shape this still cannot deliver, and the refusal now says what is true.** It used to
     // read "needs the progenitor to build the caretaker", which stopped being true on the line above. A
     // caretaker's whole attenuation is one `OPENDIR` *into* the granted directory, and a name typed

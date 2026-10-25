@@ -75,6 +75,6 @@ pub use verbs::{MAX_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_o
 mod lexing;
 
 use lexing::*;
-pub use lexing::{MAX_FILE_NAME, file_name_fits, parse_u64, trim};
+pub use lexing::{MAX_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
 
 // ---- small byte helpers (no_std, no alloc) ----

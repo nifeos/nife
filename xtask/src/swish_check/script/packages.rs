@@ -26,6 +26,15 @@ pub(super) const LINES: &[Line] = &[
         "installed/asks-an-arg 5",
         &["the progenitor read those bytes' own manifest, and it does not allow this line"],
     ),
+    // **And by its own name** (milestone 946 (a granted file name can be longer than sixteen
+    // bytes)): `least_authority_demo` is twenty bytes, and the shell opens a file by a path whose
+    // last component is that long, reads its note and sends it, so the answer is the progenitor's
+    // verdict on the bytes rather than the shell's refusal of the name.
+    line(
+        0,
+        "installed/least_authority_demo 5",
+        &["the progenitor read those bytes' own manifest, and it does not allow this line"],
+    ),
     // **A note that cannot be read is refused, not ignored** (milestone 597): the witness again,
     // with its note's version word set to 9 (`disk::with_note_version`). Running it as if it
     // carried no note would endow a program with a manifest it did not declare.

@@ -21,6 +21,32 @@ The fix was the one `spawn_fs_client`'s own comment already prescribes: its four
 client needing more is a client whose frames want looking at, not a number that wants raising. So
 the bound came down instead of the cap going up.
 
+## The bytes a set carries
+
+A name may be 252 bytes (milestone 946 (a granted file name can be longer than sixteen bytes)).
+Eight slots of 252 would make every set cost eight times what ordinary names need. So a set has a
+second bound, `nameset::NAME_BYTES`: 512 bytes of name, all its names together. That is two of the
+longest names, or eight of 64. The shell's `NameSet` packs its names into those bytes. A copy is
+544 bytes, where eight slots of 252 would be 2,040. Over either bound is `Refusal::TooManyNames`.
+A batch is cut at whichever bound it meets first. Everything it leaves out sorts after everything
+it keeps, so the next batch skips nothing.
+
+The shell's stack was then measured, not scaled. On 2026-10-24 (UTC), `script/swish-check`'s
+aarch64 leg booted the same tree with the shell's stack at each size. Twelve pages fault on the
+boot's first pipeline. Sixteen fault in `installed/jig rollback`. Seventeen pass both boots. The
+growth is mostly the file grants an `Endowment` holds, each with a name of up to 252 bytes. Three
+things answer it:
+
+| change | where | effect |
+|---|---|---|
+| the planner compiled optimized in a debug build | `Cargo.toml`, `grant_plan` | `plan_against_with`'s frame from 16,528 bytes to 5,504, below the branch point's 7,504 |
+| a set packed, and no name kept to cut a batch | `grant_plan::expand` | `Expander` and `NameSet` copies in `Nav::expand` |
+| the shell's own stack, 21 pages | `system_initializer::SHELL_STACK_PAGES` | seventeen measured and four of headroom |
+
+The eight names stand. They are what a set costs in names, and the bytes are what it costs in
+stack. Frame sizes come from the debug `swish`'s disassembly. Each is the sum of a function's `sub
+sp` instructions, set beside the same build of the branch point.
+
 ## The sweep
 
 The eight stands, and the answer at the bound is no longer a refusal. `xargs` is a third prefix

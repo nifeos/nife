@@ -26,11 +26,8 @@ struct Outcome {
 ///
 /// `None` when no RedoxFS disk is attached (nothing to test; do not fail).
 fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
-    assert!(
-        filesystem_contract::grant::fits(name.as_bytes()),
-        "the operand rides in two argument words",
-    );
-    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes());
+    let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes())
+        .expect("the operand rides in two argument words");
     let (report, held) = fs_service::start_granted_dir(
         dir_capability_tests::blk_server_image(),
         program("redoxfs_server").expect("no redoxfs_server program in the initial ramdisk"),

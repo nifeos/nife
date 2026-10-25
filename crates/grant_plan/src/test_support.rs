@@ -139,3 +139,14 @@ pub(crate) fn plan_line(text: &[u8], holds: Holdings) -> Planned {
     }
     Ok((plans, l.stage_count()))
 }
+
+/// **A line naming a file one byte longer than a grant can carry**, `<prefix>xxx...x`, built in
+/// `buf` because this crate has no allocator in tests either. Every test that proves the name
+/// bound is refused uses it, so the bound is [`crate::MAX_FILE_NAME`] and never a spelled-out
+/// literal that a raised bound would silently make legal.
+pub(crate) fn with_too_long_name<'a>(prefix: &[u8], buf: &'a mut [u8; 512]) -> &'a [u8] {
+    let n = prefix.len() + crate::MAX_FILE_NAME + 1;
+    buf[..prefix.len()].copy_from_slice(prefix);
+    buf[prefix.len()..n].fill(b'x');
+    &buf[..n]
+}

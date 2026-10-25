@@ -119,10 +119,11 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 
         let r: i64 = match policy {
             // Any name but the granted one is ENOENT: in this scope there is no such name. The
-            // buffer is `grant::MAX_NAME` bytes because this process runs on the one stack page
-            // `run` maps, so a length mismatch is refused before any copy.
+            // buffer is `grant::WORDS_NAME` bytes, the granted name's own bound, because this
+            // process runs on the one stack page `run` maps, so a length mismatch is refused
+            // before any copy.
             Policy::Local if code == fs::OPEN => {
-                let mut asked_name = [0u8; grant::MAX_NAME];
+                let mut asked_name = [0u8; grant::WORDS_NAME];
                 if len == name.len() {
                     get(&mut asked_name[..len]);
                 }
@@ -157,7 +158,7 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
 user_mode_runtime::program_entry!(start);
 
 fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
-    let mut buf = [0u8; grant::MAX_NAME];
+    let mut buf = [0u8; grant::WORDS_NAME];
     let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
     let name = &buf[..n];
 

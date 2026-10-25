@@ -13,11 +13,12 @@ use super::*;
 /// **Build the caretaker a directory grant is delivered by**, and hand back its endpoint.
 ///
 /// `fs_subtree_caretaker` for a directory, or `fs_nameset_caretaker` with its name set
-/// (`set_seen`, `spawnproto::NAMESET_BIT`) on a page from the job's `region`. A set that arrives
-/// for a program that does not hear words is refused with the grant, as `None`. For a program that
-/// hears words, the rights the shell asked for are clamped to what `manifest` allows (§170 (how a
-/// foreign program is told what to do) clause 4), which for unvouched bytes is read-only. Out of
-/// line so its locals stay off the spawn service's frame.
+/// (`set_seen`, `spawnproto::NAMESET_BIT`) on a page from the job's `region`. A set only narrows
+/// the directory it names, so it is taken for any program: a program that hears words is granted
+/// the names its words designated, and `rm` a name too long for its `START` words (milestone 946 (a granted file name can be longer than sixteen bytes)).
+/// For a program that hears words, the rights the shell asked for are clamped to what `manifest`
+/// allows (§170 (how a foreign program is told what to do) clause 4), which for unvouched bytes is
+/// read-only. Out of line so its locals stay off the spawn service's frame.
 #[inline(never)]
 pub(super) fn build_grant(
     own_ut: u64,
@@ -40,13 +41,12 @@ pub(super) fn build_grant(
         }
         _ => care_words,
     };
-    let hears_words = manifest.is_some_and(|m| m.program_argument.hears_words());
     match set_seen {
         None => care
             .subtree
             .as_ref()
             .and_then(|e| build_caretaker(own_ut, region, e, fs, words, None)),
-        Some(theirs) if hears_words => {
+        Some(theirs) => {
             let set = copy_args(own_ut, region, theirs, |_| true)?;
             let ep = care
                 .nameset
@@ -55,7 +55,6 @@ pub(super) fn build_grant(
             cap_delete(set);
             ep
         }
-        Some(_) => None,
     }
 }
 

@@ -57,7 +57,7 @@ use image_request::*;
 use layout::*;
 pub use layout::{
     CHILD_STACK_PAGES, GRANT_MACHINE_PAGE, IMAGE_POOL_PAGES, JOBS_BUDGET_PAGES,
-    PROGENITOR_RESERVED_PAGES,
+    PROGENITOR_RESERVED_PAGES, SHELL_STACK_PAGES,
 };
 use line_editor::proto;
 use measurement::*;

@@ -41,7 +41,7 @@ The command line itself is the grant expression. Its parts are designators:
   `interrupt_ignorer`, `date`).
 - `--mem N` designates N pages of untyped, carved from the shell's own budget.
 - a bare token designates whatever the program's manifest declares in that position: the integer
-  argument, then a file (one name, at most 16 bytes, no path). See the per-file grant section
+  argument, then a file (one name, at most 252 bytes, no path). See the per-file grant section
   below for what the shell narrows it from and what it can back today.
 
 `caps` is introspection: with no argument it prints the shell's whole endowment; with a tail it

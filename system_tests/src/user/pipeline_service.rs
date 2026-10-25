@@ -19,13 +19,10 @@ const SH_BUDGET_PAGES: u64 = 128;
 
 /// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
 /// `spawn_fs_client`'s measured reason, and milestone 50 (pipes and redirection) added an array of
-/// planned endowments it carries by value. `run_pipeline`'s frame holds two `FileOut`s (`2>`), each
-/// with a 256-byte staging buffer because the filesystem's write unit is a page and the sink
-/// contract's sixteen bytes; seven pages overflowed by twenty-four, as a data abort one word below
-/// the lowest mapped page. Eleven keeps four pages of headroom, since every exact fit met the wall
-/// again on the next change. It must stay level with `system_initializer`'s `CHILD_STACK_PAGES`: a
-/// test wiring with less headroom finds faults the boot does not have (notes/pipes/the-boot.md).
-const SHELL_EXTRA_STACK: usize = 11;
+/// planned endowments it carries by value. It must stay level with `system_initializer`'s
+/// `SHELL_STACK_PAGES`, twenty-one, which that constant's own comment measures: a test wiring with
+/// less headroom finds faults the boot does not have (notes/pipes/the-boot.md).
+const SHELL_EXTRA_STACK: usize = 20;
 
 /// What the kernel holds of a scripted shell.
 pub struct Wiring {

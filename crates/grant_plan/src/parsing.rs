@@ -254,13 +254,13 @@ pub enum UserVerb<'a> {
     Usage,
 }
 
-/// Classify [`Command::User`]'s tail: a verb and one name of at most sixteen bytes, the most an
-/// identity can be and still have a subtree (`filesystem_contract::grant::MAX_NAME`).
+/// Classify [`Command::User`]'s tail: a verb and one name of at most [`crate::WORDS_NAME`] bytes, the
+/// most an identity can be and still have a subtree.
 pub fn user_verb(tail: &[u8]) -> UserVerb<'_> {
     let (verb, rest) = split_first_word(trim(tail));
     let name = trim(rest);
     let one_name = !name.is_empty()
-        && name.len() <= 16
+        && name.len() <= crate::WORDS_NAME
         && !name.starts_with(b"#")
         && !name.iter().any(u8::is_ascii_whitespace);
     match verb {
@@ -283,13 +283,13 @@ pub fn vouch_verb(tail: &[u8]) -> Option<&[u8]> {
 }
 
 /// **The name a vouched file is recorded under**: its path's last component, which is what a
-/// person sees in `caps`. `None` when it is empty, longer than the
-/// sixteen bytes a packed name carries (`filesystem_contract::grant::MAX_NAME`), `.` or `..`, or
-/// holds a `#`, which the installed-programs table's lines cannot carry.
+/// person sees in `caps`. `None` when it is empty, longer than the [`crate::WORDS_NAME`] bytes a
+/// packed name carries, `.` or `..`, or holds a `#`, which the installed-programs table's lines
+/// cannot carry.
 pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
     let name = path.rsplit(|&b| b == b'/').next().unwrap_or(path);
     let recordable = !name.is_empty()
-        && name.len() <= 16
+        && name.len() <= crate::WORDS_NAME
         && name != b"."
         && name != b".."
         && !name.contains(&b'#');

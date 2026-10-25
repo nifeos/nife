@@ -337,6 +337,21 @@ opt-level = 2
 [profile.dev.package.graphics_contract]
 opt-level = 2
 
+# The shell's planner, optimised even in a debug build (milestone 946 (a granted file name can be
+# longer than sixteen bytes)). An `Endowment` carries four file grants, each holding a name of up
+# to 252 bytes, and an unoptimised build keeps a copy of one in a frame for every `?` and every
+# by-value argument, so `plan_against_with` alone took 16 KiB of the shell's stack and the first
+# pipeline of a boot ran off its bottom. Optimised, those copies collapse, as they do in a release
+# build, and that frame is 5.4 KiB. Measured from the debug `swish`'s disassembly; the numbers are in
+# notes/glob-grant/xargs.md ("The bytes a set carries").
+[profile.dev.package.grant_plan]
+opt-level = 2
+# The timetable, for the planner's reason: it holds an `Endowment` per entry, and a replacement
+# holds two plans at once, so its debug frames grew by the same file grants and ran
+# `login_user_schedule_tests`'s timetable off its 48-page stack in `Registry::register`.
+[profile.dev.package.timetable]
+opt-level = 2
+
 # Overflow checks in release, ruled by calef 2026-10-04 (UTC) (notes/overflow-checks.md, option A).
 # The shipped build now means by `a + b` what every tested build means: an overflow halts rather
 # than wraps into a quiet wrong answer. Where a hot path wants a wrap, it says so at the site with

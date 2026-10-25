@@ -318,7 +318,9 @@ fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
         }
     }
     if let Some(name) = name {
-        let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes());
+        // Every caller has held `name` to `grant::WORDS_NAME`; a longer one sends empty words,
+        // which the progenitor answers as a name it does not know.
+        let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
         rt::send(INSTALLER_SLOT, lo, hi, name.len() as u64);
     }
     let (r0, r1, r2) = rt::receive(INSTALLER_REPLY_SLOT);
@@ -815,7 +817,7 @@ fn fill(
 /// installed, whatever its programs are called (calef, 2026-10-14 (UTC), milestone 919 (a package
 /// carries several programs): "jig remove should work on packages, not programs.").
 fn remove(package: &str) -> ExitCode {
-    if package.len() > filesystem_contract::grant::MAX_NAME {
+    if !filesystem_contract::grant::fits_words(package.as_bytes()) {
         println!("{USAGE}");
         return ExitCode::from(2);
     }

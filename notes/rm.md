@@ -83,7 +83,9 @@ for a literal one, which is the honest state: a single name still travels throug
 `fs_subtree_caretaker`.
 
 A set does not fit in the two argument words a name rides in, so `rm` is started with a grant whose
-name is zero bytes long (`filesystem_contract::grant::WHOLE_NAMESPACE`). It means "the operand is your
+name is zero bytes long (`filesystem_contract::grant::WHOLE_NAMESPACE`). So is a literal name longer
+than those two words hold (`grant::WORDS_NAME`, 16 bytes, milestone 946 (a granted file name can be longer than sixteen bytes)): the shell grants the set of
+that one name, and `rm` sweeps it. It means "the operand is your
 namespace", and `rm` learns the names by enumerating the capability it holds, which reveals exactly
 what the command line already printed.
 

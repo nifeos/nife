@@ -540,7 +540,7 @@ static mut EDITOR: Editor = Editor::new();
 user_mode_runtime::program_entry!(start);
 
 fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
-    let mut name_buf = [0u8; grant::MAX_NAME];
+    let mut name_buf = [0u8; grant::WORDS_NAME];
     let name_len = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut name_buf);
     let name = &name_buf[..name_len];
 

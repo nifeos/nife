@@ -69,10 +69,10 @@ const TIMETABLE_PAGE_VA: u64 = 0x0600_0000;
 
 /// The timetable's own construction: its segments, which include the
 /// `timetable::contract::STAGING_BYTES` buffer (128 KiB, 32 pages of `.bss`, Fork 8 D), its
-/// `timetable::contract::STACK_PAGES` stack (48 pages) and its tables. 272 is the 224 measured on
+/// `timetable::contract::STACK_PAGES` stack (60 pages) and its tables. 284 is the 224 measured on
 /// the aarch64 debug build on 2026-09-26, before the buffer, plus the buffer's 32 pages and the
-/// stack's growth from 32 to 48. This program's own test fails if it is short.
-const TIMETABLE_REGION_PAGES: u64 = 272;
+/// stack's growth from 32 to 60. This program's own test fails if it is short.
+const TIMETABLE_REGION_PAGES: u64 = 284;
 /// The budget the timetable fires jobs from: two 48-page instances and the loader's scratch.
 const JOB_BUDGET_PAGES: u64 = 128;
 // What this process splits must fit what `login` gives it, with the two endpoints' pages beside.

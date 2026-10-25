@@ -62,7 +62,7 @@ Six functions, and each is there for a caller that exists:
   for a name nobody has.
 - **`match_steps`** and `cost_bound` are the anti-blowup claim made checkable. See below.
 
-Everything is bytes. A name here is a byte string (`filesystem_contract::grant::MAX_NAME` is sixteen of
+Everything is bytes. A name here is a byte string (`filesystem_contract::grant::MAX_NAME` is 252 of
 them). So a matcher that decoded UTF-8 would have to decide what to do with a name that is not valid
 UTF-8, which is a question the filesystem never asks. `?` therefore matches one byte, which is half
 of a two-byte UTF-8 character. Same as `fnmatch(3)` in the C locale.
