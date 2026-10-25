@@ -261,6 +261,6 @@ These details are calef's, and each comes to him on its own:
 - what "small" means as a number;
 - whether a crate's own `unsafe` blocks count against it.
 
-The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in milestone
-784 (reuse what the tree wrote).
+The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in
+milestone 784 (reuse what the tree wrote).
 
