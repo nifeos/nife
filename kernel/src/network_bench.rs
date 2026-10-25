@@ -116,6 +116,7 @@ fn measure() -> &'static str {
         return "FAILED: the transfer did not complete (see socket_test_client for the code)";
     }
     print_transfer(bytes, ticks);
+    print_receive(cli, bytes, ticks);
     if bytes == 0 {
         "FAILED: connected and received nothing"
     } else if w.confined_by_iommu {
@@ -136,6 +137,22 @@ fn print_transfer(bytes: u64, ticks: u64) {
         (micros / 1000) % 1000,
         rate / 1_000_000,
         (rate / 1000) % 1000,
+    );
+}
+
+/// The `receive` line, from the drain client's second report: how many `RECEIVE` calls carried
+/// the stream, how full each was, and where the time went, inside a call (the server's
+/// turnaround: one poll of the NIC, smoltcp, the copy into the frame and the IPC round trip) or
+/// between calls (the client's own loop). See notes/designware-ethernet/the-receive-rate.md.
+fn print_receive(cli: crate::sched::RendezvousId, bytes: u64, ticks: u64) {
+    let [calls, inside, full, ..] = crate::sched::ipc_receive(cli);
+    let hz = arch::timer::frequency().max(1);
+    let per = |t: u64| t.saturating_mul(1_000_000) / hz / calls.max(1);
+    println!(
+        "network-bench: receive   : {calls} calls, {} bytes each on average, {full} full; {} us inside a call and {} us between calls, on average",
+        bytes / calls.max(1),
+        per(inside),
+        per(ticks.saturating_sub(inside)),
     );
 }
 
@@ -217,6 +234,7 @@ mod radon {
             return "FAILED: the transfer did not complete (see socket_test_client for the code)";
         }
         super::print_transfer(bytes, ticks);
+        super::print_receive(cli, bytes, ticks);
         if bytes == 0 {
             "FAILED: connected and received nothing"
         } else if coherent {

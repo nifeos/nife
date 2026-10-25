@@ -13,7 +13,10 @@
 //! `--stage-only` builds and stages without booting, the night-of use. `--peer a.b.c.d:port` bakes
 //! the LAN peer into the image (it has no other way to learn one); without it the rehearsal's
 //! `10.0.2.9:9494` is used, which on a real LAN reaches nothing. `--debug` builds the debug
-//! profile. Names provisional.
+//! profile. `--debug-userspace` builds the archive debug under a release kernel, the pairing
+//! `script/board-image` ships to radon (milestone 797 (release userspace in board images)), so the
+//! rehearsal's `receive` line shows the cost radon's programs pay
+//! (notes/designware-ethernet/the-receive-rate.md). Names provisional.
 
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, ExitCode, Stdio};
@@ -45,12 +48,14 @@ pub(crate) fn network_bench() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(2).collect();
     let mut stage_only = false;
     let mut debug = false;
+    let mut debug_userspace = false;
     let mut peer: Option<String> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "--stage-only" => stage_only = true,
             "--debug" => debug = true,
+            "--debug-userspace" => debug_userspace = true,
             "--peer" if i + 1 < args.len() => {
                 peer = Some(args[i + 1].clone());
                 i += 1;
@@ -58,7 +63,8 @@ pub(crate) fn network_bench() -> ExitCode {
             other => {
                 eprintln!("network-bench: unknown argument {other}");
                 eprintln!(
-                    "usage: cargo xtask network-bench [--stage-only] [--debug] [--peer a.b.c.d:port]"
+                    "usage: cargo xtask network-bench [--stage-only] [--debug] [--debug-userspace] \
+                     [--peer a.b.c.d:port]"
                 );
                 return ExitCode::from(4);
             }
@@ -77,10 +83,12 @@ pub(crate) fn network_bench() -> ExitCode {
     // The archive first and then the kernel, for the measured-boot order `uefi::uefi_kernel`
     // documents. The peer reaches the kernel as `option_env!`, which cargo tracks, so a different
     // peer rebuilds it.
-    RELEASE.store(!debug, Ordering::Relaxed);
+    RELEASE.store(!(debug || debug_userspace), Ordering::Relaxed);
     // SAFETY: xtask is single-threaded here; nothing else reads the environment concurrently.
     unsafe { std::env::set_var("NIFE_NETWORK_BENCH_PEER", &peer) };
-    if !initial_ramdisk_x86()
+    let archived = initial_ramdisk_x86();
+    RELEASE.store(!debug, Ordering::Relaxed);
+    if !archived
         || !cargo_profiled(&[
             "build",
             "-p",
