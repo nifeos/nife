@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -45,7 +45,8 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
 1. The long-name writer in the existing `mkfs`: milestone 560, built.
 2. The sector interface, boot sector and BPB parse, and FAT type by cluster count, with a
    per-sector no-panic harness and the reader's first fuzz target. The oracle's dev-dependency pin
-   is ruled here.
+   is ruled here. Built: [stage-2-the-reader-begins.md](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
+   has what landed and the names it minted. The pin is still open, and stage 3 needs it.
 3. FAT entry decode and the bounded chain walk.
 4. Directories: entries, long-name assembly with the checksum checked, and #1803's macOS images
    read to their recorded hashes.
@@ -135,7 +136,7 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 
 | property | harness |
 |---|---|
-| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | none yet |
+| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FSInfo, FAT entry, directory entry, long-name run: none yet |
 | Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | none yet |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the FAT and directory consistent | none yet |
 | Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: none yet |
@@ -209,7 +210,8 @@ Name: `file_allocation_table` is ratified today (`script/names`, checked 2026-10
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn
   handoff or nife error enum in a public signature. A reviewer judges this; no script can.
-  Known today: The sector interface the lane chooses must not be nife's block protocol.
+  The sector interface is `SectorDevice`: a sector size and `read_sector` by index, with no nife
+  type in it.
 
 ## Exit
 
@@ -244,6 +246,14 @@ record is not legal advice.
 The first two were the ones asserted against TomTom in 2009 and upheld on reexamination. All four
 predate 1995, so none can still be in force. FAT12, FAT16 and FAT32 themselves date from 1977 to
 1996. The search was for the known Microsoft families, not a freedom-to-operate opinion.
+
+## Follow-on
+
+- **Outstanding.** Stages 3 to 9. Checked 2026-10-25 (UTC): `crates/file_allocation_table/src/`
+  holds the boot-sector reader and the `mkfs`, and nothing reads a table, a directory or a file.
+- **Outstanding.** The oracle's pin of rust-fatfs as a dev-dependency waits on calef, and stage 3
+  needs it. [The stage 2 appendix](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
+  gives three options and recommends `lamfat = "=0.4.3"` from crates.io.
 
 ## BUGS
 

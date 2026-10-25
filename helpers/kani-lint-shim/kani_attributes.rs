@@ -1,4 +1,4 @@
-//! The two Kani attribute macros, as pass-throughs, so `script/lint` can compile the proof
+//! The three Kani attribute macros, as pass-throughs, so `script/lint` can compile the proof
 //! harnesses without Kani installed (milestone 113 (the proofs' own unsafe code is ungated)). Half
 //! of the shim; `kani.rs` beside it re-exports these and supplies `any`, `assume` and `cover!`. An
 //! attribute macro can only come from a proc-macro crate, hence two crates
@@ -29,5 +29,12 @@ pub fn proof(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// `#[kani::unwind(N)]`: the loop bound, which only the model checker has any use for.
 #[proc_macro_attribute]
 pub fn unwind(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+/// `#[kani::should_panic]`: the harness passes only if every failure it reaches is a panic, which
+/// only the model checker can tell.
+#[proc_macro_attribute]
+pub fn should_panic(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }

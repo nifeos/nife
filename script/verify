@@ -369,6 +369,7 @@ paging	5	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	1	the untyped-region accounting, no double-free
 elf	70	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	3	the physical frame allocator
+address_space_map	20	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 device_tree_blob	4	the device-tree parser's leaf readers
 inter_process_communication	11	the rendezvous state machine
 generational_table	10	the generational thread table
@@ -388,7 +389,7 @@ direct_memory_access_validator	148	the DMA-confinement validator, no descriptor 
 network_time_protocol	22	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	47	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	66	the partition table's CRC-32, its round trips, and partitions that overlap
-file_allocation_table	60	the long-name writer: the checksum, the run of entries, and that every alias is a legal short name
+file_allocation_table	90	the long-name writer, and a boot sector parse that is total on hostile bytes and types the volume by its cluster count
 calendar	314	the civil-date arithmetic, and the parser on hostile text
 glob	708	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth

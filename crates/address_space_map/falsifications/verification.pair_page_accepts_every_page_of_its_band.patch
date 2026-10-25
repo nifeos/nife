@@ -1,0 +1,21 @@
+Falsifies `address_space_map::verification::pair_page_accepts_every_page_of_its_band`.
+
+The defect: an off-by-one in `pair_page`'s band check, which asks about the page after `va`, so
+the last page of `PAIR_PAGES` is refused.
+
+Expected to fail: the harness's claim that no allowed address reaches `pair_page`'s asserts; Kani
+reports "a pair page must lie in PAIR_PAGES" reachable at `va = 0x0FFF_F000`.
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..9e7ef0e0e 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -153,7 +153,7 @@ pub const CURRENT_CPU_PAGE: u64 = PROCESS_PAGES.end - PAGE;
+ pub const fn pair_page(va: u64) -> u64 {
+     assert!(va.is_multiple_of(PAGE), "a pair page must be page aligned");
+     assert!(
+-        PAIR_PAGES.contains(va),
++        PAIR_PAGES.contains(va + PAGE),
+         "a pair page must lie in PAIR_PAGES (address_space_map)"
+     );
+     va

@@ -303,6 +303,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "file_allocation_table"
+version = "0.1.0"
+
+[[package]]
 name = "filesystem_contract"
 version = "0.1.0"
 
@@ -328,6 +332,7 @@ dependencies = [
  "device_tree_blob",
  "domain_name_system",
  "elf",
+ "file_allocation_table",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
  "http_response",
