@@ -12,7 +12,7 @@ The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what it
   said out loud.
 - A newly added column can go blank across history if a CSV merge conflict is resolved with
   `--update`, which restates only the current week and past weeks not at their last commit,
-  instead of `--backfill`. Merging two branches' concurrently-added columns needs a `--backfill`
+  instead of `--backfill`. Merging two branches' concurrently added columns needs a `--backfill`
   afterward, or the older rows carry empty cells (the register's *The weekly series* has the one
   case). Empty, not zero, is the tell: run `git diff` on `notes/project-metrics/` after merging two
   metrics branches.
