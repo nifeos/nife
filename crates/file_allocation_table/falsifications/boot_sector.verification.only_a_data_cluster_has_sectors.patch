@@ -1,0 +1,21 @@
+Falsifies `file_allocation_table::boot_sector::verification::only_a_data_cluster_has_sectors`.
+
+The defect: the cluster bound is inclusive, so the number one past the last cluster maps to the
+sectors after the data region. On a volume whose data region ends at its last sector, those are
+not the volume's sectors at all.
+
+Expected to fail: the harness's `assert!(is_data)`.
+
+diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
+index 551e94595..2af20e503 100644
+--- a/crates/file_allocation_table/src/boot_sector.rs
++++ b/crates/file_allocation_table/src/boot_sector.rs
+@@ -450,7 +450,7 @@ impl BootSector {
+     /// this volume's data clusters (2 to `clusters() + 1`). The cluster's
+     /// [`BootSector::sectors_per_cluster`] sectors all lie inside the volume.
+     pub const fn cluster_first_sector(&self, cluster: u32) -> Option<u32> {
+-        if cluster < 2 || cluster - 2 >= self.clusters {
++        if cluster < 2 || cluster - 2 > self.clusters {
+             return None;
+         }
+         Some(self.first_data_sector + ((cluster - 2) << self.cluster_shift))

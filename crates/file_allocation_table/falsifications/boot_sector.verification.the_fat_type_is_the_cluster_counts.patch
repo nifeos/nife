@@ -1,0 +1,20 @@
+Falsifies `file_allocation_table::boot_sector::verification::the_fat_type_is_the_cluster_counts`.
+
+The defect: the FAT12 ceiling is off by one, so a volume of exactly 4084 clusters is typed FAT16.
+Its table holds 12-bit entries and the reader would decode them 16 bits at a time.
+
+Expected to fail: the harness's `assert!((4085..65525).contains(&clusters))`.
+
+diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
+index 551e94595..7780e57a0 100644
+--- a/crates/file_allocation_table/src/boot_sector.rs
++++ b/crates/file_allocation_table/src/boot_sector.rs
+@@ -9,7 +9,7 @@
+ use crate::sector::{SectorDevice, SectorSize};
+ 
+ /// The cluster count below which a volume is FAT12, by the specification's rule.
+-const FAT16_MIN_CLUSTERS: u32 = 4085;
++const FAT16_MIN_CLUSTERS: u32 = 4084;
+ 
+ /// The cluster count below which a volume is FAT16, and at or above which it is FAT32.
+ const FAT32_MIN_CLUSTERS: u32 = 65_525;

@@ -1,0 +1,22 @@
+Falsifies `file_allocation_table::boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`.
+
+The defect: the data region is measured from the end of the tables rather than from the end of the
+root directory region, so a FAT12 or FAT16 volume counts the root's sectors as clusters too. The
+last clusters then lie past the volume's last sector, and a read of them lands on whatever follows
+the volume on the disk.
+
+Expected to fail: the harness's `assert!(data_end <= total)`.
+
+diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
+index 551e94595..218e72d0d 100644
+--- a/crates/file_allocation_table/src/boot_sector.rs
++++ b/crates/file_allocation_table/src/boot_sector.rs
+@@ -246,7 +246,7 @@ impl BootSector {
+         let root_first = u64::from(reserved_sectors) + u64::from(tables) * u64::from(table_sectors);
+         let first_data_sector = root_first + root_sectors;
+         let data_sectors = u64::from(total_sectors)
+-            .checked_sub(first_data_sector)
++            .checked_sub(root_first)
+             .ok_or(ParseError::MetadataPastEnd)?;
+         // Bounded by `total_sectors`, so the conversions to u32 from here on cannot truncate.
+         let clusters = (data_sectors >> cluster_shift) as u32;

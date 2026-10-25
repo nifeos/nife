@@ -1,0 +1,21 @@
+Falsifies `file_allocation_table::boot_sector::verification::the_table_has_an_entry_for_every_cluster`.
+
+The defect: the table's size is checked against the cluster count without the two reserved entries
+that precede cluster 2, so a table two entries short passes. A walk reaching the last cluster then
+reads its entry from past the table's end, out of the next table or the root region.
+
+Expected to fail: the harness's `assert!((u64::from(boot.clusters()) + 2) * bits <= held)`.
+
+diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
+index 551e94595..57d7d5226 100644
+--- a/crates/file_allocation_table/src/boot_sector.rs
++++ b/crates/file_allocation_table/src/boot_sector.rs
+@@ -271,7 +271,7 @@ impl BootSector {
+             return Err(ParseError::TooManyClusters);
+         }
+         // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.
+-        let needed_bits = (u64::from(clusters) + 2) * u64::from(fat_type.entry_bits());
++        let needed_bits = u64::from(clusters) * u64::from(fat_type.entry_bits());
+         let held_bits = u64::from(table_sectors) << (sector_size.shift() + 3);
+         if needed_bits > held_bits {
+             return Err(ParseError::TableTooSmall);
