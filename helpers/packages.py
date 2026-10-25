@@ -466,7 +466,11 @@ def evaluate(tracked, texts):
     return {'errors': errors, 'packages': packages, 'crates': crates, 'crate_pkg': crate_pkg,
             'program_pkg': program_pkg, 'in_repo': in_repo, 'unclaimed': unclaimed,
             'path_status': path_status, 'tracked': len(tracked),
-            'violations': len(violations)}
+            'violations': len(violations),
+            # {prefix: package name, or None for a packages/homes.toml claim}: the longest prefix
+            # naming a path is its owner. helpers/interface_stability.py's per-package co-change
+            # reads it to place every path a past commit touched.
+            'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()}}
 
 
 def _prefixes(path):
