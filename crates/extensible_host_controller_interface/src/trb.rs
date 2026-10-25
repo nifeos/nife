@@ -1,6 +1,4 @@
 //! **One TRB** and the builders for the TRBs the driver writes.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 

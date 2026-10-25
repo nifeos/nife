@@ -1,6 +1,4 @@
 //! **An event the controller wrote**, decoded.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 

@@ -1,6 +1,4 @@
 //! **The rings**: the producer rings the driver fills and the event ring it drains.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 

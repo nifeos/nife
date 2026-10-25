@@ -126,7 +126,7 @@ in the copy, and each falsification patch, applied with `-p3`, turns its harness
 manifest and files only, plus 12 lines citing this tree: 5 `milestone N`, 3 `§N`, 2 naming calef, 1
 tree path and 1 provenance block.
 
-Name: `extensible_host_controller_interface` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `extensible_host_controller_interface` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -150,6 +150,25 @@ harness that stock Kani proves in the copy and whose falsification patch makes i
 publishes without Kani harnesses covering its hostile-input and state-machine surface, each carrying
 a falsification patch that makes it fail at its own assertion, replayable in the crate's own
 repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0820-the-xhci-crate-released-on-its-own/names.md).
+
+- `src/lib.rs`, the crate doc: the ring design is in notes/usb.md, "The rings and the cycle bit".
+- `src/window.rs`, `register_window`: notes/usb.md, "The register window".
+- `src/port.rs`, `Settle`: the settle rule and its numbers are in notes/usb.md, "The ports settle
+  before the scan".
+- `src/tests.rs`, the module doc: lane maintainer/mutation-triage-2026w42 moved the tests out of
+  `lib.rs` on 2026-10-12 (UTC), so the crate root stays an index under §282 (when a file is split,
+  the parent becomes an index).
+- `src/tests.rs`, `a_sixty_four_kibibyte_bar_maps_sixteen_pages_less_the_table`: the bench step
+  that reads xenon's own capability values is calef's.
+- `Cargo.toml`, the manifest comment: the crate is a host-testable pure-logic crate under §7
+  (testing: QEMU harness + host-testable crates, from commit one). The keyboard driver it serves
+  belongs to milestone 242 (USB host and HID, because on commodity hardware the keyboard is not a
+  UART).
 
 ## BUGS
 

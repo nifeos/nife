@@ -98,10 +98,7 @@ pub const fn speed_name(speed: u8) -> &'static str {
 /// does it at once. A boot-time scan therefore waits until no port's `CCS` has changed for
 /// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
 /// The clock starts when the ports are powered, so nothing is believed before
-/// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`);
-/// see notes/usb.md, "The ports settle before the scan".
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
+/// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settle {
     start_ms: u64,
@@ -110,29 +107,19 @@ pub struct Settle {
 }
 
 /// Every root port's `CCS`, one bit per port number: 256 bits, since `HCSPARAMS1.MaxPorts` is a byte.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub type Connections = [u32; 8];
 
 /// USB 2.0's `TATTDB` (section 7.1.7.3), a connection's debounce interval, and Linux's
 /// `HUB_DEBOUNCE_STABLE`. It also covers USB 2.0's `TSIGATT` (a device attaches within 100 ms of
 /// power) and is Linux's floor on a root hub's power-on-to-good time.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_STABLE_MS: u64 = 100;
 /// Linux's `HUB_DEBOUNCE_STEP`.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_STEP_MS: u64 = 25;
 /// Linux's `HUB_DEBOUNCE_TIMEOUT`.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_TIMEOUT_MS: u64 = 2000;
 
 impl Settle {
     /// Start at `now_ms`, when the ports were powered, having read `first`.
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
     pub const fn new(now_ms: u64, first: Connections) -> Settle {
         Settle {
             start_ms: now_ms,
@@ -143,8 +130,6 @@ impl Settle {
 
     /// The ports read `seen` at `now_ms`: `None` to keep reading, `Some(true)` once nothing has
     /// changed for [`DEBOUNCE_STABLE_MS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MS`].
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
     pub fn observe(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
         if seen != self.last {
             self.last = seen;

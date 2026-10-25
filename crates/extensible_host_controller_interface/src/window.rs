@@ -1,6 +1,4 @@
 //! **The register window**: which pages of the BAR the driver is mapped, and why a layout is refused.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
@@ -28,7 +26,7 @@ pub enum WindowRefusal {
 /// Every page of the BAR up to [`MAX_REGISTER_PAGES`] is mapped except any page that overlaps a
 /// `withheld` byte range, where the kernel passes the MSI-X table and pending-bit array. A page the
 /// driver needs ([`Capabilities`]' registers through the last `PORTSC`, interrupter 0, every
-/// doorbell) that is withheld or out of reach is refused. See notes/usb.md, "The register window".
+/// doorbell) that is withheld or out of reach is refused.
 ///
 /// # Examples
 ///

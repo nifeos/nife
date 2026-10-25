@@ -1,9 +1,9 @@
 //! **The driver's one bring-up report**, which the kernel waits for before the boot goes on.
 //!
 //! Three words on a report endpoint, sent once: what the driver found, then two words of detail.
-//! Both ends read them through this module, because they are two programs agreeing on a format
-//! (rule 7: anything two binaries agree on is a crate). The kernel prints a sentence from them;
-//! nothing else reads them.
+//! Both ends read them through this module, because they are two programs agreeing on a format,
+//! and a format two binaries agree on belongs in one crate rather than in two "must match"
+//! comments. The kernel prints a sentence from them; nothing else reads them.
 
 /// Word 0: a boot keyboard is configured and its reports are queued. Word 1 is [`keyboard`]'s
 /// packing; word 2 is the interface and endpoint.
@@ -117,15 +117,11 @@ pub const fn keyboard_of(w: u64) -> (u8, u8, u16, u16) {
 /// [`NO_KEYBOARD`]'s word 1: how many root ports there are, how many had a device at the scan,
 /// and whether every port's connection had held still before it (`false`: the scan ran at the
 /// debounce timeout, so its count is a moment, not a settled fact).
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const fn ports(ports: u8, connected: u8, settled: bool) -> u64 {
     ports as u64 | (connected as u64) << 8 | (settled as u64) << 16
 }
 
 /// [`ports`] back: `(ports, connected, settled)`.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const fn ports_of(w: u64) -> (u8, u8, bool) {
     (w as u8, (w >> 8) as u8, (w >> 16) & 1 != 0)
 }
