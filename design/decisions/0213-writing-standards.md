@@ -9,8 +9,9 @@ ratified_by: calef
 
 The rules, ratified by calef on 2026-09-23 (UTC) unless marked: a median sentence of 20 words or
 fewer, no sentence over 40 words, and 4 or fewer bold spans per 1,000 words. Rule 4 is a review
-question, and rule 5 is §298's, carried here. The ratchet is the enforcement, and two proposed
-rules stay dropped.
+question, and rule 5 is §298's, carried here. Rule 6, ratified 2026-10-25, holds new prose to 2
+passive constructions per 1,000 words. The ratchet is the enforcement, and two proposed rules stay
+dropped.
 
 His words, which are the whole brief:
 
@@ -90,8 +91,8 @@ that can be counted should be counted, rather than written as advice and left to
 
 ## The standard
 
-Three rules carry numbers. The fourth is the most valuable and no machine can check it. The fifth
-has a phrase gate under it, and review does the rest.
+Rules 1 to 3 and rule 6 carry numbers. The fourth is the most valuable and no machine can check
+it. The fifth has a phrase gate under it, and review does the rest.
 
 1. A document's median sentence is 20 words or fewer. The corrected corpus median is exactly 20, so
    the tree already sits on Amazon's 15-to-20 standard, and the proposal's 25 was a floor set above
@@ -114,6 +115,10 @@ has a phrase gate under it, and review does the rest.
 5. A document states what is in force now, and its history is in git (calef, 2026-10-13 UTC).
    [§298 (a document states what is in force now)](0298-a-document-states-what-is-in-force-now.md)
    is the rule, what stays, and its gate.
+6. Write in the active voice: new prose carries at most 2 passive constructions per 1,000 words,
+   and an old document's passive count only falls (calef, 2026-10-25 UTC).
+   [`passive-voice.md`](0213-writing-standards/passive-voice.md) has the ruling, the measure and
+   the two options refused.
 
 ### A label that opens a line becomes a heading
 

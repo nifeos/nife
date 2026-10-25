@@ -274,6 +274,15 @@ Each week is read from its own commit, so 2026W39 is the first correction, alrea
 Documents over each writing-standards limit; exempted ones count
 ([definitions](register-of-measures/ratchet-debt.md)).
 
+## Passive voice
+
+![Passive constructions in the prose](project-metrics/passive-voice.svg)
+
+![Passive constructions per 1,000 words of prose](project-metrics/passive-voice-rate.svg)
+
+§213 (writing standards) rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
+the limit a new document meets ([definitions](register-of-measures/ratchet-debt.md#passive-voice)).
+
 ## Comment blocks
 
 ![Files with a long comment block](project-metrics/comment-blocks.svg)

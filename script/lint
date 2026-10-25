@@ -3251,7 +3251,7 @@ if bad or missing:
 print(f'markdown: {len(md)} files, every relative link resolves, every note indexed')
 PY
 
-echo "==> the prose ratchet (§212 words, §213 sentences and bold)"
+echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # Milestone 586 (a prose ratchet in lint). §212 (a prose budget) and §213 (writing standards) were
 # ratified on 2026-09-23 with a ratchet as their enforcement and no gate built, and on 2026-09-24 the
 # word cap slipped twice in one day because nothing checked it: one lane moved facts into eight
@@ -3266,6 +3266,10 @@ echo "==> the prose ratchet (§212 words, §213 sentences and bold)"
 # only shrink. When a document improves, `python3 helpers/prose_ratchet.py --bank` lowers its row;
 # nothing forces that, on purpose, because the block names baseline churn as the thing that would
 # make this ratchet cost more than it saves.
+#
+# §213 rule 6 (milestone 952 (a passive-voice ratchet in lint), calef 2026-10-25 UTC) rides the same pass: helpers/passive_voice.py
+# counts passives, and a document over 2 per 1,000 prose words passes only while
+# design/passive-baseline.tsv holds it and its count has not risen there or since the merge base.
 python3 helpers/prose_ratchet.py --selftest
 python3 helpers/prose_ratchet.py --check
 echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"

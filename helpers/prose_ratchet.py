@@ -9,6 +9,8 @@ checked it: a lane moved facts into notes already over the cap and each note gre
     python3 helpers/prose_ratchet.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/prose_ratchet.py --init           # write the baseline from scratch (milestone 586 only)
     python3 helpers/prose_ratchet.py --remeasure      # once, in the change that bumps MEASURE (see there)
+    python3 helpers/prose_ratchet.py --init-passive   # write the passive baseline (milestone 952 only)
+    python3 helpers/prose_ratchet.py --remeasure-passive  # once, with a PASSIVE_MEASURE bump
 
 Name: provisional, minted by milestone 586's lane on 2026-09-24. A shared python module under
 `helpers/`, which `script/names` puts out of its own scope, so its provenance is this paragraph
@@ -23,6 +25,7 @@ which is §212's half alone.
 | median sentence, in words | 20 | §213 (writing standards) rule 1 |
 | longest sentence, in words | 40 | §213 rule 2 |
 | bold spans per 1,000 words | 4 | §213 rule 3, held as two counts: line-opening and inline |
+| passive constructions per 1,000 words | 2 | §213 rule 6, held in its own baseline |
 
 **The ratchet.** A measure at or under its limit passes. A measure over it passes only if the
 committed baseline (`design/prose-baseline.tsv`) records the document as already over on that
@@ -30,6 +33,14 @@ measure and the document has not got worse than the baseline says. A document mi
 baseline, which is every new one, meets the limits outright. Against the merge base as well: a
 document that shrank on `main` without anyone banking the shrink may not grow back into the slack,
 because §212's rule is "may not grow", not "may not exceed a number written down once".
+
+**The passive-voice half** (milestone 952, §213 rule 6, calef 2026-10-25 UTC: "Lets implement
+A."). `helpers/passive_voice.py` counts passives over the prose the sentence limits read (blocks,
+quotes out, inline code one word). A document of at least 200 prose words over 2 per 1,000 fails,
+unless `design/passive-baseline.tsv` holds a row for it, and then its count may not rise above the
+row nor above its count at the merge base. That file is its own: `--init-passive` wrote it once,
+`--bank` lowers it, and nothing raises it. No touch rule applies, unlike bold: ruling A holds an
+existing document to a count that only falls, and a document gains no allowance by being edited.
 
 **Exceptions** are HTML comments in the document, where a reader meets them, and they need a date
 and a `Reason:` so that an exception says out loud that it is one (AGENTS.md's ladder):
@@ -110,6 +121,7 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import passive_voice  # noqa: E402
 import roadmap_block  # noqa: E402
 
 # --- a counted claim's number is not a touch --------------------------------------------------
@@ -411,12 +423,21 @@ def blocks(lines):
         yield ' '.join(cur)
 
 
-def sentences(block):
+def unquoted(block):
+    """A block as the writer's own words: links as their text, inline code as one word, and each
+    `"..."` quote as a `\0` marker.
+
+    Quotes come out BEFORE the split, because a verbatim quote may hold sentence ends of its own
+    ("... It is more honest ...") and splitting inside it would measure half a quote as prose. A
+    quote that closed its sentence leaves the stop behind so the lead-in still ends there.
+    """
     s = LINK.sub(r'\1', _code_to_word(block))
-    # Quotes come out BEFORE the split, because a verbatim quote may hold sentence ends of its own
-    # ("... It is more honest ...") and splitting inside it would measure half a quote as prose. A
-    # quote that closed its sentence leaves the stop behind so the lead-in still ends there.
-    s = QUOTED.sub(lambda m: ' \0' + ('. ' if re.search(r'[.!?]\W*$', m.group(0)) else ' '), s)
+    return QUOTED.sub(lambda m: ' \0' + ('. ' if re.search(r'[.!?]\W*$', m.group(0)) else ' '), s)
+
+
+def sentences(block, s=None):
+    """Each sentence's length in words. `s` is `unquoted(block)`, for a caller that has it."""
+    s = unquoted(block) if s is None else s
     out, start = [], 0
     for m in SENTENCE_END.finditer(s):
         before = s[:m.start() + 1].split()
@@ -431,6 +452,14 @@ def sentences(block):
         if n:
             lengths.append(n)
     return lengths
+
+
+def passive_count(texts):
+    """Passive constructions in the prose `sentences` measures, given each block as `unquoted`
+    returns it: no heading, table row or blockquote; a link as its text; inline code as one word;
+    a `"..."` quote removed, since a writer cannot rewrite a speaker into the active voice. The
+    counter is `passive_voice.count`."""
+    return sum(passive_voice.count(t) for t in texts)
 
 
 # --- bold a script parses is syntax, not emphasis --------------------------------------------
@@ -884,11 +913,12 @@ def measure(text):
     §213 asks about: the 200-word floor and bold per 1,000 words are a density of prose."""
     lines = list(prose_lines(text))
     prose = sum(len(line.split()) for line in lines)
-    lengths = [n for b in blocks(lines) for n in sentences(b)]
+    prose_blocks = [(b, unquoted(b)) for b in blocks(lines)]
+    lengths = [n for b, s in prose_blocks for n in sentences(b, s)]
     lead, inline = bold_counts(lines)
     return {'words': budget_words(text), 'prose_words': prose, 'median': median(lengths),
             'longest': max(lengths, default=0), 'bold_lead': lead, 'bold_inline': inline,
-            'sentences': len(lengths)}
+            'sentences': len(lengths), 'passives': passive_count(s for _b, s in prose_blocks)}
 
 
 def bold_allowed(words):
@@ -968,6 +998,109 @@ def write_baseline(rows):
     with open(BASELINE, 'w') as f:
         f.write(''.join(out))
 
+
+
+# --- the passive-voice baseline (milestone 952) -----------------------------------------------
+#
+# Its own file, so the prose baseline's MEASURE and REMEASURED stay about the prose baseline's own
+# columns: adding this measure moved none of them, and needs no bump there. PASSIVE_MEASURE numbers
+# this file's measurement the same way. A change to `passive_voice` that raises counts (an entry
+# leaving NOT_PASSIVE, a participle joining IRREGULAR) bumps it, runs `--remeasure-passive`, and
+# `check` lets rows rise or appear in that change alone. A change that only lowers counts needs no
+# bump: the rows are ceilings, and `--bank` lowers them.
+
+PASSIVE_BASELINE = 'design/passive-baseline.tsv'
+PASSIVE_PER_1000 = 2
+PASSIVE_MEASURE = 1
+PASSIVE_FAMILY = 'writing-standards'
+
+PASSIVE_HEADER = """\
+# The passive-voice baseline: milestone 952 (a passive-voice ratchet in lint), for rule 6 of §213
+# (writing standards): at most 2 passive constructions per 1,000 prose words.
+# One row per document over that limit when `python3 helpers/prose_ratchet.py --init-passive`
+# wrote this file. A count is a ceiling that only goes DOWN: `--bank` lowers it and drops a row
+# whose document has reached the limit. A row may be removed; a row may not be added and a count
+# may not rise (script/lint compares against the merge base). A document under 200 prose words is
+# not held to the density. A document absent from this file meets the limit outright, or carries
+# a marked writing-standards exception. helpers/passive_voice.py is the counter.
+"""
+
+
+def passive_over(m):
+    """True when a measured document is over 2 passives per 1,000 prose words, and big enough to
+    be asked (the 200-word floor the bold density uses)."""
+    return (m['prose_words'] >= SMALL_DOCUMENT
+            and m['passives'] * 1000 > PASSIVE_PER_1000 * m['prose_words'])
+
+
+def passive_allowed(words):
+    """The most passives a document of `words` prose words may carry: 2 per 1,000, rounded down."""
+    return words * PASSIVE_PER_1000 // 1000
+
+
+def read_passive_baseline(text):
+    rows = {}
+    for line in (text or '').splitlines():
+        if not line.strip() or line.startswith('#'):
+            continue
+        cells = line.split('\t')
+        if cells[0] != 'path' and len(cells) >= 2:
+            rows[cells[0]] = int(cells[1])
+    return rows
+
+
+def write_passive_baseline(rows):
+    out = [PASSIVE_HEADER, f'# measure: {PASSIVE_MEASURE}\n', 'path\tpassives\n']
+    out += [f'{path}\t{rows[path]}\n' for path in sorted(rows)]
+    with open(PASSIVE_BASELINE, 'w') as f:
+        f.write(''.join(out))
+
+
+def passive_verdict(path, m, row, was):
+    """The refusal for one document's passive count, or None when it passes.
+
+    `m` is its measure now, `row` its baseline count (None without a row), and `was` its count at
+    the merge base (None for a document the branch did not change). The caller has already let a
+    `writing-standards` exception through. Pure, so `selftest` drives it with fixtures.
+    """
+    if not passive_over(m):
+        return None
+    n, words = m['passives'], m['prose_words']
+    have = (f'{path}: {n} passive constructions in {words:,} words of prose, over 2 per 1,000 '
+            f'(§213 rule 6), which here allows {passive_allowed(words)}')
+    if row is None:
+        return (f'{have}. A document not in {PASSIVE_BASELINE} meets the limit outright: put '
+                f'{n - passive_allowed(words)} into the active voice')
+    if n > row:
+        return (f'{have}, and its baseline holds it to {row}. A document already over may not '
+                f'get worse: put {n - row} into the active voice')
+    if was is not None and n > was:
+        return (f'{have}. It went from {was} to {n} on this branch, and the baseline ({row}) has '
+                f'room only because a shrink was never banked')
+    return None
+
+
+def passive_baseline_problems(base, renames):
+    """The passive baseline may only shrink: no row added and no count raised against the merge
+    base's copy, outside a change that bumps PASSIVE_MEASURE."""
+    if not base or not os.path.exists(PASSIVE_BASELINE):
+        return []
+    old_text = at(base, PASSIVE_BASELINE)
+    if old_text is None:
+        return []  # the change that writes the file once (`--init-passive`)
+    now_text = open(PASSIVE_BASELINE).read()
+    if baseline_measure(old_text) < PASSIVE_MEASURE == baseline_measure(now_text):
+        return []  # a re-measurement, once, with the counter change that moved it
+    old, bad = read_passive_baseline(old_text), []
+    for path, count in read_passive_baseline(now_text).items():
+        prior = old.get(path, old.get(renames.get(path, '')))
+        if prior is None:
+            bad.append(f'{PASSIVE_BASELINE}: {path} was added. The baseline only shrinks; a new '
+                       f'document meets 2 passives per 1,000 words outright')
+        elif count > prior:
+            bad.append(f'{PASSIVE_BASELINE}: {path} raised its passives from {prior} to {count}. '
+                       f'The baseline only goes down')
+    return bad
 
 # --- git ---------------------------------------------------------------------------------------
 
@@ -1108,6 +1241,22 @@ def check():
             bad.append(f'{BASELINE}: {path} is not in the tree. Remove its row (or move it, if the '
                        f'document was renamed)')
 
+    # The passive-voice baseline, by the same two rules: it only shrinks against the merge base,
+    # a renamed document's row is compared with its old path's, and every row names a document.
+    passive_rows = (read_passive_baseline(open(PASSIVE_BASELINE).read())
+                    if os.path.exists(PASSIVE_BASELINE) else {})
+    if base:
+        renames = {}
+        for line in (git('diff', '--name-status', '-M', base, '--', '*.md') or '').splitlines():
+            cells = line.split('\t')
+            if cells[0].startswith('R') and len(cells) == 3:
+                renames[cells[2]] = cells[1]
+        bad += passive_baseline_problems(base, renames)
+    for path in passive_rows:
+        if path not in paths:
+            bad.append(f'{PASSIVE_BASELINE}: {path} is not in the tree. Remove its row (or move it, '
+                       f'if the document was renamed)')
+
     changed = set()
     touched = set()  # content differs from the merge base; a 100%-similar rename is not a touch
     if base:
@@ -1132,6 +1281,7 @@ def check():
 
     excused = 0
     held = 0
+    passive_held = 0
     for path in docs:
         text = open(path).read()
         exc = exceptions(text)
@@ -1146,6 +1296,19 @@ def check():
                        f'rename read as the form it replaced) against the {grant:,} its '
                        f'prose-budget exception grants. Cut it back; raising the grant is calef\'s')
         m = measured(path, text)
+        if passive_over(m):
+            if PASSIVE_FAMILY in exc:
+                excused += 1
+            else:
+                prior = None
+                if path in changed:
+                    old_text = at(base, path)
+                    prior = measured(path, old_text)['passives'] if old_text is not None else None
+                problem = passive_verdict(path, m, passive_rows.get(path), prior)
+                if problem:
+                    bad.append(problem)
+                else:
+                    passive_held += 1
         now_over = over(m)
         if not now_over:
             continue
@@ -1193,7 +1356,7 @@ def check():
         held += doc_held
 
     bad += orphans(paths)
-    return docs, held, excused, bad
+    return docs, held, passive_held, excused, bad
 
 
 def remeasure():
@@ -1224,6 +1387,42 @@ def remeasure():
             rows[path] = row
             moved.append(path)
     write_baseline(rows)
+    return moved
+
+
+def bank_passive(init=False):
+    """Write the passive baseline. `init` writes every document over the limit, once; otherwise
+    each row falls to the document's count, a row at or under the limit goes, and none is added."""
+    old = {} if init else read_passive_baseline(
+        open(PASSIVE_BASELINE).read() if os.path.exists(PASSIVE_BASELINE) else '')
+    rows = {}
+    for path in documents(tracked()):
+        text = open(path).read()
+        m = measured(path, text)
+        if not passive_over(m) or PASSIVE_FAMILY in exceptions(text):
+            continue
+        if init:
+            rows[path] = m['passives']
+        elif path in old:
+            rows[path] = min(m['passives'], old[path])
+    write_passive_baseline(rows)
+    return rows
+
+
+def remeasure_passive():
+    """Raise or add passive rows to what a new PASSIVE_MEASURE counts, and lower none. Run once,
+    in the change that bumps PASSIVE_MEASURE; `check` refuses the raise anywhere else."""
+    rows = read_passive_baseline(
+        open(PASSIVE_BASELINE).read() if os.path.exists(PASSIVE_BASELINE) else '')
+    moved = []
+    for path in documents(tracked()):
+        text = open(path).read()
+        m = measured(path, text)
+        if passive_over(m) and PASSIVE_FAMILY not in exceptions(text) \
+                and m['passives'] > rows.get(path, -1):
+            rows[path] = m['passives']
+            moved.append(path)
+    write_passive_baseline(rows)
     return moved
 
 
@@ -1392,6 +1591,41 @@ def selftest():
         failed.append('a quoted marker is not an exception')
     if exc_ok != {'prose-budget': None} or exc_bad.get('writing-standards') is None:
         failed.append('exception markers')
+    # The passive count (milestone 952): the counter's own cases, then the prose it reads.
+    failed += [f'helpers/passive_voice.py: {f}' for f in passive_voice.selftest()]
+    passive_cases = [
+        ('a passive in prose counts', 'The row is checked by lint.', 1),
+        ('a passive in inline code is not prose', 'Run `it is checked` now.', 0),
+        ('a passive in a fence is not prose', 'Short.\n```\nit is checked\n```\n', 0),
+        ('a passive in a comment is not prose', 'Short.\n<!-- it is checked -->\n', 0),
+        ('a passive in a heading is not prose', '## It is checked\n\nShort.', 0),
+        ('a passive in a table row is not prose', '| it is checked | x |\n', 0),
+        ('a passive in a blockquote is a speaker\'s', '> It was decided.\n\nShort.', 0),
+        ('a passive in a quote is a speaker\'s', 'He said "it was decided" and left.', 0),
+        ('a link counts as its text', 'See [what is built](x.md) here.', 1),
+        ('the ladder\'s rung is a noun', 'That is rung two.', 0),
+    ]
+    for name, text, want in passive_cases:
+        if measure(text)['passives'] != want:
+            failed.append(f'{name} ({measure(text)["passives"]} passives, want {want})')
+    # A roadmap block's field tokens are syntax, so `**Status: BUILT.**` is no passive.
+    if measured('design/roadmap/0001-x.md', '**Status: BUILT.** Done.\n')['passives'] != 0:
+        failed.append('a roadmap field token is counted as a passive')
+    # The verdict, on a 500-word document, which 2 per 1,000 allows one passive.
+    def doc(n, words=500):
+        return {'passives': n, 'prose_words': words}
+    verdicts = [
+        ('at the limit passes', doc(1), None, None, False),
+        ('over the limit with no row fails', doc(2), None, None, True),
+        ('under the 200-word floor passes', doc(3, 150), None, None, False),
+        ('held by its row passes', doc(5), 5, None, False),
+        ('over its row fails', doc(6), 5, None, True),
+        ('grown since the merge base fails', doc(5), 9, 4, True),
+        ('shrunk since the merge base passes', doc(4), 9, 5, False),
+    ]
+    for name, m, row, was, fails in verdicts:
+        if (passive_verdict('x.md', m, row, was) is not None) != fails:
+            failed.append(f'the passive verdict: {name}')
     for name in failed:
         if name.startswith(('script/', 'helpers/', 'no parser')):
             print(f'prose ratchet selftest: {name}', file=sys.stderr)
@@ -1411,7 +1645,7 @@ def main(argv):
     if argv and argv[0] == '--selftest':
         return selftest()
     if not argv or argv[0] == '--check':
-        docs, held, excused, bad = check()
+        docs, held, passive_held, excused, bad = check()
         if bad:
             print('prose ratchet: the tree breaks §212 or §213 against its baseline:', file=sys.stderr)
             for b in bad:
@@ -1421,7 +1655,8 @@ def main(argv):
                   '586\'s block, design/roadmap/0586-a-prose-ratchet-in-lint.md.', file=sys.stderr)
             return 1
         print(f'prose ratchet: {len(docs)} documents; {held} over a limit and held to the baseline, '
-              f'{excused} measures excused by a marked exception, every appendix linked')
+              f'{passive_held} over the passive limit and held to theirs, {excused} measures '
+              f'excused by a marked exception, every appendix linked')
         return 0
     if argv[0] == '--report':
         for path in argv[1:]:
@@ -1441,6 +1676,23 @@ def main(argv):
     if argv[0] in ('--bank', '--init'):
         rows = bank(init=argv[0] == '--init')
         print(f'prose ratchet: {len(rows)} rows written to {BASELINE}')
+        if argv[0] == '--bank' and os.path.exists(PASSIVE_BASELINE):
+            rows = bank_passive()
+            print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
+        return 0
+    if argv[0] == '--init-passive':
+        # Once, by milestone 952. A second run would reset every ceiling to today's count, which
+        # is the raise the baseline exists to refuse.
+        if os.path.exists(PASSIVE_BASELINE):
+            print(f'prose ratchet: {PASSIVE_BASELINE} exists, and it is written once; '
+                  f'--bank lowers it', file=sys.stderr)
+            return 1
+        rows = bank_passive(init=True)
+        print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
+        return 0
+    if argv[0] == '--remeasure-passive':
+        moved = remeasure_passive()
+        print(f'prose ratchet: re-measured {len(moved)} passive rows under measure {PASSIVE_MEASURE}')
         return 0
     print(__doc__.split('\n\n')[1], file=sys.stderr)
     return 2
