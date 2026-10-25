@@ -4,6 +4,8 @@
 //! The parse is straight-line code with no loop, so every harness covers every sector, not a
 //! bounded family of them. The thresholds below are written as the specification's literals
 //! rather than the crate's constants, so a wrong constant cannot prove itself right.
+//!
+//! Name: provisional.
 
 use super::*;
 
