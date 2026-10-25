@@ -87,7 +87,7 @@ PINS = [
     ('spin', 'src/mutex/spin.rs',
      r'compare_exchange(?:_weak)?\(\s*false,\s*true,\s*Ordering::Acquire,\s*Ordering::Relaxed\s*\)',
      2, 'SpinMutex takes the lock with an Acquire compare-exchange, strong and weak '
-        '(notes/memory-ordering.md, "Where this kernel\'s ordering actually lives")'),
+        "(notes/memory-ordering.md, section 'Where this kernel's ordering actually lives')"),
     ('spin', 'src/mutex/spin.rs', r'\.store\(\s*false,\s*Ordering::Release\s*\)',
      2, 'SpinMutex releases the lock with a Release store, in the guard\'s drop and in '
         'force_unlock (notes/memory-ordering.md)'),

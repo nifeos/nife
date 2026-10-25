@@ -22,8 +22,8 @@ one of the options below, not the default.
 `IrqSafeMutex` (`kernel/src/sync.rs`) wraps `spin::Mutex`. [notes/memory-ordering.md](../../../notes/memory-ordering.md)
 says most of the kernel's happens-before edges come from that lock's Acquire compare-exchange and
 Release store, and §9 (locking) and §11 (per-CPU run queues) lean on them. The `unsafe` that turns
-those orderings into a `&mut T` with no data race is `spin`'s guard `Deref` and `DerefMut`
-(`src/mutex/spin.rs:384`, `:391`) and its `Send` and `Sync` impls. Nothing in nife proves the lock
+those orderings into a `&mut T` with no data race is `SpinMutexGuard`'s `deref` and
+`deref_mut`, and the `Send` and `Sync` impls beside them. Nothing in nife proves the lock
 gives exclusion. [notes/kernel-dependency-unsafe.md](../../../notes/kernel-dependency-unsafe.md) lists
 every site and what checks it: upstream Miri over the crate's tests, and a text pin here on the two
 orderings, which fails `script/lint` if a bump weakens either.
