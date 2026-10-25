@@ -2,6 +2,9 @@
 
 <!-- writing-standards: exception. Marked 2026-10-25 (UTC) by lane crates-stand-alone. Reason: each block below is a provenance record moved verbatim from the crate's source, refusals and wording included, and a record keeps its words. -->
 
+Several blocks cite milestone 159 (a real hardware entropy source: the JH7110's TRNG), where the
+crate began.
+
 An appendix of [milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its
 own)](../0818-the-jh7110-entropy-crate-released-on-its-own.md). The crate ships on its own and may
 cite nothing of this tree, so the `Name:` block of its crate and its marked items lives here.

@@ -209,8 +209,8 @@ def is_sidecar(path):
 def _sidecars(paths, pathset, read, problems):
     """`{source path: {"module": block or None, "items": [(name, block)]}}` from every sidecar.
 
-    **A crate that ships on its own keeps its `Name:` blocks beside its milestone** (milestone 857,
-    crates released on their own). Such a crate's files may cite nothing of this tree, so a block
+    **A crate that ships on its own keeps its `Name:` blocks beside its milestone** (milestone 857
+    (crates released on their own)). Such a crate's files may cite nothing of this tree, so a block
     at the name would fail `script/crate-standalone`, and moving the block nowhere would drop the
     name from this census and grow the module-block ratchet. A sidecar holds them instead, in a
     file the crate does not ship: `design/roadmap/<milestone>/names.md`, one paragraph per name,

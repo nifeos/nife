@@ -1,5 +1,7 @@
 //! Where the JH7110's TRNG is, for `jh7110_entropy`.
 //!
+//! The driver this serves is milestone 159 (a real hardware entropy source: the JH7110's TRNG).
+//!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the crate it
 //! serves. calef has not named it.
 

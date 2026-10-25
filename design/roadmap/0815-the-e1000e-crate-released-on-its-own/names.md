@@ -2,6 +2,9 @@
 
 <!-- writing-standards: exception. Marked 2026-10-25 (UTC) by lane crates-stand-alone. Reason: each block below is a provenance record moved verbatim from the crate's source, refusals and wording included, and a record keeps its words. -->
 
+Several blocks cite milestone 494 (a driver for the network card a PC actually has), where the
+crate began.
+
 An appendix of [milestone 815 (`e1000e`: proven Intel e1000e ring logic, released on its
 own)](../0815-the-e1000e-crate-released-on-its-own.md). The crate ships on its own and may cite
 nothing of this tree, so the `Name:` block of its crate, its modules and its marked items lives

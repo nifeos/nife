@@ -162,8 +162,8 @@ The crate's source cites nothing of this tree, so this section keeps the links i
   protocol walk-through is its section "How the protocol works, in one sitting".
 - `src/lib.rs`, `Command::flush`: the silent yes a flush must never give is the one milestone 55
   (Time Machine: SMB3 with Apple's extensions, and mDNS)'s verb exists to forbid.
-- `src/lib.rs`, `lba_format_shift`: the bench rehearsal is milestone 261's (the NVMe driver leaves
-  the kernel, on the machine that can finally confine it), and the format condition is the second
+- `src/lib.rs`, `lba_format_shift`: the bench rehearsal belongs to milestone 261 (the NVMe driver
+  leaves the kernel, on the machine that can finally confine it). The format condition is the second
   night-of condition of its fatal risk 6, for the Micron drive.
 - `src/lib.rs`, the admin and data plane banner: the split is milestone 261's and §86 (whether an
   NVMe driver can leave the kernel, and what capability would let it)'s option 2a. Its history is

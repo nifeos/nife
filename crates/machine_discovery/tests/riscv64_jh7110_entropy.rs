@@ -30,8 +30,8 @@ fn discover_finds_the_device_on_a_tree_shaped_like_the_real_board() {
     assert!(found.status_okay);
 }
 
-/// **Milestone 239's finding, in one assertion** (radon's device tree does not describe the TRNG,
-/// so a working driver never runs): the vendor U-Boot's control DTB describes the TRNG as
+/// **What milestone 239 (radon's device tree does not describe the TRNG, so a working driver never
+/// runs) found, in one assertion**: the vendor U-Boot's control DTB describes the TRNG as
 /// `trng@1600C000`, `compatible = "starfive,trng"`, `status = "disabled"`, and `discover` must
 /// find it. The fixture is transcribed from the firmware's source, not dumped from a board, so
 /// whether the running firmware's tree carries the node is still a bench fact;

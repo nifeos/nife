@@ -2,6 +2,8 @@
 
 <!-- writing-standards: exception. Marked 2026-10-25 (UTC) by lane crates-stand-alone. Reason: each block below is a provenance record moved verbatim from the crate's source, refusals and wording included, and a record keeps its words. -->
 
+<!-- history: exception. Reason: a name's provenance record says when and why it was minted, which is history by nature, and the blocks below keep the words they carried in the source. -->
+
 An appendix of [milestone 813 (`file_allocation_table`: a proven FAT crate, released on its
 own)](../0813-a-proven-fat-crate-released-on-its-own.md). The crate ships on its own and may cite
 nothing of this tree, so the `Name:` block of its crate, its modules and its marked items lives
