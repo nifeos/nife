@@ -54,6 +54,18 @@ if it is outside the band or not page aligned. Every fixed window in `fixtures/`
 kernel's harnesses and the progenitor was brought under one of the three when the map landed, 188 of
 them.
 
+## What checks the map
+
+Two mechanisms, each where it is strongest. `const` asserts in the crate check the constant facts
+in every consumer's build. The bands tile the first 2 GiB in `BANDS` order, and each starts and ends
+on a page. The top of the map is a user address under aarch64's 48-bit split, `x86_64`'s 47-bit
+split and Sv39's 38-bit one. Kani (`crates/address_space_map/src/verification.rs`, run by
+`script/verify`) proves what quantifies over an address. Every address below 2 GiB lies in exactly
+one band and its whole page lies in that band. A lower address never sits in a later band. Each
+band function accepts every page of its band, returns it unchanged, and refuses every address its
+doc forbids. And `check_image` places exactly the images the image band holds. Each harness carries
+a falsification patch that the weekly sweep replays.
+
 ## Why these numbers
 
 - **2 GiB is a hard ceiling for the image on `x86_64`.** The target builds with `code-model: small`
@@ -130,7 +142,8 @@ tables. The crate's test module pins that it stays above every band meanwhile.
 ## BUGS
 
 - Membership, not collision. The band functions check that a page is in its band. They cannot see
-  two pair pages one program maps landing on each other.
+  two pair pages one program maps landing on each other, and they check a window's first page
+  only, so a multi-page window near a band's top can run into the next band unseen.
 - Two protocol crates restate their numbers. `std_runtime_contract` and `counter_frequency_contract`
   are generated into std's PAL, where no crate can be named, so each pins itself to the map with a
   host test instead of deriving from it.

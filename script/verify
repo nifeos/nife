@@ -369,6 +369,7 @@ paging	5	the address arithmetic, and the page set for an IOMMU domain
 memory_regions	1	the untyped-region accounting, no double-free
 elf	70	the loader's front half, and the note walk, panic-free on hostile input
 page_frames	3	the physical frame allocator
+address_space_map	20	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 device_tree_blob	4	the device-tree parser's leaf readers
 inter_process_communication	11	the rendezvous state machine
 generational_table	10	the generational thread table
