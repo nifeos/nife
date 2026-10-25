@@ -5,7 +5,7 @@ decided: 2026-09-23
 ratified_by: calef
 ---
 
-# 213. Writing standards: four countable rules, one review rule, and a ratchet
+# 213. Writing standards: three countable rules, one review rule, and a ratchet
 
 The rules, ratified by calef on 2026-09-23 (UTC) unless marked: a median sentence of 20 words or
 fewer, no sentence over 40 words, and 4 or fewer bold spans per 1,000 words. Rule 4 is a review

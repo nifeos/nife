@@ -280,7 +280,7 @@ Documents over each writing-standards limit; exempted ones count
 
 ![Passive constructions per 1,000 words of prose](project-metrics/passive-voice-rate.svg)
 
-§213 rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
+§213 (writing standards) rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
 the limit a new document meets ([definitions](register-of-measures/ratchet-debt.md#passive-voice)).
 
 ## Comment blocks

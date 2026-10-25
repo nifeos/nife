@@ -45,16 +45,17 @@ import re
 
 AUXILIARIES = ('am', 'are', 'were', 'being', 'is', 'been', 'was', 'be')
 
-# write-good's irregular past participles, verbatim and in its order.
+# write-good's irregular past participles, in its order, less two British forms the house style
+# refuses (helpers/house_style.py). Their American forms, learned and dreamed, end in "ed".
 IRREGULAR = (
     'awoken', 'beat', 'become', 'been', 'begun', 'bent', 'beset', 'bet', 'bid', 'bidden', 'bitten',
     'bled', 'blown', 'born', 'bought', 'bound', 'bred', 'broadcast', 'broken', 'brought', 'built',
     'burnt', 'burst', 'cast', 'caught', 'chosen', 'clung', 'come', 'cost', 'crept', 'cut', 'dealt',
-    'dived', 'done', 'drawn', 'dreamt', 'driven', 'drunk', 'dug', 'eaten', 'fallen', 'fed', 'felt',
+    'dived', 'done', 'drawn', 'driven', 'drunk', 'dug', 'eaten', 'fallen', 'fed', 'felt',
     'fit', 'fled', 'flown', 'flung', 'forbidden', 'foregone', 'forgiven', 'forgotten', 'forsaken',
     'fought', 'found', 'frozen', 'given', 'gone', 'gotten', 'ground', 'grown', 'heard', 'held',
     'hidden', 'hit', 'hung', 'hurt', 'kept', 'knelt', 'knit', 'known', 'laid', 'lain', 'leapt',
-    'learnt', 'led', 'left', 'lent', 'let', 'lighted', 'lost', 'made', 'meant', 'met', 'misspelt',
+    'led', 'left', 'lent', 'let', 'lighted', 'lost', 'made', 'meant', 'met', 'misspelt',
     'mistaken', 'mown', 'overcome', 'overdone', 'overtaken', 'overthrown', 'paid', 'pled', 'proven',
     'put', 'quit', 'read', 'rid', 'ridden', 'risen', 'run', 'rung', 'said', 'sat', 'sawn', 'seen',
     'sent', 'set', 'sewn', 'shaken', 'shaven', 'shed', 'shod', 'shone', 'shorn', 'shot', 'shown',

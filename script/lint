@@ -3267,7 +3267,7 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # nothing forces that, on purpose, because the block names baseline churn as the thing that would
 # make this ratchet cost more than it saves.
 #
-# §213 rule 6 (milestone 952, calef 2026-10-25 UTC) rides the same pass: helpers/passive_voice.py
+# §213 rule 6 (milestone 952 (a passive-voice ratchet in lint), calef 2026-10-25 UTC) rides the same pass: helpers/passive_voice.py
 # counts passives, and a document over 2 per 1,000 prose words passes only while
 # design/passive-baseline.tsv holds it and its count has not risen there or since the merge base.
 python3 helpers/prose_ratchet.py --selftest
