@@ -14,8 +14,6 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 # and what each of the JH7110's two device trees calls the block. No unsafe code and no raw pointer
 # anywhere in here; the volatile MMIO access is the caller's job, given the register base.
 
-[dependencies]
-device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

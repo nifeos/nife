@@ -95,7 +95,7 @@ identical node from `jh7110-common.dtsi` (`&trng { status = "okay"; };`), along 
 
 ## What was built, and the one decision inside it
 
-`crates/jh7110_entropy::discover` now tries mainline's `starfive,jh7110-trng` first and the vendor's
+`machine_discovery::jh7110::entropy::discover` tries mainline's `starfive,jh7110-trng` first and the vendor's
 `starfive,trng` second, reads every property against the string that matched, and carries two new
 facts out: which spelling it was, and what the node's `status` says.
 
@@ -120,7 +120,7 @@ hw entropy  : skipped (this machine's tree names no TRNG: neither starfive,jh711
 ```
 
 **The fixture is transcribed, not captured**:
-`crates/jh7110_entropy/tests/fixtures/jh7110-trng-vendor-uboot.dts`, from the firmware's own source at
+`crates/machine_discovery/tests/fixtures/jh7110-trng-vendor-uboot.dts`, from the firmware's own source at
 the commit above, wrapped in the `/soc` node with the two-cell `#address-cells`/`#size-cells` that
 were measured off the board and are already committed in
 `crates/machine_discovery/tests/fixtures/visionfive2-uboot-control.dts`. `dtc` warns
@@ -158,7 +158,7 @@ there was no bench session. Two commands and one boot settle all of it.
 
 ## Follow-on
 
-- **Done.** `crates/jh7110_entropy::discover` accepts both spellings, carries which one matched and the
+- **Done.** `machine_discovery::jh7110::entropy::discover` accepts both spellings, carries which one matched and the
   node's `status`, and is host-tested against a fixture transcribed from the firmware's own source.
 - **Done.** notes/visionfive2.md's "The TRNG is not in the tree" section and its "To measure at the
   bench" item 9 ask the question that can actually be answered.

@@ -709,9 +709,6 @@ dependencies = [
 [[package]]
 name = "jh7110_entropy"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "jh7110_watchdog"
@@ -857,6 +854,7 @@ name = "machine_discovery"
 version = "0.1.0"
 dependencies = [
  "device_tree_blob",
+ "jh7110_entropy",
 ]
 
 [[package]]

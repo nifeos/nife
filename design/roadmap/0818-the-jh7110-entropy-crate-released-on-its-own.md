@@ -125,7 +125,7 @@ reads a fixture from `../../device_tree_blob/tests/fixtures/`, outside the crate
 and files, 26 lines cite this tree: 14 `milestone N`, 5 tree paths, 3 `§N`, 2 naming calef and 2
 provenance blocks.
 
-Name: `jh7110_entropy` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `jh7110_entropy` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -157,6 +157,33 @@ and every row of *What is proven* names a harness that stock Kani proves in the 
 falsification patch makes it fail. No crate publishes without Kani harnesses covering its
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0818-the-jh7110-entropy-crate-released-on-its-own/names.md).
+
+- The crate doc: the sources behind its `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels,
+  with the bring-up order and health testing, are `notes/entropy/jh7110-trng.md`; the driver
+  program is `components/src/jh7110_entropy.rs`.
+- `IE_GLBL_EN`: the bench run that showed polling works with `IE` never written is
+  `target/board/radon-2026-09-04-clock-and-first-entropy.log`, and the driver program says why it
+  polls.
+- `COMPATIBLE_VENDOR`, `Discovered`: the vendor node and its evidence are the note's "The vendor
+  spelling" section, found by milestone 239 (radon's device tree does not describe the TRNG, so a
+  working driver never runs).
+- `interpret`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone
+  159 (a real hardware entropy source: the JH7110's TRNG) added the `stat` parameter and the pool.
+- `assemble`: no conditioning here for the reason §44 (entropy is a capability, `std::random` improves
+  transparently, and the refusal is loud) gives `components/src/entropy.rs`.
+- `WORD_BYTES` and `take`'s clamp: the same 8 as `entropy_contract::MAX_BYTES`, and
+  `entropy_contract::want` clamps first in the driver.
+- The tests: milestone 326 (nobody has been assigned to turn a mutation score upward) found the
+  survivors the transcription, clear-mask and deadline tests kill.
+- The harness `ready_requires_rand_rdy_and_carries_the_words_untouched` and its patch: milestone
+  211 (a harness that states its property through the function under test cannot see that
+  function break) rewrote the harness after it verified blind. The module's proofs serve §14 (the project's
+  direction: a verified-Rust capability microkernel).
 
 ## BUGS
 

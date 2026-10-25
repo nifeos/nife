@@ -10,6 +10,9 @@ license.workspace = true
 # CPUID, so the riscv64 half of this crate reads it. The aarch64 half needs nothing: its facts come
 # from architected ID registers, which the kernel reads and hands here as raw words.
 device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
+# The JH7110 device crates take plain values and read no tree; `jh7110` finds each block for them
+# and fills in their types, so it names them.
+jh7110_entropy = { version = "0.1.0", path = "../jh7110_entropy" }
 
 [lints]
 workspace = true

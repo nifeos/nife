@@ -2757,7 +2757,6 @@ crates/jh7110_entropy/src/lib.rs::STAT_SEEDED
 crates/jh7110_entropy/src/lib.rs::STAT_SRVC_RQST
 crates/jh7110_entropy/src/lib.rs::WORD_BYTES
 crates/jh7110_entropy/src/lib.rs::assemble
-crates/jh7110_entropy/src/lib.rs::discover
 crates/jh7110_entropy/src/lib.rs::interpret
 crates/jh7110_entropy/src/lib.rs::new
 crates/jh7110_entropy/src/lib.rs::refill
