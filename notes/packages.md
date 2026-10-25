@@ -237,7 +237,7 @@ and each row records it as the manager.
 Install stages the package as an image is staged, so the progenitor checks its own copy. `package_archive::installable` is the whole decision on bytes, host-tested: the file's digest
 must be the image catalog's line for the stem in its header, and the member named after the
 package is the program. Its bytes go to `packages/<name>/<version>/<program>`, one component per
-field, so each directory stays within a directory name's 16 bytes. Remove writes a generation without
+field, so each stays within a directory name's 16 bytes. Remove writes a generation without
 the entry and leaves the bytes, which is what lets a rollback bring them back. Rollback points `current` one generation below the live one and writes nothing else.
 
 All three share one commit order: the new generation is created and written whole, `current` is
