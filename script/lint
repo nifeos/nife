@@ -1302,6 +1302,62 @@ if [ -f "$dependabot" ] && grep -qE '^[[:space:]]*ignore:' "$dependabot" &&
     exit 1
 fi
 
+# Every committed Cargo.lock is watched for a newer release. The test of §81 (a dependency stays
+# upgradable) is "if a newer version exists, does anything here ever tell us?". Dependabot reads
+# only the directories .github/dependabot.yml names, so a workspace added without an entry there
+# has no watcher, and nothing else would notice. The set is the one `script/supply-chain` runs
+# cargo-deny over, with the same two exclusions for the same reasons (vendor/ carries upstream's
+# lockfiles, which `script/vendor-watch` covers; the measurement harness has no Cargo.toml). A
+# change to one exclusion list belongs in both.
+echo "==> every committed Cargo.lock has an update watcher"
+python3 - "$(dirname "$0")/.." <<'PY'
+import os, re, subprocess, sys
+
+root = sys.argv[1]
+locks = subprocess.run(['git', '-C', root, 'ls-files', '*Cargo.lock'], check=True,
+                       capture_output=True, text=True).stdout.split()
+want = set()
+for lock in locks:
+    d = os.path.dirname(lock)
+    if (d + '/').startswith('vendor/') or d == 'notes/packages/container-format-measurements/fuzz':
+        continue
+    want.add('/' + d if d else '/')
+
+# A line-oriented read rather than a YAML parser: lint runs without third-party Python, and the
+# file's shape is ours. Inside a `package-ecosystem: cargo` entry, `directory: "/x"` and the
+# `- "/x"` items under `directories:` both name a watched directory.
+have, cargo = set(), False
+with open(os.path.join(root, '.github', 'dependabot.yml')) as f:
+    for line in f:
+        line = line.split('#', 1)[0].rstrip()
+        m = re.match(r'\s*-\s*package-ecosystem:\s*"?([\w-]+)"?', line)
+        if m:
+            cargo = m.group(1) == 'cargo'
+            continue
+        if not cargo:
+            continue
+        m = re.match(r'\s*(?:directory:|-)\s*"?(/[^"\s]*)"?\s*$', line)
+        if m:
+            have.add(m.group(1).rstrip('/') or '/')
+
+missing = sorted(want - have)
+stale = sorted(have - want)
+if missing or stale:
+    for d in missing:
+        lock = (d.lstrip('/') or '.') + '/Cargo.lock'
+        print(f'lint: {lock} has no cargo entry in .github/dependabot.yml', file=sys.stderr)
+    for d in stale:
+        print(f'lint: .github/dependabot.yml watches {d}, which holds no committed Cargo.lock',
+              file=sys.stderr)
+    print('Add the directory to the cargo `directories:` list there (or remove a stale one). A',
+          file=sys.stderr)
+    print('lockfile nothing watches is an upgrade nobody hears about; see',
+          file=sys.stderr)
+    print('design/decisions/0081-dependency-upgrades.md.', file=sys.stderr)
+    sys.exit(1)
+print(f'update watchers: all {len(want)} committed Cargo.lock directories are in dependabot.yml')
+PY
+
 # The publish allowlist, milestone 887 (crate repositories share one CI template, adapted from
 # nife's gates), from 857's Fork 3. `crates/publish-allowlist.txt` names the
 # crates calef has ruled onto crates.io; every other crate in `crates/` carries `publish = false`,

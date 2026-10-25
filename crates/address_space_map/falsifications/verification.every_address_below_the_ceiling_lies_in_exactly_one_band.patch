@@ -1,0 +1,32 @@
+Falsifies `address_space_map::verification::every_address_below_the_ceiling_lies_in_exactly_one_band`.
+
+The defect: `SERVICE_WINDOWS` starts one page below the heap's end, so the two bands share a page.
+The `const` tiling assert in `lib.rs` would stop the build first, so the patch deletes it as well:
+what this shows is that the harness catches an overlap on its own.
+
+Expected to fail: the harness's `assert_eq!(bands_containing(va), 1)`, at `va = 0x4FFF_F000..0x5000_0000`.
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..4fae2decf 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -88,7 +88,7 @@ pub const HEAP: Band = Band {
+ /// the block channel (`0x5000_0000`, 8 MiB, used by the filesystem server, the installer, the disk
+ /// partitioner and `mkfs`), the C seam's grant pages, the screen aperture.
+ pub const SERVICE_WINDOWS: Band = Band {
+-    start: HEAP.end,
++    start: HEAP.end - PAGE,
+     end: 0x6000_0000,
+ };
+ 
+@@ -282,10 +282,6 @@ const _: () = {
+     let mut i = 0;
+     while i < BANDS.len() {
+         let band = BANDS[i].1;
+-        assert!(
+-            band.start == at,
+-            "a band does not start where the band below it ends"
+-        );
+         assert!(band.start < band.end, "a band is empty");
+         assert!(
+             band.start.is_multiple_of(PAGE),
