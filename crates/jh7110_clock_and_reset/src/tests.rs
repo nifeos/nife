@@ -141,9 +141,9 @@ fn a_reset_word_past_the_first_multiplies_the_word_index_by_four() {
 
 #[test]
 fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
-    // The one result that would refute the premise that the clocks were gated: the clocks were already on
-    // and the reset already released before anything here ran, so the TRNG's zeros have some
-    // other cause. A bench transcript has to be able to say this, which is why the report
+    // The one result that would refute the premise that the clocks were gated: the clocks were
+    // already on and the reset already released before anything here ran, so the TRNG's zeros have
+    // some other cause. A bench transcript has to be able to say this, which is why the report
     // keeps `before` words at all.
     let up = Report {
         clock_before: [CLOCK_ENABLE | 4, CLOCK_ENABLE | 4, 0, 0],

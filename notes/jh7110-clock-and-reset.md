@@ -115,12 +115,12 @@ Three things make the clock controller a stronger case for that split than NVMe 
 
 ### The one genuinely dangerous thing here, and what stops it
 
-`machine_discovery::jh7110::clock_and_reset::discover` **never fails to produce an address**. A tree that names no controller gets
-`STG_BASE` (`0x1023_0000`) with `from_tree: false`. That is deliberate: radon's firmware tree is
-already known to omit and misdescribe things, and a bench session that comes back with "no
-controller node, nothing attempted" has spent a trip to the machine and learned nothing. Two
-independently published trees agree on the number, which is a stronger warrant than most
-device-tree reads get.
+`machine_discovery::jh7110::clock_and_reset::discover` **never fails to produce an address**. A tree
+that names no controller gets `STG_BASE` (`0x1023_0000`) with `from_tree: false`. That is
+deliberate: radon's firmware tree is already known to omit and misdescribe things, and a bench
+session that comes back with "no controller node, nothing attempted" has spent a trip to the machine
+and learned nothing. Two independently published trees agree on the number, which is a stronger
+warrant than most device-tree reads get.
 
 But a caller that took that answer unconditionally would store to `0x1023_0000` on every board
 this kernel boots, and on QEMU's `virt` that address is unmapped. So the guard is one rung up

@@ -179,17 +179,17 @@ names until the ratification pass, so this section keeps the links it carried.
 - `COMPATIBLE_VENDOR`, `Discovered`: the vendor node and its evidence are the note's "The vendor
   spelling" section, found by milestone 239 (radon's device tree does not describe the TRNG, so a
   working driver never runs).
-- `interpret`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone
-  159 (a real hardware entropy source: the JH7110's TRNG) added the `stat` parameter and the pool.
+- `interpret`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone 159
+  (a real hardware entropy source: the JH7110's TRNG) added the `stat` parameter and the pool.
 - `assemble`: no conditioning here for the reason §44 (entropy is a capability, `std::random` improves
   transparently, and the refusal is loud) gives `components/src/entropy.rs`.
 - `WORD_BYTES` and `take`'s clamp: the same 8 as `entropy_contract::MAX_BYTES`, and
   `entropy_contract::want` clamps first in the driver.
 - The tests: milestone 326 (nobody has been assigned to turn a mutation score upward) found the
   survivors the transcription, clear-mask and deadline tests kill.
-- The harness `ready_requires_rand_rdy_and_carries_the_words_untouched` and its patch: milestone
-  211 (a harness that states its property through the function under test cannot see that
-  function break) rewrote the harness after it verified blind. The module's proofs serve §14 (the project's
+- The harness `ready_requires_rand_rdy_and_carries_the_words_untouched` and its patch: milestone 211
+  (a harness that states its property through the function under test cannot see that function
+  break) rewrote the harness after it verified blind. The module's proofs serve §14 (the project's
   direction: a verified-Rust capability microkernel).
 
 ## BUGS

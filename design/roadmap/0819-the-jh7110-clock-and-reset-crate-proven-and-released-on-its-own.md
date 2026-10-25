@@ -49,9 +49,9 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `designware_ethernet.rs`, `user/designware_mobile_storage_service.rs`, `user/entropy_service.rs`,
   `reboot.rs`, `memory.rs`, `lib.rs`, `storage_bench.rs` and `network_bench.rs`, plus
   `system_tests/src/user/entropy_tests.rs`.
-- The crate name is ratified. The decoders and the newly public spellings carry provisional
-  `Name:` blocks, and their names become permanent with the crate. `discover_aon` and `discover_sys` left the crate
-  with the walk, so their provisional names no longer bind it.
+- The crate name is ratified. The decoders and the newly public spellings carry provisional `Name:`
+  blocks, and their names become permanent with the crate. `discover_aon` and `discover_sys` left
+  the crate with the walk, so their provisional names no longer bind it.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),

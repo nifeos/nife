@@ -219,9 +219,9 @@ pub struct Syscon {
     pub from_tree: bool,
 }
 
-/// **Find the AON syscon**: mainline's compatible, then the vendor's node name, then the
-/// constant both trees agree on. Like `machine_discovery::jh7110::clock_and_reset::discover`, never fails to produce
-/// an address, so an answer here is not evidence the machine is a JH7110.
+/// **Find the AON syscon**: mainline's compatible, then the vendor's node name, then the constant
+/// both trees agree on. Like `machine_discovery::jh7110::clock_and_reset::discover`, never fails to
+/// produce an address, so an answer here is not evidence the machine is a JH7110.
 ///
 /// # Errors
 ///

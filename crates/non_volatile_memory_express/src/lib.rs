@@ -1,9 +1,9 @@
 #![no_std]
 //! **NVMe queue mechanics, as pure logic**: everything an NVMe driver computes and nothing it
-//! touches. The register file, the doorbells and the queues' DMA memory are the caller's
-//! (a thin volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol (NVMe 1.4, chapters 4 and 5:
-//! submission and completion queues, doorbells, the phase tag, the admin queue and PRPs) is what
-//! this crate implements, and no more of it.
+//! touches. The register file, the doorbells and the queues' DMA memory are the caller's (a thin
+//! volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol
+//! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
+//! admin queue and PRPs) is what this crate implements, and no more of it.
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)); kept
 //! as the crates.io name (#1806).
@@ -563,8 +563,8 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
 /// runs, with the victim frame's physical address in the next `u64`. The EL0 server reads it first
 /// thing; a real boot's transfer buffer is zeroed (`alloc_contiguous_zeroed`), so the magic never
-/// matches. The kernel writes it and the EL0 server reads it, so it lives in this one crate. Its one
-/// caller is a test that breaks the data plane's DMA confinement and watches it fail, the NVMe
+/// matches. The kernel writes it and the EL0 server reads it, so it lives in this one crate. Its
+/// one caller is a test that breaks the data plane's DMA confinement and watches it fail, the NVMe
 /// twin of `block_driver`'s two virtio attacker roles. Named provisionally. Behind the
 /// `confinement_attackers` feature, so a shipped server cannot even name it.
 #[cfg(feature = "confinement_attackers")]

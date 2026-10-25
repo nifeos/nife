@@ -3,12 +3,12 @@
 //! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares, so QEMU proves this
 //! layer too. [`read()`] and [`write()`] are the paged access every PCH PHY register above page 0
 //! needs, and each takes a [`Swflag`], which only [`Swflag::acquire`] makes. A page this port does
-//! not carry (800, or 1 to 767) is [`Error::PageNotPorted`]. The FreeBSD sources are
-//! `e1000_phy.c` (the MDIC and paged access) and `e1000_ich8lan.c` (the semaphore and the reset
-//! block). Two divergences are deliberate. There is no MDIC retry, since FreeBSD retries only from
-//! Meteor Lake on and every part this crate claims is Sunrise Point. Page 800 (host wakeup, with its
-//! own protocol) and pages 1 to 767 (82577 and 82578 debug registers) are refused rather than
-//! ported; only an NVM-supplied LCD configuration word could address them.
+//! not carry (800, or 1 to 767) is [`Error::PageNotPorted`]. The FreeBSD sources are `e1000_phy.c`
+//! (the MDIC and paged access) and `e1000_ich8lan.c` (the semaphore and the reset block). Two
+//! divergences are deliberate. There is no MDIC retry, since FreeBSD retries only from Meteor Lake
+//! on and every part this crate claims is Sunrise Point. Page 800 (host wakeup, with its own
+//! protocol) and pages 1 to 767 (82577 and 82578 debug registers) are refused rather than ported;
+//! only an NVM-supplied LCD configuration word could address them.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

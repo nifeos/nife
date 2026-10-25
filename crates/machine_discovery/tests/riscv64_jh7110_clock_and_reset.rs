@@ -172,11 +172,11 @@ fn qemus_virt_board_has_no_clock_controller_at_all() {
 
 #[test]
 fn a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read() {
-    // `reg-names` lists three names but `reg` has only two windows, with "stg" at index 2: an
-    // index `regions` was never filled at. `Found::from_regions`'s `i < regions.len()` guard exists for exactly
-    // this: a tree this malformed must fall back to the corroborated constant rather than
-    // read the zeroed slot an off-by-one would land on. Kills the `i < n -> true` and
-    // `< -> <=` mutants, neither of which any other fixture reaches.
+    // `reg-names` lists three names but `reg` has only two windows, with "stg" at index 2: an index
+    // `regions` was never filled at. `Found::from_regions`'s `i < regions.len()` guard exists for
+    // exactly this: a tree this malformed must fall back to the corroborated constant rather than
+    // read the zeroed slot an off-by-one would land on. Kills the `i < n -> true` and `< -> <=`
+    // mutants, neither of which any other fixture reaches.
     let tree = tree(CLKGEN_VENDOR_MISMATCHED);
     let found = discover(&tree).unwrap();
     assert!(
