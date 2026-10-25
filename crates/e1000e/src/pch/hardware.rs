@@ -1,12 +1,10 @@
 //! **What the PCH sequences need from the hardware**: the register access, delays and flushes a
 //! sequence is written against, so the simulator can stand in for the device.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
-/// **What the I219 sequences need from whoever holds BAR0.** The kernel implements it over the
-/// direct map (`kernel/src/e1000e.rs`); the host tests implement it over a simulated device.
+/// **What the I219 sequences need from whoever holds BAR0.** A kernel implements it over its
+/// mapping of the registers; the host tests implement it over a simulated device.
 pub trait Hw {
     /// Read the 32-bit register at `off` in BAR0.
     fn read(&mut self, off: u64) -> u32;

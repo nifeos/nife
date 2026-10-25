@@ -1,7 +1,5 @@
 //! **The queues and their descriptors**: where each queue's registers and rings sit, how big they
 //! are, and what a descriptor's status says.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
@@ -62,7 +60,7 @@ pub enum RxVerdict {
 
 /// **Judge a receive descriptor's status word**, where `word` is the descriptor's second
 /// little-endian `u64` (length, checksum, status, errors, special) and `room` is how many bytes the
-/// caller can take. No field is trusted (notes/shared-page-audit.md's finding 6): a `Frame(n)`
+/// caller can take. No field is trusted, since the device writes them all: a `Frame(n)`
 /// always has `n <= room` and `n <= BUFFER_SIZE`, which the Kani harness below proves for every word.
 ///
 /// # Examples

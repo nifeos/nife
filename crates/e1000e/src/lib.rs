@@ -1,13 +1,12 @@
 #![no_std]
-//! **The Intel `e1000e` family, as pure logic** (milestone 494 (a driver for the network card a PC
-//! actually has); notes/e1000e.md).
+//! **The Intel `e1000e` family, as pure logic**: the 82574L and the Sunrise Point I219.
 //!
-//! Everything both halves of the driver compute, and nothing either touches. The kernel
-//! (`kernel/src/e1000e.rs`) resets the controller, reads its MAC address and programs the ring
-//! bases; `net_stack` (`components/src/e1000e_transport.rs`) fills descriptors and moves the tails.
+//! Everything both halves of the driver compute, and nothing either touches. A kernel half
+//! resets the controller, reads its MAC address and programs the ring bases; a network-stack half
+//! fills descriptors and moves the tails.
 //! A ring's base and tail share a page ([`regs`]), so the IOMMU is the whole DMA confinement; the
-//! process holds only [`RX_QUEUE_PAGE`] and [`TX_QUEUE_PAGE`]. The design is in notes/e1000e.md and
-//! where the register facts come from in notes/e1000e/the-i219-port.md.
+//! process holds only [`RX_QUEUE_PAGE`] and [`TX_QUEUE_PAGE`]. The register facts come from Linux's
+//! `regs.h` and `hw.h` for the 82574L and from FreeBSD's Intel shared code for the I219 ([`pch`]).
 
 //! # BUGS
 //!
@@ -17,11 +16,6 @@
 //!   read anywhere.
 //! - **One receive and one transmit queue, polled.** No interrupt, no checksum offload, no
 //!   segmentation offload, no jumbo frames. Each is a later decision rather than an omission.
-//!
-//! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name
-//! QEMU's `-device e1000e` and Linux's driver directory use, kept across their interface
-//! (design/naming.md, the acronym test). Milestone 815 (proven Intel e1000e ring logic, released on
-//! its own) publishes it.
 
 #[cfg(test)]
 extern crate std;

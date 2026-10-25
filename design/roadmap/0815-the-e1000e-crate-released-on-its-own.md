@@ -122,7 +122,7 @@ and `lints` from nife's workspace and states no `rust-version`, and there is no 
 Release step 2's cut is what fixes that. Beyond manifest and files, 23 lines cite this tree: 12
 `milestone N`, 5 tree paths, 2 `§N`, 2 naming calef and 2 provenance blocks.
 
-Name: `e1000e` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `e1000e` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -144,6 +144,25 @@ row of *What is proven* names a harness that stock Kani proves in the copy and w
 patch makes it fail. No crate publishes without Kani harnesses covering its hostile-input and
 state-machine surface, each carrying a falsification patch that makes it fail at its own assertion,
 replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0815-the-e1000e-crate-released-on-its-own/names.md).
+
+- `src/lib.rs`, the crate doc: milestone 494 (a driver for the network card a PC actually has)
+  wrote the crate. Its design is `notes/e1000e.md`, and `notes/e1000e/the-i219-port.md` says where
+  the register facts come from.
+- `Cargo.toml`, the old manifest comment: the crate is a pure-logic crate under §7 (the testing
+  harness), no_std for the kernel and `net_stack` and std for host tests.
+- `src/descriptor.rs`, `rx_verdict`: trusting no field of the status word answers finding 6 of
+  `notes/shared-page-audit.md`.
+- `src/pch/mod.rs`, `nvm.rs`, `phy.rs` and `sequence.rs`, the module docs: each cited milestone 494
+  and `notes/e1000e/the-i219-port.md`, the whole note for `pch` and its sections "The NVM", "The
+  PHY layer" and "The three passes" for the others. The PHY layer's two divergences now stand in
+  `phy.rs` itself.
+- `src/pch/mod.rs`, the first BUGS entry: the run on silicon without a cable is in that note's
+  "BUGS", which links the BUGS of `notes/e1000e.md`.
 
 ## BUGS
 

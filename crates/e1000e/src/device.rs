@@ -1,7 +1,5 @@
 //! **Which devices this driver drives**: the Intel vendor ID, the device IDs it knows, and the
 //! model name each one reports.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 /// Intel's PCI vendor id.
 pub const VENDOR_INTEL: u16 = 0x8086;

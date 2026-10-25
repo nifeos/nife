@@ -1,7 +1,5 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
