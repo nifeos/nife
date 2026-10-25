@@ -91,8 +91,9 @@ static mut DISC: LineDisc = LineDisc::new();
 static mut LINE_QUEUE: LineQueue = LineQueue::new();
 static mut RAW_QUEUE: RawQueue = RawQueue::new();
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, control: u64, start: u64) -> ! {
     // A raw pointer first, then one dereference: taking `&mut DISC` directly is what
     // `static_mut_refs` exists to refuse. This process has exactly one thread and cannot be given a
     // second (it is built without its own process; milestone 812 (`std::thread::spawn` runs real

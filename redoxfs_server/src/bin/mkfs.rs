@@ -116,8 +116,9 @@ pub const R_NO_FS: u64 = 0x_4E_4F_46_53_00;
 /// A filesystem is there and the file is not, or its bytes are wrong.
 pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // The shared page, mapped out of the same budget the heap draws on (milestone 108). It is

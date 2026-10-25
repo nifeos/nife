@@ -94,9 +94,10 @@ const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
 // mapped one page read/write at PAGE_FRAME_VA before any access through `SHARED_FRAME` (milestone 139 (drive the unsafe count down)).
 static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 
+user_mode_runtime::program_entry!(start);
+
 /// `a0` is the server's IPv4 packed big-endian, `a1` its UDP port.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(server_ip: u64, server_port: u64) -> ! {
+fn start(server_ip: u64, server_port: u64, _arg2: u64) -> ! {
     client(server_ip, server_port)
 }
 

@@ -144,8 +144,9 @@ const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
 #[cfg_attr(target_arch = "x86_64", allow(dead_code))]
 const UART_VA: u64 = address_space_map::pair_page(0x0070_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, uart_shape: u64, _x2: u64) -> ! {
     #[cfg(target_arch = "riscv64")]
     UART_SHAPE.store(uart_shape, core::sync::atomic::Ordering::Relaxed);
     #[cfg(not(target_arch = "riscv64"))]

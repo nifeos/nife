@@ -17,6 +17,8 @@ pub struct Wiring {
     pub doorbell: RendezvousId,
     /// The input ring's frame, so the kernel can read what was typed.
     pub ring: u64,
+    /// The rendezvous the keyboard's interrupt is bound to.
+    pub irq: RendezvousId,
     head: u32,
 }
 
@@ -31,6 +33,8 @@ pub(crate) struct KeyboardDevice {
     /// The one DMA page's physical base, which the page also carries at
     /// `abi::virtio::DMA_PHYS_OFFSET`.
     pub dma: u64,
+    /// The rendezvous the interrupt is bound to, which a bench row watches.
+    pub irq: RendezvousId,
 }
 
 /// Find the keyboard, build its DMA page, route its interrupt and register its confined
@@ -60,6 +64,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
         vid,
         intid: d.intid,
         dma,
+        irq: irq_ep,
     })
 }
 
@@ -68,7 +73,12 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
 /// The kernel keeps the doorbell's receiving half and the ring, standing in for the compositor; a
 /// real system hands both to `compositor` and the driver does not change.
 pub fn start(image: &'static [u8]) -> Option<Wiring> {
-    let KeyboardDevice { vid, intid, dma } = wire_device()?;
+    let KeyboardDevice {
+        vid,
+        intid,
+        dma,
+        irq,
+    } = wire_device()?;
     let ring = crate::memory::alloc_zeroed()
         .expect("no frame for the input ring")
         .addr();
@@ -111,6 +121,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
         report,
         doorbell,
         ring,
+        irq,
         head: 0,
     })
 }
@@ -140,9 +151,11 @@ impl Wiring {
         n
     }
 
-    /// Answer the driver's `COMMIT`, the way a compositor would after compositing.
-    pub fn answer_doorbell(&self) {
+    /// Answer the driver's `COMMIT`, the way a compositor would after compositing. Returns the
+    /// counter reading taken as the `COMMIT` arrived, before the reply, for `bench::keyboard`.
+    pub fn answer_doorbell(&self) -> u64 {
         let m = crate::sched::ipc_receive_cap(self.doorbell);
+        let arrived = crate::arch::timer::now();
         let crate::cap::Object::Reply(caller) = crate::sched::current_cap(m[1])
             .expect("the keyboard driver's ring was not a CALL")
             .object
@@ -156,5 +169,6 @@ impl Wiring {
         );
         crate::sched::ipc_reply(caller, [0, 0]);
         crate::sched::delete_current_cap(m[1]).expect("consume the one-shot reply");
+        arrived
     }
 }

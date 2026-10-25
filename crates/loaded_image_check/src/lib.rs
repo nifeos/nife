@@ -1,7 +1,8 @@
 //! **A program proving its own ELF image was loaded correctly**, using nothing but its own memory.
 //!
 //! It checks that `.rodata` holds the file's bytes, `.data` its initializer and is writable, `.bss`
-//! reads zero, and the stack survives eight frames of recursion. Every byte it reads belongs to the
+//! reads zero, the stack survives eight frames of recursion, and a 16-byte-aligned local is
+//! 16-byte aligned. Every byte it reads belongs to the
 //! process, so the milestone-7 test spawns it with no authority. It says no by trapping through the
 //! caller's `fail`, because a program whose loader is broken has no reliable way to report; the
 //! kernel turns the trap into a fault the test counts. See notes/elf/loaded-image-check.md.
@@ -47,8 +48,9 @@ static BSS_MARKER: AtomicU64 = AtomicU64::new(0);
 /// The whole of a self-checking program:
 ///
 /// ```ignore
-/// #[unsafe(no_mangle)]
-/// pub extern "C" fn _start(_a: u64, _b: u64, _c: u64) -> ! {
+/// user_mode_runtime::program_entry!(start);
+///
+/// fn start(_a: u64, _b: u64, _c: u64) -> ! {
 ///     loaded_image_check::verify(user_mode_runtime::trap);
 ///     user_mode_runtime::exit();
 /// }
@@ -65,6 +67,25 @@ pub fn verify(fail: fn() -> !) {
     BSS_MARKER.store(1, Relaxed);
     check(BSS_MARKER.load(Relaxed) == 1); // .bss is writable
     check(stack_works(7));
+    check(stack_aligned());
+}
+
+/// Whether a 16-byte-aligned local lands on a 16-byte boundary.
+///
+/// Every target here assumes a 16-byte-aligned stack and places such a local without realigning,
+/// so this holds only if the program entered with the stack its ABI promises. On `x86_64` that is
+/// `rsp % 16 == 8` at a function's first instruction, which `user_mode_runtime::program_entry!`
+/// arranges and a plain `extern "C" fn _start` does not: there it reads `at % 16 == 8`. The address
+/// goes through `black_box` because the compiler, trusting the alignment, would fold the test to
+/// `true`.
+#[inline(never)]
+fn stack_aligned() -> bool {
+    #[repr(align(16))]
+    struct Aligned([u8; 16]);
+    let local = Aligned([0; 16]);
+    let at = core::hint::black_box(&raw const local as usize);
+    core::hint::black_box(&local.0);
+    at % 16 == 0
 }
 
 /// Recurse `n` frames, keeping a live array on each so the compiler cannot flatten the chain.

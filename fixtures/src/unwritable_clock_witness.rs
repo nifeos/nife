@@ -67,9 +67,10 @@ const REPORT: u64 = 0;
 /// the `ntp` binary into, and the number did not move in that split.
 pub const RPT_PROBING: u64 = 6;
 
+user_mode_runtime::program_entry!(start);
+
 /// `a0` is the address to write: where a process holding the *set* authority maps the clock page.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(va: u64) -> ! {
+fn start(va: u64, _arg1: u64, _arg2: u64) -> ! {
     send(REPORT, RPT_PROBING, va, 0);
     // SAFETY: deliberately not safe. This is the assertion: the write must fault. If it does not,
     // the process survives to send the report below, and the test fails on that.

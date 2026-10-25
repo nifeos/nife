@@ -18,10 +18,10 @@ needs a recorded reason. Title and slug are drafts. Every crate the table below 
 weighed in [the rest of the tree](0784-reuse-what-the-tree-wrote/the-rest-of-the-tree.md).
 
 This is a proposal, not a decision: every replacement below adds a dependency, an architect's call
-under §46. Items (a), (c0), (d), (e), (f2), (g) and (i) are built, on calef's approvals of
+under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approvals of
 `httparse` (2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC), `talc` and
-`object` (both 2026-10-21 UTC), and `uuid` and the `virtio-drivers` fork (both 2026-10-22 UTC).
-Items (f) and (h) are refused.
+`object` (both 2026-10-21 UTC), and `uuid` (2026-10-22 UTC). Items (c1) to (c4), (f) and (h) are
+refused.
 
 ## Method, and what the numbers mean
 
@@ -104,15 +104,8 @@ Alacritty ships) behind a `Perform` trait our grid can implement. Cost: medium; 
 lines and the lane must measure how much of it is parser rather than grid before claiming a number.
 Loss: none proved; two widely used crates (`arrayvec`, `memchr`) in the base graph.
 
-3. Adapt the virtio drivers to `virtio-drivers`, one device per milestone. About 1,500 lines of
-device-facing code, with no proofs, driven by bytes a device or a hostile hypervisor writes.
-`virtio-drivers` covers block, net, GPU and input over MMIO and PCI ECAM and is active (last push
-2026-09-25). Release 0.13.0 (2026-03-03) lacks `VIRTIO_F_ACCESS_PLATFORM`, which our PCI devices
-need behind the IOMMU, so `vendor/virtio-drivers` carries it with upstream's #232, item (c0). Its
-`Hal` trait is static methods, so the DMA
-capability has to sit in a global. The kernel's DMA
-validation is untouched. New base-graph crates: `zerocopy`, `safe-mmio`, `thiserror`, `enumn`,
-`log`, `bitflags`.
+3. REFUSED: the virtio drivers stay nife's own, items (c1) to (c4); see
+[the virtio drivers stay ours](#the-virtio-drivers-stay-ours).
 
 4. BUILT: `talc` replaces `user_mode_heap`, item (d); see Follow-on.
 
@@ -193,15 +186,15 @@ on the customer path.
    Kani-proved `elf` (calef, 2026-10-22 UTC; [measured](0784-reuse-what-the-tree-wrote/elf-against-three-readers.md)),
    and `xmas-elf` has RUSTSEC-2025-0018, an out-of-bounds read on a malformed ELF.
 2. What the tree already does. `smoltcp` is taken whole and unpatched, and argon2 and RustCrypto
-   are ordinary dependencies; `httparse`, `vte` and `r-efi` fit that shape. `virtio-drivers` will
-   too, once a release carries #232.
+   are ordinary dependencies; `httparse`, `vte` and `r-efi` fit that shape. `virtio-drivers` does
+   not: it lays out its own virtqueues, which nife's confinement refuses (calef, 2026-10-24 UTC).
 3. Prior art. In the tables above.
 4. Is the premise true? Mostly; the kernel's exemption does not cover the two engines (above).
-5. Cost. Lines retired are measured above; lane time is estimated. Candidate 3 owes throughput numbers
-   before its ruling; candidate 4's heap numbers are in [the appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
+5. Cost. Lines retired are measured above; lane time is estimated. Candidate 3's input device
+   was measured on the crate and cost more (below); candidate 4's heap numbers are in [the appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 6. Reversibility. Each replacement is reversible code; adding a crate to the base graph is §46's
    expensive category, and each was ruled before it was built.
-7. Same cost? Yes for 1, 2, 3, 5 and 6: at equal effort the exposed library wins on trust. Nothing
+7. Same cost? Yes for 1, 2, 5 and 6: at equal effort the exposed library wins on trust. Nothing
    here is recommended because it is less work.
 
 ## Proposed milestones, one replacement each
@@ -209,12 +202,12 @@ on the customer path.
 - (a) BUILT: `http_response` parses its head with `httparse`. Gate: existing host tests and fuzz target.
 - (b) Held for milestone 705 (full-screen programs)'s engine choice (calef, 2026-10-18 UTC): a full engine has its own
   parser. Else `video_terminal` parses with `vte`; gate: host tests, new fuzz target.
-- (c0) BUILT: `vendor/virtio-drivers` carries 0.13.0 plus #232 until a release includes it. calef,
-  2026-10-22 21:58 (UTC), on #2586: *"A"*, once
-  [a probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) showed #232 works for the input
-  device behind the IOMMU. It did, on all three.
-- (c1) input, (c2) GPU, (c3) block, (c4) net, one device per milestone, each with a `script/bench`
-  number before and after on all three architectures.
+- (c0) None: nothing carries `virtio-drivers`, which was vendored only for (c1) to (c4).
+  [The probe](0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md) stays as evidence.
+- (c1) REFUSED: input, `keyboard_driver`. Reuse: write; see below.
+- (c2) REFUSED: GPU, `gpu_driver`. Reuse: write; see below.
+- (c3) REFUSED: block, the `virtio` crate. Reuse: write; see below.
+- (c4) REFUSED: net, the `virtio` crate and `virtio_net_transport`. Reuse: write; see below.
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.
@@ -228,6 +221,13 @@ on the customer path.
 
 Each component that stays has a `Reuse:` line ready to paste, to be conformed to the amendment's
 landed wording: [recorded-reasons.md](0784-reuse-what-the-tree-wrote/recorded-reasons.md).
+
+## The virtio drivers stay ours
+
+calef, 2026-10-24 (UTC): option D, refused, for (c1) to (c4). `virtio-drivers` assumes a driver lays
+out its own virtqueues; nife's kernel builds every ring itself, so no driver can aim device DMA. The
+options set aside, the trial and the unused numbers 947 to 950 are in
+[an appendix](0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md).
 
 ## The measured-boot SHA-256 stays ours
 
@@ -261,8 +261,8 @@ the measured-boot trusted base.
   index).
 - **Done.** Item (i), nifeos/nife#2564, on calef's "A" on #2548.
 - **Outstanding.** (b) waits on 705, NOT-STARTED (checked 2026-10-21 UTC).
-- **Done.** Item (c0), nifeos/nife#2587, on calef's "A" on #2586.
-- **Outstanding.** (c1) to (c4): no pull request names them (checked 2026-10-22 UTC).
+- **Done.** Items (c1) to (c4), refused on calef's D of 2026-10-24 (UTC). The four drivers and
+  the recorded reasons carry the `Reuse:` line; `vendor/virtio-drivers` is gone, settling (c0).
 
 ## Index row
 

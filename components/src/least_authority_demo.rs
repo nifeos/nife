@@ -41,10 +41,11 @@ const RESULT: u64 = 0;
 // and it asks for an argument: which unvouched bytes may not be given, so that line is refused.
 capability_manifest_note::carry!(grant_plan::Program::LeastAuthorityDemo.manifest());
 
+user_mode_runtime::program_entry!(start);
+
 /// The `least_authority_demo`'s entry. `START` (milestone 19e) hands it three registers: `x0` is unused here (a
 /// standalone binary needs no role selector), the input `n` arrives in `x1`, `x2` is unused.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_x0: u64, n: u64, _x2: u64) -> ! {
+fn start(_x0: u64, n: u64, _x2: u64) -> ! {
     let result = n.wrapping_mul(n);
     send(RESULT, result, 0, 0);
     // Exit rather than spin: this is a whole process lifecycle (spawn, run, report, exit). The

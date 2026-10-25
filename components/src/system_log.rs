@@ -87,8 +87,9 @@ const CURSOR_VA: u64 = address_space_map::pair_page(0x0080_0000);
 /// sixteen times the stack.
 static mut LOG: Log = Log::new();
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, readers: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, readers: u64, _a2: u64) -> ! {
     // SAFETY: this program has one thread, and `_start` is the only code that names `LOG`, once,
     // here; every later use goes through this one reference.
     let log = unsafe { &mut *core::ptr::addr_of_mut!(LOG) };

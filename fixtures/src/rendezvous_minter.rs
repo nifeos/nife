@@ -27,8 +27,9 @@ use user_mode_runtime::{exit, require, retype_into_kernel_object, send, send_cap
 const MEMORY_REGION: u64 = 0;
 const CHANNEL: u64 = 1;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Retype one page of our budget into a rendezvous; the kernel returns the slot where our
     // full-rights capability to it landed.
     let rendezvous = retype_into_kernel_object(MEMORY_REGION, abi::objtype::RENDEZVOUS);

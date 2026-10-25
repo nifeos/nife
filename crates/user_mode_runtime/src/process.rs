@@ -118,9 +118,9 @@ pub fn require(ok: bool) {
 /// #![no_main]
 ///
 /// user_mode_runtime::panic_handler!();
+/// user_mode_runtime::program_entry!(start);
 ///
-/// #[unsafe(no_mangle)]
-/// pub extern "C" fn _start() -> ! {
+/// fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 ///     user_mode_runtime::exit()
 /// }
 /// ```
@@ -138,5 +138,66 @@ macro_rules! panic_handler {
         fn panic(_: &::core::panic::PanicInfo) -> ! {
             $crate::trap()
         }
+    };
+}
+
+/// **The process entry point, entered with the stack the C ABI promises**: `_start`, calling
+/// `$entry(arg0, arg1, arg2)`.
+///
+/// Every `no_std` program writes `user_mode_runtime::program_entry!(start);` once, where `start` is
+/// a `fn(u64, u64, u64) -> !` taking the three argument registers its spawner set. The kernel
+/// enters a new thread with the stack pointer at the top of its stack page, 16-byte aligned. On
+/// `x86_64` the psABI promises `rsp % 16 == 8` at a function's first instruction, the return address
+/// a `call` pushes, so a plain `extern "C" fn _start` would run every frame eight bytes off and
+/// misplace every 16-byte-aligned local. On `x86_64` this expands to a one-`call` shim, as std's own
+/// entry does (`patches/std-nife/overlay/std/src/sys/pal/nife/entry.rs`); aarch64 and riscv64 push
+/// nothing on a call and get a plain `_start`. `loaded_image_check::verify` checks the alignment
+/// from inside a program, and `script/lint` refuses a hand-written `_start` in a program. See
+/// notes/user-mode-runtime.md, "Entering a process".
+///
+/// # Examples
+///
+/// ```ignore
+/// user_mode_runtime::program_entry!(start);
+///
+/// fn start(arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+///     user_mode_runtime::exit()
+/// }
+/// ```
+///
+/// Name: provisional. Refused `entry!` alone (every crate has entries) and `start!` (reads as an
+/// imperative at the call site).
+#[macro_export]
+macro_rules! program_entry {
+    ($entry:path) => {
+        /// The process entry point `program_entry!` writes, the symbol the link script's
+        /// `ENTRY(_start)` reads.
+        ///
+        /// Name: recorded (crates/user_mode_runtime/link.ld, its `ENTRY` line). The ELF entry
+        /// symbol every toolchain uses.
+        #[cfg(any(not(target_arch = "x86_64"), kani))]
+        #[unsafe(no_mangle)]
+        pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+            $entry(arg0, arg1, arg2)
+        }
+
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
+        extern "C" fn __program_entry(arg0: u64, arg1: u64, arg2: u64) -> ! {
+            $entry(arg0, arg1, arg2)
+        }
+
+        // The `call` pushes the return address the psABI expects at entry; the argument registers
+        // pass through untouched. The `ud2` is unreachable, because the entry diverges. Kani
+        // cannot compile `global_asm!`, so under it the plain `_start` above stands in.
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
+        ::core::arch::global_asm!(
+            ".pushsection .text._start, \"ax\", @progbits",
+            ".globl _start",
+            "_start:",
+            "call {entry}",
+            "ud2",
+            ".popsection",
+            entry = sym __program_entry,
+        );
     };
 }

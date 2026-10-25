@@ -43,6 +43,8 @@ pub(crate) const HEAP_MAX: u64 = 96 * 4096;
 pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =
     memory_region_heap::MemoryRegionHeap::new();
 
+user_mode_runtime::program_entry!(start);
+
 /// Entry role 0 is the net server; the NIC handoff roles are servers on other cards, and any other
 /// role runs a socket-contract client in the same binary (notes/net.md, "One binary, one archive
 /// entry").
@@ -53,8 +55,7 @@ pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =
 /// Whoever spawns the server decides both; a server spawned with zero (`NO_LISTEN_GRANT`, which
 /// every outbound-only test uses) refuses every `LISTEN` and every `BIND_UDP`. The client half
 /// ignores it.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
+fn start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
     if role == 0 {
         let dev = Nic::Virtio(virtio_net_transport::VirtioNet::bring_up(
             direct_memory_access_phys,

@@ -243,12 +243,13 @@ mod uart {
     }
 }
 
+user_mode_runtime::program_entry!(start);
+
 /// Forward wire bytes forever, interrupt-driven on all three architectures: wait on the receive
 /// interrupt, clear it at the device, drain the FIFO, hand the bytes on, acknowledge. `uart_shape`
 /// is riscv64's register shape (`abi::uart`); the other arguments are unused. A polled loop would
 /// never let the core idle; the measurement is in notes/uart.md.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
+fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     #[cfg(target_arch = "riscv64")]
     uart::set_shape(uart_shape);
     #[cfg(not(target_arch = "riscv64"))]

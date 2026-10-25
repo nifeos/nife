@@ -233,11 +233,12 @@ pub const F_STORED: u64 = 1 << 19;
 /// 152, ruled 2026-09-27 on #1377, says a durable job holds none.
 pub const F_NO_REPORT: u64 = 1 << 20;
 
+user_mode_runtime::program_entry!(start);
+
 /// `a0` is the behaviour, `a1` the identity and `a2` the secret; see the module docs. Three
 /// registers because that is what a process is born with (`kernel::user::Spawn`), and the two
 /// credential halves are indices because a register cannot carry a byte string.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(behaviour: u64, identity: u64, secret: u64) -> ! {
+fn start(behaviour: u64, identity: u64, secret: u64) -> ! {
     if behaviour == FREE_TERMINAL {
         // **Never calls `CONNECT` at all.** `login_contract::logout_word` travels on the shared front
         // door directly (`login_contract`'s own module docs): there is no secret to protect, so there

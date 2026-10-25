@@ -62,8 +62,9 @@ unsafe extern "C" {
     fn c_seam_underrun(grant: *mut u8, len: usize);
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, attempt: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, attempt: u64, _a2: u64) -> ! {
     HEAP.init(HEAP_UT, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // Report *before* the call, because two of the three attempts never return from it. This is how

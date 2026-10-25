@@ -38,8 +38,9 @@ const EMPTY: u64 = 40;
 /// The word the client sends on the carried capability.
 const PROBE_WORD: u64 = 0x5EC0_0C47;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let mut verdict = 0;
     let Some(to) = receive_request(ENDPOINT).delivered.into_reply() else {
         user_mode_runtime::trap()

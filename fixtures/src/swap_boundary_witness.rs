@@ -78,8 +78,9 @@ const SVC: u64 = capability_plan::slot_of(&hot_swap_contract::CLIENT, "service")
 const RPT: u64 = capability_plan::slot_of(&hot_swap_contract::CLIENT, "report");
 const NOTE: u64 = capability_plan::slot_of(&hot_swap_contract::CLIENT, "operator");
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     match role {
         hot_swap_contract::ROLE_USURPER => usurp(),
         hot_swap_contract::ROLE_CONFUSED => confused_deputy(),

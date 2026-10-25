@@ -118,10 +118,11 @@ enum Fail {
     Status(Outcome),
 }
 
+user_mode_runtime::program_entry!(start);
+
 /// The start words ([`domain_name_resolution_contract::endowment`]) name the server and the
 /// transport, which the spawner reads from the DHCP lease.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
+fn start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
     // SAFETY: one thread, and `_start` is the only code that names `STATE`, once, here.
     let state = unsafe { &mut *core::ptr::addr_of_mut!(STATE) };
     let (port, transport) = endowment::port_and_transport_fields(port_and_transport);

@@ -75,8 +75,9 @@ const READ_KERNEL: u64 = 1;
 /// because there is nothing there.
 const BUILD_WITH_NOTHING: u64 = 2;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, addr: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, addr: u64, _arg2: u64) -> ! {
     match role {
         READ_KERNEL => read_kernel(addr),
         BUILD_WITH_NOTHING => build_with_nothing(),

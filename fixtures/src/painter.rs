@@ -83,8 +83,9 @@ fn die(code: u64) -> ! {
     exit();
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // **Put the surface in our own address space** (milestone 108). One `MAP` call for the whole
     // run (DECISIONS §102): the `PageFrame` capability at `SURFACE_FRAME` names all
     // `gfx::SURFACE_PAGE_FRAMES` pages, contiguous in physics and in virtual memory, so one `MAP`

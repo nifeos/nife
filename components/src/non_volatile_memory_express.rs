@@ -225,8 +225,9 @@ impl Plane {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(arg0: u64, arg1: u64, arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // The three words are the whole of what this process was told; a word that cannot describe a
     // controller it could serve is a wiring bug, reported rather than acted on.
     let Some(handoff) = Handoff::unpack([arg0, arg1, arg2]) else {

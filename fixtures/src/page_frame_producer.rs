@@ -27,8 +27,9 @@ const MEMORY_REGION: u64 = 0; // retype the frame and draw page tables from here
 const CHANNEL: u64 = 1; // delegate the frame to the consumer over here
 const PAGE_FRAME_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Retype: a page out of our budget becomes a PageFrame capability we hold. Nothing is mapped
     // yet.
     let frame = retype_into_page_frame(MEMORY_REGION);

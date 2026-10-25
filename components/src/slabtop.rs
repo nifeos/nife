@@ -46,8 +46,9 @@ const REPORT: u64 = 0;
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 const SHARE_SLOT: u64 = grant_plan::SHARE_SLOT;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let has_diag = is_granted(DIAG_SLOT);
     let diag = if has_diag { DIAG_SLOT } else { REPORT };
     let found = if is_granted(SHARE_SLOT) {
