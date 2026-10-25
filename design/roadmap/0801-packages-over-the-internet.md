@@ -3,8 +3,8 @@ status: PARTIAL
 raised: 2026-09-19
 milestone_dependencies: 384, 494, 501, 809, 855
 decision_dependencies: unwritten
-machine_requirements: x86_64 PC with a wired network card on the internet
-specific_machine: xenon (rung 3c's exit criterion is xenon's installed system)
+machine_requirements: riscv64, aarch64 and x86_64 silicon, each on a wired network that reaches the internet
+specific_machine: radon (with an Oracle Cloud Ampere A1 instance and xenon's installed system; calef's exit criterion of 2026-10-24 UTC names the three)
 needs_person: yes
 ---
 # 801. Packages over the internet: a host name, HTTPS and the distribution's index
@@ -16,8 +16,9 @@ field names whole milestones. The title and slug are drafts. `raised` is the day
 
 ## What it is
 
-From xenon's installed system, a package is fetched through `basalt.nifeos.org`'s index by host
-name, verified by its digest and installed. That is rung 3c of §157 (a trivial install is a web
+On real silicon of each architecture, a package is fetched through `basalt.nifeos.org`'s index
+by host name, verified by its digest and installed: radon, an Oracle Cloud Ampere A1 instance and
+xenon's installed system (below, "Ruled 2026-10-24"). That is rung 3c of §157 (a trivial install is a web
 page, a USB drive, and packages over the internet), which [milestone 198's rung
 table](0198-package-manager.md#the-rungs) still maps.
 
@@ -94,9 +95,29 @@ has the transcript and the BUGS.
 - The store is a directory grant the owner's console alone makes, at the `std` layout's directory
   slot, on a line that names no directory of its own; the sources page comes with it (slot 18).
 
-The status is PARTIAL rather than BUILT. Items 1 to 8 are built; the exit criterion is xenon's
-installed system, which has not run it. Follow-on's `Outstanding` lines say what is left. The TUF
-client is 858's.
+The status is PARTIAL rather than BUILT. Items 1 to 8 are built under QEMU on all three
+architectures; none of the three machines has run the exit criterion. Follow-on's `Outstanding`
+lines say what is left. The TUF client is 858's.
+
+## Ruled 2026-10-24 (UTC): the exit criterion is three machines
+
+calef widened the exit criterion from xenon alone to real silicon on three machines, in addition to
+the QEMU parity CI gives on all three. On aarch64 he offered the cloud host himself: *"On aarch64
+need not be argon. We could use a cloud host."* AWS Graviton was set aside, because its NIC is ENA
+and nife has no driver for it; an A1's is `virtio-net-pci`, and nife has a virtio-net driver.
+
+| leg | machine | state, 2026-10-24 | waits on | procedure |
+|---|---|---|---|---|
+| x86_64 | xenon's installed system | rehearsed under QEMU against the live host | 494's bench boot and a fresh install, both on the same evening | `notes/xenon-bench-2026-10-18.md`, steps 1, 2, 4 and 5 |
+| riscv64 | radon, booted over the network | cannot pass: no entropy at the prompt, no file service, no wall clock | the proposal `radons-booted-system-runs-jig`, and calef's ruling in it on where the time comes from | `notes/packages/jig-on-radon.md` |
+| aarch64 | an Oracle Cloud Ampere A1 instance | cannot pass: the booted system reaches no PCIe device, and has no entropy, disk or clock | the proposal `an-aarch64-cloud-instance-drives-its-pcie-devices`, after milestone 578 (an ACPI discovery path for aarch64)'s item 7 boots the instance | `notes/rented-metal/oracle-a1.md`, section 5b |
+
+The A1 does have a NIC nife can drive, but only once the loader describes the PCI host bridge from
+ACPI and the booted system claims a virtio-net over PCIe. Both proposals are in
+`design/roadmap/proposals/`.
+
+The second index address is scheduled, and it is calef's hands: he will do basalt's README steps 1
+to 6 for `basalt.crickertech.com` and `nifeos/basalt-backup` himself. No leg waits on it.
 
 ## What is calef's
 
@@ -115,7 +136,7 @@ options):
 - C. How `jig` reaches a GitHub Release asset, whose download starts at `github.com` (Sectigo, not
   X1) and redirects. Ruled 2026-10-12 (UTC) on #2048, below.
 
-Not a ruling but calef's hands: the exit criterion on xenon. The host is built:
+Not a ruling but calef's hands: the three runs. The host is built:
 `basalt.nifeos.org` is a CNAME to `nifeos.github.io`, and
 `https://basalt.nifeos.org/rolling/metadata/stand-in-index` answers 200, listing every package
 against one Release (checked 2026-10-24 UTC, `rolling-2026-10-24-87a3b29`). The bench step is
@@ -129,49 +150,12 @@ names a fixed directory (809's open fork). `Manifest::indexes`, granted like the
 `activation/indexes` at the directory slot. It lives under `activation/` because it decides what
 installs, and because `packages/indexes` could collide with a package named `indexes`.
 
-## Ruled 2026-10-12 (UTC): where `basalt.nifeos.org` is served
+## Ruled 2026-10-12 (UTC): Pages for the index, Releases for the bytes, and one redirect
 
-calef was asked whether the host should be a VPS running Caddy, GitHub Pages, Cloudflare, or S3 and
-CloudFront. He answered *"b"*, GitHub Pages. Asked how adoption would then be measured, he answered
-*"Packages on Releases, index on Pages"*. Later the same day: basalt must not become the
-organization's Pages site, since `www.nifeos.org` will be its own site from
-`nifeos/nifeos.github.io`; basalt is a project site of `nifeos/basalt` at its own custom domain.
-
-- The index (`/rolling/metadata/`) is served by GitHub Pages at `basalt.nifeos.org`, a CNAME to
-  `nifeos.github.io`, whose certificate chains to ISRG Root X1 (measured 2026-10-13), so §250's pin
-  holds unchanged.
-- Package bytes are GitHub Release assets, one Release per publish, each listed in its index line
-  as a location. §250 clause 2 already lets bytes live anywhere. An asset's `download_count` is the
-  first adoption signal (milestone 576).
-- basalt's `publish` job (nifeos/basalt#13) builds this. It also keeps clause 9's copy under
-  `targets/` on Pages, the fallback when the Release cannot be reached.
-- The image's production sources exist: `package_index::BASALT_SOURCES`, packed when an image is
-  built with `NIFE_INDEX_SOURCES=basalt`. Every check
-  still boots the test peer.
-
-## Ruled 2026-10-12 (UTC): a listed location names its root, and one redirect is followed
-
-Question C, asked on #2048 with the options in `notes/packages/the-index-format.md`. calef answered
-*"a"*, the recommended C2, and §250's amendment of that date records it as clauses 11 to 13.
-
-- The signed index may name, per listed location, the root its certificate must chain to, among the
-  roots the image carries: `<root>=https://...` in the stand-in encoding. A location naming none
-  chains to the index's root. The image carries further roots on `location-root` lines in its
-  sources; basalt's names `sectigo-root-e46`, the root `github.com` chains to.
-- A fetch from a listed location follows exactly one redirect. It must be an absolute HTTPS URL,
-  its host is held to Q1's public-address check and to the index's root, and a second is refused.
-- The digest check is unchanged.
-
-Built 2026-10-13 (UTC). `pinned_tls_client::listed` is
-the fetch, which `jig` and `package_fetch_exerciser` both call. `package_index` reads the root
-token, `Sources::root_for` chooses it, and `pinned_tls_client::SECTIGO_ROOT_E46` is the root,
-checked byte for byte against Sectigo's and macOS's copies. An ignored host test fetched ripgrep's
-Release asset through it: `github.com` under E46, a `302` with a 931-byte path, then the bytes from
-an X1 host. `a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest` runs
-six redirect probes on all three architectures. One good redirect is fetched and admitted. Refused:
-an unnamed root, a root the image does not carry, a second redirect, a private address and a host
-off the index's root. Falsified on aarch64 twice: a redirect pinned to the
-location's root fetched from the off-root host, and two redirects allowed fetched through both.
+The index is served by GitHub Pages at `basalt.nifeos.org` and package bytes are GitHub Release
+assets (calef: *"Packages on Releases, index on Pages"*). A listed location names its root and one
+redirect is followed (question C, §250 clauses 11 to 13). Both rulings, and what built them, are in
+[rulings-of-2026-10-12.md](0801-packages-over-the-internet/rulings-of-2026-10-12.md).
 
 ## What it waits on
 
@@ -182,9 +166,9 @@ location's root fetched from the off-root host, and two redirects allowed fetche
   amendments those rulings make. Q3 amends §220 (signed builds: a vendor signs, a developer
   self-signs, and trusting a key is scoped) and §195 (a reviewed recipe vouches for a package).
   The backup address amends §250 clause 1, as clause 6 (question A).
-- Not a ruling but calef's hands: the run on xenon. That is `needs_person`. It waits on xenon's
-  I219, which the kernel refuses until milestone 494's bench boot proves it, and on a fresh
-  install: the one on xenon's NVMe no longer boots (`bench/xenon-2026-10-21/README-801.md`).
+- Not a ruling but calef's hands: the three runs, `needs_person`. xenon's waits on its I219,
+  which the kernel refuses until milestone 494's bench boot proves it, and on a fresh install
+  (`bench/xenon-2026-10-21/README-801.md`). radon's and the A1's wait on the two proposals.
 
 Reuse: the package client, digest check and installer of milestone 198 are this milestone's
 base. The §46 (thin primitives or whole subsystems) survey of index formats is
@@ -195,10 +179,9 @@ base. The §46 (thin primitives or whole subsystems) survey of index formats is
 The capability here is the resolver, the TLS client and fetching the distribution's index over
 HTTPS. It ships on aarch64, riscv64 and x86_64, proven under QEMU by the same suite on each, as rung
 3a's fetch already is: aarch64 and riscv64 since 2026-09-24, x86_64 since 2026-10-05 (milestone
-198's rung table and its "x86_64 fetches" entry). xenon is the silicon reference for the exit
-criterion, not the scope. radon follows on silicon once the network half of milestone 53 (the
-board's own peripherals: network and storage on real silicon), a driver for the JH7110's GMAC,
-exists. aarch64 silicon waits on an aarch64 board.
+198's rung table and its "x86_64 fetches" entry). On silicon the exit criterion names one machine
+per architecture. radon's NIC is milestone 53 (the board's own peripherals: network and storage on
+real silicon)'s network half, which leases; aarch64's machine is a rented A1 instance, not argon.
 
 ## BUGS
 
@@ -223,7 +206,6 @@ exists. aarch64 silicon waits on an aarch64 board.
 - `notes/packages/over-the-internet.md`'s BUGS carry the stand-in's limits (no "moved to", one plain
   HTTP location, no producer in the tree).
 
-- Proved on xenon alone until milestone 802's second-machine criterion runs.
 - A laptop with no Ethernet port cannot reach this rung. That is milestone 788 (Wi-Fi on a PC that
   has no Ethernet).
 
@@ -240,15 +222,21 @@ exists. aarch64 silicon waits on an aarch64 board.
   list is a package and a capability). 801 waits on neither: it installs from the image's own
   index under the image's root (checked 2026-10-24 against `jig update` and `jig install`, which
   read only the image's sources).
-- **Outstanding.** The exit criterion: on xenon, install, boot from the disk, `jig update`, `jig
-  install ioping`. `notes/xenon-bench-2026-10-18.md`'s steps 1 to 3 are the procedure. It waits on
-  milestone 494's bench boot (494 is PARTIAL on it) and a fresh install
-  (`bench/xenon-2026-10-21/README-801.md`). Checked 2026-10-24: no xenon log under `bench/` runs
-  `jig`, and the QEMU rehearsal passes.
-- **Outstanding.** The second index address. `basalt.crickertech.com` does not resolve, basalt's
-  `backup` job fails, and `nifeos/basalt-backup` has no Pages site (checked 2026-10-24 with `dig`,
-  `curl` and the GitHub API). basalt's README lists the six steps, which need an organization
-  owner and the domain's DNS. The client's fallback is built and gated against the test peer.
+- **Outstanding.** The x86_64 leg: on xenon, install, boot from the disk, `jig update`, `jig
+  install ioping`, as steps 4 and 5 of `notes/xenon-bench-2026-10-18.md`, the evening that also
+  runs 494's bench boot and 260's network boot. Checked 2026-10-24: no xenon log under `bench/`
+  runs `jig`, and the QEMU rehearsal passes.
+- **Outstanding.** The riscv64 leg on radon, `notes/packages/jig-on-radon.md`. It cannot pass until
+  the proposal `radons-booted-system-runs-jig` is built (checked 2026-10-24 against
+  `bench/radon-2026-10-22/53-ordinary-and-reboot.log`: `entropy : NONE`, no resolver, no file
+  service).
+- **Outstanding.** The aarch64 leg on an Oracle Cloud Ampere A1 instance,
+  `notes/rented-metal/oracle-a1.md` section 5b. It cannot pass until the proposal
+  `an-aarch64-cloud-instance-drives-its-pcie-devices` is built; the ACPI-derived tree has no PCI
+  host bridge (`uefi_loader/src/device_tree_from_acpi.rs`'s BUGS).
+- **Outstanding.** The second index address, scheduled and calef's hands: basalt's README steps 1 to 6 for
+  `basalt.crickertech.com`. Checked 2026-10-24: the name does not resolve and `nifeos/basalt-backup`
+  has no Pages site. The client's fallback is built and gated against the test peer.
 - **Milestone 858.** Who signs a target's locations, decided with the signing setup (Q1), and
   following a root that names a new location (Q2).
 
@@ -275,11 +263,11 @@ exists. aarch64 silicon waits on an aarch64 board.
 ## Index row
 
 Rung 3c of the trivial install, a milestone of its own so that milestone 576 (how many systems
-are out there) can depend on it alone. A package is fetched from xenon's installed system through
+are out there) can depend on it alone. A package is fetched on silicon through
 `basalt.nifeos.org`'s index by host name, over HTTPS, verified by digest and installed. It waits on
 the resolver (384), the TLS client (501) and xenon's network card (494). Built under QEMU
 2026-10-09 and 2026-10-10: the index split from where the bytes live, a std program resolving
 through its grant, and the whole fetch over pinned TLS. That fetch follows calef's five rulings on
 the index: HTTPS locations with a fallback, a backup address, the channel layout, the root zone.
-Since 2026-10-12 `jig update` and `jig install` do it at the prompt; what is left is the run on
-xenon.
+Since 2026-10-12 `jig update` and `jig install` do it at the prompt. What is left is the run on
+three machines (calef, 2026-10-24): xenon's installed system, radon and an Oracle Cloud A1.

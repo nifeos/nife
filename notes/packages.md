@@ -183,7 +183,8 @@ an installed program), B2; see `swish::bare`).
 
 Built 2026-09-26; a program, `jig`, since milestone 809 (the package client becomes a program).
 Each verb is one request to the progenitor and one reply naming the live generation. Files are
-installed from inside `downloads` ([packages/jig.md](packages/jig.md)):
+installed from inside `downloads` ([packages/jig.md](packages/jig.md),
+[radon](packages/jig-on-radon.md)):
 
 ```
 $ cd downloads

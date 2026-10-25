@@ -17,6 +17,6 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Installing nife onto a disk from a boot stick](../installing.md).
 - [The FAT32 writer](../file-allocation-table.md): the volume's shape, VFAT long names, and who reads it back.
 - [The sealed pair](../sealed-pair.md): checking on the host that a kernel vouches for the archive beside it.
-- [xenon bench card](../xenon-bench-2026-10-18.md): the I219, 801's fetch, ioping on nife and Linux, then the soak, in one evening.
+- [xenon bench evening](../xenon-bench-2026-10-18.md): the I219, the network boot, a fresh install, 801's fetch, then ioping and the soak.
 - [Turning Secure Boot off, before booting the nife stick on a PC](../turning-secure-boot-off.md): the install page's first instruction.
 - [xenon bench card, October 2026](../xenon-bench-2026-10.md): risk 6's throughput boots, then the install, in that order.
