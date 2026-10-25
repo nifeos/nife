@@ -15,7 +15,8 @@ will serve xenon, with the DHCP answers parsed out of the same `bench/xenon-netb
 the router carries.
 
 Steps 1 and 2 are done: calef set both firmware settings on 2026-10-04 (UTC), and the router took the
-four lines the same day. Step 3 and the record after it are what is left.
+four lines the same day. Step 3 and the record after it are what is left. They run as step 3 of the
+xenon evening, [`notes/xenon-bench-2026-10-18.md`](../xenon-bench-2026-10-18.md) (calef, 2026-10-24 UTC).
 
 ## Why bother
 
