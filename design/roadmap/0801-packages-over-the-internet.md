@@ -110,7 +110,7 @@ and nife has no driver for it; an A1's is `virtio-net-pci`, and nife has a virti
 |---|---|---|---|---|
 | x86_64 | xenon's installed system | rehearsed under QEMU against the live host | 494's bench boot and a fresh install, both on the same evening | `notes/xenon-bench-2026-10-18.md`, steps 1, 2, 4 and 5 |
 | riscv64 | radon, booted over the network | cannot pass: no entropy at the prompt, no file service, no wall clock | the proposal `radons-booted-system-runs-jig`, and calef's ruling in it on where the time comes from | `notes/packages/jig-on-radon.md` |
-| aarch64 | an Oracle Cloud Ampere A1 instance | cannot pass: the booted system reaches no PCIe device, and has no entropy, disk or clock | the proposal `an-aarch64-cloud-instance-drives-its-pcie-devices`, after milestone 578's item 7 boots the instance | `notes/rented-metal/oracle-a1.md`, section 5b |
+| aarch64 | an Oracle Cloud Ampere A1 instance | cannot pass: the booted system reaches no PCIe device, and has no entropy, disk or clock | the proposal `an-aarch64-cloud-instance-drives-its-pcie-devices`, after milestone 578 (an ACPI discovery path for aarch64)'s item 7 boots the instance | `notes/rented-metal/oracle-a1.md`, section 5b |
 
 The A1 does have a NIC nife can drive, but only once the loader describes the PCI host bridge from
 ACPI and the booted system claims a virtio-net over PCIe. Both proposals are in
