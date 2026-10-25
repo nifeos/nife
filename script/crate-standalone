@@ -20,9 +20,13 @@
 # **What it does**, per crate, in a fresh directory under `$TMPDIR` holding only the crate's tracked
 # files (`git ls-files crates/<crate>`):
 #
-# 0. The name. `script/names <crate>` must report the crate's name ratified, because the copy, the
+# 0. The names. `script/names <crate>` must report the crate's name ratified, because the copy, the
 #    `nifeos/<name>` repository and the crates.io package all carry it (calef, 2026-10-11 UTC: "We
-#    should ensure that we ratify the crate names before we break them out.").
+#    should ensure that we ratify the crate names before we break them out."). And every name a
+#    stranger meets in it is ratified too (ruled 2026-10-25 UTC): the crate's record outside its
+#    shipped files (helpers/name_release.py) must be in force, its `Ratified:` line dated, with
+#    every row ratified. Before that the crate keeps its `Name:` blocks, which step 3 refuses, so
+#    the two steps pass together only once the names are ratified and the blocks have moved out.
 # 1. The manifest. Fails on a path dependency that leaves the copy, on a key inherited from the
 #    workspace (`license.workspace = true`, `[lints] workspace = true`), on a missing `rust-version`,
 #    and on a feature whose name says `nife`. Inherited keys are then inlined from the workspace
@@ -84,6 +88,7 @@ workspace = tomllib.load(open(os.path.join(root, "Cargo.toml"), "rb"))["workspac
 # script cannot disagree about what "clean" means.
 sys.path.insert(0, os.path.join(root, "helpers"))
 import crate_release  # noqa: E402
+import name_release  # noqa: E402
 
 
 def run(argv, cwd, env=None):
@@ -143,8 +148,35 @@ def check_name(crate, fail):
             status = out[i + 1].split()[0] if out[i + 1].split() else "unknown"
             if status != "ratified":
                 fail("name", f"`script/names` reports the crate name {status}, not ratified")
-            return
-    fail("name", "`script/names` has no crate by this name")
+            break
+    else:
+        fail("name", "`script/names` has no crate by this name")
+    check_record(crate, fail)
+
+
+def check_record(crate, fail):
+    """Step 0's second half: the crate's names are ratified in a record outside its shipped files."""
+    paths = subprocess.run(["git", "-C", root, "ls-files"], capture_output=True, text=True,
+                           check=True).stdout.split()
+
+    def read(rel):
+        try:
+            return open(os.path.join(root, rel), errors="replace").read()
+        except OSError:
+            return None
+    found, _problems = name_release.load(paths, read)
+    record = name_release.record_path(crate)
+    if crate not in found:
+        fail("names", f"no record of the crate's names at {record}; its names are ratified there "
+                      f"before it leaves, and its `Name:` blocks move out of the crate")
+        return
+    _path, ratified, rows = found[crate]
+    if not ratified:
+        fail("names", f"{record} has no dated `Ratified:` line, so the crate's `Name:` blocks are "
+                      f"still its record")
+    waiting = [name for _n, name, _k, _p, cell in rows if not cell.startswith("ratified")]
+    if waiting:
+        fail("names", f"{len(waiting)} name(s) in {record} not ratified, first `{waiting[0]}`")
 
 
 def check_build(copy, toolchain, targets, fail, env):
