@@ -122,6 +122,16 @@ def _item_lines(text):
     return out
 
 
+def _member_line(text, name):
+    """`(1-based line, what)` for a field or variant called `name`, which a block may also name, or None."""
+    for number, line in enumerate(text.split("\n"), 1):
+        for what, rx in (("variant", name_provenance._VARIANT), ("field", name_provenance._FIELD)):
+            m = rx.match(line)
+            if m and m.group(1) == name and not name_provenance._ITEM.match(line):
+                return number, what
+    return None
+
+
 def load(paths, read):
     """`({crate: (record path, ratified, rows)}, problems)` for every record file, in force or not."""
     on_track = track(paths, read)
@@ -185,7 +195,8 @@ def apply(release, paths, read, is_module_file, pub_items):
             elif kind == "module":
                 ok = modules.get(source) == name
             elif kind == "item":
-                ok = name in items.get(source, {})
+                member = None if name in items.get(source, {}) else _member_line(read(source) or "", name)
+                ok = name in items.get(source, {}) or member is not None
             else:
                 ok = path == "Cargo.toml" and name in features
             if not ok:
@@ -205,7 +216,9 @@ def apply(release, paths, read, is_module_file, pub_items):
                 continue    # a stranger reads it, and the census counts no feature names
             rec = {"kind": kind, "name": name, "path": source, "status": status, "date": date,
                    "refused": refused, "text": cell, "record": where}
-            if kind == "item":
+            if kind == "item" and member is not None:
+                rec.update(path=f"{source}:{member[0]}", what=member[1])
+            elif kind == "item":
                 line, what = items[source][name]
                 rec.update(path=f"{source}:{line}", what=what)
                 # One record per item, as the census counts them, so the total does not move.
@@ -288,7 +301,7 @@ def selftest():
     import name_census
     block = "# 813. `fat`: a crate\n"
     crate = ("//! The crate.\n\npub mod a;\n\n/// A volume.\npub struct Volume;\n"
-             "pub fn new() {}\npub fn new() {}\n")
+             "pub fn new() {}\npub fn new() {}\npub enum Error {\n    Full,\n}\n")
     module = "//! A module.\n\npub fn read() {}\n"
     manifest = '[package]\nname = "fat"\n\n[features]\nstd = []\n'
     rows = ("Ratified: 2026-11-02 (#1).\n\n| name | kind | path | status |\n|---|---|---|---|\n"
@@ -297,6 +310,8 @@ def selftest():
             "| `Volume` | item | `src/lib.rs` | ratified 2026-11-02 (#1). Refused `Fs` (vague). |\n"
             "| `new` | item | `src/lib.rs` | ratified 2026-11-02 (#1). |\n"
             "| `read` | item | `src/a.rs` | provisional. |\n"
+            "| `Error` | item | `src/lib.rs` | provisional. |\n"
+            "| `Full` | item | `src/lib.rs` | provisional. |\n"
             "| `std` | feature | `Cargo.toml` | ratified 2026-11-02 (#1). |\n")
     base = {"design/roadmap/0813-fat.md": block, "crates/fat/src/lib.rs": crate,
             "crates/fat/src/a.rs": module, "crates/fat/Cargo.toml": manifest,
@@ -320,6 +335,8 @@ def selftest():
          fat[("crate", "fat")]["status"] == "ratified" and fat[("item", "Volume")]["refused"] == ["Fs"]
          and fat[("item", "read")]["status"] == "provisional"
          and fat[("item", "Volume")]["path"].rpartition(":")[2] == "6"),
+        ("a variant takes a row, as a block may name one",
+         fat[("item", "Full")]["what"] == "variant"),
         ("a crate off the track keeps the block rule",
          any("crate other: no `Name:` block" in p for p in run(base)[1])
          and "crates/other/src/lib.rs::f" in unblocked),
@@ -348,8 +365,9 @@ def selftest():
              for p in run(dict(base, **{f"{RECORD_DIR}/other-names.md": rows}))[1])),
         ("a crate that has left reads nothing",
          not problems_of({k: v for k, v in base.items() if not k.startswith("crates/fat/")})),
+        # A variant counts only where it carries a record, as it counts only where it carries a block.
         ("the total does not move when a record replaces the blocks",
-         len(recs) + missing + len(unblocked)
+         len(recs) + missing + len(unblocked) - 1
          == len(run(unblocked_rows)[0]) + run(unblocked_rows)[2] + len(run(unblocked_rows)[3])),
     ]
     failed = [name for name, ok in cases if not ok]
