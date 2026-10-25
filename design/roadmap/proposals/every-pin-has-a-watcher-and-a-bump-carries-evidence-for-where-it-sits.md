@@ -11,8 +11,8 @@ needs_person: no
 
 *(Title and slug provisional.)*
 
-Raised 2026-10-25 (UTC) by lane `dependency-updates-measured`, at calef's request: "We also need a
-mechanism to detect dependency updates and then incorporate them in a measured way." The appendix
+Raised 2026-10-25 (UTC) by lane `dependency-updates-measured`, at calef's request for a mechanism
+that detects dependency updates and takes them in a measured way. The appendix
 [inventory.md](every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits/inventory.md)
 lists every pin in the tree, what watches it, and the measurements this file cites.
 
@@ -123,79 +123,40 @@ audit. It says where a reviewer should look, as the icount table does for speed.
 
 ### Who merges
 
-D and S merge on green, armed by whoever opened the pull request, as the Actions group does today. N
-and V merge on green once the added evidence sits in the pull request, by an agent. K is Question 1
-below.
+Decided 2026-10-25 (UTC). D and S merge on green, armed by whoever opened the pull request, as the
+Actions group does today. N and V merge on green once the added evidence sits in the pull request,
+by an agent. For K, an agent merges a minor or patch bump once the kernel-class evidence sits in the
+pull request, and a major bump carries `needs-architect`.
+
+Four registry crates run in the kernel with full privilege. Since 2026-07-22 they have moved four
+times: `spin` twice through Dependabot (one of them a 0.x major), `aarch64-cpu` and `tock-registers`
+once together by hand (coupled majors), and `uuid` arriving on 2026-10-22 under a proved crate. Two
+of those moves were majors, so the rule asks for about one architect ruling a month at most, and it
+puts that ruling where an API or a lock's semantics change.
+
+### When to take a release
+
+Decided 2026-10-25 (UTC). Dependabot's default cooldown of 3 days stands, and `dependabot.yml`
+carries no `cooldown` key. A security update ignores the cooldown, so an advisory fix may land the
+day Dependabot proposes it.
 
 ### When a bump fails
 
-Never close a Dependabot pull request. Finding 1 says why: closing it is an `ignore` with no marker.
-A failed bump instead leaves three things.
+Decided 2026-10-25 (UTC). Nobody closes a Dependabot pull request to block a version. Finding 1 says
+why: closing it is an `ignore` with no marker. A bump that cannot land leaves two records and keeps
+its pull request.
 
 - A `BUGS` entry beside the consumer: the version, what broke, what would unblock it, and a date to
   re-argue by. `deny.toml`'s RUSTSEC-2026-0387 entry is the shape: a bounded claim, what ends it,
   and a date.
-- The pull request stays open with a `bump-blocked` label (provisional), which cites the entry.
-- A scheduled check lists every Dependabot pull request closed without merge and every
-  `bump-blocked` one, and fails when one has no `BUGS` entry citing it. That is the rung-two half
-  §81's own `BUGS` section asks for.
+- The pull request stays open with the `bump-blocked` label and cites the entry. Dependabot then
+  updates it in place when the next version arrives, so the failure and the retry share one thread.
 
-Question 3 below is whether to keep the pull request open or to close it once the entry exists.
-
-## The open choices
-
-calef asked for this one decision at a time; each question stands alone.
-
-### Question 1: who may merge a bump to a crate the kernel links
-
-Four registry crates run in the kernel with full privilege. Since 2026-07-22 they have moved four
-times: `spin` twice through Dependabot (one of them a 0.x major), `aarch64-cpu` and `tock-registers`
-once together by hand (coupled majors), and `uuid` arriving on 2026-10-22 under a proved crate. The
-two `spin` bumps merged on CI alone. The kernel-class evidence above makes the review an agent's
-work; the question is whether a major still reaches calef.
-
-- (a) Agents merge minor and patch bumps once the kernel-class evidence sits in the pull request; a
-  major carries `needs-architect`. Recommended. Majors are where an API or a lock's semantics
-  change, two arrived in three months across all four, and §46's bar already sends every new kernel
-  package to calef, so this adds about one ruling a month at most.
-- (b) Agents merge every kernel bump with the evidence present. Cheapest in calef's time. It loses
-  the one review a major has had until now.
-- (c) Every kernel bump carries `needs-architect`. It matches §46's wording for a take most closely
-  and costs calef a ruling for each patch release of `spin`.
-
-The recommendation holds if both cost the same: it puts calef's attention where semantics move.
-
-### Question 2: how long to wait after a release before taking it
-
-A cooldown keeps a freshly published version out of the tree for a few days. A malicious release of
-a popular crate is usually found and yanked within days (recalled, not measured here), so a wait
-trades lag on ordinary fixes for distance from that window. Security updates ignore the cooldown, so
-an advisory fix still arrives at once. Dependabot already applies 3 days.
-
-- (a) Seven days for every version update, in every Dependabot entry. Recommended. One number, one
-  place, and a week is shorter than the weekly schedule's own worst case of lag plus review.
-- (b) Seven days for classes K, V and N and the default 3 elsewhere. Dependabot scopes `cooldown` by
-  dependency name, so the class script would generate the lists. More moving parts for a difference
-  of four days on development crates.
-- (c) Keep the default 3 days and write nothing. It works; it leaves the number implicit.
-
-Choosing (a) is about elegance, not effort: (b) costs one generated list.
-
-### Question 3: what happens to a bump that cannot land
-
-A failed bump needs a record nobody can lose. The `BUGS` entry and the scheduled check above stand
-either way; this is about the pull request itself.
-
-- (a) It stays open with the label until a later release lands or the entry's date passes.
-  Recommended. Dependabot then updates it in place when the next version arrives, which keeps the
-  failure and the retry in one thread, and it never becomes a silent ignore.
-- (b) Close it once the `BUGS` entry exists. The queue stays shorter, at the price of the silent
-  ignore of that one version that finding 1 describes, now recorded rather than silent.
-- (c) Record nothing beyond today's practice. Rejected: it is the gap §81's `BUGS` names.
-
-Open blocked pull requests count against `open-pull-requests-limit`. Today the limit is 5 per entry
-and blocked bumps are rare (one group, #151, in three months), so (a) costs nothing yet; the limit
-is a `groups` and limits change that §81 leaves to us if it ever binds.
+Still to build: a scheduled check that lists every Dependabot pull request closed without merge and
+every `bump-blocked` one, and fails when one has no `BUGS` entry citing it. That is the rung-two
+half §81's own `BUGS` section asks for. Open blocked pull requests count against
+`open-pull-requests-limit`, 5 per entry; blocked bumps are rare (one group, #151, in three months),
+and raising the limit is a change §81 leaves to us if it ever binds.
 
 ## The alternatives
 
@@ -203,8 +164,7 @@ is a `groups` and limits change that §81 leaves to us if it ever binds.
   relative audits of a diff, which is the K-class delta review in a file format. Not proposed now:
   it asks for an audit or an exemption for each of 86 root packages and 204 across all the lockfiles
   we resolve before the first bump, and the classes say only four need a human-grade read. We could
-  write the K review as cargo-vet audits later, if calef wants imports from Mozilla's or Google's
-  audit sets.
+  write the K review as cargo-vet audits later, to import Mozilla's or Google's audit sets.
 - cargo-crev. A web of trust over individual reviewers. Its value depends on reviewers this project
   does not have, and it gives no answer for crates nobody has reviewed.
 - cargo-semver-checks. Its own documentation puts it in the publisher's hands, before release. It
@@ -227,9 +187,9 @@ is a `groups` and limits change that §81 leaves to us if it ever binds.
 4. Premise checks: findings 1 to 4 above; the tree commits 17 lockfiles, and 2 of them stay
    unwatched on purpose.
 5. Cost: the classes and diff summary are two stdlib scripts and a workflow step; the tool-pin
-   watcher copies `propose-kani` (about 80 lines of workflow). calef's cost under the
-   recommendations is about one ruling a month. Only the class counts are measured; the rest waits
-   on a build.
+   watcher copies `propose-kani` (about 80 lines of workflow). The architect's cost under the merge
+   rule is about one ruling a month. Only the class counts are measured; the rest waits on a build.
 6. Reversible throughout. Nothing outside this tree acts on a merge rule or a cooldown, and each is
    a one-line change.
-7. Each recommendation above says whether it would survive equal cost; all three do.
+7. The three decisions put architect attention where semantics move and keep one number implicit in
+   Dependabot's default; none of them rests on effort.
