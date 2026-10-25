@@ -61,11 +61,11 @@ and fetch-op outside test code:
 
 ## What was modeled
 
-25 harnesses <!--count:loom-harnesses--> across five crates <!--count:loom-crates-->, run by
+25 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
 `script/interleaving-check`.
 
 The harness number is written in digits because `script/lint`'s marker reads small cardinals and no
-compositions, so "twenty-four" would be read as four; the crate number stays a word because five is
+compositions, so "twenty-four" would be read as four; the crate number stays a word because six is
 in range. That asymmetry is the gate's, not the prose's.
 
 Both numbers said sixteen and three until the 2026-08-17 documentation sweep. This line is the
@@ -82,11 +82,13 @@ timing table already said "all four crates".
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |
+| `crates/spin_lock` | the lock under `IrqSafeMutex` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
 
-Two of the five are lock-based, so what loom searches there is the interleaving of critical
+Two of the six are lock-based, so what loom searches there is the interleaving of critical
 sections, not memory orderings. That is the standing correction to the survey: a protocol is a
 candidate when its steps span more than one critical section, whatever its fields are. Every
-harness runs to exhaustion, with no preemption or branch bound. Each crate's harness table, how
+harness runs to exhaustion, with no preemption or branch bound, except `spin_lock`'s three-taker
+model, which loom cannot finish past one preemption. Each crate's harness table, how
 each was falsified, and its bounds are in
 [interleaving/what-was-modeled.md](interleaving/what-was-modeled.md).
 
@@ -246,7 +248,8 @@ model that searches code the kernel no longer runs reports success forever, with
 Milestone 136 (one decision path, and a gate that keeps it that way) gated this for `crates/memory_regions`, where #316's double free could be rebuilt
 from the public API alone. `script/lint`'s "the region claim protocol has one decision path" check
 pins the crate's public surface and requires each free loop to make its entitling call first. The
-other four loom crates have the same exposure and are not gated. The rebuilt gap, the two halves of
+other loom crates have the same exposure and are not gated, except that `IrqSafeMutex`'s field type
+is `spin_lock::SpinLock`, so the compiler holds that caller. The rebuilt gap, the two halves of
 the check and the `compile_fail` doctests are in
 [interleaving/lift-is-only-worth-what-its-caller-does.md](interleaving/lift-is-only-worth-what-its-caller-does.md).
 

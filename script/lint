@@ -848,11 +848,11 @@ M267EOF
 # **This checks the bookkeeping, not the ordering, and the difference is the whole design.** Pairing
 # two fences is a dataflow problem across functions, across binaries and sometimes across address
 # spaces; in this tree the other half is frequently not a fence at all but a blocking IPC rendezvous
-# whose happens-before edge lives inside `spin::Mutex`, in a dependency. Nothing an AST can see. So
-# this takes milestone 112's posture instead: a narrow check that is true beats a broad one that is
-# aspirational. What it buys is the forcing function, because an author made to write down where the
-# partner lives has to go and look for it, and that is exactly the step neither 43's nor 80's author
-# took. See notes/memory-ordering.md, which measures the broad check and shows why it fails.
+# whose happens-before edge lives inside the kernel's lock (`crates/spin_lock`). Nothing an AST can
+# see. So this takes milestone 112's posture instead: a narrow check that is true beats a broad one
+# that is aspirational. What it buys is the forcing function, because an author made to write down
+# where the partner lives has to go and look for it, and that is exactly the step neither 43's nor
+# 80's author took. See notes/memory-ordering.md, which measures the broad check and shows why it fails.
 #
 # Fences only, not every `Ordering::Release`. A `Release` store names its variable, so its partner
 # is a grep away; `fence()` names nothing at all, which is what makes it the site where the partner
@@ -1601,7 +1601,7 @@ echo "==> the unsafe listing of the crates the kernel links matches Cargo.lock"
 # asks each registry crate the kernel links to list its `unsafe` and what checks it.
 # notes/kernel-dependency-unsafe/sites.tsv is that list, regenerated from the pinned source, so a
 # bump that moves a site or adds a crate fails here until the table is rewritten and the note reread.
-# The same run checks the upstream facts a nife claim rests on (spin's lock orderings).
+# The same run checks the upstream facts a nife claim rests on (`PINS`, empty today).
 command -v cargo >/dev/null || { echo "lint: the kernel dependency unsafe check needs cargo" >&2; exit 1; }
 python3 helpers/kernel_dependency_unsafe.py --selftest
 python3 helpers/kernel_dependency_unsafe.py --check

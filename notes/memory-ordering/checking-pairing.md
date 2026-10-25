@@ -21,8 +21,8 @@ to add an allow-list entry without looking.
 That is the measurement. The reason underneath it is structural and does not improve with effort:
 
 - The partner is frequently not an ordering primitive at all. For most of this tree it is a
-  blocking IPC rendezvous whose happens-before edge lives in `spin::Mutex`, in a dependency. No AST
-  in this repository contains it.
+  blocking IPC rendezvous whose happens-before edge lives in the kernel's lock
+  (`crates/spin_lock`), behind every call site. No AST of the two programs contains it.
 - The two halves are in different programs, often different crates, sometimes different languages
   (`fixtures/c/c_seam.c`). Cross-binary dataflow.
 - The defect is an absence. Finding 7 was a reader with no fence anywhere. There is no token to

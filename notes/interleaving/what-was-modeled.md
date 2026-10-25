@@ -199,3 +199,33 @@ Bounds: 1,364 executions across the five harnesses, ~50 ms, no `LOOM_MAX_PREEMPT
 bound. The harnesses use `RegionTable<2>` or `<4>` rather than the kernel's 256, because the search
 is exponential and nothing in the protocol depends on capacity. Two threads is the entire cast of
 the recorded bug.
+
+## `crates/spin_lock`, the kernel's lock (2026-10-25)
+
+`IrqSafeMutex` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that it
+takes `spin_lock::SpinLock`: a flag set with an Acquire compare-exchange and cleared with a Release
+store. Most of the kernel's happens-before edges come from that pair
+([memory-ordering.md](../memory-ordering.md)). The crate is the protocol and nothing else, so the
+model searches exactly what the kernel compiles. The data sits in a loom cell that the guard's
+`deref` and `deref_mut` read and write, so two guards whose accesses no edge orders fail the run.
+
+Five harnesses:
+
+| Harness | What it holds | Search |
+|---|---|---|
+| `two_takers_are_exclusive_and_ordered` | two threads each increment under the lock; none is lost, and each order is reached | exhaustive, 105 executions |
+| `three_takers_are_exclusive_and_ordered` | the same for three, each of the three counts reached | preemption bound 1, 66 executions |
+| `try_lock_refuses_while_another_guard_holds` | a held lock refuses `try_lock`, a refusal leaves the holder holding, and both outcomes are reached | exhaustive |
+| `a_release_publishes_what_the_holder_wrote_before_it` | a write outside the lock, made before the release, is visible to the next holder: the IPC rendezvous's edge | exhaustive |
+| `a_relaxed_release_publishes_nothing` | the previous model with the crate's own unlock passed `Relaxed`; passes only on loom's causality violation | exhaustive |
+
+Falsified by hand: the guard's release store weakened to `Relaxed` fails the four positive models,
+and so does the lock's compare-exchange weakened to `Relaxed` on success. The fifth harness keeps
+the first of those falsifications standing without anyone breaking the code.
+
+The three-taker bound is loom's, not the lock's. Each waiter yields while the flag is set, and with
+two waiters loom's scheduler can hand the processor from one to the other without end while the
+holder never runs. At a bound of two it reaches such an execution and stops past 20,000 scheduling
+branches with "Model exceeded maximum number of branches", the limit its message names for spin
+locks. One preemption still covers a holder preempted inside its critical section with two waiters
+spinning behind it.
