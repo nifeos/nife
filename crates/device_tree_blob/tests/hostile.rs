@@ -1022,3 +1022,31 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
 }
+
+/// An empty needle names no device. A `compatible` value ends in a NUL, so splitting it on NUL
+/// leaves an empty last piece, and the compatible walkers used to count that piece as an entry:
+/// `node_reg_compatible(b"")` answered with the first node that had any `compatible` at all.
+/// No caller passes an empty needle; the fuzz target does, and dtoolkit's `is_compatible("")`
+/// matches nothing, which is how the measurement in milestone 784 found the difference.
+#[test]
+fn an_empty_compatible_needle_matches_nothing() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &cell32(1));
+    b.prop(b"#size-cells", &cell32(1));
+    b.begin_node(b"dev@1000");
+    b.prop(b"compatible", b"nife,dev\0");
+    let mut reg = cell32(0x1000);
+    reg.extend(cell32(0x10));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.node_reg_compatible(b"", &mut out), Ok(0));
+    assert_eq!(dt.node_prop_compatible(b"", b"reg"), Ok(None));
+    assert_eq!(dt.parent_prop_compatible(b"", b"#size-cells"), Ok(None));
+    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+}

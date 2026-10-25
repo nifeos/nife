@@ -420,7 +420,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// any depth.
     ///
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
-    /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. `compatible` may follow
+    /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. The empty piece after the
+    /// final NUL is not an entry, so an empty `compat` matches nothing. `compatible` may follow
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
     /// decoded when the matched node closes; a matched parent is still answered after its
     /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
@@ -495,7 +496,9 @@ impl<'a> DeviceTreeBlob<'a> {
                                     .bytes
                                     .get(value_at..value_at + len)
                                     .ok_or(Error::Truncated)?;
-                                matched[depth] = bytes.split(|&b| b == 0).any(|s| s == compat);
+                                matched[depth] = bytes
+                                    .split(|&b| b == 0)
+                                    .any(|s| !s.is_empty() && s == compat);
                             }
                             _ => {}
                         }
@@ -608,7 +611,9 @@ impl<'a> DeviceTreeBlob<'a> {
                                 .bytes
                                 .get(value_at..value_at + len)
                                 .ok_or(Error::Truncated)?;
-                            matched[depth] = bytes.split(|&b| b == 0).any(|s| s == compat);
+                            matched[depth] = bytes
+                                .split(|&b| b == 0)
+                                .any(|s| !s.is_empty() && s == compat);
                         }
                     }
                 }
