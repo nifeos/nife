@@ -2,7 +2,8 @@
 
 <!-- writing-standards: exception. Marked 2026-10-25 (UTC) by lane crates-stand-alone. Reason: each block below is a provenance record moved verbatim from the crate's source, refusals and wording included, and a record keeps its words. -->
 
-Several blocks cite milestone 53 (the board's own peripherals: network and storage on real
+The crate began as milestone 220 (this kernel drives no clock or reset controller, and the first
+real device will need one). Several blocks cite milestone 53 (the board's own peripherals: network and storage on real
 silicon) and milestone 593 (a wedged kernel resets itself, through a watchdog that does not need
 asking), whose lanes minted them.
 

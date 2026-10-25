@@ -187,8 +187,8 @@ The crate's source cites nothing of this tree, so this section keeps the links i
 - `StandardMode` and `PMIC_RESET_REG`: the vendor U-Boot tree milestone 592 pinned, and its block's
   reading of the PMIC register.
 - `src/tests.rs`: the tests left `lib.rs` on 2026-10-12 (UTC), by lane
-  maintainer/near-ceiling-splits, to keep the root under §266 (a Rust source file stays under two
-  thousand lines).
+  maintainer/near-ceiling-splits, to keep the root under §266 (a Rust source file stays under
+  2,000 lines, held by a ratchet that only falls).
 
 ## BUGS
 

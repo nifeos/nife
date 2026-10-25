@@ -1,6 +1,7 @@
 # Programming a clock and a reset line, for the first time
 
-Milestone 220. `crates/jh7110_clock_and_reset` (the offsets, the plans, each tree's spellings),
+Milestone 220 (this kernel drives no clock or reset controller, and the first real device will
+need one). `crates/jh7110_clock_and_reset` (the offsets, the plans, each tree's spellings),
 `crates/machine_discovery/src/jh7110/clock_and_reset.rs` (the device-tree walk),
 `kernel/src/drivers/jh7110_clock_and_reset.rs` (the stores), `kernel/src/user/entropy_service.rs` (the caller).
 

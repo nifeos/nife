@@ -23,6 +23,11 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   as of today) [...] Names are ratified now and permanent on first publication."* His words: *"Yes,
   one per crate"*.
 - The release rules are forks 1 to 4 and 6 of the same pull request, applied in *Release* below.
+- The cut, 2026-10-25 (UTC), choosing option A of the lane crates-stand-alone: *"A seems like the
+  obvious choice"*. The crates take plain values, every device-tree walk moves to nife's side, and
+  nife's process layout leaves the device crates. He accepted the refinement with *"Yes"*: what
+  each of the JH7110's two trees calls a block stays in the crate as data and small decoders, and
+  only the walk moves.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -34,10 +39,10 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   requires `RAND_RDY` and carries the words untouched, neither bit set is always not ready, and an
   unseeded core never yields bytes.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
-  rule 2 (a driver gets what it needs passed in): `discover` takes a `DeviceTreeBlob`; the caller
-  passes the register region instead, and the query moves to the kernel side, which already depends
-  on `device_tree_blob`. The tests also `include_bytes!` a fixture from
-  `../../device_tree_blob/tests/fixtures/`, outside the package.
+  rule 2 (a driver gets what it needs passed in), and the crate now depends on nothing. It holds
+  both spellings (`COMPATIBLES`) and the property decoders `interrupt` and `status_okay`, and
+  `machine_discovery::jh7110::entropy::discover` walks the tree and fills in `Discovered`. The
+  fixtures and the tests that read QEMU's tree moved there with the walk.
 - Its consumers: `kernel/src/user/entropy_service.rs`, `kernel/src/memory.rs`, `kernel/src/lib.rs`
   and `components/src/jh7110_entropy.rs`.
 - crates.io answers 404 for the name (checked 2026-10-07).
@@ -131,7 +136,7 @@ provenance blocks.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `discover` takes a `DeviceTreeBlob`; the cut makes the caller pass the register region.
+  nothing; the decoders take raw property bytes.
 
 ## Exit
 
