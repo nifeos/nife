@@ -6,20 +6,20 @@ Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.m
 
 784 recorded "contribute to `dtoolkit`" with no technical comparison. calef asked for one on
 2026-10-25 (UTC). This page measures our crate against `dtoolkit` 0.4.1 (MIT or Apache-2.0,
-`no_std`, no `alloc` for reading). It was measured on 2026-10-25 at base `e865d8838`, on a Linux
-x86_64 build host shared with other lanes, with the pinned nightly of that date. No dependency was
-added. Every probe is generated outside the tree by [dtoolkit-probe.sh](dtoolkit-probe.sh), and its
-mode names the section it feeds. The reports this page would send upstream are drafted in
-[the candidate reports](dtoolkit-upstream-reports.md); none has been filed.
+`no_std`, no `alloc` for reading). I measured on 2026-10-25 at base `e865d8838`, on a Linux x86_64
+build host shared with other lanes, with the pinned nightly of that date, and added no dependency.
+[dtoolkit-probe.sh](dtoolkit-probe.sh) generates every probe outside the tree, and its mode names
+the section it feeds. [The candidate reports](dtoolkit-upstream-reports.md) hold what this page
+would send upstream; nobody has filed any.
 
 ## What a candidate has to do here
 
 Ten packages depend on the crate: the kernel, `machine_discovery`, `pci` (its tests),
-`uefi_loader`, the five JH7110 device crates, and the fuzz target. They make twelve kinds of query:
-RAM (`memory_regions`), the reservation block, `/reserved-memory`, the initial ramdisk in
-`/chosen`, a node's `reg` by name prefix or by `compatible`, a property by prefix, by `compatible`,
-on the parent of a `compatible` match, by phandle, or inherited from an ancestor, and one property
-on every `cpu@`. Nothing in the kernel's path has an allocator.
+`uefi_loader`, the five JH7110 device crates, and the fuzz target. They make twelve kinds of query.
+Four read fixed places: RAM (`memory_regions`), the reservation block, `/reserved-memory` and the
+initial ramdisk in `/chosen`. The rest search: a node's `reg` by name prefix or by `compatible`, a
+property by prefix, by `compatible`, on the parent of a `compatible` match, by phandle, or inherited
+from an ancestor, and one property on every `cpu@`. Nothing in the kernel's path has an allocator.
 
 `dtoolkit` validates the whole blob in `Fdt::new`, then offers the root, each node's children and
 properties, lookup by path, `reg` decoded with the parent's cells, and `memory()`,
@@ -64,14 +64,13 @@ kernel's 2 MiB ceiling stays a check of ours.
 
 ## Agreement on the tree's trees
 
-`dtoolkit-probe.sh agree` takes every `.dtb` in the tree, 40 files: the five QEMU dumps that are
-`device_tree_blob`'s own fixtures, three more QEMU dumps and 13 trees in `machine_discovery`
-(JH7110 modeled on vendor and mainline sources, TH1520, the PLIC excerpt captured from radon's
-U-Boot, and hand-written shapes), and 19 JH7110 excerpts in the five device crates, radon's PMIC
-bus and watchdog among them. For each, the probe
-collects every node name, name stem, `compatible` string, property name and phandle the tree
-holds, adds every literal the callers pass, and asks both parsers every query over every needle:
-307,947 queries.
+`dtoolkit-probe.sh agree` takes every `.dtb` in the tree, 40 files. Five QEMU dumps are
+`device_tree_blob`'s own fixtures. `machine_discovery` holds three more QEMU dumps and 13 trees:
+JH7110 modeled on vendor and mainline sources, TH1520, the PLIC excerpt captured from radon's
+U-Boot, and hand-written shapes. The five device crates hold 19 JH7110 excerpts, radon's PMIC bus
+and watchdog among them. For each, the probe collects every node name, name stem, `compatible`
+string, property name and phandle the tree holds, and adds every literal the callers pass. It then
+asks both parsers every query over every needle: 307,947 queries.
 
 On 38 of the 40, every QEMU dump and every JH7110 tree among them, the two agree on every query.
 The 20 disagreements are on two hand-written fixtures, `many-harts` and `partial-psci`, whose `cpu@` nodes carry a `reg` shorter
@@ -83,9 +82,9 @@ Two of our own bugs showed up first, and this branch fixes both:
 - An empty `compatible` needle matched the first node with any `compatible`, because splitting a
   NUL-terminated value leaves an empty last piece. It caused 379 disagreements; no caller passes an
   empty needle, but the fuzz target does.
-- A `#address-cells` or `#size-cells` that is not four bytes was read as four, padding included:
-  `many-harts`'s two-byte declaration became 65,536 cells. Now a malformed declaration is ignored and
-  the inherited width stands, as Linux does.
+- A `#address-cells` or `#size-cells` that is not four bytes read as four, padding included:
+  `many-harts`'s two-byte declaration became 65,536 cells. Now the parser ignores a malformed
+  declaration and the inherited width stands, as Linux does.
 
 Each has a host test in `crates/device_tree_blob/tests/hostile.rs` that fails without its fix.
 
@@ -132,9 +131,9 @@ query.
 
 ## Hostile shapes by size
 
-A chain of nested nodes and a flat tree of the same size, up to Linux's 2 MiB ceiling, timed
-through `Fdt::new`, a walk of every node on `dtoolkit`'s own API (a heap stack, so no depth limit),
-and ours walking every token (`dtoolkit-probe.sh deep`):
+`dtoolkit-probe.sh deep` builds a chain of nested nodes and a flat tree of the same size, up to
+Linux's 2 MiB ceiling. It times `Fdt::new`, a walk of every node on `dtoolkit`'s own API (a heap
+stack, so no depth limit), and ours walking every token:
 
 | tree | bytes | `Fdt::new` | `dtoolkit` walk | ours |
 |---|---|---|---|---|
@@ -191,14 +190,13 @@ So all four hold on `dtoolkit`, and they hold for the reason they hold on ours: 
 functions. Neither crate's whole parse fits in CBMC at this size and bound; validating up front does
 not make `dtoolkit` easier to prove than our walkers. Our `from_bytes` checks only the header, which
 is why it alone finishes. Proving either parse needs restructuring: a bounded loop body proved once, with the
-iteration argued separately. That is the freedom §46 (taking a dependency is a decision) keeps by
-having us write the crates Kani proves.
+iteration argued separately. That is the freedom §46 keeps by having us write the crates Kani proves.
 
 ## Record and upkeep
 
 Read from crates.io and GitHub on 2026-10-25.
 
-- Releases: eight since the name was taken on 2025-12-15, the latest 0.4.1 on 2026-09-25. 0.2.0,
+- Releases: eight since the first, on 2025-12-15, the latest 0.4.1 on 2026-09-25. 0.2.0,
   0.3.0 and 0.4.0 each broke the API. `main` holds four more breaking changes, among them the removal
   of the `Node` trait's generic associated types (#85) and of `ToCellInt` (#87). The adapter builds
   against 0.4.0 and 0.4.1, and fails with 5 errors on 0.2.0 and 0.2.1, 4 on 0.3.0 and 2 on `main`
@@ -213,7 +211,7 @@ Read from crates.io and GitHub on 2026-10-25.
   every feature combination. The repository has one cargo-fuzz target, `parse`, and CI does not run
   it. No Kani.
 - Advisories: none for `dtoolkit`, `zerocopy-derive` or `thiserror` in RUSTSEC (advisory-db at
-  `21d909e`, 2026-10-24). `zerocopy`'s RUSTSEC-2023-0074 is patched from 0.7.31 on.
+  `21d909e`, 2026-10-24). 0.7.31 and later carry the fix for `zerocopy`'s RUSTSEC-2023-0074.
 - Contribution terms: Google's Contributor License Agreement, signed once by a person or an
   employer, and Conventional Commits. CONTRIBUTING states no policy on AI-written work, and allows
   `unsafe` only with a written reason.
@@ -221,15 +219,15 @@ Read from crates.io and GitHub on 2026-10-25.
 ## What it means for 784's "contribute"
 
 The test is calef's of 2026-10-22: release our crate only where no maintained upstream crate
-deserves our proofs, and contribute where one does. `dtoolkit` deserves them. It is maintained by
-Google with Arm as a user, it agrees with ours on every query over every QEMU and JH7110 tree, it
-survived the same fuzzing, and our four properties hold on its code. Its whole parse is no easier to
+deserves our proofs, and contribute where one does. `dtoolkit` deserves them. Google maintains it and
+Arm uses it. It agrees with ours on every query over every QEMU and JH7110 tree, it survived the
+same fuzzing, and our four properties hold on its code. Its whole parse is no easier to
 prove than ours, so the proofs do not favor either crate. 857 should therefore not publish
 `device_tree_blob`, and "contribute" stands.
 
 What contributing means changes. Today `dtoolkit` cannot replace ours in the kernel. It refuses real
-Linux trees over a name's length, walks a deep tree in quadratic time, would add ten crates and two
-proc macros to a kernel graph that holds one, and breaks its API every minor release. §46 rule 3
+Linux trees over a name's length and walks a deep tree in quadratic time. It would add ten crates
+and two proc macros to a kernel graph that holds one, and it breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything in between) rule 3
 keeps the kernel's parser ours regardless, so none of this argues for a switch; it says what to
 send. Three bug reports, drafted in [the candidate reports](dtoolkit-upstream-reports.md), each
 waiting on calef: the name-length refusal, the quadratic walk, and `Display`'s panic. Then the

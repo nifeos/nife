@@ -207,13 +207,13 @@ failure, so every limitation here is a limitation on the boot path specifically.
   The walkers carry the parent's widths down instead, as Linux's `of_n_addr_cells` does, so a bus
   that declares nothing decodes `reg` with whatever its parent said. Where the tree is silent, a
   spec-following reader such as `dtoolkit` returns a different region and neither reports an error.
-  A declaration that is not exactly one cell is ignored.
+  The walkers ignore a declaration that is not exactly one cell.
 - **A `reg` shorter than one address and size pair yields no region rather than an error.** The
   caller sees `None`, the same as a node with no `reg` at all.
 - **Property placement is not checked.** A property after a child node, or before the root node,
   breaks the spec's order, and the walkers read it anyway.
-- **A blob whose strings block is empty and ends it is refused** as `Error::Truncated`, because the
-  header check requires `off_dt_strings < totalsize`. `dtc` never writes such a blob, but the spec
+- **`from_bytes` refuses a blob whose strings block is empty and ends it**, as `Error::Truncated`,
+  because the header check requires `off_dt_strings < totalsize`. `dtc` never writes such a blob, but the spec
   allows it.
 
 `crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two and for the
