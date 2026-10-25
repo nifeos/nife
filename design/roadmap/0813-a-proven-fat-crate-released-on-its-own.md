@@ -203,7 +203,7 @@ provenance block. A test reads `../../target/file-allocation-table-check.img` th
 `CARGO_MANIFEST_DIR` at run time, which the script does not catch and a stranger's checkout does not
 have.
 
-Name: `file_allocation_table` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `file_allocation_table` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -244,6 +244,27 @@ record is not legal advice.
 The first two were the ones asserted against TomTom in 2009 and upheld on reexamination. All four
 predate 1995, so none can still be in force. FAT12, FAT16 and FAT32 themselves date from 1977 to
 1996. The search was for the known Microsoft families, not a freedom-to-operate opinion.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0813-a-proven-fat-crate-released-on-its-own/names.md).
+
+- `src/lib.rs`, crate doc: why an installer needs a FAT writer was `notes/installing.md`. The read
+  half was milestone 140 (mount a drive this system did not create), and the doc now says
+  "planned". The volume's shape and the reason for each number were `notes/file-allocation-table.md`.
+- `src/lib.rs`, `BUGS`: the drivers that read the volume back were `notes/file-allocation-table.md`,
+  "Who reads it back" (OVMF in `cargo xtask install-boot`, EDK2 on riscv64 in
+  `cargo xtask stick-boot`, and the host test).
+- `src/long_name.rs`, module doc: the run's padding and how the host's driver checks it were
+  `notes/file-allocation-table.md`, "Long names". The padding now sits in the doc itself.
+- `src/long_name/verification.rs`, module doc: `script/verify` (now `cargo kani`) and
+  `notes/verification.md`.
+- `src/volume.rs`, `Volume::new`: the cluster-alignment rounding cited `notes/installing.md`,
+  section 3 ("FAT32 had to be written, and the alignment is the part that bites"), which tells how
+  ten megabytes landed six sectors early.
+- `tests/a_third_party_driver_reads_it.rs`, module doc: why the host's driver is the check that
+  counts was `notes/file-allocation-table.md`, "Who reads it back".
 
 ## BUGS
 

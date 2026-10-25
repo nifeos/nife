@@ -1,14 +1,10 @@
 //! **Machine-checked proofs (Kani) of the long-name writer**: the checksum is the specification's,
 //! every run is laid out as the specification lays it, and every alias is a legal short name.
-//! Behind `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them. See
-//! notes/verification.md.
+//! Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //!
 //! The tests in `long_name.rs` and `lib.rs` pin worked examples and the host's driver reads one
 //! back; these quantify over the name, which is what catches an off-by-one in the padding or the
 //! ordinals for a length nobody wrote a test for.
-//!
-//! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
-//! after the module every other crate's harnesses live in. calef has not named it.
 
 use super::*;
 

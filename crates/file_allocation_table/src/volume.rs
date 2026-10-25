@@ -1,8 +1,5 @@
 //! **The volume**: its layout constants, the arithmetic that sizes the table and places each
 //! cluster, and the sectors a caller writes. The crate root re-exports what is public here.
-//!
-//! Name: provisional, minted 2026-10-22 (UTC) by milestone/560-a-long-file-name-or-riscv64-cannot-be-installed,
-//! for the volume this crate lays out. calef has not named it.
 
 use crate::long_name::{self, LongName};
 
@@ -76,10 +73,6 @@ pub enum Error {
     /// The file name is neither an 8.3 short name nor a long name a VFAT entry may carry: empty,
     /// over 255 units, outside the Basic Multilingual Plane, holding a control character or one of
     /// `" * / : < > ? \ |`, or ending in a space or a period.
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by
-    /// milestone/560-a-long-file-name-or-riscv64-cannot-be-installed, for the refusal a short name
-    /// alone used to be. calef has not named it.
     NameRefused,
     /// The file does not fit in the clusters the volume has left after its directories.
     FileTooBig,
@@ -161,8 +154,9 @@ impl Volume {
         // **Rounded up until the data area starts on a cluster boundary**, as every modern
         // `mkfs.vfat` does: the installer writes whole 4096-byte `filesystem_contract::blk`
         // blocks, so a cluster can only start where a block does, and the specification's sizing
-        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). notes/installing.md,
-        // section 3; `the_data_area_begins_on_a_cluster_boundary`.
+        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). Unaligned, a 512 MiB
+        // volume put its file six sectors early on disk.
+        // `the_data_area_begins_on_a_cluster_boundary` checks it.
         let fat_sectors = after_reserved
             .div_ceil(per_fat_sector)
             .next_multiple_of(CLUSTER_SECTORS / FATS);
