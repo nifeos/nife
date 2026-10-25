@@ -232,10 +232,10 @@ save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 The boundary a program outside the tree is written against, each week: syscall surface moves
 and wire-format value changes. [definitions](interface-stability.md),
-[per crate](project-metrics/interface-stability.md).
+[per crate and package](project-metrics/interface-stability.md).
 
 <!-- interface-stability: script/metrics writes this -->
-interface, 2026W40 to 2026W43: 10 breaking changes (40 additions); 5 syscall numbers changed, 0 format bumps; 63% co-change.
+interface, 2026W40 to 2026W43: 10 breaking changes (40 additions); 5 syscall numbers changed, 0 format bumps; 63% co-change, 34% across packages.
 <!-- /interface-stability -->
 
 ## The crates 857 releases
