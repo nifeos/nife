@@ -1,11 +1,10 @@
-//! **The I219 bring-up, in FreeBSD's order** (milestone 494 (a driver for the network card a PC
-//! actually has)).
+//! **The I219 bring-up, in FreeBSD's order.**
 //!
-//! The kernel (`kernel/src/e1000e.rs`) calls three passes in this order: [`init_phy_workarounds`]
+//! A driver calls three passes in this order: [`init_phy_workarounds`]
 //! at attach, [`global_reset`] after its descriptor-ring flush, and [`init_hw`] before the rings
 //! are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's `e1000_pch_spt`
 //! branches are carried ([`super::is_pch`]), and each function names the FreeBSD function it
-//! follows. See notes/e1000e/the-i219-port.md, "The three passes".
+//! follows.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

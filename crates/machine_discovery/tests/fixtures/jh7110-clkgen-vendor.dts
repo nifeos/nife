@@ -17,8 +17,8 @@
  *
  * Regenerate with:
  *
- *     dtc -I dts -O dtb -o crates/jh7110_clock_and_reset/tests/fixtures/jh7110-clkgen-vendor.dtb \
- *                          crates/jh7110_clock_and_reset/tests/fixtures/jh7110-clkgen-vendor.dts
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor.dts
  */
 
 / {

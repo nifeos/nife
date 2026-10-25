@@ -1,9 +1,9 @@
 //! **The driver's one bring-up report**, which the kernel waits for before the boot goes on.
 //!
 //! Three words on a report endpoint, sent once: what the driver found, then two words of detail.
-//! Both ends read them through this module, because they are two programs agreeing on a format
-//! (rule 7: anything two binaries agree on is a crate). The kernel prints a sentence from them;
-//! nothing else reads them.
+//! Both ends read them through this module, because they are two programs agreeing on a format,
+//! and a format two binaries agree on belongs in one crate rather than in two "must match"
+//! comments. The kernel prints a sentence from them; nothing else reads them.
 
 /// Word 0: a boot keyboard is configured and its reports are queued. Word 1 is [`keyboard`]'s
 /// packing; word 2 is the interface and endpoint.

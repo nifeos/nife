@@ -7,7 +7,7 @@
 name = "drivers"
 kind = "base"
 home = { repo = "drivers", status = "provisional" }
-crates = ["virtio", "non_volatile_memory_express", "jh7110_entropy"]
+crates = ["virtio", "non_volatile_memory_express"]
 # `e1000e` is the contract between the kernel, which resets the NIC and packs `e1000e::Handoff`, and
 # `net_stack` in the network package, which drives the rings (milestone 494 (a driver for the
 # network card a PC actually has)). Both link it, so it is an interface rather than an internal crate.
@@ -16,5 +16,8 @@ crates = ["virtio", "non_volatile_memory_express", "jh7110_entropy"]
 # `designware_mobile_storage` is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
-interfaces = ["e1000e", "designware_ethernet", "designware_mobile_storage"]
+# `jh7110_entropy` names the TRNG's compatible strings and decodes its properties; the kernel's
+# discovery in `machine_discovery` reads the device tree with them, and the EL0 server
+# `jh7110_entropy` drives the device. Three packages link it, so it is an interface.
+interfaces = ["e1000e", "designware_ethernet", "designware_mobile_storage", "jh7110_entropy"]
 programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]

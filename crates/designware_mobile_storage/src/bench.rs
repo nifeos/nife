@@ -1,5 +1,5 @@
 //! The bench step's two halves, as logic: the read-only probe and the scratch write test that
-//! `kernel/src/storage_bench.rs` runs on radon, here so their order of operations, which is the
+//! a kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
 //! safety argument, is tested on a host rather than first tried on the card radon boots from.
 //! [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
@@ -238,8 +238,8 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
 }
 
 /// **A register window that remembers how full the FIFO got**: every `STATUS` read updates the
-/// highest fill seen and counts the reads that found the FIFO full. Milestone 53 (the board's own
-/// peripherals)'s multi-block read diagnosis: whether the polled CPU falls behind the card.
+/// highest fill seen and counts the reads that found the FIFO full. It answers the multi-block
+/// read diagnosis: whether the polled CPU falls behind the card.
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 pub struct Watch<R: Registers> {

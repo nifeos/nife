@@ -1,6 +1,4 @@
-//! The crate's host tests, moved out of `lib.rs` on 2026-10-12 (UTC) by lane
-//! maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is
-//! split, the parent becomes an index) as its tests grow.
+//! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules.
 
 extern crate std;
 use super::*;
@@ -46,7 +44,7 @@ fn a_needed_register_beyond_the_bar_is_refused() {
 
 /// An Intel-shaped controller: a 64 KiB BAR, runtime at 0x2000, doorbells at 0x3000, the
 /// MSI-X table well above them. Values from the xHCI capability layout Intel's datasheets
-/// describe, not read from xenon (calef's bench step reads xenon's own).
+/// describe, not read from xenon (a bench step on xenon reads its own).
 #[test]
 fn a_sixty_four_kibibyte_bar_maps_sixteen_pages_less_the_table() {
     let caps = Capabilities::decode(0x0100_0080, 0x1a00_0840, 0, 0x0000_7000, 0x3000, 0x2000);

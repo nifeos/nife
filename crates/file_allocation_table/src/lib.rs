@@ -8,10 +8,13 @@
 //! of bounds, and what it accepts has its regions in order inside the volume.
 //!
 //! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`Volume`] and notes/file-allocation-table.md).
+//! `\EFI\BOOT\<name>`, as pure computation (see [`Volume`]).
 //! A name that is not 8.3 gets VFAT long-name entries ahead of a `~1` alias (see `long_name.rs`).
 //! A volume below [`MIN_CLUSTERS`] is refused, because the specification types a volume by its
-//! data clusters.
+//! data clusters, and the data area is rounded up to start on a cluster boundary.
+//!
+//! Name: ratified 2026-10-07 (calef, #1806): FAT spelled out as the tree's acronym rule asks;
+//! permanent once published.
 
 //! # BUGS
 //!
@@ -24,9 +27,6 @@
 //! - A FAT32 layout under 65525 clusters (which `mkfs.fat -F 32` makes with a warning) is refused,
 //!   because Linux reads it as FAT32 and the specification as FAT16.
 //! - Not crash-atomic and no journal, which is FAT.
-//!
-//! Name: ratified 2026-10-07 (calef, #1806): FAT spelled out as the tree's acronym rule asks;
-//! permanent once published.
 
 mod boot_sector;
 mod long_name;

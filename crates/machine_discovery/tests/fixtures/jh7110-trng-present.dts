@@ -24,8 +24,8 @@
  *
  * Regenerate with:
  *
- *     dtc -I dts -O dtb -o crates/jh7110_entropy/tests/fixtures/jh7110-trng-present.dtb \
- *                          crates/jh7110_entropy/tests/fixtures/jh7110-trng-present.dts
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-trng-present.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-trng-present.dts
  */
 
 / {

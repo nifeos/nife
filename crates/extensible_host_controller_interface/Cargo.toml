@@ -2,15 +2,30 @@
 name = "extensible_host_controller_interface"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "xHCI (USB host controller) logic as pure computation: registers, TRBs, rings, contexts and HID boot reports, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# no_std for the kernel and the driver, std for host tests, like every DECISIONS §7 (testing: host-testable crates, from commit one) pure-logic
-# crate. The xHCI half of the USB keyboard driver (milestone 242 (USB host and HID)): register offsets and field
-# decode, which register pages a confined driver is mapped, the spawn handoff, TRB construction and
-# decode, the producer and event ring cycle discipline, and device and endpoint context layout. The
-# kernel's bring-up and the EL0 driver supply the volatile accesses; this crate supplies the
+# no_std for a kernel and a driver, std for host tests. The xHCI half of a USB keyboard driver:
+# register offsets and field decode, which register pages a confined driver is mapped, the spawn
+# handoff, TRB construction and decode, the producer and event ring cycle discipline, and device and
+# endpoint context layout. The caller supplies the volatile accesses; this crate supplies the
 # arithmetic they carry, so it is host-tested and reachable by the model checker.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

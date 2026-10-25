@@ -4,8 +4,8 @@
 //!
 //! On macOS it runs `fsck_msdos -n` on the image, which must exit 0, then attaches it read-only,
 //! requires the listing to hold `BOOTRISCV64.EFI` and not the alias `BOOTRI~1.EFI`, and compares
-//! every byte. Elsewhere it writes the image and stops. notes/file-allocation-table.md, "Who reads
-//! it back", has why this is the check that counts.
+//! every byte. Elsewhere it writes the image and stops. A wrong checksum or a malformed run fails
+//! silently, so only a reader that lists the directory tells the long name from the alias.
 
 //! # EXAMPLES
 //!

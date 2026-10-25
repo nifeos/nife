@@ -1,10 +1,9 @@
 //! **Reading the I219's NVM on Sunrise Point**, where the `GbE` flash region is reached through
-//! registers in BAR0 rather than the chipset's SPI controller (milestone 494 (a driver for the
-//! network card a PC actually has)).
+//! registers in BAR0 rather than the chipset's SPI controller.
 //!
 //! [`super::sequence`] needs it for the post-reset LCD configuration and the NVM-present check.
 //! Read only: nothing here can write or erase the flash. Each item names the SPT branch of
-//! FreeBSD's `e1000_ich8lan.c` it follows; see notes/e1000e/the-i219-port.md, "The NVM".
+//! FreeBSD's `e1000_ich8lan.c` it follows.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
