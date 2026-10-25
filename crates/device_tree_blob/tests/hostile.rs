@@ -1107,10 +1107,18 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
             let mut out = [Region { start: 0, size: 0 }; 2];
             let case = (core::str::from_utf8(bad).unwrap(), at_root);
             assert_eq!(dt.memory_regions(&mut out), Ok(1), "{case:?}");
-            assert_eq!((out[0].start, out[0].size), (0x4000_0000, 0x1000), "{case:?}");
+            assert_eq!(
+                (out[0].start, out[0].size),
+                (0x4000_0000, 0x1000),
+                "{case:?}"
+            );
             assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1), "{case:?}");
             assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
-            assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1), "{case:?}");
+            assert_eq!(
+                dt.node_reg_compatible(b"nife,dev", &mut out),
+                Ok(1),
+                "{case:?}"
+            );
             assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
             assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1), "{case:?}");
             assert_eq!((out[0].start, out[0].size), (0x2000, 0x20), "{case:?}");
