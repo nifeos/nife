@@ -60,7 +60,7 @@ Names provisional: the helper, the note, both CSVs, the appendix, the chart, eve
   the public surface moved; the tools answer whether a change needs a major version, and each would
   be a §46 (thin primitives or whole subsystems) dependency tied to the nightly pin. Reasoning in
   `notes/interface-stability.md`.
-- **Built.** The per-package co-change column that §235 (the OS is built and updated from
+- **Done.** The per-package co-change column that §235 (the OS is built and updated from
   packages, and the tree divides by what releases together)'s Fork 3 amendment asks for: a home is
   sized by what changes together. `interface-stability-packages.csv` holds one row per
   `packages/*.package.toml` package and per Cargo package each week, by the division method, and

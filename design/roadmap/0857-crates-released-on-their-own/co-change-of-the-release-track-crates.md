@@ -3,7 +3,7 @@
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md).
 A crate that leaves turns every commit touching it and something else into two pull requests, so
 the share of its commits that cross its directory is what leaving costs. No crate moves before this measurement
-exists, by §235's Fork 3 amendment, which sizes a home by what changes together.
+exists, under the ruling that sizes a home by what changes together.
 
 *Name: provisional. The lane that built the per-package co-change column chose it on 2026-10-25 (UTC).*
 

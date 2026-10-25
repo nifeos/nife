@@ -44,7 +44,7 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 
 ## What broke in 2026W43
 
-Read at `671918fd7c59` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `782b842e29bb` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: changed `carry`
 > - `capability_plan`: crate renamed `component_plan -> capability_plan`
@@ -167,7 +167,7 @@ Read at `671918fd7c59` against the week before. Each line is one removed or chan
 
 ## Co-change per package
 
-Every package in `packages/`, 2026W29 to 2026W43, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one (§235, Fork 3).
+Every package in `packages/`, 2026W29 to 2026W43, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one, since a home is sized by what changes together.
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|

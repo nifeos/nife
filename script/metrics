@@ -1818,7 +1818,8 @@ def interface_line(rows):
     commits = total('interface_contract_commits')
     crossing = total('interface_contract_commits_crossing')
     share = '; %d%% co-change' % round(100.0 * crossing / commits) if commits else ''
-    # The per-package figure §235's Fork 3 amendment asked for: commits touching a package that
+    # The per-package figure §235 (the OS is built and updated from packages, and the tree divides by what releases together)
+    # asked for in its Fork 3 amendment: commits touching a package that
     # also touch code outside it, each commit once. Per package in the appendix.
     packaged = total('interface_package_commits')
     if packaged:

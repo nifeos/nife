@@ -53,9 +53,10 @@ CSV = pathlib.Path('notes/project-metrics/interface-stability.csv')
 CRATES_CSV = pathlib.Path('notes/project-metrics/interface-stability-crates.csv')
 APPENDIX = pathlib.Path('notes/project-metrics/interface-stability.md')
 CRATE_FIELDS = ['breaking', 'additions', 'commits', 'commits_crossing']
-# Per-package co-change (§235's Fork 3 amendment: a home is sized by what changes together). One
-# row per unit per week it was touched; `kind` is `package` (a packages/*.package.toml file, §235's
-# package) or `crate` (one Cargo package). Recomputed whole on every run: it reads git alone.
+# Per-package co-change: §235 (the OS is built and updated from packages, and the tree divides by what releases together), in its Fork 3
+# amendment, sizes a home by what changes together. One row per unit per week a commit touched it;
+# `kind` is `package` (a packages/*.package.toml file, §235's package) or `crate` (one Cargo
+# package). Recomputed whole on every run: it reads git alone.
 PACKAGES_CSV = pathlib.Path('notes/project-metrics/interface-stability-packages.csv')
 PACKAGE_FIELDS = ['commits', 'commits_crossing', 'commits_touching_another',
                   'commits_excluding_mass', 'commits_crossing_excluding_mass']
@@ -837,7 +838,8 @@ def render_package_section(per, weeks, pairs, release_crates):
            'touching the package crosses when it also touches code outside it, and touches another '
            'when that code is another package\'s. The partner is the package most often in the '
            'same commit outside a mass change. A package that crosses rarely could take a home of '
-           'its own; packages that keep naming each other share one (§235, Fork 3).' % span, '',
+           'its own; packages that keep naming each other share one, since a home is sized by what '
+           'changes together.' % span, '',
            '| package | commits | crossing | touching another | crossing, mass excluded '
            '| most often with |',
            '|---|---:|---:|---:|---:|---|']
