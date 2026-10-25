@@ -210,8 +210,6 @@ pub(crate) const PLDMND: u32 = 0x084;
 pub(crate) const DBADDR: u32 = 0x088;
 /// IDMAC status, write one to clear. Raw: set whatever `IDINTEN` holds. The driver reads only
 /// its error bits; the completion bits are `sim`'s, and the tests'.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub const IDSTS: u32 = 0x08c;
 /// A descriptor without `DIC` finished a transmit (memory to card).
 #[cfg(test)]
@@ -238,12 +236,8 @@ pub(crate) const IDSTS_ALL: u32 = 0x3ff;
 /// IDMAC interrupt enables. Zero: this driver polls, as it does `RINTSTS`.
 pub(crate) const IDINTEN: u32 = 0x090;
 /// The descriptor the IDMAC is on, for a transcript after a failure.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub const DSCADDR: u32 = 0x094;
 /// The buffer address the IDMAC is on.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub const BUFADDR: u32 = 0x098;
 /// Card read threshold control: hold a read until a block fits in the FIFO.
 pub(crate) const CARDTHRCTL: u32 = 0x100;

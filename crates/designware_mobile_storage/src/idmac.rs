@@ -7,9 +7,6 @@
 //! Linux's `dw_mci_idmac_start_dma` use it: reset the IDMAC, point `DBADDR` at the chain, select it
 //! in `CTRL`, enable it in `BMOD`, send the command. Polled completion: `RINTSTS` for the card, the
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
-//!
-//! Name: provisional (milestone 53 (the board's own peripherals)'s IDMAC lane, 2026-10-22 UTC).
-//! The databook's own name for the engine, as `regs` names its registers.
 
 use crate::command::Command;
 use crate::host::{COMMAND_DEADLINE_US, DATA_DEADLINE_US, Error, Host, Identity, Registers};
@@ -18,8 +15,6 @@ use crate::regs;
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
 /// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub trait DirectMemoryAccessRegion {
     /// The region's first byte as the controller addresses it: on radon, its physical address.
     fn bus_address(&self) -> u64;
@@ -41,8 +36,6 @@ pub trait DirectMemoryAccessRegion {
 
 /// **No region**: a [`Host`] that moves its data through the FIFO. Uninhabited, so a host of this
 /// type provably never takes the IDMAC path.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoDirectMemoryAccess {}
 
@@ -92,8 +85,6 @@ pub(crate) const DES0_DIC: u32 = 1 << 1;
 pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
 
 /// Why a region was refused before anything was written.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
@@ -110,8 +101,6 @@ pub enum Refusal {
 
 /// **A region the IDMAC can use**, checked against the controller once. Only [`Idmac::new`] makes
 /// one, so a [`Host`] holding one has an IDMAC, 32-bit descriptors and a region they can address.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 pub struct Idmac<D: DirectMemoryAccessRegion> {
     region: D,
     bus: u32,
@@ -125,8 +114,6 @@ impl<D: DirectMemoryAccessRegion> Idmac<D> {
     ///
     /// A [`Refusal`]: no IDMAC, 64-bit addressing, or a region that is unaligned, the wrong size,
     /// or not wholly below 4 GiB.
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     pub fn new(region: D, id: &Identity) -> Result<Idmac<D>, Refusal> {
         let interface = regs::dma_interface(id.hcon);
         if interface != 0 {

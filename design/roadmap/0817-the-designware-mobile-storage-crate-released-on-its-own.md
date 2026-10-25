@@ -53,8 +53,8 @@ and none is taken, because calef ruled this crate "publish ours". rcore-os's `dw
 (Apache-2.0, 1.7k downloads) and `starfive-jh7110-dwmmc` 0.1.8 (911) live in the `tgoskits`
 monorepo with no proofs found. drivercraft's `sdmmc` 0.1.0 (11k) is a general SD/MMC crate with no
 proofs found. `embedded-sdmmc` is SD over SPI plus FAT, another scope, and its project bans
-AI-generated contributions. Linux's `dw_mmc` (GPL-2.0) stays the reference and is read, never
-copied. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
+AI-generated contributions. Linux's `dw_mmc` (GPL-2.0) stays the reference, which the crate reads
+and never copies. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
 projects nife depends on.
 
 ## What is proven
@@ -134,7 +134,7 @@ copy, so neither the build nor Kani ran. A test reads
 `../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb`. Beyond manifest and files, 14 lines
 cite this tree: 5 `milestone N`, 4 tree paths, 2 `§N`, 2 provenance blocks and 1 naming calef.
 
-Name: `designware_mobile_storage` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `designware_mobile_storage` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -156,6 +156,34 @@ in nife, and every row of *What is proven* names a harness that stock Kani prove
 whose falsification patch makes it fail. No crate publishes without Kani harnesses covering its
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its `Name:`
+blocks are in [names.md](0817-the-designware-mobile-storage-crate-released-on-its-own/names.md).
+`src/serve.rs` keeps its own citations until it moves into nife.
+
+- `Cargo.toml`, the package comment: the `no_std` and host-test split is the pure-logic split of
+  §7 (Testing: QEMU harness + host-testable crates, from commit one) that every driver crate here
+  uses. Milestone 53 (the board's own peripherals: network and storage on real silicon) wrote the
+  crate.
+- `src/lib.rs`, the crate doc: the design is in `notes/designware-mobile-storage.md`, and
+  `kernel/src/designware_mobile_storage.rs` implements `host::Registers` over the mapped window.
+  That note also records why the lane did not take the crates.io candidate. The IDMAC bench step that
+  the crate's BUGS waits on is the one that note describes.
+- `src/sim.rs`, the module doc: `notes/designware-mobile-storage/driver.md` lists each behavior
+  the simulated controller models.
+- `src/tests.rs`, the module doc: the tests left `lib.rs` on 2026-10-12 (UTC), in lane
+  maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is
+  split, the parent becomes an index).
+- `src/partition.rs`, the module doc: `notes/visionfive2.md`, "The microSD payload", describes the
+  card radon boots from.
+- `src/jh7110.rs`, the module doc: `notes/designware-mobile-storage/driver.md` holds every node,
+  clock, reset and log line of the two device trees.
+- `src/sd.rs`, the module doc: `notes/designware-mobile-storage/driver.md` holds the steps, `CMD0`
+  to `CMD16` and `EXT_CSD`.
+- `src/bench.rs`, `Watch`: it serves milestone 53 (the board's own peripherals: network and storage
+  on real silicon)'s multi-block read diagnosis.
 
 ## BUGS
 

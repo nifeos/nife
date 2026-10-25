@@ -5,8 +5,7 @@
 //! card: an SD 2.0 card echoes `CMD8`'s check pattern, and an eMMC does not answer `CMD55`, which
 //! tells it from an SD 1.x card and brings it up with `CMD1`. The clock then goes from 400 kHz to
 //! 25 MHz, default speed; high speed and UHS are not attempted, and an eMMC's bus stays 1-bit.
-//! Every step's failure names the step, so a bench transcript that stops says where. The steps,
-//! `CMD0` to `CMD16` and `EXT_CSD`, are in notes/designware-mobile-storage/driver.md.
+//! Every step's failure names the step, so a bench transcript that stops says where.
 
 use crate::card::{
     self, Cid, Csd, IF_COND_ARG, MMC_OP_COND_ARG, OCR_BUSY_DONE, OCR_HIGH_CAPACITY, R1_ERRORS,
