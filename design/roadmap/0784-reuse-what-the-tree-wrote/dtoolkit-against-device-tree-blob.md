@@ -52,7 +52,9 @@ host was busy with fuzzing, so read these as an order of magnitude.
 | ours | 0 | 0 | 2 blocks, 1 `unsafe fn` (`from_ptr`) | none |
 | `dtoolkit` | 3: `dtoolkit`, `zerocopy`, `zerocopy-derive` | 10, among them two proc macros (`zerocopy-derive`, `thiserror-impl`) and both `syn` 2 and `syn` 3 | 8 blocks, 4 `unsafe fn`; `#![deny(unsafe_code)]` with each use marked `#[expect]`; 3 blocks on the read path, all in `from_raw` | `zerocopy` 302 blocks, 58 `unsafe fn`, 111 `unsafe impl`; `zerocopy-derive` emits `unsafe impl`s into `dtoolkit` |
 
-The kernel's graph today holds one crate from outside the tree (`spin`) and no proc macro. Counts
+The kernel's graph today holds four crates from outside the tree and no proc macro: `spin` on every
+target, `aarch64-cpu` and `tock-registers` on aarch64, and `uuid` on x86_64 (`cargo tree -e normal`
+per target). Counts
 are textual over each crate's `src/`, tests included. Every license passes `deny.toml`: `zerocopy` is
 BSD-2-Clause or Apache-2.0 or MIT. The minimum Rust is 1.88; nife pins a nightly, so that costs
 nothing.
@@ -227,7 +229,7 @@ prove than ours, so the proofs do not favor either crate. 857 should therefore n
 
 What contributing means changes. Today `dtoolkit` cannot replace ours in the kernel. It refuses real
 Linux trees over a name's length and walks a deep tree in quadratic time. It would add ten crates
-and two proc macros to a kernel graph that holds one, and it breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything in between) rule 3
+and two proc macros to a kernel graph that holds four and no proc macro, and it breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything in between) rule 3
 keeps the kernel's parser ours regardless, so none of this argues for a switch; it says what to
 send. Three bug reports, drafted in [the candidate reports](dtoolkit-upstream-reports.md), each
 waiting on calef: the name-length refusal, the quadratic walk, and `Display`'s panic. Then the
