@@ -234,7 +234,7 @@ real silicon)'s network half, which leases; aarch64's machine is a rented A1 ins
   `notes/rented-metal/oracle-a1.md` section 5b. It cannot pass until the proposal
   `an-aarch64-cloud-instance-drives-its-pcie-devices` is built; the ACPI-derived tree has no PCI
   host bridge (`uefi_loader/src/device_tree_from_acpi.rs`'s BUGS).
-- **Scheduled.** The second index address, calef's hands: basalt's README steps 1 to 6 for
+- **Outstanding.** The second index address, scheduled and calef's hands: basalt's README steps 1 to 6 for
   `basalt.crickertech.com`. Checked 2026-10-24: the name does not resolve and `nifeos/basalt-backup`
   has no Pages site. The client's fallback is built and gated against the test peer.
 - **Milestone 858.** Who signs a target's locations, decided with the signing setup (Q1), and
