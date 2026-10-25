@@ -245,8 +245,10 @@ or pull request that proposes it shows each one.
 1. It builds `no_std` on all three kernel targets, and it needs no allocator or uses the kernel's.
 2. If it parses input, it survives ours: the tree's fixtures and fuzz corpus for that input, with no
    panic, hang or out-of-range read.
-3. Its dependency graph is small. `Cargo.lock` pins every crate in it, and `deny.toml` and
-   `script/supply-chain` gate each one like any other dependency.
+3. Its dependency graph is small, and the graph includes every procedural macro and build script it
+   pulls in (`zerocopy-derive` raised the case). `Cargo.lock` pins every crate in it, and
+   `deny.toml` and `script/supply-chain` gate each one like any other dependency. Unsafe code that
+   a macro generates counts as the crate's own.
 4. Either we can write the Kani harnesses its claims need against its public API, or no claim rests
    on it. If a claim rests on it and its structure defeats Kani, rule 1 decides and we write.
 5. It stays upgradable, under §81 (a dependency stays upgradable).
@@ -261,8 +263,6 @@ changes the ABI, capabilities or the verification path.
 
 These details stay open, and each gets its own ruling:
 
-- whether a procedural macro or build script may sit in the kernel's build graph (`zerocopy-derive`
-  is the case that raised it);
 - what "small" means as a number;
 - whether a crate's own `unsafe` blocks count against it.
 
