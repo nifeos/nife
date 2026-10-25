@@ -60,11 +60,14 @@ Names provisional: the helper, the note, both CSVs, the appendix, the chart, eve
   the public surface moved; the tools answer whether a change needs a major version, and each would
   be a §46 (thin primitives or whole subsystems) dependency tied to the nightly pin. Reasoning in
   `notes/interface-stability.md`.
-- **Recorded.** A per-package co-change column is owed, alongside the division-level co-change
-  this milestone already carries. §235 (the OS is built and updated from packages, and the tree
-  divides by what releases together)'s Fork 3 amendment (calef, 2026-09-27T15:06Z, question 7c)
-  rules that a home is sized by what changes together. No package moves to a new home before this
-  measurement exists. Not built here.
+- **Built.** The per-package co-change column that §235 (the OS is built and updated from
+  packages, and the tree divides by what releases together)'s Fork 3 amendment asks for: a home is
+  sized by what changes together. `interface-stability-packages.csv` holds one row per
+  `packages/*.package.toml` package and per Cargo package each week, by the division method, and
+  `interface_package_*` carries the weekly share to the metrics page. The appendix lists each
+  package's partner and the release-track crates; the method and its blind spots are in
+  `notes/interface-stability.md`, "Co-change per package". Milestone 857 (crates released on their
+  own) carries the eight crates' reading in its appendix. Branch `per-package-co-change`.
 
 ## Index row
 
