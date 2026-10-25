@@ -8,8 +8,8 @@ patagonia (Apple M3) with the pinned nightly of 2026-10-20. Each section ends wi
 lane's recommendation and calef's ruling. No dependency was added: every probe is generated outside the tree by
 [probe.sh](probe.sh), and none of the crates below is in `Cargo.lock`.
 
-Item (c) is not measured here. (c0) is the vendored fork, proved by
-[its own probe](virtio-drivers-probe.md), and (c1) to (c4) each carry a bench gate. Item (b) is held for milestone 705 (full-screen programs).
+Item (c) is not measured here. (c0) has [its own probe](virtio-drivers-probe.md), and (c1)'s trial
+is measured in [the ruling that refused (c1) to (c4)](the-virtio-drivers-stay-ours.md). Item (b) is held for milestone 705 (full-screen programs).
 
 ## (d) `user_mode_heap` against `talc` 5.1.1
 

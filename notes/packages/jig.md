@@ -143,7 +143,7 @@ region one package larger, from the progenitor's image pool (`grant_plan::named_
 
 ## A rehearsal with basalt's sources
 
-No check boots the production sources, so the bench evening's step 3 (`notes/xenon-bench-2026-10-18.md`)
+No check boots the production sources, so the bench evening's step 5 (`notes/xenon-bench-2026-10-18.md`)
 is rehearsed by hand under QEMU's x86_64 UEFI machine, from an installed disk, against the live
 `basalt.nifeos.org`. Under slirp the lease's name server forwards to the host's, so here the
 index host is resolved by name.

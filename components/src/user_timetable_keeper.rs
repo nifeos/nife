@@ -85,12 +85,13 @@ const _: () = assert!(
 /// The same net `components/src/timetable.rs` keeps, for the same reason.
 const ATTEMPTS: usize = 1024;
 
+user_mode_runtime::program_entry!(start);
+
 /// Build and start the timetable, then hold it until it dies.
 ///
 /// `image_len` (`a0`) is the length of `timetable`'s image, which `login` copies in at
 /// `login_contract::user_timetable_keeper::TIMETABLE_VA`.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(image_len: u64, _a1: u64, _a2: u64) -> ! {
+fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     // SAFETY: `login` copies `image_len` bytes to `TIMETABLE_VA` before this process runs
     // (`login_contract::user_timetable_keeper`'s contract), and nothing writes them afterwards.
     let image = unsafe {

@@ -42,8 +42,9 @@ const REPORT: u64 = 0;
 /// `None` on the wire. The protocol's own sentinel rather than a second one.
 const UNKNOWN: u64 = current_cpu_contract::UNSCHEDULED;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let first = current_cpu().map_or(UNKNOWN, |c| c as u64);
     yield_now();
     let second = current_cpu().map_or(UNKNOWN, |c| c as u64);

@@ -117,6 +117,40 @@ Create local connection, with an RSA public key (Oracle refuses other key types)
 console connection for Linux/Mac gives an `ssh` command that proxies through port 443. One client
 at a time; a dropped client holds the console for about five minutes; sessions end after 24 hours.
 
+## 5b. `jig`, for milestone 801's aarch64 leg, in the same session
+
+calef ruled on 2026-10-24 (UTC) that milestone 801 (packages over the internet) closes on real
+silicon on three machines, and an A1 instance is the aarch64 one. Its leg is the same two commands
+as xenon's, typed at the interactive console's `$` (above) once item 7's boot reaches it:
+
+```text
+jig update
+jig install ioping
+cd packages
+ioping -v
+```
+
+Success is `index updated: N packages for aarch64, from basalt.nifeos.org over TLS`, then `fetched
+ioping-1.3-aarch64 from ... over TLS`, `fetched and installed; generation N is live` and `ioping
+1.3`. The other endings read as in `notes/packages/jig-on-radon.md`'s table.
+
+**This leg cannot pass on today's tree, so the session closes item 7 and not 801's leg.** The A1's
+NIC is `virtio-net-pci`, and the loader describes no PCI host bridge, and the booted system claims
+only an MMIO virtio-net. The instance also has no entropy source nife reads, no disk it mounts and
+no clock in the written tree. The proposal
+[an aarch64 cloud instance drives its PCIe devices](../../design/roadmap/proposals/an-aarch64-cloud-instance-drives-its-pcie-devices.md)
+is that work. Type the commands anyway: the refusal is one line of evidence and costs a minute.
+
+Two more captures make the session pay for that proposal:
+
+1. Before booting nife, at the firmware's `Shell>` on the interactive console (Esc during the
+   firmware's countdown, then the boot manager's EFI shell), type `pci` and save the listing. It
+   is the A1's device inventory: whether there is a virtio-rng, and what the boot volume is.
+2. At the same shell, `time` prints the firmware's clock, which item 3 of the proposal would hand
+   over.
+
+Paste both into milestone 578's pull request with the console history.
+
 ## 6. Clean up
 
 Terminate the instance and tick Permanently delete the attached boot volume. Then delete the

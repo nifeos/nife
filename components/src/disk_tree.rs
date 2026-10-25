@@ -41,9 +41,10 @@ const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAX as u64;
 const EIO: i32 = 5;
 const EINVAL: i32 = 22;
 
+user_mode_runtime::program_entry!(start);
+
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_: u64, _: u64, _: u64) -> ! {
+fn start(_: u64, _: u64, _: u64) -> ! {
     let size = call(BLK, filesystem_contract::req(blk::SIZE), 0).0 as i64;
     if size <= 0 {
         send(REPORT, 0xDEAD_0001, size as u64, 0);

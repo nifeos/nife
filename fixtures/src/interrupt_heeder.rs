@@ -48,8 +48,9 @@ fn store(off: usize, v: u64) {
     WINDOW.write(off as u64, v);
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_x0: u64, _x1: u64, _x2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     let mut beats: u64 = 0;
     loop {
         // One unit of work. The heartbeat is liveness the shell can show; the spin makes a unit

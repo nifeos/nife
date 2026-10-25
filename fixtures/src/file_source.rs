@@ -81,10 +81,11 @@ fn fs_call(w0: u64, w1: u64) -> i64 {
     call(FS, w0, w1).0 as i64
 }
 
+user_mode_runtime::program_entry!(start);
+
 /// Open what `file_sink` wrote and stream it out over the sink contract, so the bytes that reach the
 /// test have been through a real filesystem and back.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let name = fixture::SINK_NAME.as_bytes();
     put(name);
     let handle = fs_call(fs::req(fs::OPEN, fs::ROOT, name.len() as u64), 0);

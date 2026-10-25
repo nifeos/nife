@@ -9,6 +9,13 @@
 //! VT state, scrollback and input arrive as clients of the contract, never as code in here. See
 //! notes/framebuffer-contract.md and notes/frames.md.
 
+//! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
+//! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
+//! `virtio-drivers` assumes a driver lays out its own virtqueues, and nife's confinement does not
+//! allow that: the kernel builds every ring itself, eight entries at fixed offsets, Kani-proved in
+//! `direct_memory_access_validator`, so no driver can aim device DMA. See
+//! design/roadmap/0784-reuse-what-the-tree-wrote/the-virtio-drivers-stay-ours.md.
+//!
 //! Name: ratified 2026-08-27 (calef). Renamed from `display` to `gpu_driver`, matching the
 //! `<device>_driver` shape given to `block_driver` and `keyboard_driver` in the same pass. This
 //! module's own doc already said it above: it is specifically and only the GPU device driver, and
@@ -458,8 +465,9 @@ fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
     exit();
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, _arg1: u64, arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // **The DMA region is ours to place** (milestone 108): one `PageFrame` capability naming the
     // whole [`DMA_PAGE_FRAMES`]-page run (DECISIONS §102), mapped read/write out of our own budget
     // in one `MAP` call. Before either role, because the rings live in the first page of it and the

@@ -179,7 +179,7 @@ media, and it does not exist yet. Against the tree:
 | The bench procedure | written | `notes/x86-uefi-boot/network-boot-xenon.md`, steps 3 and 4 |
 | The two firmware settings | done 2026-10-04 | `notes/xenon-firmware.md`'s table; photographs owed |
 | The router edit | done 2026-10-04 | below |
-| xenon booted over the wire, photographed | **not done** | needs calef |
+| xenon booted over the wire, photographed | **not done** | scheduled: step 3 of the xenon evening |
 
 - Router edit done (calef's homelab agent, 2026-10-04): the four lines are in the router's
   `/etc/dnsmasq.conf` inside a BEGIN/END xenon-pxe block, which the GL.iNet UI does not regenerate and
@@ -187,14 +187,11 @@ media, and it does not exist yet. Against the tree:
   `patagonia-wifi`. Backup `/root/pxe-xenon-backup-2026-10-04.tgz`; rollback:
   `ssh root@192.168.8.1 'tar -xzf /root/pxe-xenon-backup-2026-10-04.tgz -C / && /etc/init.d/dnsmasq restart'`.
   `dnsmasq --test` passes, other clients' offers are unchanged, patagonia kept `.138` on reconnect.
-- Needs calef: the bench step, steps 3 and 4 of the runbook. On patagonia, on the house LAN,
-  `cargo xtask uefi-image --release` and then `script/board-netboot --root target/esp`, allowing
-  python3 through macOS's firewall if asked. Take every nife stick out of xenon, cable its
-  motherboard ethernet to the LAN, leave the keyboard and monitor attached, and power it on (F12,
-  `UEFI PXEv4`, if it does not pick PXE itself). Photograph the `nife self-test:` line and the empty
-  ports, copy `board-netboot`'s `done` line, and during the boot run
-  `ssh root@192.168.8.1 'logread | grep -i d8:9e:f3:74:b2:a2'`. A lane then writes the photograph
-  numbers here and the rate into BUGS, and marks this block BUILT.
+- Ruled 2026-10-24 (UTC): the real network boot runs on the same xenon evening as milestone 494's
+  bench boot, the fresh install and milestone 801 (packages over the internet)'s xenon leg. It is step 3 of
+  `notes/xenon-bench-2026-10-18.md`, which builds the image from the commit that flips the I219's
+  flag and names what to record. A lane then writes the photograph numbers here and the rate into
+  BUGS, and marks this block BUILT.
 
 ## BUGS
 
@@ -239,7 +236,8 @@ media, and it does not exist yet. Against the tree:
 
 - **Outstanding.** The bench session, which is the proof and cannot be a lane: one power cycle of
   xenon with `script/board-netboot` serving, one photograph, and the real-wire transfer rate for
-  this block's BUGS. Calef's; the exact step is under Status, and runbook steps 3 and 4 in
+  this block's BUGS. Calef's, scheduled as step 3 of the xenon evening
+  (`notes/xenon-bench-2026-10-18.md`). Runbook steps 3 and 4 in
   `notes/x86-uefi-boot/network-boot-xenon.md` have what each screen should show and the failure
   table.
 - **Done.** The `dhcp-match` lines' OpenWRT siting: all four lines in the router's

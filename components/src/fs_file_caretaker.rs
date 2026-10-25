@@ -155,8 +155,9 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     let mut buf = [0u8; grant::WORDS_NAME];
     let n = grant::unpack_name(name_lo, name_hi, grant::spec_len(spec), &mut buf);
     let name = &buf[..n];

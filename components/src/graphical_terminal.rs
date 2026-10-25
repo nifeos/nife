@@ -98,8 +98,9 @@ impl Echo {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(arm: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(arm: u64, _a1: u64, _a2: u64) -> ! {
     match arm {
         1 => raw_arm(),
         _ => discipline_arm(),

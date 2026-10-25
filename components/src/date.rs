@@ -57,8 +57,9 @@ const FMT_DATE: u64 = 2;
 const FMT_TIME: u64 = 3;
 const FMT_UNIX: u64 = 4;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
     // **Is there a second stream to write to?** Probed once, before anything is said, because every
     // sentence below has to know which endpoint it is going to. A wiring that granted none (the
     // guest tests, which spawn this program directly) leaves the slot empty and every complaint goes

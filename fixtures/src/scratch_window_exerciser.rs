@@ -122,8 +122,9 @@ fn forge(out: &mut [u8; EHDR + 2 * PHDR]) {
 /// `PROGENITOR_STACK_PAGES`, for the same reason: it builds whole ELFs.
 const EXTRA_STACK_PAGES: u64 = 7;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Before anything deep runs. Retyped from the budget ahead of every carve, so they sit under
     // the regions this program splits and destroys and never block a region's pages going back.
     for k in 1..=EXTRA_STACK_PAGES {

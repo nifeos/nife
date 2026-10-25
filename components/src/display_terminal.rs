@@ -477,8 +477,9 @@ fn negotiate_geometry(mode: u64) -> (u32, u32, u32) {
     }
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(mode: u64, control: u64, start: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(mode: u64, control: u64, start: u64) -> ! {
     // Under a supervisor it names the control endpoint's slot, which is fixed; a spawner that
     // supervises nothing passes `0`.
     let supervised = match control {

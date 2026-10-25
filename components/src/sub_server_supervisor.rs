@@ -41,8 +41,9 @@ const REPORT: u64 = 3; // WRITE: what we saw and what we decided
 /// broken child does not spin the machine.
 const MAX_RESTARTS: u64 = 2;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // One entry per child: its label, the attempt it is on, and how often it has been restarted.
     // The label is the only thing that says which entry a death belongs to.
     let mut children = SUB_SERVER_LABELS.map(|(label, first)| Child {

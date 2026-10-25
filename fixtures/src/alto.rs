@@ -40,8 +40,9 @@ const MANIFEST: grant_plan::Manifest = grant_plan::Manifest {
 
 capability_manifest_note::carry!(MANIFEST);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(b"alto: one of two programs in the package duet\n");
     say(if is_granted(CLOCK) {
         b"clock: held at slot 1, as its manifest note asked\n"

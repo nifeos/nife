@@ -42,3 +42,5 @@ mod filesystem;
 use filesystem::*;
 mod smp_throughput;
 use smp_throughput::*;
+mod keyboard;
+use keyboard::*;

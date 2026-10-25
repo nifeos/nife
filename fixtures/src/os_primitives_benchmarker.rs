@@ -115,8 +115,9 @@ const PAGE: u64 = 4096;
 const MAP_WARM_BASE: u64 = address_space_map::pair_page(0x20_0000);
 const MAP_TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, x1: u64, _x2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, x1: u64, _x2: u64) -> ! {
     match role {
         ROLE_NULL_SYSCALL => null_syscall_bench(),
         ROLE_YIELDER => yielder(),

@@ -183,36 +183,6 @@ graph holds talc, and `cargo xtask std-src` generates std's heap from it.
   clippy and rustfmt gates stay off upstream code. calef ruled to carry it, 2026-10-21 (UTC), on
   nifeos/nife#2498.
 
-## virtio-drivers 0.13.0
-
-The virtio device drivers milestone 784 (reuse what the tree wrote) moves nife's onto, one device per
-milestone: (c1) input, (c2) GPU, (c3) block, (c4) net. Nothing builds it yet.
-
-- **Source:** the published crates.io package `virtio-drivers-0.13.0.crate`, sha256
-  `cfdc1c628cdd8ce7c3b9e65a8ed550d0338e9ef9f911e729666f1cce097de2f7`, upstream git sha
-  `c5d3ea74d5896036c4760d6199c1a1cc1257b659` (`.cargo_vcs_info.json`), MIT.
-- **Divergence from the published package, exhaustively:** two.
-  1. rcore-os/virtio-drivers#232 ("add support features(ACCESS_PLATFORM) for some device"), merged
-     upstream on 2026-03-17 (UTC) as `d674436a`, applied exactly as upstream wrote it to the 14
-     files the package ships. Each device offers `VIRTIO_F_ACCESS_PLATFORM` (feature bit 33), and
-     whether it was negotiated reaches every `Hal` call as a new `access_platform` argument. nife
-     needs it because its PCI virtio functions sit behind the IOMMU with `iommu_platform=on`, and
-     such a device refuses `FEATURES_OK` to a driver that does not accept the bit (notes/iommu.md).
-     The pull request's changes to `examples/` are left out, because the package does not ship that
-     directory. The patch adds 152 lines and removes 44, 151 and 43 of them in `src/`, which holds
-     13,062 lines of Rust.
-  2. `.gitignore`: its `Cargo.lock` line is dropped, so upstream's lockfile is tracked here and
-     `script/lint`'s check that no tracked file is ignored holds. Nothing builds with that lockfile;
-     the consumer's workspace resolves the crate. Drops with the fork.
-- **Drops when** a release carries #232. Then the pin, the patch and this tree go, and the drivers
-  take that release from crates.io. The pin's `upstream_fix` makes `script/vendor-watch` report it.
-- **Proved before it was taken:** milestone 784's probe drove the virtio keyboard through this tree
-  behind the IOMMU on all three architectures, with `ACCESS_PLATFORM` negotiated and a key event
-  read back through translated DMA
-  ([the appendix](../design/roadmap/0784-reuse-what-the-tree-wrote/virtio-drivers-probe.md)).
-- **Not a workspace member:** the root `Cargo.toml` excludes it, as it does `vendor/talc`. calef
-  ruled to carry it, 2026-10-22 21:58 (UTC), on nifeos/nife#2586.
-
 ## relibc, seeded at 893a3b9133ac (not a pin)
 
 The C library's relibc half, for milestone 835 (a C library, stage 1: files, clock and memory) and

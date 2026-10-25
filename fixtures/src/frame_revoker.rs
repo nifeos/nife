@@ -28,8 +28,9 @@ const MEMORY_REGION: u64 = 0; // retype + page tables
 const REPORT: u64 = 1;
 const VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Retype a page into a PageFrame capability we hold, then map it writable.
     let frame = retype_into_page_frame(MEMORY_REGION);
     require(frame >= 0);

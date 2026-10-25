@@ -77,9 +77,10 @@ No new code. The runbook now expects what xenon already printed (below, and `BUG
 
 ## Bench runbook: one boot on xenon (calef)
 
-Whole, with every failure ending, the Results table and the one staging command (`cargo xtask
-network-bench --stage-only`, run on patagonia after the peer loop): notes/e1000e.md, "calef's bench
-step on xenon". Success ends `network-bench: verdict LEASED-AND-MEASURED`.
+Whole, with every failure ending and the Results table: notes/e1000e.md, "calef's bench step on
+xenon". Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
+evening calef ruled on 2026-10-24 (UTC), beside milestone 260's network boot and 801's `jig` leg:
+`notes/xenon-bench-2026-10-18.md`.
 
 ## Which card xenon has, and the tree disagreed with itself
 
@@ -239,9 +240,9 @@ meet a known gap). Take no dependency; vendor nothing.
 
 ## Follow-on
 
-- **Outstanding.** The bench runbook on xenon (exit criterion 2), which is calef's. Then a
-  lane flips `PCH_PROVEN_ON_SILICON` in `kernel/src/user/e1000e_service.rs`, citing the Results
-  row. It waits for a wired xenon; the PCH bring-up has run there (`bench/xenon-2026-10-21/README-494.md`).
+- **Outstanding.** The bench runbook on xenon (exit criterion 2), calef's, scheduled as step 1
+  of the xenon evening. Then `PCH_PROVEN_ON_SILICON` flips in `kernel/src/user/e1000e_service.rs`,
+  citing the Results row. The PCH bring-up has run there (`bench/xenon-2026-10-21/README-494.md`).
 - **Done.** The booted system uses this NIC since 2026-10-05 (milestone 198 (a package manager)):
   the kernel builds `net_stack` on it when there is no virtio-net NIC and grants the progenitor its
   endpoint, and swish-check's x86_64 leg types the fetch lines. A PCH part is left alone at boot, so

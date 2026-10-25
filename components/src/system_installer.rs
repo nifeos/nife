@@ -164,8 +164,9 @@ static mut ARRAY: [u8; ENTRY_ARRAY_BYTES] = [0; ENTRY_ARRAY_BYTES];
 /// blocks. Also `.bss`, for the same reason.
 static mut PRIMARY: [u8; 5 * blk::BLOCK_SIZE] = [0; 5 * blk::BLOCK_SIZE];
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(role: u64, a1: u64, _a2: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(role: u64, a1: u64, _a2: u64) -> ! {
     // The page shared with the block server, mapped out of this program's own budget
     // (milestone 108). Before anything else, because every `blk` call goes through it.
     if !user_mode_runtime::map_page_frame(BLK_PAGE_FRAME, BLK_PAGE, true, BUDGET) {

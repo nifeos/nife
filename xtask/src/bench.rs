@@ -4,7 +4,10 @@
 use std::process::Command;
 use std::sync::atomic::Ordering;
 
-use crate::archive::{initial_ramdisk_path, initial_ramdisk_riscv, riscv_initial_ramdisk_path};
+use crate::archive::{
+    initial_ramdisk_path, initial_ramdisk_riscv, initial_ramdisk_x86, riscv_initial_ramdisk_path,
+    x86_initial_ramdisk_path,
+};
 use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
 use crate::host::{flag_value, kernel_elf, run, workspace_root};
 use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
@@ -51,6 +54,16 @@ pub(crate) fn bench() -> bool {
         return false;
     }
 
+    // `--keyboard`: attach the virtio keyboard and press its keys, for the `keyboard_up` and
+    // `keyboard_event` rows. A host actor is in the loop, and no baseline holds those rows, so it
+    // reports and never gates.
+    if keyboard() && (real || check || save) {
+        eprintln!(
+            "bench: --keyboard reports the keyboard rows and never gates; no --check/--save/--real"
+        );
+        return false;
+    }
+
     // E3 (milestone 134 (the register of measures),
     // design/roadmap/0134-the-measurements-that-decide.md): an extra kernel feature beside `bench`,
     // for the padded-fastpath experiment. `--real` only: there is no cache under TCG for a
@@ -72,8 +85,10 @@ pub(crate) fn bench() -> bool {
     // leg twice, under the stamped nightly and under the pin, and never writes a number; see
     // `restamp.rs`. It is its own mode rather than a modifier, so it refuses the others.
     if std::env::args().any(|a| a == "--restamp") {
-        if real || check || save {
-            eprintln!("bench: --restamp is a mode of its own; drop --check, --save and --real");
+        if real || check || save || keyboard() {
+            eprintln!(
+                "bench: --restamp is a mode of its own; drop --check, --save, --real and --keyboard"
+            );
             return false;
         }
         return crate::restamp::restamp(|| leg(false, false, false, &features));
@@ -159,6 +174,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
     }
     cmd.env("NIFE_INITIAL_RAMDISK", initial_ramdisk_path());
     cmd.env("NIFE_DISK", disk_path());
+    let monitor = attach_keyboard(&mut cmd, "aarch64");
 
     run_bench(
         cmd,
@@ -167,6 +183,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
         save,
         workspace_root().join("bench/baseline-aarch64.txt"),
         "qemu-system-aarch64",
+        monitor,
     )
 }
 
@@ -210,6 +227,8 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
         "--- bench: riscv64, single hart, TCG + icount (deterministic instruction counts) ---"
     );
 
+    let monitor = attach_keyboard(&mut cmd, "riscv64");
+
     run_bench(
         cmd,
         false,
@@ -217,6 +236,7 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
         save,
         workspace_root().join("bench/baseline-riscv64.txt"),
         "qemu-system-riscv64",
+        monitor,
     )
 }
 
@@ -231,6 +251,11 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
 /// [--check|--save]`; why icount works here though `icount()` refuses x86_64 is in
 /// notes/benchmarks/x86-instruments.md.
 fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
+    // `--keyboard` needs `keyboard_driver`, and the plain x86_64 bench boot has no initial ramdisk.
+    // Built before the kernel, whose build measures the archive's programs.
+    if keyboard() && !initial_ramdisk_x86() {
+        return false;
+    }
     if !run(
         "cargo",
         &[
@@ -267,6 +292,11 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
         );
     }
 
+    if keyboard() {
+        cmd.env("NIFE_INITIAL_RAMDISK", x86_initial_ramdisk_path());
+    }
+    let monitor = attach_keyboard(&mut cmd, "x86_64");
+
     run_bench(
         cmd,
         real,
@@ -274,6 +304,7 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
         save,
         workspace_root().join("bench/baseline-x86_64.txt"),
         "qemu-system-x86_64",
+        monitor,
     )
 }
 
@@ -424,6 +455,37 @@ fn running_qemu(binary: &str) -> Option<String> {
 /// table (and, off the deterministic icount instrument, save or check against `baseline`). Shared by
 /// the aarch64 and RISC-V bench paths so the parsing, the table, and the regression gate are one
 /// implementation. `real` only chooses the "ns are fiction" footer.
+/// Whether this invocation is `--keyboard`, which times `keyboard_driver`.
+fn keyboard() -> bool {
+    std::env::args().any(|a| a == "--keyboard")
+}
+
+/// The line `kernel/src/bench/keyboard.rs` prints before each key press it waits for.
+const KEYBOARD_PRESS_CUE: &str = "bench-keyboard: press";
+
+/// For `--keyboard`, attach a virtio keyboard and a monitor socket to the runner `cmd` for `arch`,
+/// and return the socket; otherwise `None` and `cmd` is untouched.
+fn attach_keyboard(cmd: &mut Command, arch: &str) -> Option<String> {
+    if !keyboard() {
+        return None;
+    }
+    let sock = crate::scanout::gpu_mon_socket(arch);
+    cmd.env("NIFE_KEYBOARD", "1");
+    cmd.env("NIFE_GPU_MON", &sock);
+    eprintln!("--- bench: --keyboard, a virtio keyboard pressed over {sock} ---");
+    Some(sock)
+}
+
+/// Answer one press cue: wait, then press `video_terminal::script::HOST_KEY` over `sock`.
+///
+/// `sendkey` queues a press, then a release 100 ms of virtual time later. The wait is real time and
+/// lets the previous press's release reach the guest on its own interrupt (an idle guest under
+/// `-icount sleep=off` skips straight to it), so this press is not drained in the same batch.
+fn press_key(sock: &str) {
+    std::thread::sleep(std::time::Duration::from_millis(200));
+    crate::scanout::sendkey(sock, video_terminal::script::HOST_KEY);
+}
+
 fn run_bench(
     mut cmd: Command,
     real: bool,
@@ -433,6 +495,8 @@ fn run_bench(
     // The emulator that will count these instructions, named so the baseline can record which one
     // did. Per architecture, because the three legs run three different binaries.
     qemu_binary: &str,
+    // The monitor socket a `--keyboard` run presses keys through, or `None`.
+    monitor: Option<String>,
 ) -> bool {
     cmd.stdout(std::process::Stdio::piped());
 
@@ -446,7 +510,16 @@ fn run_bench(
     let runner_pid = child.id();
 
     let stdout = child.stdout.take().expect("piped stdout");
-    let (results, cntfrq, done) = read_bench_lines(stdout);
+    let (results, cntfrq, done) = read_bench_lines(stdout, |line| {
+        if let Some(sock) = &monitor
+            && line.starts_with(KEYBOARD_PRESS_CUE)
+        {
+            press_key(sock);
+        }
+    });
+    if let Some(sock) = &monitor {
+        let _ = std::fs::remove_file(sock);
+    }
     // Kill the runner's children before the runner. The x86_64 runner wraps QEMU rather than
     // `exec`-ing it (it translates `isa-debug-exit`'s status), so killing it first orphans the
     // emulator, and under `-icount sleep=off` a halted guest spins a full core forever. The other
@@ -486,7 +559,12 @@ fn run_bench(
 /// wait forever. The `[PANIC]` line is where it stops instead, with `done` false, which fails the
 /// run. `TickWindow` (kernel/src/bench/timing.rs) relies on this: a tick in a timed window is a
 /// panic, and it has to fail the gate rather than hang it.
-fn read_bench_lines(stdout: impl std::io::Read) -> (Vec<(String, u64, u64)>, u64, bool) {
+///
+/// `on_line` sees every line first, so a host actor can answer a cue (`--keyboard`'s key presses).
+fn read_bench_lines(
+    stdout: impl std::io::Read,
+    mut on_line: impl FnMut(&str),
+) -> (Vec<(String, u64, u64)>, u64, bool) {
     // Read lines until the guest says it is done, then kill it: it is parked in wfi and will
     // never exit by itself (deliberately; see kernel/src/bench.rs).
     use std::io::BufRead;
@@ -496,6 +574,7 @@ fn read_bench_lines(stdout: impl std::io::Read) -> (Vec<(String, u64, u64)>, u64
     let mut done = false;
     let mut lines = reader.lines();
     while let Some(Ok(line)) = lines.next() {
+        on_line(&line);
         if line.starts_with("[PANIC]") {
             // The panic's message is the line after its location.
             let message = lines.next().and_then(Result::ok).unwrap_or_default();
@@ -836,7 +915,7 @@ mod tests {
                    1 preemption tick(s) landed in ipc_rtt's timed window\n\
                    bench: ipc_rtt 175709 1000\n\
                    bench: done\n";
-        let (results, cntfrq, done) = super::read_bench_lines(out.as_bytes());
+        let (results, cntfrq, done) = super::read_bench_lines(out.as_bytes(), |_| {});
         assert!(!done);
         assert_eq!(cntfrq, 10_000_000);
         assert_eq!(results, vec![("yield_switch".to_string(), 183_330, 2000)]);

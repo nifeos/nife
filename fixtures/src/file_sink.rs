@@ -110,10 +110,11 @@ fn open_for_writing() -> u64 {
     opened as u64
 }
 
+user_mode_runtime::program_entry!(start);
+
 /// Receive sink messages, append each one's bytes at the running offset, and close on end of
 /// stream.
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let handle = open_for_writing();
     send(REPORT, fixture::READY, 0, 0);
 

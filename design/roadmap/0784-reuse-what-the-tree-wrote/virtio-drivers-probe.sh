@@ -13,8 +13,8 @@
 # Needs the network for the crate's dependencies. The kernel module holds the DMA region in
 # globals because `Hal`'s methods are static, and allocates from a bump heap that never frees;
 # neither is a design for (c1). The worktree stays for a rerun; `git worktree remove --force
-# "$WORK/tree"` drops it. The patch was written against 79941d883; on a later base its context may
-# need refreshing.
+# "$WORK/tree"` drops it. The patch was written against 79941d883. The worktree is cut at
+# c1ce64f2e, a main that vendors the crate (this tree does not, since (c1) to (c4) are refused).
 set -eu
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH='' cd -- "$HERE/../../.." && pwd)
@@ -364,8 +364,8 @@ PROBE
 
 if [ ! -d "$TREE" ]; then
     mkdir -p "$WORK"
-    git -C "$ROOT" worktree add -q --detach "$TREE" HEAD
-    probe_patch | sed "s#@VIRTIO_DRIVERS@#$ROOT/vendor/virtio-drivers#" | git -C "$TREE" apply -
+    git -C "$ROOT" worktree add -q --detach "$TREE" c1ce64f2eb42b3e7886adb95c8b294b05d0fac48
+    probe_patch | sed "s#@VIRTIO_DRIVERS@#$TREE/vendor/virtio-drivers#" | git -C "$TREE" apply -
 fi
 failed=0
 for arch in $ARCHES; do

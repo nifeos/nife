@@ -284,8 +284,9 @@ fn list(set: &[u8], cursor: usize) -> i64 {
     off as i64
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
+user_mode_runtime::program_entry!(start);
+
+fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // **Copy the set before anything else runs.** It arrives in a read-only page, and this process
     // then works from a local for the rest of its life, so the namespace it serves cannot be
     // changed by anything that touches that page later. It is `nameset::BYTES`, 523 bytes, on a
