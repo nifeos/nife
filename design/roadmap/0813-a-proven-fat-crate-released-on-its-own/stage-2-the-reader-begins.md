@@ -44,7 +44,7 @@ The crate's sources carry no `Name:` blocks, because the crate publishes on its 
 sources cite nothing of this tree. The ruling of 2026-10-25 (UTC) ratified every name below and
 refused `tables` for `BootSector::table_count`. The record is
 [file-allocation-table-names.md](../0857-crates-released-on-their-own/file-allocation-table-names.md).
-Why each was chosen:
+The table gives the reason for each:
 
 | name | why this one |
 |---|---|
