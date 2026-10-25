@@ -979,3 +979,46 @@ fn a_tree_of_one_and_a_half_mebibytes_is_not_too_large() {
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
     assert_ne!(looked.err(), Some(Error::TooLarge(claimed)));
 }
+
+/// A `#address-cells` that is not one cell long is ignored, and the width inherited from above
+/// stands. Measured against dtoolkit (design/roadmap/0784-reuse-what-the-tree-wrote/), and found
+/// by `machine_discovery`'s `many-harts` fixture, whose `/cpus` writes it as two bytes: `be32`
+/// read those two bytes, the padding after them, and so a count of 0x20000 cells, which turned
+/// every `reg` below into zero regions. Linux's `of_n_addr_cells` passes over a short value the
+/// same way and takes the parent's.
+#[test]
+fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &cell32(1));
+    b.prop(b"#size-cells", &cell32(1));
+    b.begin_node(b"bus");
+    b.prop(b"#address-cells", &[0, 2]);
+    b.begin_node(b"dev@1000");
+    b.prop(b"compatible", b"nife,dev\0");
+    let mut reg = cell32(0x1000);
+    reg.extend(cell32(0x10));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    b.begin_node(b"reserved-memory");
+    b.prop(b"#size-cells", &[0, 0, 2]);
+    b.begin_node(b"fw@2000");
+    let mut reg = cell32(0x2000);
+    reg.extend(cell32(0x20));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    let dev = (0x1000, 0x10);
+    assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
+}
