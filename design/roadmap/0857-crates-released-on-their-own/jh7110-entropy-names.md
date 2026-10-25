@@ -1,0 +1,70 @@
+# The names in `jh7110_entropy`, for ratification
+
+An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for milestone 818's crate. A release-track crate's names are ratified before it leaves this tree (ruled 2026-10-25 UTC), so this file lists every name a stranger meets in it, as the record `helpers/name_release.py` reads.
+
+Nothing here is ratified by this file. Until the line below carries a date, the crate's own `Name:` blocks are the record and the status column is a snapshot of them, taken 2026-10-25 (UTC); `python3 helpers/name_release.py --draft jh7110_entropy` prints a fresh one. At ratification each row's status takes the ruling, with any refusal its block holds, and the blocks leave the crate.
+
+Ratified: not yet.
+
+A status of `unrecorded` means the name has no block in the crate. 56 names: 55 no block, 1 ratified. 0 are not reachable from outside the crate (private modules, and `pub` items in them that are not re-exported). The last column applies design/naming.md's tests and 857's Fork 5 (a name stands on its own, since the crate may outlive nife): `clear`, `term` for a name the specification or databook owns (kept in its spelling, as design/naming.md asks of a name across somebody else's interface), `nife` for a name of nife's own process plan (address-space windows, the handoff a server receives), which a stranger does not have and which the crate may shed before it leaves, `scope` for a name that belongs to something other than the crate's subject, and otherwise what a stranger would trip on; 3 rows say something other than clear or term. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them. Nothing is renamed here.
+
+| name | kind | path | status | outside | a stranger reads it |
+|---|---|---|---|---|---|
+| `jh7110_entropy` | crate | `src/lib.rs` | ratified 2026-09-13. | yes | clear |
+| `AUTO_AGE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `AUTO_RQSTS` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `BUILD_CONFIG` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `COMPATIBLE_VENDOR` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `CTRL` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `CTRL_EXEC_NONCE_RESEED` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `CTRL_EXEC_NOP` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `CTRL_EXEC_RANDRESEED` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `CTRL_GENE_RANDNUM` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `Discovered` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `FEATURES` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_AGE_ALARM_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_GLBL_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_LFSR_LOCKUP_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_RAND_RDY_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_RQST_ALARM_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `IE_SEED_DONE_EN` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `ISTAT` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `ISTAT_ALL` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `ISTAT_LFSR_LOCKUP` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `ISTAT_RAND_RDY` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `ISTAT_SEED_DONE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `MODE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `MODE_R256` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `Outcome` | item | `src/lib.rs` | unrecorded. | yes | generic |
+| `Pool` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `RAND0` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND1` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND2` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND3` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND4` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND5` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND6` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `RAND7` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `SEED0` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `SEED7` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `SMODE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `SMODE_MISSION_MODE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_MISSION_MODE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_NONCE_MODE` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_R256` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_RAND_GENERATING` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_RAND_SEEDING` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_SEEDED` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `STAT_SRVC_RQST` | item | `src/lib.rs` | unrecorded. | yes | term |
+| `WORD_BYTES` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `assemble` | item | `src/lib.rs` | unrecorded. | yes | generic |
+| `discover` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `interpret` | item | `src/lib.rs` | unrecorded. | yes | generic |
+| `new` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `refill` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `remaining` | item | `src/lib.rs` | unrecorded. | yes | clear |
+| `take` | item | `src/lib.rs` | unrecorded. | yes | clear |
+
+Inline modules a stranger also meets, which `script/names` does not count as names of their own: `regs`.
