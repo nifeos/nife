@@ -290,7 +290,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     if depth == 1 {
                         match name {
                             b"#address-cells" if len == 4 => {
-                                address_cells = be32(self.bytes, value_at)?
+                                address_cells = be32(self.bytes, value_at)?;
                             }
                             b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
                             _ => {}
@@ -388,10 +388,10 @@ impl<'a> DeviceTreeBlob<'a> {
                     if depth < MAX_DEPTH {
                         match name {
                             b"#address-cells" if len == 4 => {
-                                acells[depth] = be32(self.bytes, value_at)?
+                                acells[depth] = be32(self.bytes, value_at)?;
                             }
                             b"#size-cells" if len == 4 => {
-                                scells[depth] = be32(self.bytes, value_at)?
+                                scells[depth] = be32(self.bytes, value_at)?;
                             }
                             _ => {}
                         }
@@ -482,10 +482,10 @@ impl<'a> DeviceTreeBlob<'a> {
                     if depth < MAX_DEPTH {
                         match name {
                             b"#address-cells" if len == 4 => {
-                                acells[depth] = be32(self.bytes, value_at)?
+                                acells[depth] = be32(self.bytes, value_at)?;
                             }
                             b"#size-cells" if len == 4 => {
-                                scells[depth] = be32(self.bytes, value_at)?
+                                scells[depth] = be32(self.bytes, value_at)?;
                             }
                             b"reg" if depth >= 2 => {
                                 reg[depth] =
@@ -971,7 +971,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     if depth == 1 {
                         match name {
                             b"#address-cells" if len == 4 => {
-                                address_cells = be32(self.bytes, value_at)?
+                                address_cells = be32(self.bytes, value_at)?;
                             }
                             b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
                             _ => {}
@@ -983,10 +983,10 @@ impl<'a> DeviceTreeBlob<'a> {
                             // The reserved-memory node may declare its own cell counts for children.
                             match name {
                                 b"#address-cells" if len == 4 => {
-                                    address_cells = be32(self.bytes, value_at)?
+                                    address_cells = be32(self.bytes, value_at)?;
                                 }
                                 b"#size-cells" if len == 4 => {
-                                    size_cells = be32(self.bytes, value_at)?
+                                    size_cells = be32(self.bytes, value_at)?;
                                 }
                                 _ => {}
                             }
