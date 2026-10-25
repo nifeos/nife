@@ -22,8 +22,8 @@ The `BUGS` section of [notes/project-metrics.md](../project-metrics.md): what it
 - The series drops a milestone dated in a week it has no row for; that is milestone 1 (boot
   to Rust on QEMU `virt`, and print to the PL011 UART) and 2026W28. `script/metrics` prints a stderr
   line naming it since 2026-09-23; before that it said nothing. Summing the chart gives one fewer than the tree's dated blocks.
-- Two of the three definitions have one shared copy, and a gate checks the third (milestone 236, which found three derivations
-  copied between scripts, 2026-09-03). The `unsafe` census and the comment-and-literal strip the code and comment line split
+- Two of the three definitions have one shared copy, and a gate checks the third (milestone 236 (three derivations copied between scripts), 2026-09-03).
+  The `unsafe` census and the comment-and-literal strip the code and comment line split
   rests on live in `helpers/rust_source.py`, which `script/lint` and this script both import, so
   there is one definition and nothing left to drift. The harness count did not collapse the
   same way: `script/lint` and `script/falsifications` attribute each harness to a workspace package
