@@ -50,6 +50,11 @@
 #     against this checkout's own farm by path, so no other lane's `cargo xtask std-src` reaches it.
 #   * Three architectures times the probe list is a lot of build-std; the first run is slow and
 #     every later one shares one target directory per architecture.
+#   * It probes the majors milestone 442 measured (`sha2` 0.10, `p256` 0.13, `rsa` 0.9 and their
+#     siblings) with those majors' `force_soft` spellings, not the majors `cryptography_provider`
+#     now takes, whose portable backends are `*_backend="soft"` cfgs. The graph that ships is
+#     measured by `helpers/build-cryptography-exerciser.sh` instead. Moving the probes means
+#     dropping the `rustls-rustcrypto` rows, which need the old majors.
 
 set -eu
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).

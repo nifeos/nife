@@ -1,7 +1,7 @@
 # The same build configuration as cryptography_exerciser/.cargo/config.toml, line for line, because
 # this program links the same provider and every line there is load-bearing on at least one
-# architecture: `getrandom_backend="custom"` selects `entropy_backend`'s hook, and the five
-# `force_soft` cfgs keep x86_64-unknown-nife from compiling (or, for `chacha20`, executing) SIMD it
+# architecture: `getrandom_backend="custom"` selects `entropy_backend`'s hook, and the six
+# portable-backend cfgs keep x86_64-unknown-nife from compiling (or, for `chacha20`, executing) SIMD it
 # has no state for. That file carries the reasons; notes/cryptography-provider.md the finding.
 #
 # Two copies of one list is a foot gun, said here where the second copy is: a cfg added to the
@@ -10,9 +10,10 @@
 [build]
 rustflags = [
     "--cfg", "getrandom_backend=\"custom\"",
-    "--cfg", "polyval_force_soft",
-    "--cfg", "poly1305_force_soft",
-    "--cfg", "chacha20_force_soft",
-    "--cfg", "aes_force_soft",
+    "--cfg", "sha2_backend=\"soft\"",
+    "--cfg", "polyval_backend=\"soft\"",
+    "--cfg", "poly1305_backend=\"soft\"",
+    "--cfg", "chacha20_backend=\"soft\"",
+    "--cfg", "aes_backend=\"soft\"",
     "--cfg", "curve25519_dalek_backend=\"serial\"",
 ]

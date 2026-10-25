@@ -21,7 +21,8 @@
 //! # BUGS
 //!
 //! - `getrandom` 0.2 needs its own hook: it returns a bare `u32` and needs 0.2's `custom` feature,
-//!   which only a manifest can enable, so this crate depends on 0.2 too.
+//!   which only a manifest can enable, so this crate depends on 0.2 too. Nothing in the gated build
+//!   draws through it: the TLS graph reaches 0.4 alone, so only the probe harness exercises it.
 //! - 0.3 and 0.4 both declare `__getrandom_v03_custom`, so one definition serves both; their
 //!   `Error` types are layout-identical, which neither crate promises.
 //! - A draw panics when the process holds no entropy capability, as `SystemRng` does; there is no

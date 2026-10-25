@@ -3,8 +3,8 @@
 //!
 //! `script/crypto-probes` measures that the provider builds and links; this measures that it
 //! computes the right number here. On `x86_64-unknown-nife` (`+soft-float`, no SSE) `sha2`,
-//! `polyval`, `poly1305` and `curve25519-dalek` run their portable fallbacks, and the `rand_core`
-//! draw is the only end-to-end exercise of `entropy_backend`'s `getrandom` 0.2 hook. Every expected
+//! `polyval`, `poly1305` and `curve25519-dalek` run their portable fallbacks, and the `getrandom`
+//! draw is the end-to-end exercise of `entropy_backend`'s `getrandom` 0.4 hook. Every expected
 //! value is transcribed from the specification named beside it. **If a vector fails, do not adjust
 //! the vector**: check the transcription, or the implementation is wrong on this target.
 //! notes/cryptography-provider.md ("What runs, as opposed to what builds") has the table.
@@ -14,7 +14,7 @@
 //! - **Expiry is never exercised**: the chains verify at `CAPTURED_AT`, not at "now".
 //! - **CPU feature detection and `x86_64-unknown-nife` disagree, silently**: `chacha20` ran AVX2 in
 //!   ring 3 (`vector 6 (invalid opcode)`) until `.cargo/config.toml` set `--cfg
-//!   chacha20_force_soft`.
+//!   chacha20_backend="soft"`.
 //! - **A vector proves the answer, not the manner**: a fallback that is not constant-time passes.
 //! - `cargo xtask test` builds it for every leg it boots
 //!   (`helpers/build-cryptography-exerciser.sh`, milestone 855 (the TLS graph enters the gated
@@ -26,7 +26,6 @@ use entropy_backend as _;
 
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use hmac::Mac;
-use rand_core::RngCore;
 use sha2::Digest;
 
 /// Decode a hex literal written out of a specification, at run time, so the vectors below can be
@@ -163,7 +162,7 @@ fn hashes() {
 // and RFC 5869 test case 1.
 // ---------------------------------------------------------------------------------------
 fn hmac_and_hkdf() {
-    let mut mac = <hmac::Hmac<sha2::Sha256> as Mac>::new_from_slice(&[0x0b; 20])
+    let mut mac = <hmac::Hmac<sha2::Sha256>>::new_from_slice(&[0x0b; 20])
         .expect("HMAC takes a key of any length");
     mac.update(b"Hi There");
     check(
@@ -220,7 +219,8 @@ fn record_layer_ciphers() {
             "85d6be7857556d337f4452fe42d506a8\
              0103808afb0db2fd4abff6af4149f51b",
         );
-        let tag = poly1305::Poly1305::new(key.as_slice().into())
+        let tag = poly1305::Poly1305::new_from_slice(&key)
+            .expect("a Poly1305 key is 32 bytes")
             .compute_unpadded(b"Cryptographic Forum Research Group");
         check("poly1305", &tag, "a8061dc1305136c6c22b8baf0c0127a9");
     }
@@ -234,10 +234,13 @@ fn record_layer_ciphers() {
         let aad = hex("50515253c0c1c2c3c4c5c6c7");
         let plaintext: &[u8] = b"Ladies and Gentlemen of the class of '99: \
 If I could offer you only one tip for the future, sunscreen would be it.";
-        let aead = chacha20poly1305::ChaCha20Poly1305::new(key.as_slice().into());
+        let aead = chacha20poly1305::ChaCha20Poly1305::new_from_slice(&key)
+            .expect("a ChaCha20-Poly1305 key is 32 bytes");
+        let nonce = chacha20poly1305::Nonce::try_from(nonce.as_slice())
+            .expect("a ChaCha20-Poly1305 nonce is 12 bytes");
         let sealed = aead
             .encrypt(
-                nonce.as_slice().into(),
+                &nonce,
                 Payload {
                     msg: plaintext,
                     aad: &aad,
@@ -283,7 +286,7 @@ fn key_exchange() {
     // generator has to be the generator, in uncompressed SEC 1 form (`04` then x then y). It is a
     // small claim and it exercises the whole field-arithmetic backend to make it.
     {
-        use p256::elliptic_curve::sec1::ToEncodedPoint;
+        use p256::elliptic_curve::sec1::ToSec1Point;
         let one = p256::SecretKey::from_slice(&{
             let mut b = [0u8; 32];
             b[31] = 1;
@@ -292,7 +295,7 @@ fn key_exchange() {
         .expect("1 is a valid P-256 scalar");
         check(
             "p256 generator",
-            one.public_key().to_encoded_point(false).as_bytes(),
+            one.public_key().to_sec1_point(false).as_bytes(),
             "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296\
              4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
         );
@@ -304,8 +307,8 @@ fn key_exchange() {
 // is genuinely new on this system.
 // ---------------------------------------------------------------------------------------
 fn entropy() {
-    // `rand_core` 0.6's `OsRng` goes to `getrandom` **0.2**, whose `__getrandom_custom` hook
-    // `entropy_backend` gained at this milestone, over `std::random::SystemRng`, over the entropy
+    // `getrandom` 0.4 goes to `entropy_backend`'s `__getrandom_v03_custom` hook, the one the
+    // provider's `SecureRandom` and its key exchanges draw through, over `std::random::SystemRng`, over the entropy
     // service's one endpoint, to virtio-rng. Two draws differing is the same claim milestone 56 (secrets, credentials, and the entropy to make them safe)
     // made for `std::random` and is as much as a test can assert about an RNG without a vector:
     // it proves the bytes are not a constant, which is what a silently-stubbed backend would give.
@@ -313,14 +316,14 @@ fn entropy() {
     {
         let mut a = [0u8; 32];
         let mut b = [0u8; 32];
-        rand_core::OsRng.fill_bytes(&mut a);
-        rand_core::OsRng.fill_bytes(&mut b);
+        getrandom::fill(&mut a).expect("an entropy draw failed");
+        getrandom::fill(&mut b).expect("an entropy draw failed");
         assert_ne!(a, b, "two entropy draws were identical: this is not an RNG");
         assert!(
             a.iter().any(|&x| x != 0),
             "an entropy draw was all zeroes: a stub, not a source"
         );
-        println!("entropy 0.2 ok");
+        println!("entropy 0.4 ok");
     }
 }
 
