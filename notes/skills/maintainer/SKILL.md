@@ -60,9 +60,19 @@ does too. "Too small for a lane" is the failure, not an exception. The session i
 conversation: while it works by hand, the architect cannot talk to it and the lanes sit idle. It
 reads, looks things up, writes briefs and records rulings in the conversation.
 
-A lane that carries an architect's ruling may edit `design/decisions/` to record it. The
-[developer lane](../developer-lane/SKILL.md) says a developer never edits `design/decisions/`; the
-two disagree, and the conflict is an architect's to resolve.
+A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
+the [developer lane](../developer-lane/SKILL.md) sets.
+
+## Dependency bumps
+
+Decided 2026-10-25 (UTC); [notes/dependency-updates.md](../../dependency-updates.md) has the whole
+practice.
+
+- A bump merges on green, except for a crate the kernel links: a minor or patch bump of one waits
+  for the kernel-class evidence in the pull request, and a major bump carries `needs-architect`.
+- Never close a Dependabot pull request to block a version: Dependabot then stops proposing it, out
+  of sight of `.github/dependabot.yml`. A bump that cannot land stays open with the `bump-blocked`
+  label beside a `BUGS` entry giving the reason and a re-argue date.
 
 ## The top-up rule, which is the whole point
 

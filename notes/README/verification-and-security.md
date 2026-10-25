@@ -14,6 +14,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Falsification coverage](../falsification-coverage.md): which kinds of test carry a replayed falsification, and what gates on it.
 - [Fuzzing the parse surface](../fuzzing.md): coverage-guided fuzzing of the parsers that read outside bytes.
 - [Fuzzing the services' request handlers](../fuzzing-the-services.md): session targets over the file server, the system log and the compositor, each checking a confinement rule.
+- [Taking a dependency update](../dependency-updates.md): what notices a new release, who merges which bump, and what a bump that cannot land leaves behind. Name provisional.
 - [Overflow checks](../overflow-checks.md): which builds panic on integer overflow and which wrap, what checking the shipped build found and costs, and the options (provisional name).
 - [Dynamic undefined-behavior checking (Miri)](../undefined-behavior.md): Miri over the host crates, and what "clean" means.
 - [Interleavings, model-checked (loom)](../interleaving.md): loom over the hand-rolled concurrency protocols, and its finds.

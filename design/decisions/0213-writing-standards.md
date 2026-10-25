@@ -10,8 +10,8 @@ ratified_by: calef
 The rules, ratified by calef on 2026-09-23 (UTC) unless marked: a median sentence of 20 words or
 fewer, no sentence over 40 words, and 4 or fewer bold spans per 1,000 words. Rule 4 is a review
 question, and rule 5 is §298's, carried here. Rule 6, ratified 2026-10-25, holds new prose to 2
-passive constructions per 1,000 words. The ratchet is the enforcement, and two proposed rules stay
-dropped.
+passive constructions per 1,000 words. Rule 7 spells out contractions. The
+ratchet is the enforcement, and two proposed rules stay dropped.
 
 His words, which are the whole brief:
 
@@ -119,6 +119,8 @@ it. The fifth has a phrase gate under it, and review does the rest.
    and an old document's passive count only falls (calef, 2026-10-25 UTC).
    [`passive-voice.md`](0213-writing-standards/passive-voice.md) has the ruling, the measure and
    the two options refused.
+7. Spell out contractions ("do not", "it is", "cannot") in prose, commit messages and pull request
+   bodies. A quotation keeps its source's words. Ratified 2026-10-25 (UTC).
 
 ### A label that opens a line becomes a heading
 
@@ -273,3 +275,4 @@ then a document whose budget is spent on markup records that in its own `BUGS` s
 - This section meets its own three numbers, which tests that they are livable in a document carrying
   numbers and citations. It does not test them on a note explaining a mechanism, and that is the
   longer half of the tree.
+- Rule 7 has no gate, and about 600 contractions stood in the tree's Markdown on 2026-10-25.
