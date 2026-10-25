@@ -166,12 +166,11 @@ impl NameSet {
         let len = name.len();
         self.bytes.copy_within(from..used, from + len);
         self.bytes[from..from + len].copy_from_slice(name);
-        let mut i = self.n;
-        while i > at {
-            self.ends[i] = self.ends[i - 1] + len as u16;
-            self.is_directory[i] = self.is_directory[i - 1];
-            i -= 1;
+        for end in &mut self.ends[at..self.n] {
+            *end += len as u16;
         }
+        self.ends.copy_within(at..self.n, at + 1);
+        self.is_directory.copy_within(at..self.n, at + 1);
         self.ends[at] = (from + len) as u16;
         self.is_directory[at] = is_directory;
         self.n += 1;
@@ -203,7 +202,12 @@ impl NameSet {
         // Where it belongs: the first slot holding a name that sorts after it.
         let at = (0..self.n).find(|&i| self.name(i) > name).unwrap_or(self.n);
         let mut kept_all = true;
-        while !self.has_room_for(name.len()) && self.n > at {
+        // Bounded by how many names sort after it, not by the room check alone, so the walk
+        // always ends.
+        for _ in at..self.n {
+            if self.has_room_for(name.len()) {
+                break;
+            }
             self.n -= 1;
             kept_all = false;
         }
@@ -1045,5 +1049,20 @@ mod tests {
         assert!(!d.is_here());
         d.here();
         assert!(d.is_here());
+    }
+
+    /// **A name that cannot travel in a grant is refused by the set itself**, even into an empty set
+    /// with room to spare. [`NameSet::one`] reaches `push` without the expander's own check, so
+    /// this is the only thing between a token too long for a grant and a set holding it.
+    #[test]
+    fn a_set_refuses_a_name_no_grant_carries() {
+        assert!(NameSet::one(&TOO_LONG, false).is_none());
+        assert!(NameSet::one(b"a/b", false).is_none());
+        let mut set = NameSet::empty();
+        assert!(!set.push(&TOO_LONG, false));
+        assert!(set.is_empty(), "a refused name was kept");
+        assert!(set.push(b"a", false));
+        assert!(!set.push(b"a", true), "a name is held once");
+        assert_eq!(set.len(), 1);
     }
 }

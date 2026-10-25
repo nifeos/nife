@@ -66,11 +66,16 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
     Some(n + 1)
 }
 
-/// Walk an encoded set: `(name, is_dir)` per record. Stops at the terminator, and at the first
+/// Walk an encoded set: `(name, is_dir)` per record. Stops at the terminator, at the first
 /// record that runs off the end, which is what a truncated buffer looks like and must not be
-/// read as a name.
-pub fn iter(buf: &[u8]) -> Names<'_> {
-    Names { buf, at: 0 }
+/// read as a name, and after [`MAX_NAMES`] records.
+///
+/// **The last stop is the contract, not a guess.** [`encode`] never writes more than
+/// [`MAX_NAMES`] records, so a buffer holding more was not made by it. Reading only the first
+/// [`MAX_NAMES`] of them can only make a set narrower, never wider. It also bounds every walk a
+/// caretaker makes against a buffer it was handed.
+pub fn iter(buf: &[u8]) -> core::iter::Take<Names<'_>> {
+    Names { buf }.take(MAX_NAMES)
 }
 
 /// Whether `name` is in the set. **This is the whole of the attenuation**: the caretaker asks
@@ -87,21 +92,21 @@ pub fn count(buf: &[u8]) -> usize {
 
 /// The iterator [`iter`] returns.
 pub struct Names<'a> {
+    /// What is left to read, starting at the next record.
     buf: &'a [u8],
-    at: usize,
 }
 
 impl<'a> Iterator for Names<'a> {
     type Item = (&'a [u8], bool);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let len = *self.buf.get(self.at)? as usize;
+        let (&len, rest) = self.buf.split_first()?;
         if len == 0 {
             return None;
         }
-        let flags = *self.buf.get(self.at + 1)?;
-        let name = self.buf.get(self.at + 2..self.at + 2 + len)?;
-        self.at += 2 + len;
+        let (&flags, rest) = rest.split_first()?;
+        let (name, rest) = rest.split_at_checked(len as usize)?;
+        self.buf = rest;
         Some((name, flags & IS_DIR != 0))
     }
 }

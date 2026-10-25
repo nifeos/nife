@@ -121,3 +121,30 @@ fn a_truncated_set_stops_at_the_last_whole_record() {
     assert_eq!(nameset::count(&full[..5]), 1);
     assert_eq!(nameset::count(&full[..1]), 0);
 }
+
+/// **A buffer holding more records than [`nameset::MAX_NAMES`] reads as its first
+/// [`nameset::MAX_NAMES`]**, because `encode` never writes more, so the extra records were not
+/// planned by anyone. The bound also ends every walk over a hostile page: a set of one-byte names
+/// could otherwise hold hundreds of records.
+#[test]
+fn a_set_past_max_names_reads_as_its_first_max_names() {
+    let mut buf = [0u8; nameset::BYTES];
+    for i in 0..=nameset::MAX_NAMES {
+        buf[3 * i..3 * i + 3].copy_from_slice(&[1, 0, b'a' + i as u8]);
+    }
+    assert_eq!(nameset::count(&buf), nameset::MAX_NAMES);
+    let last = [b'a' + nameset::MAX_NAMES as u8 - 1];
+    assert!(nameset::contains(&buf, &last));
+    let extra = [b'a' + nameset::MAX_NAMES as u8];
+    assert!(
+        !nameset::contains(&buf, &extra),
+        "a record past MAX_NAMES widened the set"
+    );
+    let names: [(&[u8], bool); 2] = [(b"ab", false), (b"cde", true)];
+    let mut out = [0u8; 10];
+    let n = nameset::encode(&names, &mut out).expect("two short names fit");
+    let mut walk = nameset::iter(&out[..n]);
+    assert_eq!(walk.next(), Some((&b"ab"[..], false)));
+    assert_eq!(walk.next(), Some((&b"cde"[..], true)));
+    assert_eq!(walk.next(), None, "the terminator ends the set");
+}
