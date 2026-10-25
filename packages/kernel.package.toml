@@ -43,12 +43,6 @@ reason = "the kernel draws the xHCI driver's register window and hands it extens
 [[exception]]
 date = 2026-09-27
 member = "kernel"
-crate = "jh7110_entropy"
-reason = "the kernel discovers the TRNG with the driver's own discover(); a board description living in a driver crate"
-
-[[exception]]
-date = 2026-09-27
-member = "kernel"
 crate = "coremark"
 reason = "the bench feature runs coremark inside the kernel; a benchmark is a fixture a release kernel should not link"
 

@@ -100,7 +100,7 @@ ipc	kernel	retired
 isa	kernel	retired
 jh7110_clock_and_reset	kernel	kernel
 jh7110_crg	kernel	retired
-jh7110_entropy	shared	components,kernel
+jh7110_entropy	shared	components,kernel,uefi_loader
 jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
