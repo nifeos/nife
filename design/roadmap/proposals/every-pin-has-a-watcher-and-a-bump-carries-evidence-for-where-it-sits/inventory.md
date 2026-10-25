@@ -20,7 +20,7 @@ Measured on 2026-10-25 (UTC) against `main` at `e865d8838`, with #2714 applied f
 | `rust-toolchain.toml` | `/` | `toolchain-bump.yml` | daily | a PR on a fixed branch; floors restamped when proven unmoved |
 | `.kani-version` | `/` | `toolchain-bump.yml`, `propose-kani` | daily | a PR on a fixed branch |
 | riscv64 Kani 0.67.0, patched | `script/verify-riscv64` | none | none | proposed: a report-only row |
-| `.qemu-version` | `/` | milestone 943, not started | none | planned: a PR on a fixed branch |
+| `.qemu-version` | `/` | milestone 943 (a new QEMU release is proposed as a pin bump), not started | none | planned: a PR on a fixed branch |
 | `.cargo-deny-version` | `/` | none | none | proposed: `script/pin-watch` |
 | `.cargo-fuzz-version` | `/` | none | none | proposed: `script/pin-watch` |
 | `.cargo-mutants-version` | `/` | none | none | proposed: `script/pin-watch` |
@@ -67,6 +67,6 @@ the icount tripwire (`bench`), the boot file budget, the fastpath footprint, car
 Every pull request Dependabot opened, to 2026-10-25: 26. Actions groups merged on the day they
 opened. Cargo: `spin` 0.10.0 to 0.12.2 (#3) and 0.12.2 to 0.12.3 (#459), `smoltcp` 0.13.1 to
 0.14.0 (#460) and `argon2` 0.5.3 to 0.6.0 (#596) merged the day they opened. `aarch64-cpu` and
-`tock-registers` majors (#2, #4) closed as superseded by a hand commit taking both. The four
+`tock-registers` majors (#2, #4) closed because a hand commit had taken both together. The four
 RustCrypto majors (#144 to #147) and their group (#151) closed; the group rule in
 `.github/dependabot.yml` and §81 (a dependency stays upgradable) record that incident.
