@@ -1,7 +1,5 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
@@ -46,7 +44,7 @@ pub enum TxError {
 /// A tail pointer is one past the last descriptor the device may use. On receive one descriptor,
 /// the one just behind [`DataPlane::rx_cursor`], is always held back, so that "the device has every
 /// descriptor" and "the device has none" are never the same tail address; each received frame
-/// reposts it and holds back the slot just consumed. See notes/designware-ethernet/the-hardware.md.
+/// reposts it and holds back the slot just consumed.
 #[derive(Debug)]
 pub struct DataPlane {
     phys: u64,

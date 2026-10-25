@@ -1,13 +1,12 @@
 #![cfg_attr(not(test), no_std)]
 //! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports.
 //!
-//! Everything the driver's two halves compute and nothing either touches. The kernel
-//! (`kernel/src/designware_ethernet.rs`) brings the controller and PHY up, measures DMA coherence
-//! and starts the DMA; `net_stack` (`components/src/designware_ethernet_transport.rs`) fills
-//! descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
+//! Everything the driver's two halves compute and nothing either touches. A kernel half
+//! brings the controller and PHY up, measures DMA coherence and starts the DMA; a network-stack
+//! half fills descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
 //! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`) and `ytphy` (`sys/dev/mii/ytphy.c`), whose JH7110 path
 //! reads `starfive,tx-use-rgmii-clk`; FreeBSD's `eqos` was a cross-check, and GPL sources gave
-//! hardware facts only, no code. See notes/designware-ethernet.md.
+//! hardware facts only, no code.
 
 //! The ISC license requires this notice:
 //!
@@ -35,8 +34,6 @@
 //! - Nothing here has touched the device; every test runs against `sim`. One receive and one
 //!   transmit queue, polled: no interrupt, offloads, jumbo frames or multicast.
 //! - Only `gmac0` (`16030000`) is wired; `gmac1`'s SYS-domain clocks have no plan.
-//!
-//! Name: ratified 2026-10-07 (calef, #1806): Synopsys's name, spelled out per §154 (the acronym test).
 #[cfg(test)]
 extern crate std;
 

@@ -1,6 +1,4 @@
 //! **What the kernel hands the driver** at spawn.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 

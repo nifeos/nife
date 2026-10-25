@@ -1,7 +1,5 @@
 //! **The rings and their descriptors**: how big each ring and buffer is, the descriptor bits the
 //! driver writes and reads, and what a receive descriptor says.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 pub(crate) const PAGE: u64 = 4096;
 
@@ -110,9 +108,10 @@ pub enum RxVerdict {
 
 /// **Judge a receive descriptor's word 3**, where `room` is how many bytes the caller can take.
 ///
-/// Every field is the device's statement and none is trusted (notes/shared-page-audit.md's
-/// finding 6, applied to a third NIC): a `Frame(n)` always has `n <= room`, `n <= MAX_FRAME` and
-/// `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for every word.
+/// Every field is the device's statement and none is trusted, since a device that lies about a
+/// length would lead a trusting driver past its buffer: a `Frame(n)` always has `n <= room`,
+/// `n <= MAX_FRAME` and `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for
+/// every word.
 ///
 /// # Examples
 ///

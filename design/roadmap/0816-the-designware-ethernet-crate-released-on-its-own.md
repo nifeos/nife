@@ -127,7 +127,7 @@ build nor Kani ran. A test reads `../../device_tree_blob/tests/fixtures/qemu-ris
 which `cargo package` cannot ship. Beyond manifest and files, 18 lines cite this tree: 8 `milestone
 N`, 5 tree paths, 2 `§N`, 2 provenance blocks and 1 naming calef.
 
-Name: `designware_ethernet` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `designware_ethernet` ratified (checked 2026-10-25).
 
 ## Review before release
 
@@ -150,6 +150,28 @@ nife, and every row of *What is proven* names a harness that stock Kani proves i
 falsification patch makes it fail. No crate publishes without Kani harnesses covering its
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree, so this section keeps the links it carried. Its
+`Name:` blocks are in [names.md](0816-the-designware-ethernet-crate-released-on-its-own/names.md).
+
+- `src/lib.rs`, the crate root: the design lives in `notes/designware-ethernet.md`.
+- `src/data_plane.rs`, `DataPlane`: `notes/designware-ethernet/the-hardware.md` explains the
+  held-back receive slot.
+- `src/regs.rs`, `src/jh7110.rs` and `src/motorcomm.rs`, each module's doc: the register pages,
+  the two device trees and the PHY settings are in `notes/designware-ethernet/the-hardware.md`.
+- `src/coherence.rs`, the module's doc: `notes/designware-ethernet.md`, "Is radon's DMA coherent?
+  Yes, by measurement", records the probe reporting `Coherent` on radon over three boots on
+  2026-10-20 (UTC).
+- `src/descriptor.rs`, `rx_verdict`: the distrust of every descriptor field applies finding 6 of
+  `notes/shared-page-audit.md` (two virtio drivers trusted the buffer index the device wrote) to a
+  third NIC.
+- `src/tests.rs`, the module's doc: lane maintainer/mutation-triage-2026w42 split the tests out of
+  `lib.rs` on 2026-10-12 (UTC) under §282 (when a file is split, the parent becomes an index).
+- `Cargo.toml`, the package comment: the pure-logic split is §7 (the testing harness)'s, and the
+  crate's scope came from milestone 53 (the board's own peripherals: network and storage on real
+  silicon).
 
 ## BUGS
 

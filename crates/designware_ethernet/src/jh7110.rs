@@ -6,7 +6,7 @@
 //! interface select, the PHY's node supplies its delays. radon's U-Boot hands over **the vendor's
 //! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
 //! compatible, PHY as register values, interface select in board code). Both are read here, and
-//! their shared facts agree. See notes/designware-ethernet/the-hardware.md.
+//! their shared facts agree.
 
 use device_tree_blob::DeviceTreeBlob;
 
