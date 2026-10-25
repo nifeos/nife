@@ -188,7 +188,7 @@ media, and it does not exist yet. Against the tree:
   `ssh root@192.168.8.1 'tar -xzf /root/pxe-xenon-backup-2026-10-04.tgz -C / && /etc/init.d/dnsmasq restart'`.
   `dnsmasq --test` passes, other clients' offers are unchanged, patagonia kept `.138` on reconnect.
 - Ruled 2026-10-24 (UTC): the real network boot runs on the same xenon evening as milestone 494's
-  bench boot, the fresh install and milestone 801's xenon leg. It is step 3 of
+  bench boot, the fresh install and milestone 801 (packages over the internet)'s xenon leg. It is step 3 of
   `notes/xenon-bench-2026-10-18.md`, which builds the image from the commit that flips the I219's
   flag and names what to record. A lane then writes the photograph numbers here and the rate into
   BUGS, and marks this block BUILT.
