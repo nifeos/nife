@@ -3,11 +3,11 @@
 Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.md), drafted from
 [`device_tree_blob` against `dtoolkit`](dtoolkit-against-device-tree-blob.md). Name provisional.
 
-calef approved all three on 2026-10-25 (UTC), and each is filed on google/dtoolkit:
+calef approved all three on 2026-10-25 (UTC), and the maintainers filed each on google/dtoolkit:
 [#101](https://github.com/google/dtoolkit/issues/101) (R1),
 [#102](https://github.com/google/dtoolkit/issues/102) (R2) and
 [#103](https://github.com/google/dtoolkit/issues/103) (R3). These are bug reports, not code, so
-they needed no CLA. Each is written against 0.4.1 and `main` at `4a7faf2e7`; the filed issues carry
+they needed no CLA. Each describes 0.4.1 and `main` at `4a7faf2e7`; the filed issues carry
 a self-contained Rust reproduction in place of the probe.
 [dtoolkit-probe.sh](dtoolkit-probe.sh) reproduces each, in the mode named under it, through
 `dtoolkit`'s public API alone.
