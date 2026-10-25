@@ -1,0 +1,33 @@
+Falsifies `address_space_map::verification::the_bands_are_listed_in_address_order`.
+
+The defect: `BANDS` lists `HEAP` before `RUNTIME_WINDOWS`. Every address still lies in exactly
+one band, so the membership harness stays green; only the order is wrong. The `const` tiling
+assert in `lib.rs` would stop the build first, so the patch deletes it as well.
+
+Expected to fail: the harness's `assert!(band_index(low) <= band_index(high))`.
+
+diff --git a/crates/address_space_map/src/lib.rs b/crates/address_space_map/src/lib.rs
+index 0eba0def7..2a1284ac0 100644
+--- a/crates/address_space_map/src/lib.rs
++++ b/crates/address_space_map/src/lib.rs
+@@ -116,8 +116,8 @@ pub const PROCESS_PAGES: Band = Band {
+ pub const BANDS: [(&str, Band); 8] = [
+     ("NULL_GUARD", NULL_GUARD),
+     ("PAIR_PAGES", PAIR_PAGES),
+-    ("RUNTIME_WINDOWS", RUNTIME_WINDOWS),
+     ("HEAP", HEAP),
++    ("RUNTIME_WINDOWS", RUNTIME_WINDOWS),
+     ("SERVICE_WINDOWS", SERVICE_WINDOWS),
+     ("IMAGE", IMAGE),
+     ("STACK", STACK),
+@@ -282,10 +282,6 @@ const _: () = {
+     let mut i = 0;
+     while i < BANDS.len() {
+         let band = BANDS[i].1;
+-        assert!(
+-            band.start == at,
+-            "a band does not start where the band below it ends"
+-        );
+         assert!(band.start < band.end, "a band is empty");
+         assert!(
+             band.start.is_multiple_of(PAGE),

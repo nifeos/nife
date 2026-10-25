@@ -9,7 +9,8 @@ description: >-
   decision file. Holds: move fast on what can be undone and be methodical on what cannot (the test
   is who else has already acted on it); elegance and performance beat implementation convenience
   (would I still choose this if both options were the same amount of work? if not, say the
-  recommendation is about effort); the seven questions a fork must answer before it reaches an
+  recommendation is about effort); how a ruling is asked (plain background first, recommendation
+  first, one decision at a time); the seven questions a fork must answer before it reaches an
   architect; and why requesting a review from calef silently does nothing.
 ---
 
@@ -130,6 +131,24 @@ Assignees and labels do work; reviewers do not.
 Stop for an architect only when it is genuinely the architect's call: a design fork not
 already decided, a test that will not pass after real effort, a hardware or external dependency, or
 the machine contradicting the plan. Otherwise proceed and report what you did.
+
+## A ruling is asked plainly, one at a time
+
+Ruled 2026-10-24 (UTC), after three questions in a row came back unanswerable for want of context.
+Each answer changed once the context came first: one moved off the recommended option, and one
+gained two hosts nobody had listed.
+
+So each question put to an architect, in a chat or a `## What I need from you` comment, follows one
+shape:
+
+- Two to four short paragraphs come first. They say what the thing is, why it matters now, what
+  constrains it and what each option costs.
+- Then the question, with the recommendation first and the options lettered after it.
+- No lane jargon in the question itself: no queue layouts, crate names or milestone shorthand that
+  the paragraphs above did not explain.
+- Name the constraint and not only your shortlist. An architect often brings an option nobody
+  listed.
+- One decision at a time. Ask, wait for the answer, then ask the next.
 
 ## A fork reaches an architect with its questions already answered
 

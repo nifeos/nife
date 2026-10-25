@@ -44,6 +44,61 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
+  # --- Rust dependencies of every other workspace with a committed Cargo.lock ------------------
+  #
+  # Each directory below is its own workspace with its own lockfile, so the root entry above never
+  # sees it. The test of §81 (a dependency stays upgradable) is "if a newer version exists, does
+  # anything here ever tell us?", and for these thirteen graphs this entry is what tells us.
+  # `script/lint` keeps this list complete: every committed Cargo.lock that `script/supply-chain`
+  # checks must appear here or in the root entry, so a new workspace cannot join the tree unwatched.
+  #
+  # Two lockfiles are left out, for the same reasons `script/supply-chain` skips them, and this is
+  # not an `ignore`: no upgrade is foreclosed, because neither lockfile is ours to move.
+  #   - vendor/redoxfs and vendor/talc carry upstream's own Cargo.lock byte for byte, and
+  #     `script/vendor-verify` fails on any change to it. `script/vendor-watch` watches those
+  #     upstreams instead, and the workspaces that build them (redoxfs_server, tools/redoxfs_host
+  #     and the rest) resolve their own graphs, which are watched here.
+  #   - notes/packages/container-format-measurements/fuzz is a measuring harness kept as
+  #     `Cargo.toml.in`, so nothing can parse it, and it pins exact versions because they are what
+  #     its note measured.
+  #
+  # A separate entry from the root rather than more directories on it, so that a red bump in one of
+  # these workspaces does not hold back the root workspace's weekly group, which carries the kernel.
+  - package-ecosystem: cargo
+    directories:
+      - "/c_library"
+      - "/cryptography_exerciser"
+      - "/cryptography_provider"
+      - "/fuzz"
+      - "/jig"
+      - "/mdr"
+      - "/pinned_tls_client"
+      - "/pinned_tls_exerciser"
+      - "/redoxfs_server"
+      - "/std_exerciser"
+      - "/tools/glyph_atlas_generator"
+      - "/tools/host_reordering_litmus"
+      - "/tools/redoxfs_host"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    groups:
+      # Minor and patch bumps across all thirteen workspaces, one pull request a week.
+      workspaces-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      # A major bump is one pull request per dependency across every workspace that holds it,
+      # rather than one per workspace. `rustls` sits in four of these graphs, and the provider
+      # those four share implements its traits, so moving it one workspace at a time would be the
+      # ntlm-crypto failure above in a new shape (§81 (a dependency stays upgradable) records
+      # that incident).
+      workspaces-major:
+        patterns: ["*"]
+        update-types: ["major"]
+        group-by: dependency-name
+
   # --- GitHub Actions used by .github/workflows/ci.yml ----------------------------------------
   - package-ecosystem: github-actions
     directory: "/"

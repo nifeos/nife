@@ -40,6 +40,18 @@ test's job. A table that survives the CRC and then makes one of those wrap is wh
 The fixtures use 512-byte blocks. 4K-native disks exist, and the parser takes the block size from
 the header block's length, so a second split would be worth adding.
 
+## `file_allocation_table_boot_sector`
+
+A FAT volume arrives on a stick a stranger formatted, and its boot sector says where every table,
+the root directory and each cluster lie. A wrong number there sends every later read to the wrong
+sector, or past the volume. The crate's four Kani harnesses already cover `BootSector::parse` on
+every 512-byte sector, since the parse has no loop. What they cannot reach is the device path: a
+4096-byte sector, a device whose sector size disagrees with the volume, and the accessors a reader
+calls once the parse has said yes. So the target reads each input at all four sector sizes through
+a `SectorDevice` over the bytes, and checks the same geometry the harnesses prove on everything
+accepted. The dosfstools-made fixtures seed it unmodified. The target grows with the reader: the
+FAT entry decode and chain walk join it in their own stage.
+
 ## `domain_name_system_reply`
 
 The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and

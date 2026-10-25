@@ -40,10 +40,10 @@ cargo clippy --workspace --exclude kernel --exclude user --exclude user_mode_run
 `--cfg kani` alone does not compile: the harnesses are written against Kani's intrinsics, and
 without the crate that provides them rustc stops at `use of unresolved module or unlinked crate
 kani`. `helpers/kani-lint-shim/` is that crate, built by `script/lint` with two plain `rustc`
-invocations before the pass runs. The surface is small, which makes this cheap: across 37 packages <!--count:harness-crates--> the tree uses exactly five Kani items, `any`, `proof`,
-`assume`, `unwind` and `cover!`, and no `Arbitrary` derive, no contracts, no
-`any_where`. A sixth, `stub`, appears only in `kernel`, which this pass excludes, so the shim
-lacks it. Those five items are what the shim has to cover, and they do not move when a harness is
+invocations before the pass runs. The surface is small, which makes this cheap: across 38 packages <!--count:harness-crates--> the tree uses exactly six Kani items, `any`, `proof`,
+`assume`, `unwind`, `should_panic` and `cover!`, and no `Arbitrary` derive, no contracts, no
+`any_where`. A seventh, `stub`, appears only in `kernel`, which this pass excludes, so the shim
+lacks it. Those six items are what the shim has to cover, and they do not move when a harness is
 added.
 
 It is two crates because an attribute macro can only come from a proc-macro crate. The
