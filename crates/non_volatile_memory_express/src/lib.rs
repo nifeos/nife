@@ -1,16 +1,12 @@
 #![no_std]
-//! **NVMe queue mechanics, as pure logic** (notes/non-volatile-memory-express.md): everything an
-//! NVMe driver computes and nothing it touches. The register file, the doorbells and the queues'
-//! DMA memory are the kernel's (`kernel/src/non_volatile_memory_express.rs`, a thin volatile layer
-//! over this), so the queue logic is host-testable and Kani-reachable (rule 7). The protocol
-//! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
-//! admin queue and PRPs) is the note's "How the protocol works, in one sitting".
-//!
-//! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)); kept
-//! as the crates.io name (#1806).
+//! **NVMe queue mechanics, as pure logic**: everything an NVMe driver computes and nothing it
+//! touches. The register file, the doorbells and the queues' DMA memory are the caller's
+//! (a thin volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol (NVMe 1.4, chapters 4 and 5:
+//! submission and completion queues, doorbells, the phase tag, the admin queue and PRPs) is what
+//! this crate implements, and no more of it.
 
-/// Register offsets in BAR0 (NVMe 1.4 §3.1). All are 4-byte registers or 8-byte registers the
-/// kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
+/// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
+/// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
 pub mod regs {
     /// Controller Capabilities, 64-bit read-only. See [`super::Cap`].
     pub const CAP: u64 = 0x00;
@@ -71,7 +67,7 @@ pub fn cc_enabled() -> u32 {
 }
 
 /// A queue's role, which picks its doorbell: submission tails are even doorbells, completion
-/// heads odd (NVMe 1.4 §3.1.24-25).
+/// heads odd (NVMe 1.4 sections 3.1.24-25).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Doorbell {
     /// The submission queue's tail doorbell: even index.
@@ -108,15 +104,15 @@ pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
 
 // --- commands -------------------------------------------------------------------------------
 
-/// Admin opcodes (NVMe 1.4 §5).
+/// Admin opcodes (NVMe 1.4 section 5).
 pub const ADMIN_CREATE_IO_SQ: u8 = 0x01;
 /// Create an I/O completion queue.
 pub const ADMIN_CREATE_IO_CQ: u8 = 0x05;
 /// Fetch a controller or namespace data structure ([`CNS_CONTROLLER`], [`CNS_NAMESPACE`]).
 pub const ADMIN_IDENTIFY: u8 = 0x06;
 
-/// NVM (I/O) opcodes (NVMe 1.4 §6). Flush is opcode 0, and it is mandatory: §6.8 requires every
-/// controller to implement it, which is why the block server can offer
+/// NVM (I/O) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
+/// requires every controller to implement it, which is why the block server can offer
 /// `filesystem_contract::blk::FLUSH` unconditionally where the virtio one has to negotiate a
 /// feature bit and refuse when it is absent.
 pub const NVM_FLUSH: u8 = 0x00;
@@ -191,13 +187,13 @@ impl Command {
     }
 
     /// FLUSH (I/O): make everything the controller has already acknowledged for `nsid` durable
-    /// (NVMe 1.4 §6.8). No data transfer, so no PRPs and no LBA range; the command completes when
-    /// the volatile write cache, if the controller has one, has been committed.
+    /// (NVMe 1.4 section 6.8). No data transfer, so no PRPs and no LBA range; the command
+    /// completes when the volatile write cache, if the controller has one, has been committed.
     ///
     /// **Mandatory for every controller**, which is what lets the block server answer
     /// `filesystem_contract::blk::FLUSH` without negotiating anything. A controller with no
     /// volatile write cache completes it as a no-op, and that is a truthful yes rather than the
-    /// silent one milestone 55's verb exists to forbid: the data really is durable.
+    /// silent one a flush verb exists to forbid: the data really is durable.
     pub fn flush(cid: u16, nsid: u32) -> Self {
         Self::new(NVM_FLUSH, cid, nsid, 0, 0)
     }
@@ -416,8 +412,8 @@ impl CqState {
 // --- identify parsing -----------------------------------------------------------------------
 
 /// The two facts the driver needs from the 4096-byte IDENTIFY namespace structure (NVMe 1.4
-/// §5.15.2, figure 245): the namespace size in logical blocks (NSZE, bytes 0..8) and the data
-/// shift of the LBA format in use (FLBAS names one of 16 formats; each format's LBADS is
+/// section 5.15.2, figure 245): the namespace size in logical blocks (NSZE, bytes 0..8) and the
+/// data shift of the LBA format in use (FLBAS names one of 16 formats; each format's LBADS is
 /// `1 << shift` bytes per block). `None` if the structure is shorter than the fields it must
 /// carry, or describes a block size outside what a driver of 4096-byte filesystem blocks can
 /// serve (LBADS below 9 is the spec's "unsupported" marker; above 12 a block would outgrow the
@@ -443,10 +439,9 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
 /// [`parse_identify_namespace`] reads, before that function's bounds refuse it. `None` only when
 /// the structure is too short to carry the format table.
 ///
-/// It exists so a refusal can say what it refused (milestone 261's bench rehearsal). Fatal risk
-/// 6's second night-of condition is that the Micron's format gives `blocks_per` in `1..=8`, and a
-/// namespace this driver declines has to print its LBA size rather than arrive at the bench as a
-/// server that never started and a test that reads "skipped".
+/// It exists so a refusal can say what it refused. A drive on the bench must be formatted so that
+/// `blocks_per` falls in `1..=8`, and a namespace this driver declines has to print its LBA size
+/// rather than arrive at the bench as a server that never started and a test that reads "skipped".
 pub fn lba_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
@@ -481,59 +476,47 @@ impl IdentifyNamespace {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The split between an admin plane and a data plane (milestone 261 (the NVMe driver leaves the kernel), DECISIONS §86 (whether an NVMe driver can leave the kernel) option 2a).
+// The split between an admin plane and a data plane.
 //
 // The admin plane (reset, the admin rings, IDENTIFY, Create I/O Queue) stays in the kernel, the
 // authority over where a ring lives; the data plane (build a command, ring a doorbell, watch a
 // phase tag) runs as an unprivileged process. Below, the few facts the kernel tells it are
-// packed, unpacked and bounds-checked where the prover reaches them. See
-// notes/non-volatile-memory-express.md, "The driver left the kernel, 2026-09-17".
+// packed, unpacked and bounds-checked where the prover reaches them.
 // ---------------------------------------------------------------------------------------------
 
 /// **The largest `CAP.DSTRD` a one-page doorbell mapping can serve**, a refusal rather than an
 /// assumption.
 ///
 /// Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so the stride scales the doorbell *file*. The
-/// EL0 data plane's one page of BAR0 (DECISIONS §86's option 2a) names queues 0 and 1, up to
+/// EL0 data plane's one page of BAR0 names queues 0 and 1, up to
 /// doorbell index 3, so it fits while `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is
 /// `DSTRD <= 8`. `CAP`'s four-bit field lets a controller report 9 to 15, which this refuses.
 /// Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a quarter of a
-/// megabyte past the mapped window, and QEMU reports 0. See the note's BUGS.
+/// megabyte past the mapped window, and QEMU reports 0.
 pub const MAX_DSTRD: u32 = 8;
 
-/// **How many transfer windows the EL0 server keeps, one per client** (milestone 834 (ioping on nife and Linux); calef ruled
-/// "Per-client window" on nifeos/nife#2371, 2026-10-18 23:06 UTC). Each window is
+/// **How many transfer windows the EL0 server keeps, one per client.** Each window is
 /// `filesystem_contract::blk::TRANSFER_BLOCKS` pages of the DMA region, and the server stages a
-/// request in window `badge`, the badge on the endpoint capability the client called
-/// (milestone 599 (a frame per filesystem client channel)'s pattern), so two clients staging at once cannot overwrite each other.
+/// request in window `badge`, the badge on the endpoint capability the client called (one frame
+/// per client channel), so two clients staging at once cannot overwrite each other.
 ///
 /// The clients are a fixed set the kernel wires, one window each, so there is no pool and nothing
 /// to hand back: [`FILESYSTEM_WINDOW`], [`INSTALLER_WINDOW`] and [`DISK_TREE_WINDOW`]. A new client
 /// gets a new constant and this count grows by one; each window costs 64 KiB of the DMA region.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const CLIENT_WINDOWS: usize = 3;
 
 /// The unbadged window: the filesystem server, and every kernel-side caller of the request endpoint.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const FILESYSTEM_WINDOW: u64 = 0;
 /// `system_installer`'s window, whether it is installing or confirming a boot slot beside a live
 /// filesystem server.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const INSTALLER_WINDOW: u64 = 1;
-/// The read-only disk tree's window (`components/src/disk_tree.rs`), which reads the namespace
+/// The read-only disk tree's window, a program that reads the namespace
 /// beside a live filesystem server.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const DISK_TREE_WINDOW: u64 = 2;
 
 /// **Whether a window's client may write the disk.** The disk tree's may not: it serves a read-only
-/// view at the prompt (calef, 2026-10-18 21:36 UTC), and refusing its `WRITE` and `FLUSH` here makes
-/// that a property of the capability it holds rather than of the code it runs.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
+/// view at the prompt, and refusing its `WRITE` and `FLUSH` here makes that a property of the
+/// capability it holds rather than of the code it runs.
 ///
 /// ```
 /// use non_volatile_memory_express::{DISK_TREE_WINDOW, FILESYSTEM_WINDOW, can_write};
@@ -546,15 +529,13 @@ pub const fn can_write(window: u64) -> bool {
 
 /// **Which window a request's badge names**, or `None` for a badge no client was given. Refused
 /// rather than clamped: a badge folded onto window 0 would stage in the filesystem server's window,
-/// which is the corruption the windows exist to prevent (`redoxfs_server`'s milestone 599 lesson).
+/// which is the corruption the windows exist to prevent.
 ///
 /// ```
 /// use non_volatile_memory_express::{CLIENT_WINDOWS, DISK_TREE_WINDOW, client_window};
 /// assert_eq!(client_window(DISK_TREE_WINDOW), Some(2));
 /// assert_eq!(client_window(CLIENT_WINDOWS as u64), None);
 /// ```
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const fn client_window(badge: u64) -> Option<usize> {
     if badge < CLIENT_WINDOWS as u64 {
         Some(badge as usize)
@@ -567,10 +548,9 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
 /// runs, with the victim frame's physical address in the next `u64`. The EL0 server reads it first
 /// thing; a real boot's transfer buffer is zeroed (`alloc_contiguous_zeroed`), so the magic never
-/// matches. The kernel writes it and the EL0 server reads it, so it lives here (rule 7). Its one
-/// caller is milestone 261's Outstanding item (milestone 202 (every confinement test is a ritual
-/// until somebody breaks the confinement and watches it fail)'s convention), the NVMe twin of
-/// `block_driver`'s two virtio attacker roles. Named provisionally. Behind the
+/// matches. The kernel writes it and the EL0 server reads it, so it lives in this one crate. Its one
+/// caller is a test that breaks the data plane's DMA confinement and watches it fail, the NVMe
+/// twin of `block_driver`'s two virtio attacker roles. Named provisionally. Behind the
 /// `confinement_attackers` feature, so a shipped server cannot even name it.
 #[cfg(feature = "confinement_attackers")]
 pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
@@ -580,9 +560,9 @@ pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
 /// because reading it means IDENTIFY, the admin authority this split withholds; and the doorbell
 /// stride, because it lives in `CAP`, on the register page the process is not mapped.
 ///
-/// **Three `u64`s because a spawn carries three scalars** (`kernel/src/user/entry.rs`'s `Spawn`).
-/// It is the kernel's own convention with the one program it spawns, so rule 7 does not apply,
-/// but it lives here so the packing is written once and a Kani round trip checks its inverse.
+/// **Three `u64`s because a spawn carries three scalars** in the kernel this crate was written for.
+/// It is that kernel's own convention with the one program it spawns, not part of NVMe, but it
+/// lives here so the packing is written once and a Kani round trip checks its inverse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// `CAP.DSTRD`, for [`doorbell`]'s arithmetic.
@@ -691,8 +671,8 @@ mod tests {
 
     #[test]
     fn csts_cfs_is_a_different_bit_from_csts_rdy() {
-        // Nothing in this crate's host-tested half reads CSTS; the kernel driver does
-        // (kernel/src/non_volatile_memory_express.rs). This transcription check is the only
+        // Nothing in this crate's host-tested half reads CSTS; the kernel's volatile layer
+        // does. This transcription check is the only
         // place on the host that would catch a copied-to-the-wrong-bit constant (the NVMe
         // Controller Status register: CFS is bit 1, RDY is bit 0).
         assert_eq!(CSTS_CFS, 0b10);
@@ -729,8 +709,8 @@ mod tests {
 
     #[test]
     fn doorbells_land_where_the_spec_puts_them() {
-        // §3.1.24-25 worked example, stride 0: SQ0 tail at 0x1000, CQ0 head at 0x1004,
-        // SQ1 tail 0x1008, CQ1 head 0x100c.
+        // NVMe 1.4 sections 3.1.24-25 worked example, stride 0: SQ0 tail at 0x1000, CQ0 head at
+        // 0x1004, SQ1 tail 0x1008, CQ1 head 0x100c.
         assert_eq!(doorbell(0, Doorbell::SubmissionTail, 0), 0x1000);
         assert_eq!(doorbell(0, Doorbell::CompletionHead, 0), 0x1004);
         assert_eq!(doorbell(1, Doorbell::SubmissionTail, 0), 0x1008);
@@ -1074,7 +1054,7 @@ mod tests {
     }
 }
 
-/// Machine-checked proofs (`script/verify`; notes/verification.md).
+/// Machine-checked proofs (`cargo kani`).
 ///
 /// The ring arithmetic runs forever against a device that writes into the same memory, so the
 /// properties proved are the ones a lapped or hostile ring could otherwise erode: indices stay
@@ -1195,9 +1175,9 @@ mod verification {
         }
     }
 
-    /// **The spawn handoff is lossless in the direction it is used** (milestone 261): whatever the
-    /// kernel's admin plane packs into three words, the EL0 data plane unpacks unchanged. The
-    /// split of DECISIONS §86's option 2a makes this the only channel by which the data plane
+    /// **The spawn handoff is lossless in the direction it is used**: whatever the kernel's admin
+    /// plane packs into three words, the EL0 data plane unpacks unchanged. The split between a
+    /// kernel admin plane and an unprivileged data plane makes this the only channel by which it
     /// learns its own geometry, so a shift expression that was not its own inverse would be a
     /// driver addressing the wrong LBA with nothing in between to notice.
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.the_spawn_handoff_round_trips.patch`
@@ -1237,7 +1217,8 @@ mod verification {
     }
 
     /// **The data plane never builds a command for a block outside its namespace, and never
-    /// overflows computing one.** This is the bounds check option 2a leans on: the IOMMU bounds
+    /// overflows computing one.** This is the bounds check the unprivileged data plane leans on:
+    /// the IOMMU bounds
     /// where the controller may *write*, and nothing but this bounds *which LBA* is asked for, so
     /// a caller-supplied `u64` must not be able to wrap into a valid-looking address.
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.a_transfer_command_is_only_built_for_a_block_the_namespace_has.patch`
