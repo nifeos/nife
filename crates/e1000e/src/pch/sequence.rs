@@ -1,10 +1,10 @@
 //! **The I219 bring-up, in FreeBSD's order.**
 //!
-//! A driver calls three passes in this order: [`init_physical_layer_device_workarounds`] at attach,
-//! [`global_reset`] after its descriptor-ring flush, and [`init_hardware`] before the rings are
-//! programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's `e1000_pch_spt`
-//! branches are carried ([`super::is_pch`]), and each function names the FreeBSD function it
-//! follows.
+//! A driver calls three passes in this order: [`initialize_physical_layer_device_workarounds`] at
+//! attach, [`global_reset`] after its descriptor-ring flush, and [`initialize_hardware`] before the
+//! rings are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's
+//! `e1000_pch_spt` branches are carried ([`super::is_pch`]), and each function names the FreeBSD
+//! function it follows.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -87,7 +87,7 @@ impl From<non_volatile_memory::Error> for Error {
     }
 }
 
-/// Where the PHY was first seen to answer, in [`init_physical_layer_device_workarounds`].
+/// Where the PHY was first seen to answer, in [`initialize_physical_layer_device_workarounds`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reached {
     /// At once: the interconnect was already PCIe.
@@ -269,10 +269,12 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 
 /// **`e1000_init_phy_workarounds_pchlan`**, the SPT path. Returns the PHY's identifier.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-/// `physical_layer_device`; no ruling covers the rest of the name. Refused `init_phy_workarounds`
-/// (an abbreviation).
-pub fn init_physical_layer_device_workarounds(hardware: &mut impl Hardware) -> Result<u32, Error> {
+/// Name: ratified 2026-10-26 (UTC), in the tree-wide rulings that spell out `phy` (the chip) as
+/// `physical_layer_device` and `init` as `initialize`, the second of which names it. Refused
+/// `init_phy_workarounds` (both abbreviations).
+pub fn initialize_physical_layer_device_workarounds(
+    hardware: &mut impl Hardware,
+) -> Result<u32, Error> {
     // Gate automatic PHY configuration by hardware; this driver configures it in `global_reset`.
     set(hardware, regs::EXTCNF_CTRL, EXTCNF_CTRL_GATE_PHY_CFG);
 
@@ -728,9 +730,10 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
 /// link setup, the transmit write-back policy and relaxed-ordering disable. Statistics are not
 /// cleared; nothing reads them.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
-/// `init_hw` (`hw` abbreviates hardware).
-pub fn init_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
+/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names and the tree-wide ruling that
+/// spells out `init` as `initialize`, which names it. Refused `init_hw` (`hw` abbreviates
+/// hardware), `init_hardware` (`init` abbreviates initialize).
+pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     // `e1000_initialize_hw_bits_ich8lan`. Bit 22 of CTRL_EXT, TXDCTL and the TARC bits are
     // unnamed in FreeBSD too; they are Intel's.
     set(hardware, mac::CTRL_EXT, 1 << 22 | CTRL_EXT_PHYPDEN);
@@ -1062,15 +1065,15 @@ mod tests {
         }
     }
 
-    /// **`init_hardware` writes FreeBSD's values**, from a device that holds nothing and from one
-    /// whose registers already hold some of the bits. The second case is what tells setting a bit
-    /// from toggling it, and keeping a register's other bits from clearing them.
+    /// **`initialize_hardware` writes FreeBSD's values**, from a device that holds nothing and from
+    /// one whose registers already hold some of the bits. The second case is what tells setting a
+    /// bit from toggling it, and keeping a register's other bits from clearing them.
     #[test]
-    fn init_hardware_writes_freebsds_values_from_any_starting_state() {
+    fn initialize_hardware_writes_freebsds_values_from_any_starting_state() {
         let mut s = Sim::new(Start::Healthy, true);
         s.physical_layer_device_registers
             .insert(r::AUTONEG_ADV, 0x0c01);
-        init_hardware(&mut s).unwrap();
+        initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, mac::CTRL_EXT),
             0x0052_0000,
@@ -1105,7 +1108,7 @@ mod tests {
         s.physical_layer_device_registers
             .insert(r::CTRL_1000T, 0x0300);
         s.physical_layer_device_registers.insert(r::CONTROL, 0x1200);
-        init_hardware(&mut s).unwrap();
+        initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, regs::TARC1),
             0x4500_00ff,
@@ -1144,7 +1147,7 @@ mod tests {
         s.physical_layer_device_registers.insert(r::PM_CTRL, 0x4001);
         s.physical_layer_device_registers
             .insert(r::ULP_CONFIG1, 0x1ff5);
-        assert!(init_physical_layer_device_workarounds(&mut s).is_ok());
+        assert!(initialize_physical_layer_device_workarounds(&mut s).is_ok());
         let to = |reg: u32| -> Vec<u16> {
             s.physical_layer_device_writes
                 .iter()

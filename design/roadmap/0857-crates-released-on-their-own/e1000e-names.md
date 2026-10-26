@@ -1,6 +1,6 @@
 # The names in `e1000e`, for ratification
 
-<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,800 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,833 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
@@ -26,10 +26,14 @@ below copy:
   802.3's phrase, wherever this tree authors the name (`pch::physical_layer_device`,
   `PhysicalLayerDeviceResetBlocked`), and not `physical_layer`, which would blur the chip with the
   layer. Register names copied from FreeBSD (`PHY_ID1`, `STATUS.PHYRA`) keep their spelling.
+- Ruled 2026-10-26 (UTC), tree-wide: `init` meaning initialize is spelled out `initialize`
+  wherever this tree authors the name (`initialize_hardware`,
+  `initialize_physical_layer_device_workarounds`). Intel's `STATUS.LAN_INIT_DONE`, the
+  `LanInitTimeout` that names it, and FreeBSD's function names in docs keep their spelling.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-155 names: 104 no block, 35 provisional, 16 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+155 names: 104 no block, 34 provisional, 17 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 13 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -165,8 +169,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `Reached` | item | `src/pch/sequence.rs` | unrecorded. | yes | generic |
 | `SystemManagementBusFrequencyUnsupported` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `SmbusFrequencyUnsupported` (an abbreviation of System Management Bus). | yes | clear |
 | `global_reset` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
-| `init_hardware` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `init_hw` (`hw` abbreviates hardware). | yes | clear |
-| `init_physical_layer_device_workarounds` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `init_phy_workarounds` (an abbreviation). | yes | clear |
+| `initialize_hardware` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names and the tree-wide ruling that spells out `init` as `initialize`, which names it. Refused `init_hw` (`hw` abbreviates hardware), `init_hardware` (`init` abbreviates initialize). | yes | clear |
+| `initialize_physical_layer_device_workarounds` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the tree-wide rulings that spell out `phy` (the chip) as `physical_layer_device` and `init` as `initialize`, the second of which names it. Refused `init_phy_workarounds` (both abbreviations). | yes | clear |
 | `transmit_errata` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `Sim` | item | `src/pch/sim.rs` | unrecorded. | no | clear |
 | `Start` | item | `src/pch/sim.rs` | unrecorded. | no | clear |

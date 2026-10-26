@@ -86,7 +86,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
         use ::e1000e::pch::sequence;
-        let id = sequence::init_physical_layer_device_workarounds(&mut hw)
+        let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         phy_id = Some(id);
         flush_descriptor_rings(&c, &dev, region);
@@ -107,7 +107,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::init_hardware(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
+        ::e1000e::pch::sequence::initialize_hardware(&mut hw)
+            .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
             regs::CTRL,

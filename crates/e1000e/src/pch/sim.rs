@@ -505,7 +505,7 @@ mod tests {
     fn with_an_me_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset() {
         let mut s = Sim::new(Start::Healthy, true);
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert!(s.notes.contains(&Note::UlpByMe { cleared: true }));
@@ -527,7 +527,7 @@ mod tests {
     fn a_physical_layer_device_left_in_system_management_bus_mode_is_reached_by_forcing_the_mac() {
         let mut s = Sim::new(Start::InSystemManagementBus, true);
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
@@ -544,7 +544,7 @@ mod tests {
     fn a_dead_physical_layer_device_is_power_cycled_unless_firmware_forbids_it() {
         let mut s = Sim::new(Start::Dead, true);
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert_eq!(s.lanphypc_toggles, 1);
@@ -556,7 +556,7 @@ mod tests {
         let mut s = Sim::new(Start::Dead, true);
         s.mac.insert(regs::FWSM, super::super::ulp::FWSM_FW_VALID); // RSPCIPHY clear
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Err(Error::LanphypcBlocked)
         );
         assert_eq!(s.lanphypc_toggles, 0);
@@ -572,7 +572,7 @@ mod tests {
             .insert(r::SMB_CTRL, 0x0001);
         s.mac.insert(regs::FEXTNVM7, 0x20);
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert!(s.notes.contains(&Note::UlpBySoftware(Ok(()))));
@@ -620,7 +620,7 @@ mod tests {
         let mut s = Sim::new(Start::Healthy, true);
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0xffff;
         assert_eq!(
-            sequence::init_physical_layer_device_workarounds(&mut s),
+            sequence::initialize_physical_layer_device_workarounds(&mut s),
             Err(Error::NonVolatileMemory(
                 non_volatile_memory::Error::NoValidBank
             ))
@@ -670,7 +670,7 @@ mod tests {
             .insert(r::AUTONEG_ADV, 0x0c01);
         s.physical_layer_device_registers
             .insert(r::CTRL_1000T, 0x0100);
-        sequence::init_hardware(&mut s).unwrap();
+        sequence::initialize_hardware(&mut s).unwrap();
         assert_eq!(
             s.physical_layer_device_registers[&r::AUTONEG_ADV],
             0x0001 | 0x01e0

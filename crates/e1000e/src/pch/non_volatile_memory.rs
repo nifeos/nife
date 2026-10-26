@@ -137,7 +137,7 @@ fn status_16_bit(hardware: &mut impl Hardware) -> u16 {
 }
 
 /// `e1000_flash_cycle_init_ich8lan`, SPT's 32-bit writes.
-fn cycle_init(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
     let s = status_16_bit(hardware);
     if s & status::DESCRIPTOR_VALID == 0 {
         return Err(Error::NoDescriptor);
@@ -189,7 +189,7 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
     let mut last = Err(Error::Cycle);
     for _ in 0..=CYCLE_REPEATS {
         hardware.delay_us(1);
-        cycle_init(hardware)?;
+        initialize_cycle(hardware)?;
         let mut ctl = (hardware.read(FLASH_BASE + HSFSTS) >> 16) as u16;
         ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
         ctl &= !control::CYCLE_MASK;

@@ -1088,7 +1088,7 @@ e1000e,ulp::release,replace ulp::release -> u32 with 1,killed,"killed by the_me_
 e1000e,ulp::request,replace | with ^,killed,killed by the_ulp_handshake_changes_only_its_own_bits
 e1000e,,replace * with +,killed,killed by mdic_failures_are_told_apart
 e1000e,,replace * with /,killed,killed by mdic_failures_are_told_apart
-e1000e,,replace << with >>,equivalent,"two of the key's eight lines survive and are identities: non_volatile_memory.rs's status::DONE and control::GO are 1 << 0, and 1 >> 0 is 1. The other six (DIRECT_ACCESS_ERROR, CYCLE_MASK, BYTE_COUNT_MASK, PORT_GEN_CFG_HOST_WU and the two I82577_CFG bits) are killed by the_flash_register_bits_are_the_ich8_unions, the_post_reset_clears_host_wakeup_and_replays_only_when_asked and init_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,,replace << with >>,equivalent,"two of the key's eight lines survive and are identities: non_volatile_memory.rs's status::DONE and control::GO are 1 << 0, and 1 >> 0 is 1. The other six (DIRECT_ACCESS_ERROR, CYCLE_MASK, BYTE_COUNT_MASK, PORT_GEN_CFG_HOST_WU and the two I82577_CFG bits) are killed by the_flash_register_bits_are_the_ich8_unions, the_post_reset_clears_host_wakeup_and_replays_only_when_asked and initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
 e1000e,Geometry::from_strap,replace * with +,killed,killed by the_nvm_size_comes_from_strap_bits_five_to_one
 e1000e,Geometry::from_strap,replace >> with <<,killed,killed by the_nvm_size_comes_from_strap_bits_five_to_one
 e1000e,Swflag::acquire,delete !,killed,killed by the_semaphore_touches_only_its_own_bit
@@ -1098,9 +1098,9 @@ e1000e,Swflag::release,replace & with |,killed,killed by the_semaphore_touches_o
 e1000e,accessible,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,accessible,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,accessible,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: init_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: initialize_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
 e1000e,accessible,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: init_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: initialize_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
 e1000e,config_done,delete !,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace != with ==,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace & with ^,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
@@ -1112,12 +1112,12 @@ e1000e,cycle,replace + with *,killed,killed by a_flash_read_is_one_four_byte_cyc
 e1000e,cycle,replace + with -,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
 e1000e,cycle,replace >> with <<,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
 e1000e,cycle,replace | with ^,equivalent,"GO self-clears when a cycle starts, so the control half read back never holds it and | GO and ^ GO agree; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace & with ^,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace & with |,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace + with *,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
-e1000e,cycle_init,replace + with -,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
-e1000e,cycle_init,replace | with &,equivalent,"line 151's mutant ORs ERROR & DAE (zero) into s, and line 154's writes s & FDONE: both only stop writing a one to a write-one-to-clear bit that is already clear, since s is the status just read and line 152 has written back every bit it held. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace | with ^,equivalent,"line 151's mutant ORs ERROR ^ DAE, the same 6, into s; line 154's writes s ^ FDONE, which differs only when FDONE was set, and then line 152's write (carrying s) has already cleared it. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace & with ^,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace & with |,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace + with *,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
+e1000e,initialize_cycle,replace + with -,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
+e1000e,initialize_cycle,replace | with &,equivalent,"line 151's mutant ORs ERROR & DAE (zero) into s, and line 154's writes s & FDONE: both only stop writing a one to a write-one-to-clear bit that is already clear, since s is the status just read and line 152 has written back every bit it held. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace | with ^,equivalent,"line 151's mutant ORs ERROR ^ DAE, the same 6, into s; line 154's writes s ^ FDONE, which differs only when FDONE was set, and then line 152's write (carrying s) has already cleared it. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
 e1000e,delay_ms,replace * with +,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
 e1000e,delay_ms,replace * with /,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
 e1000e,delay_ms,replace delay_ms with (),killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
@@ -1136,15 +1136,15 @@ e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(0)",killed,killed by t
 e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(1)",killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
 e1000e,id_at,replace | with &,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
 e1000e,id_at,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,init_hardware,delete !,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace != with ==,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace & with ^,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace & with |,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace &= with |=,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace << with >>,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace | with &,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,init_hardware,replace | with ^,equivalent,"^ binds tighter than |, so each surviving mutant xors two constants that share no bit (bit 22 and PHYPDEN; the TARC0 bits; the TARC1 bits after the first; NFSW_DIS and NFSR_DIS), and line 701's FULL_TX_DESC_WB has bit 16 in the WTHRESH field just cleared and bit 24 ORed back by the next line's MAX_TX_DESC_PREFETCH. Line 687's first | is killed by init_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
-e1000e,init_hardware,replace |= with &=,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,delete !,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace != with ==,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace & with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace & with |,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace &= with |=,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace << with >>,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace | with &,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace | with ^,equivalent,"^ binds tighter than |, so each surviving mutant xors two constants that share no bit (bit 22 and PHYPDEN; the TARC0 bits; the TARC1 bits after the first; NFSW_DIS and NFSR_DIS), and line 701's FULL_TX_DESC_WB has bit 16 in the WTHRESH field just cleared and bit 24 ORed back by the next line's MAX_TX_DESC_PREFETCH. Line 687's first | is killed by initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_hardware,replace |= with &=,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
 e1000e,lan_connected_device_configuration,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
 e1000e,lan_connected_device_configuration,replace | with ^,equivalent,"a page-select word holds page << 5, whose low five bits are zero, and at & MAX_REG has only those five, so | and ^ agree for a configuration region written as FreeBSD reads it; a malformed page word would differ, and this port ORs as FreeBSD does; the 2026-10-12 per-crate re-run still reports it"
 e1000e,leave_ulp,replace / with %,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
@@ -1190,12 +1190,12 @@ e1000e,reg,replace | with ^,equivalent,"page << 5 and r & 0x1f share no bit, so 
 e1000e,reset_blocked,replace < with <=,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with ==,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with >,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
-e1000e,set,replace | with ^,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,delete !,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace & with ^,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace & with |,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace | with &,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace | with ^,equivalent,"^ binds tighter than |, so a mutant on any | after the first of a chain xors two constants that share no bit (FRCSPD and FRCDPX, CRS_ON_TX and DOWNSHIFT, ASM_DIR and PAUSE, the four 10/100 capability bits, AUTO_NEG_EN and RESTART_AUTO_NEG), and AUTO_MDI_MDIX lands in the MDIX field just masked out. Each first | on the register's own value is killed by init_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,set,replace | with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,delete !,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace & with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace & with |,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace | with &,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace | with ^,equivalent,"^ binds tighter than |, so a mutant on any | after the first of a chain xors two constants that share no bit (FRCSPD and FRCDPX, CRS_ON_TX and DOWNSHIFT, ASM_DIR and PAUSE, the four 10/100 capability bits, AUTO_NEG_EN and RESTART_AUTO_NEG), and AUTO_MDI_MDIX lands in the MDIX field just masked out. Each first | on the register's own value is killed by initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
 e1000e,toggle_lanphypc,delete !,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
 e1000e,toggle_lanphypc,replace != with ==,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
 e1000e,toggle_lanphypc,replace & with ^,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
