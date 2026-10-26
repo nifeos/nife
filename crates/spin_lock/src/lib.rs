@@ -43,7 +43,11 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// A spinlock holding a `T`. [`lock`](Self::lock) spins until it holds the flag;
 /// [`try_lock`](Self::try_lock) tries once.
 ///
+/// `repr(C)` keeps the flag at offset 0 and the data after it. Left to itself the compiler puts the
+/// flag after a large `T`, and every inlined `lock` then builds the offset in instructions.
+///
 /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+#[repr(C)]
 pub struct SpinLock<T> {
     locked: AtomicBool,
     data: UnsafeCell<T>,
@@ -67,37 +71,34 @@ pub struct SpinLockGuard<'a, T> {
 }
 
 /// The pointer a guard reads through. Under loom the cell records the access, so a read that no
-/// happens-before edge orders against another guard's write fails the model.
-#[cfg(not(loom))]
+/// happens-before edge orders against another guard's write fails the model. One function with two
+/// bodies rather than two functions, so `cargo test` compiles the function the mutation gate mutates.
+#[inline(always)]
 fn read<T>(cell: &UnsafeCell<T>) -> *const T {
-    cell.get()
+    #[cfg(not(loom))]
+    let p = cell.get();
+    #[cfg(loom)]
+    let p = cell.with(|p| p);
+    p
 }
 
 /// The pointer a guard writes through; the write twin of `read`.
-#[cfg(not(loom))]
+#[inline(always)]
 fn write<T>(cell: &UnsafeCell<T>) -> *mut T {
-    cell.get()
-}
-
-#[cfg(loom)]
-fn read<T>(cell: &UnsafeCell<T>) -> *const T {
-    cell.with(|p| p)
-}
-
-#[cfg(loom)]
-fn write<T>(cell: &UnsafeCell<T>) -> *mut T {
-    cell.with_mut(|p| p)
+    #[cfg(not(loom))]
+    let p = cell.get();
+    #[cfg(loom)]
+    let p = cell.with_mut(|p| p);
+    p
 }
 
 /// One spin-wait step. Loom needs an explicit yield to know the loop waits on another thread; the
 /// kernel wants the architectural pause hint.
-#[cfg(not(loom))]
+#[inline(always)]
 fn pause() {
+    #[cfg(not(loom))]
     core::hint::spin_loop();
-}
-
-#[cfg(loom)]
-fn pause() {
+    #[cfg(loom)]
     loom::thread::yield_now();
 }
 
@@ -133,21 +134,19 @@ impl<T> SpinLock<T> {
     /// set it spins on a Relaxed load, so waiters read a shared line rather than fight for it.
     ///
     /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
-    #[inline]
+    #[inline(always)]
     pub fn lock(&self) -> SpinLockGuard<'_, T> {
-        loop {
-            // Acquire on success pairs with the previous holder's Release store in the guard's drop.
-            if self
-                .locked
-                .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
-                .is_ok()
-            {
-                return self.guard();
-            }
+        // Acquire on success pairs with the previous holder's Release store in the guard's drop.
+        while self
+            .locked
+            .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
             while self.locked.load(Ordering::Relaxed) {
                 pause();
             }
         }
+        self.guard()
     }
 
     /// **Try once to take the lock.** [`None`] means another guard holds it.
@@ -155,7 +154,7 @@ impl<T> SpinLock<T> {
     /// Strong, not weak: a [`None`] is always a refusal, never a spurious failure.
     ///
     /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
-    #[inline]
+    #[inline(always)]
     pub fn try_lock(&self) -> Option<SpinLockGuard<'_, T>> {
         self.locked
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
@@ -177,6 +176,7 @@ impl<T> SpinLock<T> {
         self.unlock(Ordering::Release);
     }
 
+    #[inline(always)]
     fn guard(&self) -> SpinLockGuard<'_, T> {
         SpinLockGuard {
             lock: self,
