@@ -15,20 +15,23 @@ link to the section that carries their design.
 
 ## What the boot builds
 
-`boot`, in `crates/system_initializer/src/boot_sequence.rs`, calls the steps in the order they run,
-and each step is a function in `boot_steps.rs`. Everything the boot builds comes out of the
-construction root the kernel granted, wired with endpoints and pages the progenitor retypes from it.
-Why the steps run in that order is in
+`boot`, in `crates/system_initializer/src/boot_sequence.rs`, builds the console, the input driver,
+the line discipline, the shell, the terminal's sink adapter when the archive has one, and
+`job_undertaker`. It calls the steps in the order they run. Most steps are in `boot_steps.rs`;
+`announce_outcomes` and `start_undertaker` are in `boot_sequence.rs`. Everything the boot builds
+comes out of the construction root the kernel granted, wired with endpoints and pages the progenitor
+retypes from it. Why the steps run in that order is in
 [`system-initializer/the-boot-order.md`](system-initializer/the-boot-order.md). The console is the
 UART, plus the firmware screen's terminal when the kernel grants one. The spawn service keeps the
 GPU and virtio keyboard grants untouched, because graphics is launched from the prompt and never at
 boot.
 
-Before the shell starts, the progenitor carves three bounded budgets off the construction root and
-deletes the root. The negative control after the delete must see `NoSuchSlot`, not `NotPermitted`.
-The progenitor gives up the UART capabilities once the drivers hold them, so no later child can get
-the UART. It keeps the file service for the life of the boot: a caretaker must hold it to
-attenuate a directory grant, and the shell's copy carries no `GRANT`.
+Before the shell starts, the progenitor carves `PROGENITOR_RESERVED_PAGES`, `JOBS_BUDGET_PAGES` and
+`IMAGE_POOL_PAGES` off the construction root and deletes the root. The negative control after the
+delete must see `NoSuchSlot`, not `NotPermitted`. The progenitor gives up the UART capabilities once
+the drivers hold them, so no later child can get the UART. It keeps the file service for the life of
+the boot: a caretaker must hold it to attenuate a directory grant, and the shell's copy carries no
+`GRANT`.
 
 ## The measured load
 

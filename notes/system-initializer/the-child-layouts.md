@@ -54,10 +54,11 @@ itself. The progenitor, the shell, the terminal and the file server are outside 
 `notes/process-view.md` carries the argument. The share view is the region this child was split from,
 so "yours" includes the program asking, the way `ps` lists itself.
 
-Each page a native child maps (`Service::native_maps`) is one the progenitor holds and only maps, so
-the child's reclaim leaves it alone. The file contract's page is one page for the program, the
-caretaker and the file server. That is sound because every request on both hops is a blocking
-`CALL`, so the program is parked inside its own call while the caretaker uses the page.
+A native child maps the directory grant's page, the clock, the configuration page and the machine
+statistics page, each only when asked for (`Service::native_maps`). Each is one the progenitor holds
+and only maps, so the child's reclaim leaves it alone. The file contract's page is one page for the
+program, the caretaker and the file server. That is sound because every request on both hops is a
+blocking `CALL`, so the program is parked inside its own call while the caretaker uses the page.
 
 `start_job` starts a program behind a directory grant with the grant's own three words, which the
 progenitor forwards unread. That is `rm`'s shape: a spec of options and two words of name

@@ -34,13 +34,20 @@ the shell's `DESTROY`.
 ## The request, in protocol order
 
 The shell sends a request's parts in a fixed order, and `Service::read_request` takes them in that
-order; [`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md) has the
-exchange. The progenitor takes every part a request announced, whether or not this request turns out
+order. The progenitor takes every part a request announced, whether or not this request turns out
 to need it. Otherwise the endpoint would be left holding words the next command reads as its own.
 
-The last part, one `SEND` on the run-unvouched endpoint, proves only that the caller holds `WRITE`
-there, which is all it has to. Only a `std` program reads the argv. Any other program has its frame
-taken and hears nothing.
+1. The directory grant's two data messages.
+2. The image's frames, then the argv frame, then the name set's frame.
+3. The delegated capabilities, in `receive_delegated`'s order: the job untyped and frame, sink,
+   source, diagnostics, the screen-narrowed tail's completion endpoint, the `--mem` untyped and the
+   machine statistics page.
+4. Last, one `SEND` on the run-unvouched endpoint. It proves only that the caller holds `WRITE`
+   there, which is all it has to.
+
+[`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md) has the
+exchange from the shell's side. Only a `std` program reads the argv. Any other program has its
+frame taken and hears nothing.
 
 Under the image bit word 0 is a length, not a program (§219 (how the shell names an installed program to the spawner) option D). No row of the program table
 is consulted: the program is whatever the bytes are.
@@ -196,5 +203,15 @@ nothing to read and no way to learn of a failure, so the progenitor sends one `S
 word for it. An unredirected child's own message is the shell's single read, and a failure is the
 sentinel. A child that was never built cannot end its own second stream. The shell drains that stream
 to `OPERATION_EOF` before it reads anything else, so the progenitor sends the end for it.
+
+## BUGS
+
+- [`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md)'s "The
+  exchange, in order" omits the image frames, the argv frame and the name set's frame, which
+  `Service::read_request` takes after the directory grant's messages.
+- A graphical request does not lose every delegated copy. `Service::serve` returns from the
+  graphical path before the loop that deletes them, and `launch_graphical_terminal` deletes only
+  `budget` and `machine_page`. A graphical request that also carries a sink, source, diagnostics,
+  screen or job pair leaks those slots, against "they go whether or not the build worked" above.
 
 *Name: provisional. calef names files.*

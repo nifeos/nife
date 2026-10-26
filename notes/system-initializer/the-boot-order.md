@@ -49,9 +49,11 @@ says what it builds. What follows is why each step comes where it does.
 5. `retype_spawn_channel` runs only after the three driver builds. Held through them, the spawn
    channel and the supervision endpoint would raise the early peak.
 6. `build_shell` builds the shell but does not start it, and deletes the shell's budget copy and
-   window-0 slice at once. `finish_shell_endowment` hands the shell the machine statistics page
-   before the login block and keeps no copy, because a page held across that block would raise the
-   highest peak.
+   window-0 slice at once. It places the configuration page at
+   `grant_plan::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
+   what the boot granted, and before the start, because the shell's `_start` probes that slot.
+   `finish_shell_endowment` hands the shell the machine statistics page before the login block and
+   keeps no copy, because a page held across that block would raise the highest peak.
 7. `start_sink_adapter` runs after the shell. Built earlier, the adapter would hold its slots across
    the shell's build, which is a peak.
 8. `start_login_stack` runs after the shell has given back its transient capabilities.
@@ -122,18 +124,21 @@ a refusal: a program the initial ramdisk never packed was never spawnable.
 names, and `build_child` can map a page only through a `PageFrame` capability. So the progenitor
 hands `login` copies as blobs: the subtree caretaker's image, the measurement table, and
 `user_timetable_keeper` with `timetable`. The last two travel together or not at all, and without
-them `login` answers `SCHEDULE` as a plain login. No program a scheduled job runs travels with them:
-the job runs what the live activation generation names (Fork 8, ruled D by calef on 2026-09-27,
-#1377).
+them `login` answers `SCHEDULE` as a plain login. No program a scheduled job runs travels with
+them: the job runs what the live activation generation names (Fork 8, ruled D by calef on
+2026-09-27, #1377).
 
 ## The device services
 
 The boot is the same minimal UART system on every machine, and graphics is launched from the prompt
 (calef, 2026-09-30: *"I don't want graphics at boot and won't for a long time"*).
-`graphical_terminal_grants` decides which display grants the spawn service keeps for the sessions
-it builds, and releases the rest at once; the shell holds none. A gpu's four grants come together or
-not at all. A firmware screen's terminal pair and the gpu's grants never coexist, because the kernel
-wires one or the other.
+`graphical_terminal_grants` decides which display grants the spawn service keeps for the sessions it
+builds, and releases the rest at once; the shell holds none. A gpu's four grants come together or
+not at all, and the spawn service keeps them only when the table vouches for `gpu_driver` and
+`display_terminal`. It keeps a keyboard's three only beside them and only with a vouched
+`keyboard_driver`; without one, a session reads keystrokes from the boot's line discipline. A
+firmware screen's terminal pair and the gpu's grants never coexist, because the kernel wires one or
+the other.
 
 `start_virtio_entropy` probes the virtio-rng trio by reading its transport, and `start_network`
 probes the virtio-net trio with `is_granted`. Both rest on `invoke` answering `NoSuchSlot` on an
@@ -162,13 +167,14 @@ ids, and serves nobody until the spawn service grants a job a zone.
 On aarch64 and riscv64 the UART is a page, so the console and `input` map it. On x86 COM1 is a port
 range with nothing to map: each holds it as a `PortRange` capability, which the kernel's TSS I/O
 bitmap reads, and neither invokes it by slot. With a screen beside the UART, `start_console` also
-gives the console the screen terminal and a batching pair, a notification and a timer. The
-progenitor binds the notification to the console's thread between `build_child` and `start_child`:
-a running thread cannot bind itself, and the progenitor holds the console's thread only in that
-window. The pair lets the console paint once per window rather than once per write, and the console
-degrades to one paint per write without it. `start_console` builds the console's endowment as
-arrays with a count. The screen is a runtime fact and the port range a compile-time one, so one
-literal per case would be one more place to get the slot order wrong.
+gives the console the screen terminal and a batching pair, a notification and a timer. The console's
+slot 2 is the screen terminal's endpoint and slots 3 and 4 are the batching pair; on x86 the port
+range lands after them. The progenitor binds the notification to the console's thread between
+`build_child` and `start_child`: a running thread cannot bind itself, and the progenitor holds the
+console's thread only in that window. The pair lets the console paint once per window rather than
+once per write, and the console degrades to one paint per write without it. `start_console` builds
+the console's endowment as arrays with a count. The screen is a runtime fact and the port range a
+compile-time one, so one literal per case would be one more place to get the slot order wrong.
 
 `system_log` is built right after the console, because until it attaches the kernel prints for
 itself and can splice with the console's bytes. The progenitor deletes the system log's ring grants
@@ -195,9 +201,9 @@ order is a chain of things that must exist before something waits on them.
 4. The progenitor seals the store whatever provisioning did, because `credentialer` must leave its
    first phase before `VERIFY` answers anything. A login against a partial store then denies
    cleanly.
-5. Only now does the progenitor read `credentialer`'s readiness report. It sends `RPT_READY` after
-   `provision()` returns, which is after the seal, so a receive before the seal would never wake. A
-   service that failed at start-up answers with its own failure word instead.
+5. Only now does the progenitor read `credentialer`'s readiness report. `credentialer` sends
+   `RPT_READY` after `provision()` returns, which is after the seal, so a receive before the seal
+   would never wake. A service that failed at start-up answers with its own failure word instead.
 6. The progenitor starts `login_audit_receiver` before `login`, so `login`'s blocking audit send
    has a receiver before anything can reach `login`.
 7. `login` is built. It holds `WRITE` on the file service's page and not `READ`, because the
@@ -222,9 +228,9 @@ the job is not the top and give back nothing.
 
 It then proves the root is gone from the inside, on the two primitives that build things. Both must
 answer `NoSuchSlot` (-1) rather than `NotPermitted` (-3): the capability is gone, not narrowed.
-`script/swish-check` reads the sentence it prints. After the last announcement, `announce_outcomes`
-gives up the progenitor's mapping of the shell's output page with `UNMAP`, because
-`PageFrame::REVOKE` would take it from the shell too.
+`script/swish-check` reads the sentence it prints. After that line, `announce_outcomes` gives up
+the progenitor's mapping of the shell's output page with `UNMAP`, because `PageFrame::REVOKE` would
+take it from the shell too.
 
 ## BUGS
 
@@ -234,6 +240,7 @@ gives up the progenitor's mapping of the shell's output page with `UNMAP`, becau
 - A boot whose archive has no vouched `entropy` never releases the virtio-rng trio: `start_entropy`
   reaches the deletes only through `start_virtio_entropy`. Its three slots stay held under every
   later peak.
-- `start_network`, `start_system_log`, `start_keystroke_sources` and `spawn_channels` probe kernel
-  grants with `is_granted` after the boot has retyped objects. Nothing checks whether a retyped
-  object can land in one of those slots on a real boot.
+- `start_network`, `start_system_log` and `start_keystroke_sources` probe kernel grants with
+  `is_granted` after the boot has retyped objects. Today the empty endowment slots below each probed
+  slot absorb the live objects. So this entry records an unchecked margin, not a known fault.
+  Nothing checks that a retyped object cannot land in one of those slots on a real boot.
