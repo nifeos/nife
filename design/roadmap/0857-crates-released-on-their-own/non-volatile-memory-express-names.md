@@ -7,7 +7,8 @@ crate's shipped files carry none.
 
 Ratified: 2026-10-25 (#2720).
 
-The ruling of that date ratified every name below but the two marked provisional. Each row with a
+The ruling of that date ratified every name below but `namespace_holds_block` and
+`transfer_command`, which the ruling of 2026-10-26 (UTC) ratified on #2749. Each row with a
 refusal names the spelling the ruling turned down and why. nife's process plan sits outside the
 crate, in the `non_volatile_memory_express` module of the nife-internal crate
 `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). That plan is the client
@@ -58,8 +59,8 @@ because `script/names` does not count them: the variants of `Doorbell` (`Submiss
 | `flush` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `write` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `prp_pair` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
-| `holds_block` | item | `src/lib.rs` | provisional. No ruling covers the name. | yes |
-| `transfer_command` | item | `src/lib.rs` | provisional. No ruling covers the name. | yes |
+| `namespace_holds_block` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2749. | yes |
+| `transfer_command` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2749. | yes |
 | `Completion` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `from_dwords` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `SubmissionQueue` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). Refused `SqState` (an abbreviation, and the type is the queue, not a state beside it). | yes |

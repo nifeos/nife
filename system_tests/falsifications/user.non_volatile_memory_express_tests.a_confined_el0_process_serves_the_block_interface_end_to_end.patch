@@ -24,7 +24,7 @@ diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile
 --- a/crates/non_volatile_memory_express/src/lib.rs
 +++ b/crates/non_volatile_memory_express/src/lib.rs
 @@ -317,7 +317,7 @@ pub fn transfer_command(
-     if !holds_block(size_bytes, block, unit) {
+     if !namespace_holds_block(size_bytes, block, unit) {
          return None;
      }
 -    let slba = block.checked_mul(blocks_per as u64)?;

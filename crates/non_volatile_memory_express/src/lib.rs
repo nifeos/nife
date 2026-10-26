@@ -270,13 +270,13 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::holds_block;
+/// use non_volatile_memory_express::namespace_holds_block;
 ///
 /// // An 8 MiB namespace holds 2048 blocks of 4096 bytes, numbered 0 to 2047.
-/// assert!(holds_block(8 << 20, 2047, 4096));
-/// assert!(!holds_block(8 << 20, 2048, 4096));
+/// assert!(namespace_holds_block(8 << 20, 2047, 4096));
+/// assert!(!namespace_holds_block(8 << 20, 2048, 4096));
 /// ```
-pub fn holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
+pub fn namespace_holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
     match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
         Some(end) => end <= size_bytes,
         None => false,
@@ -284,7 +284,7 @@ pub fn holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
 }
 
 /// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
-/// close: a block outside the namespace ([`holds_block`]), an LBA that overflows, or a buffer that
+/// close: a block outside the namespace ([`namespace_holds_block`]), an LBA that overflows, or a buffer that
 /// is not expressible as a PRP pair (which for a page-aligned `unit`-byte buffer with
 /// `unit <= 2 * page_size` it always is; see [`prp_pair`]).
 ///
@@ -314,7 +314,7 @@ pub fn transfer_command(
     page_size: u64,
     write: bool,
 ) -> Option<Command> {
-    if !holds_block(size_bytes, block, unit) {
+    if !namespace_holds_block(size_bytes, block, unit) {
         return None;
     }
     let slba = block.checked_mul(blocks_per as u64)?;
@@ -750,10 +750,10 @@ mod tests {
     fn a_transfer_command_refuses_a_block_the_namespace_does_not_have() {
         const SIZE: u64 = 8 * 1024 * 1024;
         const LAST: u64 = SIZE / 4096 - 1;
-        assert!(holds_block(SIZE, LAST, 4096));
-        assert!(!holds_block(SIZE, LAST + 1, 4096));
+        assert!(namespace_holds_block(SIZE, LAST, 4096));
+        assert!(!namespace_holds_block(SIZE, LAST + 1, 4096));
         assert!(
-            !holds_block(SIZE, u64::MAX, 4096),
+            !namespace_holds_block(SIZE, u64::MAX, 4096),
             "no overflow, no wrap-around"
         );
 
@@ -1007,9 +1007,9 @@ mod verification {
         )
         .is_some()
         {
-            assert!(holds_block(size_bytes, block, 4096));
+            assert!(namespace_holds_block(size_bytes, block, 4096));
             // The transfer's last byte is inside the namespace, which is the property
-            // `holds_block` exists to state and the one a wrap would quietly break.
+            // `namespace_holds_block` exists to state and the one a wrap would quietly break.
             assert!((block + 1) * 4096 <= size_bytes);
         }
     }
