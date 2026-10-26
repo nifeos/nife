@@ -123,7 +123,7 @@ and `arch/x86_64/` produced *"4 successfully verified harnesses, 0 failures"*, b
 subtree was compiled.
 
 The first proof ever pointed at `arch/x86_64/irq.rs` went red. `gsi_vector` is a flat
-`GSI_VECTOR_BASE.wrapping_add(gsi)`, and `MAX_REDIRECTION_ENTRIES` is documented as the reason it
+`GSI_VECTOR_BASE.wrapping_add(gsi)`, and `MAXIMUM_REDIRECTION_ENTRIES` is documented as the reason it
 "cannot silently wrap onto an exception vector" while actually bounding the IO APIC's entry count,
 not the GSI. A second IO APIC based at global interrupt 200 with the 24 entries every real part has
 admits GSI 210, and `gsi_vector(210)` wraps onto vector 2, the NMI. Nothing has hit it because every

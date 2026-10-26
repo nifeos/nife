@@ -95,7 +95,7 @@ were not enough. The result was a data abort one word below the lowest mapped pa
 Two things came out of it, and the second is the one to keep:
 
 - An `Endowment` is not small: it carries a whole `NameSet`. So a line that is one stage by
-  construction does not declare `[Option<Endowment>; MAX_STAGES]`. `run_pipeline` takes a slice, and
+  construction does not declare `[Option<Endowment>; MAXIMUM_STAGES]`. `run_pipeline` takes a slice, and
   `&[Some(endow)]` is the same call without the array cost. The reflex of reaching for the
   full-width array makes a one-stage line pay for four.
 - The two wirings gave the shell different stacks, and that was the real oddity.

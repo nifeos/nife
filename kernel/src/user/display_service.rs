@@ -430,7 +430,7 @@ struct SpawnedTerminal {
 const SCREEN_APERTURE_VA: u64 = address_space_map::service_window(0x5800_0000);
 const _: () = assert!(address_space_map::SERVICE_WINDOWS.holds(
     SCREEN_APERTURE_VA,
-    SCREEN_APERTURE_VA + MAX_APERTURE_PAGES * page_frames::FRAME_SIZE
+    SCREEN_APERTURE_VA + MAXIMUM_APERTURE_PAGES * page_frames::FRAME_SIZE
 ));
 
 /// The most aperture pages this wiring maps: 8 MiB, four 2 MiB page-table windows.
@@ -438,7 +438,7 @@ const _: () = assert!(address_space_map::SERVICE_WINDOWS.holds(
 /// The tables come out of the driver's own address-space budget (`AS_OVERHEAD`, sixteen pages shared
 /// with its image and stack), so this is a bound. xenon's 1920x1080 is 2,025 pages; a larger screen
 /// gets a terminal over the rows that fit (see [`start_screen_terminal`]).
-const MAX_APERTURE_PAGES: u64 = 2048;
+const MAXIMUM_APERTURE_PAGES: u64 = 2048;
 
 // The firmware screen driver's capability table. Must match components/src/framebuffer_driver.rs.
 const SCREEN_SLOT_REPORT: u64 = 0;
@@ -449,7 +449,7 @@ const _: () = assert!(SCREEN_SLOT_SURFACE < abi::fault::FAULT_EP_SLOT);
 
 /// The part of `screen` the terminal covers, and the pages of it the driver maps:
 /// [`start_screen_terminal`]'s first step. `None` when the screen cannot show a surface or its
-/// covered rows would need more than [`MAX_APERTURE_PAGES`].
+/// covered rows would need more than [`MAXIMUM_APERTURE_PAGES`].
 ///
 /// The surface is the screen divided by `screen_console::ScreenConsole::scale_for_cell`'s scale,
 /// the boot console's rule, capped at what one terminal grid can lay out. See
@@ -460,13 +460,13 @@ fn screen_terminal_aperture(
     let mut aperture = screen_console::Aperture::new(
         screen,
         video_terminal::CELL_W,
-        video_terminal::MAX_COLS as u32 * video_terminal::CELL_W,
+        video_terminal::MAXIMUM_COLS as u32 * video_terminal::CELL_W,
         u32::MAX,
     )?;
-    // The rows one `Vt` can hold at that width (`video_terminal::MAX_CELLS` is a cell budget, not
+    // The rows one `Vt` can hold at that width (`video_terminal::MAXIMUM_CELLS` is a cell budget, not
     // a rectangle): the whole screen on xenon and OVMF, the top rows on a taller one.
     let cols = (aperture.size().0 / video_terminal::CELL_W).max(1) as usize;
-    let rows = (video_terminal::MAX_CELLS / cols).min(video_terminal::MAX_ROWS) as u32;
+    let rows = (video_terminal::MAXIMUM_CELLS / cols).min(video_terminal::MAXIMUM_ROWS) as u32;
     aperture = screen_console::Aperture::new(
         screen,
         video_terminal::CELL_W,
@@ -477,12 +477,12 @@ fn screen_terminal_aperture(
     // (0, 0), and the driver is told how far into it that pixel is.
     let offset = screen.base % FRAME_SIZE;
     let mut pages = (offset + aperture.span() as u64).div_ceil(FRAME_SIZE);
-    if pages > MAX_APERTURE_PAGES {
+    if pages > MAXIMUM_APERTURE_PAGES {
         // A screen too large to map whole (past 8 MiB, so a 2560x1440 or a 4K panel) gets the
         // shell over the rows that fit rather than no shell at all. Each surface row is `scale`
         // screen rows of `stride` bytes.
         let row_bytes = screen.stride as u64 * aperture.scale() as u64;
-        let fit = (MAX_APERTURE_PAGES * FRAME_SIZE - offset) / row_bytes;
+        let fit = (MAXIMUM_APERTURE_PAGES * FRAME_SIZE - offset) / row_bytes;
         aperture = screen_console::Aperture::new(
             screen,
             video_terminal::CELL_W,
@@ -495,7 +495,7 @@ fn screen_terminal_aperture(
             aperture.size().1 * aperture.scale()
         );
     }
-    if pages > MAX_APERTURE_PAGES {
+    if pages > MAXIMUM_APERTURE_PAGES {
         return None;
     }
     Some((aperture, pages))
@@ -504,7 +504,7 @@ fn screen_terminal_aperture(
 /// The terminal on a screen the firmware already set up: `framebuffer_driver` serving the
 /// framebuffer contract over `screen`, and `display_terminal` on it as [`start_terminal`] wires it.
 /// `None`, with nothing spawned, when the screen cannot show a surface or its covered rows would
-/// need more than [`MAX_APERTURE_PAGES`].
+/// need more than [`MAXIMUM_APERTURE_PAGES`].
 ///
 /// `screen` must already be off the kernel's console (`console::yield_screen`), or two painters
 /// share it. The driver holds no interrupt, DMA, transport or physical address, and only the rows

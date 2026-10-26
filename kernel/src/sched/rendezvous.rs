@@ -11,7 +11,7 @@ use super::*;
 pub(super) enum RendezvousFailure {
     /// The region has no page left to retype. Nothing was spent.
     RegionFull,
-    /// The registry is at [`MAX_RENDEZVOUS`]. Checked *before* spending a page, so nothing was spent.
+    /// The registry is at [`MAXIMUM_RENDEZVOUS`]. Checked *before* spending a page, so nothing was spent.
     RegistryFull,
 }
 
@@ -26,7 +26,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     let sched = guard.as_mut().ok_or(RendezvousFailure::RegistryFull)?;
 
     // Checked before the retype, so a full registry spends no page.
-    if sched.rendezvous_table.len() >= MAX_RENDEZVOUS {
+    if sched.rendezvous_table.len() >= MAXIMUM_RENDEZVOUS {
         return Err(RendezvousFailure::RegistryFull);
     }
 
@@ -65,7 +65,7 @@ pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
 /// Create an IPC rendezvous on the kernel's own budget, from chunks carved lazily and grown on
 /// demand, and return the name that goes inside an `Object::Rendezvous`.
 ///
-/// Panics on the unrecoverable: the registry at [`MAX_RENDEZVOUS`], the chunk bound reached, or no
+/// Panics on the unrecoverable: the registry at [`MAXIMUM_RENDEZVOUS`], the chunk bound reached, or no
 /// memory left to carve. `pub(crate)`, so the system tests cannot call it: the chunks are never
 /// freed, so a test endpoint made here would cost the boot a page for good. A test carves from a
 /// region it owns with [`create_rendezvous_from`]. See notes/scheduler/rendezvous.md.
@@ -82,9 +82,9 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
                 Some(r) => r,
                 None => {
                     assert!(
-                        sched.kernel_ep_chunks < MAX_KERNEL_EP_CHUNKS,
-                        "the kernel carved all {MAX_KERNEL_EP_CHUNKS} rendezvous chunks; \
-                         with {MAX_RENDEZVOUS} registry slots this should be unreachable",
+                        sched.kernel_ep_chunks < MAXIMUM_KERNEL_EP_CHUNKS,
+                        "the kernel carved all {MAXIMUM_KERNEL_EP_CHUNKS} rendezvous chunks; \
+                         with {MAXIMUM_RENDEZVOUS} registry slots this should be unreachable",
                     );
                     let r = crate::memory_region::create(KERNEL_EP_CHUNK_PAGES)
                         .expect("no memory for a kernel rendezvous chunk");
@@ -111,7 +111,7 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
             }
             Err(RendezvousFailure::RegistryFull) => {
                 panic!(
-                    "out of rendezvous points: {MAX_RENDEZVOUS} live at once, raise MAX_RENDEZVOUS"
+                    "out of rendezvous points: {MAXIMUM_RENDEZVOUS} live at once, raise MAXIMUM_RENDEZVOUS"
                 )
             }
         }
@@ -948,7 +948,7 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
 /// torn down. `drain_waiters` cannot, because a reply park is linked on no queue; `wait_on` records
 /// it.
 ///
-/// Rescans the thread table rather than listing victims, because a list bounded by `MAX_THREADS`
+/// Rescans the thread table rather than listing victims, because a list bounded by `MAXIMUM_THREADS`
 /// would grow the deepest frame in the kernel. The scan ends on the abort flag, not on `wait_on`,
 /// which a wake deferred behind `on_cpu` leaves in place. See notes/scheduler/rendezvous.md.
 ///

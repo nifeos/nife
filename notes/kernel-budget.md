@@ -8,7 +8,7 @@ Milestone 14's thesis was: the kernel allocates nothing after boot; every byte i
 static or comes from an untyped a process paid for. It got almost everything. The one draw it
 left open-ended was the kernel stack: every thread has a 16 KiB (4-page) kernel stack for
 its syscalls and exceptions, and `KernelStack::new` took those pages straight from the frame
-allocator, open-endedly, one thread at a time. Bounded only by MAX_THREADS in the worst case,
+allocator, open-endedly, one thread at a time. Bounded only by MAXIMUM_THREADS in the worst case,
 but drawn from the shared allocator rather than a budget the kernel owns.
 
 ## The fix, and the decision behind it
@@ -64,7 +64,7 @@ created by the progenitor has its TCB page retyped from the progenitor's own reg
 because the progenitor is its creator: one principle, two payers.
 
 The size is a sum, not a ratio. A thread costs 7 pages here, six of stack and one of TCB, so
-`sched::MAX_THREADS` (256) takes 1792; endpoints take about 60 across a full test run; that leaves
+`sched::MAXIMUM_THREADS` (256) takes 1792; endpoints take about 60 across a full test run; that leaves
 196 of slack. A carve sized by doubling an older number would be a guess. One left too small moves
 the thread ceiling from the thread table down to here, one level lower and no easier to diagnose.
 Exhaustion surfaces as `kmem::page()` returning `None` and an unrelated test's spawn

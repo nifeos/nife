@@ -192,7 +192,7 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
         "the control matches, so 'the batches are the match' proves nothing",
     );
     assert!(
-        tree::MANY_NAMES.len() > nameset::MAX_NAMES,
+        tree::MANY_NAMES.len() > nameset::MAXIMUM_NAMES,
         "the fixture fits in one grant, so nothing here is batched",
     );
     // The names are staged in sorted order, which is what lets the two batches below be read off
@@ -200,11 +200,11 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
     assert!(tree::MANY_NAMES.windows(2).all(|w| w[0] < w[1]));
     assert_eq!(
         tree::MANY_FIRST_BATCH,
-        tree::MANY_NAMES[..nameset::MAX_NAMES].join(" "),
+        tree::MANY_NAMES[..nameset::MAXIMUM_NAMES].join(" "),
     );
     assert_eq!(
         tree::MANY_SECOND_BATCH,
-        tree::MANY_NAMES[nameset::MAX_NAMES..].join(" "),
+        tree::MANY_NAMES[nameset::MAXIMUM_NAMES..].join(" "),
     );
 }
 
@@ -247,7 +247,7 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     assert_ne!(PROBE, PROBE_MOVED);
     assert!(grant::fits(PROBE.as_bytes()) && grant::fits(PROBE_MOVED.as_bytes()));
     assert!(xattr::is_valid_name(NAME));
-    assert!(VALUE.len() <= xattr::MAX_VALUE);
+    assert!(VALUE.len() <= xattr::MAXIMUM_VALUE);
     // Checked at COMPILE time: both sides are constants, so a fixture that fell back to the
     // default kind should fail the build rather than wait for the suite. The same discipline
     // `a_text_frame_and_a_verdict_are_told_apart_by_the_first_word` uses.

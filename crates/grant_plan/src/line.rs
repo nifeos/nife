@@ -21,7 +21,9 @@ use crate::{Refusal, word};
 /// The most stages one pipeline may carry. Four is past what anybody types interactively and it is
 /// a real ceiling rather than a buffer size: each stage costs a process and an endpoint, and a line
 /// that wants more is better written as two lines than silently truncated.
-pub const MAX_STAGES: usize = 4;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_STAGES`.
+pub const MAXIMUM_STAGES: usize = 4;
 
 /// **Where a stage's bytes go**, which is the whole of what `>` and `|` decide.
 ///
@@ -123,7 +125,7 @@ pub enum Source {
 /// existed.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Line<'a> {
-    stages: [&'a [u8]; MAX_STAGES],
+    stages: [&'a [u8]; MAXIMUM_STAGES],
     nstages: usize,
     /// The name after `<`, if the line has one. It belongs to the first stage.
     pub input: Option<&'a [u8]>,
@@ -257,13 +259,13 @@ fn is_diag_op(line: &[u8], i: usize, word_start: usize) -> bool {
 /// assert_eq!(split(b"date>report.txt").unwrap().output, Some(&b"report.txt"[..]));
 /// ```
 pub fn split(line: &[u8]) -> Result<Line<'_>, Refusal> {
-    let mut stages = [&b""[..]; MAX_STAGES];
+    let mut stages = [&b""[..]; MAXIMUM_STAGES];
     let mut r = Redirects::new();
     let mut n = 0usize;
 
     let mut i = 0usize;
     loop {
-        if n == MAX_STAGES {
+        if n == MAXIMUM_STAGES {
             return Err(Refusal::TooManyStages);
         }
         let start = i;
@@ -299,31 +301,31 @@ pub fn split(line: &[u8]) -> Result<Line<'_>, Refusal> {
 
 /// Each stage's redirection names, as [`split`] reads them: one slot per stream per stage.
 struct Redirects<'a> {
-    ins: [Option<&'a [u8]>; MAX_STAGES],
-    outs: [Option<&'a [u8]>; MAX_STAGES],
-    diags: [Option<&'a [u8]>; MAX_STAGES],
+    ins: [Option<&'a [u8]>; MAXIMUM_STAGES],
+    outs: [Option<&'a [u8]>; MAXIMUM_STAGES],
+    diags: [Option<&'a [u8]>; MAXIMUM_STAGES],
     // Whether each redirection's name arrived quoted. A quoted name is not a pattern, whatever
     // bytes are in it, so `date > "*.txt"` writes to a file called `*.txt` rather than being
     // refused for designating a set (milestone 67, notes/swish-language.md).
-    in_q: [bool; MAX_STAGES],
-    out_q: [bool; MAX_STAGES],
-    diag_q: [bool; MAX_STAGES],
-    apps: [bool; MAX_STAGES],
-    diag_apps: [bool; MAX_STAGES],
+    in_q: [bool; MAXIMUM_STAGES],
+    out_q: [bool; MAXIMUM_STAGES],
+    diag_q: [bool; MAXIMUM_STAGES],
+    apps: [bool; MAXIMUM_STAGES],
+    diag_apps: [bool; MAXIMUM_STAGES],
 }
 
 impl Redirects<'_> {
     /// No redirection on any stage.
     fn new() -> Self {
         Redirects {
-            ins: [None; MAX_STAGES],
-            outs: [None; MAX_STAGES],
-            diags: [None; MAX_STAGES],
-            in_q: [false; MAX_STAGES],
-            out_q: [false; MAX_STAGES],
-            diag_q: [false; MAX_STAGES],
-            apps: [false; MAX_STAGES],
-            diag_apps: [false; MAX_STAGES],
+            ins: [None; MAXIMUM_STAGES],
+            outs: [None; MAXIMUM_STAGES],
+            diags: [None; MAXIMUM_STAGES],
+            in_q: [false; MAXIMUM_STAGES],
+            out_q: [false; MAXIMUM_STAGES],
+            diag_q: [false; MAXIMUM_STAGES],
+            apps: [false; MAXIMUM_STAGES],
+            diag_apps: [false; MAXIMUM_STAGES],
         }
     }
 }
@@ -426,7 +428,7 @@ fn read_redirections<'a>(
 
 /// Every stage has a command, and each redirection is on the stage it belongs to.
 fn check_placement(
-    stages: &[&[u8]; MAX_STAGES],
+    stages: &[&[u8]; MAXIMUM_STAGES],
     n: usize,
     r: &Redirects<'_>,
 ) -> Result<(), Refusal> {

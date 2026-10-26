@@ -16,8 +16,8 @@
 /// One page, in bytes, and one RedoxFS block (`redoxfs::BLOCK_SIZE`), so a block move is a page
 /// move and one frame of the direct map holds exactly one block. Both channels are built from it:
 /// a `blk` request moves up to [`blk::TRANSFER_BLOCKS`] of these and a file request up to
-/// [`fs::TRANSFER_PAGES`]. A file read or write larger than [`fs::TRANSFER_MAX`], or a `Disk` call
-/// spanning more than [`blk::TRANSFER_MAX`], is chunked by the caller.
+/// [`fs::TRANSFER_PAGES`]. A file read or write larger than [`fs::TRANSFER_MAXIMUM`], or a `Disk` call
+/// spanning more than [`blk::TRANSFER_MAXIMUM`], is chunked by the caller.
 pub const PAGE: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
@@ -133,7 +133,7 @@ pub mod grant;
 /// `components/src/fs_nameset_caretaker.rs`.
 ///
 /// A set does not fit in `START`'s argument words, so it rides in a frame the wiring maps read-only
-/// into the caretaker, and [`nameset::MAX_NAMES`] and [`nameset::NAME_BYTES`] are the capability's
+/// into the caretaker, and [`nameset::MAXIMUM_NAMES`] and [`nameset::NAME_BYTES`] are the capability's
 /// ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIR`]), then the name; a zero
 /// length ends the set, so a name may not be empty. The caretaker answers `READDIR` from the set, so the
 /// type is what the directory said when the grant was planned. See notes/glob-grant.md.

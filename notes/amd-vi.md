@@ -157,7 +157,7 @@ A boot on silicon is the outstanding piece. Read these lines:
 - The exclusion clear is half proved under QEMU, which ignores those registers.
 - Two devices behind one alias cannot both work: the second attach blocks the alias, loudly. Giving
   such a pair one shared domain on purpose (an alias group) is not built. `attach` assumes an alias
-  is served by its device's unit and tracks at most `MAX_ALIASES` per unit, failing closed past
+  is served by its device's unit and tracks at most `MAXIMUM_ALIASES` per unit, failing closed past
   that.
 - The root is checked against the 52-bit field, not the unit's real address width.
 - `notes/confinement-claims.md` has no AMD-Vi row, because that note is over its word budget and a

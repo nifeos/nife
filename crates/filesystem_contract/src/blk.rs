@@ -48,7 +48,9 @@ pub const TRANSFER_BLOCKS: usize = 16;
 
 /// The largest payload one [`READ`] or [`WRITE`] may carry, in bytes: the whole shared region
 /// ([`TRANSFER_BLOCKS`] blocks). The block server clamps every request's count to this.
-pub const TRANSFER_MAX: usize = TRANSFER_BLOCKS * BLOCK_SIZE;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TRANSFER_MAX`.
+pub const TRANSFER_MAXIMUM: usize = TRANSFER_BLOCKS * BLOCK_SIZE;
 
 /// Pack a blk request's first word: opcode (bits 63:56, [`super::OPERATION_SHIFT`]) and a block count
 /// (bits 7:0, stored as `blocks - 1` so the all-zero word a single-block caller sends decodes as
@@ -65,12 +67,12 @@ pub const fn req_blocks(w0: u64) -> usize {
 }
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, for
-/// `fs::TRANSFER_MAX`'s reason: this contract has no test harness at EL0, and a build is the
+/// `fs::TRANSFER_MAXIMUM`'s reason: this contract has no test harness at EL0, and a build is the
 /// only artifact that can be wrong about it there.
 const _: () = {
     assert!(TRANSFER_BLOCKS >= 1);
     assert!(TRANSFER_BLOCKS <= 256); // the 8-bit count field's range
-    assert!(TRANSFER_MAX == TRANSFER_BLOCKS * BLOCK_SIZE);
+    assert!(TRANSFER_MAXIMUM == TRANSFER_BLOCKS * BLOCK_SIZE);
     // `req`'s all-zero-low-bits compatibility case: a caller that never heard of `req_blocks`
     // sends `super::req(operation)`, whose low bits are 0, and that must still mean one block.
     assert!(req_blocks(super::req(READ)) == 1);

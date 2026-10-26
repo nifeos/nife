@@ -41,7 +41,7 @@
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
 //! | 35 | 1 | `startup` | 0 native, 1 std |
-//! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_SHORT_OPTIONS` (16) |
+//! | 36 | 1 | option count | at most `grant_plan::MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
 //! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
 //! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
@@ -57,8 +57,8 @@
 //!
 //! | offset | size | field | values |
 //! |---|---|---|---|
-//! | 56 | 1 | zone count | 1 to [`MAX_ZONES`] |
-//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most [`ZONE_MAX`]; 0 is the root zone |
+//! | 56 | 1 | zone count | 1 to [`MAXIMUM_ZONES`] |
+//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most [`ZONE_MAXIMUM`]; 0 is the root zone |
 //!
 //! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
 //! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
@@ -75,7 +75,7 @@
 
 use grant_plan::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
-    InputDeclaration, MAX_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
+    InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
 };
 
@@ -108,17 +108,17 @@ pub const DESCRIPTOR_LEN: usize = 56;
 pub const ZONED_VERSION: u32 = 2;
 
 /// The most zones a manifest may ask for: 8, the resolver's
-/// `domain_name_resolution_contract::GRANTS_MAX`, since each granted zone is its own badge and a
+/// `domain_name_resolution_contract::GRANTS_MAXIMUM`, since each granted zone is its own badge and a
 /// program asking for more could never be granted them all at once.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const MAX_ZONES: usize = domain_name_resolution_contract::GRANTS_MAX;
+pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
 
 /// The longest zone, in bytes of dotted text: 253, a host name's limit and the resolver's
-/// `domain_name_resolution_contract::NAME_TEXT_MAX`.
+/// `domain_name_resolution_contract::NAME_TEXT_MAXIMUM`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const ZONE_MAX: usize = domain_name_resolution_contract::NAME_TEXT_MAX;
+pub const ZONE_MAXIMUM: usize = domain_name_resolution_contract::NAME_TEXT_MAXIMUM;
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD: usize = 8;
@@ -150,8 +150,8 @@ const ARG: usize = 4;
 const MEM: usize = 5;
 const FILE: usize = 6;
 const DIR: usize = 7;
-const MEM_MIN: usize = 8;
-const MEM_MAX: usize = 16;
+const MEM_MINIMUM: usize = 8;
+const MEM_MAXIMUM: usize = 16;
 const OUTPUT: usize = 24;
 const INPUT: usize = 25;
 const WRITES_WHILE_READING: usize = 26;
@@ -166,7 +166,7 @@ const NETWORK: usize = 34;
 const RUNTIME: usize = 35;
 const FLAG_COUNT: usize = 36;
 const FLAG_LETTERS: usize = 37;
-const MACHINE: usize = FLAG_LETTERS + MAX_DECLARED_SHORT_OPTIONS;
+const MACHINE: usize = FLAG_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS;
 const SHARE: usize = MACHINE + 1;
 const TAIL: usize = SHARE + 1;
 
@@ -250,10 +250,10 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         ProgramArgumentDeclaration::Words(WordGrant::ReadWrite) => 3,
         ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
     };
-    if let MemoryGrantDeclaration::Required { min, max } = m.memory_grant {
+    if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
         out[MEM] = 1;
-        put8(&mut out, MEM_MIN, min);
-        put8(&mut out, MEM_MAX, max);
+        put8(&mut out, MEM_MINIMUM, minimum);
+        put8(&mut out, MEM_MAXIMUM, maximum);
     }
     out[FILE] = match m.file {
         FileGrantDeclaration::Forbidden => 0,
@@ -381,12 +381,16 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let mem = decode_mem(d)?;
     let file = decode_file(d)?;
     let count = d[FLAG_COUNT] as usize;
-    if count > MAX_DECLARED_SHORT_OPTIONS {
+    if count > MAXIMUM_DECLARED_SHORT_OPTIONS {
         return Err(Error::BadField(FLAG_COUNT));
     }
     let letters = &d[FLAG_LETTERS..FLAG_LETTERS + count];
     let short_options = ShortOptions::try_new(letters).ok_or(Error::BadField(FLAG_LETTERS))?;
-    zero(d, FLAG_LETTERS + count, MAX_DECLARED_SHORT_OPTIONS - count)?;
+    zero(
+        d,
+        FLAG_LETTERS + count,
+        MAXIMUM_DECLARED_SHORT_OPTIONS - count,
+    )?;
     let dir = decode_dir(d, letters)?;
     let output = decode_output(d)?;
     let input = decode_input(d)?;
@@ -437,15 +441,15 @@ fn decode_arg(d: &[u8]) -> Result<ProgramArgumentDeclaration, Error> {
 fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
     Ok(match d[MEM] {
         0 => {
-            zero(d, MEM_MIN, 16)?;
+            zero(d, MEM_MINIMUM, 16)?;
             MemoryGrantDeclaration::Forbidden
         }
         1 => {
-            let (min, max) = (get8(d, MEM_MIN), get8(d, MEM_MAX));
-            if min > max {
-                return Err(Error::BadField(MEM_MIN));
+            let (minimum, maximum) = (get8(d, MEM_MINIMUM), get8(d, MEM_MAXIMUM));
+            if minimum > maximum {
+                return Err(Error::BadField(MEM_MINIMUM));
             }
-            MemoryGrantDeclaration::Required { min, max }
+            MemoryGrantDeclaration::Required { minimum, maximum }
         }
         _ => return Err(Error::BadField(MEM)),
     })
@@ -577,7 +581,7 @@ pub const fn zoned_len(zones: &[&str]) -> usize {
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8; LEN] {
     assert!(
-        !zones.is_empty() && zones.len() <= MAX_ZONES,
+        !zones.is_empty() && zones.len() <= MAXIMUM_ZONES,
         "a version 2 manifest asks for one to eight zones; none is version 1"
     );
     assert!(LEN == zoned_len(zones), "LEN must be zoned_len(zones)");
@@ -616,12 +620,12 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
     out
 }
 
-/// Every zone of a version 2 descriptor, checked: a count of one to [`MAX_ZONES`], each zone
+/// Every zone of a version 2 descriptor, checked: a count of one to [`MAXIMUM_ZONES`], each zone
 /// canonical (`domain_name_resolution_contract::is_canonical_zone`) and sorted strictly after the one before, and nothing after the
 /// last. The offset in a refusal is the first byte at fault.
 fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
     let count = *d.get(DESCRIPTOR_LEN).ok_or(Error::WrongLength)? as usize;
-    if count == 0 || count > MAX_ZONES {
+    if count == 0 || count > MAXIMUM_ZONES {
         return Err(Error::BadField(DESCRIPTOR_LEN));
     }
     let mut at = DESCRIPTOR_LEN + 1;
@@ -897,11 +901,13 @@ pub const VERBS_VERSION: u32 = 1;
 /// The most verbs a [`VERBS`] descriptor may hold: 256. Room for a program the size of git
 /// (175 subcommands in git 2.56.0, calef's measure on #1903), and a bound on what a malformed count
 /// can make a reader walk.
-pub const MAX_VERBS: usize = 256;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_VERBS`.
+pub const MAXIMUM_VERBS: usize = 256;
 
-/// One verb's record: the word in `grant_plan::MAX_VERB` bytes, zero-padded; then the grants'
+/// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
-pub const VERB_RECORD: usize = grant_plan::MAX_VERB + 4;
+pub const VERB_RECORD: usize = grant_plan::MAXIMUM_VERB + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
 /// exactly `count` records. Variable, as calef ruled on #1903 (2026-10-10 (UTC)); one table still
@@ -920,12 +926,12 @@ pub const fn verbs_len(count: usize) -> usize {
 /// ```
 ///
 /// It panics, a compile error in a constant, on a `LEN` that is not that length, more than
-/// [`MAX_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that is
+/// [`MAXIMUM_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that is
 /// not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
 /// one encoding.
 pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> [u8; LEN] {
     assert!(
-        verbs.len() <= MAX_VERBS,
+        verbs.len() <= MAXIMUM_VERBS,
         "a verb table holds at most 256 verbs"
     );
     assert!(
@@ -945,7 +951,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
     while i < verbs.len() {
         let word = verbs[i].verb.as_bytes();
         assert!(
-            !word.is_empty() && word.len() <= grant_plan::MAX_VERB,
+            !word.is_empty() && word.len() <= grant_plan::MAXIMUM_VERB,
             "a verb is one to sixteen bytes"
         );
         if i > 0 {
@@ -962,8 +968,8 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
             b += 1;
         }
         let bits = verbs[i].authorities.bits().to_le_bytes();
-        out[at + grant_plan::MAX_VERB] = bits[0];
-        out[at + grant_plan::MAX_VERB + 1] = bits[1];
+        out[at + grant_plan::MAXIMUM_VERB] = bits[0];
+        out[at + grant_plan::MAXIMUM_VERB + 1] = bits[1];
         i += 1;
     }
     out
@@ -1024,9 +1030,10 @@ impl<'a> Verbs<'a> {
     /// Record `i`, which [`decode_verbs`] has already checked.
     fn record(&self, i: usize) -> (&'a [u8], grant_plan::ManifestAuthorities) {
         let r = &self.records[i * VERB_RECORD..(i + 1) * VERB_RECORD];
-        let word = &r[..grant_plan::MAX_VERB];
+        let word = &r[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
-        let bits = u16::from_le_bytes([r[grant_plan::MAX_VERB], r[grant_plan::MAX_VERB + 1]]);
+        let bits =
+            u16::from_le_bytes([r[grant_plan::MAXIMUM_VERB], r[grant_plan::MAXIMUM_VERB + 1]]);
         (
             &word[..len],
             grant_plan::ManifestAuthorities::from_bits(bits)
@@ -1036,7 +1043,7 @@ impl<'a> Verbs<'a> {
 }
 
 /// **A [`VERBS`] descriptor, decoded**, or why not. One table has one encoding, as [`decode`]
-/// enforces for a manifest: an unknown version, a count past [`MAX_VERBS`], a length that is not
+/// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is not
 /// [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it, a
 /// grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
 /// refuse.
@@ -1047,7 +1054,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     }
     let count = d.get(4..8).ok_or(Error::WrongLength)?;
     let count = u32::from_le_bytes([count[0], count[1], count[2], count[3]]) as usize;
-    if count > MAX_VERBS {
+    if count > MAXIMUM_VERBS {
         return Err(Error::BadField(4));
     }
     if d.len() != verbs_len(count) {
@@ -1057,7 +1064,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     for i in 0..count {
         let at = 8 + i * VERB_RECORD;
         let record = &d[at..at + VERB_RECORD];
-        let word = &record[..grant_plan::MAX_VERB];
+        let word = &record[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         if len == 0 {
             return Err(Error::BadField(at));
@@ -1066,14 +1073,14 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
             return Err(Error::BadField(at + len + k));
         }
         let bits = u16::from_le_bytes([
-            record[grant_plan::MAX_VERB],
-            record[grant_plan::MAX_VERB + 1],
+            record[grant_plan::MAXIMUM_VERB],
+            record[grant_plan::MAXIMUM_VERB + 1],
         ]);
         if grant_plan::ManifestAuthorities::from_bits(bits).is_none() {
-            return Err(Error::BadField(at + grant_plan::MAX_VERB));
+            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB));
         }
-        if record[grant_plan::MAX_VERB + 2] != 0 || record[grant_plan::MAX_VERB + 3] != 0 {
-            return Err(Error::BadField(at + grant_plan::MAX_VERB + 2));
+        if record[grant_plan::MAXIMUM_VERB + 2] != 0 || record[grant_plan::MAXIMUM_VERB + 3] != 0 {
+            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB + 2));
         }
         if previous.is_some_and(|p| !before(p, &word[..len])) {
             return Err(Error::BadField(at));
@@ -1242,8 +1249,8 @@ mod verb_tests {
     /// count's second byte is nonzero only here, so this is also what proves the count is written
     /// where the decoder reads it.
     #[test]
-    fn a_table_of_exactly_max_verbs_round_trips() {
-        const N: usize = MAX_VERBS;
+    fn a_table_of_exactly_maximum_verbs_round_trips() {
+        const N: usize = MAXIMUM_VERBS;
         let table: std::vec::Vec<VerbGrant> = (0..N)
             .map(|i| VerbGrant {
                 verb: std::boxed::Box::leak(std::format!("verb{i:03}").into_boxed_str()),
@@ -1393,8 +1400,8 @@ mod tests {
         // Uptime declares no memory, no input, no directory and no options, so all of these are
         // absent fields, and the three trailing bytes are always zero.
         for at in [
-            MEM_MIN,
-            MEM_MAX + 7,
+            MEM_MINIMUM,
+            MEM_MAXIMUM + 7,
             WRITES_WHILE_READING,
             SUBTREE,
             FLAG_LETTERS,
@@ -1422,20 +1429,23 @@ mod tests {
         assert_eq!(decode(&undeclared), Err(Error::BadField(SUBTREE)));
 
         let mut too_many = rm;
-        too_many[FLAG_COUNT] = MAX_DECLARED_SHORT_OPTIONS as u8 + 1;
+        too_many[FLAG_COUNT] = MAXIMUM_DECLARED_SHORT_OPTIONS as u8 + 1;
         assert_eq!(decode(&too_many), Err(Error::BadField(FLAG_COUNT)));
     }
 
     #[test]
     fn a_memory_range_upside_down_is_refused() {
         let m = Manifest {
-            memory_grant: MemoryGrantDeclaration::Required { min: 4, max: 8 },
+            memory_grant: MemoryGrantDeclaration::Required {
+                minimum: 4,
+                maximum: 8,
+            },
             ..Program::Uptime.manifest()
         };
         let mut d = encode(&m);
         assert_eq!(decode(&d), Ok(m));
-        d[MEM_MIN] = 9;
-        assert_eq!(decode(&d), Err(Error::BadField(MEM_MIN)));
+        d[MEM_MINIMUM] = 9;
+        assert_eq!(decode(&d), Err(Error::BadField(MEM_MINIMUM)));
     }
 
     #[test]
@@ -1559,7 +1569,8 @@ mod tests {
         assert_eq!(decode(&VERSION.to_le_bytes()), Err(Error::WrongLength));
         assert_eq!(decode(&3u32.to_le_bytes()), Err(Error::UnknownVersion));
 
-        let letters: [u8; MAX_DECLARED_SHORT_OPTIONS] = core::array::from_fn(|i| b'a' + i as u8);
+        let letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS] =
+            core::array::from_fn(|i| b'a' + i as u8);
         let m = Manifest {
             short_options: ShortOptions::try_new(&letters).unwrap(),
             ..base()
@@ -1567,7 +1578,10 @@ mod tests {
         assert_eq!(decode(&encode(&m)), Ok(m));
 
         let m = Manifest {
-            memory_grant: MemoryGrantDeclaration::Required { min: 8, max: 8 },
+            memory_grant: MemoryGrantDeclaration::Required {
+                minimum: 8,
+                maximum: 8,
+            },
             ..base()
         };
         assert_eq!(decode(&encode(&m)), Ok(m));
@@ -1635,7 +1649,7 @@ mod tests {
         const D8: [u8; zoned_len(EIGHT)] = encode_zoned(&M, EIGHT);
         assert_eq!(
             zones(&D8).unwrap().iter().count(),
-            MAX_ZONES,
+            MAXIMUM_ZONES,
             "eight is the most, and allowed"
         );
         let unsorted = std::panic::catch_unwind(|| {

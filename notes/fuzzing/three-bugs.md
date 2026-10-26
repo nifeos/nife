@@ -16,8 +16,8 @@ with no upper guard, so a device tree nested 17 levels deep with a matching name
 indexed `acells[16]` on a 16-element array. That is a panic in the parser the kernel runs against a
 blob it did not write, before there is any way to report a failure.
 
-Fixed by refusing to match past the stack, `(2..MAX_DEPTH).contains(&depth)`, which is what the
-sibling `node_reg_compatible` already did. Clamping the index would have been worse: past `MAX_DEPTH`
+Fixed by refusing to match past the stack, `(2..MAXIMUM_DEPTH).contains(&depth)`, which is what the
+sibling `node_reg_compatible` already did. Clamping the index would have been worse: past `MAXIMUM_DEPTH`
 the walk has stopped tracking cell counts, so the region it decoded would be arithmetic on the wrong
 widths. Not finding the node is honest; finding it and reporting the wrong address is not.
 

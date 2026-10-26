@@ -22,13 +22,19 @@ use crate::acpi::Ownership;
 
 /// The most IVHDs (of the chosen type) recorded. A client AMD part has one IOMMU; a two-socket
 /// server can have eight. Name: provisional.
-pub const MAX_IVHDS: usize = 8;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVHDS`.
+pub const MAXIMUM_IVHDS: usize = 8;
 /// The most device-id ranges recorded across every unit, a select entry counting as a range of
 /// one. QEMU's `q35` with every device this tree's runner attaches writes about a dozen. Name:
 /// provisional.
-pub const MAX_IVHD_RANGES: usize = 64;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVHD_RANGES`.
+pub const MAXIMUM_IVHD_RANGES: usize = 64;
 /// The most IVMDs recorded. Name: provisional.
-pub const MAX_IVMDS: usize = 8;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVMDS`.
+pub const MAXIMUM_IVMDS: usize = 8;
 
 /// Four bytes of `IVinfo`, eight reserved.
 const IVRS_FIXED_LEN: usize = 12;
@@ -122,11 +128,11 @@ pub struct IvrsUnits {
     /// The IVHD type decoded: the highest of 10h, 11h and 40h the table carries. Zero when there
     /// is no IVHD.
     pub ivhd_type: u8,
-    pub ivhds: [Ivhd; MAX_IVHDS],
+    pub ivhds: [Ivhd; MAXIMUM_IVHDS],
     pub ivhd_count: usize,
-    pub ranges: [DeviceRange; MAX_IVHD_RANGES],
+    pub ranges: [DeviceRange; MAXIMUM_IVHD_RANGES],
     pub range_count: usize,
-    pub unity: [UnityRegion; MAX_IVMDS],
+    pub unity: [UnityRegion; MAXIMUM_IVMDS],
     pub unity_count: usize,
     /// IVMDs refused as malformed (zero length, or a range that wraps), counted so the boot print
     /// can say so.
@@ -142,11 +148,11 @@ impl Default for IvrsUnits {
         Self {
             ivinfo: 0,
             ivhd_type: 0,
-            ivhds: [Ivhd::default(); MAX_IVHDS],
+            ivhds: [Ivhd::default(); MAXIMUM_IVHDS],
             ivhd_count: 0,
-            ranges: [DeviceRange::default(); MAX_IVHD_RANGES],
+            ranges: [DeviceRange::default(); MAXIMUM_IVHD_RANGES],
             range_count: 0,
-            unity: [UnityRegion::default(); MAX_IVMDS],
+            unity: [UnityRegion::default(); MAXIMUM_IVMDS],
             unity_count: 0,
             unity_refused: 0,
             truncated: false,
@@ -213,7 +219,7 @@ impl IvrsUnits {
             self.truncated = true;
             return;
         }
-        if self.ivhd_count == MAX_IVHDS {
+        if self.ivhd_count == MAXIMUM_IVHDS {
             self.truncated = true;
             return;
         }
@@ -318,7 +324,7 @@ impl IvrsUnits {
     }
 
     fn push(&mut self, r: DeviceRange) {
-        if self.range_count == MAX_IVHD_RANGES {
+        if self.range_count == MAXIMUM_IVHD_RANGES {
             self.truncated = true;
             return;
         }
@@ -363,7 +369,7 @@ impl IvrsUnits {
         if self.unity[..self.unity_count].contains(&r) {
             return;
         }
-        if self.unity_count == MAX_IVMDS {
+        if self.unity_count == MAXIMUM_IVMDS {
             self.truncated = true;
             return;
         }

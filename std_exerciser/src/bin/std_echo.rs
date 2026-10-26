@@ -1,7 +1,7 @@
 //! **`std_echo`: a `std` program that prints the words it was run with, and nothing else**
 //! (milestone 205 (how a foreign program is told what to do)). It is the smallest `std` program
 //! whose manifest note says it hears words; `std_exerciser` is too big to travel as an image (256
-//! KiB, `spawnproto::IMAGE_MAX_PAGES`). `script/swish-check` runs it unvouched by path, so its one
+//! KiB, `spawnproto::IMAGE_MAXIMUM_PAGES`). `script/swish-check` runs it unvouched by path, so its one
 //! line, `words [...]` in `{:?}` form, proves the shell sent the argv, the progenitor built the
 //! `std` layout for an image, and `std::env::args_os()` read the page. See notes/std/the-proof.md.
 //!

@@ -37,7 +37,7 @@ enum State {
 /// How many numeric parameters a CSI sequence may carry: a foreground and a background in 24-bit
 /// color are ten, with room for a reset and a rendition or two. A seventeenth marks the sequence
 /// ignored rather than growing the array.
-pub(crate) const MAX_PARAMS: usize = 16;
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
 
 /// **A terminal's live grid, plus its off-screen history.**
 ///
@@ -49,7 +49,7 @@ pub(crate) const MAX_PARAMS: usize = 16;
 /// `script/stack-frame-check` catches a violation. See notes/video-terminal.md, "The grid's
 /// capacity".
 pub struct Vt {
-    cells: [Cell; MAX_CELLS],
+    cells: [Cell; MAXIMUM_CELLS],
     /// Off-screen history: a ring of whole rows, oldest overwritten first. See
     /// [`Vt::scroll_up`]/[`Vt::scroll_down`] for the read side and [`Vt::line_feed`] for the write
     /// side (a row scrolled off the live grid's top is pushed here before being discarded).
@@ -72,7 +72,7 @@ pub struct Vt {
     wrap_pending: bool,
     cursor_visible: bool,
     state: State,
-    params: [u16; MAX_PARAMS],
+    params: [u16; MAXIMUM_PARAMS],
     /// Bit `k` set when `params[k]` followed a `:` rather than a `;`: a sub-parameter of the one
     /// before it, as in `4:3` (a curly underline) or `58:2::255:0:0`. ECMA-48's colon form.
     subs: u16,
@@ -98,7 +98,7 @@ pub struct Vt {
 }
 
 impl Vt {
-    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAX_COLS`] and [`MAX_ROWS`].
+    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAXIMUM_COLS`] and [`MAXIMUM_ROWS`].
     ///
     /// Clamped rather than refused, because the alternative in a `no_std` component is a panic it
     /// cannot report. **`const`, so a terminal can live in `.bss`**; the clamps are spelled out
@@ -108,7 +108,7 @@ impl Vt {
         let cols = Self::clamp_cols(cols);
         let rows = Self::clamp_rows(rows, cols);
         Vt {
-            cells: [Cell::blank(Attr::DEFAULT); MAX_CELLS],
+            cells: [Cell::blank(Attr::DEFAULT); MAXIMUM_CELLS],
             scrollback: [Cell::blank(Attr::DEFAULT); SCROLLBACK_CELLS],
             sb_tail: 0,
             sb_len: 0,
@@ -121,7 +121,7 @@ impl Vt {
             wrap_pending: false,
             cursor_visible: true,
             state: State::Ground,
-            params: [0; MAX_PARAMS],
+            params: [0; MAXIMUM_PARAMS],
             subs: 0,
             nparams: 0,
             ignore: false,
@@ -142,20 +142,20 @@ impl Vt {
     const fn clamp_cols(cols: u32) -> u32 {
         if cols == 0 {
             1
-        } else if cols > MAX_COLS as u32 {
-            MAX_COLS as u32
+        } else if cols > MAXIMUM_COLS as u32 {
+            MAXIMUM_COLS as u32
         } else {
             cols
         }
     }
 
-    /// `rows` clamped to one and to [`MAX_ROWS`], and to what fits in [`MAX_CELLS`] at `cols`.
+    /// `rows` clamped to one and to [`MAXIMUM_ROWS`], and to what fits in [`MAXIMUM_CELLS`] at `cols`.
     const fn clamp_rows(rows: u32, cols: u32) -> u32 {
-        let fit = (MAX_CELLS / cols as usize) as u32;
-        let most = if fit < MAX_ROWS as u32 {
+        let fit = (MAXIMUM_CELLS / cols as usize) as u32;
+        let most = if fit < MAXIMUM_ROWS as u32 {
             fit
         } else {
-            MAX_ROWS as u32
+            MAXIMUM_ROWS as u32
         };
         if rows == 0 {
             1
@@ -184,7 +184,7 @@ impl Vt {
     pub fn reset_to(&mut self, cols: u32, rows: u32) {
         let cols = Self::clamp_cols(cols);
         let rows = Self::clamp_rows(rows, cols);
-        self.cells = [Cell::blank(Attr::DEFAULT); MAX_CELLS];
+        self.cells = [Cell::blank(Attr::DEFAULT); MAXIMUM_CELLS];
         self.scrollback = [Cell::blank(Attr::DEFAULT); SCROLLBACK_CELLS];
         self.sb_tail = 0;
         self.sb_len = 0;
@@ -197,7 +197,7 @@ impl Vt {
         self.wrap_pending = false;
         self.cursor_visible = true;
         self.state = State::Ground;
-        self.params = [0; MAX_PARAMS];
+        self.params = [0; MAXIMUM_PARAMS];
         self.subs = 0;
         self.nparams = 0;
         self.ignore = false;
@@ -664,7 +664,7 @@ impl Vt {
         match b {
             b'[' => {
                 self.state = State::Csi;
-                self.params = [0; MAX_PARAMS];
+                self.params = [0; MAXIMUM_PARAMS];
                 self.subs = 0;
                 self.nparams = 0;
                 self.ignore = false;
@@ -683,7 +683,7 @@ impl Vt {
                 if self.nparams == 0 {
                     self.nparams = 1;
                 }
-                if self.nparams <= MAX_PARAMS {
+                if self.nparams <= MAXIMUM_PARAMS {
                     let p = &mut self.params[self.nparams - 1];
                     *p = p.saturating_mul(10).saturating_add((b - b'0') as u16);
                 }
@@ -695,9 +695,9 @@ impl Vt {
                     self.nparams = 1;
                 }
                 self.nparams += 1;
-                if self.nparams > MAX_PARAMS {
+                if self.nparams > MAXIMUM_PARAMS {
                     self.ignore = true;
-                    self.nparams = MAX_PARAMS;
+                    self.nparams = MAXIMUM_PARAMS;
                 } else if b == b':' {
                     self.subs |= 1 << (self.nparams - 1);
                 }
@@ -803,7 +803,7 @@ impl Vt {
         let n = self.nparams.max(1);
         let mut i = 0;
         // Every pass consumes at least one parameter, so the bound ends the walk by construction.
-        for _ in 0..MAX_PARAMS {
+        for _ in 0..MAXIMUM_PARAMS {
             if i >= n {
                 break;
             }
@@ -927,7 +927,7 @@ impl Vt {
     /// one, which is the difference between a reset and an erase.
     fn reset(&mut self) {
         self.attr = Attr::DEFAULT;
-        self.cells = [Cell::blank(Attr::DEFAULT); MAX_CELLS];
+        self.cells = [Cell::blank(Attr::DEFAULT); MAXIMUM_CELLS];
         self.col = 0;
         self.row = 0;
         self.wrap_pending = false;
@@ -1145,7 +1145,7 @@ impl Vt {
             attr.ok_or(Refusal::Malformed)?,
             subs.ok_or(Refusal::Malformed)?,
         );
-        let mut params = [0u16; MAX_PARAMS];
+        let mut params = [0u16; MAXIMUM_PARAMS];
         for (i, p) in params.iter_mut().enumerate() {
             *p = u16::try_from(w(params_at + i)?).map_err(|_| Refusal::Malformed)?;
         }
@@ -1154,7 +1154,7 @@ impl Vt {
             || sb_len > self.scrollback_depth()
             || view_offset > sb_len
             || flags & !(FLAG_WRAP_PENDING | FLAG_CURSOR_VISIBLE | FLAG_IGNORE) != 0
-            || nparams > MAX_PARAMS
+            || nparams > MAXIMUM_PARAMS
             || utf8_need > 3
         {
             return Err(Refusal::Malformed);

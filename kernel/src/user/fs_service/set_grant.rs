@@ -28,7 +28,7 @@ pub struct SetGrant<'a> {
     /// names are the names *in* it that the grant designates.
     pub dir: &'static str,
     /// The set, as `(name, is_dir)`: what the shell's expansion produced. At most
-    /// `filesystem_contract::nameset::MAX_NAMES` of them, and an over-long set is a panic here because the
+    /// `filesystem_contract::nameset::MAXIMUM_NAMES` of them, and an over-long set is a panic here because the
     /// shell refuses it at the prompt (`grant_plan::Refusal::TooManyNames`), so one arriving means
     /// the wiring built a grant no command line could have expressed.
     pub names: &'a [(&'a [u8], bool)],

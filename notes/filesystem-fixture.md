@@ -52,7 +52,7 @@ small piece of work with no design question in it.
 
 ## The throughput shape
 
-The transfer unit is `filesystem_contract::fs::TRANSFER_MAX`, so the phase measures the protocol's
+The transfer unit is `filesystem_contract::fs::TRANSFER_MAXIMUM`, so the phase measures the protocol's
 own ceiling. A comparison against a system whose client may pass a differently sized buffer
 compares two different things, however large the unit is ([benchmarks.md](benchmarks.md)).
 

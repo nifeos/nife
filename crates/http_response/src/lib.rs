@@ -6,7 +6,7 @@
 //! the status line and headers in a fixed buffer (parsed by `httparse`), and hands back the part
 //! that is body, so the caller hashes and stores it without this crate holding a byte. It is
 //! strict: it requires `Content-Length` and CRLF line ends, refuses `Transfer-Encoding`, caps the
-//! head at [`HEAD_MAX`] and refuses a body longer than it said. See notes/packages/fetching.md.
+//! head at [`HEAD_MAXIMUM`] and refuses a body longer than it said. See notes/packages/fetching.md.
 //!
 
 //! # BUGS
@@ -15,7 +15,7 @@
 //! - A close-delimited body is refused, so a server that omits `Content-Length` cannot serve nife.
 //! - Header values other than the two it reads are skipped, not validated.
 //! - The head parse is `httparse`'s, vouched for by upstream fuzzing, not proved here.
-//! - At most [`MAX_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
+//! - At most [`MAXIMUM_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
 //! - The head is re-parsed on every read until it ends, quadratic in the cap; not measured.
 //! - A minor version other than 0 or 1 is refused.
 //!
@@ -28,12 +28,14 @@
 /// The most a status line plus headers may take. A package server's head is a few hundred bytes;
 /// this is enough for a real server's, and it is a bound, so a peer that never ends its headers is
 /// refused rather than read forever.
-pub const HEAD_MAX: usize = 2048;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `HEAD_MAX`.
+pub const HEAD_MAXIMUM: usize = 2048;
 
 /// The most header lines a head may hold. `httparse` fills a caller-supplied array and this crate
 /// has no allocator, so the array is a bound. 128 is enough for GitHub's redirect head, which had 16
 /// lines on 2026-10-24 (UTC); each slot is 32 bytes of stack.
-const MAX_HEADERS: usize = 128;
+const MAXIMUM_HEADERS: usize = 128;
 
 /// **A head big enough for `github.com`'s redirect**, for a reader made with
 /// [`Response::with_room`]. A GitHub Release download answers `302` with a head of 10,806 bytes
@@ -41,18 +43,18 @@ const MAX_HEADERS: usize = 128;
 /// line, about 940 the `Location` URL. It was 5,291 on 2026-10-13, so the bound is three times
 /// today's head rather than a fit to it; GitHub sets the size, not nife. `pinned_tls_client` reads
 /// with this bound, boxed, so a package client can follow the one redirect calef ruled on
-/// 2026-10-12 (UTC) on #2048; the plain LAN reader keeps [`HEAD_MAX`], because its consumers
+/// 2026-10-12 (UTC) on #2048; the plain LAN reader keeps [`HEAD_MAXIMUM`], because its consumers
 /// include a `no_std` test component with a small stack.
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
-pub const REDIRECT_HEAD_MAX: usize = 32 * 1024;
+pub const REDIRECT_HEAD_MAXIMUM: usize = 32 * 1024;
 
 /// Why a response was refused. Every variant is a peer that is not speaking the HTTP this reader
 /// accepts; none of them is recoverable by reading more.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The status line and headers ran past the reader's bound ([`HEAD_MAX`] unless it was made
-    /// with more room) without the blank line that ends them, or held more than [`MAX_HEADERS`]
+    /// The status line and headers ran past the reader's bound ([`HEAD_MAXIMUM`] unless it was made
+    /// with more room) without the blank line that ends them, or held more than [`MAXIMUM_HEADERS`]
     /// header lines.
     HeadTooLong,
     /// The first line is not `HTTP/1.<digit> <three digits> ...`.
@@ -104,7 +106,7 @@ enum State {
 }
 
 /// A response being read. See the crate documentation for what it accepts. `N` is the most its
-/// status line and headers may take: [`HEAD_MAX`] unless it was made with [`Response::with_room`].
+/// status line and headers may take: [`HEAD_MAXIMUM`] unless it was made with [`Response::with_room`].
 ///
 /// # Examples
 ///
@@ -126,7 +128,7 @@ enum State {
 /// assert_eq!(response.feed(b"lo").unwrap(), b"lo");
 /// assert!(response.is_complete());
 /// ```
-pub struct Response<const N: usize = HEAD_MAX> {
+pub struct Response<const N: usize = HEAD_MAXIMUM> {
     head: [u8; N],
     head_len: usize,
     status: Option<u16>,
@@ -150,7 +152,7 @@ impl Default for Response {
 }
 
 impl Response {
-    /// A reader that has seen nothing, with room for a [`HEAD_MAX`] head.
+    /// A reader that has seen nothing, with room for a [`HEAD_MAXIMUM`] head.
     pub const fn new() -> Self {
         Self::with_room()
     }
@@ -158,7 +160,7 @@ impl Response {
 
 impl<const N: usize> Response<N> {
     /// A reader that has seen nothing, with room for an `N`-byte head: `Response::<{
-    /// REDIRECT_HEAD_MAX }>::with_room()` for a host whose redirects are long.
+    /// REDIRECT_HEAD_MAXIMUM }>::with_room()` for a host whose redirects are long.
     pub const fn with_room() -> Self {
         Self {
             head: [0; N],
@@ -175,7 +177,7 @@ impl<const N: usize> Response<N> {
         if self.state == State::Head {
             return None;
         }
-        let mut headers = [httparse::EMPTY_HEADER; MAX_HEADERS];
+        let mut headers = [httparse::EMPTY_HEADER; MAXIMUM_HEADERS];
         let mut parsed = httparse::Response::new(&mut headers);
         parsed.parse(&self.head[..self.head_len]).ok()?;
         parsed
@@ -262,7 +264,7 @@ fn read_head(buf: &[u8]) -> Result<Option<Head>, Error> {
     if matches!(buf.first(), Some(b'\r' | b'\n')) {
         return Err(Error::BadStatusLine);
     }
-    let mut headers = [httparse::EMPTY_HEADER; MAX_HEADERS];
+    let mut headers = [httparse::EMPTY_HEADER; MAXIMUM_HEADERS];
     let mut parsed = httparse::Response::new(&mut headers);
     let end = match parsed.parse(buf) {
         Ok(httparse::Status::Complete(end)) => end,
@@ -430,7 +432,7 @@ mod tests {
     #[test]
     fn a_head_that_never_ends_is_refused_at_the_bound() {
         let mut endless = b"HTTP/1.0 200 OK\r\n".to_vec();
-        while endless.len() <= HEAD_MAX {
+        while endless.len() <= HEAD_MAXIMUM {
             endless.extend_from_slice(b"X-Padding: aaaaaaaaaaaaaaaa\r\n");
         }
         assert_eq!(read_in(&endless, 100).unwrap_err(), Error::HeadTooLong);
@@ -521,7 +523,7 @@ mod tests {
     }
 
     /// A head of GitHub's measured size (10,806 bytes on 2026-10-24 UTC, most of it one line) is
-    /// refused by the default reader and read by one made with [`REDIRECT_HEAD_MAX`] of room.
+    /// refused by the default reader and read by one made with [`REDIRECT_HEAD_MAXIMUM`] of room.
     #[test]
     fn a_long_head_needs_a_reader_made_with_room() {
         let mut head = Vec::from(&b"HTTP/1.1 302 Found\r\nContent-Length: 0\r\n"[..]);
@@ -533,7 +535,7 @@ mod tests {
         }
         head.extend_from_slice(b"\r\n");
         assert_eq!(Response::new().feed(&head), Err(Error::HeadTooLong));
-        let mut roomy = Response::<REDIRECT_HEAD_MAX>::with_room();
+        let mut roomy = Response::<REDIRECT_HEAD_MAXIMUM>::with_room();
         assert_eq!(roomy.feed(&head), Ok(&b""[..]));
         assert_eq!(roomy.status(), Some(302));
     }

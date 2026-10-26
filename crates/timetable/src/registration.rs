@@ -46,7 +46,7 @@ pub const STATUS: usize = 24;
 pub const DETAIL: usize = 32;
 /// Byte offset of the verdict word: eight bits per entry, entry 0 in the low byte ([`verdict`]).
 pub const VERDICTS: usize = 40;
-/// Byte offset of the printed plan's length, which is at most [`BODY_MAX`].
+/// Byte offset of the printed plan's length, which is at most [`BODY_MAXIMUM`].
 pub const PLAN_LEN: usize = 48;
 /// Byte offset of the exit word: zero while the timetable runs, and [`EXITED`] with its exit code
 /// (one of [`crate::contract`]'s, or `0`) once it has stopped. Written just before it exits, so a
@@ -57,7 +57,9 @@ pub const EXITED: u64 = 1 << 63;
 /// Where the bytes start: the document on the way in, the printed plan on the way out.
 pub const BODY: usize = 64;
 /// The most bytes a document, or a plan, can occupy.
-pub const BODY_MAX: usize = PAGE_BYTES - BODY;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `BODY_MAX`.
+pub const BODY_MAXIMUM: usize = PAGE_BYTES - BODY;
 
 /// **Replace the whole document.** The one operation §222 ruled on. Removing an entry is a replace
 /// without its line; removing all of them is an empty document.
@@ -70,7 +72,7 @@ pub const STATUS_PARSE: u64 = 1;
 /// An admitted entry names a program the timetable's archive does not carry. [`DETAIL`] is the
 /// entry's index. The schedule in force is unchanged.
 pub const STATUS_NO_IMAGE: u64 = 2;
-/// [`LEN`] is larger than [`BODY_MAX`], or the bytes are not UTF-8. Unchanged.
+/// [`LEN`] is larger than [`BODY_MAXIMUM`], or the bytes are not UTF-8. Unchanged.
 pub const STATUS_MALFORMED: u64 = 3;
 /// The request word named an operation other than [`REPLACE`]. Unchanged.
 pub const STATUS_UNKNOWN_OPERATION: u64 = 4;
@@ -160,7 +162,7 @@ pub const fn verdict_of(word: u64, i: usize) -> u8 {
 /// `None` when the document does not fit. It does not parse the document: the timetable does, and
 /// a registrar that pre-checked would be a second opinion that could disagree with the first.
 pub fn stage(page: &mut [u8], doc: &[u8]) -> Option<()> {
-    if doc.len() > BODY_MAX || page.len() < PAGE_BYTES {
+    if doc.len() > BODY_MAXIMUM || page.len() < PAGE_BYTES {
         return None;
     }
     page[LEN..LEN + 8].copy_from_slice(&(doc.len() as u64).to_le_bytes());
@@ -210,7 +212,7 @@ mod tests {
     #[test]
     fn the_page_layout_adds_up() {
         assert_eq!(EXITED, 0x8000_0000_0000_0000);
-        assert_eq!(BODY_MAX + BODY, PAGE_BYTES);
+        assert_eq!(BODY_MAXIMUM + BODY, PAGE_BYTES);
         assert_eq!(STAGING_BYTES, 131_072);
     }
 
@@ -227,9 +229,9 @@ mod tests {
         assert_eq!(stage(&mut big, &doc), Some(()));
         let mut small = std::vec![0u8; PAGE_BYTES - 1];
         assert_eq!(stage(&mut small, &doc), None);
-        let long = std::vec![b'y'; BODY_MAX + 1];
+        let long = std::vec![b'y'; BODY_MAXIMUM + 1];
         assert_eq!(stage(&mut page, &long), None);
-        let fits = std::vec![b'y'; BODY_MAX];
+        let fits = std::vec![b'y'; BODY_MAXIMUM];
         assert_eq!(stage(&mut page, &fits), Some(()));
     }
 
@@ -265,11 +267,11 @@ mod tests {
         );
         assert_eq!(&page[BODY..BODY + 31], b"at-boot least_authority_demo 3\n");
         assert!(
-            stage(&mut page, &[b'#'; BODY_MAX + 1]).is_none(),
+            stage(&mut page, &[b'#'; BODY_MAXIMUM + 1]).is_none(),
             "a document past the page"
         );
         assert!(
-            stage(&mut page, &[b'#'; BODY_MAX]).is_some(),
+            stage(&mut page, &[b'#'; BODY_MAXIMUM]).is_some(),
             "and one that exactly fills it"
         );
     }

@@ -10,14 +10,16 @@ pub const WRITE: u64 = 1 << 1;
 /// is §307 (how long a name may be)'s bound for a program, a package and the files they travel in:
 /// RedoxFS's `DIR_ENTRY_MAX_LENGTH`, the smallest name limit of a filesystem nife installs onto.
 /// calef ruled it on 2026-10-24 (UTC), on milestone 946 (a granted file name can be longer than
-/// sixteen bytes): *"B"*, over 255, Linux's `NAME_MAX`, which would make a 253-byte name grantable
+/// sixteen bytes): *"B"*, over 255, Linux's `NAME_MAXIMUM`, which would make a 253-byte name grantable
 /// and unstorable on nife's own disk.
 ///
 /// A name this long does not fit in a caretaker's `START` words. Those carry at most
 /// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the
 /// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
 /// two words by mistake.
-pub const MAX_NAME: usize = 252;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NAME`.
+pub const MAXIMUM_NAME: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
 /// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
@@ -25,7 +27,7 @@ pub const MAX_NAME: usize = 252;
 /// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
-/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAX_NAME`]'s "what a
+/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAXIMUM_NAME`]'s "what a
 /// grant can name".
 pub const WORDS_NAME: usize = 16;
 
@@ -73,9 +75,9 @@ pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; WORDS_NAME]) -> 
     len.min(WORDS_NAME)
 }
 
-/// Whether a name can be granted at all: one to [`MAX_NAME`] bytes.
+/// Whether a name can be granted at all: one to [`MAXIMUM_NAME`] bytes.
 pub const fn fits(name: &[u8]) -> bool {
-    !name.is_empty() && name.len() <= MAX_NAME
+    !name.is_empty() && name.len() <= MAXIMUM_NAME
 }
 
 /// Whether a name fits in two `START` argument words: one to [`WORDS_NAME`] bytes.

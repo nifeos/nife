@@ -210,7 +210,9 @@ pub enum Error {
 /// `kernel/src/cap.rs` asserts it again beside `CAPABILITY_TABLE_SLOTS`. Growing past 64 is a
 /// wider word or a second one; `design/roadmap/0778-capability-tables-sized-per-process.md` is the
 /// question to answer first.
-pub const MAX_SLOTS: usize = u64::BITS as usize;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SLOTS`.
+pub const MAXIMUM_SLOTS: usize = u64::BITS as usize;
 
 pub use storage::CapabilityTable;
 
@@ -223,7 +225,7 @@ pub use storage::CapabilityTable;
 /// `the_count_is_the_slots` check the two doors against the array. See
 /// notes/capabilities/table.md ("Two doors").
 mod storage {
-    use super::{Cap, MAX_SLOTS, note_peak};
+    use super::{Cap, MAXIMUM_SLOTS, note_peak};
 
     /// A thread's capability table: a flat array, an fd table with a type tag on each entry,
     /// rather than seL4's tree of CNodes. See notes/capabilities/table.md ("The table").
@@ -247,13 +249,13 @@ mod storage {
 
     impl<O: Copy, const N: usize> CapabilityTable<O, N> {
         /// Every slot free: the low `N` bits. The assertion is the compile-time wall
-        /// [`MAX_SLOTS`] describes, evaluated for each `N` that is instantiated.
+        /// [`MAXIMUM_SLOTS`] describes, evaluated for each `N` that is instantiated.
         const ALL_FREE: u64 = {
             assert!(
-                N <= MAX_SLOTS,
+                N <= MAXIMUM_SLOTS,
                 "a capability table has one free-slot bit per slot, and the word is a u64"
             );
-            if N == MAX_SLOTS {
+            if N == MAXIMUM_SLOTS {
                 u64::MAX
             } else {
                 (1u64 << N) - 1

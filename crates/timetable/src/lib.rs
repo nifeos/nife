@@ -54,7 +54,9 @@ pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// [`Error::TooManyEntries`] rather than quietly short of an entry somebody wrote down. Eight is
 /// what a fixed array costs nothing to hold; the reason there is an array at all is that this crate
 /// allocates nothing, so a document borrows its own bytes and the table is inline.
-pub const MAX_ENTRIES: usize = 8;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ENTRIES`.
+pub const MAXIMUM_ENTRIES: usize = 8;
 
 // Machine-checked proofs (Kani). Behind `#[cfg(kani)]`, so an ordinary build or test never sees
 // them; `script/verify` runs them.

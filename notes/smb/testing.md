@@ -79,7 +79,7 @@ service), from a claim about a stand-in into a claim about the real SMB server.
 The adapter rides the spawn of the milestone-107 inbound test
 (`a_host_process_connects_to_the_guest_and_is_answered`), as a second client of the same `Stack`
 endpoint, from milestone 107 (the socket contract learns to accept). A second `net_stack` does not fit
-the test boot: its 192-page region is never reclaimed; see `virtio::MAX_DEVICES` for the recorded
+the test boot: its 192-page region is never reclaimed; see `virtio::MAXIMUM_DEVICES` for the recorded
 failure.
 
 The test wires the FS service, seeds the gate's file through it, and grants the adapter the directory

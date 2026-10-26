@@ -279,8 +279,8 @@ fn monitor_output(reply: &[u8]) -> String {
 /// - It is one `uptime` every five seconds; where that is missing or prints an unfamiliar shape,
 ///   the report says "unavailable" rather than guessing.
 pub(crate) struct HostLoad {
-    min: f64,
-    max: f64,
+    minimum: f64,
+    maximum: f64,
     total: f64,
     samples: u32,
     last: std::time::Instant,
@@ -296,8 +296,8 @@ impl HostLoad {
     /// reports something.
     pub(crate) fn new() -> Self {
         let mut load = Self {
-            min: f64::INFINITY,
-            max: 0.0,
+            minimum: f64::INFINITY,
+            maximum: 0.0,
             total: 0.0,
             samples: 0,
             // Back-dated so the first `sample()` call fires rather than waiting out the interval.
@@ -321,8 +321,8 @@ impl HostLoad {
         let Some(now) = one_minute_load_average() else {
             return;
         };
-        self.min = self.min.min(now);
-        self.max = self.max.max(now);
+        self.minimum = self.minimum.min(now);
+        self.maximum = self.maximum.max(now);
         self.total += now;
         self.samples += 1;
     }
@@ -345,15 +345,15 @@ impl HostLoad {
         eprintln!(
             "host load ({arch}): 1-minute average {:.2} / {:.2} / {:.2} (min/mean/peak over {} \
              samples), on {} cores",
-            self.min, mean, self.max, self.samples, cpus,
+            self.minimum, mean, self.maximum, self.samples, cpus,
         );
-        if cpus > 0 && self.max > cpus as f64 {
+        if cpus > 0 && self.maximum > cpus as f64 {
             eprintln!(
                 "  {:.1}x oversubscribed at the peak. A timing assertion that failed above may be \
                  measuring this machine rather than this kernel; `script/icount` asserts the timer \
                  claims in instructions, which nothing the host does can move. See \
                  notes/load-sensitive-assertions.md.",
-                self.max / cpus as f64,
+                self.maximum / cpus as f64,
             );
         } else {
             eprintln!(

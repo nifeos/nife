@@ -8,7 +8,7 @@ use std::vec::Vec;
 fn rows(vt: &Vt) -> Vec<String> {
     (0..vt.rows())
         .map(|r| {
-            let mut buf = [0u8; MAX_COLS];
+            let mut buf = [0u8; MAXIMUM_COLS];
             let n = vt.row_bytes(r, &mut buf);
             String::from_utf8_lossy(&buf[..n]).into_owned()
         })
@@ -886,15 +886,18 @@ fn a_wide_grid_keeps_the_history_its_cell_budget_holds() {
     );
 }
 
-/// **The size clamp is exact at the boundary.** `MAX_COLS`/`MAX_ROWS` themselves are legal, one
+/// **The size clamp is exact at the boundary.** `MAXIMUM_COLS`/`MAXIMUM_ROWS` themselves are legal, one
 /// past either is clamped down, and zero clamps up to one rather than producing an empty grid no
 /// cursor could ever occupy. Milestone 326 (turn a mutation score upward)'s mutation triage.
 #[test]
 fn geometry_clamps_exactly_at_the_boundary_not_one_off_it() {
-    // The widest grid gets the rows MAX_CELLS leaves it; the tallest needs a narrow one.
-    let wide_rows = (MAX_CELLS / MAX_COLS) as u32;
-    let tall_cols = (MAX_CELLS / MAX_ROWS) as u32;
-    for (cols, rows) in [(MAX_COLS as u32, wide_rows), (tall_cols, MAX_ROWS as u32)] {
+    // The widest grid gets the rows MAXIMUM_CELLS leaves it; the tallest needs a narrow one.
+    let wide_rows = (MAXIMUM_CELLS / MAXIMUM_COLS) as u32;
+    let tall_cols = (MAXIMUM_CELLS / MAXIMUM_ROWS) as u32;
+    for (cols, rows) in [
+        (MAXIMUM_COLS as u32, wide_rows),
+        (tall_cols, MAXIMUM_ROWS as u32),
+    ] {
         let t = Vt::new(cols, rows);
         assert_eq!(
             (t.cols(), t.rows()),
@@ -908,10 +911,10 @@ fn geometry_clamps_exactly_at_the_boundary_not_one_off_it() {
             "one row past the boundary must be clamped"
         );
     }
-    let t = Vt::new(MAX_COLS as u32 + 1, 1);
+    let t = Vt::new(MAXIMUM_COLS as u32 + 1, 1);
     assert_eq!(
         t.cols(),
-        MAX_COLS as u32,
+        MAXIMUM_COLS as u32,
         "one column past the boundary must be clamped"
     );
     // OVMF's 1280x800 and xenon's 1920x1080 fit whole at the 14x26 cell.
@@ -1101,14 +1104,14 @@ fn put_and_damage_cell_reject_a_partly_out_of_range_coordinate() {
     t.put(t.cols(), 1, mark);
     assert_eq!(
         t.cells,
-        [Cell::default(); MAX_CELLS],
+        [Cell::default(); MAXIMUM_CELLS],
         "a partly out-of-range put must be a no-op"
     );
     assert_eq!(t.damage(), None);
 
     // Row out of range, column in range.
     t.put(1, t.rows(), mark);
-    assert_eq!(t.cells, [Cell::default(); MAX_CELLS]);
+    assert_eq!(t.cells, [Cell::default(); MAXIMUM_CELLS]);
     assert_eq!(t.damage(), None);
 
     t.damage_cell(t.cols(), 1);

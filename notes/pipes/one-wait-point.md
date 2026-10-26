@@ -70,7 +70,7 @@ The output ceiling was two numbers for one job. Printing stopped at 32 sixteen-b
 `>` allowed 1024, so the shell cut the same program's output at 512 bytes on the screen and wrote it
 whole to a file, with nothing saying which had happened. The number exists to bound a program that
 never announces end of stream, and that bug is not more tolerable when the bytes are going into a
-file. There is one number now (`MAX_OUTPUT_CHUNKS`, 64 KiB) and the reason on record for the split
+file. There is one number now (`MAXIMUM_OUTPUT_CHUNKS`, 64 KiB) and the reason on record for the split
 ("a file is where output goes when there is too much of it to read") was a policy about length,
 which the same comment disclaimed in its next sentence.
 

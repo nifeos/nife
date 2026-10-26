@@ -198,17 +198,17 @@ fn start_with(
         )
     });
 
-    // Say why it was refused rather than return a bare `None`: only `sched::MAX_THREADS` can refuse
+    // Say why it was refused rather than return a bare `None`: only `sched::MAXIMUM_THREADS` can refuse
     // this spawn.
     // `dump_threads` goes with the line because the table is the whole diagnosis: a leak and a boot
     // that legitimately wants more threads are indistinguishable from the refusal alone. See
-    // `sched::MAX_THREADS`, whose doc carries the measurement and the coupled constants.
+    // `sched::MAXIMUM_THREADS`, whose doc carries the measurement and the coupled constants.
     if shell.is_none() {
         crate::println!(
             "start_with: spawn(swish) refused; the thread table is full ({} of {} live). \
-             See sched::MAX_THREADS.",
+             See sched::MAXIMUM_THREADS.",
             crate::sched::thread_count(),
-            crate::sched::MAX_THREADS,
+            crate::sched::MAXIMUM_THREADS,
         );
         crate::sched::dump_threads();
         return None;

@@ -32,7 +32,7 @@ The per-segment arithmetic a hostile header can weaponize, `p_offset + p_filesz`
 loopless, so Kani proves it panic-free and its result in bounds for every field combination. A proof
 that the whole of `parse` is total did not finish:
 [`notes/verification/elf-parser-wall.md`](../verification/elf-parser-wall.md) says why. In short,
-the overlap check is a loop over up to `MAX_PHNUM` (64) headers inside a loop over the same, and
+the overlap check is a loop over up to `MAXIMUM_PHNUM` (64) headers inside a loop over the same, and
 Kani unrolls it by the linear 64 bound it can see. On top of that, `phoff` and `p_offset` place
 reads at symbolic offsets in a symbolic array. The solver did not return in minutes even with the
 header count pinned to one segment. Totality wants a loop-invariant tool such as Verus, or more of
@@ -43,7 +43,7 @@ that is a panic, which is a crafted binary halting the kernel. `Error::AddressOv
 before the entry check and `Segment::page_range` use the sum. `page_range` also saturates on its
 own, because `Segment` is public and must be panic-free without `parse`'s guarantee.
 
-`MAX_PHNUM` bounds the header count before the overlap check, which is quadratic. A real static
+`MAXIMUM_PHNUM` bounds the header count before the overlap check, which is quadratic. A real static
 executable has a handful of headers. A count of 65,535 exists only to make validation stall. The
 note reader walks the same bound.
 
@@ -169,7 +169,7 @@ on ELF64 and 4-byte padding, except `.note.gnu.property`, which is 8-byte padded
   endow another. Refusing the ambiguity makes "which one?" unaskable.
 - An owner name with no terminating NUL where it must have one. The note does not match, since the
   comparison includes the NUL.
-- Up to 64 `PT_NOTE` headers (`MAX_PHNUM`), each walked once. Each note advances the cursor by at
+- Up to 64 `PT_NOTE` headers (`MAXIMUM_PHNUM`), each walked once. Each note advances the cursor by at
   least 12 bytes, which is proved, so the walk ends.
 - A header table outside the bytes the reader was given, refused (`NoteError::NotReadable`).
   `verification::note_segments_from_a_head_never_panic` proves the check panic-free.

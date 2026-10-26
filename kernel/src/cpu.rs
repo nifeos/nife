@@ -23,7 +23,9 @@ pub const NO_TID: ThreadId = u64::MAX;
 /// A bound on hart ids, not core counts, since each core is seated at the slot its id names. One
 /// name for `current_cpu_contract::CPU_ID_BOUND`, which userspace shares. Each seat costs a block
 /// and a 68 KiB secondary stack slot whether or not a core fills it. See notes/per-cpu.md.
-pub const MAX_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CPUS`.
+pub const MAXIMUM_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
 
 /// One core's private data.
 ///
@@ -252,10 +254,10 @@ impl PerCpu {
 /// exists for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named
 /// core because stealing may move the thread before it runs (notes/load-sensitive-assertions.md).
 /// An array beside `PerCpu`, because a drain is on no hot path (notes/per-cpu.md).
-static ADOPTED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static ADOPTED: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// The per-CPU blocks, one per core, static so a core's block exists before any allocator.
-static PERCPU: [PerCpu; MAX_CPUS] = [const { PerCpu::new() }; MAX_CPUS];
+static PERCPU: [PerCpu; MAXIMUM_CPUS] = [const { PerCpu::new() }; MAXIMUM_CPUS];
 
 /// `PerCpu`'s size stays a power of two, so `PERCPU[id]` indexes with a shift.
 ///
@@ -288,9 +290,12 @@ const _: () = assert!(
 ///
 /// Call once per core, before that core takes its first lock, because the lock path reads
 /// `current().held_rank`: before `console::initialize` on the boot core, first thing on a
-/// secondary. Panics if `id` is not below [`MAX_CPUS`].
+/// secondary. Panics if `id` is not below [`MAXIMUM_CPUS`].
 pub(crate) fn initialize_this_cpu(id: usize) {
-    assert!(id < MAX_CPUS, "cpu id {id} exceeds MAX_CPUS {MAX_CPUS}");
+    assert!(
+        id < MAXIMUM_CPUS,
+        "cpu id {id} exceeds MAXIMUM_CPUS {MAXIMUM_CPUS}"
+    );
     crate::arch::set_percpu(&PERCPU[id] as *const PerCpu as usize);
     // Deterministic per core, so the cores do not sample in lockstep. `| 1` keeps it nonzero,
     // which xorshift requires.
@@ -317,7 +322,7 @@ pub fn current() -> &'static PerCpu {
 pub fn id() -> usize {
     let base = PERCPU.as_ptr() as usize;
     // Wrapping, because it cannot wrap: the register holds `&PERCPU[id]`, at or above `base`. Were
-    // that broken, the quotient lands far past `MAX_CPUS` and the next index refuses it.
+    // that broken, the quotient lands far past `MAXIMUM_CPUS` and the next index refuses it.
     crate::arch::percpu().wrapping_sub(base) / core::mem::size_of::<PerCpu>()
 }
 
@@ -349,7 +354,7 @@ mod tests {
     #[test_case]
     fn percpu_is_self_consistent_on_whatever_cpu_we_run() {
         let me = id();
-        assert!(me < MAX_CPUS, "cpu::id() returned {me}, out of range");
+        assert!(me < MAXIMUM_CPUS, "cpu::id() returned {me}, out of range");
         assert_eq!(
             current() as *const PerCpu,
             &PERCPU[me] as *const PerCpu,

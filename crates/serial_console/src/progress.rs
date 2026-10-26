@@ -257,13 +257,13 @@ pub struct SweepPoint {
     /// reading it is to catch a log whose kernel disagrees with this build.
     pub repeats: u64,
     /// The fastest repeat's wall-clock ticks, on the kernel's own counter.
-    pub ticks_min: u64,
+    pub ticks_minimum: u64,
     /// The median repeat's ticks, which is the statistic [`jpm_median`](Self::jpm_median) is
     /// computed from.
     pub ticks_median: u64,
-    /// The slowest repeat's ticks. With [`ticks_min`](Self::ticks_min) it is the spread, and the
+    /// The slowest repeat's ticks. With [`ticks_minimum`](Self::ticks_minimum) it is the spread, and the
     /// spread is what says whether the median means anything on this machine.
-    pub ticks_max: u64,
+    pub ticks_maximum: u64,
     /// Jobs per minute at the median, as the kernel computed it.
     pub jpm_median: u64,
 }
@@ -704,9 +704,9 @@ impl BootProgress {
             ("tasks=", &mut point.tasks),
             ("jobs=", &mut point.jobs),
             ("repeats=", &mut point.repeats),
-            ("ticks_min=", &mut point.ticks_min),
+            ("ticks_min=", &mut point.ticks_minimum),
             ("ticks_median=", &mut point.ticks_median),
-            ("ticks_max=", &mut point.ticks_max),
+            ("ticks_max=", &mut point.ticks_maximum),
             ("jpm_median=", &mut point.jpm_median),
         ] {
             if let Some(v) = field(tail, name) {

@@ -33,7 +33,7 @@ fit in a block.
 | `ENTRY_LEN` (name + two `u32`s) | 32 | **40** |
 | `DIR_BLOCKS` | 4 | **6** |
 | Directory bytes in every image | 2048 | **3072** |
-| `MAX_FILES` | 63 | **76** |
+| `MAXIMUM_FILES` | 63 | **76** |
 | Entries visible in block 0 alone | 15 | **12** |
 | Files in the aarch64 initrd | 46 | 46 |
 | Files in the riscv64 initrd | 50 | 50 |
@@ -43,7 +43,7 @@ fit in a block.
 Two of those rows are the whole decision.
 
 **`DIR_BLOCKS` had to move with `NAME_LEN`, and the margin was zero rather than thin.** Widening
-alone would have taken `MAX_FILES` from 63 down to 50, and the riscv64 initrd holds exactly 50
+alone would have taken `MAXIMUM_FILES` from 63 down to 50, and the riscv64 initrd holds exactly 50
 files. It would have built, once, and the next program added to it would have failed. That was
 measured after the fact rather than predicted, which is the argument for measuring. The plan in the
 roadmap reasoned about the aarch64 archive, which carries 46. The riscv64 one carries four more
@@ -56,15 +56,15 @@ of image bytes in a multi-megabyte initrd. Five blocks would have given exactly 
 for the number looking unchanged rather than for the failure it exists to prevent.
 
 The kernel-stack cost is zero, and that is new. `Fs` used to copy every directory entry into a
-fixed `[Entry; MAX_FILES]`, and `Fs` is a stack local on the kernel's boot and spawn paths. So
-`MAX_FILES` was kernel stack: raising it to 63 on 2026-07-30 overflowed a four-page kernel stack the
+fixed `[Entry; MAXIMUM_FILES]`, and `Fs` is a stack local on the kernel's boot and spawn paths. So
+`MAXIMUM_FILES` was kernel stack: raising it to 63 on 2026-07-30 overflowed a four-page kernel stack the
 same day, faulting on the guard page while parsing the initrd. That array was removed in the fix, and
 entries are decoded from the borrowed image one at a time. So the roadmap's statement of the trade
 ("it costs kernel stack, because `Fs` holds `entries` as a fixed array") was **already stale when it
 was written**, and the raise was much cheaper than the plan expected. The only per-entry stack left is
 one decoded `Entry`, which went from 32 bytes to 40.
 
-`crates/nifefs`'s test `fs_does_not_grow_with_max_files` pins that: it asserts `size_of::<Fs>()`
+`crates/nifefs`'s test `fs_does_not_grow_with_maximum_files` pins that: it asserts `size_of::<Fs>()`
 is a borrowed slice plus a count, so reintroducing the array fails a host test in milliseconds
 instead of faulting a guard page during boot.
 
@@ -131,7 +131,7 @@ here. Nothing panicked. The property that broke had never been written down.
 
 ## The capacity constants, as they stand
 
-`DIR_BLOCKS` is 14, which puts `MAX_FILES` at 178. The kernel suite's archive packs every program
+`DIR_BLOCKS` is 14, which puts `MAXIMUM_FILES` at 178. The kernel suite's archive packs every program
 the tree builds and, where `cargo xtask basalt-fetch` ran, the program of each basalt package its
 tests use. With ripgrep, ioping, hackbench and SQLite's `speedtest1`, the x86_64 archive held 128
 entries against the previous ceiling of 127. `write_image` refused, which is the mechanism working.
@@ -201,7 +201,7 @@ everywhere else.
   only, so it can find the first `ENTRIES_IN_FIRST_BLOCK` files (12) and no more. It walks the tiny
   three-file test disk, not the initrd, so nothing hits it today, and nothing in the format announces
   the limit either.
-- `MAX_FILES` still grows with the suite, not with the system. It is 178, and the pressure on it
+- `MAXIMUM_FILES` still grows with the suite, not with the system. It is 178, and the pressure on it
   is the number of programs the test suite ships. The real fix, if it recurs, is not another `DIR_BLOCKS` bump but a directory whose size is
   written in the superblock, so a reader learns it from the image instead of from a constant every
   reader has to agree on.

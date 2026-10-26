@@ -113,8 +113,8 @@ const _: () = assert!(core::mem::offset_of!(Tss, iomap) == IOMAP_OFFSET as usize
 /// A `SyncUnsafeCell`, by calef's ruling of 2026-10-09 on milestone 891 (a mutable static becomes
 /// an atomic, a lock or a recorded cell): the CPU reads it by address, through the descriptor `ltr`
 /// loads. Each core touches only its own slot, and the CPU reads that slot only on that core.
-static TSS: SyncUnsafeCell<[Tss; crate::cpu::MAX_CPUS]> =
-    SyncUnsafeCell::new([const { Tss::new() }; crate::cpu::MAX_CPUS]);
+static TSS: SyncUnsafeCell<[Tss; crate::cpu::MAXIMUM_CPUS]> =
+    SyncUnsafeCell::new([const { Tss::new() }; crate::cpu::MAXIMUM_CPUS]);
 
 /// The GDT: seven 8-byte slots, the last two of which are one 16-byte TSS descriptor. **One per
 /// core**, for the same reason as [`TSS`]: the TSS descriptor's base address is this core's own
@@ -124,8 +124,8 @@ static TSS: SyncUnsafeCell<[Tss; crate::cpu::MAX_CPUS]> =
 /// A `SyncUnsafeCell` for the reason [`TSS`] is one (milestone 891): `lgdt` takes its address. Each
 /// core writes only its own row, in [`initialize`], before its own `lgdt`, and no core reads
 /// another's.
-static GDT: SyncUnsafeCell<[[u64; 7]; crate::cpu::MAX_CPUS]> =
-    SyncUnsafeCell::new([BASE_GDT; crate::cpu::MAX_CPUS]);
+static GDT: SyncUnsafeCell<[[u64; 7]; crate::cpu::MAXIMUM_CPUS]> =
+    SyncUnsafeCell::new([BASE_GDT; crate::cpu::MAXIMUM_CPUS]);
 
 /// Every core's GDT starts identical: only the TSS descriptor (slots 5 and 6) differs per core, and
 /// [`initialize`] fills those in from this core's own [`TSS`] entry.
@@ -166,7 +166,7 @@ pub unsafe fn initialize() {
 
     // The TSS descriptor holds the TSS's address, known only once loaded, across three fields.
     // SAFETY: indexing this core's own slot with `id` in bounds (`cpu::id()` cannot exceed
-    // `MAX_CPUS`, which is exactly how big `TSS` is); reading only the address, not the (possibly
+    // `MAXIMUM_CPUS`, which is exactly how big `TSS` is); reading only the address, not the (possibly
     // concurrently-written-by-another-core-at-a-different-index) contents.
     let base = unsafe { (&raw const (*TSS.get())[id]) as u64 };
     let limit = (size_of::<Tss>() - 1) as u64;
@@ -286,8 +286,8 @@ pub(crate) fn interrupt_stack(id: usize, slot: u8) -> u64 {
 /// A `SyncUnsafeCell` (milestone 891, calef's ruling of 2026-10-09): it changes in the same masked
 /// window as the bitmap it records, so a lock would add an acquisition for no second party. Each
 /// core reads and writes only its own slot, with interrupts masked ([`set_port_range_grant_on`]).
-static INSTALLED_PORT_GRANT: SyncUnsafeCell<[Option<(u16, u16)>; crate::cpu::MAX_CPUS]> =
-    SyncUnsafeCell::new([None; crate::cpu::MAX_CPUS]);
+static INSTALLED_PORT_GRANT: SyncUnsafeCell<[Option<(u16, u16)>; crate::cpu::MAXIMUM_CPUS]> =
+    SyncUnsafeCell::new([None; crate::cpu::MAXIMUM_CPUS]);
 
 /// Set every bit of ports `[base, base + count)` in `iomap` to `deny` (`true` faults the port from
 /// ring 3). Port `p` is bit `p % 8` of byte `p / 8`; the range is clamped to the bitmap, so the

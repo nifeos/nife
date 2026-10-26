@@ -182,7 +182,7 @@ grep -ah '^job-mix-kind: tasks=1 ' jobmix-boot1.log     # and what they cost alo
    bar this change was built to clear is **under 10% boot-to-boot at every point**, `tasks=4`
    included (the resampling predicts about 4%). If `tasks=4` is still wide, the median did not fix
    it and the reason is new: record the spread and do not quote the point.
-2. Is `ticks_max` far from `ticks_median` on one boot only? One outlier boot is the placement
+2. Is `ticks_maximum` far from `ticks_median` on one boot only? One outlier boot is the placement
    lottery (`notes/soak.md`, milestone 240); compare its census with the others'.
 3. The shape. Throughput against task count, from the medians. Record where it stops rising,
    and whether anything past that point declines. On 2026-09-16, with the old mix, it rose to
@@ -214,7 +214,7 @@ spread per point, and the census summary.
 | What the log shows | What it means | Where it routes |
 |---|---|---|
 | `job-mix: FAILED: no 'job_mix_task' program in the initrd archive` | an archive built before this milestone (a mismatched pair halts earlier, at `MEASURED BOOT REFUSED`) | rebuild with `script/board-image --job-mix ...`, which packs the archive before the kernel for exactly this reason |
-| `job-mix: FAILED: could not spawn task N of 32` | the board ran out of memory or thread slots partway through building the pool | a real finding: `job_mix::MAX_TASKS` is 32 against `sched::MAX_THREADS`'s 256, so this is memory. Record N and reduce `MAX_TASKS` |
+| `job-mix: FAILED: could not spawn task N of 32` | the board ran out of memory or thread slots partway through building the pool | a real finding: `job_mix::MAXIMUM_TASKS` is 32 against `sched::MAXIMUM_THREADS`'s 256, so this is memory. Record N and reduce `MAXIMUM_TASKS` |
 | `job-mix: FAILED: could not create task N's 25-page budget` | the kernel could not carve a task's untyped region | memory again, before any subrun; the same routing as the line above |
 | `job-mix: FAILED: task N could not finish a map job` (or `spawn`) | the kernel refused a verb inside the job; the error is printed | a budget constant is too small for this machine (`job_mix::MAP_REGION_PAGES`, `CHILD_PAGES`), since QEMU passes on all three architectures. Record the error and raise the constant |
 | the census, then nothing, ever | a task, a server or a child wedged before the first subrun finished | the hang case, and since milestone 324 the tool says so rather than leaving it to the operator: `script/job-mix` and `script/board-console --until sweep-done` both exit **2**. `ROUND_TRIP` blocks on a server and `SPAWN` on a child; either wedged looks exactly like this |

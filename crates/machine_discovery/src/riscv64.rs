@@ -18,9 +18,11 @@
 use device_tree_blob::{DeviceTreeBlob, Error};
 
 /// The most CPU nodes [`Isa::from_device_tree`] will read. Sixteen is twice the kernel's
-/// `MAX_CPUS` and costs one pointer pair each on the stack; a machine with more is reported as
+/// `MAXIMUM_CPUS` and costs one pointer pair each on the stack; a machine with more is reported as
 /// truncated ([`Isa::harts`] saturates) rather than silently half-read.
-pub const MAX_HARTS: usize = 16;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_HARTS`.
+pub const MAXIMUM_HARTS: usize = 16;
 
 /// The base integer ISA the machine declares (`riscv,isa-base`, or the prefix of `riscv,isa`).
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -573,7 +575,7 @@ pub struct Isa {
     pub any: Extensions,
     /// Tier 1. The narrowest `mmu-type` any hart declares.
     pub mmu: MmuType,
-    /// How many `cpu@` nodes the tree has, saturating at [`MAX_HARTS`].
+    /// How many `cpu@` nodes the tree has, saturating at [`MAXIMUM_HARTS`].
     pub harts: u16,
     /// How many of those declared an ISA at all, not counting disabled harts or harts whose own
     /// `riscv,isa` disclaims supervisor mode (the module BUGS say why neither may speak).
@@ -646,16 +648,16 @@ impl Isa {
     /// Read the CPU nodes. Fills the tier-1 fields and leaves `asid_bits` and `sbi` at their
     /// defaults for the kernel to complete.
     pub fn from_device_tree(dt: &DeviceTreeBlob<'_>) -> Result<Isa, Error> {
-        let mut extensions = [None; MAX_HARTS];
+        let mut extensions = [None; MAXIMUM_HARTS];
         let harts = dt.node_props(b"cpu@", b"riscv,isa-extensions", &mut extensions)?;
 
-        let mut legacy = [None; MAX_HARTS];
+        let mut legacy = [None; MAXIMUM_HARTS];
         dt.node_props(b"cpu@", b"riscv,isa", &mut legacy)?;
 
-        let mut isa_base = [None; MAX_HARTS];
+        let mut isa_base = [None; MAXIMUM_HARTS];
         dt.node_props(b"cpu@", b"riscv,isa-base", &mut isa_base)?;
 
-        let mut mmu_type = [None; MAX_HARTS];
+        let mut mmu_type = [None; MAXIMUM_HARTS];
         dt.node_props(b"cpu@", b"mmu-type", &mut mmu_type)?;
 
         // Which harts may speak for the machine at all. A disabled hart never runs kernel code,
@@ -663,7 +665,7 @@ impl Isa {
         // declare says nothing about the machine the kernel schedules on; see the module BUGS.
         // Both gates are needed: mainline JH7110 trees exclude the S7 by `status`, and the vendor
         // tree marks it "okay" so only the missing `s` in `rv64imacu` excludes it.
-        let mut status = [None; MAX_HARTS];
+        let mut status = [None; MAXIMUM_HARTS];
         dt.node_props(b"cpu@", b"status", &mut status)?;
         let enabled = |i: usize| {
             status[i].is_none_or(crate::cpu_list::is_okay)
@@ -679,7 +681,7 @@ impl Isa {
         // gates every reader of `common` and the loop below only touches it when a hart speaks.
         let mut common = Extensions(!0);
 
-        for i in 0..harts.min(MAX_HARTS) {
+        for i in 0..harts.min(MAXIMUM_HARTS) {
             if !enabled(i) {
                 continue;
             }
@@ -713,7 +715,7 @@ impl Isa {
             out.common = common.intersection(NAMED);
         }
 
-        for (i, m) in mmu_type.iter().enumerate().take(harts.min(MAX_HARTS)) {
+        for (i, m) in mmu_type.iter().enumerate().take(harts.min(MAXIMUM_HARTS)) {
             let Some(m) = m else { continue };
             // Same gate as the ISA loop: an unschedulable hart's MMU must not touch what the
             // schedulable harts declare, in either direction. Mainline spells the S7's truth

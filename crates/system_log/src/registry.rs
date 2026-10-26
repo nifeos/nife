@@ -11,26 +11,26 @@ use system_log_contract::{control, severity};
 /// reaped, so this bounds live writers and readers, not every process the boot ever ran.
 pub const ENTRIES: usize = 32;
 
-/// A registered name: a program's or a user's, at most [`control::NAME_MAX`] bytes.
+/// A registered name: a program's or a user's, at most [`control::NAME_MAXIMUM`] bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Name {
-    bytes: [u8; control::NAME_MAX],
+    bytes: [u8; control::NAME_MAXIMUM],
     len: u8,
 }
 
 impl Name {
     /// The empty name.
     pub const EMPTY: Name = Name {
-        bytes: [0; control::NAME_MAX],
+        bytes: [0; control::NAME_MAXIMUM],
         len: 0,
     };
 
-    /// A name from bytes, cut at [`control::NAME_MAX`]. For the service's own records (`kernel`,
+    /// A name from bytes, cut at [`control::NAME_MAXIMUM`]. For the service's own records (`kernel`,
     /// from milestone 342 (the kernel and the `console` server drive one UART from two address
     /// spaces)) and for tests.
     pub fn new(name: &[u8]) -> Name {
         let mut n = Name::EMPTY;
-        let len = name.len().min(control::NAME_MAX);
+        let len = name.len().min(control::NAME_MAXIMUM);
         n.bytes[..len].copy_from_slice(&name[..len]);
         n.len = len as u8;
         n
@@ -174,7 +174,10 @@ mod tests {
         assert!(!r.name(6, control::USER, 1, &chunk(b"tail")));
         assert!(!r.name(6, control::USER, 2, &chunk(b"x")));
         assert_eq!(r.get(6).unwrap().user.as_bytes(), b"bob");
-        assert_eq!(Name::new(&[b'n'; 40]).as_bytes().len(), control::NAME_MAX);
+        assert_eq!(
+            Name::new(&[b'n'; 40]).as_bytes().len(),
+            control::NAME_MAXIMUM
+        );
     }
 
     /// A full table refuses a new badge rather than evicting a live one, and forgetting a badge

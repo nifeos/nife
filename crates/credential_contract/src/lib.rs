@@ -14,7 +14,7 @@
 #![cfg_attr(not(test), no_std)]
 
 /// The shared-page size, in bytes. One host page, the same unit `filesystem_contract` moves, and far more
-/// than the [`MAX_IDENTITY`] + [`MAX_SECRET`] a request can fill.
+/// than the [`MAXIMUM_IDENTITY`] + [`MAXIMUM_SECRET`] a request can fill.
 pub const PAGE: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
@@ -25,23 +25,27 @@ pub const OPERATION_SHIFT: u32 = 56;
 /// no user id, no group, no home directory, no session. milestone 49 (users, login, attribution)
 /// is a different milestone and this crate deliberately does not start it. 64 bytes is longer than
 /// any SMB account name and short enough that the whole store is a small fixed array.
-pub const MAX_IDENTITY: usize = 64;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IDENTITY`.
+pub const MAXIMUM_IDENTITY: usize = 64;
 
 /// The longest secret a request may present, in bytes. Long enough for a passphrase nobody would
 /// type twice; the bound exists so the service's parse is total and its page layout is fixed.
-pub const MAX_SECRET: usize = 256;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SECRET`.
+pub const MAXIMUM_SECRET: usize = 256;
 
 /// Where the identity starts in the shared page.
 pub const ID_OFF: usize = 0;
 
-/// Where the secret starts in the shared page. [`MAX_IDENTITY`] bytes after the identity, so the
+/// Where the secret starts in the shared page. [`MAXIMUM_IDENTITY`] bytes after the identity, so the
 /// two never overlap and a short identity does not shift the secret.
-pub const SECRET_OFF: usize = MAX_IDENTITY;
+pub const SECRET_OFF: usize = MAXIMUM_IDENTITY;
 
 /// The whole area this contract owns in the shared page, and therefore what [`wipe`] clears: the
 /// identity and the secret. Everything past it belongs to whoever mapped the frame, and a wipe
 /// that ran past this bound would scribble on state it was never told about.
-pub const LAYOUT_LEN: usize = SECRET_OFF + MAX_SECRET;
+pub const LAYOUT_LEN: usize = SECRET_OFF + MAXIMUM_SECRET;
 
 /// The layout has to fit in the frame both parties map, and a compile-time assertion is the only
 /// check that cannot be skipped by a build that never runs a test.
@@ -92,7 +96,9 @@ pub const FULL: u64 = 5;
 pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
-pub const MAX_CODE: u64 = NO_ENTROPY;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CODE`.
+pub const MAXIMUM_CODE: u64 = NO_ENTROPY;
 
 /// Build a request's first word: the opcode, the identity's length, and the secret's length.
 ///
@@ -107,7 +113,7 @@ pub const fn operation(w0: u64) -> u64 {
     w0 >> OPERATION_SHIFT
 }
 
-/// The identity length a request word claims. Not yet checked against [`MAX_IDENTITY`]; that is
+/// The identity length a request word claims. Not yet checked against [`MAXIMUM_IDENTITY`]; that is
 /// [`read`]'s job, and it is the reason [`read`] exists rather than two accessors.
 pub const fn id_len(w0: u64) -> usize {
     ((w0 >> 16) & 0xffff) as usize
@@ -150,18 +156,18 @@ pub const fn secret_len(w0: u64) -> usize {
 /// assert_eq!(place(&mut page, b"", b"hunter2", verify::VERIFY), None);
 /// ```
 pub fn place(page: &mut [u8], identity: &[u8], secret: &[u8], operation: u64) -> Option<u64> {
-    if page.len() < SECRET_OFF + MAX_SECRET {
+    if page.len() < SECRET_OFF + MAXIMUM_SECRET {
         return None;
     }
-    if identity.is_empty() || identity.len() > MAX_IDENTITY {
+    if identity.is_empty() || identity.len() > MAXIMUM_IDENTITY {
         return None;
     }
-    if secret.is_empty() || secret.len() > MAX_SECRET {
+    if secret.is_empty() || secret.len() > MAXIMUM_SECRET {
         return None;
     }
     page[ID_OFF..SECRET_OFF].fill(0);
     page[ID_OFF..ID_OFF + identity.len()].copy_from_slice(identity);
-    page[SECRET_OFF..SECRET_OFF + MAX_SECRET].fill(0);
+    page[SECRET_OFF..SECRET_OFF + MAXIMUM_SECRET].fill(0);
     page[SECRET_OFF..SECRET_OFF + secret.len()].copy_from_slice(secret);
     Some(req(operation, identity.len(), secret.len()))
 }
@@ -171,10 +177,10 @@ pub fn place(page: &mut [u8], identity: &[u8], secret: &[u8], operation: u64) ->
 /// rejected, so the serve loop has no arithmetic that could run off the page.
 pub fn read(page: &[u8], w0: u64) -> Option<(&[u8], &[u8])> {
     let (i, s) = (id_len(w0), secret_len(w0));
-    if i == 0 || i > MAX_IDENTITY || s == 0 || s > MAX_SECRET {
+    if i == 0 || i > MAXIMUM_IDENTITY || s == 0 || s > MAXIMUM_SECRET {
         return None;
     }
-    if page.len() < SECRET_OFF + MAX_SECRET {
+    if page.len() < SECRET_OFF + MAXIMUM_SECRET {
         return None;
     }
     Some((&page[ID_OFF..ID_OFF + i], &page[SECRET_OFF..SECRET_OFF + s]))
@@ -202,7 +208,7 @@ pub fn wipe(page: &mut [u8]) {
 /// from a `CALL` is a small negative (`abi::Error`, -1 to -8), which reads as an enormous `u64`,
 /// so "no credential service" never reads as an answer (`entropy_contract::delivered`'s shape).
 pub const fn code(r0: u64) -> Option<u64> {
-    if r0 >= OK && r0 <= MAX_CODE {
+    if r0 >= OK && r0 <= MAXIMUM_CODE {
         Some(r0)
     } else {
         None
@@ -371,11 +377,11 @@ mod tests {
     /// tell a working `operation` from one that returns a constant.
     #[test]
     fn the_request_word_is_the_documented_bit_layout() {
-        let w = req(provision::SEAL, MAX_IDENTITY, MAX_SECRET);
+        let w = req(provision::SEAL, MAXIMUM_IDENTITY, MAXIMUM_SECRET);
         assert_eq!(w, 0x0200_0000_0040_0100);
         assert_eq!(operation(w), provision::SEAL);
-        assert_eq!(id_len(w), MAX_IDENTITY);
-        assert_eq!(secret_len(w), MAX_SECRET);
+        assert_eq!(id_len(w), MAXIMUM_IDENTITY);
+        assert_eq!(secret_len(w), MAXIMUM_SECRET);
     }
 
     #[test]
@@ -405,7 +411,7 @@ mod tests {
         assert_eq!(id, b"cd");
         assert_eq!(secret, b"ef");
         assert!(
-            page[..SECRET_OFF + MAX_SECRET]
+            page[..SECRET_OFF + MAXIMUM_SECRET]
                 .windows(4)
                 .all(|w| w != b"very"),
             "the previous identity survived into the next request",
@@ -420,8 +426,8 @@ mod tests {
         for (i, s) in [
             (0, 8),
             (8, 0),
-            (MAX_IDENTITY + 1, 8),
-            (8, MAX_SECRET + 1),
+            (MAXIMUM_IDENTITY + 1, 8),
+            (8, MAXIMUM_SECRET + 1),
             (0xffff, 0xffff),
         ] {
             assert!(
@@ -429,7 +435,7 @@ mod tests {
                 "id_len {i}, secret_len {s} should be refused",
             );
         }
-        assert!(read(&page, req(verify::VERIFY, MAX_IDENTITY, MAX_SECRET)).is_some());
+        assert!(read(&page, req(verify::VERIFY, MAXIMUM_IDENTITY, MAXIMUM_SECRET)).is_some());
     }
 
     /// A page too small to hold the fixed layout is refused rather than indexed into. The service
@@ -437,17 +443,17 @@ mod tests {
     /// check is here so a future caller with a smaller buffer fails loudly instead of panicking.
     #[test]
     fn a_page_too_small_for_the_layout_is_refused_at_both_ends() {
-        let mut small = [0u8; SECRET_OFF + MAX_SECRET - 1];
+        let mut small = [0u8; SECRET_OFF + MAXIMUM_SECRET - 1];
         assert!(place(&mut small, b"x", b"y", verify::VERIFY).is_none());
         assert!(read(&small, req(verify::VERIFY, 1, 1)).is_none());
     }
 
-    /// A page of exactly `SECRET_OFF + MAX_SECRET` bytes is the smallest the fixed layout fits,
+    /// A page of exactly `SECRET_OFF + MAXIMUM_SECRET` bytes is the smallest the fixed layout fits,
     /// and both ends must accept it: the size check refuses a page the layout runs off, not a
     /// page with no slack after it.
     #[test]
     fn the_smallest_page_the_layout_fits_is_accepted_at_both_ends() {
-        let mut page = [0u8; SECRET_OFF + MAX_SECRET];
+        let mut page = [0u8; SECRET_OFF + MAXIMUM_SECRET];
         let w = place(&mut page, b"id", b"secret", verify::VERIFY).unwrap();
         let (id, secret) = read(&page, w).unwrap();
         assert_eq!(id, b"id");
@@ -464,13 +470,21 @@ mod tests {
     #[test]
     fn place_refuses_what_will_not_fit() {
         let mut page = [0u8; PAGE];
-        assert!(place(&mut page, &[b'x'; MAX_IDENTITY + 1], b"s", verify::VERIFY).is_none());
-        assert!(place(&mut page, b"i", &[b'x'; MAX_SECRET + 1], verify::VERIFY).is_none());
         assert!(
             place(
                 &mut page,
-                &[b'x'; MAX_IDENTITY],
-                &[b'x'; MAX_SECRET],
+                &[b'x'; MAXIMUM_IDENTITY + 1],
+                b"s",
+                verify::VERIFY
+            )
+            .is_none()
+        );
+        assert!(place(&mut page, b"i", &[b'x'; MAXIMUM_SECRET + 1], verify::VERIFY).is_none());
+        assert!(
+            place(
+                &mut page,
+                &[b'x'; MAXIMUM_IDENTITY],
+                &[b'x'; MAXIMUM_SECRET],
                 verify::VERIFY
             )
             .is_some()
@@ -499,7 +513,7 @@ mod tests {
     fn the_page_layout_does_not_overlap_itself() {
         // Kept with two fields: the property is about the layout, and the next field is what it
         // is for.
-        let fields = [(ID_OFF, MAX_IDENTITY), (SECRET_OFF, MAX_SECRET)];
+        let fields = [(ID_OFF, MAXIMUM_IDENTITY), (SECRET_OFF, MAXIMUM_SECRET)];
         for (i, &(a, alen)) in fields.iter().enumerate() {
             assert!(a + alen <= LAYOUT_LEN, "field {i} runs past the layout");
             for &(b, blen) in &fields[i + 1..] {
@@ -519,7 +533,7 @@ mod tests {
     /// in the first register.
     #[test]
     fn a_kernel_refusal_is_never_mistaken_for_a_verdict() {
-        for c in OK..=MAX_CODE {
+        for c in OK..=MAXIMUM_CODE {
             assert_eq!(code(c), Some(c));
         }
         for err in 1i64..=8 {
@@ -527,7 +541,7 @@ mod tests {
             assert!(!is_authenticated((-err) as u64), "kernel error -{err}");
         }
         assert_eq!(code(0), None);
-        assert_eq!(code(MAX_CODE + 1), None);
+        assert_eq!(code(MAXIMUM_CODE + 1), None);
     }
 
     /// Only [`MATCH`] authenticates. Written as an exhaustive sweep rather than a handful of cases
@@ -535,7 +549,7 @@ mod tests {
     /// falling on the permissive side.
     #[test]
     fn nothing_but_match_authenticates() {
-        for w in 0u64..=MAX_CODE + 4 {
+        for w in 0u64..=MAXIMUM_CODE + 4 {
             assert_eq!(is_authenticated(w), w == MATCH, "reply word {w}");
         }
         assert!(!is_authenticated(u64::MAX));
@@ -559,7 +573,7 @@ mod proofs {
     /// Falsification: replayable `crates/credential_contract/falsifications/proofs.no_request_word_makes_the_parse_read_outside_the_page.patch`
     #[kani::proof]
     fn no_request_word_makes_the_parse_read_outside_the_page() {
-        let page = [0u8; SECRET_OFF + MAX_SECRET];
+        let page = [0u8; SECRET_OFF + MAXIMUM_SECRET];
         let w0: u64 = kani::any();
         match read(&page, w0) {
             None => {}
@@ -571,8 +585,8 @@ mod proofs {
                 assert!(secret.len() == (w0 & 0xffff) as usize);
                 assert!(identity.len() == id_len(w0));
                 assert!(secret.len() == secret_len(w0));
-                assert!(!identity.is_empty() && identity.len() <= MAX_IDENTITY);
-                assert!(!secret.is_empty() && secret.len() <= MAX_SECRET);
+                assert!(!identity.is_empty() && identity.len() <= MAXIMUM_IDENTITY);
+                assert!(!secret.is_empty() && secret.len() <= MAXIMUM_SECRET);
                 assert!(ID_OFF + identity.len() <= SECRET_OFF);
                 assert!(SECRET_OFF + secret.len() <= page.len());
             }
@@ -591,8 +605,8 @@ mod proofs {
         // And the discrimination itself: a code is a code exactly when it is in range, so no
         // arithmetic on a kernel error word can land inside the reply space.
         match code(r0) {
-            Some(c) => assert!(c == r0 && (OK..=MAX_CODE).contains(&c)),
-            None => assert!(!(OK..=MAX_CODE).contains(&r0)),
+            Some(c) => assert!(c == r0 && (OK..=MAXIMUM_CODE).contains(&c)),
+            None => assert!(!(OK..=MAXIMUM_CODE).contains(&r0)),
         }
     }
 
@@ -608,8 +622,8 @@ mod proofs {
         let i: usize = kani::any();
         let s: usize = kani::any();
         kani::assume(operation_in <= 0xff);
-        kani::assume(i <= MAX_IDENTITY);
-        kani::assume(s <= MAX_SECRET);
+        kani::assume(i <= MAXIMUM_IDENTITY);
+        kani::assume(s <= MAXIMUM_SECRET);
         let w = req(operation_in, i, s);
         assert!(operation(w) == operation_in);
         assert!(id_len(w) == i);

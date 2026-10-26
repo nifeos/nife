@@ -8,7 +8,7 @@ of, its neighbour's first pixel frame, is now in its own address space. Nothing 
 The same binary runs with the same role bits, reaches for the same virtual address, and the
 address still points where the test asserts it points.
 
-`MAX_CLIENT_MAPS` is 5 and the attacker's window needs 2 surface frames plus its control page,
+`MAXIMUM_CLIENT_MAPS` is 5 and the attacker's window needs 2 surface frames plus its control page,
 so the extended loop fits exactly with no capacity edit, which is why this is one line.
 
 Expected to fail: `assert!(wait_for(|| USER_FAULTS.load(Ordering::Relaxed) > faults), "a client

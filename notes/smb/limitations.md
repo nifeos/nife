@@ -9,7 +9,7 @@ attempt knew it had not solved, written while the code was in front of someone.
 ## Throughput
 
 - A 64 KiB SMB message still crosses the socket contract seventeen times in each direction.
-  `socket_contract::DATA_MAX` is 4080 bytes, because a client and `net_stack` share one frame. So
+  `socket_contract::DATA_MAXIMUM` is 4080 bytes, because a client and `net_stack` share one frame. So
   `smb_server`'s `send_all` and `recv_into` chunk every message through it. Since milestone 55 (Time
   Machine) put the file transfer at 64 KiB, this is the dominant cost of a transfer. An SMB write went
   from ~985 ms to ~206 ms per 64 KiB message, and the filesystem is no longer what is left. It is the

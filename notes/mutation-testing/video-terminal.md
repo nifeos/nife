@@ -69,8 +69,8 @@ because at `row == 0` the two terms are equal. Row 1 is what makes the sign matt
 (`live_row = row - view_offset`), which closes that arithmetic's own mutant.
 
 `SCROLLBACK_CELLS` closes as a side effect of the same test. That constant sizes the `scrollback`
-array. A mutant computing it as `MAX_COLS + SCROLLBACK_ROWS` (432 cells) rather than
-`MAX_COLS * SCROLLBACK_ROWS` (39,600) panics on an out-of-bounds index early in the first feed
+array. A mutant computing it as `MAXIMUM_COLS + SCROLLBACK_ROWS` (432 cells) rather than
+`MAXIMUM_COLS * SCROLLBACK_ROWS` (39,600) panics on an out-of-bounds index early in the first feed
 loop, before any assertion runs. A panicking test is a caught mutant, not a special case.
 
 ### `reset_to` had never been called (1 survivor, the whole function body)
@@ -86,8 +86,8 @@ clearing `sb_len` is `reset_to`'s own job, separate from `scroll_down`'s.
 ### The size clamp had never been tested at its boundary (2 of 4 survivors)
 
 The other 2 are equivalent, below. `clamp_cols` and `clamp_rows` had no test at
-`cols == MAX_COLS` or `cols == MAX_COLS + 1`. So a mutant relaxing `cols > MAX_COLS` to
-`cols == MAX_COLS` survived. It clamps only the exact boundary value and lets anything past it
+`cols == MAXIMUM_COLS` or `cols == MAXIMUM_COLS + 1`. So a mutant relaxing `cols > MAXIMUM_COLS` to
+`cols == MAXIMUM_COLS` survived. It clamps only the exact boundary value and lets anything past it
 through unclamped. `geometry_clamps_exactly_at_the_boundary_not_one_off_it` checks the boundary,
 one past it, and zero, in both dimensions.
 
@@ -114,10 +114,10 @@ axis in range and the other not, on both axes, and checks that the private `cell
   are the same number. `<` and `<=` (or `>` and `>=`) disagree only about which branch fires at that
   one point, and there it no longer matters. So no input at all can tell the strict comparison from
   the non-strict one.
-- The `>=` half of the size clamp, 2 mutants (`cols > MAX_COLS as u32` in `clamp_cols`, and the
+- The `>=` half of the size clamp, 2 mutants (`cols > MAXIMUM_COLS as u32` in `clamp_cols`, and the
   same in `clamp_rows`). It is the `union` argument applied to
-  `if cols > MAX_COLS { MAX_COLS } else { cols }`. At `cols == MAX_COLS` the else branch returns
-  `cols`, which is `MAX_COLS`, so both branches agree at the one point `>` and `>=` differ. The `==`
+  `if cols > MAXIMUM_COLS { MAXIMUM_COLS } else { cols }`. At `cols == MAXIMUM_COLS` the else branch returns
+  `cols`, which is `MAXIMUM_COLS`, so both branches agree at the one point `>` and `>=` differ. The `==`
   half above is a real gap: it clamps only the boundary value and lets everything past it through.
 - `Vt::pixel`'s `col < self.cols` in the cursor-overlay check, 1 mutant. The term is reached only
   after `col == self.col` matched earlier in the same `&&` chain. `self.col` is never

@@ -10,12 +10,12 @@
 use super::*;
 
 /// Draw `out.len()` bytes from the entropy service through `request`, at most
-/// [`entropy_contract::MAX_BYTES`] at a time, as `components/src/credentialer.rs`'s `fill` does.
+/// [`entropy_contract::MAXIMUM_BYTES`] at a time, as `components/src/credentialer.rs`'s `fill` does.
 /// `false` when the service could not supply them all; the caller then generates no password.
 fn fill_entropy(request: u64, out: &mut [u8]) -> bool {
     let mut done = 0;
     while done < out.len() {
-        let want = (out.len() - done).min(entropy_contract::MAX_BYTES as usize);
+        let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             request,
             entropy_contract::req(entropy_contract::GET, want as u64),

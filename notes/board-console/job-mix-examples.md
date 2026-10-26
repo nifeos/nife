@@ -11,27 +11,27 @@ runs:
 ```
 $ cargo xtask job-mix --arch aarch64 --smp 4
 ...
-job-mix: tasks=32 jobs=4096 repeats=21 ticks_min=228108401 ticks_median=233958411 \
-  ticks_max=249234771 jpm_median=65652
+job-mix: tasks=32 jobs=4096 repeats=21 ticks_minimum=228108401 ticks_median=233958411 \
+  ticks_maximum=249234771 jpm_median=65652
 job-mix: done
 
 job-mix: reached job-mix sweep complete (15924 bytes in 164.9s)
-job-mix: last point tasks=32 jobs=4096 repeats=21 ticks_min=228108401 \
-  ticks_median=233958411 ticks_max=249234771 jpm_median=65652
+job-mix: last point tasks=32 jobs=4096 repeats=21 ticks_minimum=228108401 \
+  ticks_median=233958411 ticks_maximum=249234771 jpm_median=65652
 $ echo $?
 0
 
 $ cargo xtask job-mix --arch aarch64 --smp 4 --quiet-after 1s
 job-mix: went quiet after job-mix sweep running (8545 bytes in 13.7s)
-job-mix: last point tasks=2 jobs=256 repeats=21 ticks_min=18753659 \
-  ticks_median=20392064 ticks_max=24330391 jpm_median=47077
+job-mix: last point tasks=2 jobs=256 repeats=21 ticks_minimum=18753659 \
+  ticks_median=20392064 ticks_maximum=24330391 jpm_median=47077
 $ echo $?
 2
 
 $ cargo xtask job-mix --arch aarch64 --smp 4 --for 30s
 job-mix: time ran out after job-mix sweep running (9437 bytes in 30.0s)
-job-mix: last point tasks=2 jobs=256 repeats=21 ticks_min=19380785 \
-  ticks_median=23557551 ticks_max=51605248 jpm_median=40751
+job-mix: last point tasks=2 jobs=256 repeats=21 ticks_minimum=19380785 \
+  ticks_median=23557551 ticks_maximum=51605248 jpm_median=40751
 $ echo $?
 3
 ```

@@ -15,7 +15,7 @@ Every equivalence claim is a mutant the final run still reports.
 One sentence explains all 77, and it is not a truncation bug. Every fixture in this crate is a
 table or a device tree that is well formed, so a guard was only ever asked about inputs with room
 to spare on both sides of it. The crate has an `AcpiError::Truncated` variant, prose about tables
-"shorter than it is", and a `MAX_CPU_NODES` the record can overflow. Nothing ever handed a parser
+"shorter than it is", and a `MAXIMUM_CPU_NODES` the record can overflow. Nothing ever handed a parser
 an input at any of those edges.
 
 #### The one-property hypothesis, measured and refused
@@ -101,7 +101,7 @@ These are four shapes no dump can produce. Three fixtures are new (`many-harts`,
   the PLIC named like its harts' own controllers and declared before `/cpus`. Both JH7110 fixtures
   declare theirs after, so a walk that failed to filter it by `compatible` still got the right
   answer there. The second is a hart controller with no `phandle`, which still consumes its hart's
-  slot. The third is a hart whose id is exactly `MAX_CONTEXT_HARTS`: the tree names an S context
+  slot. The third is a hart whose id is exactly `MAXIMUM_CONTEXT_HARTS`: the tree names an S context
   for it and the record has no slot for it. That last one is a write past a sixteen-element array
   under `<=`.
 - PPI 16. `interrupt-shapes` had `badppi@` at 99, which any reading of the bound turns away. 16 is
@@ -139,8 +139,8 @@ alone could not tell a sixteen-bit shift from either direction.
   its four variants to four distinct widths (0, 32, 64, 128), so `Equal` means the same variant in
   both. An ordering that put two variants at one rank would break this argument rather than the
   code.
-- A bound the other ceiling makes unreachable (1). `plic`'s `n < MAX_CONTEXT_HARTS` under `<=`. The
-  conjunct after it is `cpus.cpus().get(n)`, and that slice is at most `MAX_CPU_NODES` long. Both
+- A bound the other ceiling makes unreachable (1). `plic`'s `n < MAXIMUM_CONTEXT_HARTS` under `<=`. The
+  conjunct after it is `cpus.cpus().get(n)`, and that slice is at most `MAXIMUM_CPU_NODES` long. Both
   constants are sixteen, so `get(16)` is `None` for every tree. The mutant's extra iteration never
   reaches the array it would index. **Re-check this one if either constant ever moves**: the
   equivalence is a relationship between two numbers, not a property of the line.

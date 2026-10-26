@@ -652,7 +652,7 @@ fn write_archive(
 
     let size = nifefs::image_size(&files);
     let mut img = std::vec![0u8; size];
-    // Carry the error: it names which of `MAX_FILES`, `image_size` and `write_image`'s bounds check
+    // Carry the error: it names which of `MAXIMUM_FILES`, `image_size` and `write_image`'s bounds check
     // refused, and those are otherwise hunted for by hand.
     if let Err(e) = nifefs::write_image(&files, &mut img) {
         eprintln!(

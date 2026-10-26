@@ -34,9 +34,9 @@ const REPORT: u64 = 2;
 /// here; the controller writes it by DMA.
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 /// The client windows, directly above the block channel, as `redoxfs_server` lays them out:
-/// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAX` bytes in one run, window `badge` per request
+/// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes in one run, window `badge` per request
 /// (milestone 599 (a frame per filesystem client channel)'s pattern).
-const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAX as u64;
+const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
 
 const EIO: i32 = 5;
 const EINVAL: i32 = 22;
@@ -62,13 +62,13 @@ fn start(_: u64, _: u64, _: u64) -> ! {
             reply(to, reply_err(EINVAL) as u64, 0);
             continue;
         }
-        // SAFETY: the wiring maps `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAX` bytes at
+        // SAFETY: the wiring maps `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes at
         // FILE_PAGE, and the client whose badge names this one is parked inside its CALL until
         // the reply below.
         let page = unsafe {
             core::slice::from_raw_parts_mut(
-                (FILE_PAGE + req.badge * fs::TRANSFER_MAX as u64) as *mut u8,
-                fs::TRANSFER_MAX,
+                (FILE_PAGE + req.badge * fs::TRANSFER_MAXIMUM as u64) as *mut u8,
+                fs::TRANSFER_MAXIMUM,
             )
         };
         let (r0, r1) = match tree.handle(req.w0, req.w1, page) {
@@ -78,10 +78,10 @@ fn start(_: u64, _: u64, _: u64) -> ! {
                 if got < 0 {
                     (reply_err(EIO), 0)
                 } else {
-                    // SAFETY: the NVMe window is `blk::TRANSFER_MAX` bytes at BLK_PAGE and
+                    // SAFETY: the NVMe window is `blk::TRANSFER_MAXIMUM` bytes at BLK_PAGE and
                     // `skip + len` never passes `read.blocks` blocks (`crates/disk_tree`'s tests).
                     let staged = unsafe {
-                        core::slice::from_raw_parts(BLK_PAGE as *const u8, blk::TRANSFER_MAX)
+                        core::slice::from_raw_parts(BLK_PAGE as *const u8, blk::TRANSFER_MAXIMUM)
                     };
                     page[..read.len].copy_from_slice(&staged[read.skip..read.skip + read.len]);
                     (read.len as i64, 0)

@@ -47,7 +47,7 @@ the price of `IrqSafeMutex` visible on the second ISA.
 
 ### 3. `TICKS` was one global counter for a per-hart timer
 
-aarch64's `TICKS` is `[AtomicU64; MAX_CPUS]`, and the comment on it explains why (DECISIONS §11): a
+aarch64's `TICKS` is `[AtomicU64; MAXIMUM_CPUS]`, and the comment on it explains why (DECISIONS §11): a
 single counter is advanced by *every* core's tick, so "holding a lock stops my ticks" stops being
 observable, because masking interrupts masks only the holding core.
 

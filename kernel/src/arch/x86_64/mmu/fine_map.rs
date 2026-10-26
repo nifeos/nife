@@ -149,15 +149,15 @@ where
         stack_top(),
         Flags::kernel_data(),
     )?;
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         va("secondary stack", bottom, top, Flags::kernel_data())?;
     }
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         va("interrupt stack", bottom, top, Flags::kernel_data())?;
     }
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         for k in 0..super::super::ist::VECTORS.len() {
             let (bottom, top) = super::super::ist::span(id, k);
             va("IST stack", bottom, top, Flags::kernel_data())?;
@@ -290,7 +290,7 @@ where
         m.translate(stack_guard()).is_none(),
         "the guard page IS mapped: stack overflow protection is off"
     );
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
             "a secondary's guard page IS mapped: its stack overflow protection is off"

@@ -27,13 +27,13 @@ The layout, per core (`kernel/src/smp.rs`):
   slot n:  [ guard 4 KiB, unmapped ][ stack 64 KiB, kernel_data ]   stride 68 KiB (0x11000)
 ```
 
-The region is `MAX_CPUS` slots, page-aligned at both ends, and it sits inside
+The region is `MAXIMUM_CPUS` slots, page-aligned at both ends, and it sits inside
 `__image_start`..`__image_end`. So `image_size` in the arm64 Image header still covers it (the
 bootloader will not drop a device tree on a stack). And the direct map still skips it, so there is
 no second, mapped alias of a guard page. On aarch64 it lands at `__stack_top`,
 0x4010c000..0x40194000; on riscv64 at 0x80272000..0x802fa000. Those are eight slots since the
-2026-08-14 `MAX_CPUS` bump; the ranges were 0x400fc000..0x40140000 and 0x80266000..0x802aa000 at
-four. `MAX_CPUS` stays in Rust and is not written again in either linker script, which is the drift
+2026-08-14 `MAXIMUM_CPUS` bump; the ranges were 0x400fc000..0x40140000 and 0x80266000..0x802aa000 at
+four. `MAXIMUM_CPUS` stays in Rust and is not written again in either linker script, which is the drift
 `cseam` teaches to avoid. A test holds the emitted region against the reserved one from the other
 side.
 

@@ -45,8 +45,8 @@ sentinel, and only then spawns the program.
 
 A set does not fit in `START` registers, so the set grant encodes it into a frame of its own,
 mapped read-only into the caretaker before it is spawned. No client can reach that frame, so it
-needs none of the ordering above. `ARG_MAX` returns here as the size of a capability, bounded by
-`filesystem_contract::nameset::MAX_NAMES` at both ends.
+needs none of the ordering above. `ARG_MAXIMUM` returns here as the size of a capability, bounded by
+`filesystem_contract::nameset::MAXIMUM_NAMES` at both ends.
 
 ## Two directories for one program
 

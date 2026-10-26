@@ -161,7 +161,7 @@ at once.
 answer, a closed channel failing the call in flight, reached without touching the server.
 `drain_waiters` cannot do it, since a reply park is on no queue. `wait_on` records `(ep, Reply)`, so
 a scan of the thread table finds it. It rescans rather than lists, because its bound is
-`MAX_THREADS`, a kilobyte that grows with the thread ceiling. A list would sit on the chain through
+`MAXIMUM_THREADS`, a kilobyte that grows with the thread ceiling. A list would sit on the chain through
 `reap_region_objects`, the deepest frame in the kernel ([notes/stack-high-water.md](../stack-high-water.md)).
 The scan ends on the abort flag `strand_reply_caller` sets, not on `wait_on`. A wake deferred behind
 `on_cpu` leaves the park in place until that core's `finish_switch`. A predicate on `wait_on` alone

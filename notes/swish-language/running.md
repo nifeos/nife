@@ -146,7 +146,7 @@ drains to `OPERATION_EOF` has no dead reader to signal.
 
 ## The output ceiling
 
-`MAX_OUTPUT_CHUNKS` is one number for every destination: 4096 chunks of 16 bytes, 64 KiB. It bounds a
+`MAXIMUM_OUTPUT_CHUNKS` is one number for every destination: 4096 chunks of 16 bytes, 64 KiB. It bounds a
 bug, a program that never announces end of stream, so that the bug costs a truncated answer and not a
 prompt that never returns. A bug is not more tolerable when the bytes go into a file, so a `>` gets
 the same ceiling as the screen. The number only has to be larger than anything a working program says

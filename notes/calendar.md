@@ -55,7 +55,7 @@ assert an equality rather than an implication.
 
 ### The range: years 0000 through 9999
 
-`MIN_TIMESTAMP` is 0000-01-01T00:00:00Z and `MAX_TIMESTAMP` is 9999-12-31T23:59:59Z. The bound comes
+`MINIMUM_TIMESTAMP` is 0000-01-01T00:00:00Z and `MAXIMUM_TIMESTAMP` is 9999-12-31T23:59:59Z. The bound comes
 from RFC 3339, whose `date-fullyear` is exactly four digits. A year outside it cannot be *written*
 in the interchange format the crate parses and prints, so admitting it would create values that can
 be computed and not spoken. Outside the range is `Error::OutOfRange`, never a wrapped or saturated

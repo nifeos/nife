@@ -37,7 +37,7 @@ The two numbers that decide anything are the last two, and neither is a data str
 
 ## 1. A per-thread deadline is free, and the block's premise is stale
 
-The brief for this lane said "`MAX_THREADS` is 128 and the thread pool is a static BSS array". That
+The brief for this lane said "`MAXIMUM_THREADS` is 128 and the thread pool is a static BSS array". That
 was true at milestone 14 (kernel) phase B.2 and stopped being true at 19c.2. The static pool is
 gone, and every `Thread` now lives at the start of one page drawn from `kmem` or from a user process's own
 memory region (`sched.rs:80-93`, notes/thread-control-block.md). The table is `generational_table::Table<ThreadControlBlockPointer, 256>`, about 2 KiB of
@@ -126,7 +126,7 @@ A deadline on `Rendezvous::RECEIVE`/`CALL` needs two things the other two do not
    `pop_front`, `is_empty`, `len`. `inter_process_communication::Rendezvous` adds only
    `drain_waiters`, which drains *all* of them. Removing one specific waiter is a new method,
    O(queue length) from the head, on a crate that carries machine-checked proofs of its one-queue
-   invariant, so the proofs move with it. Bounded by `MAX_THREADS`, paid only on an actual expiry,
+   invariant, so the proofs move with it. Bounded by `MAXIMUM_THREADS`, paid only on an actual expiry,
    and the census in section 6 says a queue can hold most of the table.
 2. Nothing else. The half that looks harder is already built. `thread_wake_handshake`'s undelivered-wake
    gate refuses a wake with `wait_on.is_some()` and nothing delivered (boot 8). So a timeout looks
@@ -147,7 +147,7 @@ whichever shape wins.
 
 ## 6. How many threads are actually blocked at once
 
-`MAX_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the occupancy
+`MAXIMUM_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the occupancy
 is worth knowing rather than assuming. A `#[cfg(test)]` census was sampled from inside `schedule()`'s
 decision (which already holds `SCHED` and already has the table), every 64th call, over the whole
 aarch64 suite:

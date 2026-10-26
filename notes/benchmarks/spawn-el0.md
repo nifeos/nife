@@ -7,28 +7,28 @@ lets a reader act without opening this file. This one holds the 2026-08-27 occup
 
 ## 2026-08-27: raising a ceiling made `spawn_el0` 16.5% slower, and the fix made it 41% faster than it had ever been
 
-The `--check` tripwire caught `sched::MAX_THREADS` going 128 to 256. `spawn_el0` measured 2,418,606
+The `--check` tripwire caught `sched::MAXIMUM_THREADS` going 128 to 256. `spawn_el0` measured 2,418,606
 ticks against a 2,070,473 baseline, +348,133 (+16.8%), well outside the ±10% band. Every other row
 was flat.
 
 ### Attribution, by measurement rather than arithmetic
 
 The technique is `1259dc07`'s: hold everything constant and remove one suspect at a time. All four
-numbers are `spawn_el0`, aarch64, TCG + icount, at `MAX_THREADS = 256` unless stated.
+numbers are `spawn_el0`, aarch64, TCG + icount, at `MAXIMUM_THREADS = 256` unless stated.
 
 | configuration | ticks | attributed |
 |---|---|---|
-| baseline, `MAX_THREADS = 128` | 2,070,473 | (reference) |
+| baseline, `MAXIMUM_THREADS = 128` | 2,070,473 | (reference) |
 | everything at 256 | 2,418,606 | +348,133 total |
 | 256, capability sweep stubbed out | 2,277,247 | the sweep = **141,359** |
-| 256, `revoke::MAX_SPACES` pinned at its old 160 | 2,280,022 | the registry = **138,584** |
+| 256, `revoke::MAXIMUM_SPACES` pinned at its old 160 | 2,280,022 | the registry = **138,584** |
 
 There are two causes of nearly equal size, not one. The first was predicted.
 `sched::delete_page_frame_caps_where` walks every thread's capability table on every
 `MemoryRegion::DESTROY`. `generational_table::iter_mut` yields only live entries but visits every
-slot to filter them, so its cost tracked `MAX_THREADS` rather than the number of live threads.
+slot to filter them, so its cost tracked `MAXIMUM_THREADS` rather than the number of live threads.
 
-The second was not predicted. `revoke::MAX_SPACES` derives from `MAX_THREADS`, and the registry is
+The second was not predicted. `revoke::MAXIMUM_SPACES` derives from `MAXIMUM_THREADS`, and the registry is
 a plain array walked linearly. `forget_root` scans all of it unconditionally on every
 `AddressSpace::drop`. The two do not quite sum to the total (280k of 348k). The remainder was not
 chased separately, because the fix below removed all of it.
@@ -63,7 +63,7 @@ this benchmark will not notice.
 
 - This is a mitigation, and milestone 183 (a physical-range index for capability holders) is the fix. That milestone ("a physical-range index for
   capability holders, so revocation stops scanning every thread") removes the sweep rather than
-  making it cheaper. The sweep is now O(live threads) instead of O(`MAX_THREADS`). That is a much
+  making it cheaper. The sweep is now O(live threads) instead of O(`MAXIMUM_THREADS`). That is a much
   better constant on a boot holding 130 threads, and no help to one holding 130 threads that all
   need checking. The index is still the answer for a machine with real tenancy.
 - The 41% is `spawn_el0` on a bench boot, not a claim about spawn in general. A boot whose tables

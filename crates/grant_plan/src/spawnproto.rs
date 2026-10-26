@@ -347,7 +347,7 @@ pub enum ActivationStatus {
     /// failure is described in `notes/packages.md`: never a `current` naming a generation that
     /// was not written whole.
     StoreFailed = 5,
-    /// A verb this progenitor does not know, or a package larger than [`IMAGE_MAX_PAGES`].
+    /// A verb this progenitor does not know, or a package larger than [`IMAGE_MAXIMUM_PAGES`].
     Unknown = 6,
     // 7, 8 and 9 were `NoSuchPackage`, `NoNetwork` and `FetchFailed`, the progenitor's fetch's
     // answers, retired with it by milestone 809. A fetch's failures are `jig`'s to say now.
@@ -422,15 +422,17 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// **The longest holder name a [`ActivationStatus::NameTaken`] reply carries**, in bytes: the
 /// width of a package header's name field (`package_archive::NAME_LEN`). A longer name, which only
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
-pub const HOLDER_MAX: usize = 32;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `HOLDER_MAX`.
+pub const HOLDER_MAXIMUM: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
 /// endpoint** (milestone 919): the name of the package that already holds the program, so the
 /// owner is told what to remove first. Four little-endian words of name and its length. The spawn
 /// endpoint sends no install, so only a package manager reads these. Name: provisional.
 pub fn holder_words(holder: &str) -> [(u64, u64, u64); 2] {
-    let mut bytes = [0u8; HOLDER_MAX];
-    let len = holder.len().min(HOLDER_MAX);
+    let mut bytes = [0u8; HOLDER_MAXIMUM];
+    let len = holder.len().min(HOLDER_MAXIMUM);
     bytes[..len].copy_from_slice(&holder.as_bytes()[..len]);
     let word = |i: usize| {
         let mut w = [0u8; 8];
@@ -442,12 +444,12 @@ pub fn holder_words(holder: &str) -> [(u64, u64, u64); 2] {
 
 /// [`holder_words`] read back into `out`: the holder's name, or `""` for words that do not spell
 /// one.
-pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAX]) -> &str {
+pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXIMUM]) -> &str {
     let [(a, b, len), (c, d, _)] = words;
     for (i, w) in [a, b, c, d].into_iter().enumerate() {
         out[i * 8..i * 8 + 8].copy_from_slice(&w.to_le_bytes());
     }
-    let len = usize::try_from(len).map_or(HOLDER_MAX, |l| l.min(HOLDER_MAX));
+    let len = usize::try_from(len).map_or(HOLDER_MAXIMUM, |l| l.min(HOLDER_MAXIMUM));
     core::str::from_utf8(&out[..len]).unwrap_or("")
 }
 
@@ -455,21 +457,23 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAX]
 /// shell refuses a larger file before it sends anything and the progenitor never stages more than
 /// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`).
 ///
-/// Reserved, not spent: `IMAGE_MAX_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5 MiB,
+/// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5 MiB,
 /// are set aside at boot for the shell's staging frames, the progenitor's copy, the child's pages
 /// and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
-pub const IMAGE_MAX_PAGES: u64 = 1024;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `IMAGE_MAX_PAGES`.
+pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 
 /// **The budget the progenitor hands the boot shell**, in pages, which both read: the progenitor
 /// splits it, and the shell prints it in `caps` because there is no call that says how much is
 /// left.
 ///
 /// 128 pages for `--mem` grants, pipes and the shell's own windows, plus one image's staging frames
-/// ([`IMAGE_MAX_PAGES`]), since the shell reads a file run by its path into frames split from this
+/// ([`IMAGE_MAXIMUM_PAGES`]), since the shell reads a file run by its path into frames split from this
 /// budget before it sends them.
 ///
 /// Name: provisional.
-pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
+pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 
 /// The page size an image is carried in. A frame is one page on every architecture this tree
 /// builds for.
@@ -796,11 +800,11 @@ mod tests {
     /// A holder's name survives the two messages whole, at the full width and empty.
     #[test]
     fn a_holder_name_round_trips() {
-        let mut out = [0u8; HOLDER_MAX];
+        let mut out = [0u8; HOLDER_MAXIMUM];
         for name in ["duet", "", "a-package-name-that-fills-it-all"] {
             assert_eq!(holder_from_words(holder_words(name), &mut out), name);
         }
-        let mut out = [0u8; HOLDER_MAX];
+        let mut out = [0u8; HOLDER_MAXIMUM];
         let words = [(u64::MAX, 0, 99), (0, 0, 0)];
         assert_eq!(
             holder_from_words(words, &mut out),
@@ -1036,6 +1040,6 @@ mod tests {
     /// The shell's budget is its own 128 pages and one image's staging frames.
     #[test]
     fn the_shell_budget_is_its_windows_and_one_staged_image() {
-        assert_eq!(SHELL_BUDGET_PAGES, 128 + IMAGE_MAX_PAGES);
+        assert_eq!(SHELL_BUDGET_PAGES, 128 + IMAGE_MAXIMUM_PAGES);
     }
 }

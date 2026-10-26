@@ -201,7 +201,7 @@ fn eof_flushes_and_a_long_line_is_split_not_truncated() {
     reader(&mut log, 9, b"", true, 0);
     write(&mut log, 1, b"no newline", 0);
     log.handle(1, eof(), 0, 0, 1);
-    let long = [b'x'; record::TEXT_MAX + 10];
+    let long = [b'x'; record::TEXT_MAXIMUM + 10];
     write(&mut log, 1, &long, 2);
     write(&mut log, 1, b"\n", 3);
     let (_, lines) = read_all(&mut log, 9, 0);

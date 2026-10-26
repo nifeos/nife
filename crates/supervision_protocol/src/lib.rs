@@ -472,7 +472,7 @@ pub fn build_child_space(
         hi = hi.max(end);
     }
     if address_space_map::check_image(lo, hi).is_err()
-        || endow.stack_pages > address_space_map::MAX_STACK_PAGES
+        || endow.stack_pages > address_space_map::MAXIMUM_STACK_PAGES
     {
         return Err(());
     }

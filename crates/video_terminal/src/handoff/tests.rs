@@ -3,8 +3,8 @@
 
 use super::*;
 use crate::Vt;
-use crate::geometry::{MAX_ROWS, SCROLLBACK_ROWS};
-use crate::vt::MAX_PARAMS;
+use crate::geometry::{MAXIMUM_ROWS, SCROLLBACK_ROWS};
+use crate::vt::MAXIMUM_PARAMS;
 extern crate std;
 use std::vec;
 
@@ -111,11 +111,11 @@ fn every_refusal_leaves_the_terminal_untouched() {
 /// the shape that fills both budgets exactly, which is the worst case [`HANDOFF_BYTES`] claims.
 #[test]
 fn the_largest_blob_fits_the_handoff_pages() {
-    // 96 columns divides both MAX_CELLS (192 rows, clamped to MAX_ROWS) and SCROLLBACK_CELLS
+    // 96 columns divides both MAXIMUM_CELLS (192 rows, clamped to MAXIMUM_ROWS) and SCROLLBACK_CELLS
     // (275 rows); 88 is the widest ring that is a full SCROLLBACK_ROWS deep.
     for cols in [88, 96, 132] {
         let mut t = Vt::new(cols, u32::MAX);
-        for _ in 0..SCROLLBACK_ROWS + MAX_ROWS {
+        for _ in 0..SCROLLBACK_ROWS + MAXIMUM_ROWS {
             t.feed(b"\r\n");
         }
         assert_eq!(t.scrollback_len(), t.scrollback_depth());
@@ -303,7 +303,7 @@ fn each_header_field_out_of_range_is_refused() {
         (6, depth + 1),
         (7, sb_len + 1),
         (8, 1 << 3),
-        (10, MAX_PARAMS as u32 + 1),
+        (10, MAXIMUM_PARAMS as u32 + 1),
         (11, 4),
         (16, 1 << 7),
         (16, 1 << 2),

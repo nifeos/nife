@@ -90,7 +90,7 @@ because it serves whatever length a request asks for. A client maps as much as i
 for one page. They are untouched by the step and cannot tell it happened. That is a property rather
 than a convention, and the serve loop is where it is enforced:
 
-- A length the client chooses (`READ`, `WRITE`) is clamped to `fs::TRANSFER_MAX`. A client that asks
+- A length the client chooses (`READ`, `WRITE`) is clamped to `fs::TRANSFER_MAXIMUM`. A client that asks
   for one page gets one page, and a client that maps sixteen may ask for sixteen.
 - A length the server chooses (`READDIR`, the four attribute verbs, a rename's two names) is clamped
   to one page, as it always was. This is the half that matters. A `READDIR` that filled 64 KiB would

@@ -4,8 +4,8 @@ The defect: the reply-code range loses its upper bound. Codes are a small run st
 so "at least OK" looks like the whole test, and every word a live service sends still decodes
 correctly.
 
-Expected to fail: the harness's second claim, `None => assert!(!(OK..=MAX_CODE).contains(&r0))`,
-for any word above `MAX_CODE`: an arbitrary kernel error word now decodes as a reply code. The
+Expected to fail: the harness's second claim, `None => assert!(!(OK..=MAXIMUM_CODE).contains(&r0))`,
+for any word above `MAXIMUM_CODE`: an arbitrary kernel error word now decodes as a reply code. The
 first assertion survives, because `is_authenticated` still asks for `MATCH` exactly, which is why
 this harness states the discrimination as well as the authentication.
 
@@ -14,6 +14,6 @@ diff --git a/crates/credential_contract/src/lib.rs b/crates/credential_contract/
 +++ b/crates/credential_contract/src/lib.rs
 @@ -320,3 +320,3 @@ pub fn wipe(page: &mut [u8]) {
  pub const fn code(r0: u64) -> Option<u64> {
--    if r0 >= OK && r0 <= MAX_CODE {
+-    if r0 >= OK && r0 <= MAXIMUM_CODE {
 +    if r0 >= OK {
          Some(r0)

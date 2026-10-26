@@ -22,20 +22,20 @@ fn raw_queue_pops_in_order_up_to_eight() {
     assert!(q.pop8().is_none());
 }
 
-/// A burst past [`RAW_QUEUE_MAX`] is truncated: `push` reports how many actually landed, so
+/// A burst past [`RAW_QUEUE_MAXIMUM`] is truncated: `push` reports how many actually landed, so
 /// the caller (which owns the [`Sink`]) knows to ring the bell for the rest, exactly the
 /// `LineDisc` overflow contract one level over.
 #[test]
 fn raw_queue_overflow_is_reported_not_grown() {
     let mut q = RawQueue::new();
-    assert_eq!(q.push(&[b'a'; RAW_QUEUE_MAX]), RAW_QUEUE_MAX);
+    assert_eq!(q.push(&[b'a'; RAW_QUEUE_MAXIMUM]), RAW_QUEUE_MAXIMUM);
     assert_eq!(q.push(b"more"), 0, "a full queue accepts nothing further");
     // Draining still returns exactly what was pushed, byte for byte.
     let mut drained = 0;
     while let Some((n, _)) = q.pop8() {
         drained += n;
     }
-    assert_eq!(drained, RAW_QUEUE_MAX);
+    assert_eq!(drained, RAW_QUEUE_MAXIMUM);
 }
 
 /// The queue wraps its ring correctly: push past the wrap point, pop some, push more, and the
@@ -47,7 +47,7 @@ fn raw_queue_wraps_the_ring_in_order() {
     let (n, packed) = q.pop8().unwrap(); // drain the first 8, head now at index 8
     assert_eq!(n, 8);
     assert_eq!(packed.to_le_bytes(), [1, 2, 3, 4, 5, 6, 7, 8]);
-    q.push(&[11, 12, 13]); // wraps past RAW_QUEUE_MAX
+    q.push(&[11, 12, 13]); // wraps past RAW_QUEUE_MAXIMUM
     let mut out = std::vec::Vec::new();
     while let Some((n, packed)) = q.pop8() {
         out.extend_from_slice(&packed.to_le_bytes()[..n]);
@@ -56,7 +56,7 @@ fn raw_queue_wraps_the_ring_in_order() {
 }
 
 /// **`head` is a ring index after every pop**, not a count that merely reads the same through
-/// `% RAW_QUEUE_MAX` later. `save` and `restore` walk the ring from `head`, and a `head` that
+/// `% RAW_QUEUE_MAXIMUM` later. `save` and `restore` walk the ring from `head`, and a `head` that
 /// grew by a whole ring each pop would still deliver the same bytes while no longer naming a
 /// slot, so the bytes alone cannot catch it. Mutation survivor triage, milestone 326 (turn a
 /// mutation score upward), batch 3.
@@ -66,6 +66,6 @@ fn raw_queue_head_stays_inside_the_ring() {
     for round in 0..20u8 {
         q.push(&[round; 5]);
         q.pop8().unwrap();
-        assert!(q.head < RAW_QUEUE_MAX, "round {round}: head {}", q.head);
+        assert!(q.head < RAW_QUEUE_MAXIMUM, "round {round}: head {}", q.head);
     }
 }

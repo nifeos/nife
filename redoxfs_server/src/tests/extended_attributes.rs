@@ -446,15 +446,20 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         xattr::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, &vec![b'n'; xattr::MAX_NAME + 1], xattr::RAW, b"v")
+        srv.set_xattr(h, &vec![b'n'; xattr::MAXIMUM_NAME + 1], xattr::RAW, b"v")
             .unwrap_err()
             .errno,
         xattr::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, b"user.big", xattr::RAW, &vec![0u8; xattr::MAX_VALUE + 1])
-            .unwrap_err()
-            .errno,
+        srv.set_xattr(
+            h,
+            b"user.big",
+            xattr::RAW,
+            &vec![0u8; xattr::MAXIMUM_VALUE + 1]
+        )
+        .unwrap_err()
+        .errno,
         xattr::E2BIG,
     );
     // The widest value the contract allows must actually work, or the limit above is a limit on
@@ -463,16 +468,16 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         h,
         b"user.widest",
         xattr::RAW,
-        &vec![0xCDu8; xattr::MAX_VALUE],
+        &vec![0xCDu8; xattr::MAXIMUM_VALUE],
     )
     .expect("the widest permitted value");
     assert_eq!(
         attr(&mut srv, h, b"user.widest").unwrap().1.len(),
-        xattr::MAX_VALUE,
+        xattr::MAXIMUM_VALUE,
     );
 
     // Fill the node and ask for one more.
-    for i in 1..xattr::MAX_COUNT {
+    for i in 1..xattr::MAXIMUM_COUNT {
         srv.set_xattr(h, format!("user.a{i}").as_bytes(), xattr::RAW, b"v")
             .unwrap();
     }

@@ -30,7 +30,7 @@ The flat binary QEMU loads is 249,856 bytes on aarch64 and 225,280 on riscv64. T
 `.text + .rodata + .data` to the byte, which confirms the rest is `NOBITS`: reserved at runtime,
 zero file bytes.
 
-The stacks are 70% of the total and are not a code-size fact. `.secondary_stacks` is `MAX_CPUS` (8)
+The stacks are 70% of the total and are not a code-size fact. `.secondary_stacks` is `MAXIMUM_CPUS` (8)
 times `SECONDARY_STACK_SLOT` (64 KiB plus a 4 KiB guard) = 557,056. `.interrupt_stacks` is 8 times
 (`interrupt_stack::SIZE` 16 KiB plus a 4 KiB guard) = 163,840. Both hold room for eight cores
 whether eight exist or not, so a single-hart boot never touches seven eighths of 704 KiB. Runtime

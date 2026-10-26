@@ -138,7 +138,7 @@ never becomes collectable is a leak.
   supervision endpoint, and nothing kills a livelocked child.
 - A calendar line fires up to one pass late, because `Registry::next_deadline` covers only counter
   rows.
-- A replacement's printed plan is cut at `registration::BODY_MAX`, and the verdict word survives.
+- A replacement's printed plan is cut at `registration::BODY_MAXIMUM`, and the verdict word survives.
   The archive audit is printed only for the compiled-in document.
 - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 - In store mode a program over `contract::STAGING_BYTES` is refused without saying which refusal

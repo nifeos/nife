@@ -17,7 +17,7 @@
 
 use domain_name_resolution_contract::fixture::{self, CASES};
 use domain_name_resolution_contract::{
-    GRANTS_MAX, Outcome, endowment, forget_message, grant_messages, status,
+    GRANTS_MAXIMUM, Outcome, endowment, forget_message, grant_messages, status,
 };
 
 use super::*;
@@ -31,7 +31,7 @@ const GRANTED: u32 = 0x384;
 const UNGRANTED: u32 = 0x385;
 
 /// Budget pages: each program mints at most two pages and pays for their page tables, and the
-/// resolver maps up to `GRANTS_MAX` client pages besides.
+/// resolver maps up to `GRANTS_MAXIMUM` client pages besides.
 const BUDGET_PAGES: u64 = 16;
 /// Extra stack pages for the client, the margin `network_time_client` gets.
 const CLIENT_STACK_PAGES: u64 = 3;
@@ -40,7 +40,7 @@ const CLIENT_STACK_PAGES: u64 = 3;
 /// `Query::accept` and the `Name`s around it keep several 256-byte copies live at once.
 const RESOLVER_STACK_PAGES: u64 = 8;
 /// The larger of the two, which sizes the one array `stack_pages` fills.
-const STACK_PAGES_MAX: usize = RESOLVER_STACK_PAGES as usize;
+const STACK_PAGES_MAXIMUM: usize = RESOLVER_STACK_PAGES as usize;
 
 /// Bounded by wall clock, as `ntp_tests`' is, so a client that never reports fails with a sentence
 /// rather than the 60 s watchdog. Twenty seconds, because one case is a TCP connection to a host
@@ -87,13 +87,13 @@ pub(super) fn entropy() -> Option<RendezvousId> {
 
 /// `pages` zeroed pages below the stack top, from a region `held` hands back once the program is
 /// dead. The array is the largest size; only the first `pages` entries are mappings.
-fn stack_pages(pages: u64, held: &mut Holding) -> [Mapping; STACK_PAGES_MAX] {
+fn stack_pages(pages: u64, held: &mut Holding) -> [Mapping; STACK_PAGES_MAXIMUM] {
     let region = crate::memory_region::create(pages).expect("no stack region");
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
         flags: Flags::user_data(),
-    }; STACK_PAGES_MAX];
+    }; STACK_PAGES_MAXIMUM];
     for (k, m) in maps.iter_mut().take(pages as usize).enumerate() {
         m.phys = crate::memory_region::retype_page(region).expect("no stack page");
         m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
@@ -313,7 +313,7 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
 /// (milestone 892 (a std program at the prompt holds the network and a resolver)).
 ///
 /// The progenitor at the prompt outlives its clients: each `jig` gets a fresh badge, and the
-/// resolver has [`GRANTS_MAX`] windows for life. Every window but the first holds an unused grant,
+/// resolver has [`GRANTS_MAXIMUM`] windows for life. Every window but the first holds an unused grant,
 /// so the second client lands where the first one's page was mapped, and resolves only if the
 /// forget freed the grant (else `Full`, every name `DENIED`) and the page (else `NOT_ATTACHED`).
 /// The first badge, given to a new client, is denied every name.
@@ -336,7 +336,7 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_client() {
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, FIRST, fixture::ZONE);
-    for k in 1..GRANTS_MAX as u32 {
+    for k in 1..GRANTS_MAXIMUM as u32 {
         grant(service, UNUSED + k, fixture::ZONE);
     }
 

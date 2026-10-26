@@ -27,6 +27,6 @@ fn main() {
         acc = acc.wrapping_add(unsafe { syscall(sys_getpid) } as i64);
     }
     let ns = t.elapsed().as_nanos() as f64 / iters as f64;
-    let os = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
-    println!("{os} null_syscall (raw getpid): {ns:.1} ns/iter  (acc={acc}, iters={iters})");
+    let operating_system = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
+    println!("{operating_system} null_syscall (raw getpid): {ns:.1} ns/iter  (acc={acc}, iters={iters})");
 }

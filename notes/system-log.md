@@ -13,7 +13,7 @@ contracts it shares with the spawner, its readers, the kernel and the console. T
    the spawner registered (`system_log::registry`). It fills `seq`, `time`, `program`, `user` and
    `severity` itself. A writer supplies text and optionally a level, never its name or its time.
 2. Lines. `system_log::assembler` joins one writer's sixteen-byte chunks into lines of at most
-   `record::TEXT_MAX` bytes, so interleaved writers still produce whole lines. Eight writers can be
+   `record::TEXT_MAXIMUM` bytes, so interleaved writers still produce whole lines. Eight writers can be
    mid-line at once. A ninth cuts the least recent writer's line into two records, and the first
    is flagged `"cut":true`.
 3. F3 to JSONL. A line becomes an F3 `record::Header` plus text, rendered by `system_log::json` as
@@ -45,7 +45,7 @@ filter. The fixed field order means a reader that greps rather than parses still
 
 `system_log_contract` holds three contracts: F3 (`record`), the spawner's `control` words and the
 reader's `read` page. F3 is a 32-byte header that the service writes, or the kernel through
-`kernel_ring`, then up to `record::TEXT_MAX` bytes of text. It is the transport, never the stored
+`kernel_ring`, then up to `record::TEXT_MAXIMUM` bytes of text. It is the transport, never the stored
 form: the service converts it to one JSON object per line before storing it (§242, Question 3 as
 ruled).
 
@@ -64,7 +64,7 @@ log instead of a terminal and change nothing.
 The control words pack a badge into the low 32 bits of one word, beside an opcode and a field,
 while the kernel's badges are 64 bits. A spawner minting past `u32::MAX` has its registration
 refused rather than truncated (`control::badge_fits`). No spawner in the tree comes near it; the
-narrowing is a choice, not a fact of the kernel. A name is at most `control::NAME_MAX` bytes, so a
+narrowing is a choice, not a fact of the kernel. A name is at most `control::NAME_MAXIMUM` bytes, so a
 longer program name is cut at registration and a JSONL reader sees the prefix. Every program in the
 archive fits.
 

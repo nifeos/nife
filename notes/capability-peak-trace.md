@@ -154,7 +154,7 @@ the costs and the seven questions for each option are there.
 
 Done by milestone 754 (the capability table grows to 64 slots), calef's ruling A on 2026-10-04 UTC.
 
-The free-slot word went from `u32` to `u64`, and `capability::MAX_SLOTS` from 32 to 64. The table is
+The free-slot word went from `u32` to `u64`, and `capability::MAXIMUM_SLOTS` from 32 to 64. The table is
 64 slots of 32 bytes plus the word and two `u16` counts, so 2,064 bytes against 1,032: **1,032 more
 per thread, not 1,024**, because the wider word is eight bytes. The table lives inside the thread's
 TCB page with the FP register file, so it is no new memory. Before the change, a compile-time probe of

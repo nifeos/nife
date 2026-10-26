@@ -235,7 +235,7 @@ value) plus a second `Header::decode` for the backup overran the single mapped s
 as the lost-wakeup watchdog, because the test was still waiting on a report from a process that had
 died. `spawn_fs_client` records exactly this twice; it is now three times.
 
-**`MAX_DEVICES` again**, the sixth bump. Every milestone that wires one more confined device costs a
+**`MAXIMUM_DEVICES` again**, the sixth bump. Every milestone that wires one more confined device costs a
 table slot forever, because a transport is never unregistered. The constant's comment now says the
 fix is an unregister on process death rather than counting to seven.
 

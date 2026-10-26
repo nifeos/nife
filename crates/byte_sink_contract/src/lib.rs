@@ -1,6 +1,6 @@
 //! **The byte-sink contract**: one framing for *write these bytes there*, so a writer cannot tell
 //! what is underneath its output. A sink is a `Rendezvous` capability with `WRITE` and nothing
-//! else: up to [`INLINE_MAX`] bytes ride in registers with the opcode and length in the first word
+//! else: up to [`INLINE_MAXIMUM`] bytes ride in registers with the opcode and length in the first word
 //! (the three-word fastpath, notes/abi.md), sent with `SEND`, whose rendezvous is the flow control.
 //! [`Sent::NoSink`] means the slot is empty and writing into the void is correct; [`Sent::Gone`]
 //! means the sink was destroyed (§16 (object revocation)) and **the writer must end**, `SIGPIPE`
@@ -15,7 +15,7 @@
 /// `line_editor::proto` put theirs. One spelling for "the wire contract" across the tree.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAX`]); the bytes themselves are in the
+/// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in the
 /// second and third words, little-endian, low word first.
 ///
 /// It is **zero on purpose.** With the opcode at zero the first word is exactly the byte count,
@@ -37,7 +37,9 @@ pub const OPERATION_EOF: u64 = 1;
 /// The most bytes one message carries: two 64-bit words. Not a tuning parameter. It is what fits in
 /// the registers a `SEND` already has, and enlarging it means giving a sink a shared page, which is
 /// the thing the module note explains this contract exists to avoid.
-pub const INLINE_MAX: usize = 16;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `INLINE_MAX`.
+pub const INLINE_MAXIMUM: usize = 16;
 
 /// The kernel's `abi::Error::Gone`, restated so this crate stays dependency-free.
 ///
@@ -67,14 +69,14 @@ pub const fn eof() -> u64 {
     req(OPERATION_EOF, 0)
 }
 
-/// Pack up to [`INLINE_MAX`] bytes into the three words of a `SEND`. Bytes past the sixteenth are
+/// Pack up to [`INLINE_MAXIMUM`] bytes into the three words of a `SEND`. Bytes past the sixteenth are
 /// **not** silently dropped: the caller chunks, and the returned count says how many were taken, so
 /// a caller that ignores it writes a short message rather than losing a tail without knowing.
 ///
 /// # Examples
 ///
 /// ```
-/// use byte_sink_contract::{INLINE_MAX, Msg, eof, pack, unpack};
+/// use byte_sink_contract::{INLINE_MAXIMUM, Msg, eof, pack, unpack};
 ///
 /// let line = b"the quick brown fox\n"; // 20 bytes, so two messages and an EOF
 /// let mut messages = 0;
@@ -89,7 +91,7 @@ pub const fn eof() -> u64 {
 ///     rest = &rest[taken..]; // `pack` never drops a tail silently; the count says what it took
 ///
 ///     // The other end of the SEND.
-///     let mut buf = [0u8; INLINE_MAX];
+///     let mut buf = [0u8; INLINE_MAXIMUM];
 ///     match unpack(w0, w1, w2, &mut buf) {
 ///         Msg::Bytes(n) => {
 ///             received[got..got + n].copy_from_slice(&buf[..n]);
@@ -99,7 +101,7 @@ pub const fn eof() -> u64 {
 ///     }
 /// }
 /// let (w0, w1, w2) = (eof(), 0, 0);
-/// if let Msg::Eof = unpack(w0, w1, w2, &mut [0u8; INLINE_MAX]) {
+/// if let Msg::Eof = unpack(w0, w1, w2, &mut [0u8; INLINE_MAXIMUM]) {
 ///     ended = true;
 /// }
 ///
@@ -108,12 +110,12 @@ pub const fn eof() -> u64 {
 /// assert!(ended);
 /// ```
 pub fn pack(bytes: &[u8]) -> (u64, u64, u64, usize) {
-    let n = if bytes.len() < INLINE_MAX {
+    let n = if bytes.len() < INLINE_MAXIMUM {
         bytes.len()
     } else {
-        INLINE_MAX
+        INLINE_MAXIMUM
     };
-    let mut words = [0u8; INLINE_MAX];
+    let mut words = [0u8; INLINE_MAXIMUM];
     words[..n].copy_from_slice(&bytes[..n]);
     let mut lo = [0u8; 8];
     let mut hi = [0u8; 8];
@@ -173,11 +175,11 @@ pub const fn kind(w0: u64) -> u8 {
 /// What one received message was.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Msg {
-    /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to [`INLINE_MAX`].
+    /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to [`INLINE_MAXIMUM`].
     Bytes(usize),
     /// [`OPERATION_EOF`]: the writer is finished.
     Eof,
-    /// An opcode this contract does not define, or a byte count past [`INLINE_MAX`].
+    /// An opcode this contract does not define, or a byte count past [`INLINE_MAXIMUM`].
     ///
     /// A sink refuses it rather than guessing, and refusing loudly is the point: a length larger
     /// than the message can hold is the shape of a confused or hostile writer, and the read it
@@ -193,7 +195,7 @@ pub enum Msg {
 /// hold is refused rather than obeyed:
 ///
 /// ```
-/// use byte_sink_contract::{INLINE_MAX, Msg, OPERATION_BYTES, len, operation, pack, req, unpack};
+/// use byte_sink_contract::{INLINE_MAXIMUM, Msg, OPERATION_BYTES, len, operation, pack, req, unpack};
 ///
 /// let (w0, ..) = pack(b"hi");
 /// assert_eq!(w0, 2); // the whole word, not just its low bits
@@ -201,14 +203,14 @@ pub enum Msg {
 /// assert_eq!(len(w0), 2);
 ///
 /// // A writer claiming more bytes than three words can carry is malformed, not generous.
-/// let lying = req(OPERATION_BYTES, INLINE_MAX as u64 + 1);
-/// assert_eq!(unpack(lying, 0, 0, &mut [0u8; INLINE_MAX]), Msg::Malformed);
+/// let lying = req(OPERATION_BYTES, INLINE_MAXIMUM as u64 + 1);
+/// assert_eq!(unpack(lying, 0, 0, &mut [0u8; INLINE_MAXIMUM]), Msg::Malformed);
 /// ```
-pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAX]) -> Msg {
+pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg {
     match operation(w0) {
         OPERATION_BYTES => {
             let n = len(w0);
-            if n > INLINE_MAX {
+            if n > INLINE_MAXIMUM {
                 return Msg::Malformed;
             }
             out[..8].copy_from_slice(&w1.to_le_bytes());
@@ -307,11 +309,12 @@ mod tests {
     /// both words, one that fills neither, and one that straddles them.
     #[test]
     fn bytes_survive_the_wire_words() {
-        for n in 0..=INLINE_MAX {
-            let src: [u8; INLINE_MAX] = core::array::from_fn(|i| (i as u8).wrapping_mul(37) ^ 0x5a);
+        for n in 0..=INLINE_MAXIMUM {
+            let src: [u8; INLINE_MAXIMUM] =
+                core::array::from_fn(|i| (i as u8).wrapping_mul(37) ^ 0x5a);
             let (w0, w1, w2, taken) = pack(&src[..n]);
             assert_eq!(taken, n);
-            let mut out = [0u8; INLINE_MAX];
+            let mut out = [0u8; INLINE_MAXIMUM];
             assert_eq!(unpack(w0, w1, w2, &mut out), Msg::Bytes(n));
             assert_eq!(&out[..n], &src[..n]);
         }
@@ -323,8 +326,8 @@ mod tests {
     fn pack_takes_a_full_message_and_says_so() {
         let src = [7u8; 40];
         let (w0, _, _, taken) = pack(&src);
-        assert_eq!(taken, INLINE_MAX);
-        assert_eq!(len(w0), INLINE_MAX);
+        assert_eq!(taken, INLINE_MAXIMUM);
+        assert_eq!(len(w0), INLINE_MAXIMUM);
     }
 
     /// The framing that makes the unification free: with [`OPERATION_BYTES`] at zero, a bytes message's
@@ -348,7 +351,7 @@ mod tests {
         assert_eq!(len(marked), 9);
         assert_eq!(operation(marked), OPERATION_BYTES);
         assert_eq!(kind(marked), KIND_TEXT);
-        let mut out = [0u8; INLINE_MAX];
+        let mut out = [0u8; INLINE_MAXIMUM];
         assert_eq!(unpack(marked, w1, w2, &mut out), Msg::Bytes(9));
         assert_eq!(&out[..9], b"disk full");
         assert_eq!(severity(with_severity(w0, 0)), Some(0));
@@ -360,7 +363,7 @@ mod tests {
     /// lets one word carry both.
     #[test]
     fn eof_is_not_a_byte_count() {
-        let mut out = [0u8; INLINE_MAX];
+        let mut out = [0u8; INLINE_MAXIMUM];
         assert_eq!(unpack(eof(), 0, 0, &mut out), Msg::Eof);
         let (w0, w1, w2, _) = pack(&[]);
         assert_eq!(unpack(w0, w1, w2, &mut out), Msg::Bytes(0));
@@ -371,11 +374,11 @@ mod tests {
     /// clamped. Clamping a length would turn a hostile writer's message into a plausible one.
     #[test]
     fn a_malformed_message_is_refused_not_repaired() {
-        let mut out = [0u8; INLINE_MAX];
+        let mut out = [0u8; INLINE_MAXIMUM];
         assert_eq!(
             unpack(req(OPERATION_BYTES, 17), 0, 0, &mut out),
             Msg::Malformed,
-            "a byte count past INLINE_MAX must not be clamped",
+            "a byte count past INLINE_MAXIMUM must not be clamped",
         );
         assert_eq!(
             unpack(req(OPERATION_BYTES, u32::MAX as u64), 0, 0, &mut out),

@@ -13,7 +13,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 #[cfg(any(test, not(target_arch = "x86_64")))]
 use machine_discovery::cpu_list::CpuList;
 
-use crate::cpu::{self, MAX_CPUS};
+use crate::cpu::{self, MAXIMUM_CPUS};
 use crate::{arch, print, println};
 
 /// 64 KiB per secondary, matching core 0's boot stack (link-aarch64.ld).
@@ -30,7 +30,7 @@ const SECONDARY_STACK_GUARD: usize = 4096;
 const SECONDARY_STACK_SLOT: usize = SECONDARY_STACK_GUARD + SECONDARY_STACK_SIZE;
 
 /// One boot stack per core, each over its own guard page. Slot 0 is unused (core 0 has its own
-/// stack from link-aarch64.ld); slots `1..MAX_CPUS` belong to the secondaries. On RISC-V the boot
+/// stack from link-aarch64.ld); slots `1..MAXIMUM_CPUS` belong to the secondaries. On RISC-V the boot
 /// hart is whichever one OpenSBI picked, so the unused slot is not always 0.
 ///
 /// The `UnsafeCell` keeps the static out of `.rodata`, which the fine kernel map makes read-only.
@@ -38,7 +38,7 @@ const SECONDARY_STACK_SLOT: usize = SECONDARY_STACK_GUARD + SECONDARY_STACK_SIZE
 /// stack and skip each guard; nothing zeroes it. The linker scripts only anchor
 /// `__secondary_stacks_start`..`__secondary_stacks_end` around it. See notes/smp.md.
 #[repr(C, align(4096))]
-struct Stacks(core::cell::UnsafeCell<[[u8; SECONDARY_STACK_SLOT]; MAX_CPUS]>);
+struct Stacks(core::cell::UnsafeCell<[[u8; SECONDARY_STACK_SLOT]; MAXIMUM_CPUS]>);
 
 // SAFETY: each core writes only its OWN slot, as its stack via SP, so no two cores mutate the same
 // bytes. The cell exists to place the stacks in writable memory, not to share them.
@@ -46,7 +46,7 @@ unsafe impl Sync for Stacks {}
 
 #[cfg_attr(target_os = "none", unsafe(link_section = ".secondary_stacks"))]
 static SECONDARY_STACKS: Stacks = Stacks(core::cell::UnsafeCell::new(
-    [[0; SECONDARY_STACK_SLOT]; MAX_CPUS],
+    [[0; SECONDARY_STACK_SLOT]; MAXIMUM_CPUS],
 ));
 
 /// How many secondaries have reached [`secondary_main`] and are idling.
@@ -88,16 +88,16 @@ pub(crate) fn nth_online(k: usize) -> usize {
 /// Set by each secondary's probe thread, indexed by the core it actually ran on. The proof that a
 /// secondary schedules real work from its own queue, not just idles. See `secondary_main` step 5.
 #[cfg(any(test, feature = "system_tests"))]
-static RAN_ON: [core::sync::atomic::AtomicBool; MAX_CPUS] =
-    [const { core::sync::atomic::AtomicBool::new(false) }; MAX_CPUS];
+static RAN_ON: [core::sync::atomic::AtomicBool; MAXIMUM_CPUS] =
+    [const { core::sync::atomic::AtomicBool::new(false) }; MAXIMUM_CPUS];
 
 /// Set by a probe placed on a specific core via `spawn_on`: indexed by the core it was **placed
 /// on**, holding the core it actually **ran on**, plus one (so zero means "has not run yet"). The
 /// two differ because an idle core may steal a placed thread before its target runs it (DECISIONS
 /// §28.3). See `work_can_be_placed_on_every_cpu`.
 #[cfg(test)]
-static SPREAD: [core::sync::atomic::AtomicU32; MAX_CPUS] =
-    [const { core::sync::atomic::AtomicU32::new(0) }; MAX_CPUS];
+static SPREAD: [core::sync::atomic::AtomicU32; MAXIMUM_CPUS] =
+    [const { core::sync::atomic::AtomicU32::new(0) }; MAXIMUM_CPUS];
 
 /// The low end of core `id`'s slot, which is its **guard page**: one page of address space the
 /// kernel map deliberately leaves unmapped. `arch::mmu::map_everything` skips exactly this page per
@@ -118,7 +118,7 @@ pub(crate) fn secondary_stack_span(id: usize) -> (u64, u64) {
 #[cfg(test)]
 fn secondary_stack_region() -> (u64, u64) {
     let start = SECONDARY_STACKS.0.get() as u64;
-    (start, start + (MAX_CPUS * SECONDARY_STACK_SLOT) as u64)
+    (start, start + (MAXIMUM_CPUS * SECONDARY_STACK_SLOT) as u64)
 }
 
 /// The high-VA top of core `id`'s boot stack. Stacks grow down, so the top is the high address, and
@@ -138,13 +138,13 @@ fn stack_top(id: usize) -> u64 {
 /// `u64::MAX` is safe as the empty marker rather than merely convenient: an aarch64 affinity value
 /// is 40 bits by architecture, so it cannot reach it, and a RISC-V hart id that could would fail the
 /// hardware-id-equals-index check in [`bring_up_secondaries`] long before anything indexed by it.
-static HWID: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(u64::MAX) }; MAX_CPUS];
+static HWID: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(u64::MAX) }; MAXIMUM_CPUS];
 
 /// Per slot: did the tree describe a core this kernel could actually start? False for a core
 /// firmware marked `status = "disabled"`, for one whose own `riscv,isa` disclaims supervisor mode
 /// (the VisionFive 2's S7, whose vendor node claims a schedulable core everywhere else), and
 /// for one whose `enable-method` is a mechanism this kernel does not speak. See notes/smp.md.
-static STARTABLE: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
+static STARTABLE: [AtomicBool; MAXIMUM_CPUS] = [const { AtomicBool::new(false) }; MAXIMUM_CPUS];
 
 /// How many `cpu@` nodes the tree had, which may be more than the slots that got seated. Kept so
 /// the boot line can say "this machine has more cores than this kernel was built for" instead of
@@ -173,7 +173,7 @@ pub(crate) fn read_cpu_list() {
     for cpu in list.cpus().iter() {
         let ok = cpu.is_startable();
         startable += usize::from(ok);
-        let Some(slot) = usize::try_from(cpu.hwid).ok().filter(|&s| s < MAX_CPUS) else {
+        let Some(slot) = usize::try_from(cpu.hwid).ok().filter(|&s| s < MAXIMUM_CPUS) else {
             // Its id is past the per-CPU statics, as every clustered aarch64 affinity value is.
             // Counted only when we could otherwise have run it.
             unseated += usize::from(ok);
@@ -196,7 +196,7 @@ pub(crate) fn read_cpu_list() {
     }
     if unseated > 0 {
         print!(
-            " ({unseated} of them with hart ids past cpu::MAX_CPUS = {MAX_CPUS}, which sizes the \
+            " ({unseated} of them with hart ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, which sizes the \
              per-CPU statics, so they stay parked)"
         );
     }
@@ -249,7 +249,7 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
 
     for &(apic_id, enabled) in cpus {
         let slot = apic_id as usize;
-        if slot >= MAX_CPUS {
+        if slot >= MAXIMUM_CPUS {
             // Past the per-CPU statics; counted only when we could otherwise have run it.
             unseated += usize::from(enabled);
             continue;
@@ -271,7 +271,7 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     }
     if unseated > 0 {
         print!(
-            " ({unseated} of them with local apic ids past cpu::MAX_CPUS = {MAX_CPUS}, which sizes \
+            " ({unseated} of them with local apic ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, which sizes \
              the per-CPU statics, so they stay parked)"
         );
     }
@@ -305,7 +305,7 @@ pub(crate) fn hwid(id: usize) -> Option<u64> {
 }
 
 /// How many cores the device tree described, which is not how many this kernel can use. Greater than
-/// [`MAX_CPUS`] on a bigger machine than this build is sized for.
+/// [`MAXIMUM_CPUS`] on a bigger machine than this build is sized for.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn described_count() -> usize {
     DESCRIBED.load(Ordering::Acquire)
@@ -323,7 +323,7 @@ unsafe extern "C" {
 ///
 /// # BUGS
 ///
-/// - A core whose hardware id is at or past `MAX_CPUS` stays parked rather than being remapped.
+/// - A core whose hardware id is at or past `MAXIMUM_CPUS` stays parked rather than being remapped.
 /// - The PSCI `smc` conduit is proved by parsing, never by a call. See `arch::cpu_start`.
 #[cfg_attr(feature = "single_hart", allow(unreachable_code))]
 pub(crate) fn bring_up_secondaries() {
@@ -342,7 +342,7 @@ pub(crate) fn bring_up_secondaries() {
     // Paint every secondary's stack before any CPU_ON, while the slots are still untouched `.bss`,
     // so no live frame can be painted over (milestone 84). Whole slots: nothing has run on them.
     #[cfg(any(test, feature = "system_tests"))]
-    for id in 0..MAX_CPUS {
+    for id in 0..MAXIMUM_CPUS {
         if id != cpu::id() {
             let (b, t) = secondary_stack_span(id);
             // SAFETY: a secondary's stack slot is `.bss`, mapped by the kernel's own image, and no
@@ -369,7 +369,7 @@ pub(crate) fn bring_up_secondaries() {
     let entry = arch::mmu::virt_to_phys(secondary_boot as *const () as u64);
 
     let mut started = 0;
-    for id in 0..MAX_CPUS {
+    for id in 0..MAXIMUM_CPUS {
         // Start every seated core but the one we booted on. On aarch64 that is always core 0; on
         // RISC-V OpenSBI's boot hart is not guaranteed to be 0, so skip whichever this is.
         if id == cpu::id() {
@@ -462,7 +462,7 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 }
 
 // The SMP tests need more than one core online (the runners default to `-smp 4`; NIFE_SMP moves
-// it, up to MAX_CPUS). See notes/smp.md.
+// it, up to MAXIMUM_CPUS). See notes/smp.md.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -491,7 +491,7 @@ mod tests {
     /// nothing about the coarse boot map, on which the guards are mapped. See notes/smp.md.
     #[test_case]
     fn every_secondary_stack_sits_on_a_guard_page() {
-        for id in 0..MAX_CPUS {
+        for id in 0..MAXIMUM_CPUS {
             let guard = super::secondary_stack_guard(id);
             let (bottom, top) = secondary_stack_span(id);
 
@@ -567,7 +567,7 @@ mod tests {
             list.described,
             "the roster and a fresh read of the tree disagree about how many cores exist",
         );
-        // The tree's count is the runner's `-smp`. MAX_CPUS is a ceiling, not the machine; the
+        // The tree's count is the runner's `-smp`. MAXIMUM_CPUS is a ceiling, not the machine; the
         // suite needs at least two cores and no more than the statics can seat.
         assert!(
             list.described >= 2,
@@ -575,17 +575,17 @@ mod tests {
             list.described,
         );
         assert!(
-            list.described <= MAX_CPUS,
-            "the runner passed -smp {} but this kernel seats only {MAX_CPUS}: cores would stay \
-             parked, so run the suite at or below cpu::MAX_CPUS",
+            list.described <= MAXIMUM_CPUS,
+            "the runner passed -smp {} but this kernel seats only {MAXIMUM_CPUS}: cores would stay \
+             parked, so run the suite at or below cpu::MAXIMUM_CPUS",
             list.described,
         );
 
         for cpu in list.cpus().iter() {
             let slot = usize::try_from(cpu.hwid).expect("a virt hart id fits in usize");
             assert!(
-                slot < MAX_CPUS,
-                "hart {slot} has no seat: the runner's -smp exceeds cpu::MAX_CPUS",
+                slot < MAXIMUM_CPUS,
+                "hart {slot} has no seat: the runner's -smp exceeds cpu::MAXIMUM_CPUS",
             );
             // Seating is by hart id (read_cpu_list), so the slot a core occupies IS its hardware id.
             assert_eq!(
@@ -665,7 +665,7 @@ mod tests {
     ///
     /// `bring_up_secondaries` already waited for the count before `test_main` ran, so the other
     /// cores are online by now. The expectation is the machine's own core count (whatever `-smp`
-    /// the runner passed), not `MAX_CPUS`: the constant is capacity, and a leg run at `-smp 5`
+    /// the runner passed), not `MAXIMUM_CPUS`: the constant is capacity, and a leg run at `-smp 5`
     /// on an eight-slot kernel has four secondaries, honestly.
     #[test_case]
     fn all_secondaries_came_online() {
@@ -698,7 +698,7 @@ mod tests {
         // is cores 1..N; on RISC-V QEMU's boot hart is not fixed, so it is every core but that one.
         let boot = crate::arch::boot_cpu_id();
         let is_secondary = |c: usize| c != boot;
-        // The online set, not `0..MAX_CPUS`: only a core that came online spawned a probe.
+        // The online set, not `0..MAXIMUM_CPUS`: only a core that came online spawned a probe.
         let all_ran = || {
             online_cpus()
                 .filter(|&c| is_secondary(c))
@@ -811,8 +811,8 @@ mod tests {
     /// every idle core, then they exit and are reaped (the no-leak proxy would catch it otherwise).
     #[test_case]
     fn a_batch_of_cpu_bound_work_reaches_every_cpu() {
-        static ON: [core::sync::atomic::AtomicU32; MAX_CPUS] =
-            [const { core::sync::atomic::AtomicU32::new(0) }; MAX_CPUS];
+        static ON: [core::sync::atomic::AtomicU32; MAXIMUM_CPUS] =
+            [const { core::sync::atomic::AtomicU32::new(0) }; MAXIMUM_CPUS];
         static RELEASE: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
         for r in &ON {
             r.store(0, Ordering::Relaxed);

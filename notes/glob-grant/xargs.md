@@ -92,7 +92,7 @@ $ xargs caps rm globmany/m-*.txt
 
 ### Milestone 47's claim, quoted and then corrected
 
-> `ARG_MAX` becomes a capability limit rather than a buffer limit. Unix's "argument list too
+> `ARG_MAXIMUM` becomes a capability limit rather than a buffer limit. Unix's "argument list too
 > long" is why `xargs` exists; here the ceiling is that you cannot hand a child a hundred thousand
 > capabilities. The same failure with a more honest cause, and it wants the same answer (batching),
 > so `xargs` earns its place for a better reason than Unix had.
@@ -101,7 +101,7 @@ The conclusion is right and the reason recorded for it is the weaker of the two 
 honest cause" is a claim about why the *limit* exists, and a nicer-sounding limit is still a limit.
 
 The claim worth making is about the batching. Unix's `xargs` is a workaround with no upside: if
-`ARG_MAX` were infinite, nobody would ever type it. Here, batching bounds the authority in flight.
+`ARG_MAXIMUM` were infinite, nobody would ever type it. Here, batching bounds the authority in flight.
 A single grant of five hundred names would mean one process holding five hundred names at once; a
 sweep means at most eight are reachable by anything at any moment, and each batch's caretaker dies
 with its batch. We would want this even if the carrier were unlimited, which is the whole

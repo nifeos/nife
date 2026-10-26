@@ -69,7 +69,7 @@ arguments, so the syscall's argument shape is the same for a run as for one page
 
 A slot is 32 bytes: `Object` is as wide as its widest variant, `PageFrame`, at 24 bytes, plus the
 rights. §102 priced the slot count on 24 bytes a slot. At 64 slots a table is 2,048 bytes of slots,
-and the option §102 priced at 12 KiB a thread for 512 slots would be 32 KiB. `sched::MAX_THREADS`
+and the option §102 priced at 12 KiB a thread for 512 slots would be 32 KiB. `sched::MAXIMUM_THREADS`
 is 256, so every whole-machine figure §102 quoted is larger again. The refusal does not change; the
 size assertions in `cap.rs` exist so the number a reader quotes is the one the compiler agrees
 with.

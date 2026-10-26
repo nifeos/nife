@@ -37,13 +37,13 @@ const BLOCK: usize = BLOCK_SIZE as usize;
 /// The image size. RedoxFS's own minimum is well under this; it matches the proposal's measurement.
 const IMAGE: usize = 4 * 1024 * 1024;
 /// Requests per session after the prologue. Long enough to bind, mint, close and reuse a slot.
-const MAX_REQUESTS: usize = 48;
+const MAXIMUM_REQUESTS: usize = 48;
 
 /// **The largest end a session lets a file reach, below the server's own refusal.** A recorded
 /// limitation, not a rule: shrinking a file costs time linear in its logical size (the `BUGS`
 /// section of `Server::truncate`), so a session that grew a file to terabytes would time out on
 /// every run and hide everything after it. A `WRITE` end or `TRUNCATE` size between this and
-/// `MAX_FILE_END` is folded below it; past `MAX_FILE_END` it is sent as drawn, so the `EFBIG`
+/// `MAXIMUM_FILE_END` is folded below it; past `MAXIMUM_FILE_END` it is sent as drawn, so the `EFBIG`
 /// refusals stay exercised. Drop this when the proposal that `BUGS` entry names is built.
 const SPARSE_LIMIT: u64 = 64 << 20;
 
@@ -53,7 +53,7 @@ fn sparse(code: u64, len: usize, w1: u64) -> u64 {
         fs::TRUNCATE => w1,
         _ => return w1,
     };
-    if end > SPARSE_LIMIT && end <= redoxfs_server::MAX_FILE_END {
+    if end > SPARSE_LIMIT && end <= redoxfs_server::MAXIMUM_FILE_END {
         w1 % SPARSE_LIMIT
     } else {
         w1
@@ -381,7 +381,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     };
     let mut s = Session {
         server: Server::open(disk).expect("the template opens"),
-        window: vec![0; fs::TRANSFER_MAX],
+        window: vec![0; fs::TRANSFER_MAXIMUM],
         badges: [Model::Open; fs::CLIENT_WINDOWS],
         owners: HashMap::new(),
         forbidden: [&[]; fs::CLIENT_WINDOWS],
@@ -409,7 +409,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
         s.forbidden[badge as usize] = forbidden;
     }
 
-    for _ in 0..MAX_REQUESTS {
+    for _ in 0..MAXIMUM_REQUESTS {
         if u.is_empty() {
             break;
         }

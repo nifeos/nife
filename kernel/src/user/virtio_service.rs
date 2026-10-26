@@ -132,7 +132,7 @@ pub fn start_net_pci(image: &'static [u8]) -> Option<RendezvousId> {
 /// The heap budget the net server (smoltcp) draws from, in pages: the socket set, per-frame
 /// transmit buffers and caches, plus the page tables for the heap and for clients' shared frames.
 ///
-/// `net_stack::HEAP_MAX` caps the heap at 96 pages, which leaves 32 for page tables and clients'
+/// `net_stack::HEAP_MAXIMUM` caps the heap at 96 pages, which leaves 32 for page tables and clients'
 /// frame mappings; if one number moves, the other must. See notes/net/memory-and-reclamation.md.
 pub(super) const NET_SERVER_BUDGET_PAGES: u64 = 128;
 /// smoltcp builds packets on the stack; one mapped stack page is not enough. Eight extra keeps

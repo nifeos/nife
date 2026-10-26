@@ -38,7 +38,7 @@ pub enum Refusal {
     /// whose printed preview and actual transfer could disagree.
     NoSuchOption,
     /// The named file is not something this shell can express: empty, a component longer than the
-    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAX_NAME`), deeper than the
+    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAXIMUM_NAME`), deeper than the
     /// shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.
@@ -52,7 +52,7 @@ pub enum Refusal {
     /// `--mem N` was outside the program's declared range.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
-    MemoryGrantOutOfRange { min: u64, max: u64 },
+    MemoryGrantOutOfRange { minimum: u64, maximum: u64 },
     /// The program requires an integer argument, but none was given.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
@@ -66,13 +66,13 @@ pub enum Refusal {
     /// empty expansion is an empty grant and running the command would be running it with an
     /// authority nobody named. See [`expand::Expander::finish`](crate::expand::Expander::finish).
     NoMatch,
-    /// **A pattern matched more names than one grant can carry.** Unix's `ARG_MAX` with a more
+    /// **A pattern matched more names than one grant can carry.** Unix's `ARG_MAXIMUM` with a more
     /// honest cause: not a buffer that ran out but a capability the child could neither hold nor be
     /// shown. Loud at the prompt with nothing spawned, because a glob that quietly granted a prefix
     /// of what it matched is the worst outcome this mechanism has.
     TooManyNames,
     /// A name a pattern matched cannot travel in a grant (longer than
-    /// [`expand::MAX_NAME`](crate::expand::MAX_NAME)). Refused whole rather than dropped from the set, for
+    /// [`expand::MAXIMUM_NAME`](crate::expand::MAXIMUM_NAME)). Refused whole rather than dropped from the set, for
     /// [`Refusal::TooManyNames`]'s reason.
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting
@@ -112,7 +112,7 @@ pub enum Refusal {
     /// direct call, which is why the sequence splitter has to run first rather than merely usually
     /// running first.
     EmptyStage,
-    /// **More stages than one line may carry** ([`line::MAX_STAGES`](crate::line::MAX_STAGES)). A ceiling on processes and
+    /// **More stages than one line may carry** ([`line::MAXIMUM_STAGES`](crate::line::MAXIMUM_STAGES)). A ceiling on processes and
     /// endpoints, not on a buffer.
     TooManyStages,
     /// **A pattern where a redirection's name goes.** A redirection designates one destination and

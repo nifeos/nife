@@ -121,7 +121,7 @@ the next reader down a road already walked.
 
 Heap exhaustion and accumulated mount state: dead, measured. The hypothesis was that a used image
 carries a higher header generation, a longer allocator log and more live tree blocks. So the second
-mount would drive the FS server past its 8 MiB cap (`HEAP_MAX` in `redoxfs_server.rs`, matched by
+mount would drive the FS server past its 8 MiB cap (`HEAP_MAXIMUM` in `redoxfs_server.rs`, matched by
 `FS_BUDGET_PAGES` in `kernel/src/user.rs`). It does not. `redoxfs_server/src/bin/second_mount.rs`
 runs the real engine under the same allocator the FS server uses: `user_mode_heap`, the algorithm
 behind `user_mode_runtime::heap::UntypedHeap`, grown incrementally and capped identically. The image

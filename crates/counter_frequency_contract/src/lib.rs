@@ -32,17 +32,21 @@ pub const MAGIC: [u8; 8] = *b"TIMEBAS1";
 /// boot: radon's 4 MHz `time` CSR is the slowest counter here, and 100 kHz sits above the 32.768
 /// kHz watch crystal on purpose. Anything under it is a failed measurement, not a slow part. See
 /// notes/benchmarks/counter-frequency-and-calibration.md, "The page and its bounds".
-pub const MIN_PLAUSIBLE_HZ: u64 = 100_000;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MIN_PLAUSIBLE_HZ`.
+pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
 
 /// **The fastest counter this tree will believe**, 100 GHz, and the same reasoning as
-/// [`MIN_PLAUSIBLE_HZ`] read from the other end. No part ticks a counter at 100 GHz and none will
+/// [`MINIMUM_PLAUSIBLE_HZ`] read from the other end. No part ticks a counter at 100 GHz and none will
 /// for a long time (the fastest here is a few GHz of TSC), so a number above this came from a
 /// division that went the wrong way or a register that was never written. Generous by two orders of
 /// magnitude on purpose: this band exists to catch nonsense, not to police hardware.
-pub const MAX_PLAUSIBLE_HZ: u64 = 100_000_000_000;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_PLAUSIBLE_HZ`.
+pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 
-/// Is `hz` a rate a real machine could plausibly have? See [`MIN_PLAUSIBLE_HZ`] and
-/// [`MAX_PLAUSIBLE_HZ`] for where the bounds come from and why they are so wide.
+/// Is `hz` a rate a real machine could plausibly have? See [`MINIMUM_PLAUSIBLE_HZ`] and
+/// [`MAXIMUM_PLAUSIBLE_HZ`] for where the bounds come from and why they are so wide.
 ///
 /// One definition rather than three: a band copied into each architecture's timer drifts, so the
 /// kernel's aarch64, riscv64 and `x86_64` boot paths all call this where each first learns its
@@ -59,7 +63,7 @@ pub const MAX_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 /// assert!(!is_plausible(1)); // firmware wrote nonsense, and `> 0` would have believed it
 /// ```
 pub fn is_plausible(hz: u64) -> bool {
-    (MIN_PLAUSIBLE_HZ..=MAX_PLAUSIBLE_HZ).contains(&hz)
+    (MINIMUM_PLAUSIBLE_HZ..=MAXIMUM_PLAUSIBLE_HZ).contains(&hz)
 }
 
 const OFF_MAGIC: usize = 0;

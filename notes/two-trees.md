@@ -117,7 +117,7 @@ was still waiting for a report from a process that had died. Four pages fit the 
 
 The cost is a name set traveling by value through frames a debug build does not collapse: the
 expander holds one, `Expansion` carries one into `plan`, `designate` returns one, and the returned
-`Endowment` carries one more. The same measurement set `nameset::MAX_NAMES`: sixteen names did not
+`Endowment` carries one more. The same measurement set `nameset::MAXIMUM_NAMES`: sixteen names did not
 fit in four pages, and the answer was smaller frames rather than a bigger stack.
 
 Seven came with this milestone, and it is a number rather than a smaller frame. Six pages ran within

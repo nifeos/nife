@@ -159,7 +159,7 @@ Since §249 the registry owns every space, bound to a thread or not, so a runnin
 entry for as long as it lives. A capability is a name, and it stops resolving once the space is
 gone. Deleting one removes nothing (§249's amendment (a)).
 
-`MAX_USER_SPACES` is `crate::revoke::MAX_SPACES`. Every space registers with the revocation registry
+`MAXIMUM_USER_SPACES` is `crate::revoke::MAXIMUM_SPACES`. Every space registers with the revocation registry
 when it is built and leaves only when it drops, and holds one entry here, so this table cannot fill
 while a space that wants an entry exists. That is why `register_bound_address_space` panics on a
 full table rather than handing every kernel spawn path an error it could never act on. The

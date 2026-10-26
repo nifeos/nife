@@ -34,12 +34,14 @@ use crate::jig_versions;
 /// The longest installed path this builds: `/packages/` and three fields of at most
 /// `package_archive::NAME_LEN` (32) bytes each, with their slashes. A path is walked a component at
 /// a time, and a component longer than the shell can name fails there, loudly.
-pub const PATH_MAX: usize = 10 + 3 * 32 + 2;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `PATH_MAX`.
+pub const PATH_MAXIMUM: usize = 10 + 3 * 32 + 2;
 
 /// An installed program's path, from the shell's root.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Path {
-    bytes: [u8; PATH_MAX],
+    bytes: [u8; PATH_MAXIMUM],
     len: usize,
 }
 
@@ -51,7 +53,7 @@ impl Path {
 
     fn of(package: &str, version: &str, program: &str) -> Option<Path> {
         let mut p = Path {
-            bytes: [0; PATH_MAX],
+            bytes: [0; PATH_MAXIMUM],
             len: 0,
         };
         for part in ["/packages/", package, "/", version, "/", program] {
@@ -363,15 +365,15 @@ mod tests {
         assert_eq!(path.as_bytes(), b"/packages/uptime/0.2.0/uptime");
     }
 
-    /// **The longest installed path is exactly `PATH_MAX`**: three 32-byte fields fill it to the
+    /// **The longest installed path is exactly `PATH_MAXIMUM`**: three 32-byte fields fill it to the
     /// last byte, so a bound computed too small refuses a legal install and one computed too large
     /// is noticed here.
     #[test]
-    fn the_longest_installed_path_fills_path_max_exactly() {
+    fn the_longest_installed_path_fills_path_maximum_exactly() {
         let f = "a".repeat(32);
         let p = Path::of(&f, &f, &f).expect("three 32-byte fields fit");
-        assert_eq!(p.as_bytes().len(), PATH_MAX);
-        assert_eq!(PATH_MAX, 108);
+        assert_eq!(p.as_bytes().len(), PATH_MAXIMUM);
+        assert_eq!(PATH_MAXIMUM, 108);
         let too_long = "a".repeat(33);
         assert!(Path::of(&too_long, &f, &f).is_none());
     }

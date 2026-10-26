@@ -26,7 +26,7 @@ its MMU as `riscv,none` would have read as a machine that cannot run us at all. 
 contributes nothing to the record. That is host-proven against the hand-written jh7110 fixture
 (crates/machine_discovery/tests/riscv64_jh7110.rs).
 
-This paragraph used to end on a roster limitation: `cpu::MAX_CPUS` was 4 against this SoC's five
+This paragraph used to end on a roster limitation: `cpu::MAXIMUM_CPUS` was 4 against this SoC's five
 described harts. It closed on 2026-08-14. The constant is 8 and the roster seats cores by hart id,
 so hart 4 has a seat. [bench-boots-2026-08.md](bench-boots-2026-08.md) carries the details and what
 boot 10 had to prove.
@@ -72,7 +72,7 @@ by its ISA string. The same conclusion arrives through the two trees' different 
 
 ## Third bench stop: the online set is {1,2,3}, and the kernel indexed it as {0,1,2}
 
-With the S7 refused, the machine's online cpus are harts 1..3. Hart 4 was past `MAX_CPUS`, then 4;
+With the S7 refused, the machine's online cpus are harts 1..3. Hart 4 was past `MAXIMUM_CPUS`, then 4;
 that was fixed later that day (see [bench-boots-2026-08.md](bench-boots-2026-08.md)). It was the
 first time this kernel ever ran with a set not contiguous from zero. On QEMU `virt` the set is
 always {0..n-1}. So every `0..online_count()` loop and every `rng % online_count()` pick had been

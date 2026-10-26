@@ -97,7 +97,7 @@ pub enum InputDeclaration {
 pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 
 /// **The most short options one program may declare.** Sixteen, which is far above the three `rm`
-/// declares and well inside the 64 bits of [`Endowment::short_options`](crate::Endowment::short_options). Not [`MAX_SHORT_OPTIONS`](crate::MAX_SHORT_OPTIONS), which bounds
+/// declares and well inside the 64 bits of [`Endowment::short_options`](crate::Endowment::short_options). Not [`MAXIMUM_SHORT_OPTIONS`](crate::MAXIMUM_SHORT_OPTIONS), which bounds
 /// what one line may type rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
@@ -105,31 +105,31 @@ pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 /// its letters by value rather than point at a `'static` string the program's bytes are not.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
-pub const MAX_DECLARED_SHORT_OPTIONS: usize = 16;
+pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 
 /// **The short options a program declares, as their letters in bit order** ([`Manifest::short_options`]).
 ///
 /// A value rather than a `&'static [u8]` since milestone 597 (provisional): a manifest read out
 /// of a program's own bytes has no `'static` string to point at, so the letters are held inline.
 /// Every constructor checks the same three things, so a manifest compiled in and a manifest decoded
-/// from a note cannot disagree about what a well-formed option set is: at most [`MAX_DECLARED_SHORT_OPTIONS`]
+/// from a note cannot disagree about what a well-formed option set is: at most [`MAXIMUM_DECLARED_SHORT_OPTIONS`]
 /// letters, each an ASCII letter or digit, and no letter twice (a repeated letter would give one
 /// option two bits, and [`plan`](crate::plan) reads the first).
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShortOptions {
-    letters: [u8; MAX_DECLARED_SHORT_OPTIONS],
+    letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS],
     len: u8,
 }
 
 impl ShortOptions {
     /// The option set `letters` spells, or `None` if it breaks one of the three rules above.
     pub const fn try_new(letters: &[u8]) -> Option<Self> {
-        if letters.len() > MAX_DECLARED_SHORT_OPTIONS {
+        if letters.len() > MAXIMUM_DECLARED_SHORT_OPTIONS {
             return None;
         }
-        let mut out = [0u8; MAX_DECLARED_SHORT_OPTIONS];
+        let mut out = [0u8; MAXIMUM_DECLARED_SHORT_OPTIONS];
         let mut i = 0;
         while i < letters.len() {
             let l = letters[i];
@@ -415,7 +415,7 @@ pub enum MemoryGrantDeclaration {
     Forbidden,
     /// The program must be granted a budget in `[min, max]` pages. Omitting it is
     /// [`Refusal::MemoryGrantRequired`](crate::Refusal::MemoryGrantRequired); out of range is [`Refusal::MemoryGrantOutOfRange`](crate::Refusal::MemoryGrantOutOfRange).
-    Required { min: u64, max: u64 },
+    Required { minimum: u64, maximum: u64 },
 }
 
 /// A program's expectation about a **file grant**, milestone 31 (a capability shell: designation is authorization) phase 2.
@@ -720,7 +720,7 @@ pub enum StartupContract {
 pub const STD_REGION_PAGES: u64 = 256 + 128;
 
 /// **The region a named `std` program is built in**, in pages: [`STD_REGION_PAGES`], plus one
-/// package's worth ([`spawnproto::IMAGE_MAX_PAGES`]) for a program that declares
+/// package's worth ([`spawnproto::IMAGE_MAXIMUM_PAGES`]) for a program that declares
 /// [`Manifest::installer`] (milestone 809 (the package client becomes a program)).
 ///
 /// A package manager reads a whole package into one run of its own pages before it sends it a page
@@ -732,7 +732,7 @@ pub const STD_REGION_PAGES: u64 = 256 + 128;
 pub const fn named_std_region_pages(m: &Manifest) -> u64 {
     STD_REGION_PAGES
         + if m.installer {
-            spawnproto::IMAGE_MAX_PAGES
+            spawnproto::IMAGE_MAXIMUM_PAGES
         } else {
             0
         }

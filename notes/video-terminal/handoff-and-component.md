@@ -31,7 +31,7 @@ rendition with no underline color or style, no sub-parameter mask, and underline
 
 A blob for a grid of another shape is refused, not reflowed. The replacement negotiates its
 geometry with the screen before it absorbs. So a swap that also changes the screen's size, or a
-build that changes `MAX_CELLS` or the scrollback budget so the old shape no longer fits, rolls back
+build that changes `MAXIMUM_CELLS` or the scrollback budget so the old shape no longer fits, rolls back
 and the incumbent serves on.
 
 ## The component's slots and the swap

@@ -38,7 +38,7 @@ pub(super) struct Nav {
     pub(super) holds: grant_plan::Holdings,
     /// `handles[i]` is the directory capability for level `i + 1`; level 0 is [`fs::ROOT`], the
     /// capability the rendezvous itself designates.
-    handles: [u64; nav::MAX_DEPTH],
+    handles: [u64; nav::MAXIMUM_DEPTH],
     /// The sweep in progress, when the line is under `xargs` (milestone 109). Zeroed outside one.
     pub(super) batching: Batching,
     /// **The second tree, when this shell holds two**: milestone 154 (a process that holds two
@@ -96,7 +96,7 @@ pub(super) struct Walk {
     /// The directory the lead designates.
     pub(super) handle: u64,
     /// The capabilities opened on the way down, in order.
-    tmp: [u64; nav::MAX_DEPTH],
+    tmp: [u64; nav::MAXIMUM_DEPTH],
     n: usize,
 }
 
@@ -108,7 +108,7 @@ impl Nav {
             dir: None,
             rights: 0,
             holds: grant_plan::Holdings::default(),
-            handles: [0; nav::MAX_DEPTH],
+            handles: [0; nav::MAXIMUM_DEPTH],
             batching: Batching::default(),
             second: None,
             jobs: Jobs::new(),
@@ -126,7 +126,7 @@ impl Nav {
                 directory: true,
                 ..grant_plan::Holdings::default()
             },
-            handles: [0; nav::MAX_DEPTH],
+            handles: [0; nav::MAXIMUM_DEPTH],
             batching: Batching::default(),
             second: None,
             jobs: Jobs::new(),
@@ -215,7 +215,7 @@ impl Nav {
     ///
     /// The path is resolved first, then opened: [`grant_plan::Holdings::anchor`] says where the
     /// steps start, [`Cwd::apply`] applies them (refusing `..` past the root with nothing sent, and
-    /// a path deeper than [`nav::MAX_DEPTH`], which bounds [`Walk::tmp`]), and
+    /// a path deeper than [`nav::MAXIMUM_DEPTH`], which bounds [`Walk::tmp`]), and
     /// [`grant_plan::Holdings::locate`] says which tree serves the result. The walk opens it one
     /// `OPENDIR` at a time from that tree's root, since the FS contract takes one component per
     /// request. So `..` from a mount point is its parent in the first tree, and a bound name can
@@ -228,7 +228,7 @@ impl Nav {
         let mut w = Walk {
             tree: self.tree(which),
             handle: fs::ROOT,
-            tmp: [0; nav::MAX_DEPTH],
+            tmp: [0; nav::MAXIMUM_DEPTH],
             n: 0,
         };
         // One level at a time from that tree's own root. One step per call rather than a staged
@@ -274,8 +274,8 @@ impl Nav {
 
     /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
     /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
-    /// in that directory and so may be as long as a file's ([`nav::MAX_NAME`], milestone 946 (a granted file name can be longer than sixteen bytes)) where
-    /// a directory the shell stands in may not ([`nav::MAX_DIRECTORY_NAME`]). A path ending in `..`
+    /// in that directory and so may be as long as a file's ([`nav::MAXIMUM_NAME`], milestone 946 (a granted file name can be longer than sixteen bytes)) where
+    /// a directory the shell stands in may not ([`nav::MAXIMUM_DIRECTORY_NAME`]). A path ending in `..`
     /// names a directory, and is validated whole.
     ///
     /// Name: provisional (milestone 946).

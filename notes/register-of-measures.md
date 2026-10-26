@@ -24,7 +24,7 @@ halves matter, and the second is the one that cuts.
 
 - *Something depends on its value.* Not "somebody would find it interesting". A decision rests on
   it, a constant is sized against it, a claim in the documentation quotes it, or a customer notices
-  when it moves. `documentation::render::LINE_MAX` is 2048 because the longest markdown line was
+  when it moves. `documentation::render::LINE_MAXIMUM` is 2048 because the longest markdown line was
   1841, so that measurement has a consumer. The kernel's image size, which
   `notes/benchmarks/kernel-footprint-and-caches.md` calls "the number that does not matter", has
   only a reader.

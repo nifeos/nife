@@ -70,7 +70,7 @@ pub enum Error {
     BadToken(u32),
     /// The caller's output slice was too small to hold every region found.
     TooManyRegions,
-    /// The header's `totalsize` is larger than [`MAX_TOTALSIZE`], so
+    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE`], so
     /// [`from_ptr`](DeviceTreeBlob::from_ptr) refused to build a slice of that length over
     /// memory nobody has checked. Carries the size claimed.
     TooLarge(usize),
@@ -98,10 +98,12 @@ const HEADER_LEN: usize = 40;
 /// `from_ptr` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
 /// 4 GiB slice read past the end of RAM, a data abort in `memory::initialize` before any handler can say
-/// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
+/// why (2026-09-24 security audit). 2 MiB is Linux's `MAXIMUM_FDT_SIZE` (`SZ_2M` in
 /// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
 /// 64 KiB. See notes/device-tree.md ("The parser's bounds").
-pub const MAX_TOTALSIZE: usize = 2 * 1024 * 1024;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_TOTALSIZE`.
+pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
     // `at + 4` is a checked add, not a bare one: `at` comes straight out of the (untrusted) blob,
@@ -143,12 +145,12 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::BadMagic(magic));
         }
         let total = be32(header, 4)? as usize;
-        if total > MAX_TOTALSIZE {
+        if total > MAXIMUM_TOTALSIZE {
             return Err(Error::TooLarge(total));
         }
 
         // SAFETY: the magic checked out, so `ptr` really is a blob, and `total` is the length it
-        // declares for itself, now bounded by `MAX_TOTALSIZE`; the caller's contract covers the
+        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE`; the caller's contract covers the
         // whole of it for `'a`.
         let bytes = unsafe { core::slice::from_raw_parts(ptr, total) };
         Self::from_bytes(bytes)
@@ -326,9 +328,9 @@ impl<'a> DeviceTreeBlob<'a> {
     pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // #address-cells/#size-cells declared by the node at each depth, applying to its children.
         // Depth 0 is the pre-root sentinel; the root is depth 1. Spec defaults are 2 and 1.
-        const MAX_DEPTH: usize = 16;
-        let mut acells = [2u32; MAX_DEPTH];
-        let mut scells = [1u32; MAX_DEPTH];
+        const MAXIMUM_DEPTH: usize = 16;
+        let mut acells = [2u32; MAXIMUM_DEPTH];
+        let mut scells = [1u32; MAXIMUM_DEPTH];
 
         let mut depth = 0usize;
         let mut target_at: Option<usize> = None;
@@ -345,17 +347,17 @@ impl<'a> DeviceTreeBlob<'a> {
                     depth += 1;
                     // Inherit the parent's cell counts as this node's defaults, until/unless this
                     // node declares its own (its props, processed below, come before its children).
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         acells[depth] = acells[depth - 1];
                         scells[depth] = scells[depth - 1];
                     }
 
-                    // `(2..MAX_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth - 1]`,
+                    // `(2..MAXIMUM_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth - 1]`,
                     // which is out of bounds once `depth` reaches 17, a boot-time panic on a hostile
-                    // blob (tests/hostile.rs). Past `MAX_DEPTH` the cell counts are no longer
+                    // blob (tests/hostile.rs). Past `MAXIMUM_DEPTH` the cell counts are no longer
                     // tracked, so refusing to match is honest where a clamped index would decode the
                     // wrong widths. `node_reg_compatible` refuses the same way at its END_NODE.
-                    if (2..MAX_DEPTH).contains(&depth)
+                    if (2..MAXIMUM_DEPTH).contains(&depth)
                         && name.starts_with(prefix)
                         && target_at.is_none()
                     {
@@ -385,7 +387,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     // declaration that is not exactly one cell is ignored, here and in every walker,
                     // so the inherited width stands: `be32` of a shorter value would read the padding
                     // and the next token as the count.
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         match name {
                             b"#address-cells" if len == 4 => {
                                 acells[depth] = be32(self.bytes, value_at)?;
@@ -427,13 +429,13 @@ impl<'a> DeviceTreeBlob<'a> {
     /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
     /// ("Finding a node").
     pub fn node_reg_compatible(&self, compat: &[u8], out: &mut [Region]) -> Result<usize, Error> {
-        const MAX_DEPTH: usize = 16;
-        let mut acells = [2u32; MAX_DEPTH];
-        let mut scells = [1u32; MAX_DEPTH];
+        const MAXIMUM_DEPTH: usize = 16;
+        let mut acells = [2u32; MAXIMUM_DEPTH];
+        let mut scells = [1u32; MAXIMUM_DEPTH];
         // Per open node: where its `reg` value sits and how wide its cells are, and whether its
         // `compatible` named the device we are looking for.
-        let mut reg = [None::<(usize, usize, u32, u32)>; MAX_DEPTH];
-        let mut matched = [false; MAX_DEPTH];
+        let mut reg = [None::<(usize, usize, u32, u32)>; MAXIMUM_DEPTH];
+        let mut matched = [false; MAXIMUM_DEPTH];
 
         let mut depth = 0usize;
         let mut at = self.off_struct;
@@ -447,7 +449,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     let name = self.cstr(at)?;
                     at += align4(name.len() + 1);
                     depth += 1;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         acells[depth] = acells[depth - 1];
                         scells[depth] = scells[depth - 1];
                         reg[depth] = None;
@@ -458,7 +460,7 @@ impl<'a> DeviceTreeBlob<'a> {
                 FDT_END_NODE => {
                     // Depth 1 is the root, which has no `compatible` worth matching and whose `reg`
                     // would have no parent to decode against.
-                    if (2..MAX_DEPTH).contains(&depth) && matched[depth] {
+                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
                         return match reg[depth] {
                             Some((value_at, len, a, s)) => {
                                 self.decode_reg(value_at, len, a, s, out)
@@ -479,7 +481,7 @@ impl<'a> DeviceTreeBlob<'a> {
 
                     let name = self.cstr(self.off_strings + name_off)?;
 
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         match name {
                             b"#address-cells" if len == 4 => {
                                 acells[depth] = be32(self.bytes, value_at)?;
@@ -553,10 +555,10 @@ impl<'a> DeviceTreeBlob<'a> {
         name: &[u8],
         up: usize,
     ) -> Result<Option<&'a [u8]>, Error> {
-        const MAX_DEPTH: usize = 16;
+        const MAXIMUM_DEPTH: usize = 16;
         // Per open node: where `name`'s value sits, and whether `compatible` matched.
-        let mut found = [None::<(usize, usize)>; MAX_DEPTH];
-        let mut matched = [false; MAX_DEPTH];
+        let mut found = [None::<(usize, usize)>; MAXIMUM_DEPTH];
+        let mut matched = [false; MAXIMUM_DEPTH];
 
         let mut depth = 0usize;
         let mut at = self.off_struct;
@@ -570,7 +572,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     let nm = self.cstr(at)?;
                     at += align4(nm.len() + 1);
                     depth += 1;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         found[depth] = None;
                         matched[depth] = false;
                     }
@@ -578,9 +580,9 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_END_NODE => {
                     // Depth 1 is the root, which carries no `compatible` worth matching here; a
-                    // node past MAX_DEPTH was never tracked, so it cannot answer (the same refusal
+                    // node past MAXIMUM_DEPTH was never tracked, so it cannot answer (the same refusal
                     // node_reg records: not finding is honest, misreporting is not).
-                    if (2..MAX_DEPTH).contains(&depth) && matched[depth] {
+                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
                         // `depth >= 2` and `up <= 1` keep this at the root or below it.
                         return match found[depth - up] {
                             Some((value_at, len)) => self
@@ -601,7 +603,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     at = value_at + align4(len);
 
                     let pname = self.cstr(self.off_strings + name_off)?;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         // Two independent `if`s, so asking for `compatible` itself still answers.
                         if pname == name {
                             found[depth] = Some((value_at, len));
@@ -695,11 +697,11 @@ impl<'a> DeviceTreeBlob<'a> {
         prefix: &[u8],
         name: &[u8],
     ) -> Result<Option<&'a [u8]>, Error> {
-        const MAX_DEPTH: usize = 16;
+        const MAXIMUM_DEPTH: usize = 16;
         // Where `name`'s value sits on the node open at each depth, `None` where it has none. A
         // BEGIN_NODE resets its own depth's slot, so a closed sibling's value can never leak into
         // the ancestor scan (which only reads the depths still open above the target anyway).
-        let mut values = [None::<(usize, usize)>; MAX_DEPTH];
+        let mut values = [None::<(usize, usize)>; MAXIMUM_DEPTH];
 
         let mut depth = 0usize;
         let mut target_at: Option<usize> = None;
@@ -714,13 +716,13 @@ impl<'a> DeviceTreeBlob<'a> {
                     let nm = self.cstr(at)?;
                     at += align4(nm.len() + 1);
                     depth += 1;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         values[depth] = None;
                     }
-                    // The same `(2..MAX_DEPTH)` refusal as `node_reg`: a node deeper than the
+                    // The same `(2..MAXIMUM_DEPTH)` refusal as `node_reg`: a node deeper than the
                     // value stack was never tracked, and answering for it would mean answering
                     // from ancestors we stopped recording. Not finding it is honest.
-                    if (2..MAX_DEPTH).contains(&depth)
+                    if (2..MAXIMUM_DEPTH).contains(&depth)
                         && nm.starts_with(prefix)
                         && target_at.is_none()
                     {
@@ -752,7 +754,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     let value_at = at + 8;
                     at = value_at + align4(len);
 
-                    if depth < MAX_DEPTH && self.cstr(self.off_strings + name_off)? == name {
+                    if depth < MAXIMUM_DEPTH && self.cstr(self.off_strings + name_off)? == name {
                         values[depth] = Some((value_at, len));
                     }
                 }
@@ -772,10 +774,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// because old dtc wrote the latter. As in [`node_prop_compatible`](Self::node_prop_compatible),
     /// the answer is taken when the matching node closes.
     pub fn phandle_prop(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
-        const MAX_DEPTH: usize = 16;
+        const MAXIMUM_DEPTH: usize = 16;
         // Per open node: where `name`'s value sits, and whether its phandle matched.
-        let mut found = [None::<(usize, usize)>; MAX_DEPTH];
-        let mut matched = [false; MAX_DEPTH];
+        let mut found = [None::<(usize, usize)>; MAXIMUM_DEPTH];
+        let mut matched = [false; MAXIMUM_DEPTH];
 
         let mut depth = 0usize;
         let mut at = self.off_struct;
@@ -789,7 +791,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     let nm = self.cstr(at)?;
                     at += align4(nm.len() + 1);
                     depth += 1;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         found[depth] = None;
                         matched[depth] = false;
                     }
@@ -797,8 +799,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_END_NODE => {
                     // Depth 1 is the root, which no phandle names in practice; a node past
-                    // MAX_DEPTH was never tracked, so it cannot answer (node_reg's refusal).
-                    if (2..MAX_DEPTH).contains(&depth) && matched[depth] {
+                    // MAXIMUM_DEPTH was never tracked, so it cannot answer (node_reg's refusal).
+                    if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
                         return match found[depth] {
                             Some((value_at, len)) => self
                                 .bytes
@@ -818,7 +820,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     at = value_at + align4(len);
 
                     let pname = self.cstr(self.off_strings + name_off)?;
-                    if depth < MAX_DEPTH {
+                    if depth < MAXIMUM_DEPTH {
                         if pname == name {
                             found[depth] = Some((value_at, len));
                         }

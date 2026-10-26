@@ -168,13 +168,13 @@ load and no run-queue depth; 109 endpoints is a fifth of `MAX_ENDPOINTS`. The su
 test that way on both ISAs (`notes/riscv-parity-scope.md` measured the table at 87 on each at the
 leak police), so it never could have explained an ISA skew either.
 
-It is still worth its own milestone: 101 of `MAX_THREADS = 128` is 79% of a hard `create_tcb`
+It is still worth its own milestone: 101 of `MAXIMUM_THREADS = 128` is 79% of a hard `create_tcb`
 failure, and the leak police only polices *runnable* leaks, so a blocked leak is invisible to it by
 construction. Nothing today would warn before the suite hit the wall.
 
 Update, 2026-08-27: it hit the wall, and the warning now exists. The paragraph above was a
 prediction; the aarch64 suite reached 128 of 128 with 121-123 `Blocked` and had spawns
-refused with no diagnostic, exactly as described. `sched::MAX_THREADS` is 256 now, on a measured
+refused with no diagnostic, exactly as described. `sched::MAXIMUM_THREADS` is 256 now, on a measured
 peak of 130 (aarch64), 129 (riscv64) and 57 (x86_64), and that constant's own doc comment carries
 the ledger and the four coupled constants that moved with it. Two things closed the gap this
 section names:

@@ -41,7 +41,7 @@ pub(crate) fn find_store<D: Disk>(
 
 /// One node's raw attribute blob, empty if it has none.
 ///
-/// A blob longer than [`xattr::store::MAX_BYTES`] is refused rather than clipped: the layer cannot
+/// A blob longer than [`xattr::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer cannot
 /// have written it, so reading its first 53 KB would be reading a file this format does not describe.
 pub(crate) fn attr_blob<D: Disk>(
     transaction: &mut Transaction<D>,
@@ -62,11 +62,11 @@ pub(crate) fn attr_blob<D: Disk>(
         Err(e) => return Err(format!("{}/{name}: {e}", xattr::STORE_DIR)),
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAX_BYTES {
+    if size > xattr::store::MAXIMUM_BYTES {
         return Err(format!(
             "{}/{name}: {size} bytes, more than the {} an attribute blob can be; not read",
             xattr::STORE_DIR,
-            xattr::store::MAX_BYTES,
+            xattr::store::MAXIMUM_BYTES,
         ));
     }
     read_all(transaction, &node)

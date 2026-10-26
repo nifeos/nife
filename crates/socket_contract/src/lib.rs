@@ -431,7 +431,7 @@ pub mod stack_slots {
 ///   +0x000  u8[4]  dst_ip    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
 ///   +0x004  u16    dst_port  little-endian, the same two roles
 ///   +0x006  u16    len       payload length, in for SEND*, out for RECEIVE
-///   +0x008  ...    payload   up to DATA_MAX bytes
+///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```
 pub const OFF_DST_IP: u64 = 0x000;
 /// The destination port, right after the destination IP.
@@ -442,7 +442,9 @@ pub const OFF_LEN: u64 = 0x006;
 pub const OFF_PAYLOAD: u64 = 0x008;
 
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
-pub const DATA_MAX: usize = 4096 - OFF_PAYLOAD as usize;
+///
+/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `DATA_MAX`.
+pub const DATA_MAXIMUM: usize = 4096 - OFF_PAYLOAD as usize;
 
 /// The inbound gate's shared facts, for the four programs that must agree on them (rule 7). The
 /// host's copy is deliberately not here: `xtask`'s prober and `helpers/qemu-runner-*.sh` spell
@@ -610,7 +612,7 @@ mod tests {
     #[test]
     fn a_full_payload_fills_the_shared_frame_exactly() {
         assert_eq!(
-            OFF_PAYLOAD as usize + DATA_MAX,
+            OFF_PAYLOAD as usize + DATA_MAXIMUM,
             4096,
             "the payload is not the whole frame minus its header"
         );

@@ -10,13 +10,13 @@ const SIZE: u64 = 256 << 20;
 const BS: usize = blk::BLOCK_SIZE;
 
 fn call(t: &mut Tree, code: u64, handle: u64, name: &[u8], w1: u64) -> Answer {
-    let mut page = [0u8; fs::TRANSFER_MAX];
+    let mut page = [0u8; fs::TRANSFER_MAXIMUM];
     page[..name.len()].copy_from_slice(name);
     t.handle(fs::req(code, handle, name.len() as u64), w1, &mut page)
 }
 
 fn read(t: &mut Tree, handle: u64, len: u64, offset: u64) -> Answer {
-    let mut page = [0u8; fs::TRANSFER_MAX];
+    let mut page = [0u8; fs::TRANSFER_MAXIMUM];
     t.handle(fs::req(fs::READ, handle, len), offset, &mut page)
 }
 
@@ -91,7 +91,7 @@ fn a_read_comes_back_short_at_the_window_and_at_the_end() {
     let f = opened(&mut t);
     let window = blk::TRANSFER_BLOCKS * BS;
     assert_eq!(
-        read(&mut t, f, fs::TRANSFER_MAX as u64, 10),
+        read(&mut t, f, fs::TRANSFER_MAXIMUM as u64, 10),
         Answer::Read(Read {
             block: 0,
             blocks: blk::TRANSFER_BLOCKS,
@@ -157,7 +157,7 @@ fn a_grant_without_read_cannot_open_the_file() {
 #[test]
 fn listings_name_what_is_there() {
     let mut t = Tree::new(SIZE);
-    let mut page = [0u8; fs::TRANSFER_MAX];
+    let mut page = [0u8; fs::TRANSFER_MAXIMUM];
     let Answer::Reply(n, _) = t.handle(fs::req(fs::READDIR, fs::ROOT, 0), 0, &mut page) else {
         panic!()
     };
@@ -174,7 +174,10 @@ fn listings_name_what_is_there() {
 #[test]
 fn the_reachability_probe_is_refused_as_a_bad_handle() {
     let mut t = Tree::new(SIZE);
-    assert_eq!(call(&mut t, fs::FSTAT, fs::MAX_HANDLE, b"", 0), err(EBADF));
+    assert_eq!(
+        call(&mut t, fs::FSTAT, fs::MAXIMUM_HANDLE, b"", 0),
+        err(EBADF)
+    );
     assert_eq!(call(&mut t, fs::CLOSE, fs::ROOT, b"", 0), err(dir::EINVAL));
 }
 

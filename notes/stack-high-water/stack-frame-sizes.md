@@ -33,9 +33,9 @@ three scratch arrays sized to their table maxima:
 
 | local | size |
 |---|---|
-| `doomed: [u64; MAX_THREADS]` | 1024 |
+| `doomed: [u64; MAXIMUM_THREADS]` | 1024 |
 | `doomed_eps: [u64; MAX_ENDPOINTS]` | **4096** |
-| `waiters: [u64; MAX_THREADS]` | 1024 |
+| `waiters: [u64; MAXIMUM_THREADS]` | 1024 |
 
 All three are gone, and the last two were removed by the same pressure that found them. `doomed_eps` went first, replaced by the rescan-for-one-at-a-time loop. Its comment in
 `sched::reap_region_objects` is the general statement of the rule. The other two survived because
@@ -43,7 +43,7 @@ All three are gone, and the last two were removed by the same pressure that foun
 local is a stack allocation wearing the clothes of a bound. It grows when the bound does, and nobody
 is watching that line.
 
-Raising `sched::MAX_THREADS` to 256 took the frame to 4,624 bytes, over `script/stack-frame-check`'s
+Raising `sched::MAXIMUM_THREADS` to 256 took the frame to 4,624 bytes, over `script/stack-frame-check`'s
 4,096-byte guard-page ceiling, and the gate caught it before any run did. `doomed` became the same
 rescan loop. `waiters` was removed outright, by waking each thread inside
 `Rendezvous::drain_waiters`'s callback rather than listing them first. The entry is already off its
