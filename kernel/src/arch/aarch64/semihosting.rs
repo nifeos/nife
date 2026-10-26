@@ -53,6 +53,6 @@ pub fn exit(code: u32) -> ! {
     // The host did not end the run: stop. Not `halt`, which takes a `HaltReason` this path is
     // beneath every holder of.
     loop {
-        aarch64_cpu::asm::wfi();
+        super::instructions::wfi();
     }
 }

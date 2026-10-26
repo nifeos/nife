@@ -2,13 +2,13 @@
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
-This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-25 (UTC). `python3 helpers/name_release.py --draft e1000e` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
+This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-26 (UTC). `python3 helpers/name_release.py --draft e1000e` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
 
 Ratified: not yet.
 
-149 names: 142 no block, 6 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 13 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+145 names: 138 no block, 6 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 13 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 25 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 21 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -37,7 +37,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `sim` | module | `src/pch/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/pch/tests.rs` | unrecorded. | no | clear; private |
 | `ulp` | module | `src/pch/ulp.rs` | unrecorded. | yes | unclear: Intel's ultra low power, an abbreviation |
-| `process` | module | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
@@ -142,9 +141,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `done` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
 | `release` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
 | `request` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
-| `DATA_PLANE_VA` | item | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `RX_QUEUE_VA` | item | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `TX_QUEUE_VA` | item | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `CTRL` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CTRL_EXT` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `ICR` | item | `src/regs.rs` | unrecorded. | yes | term |
@@ -169,4 +165,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `TDT` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `TIPG` | item | `src/regs.rs` | unrecorded. | yes | term |
 
-Inline modules a stranger also meets, which `script/names` does not count as names of their own: `status`, `control`, `mdic`, `r`.
+Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
+
+- the inline modules `status` and `control` in `src/pch/nvm.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
+- the fields of `DataPlane` (1), `Handoff` (2), `phy::Plan` (3) and the private `Sim` (22);
+- the variants of `TxError` (2), `RxVerdict` (3), `nvm::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
+- the methods of the traits `Region` (4), `Tails` (3) and `Hw` (6).
+
+The `pub use` lines re-export items that have rows where they are defined. The one field of the crate-private `nvm::Geometry` is reachable from nowhere outside.

@@ -4,7 +4,7 @@ Appendix to
 [the proposal](../every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md).
 Measured on 2026-10-25 (UTC) against `main` at `e865d8838`, with #2714 applied for the lockfile rows.
 The kernel's rows, under "The kernel's registry crates" and "The verification path", were read again
-on 2026-10-26 (UTC) at `2a3cc0dbd`.
+on 2026-10-26 (UTC) at `01b316db9`.
 
 ## The pins
 
@@ -36,13 +36,13 @@ without a path:
 
 | Target | Registry crates linked |
 |---|---|
-| aarch64-unknown-none-softfloat | `aarch64-cpu` 11.2.0, `tock-registers` 0.10.1 |
+| aarch64-unknown-none-softfloat | none |
 | riscv64imac-unknown-none-elf | none |
 | x86_64-unknown-none | `uuid` 1.28.0 |
 
 `cargo tree -i uuid` on x86_64 gives the path: `uuid`, then
 `globally_unique_identifier_partition_table`, then `boot_slot`, then `kernel`. `cargo metadata`
-without a target filter reports 33 registry packages under the kernel, because it counts the
+without a target filter reports 31 registry packages under the kernel, because it counts the
 host-only `loom` and `tracing` graph behind `cfg(loom)`. The classes need the target filter.
 
 ## The verification path

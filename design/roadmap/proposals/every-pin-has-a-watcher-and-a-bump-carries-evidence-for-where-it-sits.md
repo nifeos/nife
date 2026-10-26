@@ -24,9 +24,9 @@ cargo-crev themselves; "The alternatives" says why.
 
 ## The claim
 
-Detection has gaps, and incorporation has one rule for everything. A bump to `aarch64-cpu`, which
-the aarch64 kernel links, and a bump to a fuzz harness's `libfuzzer-sys` meet the same gate today. The gate is
-already strong: every pull request runs Kani, the icount tripwire, the fuzz targets, the boot file
+Detection has gaps, and incorporation has one rule for everything. A bump to `uuid`, which the
+x86_64 kernel links, and a bump to a fuzz harness's `libfuzzer-sys` meet the same gate today. The
+gate is already strong: every pull request runs Kani, the icount tripwire, the fuzz targets, the boot file
 budget and cargo-deny. What a bump lacks is anyone reading the dependency itself, a merge rule that
 knows where the crate sits, and a record when a bump fails.
 
@@ -57,11 +57,11 @@ Four findings changed the shape of this proposal:
    lint cannot see it.
 2. Dependabot already waits. With no `cooldown` key, it applies "a default cooldown of 3 days" to
    version updates, and never to security updates (GitHub's options reference, read 2026-10-25).
-3. The kernel links three registry crates: `aarch64-cpu` and `tock-registers` on aarch64, and
-   `uuid` on x86_64 through `globally_unique_identifier_partition_table` and `boot_slot` (`cargo
-   tree -p kernel --target x86_64-unknown-none -e normal,build`). The set moved twice in one week,
-   `uuid` arriving on 2026-10-22 and `spin` leaving on 2026-10-26, so a hand list of kernel
-   dependencies goes stale and the classes below must come from the graph.
+3. The kernel links one registry crate: `uuid` on x86_64, through
+   `globally_unique_identifier_partition_table` and `boot_slot` (`cargo tree -p kernel --target
+   x86_64-unknown-none -e normal,build`). The set moved three times in one week: `uuid` arrived on
+   2026-10-22, and `spin`, `aarch64-cpu` and `tock-registers` left on 2026-10-26. A hand list of
+   kernel dependencies goes stale, so the classes below must come from the graph.
 4. The mutation gate runs `cargo mutants --in-diff`. A bump changes a lockfile and no first-party
    line, so it generates no mutants: a bump carries no mutation evidence at all.
 
@@ -128,12 +128,12 @@ Actions group does today. N and V merge on green once the added evidence sits in
 by an agent. For K, an agent merges a minor or patch bump once the kernel-class evidence sits in the
 pull request, and a major bump carries `needs-architect`.
 
-Three registry crates run in the kernel with full privilege. Since 2026-07-22 the kernel's
-registry crates have moved four times. `spin` moved twice through Dependabot (one of them a 0.x major)
-before it left the kernel, `aarch64-cpu` and `tock-registers` once together by hand (coupled
-majors), and `uuid` arriving on 2026-10-22 under a proved crate. Two of those moves were majors, so
-the rule asks for about one architect ruling a month at most, and it puts that ruling where a
-kernel crate's API changes.
+One registry crate runs in the kernel with full privilege. Since 2026-07-22 the kernel's
+registry crates have moved four times. `spin` moved twice through Dependabot (one of them a 0.x
+major), `aarch64-cpu` and `tock-registers` once together by hand (coupled majors), and `uuid`
+arrived on 2026-10-22 under a proved crate. `spin`, `aarch64-cpu` and `tock-registers` left the
+kernel on 2026-10-26. Two of those moves were majors, so the rule asks for about one architect
+ruling a month at most, and it puts that ruling where a kernel crate's API changes.
 
 ### When to take a release
 

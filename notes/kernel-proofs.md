@@ -160,8 +160,8 @@ under the prover and nowhere else. They are wrapped in `isa::cpuid` and `isa::cp
 Milestone 193's block nominates the milestone 6 timer re-arm drift as the first property worth
 trying, on the grounds that its property is already proved in `crates/timetable`'s `next_after` and
 the timer does not call it. That is still a good future lane, but the re-arm is in `kernel/src/arch/aarch64/timer.rs` and `kernel/src/arch/riscv64/timer.rs`, which item 2 above
-puts out of reach: `rearm` reads `CNTVCT_EL0` and writes `CNTV_CVAL_EL0`, both `asm!` through
-`aarch64-cpu`. Proving it means first lifting the arithmetic out of the register accesses, and where
+puts out of reach: `rearm` reads `CNTVCT_EL0` and writes `CNTV_CVAL_EL0`, both `asm!`. Both are
+accessors in `arch/aarch64/instructions.rs`, which a harness can stub. Proving it means first lifting the arithmetic out of the register accesses, and where
 that seam goes is a design question.
 
 `run_end_va` was chosen instead on the criterion that matters most given milestone 191's finding:

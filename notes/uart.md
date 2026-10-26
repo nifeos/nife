@@ -99,8 +99,8 @@ The register block's shape is the board's, not the architecture's, so the driver
 (`reg-io-width = <4>`) and run from a 24 MHz clock. A byte read of LSR at offset 5 there lands in
 the middle of the IER word, and the transmit poll spins on garbage forever. The shape comes from the
 device tree (notes/kernel-console.md). A 32-bit access is used only when the shifted offset is
-aligned, since an unaligned volatile `u32` traps. The stride is a runtime value no static layout
-macro can express, which is why this driver uses plain volatile access rather than `tock_registers`.
+aligned, since an unaligned volatile `u32` traps. The stride is a runtime value, so a register's
+offset is its index times the stride rather than a fixed constant as in `pl011.rs`.
 
 The divisor is programmed only from a stated clock. A 16550 divides its clock by 16 times the
 divisor: 24 MHz gives 13 (115,385 baud, 0.16% high), and QEMU's stated 3.6864 MHz gives exactly 2.

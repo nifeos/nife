@@ -28,12 +28,24 @@ pub fn entry_el() -> u64 {
     unsafe { core::ptr::read_volatile(&raw const boot_entry_el) }
 }
 
+/// **Which exception level is this core running at now?** 1 everywhere after `boot.s`, which
+/// drops from EL2; the boot banner prints it beside [`entry_el`], and a test asserts it.
+///
+/// `CurrentEL.EL` is bits 3:2 (Arm DDI 0487, `CurrentEL`).
+///
+/// Name: provisional (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64 spell
+/// them)), the twin of [`entry_el`].
+pub fn current_el() -> u64 {
+    (instructions::read_current_el() >> 2) & 0b11
+}
+
 /// Point `TPIDR_EL1` at this core's per-CPU block.
 ///
 /// `TPIDR_EL1` is reserved for software, and holds the per-core pointer as it does in Linux. The
 /// portable side is `kernel/src/cpu.rs`.
 pub(crate) fn set_percpu(ptr: usize) {
-    TPIDR_EL1.set(ptr as u64);
+    // SAFETY: `ptr` is this core's `PerCpu`, which is what `TPIDR_EL1` must name.
+    unsafe { instructions::write_tpidr_el1(ptr as u64) };
 }
 
 /// The logical id of the core the kernel boots on. On aarch64's `virt` the boot core is MPIDR
@@ -45,7 +57,7 @@ pub(crate) fn boot_cpu_id() -> usize {
 
 /// Read this core's per-CPU pointer back. One instruction.
 pub fn percpu() -> usize {
-    TPIDR_EL1.get() as usize
+    instructions::read_tpidr_el1() as usize
 }
 
 /// **This core's `PerCpu::current`, read with IRQs masked**, so no interrupt can fall between

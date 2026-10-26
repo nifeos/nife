@@ -52,9 +52,8 @@ host was busy with fuzzing, so read these as an order of magnitude.
 | ours | 0 | 0 | 2 blocks, 1 `unsafe fn` (`from_ptr`) | none |
 | `dtoolkit` | 3: `dtoolkit`, `zerocopy`, `zerocopy-derive` | 10, among them two proc macros (`zerocopy-derive`, `thiserror-impl`) and both `syn` 2 and `syn` 3 | 8 blocks, 4 `unsafe fn`; `#![deny(unsafe_code)]` with each use marked `#[expect]`; 3 blocks on the read path, all in `from_raw` | `zerocopy` 302 blocks, 58 `unsafe fn`, 111 `unsafe impl`; `zerocopy-derive` emits `unsafe impl`s into `dtoolkit` |
 
-The kernel's graph today holds three crates from outside the tree and no proc macro:
-`aarch64-cpu` and `tock-registers` on aarch64, and `uuid` on x86_64 (`cargo tree -e normal` per
-target). Counts
+The kernel's graph today holds one crate from outside the tree and no proc macro: `uuid` on
+x86_64 (`cargo tree -e normal` per target). Counts
 are textual over each crate's `src/`, tests included. Every license passes `deny.toml`: `zerocopy` is
 BSD-2-Clause or Apache-2.0 or MIT. The minimum Rust is 1.88; nife pins a nightly, so that costs
 nothing.
