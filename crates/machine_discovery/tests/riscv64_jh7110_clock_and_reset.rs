@@ -6,8 +6,10 @@
 //! board-shaped fixtures and the tree every CI boot uses.
 
 use jh7110_clock_and_reset::{
-    AON_WINDOW, COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR, COMPATIBLE_STGCRG,
-    COMPATIBLE_SYSCRG, COMPATIBLE_VENDOR_CLKGEN, STG_WINDOW, SYS_WINDOW, Step,
+    ALWAYS_ON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
+    COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CRG,
+    COMPATIBLE_SYSTEM_TOP_GROUP_CRG, COMPATIBLE_VENDOR_CLKGEN, SYSTEM_TOP_GROUP_WINDOW,
+    SYSTEM_WINDOW, Step,
 };
 use machine_discovery::jh7110::clock_and_reset::{discover, discover_aon, discover_sys, pmic_bus};
 
@@ -46,7 +48,10 @@ fn radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipp
         &[Step::EnableClock(143), Step::DeassertReset(81)]
     );
     assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR)
+    );
     assert_eq!(bus.skipped, 1, "clock 298, and nothing else");
     assert!(!bus.truncated);
 }
@@ -55,11 +60,14 @@ fn radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipp
 fn radons_sys_window_is_the_vendor_nodes_first_entry_found_by_name() {
     let tree = tree(PMIC_BUS_RADON);
     let found = discover_sys(&tree).unwrap();
-    assert_eq!((found.base, found.size), (SYS_WINDOW.base, SYS_WINDOW.size));
+    assert_eq!(
+        (found.base, found.size),
+        (SYSTEM_WINDOW.base, SYSTEM_WINDOW.size)
+    );
     assert!(found.from_tree);
     assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
     // And STG, from the same node, is still its second window.
-    assert_eq!(discover(&tree).unwrap().base, STG_WINDOW.base);
+    assert_eq!(discover(&tree).unwrap().base, SYSTEM_TOP_GROUP_WINDOW.base);
 }
 
 #[test]
@@ -70,11 +78,14 @@ fn mainlines_pmic_bus_gives_the_same_plan_through_syscrg() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE)
+    );
     assert_eq!(bus.skipped, 0);
     let found = discover_sys(&tree).unwrap();
-    assert_eq!(found.base, SYS_WINDOW.base);
-    assert_eq!(found.compatible, Some(COMPATIBLE_SYSCRG));
+    assert_eq!(found.base, SYSTEM_WINDOW.base);
+    assert_eq!(found.compatible, Some(COMPATIBLE_SYSTEM_CRG));
 }
 
 #[test]
@@ -86,7 +97,10 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_says_so() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE)
+    );
     // aoncrg 3, syscrg 190, then 36 - 16 = 20 bytes read as three eight-byte strides, then
     // syscrg 126 in `resets`.
     assert_eq!(bus.skipped, 2 + 3 + 1);
@@ -117,7 +131,7 @@ fn qemus_virt_board_has_no_pmic_and_gets_the_constant_plan_unclaimed() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, None);
+    assert_eq!(bus.power_management_chip, None);
     assert!(!discover_sys(&tree).unwrap().from_tree);
 }
 
@@ -128,7 +142,7 @@ fn mainline_stgcrg_is_read_from_its_single_reg() {
     assert_eq!(found.base, 0x1023_0000);
     assert_eq!(found.size, 0x1_0000);
     assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_STGCRG));
+    assert_eq!(found.compatible, Some(COMPATIBLE_SYSTEM_TOP_GROUP_CRG));
 }
 
 #[test]
@@ -138,7 +152,7 @@ fn the_vendor_clkgens_stg_window_is_found_by_name() {
     let tree = tree(CLKGEN_VENDOR);
     let found = discover(&tree).unwrap();
     assert_eq!(
-        found.base, STG_WINDOW.base,
+        found.base, SYSTEM_TOP_GROUP_WINDOW.base,
         "the second window, not the first"
     );
     assert_eq!(found.size, 0x1_0000);
@@ -150,7 +164,7 @@ fn the_vendor_clkgens_stg_window_is_found_by_name() {
 fn a_multi_window_node_without_reg_names_falls_back_rather_than_guessing() {
     let tree = tree(CLKGEN_VENDOR_UNNAMED);
     let found = discover(&tree).unwrap();
-    assert_eq!(found.base, STG_WINDOW.base);
+    assert_eq!(found.base, SYSTEM_TOP_GROUP_WINDOW.base);
     assert!(
         !found.from_tree,
         "the address is right and nothing in the tree said so; the transcript must say which"
@@ -167,7 +181,7 @@ fn qemus_virt_board_has_no_clock_controller_at_all() {
     let found = discover(&tree).unwrap();
     assert!(!found.from_tree);
     assert_eq!(found.compatible, None);
-    assert_eq!(found.base, STG_WINDOW.base);
+    assert_eq!(found.base, SYSTEM_TOP_GROUP_WINDOW.base);
 }
 
 #[test]
@@ -183,7 +197,7 @@ fn a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read() {
         !found.from_tree,
         "the named window does not exist; this must not be trusted"
     );
-    assert_eq!(found.base, STG_WINDOW.base);
+    assert_eq!(found.base, SYSTEM_TOP_GROUP_WINDOW.base);
     assert_eq!(found.compatible, None);
 }
 
@@ -191,7 +205,10 @@ fn a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read() {
 fn radons_aon_window_is_the_vendor_nodes_third_entry_found_by_name() {
     let tree = tree(CLKGEN_VENDOR);
     let found = discover_aon(&tree).unwrap();
-    assert_eq!((found.base, found.size), (AON_WINDOW.base, AON_WINDOW.size));
+    assert_eq!(
+        (found.base, found.size),
+        (ALWAYS_ON_WINDOW.base, ALWAYS_ON_WINDOW.size)
+    );
     assert!(found.from_tree);
     assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
 }
@@ -200,7 +217,7 @@ fn radons_aon_window_is_the_vendor_nodes_third_entry_found_by_name() {
 fn a_tree_naming_no_aon_controller_gets_the_constant_and_says_so() {
     let tree = tree(STGCRG_MAINLINE);
     let found = discover_aon(&tree).unwrap();
-    assert_eq!(found.base, AON_WINDOW.base);
+    assert_eq!(found.base, ALWAYS_ON_WINDOW.base);
     assert!(!found.from_tree);
 }
 
@@ -209,7 +226,7 @@ fn radons_pmic_bus_also_names_the_controller_window_and_the_pmic_address() {
     let tree = tree(PMIC_BUS_RADON);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
 #[test]
@@ -217,7 +234,7 @@ fn the_mainline_tree_names_the_same_controller_and_address() {
     let tree = tree(PMIC_BUS_MAINLINE);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
 #[test]
@@ -225,5 +242,5 @@ fn the_foreign_tree_names_neither() {
     let tree = tree(PMIC_BUS_FOREIGN);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, None);
-    assert_eq!(bus.pmic_address, None);
+    assert_eq!(bus.power_management_chip_address, None);
 }

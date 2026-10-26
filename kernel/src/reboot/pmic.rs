@@ -19,12 +19,12 @@ fn pmic_bus(
 )> {
     use jh7110_clock_and_reset::{
         I2cClockWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
-        SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_divider, standard_mode_100k,
+        SYSCLK_STG_AXIAHB, i2c5_clock_frequency, one_based_divider, standard_mode_100k,
     };
 
     let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
     let (controller, _size) = bus.controller?;
-    let address = bus.pmic_address?;
+    let address = bus.power_management_chip_address?;
 
     // The input-clock chain, from the two windows the plan's guard mapped: the CRG words at their
     // ids' offsets, the PLL2 words in the syscon at the offsets the vendor's pll.c masks name.
@@ -44,7 +44,7 @@ fn pmic_bus(
         pll2_postdiv1: word(syscon, 0x30),
         pll2_prediv: word(syscon, 0x34),
     };
-    let ic = i2c5_ic_clk(&words);
+    let ic = i2c5_clock_frequency(&words);
     let mode = standard_mode_100k(ic);
     let fbdiv = (words.pll2_dacpd_dsmpd_fbdiv >> 17) & 0xfff;
     println!(
@@ -76,29 +76,41 @@ fn pmic_bus(
 /// See design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 #[cfg(target_arch = "riscv64")]
 pub(super) fn pmic_reset_attempt(marker: &str) {
-    use jh7110_clock_and_reset::{PMIC_RESET_BIT, PMIC_RESET_REG};
+    use jh7110_clock_and_reset::{
+        POWER_MANAGEMENT_CHIP_RESET_BIT, POWER_MANAGEMENT_CHIP_RESET_REGISTER,
+    };
     let Some((i2c, mode, address)) = pmic_bus(marker) else {
         return;
     };
     // Read first, so the write sets the reset bit alone and leaves every other bit as found,
     // unlike radon's OpenSBI, which also sets power-off bit 7.
     let mut current = [0u8; 1];
-    if let Err(failure) = i2c.write_read(&mode, address, &[PMIC_RESET_REG], &mut current) {
+    if let Err(failure) = i2c.write_read(
+        &mode,
+        address,
+        &[POWER_MANAGEMENT_CHIP_RESET_REGISTER],
+        &mut current,
+    ) {
         println!(
-            "{marker} AXP15060: read of reg {PMIC_RESET_REG:#04x} failed: {failure:?}; the \
+            "{marker} AXP15060: read of reg {POWER_MANAGEMENT_CHIP_RESET_REGISTER:#04x} failed: {failure:?}; the \
              firmware route is next"
         );
         return;
     }
-    let value = current[0] | (1 << PMIC_RESET_BIT);
+    let value = current[0] | (1 << POWER_MANAGEMENT_CHIP_RESET_BIT);
     println!(
-        "{marker} AXP15060: reg {PMIC_RESET_REG:#04x} read {:#04x}, writing {value:#04x} (bit \
-         {PMIC_RESET_BIT} set, every other bit as found); this line is the last if the PMIC honors it",
+        "{marker} AXP15060: reg {POWER_MANAGEMENT_CHIP_RESET_REGISTER:#04x} read {:#04x}, writing {value:#04x} (bit \
+         {POWER_MANAGEMENT_CHIP_RESET_BIT} set, every other bit as found); this line is the last if the PMIC honors it",
         current[0],
     );
     // Drained before the byte that may cut power, or the line above is lost.
     crate::console::drain();
-    match i2c.write_read(&mode, address, &[PMIC_RESET_REG, value], &mut []) {
+    match i2c.write_read(
+        &mode,
+        address,
+        &[POWER_MANAGEMENT_CHIP_RESET_REGISTER, value],
+        &mut [],
+    ) {
         Ok(()) => {
             // Still up: the PMIC ignored the byte or is slower than the stop. The firmware is next.
             println!(

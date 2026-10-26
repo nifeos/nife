@@ -82,7 +82,7 @@ names exactly as many windows as `reg` has.
 
 A new fixture, `jh7110-clkgen-vendor-mismatched-names.dts`, gives the vendor clkgen node two `reg`
 windows but three `reg-names` entries. `"stg"` is last, at index 2, one past the two the array
-holds. `discover` over it must fall back to the corroborated `STG_BASE` constant, not read the
+holds. `discover` over it must fall back to the corroborated `SYSTEM_TOP_GROUP_BASE` constant, not read the
 zeroed slot an off-by-one would land on.
 `a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read` checks that.
 

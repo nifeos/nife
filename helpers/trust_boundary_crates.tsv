@@ -179,7 +179,7 @@ top	userspace	components
 universally_unique_identifier	shared	retired
 uptime	userspace	components
 usb	userspace	components
-usb_keyboard_report	shared	components,kernel
+usb_keyboard_report	shared	retired
 user_heap	userspace	retired
 user_mode_heap	userspace	retired
 user_mode_runtime	userspace	components,fixtures,jig,redoxfs_server

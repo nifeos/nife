@@ -128,8 +128,8 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
     // The doorbell page, and only it: BAR0's first page holds `CC`, `CSTS`, `AQA`, `ASQ` and
     // `ACQ`, and the doorbells start at 0x1000 (NVMe 1.4, section 3.1.25).
     let doorbell_phys = found.bar0 + page_frames::FRAME_SIZE;
-    let data_plane_phys = handoff.data_plane_phys;
-    let transfer_phys = data_plane_phys + 2 * page_frames::FRAME_SIZE;
+    let data_plane_physical_address = handoff.data_plane_physical_address;
+    let transfer_phys = data_plane_physical_address + 2 * page_frames::FRAME_SIZE;
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
@@ -149,7 +149,7 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
         super::fs_service::map_channel(
             &mut maps[..DATA_PLANE_PAGES],
             DATA_PLANE_VA,
-            data_plane_phys,
+            data_plane_physical_address,
             DATA_PLANE_PAGES,
         );
         maps[DATA_PLANE_PAGES] = Mapping {
@@ -180,7 +180,7 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
         confined_by_iommu,
         scope,
         rid,
-        blocks_per: handoff.blocks_per,
+        blocks_per: handoff.blocks_per_transfer,
         size_bytes: handoff.size_bytes,
     })
 }
@@ -303,8 +303,8 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
     let words = handoff.pack();
 
     let doorbell_phys = found.bar0 + page_frames::FRAME_SIZE;
-    let data_plane_phys = handoff.data_plane_phys;
-    let transfer_phys = data_plane_phys + 2 * page_frames::FRAME_SIZE;
+    let data_plane_physical_address = handoff.data_plane_physical_address;
+    let transfer_phys = data_plane_physical_address + 2 * page_frames::FRAME_SIZE;
 
     // `[ESCAPE_MAGIC, victim]` at the start of the transfer buffer. No fence: the
     // `crate::sched::spawn` below is the happens-before edge to the reader, as in `start`.
@@ -330,7 +330,7 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
         super::fs_service::map_channel(
             &mut maps[..DATA_PLANE_PAGES],
             DATA_PLANE_VA,
-            data_plane_phys,
+            data_plane_physical_address,
             DATA_PLANE_PAGES,
         );
         maps[DATA_PLANE_PAGES] = Mapping {

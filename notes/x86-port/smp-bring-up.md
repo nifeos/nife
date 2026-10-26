@@ -12,9 +12,9 @@ page). This page holds the constraints behind them. The counting bug that shaped
 
 ## The trampoline page
 
-INIT-SIPI-SIPI cannot place code or pass a value. `ap_boot::prepare` does both before the messages
-are sent. It copies the trampoline's bytes onto its low page and writes the one value that varies
-per core, the stack top, which `boot.s`'s 64-bit tail reads back RIP-relative.
+INIT-SIPI-SIPI cannot place code or pass a value. `ap_boot::prepare` does both before `cpu_start`
+sends the messages. It copies the trampoline's bytes onto its low page and writes the one value that
+varies per core, the stack top, which `boot.s`'s 64-bit tail reads back RIP-relative.
 
 `link-x86_64.ld` gives `.ap_trampoline` a fixed low VMA, `AP_TRAMPOLINE_PHYS`, where it has to
 execute, and a load address in a gap it opens between `.rodata` and `.data`. That gap is not
@@ -25,8 +25,8 @@ second writable alias. And the gap lies between two mapped sections rather than 
 the general rules miss. The destination is the low megabyte, which `map_firmware_regions` maps
 writable and the frame allocator never hands out (`machine::LOW_MEGABYTE`).
 
-Because `secondary_boot` is linked at that low address, its own address already is the physical
-page. On aarch64 and RISC-V, `secondary_boot` is an ordinary high-linked label and
+Because `secondary_boot` is linked at that low address, its own address already is the
+physical page. On aarch64 and RISC-V, `secondary_boot` is an ordinary high-linked label and
 `smp::bring_up_secondaries` converts it with `virt_to_phys`. Doing that here computes
 `secondary_boot - DIRECT_MAP_BASE`, an underflow. `arch::secondary_boot_entry` is therefore the
 identity on x86_64. The page is a multiple of 4096, which lets `cpu_start` derive the STARTUP vector
@@ -43,9 +43,9 @@ makes the next call's `prepare` safe to overwrite the page.
 ## The sequence and its timing
 
 The algorithm is the Intel MP specification's (appendix B.4): INIT, a 10 ms settle delay, a
-STARTUP IPI, and 200 µs. The online count is read once, before the INIT, and every wait compares
-against that value. A core quick enough to check in during the settle delays has already moved the
-count, so a later re-read would wait for a second increment nobody makes.
+STARTUP IPI, and 200 µs. `cpu_start` reads the online count once, before the INIT, and every wait
+compares against that value. A core quick enough to check in during the settle delays has already
+moved the count, so a later re-read would wait for a second increment nobody makes.
 
 The specification calls for two STARTUP IPIs, and a core that has already left wait-for-SIPI is
 defined to ignore the second (QEMU's `apic_sipi` does). `cpu_start` sends the second only when the

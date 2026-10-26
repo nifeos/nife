@@ -6,7 +6,7 @@
 //! or check its checksum against the short entry that follows. The layouts are those of
 //! Microsoft's "FAT: General Overview of On-Disk Format", version 1.03, sections 6 and 7.
 
-use crate::boot_sector::{BootSector, FatType, RootDirectory};
+use crate::boot_sector::{BootSector, FileAllocationTableType, RootDirectory};
 use crate::reader::{ChainError, Links, Volume, Walk};
 use crate::sector::{SectorDevice, SectorSize};
 
@@ -74,13 +74,16 @@ pub struct LongNameEntry {
 }
 
 impl Slot {
-    /// **Parse one slot of a directory on a volume of `fat_type`.**
+    /// **Parse one slot of a directory on a volume of `file_allocation_table_type`.**
     ///
     /// Never panics: every 32 bytes are one of the variants. A short entry's first cluster takes
     /// its high half from `DIR_FstClusHI` only on FAT32; FAT12 and FAT16 leave that word to other
     /// uses, so it is ignored there. The cluster is not checked against any volume here; a reader
     /// that follows it does that.
-    pub fn parse(slot: &[u8; SLOT_BYTES], fat_type: FatType) -> Slot {
+    pub fn parse(
+        slot: &[u8; SLOT_BYTES],
+        file_allocation_table_type: FileAllocationTableType,
+    ) -> Slot {
         match slot[0] {
             0 => return Slot::End,
             FREE => return Slot::Free,
@@ -104,9 +107,9 @@ impl Slot {
         if name[0] == 0x05 {
             name[0] = FREE;
         }
-        let high = match fat_type {
-            FatType::Fat32 => u32::from(u16::from_le_bytes([slot[20], slot[21]])),
-            FatType::Fat12 | FatType::Fat16 => 0,
+        let high = match file_allocation_table_type {
+            FileAllocationTableType::Fat32 => u32::from(u16::from_le_bytes([slot[20], slot[21]])),
+            FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 => 0,
         };
         let low = u32::from(u16::from_le_bytes([slot[26], slot[27]]));
         Slot::Used(DirectoryEntry::Short(ShortEntry {
@@ -147,7 +150,7 @@ impl ShortEntry {
     }
 
     /// The file's length in bytes; 0 for a directory.
-    pub const fn size(&self) -> u32 {
+    pub const fn size_bytes(&self) -> u32 {
         self.size
     }
 }
@@ -169,9 +172,9 @@ impl LongNameEntry {
         self.checksum
     }
 
-    /// The piece's thirteen UTF-16 units, as stored: the name ends at a `0x0000` unit, and
+    /// The piece's thirteen UTF-16 code units, as stored: the name ends at a `0x0000` unit, and
     /// `0xFFFF` pads the rest.
-    pub const fn units(&self) -> [u16; 13] {
+    pub const fn code_units(&self) -> [u16; 13] {
         self.units
     }
 }
@@ -304,7 +307,7 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
 
     fn advance(&mut self) -> Option<Result<DirectoryEntry, ChainError<D::Error>>> {
         let size = self.volume.boot_sector().sector_size().bytes();
-        let fat_type = self.volume.boot_sector().fat_type();
+        let file_allocation_table_type = self.volume.boot_sector().file_allocation_table_type();
         loop {
             if self.at >= size {
                 match self.fill() {
@@ -316,7 +319,7 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
             let mut slot = [0u8; SLOT_BYTES];
             slot.copy_from_slice(&self.buffer[self.at..self.at + SLOT_BYTES]);
             self.at += SLOT_BYTES;
-            match Slot::parse(&slot, fat_type) {
+            match Slot::parse(&slot, file_allocation_table_type) {
                 Slot::End => return None,
                 Slot::Free => {}
                 Slot::Used(entry) => return Some(Ok(entry)),
