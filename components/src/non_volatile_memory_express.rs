@@ -3,7 +3,7 @@
 //! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
 //! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
 //! host-tested and Kani-reachable, including the block-range check
-//! [`non_volatile_memory_express::transfer_command`] applies; what is left here is volatile access,
+//! [`non_volatile_memory_express::Namespace::transfer_command`] applies; what is left here is volatile access,
 //! two barriers and a bounded poll.
 
 //! # Capability contract
@@ -21,8 +21,8 @@
 //! - One command in flight, so measured throughput is a lower bound on the device.
 //! - It polls: no interrupt vector, and nothing would confine one aimed from userspace (§86).
 //! - A hung controller is `EIO` after [`SPIN_BOUND`] polls: `CSTS.CFS` is on the unmapped page.
-//! - A PRP aimed backwards from [`Handoff::data_plane_phys`] could overwrite the admin ring; not an
-//!   escape, and §86 option 4's doorbell validator would close it.
+//! - A PRP aimed backwards from [`Handoff::data_plane_physical_address`] could overwrite the admin
+//!   ring; not an escape, and §86 option 4's doorbell validator would close it.
 //! - One command per filesystem block (`prp_pair` builds no PRP list); bulk trails virtio.
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)), the
@@ -42,7 +42,7 @@ use driver_process_contract::non_volatile_memory_express::{
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue, transfer_command,
+    Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -200,7 +200,7 @@ impl Plane {
             ) - PAGE,
             new_head as u32,
         );
-        self.sq.record_head(c.sq_head);
+        self.sq.record_head(c.submission_queue_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation. Answering EIO
         // rather than panicking, because this is a server and a client is waiting on it: a
@@ -224,23 +224,18 @@ impl Plane {
         write: bool,
     ) -> Result<(), u16> {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
-        let data_phys = self.handoff.data_plane_phys + TRANSFER_OFF + page * PAGE;
+        let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
-        let cmd = transfer_command(
-            self.handoff.size_bytes,
-            self.handoff.blocks_per,
-            cid,
-            NSID,
-            block,
-            PAGE,
-            data_phys,
-            PAGE,
-            write,
-        )
-        // `None` means the block is outside the namespace or the arithmetic would not close;
-        // either way it is the caller's request that is wrong, and the crate refused to build
-        // a command rather than let the controller answer for it.
-        .ok_or(u16::MAX)?;
+        let namespace = Namespace {
+            size_bytes: self.handoff.size_bytes,
+            blocks_per_transfer: self.handoff.blocks_per_transfer,
+        };
+        let cmd = namespace
+            .transfer_command(cid, NSID, block, PAGE, data_phys, PAGE, write)
+            // `None` means the block is outside the namespace or the arithmetic would not close;
+            // either way it is the caller's request that is wrong, and the crate refused to build
+            // a command rather than let the controller answer for it.
+            .ok_or(u16::MAX)?;
         self.transact(cmd)
     }
 }
@@ -354,7 +349,7 @@ fn serve(mut plane: Plane) -> ! {
 /// **Aim DMA outside this server's region, both directions, and report what the controller did**
 /// (milestone 261 (the NVMe driver leaves the kernel)'s Outstanding item; milestone 202 (every
 /// confinement test is a ritual until somebody breaks the confinement)). It goes around
-/// [`transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
+/// [`Namespace::transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
 /// its own, `victim`, a physical address outside this process's DMA window: a `READ` would
 /// overwrite a frame this server was never granted, a `WRITE` would leak `victim` onto the disk.
 /// With the IOMMU confining the controller to its own region both fault, and the kernel test reads
@@ -362,7 +357,7 @@ fn serve(mut plane: Plane) -> ! {
 /// `victim`**: a raw number out of shared memory, the authority an escaping driver would fabricate.
 #[cfg(feature = "confinement_attackers")]
 fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
-    let blocks = plane.handoff.blocks_per;
+    let blocks = plane.handoff.blocks_per_transfer;
     // disk -> victim: the controller would overwrite a frame outside the region.
     let rd = {
         let cid = plane.next_cid();

@@ -10,26 +10,26 @@ Ratified: 2026-10-25 (#2720).
 The ruling of that date ratified every name below; register names keep the specification's
 spelling. Each row with a refusal names the spelling the ruling turned down and why. The same ruling
 moved nife's process plan out of the crate. `Handoff`, `register_window`, `WindowRefusal`,
-`MAX_REGISTER_PAGES`, `WORK_PAGES` and `region_pages` sit in the module
-`extensible_host_controller_interface` of the nife-internal crate `driver_process_contract`. The
-bring-up report sits in the nife crate
-`usb_keyboard_report`. Neither publishes, and their names follow nife's ordinary naming, with no row
-here. A new name in this crate takes a row here, `provisional` until a ruling, and `script/lint`
+`MAXIMUM_REGISTER_PAGES`, `WORK_PAGES`, `region_pages` and the driver's bring-up report sit in the
+module `extensible_host_controller_interface` of the nife-internal crate `driver_process_contract`,
+which does not publish. Their names follow nife's ordinary naming, with no row here. A new name in this crate takes a row here, `provisional` until a ruling, and `script/lint`
 fails a module or `pub` item without one.
 
 The column `outside` says whether a caller outside the crate reaches the name. Some names have no
 row because `script/names` does not count them: enum variants, struct fields and trait members. The
-same ruling covers them.
+same ruling covers them. Ruled 2026-10-26 (UTC), on #2760: the TRB field of `Event::Transfer`,
+`Event::Command` and `TransferRequestBlockPlacement` is `transfer_request_block`, the module's own
+spelling, and the `USBCMD`, `USBSTS` and `USBLEGCTLSTS` bits spell out what this tree abbreviated.
 
 | name | kind | path | status | outside |
 |---|---|---|---|---|
 | `extensible_host_controller_interface` | crate | `src/lib.rs` | ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once published. Too long for a program name, so the program is `usb_keyboard_driver`. | yes |
 | `completion` | module | `src/completion.rs` | ratified 2026-10-25 (#2720). | yes |
 | `context` | module | `src/context.rs` | ratified 2026-10-25 (#2720). | yes |
-| `dma` | module | `src/dma.rs` | ratified 2026-10-25 (#2720). Kept as it stands. | yes |
+| `direct_memory_access` | module | `src/direct_memory_access.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `dma` (spelled out, as the acronym test asks). | yes |
 | `event` | module | `src/event.rs` | ratified 2026-10-25 (#2720). | no |
 | `port` | module | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
-| `regs` | module | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
+| `registers` | module | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `regs` (an abbreviation; the constants inside keep the specification's names). | yes |
 | `ring` | module | `src/ring.rs` | ratified 2026-10-25 (#2720). | no |
 | `tests` | module | `src/tests.rs` | ratified 2026-10-25 (#2720). | no |
 | `transfer_request_block` | module | `src/transfer_request_block.rs` | ratified 2026-10-25 (#2720). Refused `trb` (spelled out, as the acronym test asks). | no |
@@ -52,21 +52,21 @@ same ruling covers them.
 | `is_superspeed` | item | `src/context.rs` | ratified 2026-10-25 (#2720). | yes |
 | `slot` | item | `src/context.rs` | ratified 2026-10-25 (#2720). | yes |
 | `slot_address` | item | `src/context.rs` | ratified 2026-10-25 (#2720). | no |
-| `COMMAND_RING` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CONTROL_BUFFER` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CONTROL_RING` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `DEVICE_CONTEXT` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `DEVICE_CONTEXT_ARRAY` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `EVENT_RING` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `EVENT_SEGMENT_TABLE` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `INPUT_CONTEXT` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `INTERRUPT_RING` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `MAX_SCRATCHPADS` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `REPORTS_QUEUED` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `REPORT_BUFFERS` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `REPORT_SLOT` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `RING_ENTRIES` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
-| `SCRATCHPAD_ARRAY` | item | `src/dma.rs` | ratified 2026-10-25 (#2720). | yes |
+| `COMMAND_RING` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `CONTROL_BUFFER` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `CONTROL_RING` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `DEVICE_CONTEXT` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `DEVICE_CONTEXT_ARRAY` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `EVENT_RING` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `EVENT_SEGMENT_TABLE` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `INPUT_CONTEXT` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `INTERRUPT_RING` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `MAXIMUM_SCRATCHPADS` | item | `src/direct_memory_access.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `MAX_SCRATCHPADS` (max spelled out, as the tree-wide ruling asks). | yes |
+| `REPORTS_QUEUED` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `REPORT_BUFFERS` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `REPORT_SLOT` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `RING_ENTRIES` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `SCRATCHPAD_ARRAY` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
 | `Event` | item | `src/event.rs` | ratified 2026-10-25 (#2720). | yes |
 | `decode` | item | `src/event.rs` | ratified 2026-10-25 (#2720). | yes |
 | `PAGE_BYTES` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). Refused `PAGE` (it reads as a page and holds a size). | yes |
@@ -89,46 +89,46 @@ same ruling covers them.
 | `speed_name` | item | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
 | `speed_of` | item | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
 | `write_value` | item | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CAPLENGTH` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_INTERRUPTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_RESET` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_RUN` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CONFIG` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CRCR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `Capabilities` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `DBOFF` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `DCBAAP` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `ERDP` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `ERDP_BUSY` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `ERSTBA` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `ERSTSZ` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `EXTENDED_LEGACY_SUPPORT` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `HCCPARAMS1` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `HCSPARAMS1` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `HCSPARAMS2` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `IMAN` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `IMAN_ENABLE` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `IMAN_PENDING` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `IMOD` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `LEGACY_BIOS_OWNED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `LEGACY_OS_OWNED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `LEGACY_SMI_ENABLES` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `LEGACY_SMI_EVENTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `PAGESIZE` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `RTSOFF` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_CONTROLLER_ERROR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `STS_EVENT_INTERRUPT` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_HALTED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_HOST_SYSTEM_ERROR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `STS_NOT_READY` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_PORT_CHANGE` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `USBCMD` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `USBSTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `decode` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `doorbell` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `find_extended` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `interrupter` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `portsc` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
+| `CAPLENGTH` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `COMMAND_INTERRUPTS` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_INTERRUPTS` (spelled out; the register keeps `USBCMD`). | yes |
+| `COMMAND_RESET` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RESET` (spelled out; the register keeps `USBCMD`). | yes |
+| `COMMAND_RUN` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RUN` (spelled out; the register keeps `USBCMD`). | yes |
+| `CONFIG` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `CRCR` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `Capabilities` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `DBOFF` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `DCBAAP` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `ERDP` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `ERDP_BUSY` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `ERSTBA` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `ERSTSZ` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `EXTENDED_LEGACY_SUPPORT` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `HCCPARAMS1` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `HCSPARAMS1` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `HCSPARAMS2` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `IMAN` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `IMAN_ENABLE` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `IMAN_PENDING` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `IMOD` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | no |
+| `LEGACY_BIOS_OWNED` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `LEGACY_OPERATING_SYSTEM_OWNED` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_OS_OWNED` (os spelled out, as the tree-wide ruling asks). | no |
+| `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_ENABLES` (`smi` spelled out, as the acronym test asks). | yes |
+| `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_EVENTS` (`smi` spelled out, as the acronym test asks). | yes |
+| `PAGESIZE` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `RTSOFF` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `STATUS_CONTROLLER_ERROR` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_CONTROLLER_ERROR` (spelled out; the register keeps `USBSTS`). | no |
+| `STATUS_EVENT_INTERRUPT` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_EVENT_INTERRUPT` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_HALTED` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_HALTED` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_HOST_SYSTEM_ERROR` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_HOST_SYSTEM_ERROR` (spelled out; the register keeps `USBSTS`). | no |
+| `STATUS_NOT_READY` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_NOT_READY` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_PORT_CHANGE` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_PORT_CHANGE` (spelled out; the register keeps `USBSTS`). | yes |
+| `USBCMD` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `USBSTS` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `decode` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `doorbell` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `find_extended` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `interrupter` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
+| `portsc` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
 | `EventRing` | item | `src/ring.rs` | ratified 2026-10-25 (#2720). | yes |
 | `ProducerRing` | item | `src/ring.rs` | ratified 2026-10-25 (#2720). | yes |
 | `TransferRequestBlockPlacement` | item | `src/ring.rs` | ratified 2026-10-25 (#2720). Refused `Placement` (it did not say what is placed). | yes |

@@ -7,7 +7,7 @@
 //! Name: provisional, minted 2026-10-26 (UTC) by lane driver-contracts-folded, after the crate it
 //! serves, as this crate's other modules are named.
 
-use ::non_volatile_memory_express::regs::DOORBELL_BASE;
+use ::non_volatile_memory_express::registers::DOORBELL_BASE;
 
 // ---------------------------------------------------------------------------------------------
 // The split between an admin plane and a data plane.
@@ -77,18 +77,21 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// again. Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a
 /// quarter of a megabyte past the mapped window, and QEMU reports 0.
 ///
-/// Name: ratified 2026-10-25 (#2720). The ruling of 2026-10-26 (UTC) set it in this module rather
-/// than in `non_volatile_memory_express`, because the bound is nife's mapping and not the
-/// specification's.
-pub const MAX_DSTRD: u32 = 8;
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_DSTRD` (it copied the field's
+/// abbreviation into a name this tree authors) and `MAX_DOORBELL_STRIDE` (max spelled out, as the
+/// tree-wide ruling asks). The ruling of 2026-10-26 (UTC) on #2749 set it in
+/// this module rather than in `non_volatile_memory_express`, because the bound is nife's mapping
+/// and not the specification's.
+pub const MAXIMUM_DOORBELL_STRIDE: u32 = 8;
 
 /// The one page of BAR0 the data plane is mapped, from the doorbell base.
 const DOORBELL_PAGE_END: u64 = DOORBELL_BASE + 0x1000;
 
 // The bound is the page's edge, at compile time: doorbell index 3 ends inside the page at
-// `MAX_DSTRD` and past it one stride wider.
-const _: () = assert!(DOORBELL_BASE + 3 * (4 << MAX_DSTRD) + 4 <= DOORBELL_PAGE_END);
-const _: () = assert!(DOORBELL_BASE + 3 * (4 << (MAX_DSTRD + 1)) + 4 > DOORBELL_PAGE_END);
+// `MAXIMUM_DOORBELL_STRIDE` and past it one stride wider.
+const _: () = assert!(DOORBELL_BASE + 3 * (4 << MAXIMUM_DOORBELL_STRIDE) + 4 <= DOORBELL_PAGE_END);
+const _: () =
+    assert!(DOORBELL_BASE + 3 * (4 << (MAXIMUM_DOORBELL_STRIDE + 1)) + 4 > DOORBELL_PAGE_END);
 
 /// **The sentinel that selects the test-only DMA-escape role**, written by the confinement
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
@@ -119,12 +122,12 @@ pub struct Handoff {
     pub dstrd: u32,
     /// Logical blocks per filesystem block, from IDENTIFY. `1..=8` for every namespace
     /// [`parse_identify_namespace`](::non_volatile_memory_express::parse_identify_namespace) admits.
-    pub blocks_per: u16,
+    pub blocks_per_transfer: u16,
     /// Entries per I/O ring, as the admin plane created them.
     pub entries: u16,
     /// The **physical** base of the run of pages the data plane was mapped: the I/O submission
     /// ring, the I/O completion ring, then the transfer buffer.
-    pub data_plane_phys: u64,
+    pub data_plane_physical_address: u64,
     /// The namespace's capacity in bytes, the `SIZE` answer.
     pub size_bytes: u64,
 }
@@ -135,31 +138,34 @@ impl Handoff {
     /// Name: provisional. No ruling covers it.
     pub fn pack(&self) -> [u64; 3] {
         [
-            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,
-            self.data_plane_phys,
+            (self.dstrd as u64) << 32
+                | (self.blocks_per_transfer as u64) << 16
+                | self.entries as u64,
+            self.data_plane_physical_address,
             self.size_bytes,
         ]
     }
 
     /// [`pack`](Self::pack)'s inverse, refusing a word that cannot describe a controller this
     /// driver could serve rather than carrying the nonsense forward into a doorbell offset.
-    /// `None` for a zero ring depth, a zero or out-of-range `blocks_per` (the shift bounds
+    /// `None` for a zero ring depth, a zero or out-of-range `blocks_per_transfer` (the shift bounds
     /// `parse_identify_namespace` enforces make `1..=8` the whole reachable range for a 4096-byte
-    /// unit), or a `dstrd` above [`MAX_DSTRD`].
+    /// unit), or a `dstrd` above [`MAXIMUM_DOORBELL_STRIDE`].
     ///
     /// Name: provisional. No ruling covers it.
     pub fn unpack(words: [u64; 3]) -> Option<Handoff> {
         let dstrd = (words[0] >> 32) as u32;
-        let blocks_per = (words[0] >> 16) as u16;
+        let blocks_per_transfer = (words[0] >> 16) as u16;
         let entries = words[0] as u16;
-        if dstrd > MAX_DSTRD || !(1..=8).contains(&blocks_per) || entries < 2 {
+        if dstrd > MAXIMUM_DOORBELL_STRIDE || !(1..=8).contains(&blocks_per_transfer) || entries < 2
+        {
             return None;
         }
         Some(Handoff {
             dstrd,
-            blocks_per,
+            blocks_per_transfer,
             entries,
-            data_plane_phys: words[1],
+            data_plane_physical_address: words[1],
             size_bytes: words[2],
         })
     }
@@ -180,25 +186,35 @@ mod tests {
     fn the_handoff_survives_three_words_and_refuses_nonsense() {
         let h = Handoff {
             dstrd: 0,
-            blocks_per: 8,
+            blocks_per_transfer: 8,
             entries: 16,
-            data_plane_phys: 0x4001_3000,
+            data_plane_physical_address: 0x4001_3000,
             size_bytes: 8 * 1024 * 1024,
         };
         assert_eq!(Handoff::unpack(h.pack()), Some(h));
 
         // A stride whose doorbell file would not fit the one page of BAR0 this wiring maps (see
-        // `MAX_DSTRD`, which Kani found), a ring of one, and a geometry no namespace
+        // `MAXIMUM_DOORBELL_STRIDE`, which Kani found), a ring of one, and a geometry no namespace
         // `parse_identify_namespace` admits can produce for a 4096-byte unit.
-        assert!(Handoff::unpack([(MAX_DSTRD as u64 + 1) << 32 | 8 << 16 | 16, 0, 0]).is_none());
+        assert!(
+            Handoff::unpack([
+                (MAXIMUM_DOORBELL_STRIDE as u64 + 1) << 32 | 8 << 16 | 16,
+                0,
+                0
+            ])
+            .is_none()
+        );
         // And the largest stride that does fit is admitted, with its last doorbell inside the
         // page: this bound is a real edge, not a round number chosen for comfort.
-        let widest = Handoff::unpack([(MAX_DSTRD as u64) << 32 | 8 << 16 | 16, 0, 0])
-            .expect("MAX_DSTRD itself must be servable");
+        let widest = Handoff::unpack([(MAXIMUM_DOORBELL_STRIDE as u64) << 32 | 8 << 16 | 16, 0, 0])
+            .expect("MAXIMUM_DOORBELL_STRIDE itself must be servable");
         assert!(doorbell(1, Doorbell::CompletionHead, widest.dstrd) + 4 <= DOORBELL_PAGE_END);
         assert!(Handoff::unpack([8 << 16 | 1, 0, 0]).is_none());
         assert!(Handoff::unpack([9 << 16 | 16, 0, 0]).is_none());
-        assert!(Handoff::unpack([16, 0, 0]).is_none(), "blocks_per zero");
+        assert!(
+            Handoff::unpack([16, 0, 0]).is_none(),
+            "blocks_per_transfer zero"
+        );
         // The spec's minimum queue depth is 2 (`SubmissionQueue::new`'s own doc says why: a one-slot
         // ring cannot distinguish full from empty), and nothing above sits exactly on that
         // boundary: `entries: 1` is refused either by `< 2` or by the `<= 2` this guards against.
@@ -213,16 +229,16 @@ mod tests {
         // The round-trip test above uses `dstrd: 0`, where `<< 32` and `>> 32` both give 0.
         // Nothing else calls `pack` at all, so a nonzero `dstrd` never reached it.
         let h = Handoff {
-            dstrd: MAX_DSTRD,
-            blocks_per: 8,
+            dstrd: MAXIMUM_DOORBELL_STRIDE,
+            blocks_per_transfer: 8,
             entries: 16,
-            data_plane_phys: 0x4001_3000,
+            data_plane_physical_address: 0x4001_3000,
             size_bytes: 8 * 1024 * 1024,
         };
         let words = h.pack();
         assert_eq!(
             words[0] >> 32,
-            MAX_DSTRD as u64,
+            MAXIMUM_DOORBELL_STRIDE as u64,
             "dstrd lands in the high word, shifted left, not right"
         );
         assert_eq!(Handoff::unpack(words), Some(h));
@@ -231,13 +247,13 @@ mod tests {
     #[test]
     fn pack_words_three_fields_share_no_bit_so_or_and_xor_agree() {
         // The remaining two `| -> ^` survivors in `pack` are both this shape: `entries` (a plain
-        // `u16`, bits 0-15), `blocks_per as u64 << 16` (bits 16-31, a `u16` shifted left 16), and
-        // `dstrd as u64 << 32` (bits 32-63, a `u32` shifted left 32). Each shift zeroes exactly
-        // the bits the field below it occupies, checked at the widest each field can be.
+        // `u16`, bits 0-15), `blocks_per_transfer as u64 << 16` (bits 16-31, a `u16` shifted left
+        // 16), and `dstrd as u64 << 32` (bits 32-63, a `u32` shifted left 32). Each shift zeroes
+        // exactly the bits the field below it occupies, checked at the widest each field can be.
         assert_eq!(
             0xffffu64 & (0xffffu64 << 16),
             0,
-            "entries against blocks_per"
+            "entries against blocks_per_transfer"
         );
         assert_eq!(
             0xffff_ffffu64 & (0xffff_ffffu64 << 32),
@@ -249,9 +265,9 @@ mod tests {
     /// The stride bound is the page's edge: the widest admitted stride's last doorbell ends inside
     /// the page, and the next stride's begins past it.
     #[test]
-    fn max_dstrd_is_the_widest_stride_whose_doorbells_fit_one_page() {
+    fn maximum_doorbell_stride_is_the_widest_whose_doorbells_fit_one_page() {
         let page_end = DOORBELL_PAGE_END;
-        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DSTRD) + 4 <= page_end);
-        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DSTRD + 1) >= page_end);
+        assert!(doorbell(1, Doorbell::CompletionHead, MAXIMUM_DOORBELL_STRIDE) + 4 <= page_end);
+        assert!(doorbell(1, Doorbell::CompletionHead, MAXIMUM_DOORBELL_STRIDE + 1) >= page_end);
     }
 }

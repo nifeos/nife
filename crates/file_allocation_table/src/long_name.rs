@@ -9,7 +9,7 @@
 //! `0x0000`, then `0xFFFF` to the end of the entry, unless the name fills its last entry exactly.
 
 /// The most UCS-2 units a long name holds.
-pub(crate) const MAX_UNITS: usize = 255;
+pub(crate) const MAXIMUM_CODE_UNITS: usize = 255;
 
 /// UCS-2 units in one long-name entry: five in `LDIR_Name1`, six in `LDIR_Name2`, two in
 /// `LDIR_Name3`.
@@ -55,7 +55,7 @@ const fn is_short_punctuation(b: u8) -> bool {
 /// a value of this type is a name the specification admits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct LongName {
-    units: [u16; MAX_UNITS],
+    units: [u16; MAXIMUM_CODE_UNITS],
     len: usize,
 }
 
@@ -65,7 +65,7 @@ impl LongName {
     /// A character outside the Basic Multilingual Plane is refused rather than written as a
     /// surrogate pair, because the specification says UCS-2 and not UTF-16.
     pub(crate) fn new(name: &str) -> Option<LongName> {
-        let mut units = [0u16; MAX_UNITS];
+        let mut units = [0u16; MAXIMUM_CODE_UNITS];
         let mut len = 0;
         for c in name.chars() {
             let unit = u16::try_from(u32::from(c)).ok()?;
@@ -77,12 +77,12 @@ impl LongName {
 
     /// **Check `units` as a long name**, or `None`.
     ///
-    /// Refused: an empty name, one over [`MAX_UNITS`], a control character, any of `" * / : < > ?
-    /// \ |`, and a name ending in a space or a period. The specification has a driver strip those
-    /// last two, so writing one would make a file whose name is not the name asked for. Also
+    /// Refused: an empty name, one over [`MAXIMUM_CODE_UNITS`], a control character, any of `" * /
+    /// : < > ? \ |`, and a name ending in a space or a period. The specification has a driver strip
+    /// those last two, so writing one would make a file whose name is not the name asked for. Also
     /// refused is a name whose alias would have nothing before its dot (see [`LongName::alias`]).
     pub(crate) fn from_units(units: &[u16]) -> Option<LongName> {
-        if units.is_empty() || units.len() > MAX_UNITS {
+        if units.is_empty() || units.len() > MAXIMUM_CODE_UNITS {
             return None;
         }
         let forbidden = |u: u16| u < 0x20 || b"\"*/:<>?\\|".iter().any(|b| u == u16::from(*b));
@@ -93,7 +93,7 @@ impl LongName {
             return None;
         }
         let mut name = LongName {
-            units: [0; MAX_UNITS],
+            units: [0; MAXIMUM_CODE_UNITS],
             len: units.len(),
         };
         name.units[..units.len()].copy_from_slice(units);
@@ -264,7 +264,7 @@ mod tests {
         assert_eq!(LongName::new(&"a".repeat(256)), None);
         // `from_units` holds the length limit itself, since a caller with units skips `new`.
         assert_eq!(
-            LongName::from_units(&[u16::from(b'a'); MAX_UNITS + 1]),
+            LongName::from_units(&[u16::from(b'a'); MAXIMUM_CODE_UNITS + 1]),
             None
         );
     }

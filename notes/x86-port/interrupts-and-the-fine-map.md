@@ -15,10 +15,10 @@ x86 has at least four clocks and no architected way to ask any of them, on the p
 on. `CPUID` leaf 0x15 gives the TSC's ratio to a crystal whose frequency leaf 0x16 may not report.
 The local APIC timer counts a bus clock nothing reports at all.
 
-So the rate is measured, against the one device on a PC whose frequency is a fixed number: the
-8254 PIT at 1193182 Hz. That number has not changed since 1981 because it came from dividing the
+So the kernel measures the rate against the one device on a PC whose frequency is a fixed number:
+the 8254 PIT at 1193182 Hz. That number has not changed since 1981 because it came from dividing the
 NTSC color-burst crystal and every clone copied it. One ten-millisecond window, polled on channel 2
-(the only channel whose gate is under software control and whose output can be read), with both the
+(the only channel whose gate is under software control and whose output is readable), with both the
 TSC and the APIC timer sampled across it. So one wait produces both numbers and they cannot disagree
 with each other.
 
@@ -40,11 +40,11 @@ agree with each other as well as with the emulator's nominal rate.
 Two obligations the ACPI tables state and this code honors, both of which would otherwise show up
 much later as a hang:
 
-- The 8259 PICs are masked before the local APIC is enabled. Their power-on vector base overlaps
-  the CPU's own exception vectors, so an interrupt from one arrives as, for instance, the double
-  fault. The order matters: the reverse leaves a window in which the IDT is live and they are not
-  masked.
-- The Task Priority Register is zeroed. Anything else silently drops interrupts below that
+- The kernel masks the 8259 PICs before it enables the local APIC. Their power-on vector base
+  overlaps the CPU's own exception vectors, so an interrupt from one arrives as, for instance, the
+  double fault. The order matters: the reverse leaves a window in which the IDT is live and they are
+  not masked.
+- The kernel zeroes the Task Priority Register. Anything else silently drops interrupts below that
   priority class, which looks exactly like a controller that was never wired up.
 
 ## The IO APIC, and the number that is not the number
@@ -138,14 +138,14 @@ Physical destination mode, fixed delivery, at the boot CPU. Not lowest-priority 
 a logical group: the simplest thing that is correct on one CPU and stays correct on several.
 Distributing interrupts is a policy too.
 
-Every entry is masked during bring-up. They power on masked, so this changes nothing on a cold
-boot. It matters on a warm one, where firmware may have armed a line for its own use and left it
-armed. An inherited interrupt arriving on a vector this kernel never assigned is a puzzle with
+The kernel masks every entry during bring-up. They power on masked, so this changes nothing on a
+cold boot. It matters on a warm one, where firmware may have armed a line for its own use and left
+it armed. An inherited interrupt arriving on a vector this kernel never assigned is a puzzle with
 no clue in it.
 
-The 8259s stay masked rather than being remapped. The same device line reaches both controllers,
-so an unmasked 8259 would deliver a second copy of every interrupt the redirection table routes, on
-a vector that is an exception number.
+The kernel leaves the 8259s masked and does not remap them. The same device line reaches both
+controllers, so an unmasked 8259 would deliver a second copy of every interrupt the redirection
+table routes, on a vector that is an exception number.
 
 ### What this did not touch
 
@@ -192,8 +192,8 @@ The roadmap's prescribed answer was to carry both aliases across the switch and 
 afterwards. The answer taken instead was to make the arithmetic never change. `boot.s` writes
 PML4[273] itself, pointing at the same low PDPT the identity map already uses. So the direct map
 exists from before the first Rust instruction and `mmu::initialize` widens it rather than
-introducing it. Eight bytes, no extra memory, no second step, and nothing to remember. The two
-constants are kept in agreement by a `const` assertion in `mmu.rs` that recomputes PML4[273] from
+introducing it. Eight bytes, no extra memory, no second step, and nothing to remember. A `const`
+assertion in `mmu.rs` keeps the two constants in agreement by recomputing PML4[273] from
 `DIRECT_MAP_BASE`, so changing one without the other fails the build rather than the boot.
 
 The one thing that *does* change across the switch is the local APIC page's memory type, from
@@ -225,7 +225,7 @@ patched here.
 Two other honest limits live in that same `BUGS` section. `mmu::initialize` must draw its table
 frames from below 4 GiB, because that is all the boot map's direct map reaches and the mapper writes
 every table through it. (The frame allocator hands out the lowest free frame first, so this holds
-today.) And `CR4.PGE` is off, so the `G` bit the kernel's `Flags` set is ignored and every
+today.) And `CR4.PGE` is off, so the `G` bit the kernel's `Flags` set does nothing and every
 `mov cr3` flushes the whole TLB: correct and slow, and worth revisiting with ring 3, when a context
 switch starts happening often enough to measure.
 
@@ -236,5 +236,5 @@ the direct map's RAM uses them: 560 KiB of page tables on QEMU's 256 MiB became 
 4 GiB, 8,252 KiB became 64 KiB. 1 GiB leaves are used only where `CPUID` leaf 0x80000001 reports
 `Page1GB` (`mmu::largest_leaf`); `-cpu qemu64` does not, and boots in 2 MiB blocks. Device windows
 and firmware reservations stay in 4 KiB pages, because this kernel does not read the MTRRs and a
-large page spanning two memory types is undefined (`mmu.rs`'s BUGS). aarch64 and riscv64 adopted the
-same rule for their direct maps in the same change, so this is not an x86 difference.
+large page spanning two memory types has undefined behavior (`mmu.rs`'s BUGS). aarch64 and riscv64
+adopted the same rule for their direct maps in the same change, so this is not an x86 difference.

@@ -43,16 +43,17 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use driver_process_contract::extensible_host_controller_interface::Handoff;
+use driver_process_contract::extensible_host_controller_interface::{
+    self as report, BringUpStep, Handoff,
+};
 use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
-    TransferRequestBlockPlacement, completion, context, dma, port, regs,
+    TransferRequestBlockPlacement, completion, context, direct_memory_access, port, registers,
 };
 use line_editor::proto;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
-use usb_keyboard_report::{self as report, BringUpStep};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
     call, exit, interrupt_acknowledge, interrupt_wait, monotonic_nanos, receive_cap, send,
@@ -75,7 +76,7 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const REGS: MappedWindow = unsafe {
     MappedWindow::new(
         REGS_VA,
-        driver_process_contract::extensible_host_controller_interface::MAX_REGISTER_PAGES
+        driver_process_contract::extensible_host_controller_interface::MAXIMUM_REGISTER_PAGES
             * PAGE_BYTES,
     )
 };
@@ -87,8 +88,12 @@ const DMA: MappedWindow = unsafe {
     )
 };
 // SAFETY: the control buffer page, inside the DMA window above.
-const CONTROL_BUFFER: MappedWindow =
-    unsafe { MappedWindow::new(DMA_VA + dma::CONTROL_BUFFER * PAGE_BYTES, PAGE_BYTES) };
+const CONTROL_BUFFER: MappedWindow = unsafe {
+    MappedWindow::new(
+        DMA_VA + direct_memory_access::CONTROL_BUFFER * PAGE_BYTES,
+        PAGE_BYTES,
+    )
+};
 
 /// One millisecond, in the units [`monotonic_nanos`] counts.
 const MS: u64 = 1_000_000;
@@ -208,7 +213,7 @@ impl Host {
     }
 
     fn put(page: u64, p: TransferRequestBlockPlacement) {
-        Host::write_trb(page, p.index, p.trb);
+        Host::write_trb(page, p.index, p.transfer_request_block);
         if let Some((at, link)) = p.link {
             Host::write_trb(page, at, link);
         }
@@ -216,14 +221,14 @@ impl Host {
 
     /// Take the next event off the ring, if the controller has written one, and tell it so.
     fn poll_event(&mut self) -> Option<Event> {
-        let t = Host::read_trb(dma::EVENT_RING, self.events.index());
+        let t = Host::read_trb(direct_memory_access::EVENT_RING, self.events.index());
         if !self.events.is_ready(&t) {
             return None;
         }
         self.events.advance();
         self.set_reg64(
-            self.capabilities.interrupter(regs::ERDP),
-            self.events.dequeue_pointer() | regs::ERDP_BUSY,
+            self.capabilities.interrupter(registers::ERDP),
+            self.events.dequeue_pointer() | registers::ERDP_BUSY,
         );
         Some(Event::decode(t))
     }
@@ -252,11 +257,11 @@ impl Host {
     fn command(&mut self, trb: TransferRequestBlock) -> Result<u8, Fail> {
         let p = self.commands.enqueue(trb);
         let at = self.commands.address_of(p.index);
-        Host::put(dma::COMMAND_RING, p);
+        Host::put(direct_memory_access::COMMAND_RING, p);
         self.ring_doorbell(0, 0);
         match self.wait_for(
             1000,
-            &|e| matches!(e, Event::Command { trb, .. } if *trb == at),
+            &|e| matches!(e, Event::Command { transfer_request_block, .. } if *transfer_request_block == at),
         ) {
             Some(Event::Command { code, slot, .. }) if code == completion::SUCCESS => Ok(slot),
             Some(Event::Command { code, .. }) => Err((BringUpStep::CommandFailed, u32::from(code))),
@@ -273,21 +278,21 @@ impl Host {
         let p = self
             .control
             .enqueue(TransferRequestBlock::setup(setup.to_u64(), data_in));
-        Host::put(dma::CONTROL_RING, p);
+        Host::put(direct_memory_access::CONTROL_RING, p);
         let mut data_at = None;
         if len > 0 {
-            let buffer = self.phys(dma::CONTROL_BUFFER);
+            let buffer = self.phys(direct_memory_access::CONTROL_BUFFER);
             let p = self
                 .control
                 .enqueue(TransferRequestBlock::data(buffer, len, inbound));
             data_at = Some(self.control.address_of(p.index));
-            Host::put(dma::CONTROL_RING, p);
+            Host::put(direct_memory_access::CONTROL_RING, p);
         }
         let p = self
             .control
             .enqueue(TransferRequestBlock::status(len > 0 && inbound));
         let status_at = self.control.address_of(p.index);
-        Host::put(dma::CONTROL_RING, p);
+        Host::put(direct_memory_access::CONTROL_RING, p);
         self.ring_doorbell(slot, 1);
 
         let mut moved = usize::from(len);
@@ -297,7 +302,7 @@ impl Host {
                 &|e| matches!(e, Event::Transfer { slot: s, endpoint: 1, .. } if *s == slot),
             );
             let Some(Event::Transfer {
-                trb,
+                transfer_request_block: trb,
                 residual,
                 code,
                 ..
@@ -337,7 +342,7 @@ impl Host {
     }
 
     fn input_context(&self, index: u8, words: [u32; 8]) {
-        let at = dma::INPUT_CONTEXT * PAGE_BYTES
+        let at = direct_memory_access::INPUT_CONTEXT * PAGE_BYTES
             + context::input_offset(index, self.capabilities.context_bytes);
         for (i, w) in words.iter().enumerate() {
             DMA.w32(at + 4 * i as u64, *w);
@@ -385,18 +390,24 @@ impl Host {
         // Fresh rings and contexts for this device: a stale TRB carrying the new lap's cycle bit
         // would be run by the controller as if it had just been written.
         for page in [
-            dma::DEVICE_CONTEXT,
-            dma::CONTROL_RING,
-            dma::INTERRUPT_RING,
-            dma::INPUT_CONTEXT,
+            direct_memory_access::DEVICE_CONTEXT,
+            direct_memory_access::CONTROL_RING,
+            direct_memory_access::INTERRUPT_RING,
+            direct_memory_access::INPUT_CONTEXT,
         ] {
             zero_page(page);
         }
-        self.control = ProducerRing::new(self.phys(dma::CONTROL_RING), dma::RING_ENTRIES);
-        self.interrupt = ProducerRing::new(self.phys(dma::INTERRUPT_RING), dma::RING_ENTRIES);
+        self.control = ProducerRing::new(
+            self.phys(direct_memory_access::CONTROL_RING),
+            direct_memory_access::RING_ENTRIES,
+        );
+        self.interrupt = ProducerRing::new(
+            self.phys(direct_memory_access::INTERRUPT_RING),
+            direct_memory_access::RING_ENTRIES,
+        );
         DMA.w64(
-            dma::DEVICE_CONTEXT_ARRAY * PAGE_BYTES + 8 * u64::from(slot),
-            self.phys(dma::DEVICE_CONTEXT),
+            direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES + 8 * u64::from(slot),
+            self.phys(direct_memory_access::DEVICE_CONTEXT),
         );
 
         // Address Device: the slot context and endpoint 0.
@@ -407,7 +418,7 @@ impl Host {
             context::control_endpoint(packet0, self.control.dequeue_pointer()),
         );
         self.command(TransferRequestBlock::address_device(
-            self.phys(dma::INPUT_CONTEXT),
+            self.phys(direct_memory_access::INPUT_CONTEXT),
             slot,
         ))?;
         Ok(())
@@ -433,14 +444,14 @@ impl Host {
             return Err((BringUpStep::BadControlPacket, b0.into()));
         };
         if packet != packet0 {
-            zero_page(dma::INPUT_CONTEXT);
+            zero_page(direct_memory_access::INPUT_CONTEXT);
             self.input_context(0, context::input_control(0b10, 0));
             self.input_context(
                 2,
                 context::control_endpoint(packet, self.control.dequeue_pointer()),
             );
             self.command(TransferRequestBlock::evaluate_context(
-                self.phys(dma::INPUT_CONTEXT),
+                self.phys(direct_memory_access::INPUT_CONTEXT),
                 slot,
             ))?;
         }
@@ -483,7 +494,7 @@ impl Host {
 
         // Configure Endpoint: the interrupt IN endpoint, its ring, its interval.
         let dci = context::endpoint_index(keyboard.endpoint);
-        zero_page(dma::INPUT_CONTEXT);
+        zero_page(direct_memory_access::INPUT_CONTEXT);
         self.input_context(0, context::input_control(1 | 1 << dci, 0));
         self.input_context(1, context::slot(speed, port_number, dci));
         self.input_context(
@@ -497,7 +508,7 @@ impl Host {
             ),
         );
         self.command(TransferRequestBlock::configure_endpoint(
-            self.phys(dma::INPUT_CONTEXT),
+            self.phys(direct_memory_access::INPUT_CONTEXT),
             slot,
         ))?;
 
@@ -506,10 +517,11 @@ impl Host {
             port: port_number,
             dci,
         };
-        for i in 0..dma::REPORTS_QUEUED {
+        for i in 0..direct_memory_access::REPORTS_QUEUED {
             self.queue_report(
                 attached,
-                self.phys(dma::REPORT_BUFFERS) + u64::from(i) * dma::REPORT_SLOT,
+                self.phys(direct_memory_access::REPORT_BUFFERS)
+                    + u64::from(i) * direct_memory_access::REPORT_SLOT,
             );
         }
         self.last = BootReport::RELEASED;
@@ -521,7 +533,7 @@ impl Host {
         let p = self
             .interrupt
             .enqueue(TransferRequestBlock::normal(buffer, REPORT_LEN as u16));
-        Host::put(dma::INTERRUPT_RING, p);
+        Host::put(direct_memory_access::INTERRUPT_RING, p);
         self.ring_doorbell(k.slot, u32::from(k.dci));
     }
 }
@@ -543,28 +555,40 @@ impl Host {
     /// found it, took it from the firmware and confined it.
     fn bring_up(h: Handoff) -> Result<Host, Fail> {
         let capabilities = Capabilities::decode(
-            REGS.r32(regs::CAPLENGTH),
-            REGS.r32(regs::HCSPARAMS1),
-            REGS.r32(regs::HCSPARAMS2),
-            REGS.r32(regs::HCCPARAMS1),
-            REGS.r32(regs::DBOFF),
-            REGS.r32(regs::RTSOFF),
+            REGS.r32(registers::CAPLENGTH),
+            REGS.r32(registers::HCSPARAMS1),
+            REGS.r32(registers::HCSPARAMS2),
+            REGS.r32(registers::HCCPARAMS1),
+            REGS.r32(registers::DBOFF),
+            REGS.r32(registers::RTSOFF),
         );
-        let phys = |page: u64| h.dma_phys + page * PAGE_BYTES;
+        let phys = |page: u64| h.direct_memory_access_physical_address + page * PAGE_BYTES;
         let host = Host {
             capabilities,
-            dma_phys: h.dma_phys,
-            commands: ProducerRing::new(phys(dma::COMMAND_RING), dma::RING_ENTRIES),
-            events: EventRing::new(phys(dma::EVENT_RING), dma::RING_ENTRIES),
-            control: ProducerRing::new(phys(dma::CONTROL_RING), dma::RING_ENTRIES),
-            interrupt: ProducerRing::new(phys(dma::INTERRUPT_RING), dma::RING_ENTRIES),
+            dma_phys: h.direct_memory_access_physical_address,
+            commands: ProducerRing::new(
+                phys(direct_memory_access::COMMAND_RING),
+                direct_memory_access::RING_ENTRIES,
+            ),
+            events: EventRing::new(
+                phys(direct_memory_access::EVENT_RING),
+                direct_memory_access::RING_ENTRIES,
+            ),
+            control: ProducerRing::new(
+                phys(direct_memory_access::CONTROL_RING),
+                direct_memory_access::RING_ENTRIES,
+            ),
+            interrupt: ProducerRing::new(
+                phys(direct_memory_access::INTERRUPT_RING),
+                direct_memory_access::RING_ENTRIES,
+            ),
             ports_changed: false,
             keyboard: None,
             found: None,
             last: BootReport::RELEASED,
             keys: Keyboard::new(),
         };
-        host.halt_and_reset(h.dma_pages)?;
+        host.halt_and_reset(h.direct_memory_access_pages)?;
         host.lay_out();
         host.run()?;
         host.power_ports();
@@ -574,31 +598,32 @@ impl Host {
     /// Halt the controller (the firmware may have left it running), reset it, and check it can
     /// use this driver's pages and that `dma_pages` holds everything it will lay out.
     fn halt_and_reset(&self, dma_pages: u32) -> Result<(), Fail> {
-        let usbcmd = self.op(regs::USBCMD);
-        let usbsts = self.op(regs::USBSTS);
+        let usbcmd = self.op(registers::USBCMD);
+        let usbsts = self.op(registers::USBSTS);
 
         // Halt (the firmware may have left it running), then reset.
-        self.set_reg(usbcmd, self.reg(usbcmd) & !regs::CMD_RUN);
+        self.set_reg(usbcmd, self.reg(usbcmd) & !registers::COMMAND_RUN);
         let end = deadline(100);
-        while self.reg(usbsts) & regs::STS_HALTED == 0 {
+        while self.reg(usbsts) & registers::STATUS_HALTED == 0 {
             if past(end) {
                 return Err((BringUpStep::HaltTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
-        self.set_reg(usbcmd, regs::CMD_RESET);
+        self.set_reg(usbcmd, registers::COMMAND_RESET);
         let end = deadline(1000);
-        while self.reg(usbcmd) & regs::CMD_RESET != 0 || self.reg(usbsts) & regs::STS_NOT_READY != 0
+        while self.reg(usbcmd) & registers::COMMAND_RESET != 0
+            || self.reg(usbsts) & registers::STATUS_NOT_READY != 0
         {
             if past(end) {
                 return Err((BringUpStep::ResetTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
-        if self.reg(self.op(regs::PAGESIZE)) & 1 == 0 {
+        if self.reg(self.op(registers::PAGESIZE)) & 1 == 0 {
             return Err((
                 BringUpStep::NoFourKibibytePages,
-                self.reg(self.op(regs::PAGESIZE)),
+                self.reg(self.op(registers::PAGESIZE)),
             ));
         }
         if u64::from(dma_pages)
@@ -619,14 +644,14 @@ impl Host {
         let phys = |page: u64| self.dma_phys + page * PAGE_BYTES;
         // One slot: this driver serves one device at a time, and gives a slot back before it
         // asks for another.
-        let config = self.op(regs::CONFIG);
+        let config = self.op(registers::CONFIG);
         self.set_reg(config, (self.reg(config) & !0xff) | 1);
 
         // The slot array, its entry 0 the scratchpad array when the controller wants one.
         if self.capabilities.scratchpads > 0 {
             for i in 0..u64::from(self.capabilities.scratchpads) {
                 DMA.w64(
-                    dma::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
+                    direct_memory_access::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
                     phys(
                         driver_process_contract::extensible_host_controller_interface::WORK_PAGES
                             + i,
@@ -634,42 +659,51 @@ impl Host {
                 );
             }
             DMA.w64(
-                dma::DEVICE_CONTEXT_ARRAY * PAGE_BYTES,
-                phys(dma::SCRATCHPAD_ARRAY),
+                direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES,
+                phys(direct_memory_access::SCRATCHPAD_ARRAY),
             );
         }
         barrier();
-        self.set_reg64(self.op(regs::DCBAAP), phys(dma::DEVICE_CONTEXT_ARRAY));
-        self.set_reg64(self.op(regs::CRCR), self.commands.dequeue_pointer());
+        self.set_reg64(
+            self.op(registers::DCBAAP),
+            phys(direct_memory_access::DEVICE_CONTEXT_ARRAY),
+        );
+        self.set_reg64(self.op(registers::CRCR), self.commands.dequeue_pointer());
 
         // The event ring: its one segment table entry, then interrupter 0, base last.
         let entry = self.events.segment_table_entry();
         for (i, w) in entry.iter().enumerate() {
-            DMA.w32(dma::EVENT_SEGMENT_TABLE * PAGE_BYTES + 4 * i as u64, *w);
+            DMA.w32(
+                direct_memory_access::EVENT_SEGMENT_TABLE * PAGE_BYTES + 4 * i as u64,
+                *w,
+            );
         }
         barrier();
-        self.set_reg(self.capabilities.interrupter(regs::ERSTSZ), 1);
+        self.set_reg(self.capabilities.interrupter(registers::ERSTSZ), 1);
         self.set_reg64(
-            self.capabilities.interrupter(regs::ERDP),
+            self.capabilities.interrupter(registers::ERDP),
             self.events.dequeue_pointer(),
         );
         self.set_reg64(
-            self.capabilities.interrupter(regs::ERSTBA),
-            phys(dma::EVENT_SEGMENT_TABLE),
+            self.capabilities.interrupter(registers::ERSTBA),
+            phys(direct_memory_access::EVENT_SEGMENT_TABLE),
         );
         self.set_reg(
-            self.capabilities.interrupter(regs::IMAN),
-            regs::IMAN_ENABLE | regs::IMAN_PENDING,
+            self.capabilities.interrupter(registers::IMAN),
+            registers::IMAN_ENABLE | registers::IMAN_PENDING,
         );
     }
 
     /// Set the controller running with interrupts on, and wait for it to leave the halted state.
     fn run(&self) -> Result<(), Fail> {
-        let usbcmd = self.op(regs::USBCMD);
-        let usbsts = self.op(regs::USBSTS);
-        self.set_reg(usbcmd, regs::CMD_RUN | regs::CMD_INTERRUPTS);
+        let usbcmd = self.op(registers::USBCMD);
+        let usbsts = self.op(registers::USBSTS);
+        self.set_reg(
+            usbcmd,
+            registers::COMMAND_RUN | registers::COMMAND_INTERRUPTS,
+        );
         let end = deadline(100);
-        while self.reg(usbsts) & regs::STS_HALTED != 0 {
+        while self.reg(usbsts) & registers::STATUS_HALTED != 0 {
             if past(end) {
                 return Err((BringUpStep::RunTimeout, self.reg(usbsts)));
             }
@@ -680,7 +714,7 @@ impl Host {
 
     /// Power every port that is not powered (only on a controller with port power control).
     fn power_ports(&self) {
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             let sc = self.reg(self.capabilities.portsc(n));
             if sc & port::POWER == 0 {
                 self.set_reg(
@@ -732,7 +766,7 @@ impl Host {
     /// Every root port's `CCS`, one bit per port.
     fn connections(&self) -> port::Connections {
         let mut bits = [0u32; 8];
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             if self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] |= 1 << (n % 32);
             }
@@ -744,7 +778,7 @@ impl Host {
     fn scan(&mut self) -> (u8, u64) {
         let mut connected = 0;
         let mut refused = 0;
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             if self.reg(self.capabilities.portsc(n)) & port::CONNECTED == 0 {
                 continue;
             }
@@ -763,7 +797,7 @@ impl Host {
     /// **A port changed**: give back the slot of a keyboard that left, and look at a port that
     /// gained a device when nothing is being served.
     fn service_ports(&mut self) {
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             let at = self.capabilities.portsc(n);
             let sc = self.reg(at);
             let changed = sc & port::CHANGES;
@@ -796,36 +830,38 @@ impl Host {
             // A halted endpoint: reset it and queue fresh reads. A device that left is noticed by
             // its port change instead, and this fails harmlessly.
             if self.recover(k.slot, k.dci, false).is_ok() {
-                for i in 0..dma::REPORTS_QUEUED {
+                for i in 0..direct_memory_access::REPORTS_QUEUED {
                     self.queue_report(
                         k,
-                        self.phys(dma::REPORT_BUFFERS) + u64::from(i) * dma::REPORT_SLOT,
+                        self.phys(direct_memory_access::REPORT_BUFFERS)
+                            + u64::from(i) * direct_memory_access::REPORT_SLOT,
                     );
                 }
             }
             return;
         }
         // Which buffer: the TRB that completed names it, so read it back off the ring.
-        let base = self.phys(dma::INTERRUPT_RING);
+        let base = self.phys(direct_memory_access::INTERRUPT_RING);
         let Some(index) = trb.checked_sub(base).map(|o| o / 16) else {
             return;
         };
-        if index >= u64::from(dma::RING_ENTRIES) {
+        if index >= u64::from(direct_memory_access::RING_ENTRIES) {
             return;
         }
-        let sent = Host::read_trb(dma::INTERRUPT_RING, index as u16);
+        let sent = Host::read_trb(direct_memory_access::INTERRUPT_RING, index as u16);
         let buffer = u64::from(sent.0[0]) | u64::from(sent.0[1]) << 32;
-        let Some(offset) = buffer.checked_sub(self.phys(dma::REPORT_BUFFERS)) else {
+        let Some(offset) = buffer.checked_sub(self.phys(direct_memory_access::REPORT_BUFFERS))
+        else {
             return;
         };
-        if offset + dma::REPORT_SLOT > PAGE_BYTES {
+        if offset + direct_memory_access::REPORT_SLOT > PAGE_BYTES {
             return;
         }
         barrier();
         let mut bytes = [0u8; REPORT_LEN];
         let got = REPORT_LEN.saturating_sub(residual as usize);
         for (i, b) in bytes.iter_mut().enumerate().take(got) {
-            *b = DMA.r8(dma::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
+            *b = DMA.r8(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
         }
         if let Some(now) = BootReport::parse(&bytes[..got]) {
             let mut typed = Typed::new(out);
@@ -922,7 +958,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         _ => send(
             REPORT,
             report::NO_KEYBOARD_FOUND,
-            report::ports_report(host.capabilities.max_ports, connected, settled),
+            report::ports_report(host.capabilities.maximum_ports, connected, settled),
             refused,
         ),
     };
@@ -937,17 +973,17 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         // Clear the pending bits before draining, so an event that lands after the drain raises
         // the interrupt again rather than waiting for the next one.
         host.set_reg(
-            host.capabilities.interrupter(regs::IMAN),
-            regs::IMAN_ENABLE | regs::IMAN_PENDING,
+            host.capabilities.interrupter(registers::IMAN),
+            registers::IMAN_ENABLE | registers::IMAN_PENDING,
         );
         host.set_reg(
-            host.op(regs::USBSTS),
-            regs::STS_EVENT_INTERRUPT | regs::STS_PORT_CHANGE,
+            host.op(registers::USBSTS),
+            registers::STATUS_EVENT_INTERRUPT | registers::STATUS_PORT_CHANGE,
         );
         while let Some(e) = host.poll_event() {
             match e {
                 Event::Transfer {
-                    trb,
+                    transfer_request_block: trb,
                     residual,
                     code,
                     slot,

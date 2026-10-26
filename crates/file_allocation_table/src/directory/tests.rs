@@ -44,34 +44,43 @@ fn short_of(slot: Slot) -> ShortEntry {
 fn the_first_byte_marks_the_end_and_free_slots() {
     let mut slot = short(b"HELLO   TXT", 0x20, 0, 5, 1);
     slot[0] = 0;
-    assert_eq!(Slot::parse(&slot, FatType::Fat16), Slot::End);
+    assert_eq!(
+        Slot::parse(&slot, FileAllocationTableType::Fat16),
+        Slot::End
+    );
     slot[0] = 0xE5;
-    assert_eq!(Slot::parse(&slot, FatType::Fat16), Slot::Free);
+    assert_eq!(
+        Slot::parse(&slot, FileAllocationTableType::Fat16),
+        Slot::Free
+    );
     let mut piece = long(0x41, 7, 0);
     piece[0] = 0xE5;
-    assert_eq!(Slot::parse(&piece, FatType::Fat32), Slot::Free);
+    assert_eq!(
+        Slot::parse(&piece, FileAllocationTableType::Fat32),
+        Slot::Free
+    );
 }
 
 #[test]
 fn a_short_entry_reads_its_fields() {
     let entry = short_of(Slot::parse(
         &short(b"HELLO   TXT", 0x21, 0, 5, 1234),
-        FatType::Fat12,
+        FileAllocationTableType::Fat12,
     ));
     assert_eq!(&entry.name(), b"HELLO   TXT");
     assert_eq!(entry.attributes(), 0x21);
     assert!(!entry.is_directory() && !entry.is_volume_label());
     assert_eq!(entry.first_cluster(), 5);
-    assert_eq!(entry.size(), 1234);
+    assert_eq!(entry.size_bytes(), 1234);
 
     let dir = short_of(Slot::parse(
         &short(b"SUB        ", 0x10, 0, 9, 0),
-        FatType::Fat12,
+        FileAllocationTableType::Fat12,
     ));
     assert!(dir.is_directory());
     let label = short_of(Slot::parse(
         &short(b"NIFETEST   ", 0x08, 0, 0, 0),
-        FatType::Fat12,
+        FileAllocationTableType::Fat12,
     ));
     assert!(label.is_volume_label());
 }
@@ -80,7 +89,7 @@ fn a_short_entry_reads_its_fields() {
 fn a_stored_0x05_reads_back_as_0xe5() {
     let entry = short_of(Slot::parse(
         &short(b"\x05BC     TXT", 0x20, 0, 5, 1),
-        FatType::Fat16,
+        FileAllocationTableType::Fat16,
     ));
     assert_eq!(entry.name()[0], 0xE5);
 }
@@ -89,15 +98,15 @@ fn a_stored_0x05_reads_back_as_0xe5() {
 fn only_fat32_takes_the_high_cluster_word() {
     let slot = short(b"BIG     BIN", 0x20, 0x0001, 0x0002, 1);
     assert_eq!(
-        short_of(Slot::parse(&slot, FatType::Fat32)).first_cluster(),
+        short_of(Slot::parse(&slot, FileAllocationTableType::Fat32)).first_cluster(),
         0x0001_0002
     );
     assert_eq!(
-        short_of(Slot::parse(&slot, FatType::Fat16)).first_cluster(),
+        short_of(Slot::parse(&slot, FileAllocationTableType::Fat16)).first_cluster(),
         2
     );
     assert_eq!(
-        short_of(Slot::parse(&slot, FatType::Fat12)).first_cluster(),
+        short_of(Slot::parse(&slot, FileAllocationTableType::Fat12)).first_cluster(),
         2
     );
 }
@@ -105,16 +114,19 @@ fn only_fat32_takes_the_high_cluster_word() {
 #[test]
 fn a_long_name_piece_reads_its_units_in_order() {
     let Slot::Used(DirectoryEntry::LongName(piece)) =
-        Slot::parse(&long(0x42, 0xAB, 0x40), FatType::Fat32)
+        Slot::parse(&long(0x42, 0xAB, 0x40), FileAllocationTableType::Fat32)
     else {
         panic!("not a long-name piece");
     };
     assert_eq!(piece.ordinal(), 2);
     assert!(piece.is_last());
     assert_eq!(piece.checksum(), 0xAB);
-    assert_eq!(piece.units(), core::array::from_fn(|i| 0x41 + i as u16));
+    assert_eq!(
+        piece.code_units(),
+        core::array::from_fn(|i| 0x41 + i as u16)
+    );
     let Slot::Used(DirectoryEntry::LongName(piece)) =
-        Slot::parse(&long(0x01, 0, 0), FatType::Fat32)
+        Slot::parse(&long(0x01, 0, 0), FileAllocationTableType::Fat32)
     else {
         panic!("not a long-name piece");
     };
@@ -126,7 +138,7 @@ fn a_long_name_piece_reads_its_units_in_order() {
 fn the_archive_bit_beside_the_long_name_bits_makes_a_short_entry() {
     let slot = short(b"ODD     BIN", 0x2F, 0, 3, 1);
     assert!(matches!(
-        Slot::parse(&slot, FatType::Fat16),
+        Slot::parse(&slot, FileAllocationTableType::Fat16),
         Slot::Used(DirectoryEntry::Short(_))
     ));
 }

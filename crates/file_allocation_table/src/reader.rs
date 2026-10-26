@@ -119,13 +119,13 @@ impl<D: SectorDevice> Volume<D> {
     ///
     /// Refuses a cluster that is not a data cluster of this volume, and passes on the device's
     /// error. A FAT12 entry that straddles two sectors costs two reads.
-    pub fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
+    pub fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
         let (sector, within) = table::entry_position(&self.boot, cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
-        let fat_type = self.boot.fat_type();
+        let file_allocation_table_type = self.boot.file_allocation_table_type();
         let size = self.boot.sector_size().bytes();
         let mut bytes = [0u8; 4];
-        let wanted = table::entry_bytes(fat_type);
+        let wanted = table::entry_bytes(file_allocation_table_type);
         self.load(sector)?;
         // FAT16 and FAT32 entries are aligned to their width, so only FAT12's split.
         let here = wanted.min(size - within);
@@ -134,8 +134,8 @@ impl<D: SectorDevice> Volume<D> {
             self.load(sector + 1)?;
             bytes[here..wanted].copy_from_slice(&self.buffer[..wanted - here]);
         }
-        let raw = table::assemble(fat_type, cluster, bytes);
-        Ok(TableEntry::decode(fat_type, raw))
+        let raw = table::assemble(file_allocation_table_type, cluster, bytes);
+        Ok(TableEntry::decode(file_allocation_table_type, raw))
     }
 
     /// **The chain that starts at `first`**, cluster by cluster.
@@ -178,7 +178,7 @@ pub(crate) trait Links {
     fn clusters(&self) -> u32;
 
     /// Data cluster `cluster`'s entry.
-    fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<Self::Error>>;
+    fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<Self::Error>>;
 }
 
 impl<D: SectorDevice> Links for Volume<D> {
@@ -188,8 +188,8 @@ impl<D: SectorDevice> Links for Volume<D> {
         self.boot.clusters()
     }
 
-    fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
-        Volume::entry(self, cluster)
+    fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
+        Volume::table_entry(self, cluster)
     }
 }
 
@@ -243,7 +243,7 @@ impl Walk {
                 }
                 first
             }
-            (None, Some(last)) => match links.entry(last) {
+            (None, Some(last)) => match links.table_entry(last) {
                 Err(error) => return Some(Err(error)),
                 Ok(TableEntry::EndOfChain) => return None,
                 Ok(TableEntry::Next(next)) if is_data(clusters, next) => next,

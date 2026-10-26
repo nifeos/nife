@@ -55,10 +55,10 @@ const LBA: u64 = fat::SECTOR_BYTES as u64;
 /// which also leaves the backup table's 33 blocks room at the far end.
 const ALIGN: u64 = 2048;
 
-/// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB
-/// at 4096-byte clusters (`file_allocation_table::FAT32_MIN_CLUSTERS`), and below that the firmware reads
-/// the volume as FAT16 whatever its boot sector says. The image is sparse, so the size costs no
-/// disk; a cloud grows the boot volume to its own minimum on import regardless.
+/// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB at
+/// 4096-byte clusters (`file_allocation_table::FAT32_MINIMUM_CLUSTERS`), and below that the
+/// firmware reads the volume as FAT16 whatever its boot sector says. The image is sparse, so the
+/// size costs no disk; a cloud grows the boot volume to its own minimum on import regardless.
 const ESP_SECTORS: u64 = 300 * 1024 * 1024 / LBA;
 
 /// Where `arch`'s disk is written.

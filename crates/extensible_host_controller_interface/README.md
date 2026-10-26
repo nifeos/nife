@@ -33,7 +33,7 @@ assert_eq!((caps.portsc(1), caps.doorbell(0)), (0x440, 0x2000));
 // A four-entry command ring: three usable slots, then a link TRB back to the first.
 let mut ring = ProducerRing::new(0x1000, 4);
 let a = ring.enqueue(TransferRequestBlock::enable_slot());
-assert_eq!((a.index, a.trb.cycle(), a.link), (0, true, None));
+assert_eq!((a.index, a.transfer_request_block.cycle(), a.link), (0, true, None));
 ```
 
 The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA memory at

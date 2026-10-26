@@ -20,7 +20,7 @@ Six Kani harnesses, in the `verification` module:
 - `prp_pair_is_total_and_page_disciplined`: for any base, length and page size, the PRP pair
   either refuses or covers the transfer; the second pointer is zero when one page suffices, and
   otherwise the page boundary right after the base.
-- `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: `transfer_command` builds a
+- `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: `Namespace::transfer_command` builds a
   command only for a block whose last byte lies inside the namespace, and never overflows
   computing its LBA, for any block number, buffer address and namespace size.
 - `identify_parse_is_total_and_bounds_the_shift`: no controller response panics the IDENTIFY
@@ -51,7 +51,7 @@ assert_eq!((slot, sq.tail()), (0, 1));
 // Poll completion slot cq.head() until the controller's entry carries the expected phase.
 let done = Completion::from_dwords([0, 1 | (1 << 16), 0, 1 | (1 << 16)]);
 assert!(cq.is_owned(&done) && done.cid == 1 && done.status == 0);
-sq.record_head(done.sq_head);
+sq.record_head(done.submission_queue_head);
 let head = cq.pop(); // write `head` to doorbell(1, Doorbell::CompletionHead, dstrd)
 assert_eq!(head, 1);
 ```
@@ -62,8 +62,8 @@ assert_eq!(head, 1);
   no free-slot count.
 - `prp_pair` covers at most two pages. A transfer that needs a PRP list returns `None`.
 - `parse_identify_namespace` refuses LBA formats outside 512 bytes to 4 KiB per block.
-  `lba_format_shift` reports the shift it refused.
-- Not proven: the `Cap` decode beyond the doorbell stride, the status fields of
+  `logical_block_address_format_shift` reports the shift it refused.
+- Not proven: the `Capabilities` decode beyond the doorbell stride, the status fields of
   `Completion::from_dwords`, and anything in time, which belongs to the caller.
 
 The minimum supported Rust version is 1.88.

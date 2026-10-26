@@ -38,11 +38,11 @@ pub const REPORT_SLOT: u64 = 64;
 pub const REPORTS_QUEUED: u16 = 4;
 
 /// The most scratchpad pages the scratchpad array's one page can name.
-pub const MAX_SCRATCHPADS: u16 = 512;
+pub const MAXIMUM_SCRATCHPADS: u16 = 512;
 
 // The queued reports fit their page, the ring holds every one of them and its link, and the
 // scratchpad array's page names every scratchpad this layout accepts. Checked by the compiler, so
 // an edit to any one constant that breaks the others fails the build.
 const _: () = assert!(REPORTS_QUEUED as u64 * REPORT_SLOT <= crate::PAGE_BYTES);
 const _: () = assert!(REPORTS_QUEUED < RING_ENTRIES - 1);
-const _: () = assert!(MAX_SCRATCHPADS as u64 * 8 == crate::PAGE_BYTES);
+const _: () = assert!(MAXIMUM_SCRATCHPADS as u64 * 8 == crate::PAGE_BYTES);
