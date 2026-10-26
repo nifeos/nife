@@ -47,11 +47,11 @@ pub const GMAC1_BASE: u64 = 0x1604_0000;
 /// one thing both trees share verbatim and parsing it would add a failure path for no new fact.
 pub const BUS: Bus = Bus {
     fixed_burst: true,
-    pbl_x8: false,
-    tx_pbl: 16,
-    rx_pbl: 16,
+    channel_burst_length_times_8: false,
+    transmit_channel_burst_length: 16,
+    receive_channel_burst_length: 16,
     threshold_mode: true,
-    burst_lengths: regs::DMA_SYSBUS_MODE_BLEN_256
+    bus_burst_lengths: regs::DMA_SYSBUS_MODE_BLEN_256
         | regs::DMA_SYSBUS_MODE_BLEN_128
         | regs::DMA_SYSBUS_MODE_BLEN_64
         | regs::DMA_SYSBUS_MODE_BLEN_32,
@@ -88,8 +88,14 @@ pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
 /// The RGMII interface (OpenBSD's `JH7110_PHY_INTF_RGMII`; the vendor's `BIT(SHIFT)` for 1000M).
 pub(crate) const PHY_INTERFACE_RGMII: u32 = 1;
 
-/// **The syscon word with `gmac0`'s interface select set to RGMII**, every other field kept.
-pub const fn select_rgmii(word: u32) -> u32 {
+/// **The syscon word with `gmac0`'s interface select set to RGMII**, the reduced gigabit
+/// media-independent interface (the MAC-to-PHY wiring both JH7110 boards use), every other field
+/// kept.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): the reduced gigabit media-independent interface
+/// spelled out; was `select_rgmii`.
+#[doc(alias = "rgmii")]
+pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
         | PHY_INTERFACE_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
@@ -117,9 +123,11 @@ pub struct Discovered {
     /// tree has none, and then the driver falls back to what the address registers hold.
     #[doc(alias = "mac_address")]
     pub station_address: Option<[u8; 6]>,
-    /// Whether `phy-mode` names an RGMII variant. Both trees say `rgmii-id`; anything else is a
-    /// board this driver has no interface select for.
-    pub rgmii: bool,
+    /// Whether `phy-mode` names an RGMII (reduced gigabit media-independent interface) variant.
+    /// Both trees say `rgmii-id`; anything else is a board this driver has no interface select
+    /// for.
+    #[doc(alias = "rgmii")]
+    pub reduced_gigabit_media_independent_interface: bool,
     /// The PHY's MDIO address: its node's `reg`, else its unit address, else 0.
     pub phy_address: u8,
     /// The PHY's board settings, and which spelling they were read from.
@@ -172,7 +180,8 @@ impl Discovered {
         let station_address = prop(b"local-mac-address")?
             .and_then(|b| b.get(..6))
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
-        let rgmii = prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
+        let reduced_gigabit_media_independent_interface =
+            prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
         let (phy_address, phy) = phy;
         Ok(Discovered {
             base,
@@ -181,7 +190,7 @@ impl Discovered {
             compatible,
             status_okay,
             station_address,
-            rgmii,
+            reduced_gigabit_media_independent_interface,
             phy_address,
             phy,
         })
@@ -330,7 +339,7 @@ mod tests {
             (d.base, d.size, d.compatible),
             (GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR)
         );
-        assert!(d.status_okay && d.rgmii);
+        assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
         assert_eq!(
             d.station_address,
             Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
@@ -340,7 +349,8 @@ mod tests {
     }
 
     #[test]
-    fn a_bare_port_node_is_okay_with_no_address_and_no_rgmii() {
+    fn a_bare_port_node_is_okay_with_no_address_and_no_reduced_gigabit_media_independent_interface()
+    {
         let d = Discovered::from_node(
             1,
             2,
@@ -350,7 +360,7 @@ mod tests {
         )
         .unwrap();
         assert!(d.status_okay);
-        assert!(!d.rgmii);
+        assert!(!d.reduced_gigabit_media_independent_interface);
         assert_eq!(
             (d.station_address, d.interrupt, d.phy_address),
             (None, None, 3)
@@ -368,7 +378,7 @@ mod tests {
             (0, Settings::FALLBACK_GMAC0),
         )
         .unwrap();
-        assert!(!d.status_okay && !d.rgmii);
+        assert!(!d.status_okay && !d.reduced_gigabit_media_independent_interface);
         assert_eq!(d.station_address, None);
         for okay in [&b"ok\0"[..], b"ok", b"okay"] {
             let table: &[(&[u8], &[u8])] = &[(b"status", okay)];
@@ -494,9 +504,20 @@ mod tests {
 
     #[test]
     fn the_interface_select_touches_only_gmac0s_three_bits() {
-        assert_eq!(select_rgmii(0), 0x0004_0000);
-        assert_eq!(select_rgmii(0xffff_ffff), !0x0018_0000);
-        assert_eq!(interface(select_rgmii(0x0010_0000)), PHY_INTERFACE_RGMII);
+        assert_eq!(
+            select_reduced_gigabit_media_independent_interface(0),
+            0x0004_0000
+        );
+        assert_eq!(
+            select_reduced_gigabit_media_independent_interface(0xffff_ffff),
+            !0x0018_0000
+        );
+        assert_eq!(
+            interface(select_reduced_gigabit_media_independent_interface(
+                0x0010_0000
+            )),
+            PHY_INTERFACE_RGMII
+        );
         // The vendor U-Boot's mask, 0x1c0000, is exactly this field.
         assert_eq!(
             SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT,
@@ -508,7 +529,7 @@ mod tests {
 
     /// `snps,blen = <256 128 64 32 0 0 0>` is bits 7 to 4 of the bus mode, all four.
     #[test]
-    fn radons_burst_lengths_are_all_four_bits() {
-        assert_eq!(BUS.burst_lengths, 0xf0);
+    fn radons_bus_burst_lengths_are_all_four_bits() {
+        assert_eq!(BUS.bus_burst_lengths, 0xf0);
     }
 }

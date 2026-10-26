@@ -110,7 +110,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `interface` | item | `src/jh7110.rs` | unrecorded. | yes | generic |
 | `mainline_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
-| `select_rgmii` | item | `src/jh7110.rs` | unrecorded. | yes | term |
+| `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): the reduced gigabit media-independent interface spelled out; was `select_rgmii`. | yes | clear |
 | `vendor_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
@@ -206,3 +206,10 @@ Each renamed row's status says which ruling renamed it and what it was.
   `cpu` is by precedent. A FIFO is a queue, matching the RQS and TQS fields that size it:
   `rx_fifo_bytes`, `tx_fifo_bytes` and `fifo_bytes` become `receive_queue_bytes`,
   `transmit_queue_bytes` and `queue_bytes`, with `doc(alias = "fifo")`.
+- Ruled 2026-10-26 (UTC), terms of art: `rgmii` is spelled out,
+  `reduced_gigabit_media_independent_interface` (`select_rgmii` and `Discovered`'s field `rgmii`, and the tests that name them), with
+  `doc(alias = "rgmii")` and a doc that says what it is; register names copied from a source keep
+  `RGMII`. The programmable burst length spells out by what it sets: `rx_pbl`, `tx_pbl` and
+  `pbl_x8` become `receive_channel_burst_length`, `transmit_channel_burst_length` and
+  `channel_burst_length_times_8`, with `doc(alias = "pbl")`. `burst_lengths`, the `BLEN` bits, a
+  different setting, becomes `bus_burst_lengths`.

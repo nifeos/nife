@@ -197,7 +197,7 @@ fn run(
     e: &crate::memory::Jh7110Ethernet,
     r: &mut Report,
 ) -> Result<(Handoff, Option<Link>), Error> {
-    if !e.port.rgmii {
+    if !e.port.reduced_gigabit_media_independent_interface {
         return Err(Error::NotRgmii);
     }
 
@@ -232,7 +232,10 @@ fn run(
     // word, and this runs on the one thread wiring the port.
     unsafe {
         let before = core::ptr::read_volatile(syscon);
-        core::ptr::write_volatile(syscon, jh7110::select_rgmii(before));
+        core::ptr::write_volatile(
+            syscon,
+            jh7110::select_reduced_gigabit_media_independent_interface(before),
+        );
         r.syscon = (before, core::ptr::read_volatile(syscon));
     }
 

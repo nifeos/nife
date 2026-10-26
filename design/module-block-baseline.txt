@@ -881,7 +881,6 @@ crates/designware_ethernet/src/jh7110.rs::Discovered
 crates/designware_ethernet/src/jh7110.rs::GMAC0_BASE
 crates/designware_ethernet/src/jh7110.rs::GMAC1_BASE
 crates/designware_ethernet/src/jh7110.rs::interface
-crates/designware_ethernet/src/jh7110.rs::select_rgmii
 crates/designware_ethernet/src/layout.rs
 crates/designware_ethernet/src/layout.rs::BYTES
 crates/designware_ethernet/src/layout.rs::PAGES

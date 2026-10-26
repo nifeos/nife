@@ -137,16 +137,21 @@ pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
 pub struct Bus {
     /// `snps,fixed-burst`.
     pub fixed_burst: bool,
-    /// Not `snps,no-pbl-x8`.
-    pub pbl_x8: bool,
-    /// `snps,txpbl`.
-    pub tx_pbl: u32,
-    /// `snps,rxpbl`.
-    pub rx_pbl: u32,
+    /// Multiply both channel burst lengths by eight (the databook's programmable burst length
+    /// times 8, `PBLx8`): not `snps,no-pbl-x8`.
+    #[doc(alias = "pbl")]
+    pub channel_burst_length_times_8: bool,
+    /// The transmit channel's programmable burst length (PBL), in beats: `snps,txpbl`.
+    #[doc(alias = "pbl")]
+    pub transmit_channel_burst_length: u32,
+    /// The receive channel's programmable burst length (PBL), in beats: `snps,rxpbl`.
+    #[doc(alias = "pbl")]
+    pub receive_channel_burst_length: u32,
     /// `snps,force_thresh_dma_mode`: threshold mode rather than store and forward.
     pub threshold_mode: bool,
-    /// The [`regs::DMA_SYSBUS_MODE`] burst-length bits `snps,blen` names.
-    pub burst_lengths: u32,
+    /// The system bus's permitted burst lengths: the [`regs::DMA_SYSBUS_MODE`] `BLEN` bits
+    /// `snps,blen` names, a different setting from the channels' burst lengths.
+    pub bus_burst_lengths: u32,
     /// `snps,rd_osr_lmt`.
     pub read_outstanding: u32,
     /// `snps,wr_osr_lmt`.
@@ -237,13 +242,13 @@ pub fn configure(
         | osr << regs::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT);
     mode |= (bus.read_outstanding & osr) << regs::DMA_SYSBUS_MODE_RD_OSR_LMT_SHIFT
         | (bus.write_outstanding & osr) << regs::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT
-        | bus.burst_lengths;
+        | bus.bus_burst_lengths;
     hardware.write(regs::DMA_SYSBUS_MODE, mode);
 
     let control = hardware.read(regs::CHAN_CONTROL);
     hardware.write(
         regs::CHAN_CONTROL,
-        if bus.pbl_x8 {
+        if bus.channel_burst_length_times_8 {
             control | regs::CHAN_CONTROL_PBLX8
         } else {
             control & !regs::CHAN_CONTROL_PBLX8
@@ -253,7 +258,8 @@ pub fn configure(
     let tx = hardware.read(regs::CHAN_TX_CONTROL) & !(pbl << regs::CHAN_TX_CONTROL_PBL_SHIFT);
     hardware.write(
         regs::CHAN_TX_CONTROL,
-        tx | (bus.tx_pbl & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT | regs::CHAN_TX_CONTROL_OSP,
+        tx | (bus.transmit_channel_burst_length & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT
+            | regs::CHAN_TX_CONTROL_OSP,
     );
     // The buffer size is written, not inherited (OpenBSD inherits it): a size left by firmware is
     // a fact about whoever ran last, and the device writes a frame up to it.
@@ -262,7 +268,7 @@ pub fn configure(
         hardware.read(regs::CHAN_RX_CONTROL) & !(pbl << regs::CHAN_RX_CONTROL_PBL_SHIFT | rbsz);
     hardware.write(
         regs::CHAN_RX_CONTROL,
-        rx | (bus.rx_pbl & pbl) << regs::CHAN_RX_CONTROL_PBL_SHIFT
+        rx | (bus.receive_channel_burst_length & pbl) << regs::CHAN_RX_CONTROL_PBL_SHIFT
             | (BUFFER_SIZE as u32) << regs::CHAN_RX_CONTROL_RBSZ_SHIFT,
     );
 
@@ -582,11 +588,11 @@ mod tests {
     /// (big enough for flow control) at 32 bits.
     const ODD: Bus = Bus {
         fixed_burst: false,
-        pbl_x8: true,
-        tx_pbl: 0x48,
-        rx_pbl: 0x41,
+        channel_burst_length_times_8: true,
+        transmit_channel_burst_length: 0x48,
+        receive_channel_burst_length: 0x41,
         threshold_mode: false,
-        burst_lengths: regs::DMA_SYSBUS_MODE_BLEN_32,
+        bus_burst_lengths: regs::DMA_SYSBUS_MODE_BLEN_32,
         read_outstanding: 0x13,
         write_outstanding: 0x25,
     };

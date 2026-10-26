@@ -27,7 +27,7 @@ fn radons_vendor_tree_gives_gmac0_its_phy_settings_and_its_address() {
     assert_eq!((d.base, d.size), (GMAC0_BASE, 0x1_0000));
     assert_eq!(d.compatible, COMPATIBLE_VENDOR);
     assert_eq!(d.interrupt, Some(7));
-    assert!(d.status_okay && d.rgmii);
+    assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
     assert_eq!(
         d.station_address,
         Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
