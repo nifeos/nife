@@ -66,20 +66,23 @@ impl Identity {
         }
     }
 
-    /// The transmit FIFO's size in bytes, `128 << TXFIFOSIZE`.
-    pub(crate) const fn tx_fifo_bytes(&self) -> u32 {
-        fifo_bytes((self.features[1] >> 6) & 0x1f)
+    /// The transmit queue's size in bytes (the MTL's transmit FIFO), `128 << TXFIFOSIZE`.
+    #[doc(alias = "fifo")]
+    pub(crate) const fn transmit_queue_bytes(&self) -> u32 {
+        queue_bytes((self.features[1] >> 6) & 0x1f)
     }
 
-    /// The receive FIFO's size in bytes, `128 << RXFIFOSIZE`.
-    pub(crate) const fn rx_fifo_bytes(&self) -> u32 {
-        fifo_bytes(self.features[1] & 0x1f)
+    /// The receive queue's size in bytes (the MTL's receive FIFO), `128 << RXFIFOSIZE`.
+    #[doc(alias = "fifo")]
+    pub(crate) const fn receive_queue_bytes(&self) -> u32 {
+        queue_bytes(self.features[1] & 0x1f)
     }
 }
 
-/// `128 << field`, with a field past the largest FIFO the databook encodes (256 KiB, field 11)
-/// saturating there rather than shifting a bit off the top of the word.
-const fn fifo_bytes(field: u32) -> u32 {
+/// `128 << field`, with a field past the largest queue (FIFO) the databook encodes (256 KiB, field
+/// 11) saturating there rather than shifting a bit off the top of the word.
+#[doc(alias = "fifo")]
+const fn queue_bytes(field: u32) -> u32 {
     let f = if field > 11 { 11 } else { field };
     128 << f
 }
@@ -107,18 +110,24 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
 pub fn station_address(hi: u32, lo: u32) -> Option<[u8; 6]> {
     let [a, b, c, d] = lo.to_le_bytes();
     let [e, f, _, _] = hi.to_le_bytes();
-    let mac = [a, b, c, d, e, f];
-    if mac == [0; 6] || mac == [0xff; 6] || a & 1 != 0 {
+    let station_address = [a, b, c, d, e, f];
+    if station_address == [0; 6] || station_address == [0xff; 6] || a & 1 != 0 {
         return None;
     }
-    Some(mac)
+    Some(station_address)
 }
 
-/// The two address register words for `mac`: `(high, low)`, OpenBSD's `dwqe_lladdr_write`.
-pub(crate) const fn address_words(mac: [u8; 6]) -> (u32, u32) {
+/// The two address register words for `station_address`: `(high, low)`, OpenBSD's
+/// `dwqe_lladdr_write`.
+pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
     (
-        u32::from_le_bytes([mac[4], mac[5], 0, 0]),
-        u32::from_le_bytes([mac[0], mac[1], mac[2], mac[3]]),
+        u32::from_le_bytes([station_address[4], station_address[5], 0, 0]),
+        u32::from_le_bytes([
+            station_address[0],
+            station_address[1],
+            station_address[2],
+            station_address[3],
+        ]),
     )
 }
 
@@ -144,10 +153,10 @@ pub struct Bus {
     pub write_outstanding: u32,
 }
 
-/// The receive operation mode word for a FIFO of `fifo` bytes, OpenBSD's arithmetic: the queue
-/// size in 256-byte units less one, threshold or store-and-forward, and hardware flow control with
-/// its thresholds once the FIFO is large enough for them to mean anything.
-pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, fifo: u32) -> u32 {
+/// The receive operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic: the
+/// queue size in 256-byte units less one, threshold or store-and-forward, and hardware flow control
+/// with its thresholds once the queue is large enough for them to mean anything.
+pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(regs::MTL_RXQ_OP_MODE_RSF | regs::MTL_RXQ_OP_MODE_RTC_MASK);
@@ -155,10 +164,10 @@ pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, fifo: u32) -> u32 {
     } else {
         mode |= regs::MTL_RXQ_OP_MODE_RSF;
     }
-    let rqs = (fifo / 256).saturating_sub(1);
+    let rqs = (queue_bytes / 256).saturating_sub(1);
     mode &= !regs::MTL_RXQ_OP_MODE_RQS_MASK;
     mode |= (rqs << regs::MTL_RXQ_OP_MODE_RQS_SHIFT) & regs::MTL_RXQ_OP_MODE_RQS_MASK;
-    if fifo >= 4096 {
+    if queue_bytes >= 4096 {
         // EHFC, then RFD = 3 and RFA = 1: OpenBSD's flow control thresholds.
         mode |= 1 << 7;
         mode &= !((0x3f << 14) | (0x3f << 8));
@@ -167,8 +176,8 @@ pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, fifo: u32) -> u32 {
     mode
 }
 
-/// The transmit operation mode word for a FIFO of `fifo` bytes, OpenBSD's arithmetic.
-pub(crate) fn tx_queue_mode(current: u32, bus: &Bus, fifo: u32) -> u32 {
+/// The transmit operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic.
+pub(crate) fn tx_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(regs::MTL_TXQ_OP_MODE_TSF | regs::MTL_TXQ_OP_MODE_TTC_MASK);
@@ -178,7 +187,7 @@ pub(crate) fn tx_queue_mode(current: u32, bus: &Bus, fifo: u32) -> u32 {
     }
     mode &= !regs::MTL_TXQ_OP_MODE_TXQEN_MASK;
     mode |= regs::MTL_TXQ_OP_MODE_TXQEN;
-    let tqs = (fifo / 256).saturating_sub(1);
+    let tqs = (queue_bytes / 256).saturating_sub(1);
     mode &= !regs::MTL_TXQ_OP_MODE_TQS_MASK;
     mode |= (tqs << regs::MTL_TXQ_OP_MODE_TQS_SHIFT) & regs::MTL_TXQ_OP_MODE_TQS_MASK;
     mode
@@ -208,7 +217,7 @@ pub fn configure(
     id: &Identity,
     bus: &Bus,
     region: u64,
-    mac: [u8; 6],
+    station_address: [u8; 6],
 ) -> Result<(), Error> {
     if !region_in_reach(region, layout::BYTES, id.dma_bits()) {
         return Err(Error::RegionOutOfReach {
@@ -271,13 +280,13 @@ pub fn configure(
     let rx_mode = rx_queue_mode(
         hardware.read(regs::MTL_RXQ0_OP_MODE),
         bus,
-        id.rx_fifo_bytes(),
+        id.receive_queue_bytes(),
     );
     hardware.write(regs::MTL_RXQ0_OP_MODE, rx_mode);
     let tx_mode = tx_queue_mode(
         hardware.read(regs::MTL_TXQ0_OP_MODE),
         bus,
-        id.tx_fifo_bytes(),
+        id.transmit_queue_bytes(),
     );
     hardware.write(regs::MTL_TXQ0_OP_MODE, tx_mode);
 
@@ -290,7 +299,7 @@ pub fn configure(
     hardware.write(regs::MAC_RX_FLOW_CTRL, flow | regs::MAC_RX_FLOW_CTRL_RFE);
     hardware.write(regs::MAC_RXQ_CTRL0, regs::MAC_RXQ_CTRL0_Q0_DCB);
 
-    let (hi, lo) = address_words(mac);
+    let (hi, lo) = address_words(station_address);
     hardware.write(regs::MAC_ADDR0_HI, hi);
     hardware.write(regs::MAC_ADDR0_LO, lo);
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
@@ -380,7 +389,7 @@ mod tests {
     use crate::sim::{Memory, NetworkInterfaceController};
 
     const PHYS: u64 = 0x4800_0000;
-    const MAC: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
+    const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
 
     #[test]
     fn a_reset_that_completes_reports_how_long_it_took() {
@@ -401,25 +410,25 @@ mod tests {
 
     #[test]
     fn the_station_address_round_trips_through_its_registers() {
-        let (hi, lo) = address_words(MAC);
+        let (hi, lo) = address_words(STATION_ADDRESS);
         assert_eq!(hi, 0x2c47);
         assert_eq!(lo, 0x0039_cf6c);
-        assert_eq!(station_address(hi, lo), Some(MAC));
+        assert_eq!(station_address(hi, lo), Some(STATION_ADDRESS));
         assert_eq!(station_address(0xffff_ffff, 0xffff_ffff), None);
         assert_eq!(station_address(0, 0), None);
         assert_eq!(station_address(0, 1), None, "multicast");
     }
 
     #[test]
-    fn identity_decodes_the_address_width_and_fifo_sizes() {
+    fn identity_decodes_the_address_width_and_queue_sizes() {
         let id = Identity {
             version: 0x1052,
             features: [0, 1 << 14 | 4 << 6 | 4, 0, 0],
         };
         assert_eq!(id.core_version(), 0x52);
         assert_eq!(id.dma_bits(), 40);
-        assert_eq!(id.tx_fifo_bytes(), 2048);
-        assert_eq!(id.rx_fifo_bytes(), 2048);
+        assert_eq!(id.transmit_queue_bytes(), 2048);
+        assert_eq!(id.receive_queue_bytes(), 2048);
     }
 
     #[test]
@@ -439,7 +448,7 @@ mod tests {
     fn configure_programs_the_rings_with_nothing_available_and_every_interrupt_masked() {
         let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
+        configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         assert_eq!(nic.reg(regs::CHAN_RX_BASE), PHYS as u32);
         assert_eq!(nic.reg(regs::CHAN_TX_BASE), (PHYS + layout::TX_RING) as u32);
         assert_eq!(nic.reg(regs::CHAN_RX_TAIL), nic.reg(regs::CHAN_RX_BASE));
@@ -454,7 +463,7 @@ mod tests {
         assert_eq!(nic.reg(regs::MAC_RXQ_CTRL0), regs::MAC_RXQ_CTRL0_Q0_DCB);
         assert_eq!(
             station_address(nic.reg(regs::MAC_ADDR0_HI), nic.reg(regs::MAC_ADDR0_LO)),
-            Some(MAC)
+            Some(STATION_ADDRESS)
         );
         // radon's bus: fixed burst, no PBLx8, 16-beat bursts, threshold mode.
         assert_ne!(nic.reg(regs::DMA_SYSBUS_MODE) & regs::DMA_SYSBUS_MODE_FB, 0);
@@ -512,7 +521,7 @@ mod tests {
     fn stop_quiesces_and_reports_a_flush_that_never_finishes() {
         let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
+        configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         start(
             &mut nic,
             Link {
@@ -588,7 +597,7 @@ mod tests {
 
     fn configured(fill: u32, id: &Identity, bus: &Bus, region: u64) -> Seeded {
         let mut hardware = Seeded::new(fill);
-        configure(&mut hardware, id, bus, region, MAC).unwrap();
+        configure(&mut hardware, id, bus, region, STATION_ADDRESS).unwrap();
         hardware
     }
 
@@ -734,7 +743,7 @@ mod tests {
     /// The address width's every encoding, and a FIFO field past the largest the databook names
     /// saturating at 256 KiB rather than shifting bits off the word.
     #[test]
-    fn every_address_width_encoding_and_a_saturating_fifo() {
+    fn every_address_width_encoding_and_a_saturating_queue() {
         let width = |bits: u32| {
             Identity {
                 version: 0,
@@ -743,15 +752,15 @@ mod tests {
             .dma_bits()
         };
         assert_eq!([0, 1, 2, 3].map(width), [32, 40, 48, 32]);
-        let fifo = |field: u32| {
+        let queue_bytes = |field: u32| {
             Identity {
                 version: 0,
                 features: [0, field, 0, 0],
             }
-            .rx_fifo_bytes()
+            .receive_queue_bytes()
         };
-        assert_eq!(fifo(11), 256 * 1024);
-        assert_eq!(fifo(0x1f), 256 * 1024);
+        assert_eq!(queue_bytes(11), 256 * 1024);
+        assert_eq!(queue_bytes(0x1f), 256 * 1024);
     }
 
     /// A region that ends exactly at a 4 GiB boundary is in reach: its last byte is below it.

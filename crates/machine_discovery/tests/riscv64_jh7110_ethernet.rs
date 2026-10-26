@@ -28,7 +28,10 @@ fn radons_vendor_tree_gives_gmac0_its_phy_settings_and_its_address() {
     assert_eq!(d.compatible, COMPATIBLE_VENDOR);
     assert_eq!(d.interrupt, Some(7));
     assert!(d.status_okay && d.rgmii);
-    assert_eq!(d.mac, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]));
+    assert_eq!(
+        d.station_address,
+        Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
+    );
     assert_eq!(d.phy_address, 0);
     assert_eq!(d.phy.source, Source::VendorTree);
     assert_eq!(
@@ -47,7 +50,7 @@ fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
     let d = discover(&tree).unwrap().unwrap();
     assert_eq!(d.base, GMAC0_BASE);
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
-    assert_eq!(d.mac, None);
+    assert_eq!(d.station_address, None);
     assert_eq!(d.phy.source, Source::MainlineTree);
     assert_eq!(d.phy.rx_delay, 0xa);
     assert_eq!(d.phy.tx_delay, 0xa);

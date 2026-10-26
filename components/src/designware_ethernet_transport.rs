@@ -82,7 +82,7 @@ impl DesignWareNic {
         plane.start(&mut Plane, &mut Channel);
         DesignWareNic {
             plane,
-            mac: handoff.mac,
+            mac: handoff.station_address,
         }
     }
 

@@ -200,3 +200,9 @@ Each renamed row's status says which ruling renamed it and what it was.
   `dev_write`, `device_read` and `device_write`; `volt_mv`, `voltage_mv`. The simulator's `Nic`
   becomes `NetworkInterfaceController`, a `*_LEN` this crate authors becomes `*_LENGTH`, and
   `MAX_FRAME` becomes `MAXIMUM_FRAME`. The unit symbols `ps`, `mv`, `ua`, `us` and `ms` stay.
+- Ruled 2026-10-26 (UTC), earned words: a `mac` that holds the six-byte address is a
+  `station_address`, IEEE 802.3's term and the databook's, with `doc(alias = "mac_address")`
+  (`Discovered`'s field, the handoff's field, and every parameter). `crc` is earned and stays, as
+  `cpu` is by precedent. A FIFO is a queue, matching the RQS and TQS fields that size it:
+  `rx_fifo_bytes`, `tx_fifo_bytes` and `fifo_bytes` become `receive_queue_bytes`,
+  `transmit_queue_bytes` and `queue_bytes`, with `doc(alias = "fifo")`.

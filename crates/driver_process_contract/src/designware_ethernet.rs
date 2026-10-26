@@ -32,7 +32,8 @@ pub const ROLE_TAG: u64 = 0xd3e0;
 pub struct Handoff {
     /// The station address the kernel programmed. The process cannot read or change it: the
     /// MAC's page is not mapped.
-    pub mac: [u8; 6],
+    #[doc(alias = "mac_address")]
+    pub station_address: [u8; 6],
     /// The DMA region's physical base. Descriptors speak physical addresses (there is no IOMMU
     /// on the JH7110), so the process cannot compute them from its virtual window.
     pub data_plane_phys: u64,
@@ -43,10 +44,10 @@ impl Handoff {
     ///
     /// Name: provisional. No ruling covers it.
     pub fn pack(&self) -> [u64; 2] {
-        let mut mac = [0u8; 8];
-        mac[..6].copy_from_slice(&self.mac);
+        let mut station_address = [0u8; 8];
+        station_address[..6].copy_from_slice(&self.station_address);
         [
-            ROLE_TAG | u64::from_le_bytes(mac) << 16,
+            ROLE_TAG | u64::from_le_bytes(station_address) << 16,
             self.data_plane_phys,
         ]
     }
@@ -59,7 +60,10 @@ impl Handoff {
     /// ```
     /// use driver_process_contract::designware_ethernet::Handoff;
     ///
-    /// let h = Handoff { mac: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c], data_plane_phys: 0x4012_3000 };
+    /// let h = Handoff {
+    ///     station_address: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
+    ///     data_plane_phys: 0x4012_3000,
+    /// };
     /// let [role, phys] = h.pack();
     /// assert_eq!(Handoff::unpack(role, phys), Some(h));
     /// assert_eq!(Handoff::unpack(0, phys), None);
@@ -72,12 +76,12 @@ impl Handoff {
             return None;
         }
         let b = (arg0 >> 16).to_le_bytes();
-        let mac = [b[0], b[1], b[2], b[3], b[4], b[5]];
-        if mac == [0; 6] || mac[0] & 1 != 0 {
+        let station_address = [b[0], b[1], b[2], b[3], b[4], b[5]];
+        if station_address == [0; 6] || station_address[0] & 1 != 0 {
             return None;
         }
         Some(Handoff {
-            mac,
+            station_address,
             data_plane_phys: arg1,
         })
     }
@@ -97,12 +101,16 @@ mod tests {
     #[test]
     fn the_handoff_refuses_a_multicast_or_absent_address() {
         let h = Handoff {
-            mac: [0x01, 0, 0, 0, 0, 1],
+            station_address: [0x01, 0, 0, 0, 0, 1],
             data_plane_phys: 0x4000_0000,
         };
         let [r, p] = h.pack();
         assert_eq!(Handoff::unpack(r, p), None);
-        let [r, p] = Handoff { mac: [0; 6], ..h }.pack();
+        let [r, p] = Handoff {
+            station_address: [0; 6],
+            ..h
+        }
+        .pack();
         assert_eq!(Handoff::unpack(r, p), None);
         assert!(!Handoff::is_role(0xe1e0));
     }
@@ -113,7 +121,7 @@ mod tests {
     #[test]
     fn the_handoff_round_trips_and_each_refusal_stands_alone() {
         let h = Handoff {
-            mac: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
+            station_address: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
             data_plane_phys: 0x4800_0000,
         };
         let [r, p] = h.pack();

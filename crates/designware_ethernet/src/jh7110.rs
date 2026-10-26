@@ -115,7 +115,8 @@ pub struct Discovered {
     /// `local-mac-address`, which radon's U-Boot writes into the tree it hands over from the
     /// EEPROM's address (its `fdt_fixup_ethernet`, through the `ethernet0` alias). `None` when the
     /// tree has none, and then the driver falls back to what the address registers hold.
-    pub mac: Option<[u8; 6]>,
+    #[doc(alias = "mac_address")]
+    pub station_address: Option<[u8; 6]>,
     /// Whether `phy-mode` names an RGMII variant. Both trees say `rgmii-id`; anything else is a
     /// board this driver has no interface select for.
     pub rgmii: bool,
@@ -168,7 +169,7 @@ impl Discovered {
     ) -> Result<Self, E> {
         let status_okay =
             prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
-        let mac = prop(b"local-mac-address")?
+        let station_address = prop(b"local-mac-address")?
             .and_then(|b| b.get(..6))
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
         let rgmii = prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
@@ -179,7 +180,7 @@ impl Discovered {
             interrupt: prop(b"interrupts")?.and_then(first_cell),
             compatible,
             status_okay,
-            mac,
+            station_address,
             rgmii,
             phy_address,
             phy,
@@ -330,7 +331,10 @@ mod tests {
             (GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR)
         );
         assert!(d.status_okay && d.rgmii);
-        assert_eq!(d.mac, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]));
+        assert_eq!(
+            d.station_address,
+            Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
+        );
         assert_eq!(d.interrupt, Some(7));
         assert_eq!((d.phy_address, d.phy), phy);
     }
@@ -347,7 +351,10 @@ mod tests {
         .unwrap();
         assert!(d.status_okay);
         assert!(!d.rgmii);
-        assert_eq!((d.mac, d.interrupt, d.phy_address), (None, None, 3));
+        assert_eq!(
+            (d.station_address, d.interrupt, d.phy_address),
+            (None, None, 3)
+        );
         let table: &[(&[u8], &[u8])] = &[
             (b"status", b"disabled\0"),
             (b"local-mac-address", &[1, 2, 3]),
@@ -362,7 +369,7 @@ mod tests {
         )
         .unwrap();
         assert!(!d.status_okay && !d.rgmii);
-        assert_eq!(d.mac, None);
+        assert_eq!(d.station_address, None);
         for okay in [&b"ok\0"[..], b"ok", b"okay"] {
             let table: &[(&[u8], &[u8])] = &[(b"status", okay)];
             let d = Discovered::from_node(

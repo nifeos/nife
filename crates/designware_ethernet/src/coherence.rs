@@ -27,12 +27,13 @@ pub(crate) const POISON: u8 = 0xa5;
 /// slack for a slow first descriptor fetch, not a guess at the wire.
 pub const WAIT_US: u64 = 100_000;
 
-/// **The probe frame**: addressed from and to `mac` (so the packet filter passes it), the
-/// experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from zero.
-pub(crate) fn probe_frame(mac: [u8; 6]) -> [u8; PROBE_LENGTH] {
+/// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
+/// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
+/// zero.
+pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     let mut f = [0u8; PROBE_LENGTH];
-    f[..6].copy_from_slice(&mac);
-    f[6..12].copy_from_slice(&mac);
+    f[..6].copy_from_slice(&station_address);
+    f[6..12].copy_from_slice(&station_address);
     f[12..14].copy_from_slice(&PROBE_ETHERTYPE.to_be_bytes());
     for (i, b) in f[14..].iter_mut().enumerate() {
         // 0x40 to 0x7f, repeating: never 0xa5 and never zero.
@@ -48,7 +49,7 @@ pub fn prepare(
     dp: &mut DataPlane,
     region: &mut impl Region,
     tails: &mut impl Tails,
-    mac: [u8; 6],
+    station_address: [u8; 6],
 ) -> Result<(), TxError> {
     dp.start(region, tails);
     let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
@@ -58,7 +59,7 @@ pub fn prepare(
     // hide a short one.
     let mut back = poison;
     region.read_bytes(layout::rx_buffer(0), &mut back);
-    dp.transmit(region, tails, &probe_frame(mac))
+    dp.transmit(region, tails, &probe_frame(station_address))
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
@@ -92,12 +93,12 @@ pub struct Observation {
 }
 
 /// **Read the CPU's half of the observation** and pair it with the device's status word.
-pub fn observe(region: &impl Region, mac: [u8; 6], status: u32) -> Observation {
+pub fn observe(region: &impl Region, station_address: [u8; 6], status: u32) -> Observation {
     let receive_descriptor_word_3 = (region.read_u64(layout::rx_descriptor(0) + 8) >> 32) as u32;
     let transmit_descriptor_word_3 = (region.read_u64(layout::tx_descriptor(0) + 8) >> 32) as u32;
     let mut got = [0u8; PROBE_LENGTH];
     region.read_bytes(layout::rx_buffer(0), &mut got);
-    let payload = if got == probe_frame(mac) {
+    let payload = if got == probe_frame(station_address) {
         Payload::Matches
     } else if got.iter().all(|&b| b == POISON) {
         Payload::Poison
@@ -189,7 +190,7 @@ mod tests {
     use crate::{Hardware, RDES3_FD, RDES3_LD};
 
     const PHYS: u64 = 0x4800_0000;
-    const MAC: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
+    const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
     const GIG: Link = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -203,17 +204,18 @@ mod tests {
             nic.break_loopback();
         }
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
         let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, MAC)).unwrap();
+        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+            .unwrap();
         let mut waited = 0;
         while !nic.with(|r, _| delivered(r)) && waited < WAIT_US {
             nic.delay_us(1000);
             waited += 1000;
         }
         let status = nic.read(regs::CHAN_STATUS);
-        let o = nic.with(|r, _| observe(r, MAC, status));
+        let o = nic.with(|r, _| observe(r, STATION_ADDRESS, status));
         classify(&o)
     }
 
@@ -245,9 +247,9 @@ mod tests {
 
     #[test]
     fn the_probe_frame_is_never_mistaken_for_poison_or_silence() {
-        let f = probe_frame(MAC);
+        let f = probe_frame(STATION_ADDRESS);
         assert!(f[14..].iter().all(|&b| b != POISON && b != 0));
-        assert_eq!(&f[..6], &MAC);
+        assert_eq!(&f[..6], &STATION_ADDRESS);
         assert_eq!(u16::from_be_bytes([f[12], f[13]]), PROBE_ETHERTYPE);
     }
 
@@ -290,7 +292,7 @@ mod tests {
     /// mistaken_for_poison_or_silence` relies on, pinned at both ends of a lap.
     #[test]
     fn the_payload_counts_from_0x40_and_wraps_at_0x7f() {
-        let f = probe_frame(MAC);
+        let f = probe_frame(STATION_ADDRESS);
         assert_eq!(
             [f[14], f[15], f[14 + 63], f[14 + 64]],
             [0x40, 0x41, 0x7f, 0x40]
@@ -304,10 +306,11 @@ mod tests {
     fn prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0() {
         let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
         let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, MAC)).unwrap();
+        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+            .unwrap();
         nic.with(|r, _| {
             let mut b = [0u8; PROBE_LENGTH + CRC_BYTES + 1];
             r.read_bytes(layout::rx_buffer(0), &mut b);
@@ -325,14 +328,15 @@ mod tests {
     fn a_completed_loopback_is_seen_on_both_rings() {
         let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
         let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, MAC)).unwrap();
+        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+            .unwrap();
         nic.step();
         let o = nic.with(|r, _| {
             assert!(delivered(r));
-            observe(r, MAC, 0)
+            observe(r, STATION_ADDRESS, 0)
         });
         assert_eq!(
             o.transmit_descriptor_word_3,
@@ -354,7 +358,7 @@ mod tests {
         let judged = |nic: &mut NetworkInterfaceController, fill: u8| {
             nic.with(|r, _| {
                 r.write_bytes(layout::rx_buffer(0), &[fill; PROBE_LENGTH]);
-                observe(r, MAC, 0).payload
+                observe(r, STATION_ADDRESS, 0).payload
             })
         };
         assert_eq!(judged(&mut nic, POISON), Payload::Poison);

@@ -247,7 +247,7 @@ fn run(
     }
 
     // The address before the reset, which returns the registers to all ones.
-    let mac = match e.port.mac {
+    let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
         None => controller::station_address(w.read(regs::MAC_ADDR0_HI), w.read(regs::MAC_ADDR0_LO))
             .map(|m| (m, AddressSource::Registers))
@@ -311,7 +311,7 @@ fn run(
     }
     Ok((
         Handoff {
-            mac,
+            station_address: mac,
             data_plane_phys: region,
         },
         link,
