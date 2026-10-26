@@ -10,9 +10,9 @@
 //! protocol) and pages 1 to 767 (82577 and 82578 debug registers) are refused rather than ported;
 //! only an NVM-supplied LCD configuration word could address them.
 //!
-//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as
-//! `physical_layer_device`, IEEE 802.3's phrase. Refused `phy` (an abbreviation), `physical_layer`
-//! (blurs the chip with the layer).
+//! Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out `phy` (the
+//! chip) as `physical_layer_device`, IEEE 802.3's phrase. Refused `phy` (an abbreviation),
+//! `physical_layer` (blurs the chip with the layer).
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -57,7 +57,7 @@ pub enum Error {
     NotReady,
     /// `MDIC.ERROR`: the PHY, or the MAC on its behalf, refused the transaction.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`).
     ManagementDataInterface,
     /// `MDIC` completed for a register other than the one asked for.
@@ -126,24 +126,24 @@ pub const fn paged_offset(page: u32, register: u32) -> u32 {
 /// The PHY's registers this crate addresses, from FreeBSD's `e1000_defines.h`, `e1000_phy.h` and
 /// `e1000_ich8lan.h`.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
-/// `registers`, which names e1000e's one-letter `r`. The constants inside keep their sources'
+/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that turns every `regs` module
+/// into `registers`, which names e1000e's one-letter `r`. The constants inside keep their sources'
 /// names. Refused `r` (a letter, not a name).
 pub mod registers {
     use super::paged_offset;
     /// **Control Register** (`PHY_CONTROL`, FreeBSD's `e1000_defines.h`). MII register 0.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
-    /// a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused `CONTROL` (a
-    /// shortened copy).
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name
+    /// copied from a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused
+    /// `CONTROL` (a shortened copy).
     #[doc(alias = "control register")]
     pub const PHY_CONTROL: u32 = 0x00;
     /// **PHY Identifier, Word 1** (`PHY_ID1`, FreeBSD's `e1000_defines.h`). The high word.
-    #[doc(alias = "phy identifier, word 1")]
+    #[doc(alias = "physical layer device identifier, word 1")]
     pub(crate) const PHY_ID1: u32 = 0x02;
     /// **PHY Identifier, Word 2** (`PHY_ID2`, FreeBSD's `e1000_defines.h`). The low word and the
     /// revision.
-    #[doc(alias = "phy identifier, word 2")]
+    #[doc(alias = "physical layer device identifier, word 2")]
     pub(crate) const PHY_ID2: u32 = 0x03;
     /// **Autonegotiation Advertisement** (`PHY_AUTONEG_ADV`, FreeBSD's `e1000_defines.h`).
     #[doc(alias = "autonegotiation advertisement")]
@@ -155,14 +155,14 @@ pub mod registers {
     #[doc(alias = "82577 configuration")]
     pub(crate) const I82577_CFG_REG: u32 = 22;
     /// **82577 PHY Control 2** (`I82577_PHY_CTRL_2`, FreeBSD's `e1000_phy.h`).
-    #[doc(alias = "82577 phy control 2")]
+    #[doc(alias = "82577 physical layer device control 2")]
     pub(crate) const I82577_PHY_CTRL_2: u32 = 18;
     /// **Kumeran Mode Control** (`HV_KMRN_MODE_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 769,
     /// register 16.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
-    /// a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`). Refused
-    /// `KMRN_MODE_CTRL` (a shortened copy).
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name
+    /// copied from a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`).
+    /// Refused `KMRN_MODE_CTRL` (a shortened copy).
     #[doc(alias = "kumeran mode control")]
     pub const HV_KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
     /// **Port General Configuration** (`BM_PORT_GEN_CFG`, FreeBSD's `e1000_ich8lan.h`). Page 769,
@@ -334,7 +334,7 @@ pub struct Plan {
     pub physical_layer_device_address: u32,
     /// The five-bit register.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `reg` (an abbreviation).
     pub register: u32,
 }

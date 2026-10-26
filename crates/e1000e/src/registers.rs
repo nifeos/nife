@@ -1,5 +1,5 @@
-//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
-//! `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
+//! Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that turns every `regs` module
+//! into `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
 //! `regs` (an abbreviation).
 
 /// **Device Control** (`E1000_CTRL`, Linux's `regs.h`).
@@ -72,7 +72,7 @@ pub const RFCTL: u64 = 0x0_5008;
 pub const MTA: u64 = 0x0_5200;
 /// How many 32-bit entries [`MTA`] has.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
 /// `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the
 /// count names what the table holds).
 #[doc(alias = "dwords")]

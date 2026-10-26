@@ -171,10 +171,10 @@ names until the ratification pass, so this section keeps the links it carried.
   harness), no_std for the kernel and `net_stack` and std for host tests.
 - `src/descriptor.rs`, `receive_verdict`: trusting no field of the status word answers finding 6 of
   `notes/shared-page-audit.md`.
-- `src/pch/mod.rs`, `non_volatile_memory.rs`, `physical_layer_device.rs` and `sequence.rs`, the module docs: each
-  cited milestone 494 and `notes/e1000e/the-i219-port.md`, the whole note for `pch` and its
-  sections "The NVM", "The PHY layer" and "The three passes" for the others. The PHY layer's two
-  divergences now stand in `physical_layer_device.rs` itself.
+- `src/pch/mod.rs`, `non_volatile_memory.rs`, `physical_layer_device.rs` and `sequence.rs`, the
+  module docs: each cited milestone 494 and `notes/e1000e/the-i219-port.md`, the whole note for
+  `pch` and its sections "The NVM", "The PHY layer" and "The three passes" for the others. The PHY
+  layer's two divergences now stand in `physical_layer_device.rs` itself.
 - `src/pch/mod.rs`, the first BUGS entry: the run on silicon without a cable is in that note's
   "BUGS", which links the BUGS of `notes/e1000e.md`.
 

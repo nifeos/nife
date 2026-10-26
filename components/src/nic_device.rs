@@ -27,7 +27,7 @@ impl Nic {
     pub(crate) fn mac(&self) -> [u8; 6] {
         match self {
             Nic::Virtio(_) => MAC,
-            Nic::Gigabit(n) => n.mac(),
+            Nic::Gigabit(n) => n.station_address(),
             Nic::DesignWare(n) => n.mac(),
         }
     }

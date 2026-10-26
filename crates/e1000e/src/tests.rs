@@ -302,18 +302,21 @@ fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
 }
 
 #[test]
-fn the_mac_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
+fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
     // QEMU's default, 52:54:00:12:34:56, as RAL/RAH hold it.
     let ral = u32::from_le_bytes([0x52, 0x54, 0x00, 0x12]);
     let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RAH_AV;
     assert_eq!(
-        mac_from_receive_address(ral, rah),
+        station_address_from_receive_address(ral, rah),
         Some([0x52, 0x54, 0x00, 0x12, 0x34, 0x56])
     );
-    assert_eq!(mac_from_receive_address(ral, rah & !RAH_AV), None);
-    assert_eq!(mac_from_receive_address(0, RAH_AV), None);
     assert_eq!(
-        mac_from_receive_address(0x01, RAH_AV),
+        station_address_from_receive_address(ral, rah & !RAH_AV),
+        None
+    );
+    assert_eq!(station_address_from_receive_address(0, RAH_AV), None);
+    assert_eq!(
+        station_address_from_receive_address(0x01, RAH_AV),
         None,
         "a group address"
     );

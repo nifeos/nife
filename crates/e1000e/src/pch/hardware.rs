@@ -8,7 +8,7 @@ use super::*;
 /// **What the I219 sequences need from whoever holds BAR0.** A kernel implements it over its
 /// mapping of the registers; the host tests implement it over a simulated device.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Hw`
+/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused `Hw`
 /// (an abbreviation of hardware).
 pub trait Hardware {
     /// Read the 32-bit register at `offset` in BAR0.

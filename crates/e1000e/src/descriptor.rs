@@ -43,8 +43,9 @@ pub const BUFFER_SIZE: u64 = 2048;
 /// header, no CRC (the device strips it on receive and appends it on transmit). smoltcp's
 /// `max_transmission_unit` means exactly this for an Ethernet device.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `max` as `maximum`,
-/// which names `MAXIMUM_FRAME` in `designware_ethernet`. Refused `MAX_FRAME` (an abbreviation).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out `max` as
+/// `maximum`, which names `MAXIMUM_FRAME` in `designware_ethernet`. Refused `MAX_FRAME` (an
+/// abbreviation).
 pub const MAXIMUM_FRAME: usize = 1514;
 
 /// Receive status: descriptor done.
@@ -81,8 +82,8 @@ pub const TRANSMIT_STATUS_DD: u8 = 0x01;
 
 /// What a receive descriptor's second word says, judged.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out rx and tx, which names
-/// it. Refused `RxVerdict` (rx abbreviates receive).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out rx and tx,
+/// which names it. Refused `RxVerdict` (rx abbreviates receive).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReceiveVerdict {
     /// The device has not written this descriptor yet.

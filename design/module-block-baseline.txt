@@ -73,7 +73,6 @@ components/src/disk_surveyor.rs::P_RW_REFUSED
 components/src/disk_surveyor.rs::R_HOLDING
 components/src/disk_surveyor.rs::R_PROBING
 components/src/e1000e_transport.rs::bring_up
-components/src/e1000e_transport.rs::mac
 components/src/entropy.rs::draw
 components/src/entropy.rs::draw
 components/src/entropy.rs::draw
@@ -1262,7 +1261,6 @@ crates/e1000e/src/control.rs::CTRL_SLU
 crates/e1000e/src/control.rs::RAH_AV
 crates/e1000e/src/control.rs::RFCTL_EXTEN
 crates/e1000e/src/control.rs::STATUS_LU
-crates/e1000e/src/control.rs::mac_from_receive_address
 crates/e1000e/src/control.rs::rctl
 crates/e1000e/src/control.rs::tctl
 crates/e1000e/src/control.rs::tipg

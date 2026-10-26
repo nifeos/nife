@@ -17,8 +17,9 @@ Three Kani harnesses cover the input a device or a caller controls:
   receive buffer and the caller's space.
 - `proofs::every_ring_offset_is_inside_the_region`: for any index, every descriptor and buffer
   offset lies inside its part of the DMA region.
-- `pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register`: every paged PHY
-  access names a PHY address that exists, the offset's own register and the offset's own page.
+- `pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register`:
+  every paged PHY access names a PHY address that exists, the offset's own register and the offset's
+  own page.
 
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root

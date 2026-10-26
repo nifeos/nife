@@ -40,8 +40,8 @@ pub trait Tails {
 
 /// Why a frame was not queued.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out rx and tx, which names
-/// it. Refused `TxError` (tx abbreviates transmit).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out rx and tx,
+/// which names it. Refused `TxError` (tx abbreviates transmit).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
     /// Empty, or longer than [`MAXIMUM_FRAME`].

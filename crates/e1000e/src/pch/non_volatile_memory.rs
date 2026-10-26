@@ -5,7 +5,7 @@
 //! Read only: nothing here can write or erase the flash. Each item names the SPT branch of
 //! FreeBSD's `e1000_ich8lan.c` it follows.
 //!
-//! Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `nvm`
+//! Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused `nvm`
 //! (an abbreviation).
 
 //! ```text

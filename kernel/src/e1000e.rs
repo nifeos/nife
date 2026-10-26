@@ -27,7 +27,7 @@ pub enum Error {
     /// `CTRL.RST` did not self-clear.
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
-    NoMacAddress,
+    NoStationAddress,
     /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
     Pch(::e1000e::pch::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
@@ -116,8 +116,9 @@ pub fn bring_up() -> Result<Found, Absent> {
         );
     }
 
-    let mac = ::e1000e::mac_from_receive_address(c.r(registers::RAL0), c.r(registers::RAH0))
-        .ok_or(refused(Error::NoMacAddress))?;
+    let station_address =
+        ::e1000e::station_address_from_receive_address(c.r(registers::RAL0), c.r(registers::RAH0))
+            .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
     for k in 0..registers::MTA_ENTRIES {
@@ -166,7 +167,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         rid: dev.rid,
         device: dev.device,
         handoff: ::driver_process_contract::e1000e::Handoff {
-            mac,
+            station_address,
             data_plane_physical_address: region,
         },
         link_up,

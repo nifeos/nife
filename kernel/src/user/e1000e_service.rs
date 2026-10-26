@@ -53,8 +53,8 @@ pub struct Wiring {
     /// True when the IOMMU unit that owns the NIC's requester id translates it. False means the
     /// driver is as confined as its arithmetic.
     pub confined_by_iommu: bool,
-    /// The MAC address the kernel read and handed over.
-    pub mac: [u8; 6],
+    /// The station address the kernel read and handed over.
+    pub station_address: [u8; 6],
     /// The PCI device id.
     pub device: u16,
     /// The PHY's identifier as the kernel read it over MDIO, revision masked off.
@@ -226,7 +226,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         stack,
         held,
         confined_by_iommu,
-        mac: found.handoff.mac,
+        station_address: found.handoff.station_address,
         device: found.device,
         phy_id: found.phy_id,
         lease: 0,

@@ -45,8 +45,9 @@ Everything was read from `sys/dev/e1000/` on FreeBSD's `main`: `ulp`, `flush` an
 
 Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
 (`pch/sim.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `physical_layer_device::id_at`, which shares `physical_layer_device::read_mdic` with everything here, so the
-MDIO primitive is the one piece the QEMU gates prove.
+`sequence`. It does reach `physical_layer_device::id_at`, which shares
+`physical_layer_device::read_mdic` with everything here, so the MDIO primitive is the one piece the
+QEMU gates prove.
 
 ## The three passes
 
@@ -55,19 +56,19 @@ FreeBSD brings an SPT-class I219 up in three passes, and `kernel/src/e1000e.rs` 
 class are carried, because every I219 the crate claims is in it (`pch::is_pch`). Each function's
 doc comment names the FreeBSD function it follows.
 
-1. `initialize_physical_layer_device_workarounds`, at attach. It gates the hardware's automatic PHY configuration and
-   forces the PHY out of ultra-low-power. That goes through the Management Engine if there is one,
-   and through PHY registers if not. It makes sure the MAC-PHY interconnect is PCIe rather than
-   `SMBus`. If the PHY does not answer, it forces `SMBus` and power-cycles the PHY with `LANPHYPC`.
-   Then it resets the PHY so it starts from a known state. The sources are
-   `e1000_init_phy_workarounds_pchlan`, `e1000_disable_ulp_lpt_lp`,
-   `e1000_phy_is_accessible_pchlan` and `e1000_toggle_lanphypc_pch_lpt`.
+1. `initialize_physical_layer_device_workarounds`, at attach. It gates the hardware's automatic PHY
+   configuration and forces the PHY out of ultra-low-power. That goes through the Management Engine
+   if there is one, and through PHY registers if not. It makes sure the MAC-PHY interconnect is PCIe
+   rather than `SMBus`. If the PHY does not answer, it forces `SMBus` and power-cycles the PHY with
+   `LANPHYPC`. Then it resets the PHY so it starts from a known state. The sources are
+   `e1000_init_phy_workarounds_pchlan`, `e1000_disable_ulp_lpt_lp`, `e1000_phy_is_accessible_pchlan`
+   and `e1000_toggle_lanphypc_pch_lpt`.
 2. `global_reset`, after the kernel's descriptor-ring flush. The MAC and PHY reset together, and
    then the PHY is configured from the NVM. The sources are `e1000_reset_hw_ich8lan`,
    `e1000_get_cfg_done_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_sw_lcd_config_ich8lan`,
    `e1000_write_smbus_addr` and `e1000_oem_bits_config_ich8lan`.
-3. `initialize_hardware`, before the rings are programmed, and `transmit_errata` once transmit is on.
-   These are `e1000_init_hw_ich8lan`'s hardware bits, `e1000_setup_copper_link_pch_lpt`, and
+3. `initialize_hardware`, before the rings are programmed, and `transmit_errata` once transmit is
+   on. These are `e1000_init_hw_ich8lan`'s hardware bits, `e1000_setup_copper_link_pch_lpt`, and
    `em_initialize_transmit_unit`'s SPT errata.
 
 ## The PHY layer

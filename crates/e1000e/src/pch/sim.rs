@@ -531,7 +531,8 @@ mod tests {
     }
 
     #[test]
-    fn with_an_me_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset() {
+    fn with_a_management_engine_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset()
+     {
         let mut s = Sim::new(Start::Healthy, true);
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
@@ -594,7 +595,7 @@ mod tests {
     }
 
     #[test]
-    fn without_an_me_ulp_is_left_by_physical_layer_device_registers() {
+    fn without_a_management_engine_ulp_is_left_by_physical_layer_device_registers() {
         let mut s = Sim::new(Start::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff4);
@@ -651,7 +652,7 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_nvm_fails_the_physical_layer_device_reset_as_freebsd_does() {
+    fn a_missing_non_volatile_memory_fails_the_physical_layer_device_reset_as_freebsd_does() {
         let mut s = Sim::new(Start::Healthy, true);
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0xffff;
         assert_eq!(
@@ -663,8 +664,8 @@ mod tests {
     }
 
     #[test]
-    fn the_nvm_configuration_region_is_replayed_into_the_physical_layer_device_from_the_valid_bank()
-    {
+    fn the_non_volatile_memory_configuration_region_is_replayed_into_the_physical_layer_device_from_the_valid_bank()
+     {
         let mut s = Sim::new(Start::Healthy, true);
         let bank = non_volatile_memory::Geometry::read(&mut s).bank_words as usize;
         assert_eq!(bank, 1024);
@@ -903,7 +904,7 @@ mod tests {
 
     /// The NVM's size is `STRAP` bits 5:1 plus one, in 4 KiB units, over two banks.
     #[test]
-    fn the_nvm_size_comes_from_strap_bits_five_to_one() {
+    fn the_non_volatile_memory_size_comes_from_strap_bits_five_to_one() {
         assert_eq!(
             non_volatile_memory::Geometry::from_strap(STRAP_VALUE).bank_words,
             1024

@@ -42,7 +42,7 @@ pub const ROLE_TAG: u64 = 0xe1e0;
 /// use driver_process_contract::e1000e::Handoff;
 ///
 /// let h = Handoff {
-///     mac: [0x52, 0x54, 0x00, 0x12, 0x34, 0x57],
+///     station_address: [0x52, 0x54, 0x00, 0x12, 0x34, 0x57],
 ///     data_plane_physical_address: 0x4012_3000,
 /// };
 /// let [role, phys] = h.pack();
@@ -59,7 +59,13 @@ pub const ROLE_TAG: u64 = 0xe1e0;
 pub struct Handoff {
     /// The station address, read by the kernel from receive-address entry 0. The process has no
     /// way to read it itself (page 5 is not mapped) and no way to change it.
-    pub mac: [u8; 6],
+    ///
+    /// Name: ratified 2026-10-26 (#2761). Ruled in Decision 49 (2026-10-26 UTC): `mac` holding the
+    /// six-byte hardware address is spelled `station_address`, IEEE 802.3's term, tree-wide.
+    /// Refused `mac` (the media access controller's name, not the address).
+    #[doc(alias = "mac")]
+    #[doc(alias = "mac_address")]
+    pub station_address: [u8; 6],
     /// The DMA region's physical base. Descriptors speak physical addresses (identity-mapped by
     /// the IOMMU domain), so the process cannot compute them from its virtual window.
     ///
@@ -71,20 +77,20 @@ pub struct Handoff {
 }
 
 impl Handoff {
-    /// `[arg0, arg1]`: the tag and the MAC address in the role word, the base in the second.
+    /// `[arg0, arg1]`: the tag and the station address in the role word, the base in the second.
     ///
     /// Name: provisional. No ruling covers it.
     pub fn pack(&self) -> [u64; 2] {
-        let mut mac = [0u8; 8];
-        mac[..6].copy_from_slice(&self.mac);
+        let mut station_address = [0u8; 8];
+        station_address[..6].copy_from_slice(&self.station_address);
         [
-            ROLE_TAG | u64::from_le_bytes(mac) << 16,
+            ROLE_TAG | u64::from_le_bytes(station_address) << 16,
             self.data_plane_physical_address,
         ]
     }
 
     /// The inverse of [`Handoff::pack`], refusing a role word without the tag, a base that is
-    /// zero or not page aligned, and a MAC address no station can own.
+    /// zero or not page aligned, and a station address no station can own.
     ///
     /// Name: provisional. No ruling covers it.
     pub fn unpack(arg0: u64, arg1: u64) -> Option<Handoff> {
@@ -92,12 +98,12 @@ impl Handoff {
             return None;
         }
         let b = (arg0 >> 16).to_le_bytes();
-        let mac = [b[0], b[1], b[2], b[3], b[4], b[5]];
-        if mac == [0; 6] || mac[0] & 1 != 0 {
+        let station_address = [b[0], b[1], b[2], b[3], b[4], b[5]];
+        if station_address == [0; 6] || station_address[0] & 1 != 0 {
             return None;
         }
         Some(Handoff {
-            mac,
+            station_address,
             data_plane_physical_address: arg1,
         })
     }
@@ -125,25 +131,25 @@ mod tests {
             assert!(!Handoff::is_role(role));
         }
         let h = Handoff {
-            mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
+            station_address: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
             data_plane_physical_address: PHYS,
         };
         assert!(Handoff::is_role(h.pack()[0]));
     }
 
-    /// The handoff refuses each bad field on its own: a role word with a valid-looking MAC but the
-    /// wrong tag, and a group MAC under the right tag.
+    /// The handoff refuses each bad field on its own: a role word with a valid-looking station address but the
+    /// wrong tag, and a group address under the right tag.
     #[test]
     fn the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone() {
         let h = Handoff {
-            mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
+            station_address: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
             data_plane_physical_address: PHYS,
         };
         let [role, phys] = h.pack();
         assert_eq!(Handoff::unpack(role, phys), Some(h));
         assert_eq!(Handoff::unpack(role ^ 1, phys), None, "wrong tag");
         let group = Handoff {
-            mac: [0x53, 0x54, 0, 0x12, 0x34, 0x56],
+            station_address: [0x53, 0x54, 0, 0x12, 0x34, 0x56],
             ..h
         };
         assert_eq!(

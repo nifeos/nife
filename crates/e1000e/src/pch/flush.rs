@@ -1,14 +1,14 @@
 /// PCI configuration offset of the descriptor ring status word.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a
-/// cited source, strictly: FreeBSD's `PCICFG_DESC_RING_STATUS` (`if_em.h`). Refused
+/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
+/// from a cited source, strictly: FreeBSD's `PCICFG_DESC_RING_STATUS` (`if_em.h`). Refused
 /// `DESC_RING_STATUS` (a shortened copy).
 pub const PCICFG_DESC_RING_STATUS: u64 = 0xe4;
 /// The bit in it that says a flush is required.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a
-/// cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED` (a
-/// shortened copy).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
+/// from a cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED`
+/// (a shortened copy).
 pub const FLUSH_DESC_REQUIRED: u16 = 0x100;
 /// `FEXTNVM11.DISABLE_MULR_FIX`, set before the flush.
 pub const FEXTNVM11_DISABLE_MULR_FIX: u32 = 0x0000_2000;

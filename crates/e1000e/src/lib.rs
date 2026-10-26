@@ -46,8 +46,8 @@ mod descriptor;
 mod device;
 
 pub use control::{
-    CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU,
-    mac_from_receive_address, rctl, tctl, tipg,
+    CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU, rctl,
+    station_address_from_receive_address, tctl, tipg,
 };
 pub use data_plane::{DataPlane, Region, Tails, TransmitError};
 use descriptor::*;

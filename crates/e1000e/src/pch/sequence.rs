@@ -54,7 +54,7 @@ pub enum Error {
     PhysicalLayerDevice(physical_layer_device::Error),
     /// An NVM read failed, or no bank is valid ("EEPROM not present" in FreeBSD).
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `Nvm` (an abbreviation, as the module's `nvm` was).
     NonVolatileMemory(non_volatile_memory::Error),
     /// The PHY did not answer after the `SMBus` force, the `LANPHYPC` power cycle and the unforce.
@@ -94,7 +94,7 @@ pub enum Reached {
     Directly,
     /// After forcing the MAC into System Management Bus (`SMBus`) mode.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `InSmbus` (an abbreviation of System Management Bus).
     #[doc(alias = "smbus")]
     InSystemManagementBus,
@@ -127,8 +127,9 @@ pub enum Note {
     },
     /// Firmware blocks PHY resets, so FreeBSD's PHY reset was skipped.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as
-    /// `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an abbreviation).
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out `phy` (the
+    /// chip) as `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an
+    /// abbreviation).
     PhysicalLayerDeviceResetBlocked,
     /// `STATUS.LAN_INIT_DONE` did not rise in 150 ms after a reset.
     LanInitTimeout,
@@ -145,7 +146,7 @@ pub enum Note {
     /// The NVM's extended configuration region was replayed into the LAN connected device (LCD,
     /// Intel's name for the PHY beside a PCH): this many words.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `LcdConfigured` (`Lcd` reads as a display).
     #[doc(alias = "lcd")]
     LanConnectedDeviceConfigured {
@@ -155,14 +156,14 @@ pub enum Note {
     /// No extended configuration to replay into the LAN connected device (`FEXTNVM.SW_CONFIG`
     /// clear, or a zero size).
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `LcdNotConfigured` (as `LcdConfigured`).
     #[doc(alias = "lcd")]
     LanConnectedDeviceNotConfigured,
     /// `STRAP` names a System Management Bus (`SMBus`) frequency of zero, which FreeBSD declines to
     /// program.
     ///
-    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
     /// `SmbusFrequencyUnsupported` (an abbreviation of System Management Bus).
     #[doc(alias = "smbus")]
     SystemManagementBusFrequencyUnsupported,
@@ -269,9 +270,9 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 
 /// **`e1000_init_phy_workarounds_pchlan`**, the SPT path. Returns the PHY's identifier.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the tree-wide rulings that spell out `phy` (the chip) as
-/// `physical_layer_device` and `init` as `initialize`, the second of which names it. Refused
-/// `init_phy_workarounds` (both abbreviations).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide rulings that spell out `phy` (the
+/// chip) as `physical_layer_device` and `init` as `initialize`, the second of which names it.
+/// Refused `init_phy_workarounds` (both abbreviations).
 pub fn initialize_physical_layer_device_workarounds(
     hardware: &mut impl Hardware,
 ) -> Result<u32, Error> {
@@ -802,9 +803,9 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
 /// link setup, the transmit write-back policy and relaxed-ordering disable. Statistics are not
 /// cleared; nothing reads them.
 ///
-/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names and the tree-wide ruling that
-/// spells out `init` as `initialize`, which names it. Refused `init_hw` (`hw` abbreviates
-/// hardware), `init_hardware` (`init` abbreviates initialize).
+/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names and the tree-wide
+/// ruling that spells out `init` as `initialize`, which names it. Refused `init_hw` (`hw`
+/// abbreviates hardware), `init_hardware` (`init` abbreviates initialize).
 pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     // `e1000_initialize_hw_bits_ich8lan`. Bit 22 of CTRL_EXT, TXDCTL and the TARC bits are
     // unnamed in FreeBSD too; they are Intel's.
@@ -973,7 +974,7 @@ mod tests {
     /// polls, none after the last, and no polls past them), and the request is left standing. One
     /// that is already done costs nothing and has its request released.
     #[test]
-    fn the_me_gets_two_and_a_half_seconds_to_leave_ulp() {
+    fn the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp() {
         let mut hardware = Inert::default();
         hardware.registers.insert(
             registers::FWSM,
@@ -1281,7 +1282,7 @@ mod tests {
     /// ULP start bit are set even when already set.** The PHY is reset twice: once by the ULP exit
     /// and once by the attach that follows it.
     #[test]
-    fn leaving_ulp_without_an_me_changes_only_the_bits_it_names() {
+    fn leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names() {
         let mut s = Sim::new(Start::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0101);

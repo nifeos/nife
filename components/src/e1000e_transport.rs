@@ -86,7 +86,7 @@ impl Tails for Queues {
 /// The NIC as `net_stack` sees it.
 pub(crate) struct GigabitNic {
     plane: DataPlane,
-    mac: [u8; 6],
+    station_address: [u8; 6],
 }
 
 impl GigabitNic {
@@ -96,13 +96,17 @@ impl GigabitNic {
         plane.start(&mut Plane, &mut Queues);
         GigabitNic {
             plane,
-            mac: handoff.mac,
+            station_address: handoff.station_address,
         }
     }
 
     /// The station address the kernel read from the device.
-    pub fn mac(&self) -> [u8; 6] {
-        self.mac
+    ///
+    /// Name: ratified 2026-10-26 (#2761). Ruled in Decision 49 (2026-10-26 UTC): `mac` holding the
+    /// six-byte hardware address is spelled `station_address`, tree-wide. Refused `mac` (`mac`
+    /// names the controller, not the address).
+    pub fn station_address(&self) -> [u8; 6] {
+        self.station_address
     }
 
     /// The next received frame, if the device has written one.

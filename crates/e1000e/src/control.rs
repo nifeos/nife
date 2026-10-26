@@ -52,15 +52,22 @@ pub const fn tipg() -> u32 {
     8 | 8 << 10 | 6 << 20
 }
 
-/// The MAC address in receive-address entry 0, or `None` when the entry is not marked valid, which
-/// on a real part means the NVM load did not happen and on QEMU does not occur.
-pub fn mac_from_receive_address(ral: u32, rah: u32) -> Option<[u8; 6]> {
+/// The station address (the MAC address) in receive-address entry 0, or `None` when the entry is
+/// not marked valid, which on a real part means the NVM load did not happen and on QEMU does not
+/// occur.
+///
+/// Name: ratified 2026-10-26 (#2761). Ruled in Decision 49 (2026-10-26 UTC): `mac` holding the
+/// six-byte hardware address is spelled `station_address`, tree-wide. Refused
+/// `mac_from_receive_address` (`mac` names the controller, not the address).
+#[doc(alias = "mac")]
+#[doc(alias = "mac_address")]
+pub fn station_address_from_receive_address(ral: u32, rah: u32) -> Option<[u8; 6]> {
     if rah & RAH_AV == 0 {
         return None;
     }
     let l = ral.to_le_bytes();
     let h = rah.to_le_bytes();
-    let mac = [l[0], l[1], l[2], l[3], h[0], h[1]];
+    let station_address = [l[0], l[1], l[2], l[3], h[0], h[1]];
     // All zeros, or a group address, is not an address a station can own.
-    (mac != [0; 6] && mac[0] & 1 == 0).then_some(mac)
+    (station_address != [0; 6] && station_address[0] & 1 == 0).then_some(station_address)
 }

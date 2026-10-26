@@ -1,5 +1,5 @@
-//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
-//! `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
+//! Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that turns every `regs` module
+//! into `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
 //! `regs` (an abbreviation).
 
 /// **Strap** (`E1000_STRAP`, FreeBSD's `e1000_ich8lan.h`). Read only; FreeBSD writes it to order a
@@ -9,16 +9,16 @@
 pub(crate) const STRAP: u64 = 0x0_000c;
 /// **MDI Control** (`E1000_MDIC`, FreeBSD's `e1000_regs.h`). The MDIO transaction register
 /// ([`super::physical_layer_device`]).
-#[doc(alias = "mdi control")]
+#[doc(alias = "management data interface control")]
 pub(crate) const MDIC: u64 = 0x0_0020;
 /// **Future Extended NVM** (`E1000_FEXTNVM`, FreeBSD's `e1000_regs.h`).
-#[doc(alias = "future extended nvm")]
+#[doc(alias = "future extended non-volatile memory")]
 pub(crate) const FEXTNVM: u64 = 0x0_0028;
 /// **Future Extended NVM 3** (`E1000_FEXTNVM3`, FreeBSD's `e1000_regs.h`).
-#[doc(alias = "future extended nvm 3")]
+#[doc(alias = "future extended non-volatile memory 3")]
 pub(crate) const FEXTNVM3: u64 = 0x0_003c;
 /// **Future Extended NVM 7** (`E1000_FEXTNVM7`, FreeBSD's `e1000_regs.h`).
-#[doc(alias = "future extended nvm 7")]
+#[doc(alias = "future extended non-volatile memory 7")]
 pub(crate) const FEXTNVM7: u64 = 0x0_00e4;
 /// **LED Control** (`E1000_LEDCTL`, FreeBSD's `e1000_regs.h`).
 #[doc(alias = "led control")]
@@ -33,7 +33,7 @@ pub(crate) const EXTCNF_CTRL: u64 = 0x0_0f00;
 pub(crate) const EXTCNF_SIZE: u64 = 0x0_0f08;
 /// **PHY Control Register in CSR** (`E1000_PHY_CTRL`, FreeBSD's `e1000_regs.h`). The PHY control
 /// the MAC holds: LPLU and gigabit disable.
-#[doc(alias = "phy control register in csr")]
+#[doc(alias = "physical layer device control register in control and status registers")]
 pub(crate) const PHY_CTRL: u64 = 0x0_0f10;
 /// **IOSF Power Control** (`E1000_IOSFPC`, FreeBSD's `e1000_regs.h`). The I/O side-band fabric's
 /// power control, which SPT's transmit errata write. FreeBSD's comment reads "TX corrupted data".
@@ -66,12 +66,12 @@ pub(crate) const TXDCTL1: u64 = 0x0_3928;
 pub(crate) const TARC1: u64 = 0x0_3940;
 /// **Host to ME** (`E1000_H2ME`, FreeBSD's `e1000_ich8lan.h`). Messages from the driver to the
 /// Management Engine.
-#[doc(alias = "host to me")]
+#[doc(alias = "host to management engine")]
 pub(crate) const H2ME: u64 = 0x0_5b50;
 /// **FW Semaphore** (`E1000_FWSM`, FreeBSD's `e1000_regs.h`). The firmware semaphore: the
 /// Management Engine's status.
-#[doc(alias = "fw semaphore")]
+#[doc(alias = "firmware semaphore")]
 pub(crate) const FWSM: u64 = 0x0_5b54;
 /// **Future Extended NVM 11** (`E1000_FEXTNVM11`, FreeBSD's `e1000_regs.h`).
-#[doc(alias = "future extended nvm 11")]
+#[doc(alias = "future extended non-volatile memory 11")]
 pub const FEXTNVM11: u64 = 0x0_5bbc;
