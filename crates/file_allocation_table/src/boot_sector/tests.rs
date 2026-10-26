@@ -559,3 +559,13 @@ fn a_device_error_and_a_refusal_come_back_as_themselves() {
         Err(ReadError::Refused(ParseError::NoSignature))
     );
 }
+
+/// A FAT32 boot sector of 70,000 clusters whose `BPB_ExtFlags` turn mirroring off and name
+/// `table` live, for the table reader's tests.
+pub(crate) fn fat32_with_active_table(table: u8) -> [u8; 512] {
+    with(
+        &Shape::fat32(1232 + 70_000, 600).bytes(),
+        40,
+        &[0x80 | table, 0],
+    )
+}
