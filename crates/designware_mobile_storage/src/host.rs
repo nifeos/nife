@@ -4,15 +4,12 @@
 //! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
 //! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
 //! 64-bit FIFO is refused (radon's is measured by the bench step before anything depends on it).
-//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from
-//! [`Host::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
-//! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
-//! both.
+//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from [`Host::with_idmac`],
+//! hands each data phase to the controller's DMA engine ([`crate::idmac`]). Commands and
+//! identification are the same on both.
 
 use crate::command::{Command, UPDATE_CLOCK};
-use crate::internal_direct_memory_access::{
-    DirectMemoryAccessRegion, InternalDirectMemoryAccess, NoDirectMemoryAccess, PAGE,
-};
+use crate::idmac::{DirectMemoryAccessRegion, Idmac, NoDirectMemoryAccess, PAGE};
 use crate::registers;
 
 /// **The register window, and a clock**: everything the driver needs from the machine.
@@ -33,8 +30,7 @@ pub trait Registers {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
-    #[doc(alias = "fifo")]
-    QueueWidth(u32),
+    FifoWidth(u32),
     /// A reset bit in `CTRL` or `BMOD` did not clear: the word last read.
     ResetStuck(u32),
     /// The controller did not take a clock update (the start bit stayed set).
@@ -84,9 +80,9 @@ pub(crate) const COMMAND_DEADLINE_US: u64 = 100_000;
 /// to start a write (the SD spec's write timeout for SDHC); half a second is that with slack.
 pub(crate) const DATA_DEADLINE_US: u64 = 500_000;
 
-/// **The card clock divider** for a `target` from a `base`: the smallest `divider` with
-/// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when
-/// even 255 is too fast.
+/// **The card clock divider** for a `target` from a `base`: the smallest `div` with
+/// `base / (2 * div) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when even
+/// 255 is too fast.
 ///
 /// OpenBSD's loop, with its edge closed: OpenBSD exits at `div = 256` and writes that to an
 /// eight-bit field, which reads back as 0, the fastest setting there is.
@@ -111,34 +107,26 @@ pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
     }
     // ceil(base / (2 * target)). Saturating, and still exact: a target of 2^31 or more saturates
     // to u32::MAX, and since base > target the quotient is then 1 either way.
-    let divider = base.div_ceil(target.saturating_mul(2));
-    if divider > 255 {
-        None
-    } else {
-        Some(divider as u8)
-    }
+    let div = base.div_ceil(target.saturating_mul(2));
+    if div > 255 { None } else { Some(div as u8) }
 }
 
-/// The card clock a divider gives: `base` at 0, `base / (2 * divider)` otherwise.
+/// The card clock a divider gives: `base` at 0, `base / (2 * div)` otherwise.
 #[must_use]
-pub const fn card_clock(base: u32, divider: u8) -> u32 {
-    if divider == 0 {
+pub const fn card_clock(base: u32, div: u8) -> u32 {
+    if div == 0 {
         base
     } else {
-        base / (2 * divider as u32)
+        base / (2 * div as u32)
     }
 }
 
 /// **How many bytes the next FIFO step moves**: the FIFO's filled words (reading) or empty words
 /// (writing), in bytes, never more than `remaining`. A count the controller reports above `depth`
 /// is clamped to `depth`, so a confused `STATUS` cannot make a write overrun the FIFO.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors; was `fifo_step`.
-#[doc(alias = "fifo")]
 #[must_use]
-pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
-    let filled = registers::queue_count(status);
+pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
+    let filled = registers::fifo_count(status);
     let filled = if filled > depth { depth } else { filled };
     let words = if write { depth - filled } else { filled };
     let bytes = words.saturating_mul(4);
@@ -146,31 +134,30 @@ pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) ->
 }
 
 /// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
-/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver;
-/// [`Host::with_internal_direct_memory_access`] makes a `Host<R, D>` whose every data phase goes
-/// through the IDMAC.
+/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver; [`Host::with_idmac`]
+/// makes a `Host<R, D>` whose every data phase goes through the IDMAC.
 pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess> {
     pub(crate) registers: R,
-    queue_offset: u32,
+    fifo: u32,
     pub(crate) depth: u32,
     base_hz: u32,
-    pub(crate) direct_memory_access: Option<InternalDirectMemoryAccess<D>>,
+    pub(crate) direct_memory_access: Option<Idmac<D>>,
 }
 
 impl<R: Registers> Host<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
-    /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
-    /// read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
+    /// radon), and `fifo_depth` the tree's `fifo-depth` if it has one; without it the depth is read
+    /// from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
     ///
     /// # Errors
     ///
-    /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
+    /// [`Error::FifoWidth`] for a 16- or 64-bit FIFO.
     pub fn new(
         mut registers: R,
         base_hz: u32,
-        queue_depth: Option<u32>,
+        fifo_depth: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
             verid: registers.read(registers::VERID),
@@ -186,17 +173,17 @@ impl<R: Registers> Host<R> {
                 registers.read(registers::CTYPE),
             ],
         };
-        if registers::queue_width(id.hcon) != Some(4) {
-            return Err(Error::QueueWidth((id.hcon >> 7) & 7));
+        if registers::fifo_width(id.hcon) != Some(4) {
+            return Err(Error::FifoWidth((id.hcon >> 7) & 7));
         }
-        let depth = match queue_depth {
+        let depth = match fifo_depth {
             Some(d) if d > 0 => d,
-            _ => registers::fifoth_receive_watermark(id.fifoth) + 1,
+            _ => registers::fifoth_rx_watermark(id.fifoth) + 1,
         };
         Ok((
             Host {
                 registers,
-                queue_offset: registers::queue_offset(id.verid),
+                fifo: registers::fifo_offset(id.verid),
                 depth,
                 base_hz,
                 direct_memory_access: None,
@@ -205,36 +192,26 @@ impl<R: Registers> Host<R> {
         ))
     }
 
-    /// **Move every later data phase through the IDMAC**, over a region
-    /// [`InternalDirectMemoryAccess::new`] checked. The controller's state carries over: a card
-    /// identified by the polled host stays selected.
+    /// **Move every later data phase through the IDMAC**, over a region [`Idmac::new`] checked.
+    /// The controller's state carries over: a card identified by the polled host stays selected.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-    /// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `with_idmac`.
-    #[doc(alias = "idmac")]
+    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     #[must_use]
-    pub fn with_internal_direct_memory_access<D: DirectMemoryAccessRegion>(
-        self,
-        internal_direct_memory_access: InternalDirectMemoryAccess<D>,
-    ) -> Host<R, D> {
+    pub fn with_idmac<D: DirectMemoryAccessRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
         Host {
             registers: self.registers,
-            queue_offset: self.queue_offset,
+            fifo: self.fifo,
             depth: self.depth,
             base_hz: self.base_hz,
-            direct_memory_access: Some(internal_direct_memory_access),
+            direct_memory_access: Some(idmac),
         }
     }
 }
 
 impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// The FIFO depth in words, as decided by [`Host::new`].
-    ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-    /// authors; was `fifo_depth`.
-    #[doc(alias = "fifo")]
     #[must_use]
-    pub fn queue_depth(&self) -> u32 {
+    pub fn fifo_depth(&self) -> u32 {
         self.depth
     }
 
@@ -275,8 +252,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 | registers::CTRL_INT_ENABLE);
         self.registers
             .write(registers::CTRL, ctrl | registers::CTRL_ALL_RESET);
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
-            window.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
+        if !self.wait(COMMAND_DEADLINE_US, |registers| {
+            registers.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
         }
@@ -293,7 +270,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         // OpenBSD's one block, 512 bytes, against radon's 128-byte FIFO overran the first read.
         // Written rather than assumed, since firmware may have set it. Before release 2.40a the
         // offset is the data FIFO, and a write there would be a word of data.
-        if self.queue_offset != registers::CARDTHRCTL {
+        if self.fifo != registers::CARDTHRCTL {
             self.registers.write(registers::CARDTHRCTL, 0);
         }
         Ok(())
@@ -307,8 +284,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
-        if self.wait(COMMAND_DEADLINE_US, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+        if self.wait(COMMAND_DEADLINE_US, |registers| {
+            registers.read(registers::CMD) & registers::CMD_START == 0
         }) {
             Ok(())
         } else {
@@ -325,17 +302,17 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::ClockUpdate`] if the controller does not take either update; `BufferSize` is never
     /// returned. A target no divider reaches runs at the slowest the controller has.
     pub(crate) fn set_clock(&mut self, hz: u32) -> Result<u32, Error> {
-        let divider = clock_divider(self.base_hz, hz).unwrap_or(255);
+        let div = clock_divider(self.base_hz, hz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);
         self.registers.write(registers::CLKSRC, 0);
-        self.registers.write(registers::CLKDIV, u32::from(divider));
+        self.registers.write(registers::CLKDIV, u32::from(div));
         self.update_clock()?;
         self.registers.write(
             registers::CLKENA,
-            registers::CLKENA_CCLK_ENABLE | registers::CLKENA_CCLK_LOW_POWER,
+            registers::CLKENA_ENABLE | registers::CLKENA_LOW_POWER,
         );
         self.update_clock()?;
-        Ok(card_clock(self.base_hz, divider))
+        Ok(card_clock(self.base_hz, div))
     }
 
     /// Set the bus width the controller drives: 1, 4 or 8. Anything else is 1.
@@ -354,8 +331,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// [`Error::Busy`] past [`DATA_DEADLINE_US`].
     pub(crate) fn wait_not_busy(&mut self) -> Result<(), Error> {
-        if self.wait(DATA_DEADLINE_US, |window| {
-            window.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
+        if self.wait(DATA_DEADLINE_US, |registers| {
+            registers.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
         }) {
             Ok(())
         } else {
@@ -363,52 +340,51 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         }
     }
 
-    /// Send `command`, its data phase prepared first; `direct_memory_access` arms the IDMAC between
-    /// the FIFO reset and the command.
+    /// Send `cmd`, its data phase prepared first; `direct_memory_access` arms the IDMAC between the FIFO reset and
+    /// the command.
     pub(crate) fn issue(
         &mut self,
-        command: &Command,
+        cmd: &Command,
         direct_memory_access: bool,
     ) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
-        if let Some(d) = command.data {
+        if let Some(d) = cmd.data {
             self.registers.write(registers::BYTCNT, d.bytes());
             self.registers.write(registers::BLKSIZ, d.block_size);
             let ctrl = self.registers.read(registers::CTRL);
             self.registers
                 .write(registers::CTRL, ctrl | registers::CTRL_FIFO_RESET);
-            if !self.wait(COMMAND_DEADLINE_US, |window| {
-                window.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
+            if !self.wait(COMMAND_DEADLINE_US, |registers| {
+                registers.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
             }
             if direct_memory_access {
-                self.internal_direct_memory_access_start()?;
+                self.idmac_start()?;
             }
         }
-        self.registers
-            .write(registers::RINTSTS, registers::RINTSTS_ALL);
-        self.registers.write(registers::CMDARG, command.argument);
-        self.registers.write(registers::CMD, command.word());
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+        self.registers.write(registers::RINTSTS, registers::INT_ALL);
+        self.registers.write(registers::CMDARG, cmd.arg);
+        self.registers.write(registers::CMD, cmd.word());
+        if !self.wait(COMMAND_DEADLINE_US, |registers| {
+            registers.read(registers::CMD) & registers::CMD_START == 0
         }) {
-            return Err(Error::CommandNotTaken(command.index));
+            return Err(Error::CommandNotTaken(cmd.index));
         }
         let mut status = 0;
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
-            status = window.read(registers::RINTSTS);
-            status & registers::RINTSTS_CD != 0
+        if !self.wait(COMMAND_DEADLINE_US, |registers| {
+            status = registers.read(registers::RINTSTS);
+            status & registers::INT_CD != 0
         }) {
-            return Err(Error::CommandTimeout(command.index, status));
+            return Err(Error::CommandTimeout(cmd.index, status));
         }
-        if status & registers::RINTSTS_RTO != 0 {
-            return Err(Error::NoResponse(command.index));
+        if status & registers::INT_RTO != 0 {
+            return Err(Error::NoResponse(cmd.index));
         }
-        if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
-            return Err(Error::BadResponse(command.index, status));
+        if status & (registers::INT_RCRC | registers::INT_RE) != 0 {
+            return Err(Error::BadResponse(cmd.index, status));
         }
-        Ok(if command.response.is_long() {
+        Ok(if cmd.response.is_long() {
             [
                 self.registers.read(registers::RESP0),
                 self.registers.read(registers::RESP1),
@@ -424,130 +400,114 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// # Errors
     ///
-    /// Any of the command-phase errors, and [`Error::BufferSize`] if `command` has a data phase.
-    pub fn command(&mut self, command: &Command) -> Result<[u32; 4], Error> {
-        if command.data.is_some() {
+    /// Any of the command-phase errors, and [`Error::BufferSize`] if `cmd` has a data phase.
+    pub fn command(&mut self, cmd: &Command) -> Result<[u32; 4], Error> {
+        if cmd.data.is_some() {
             return Err(Error::BufferSize);
         }
-        self.issue(command, false)
+        self.issue(cmd, false)
     }
 
-    /// **Send a command whose data phase reads into `buffer`.** `buffer` must be exactly the
-    /// command's byte count, and a whole number of words; through the IDMAC, no more than its
-    /// capacity.
+    /// **Send a command whose data phase reads into `buf`.** `buf` must be exactly the command's
+    /// byte count, and a whole number of words; through the IDMAC, no more than its capacity.
     ///
     /// # Errors
     ///
     /// [`Error::BufferSize`] on a size mismatch or a write command; any command-phase error;
-    /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data
-    /// phase.
-    pub fn read(&mut self, command: &Command, buffer: &mut [u8]) -> Result<[u32; 4], Error> {
-        let Some(d) = command.data else {
+    /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data phase.
+    pub fn read(&mut self, cmd: &Command, buf: &mut [u8]) -> Result<[u32; 4], Error> {
+        let Some(d) = cmd.data else {
             return Err(Error::BufferSize);
         };
-        if d.write || buffer.len() as u64 != u64::from(d.bytes()) || !buffer.len().is_multiple_of(4)
-        {
+        if d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
             return Err(Error::BufferSize);
         }
-        if let Some(capacity) = self
-            .direct_memory_access
-            .as_ref()
-            .map(InternalDirectMemoryAccess::capacity)
-        {
+        if let Some(capacity) = self.direct_memory_access.as_ref().map(Idmac::capacity) {
             if d.bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            let resp = self.idmac_transfer(cmd, d.bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
-                direct_memory_access.region().read_bytes(PAGE, buffer);
+                direct_memory_access.region().read_bytes(PAGE, buf);
             }
             return Ok(resp);
         }
-        let resp = self.issue(command, false)?;
+        let resp = self.issue(cmd, false)?;
         let mut done = 0usize;
-        while done < buffer.len() {
-            let (status, rint) = self.wait_queue(
-                command.index,
-                registers::RINTSTS_RXDR,
-                (buffer.len() - done) as u32,
-            )?;
-            let n = queue_step(status, self.depth, false, (buffer.len() - done) as u32) as usize;
-            for chunk in buffer[done..done + n].as_chunks_mut::<4>().0 {
-                *chunk = self.registers.read(self.queue_offset).to_le_bytes();
+        while done < buf.len() {
+            let (status, rint) =
+                self.wait_fifo(cmd.index, registers::INT_RXDR, (buf.len() - done) as u32)?;
+            let n = fifo_step(status, self.depth, false, (buf.len() - done) as u32) as usize;
+            for chunk in buf[done..done + n].as_chunks_mut::<4>().0 {
+                *chunk = self.registers.read(self.fifo).to_le_bytes();
             }
             done += n;
             self.registers
-                .write(registers::RINTSTS, rint & registers::RINTSTS_RXDR);
+                .write(registers::RINTSTS, rint & registers::INT_RXDR);
         }
-        self.finish(command)?;
+        self.finish(cmd)?;
         Ok(resp)
     }
 
-    /// **Send a command whose data phase writes `buffer`.** The same size rules as [`Host::read`].
+    /// **Send a command whose data phase writes `buf`.** The same size rules as [`Host::read`].
     ///
     /// # Errors
     ///
     /// As [`Host::read`].
-    pub fn write(&mut self, command: &Command, buffer: &[u8]) -> Result<[u32; 4], Error> {
-        let Some(d) = command.data else {
+    pub fn write(&mut self, cmd: &Command, buf: &[u8]) -> Result<[u32; 4], Error> {
+        let Some(d) = cmd.data else {
             return Err(Error::BufferSize);
         };
-        if !d.write
-            || buffer.len() as u64 != u64::from(d.bytes())
-            || !buffer.len().is_multiple_of(4)
-        {
+        if !d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
             return Err(Error::BufferSize);
         }
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
             if d.bytes() > direct_memory_access.capacity() {
                 return Err(Error::BufferSize);
             }
-            direct_memory_access.region().write_bytes(PAGE, buffer);
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            direct_memory_access.region().write_bytes(PAGE, buf);
+            let resp = self.idmac_transfer(cmd, d.bytes())?;
             self.wait_not_busy()?;
             return Ok(resp);
         }
-        let resp = self.issue(command, false)?;
+        let resp = self.issue(cmd, false)?;
         let mut done = 0usize;
-        while done < buffer.len() {
-            let (status, rint) = self.wait_queue(
-                command.index,
-                registers::RINTSTS_TXDR,
-                (buffer.len() - done) as u32,
-            )?;
-            let n = queue_step(status, self.depth, true, (buffer.len() - done) as u32) as usize;
-            for chunk in buffer[done..done + n].as_chunks::<4>().0 {
+        while done < buf.len() {
+            let (status, rint) =
+                self.wait_fifo(cmd.index, registers::INT_TXDR, (buf.len() - done) as u32)?;
+            let n = fifo_step(status, self.depth, true, (buf.len() - done) as u32) as usize;
+            for chunk in buf[done..done + n].as_chunks::<4>().0 {
                 let w = u32::from_le_bytes(*chunk);
-                self.registers.write(self.queue_offset, w);
+                self.registers.write(self.fifo, w);
             }
             done += n;
             self.registers
-                .write(registers::RINTSTS, rint & registers::RINTSTS_TXDR);
+                .write(registers::RINTSTS, rint & registers::INT_TXDR);
         }
-        self.finish(command)?;
+        self.finish(cmd)?;
         self.wait_not_busy()?;
         Ok(resp)
     }
 
     /// Wait for the FIFO to want service (`want`) or the transfer to end; a data error ends it.
     /// Returns `STATUS` and `RINTSTS` once there is something to move.
-    fn wait_queue(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
+    fn wait_fifo(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
         let mut rint = 0;
         let mut status = 0;
         let depth = self.depth;
-        let write = want == registers::RINTSTS_TXDR;
-        let ok = self.wait(DATA_DEADLINE_US, |window| {
-            rint = window.read(registers::RINTSTS);
-            if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
+        let write = want == registers::INT_TXDR;
+        let ok = self.wait(DATA_DEADLINE_US, |registers| {
+            rint = registers.read(registers::RINTSTS);
+            if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
                 return true;
             }
-            status = window.read(registers::STATUS);
+            status = registers.read(registers::STATUS);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
-            rint & want != 0 && queue_step(status, depth, write, owed) > 0
-                || rint & registers::RINTSTS_DTO != 0 && queue_step(status, depth, write, owed) > 0
+            rint & want != 0 && fifo_step(status, depth, write, owed) > 0
+                || rint & registers::INT_DTO != 0 && fifo_step(status, depth, write, owed) > 0
         });
-        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
+        if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
             return Err(Error::Data(index, rint));
         }
         if !ok {
@@ -557,22 +517,22 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     }
 
     /// Wait for data-transfer-over, and for the automatic CMD12 after a multi-block transfer.
-    fn finish(&mut self, command: &Command) -> Result<(), Error> {
+    fn finish(&mut self, cmd: &Command) -> Result<(), Error> {
         let mut rint = 0;
-        let want = match command.data {
-            Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
-            _ => registers::RINTSTS_DTO,
+        let want = match cmd.data {
+            Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
+            _ => registers::INT_DTO,
         };
-        let ok = self.wait(DATA_DEADLINE_US, |window| {
-            rint = window.read(registers::RINTSTS);
+        let ok = self.wait(DATA_DEADLINE_US, |registers| {
+            rint = registers.read(registers::RINTSTS);
             rint & want == want
-                || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
+                || rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0
         });
-        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
-            return Err(Error::Data(command.index, rint));
+        if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
+            return Err(Error::Data(cmd.index, rint));
         }
         if !ok {
-            return Err(Error::DataTimeout(command.index, rint, 0));
+            return Err(Error::DataTimeout(cmd.index, rint, 0));
         }
         Ok(())
     }
@@ -613,14 +573,14 @@ mod tests {
     }
 
     #[test]
-    fn a_queue_step_moves_what_is_there_and_never_more_than_is_owed() {
+    fn a_fifo_step_moves_what_is_there_and_never_more_than_is_owed() {
         let filled = |n: u32| n << 17;
-        assert_eq!(queue_step(filled(8), 32, false, 4096), 32);
-        assert_eq!(queue_step(filled(8), 32, true, 4096), 96);
-        assert_eq!(queue_step(filled(8), 32, false, 12), 12);
+        assert_eq!(fifo_step(filled(8), 32, false, 4096), 32);
+        assert_eq!(fifo_step(filled(8), 32, true, 4096), 96);
+        assert_eq!(fifo_step(filled(8), 32, false, 12), 12);
         // A count above the depth (a confused STATUS) cannot overrun a write.
-        assert_eq!(queue_step(filled(0x1fff), 32, true, 4096), 0);
-        assert_eq!(queue_step(filled(0x1fff), 32, false, 4096), 128);
+        assert_eq!(fifo_step(filled(0x1fff), 32, true, 4096), 0);
+        assert_eq!(fifo_step(filled(0x1fff), 32, false, 4096), 128);
     }
 
     // The sequences below run against `sim`, which models the contract and, through its knobs, the
@@ -643,12 +603,11 @@ mod tests {
     /// Runs `f` on a worker and fails if it has not returned in ten seconds. A wait whose deadline
     /// never fires spins forever, and this turns that into a named failure rather than a hung test.
     fn within_ten_seconds<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
-        let (sender, receiver) = mpsc::channel();
+        let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
-            let _ = sender.send(f());
+            let _ = tx.send(f());
         });
-        receiver
-            .recv_timeout(Duration::from_secs(10))
+        rx.recv_timeout(Duration::from_secs(10))
             .expect("the driver neither returned nor gave up: a deadline never fired")
     }
 
@@ -664,7 +623,7 @@ mod tests {
         h.registers().write(registers::CTRL, firmware);
         h.registers().write(
             registers::CARDTHRCTL,
-            512 << 16 | registers::CARDTHRCTL_RDTHREN,
+            512 << 16 | registers::CARDTHRCTL_READ_ENABLE,
         );
         h.registers().writes.clear();
         h.reset().unwrap();
@@ -769,7 +728,7 @@ mod tests {
         h.command(&Command::new(0, 0, Response::None)).unwrap();
         assert!(matches!(
             h.command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
-            Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::RINTSTS_RCRC != 0
+            Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::INT_RCRC != 0
         ));
     }
 
@@ -778,7 +737,7 @@ mod tests {
     /// read. Bit 8 of `CTRL`, left by firmware, makes a wait that tested anything but the reset
     /// bits never finish.
     #[test]
-    fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
+    fn a_data_command_resets_the_fifo_and_leaves_the_threshold_off() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         h.registers().write(registers::CTRL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
@@ -812,11 +771,11 @@ mod tests {
         };
         let read = Command::with_data(17, 0, Response::R1, one(false));
         let write = Command::with_data(WRITE_BLOCK, 0, Response::R1, one(true));
-        let mut buffer = [0u8; 1024];
-        assert_eq!(h.read(&write, &mut buffer[..512]), Err(Error::BufferSize));
-        assert_eq!(h.read(&read, &mut buffer), Err(Error::BufferSize));
-        assert_eq!(h.write(&read, &buffer[..512]), Err(Error::BufferSize));
-        assert_eq!(h.write(&write, &buffer), Err(Error::BufferSize));
+        let mut buf = [0u8; 1024];
+        assert_eq!(h.read(&write, &mut buf[..512]), Err(Error::BufferSize));
+        assert_eq!(h.read(&read, &mut buf), Err(Error::BufferSize));
+        assert_eq!(h.write(&read, &buf[..512]), Err(Error::BufferSize));
+        assert_eq!(h.write(&write, &buf), Err(Error::BufferSize));
         assert!(h.into_registers().commands.is_empty());
     }
 
@@ -861,9 +820,9 @@ mod tests {
 
     /// A 48-word FIFO does not divide a 512-byte block, so the last step of a transfer is shorter
     /// than the FIFO: each step must move what is owed, not what fits. The read half is with a
-    /// `STATUS` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
+    /// `STATUS` that says the FIFO is full whatever it holds, which `fifo_step` exists to survive.
     #[test]
-    fn the_last_queue_step_moves_only_what_is_owed() {
+    fn the_last_fifo_step_moves_only_what_is_owed() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 48));
         let card = sd::identify(&mut h, 4).unwrap();
         let data: Vec<u8> = (0..512).map(|i| (i % 253) as u8).collect();
@@ -884,7 +843,7 @@ mod tests {
         let start = h.registers().now_us();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
+            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::INT_DCRC != 0
         ));
         assert!(h.registers().now_us() - start < DATA_DEADLINE_US);
     }
@@ -913,7 +872,7 @@ mod tests {
         let mut blocks = [0u8; 4 * 512];
         sd::read_blocks(&mut h, &card, 1, &mut blocks).unwrap();
         assert_ne!(
-            h.registers().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
+            h.registers().peek(registers::RINTSTS) & registers::INT_ACD,
             0
         );
     }

@@ -8,41 +8,30 @@
 //! Nothing here can fail on hostile input. A card is a device on the far side of a bus and its
 //! registers are data, so every decoder is total and every capacity is computed without overflow.
 
-/// The operation conditions register's (OCR) power-up-complete bit: clear while the card is still
-/// busy initializing.
-#[doc(alias = "ocr")]
-pub(crate) const OPERATION_CONDITIONS_BUSY_DONE: u32 = 1 << 31;
+/// The OCR's power-up-complete bit: clear while the card is still busy initializing.
+pub(crate) const OCR_BUSY_DONE: u32 = 1 << 31;
 /// The OCR's card capacity status (SD) or access mode (eMMC, as bits 30:29 = `0b10`): set on a
 /// high-capacity card, which is addressed in 512-byte blocks rather than bytes.
-#[doc(alias = "ocr")]
-pub(crate) const OPERATION_CONDITIONS_HIGH_CAPACITY: u32 = 1 << 30;
+pub(crate) const OCR_HIGH_CAPACITY: u32 = 1 << 30;
 /// The voltage window this host offers, 3.2 to 3.4 V: OpenBSD's `dwmmc_host_ocr`. The JH7110's
 /// card slot is wired for 3.3 V and nothing here switches it.
-#[doc(alias = "ocr")]
-pub(crate) const OPERATION_CONDITIONS_VOLTAGE_WINDOW: u32 = (1 << 20) | (1 << 21);
+pub(crate) const OCR_VOLTAGE_WINDOW: u32 = (1 << 20) | (1 << 21);
 /// `ACMD41`'s argument: high capacity supported, and the window.
-#[doc(alias = "ocr")]
-pub(crate) const SD_OPERATION_CONDITIONS_ARGUMENT: u32 =
-    OPERATION_CONDITIONS_HIGH_CAPACITY | OPERATION_CONDITIONS_VOLTAGE_WINDOW;
+pub(crate) const SD_OP_COND_ARG: u32 = OCR_HIGH_CAPACITY | OCR_VOLTAGE_WINDOW;
 /// eMMC `CMD1`'s argument: sector access mode (bits 30:29 = `0b10`) and 2.7 to 3.6 V plus the
 /// 1.70 to 1.95 V bit, the value Linux and U-Boot both send.
-#[doc(alias = "ocr")]
-pub(crate) const MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT: u32 = 0x40ff_8080;
-/// `CMD8` (`SEND_IF_COND`)'s interface condition argument: 2.7 to 3.6 V (`0x1`) and the check
-/// pattern `0xaa`. A card that understands it echoes both.
-#[doc(alias = "if_cond")]
-pub(crate) const INTERFACE_CONDITION_ARGUMENT: u32 = 0x1aa;
+pub(crate) const MMC_OP_COND_ARG: u32 = 0x40ff_8080;
+/// `CMD8`'s argument: 2.7 to 3.6 V (`0x1`) and the check pattern `0xaa`. A card that understands
+/// it echoes both.
+pub(crate) const IF_COND_ARG: u32 = 0x1aa;
 
-/// **Card status errors** (SD section 4.10.1): the R1 bits that report a failure, Linux's error
-/// mask: out of range, address, block length, erase sequence and parameter, write-protect
-/// violation, lock failure, CRC, illegal command, ECC, controller error, unknown error, CSD
-/// overwrite, write-protect erase skip, and the authentication sequence error. `CARD_IS_LOCKED`
-/// (bit 25) is a state, not an error, and is not in the mask.
-#[doc(alias = "card status errors")]
+/// The R1 bits that report a failure, Linux's error mask: out of range, address, block length,
+/// erase sequence and parameter, write-protect violation, lock failure, CRC, illegal command, ECC,
+/// controller error, unknown error, CSD overwrite, write-protect erase skip, and the
+/// authentication sequence error. `CARD_IS_LOCKED` (bit 25) is a state, not an error, and is not
+/// in the mask.
 pub const R1_ERRORS: u32 = 0xfdf9_8008;
-/// **Ready for data, card status bit 8** (Linux's `R1_READY_FOR_DATA`, SD section 4.10.1): the R1
-/// bit saying the card is ready for data.
-#[doc(alias = "ready for data")]
+/// The R1 bit saying the card is ready for data.
 pub const R1_READY_FOR_DATA: u32 = 1 << 8;
 
 /// The R1 word's current state, bits 12:9: 4 is transfer, 5 sending data, 6 receive data, 7
@@ -77,34 +66,29 @@ pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
     (v & mask) as u32
 }
 
-/// **The card-specific data register (CSD)**, decoded to the two facts this driver uses: SD
-/// Physical Layer Simplified Specification section 5.3, JESD84-B51 section 7.3 for eMMC.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `Csd`.
-#[doc(alias = "csd")]
+/// The CSD, decoded to the two facts this driver uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CardSpecificData {
+pub struct Csd {
     /// The structure version, bits 127:126: 0 standard capacity, 1 high or extended capacity
     /// (SDHC and SDXC), 2 ultra capacity (SDUC). For eMMC it is a different field with different
-    /// meaning; see [`CardSpecificData::sd`]'s caller.
+    /// meaning; see [`Csd::sd`]'s caller.
     pub structure: u32,
     /// Capacity in 512-byte blocks, or 0 when the structure is one this driver does not decode.
     pub blocks: u64,
 }
 
-impl CardSpecificData {
+impl Csd {
     /// **Decode an SD card's CSD.**
     ///
     /// ```
-    /// use designware_mobile_storage::card::CardSpecificData;
+    /// use designware_mobile_storage::card::Csd;
     ///
     /// // A 32 GB SDHC card: structure 1, C_SIZE 60_947 (bits 69:48).
     /// let csd = [0, 60_947u32 << 16, 0, 1 << 30];
-    /// assert_eq!(CardSpecificData::sd(&csd).blocks, 60_948 * 1024);
+    /// assert_eq!(Csd::sd(&csd).blocks, 60_948 * 1024);
     /// ```
     #[must_use]
-    pub const fn sd(register: &[u32; 4]) -> CardSpecificData {
+    pub const fn sd(register: &[u32; 4]) -> Csd {
         let structure = bits(register, 126, 2);
         let blocks = match structure {
             // (C_SIZE + 1) * 2^(C_SIZE_MULT + 2) blocks of 2^READ_BL_LEN bytes. READ_BL_LEN is 9,
@@ -126,35 +110,30 @@ impl CardSpecificData {
             2 => (bits(register, 48, 28) as u64 + 1) * 1024,
             _ => 0,
         };
-        CardSpecificData { structure, blocks }
+        Csd { structure, blocks }
     }
 
     /// **Decode an eMMC's CSD**, which gives a capacity only up to 2 GB. Above that `C_SIZE` reads
-    /// `0xfff` and the true count is `EXT_CSD`'s [`extended_card_specific_data_sectors`]. The
-    /// layout of the size fields is the same as SD's version 1.
+    /// `0xfff` and the true count is `EXT_CSD`'s [`ext_csd_sectors`]. The layout of the size fields
+    /// is the same as SD's version 1.
     #[must_use]
-    pub(crate) const fn multimedia_card(register: &[u32; 4]) -> CardSpecificData {
-        let mut card_specific_data = CardSpecificData::sd(register);
+    pub(crate) const fn mmc(register: &[u32; 4]) -> Csd {
+        let mut csd = Csd::sd(register);
         let c_size = bits(register, 62, 12) as u64;
         let mult = bits(register, 47, 3);
         let read_bl_len = bits(register, 80, 4);
-        card_specific_data.blocks = if read_bl_len < 9 {
+        csd.blocks = if read_bl_len < 9 {
             0
         } else {
             (c_size + 1) << (mult + 2 + read_bl_len - 9)
         };
-        card_specific_data
+        csd
     }
 }
 
-/// **The card identification register (CID)**, decoded to what a transcript should name: SD
-/// Physical Layer Simplified Specification section 5.2, JESD84-B51 section 7.2 for eMMC.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `Cid`.
-#[doc(alias = "cid")]
+/// The CID, decoded to what a transcript should name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CardIdentification {
+pub struct Cid {
     /// Manufacturer identifier, bits 127:120.
     pub manufacturer: u8,
     /// Product name: five ASCII bytes for SD (bits 103:64), six for eMMC (bits 103:56), padded with
@@ -164,17 +143,17 @@ pub struct CardIdentification {
     pub serial: u32,
 }
 
-impl CardIdentification {
+impl Cid {
     /// Decode an SD card's CID.
     #[must_use]
-    pub const fn sd(register: &[u32; 4]) -> CardIdentification {
+    pub const fn sd(register: &[u32; 4]) -> Cid {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 5 {
             name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
-        CardIdentification {
+        Cid {
             manufacturer: bits(register, 120, 8) as u8,
             name,
             serial: bits(register, 24, 32),
@@ -183,14 +162,14 @@ impl CardIdentification {
 
     /// Decode an eMMC's CID.
     #[must_use]
-    pub(crate) const fn multimedia_card(register: &[u32; 4]) -> CardIdentification {
+    pub(crate) const fn mmc(register: &[u32; 4]) -> Cid {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 6 {
             name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
-        CardIdentification {
+        Cid {
             manufacturer: bits(register, 120, 8) as u8,
             name,
             serial: bits(register, 16, 32),
@@ -198,12 +177,11 @@ impl CardIdentification {
     }
 }
 
-/// The extended card-specific data register's (`EXT_CSD`) `SEC_COUNT`, bytes 212 to 215,
-/// little-endian: an eMMC's capacity in 512-byte sectors. Zero for a buffer too short to hold it.
-#[doc(alias = "ext_csd")]
+/// `EXT_CSD`'s `SEC_COUNT`, bytes 212 to 215, little-endian: an eMMC's capacity in 512-byte
+/// sectors. Zero for a buffer too short to hold it.
 #[must_use]
-pub(crate) fn extended_card_specific_data_sectors(extended_card_specific_data: &[u8]) -> u64 {
-    match extended_card_specific_data.get(212..216) {
+pub(crate) fn ext_csd_sectors(ext_csd: &[u8]) -> u64 {
+    match ext_csd.get(212..216) {
         Some(b) => u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as u64,
         None => 0,
     }
@@ -245,18 +223,15 @@ mod tests {
         put(&mut r, 62, 12, 4095);
         put(&mut r, 47, 3, 7);
         put(&mut r, 80, 4, 10);
-        assert_eq!(
-            CardSpecificData::sd(&r).blocks * 512,
-            2 * 1024 * 1024 * 1024
-        );
+        assert_eq!(Csd::sd(&r).blocks * 512, 2 * 1024 * 1024 * 1024);
     }
 
     #[test]
     fn a_read_block_length_below_512_is_refused_rather_than_shifted_negative() {
         let mut r = [0u32; 4];
         put(&mut r, 80, 4, 3);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 0);
-        assert_eq!(CardSpecificData::multimedia_card(&r).blocks, 0);
+        assert_eq!(Csd::sd(&r).blocks, 0);
+        assert_eq!(Csd::mmc(&r).blocks, 0);
     }
 
     #[test]
@@ -264,29 +239,29 @@ mod tests {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 1);
         put(&mut r, 48, 22, 0x3f_ffff);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 0x40_0000 * 1024);
+        assert_eq!(Csd::sd(&r).blocks, 0x40_0000 * 1024);
     }
 
     #[test]
-    fn a_card_identification_names_its_maker_and_product() {
+    fn a_cid_names_its_maker_and_product() {
         let mut r = [0u32; 4];
         put(&mut r, 120, 8, 0x03);
         for (i, b) in b"SN32G".iter().enumerate() {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));
         }
         put(&mut r, 24, 32, 0xdead_beef);
-        let card_identification = CardIdentification::sd(&r);
-        assert_eq!(card_identification.manufacturer, 3);
-        assert_eq!(&card_identification.name[..5], b"SN32G");
-        assert_eq!(card_identification.serial, 0xdead_beef);
+        let cid = Cid::sd(&r);
+        assert_eq!(cid.manufacturer, 3);
+        assert_eq!(&cid.name[..5], b"SN32G");
+        assert_eq!(cid.serial, 0xdead_beef);
     }
 
     #[test]
-    fn extended_card_specific_data_sector_count_is_little_endian_and_short_buffers_read_zero() {
+    fn ext_csd_sector_count_is_little_endian_and_short_buffers_read_zero() {
         let mut e = [0u8; 512];
         e[212..216].copy_from_slice(&0x01d2_0000u32.to_le_bytes());
-        assert_eq!(extended_card_specific_data_sectors(&e), 0x01d2_0000);
-        assert_eq!(extended_card_specific_data_sectors(&e[..100]), 0);
+        assert_eq!(ext_csd_sectors(&e), 0x01d2_0000);
+        assert_eq!(ext_csd_sectors(&e[..100]), 0);
     }
 
     #[test]
@@ -303,8 +278,8 @@ mod tests {
     /// The arguments a card is sent, as numbers: what a protocol analyzer on the bus would show.
     #[test]
     fn the_operating_condition_arguments_are_the_specs() {
-        assert_eq!(OPERATION_CONDITIONS_VOLTAGE_WINDOW, 0x0030_0000);
-        assert_eq!(SD_OPERATION_CONDITIONS_ARGUMENT, 0x4030_0000);
+        assert_eq!(OCR_VOLTAGE_WINDOW, 0x0030_0000);
+        assert_eq!(SD_OP_COND_ARG, 0x4030_0000);
     }
 
     #[test]
@@ -323,13 +298,13 @@ mod tests {
     /// `READ_BL_LEN` 9 (512-byte blocks) is the case where the shift's `- 9` is zero, and
     /// `C_SIZE_MULT` 3 the one where the multiplier's `+ 2` matters: (100 + 1) * 2^(3 + 2) blocks.
     #[test]
-    fn a_card_specific_data_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
+    fn a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
         let mut r = [0u32; 4];
         put(&mut r, 62, 12, 100);
         put(&mut r, 47, 3, 3);
         put(&mut r, 80, 4, 9);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 101 << 5);
-        assert_eq!(CardSpecificData::multimedia_card(&r).blocks, 101 << 5);
+        assert_eq!(Csd::sd(&r).blocks, 101 << 5);
+        assert_eq!(Csd::mmc(&r).blocks, 101 << 5);
     }
 
     #[test]
@@ -337,9 +312,9 @@ mod tests {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 2);
         put(&mut r, 48, 28, 0x0abc_def0);
-        let card_specific_data = CardSpecificData::sd(&r);
-        assert_eq!(card_specific_data.structure, 2);
-        assert_eq!(card_specific_data.blocks, (0x0abc_def0 + 1) * 1024);
+        let csd = Csd::sd(&r);
+        assert_eq!(csd.structure, 2);
+        assert_eq!(csd.blocks, (0x0abc_def0 + 1) * 1024);
     }
 
     /// An SD CID has a five-byte name; the byte after it is the product revision, not a sixth
@@ -351,16 +326,12 @@ mod tests {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));
         }
         put(&mut r, 120, 8, 0x15);
-        assert_eq!(CardIdentification::sd(&r).name, *b"NIFEM\0");
-        let mut multimedia_card = r;
-        put(&mut multimedia_card, 16, 32, 0x1357_9bdf);
-        let card_identification = CardIdentification::multimedia_card(&multimedia_card);
+        assert_eq!(Cid::sd(&r).name, *b"NIFEM\0");
+        let mut mmc = r;
+        put(&mut mmc, 16, 32, 0x1357_9bdf);
+        let cid = Cid::mmc(&mmc);
         assert_eq!(
-            (
-                card_identification.manufacturer,
-                card_identification.name,
-                card_identification.serial
-            ),
+            (cid.manufacturer, cid.name, cid.serial),
             (0x15, *b"NIFEMC", 0x1357_9bdf)
         );
     }

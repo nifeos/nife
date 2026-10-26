@@ -1,15 +1,15 @@
-//! The bench step's two halves, as logic: the read-only probe and the scratch write test that a
-//! kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
+//! The bench step's two halves, as logic: the read-only probe and the scratch write test that
+//! a kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
 //! safety argument, is tested on a host rather than first tried on the card radon boots from.
 //! [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
-//! [`scratch_write`] writes only inside [`MasterBootRecord::scratch`]'s range, after reading what
-//! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
-//! not written.
+//! [`scratch_write`] writes only inside [`Mbr::scratch`]'s range, after reading what is there: a
+//! pattern, read back, then the original, read back too. A card with no gap is refused, not
+//! written.
 
 use crate::host::{Host, Registers};
-use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
-use crate::partition::MasterBootRecord;
+use crate::idmac::DirectMemoryAccessRegion;
+use crate::partition::Mbr;
 use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
 
 /// How many sectors the write test uses at most: 4 KiB, one multi-block command each way.
@@ -21,13 +21,12 @@ pub struct ReadReport {
     /// The card, identified.
     pub card: Card,
     /// Sector 0, parsed, if it holds an MBR.
-    #[doc(alias = "mbr")]
-    pub master_boot_record: Option<MasterBootRecord>,
+    pub mbr: Option<Mbr>,
     /// The first partition's first sector ends in `55 aa` (a FAT boot sector does).
     pub partition_boot_signature: bool,
     /// The first partition's first sector's bytes 82..90 (FAT32's `"FAT32   "` file system
     /// type), for the transcript.
-    pub file_system_type: [u8; 8],
+    pub fs_type: [u8; 8],
     /// The block the timed read started at: the first partition's, or 0 without one.
     pub timed_from: u64,
     /// Blocks read in the timed sequential read.
@@ -45,8 +44,8 @@ pub enum ReadFailure {
     Read(u64, IoError),
 }
 
-/// **The read-only probe.** `buffer` is the transfer buffer (a whole number of blocks; the timed
-/// read moves `buffer.len()` bytes per command), `timed_blocks` how many blocks to time.
+/// **The read-only probe.** `buf` is the transfer buffer (a whole number of blocks; the timed read
+/// moves `buf.len()` bytes per command), `timed_blocks` how many blocks to time.
 ///
 /// # Errors
 ///
@@ -54,51 +53,49 @@ pub enum ReadFailure {
 pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     bus_width: u8,
-    buffer: &mut [u8],
+    buf: &mut [u8],
     timed_blocks: u64,
 ) -> Result<ReadReport, ReadFailure> {
     let card = sd::identify(host, bus_width).map_err(ReadFailure::Initialization)?;
     let mut sector = [0u8; BLOCK];
     sd::read_blocks(host, &card, 0, &mut sector).map_err(|e| ReadFailure::Read(0, e))?;
-    let master_boot_record = MasterBootRecord::parse(&sector);
-    let first = master_boot_record
-        .and_then(|m| m.first_start())
-        .map_or(0, u64::from);
+    let mbr = Mbr::parse(&sector);
+    let first = mbr.and_then(|m| m.first_start()).map_or(0, u64::from);
     let mut partition_boot_signature = false;
-    let mut file_system_type = [0u8; 8];
+    let mut fs_type = [0u8; 8];
     if first != 0 {
         sd::read_blocks(host, &card, first, &mut sector)
             .map_err(|e| ReadFailure::Read(first, e))?;
         partition_boot_signature = sector[510..512] == [0x55, 0xaa];
-        file_system_type.copy_from_slice(&sector[82..90]);
+        fs_type.copy_from_slice(&sector[82..90]);
     }
-    let (timed, timed_us) = timed_read(host, &card, first, buffer, timed_blocks)?;
+    let (timed, timed_us) = timed_read(host, &card, first, buf, timed_blocks)?;
     Ok(ReadReport {
         card,
-        master_boot_record,
+        mbr,
         partition_boot_signature,
-        file_system_type,
+        fs_type,
         timed_from: first,
         timed_blocks: timed,
         timed_us,
     })
 }
 
-/// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buffer.len()` bytes a
+/// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buf.len()` bytes a
 /// command, stopping before the card's end. Returns the blocks read and the microseconds taken.
 fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     first: u64,
-    buffer: &mut [u8],
+    buf: &mut [u8],
     timed_blocks: u64,
 ) -> Result<(u64, u64), ReadFailure> {
-    let per = (buffer.len() / BLOCK) as u64;
+    let per = (buf.len() / BLOCK) as u64;
     let mut timed = 0u64;
     let start = host.registers().now_us();
     if per > 0 {
         while timed < timed_blocks && first + timed + per <= card.blocks {
-            sd::read_blocks(host, card, first + timed, buffer)
+            sd::read_blocks(host, card, first + timed, buf)
                 .map_err(|e| ReadFailure::Read(first + timed, e))?;
             timed += per;
         }
@@ -108,11 +105,9 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// What the IDMAC's half of the read-only probe found.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `IdmacReport`.
-#[doc(alias = "idmac")]
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct InternalDirectMemoryAccessReport {
+pub struct IdmacReport {
     /// The first transfer's bytes are the polled host's for the same blocks.
     pub matches: bool,
     /// Blocks read in the timed sequential read.
@@ -121,50 +116,43 @@ pub struct InternalDirectMemoryAccessReport {
     pub timed_us: u64,
 }
 
-/// **The IDMAC's half of the read-only probe**, on a host
-/// [`Host::with_internal_direct_memory_access`] made from the one [`read_only`] ran on and reported
-/// `report`. `reference` is the polled host's read of `reference.len()` bytes from
-/// `report.timed_from`; the same blocks are read through the IDMAC and compared, then
-/// [`read_only`]'s timed read runs again from there in `buffer.len()`-byte commands, so the two
-/// rates differ only in the data path.
+/// **The IDMAC's half of the read-only probe**, on a host [`Host::with_idmac`] made from the one
+/// [`read_only`] ran on and reported `r`. `reference` is the polled host's read of
+/// `reference.len()` bytes from `r.timed_from`; the same blocks are read through the IDMAC and
+/// compared, then [`read_only`]'s timed read runs again from there in `buf.len()`-byte commands,
+/// so the two rates differ only in the data path.
 ///
 /// # Errors
 ///
 /// The read that failed.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac_read`.
-#[doc(alias = "idmac")]
-pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessRegion>(
+/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
-    report: &ReadReport,
+    r: &ReadReport,
     reference: &[u8],
-    buffer: &mut [u8],
+    buf: &mut [u8],
     timed_blocks: u64,
-) -> Result<InternalDirectMemoryAccessReport, ReadFailure> {
-    let (card, first) = (&report.card, report.timed_from);
-    let n = reference.len().min(buffer.len());
-    sd::read_blocks(host, card, first, &mut buffer[..n])
-        .map_err(|e| ReadFailure::Read(first, e))?;
+) -> Result<IdmacReport, ReadFailure> {
+    let (card, first) = (&r.card, r.timed_from);
+    let n = reference.len().min(buf.len());
+    sd::read_blocks(host, card, first, &mut buf[..n]).map_err(|e| ReadFailure::Read(first, e))?;
     // An empty reference never gets here: a read of no blocks is refused as `Length`.
-    let matches = buffer[..n] == reference[..n];
-    let (timed_blocks, timed_us) = timed_read(host, card, first, buffer, timed_blocks)?;
-    Ok(InternalDirectMemoryAccessReport {
+    let matches = buf[..n] == reference[..n];
+    let (timed_blocks, timed_us) = timed_read(host, card, first, buf, timed_blocks)?;
+    Ok(IdmacReport {
         matches,
         timed_blocks,
         timed_us,
     })
 }
 
-/// The byte the write test puts at offset `i` of the sector at `logical_block_address`: never
-/// constant across a sector, different for each sector, so a write that lands one sector off or
-/// repeats a block is seen on readback.
+/// The byte the write test puts at offset `i` of the sector at `lba`: never constant across a
+/// sector, different for each sector, so a write that lands one sector off or repeats a block is
+/// seen on readback.
 #[must_use]
-pub const fn pattern(logical_block_address: u64, i: usize) -> u8 {
-    (i as u8).wrapping_mul(31)
-        ^ (logical_block_address as u8).wrapping_mul(7)
-        ^ 0x5a
-        ^ (i >> 8) as u8
+pub const fn pattern(lba: u64, i: usize) -> u8 {
+    (i as u8).wrapping_mul(31) ^ (lba as u8).wrapping_mul(7) ^ 0x5a ^ (i >> 8) as u8
 }
 
 /// How the scratch write test ended.
@@ -186,55 +174,55 @@ pub enum WriteVerdict {
     Failed(u8, IoError),
 }
 
-/// **The scratch write test.** `master_boot_record` is what [`read_only`] parsed from this card;
-/// `original` and `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
+/// **The scratch write test.** `mbr` is what [`read_only`] parsed from this card; `original` and
+/// `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
 pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
-    master_boot_record: Option<&MasterBootRecord>,
+    mbr: Option<&Mbr>,
     original: &mut [u8],
     scratch: &mut [u8],
 ) -> WriteVerdict {
-    let Some((first, count)) = master_boot_record.and_then(|m| m.scratch(SCRATCH_SECTORS)) else {
+    let Some((first, count)) = mbr.and_then(|m| m.scratch(SCRATCH_SECTORS)) else {
         return WriteVerdict::Refused;
     };
     let bytes = count as usize * BLOCK;
     if original.len() < bytes || scratch.len() < bytes {
         return WriteVerdict::Failed(0, IoError::Length);
     }
-    let logical_block_address = u64::from(first);
+    let lba = u64::from(first);
     let (original, scratch) = (&mut original[..bytes], &mut scratch[..bytes]);
-    if let Err(e) = sd::read_blocks(host, card, logical_block_address, original) {
+    if let Err(e) = sd::read_blocks(host, card, lba, original) {
         return WriteVerdict::Failed(0, e);
     }
     let blank = original.iter().all(|&b| b == 0);
     for (s, block) in scratch.as_chunks_mut::<BLOCK>().0.iter_mut().enumerate() {
         for (i, b) in block.iter_mut().enumerate() {
-            *b = pattern(logical_block_address + s as u64, i);
+            *b = pattern(lba + s as u64, i);
         }
     }
     let mut verdict = None;
-    if let Err(e) = sd::write_blocks(host, card, logical_block_address, scratch) {
+    if let Err(e) = sd::write_blocks(host, card, lba, scratch) {
         verdict = Some(WriteVerdict::Failed(1, e));
     } else {
         let mut back = [0u8; BLOCK];
         for s in 0..u64::from(count) {
-            if let Err(e) = sd::read_blocks(host, card, logical_block_address + s, &mut back) {
+            if let Err(e) = sd::read_blocks(host, card, lba + s, &mut back) {
                 verdict = Some(WriteVerdict::Failed(2, e));
                 break;
             }
             let at = s as usize * BLOCK;
             if back[..] != scratch[at..at + BLOCK] {
-                verdict = Some(WriteVerdict::PatternMismatch(logical_block_address + s));
+                verdict = Some(WriteVerdict::PatternMismatch(lba + s));
                 break;
             }
         }
     }
     // Whatever happened, put back what was there.
-    if let Err(e) = sd::write_blocks(host, card, logical_block_address, original) {
+    if let Err(e) = sd::write_blocks(host, card, lba, original) {
         return WriteVerdict::Failed(3, e);
     }
-    if let Err(e) = sd::read_blocks(host, card, logical_block_address, scratch) {
+    if let Err(e) = sd::read_blocks(host, card, lba, scratch) {
         return WriteVerdict::Failed(4, e);
     }
     if let Some(s) = scratch
@@ -244,7 +232,7 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
         .zip(original.as_chunks::<BLOCK>().0)
         .position(|(a, b)| a != b)
     {
-        return WriteVerdict::RestoreMismatch(logical_block_address + s as u64);
+        return WriteVerdict::RestoreMismatch(lba + s as u64);
     }
     verdict.unwrap_or(WriteVerdict::Verified(first, count, blank))
 }
@@ -257,7 +245,7 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
 pub struct Watch<R: Registers> {
     inner: R,
     /// The highest `STATUS` FIFO count seen since the last [`Watch::clear`].
-    pub maximum_fill: u32,
+    pub max_fill: u32,
     /// `STATUS` reads that found the FIFO-full flag set since the last [`Watch::clear`].
     pub full_reads: u32,
 }
@@ -269,7 +257,7 @@ impl<R: Registers> Watch<R> {
     pub const fn new(inner: R) -> Self {
         Self {
             inner,
-            maximum_fill: 0,
+            max_fill: 0,
             full_reads: 0,
         }
     }
@@ -278,7 +266,7 @@ impl<R: Registers> Watch<R> {
     ///
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
     pub fn clear(&mut self) {
-        self.maximum_fill = 0;
+        self.max_fill = 0;
         self.full_reads = 0;
     }
 }
@@ -287,7 +275,7 @@ impl<R: Registers> Registers for Watch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
         if offset == crate::registers::STATUS {
-            self.maximum_fill = self.maximum_fill.max(crate::registers::queue_count(v));
+            self.max_fill = self.max_fill.max(crate::registers::fifo_count(v));
             if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
             }
@@ -318,7 +306,7 @@ pub struct MatrixRow {
     /// Microseconds the read took.
     pub us: u64,
     /// The highest FIFO fill seen during it, in words.
-    pub maximum_fill: u32,
+    pub max_fill: u32,
     /// `STATUS` reads that found the FIFO full.
     pub full_reads: u32,
     /// `STATUS`, `RINTSTS`, `TCBCNT` and `TBBCNT` read straight after it.
@@ -336,8 +324,7 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
 /// so a read that leaves the card mid-transfer cannot fail the next one. Read-only: `CMD18` from
-/// `logical_block_address` and identification, nothing else. `buffer` holds at least the longest
-/// read.
+/// `lba` and identification, nothing else. `buf` holds at least the longest read.
 ///
 /// # Errors
 ///
@@ -347,8 +334,8 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 pub fn read_matrix<R: Registers>(
     host: &mut Host<Watch<R>>,
     bus_width: u8,
-    logical_block_address: u64,
-    buffer: &mut [u8],
+    lba: u64,
+    buf: &mut [u8],
     mut row: impl FnMut(MatrixRow),
 ) -> Result<(), InitializationError> {
     for &hz in &MATRIX_HZ {
@@ -358,12 +345,12 @@ pub fn read_matrix<R: Registers>(
                 .set_clock(hz)
                 .map_err(InitializationError::Controller)?;
             let len = blocks as usize * BLOCK;
-            let Some(dst) = buffer.get_mut(..len) else {
+            let Some(dst) = buf.get_mut(..len) else {
                 continue;
             };
             host.registers().clear();
             let start = host.registers().now_us();
-            let result = sd::read_blocks(host, &card, logical_block_address, dst);
+            let result = sd::read_blocks(host, &card, lba, dst);
             let us = host.registers().now_us().wrapping_sub(start);
             let watch = host.registers();
             let after = [
@@ -378,7 +365,7 @@ pub fn read_matrix<R: Registers>(
                 blocks,
                 result,
                 us,
-                maximum_fill: watch.maximum_fill,
+                max_fill: watch.max_fill,
                 full_reads: watch.full_reads,
                 after,
             });

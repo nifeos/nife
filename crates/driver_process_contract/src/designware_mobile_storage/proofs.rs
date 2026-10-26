@@ -18,9 +18,9 @@ fn a_served_block_never_leaves_its_window() {
     kani::assume(w.first.checked_add(w.sectors).is_some());
     let block: u64 = kani::any();
     let count: u64 = kani::any();
-    if let Some(logical_block_address) = w.translate(block, count) {
-        assert!(logical_block_address >= w.first);
+    if let Some(lba) = w.translate(block, count) {
+        assert!(lba >= w.first);
         let span = count * SECTORS_PER_BLOCK;
-        assert!(logical_block_address + span <= w.first + w.sectors);
+        assert!(lba + span <= w.first + w.sectors);
     }
 }

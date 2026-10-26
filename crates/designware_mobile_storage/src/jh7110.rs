@@ -23,13 +23,9 @@ pub const SDIO1_BASE: u64 = 0x1602_0000;
 /// Each controller's window, `0x10000` in both trees.
 pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// The rate both trees assign the `ciu` clock, which the controller divides for the card.
-pub(crate) const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
+pub(crate) const CIU_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors, and the device tree's `fifo-depth` keeps its spelling; was `FIFO_DEPTH`.
-#[doc(alias = "fifo")]
-pub const QUEUE_DEPTH: u32 = 32;
+pub const FIFO_DEPTH: u32 = 32;
 /// Mainline's interrupt numbers at the PLIC, slot 0 and slot 1.
 pub const INTERRUPTS: [u32; 2] = [74, 75];
 
@@ -56,10 +52,9 @@ pub struct Slot {
     /// The tree's `bus-width`, 1 when absent.
     pub bus_width: u8,
     /// The tree's `fifo-depth`, if it has one.
-    #[doc(alias = "fifo")]
-    pub queue_depth: Option<u32>,
-    /// The tree's first `assigned-clock-rates` cell, or [`CARD_INTERFACE_UNIT_HZ`] when absent.
-    pub card_interface_unit_hz: u32,
+    pub fifo_depth: Option<u32>,
+    /// The tree's first `assigned-clock-rates` cell, or [`CIU_HZ`] when absent.
+    pub ciu_hz: u32,
     /// Which `compatible` matched.
     pub compatible: &'static [u8],
     /// `status` is `okay` or absent.
@@ -79,7 +74,7 @@ impl Slot {
     }
 }
 
-fn big_endian_u32(bytes: &[u8]) -> Option<u32> {
+fn be32(bytes: &[u8]) -> Option<u32> {
     Some(u32::from_be_bytes(bytes.get(..4)?.try_into().ok()?))
 }
 
@@ -115,19 +110,19 @@ impl Slot {
         let status_okay =
             prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
         let bus_width = prop(b"bus-width")?
-            .and_then(big_endian_u32)
+            .and_then(be32)
             .map_or(1, |w| u8::try_from(w).unwrap_or(1));
         Ok(Some(Slot {
             index,
             base,
             size,
-            interrupt: prop(b"interrupts")?.and_then(big_endian_u32),
+            interrupt: prop(b"interrupts")?.and_then(be32),
             bus_width,
-            queue_depth: prop(b"fifo-depth")?.and_then(big_endian_u32),
-            card_interface_unit_hz: prop(b"assigned-clock-rates")?
-                .and_then(big_endian_u32)
+            fifo_depth: prop(b"fifo-depth")?.and_then(be32),
+            ciu_hz: prop(b"assigned-clock-rates")?
+                .and_then(be32)
                 .filter(|&hz| hz != 0)
-                .unwrap_or(CARD_INTERFACE_UNIT_HZ),
+                .unwrap_or(CIU_HZ),
             compatible,
             status_okay,
             non_removable: prop(b"non-removable")?.is_some(),
@@ -168,8 +163,8 @@ mod tests {
                 size: WINDOW_SIZE,
                 interrupt: Some(75),
                 bus_width: 4,
-                queue_depth: Some(QUEUE_DEPTH),
-                card_interface_unit_hz: 100_000_000,
+                fifo_depth: Some(FIFO_DEPTH),
+                ciu_hz: 100_000_000,
                 compatible: COMPATIBLE_MAINLINE,
                 status_okay: true,
                 non_removable: true,
@@ -186,8 +181,8 @@ mod tests {
             .unwrap();
         assert_eq!(slot.compatible, COMPATIBLE_VENDOR);
         assert_eq!(
-            (slot.bus_width, slot.card_interface_unit_hz, slot.interrupt),
-            (1, CARD_INTERFACE_UNIT_HZ, None)
+            (slot.bus_width, slot.ciu_hz, slot.interrupt),
+            (1, CIU_HZ, None)
         );
         assert!(slot.status_okay && !slot.non_removable);
         assert_eq!(slot.role(), "eMMC socket");
@@ -198,10 +193,7 @@ mod tests {
             (b"status", b"disabled\0"),
         ];
         let slot = Slot::from_node(0, 0, 0, node(table)).unwrap().unwrap();
-        assert_eq!(
-            (slot.card_interface_unit_hz, slot.bus_width),
-            (CARD_INTERFACE_UNIT_HZ, 1)
-        );
+        assert_eq!((slot.ciu_hz, slot.bus_width), (CIU_HZ, 1));
         assert!(!slot.status_okay);
     }
 

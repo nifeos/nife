@@ -36,18 +36,17 @@ use designware_mobile_storage::sd;
 fn first_sector<R: Registers>(registers: R) -> Option<[u8; 512]> {
     let (mut host, _id) = Host::new(registers, 50_000_000, Some(32)).ok()?;
     let card = sd::identify(&mut host, 4).ok()?; // at most a 4-bit bus
-    let mut buffer = [0u8; 512];
-    sd::read_blocks(&mut host, &card, 0, &mut buffer).ok()?;
-    Some(buffer)
+    let mut buf = [0u8; 512];
+    sd::read_blocks(&mut host, &card, 0, &mut buf).ok()?;
+    Some(buf)
 }
 ```
 
-`partition::MasterBootRecord::parse` reads that sector, and `MasterBootRecord::scratch` names the
-sectors before the first partition that a write test may use.
-`Host::with_internal_direct_memory_access` moves later transfers through a DMA region you supply
-(`internal_direct_memory_access::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's
-constants and `Slot::from_node`, which decodes one slot from the properties of a device-tree node
-you found. The crate reads no device tree itself.
+`partition::Mbr::parse` reads that sector, and `Mbr::scratch` names the sectors before the first
+partition that a write test may use. `Host::with_idmac` moves later transfers through a DMA region
+you supply (`idmac::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's constants
+and `Slot::from_node`, which decodes one slot from the properties of a device-tree node you found.
+The crate reads no device tree itself.
 
 ## Limitations
 

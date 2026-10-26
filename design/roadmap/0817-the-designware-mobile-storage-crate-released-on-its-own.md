@@ -74,10 +74,10 @@ Measured 2026-10-25 (UTC), after the cut: 3 of 5 proven.
 | property | harness |
 |---|---|
 | The scratch range never touches a partition or sector zero | `proofs::the_scratch_range_never_touches_a_partition_or_sector_zero` |
-| A FIFO step never overruns the FIFO or the buffer | `proofs::a_queue_step_never_overruns_the_queue_or_the_buffer` |
+| A FIFO step never overruns the FIFO or the buffer | `proofs::a_fifo_step_never_overruns_the_fifo_or_the_buffer` |
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
-| The MBR parse (`partition::MasterBootRecord::parse`) is total, and every entry it accepts lies inside the card | none yet |
-| The capacity decoders (`card::CardSpecificData`, `card::extended_card_specific_data_sectors`) are total for any register or EXT_CSD bytes | none yet |
+| The MBR parse (`partition::Mbr::parse`) is total, and every entry it accepts lies inside the card | none yet |
+| The capacity decoders (`card::Csd`, `card::ext_csd_sectors`) are total for any register or EXT_CSD bytes | none yet |
 
 The last two rows are this lane's reading of the hostile surface: a stranger's SD card supplies
 its partition table and its registers. The served-block row left with `serve` on 2026-10-25: its

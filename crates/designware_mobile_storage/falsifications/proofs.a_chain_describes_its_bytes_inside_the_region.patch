@@ -6,9 +6,9 @@ descriptor the card will never fill.
 
 Expected to fail: `assert!(i * PAGE + size == bytes)`, on any `bytes` that is not a multiple of a page.
 
-diff --git a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
---- a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
-+++ b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
+diff --git a/crates/designware_mobile_storage/src/idmac.rs b/crates/designware_mobile_storage/src/idmac.rs
+--- a/crates/designware_mobile_storage/src/idmac.rs
++++ b/crates/designware_mobile_storage/src/idmac.rs
 @@ -214,7 +214,7 @@
      } else {
          des0 |= DES0_DIC;

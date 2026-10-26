@@ -13,9 +13,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::vec::Vec;
 
 use crate::host::Registers;
-use crate::internal_direct_memory_access::{
-    DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion,
-};
+use crate::idmac::{DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion};
 use crate::registers;
 
 /// What the bus holds and what has been ordered: the driver's writes since its last barrier, and
@@ -65,26 +63,26 @@ impl DirectMemoryAccessRegion for Memory {
     fn bytes(&self) -> u32 {
         u32::try_from(self.bus().bytes.len()).unwrap()
     }
-    fn read_u32(&self, offset: u32) -> u32 {
-        let b = &self.bus().bytes[offset as usize..offset as usize + 4];
+    fn read_u32(&self, off: u32) -> u32 {
+        let b = &self.bus().bytes[off as usize..off as usize + 4];
         u32::from_le_bytes([b[0], b[1], b[2], b[3]])
     }
-    fn write_u32(&mut self, offset: u32, value: u32) {
+    fn write_u32(&mut self, off: u32, v: u32) {
         let mut bus = self.bus();
         bus.cpu_unfenced = true;
-        bus.bytes[offset as usize..offset as usize + 4].copy_from_slice(&value.to_le_bytes());
+        bus.bytes[off as usize..off as usize + 4].copy_from_slice(&v.to_le_bytes());
     }
-    fn read_bytes(&self, offset: u32, out: &mut [u8]) {
+    fn read_bytes(&self, off: u32, out: &mut [u8]) {
         let mut bus = self.bus();
         if bus.device_unfenced {
             bus.unfenced_read = true;
         }
-        out.copy_from_slice(&bus.bytes[offset as usize..offset as usize + out.len()]);
+        out.copy_from_slice(&bus.bytes[off as usize..off as usize + out.len()]);
     }
-    fn write_bytes(&mut self, offset: u32, source: &[u8]) {
+    fn write_bytes(&mut self, off: u32, src: &[u8]) {
         let mut bus = self.bus();
         bus.cpu_unfenced = true;
-        bus.bytes[offset as usize..offset as usize + source.len()].copy_from_slice(source);
+        bus.bytes[off as usize..off as usize + src.len()].copy_from_slice(src);
     }
     fn barrier(&mut self) {
         let mut bus = self.bus();
@@ -118,7 +116,7 @@ pub(crate) enum CardKind {
     /// An SD 2.0 card of standard capacity: answers CMD8, byte addressed.
     SdV2,
     /// An eMMC: ignores CMD8 in idle and CMD55, answers CMD1, takes its address from the host.
-    MultimediaCard,
+    Mmc,
     /// An empty slot: nothing answers.
     Empty,
 }
@@ -148,12 +146,12 @@ enum State {
 #[derive(Debug)]
 struct Transfer {
     write: bool,
-    first_logical_block_address: u64,
+    first_lba: u64,
     bytes: usize,
     moved: usize,
     auto_stop: bool,
     buffer: Vec<u8>,
-    extended_card_specific_data: bool,
+    ext_csd: bool,
 }
 
 /// The simulation. Public fields are what a test sets up or checks.
@@ -161,13 +159,13 @@ pub struct Sim {
     registers: [u32; 0x220 / 4],
     reset_pending: bool,
     now: u64,
-    queue: VecDeque<u32>,
+    fifo: VecDeque<u32>,
     depth: usize,
     transfer: Option<Transfer>,
     state: State,
     app: bool,
     power_up_polls: u32,
-    relative_card_address: u16,
+    rca: u16,
     busy_reads: u32,
     /// The card in the slot.
     pub kind: CardKind,
@@ -186,7 +184,7 @@ pub struct Sim {
     /// The release `VERID` reports, which decides where the FIFO is.
     verid: u32,
     /// Set when the driver wrote the FIFO with no write transfer in progress.
-    pub stray_queue_write: bool,
+    pub stray_fifo_write: bool,
     /// Faults to inject: the command index, which of its occurrences (from 0), and what happens.
     pub faults: Vec<(u8, usize, Fault)>,
     /// How many times each command index has been sent.
@@ -226,9 +224,9 @@ pub struct Sim {
     pub late_acd: u32,
     acd_pending: u32,
     /// An eMMC of 2 GB or less: byte addressed, its OCR without the sector-mode bit.
-    pub multimedia_card_byte_addressed: bool,
+    pub mmc_byte_addressed: bool,
     /// What `EXT_CSD`'s `SEC_COUNT` reports, if not the card's real size.
-    pub extended_card_specific_data_sectors: Option<u32>,
+    pub ext_csd_sectors: Option<u32>,
     /// Store one block of one write command wrongly: `(write command, from 0; block)`.
     pub mangle_write: Option<(usize, u64)>,
     /// Microseconds per call to `now_us`.
@@ -242,9 +240,9 @@ pub struct Sim {
     /// driver did not finish handing over.
     pub unowned_at: Option<u32>,
     /// This many `CTRL` reset requests clear; every later one holds, as `reset_stuck` does.
-    pub control_resets_cleared: Option<u32>,
+    pub ctrl_resets_cleared: Option<u32>,
     /// This many `BMOD` soft resets clear; every later one holds.
-    pub bus_mode_resets_cleared: Option<u32>,
+    pub bmod_resets_cleared: Option<u32>,
     walked: u32,
     /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
     /// a read's `DTO` land well before its last words reach memory.
@@ -268,13 +266,13 @@ impl Sim {
             registers: [0; 0x220 / 4],
             reset_pending: false,
             now: 0,
-            queue: VecDeque::new(),
+            fifo: VecDeque::new(),
             depth,
             transfer: None,
             state: State::Idle,
             app: false,
             power_up_polls: 0,
-            relative_card_address: 0,
+            rca: 0,
             busy_reads: 0,
             kind,
             storage: vec![[0u8; 512]; blocks],
@@ -284,7 +282,7 @@ impl Sim {
             busy_polls: 3,
             clockless_command: false,
             verid: VERID,
-            stray_queue_write: false,
+            stray_fifo_write: false,
             faults: Vec::new(),
             seen: [0; 64],
             zero_capacity: false,
@@ -303,16 +301,16 @@ impl Sim {
             crc_error_at_end: false,
             late_acd: 0,
             acd_pending: 0,
-            multimedia_card_byte_addressed: false,
-            extended_card_specific_data_sectors: None,
+            mmc_byte_addressed: false,
+            ext_csd_sectors: None,
             mangle_write: None,
             clock_step: 1,
             memory: None,
             walk: Walk::Idle,
             bus_error_at: None,
             unowned_at: None,
-            control_resets_cleared: None,
-            bus_mode_resets_cleared: None,
+            ctrl_resets_cleared: None,
+            bmod_resets_cleared: None,
             walked: 0,
             direct_memory_access_words_per_step: None,
             direct_memory_access_corrupts: false,
@@ -354,7 +352,7 @@ impl Sim {
 
     fn high_capacity(&self) -> bool {
         !matches!(self.kind, CardKind::SdV1 | CardKind::SdV2)
-            && !(self.kind == CardKind::MultimediaCard && self.multimedia_card_byte_addressed)
+            && !(self.kind == CardKind::Mmc && self.mmc_byte_addressed)
     }
 
     fn r1(&self) -> u32 {
@@ -368,7 +366,7 @@ impl Sim {
         (state << 9) | (1 << 8) | if self.app { 1 << 5 } else { 0 }
     }
 
-    fn card_specific_data(&self) -> [u32; 4] {
+    fn csd(&self) -> [u32; 4] {
         let blocks = self.storage.len() as u64;
         let mut r = [0u32; 4];
         let mut put = |start: u32, len: u32, v: u64| {
@@ -398,7 +396,7 @@ impl Sim {
         r
     }
 
-    fn card_identification(&self) -> [u32; 4] {
+    fn cid(&self) -> [u32; 4] {
         // Manufacturer 0x1b, product "NIFE1", serial 0x1234_5678.
         let mut r = [0x1234_5678u32 << 24, 0x1234_5678 >> 8, 0, 0x1b00_0000];
         for (i, b) in b"NIFE1".iter().enumerate() {
@@ -408,16 +406,16 @@ impl Sim {
         r
     }
 
-    fn logical_block_address(&self, argument: u32) -> u64 {
+    fn lba(&self, arg: u32) -> u64 {
         if self.high_capacity() {
-            u64::from(argument)
+            u64::from(arg)
         } else {
-            u64::from(argument) / 512
+            u64::from(arg) / 512
         }
     }
 
     /// The card's answer to one command: `None` is no response.
-    fn card(&mut self, index: u8, argument: u32) -> Option<[u32; 4]> {
+    fn card(&mut self, index: u8, arg: u32) -> Option<[u32; 4]> {
         if self.kind == CardKind::Empty {
             return None;
         }
@@ -430,47 +428,44 @@ impl Sim {
                 None
             }
             (8, false, CardKind::SdHighCapacity | CardKind::SdV2) if self.state == State::Idle => {
-                short(argument & 0xfff)
+                short(arg & 0xfff)
             }
-            (55, _, CardKind::MultimediaCard) => None,
+            (55, _, CardKind::Mmc) => None,
             (55, _, _) => {
                 self.app = true;
                 short(self.r1() | 1 << 5)
             }
-            (41, true, _) | (1, false, CardKind::MultimediaCard) => {
+            (41, true, _) | (1, false, CardKind::Mmc) => {
                 self.power_up_polls += 1;
-                let mut operation_conditions = 0x00ff_8000;
+                let mut ocr = 0x00ff_8000;
                 if self.power_up_polls > self.busy_polls {
-                    operation_conditions |= 1 << 31;
-                    if self.high_capacity() && (index == 1 || argument & (1 << 30) != 0) {
-                        operation_conditions |= 1 << 30;
+                    ocr |= 1 << 31;
+                    if self.high_capacity() && (index == 1 || arg & (1 << 30) != 0) {
+                        ocr |= 1 << 30;
                     }
                     self.state = State::Ready;
                 }
-                short(operation_conditions)
+                short(ocr)
             }
             (2, false, _) if self.state == State::Ready => {
                 self.state = State::Ident;
-                Some(self.card_identification())
+                Some(self.cid())
             }
-            (3, false, CardKind::MultimediaCard) if self.state == State::Ident => {
-                self.relative_card_address = (argument >> 16) as u16;
+            (3, false, CardKind::Mmc) if self.state == State::Ident => {
+                self.rca = (arg >> 16) as u16;
                 let r = self.r1();
                 self.state = State::Standby;
                 short(r)
             }
             (3, false, _) if self.state == State::Ident => {
-                self.relative_card_address = 0xb368;
+                self.rca = 0xb368;
                 self.state = State::Standby;
-                short(u32::from(self.relative_card_address) << 16 | 0x0500)
+                short(u32::from(self.rca) << 16 | 0x0500)
             }
-            (9, false, _)
-                if self.state == State::Standby
-                    && (argument >> 16) as u16 == self.relative_card_address =>
-            {
-                Some(self.card_specific_data())
+            (9, false, _) if self.state == State::Standby && (arg >> 16) as u16 == self.rca => {
+                Some(self.csd())
             }
-            (7, false, _) if (argument >> 16) as u16 == self.relative_card_address => {
+            (7, false, _) if (arg >> 16) as u16 == self.rca => {
                 let r = self.r1();
                 self.state = State::Transfer;
                 short(r)
@@ -478,7 +473,7 @@ impl Sim {
             (6, true, _) | (16, false, _) | (13, false, _) if self.state == State::Transfer => {
                 short(self.r1())
             }
-            (8, false, CardKind::MultimediaCard) | (17 | 18 | 24 | 25, false, _)
+            (8, false, CardKind::Mmc) | (17 | 18 | 24 | 25, false, _)
                 if self.state == State::Transfer =>
             {
                 short(self.r1())
@@ -489,9 +484,9 @@ impl Sim {
 
     fn command(&mut self, word: u32) {
         let index = (word & 0x3f) as u8;
-        let argument = *self.register(registers::CMDARG);
-        self.commands.push((index, argument));
-        if *self.register(registers::CLKENA) & registers::CLKENA_CCLK_ENABLE == 0 {
+        let arg = *self.register(registers::CMDARG);
+        self.commands.push((index, arg));
+        if *self.register(registers::CLKENA) & registers::CLKENA_ENABLE == 0 {
             self.clockless_command = true;
         }
         let nth = self.seen[usize::from(index)];
@@ -504,7 +499,7 @@ impl Sim {
         let mut answer = if fault == Some(Fault::NoResponse) {
             None
         } else {
-            self.card(index, argument)
+            self.card(index, arg)
         };
         if let Some(r) = answer.as_mut() {
             match fault {
@@ -513,11 +508,11 @@ impl Sim {
                 _ => {}
             }
         }
-        let mut rint = registers::RINTSTS_CD;
+        let mut rint = registers::INT_CD;
         match answer {
-            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::RINTSTS_RTO,
+            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::INT_RTO,
             None => {}
-            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::RINTSTS_RCRC,
+            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::INT_RCRC,
             Some(_) => {}
         }
         if self.late_answer > 0 {
@@ -527,43 +522,35 @@ impl Sim {
         }
         if answer.is_some() && word & registers::CMD_DATA_EXPECTED != 0 {
             let bytes = *self.register(registers::BYTCNT) as usize;
-            let write = word & registers::CMD_WR != 0;
+            let write = word & registers::CMD_WRITE != 0;
             self.direct_memory_access_write = write;
-            if self.internal_direct_memory_access_active()
+            if self.idmac_active()
                 && let Some(m) = &self.memory
                 && m.bus().cpu_unfenced
             {
                 m.bus().unfenced_start = true;
             }
-            let extended_card_specific_data = index == 8;
+            let ext_csd = index == 8;
             let mut t = Transfer {
                 write,
-                first_logical_block_address: if extended_card_specific_data {
-                    0
-                } else {
-                    self.logical_block_address(argument)
-                },
+                first_lba: if ext_csd { 0 } else { self.lba(arg) },
                 bytes,
                 moved: 0,
                 auto_stop: word & registers::CMD_SEND_AUTO_STOP != 0,
                 buffer: Vec::new(),
-                extended_card_specific_data,
+                ext_csd,
             };
             if !write {
-                if extended_card_specific_data {
+                if ext_csd {
                     let mut e = vec![0u8; 512];
-                    let sectors = self
-                        .extended_card_specific_data_sectors
-                        .unwrap_or(self.storage.len() as u32);
+                    let sectors = self.ext_csd_sectors.unwrap_or(self.storage.len() as u32);
                     e[212..216].copy_from_slice(&sectors.to_le_bytes());
                     t.buffer = e;
                 } else {
                     for i in 0..bytes / 512 {
-                        let logical_block_address = t.first_logical_block_address as usize + i;
+                        let lba = t.first_lba as usize + i;
                         t.buffer.extend_from_slice(
-                            self.storage
-                                .get(logical_block_address)
-                                .map_or(&[0xffu8; 512][..], |b| &b[..]),
+                            self.storage.get(lba).map_or(&[0xffu8; 512][..], |b| &b[..]),
                         );
                     }
                 }
@@ -584,9 +571,9 @@ impl Sim {
 
     /// Advance the data phase: fill or drain the FIFO, and end it when every byte has moved.
     fn pump(&mut self) {
-        self.internal_direct_memory_access_step();
+        self.idmac_step();
         self.pump_card();
-        self.internal_direct_memory_access_step();
+        self.idmac_step();
     }
 
     /// The card's side of the data phase.
@@ -597,7 +584,7 @@ impl Sim {
         if t.write {
             let limit = self.stall_after.unwrap_or(usize::MAX);
             while t.buffer.len() < limit
-                && let Some(w) = self.queue.pop_front()
+                && let Some(w) = self.fifo.pop_front()
             {
                 t.buffer.extend_from_slice(&w.to_le_bytes());
             }
@@ -606,10 +593,10 @@ impl Sim {
                 let nth = self.write_commands;
                 self.write_commands += 1;
                 for (i, block) in t.buffer.as_chunks::<512>().0.iter().enumerate() {
-                    let logical_block_address = t.first_logical_block_address + i as u64;
-                    self.written.push(logical_block_address);
-                    let mangle = self.mangle_write == Some((nth, logical_block_address));
-                    if let Some(b) = self.storage.get_mut(logical_block_address as usize)
+                    let lba = t.first_lba + i as u64;
+                    self.written.push(lba);
+                    let mangle = self.mangle_write == Some((nth, lba));
+                    if let Some(b) = self.storage.get_mut(lba as usize)
                         && store
                     {
                         b.copy_from_slice(block);
@@ -622,34 +609,32 @@ impl Sim {
                 self.end(&t);
                 return;
             }
-            *self.register(registers::RINTSTS) |= registers::RINTSTS_TXDR;
+            *self.register(registers::RINTSTS) |= registers::INT_TXDR;
         } else {
-            if self.threshold_beyond_queue() {
+            if self.threshold_beyond_fifo() {
                 // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
-                *self.register(registers::RINTSTS) |=
-                    registers::RINTSTS_FRUN | registers::RINTSTS_DTO;
+                *self.register(registers::RINTSTS) |= registers::INT_FRUN | registers::INT_DTO;
                 return;
             }
-            if self.fail_next_read_crc && !t.extended_card_specific_data {
+            if self.fail_next_read_crc && !t.ext_csd {
                 self.fail_next_read_crc = false;
-                *self.register(registers::RINTSTS) |=
-                    registers::RINTSTS_DCRC | registers::RINTSTS_DTO;
+                *self.register(registers::RINTSTS) |= registers::INT_DCRC | registers::INT_DTO;
                 return;
             }
             let limit = self.stall_after.unwrap_or(usize::MAX);
-            while self.queue.len() < self.depth && t.moved < t.bytes && t.moved < limit {
+            while self.fifo.len() < self.depth && t.moved < t.bytes && t.moved < limit {
                 let b = &t.buffer[t.moved..t.moved + 4];
-                self.queue
+                self.fifo
                     .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
                 t.moved += 4;
             }
             let watermark = if self.strict_watermark {
-                registers::fifoth_receive_watermark(*self.register(registers::FIFOTH)) as usize
+                registers::fifoth_rx_watermark(*self.register(registers::FIFOTH)) as usize
             } else {
                 0
             };
-            if self.queue.len() > watermark {
-                *self.register(registers::RINTSTS) |= registers::RINTSTS_RXDR;
+            if self.fifo.len() > watermark {
+                *self.register(registers::RINTSTS) |= registers::INT_RXDR;
             }
             if t.moved >= t.bytes || (self.end_early && t.moved >= limit) {
                 self.end(&t);
@@ -659,17 +644,17 @@ impl Sim {
         self.transfer = Some(t);
     }
 
-    fn internal_direct_memory_access_active(&self) -> bool {
+    fn idmac_active(&self) -> bool {
         let both = registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
         self.peek(registers::CTRL) & both == both
-            && self.peek(registers::BMOD) & registers::BMOD_DE != 0
+            && self.peek(registers::BMOD) & registers::BMOD_DMA_ENABLE != 0
             && self.memory.is_some()
     }
 
     /// **One stretch of the IDMAC's walk**: move words between the FIFO and memory until the FIFO
     /// is empty (a read) or full (a write), or the walk stops.
-    fn internal_direct_memory_access_step(&mut self) {
-        if !self.internal_direct_memory_access_active() {
+    fn idmac_step(&mut self) {
+        if !self.idmac_active() {
             return;
         }
         let Some(memory) = self.memory.clone() else {
@@ -685,9 +670,9 @@ impl Sim {
             }
             budget -= 1;
             let more = if self.direct_memory_access_write {
-                self.queue.len() < self.depth
+                self.fifo.len() < self.depth
             } else {
-                !self.queue.is_empty()
+                !self.fifo.is_empty()
             };
             if !more {
                 return;
@@ -715,17 +700,17 @@ impl Sim {
                 self.halt();
                 return;
             }
-            let Some(buffer) = self.offset(&bus, buffer.wrapping_add(done), 4) else {
+            let Some(buf) = self.offset(&bus, buffer.wrapping_add(done), 4) else {
                 self.halt();
                 return;
             };
             if self.direct_memory_access_write {
-                let b = &bus.bytes[buffer..buffer + 4];
-                self.queue
+                let b = &bus.bytes[buf..buf + 4];
+                self.fifo
                     .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
-            } else if let Some(w) = self.queue.pop_front() {
+            } else if let Some(w) = self.fifo.pop_front() {
                 let w = w ^ u32::from(self.direct_memory_access_corrupts);
-                bus.bytes[buffer..buffer + 4].copy_from_slice(&w.to_le_bytes());
+                bus.bytes[buf..buf + 4].copy_from_slice(&w.to_le_bytes());
                 bus.device_unfenced = true;
                 bus.device_written += 4;
             }
@@ -755,9 +740,9 @@ impl Sim {
         }
     }
 
-    /// The byte offset in memory of `len` bytes at bus address `address`, if they are all there.
-    fn offset(&self, bus: &Bus, address: u32, len: usize) -> Option<usize> {
-        let off = usize::try_from(u64::from(address).checked_sub(bus.base)?).ok()?;
+    /// The byte offset in memory of `len` bytes at bus address `addr`, if they are all there.
+    fn offset(&self, bus: &Bus, addr: u32, len: usize) -> Option<usize> {
+        let off = usize::try_from(u64::from(addr).checked_sub(bus.base)?).ok()?;
         (off + len <= bus.bytes.len()).then_some(off)
     }
 
@@ -780,26 +765,26 @@ impl Sim {
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
-    fn threshold_beyond_queue(&self) -> bool {
-        if registers::queue_offset(self.verid) == registers::CARDTHRCTL {
+    fn threshold_beyond_fifo(&self) -> bool {
+        if registers::fifo_offset(self.verid) == registers::CARDTHRCTL {
             return false;
         }
         let t = self.peek(registers::CARDTHRCTL);
-        t & registers::CARDTHRCTL_RDTHREN != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
+        t & registers::CARDTHRCTL_READ_ENABLE != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
     }
 
     fn end(&mut self, t: &Transfer) {
         if t.write && self.crc_error_at_end {
-            *self.register(registers::RINTSTS) |= registers::RINTSTS_DCRC;
+            *self.register(registers::RINTSTS) |= registers::INT_DCRC;
             return;
         }
-        let mut rint = registers::RINTSTS_DTO;
+        let mut rint = registers::INT_DTO;
         if t.auto_stop {
             self.commands.push((12, 0));
             if self.late_acd > 0 {
                 self.acd_pending = self.late_acd;
             } else {
-                rint |= registers::RINTSTS_ACD;
+                rint |= registers::INT_ACD;
             }
         }
         *self.register(registers::RINTSTS) |= rint;
@@ -808,9 +793,9 @@ impl Sim {
 
 impl Registers for Sim {
     fn read(&mut self, offset: u32) -> u32 {
-        let queue_offset = registers::queue_offset(self.verid);
-        if offset == queue_offset {
-            let w = self.queue.pop_front().unwrap_or(0xdead_dead);
+        let fifo = registers::fifo_offset(self.verid);
+        if offset == fifo {
+            let w = self.fifo.pop_front().unwrap_or(0xdead_dead);
             self.pump();
             return w;
         }
@@ -822,10 +807,10 @@ impl Registers for Sim {
                 *self.register(registers::CTRL) &= !registers::CTRL_ALL_RESET;
                 v
             }
-            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SWR != 0 => {
+            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SOFTWARE_RESET != 0 => {
                 let v = self.peek(registers::BMOD);
-                if !self.reset_stuck && !Self::holds(&mut self.bus_mode_resets_cleared) {
-                    *self.register(registers::BMOD) &= !registers::BMOD_SWR;
+                if !self.reset_stuck && !Self::holds(&mut self.bmod_resets_cleared) {
+                    *self.register(registers::BMOD) &= !registers::BMOD_SOFTWARE_RESET;
                 }
                 v
             }
@@ -834,7 +819,7 @@ impl Registers for Sim {
                 let filled = if self.overreport_fill {
                     self.depth
                 } else {
-                    self.queue.len()
+                    self.fifo.len()
                 };
                 let mut s = (filled as u32) << 17;
                 if self.busy_forever {
@@ -857,7 +842,7 @@ impl Registers for Sim {
                 if self.acd_pending > 0 {
                     self.acd_pending -= 1;
                     if self.acd_pending == 0 {
-                        *self.register(registers::RINTSTS) |= registers::RINTSTS_ACD;
+                        *self.register(registers::RINTSTS) |= registers::INT_ACD;
                     }
                 }
                 self.pump();
@@ -868,16 +853,16 @@ impl Registers for Sim {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        let queue_offset = registers::queue_offset(self.verid);
-        if offset == queue_offset {
+        let fifo = registers::fifo_offset(self.verid);
+        if offset == fifo {
             if !self.transfer.as_ref().is_some_and(|t| t.write) {
-                self.stray_queue_write = true;
+                self.stray_fifo_write = true;
             }
             assert!(
-                self.queue.len() < self.depth,
+                self.fifo.len() < self.depth,
                 "FIFO overrun: the driver wrote into a full FIFO"
             );
-            self.queue.push_back(value);
+            self.fifo.push_back(value);
             return;
         }
         self.writes.push((offset, value));
@@ -885,8 +870,8 @@ impl Registers for Sim {
             registers::RINTSTS => *self.register(registers::RINTSTS) &= !value,
             registers::IDSTS => *self.register(registers::IDSTS) &= !value,
             registers::BMOD => {
-                if value & registers::BMOD_SWR != 0
-                    || value & registers::BMOD_DE & !self.peek(registers::BMOD) != 0
+                if value & registers::BMOD_SOFTWARE_RESET != 0
+                    || value & registers::BMOD_DMA_ENABLE & !self.peek(registers::BMOD) != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
@@ -909,9 +894,9 @@ impl Registers for Sim {
                 }
                 if value & registers::CTRL_ALL_RESET != 0 {
                     self.reset_pending =
-                        !self.reset_stuck && !Self::holds(&mut self.control_resets_cleared);
+                        !self.reset_stuck && !Self::holds(&mut self.ctrl_resets_cleared);
                     if value & registers::CTRL_FIFO_RESET != 0 {
-                        self.queue.clear();
+                        self.fifo.clear();
                     }
                     if value & registers::CTRL_CONTROLLER_RESET != 0 {
                         self.transfer = None;
@@ -920,17 +905,16 @@ impl Registers for Sim {
                 *self.register(registers::CTRL) = value;
             }
             registers::CMD => {
-                if value & registers::CMD_START_CMD != 0
-                    && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY == 0
+                if value & registers::CMD_START != 0
+                    && value & registers::CMD_UPDATE_CLOCK_ONLY == 0
                 {
                     self.command(value);
                 }
-                let stuck =
-                    self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY != 0;
+                let stuck = self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_ONLY != 0;
                 *self.register(registers::CMD) = if stuck {
                     value
                 } else {
-                    value & !registers::CMD_START_CMD
+                    value & !registers::CMD_START
                 };
             }
             registers::VERID | registers::HCON | registers::STATUS => {}

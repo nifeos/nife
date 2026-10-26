@@ -102,11 +102,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         send(READY, STEP_BAD_HANDOFF, arg0, 0);
         exit();
     };
-    let Ok((mut host, _)) = Host::new(
-        Page,
-        h.card_interface_unit_hz,
-        Some(u32::from(h.queue_depth)),
-    ) else {
+    let Ok((mut host, _)) = Host::new(Page, h.ciu_hz, Some(u32::from(h.fifo_depth))) else {
         send(READY, STEP_CONTROLLER, 0, 0);
         exit();
     };
@@ -181,7 +177,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
             blk::FLUSH => {
                 let status = host.command(&c::Command::new(
                     c::SEND_STATUS,
-                    u32::from(card.relative_card_address) << 16,
+                    u32::from(card.rca) << 16,
                     c::Response::R1,
                 ));
                 match status {

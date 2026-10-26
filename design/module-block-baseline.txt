@@ -964,6 +964,8 @@ crates/designware_mobile_storage/src/bench.rs::pattern
 crates/designware_mobile_storage/src/bench.rs::read_only
 crates/designware_mobile_storage/src/bench.rs::scratch_write
 crates/designware_mobile_storage/src/card.rs
+crates/designware_mobile_storage/src/card.rs::Cid
+crates/designware_mobile_storage/src/card.rs::Csd
 crates/designware_mobile_storage/src/card.rs::R1_ERRORS
 crates/designware_mobile_storage/src/card.rs::R1_READY_FOR_DATA
 crates/designware_mobile_storage/src/card.rs::STATE_TRANSFER
@@ -989,6 +991,8 @@ crates/designware_mobile_storage/src/host.rs::Registers
 crates/designware_mobile_storage/src/host.rs::card_clock
 crates/designware_mobile_storage/src/host.rs::clock_divider
 crates/designware_mobile_storage/src/host.rs::command
+crates/designware_mobile_storage/src/host.rs::fifo_depth
+crates/designware_mobile_storage/src/host.rs::fifo_step
 crates/designware_mobile_storage/src/host.rs::into_registers
 crates/designware_mobile_storage/src/host.rs::new
 crates/designware_mobile_storage/src/host.rs::read
@@ -998,6 +1002,7 @@ crates/designware_mobile_storage/src/host.rs::write
 crates/designware_mobile_storage/src/jh7110.rs
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_MAINLINE
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_VENDOR
+crates/designware_mobile_storage/src/jh7110.rs::FIFO_DEPTH
 crates/designware_mobile_storage/src/jh7110.rs::INTERRUPTS
 crates/designware_mobile_storage/src/jh7110.rs::SDIO0_BASE
 crates/designware_mobile_storage/src/jh7110.rs::SDIO1_BASE
@@ -1006,6 +1011,7 @@ crates/designware_mobile_storage/src/jh7110.rs::WINDOW_SIZE
 crates/designware_mobile_storage/src/jh7110.rs::role
 crates/designware_mobile_storage/src/partition.rs
 crates/designware_mobile_storage/src/partition.rs::Entry
+crates/designware_mobile_storage/src/partition.rs::Mbr
 crates/designware_mobile_storage/src/partition.rs::SIGNATURE
 crates/designware_mobile_storage/src/partition.rs::contains
 crates/designware_mobile_storage/src/partition.rs::is_used
@@ -1014,13 +1020,18 @@ crates/designware_mobile_storage/src/partition.rs::scratch
 crates/designware_mobile_storage/src/proofs.rs
 crates/designware_mobile_storage/src/registers.rs::BMOD
 crates/designware_mobile_storage/src/registers.rs::CMD_RESPONSE_EXPECT
+crates/designware_mobile_storage/src/registers.rs::CMD_SEND_INIT
+crates/designware_mobile_storage/src/registers.rs::CMD_START
 crates/designware_mobile_storage/src/registers.rs::CTRL
 crates/designware_mobile_storage/src/registers.rs::RST_N
 crates/designware_mobile_storage/src/registers.rs::STATUS
 crates/designware_mobile_storage/src/registers.rs::TBBCNT
 crates/designware_mobile_storage/src/registers.rs::TCBCNT
+crates/designware_mobile_storage/src/registers.rs::UHS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 crates/designware_mobile_storage/src/registers.rs::WRTPRT
+crates/designware_mobile_storage/src/registers.rs::fifo_offset
+crates/designware_mobile_storage/src/registers.rs::fifo_width
 crates/designware_mobile_storage/src/sd.rs
 crates/designware_mobile_storage/src/sd.rs::BLOCK
 crates/designware_mobile_storage/src/sd.rs::Card

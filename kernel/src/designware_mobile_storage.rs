@@ -7,7 +7,7 @@
 //! notes/designware-mobile-storage.md.
 
 use designware_mobile_storage::host::Registers;
-use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
+use designware_mobile_storage::idmac::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
 pub(crate) struct Window {
