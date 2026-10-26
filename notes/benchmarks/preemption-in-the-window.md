@@ -1,6 +1,9 @@
 # Preemption inside a timed window
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the x86_64 `map_new` +26.4% lump and milestone 541's masked window, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the x86_64 `map_new` +26.4% lump and
+milestone 541's masked window, with the dates, tables and corrections behind them. Name: ratified
+2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## 2026-09-21: the x86_64 `map_new` "+26.4%" is a fixed 47,752-tick lump, not a cost per map
 
@@ -13,7 +16,7 @@ the attribution.
 
 On `origin/main` at `8ea8e2f3`, `map_new` measures 180,604, the committed baseline to the digit, and
 `script/bench --x86 --check` exits 0. It also measures 180,604 at `8cda8b53`, the merge base that
-branch was cut from. Every number quoted in that pull request is a number from its own branch.
+branch forked from. Every number quoted in that pull request is a number from its own branch.
 
 ### One commit, and one hunk inside it
 
@@ -97,7 +100,7 @@ was corrected in the same commit as this entry.
 ### BUGS
 
 All three were closed the same day by milestone 541 (a timed window that excludes preemption),
-whose entry is directly below. They are kept as written because the second one was wrong.
+whose entry is directly below. They stay as written because the second one was wrong.
 
 - This entry attributes the number and does not fix the benchmark. `map_new`'s window is short
   enough to be dominated by whether a preemption lands in it, which is a defect in the benchmark
@@ -105,8 +108,8 @@ whose entry is directly below. They are kept as written because the second one w
   [design/roadmap/541](../../design/roadmap/0541-a-timed-window-that-excludes-preemption.md) (a timed
   window that excludes preemption), which is this proposal promoted and built.
 - The five-context-switches reading is arithmetic that fits, not an instrumented count. The lump is
-  measured; its composition is inferred from `47,752 / 9,594`. A lane that fixes the benchmark
-  should count the preemptions directly. It did, and the count is one.
+  a measurement; its composition is an inference from `47,752 / 9,594`. A lane that fixes the
+  benchmark should count the preemptions directly. It did, and the count is one.
 - No baseline was re-saved. `map_new`'s baseline of 180,604 is the old spelling's number and still
   reproduced on `main` exactly. 541 re-saved all three on calef's ruling; the x86_64 row reads
   176,491 in `bench/baseline-x86_64.txt` today (re-recorded for `nightly-2026-09-23`).
@@ -140,7 +143,7 @@ So the whole 47,752-tick lump is one timer preemption. The "about five" reading 
 `yield_switch`'s 9,594 ticks per iteration, and that denominator is the wrong event. A `yield_switch`
 iteration is a voluntary round trip between two kernel threads that are both immediately runnable. A
 timer preemption is a trap, a dispatch, an EOI and a `schedule()`. It then lasts however long it
-takes for this thread to be picked again, which nothing in the benchmark bounds.
+takes for this thread to run again, which nothing in the benchmark bounds.
 
 The spread on that last term is the substantive half of the correction. The same single preemption
 measured at 4,096 iterations costs 6,670 ticks, against 47,752 at 64. That is a factor of seven for
@@ -214,9 +217,10 @@ three architectures.
 The instrument lesson: between the two shapes every row of `script/bench` moved by at most 0.12%. A
 tripwire on time could not see a change that a tripwire on size failed on. Neither substitutes for
 the other. `map_new`'s own defect was the mirror image: a row that moved 26.4% while the code was
-byte-identical. The size gate is described in [the fastpath footprint appendix](fastpath-footprint-gate.md).
+byte-identical. [The fastpath footprint appendix](fastpath-footprint-gate.md) describes the size
+gate.
 
 `kernel/src/cpu.rs` now asserts the size is a power of two. x86_64 is exempt: the struct there
 already carries `x86_trap`, is already 152 bytes, and its gate is green with room (+1.0%, +1.4%,
-+3.9%). The exemption is measured, because asserting a property the tree does not hold teaches
-people to route around the gate.
++3.9%). The exemption rests on a measurement, because asserting a property the tree does not hold
+teaches people to route around the gate.

@@ -99,7 +99,7 @@ Native macOS is the bare-metal ceiling. The host side is `bench/host/`.
 | map mechanism only | ~92 ns (`map_el0`) | 2026-07-29 | n/a | n/a |
 | spawn, build to reap | ~4.4 us (`spawn_el0`) | 2026-07-29 | ~19.7 us (`fork`+`exit`) | ~291 us |
 
-The Linux and macOS columns were taken on 2026-07-25 (spawn 2026-07-26); the nife column is the
+The Linux and macOS columns date from 2026-07-25 (spawn 2026-07-26); the nife column is the
 latest release reading of each row, and the 2026-08-04 figures are a median of five boots.
 
 nife wins four rows and ties one. The null syscall and the IPC round trip are about 5x faster than
@@ -114,7 +114,7 @@ On one core, under the same QEMU-HVF machine, seL4's `Call` plus `ReplyRecv` bet
 spaces costs a median of 96 ns and nife's `ipc_rtt_el0` 442 ns: about 4.6 times (2026-10-21, eight
 boots each). [How much of the ARM plan runs under HVF](arm-plan-under-hvf.md) has the method and its
 caveats. seL4 needed one patched line for the guest's 8-bit ASIDs. The instrument is a loop
-averaged against the generic timer, because the guest's PMU is synthesized.
+averaged against the generic timer, because the guest's PMU is synthetic.
 
 seL4 publishes, for the same-core different-address-space path, 413 cycles for the IPC call and 426
 for the IPC reply, one-way each. The machine is a Jetson TX1 (Cortex-A57, 1.9 GHz). Converting 350 ns at an
@@ -229,8 +229,8 @@ underneath, an L1 large enough to hide any footprint effect. argon's PMU is wher
   from nothing, paying about ten traps to Unix's two. Most of the gap is that structural difference.
   The 4.4 us is also older than the path: icount has since measured it 41% shorter (2026-08-27), then
   6.3% longer for the current-CPU page (2026-09-21) ([`spawn_el0`](benchmarks/spawn-el0.md)).
-- The context switch is derived by subtraction from two different mechanisms, a yield on our side and
-  a pipe pass on theirs. Read the gap as a direction.
+- The context switch is derived by subtraction from two different mechanisms, a yield on our side
+  and a pipe pass on theirs. Read the gap as a direction.
 - Our IPC is a synchronous five-word rendezvous; `lat_pipe` is a buffered byte stream. A Mach port
   would likely beat the pipe. XNU is a hybrid whose syscalls are mostly in-kernel BSD calls.
 - Against seL4 on one core: their round trip is two syscalls with a fastpath; a service here issues

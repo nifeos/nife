@@ -32,8 +32,8 @@ free-running tick an unrelated change moves those rows by whole percent. At the 
 `TICK_HZ` of 1, a window that opens on a tick has a full second before the next, and the close
 proves on every run that the row fit. The opening tick also fixes a ping-pong's starting mode, so
 `ipc_rtt` always measures the receiver-first mode. `yield_switch` and `spawn_reap` still do not
-mask interrupts; this only moves where involuntary switches fall. Ticks are counted per core, so a
-thread that changes cores inside the window cannot be checked, and a `--real --smp` run prints a
+mask interrupts; this only moves where involuntary switches fall. Ticks are per core, so a thread
+that changes cores inside the window escapes the check, and a `--real --smp` run prints a
 probe line instead.
 
 ## `map_new`: preemption masked across the window
@@ -44,10 +44,10 @@ in, which moves when unrelated code changes size.
 [preemption-in-the-window.md](preemption-in-the-window.md) has the +26.4% reading that showed it.
 Masking removes the coin flip: the interrupt is pending at `restore` and taken there, outside the
 window, which is why `bench-probe: map_new_preemptions` can still read 1. Under `-icount` a masked
-window also excludes whatever the rest of the machine would have done inside it, which is wanted:
-the row prices mapping a page, not being descheduled while mapping one. It is safe because nothing
-on the path blocks (`map_new` takes only spin locks). A row that means to measure scheduling, or
-whose body can block, must not mask.
+window also excludes whatever the rest of the machine would have done inside it, which is what the
+row needs: the row prices mapping a page, not a deschedule in the middle of mapping one. It is safe
+because nothing on the path blocks (`map_new` takes only spin locks). A row that means to measure
+scheduling, or whose body can block, must not mask.
 
 The preemption, fence and mask probes are counts, not durations, so they are probes and never
 `timed` rows. A 10% tolerance over a count is not a tripwire, and their interesting values are
@@ -68,11 +68,11 @@ It must be single-hart: under `-icount` all harts share one virtual clock, so a 
 `cycles_per_tick` converts every board row from ticks of the reference counter into the cycles the
 literature uses. It is a probe, never a row, because the rate moves with frequency scaling. Its
 `cycles_per_tick_means` line names both halves of the ratio on each architecture, because a rate
-printed under one name on three machines will be compared across them. `notes/pmu.md` has the
+printed under one name on three machines invites comparison across them. `notes/pmu.md` has the
 counters, and the aarch64 filter is calef's ruling A1 of 2026-10-07 UTC. Under emulation the
 ratio is a fact about the emulator, and the line says so.
 
-- The window is a timed spin, so both counters are read across the same span. A fixed iteration
+- The window is a timed spin, so both counters cover the same span. A fixed iteration
   count would make the ratio depend on the code inside the loop, which is what differs between an
   emulator and a core.
 - On riscv64 the window is a constant 100,000 ticks (10 ms on QEMU, 25 ms on radon), kept so every
@@ -88,8 +88,8 @@ ratio is a fact about the emulator, and the line says so.
 ## The EL0 rows
 
 The `os_primitives_benchmarker` roles must match `fixtures/src/os_primitives_benchmarker.rs`. The
-two crates share no header, so the numbers are mirrored by hand. `MAP_EL0_ITERS` and
-`MAP_EL0_WARMUP` must equal its `MAP_ITERS` and `MAP_WARMUP`: the target region is sized for their
+two crates share no header, so the numbers are hand copies of each other. `MAP_EL0_ITERS` and
+`MAP_EL0_WARMUP` must equal its `MAP_ITERS` and `MAP_WARMUP`: the target region has room for their
 sum plus overhead, and maps past what it funds fail cheaply and skew the row.
 
 `SPAWN_EL0_BUDGET` is 64 pages on purpose. Each child is split, run and destroyed strictly LIFO, so
@@ -143,14 +143,14 @@ the FS server's memory, like a Linux buffered read from the page cache, so the r
 IPC path plus a copy (about 260 ns under HVF, release, 2026-09-26). The device path is what
 `fs_seq_read` and its siblings measure, because their 1 MiB file is over the memo's 256 KiB limit.
 An isolated file-server tax is not measured here: a few hundred nanoseconds of serving layer sits
-inside a block read's run-to-run spread. The per-hop tax is `relay_rtt`'s, where it is gated.
+inside a block read's run-to-run spread. The per-hop tax is `relay_rtt`'s, where the gate sits.
 
 `fs_throughput` prints a row and a MiB/s probe per phase. The row's ns/iter is the per-request
 latency, which compares with `fs_read`; the probe compares with another operating system. One
 transfer is 4096 bytes and cannot be more, because a request carries its payload through the one
 page the client shares with the server, so these are a request rate in disguise.
-[filesystem-throughput.md](filesystem-throughput.md) has the numbers. MiB/s is computed in integer
-hundredths on the kernel side, where the counter frequency and transfer size are both known; a phase
+[filesystem-throughput.md](filesystem-throughput.md) has the numbers. The kernel side computes MiB/s
+in integer hundredths, where the counter frequency and transfer size are both known; a phase
 whose ticks did not advance is a broken run and reports zero.
 
 ## The keyboard rows
@@ -161,7 +161,7 @@ monitor socket. An ordinary bench boot finds no keyboard, prints neither row, an
 `--keyboard` refuses `--check`, `--save` and `--real`, because no baseline holds the rows and a host
 actor is in the loop.
 
-`keyboard_up` runs from the driver's spawn being queued to its `KEYBOARD_UP` report, after the
+`keyboard_up` runs from the queuing of the driver's spawn to its `KEYBOARD_UP` report, after the
 kernel has wired the device. That covers loading the image, feature negotiation, queue setup and
 posting the event buffers, and the host plays no part in it.
 
@@ -201,7 +201,7 @@ ns/iter.
 
 - Compute workers make no syscalls, so they make no cross-core wakes and scale cleanly to the core
   count: the direct picture of placement filling the machine.
-- Ping-pong pipelines do not scale under HVF. A semi-idle guest vCPU is descheduled by the host, so
+- Ping-pong pipelines do not scale under HVF. The host deschedules a semi-idle guest vCPU, so
   each cross-core wake a split pair needs pays host reschedule latency. That is a virtualization
   property, not a scheduler defect ([per-core-and-multi-hart.md](per-core-and-multi-hart.md)).
 - The main thread blocks through the window rather than busy-yielding. A runnable main makes the
@@ -237,9 +237,9 @@ would make every later run incomparable. Change it only if the knee moves.
 
 E4 sweeps working sets of 4 to 128 KiB, below, at and above a typical 32 KB L1d and into L2, so it
 can show whether displacement tracks one cache level. Its low-load condition is 8 pairs, inside
-E1's flat region, so a null result there is expected from E1's curve. Its high-load condition is
+E1's flat region, so E1's curve predicts a null result there. Its high-load condition is
 `SCALE_MAX_PAIRS` pairs, past E1's knee (on radon the knee is at 16 threads, 1.68x), which is where
-it can tell the kernel's path slowing from the application's cache being evicted
+it can tell the kernel's path slowing from eviction of the application's cache
 ([cache-experiments.md](../register-of-measures/cache-experiments.md)). The workload yields about 64
 times per run in every condition, so a compute-only thread cannot finish before the background pairs
 run and the conditions differ only in what else is ready. It keeps the minimum of 5 batches, one
