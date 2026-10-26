@@ -119,6 +119,7 @@ Only after step 1 ended `LEASED-AND-MEASURED`. On a branch from the commit under
 ```sh
 git switch -c lane/i219-proven-on-xenon
 sed -i '' 's/^pub(crate) const PCH_PROVEN_ON_SILICON: bool = false;/pub(crate) const PCH_PROVEN_ON_SILICON: bool = true;/' kernel/src/user/e1000e_service.rs
+git add bench/xenon-<date>/i219.log
 git commit -am "e1000e: the I219 is proven on xenon (bench log <file>, verdict LEASED-AND-MEASURED)"
 cargo xtask uefi-image --release                            # step 3's image, in target/esp
 shasum -a 256 target/esp/EFI/BOOT/BOOTX64.EFI
@@ -293,5 +294,6 @@ and nothing else (`notes/bench-runbook.md`'s BUGS):
 - Step 2 builds the evening's installer from a branch that has not merged, because the flag may
   flip only after silicon proves it. The branch's pull request follows the evening.
 - The soak image is a debug build, as radon's were.
-- Every xenon-side line above is a prediction. xenon has booted four cores (2026-09-17) and has
-  never run the I219 path, a network boot, `jig` or the soak.
+- Every xenon-side line above is a prediction. xenon has booted four cores (2026-09-17) and has run
+  the I219 path once, with no cable (2026-10-21). It has never run the I219 path with a link, a
+  network boot, `jig` or the soak.

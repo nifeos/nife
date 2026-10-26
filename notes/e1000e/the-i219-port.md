@@ -9,7 +9,7 @@ a provisional name.
 
 The crate's README, under "Sources", says what was read for its register facts and its PCH port,
 and when. Each item in `pch` names the FreeBSD function it follows. `pch::phy`'s module doc gives
-the PHY layer's two deliberate divergences, and `pch::nvm`'s says why the NVM port is read only.
+the PHY layer's two deliberate divergences, and `pch::nvm`'s says that the NVM port is read only.
 
 ## Why the I219 needs a port at all
 
