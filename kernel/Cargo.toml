@@ -28,7 +28,8 @@ workspace = true
 [dependencies]
 # No register crate on any target: aarch64's system registers are `arch/aarch64/instructions.rs`
 # and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
-# stub every access (milestone 707, §46).
+# stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
+# spell them), §46).
 abi = { version = "0.1.0", path = "../crates/abi" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`

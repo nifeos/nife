@@ -102,7 +102,7 @@ A kernel does almost nothing else.
 `kernel/src/arch/aarch64/instructions.rs` holds one accessor for each of these the Rust side
 touches, so a proof can stub it. The field constants sit beside their users (`SCTLR_M` and the
 `TCR_*` fields in `mmu.rs`), each citing the Arm Architecture Reference Manual by the register's
-heading, so a bit position is checked against its source.
+heading, so a reader checks a bit position against its source.
 
 ## Control flow: `b`, `bl`, `ret`
 

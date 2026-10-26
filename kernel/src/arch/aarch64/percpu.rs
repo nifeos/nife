@@ -33,7 +33,8 @@ pub fn entry_el() -> u64 {
 ///
 /// `CurrentEL.EL` is bits 3:2 (Arm DDI 0487, CurrentEL).
 ///
-/// Name: provisional (milestone 707), the twin of [`entry_el`].
+/// Name: provisional (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64 spell
+/// them)), the twin of [`entry_el`].
 pub fn current_el() -> u64 {
     (instructions::read_current_el() >> 2) & 0b11
 }

@@ -15,7 +15,7 @@ const DR: usize = 0x00;
 const FR: usize = 0x18;
 /// `UARTIBRD`: the integer part of the baud divisor.
 const IBRD: usize = 0x24;
-/// `UARTFBRD`: the fractional part of the baud divisor, in 64ths.
+/// `UARTFBRD`: the fractional part of the baud divisor, in units of 1/64.
 const FBRD: usize = 0x28;
 /// `UARTLCR_H`: line control.
 const LCR_H: usize = 0x2c;

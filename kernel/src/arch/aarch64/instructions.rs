@@ -10,16 +10,10 @@
 //! unchecked claim about the silicon (notes/kernel-proofs/stubbing-an-instruction.md). Every
 //! function is `#[inline(always)]` and carries its call site's `options` unchanged.
 //!
-//! # The system-register accessors
-//!
-//! One `mrs` or `msr` each, with `options(nomem, nostack)`. `nomem` lets the compiler move
-//! ordinary loads and stores across a write, so a write whose order against
-//! memory matters (the translation registers, `VBAR_EL1`) is bracketed at its call site by
-//! [`dsb_sy`] or [`isb`], which carry no `nomem` and so order the compiler as well as the core. A
-//! write that can change which memory is reachable, or what a trap runs, is an `unsafe fn` here,
-//! the way riscv64's `write_satp` and `write_stvec` are. Field layouts live with their users
-//! (`mmu.rs` for `SCTLR_EL1` and `TCR_EL1`), each citing the Arm Architecture Reference Manual
-//! (Arm DDI 0487) by the register's own heading.
+//! A system-register accessor is one `mrs` or `msr` with `options(nomem, nostack)`, so a write whose
+//! order against memory matters (`TTBRn_EL1`, `VBAR_EL1`) sits between [`dsb_sy`] or [`isb`] at its
+//! call site; those carry no `nomem`. A write that changes reachable memory or the trap target is
+//! an `unsafe fn`. Field constants live with their users and cite Arm DDI 0487 by register.
 
 use core::arch::asm;
 

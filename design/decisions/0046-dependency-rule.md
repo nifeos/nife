@@ -8,8 +8,8 @@ ratified_by: calef
 # 46. Thin primitives or whole subsystems; we write everything in between
 
 (three amendments below: 2026-07-31 distinguishes taking from vendoring, 2026-10-04 makes taking
-the default outside the kernel and the crates Kani proves, 2026-10-25 gives the kernel a bar in
-place of a blanket, and a 2026-10-26 ruling under rule 1 takes register access off the crates.)
+the default outside the kernel and the crates Kani proves, and 2026-10-25 gives the kernel a bar in
+place of a blanket. Rule 1 carries a 2026-10-26 ruling that takes register access off the crates.)
 
 Decided 2026-07-30 (calef), after the calendar crate made the absence of a rule visible. The
 practice was already unanimous and written down nowhere, which is the state that produces an
@@ -44,9 +44,8 @@ never write. Nothing in between. Everything in between is written here.
    other lanes hit the same wall the same day (`ntp_proto`'s fixed-point multiply, `gpt`'s
    table-driven CRC) and all three resolved it by changing code. None of that is available in a
    dependency. Register access is the second case. Ruled 2026-10-26 (UTC): the kernel spells
-   aarch64's system and MMIO registers in the tree and links no register crate, because a proof
-   stubs an accessor in `arch/aarch64/instructions.rs` and cannot stub another crate's trait
-   method. That replaces §3 (use the crate ecosystem) for register access.
+   aarch64's system and MMIO registers in the tree and links no register crate. A proof stubs an
+   accessor in `arch/aarch64/instructions.rs`, and it cannot stub another crate's trait method. That replaces §3 (use the crate ecosystem) for register access.
 2. Is it a whole subsystem we would never write? Then take it, vendored, under §34's conditions.
    RedoxFS and smoltcp are the model: a filesystem and a TCP/IP stack are each larger than the thesis
    they would serve, and confining them is the thesis.
