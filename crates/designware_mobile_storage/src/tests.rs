@@ -4,7 +4,7 @@
 use crate::bench::{self, WriteVerdict};
 use crate::card;
 use crate::host::{Error, Host};
-use crate::sd::{self, BLOCK, InitError, IoError, Kind};
+use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
 use crate::sim::{CardKind, Sim};
 
 fn host(kind: CardKind, blocks: usize) -> Host<Sim> {
@@ -74,7 +74,7 @@ fn an_empty_slot_is_no_card_not_a_hang() {
     let mut h = host(CardKind::Empty, 1024);
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::NoCard(Error::NoResponse(1)))
+        Err(InitializationError::NoCard(Error::NoResponse(1)))
     ));
 }
 
@@ -102,17 +102,17 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     let sent = h.registers().commands.len();
-    let mut buf = [0u8; BLOCK];
+    let mut buffer = [0u8; BLOCK];
     assert_eq!(
-        sd::read_blocks(&mut h, &card, 8192, &mut buf),
+        sd::read_blocks(&mut h, &card, 8192, &mut buffer),
         Err(IoError::Range)
     );
     assert_eq!(
-        sd::read_blocks(&mut h, &card, 0, &mut buf[..100]),
+        sd::read_blocks(&mut h, &card, 0, &mut buffer[..100]),
         Err(IoError::Length)
     );
     assert_eq!(
-        sd::write_blocks(&mut h, &card, u64::MAX, &buf),
+        sd::write_blocks(&mut h, &card, u64::MAX, &buffer),
         Err(IoError::Range)
     );
     assert_eq!(h.registers().commands.len(), sent);
@@ -122,7 +122,7 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_threshold_write() {
     let sim = Sim::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
     let (mut h, id) = Host::new(sim, 50_000_000, Some(32)).unwrap();
-    assert_eq!(crate::regs::fifo_offset(id.verid), 0x100);
+    assert_eq!(crate::registers::queue_offset(id.verid), 0x100);
     let card = sd::identify(&mut h, 4).unwrap();
     let data: Vec<u8> = (0..2 * BLOCK).map(|i| (i % 253) as u8).collect();
     sd::write_blocks(&mut h, &card, 7, &data).unwrap();
@@ -130,7 +130,7 @@ fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_thresho
     // A threshold write to 0x100 here would land in the FIFO and shift every word read.
     sd::read_blocks(&mut h, &card, 7, &mut back).unwrap();
     assert_eq!(back, data);
-    assert!(!h.into_registers().stray_fifo_write);
+    assert!(!h.into_registers().stray_queue_write);
 }
 
 #[test]
@@ -152,21 +152,21 @@ fn a_data_crc_error_is_reported_with_its_command() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     h.registers().fail_next_read_crc = true;
-    let mut buf = [0u8; BLOCK];
+    let mut buffer = [0u8; BLOCK];
     assert!(matches!(
-        sd::read_blocks(&mut h, &card, 0, &mut buf),
-        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::regs::INT_DCRC != 0
+        sd::read_blocks(&mut h, &card, 0, &mut buffer),
+        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::registers::INT_DCRC != 0
     ));
 }
 
 #[test]
 fn the_read_only_probe_reads_and_never_writes() {
     let (mut h, _) = Host::new(mbr_card(8192, 2048), 50_000_000, Some(32)).unwrap();
-    let mut buf = vec![0u8; 128 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buf, 1024).unwrap();
+    let mut buffer = vec![0u8; 128 * BLOCK];
+    let r = bench::read_only(&mut h, 4, &mut buffer, 1024).unwrap();
     assert_eq!(r.mbr.unwrap().first_start(), Some(2048));
     assert!(r.partition_boot_signature);
-    assert_eq!(&r.fs_type, b"FAT32   ");
+    assert_eq!(&r.file_system_type, b"FAT32   ");
     assert_eq!(r.timed_blocks, 1024);
     let sim = h.into_registers();
     assert!(sim.written.is_empty());
@@ -184,13 +184,13 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     let sim = mbr_card(8192, 2048);
     let want = sim.storage[2048..2048 + 128].concat();
     let (mut h, _) = Host::new(bench::Watch::new(sim), 50_000_000, Some(32)).unwrap();
-    let mut buf = vec![0u8; 128 * BLOCK];
+    let mut buffer = vec![0u8; 128 * BLOCK];
     let mut rows = 0;
     let mut asked = Vec::new();
-    bench::read_matrix(&mut h, 4, 2048, &mut buf, |r| {
+    bench::read_matrix(&mut h, 4, 2048, &mut buffer, |r| {
         rows += 1;
         assert_eq!(r.result, Ok(()), "{r:?}");
-        assert!(r.max_fill > 0, "{r:?}");
+        assert!(r.maximum_fill > 0, "{r:?}");
         assert!(
             r.us > 0,
             "the read took no time on a clock that advances: {r:?}"
@@ -201,7 +201,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     assert_eq!(rows, bench::MATRIX_HZ.len() * bench::MATRIX_BLOCKS.len());
     asked.dedup();
     assert_eq!(asked, [25_000_000, 12_500_000, 6_250_000]);
-    assert_eq!(buf, want);
+    assert_eq!(buffer, want);
 }
 
 /// `Watch` is what says whether radon's FIFO filled: its peak and full count must come from
@@ -215,7 +215,7 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     }
     impl Registers for Fixed {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::regs::STATUS {
+            if o == crate::registers::STATUS {
                 self.status
             } else {
                 u32::MAX
@@ -228,18 +228,18 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     }
     // FIFO count in bits 29:17, the full flag in bit 3.
     let mut w = bench::Watch::new(Fixed { status: 5 << 17 });
-    w.read(crate::regs::RINTSTS);
-    assert_eq!((w.max_fill, w.full_reads), (0, 0));
-    w.read(crate::regs::STATUS);
-    assert_eq!((w.max_fill, w.full_reads), (5, 0));
+    w.read(crate::registers::RINTSTS);
+    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
+    w.read(crate::registers::STATUS);
+    assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
     let mut w = bench::Watch::new(Fixed {
         status: (128 << 17) | (1 << 3),
     });
-    w.read(crate::regs::STATUS);
-    w.read(crate::regs::STATUS);
-    assert_eq!((w.max_fill, w.full_reads), (128, 2));
+    w.read(crate::registers::STATUS);
+    w.read(crate::registers::STATUS);
+    assert_eq!((w.maximum_fill, w.full_reads), (128, 2));
     w.clear();
-    assert_eq!((w.max_fill, w.full_reads), (0, 0));
+    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
 }
 
 #[test]
@@ -249,13 +249,17 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
     sim.storage[2043][0] = 0x42;
     let before = sim.storage.clone();
     let (mut h, _) = Host::new(sim, 50_000_000, Some(32)).unwrap();
-    let mut buf = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buf, 0).unwrap();
+    let mut buffer = vec![0u8; 8 * BLOCK];
+    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
     let v = bench::scratch_write(&mut h, &r.card, r.mbr.as_ref(), &mut a, &mut b);
     assert_eq!(v, WriteVerdict::Verified(2040, 8, false));
     let sim = h.into_registers();
-    assert!(sim.written.iter().all(|&lba| (2040..2048).contains(&lba)));
+    assert!(
+        sim.written
+            .iter()
+            .all(|&logical_block_address| (2040..2048).contains(&logical_block_address))
+    );
     assert_eq!(sim.written.len(), 16);
     assert_eq!(sim.storage, before);
 }
@@ -263,8 +267,8 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
 #[test]
 fn a_card_with_no_gap_is_refused_and_not_written() {
     let (mut h, _) = Host::new(mbr_card(8192, 1), 50_000_000, Some(32)).unwrap();
-    let mut buf = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buf, 0).unwrap();
+    let mut buffer = vec![0u8; 8 * BLOCK];
+    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
     let v = bench::scratch_write(&mut h, &r.card, r.mbr.as_ref(), &mut a, &mut b);
     assert_eq!(v, WriteVerdict::Refused);
@@ -277,7 +281,7 @@ fn a_sixteen_bit_fifo_is_refused_at_the_door() {
     struct Narrow(Sim);
     impl crate::host::Registers for Narrow {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::regs::HCON {
+            if o == crate::registers::HCON {
                 0
             } else {
                 self.0.read(o)
@@ -293,7 +297,7 @@ fn a_sixteen_bit_fifo_is_refused_at_the_door() {
     let narrow = Narrow(Sim::new(CardKind::SdHighCapacity, 1024, 32));
     assert!(matches!(
         Host::new(narrow, 50_000_000, None),
-        Err(Error::FifoWidth(0))
+        Err(Error::QueueWidth(0))
     ));
 }
 
@@ -305,7 +309,7 @@ fn without_a_tree_depth_the_fifo_depth_is_read_from_its_reset_watermark() {
         None,
     )
     .unwrap();
-    assert_eq!(h.fifo_depth(), 16);
+    assert_eq!(h.queue_depth(), 16);
 }
 
 // **The error paths.** Each test below injects one fault the sim can produce and checks that
@@ -335,7 +339,7 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
     let mut h = faulty(CardKind::SdHighCapacity, 8192, &[(8, 0, Fault::EchoWrong)]);
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::InterfaceCondition(r)) if r & 0xfff != 0x1aa
+        Err(InitializationError::InterfaceCondition(r)) if r & 0xfff != 0x1aa
     ));
 }
 
@@ -347,7 +351,7 @@ fn a_card_that_never_finishes_power_up_is_reported_with_its_last_ocr() {
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
         assert!(matches!(
             sd::identify(&mut h, 4),
-            Err(InitError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
         ));
     }
 }
@@ -361,7 +365,7 @@ fn an_sd_2_0_card_silent_to_its_first_app_command_is_no_card_not_an_emmc() {
     );
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::NoCard(Error::NoResponse(55)))
+        Err(InitializationError::NoCard(Error::NoResponse(55)))
     ));
 }
 
@@ -375,14 +379,17 @@ fn each_identification_step_names_itself_when_the_card_goes_silent() {
         );
         assert_eq!(
             sd::identify(&mut h, 4),
-            Err(InitError::Identify(index, Error::NoResponse(index))),
+            Err(InitializationError::Identify(
+                index,
+                Error::NoResponse(index)
+            )),
             "CMD{index}"
         );
     }
     let mut h = faulty(CardKind::Mmc, 16_384, &[(3, 0, Fault::NoResponse)]);
     assert_eq!(
         sd::identify(&mut h, 8),
-        Err(InitError::Identify(3, Error::NoResponse(3)))
+        Err(InitializationError::Identify(3, Error::NoResponse(3)))
     );
 }
 
@@ -397,7 +404,10 @@ fn each_configuration_step_names_itself_when_the_card_goes_silent() {
         );
         assert_eq!(
             sd::identify(&mut h, 4),
-            Err(InitError::Configure(index, Error::NoResponse(index))),
+            Err(InitializationError::Configure(
+                index,
+                Error::NoResponse(index)
+            )),
             "CMD{index}"
         );
     }
@@ -405,7 +415,7 @@ fn each_configuration_step_names_itself_when_the_card_goes_silent() {
     let mut h = faulty(CardKind::Mmc, 16_384, &[(8, 1, Fault::NoResponse)]);
     assert_eq!(
         sd::identify(&mut h, 8),
-        Err(InitError::Configure(8, Error::NoResponse(8)))
+        Err(InitializationError::Configure(8, Error::NoResponse(8)))
     );
 }
 
@@ -416,11 +426,13 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
         8192,
         &[(7, 0, Fault::ErrorStatus)],
     );
-    assert!(matches!(sd::identify(&mut h, 4), Err(InitError::Status(7, r)) if r & (1 << 19) != 0));
+    assert!(
+        matches!(sd::identify(&mut h, 4), Err(InitializationError::Status(7, r)) if r & (1 << 19) != 0)
+    );
     let mut h = faulty(CardKind::Mmc, 16_384, &[(3, 0, Fault::ErrorStatus)]);
     assert!(matches!(
         sd::identify(&mut h, 8),
-        Err(InitError::Status(3, _))
+        Err(InitializationError::Status(3, _))
     ));
     let mut h = faulty(
         CardKind::SdHighCapacity,
@@ -429,7 +441,7 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
     );
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::Status(16, _))
+        Err(InitializationError::Status(16, _))
     ));
 }
 
@@ -438,7 +450,10 @@ fn a_csd_this_driver_cannot_size_is_refused_with_its_structure() {
     let mut sim = Sim::new(CardKind::SdHighCapacity, 8192, 32);
     sim.zero_capacity = true;
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    assert_eq!(sd::identify(&mut h, 4), Err(InitError::Capacity(3)));
+    assert_eq!(
+        sd::identify(&mut h, 4),
+        Err(InitializationError::Capacity(3))
+    );
 }
 
 #[test]
@@ -501,16 +516,16 @@ fn the_read_only_probe_says_which_block_it_could_not_read() {
     let mut sim = mbr_card(8192, 2048);
     sim.faults = vec![(17, 1, Fault::ErrorStatus)];
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buf = vec![0u8; 8 * BLOCK];
+    let mut buffer = vec![0u8; 8 * BLOCK];
     assert!(matches!(
-        bench::read_only(&mut h, 4, &mut buf, 64),
+        bench::read_only(&mut h, 4, &mut buffer, 64),
         Err(bench::ReadFailure::Read(2048, IoError::Status(_)))
     ));
     let mut sim = mbr_card(8192, 2048);
     sim.faults = vec![(18, 1, Fault::ErrorStatus)];
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
     assert!(matches!(
-        bench::read_only(&mut h, 4, &mut buf, 64),
+        bench::read_only(&mut h, 4, &mut buffer, 64),
         Err(bench::ReadFailure::Read(2056, IoError::Status(_)))
     ));
 }
@@ -521,8 +536,8 @@ fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (WriteVerdict, Sim) {
     let mut sim = mbr_card(8192, 2048);
     setup(&mut sim);
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buf = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buf, 0).unwrap();
+    let mut buffer = vec![0u8; 8 * BLOCK];
+    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; len], vec![0u8; len]);
     let v = bench::scratch_write(&mut h, &r.card, r.mbr.as_ref(), &mut a, &mut b);
     (v, h.into_registers())
@@ -566,7 +581,11 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
     // The pattern stayed, inside the gap, and partition 1 was never touched.
     assert!(sim.storage[2040].iter().any(|&b| b != 0));
-    assert!(sim.written.iter().all(|&lba| lba < 2048));
+    assert!(
+        sim.written
+            .iter()
+            .all(|&logical_block_address| logical_block_address < 2048)
+    );
 }
 
 /// What the write test put on the card is the pattern for each sector's own address: seen when
@@ -575,9 +594,16 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
 fn the_pattern_left_behind_is_each_sectors_own() {
     let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
-    for lba in 2040..2048u64 {
-        for (i, &b) in sim.storage[lba as usize].iter().enumerate() {
-            assert_eq!(b, bench::pattern(lba, i), "sector {lba} byte {i}");
+    for logical_block_address in 2040..2048u64 {
+        for (i, &b) in sim.storage[logical_block_address as usize]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(
+                b,
+                bench::pattern(logical_block_address, i),
+                "sector {logical_block_address} byte {i}"
+            );
         }
     }
 }
@@ -603,16 +629,17 @@ fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blan
         let mut h = Host::new(mbr_card(8192, 2048), 50_000_000, Some(32))
             .unwrap()
             .0;
-        let mut buf = vec![0u8; 8 * BLOCK];
-        let r = bench::read_only(&mut h, 4, &mut buf, 0).unwrap();
+        let mut buffer = vec![0u8; 8 * BLOCK];
+        let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
         let (mut a, mut b) = (vec![0u8; a * BLOCK], vec![0u8; b * BLOCK]);
         let v = bench::scratch_write(&mut h, &r.card, r.mbr.as_ref(), &mut a, &mut b);
         assert_eq!(v, WriteVerdict::Failed(0, IoError::Length));
     }
 }
 
-/// The pattern, worked by hand for a few bytes: `i * 31 ^ lba * 7 ^ 0x5a ^ i >> 8`, each in
-/// eight bits. The `i >> 8` term is what makes a sector's two halves differ.
+/// The pattern, worked by hand for a few bytes:
+/// `i * 31 ^ logical_block_address * 7 ^ 0x5a ^ i >> 8`, each in eight bits. The `i >> 8` term is
+/// what makes a sector's two halves differ.
 #[test]
 fn the_write_pattern_is_the_formula_and_its_halves_differ() {
     assert_eq!(bench::pattern(0, 0), 0x5a);
@@ -631,8 +658,8 @@ fn the_write_pattern_is_the_formula_and_its_halves_differ() {
 #[test]
 fn the_timed_reads_stop_at_the_end_of_the_card() {
     let (mut h, _) = Host::new(mbr_card(2048, 16), 50_000_000, Some(32)).unwrap();
-    let mut buf = vec![0u8; 256 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buf, 100_000).unwrap();
+    let mut buffer = vec![0u8; 256 * BLOCK];
+    let r = bench::read_only(&mut h, 4, &mut buffer, 100_000).unwrap();
     // Partition 1 starts at 16, so blocks 16 to 2047 fit seven 256-block reads and not eight.
     assert_eq!(r.timed_blocks, 7 * 256);
     // Each read was of the next 256 blocks up from the partition, not below it.
@@ -706,7 +733,7 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
         let _ = tx.send(matches!(
             sd::identify(&mut h, 8),
-            Err(InitError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
         ));
     });
     assert_eq!(

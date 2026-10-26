@@ -35,7 +35,7 @@ node-by-node evidence.
 Reuse: adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` (revision 1.33, 2026-03-11, ISC), which
 matches both compatibles above and so already drives this part on this board. Its register map,
 reset, clock and bus-width sequences, command flags and polled FIFO transfer are the crate's
-`regs`, `command` and `host` modules; the identification order follows its `sdmmc_mem.c`. The ISC
+`registers`, `command` and `host` modules; the identification order follows its `sdmmc_mem.c`. The ISC
 notice is in the crate root.
 
 The crates.io candidate, `starfive-jh7110-dwmmc` 0.1.8 (Apache-2.0, from `rcore-os/tgoskits`), was
@@ -63,15 +63,17 @@ U-Boot's driver and both device trees are GPL and were read only for facts about
 ## Two data paths: the FIFO and the IDMAC
 
 `Host<R>` moves every word through the FIFO by MMIO, so radon's first silicon read could fail only
-in the controller or the card protocol, not in DMA as well. `Host::with_idmac` hands each data phase
-to the controller's own DMA engine, the IDMAC; `crates/designware_mobile_storage/src/idmac.rs`
-holds its sequence. It waited on two things, both met: radon's DMA is coherent with its caches
+in the controller or the card protocol, not in DMA as well.
+`Host::with_internal_direct_memory_access` hands each data phase to the controller's own DMA engine,
+the IDMAC; `crates/designware_mobile_storage/src/internal_direct_memory_access.rs` holds its
+sequence. It waited on two things, both met: radon's DMA is coherent with its caches
 (`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC), notes/designware-ethernet.md),
 so a `fence` each way is all the ordering it needs, and the polled read works (Results, below).
 
 - One region: a page of descriptors, then up to 256 data pages, one descriptor each. Reads are
-  copied out of it and writes in. `Idmac::new` refuses a controller without an IDMAC, 64-bit
-  descriptors, or a region not wholly below 4 GiB, which an 8 GB board's upper RAM is not.
+  copied out of it and writes in. `InternalDirectMemoryAccess::new` refuses a controller without
+  an IDMAC, 64-bit descriptors, or a region not wholly below 4 GiB, which an 8 GB board's upper RAM
+  is not.
 - A transfer is done at `DTO` (and `ACD`) with the last descriptor closed, since a read's `DTO`
   can land before its last words reach memory.
 - Every transfer, finished or failed, stops and resets the engine before returning, so none is
