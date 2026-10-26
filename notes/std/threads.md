@@ -83,7 +83,9 @@ faster in two (riscv64 at 1.07 times, `x86_64`'s one-core leg at 1.05).
 ## BUGS
 
 - A spawned thread's stack has no guard page. It is heap memory, so an overflow writes into the
-  heap. A stack mapped from the region with an unmapped page below it is the fix.
+  heap. A stack mapped from the region with an unmapped page below it is the fix. Until then a
+  program that parses hostile input by recursion on a spawned thread turns deep input into heap
+  corruption rather than a fault, so such a parser bounds its own depth.
 - A detached thread's stack is never freed, because nothing remains to free it.
 - A timed wait spins on `yield` until its deadline, because the kernel's `WAIT` has no timeout.
 - One TCB page per spawn is spent for good, and 16 threads at most per process

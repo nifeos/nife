@@ -284,7 +284,7 @@ isr_restore:
     # this core's `PerCpu` block throughout this window (the guard above only swaps it back to the
     # interrupted ring's value further down, at label 2), so a `gs`-relative store can only ever
     # land on the running core's own slot. `SYSCALL_KERNEL_RSP_OFF` is a direct value (the syscall
-    # path's own scratch, inside `PerCpu`); `TSS_RSP0_PTR_OFF` is a POINTER `segments::init` wrote
+    # path's own scratch, inside `PerCpu`); `TSS_RSP0_PTR_OFF` is a POINTER `segments::initialize` wrote
     # once, to this core's own `TSS[cpu::id()].rsp0`, because the TSS array itself is not reachable
     # through `gs` the way `PerCpu` is.
     test byte ptr [rsp + 18*8], 3   # cs, whose low two bits are the ring we are returning to
@@ -547,7 +547,7 @@ user_return:
 .size user_return, . - user_return
 
 # ---------------------------------------------------------------------------------------------
-# The table of stub addresses, so `exceptions::init` can fill the IDT from a loop in Rust rather
+# The table of stub addresses, so `exceptions::initialize` can fill the IDT from a loop in Rust rather
 # than needing 256 `extern` declarations.
 # ---------------------------------------------------------------------------------------------
 .macro ISR_ADDR num

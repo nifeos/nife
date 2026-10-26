@@ -97,12 +97,12 @@ Only after the board has printed its arming announcement, the `THIS BUILD REBOOT
 line `kernel/src/soak.rs` prints from `arm_reboot`. Nothing else in a session can cause a byte to
 go out. Four things follow from that one gate:
 
-- The kernel's own drain is already behind us. `arm_reboot` calls `console::discard_rx` and
-  *then* prints, so a byte sent any earlier is a byte the kernel deliberately throws away. This is
-  the trap worth knowing about: `soak-test: started` is printed **before** `arm_reboot`, with four
-  more lines between them, about a kilobyte, roughly ninety milliseconds at 115200 baud. A sender
-  triggered on that line would lose the race nearly every time, silently, and the failure would look
-  exactly like a board whose receive path is miswired.
+- The kernel's own drain is already behind us. `arm_reboot` calls `console::discard_waiting_bytes`
+  and *then* prints, so a byte sent any earlier is a byte the kernel deliberately throws away. This
+  is the trap worth knowing about: `soak-test: started` is printed **before** `arm_reboot`, with
+  four more lines between them, about a kilobyte, roughly ninety milliseconds at 115200 baud. A
+  sender triggered on that line would lose the race nearly every time, silently, and the failure
+  would look exactly like a board whose receive path is miswired.
 - There is a reboot loop to stop. A plain `--features soak_test` kernel never prints the banner
   and never polls for an escape.
 - The board is long past its firmware, because a kernel that has printed this has been running

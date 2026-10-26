@@ -110,17 +110,17 @@ on the other two architectures, leaves the span unchanged.
 
 ## The seam with the machine description
 
-`memory::init` is a front end per description: a device tree on aarch64 and riscv64, PVH and ACPI on
-`x86_64` (`arch::discovery::init`). Both end in `bring_up_page_frames(ram, forbidden)`, which does
-not care where the description came from. What crosses the seam is RAM and reservations. The device
-windows the device-tree front end also discovers (the interrupt controller, the RTC, the UART's
-interrupt line, the PCIe ECAM range) are stored in `memory`'s statics. They stay `None` on a machine
-with no tree. `x86_64` records its own through `record_*` calls: the UART's interrupt line, the PCIe
-windows, each VT-d or AMD-Vi unit and the framebuffer; it records no RTC and no GIC or PLIC (see
-[x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)). The `record_*` calls for facts the front end
-also reserves (the initial ramdisk, the boot file) store and do not reserve. The caller is already
-building the forbidden list, and reserving in both places would double-reserve or let each side
-assume the other did it.
+`memory::initialize` is a front end per description: a device tree on aarch64 and riscv64, PVH and
+ACPI on `x86_64` (`arch::discovery::initialize`). Both end in `bring_up_page_frames(ram,
+forbidden)`, which does not care where the description came from. What crosses the seam is RAM and
+reservations. The device windows the device-tree front end also discovers (the interrupt controller,
+the RTC, the UART's interrupt line, the PCIe ECAM range) are stored in `memory`'s statics. They stay
+`None` on a machine with no tree. `x86_64` records its own through `record_*` calls: the UART's
+interrupt line, the PCIe windows, each VT-d or AMD-Vi unit and the framebuffer; it records no RTC
+and no GIC or PLIC (see [x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)). The `record_*` calls
+for facts the front end also reserves (the initial ramdisk, the boot file) store and do not reserve.
+The caller is already building the forbidden list, and reserving in both places would double-reserve
+or let each side assume the other did it.
 
 ## The low-water ledger
 

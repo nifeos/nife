@@ -25,7 +25,7 @@
 
 //! # BUGS
 //!
-//! - The DMA-page layout below (`RX_DESC`..`TX_USED`, stride 0x200) restates
+//! - The DMA-page layout below (`RECEIVE_DESC`..`TRANSMIT_USED`, stride 0x200) restates
 //!   `direct_memory_access_validator`'s ring offsets as literals, and nothing checks the copies
 //!   (notes/net/the-driver-and-dhcp.md has why the constants are not consumed).
 
@@ -70,25 +70,25 @@ const VIRTQ_DESC_F_WRITE: u16 = 2;
 
 /// Queue size and the two queues, matching the kernel's contract (receive = 0, transmit = 1).
 const QSIZE: u16 = 8;
-const RX_Q: u64 = 0;
-const TX_Q: u64 = 1;
+const RECEIVE_Q: u64 = 0;
+const TRANSMIT_Q: u64 = 1;
 
 /// The 12-byte modern virtio-net header in front of every frame (`VIRTIO_F_VERSION_1` negotiated).
 const NET_HDR_LEN: u64 = 12;
 
 // The DMA-page layout: each queue's rings at the kernel's per-queue stride (RING_BLOCK = 0x200,
 // desc/avail/used at +0x000/+0x080/+0x100), then the frame buffers. All within the one 4 KiB page.
-const RX_DESC: u64 = 0x000;
-const RX_AVAIL: u64 = 0x080;
-const RX_USED: u64 = 0x100;
-const TX_DESC: u64 = 0x200;
-const TX_AVAIL: u64 = 0x280;
-const TX_USED: u64 = 0x300;
+const RECEIVE_DESC: u64 = 0x000;
+const RECEIVE_AVAIL: u64 = 0x080;
+const RECEIVE_USED: u64 = 0x100;
+const TRANSMIT_DESC: u64 = 0x200;
+const TRANSMIT_AVAIL: u64 = 0x280;
+const TRANSMIT_USED: u64 = 0x300;
 
 /// How many receive and transmit buffers fit, and how big each is. Two of each keeps a spare in
 /// flight; 0x2C0 bytes holds a small frame plus the virtio header.
-const RX_BUFS: usize = 2;
-const TX_BUFS: usize = 2;
+const RECEIVE_BUFS: usize = 2;
+const TRANSMIT_BUFS: usize = 2;
 const BUF: u64 = 0x2C0;
 const BUF_BASE: u64 = 0x400;
 
@@ -96,11 +96,11 @@ const BUF_BASE: u64 = 0x400;
 /// DNS, and small TCP segments fit. A recorded demonstrator caveat, not a protocol limit.
 pub(crate) const MTU: usize = 576;
 
-fn rx_buf(i: usize) -> u64 {
+fn receive_buf(i: usize) -> u64 {
     BUF_BASE + i as u64 * BUF
 }
-fn tx_buf(i: usize) -> u64 {
-    BUF_BASE + (RX_BUFS as u64 + i as u64) * BUF
+fn transmit_buf(i: usize) -> u64 {
+    BUF_BASE + (RECEIVE_BUFS as u64 + i as u64) * BUF
 }
 
 // Raw DMA-page and device-register access. The DMA page is one contiguous physical frame mapped at
@@ -142,10 +142,10 @@ fn write_desc(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16
 /// and descriptor tables live in the DMA page at fixed offsets.
 pub(crate) struct VirtioNet {
     direct_memory_access_phys: u64,
-    rx_avail: u16,
-    rx_seen: u16, // receive used-ring index already drained
-    tx_avail: u16,
-    tx_next: usize,
+    receive_avail: u16,
+    receive_seen: u16, // receive used-ring index already drained
+    transmit_avail: u16,
+    transmit_next: usize,
 }
 
 impl VirtioNet {
@@ -175,11 +175,11 @@ impl VirtioNet {
 
         // Set up both queues through the kernel; it programs each queue's ring addresses.
         assert_eq!(
-            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, RX_Q),
+            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, RECEIVE_Q),
             0
         );
         assert_eq!(
-            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, TX_Q),
+            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, TRANSMIT_Q),
             0
         );
 
@@ -190,32 +190,32 @@ impl VirtioNet {
 
         let mut dev = VirtioNet {
             direct_memory_access_phys,
-            rx_avail: 0,
-            rx_seen: 0,
-            tx_avail: 0,
-            tx_next: 0,
+            receive_avail: 0,
+            receive_seen: 0,
+            transmit_avail: 0,
+            transmit_next: 0,
         };
 
         // A permanent descriptor per receive buffer, then publish them all as available.
-        for i in 0..RX_BUFS {
+        for i in 0..RECEIVE_BUFS {
             write_desc(
-                RX_DESC,
+                RECEIVE_DESC,
                 i as u64,
-                dev.direct_memory_access_phys + rx_buf(i),
+                dev.direct_memory_access_phys + receive_buf(i),
                 BUF as u32,
                 VIRTQ_DESC_F_WRITE,
                 0,
             );
         }
-        for i in 0..RX_BUFS {
-            let slot = (dev.rx_avail % QSIZE) as u64;
-            w16(RX_AVAIL + 4 + slot * 2, i as u16);
-            dev.rx_avail = dev.rx_avail.wrapping_add(1);
+        for i in 0..RECEIVE_BUFS {
+            let slot = (dev.receive_avail % QSIZE) as u64;
+            w16(RECEIVE_AVAIL + 4 + slot * 2, i as u16);
+            dev.receive_avail = dev.receive_avail.wrapping_add(1);
         }
         virtio_ring_barrier();
-        w16(RX_AVAIL + 2, dev.rx_avail);
+        w16(RECEIVE_AVAIL + 2, dev.receive_avail);
         virtio_ring_barrier();
-        dev.notify(RX_Q);
+        dev.notify(RECEIVE_Q);
         dev
     }
 
@@ -233,62 +233,62 @@ impl VirtioNet {
 
     /// Take one received frame, if the receive used ring has advanced. Copies the frame out (minus
     /// the virtio header) and re-posts the buffer so the device can fill it again.
-    pub(crate) fn rx_take(&mut self) -> Option<Vec<u8>> {
-        let used_idx = r16(RX_USED + 2);
-        if used_idx == self.rx_seen {
+    pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
+        let used_idx = r16(RECEIVE_USED + 2);
+        if used_idx == self.receive_seen {
             return None;
         }
-        // used ring element: { u32 id; u32 len } at RX_USED + 4 + slot*8.
-        let slot = (self.rx_seen % QSIZE) as u64;
-        let id = r32(RX_USED + 4 + slot * 8) as usize; // descriptor head = buffer index
-        let total = r32(RX_USED + 4 + slot * 8 + 4) as u64; // bytes written incl the virtio header
+        // used ring element: { u32 id; u32 len } at RECEIVE_USED + 4 + slot*8.
+        let slot = (self.receive_seen % QSIZE) as u64;
+        let id = r32(RECEIVE_USED + 4 + slot * 8) as usize; // descriptor head = buffer index
+        let total = r32(RECEIVE_USED + 4 + slot * 8 + 4) as u64; // bytes written incl the virtio header
 
         // `id` and `total` are device-written and untrusted (notes/shared-page-audit.md, finding
-        // 6): an unchecked `id` walks `rx_buf(id)` out of the DMA page, an unchecked `total` reads
-        // past the buffer. Fail closed: drop a completion naming a buffer never posted, without
-        // re-posting it (a bogus `id` does not say which), and truncate a length to the buffer.
-        // notes/net/the-driver-and-dhcp.md has the worked case.
-        if id >= RX_BUFS {
-            self.rx_seen = self.rx_seen.wrapping_add(1);
+        // 6): an unchecked `id` walks `receive_buf(id)` out of the DMA page, an unchecked `total`
+        // reads past the buffer. Fail closed: drop a completion naming a buffer never posted,
+        // without re-posting it (a bogus `id` does not say which), and truncate a length to the
+        // buffer. notes/net/the-driver-and-dhcp.md has the worked case.
+        if id >= RECEIVE_BUFS {
+            self.receive_seen = self.receive_seen.wrapping_add(1);
             return None;
         }
         let frame_len = total.saturating_sub(NET_HDR_LEN).min(BUF - NET_HDR_LEN);
 
-        let base = rx_buf(id) + NET_HDR_LEN;
+        let base = receive_buf(id) + NET_HDR_LEN;
         let mut v = vec![0u8; frame_len as usize];
         for (k, byte) in v.iter_mut().enumerate() {
             *byte = r8(base + k as u64);
         }
 
-        self.rx_seen = self.rx_seen.wrapping_add(1);
+        self.receive_seen = self.receive_seen.wrapping_add(1);
         // Re-post this buffer (its descriptor is permanent) so the device reuses it.
-        let aslot = (self.rx_avail % QSIZE) as u64;
-        w16(RX_AVAIL + 4 + aslot * 2, id as u16);
+        let aslot = (self.receive_avail % QSIZE) as u64;
+        w16(RECEIVE_AVAIL + 4 + aslot * 2, id as u16);
         virtio_ring_barrier();
-        self.rx_avail = self.rx_avail.wrapping_add(1);
-        w16(RX_AVAIL + 2, self.rx_avail);
+        self.receive_avail = self.receive_avail.wrapping_add(1);
+        w16(RECEIVE_AVAIL + 2, self.receive_avail);
         virtio_ring_barrier();
-        self.notify(RX_Q);
+        self.notify(RECEIVE_Q);
         Some(v)
     }
 
     /// Transmit one frame: prepend the zero virtio header, post the next transmit buffer's
     /// descriptor, and ring the device. Waits briefly for a buffer to free if all are in flight.
-    pub(crate) fn tx_send(&mut self, frame: &[u8]) {
-        let i = self.tx_next;
+    pub(crate) fn transmit_frame(&mut self, frame: &[u8]) {
+        let i = self.transmit_next;
         // Do not overwrite a buffer the device has not finished sending. Under slirp this never
         // actually spins, but a bounded wait keeps a slow completion from corrupting an in-flight
         // frame. The transmit used ring advances once per consumed descriptor.
-        if self.tx_avail.wrapping_sub(r16(TX_USED + 2)) >= TX_BUFS as u16 {
+        if self.transmit_avail.wrapping_sub(r16(TRANSMIT_USED + 2)) >= TRANSMIT_BUFS as u16 {
             for _ in 0..100_000 {
-                if self.tx_avail.wrapping_sub(r16(TX_USED + 2)) < TX_BUFS as u16 {
+                if self.transmit_avail.wrapping_sub(r16(TRANSMIT_USED + 2)) < TRANSMIT_BUFS as u16 {
                     break;
                 }
                 core::hint::spin_loop();
             }
         }
 
-        let buf = tx_buf(i);
+        let buf = transmit_buf(i);
         for k in 0..NET_HDR_LEN {
             w8(buf + k, 0);
         }
@@ -296,20 +296,20 @@ impl VirtioNet {
             w8(buf + NET_HDR_LEN + k as u64, byte);
         }
         write_desc(
-            TX_DESC,
+            TRANSMIT_DESC,
             i as u64,
             self.direct_memory_access_phys + buf,
             (NET_HDR_LEN + frame.len() as u64) as u32,
             0, // device reads the buffer (transmit)
             0,
         );
-        let slot = (self.tx_avail % QSIZE) as u64;
-        w16(TX_AVAIL + 4 + slot * 2, i as u16);
+        let slot = (self.transmit_avail % QSIZE) as u64;
+        w16(TRANSMIT_AVAIL + 4 + slot * 2, i as u16);
         virtio_ring_barrier();
-        self.tx_avail = self.tx_avail.wrapping_add(1);
-        w16(TX_AVAIL + 2, self.tx_avail);
+        self.transmit_avail = self.transmit_avail.wrapping_add(1);
+        w16(TRANSMIT_AVAIL + 2, self.transmit_avail);
         virtio_ring_barrier();
-        self.notify(TX_Q);
-        self.tx_next = (self.tx_next + 1) % TX_BUFS;
+        self.notify(TRANSMIT_Q);
+        self.transmit_next = (self.transmit_next + 1) % TRANSMIT_BUFS;
     }
 }

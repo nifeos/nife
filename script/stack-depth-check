@@ -90,7 +90,7 @@
 #     pushes, which `-Z emit-stack-sizes` leaves out (checked against `x86_trap_dispatch`: `subq
 #     $0x68, %rsp` and a recorded size of 104). The first run found no offender: the deepest
 #     thread chain was 9224 bytes (kernel image) and 12280 (system tests) of 24576,
-#     `iommu::init`'s 12,504-byte frame is not reachable from a thread entry point, and the
+#     `iommu::initialize`'s 12,504-byte frame is not reachable from a thread entry point, and the
 #     interrupt stack carries 4544 of 16384. **x86_64 disassembly is AT&T syntax** and the walker
 #     reads `call`/`callq` and `jmp`/`jmpq`; `jmpq *` (jump tables as well as tail calls through a
 #     register) counts as an indirect site, so its indirect-site total is much larger than the

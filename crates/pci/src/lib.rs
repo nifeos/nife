@@ -597,7 +597,7 @@ pub const MSIX_FUNCTION_MASK: u16 = 1 << 14;
 pub const MSIX_ENTRY_BYTES: u64 = 16;
 
 /// Vector control bit 0: this entry is masked. An entry powers on masked, so unmasking is a
-/// deliberate act, the same posture `arch::x86_64::irq::init_io_apic` takes with its own table.
+/// deliberate act, the same posture `arch::x86_64::irq::initialize_io_apic` takes with its own table.
 pub const MSIX_ENTRY_MASKED: u32 = 1;
 
 /// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.1

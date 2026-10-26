@@ -43,7 +43,7 @@ pub fn fault(pc: u64, addr: u64) -> ! {
 pub(super) fn depart(event: u64, pc: u64, addr: u64, whole: bool) -> ! {
     {
         let mut guard = IPC_TABLES.lock();
-        let sched = guard.as_mut().expect("depart before sched::init");
+        let sched = guard.as_mut().expect("depart before sched::initialize");
         let current = current_thread_id();
 
         // A member of a process ends it on `exit` or a fault, and on `exit_thread` when it was

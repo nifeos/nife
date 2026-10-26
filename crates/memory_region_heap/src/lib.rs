@@ -5,7 +5,7 @@
 //! #[global_allocator]
 //! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 //! // first thing in _start:
-//! HEAP.init(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
+//! HEAP.initialize(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
 //! ```
 //!
 //! Name: provisional (lane/784-talc, 2026-10-21 UTC), for the type it holds; calef has not ruled
@@ -22,10 +22,10 @@ use talc::base::binning::DefaultBinning;
 use talc::source::Manual;
 
 /// The suggested heap base: 1 GiB, the start of the address-space map's heap band (milestone 206 (a program image has under 896 KiB)).
-/// A convention, not a law; a program with its own layout passes its own base to [`init`], and one
-/// that does should still keep it inside `address_space_map::HEAP`.
+/// A convention, not a law; a program with its own layout passes its own base to [`initialize`],
+/// and one that does should still keep it inside `address_space_map::HEAP`.
 ///
-/// [`init`]: MemoryRegionHeap::init
+/// [`initialize`]: MemoryRegionHeap::initialize
 pub const DEFAULT_BASE: u64 = address_space_map::HEAP.start;
 
 const PAGE: u64 = 4096;
@@ -39,7 +39,8 @@ struct Inner {
     /// The end `talc` reports for the one heap it holds, which the next grow extends; `None`
     /// until the first grow claims the first run.
     heap_end: Option<NonNull<u8>>,
-    /// Which capability table slot holds the untyped that pays for pages. `u64::MAX` until `init`.
+    /// Which capability table slot holds the untyped that pays for pages. `u64::MAX` until
+    /// `initialize`.
     memory_region_slot: u64,
     /// The heap's virtual range: `[base, base + max)`, of which `[base, base + committed)` is
     /// mapped and donated to the allocator so far.
@@ -93,7 +94,10 @@ impl MemoryRegionHeap {
     /// Wire the heap to its budget: pages come from the untyped in `memory_region_slot`, mapped at
     /// `[base, base + max_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
-    pub fn init(&self, memory_region_slot: u64, base: u64, max_bytes: u64) {
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
+    pub fn initialize(&self, memory_region_slot: u64, base: u64, max_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();
         inner.memory_region_slot = memory_region_slot;
@@ -142,7 +146,7 @@ impl MemoryRegionHeap {
     /// retry cannot succeed and the allocation must fail.
     fn grow(inner: &mut Inner, need: u64) -> bool {
         if inner.memory_region_slot == u64::MAX {
-            return false; // init() has not run; there is nothing to pay with.
+            return false; // initialize() has not run; there is nothing to pay with.
         }
         let need_pages = need.div_ceil(PAGE);
         // Grow geometrically (double the committed range) but never less than the request and

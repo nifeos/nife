@@ -98,9 +98,9 @@ pub struct PerCpu {
     /// by this core, with interrupts masked.
     pub switches: AtomicU64,
 
-    /// This core's placement PRNG for §28's two choices: xorshift32, seeded in [`init_this_cpu`].
-    /// Advanced by [`rng_next`](Self::rng_next) through `cpu::current()`. Deterministic, so the
-    /// icount instrument is reproducible.
+    /// This core's placement PRNG for §28's two choices: xorshift32, seeded in
+    /// [`initialize_this_cpu`]. Advanced by [`rng_next`](Self::rng_next) through `cpu::current()`.
+    /// Deterministic, so the icount instrument is reproducible.
     rng: AtomicU32,
 
     /// `x86_64` only: this core's trap-entry scratch, which `trap.s` reaches `gs`-relative at
@@ -113,7 +113,7 @@ pub struct PerCpu {
 /// See [`PerCpu::x86_trap`].
 #[cfg(target_arch = "x86_64")]
 pub(crate) struct X86TrapPerCpu {
-    /// The address of this core's `TSS.rsp0` field, written once by `segments::init`.
+    /// The address of this core's `TSS.rsp0` field, written once by `segments::initialize`.
     /// `isr_restore` writes the outgoing thread's kernel-stack top through it on every return to
     /// ring 3.
     pub tss_rsp0_ptr: UnsafeCell<u64>,
@@ -164,7 +164,7 @@ impl PerCpu {
             inbox_len: AtomicUsize::new(0),
             steal_request: work_steal_slot::Slot::new(),
             switches: AtomicU64::new(0),
-            rng: AtomicU32::new(1), // reseeded per core in init_this_cpu; never left 0 (xorshift)
+            rng: AtomicU32::new(1), // reseeded per core in initialize_this_cpu; never left 0 (xorshift)
             #[cfg(target_arch = "x86_64")]
             x86_trap: X86TrapPerCpu::new(),
         }
@@ -287,9 +287,9 @@ const _: () = assert!(
 /// Point this core's per-CPU register at block `id`, and seed its placement PRNG.
 ///
 /// Call once per core, before that core takes its first lock, because the lock path reads
-/// `current().held_rank`: before `console::init` on the boot core, first thing on a secondary.
-/// Panics if `id` is not below [`MAX_CPUS`].
-pub(crate) fn init_this_cpu(id: usize) {
+/// `current().held_rank`: before `console::initialize` on the boot core, first thing on a
+/// secondary. Panics if `id` is not below [`MAX_CPUS`].
+pub(crate) fn initialize_this_cpu(id: usize) {
     assert!(id < MAX_CPUS, "cpu id {id} exceeds MAX_CPUS {MAX_CPUS}");
     crate::arch::set_percpu(&PERCPU[id] as *const PerCpu as usize);
     // Deterministic per core, so the cores do not sample in lockstep. `| 1` keeps it nonzero,
@@ -306,10 +306,10 @@ pub(crate) fn init_this_cpu(id: usize) {
 /// the running thread's name, which `arch::read_current_thread` reads in one step
 /// (notes/scheduler.md, "The costs migration made real").
 pub fn current() -> &'static PerCpu {
-    // SAFETY: `init_this_cpu` set TPIDR_EL1 to the address of an element of the `'static`
+    // SAFETY: `initialize_this_cpu` set TPIDR_EL1 to the address of an element of the `'static`
     // `PERCPU` array, and nothing else ever writes TPIDR_EL1. The one window where this would be
-    // wrong is before `init_this_cpu` has run on this core, which is exactly why that call is the
-    // first thing `kernel_main` (and each secondary's entry) does, ahead of any lock.
+    // wrong is before `initialize_this_cpu` has run on this core, which is exactly why that call is
+    // the first thing `kernel_main` (and each secondary's entry) does, ahead of any lock.
     unsafe { &*(crate::arch::percpu() as *const PerCpu) }
 }
 

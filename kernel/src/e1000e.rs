@@ -31,7 +31,7 @@ pub enum Error {
     /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
     Pch(::e1000e::pch::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhyId(::e1000e::pch::phy::Error),
+    PhysicalLayerDeviceId(::e1000e::pch::phy::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -63,7 +63,7 @@ pub struct Found {
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
     /// that proves [`::e1000e::pch::phy::read_mdic`] under QEMU.
-    pub phy_id: u32,
+    pub physical_layer_device_id: u32,
 }
 
 /// The region's physical base, once allocated: zero until the first bring-up.
@@ -80,13 +80,13 @@ pub fn bring_up() -> Result<Found, Absent> {
     let refused = |why| Absent::Refused { rid: dev.rid, why };
     let pch = ::e1000e::pch::is_pch(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
-    let mut phy_id = None;
+    let mut physical_layer_device_id = None;
     if pch {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
         use ::e1000e::pch::sequence;
         let id = sequence::init_phy_workarounds(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
-        phy_id = Some(id);
+        physical_layer_device_id = Some(id);
         flush_descriptor_rings(&c, &dev, region);
         sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
     } else {
@@ -124,15 +124,15 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(regs::RFCTL, c.r(regs::RFCTL) & !::e1000e::RFCTL_EXTEN);
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RX_RING;
-    let tx = region + layout::TX_RING;
-    c.w(regs::RDBAL, rx as u32);
-    c.w(regs::RDBAH, (rx >> 32) as u32);
+    let receive_ring = region + layout::RX_RING;
+    let transmit_ring = region + layout::TX_RING;
+    c.w(regs::RDBAL, receive_ring as u32);
+    c.w(regs::RDBAH, (receive_ring >> 32) as u32);
     c.w(regs::RDLEN, u32::from(::e1000e::RX_ENTRIES) * 16);
     c.w(regs::RDH, 0);
     c.w(regs::RDT, 0);
-    c.w(regs::TDBAL, tx as u32);
-    c.w(regs::TDBAH, (tx >> 32) as u32);
+    c.w(regs::TDBAL, transmit_ring as u32);
+    c.w(regs::TDBAH, (transmit_ring >> 32) as u32);
     c.w(regs::TDLEN, u32::from(::e1000e::TX_ENTRIES) * 16);
     c.w(regs::TDH, 0);
     c.w(regs::TDT, 0);
@@ -145,9 +145,10 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(regs::RCTL, ::e1000e::rctl());
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
-    let phy_id = match phy_id {
+    let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::pch::phy::id_at(&mut hw, 1).map_err(|e| refused(Error::PhyId(e)))?,
+        None => ::e1000e::pch::phy::id_at(&mut hw, 1)
+            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
@@ -163,7 +164,7 @@ pub fn bring_up() -> Result<Found, Absent> {
             data_plane_phys: region,
         },
         link_up,
-        phy_id,
+        physical_layer_device_id,
     })
 }
 

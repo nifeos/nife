@@ -1,6 +1,10 @@
 # Milestone 138 (close the read gap), steps 4 and 2, and the comparisons not yet run
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 16-block blk contract, the metadata cache, and the two controlled comparisons, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef), who refused `milestone-138-steps-4-and-2` for this file; [the naming record](README.md) says why.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 16-block blk contract, the metadata
+cache, and the two controlled comparisons, with the dates, tables and corrections behind them. Name:
+ratified 2026-09-24 (calef), who refused `milestone-138-steps-4-and-2` for this file; [the naming
+record](README.md) says why.*
 
 ## Step 4 taken: the blk contract carries 16 blocks, and the win is smaller than the block count predicts (milestone 138, 2026-08-19)
 
@@ -63,10 +67,10 @@ Eight round trips at ~37 us each predict ~296 us saved. `fs_seq_read`, `fs_rand_
 `fs_record_read` each saved 284,304 to 302,165 ns, within 6%.
 
 The finding, as a sentence a reader can act on: step 4's batching is bounded by the record size, not
-the file-level request size, because RedoxFS only ever asks its `Disk` for one record's worth of bytes
-at a time. Step 1 chose an 8 KiB record to keep lz4 compression, and that caps what step 4 alone can
-batch per record at two blocks. Most of what remains (5 of 6 to 7 calls per record) is the tree walk,
-which is step 2's target.
+the file-level request size, because RedoxFS only ever asks its `Disk` for one record's worth of
+bytes at a time. Step 1 chose an 8 KiB record to keep lz4 compression, and that caps what step 4
+alone can batch per record at two blocks. Most of what remains (5 of 6 to 7 calls per record) is the
+tree walk, which is step 2's target.
 
 ### Crash consistency, re-run at the new geometry
 
@@ -80,7 +84,7 @@ coverage of the real device is unchanged by this step, not merely re-run.
 
 ### BUGS
 
-- The machine was loaded, `uptime` 15 to 21 throughout. The `fs_read` control and the model's
+- The machine was busy, `uptime` 15 to 21 throughout. The `fs_read` control and the model's
   internal consistency (a predicted ~296 us saving against a measured 284 to 302 us across three
   independent phases) are the evidence of a real signal. It is not the quiet single-tenant machine
   the record-level and transfer-size sweeps had.
@@ -95,8 +99,8 @@ coverage of the real device is unchanged by this step, not merely re-run.
 ## Step 2 taken: a 64-block metadata cache, and it is the biggest single number in this milestone (milestone 138, 2026-08-19)
 
 Step 4 said where the residual now lives. Of every 6 to 7 blk calls per record, 5 are
-`Transaction::read_tree_and_addr`'s tree walk. It is issued fresh on every
-`Server::read`/`write`/... call, even when the call just before resolved the identical node. That
+`Transaction::read_tree_and_addr`'s tree walk. It runs fresh on every `Server::read`/`write`/...
+call, even when the call just before resolved the identical node. That
 was first identified on 2026-08-18 ([the fixed term](five-blocks-per-request.md), and notes/fs-server.md's
 "the same five blocks every time") and not addressed until now.
 
@@ -158,11 +162,10 @@ buffered Linux (7,141 MiB/s) is the page-cache gap this milestone was never scop
 
 `redoxfs_server/tests/crash_consistency.rs`, unchanged pass: 0 silently wrong. The reason is the one
 steps 3 and 4 gave: the host-side model drives `BlockDisk<Recording>` below `CachedDisk`, so the cache
-is not on its path. At the device level the property that matters is argued, not re-run. The recovery mount of
-milestone 37 (prove RedoxFS's crash consistency) is a fresh process, so it builds a fresh, cold
-`CachedDisk` and can never observe
-what the killed process's cache held. A cache that survived its process's death would be the hazard;
-one that cannot outlive its process is not.
+is not on its path. At the device level the property that matters is argued, not re-run. The
+recovery mount of milestone 37 (prove RedoxFS's crash consistency) is a fresh process, so it builds
+a fresh, cold `CachedDisk` and can never observe what the killed process's cache held. A cache that
+survived its process's death would be the hazard; one that cannot outlive its process is not.
 
 ### What was not measured, and is the first thing to run next
 
@@ -178,35 +181,36 @@ two points here are the shipped value and an approximate floor.
 
 ### BUGS
 
-- The machine was loaded here too, `uptime` 15 to 19 throughout. The `fs_read` control's absolute
+- The machine was busy here too, `uptime` 15 to 19 throughout. The `fs_read` control's absolute
   value (9,474 to 15,107 ns across 8 rounds at 64 slots) is small enough that a scheduling hiccup
   moves it proportionally more than a millisecond-scale phase. The headline 22.2x is a median of 8
   rounds for that reason.
-- The cache is sized against this milestone's test fixtures, not a real deployment's node count.
+- The cache's size follows this milestone's test fixtures, not a real deployment's node count.
   [The fixed term](five-blocks-per-request.md) puts a 65,536-node filesystem's full spine at 259 blocks. 64
   slots keeps one open file's working set hot. It thrashes if enough distinct files are open at once
   to collide across the tree's shared upper levels, and nobody has measured that case.
-- A collision evicts silently. Two block numbers that hash to the same slot (`block % 64`) take turns
-  being cached. Correctness does not depend on the hit rate, since a miss is always safe. But a
-  workload alternating between two colliding blocks gets none of this step's benefit, and no
+- A collision evicts silently. Two block numbers that hash to the same slot (`block % 64`) take
+  turns in the cache. Correctness does not depend on the hit rate, since a miss is always safe. But
+  a workload alternating between two colliding blocks gets none of this step's benefit, and no
   instrumentation would show a reader why.
 
 ## The two controlled comparisons nobody has run (2026-08-19)
 
 Every filesystem comparison in these appendices is uncontrolled. The published pairing is
 nife-on-RedoxFS against Linux-on-ext4, where the operating system and the filesystem differ at once,
-so a gap can be attributed to either. That is why milestone 138's answer to *"does this architecture
-have a disk-read liability that cannot be overcome"* is assembled from decomposition rather than read
-off one number. The block server is at parity with raw virtio, the per-request residual is ~13 us,
+so either one could explain a gap. That is why milestone 138's answer to *"does this architecture
+have a disk-read liability that cannot be overcome"* comes from decomposition rather than from one
+number. The block server is at parity with raw virtio, the per-request residual is ~13 us,
 and everything else found so far is an implementation choice.
 
-Two comparisons would control it. Both were calef's, on 2026-08-19, and neither has been run.
+Two comparisons would control it. Both were calef's, on 2026-08-19, and neither has run.
 
 ### Linux-on-ext2 against nife-on-ext2
 
-This holds the filesystem constant and leaves the architecture. It is wanted when the ext2 stratum of milestone 140 (mount a drive this system did not
-create) exists. That block argues it: the ext2 row isolates the operating system, the nife column
-isolates the filesystem, and today's diagonal isolates neither.
+This holds the filesystem constant and leaves the architecture. Its time comes when the ext2 stratum
+of milestone 140 (mount a drive this system did not create) exists. That block argues it: the ext2
+row isolates the operating system, the nife column isolates the filesystem, and today's diagonal
+isolates neither.
 
 Its ceiling: our ext2 would be new against a thirty-year-old one, so the result bounds what the
 architecture can cost rather than deciding it.
@@ -236,8 +240,9 @@ where they differ:
 | policy | FIFO over a `HashMap` | direct-mapped, `block % 64` |
 | what it holds | every block read, record bodies included | single-block reads only; a record body bypasses it |
 
-Redox is still only *expected* to run `DiskCache`: it is std-only, and Redox has `std`. That is
-read from the vendored source, not from Redox's running filesystem service, and the comparison should confirm it first.
+Redox is still only *expected* to run `DiskCache`: it is std-only, and Redox has `std`. That comes
+from reading the vendored source, not from Redox's running filesystem service, and the comparison
+should confirm it first.
 
 So the prediction splits in three, and each part answers a different question:
 

@@ -10,7 +10,7 @@ mode differently:
 
 | architecture | instruction | what opens it |
 |---|---|---|
-| aarch64 | `mrs cntvct_el0` | the kernel sets `CNTKCTL_EL1.EL0VCTEN` in `timer::init` (notes/abi.md) |
+| aarch64 | `mrs cntvct_el0` | the kernel sets `CNTKCTL_EL1.EL0VCTEN` in `timer::initialize` (notes/abi.md) |
 | riscv64 | `rdtime` | the kernel sets `scounteren.TM` in its per-hart timer init |
 | `x86_64` | `rdtsc` | `CR4.TSD` is clear, the reset state, and the kernel never writes it |
 
@@ -27,7 +27,7 @@ fail. QEMU reports 62.5 MHz under TCG and the host's counter frequency under HVF
 
 RISC-V has no register that reports the timebase. The machine states it in the device tree at
 `/cpus/timebase-frequency`, and a process holds neither a pointer to the blob nor a capability to
-its memory. `kernel::arch::riscv64::timer::init_frequency` reads it on the boot hart and
+its memory. `kernel::arch::riscv64::timer::initialize_frequency` reads it on the boot hart and
 `kernel::user::timebase_page_phys` publishes it. radon (the VisionFive 2) runs its `time` CSR at
 4 MHz, so no constant could stand in for it.
 
@@ -35,7 +35,7 @@ x86 has no architected rate a ring-3 program can ask for. `CPUID` leaf `0x15` is
 parts, and calibrating against the 8254 PIT needs port I/O. Under §121 (what a device capability is when
 the device has no page: x86 port I/O) ring 3 runs `in` and `out` only on a `PortRange` it holds,
 and no program holds one for the PIT.
-`arch::x86_64::timer::init_frequency` reads the leaf or calibrates, and every kernel path that
+`arch::x86_64::timer::initialize_frequency` reads the leaf or calibrates, and every kernel path that
 builds a top-level address space maps the page (`kernel::user::map_x86_timebase_page`).
 
 Both publish the rate on the timebase page, mapped read-only into every process at
@@ -74,8 +74,8 @@ authority) option 4 chose a grant that keeps the read a single instruction with 
 
 On `x86_64` the TSC is both the coarse and the fine counter. `CR4.TSD` is clear at reset and never
 written, so every ring-3 program holds a sub-nanosecond timing instrument it was never granted.
-`CR4.PCE`, the `rdpmc` door, is closed per core in `arch::init`. Setting `CR4.TSD` would take away
-`Instant`, `thread::sleep`, the random seed and smoltcp's timestamps at once. It needs a coarse
+`CR4.PCE`, the `rdpmc` door, is closed per core in `arch::initialize`. Setting `CR4.TSD` would take
+away `Instant`, `thread::sleep`, the random seed and smoltcp's timestamps at once. It needs a coarse
 monotonic page first, the move §43 (reading the clock is a page) made one axis over. Until then
 `x86_64` answers milestone 75 (who may read the cycle counter, and by what authority) with
 "everyone, always", against §19 (architectural parity is a tenet).

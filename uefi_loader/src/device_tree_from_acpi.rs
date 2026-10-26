@@ -530,7 +530,7 @@ mod tests {
     /// Every assertion here is a call the kernel makes on the real boot path, against the bytes
     /// this module writes. A writer proved by inspection is proved by nothing; this is the rule
     /// `handoff.rs` and `device_tree_patch.rs` already follow, and it is what would catch a cell
-    /// count or a node name drifting out from under `memory::init` in milliseconds rather than in
+    /// count or a node name drifting out from under `memory::initialize` in milliseconds rather than in
     /// a QEMU run.
     #[test]
     fn what_this_writes_is_what_the_kernel_reads() {
@@ -538,14 +538,14 @@ mod tests {
         let (len, out) = built(&machine);
         let dt = DeviceTreeBlob::from_bytes(&out[..len]).expect("a well-formed device tree");
 
-        // `memory::init`, first call: the interrupt controller, found by its binding.
+        // `memory::initialize`, first call: the interrupt controller, found by its binding.
         assert_eq!(
             gic::discover(&dt).expect("the GIC node parses"),
             Some(machine.gic),
             "the GIC written is not the GIC read back"
         );
 
-        // `memory::init`, second call: RAM.
+        // `memory::initialize`, second call: RAM.
         let mut regions = [Region { start: 0, size: 0 }; MAX_RAM];
         let n = dt
             .memory_regions(&mut regions)
@@ -556,7 +556,7 @@ mod tests {
             (0x4000_0000, 0x1000_0000)
         );
 
-        // `memory::init`, third call: the console UART's interrupt, decoded through the root's
+        // `memory::initialize`, third call: the console UART's interrupt, decoded through the root's
         // `interrupt-parent` phandle and the controller's `#interrupt-cells`. 33 is SPI 1, which
         // is what QEMU's own tree states and what the kernel's fallback constant also says; the
         // point is that it came from the machine.
@@ -577,7 +577,7 @@ mod tests {
             assert_eq!(cpu.enable_method, EnableMethod::Psci);
         }
 
-        // `arch::aarch64::isa::init`.
+        // `arch::aarch64::isa::initialize`.
         let psci = Psci::from_device_tree(&dt)
             .expect("/psci parses")
             .expect("this machine claims PSCI");

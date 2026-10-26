@@ -1,6 +1,10 @@
 # x86_64 instruments: the icount leg, CR4, and two cores
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the x86 icount leg, why `CR4.PGE`/`PCIDE` cannot be measured under TCG, and the two-core counters, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the x86 icount leg, why
+`CR4.PGE`/`PCIDE` escape measurement under TCG, and the two-core counters, with the dates, tables
+and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds
+it.*
 
 ## 2026-08-25: an icount leg for x86_64, and the "no icount leg" line was wrong
 
@@ -15,13 +19,13 @@ Two different questions were being conflated, and they have different answers.
 - Does `icount()` (the instrument of milestone 78 (the load-sensitive assertions), `kernel/src/icount.rs`) work on `x86_64`? No, and
   this has not changed. Its claims compare an interrupt's arrival, and a re-armed deadline, against
   the deadline the kernel last wrote (`CNTV_CVAL_EL0` on aarch64, the SBI `DEADLINE` word on
-  riscv64). `kernel/src/arch/x86_64/timer.rs::init` arms the local APIC timer in periodic mode
+  riscv64). `kernel/src/arch/x86_64/timer.rs::initialize` arms the local APIC timer in periodic mode
   (`irq::arm_periodic_timer`, a fixed reload count the hardware reloads on its own). There is no
   deadline word to read back, so claims 1 and 4 have no x86_64 referent as designed. Building one
   would mean moving the shipping x86_64 tick source to one-shot/TSC-deadline mode. That is an
   architecture change to a production path, not a small addition to an instrument, and it stays
   out of scope. `icount()` still refuses `--arch x86_64` and should.
-- Can QEMU's virtual clock be pinned to the instruction stream on `q35` at all, for a plain
+- Can QEMU pin its virtual clock to the instruction stream on `q35` at all, for a plain
   duration measurement? Yes. `kernel/src/bench.rs`'s `timed()` helper, which every `bench:` line
   uses on every ISA, needs only two `now()` reads around a span and has no opinion about
   deadlines. `now()` on `x86_64` already dispatches to `rdtsc` (`kernel/src/arch/x86_64/timer.rs`).
@@ -61,7 +65,7 @@ runners already `exec`, so `pkill -P` finds no children there.
 ### Reproducibility
 
 Deterministic here means deterministic against this exact QEMU build, this exact kernel binary, on
-`q35`. Every icount leg carries that caveat, which is why `.qemu-version` is pinned on all three
+`q35`. Every icount leg carries that caveat, which is why `.qemu-version` pins QEMU for all three
 ISAs. Three consecutive runs in one session show that TCG's icount accounting for `x86_64` under
 `q35` does not fall back to wall-clock timing anywhere in this kernel's boot path. It was not tested
 across a QEMU upgrade, a different host OS, or `-smp` greater than one. The runner already forces
@@ -75,15 +79,15 @@ A gated number now exists for `yield_switch`, a bare kernel-thread switch with n
 on and re-running `--check` would show whether the change moves it at all. It does not answer the
 question alone, because nothing on this port switched address spaces under load yet:
 `switch_user_root` still skips the `CR3` write `yield_switch` exercises. So this baseline is a
-kernel-thread switch's cost, not an address-space switch's. The tooling gap is retired. The
+kernel-thread switch's cost, not an address-space switch's. The tooling gap closed. The
 measurement gap, a workload that actually switches `CR3`, stayed open and stayed an architect's
 call. The 2026-09-19 entry below is that workload.
 
 ## 2026-09-19: `CR4.PGE` and `CR4.PCIDE`, and why this tree cannot yet measure either (milestone 161 (the x86_64 kernel port))
 
 Milestone 161 carried "measure `CR4.PGE` and `CR4.PCIDE`" from item 3 onward, deferred each time
-because nothing switched address spaces under load. Something does now, and the measurement was
-taken. The instrument cannot see the effect, so the obvious reading of the table below ("PGE saves
+because nothing switched address spaces under load. Something does now, and a measurement exists.
+The instrument cannot see the effect, so the obvious reading of the table below ("PGE saves
 nothing") is wrong.
 
 ### What changes when PGE is on, and what does not
@@ -104,7 +108,7 @@ write. `ipc_rtt_el0` is a round trip between two processes, two per iteration.
 ### icount: byte-identical, by construction
 
 Same tree, two builds differing only in setting `CR4.PGE` after the fine map is installed (in
-`mmu::init` and `mmu::init_secondary`), `-icount shift=0,sleep=off`, one boot each:
+`mmu::initialize` and `mmu::initialize_secondary`), `-icount shift=0,sleep=off`, one boot each:
 
 | bench | iters | ticks, PGE off | ticks, PGE on |
 |---|---|---|---|
@@ -132,7 +136,7 @@ Overlapping, about 1% apart, on a shared host with other lanes running. No diffe
 The pinned QEMU (11.0.2) implements `CR3` writes as `cpu_x86_update_cr3`, which calls `tlb_flush` on
 the whole softmmu TLB whenever paging is on and reads neither `PGE` nor `PCIDE`
 (`target/i386/helper.c`, read at the `v11.0.2` tag on 2026-09-19). Under TCG a global entry never
-survives a switch, and a `PCIDE`-tagged entry is discarded with everything else.
+survives a switch, and a `PCIDE`-tagged entry goes with everything else.
 
 *(Correction, 2026-09-24: these `ns` figures come from the stored TSC rate, which the 2026-09-21
 calibration finding showed could be inflated by up to 12x on any boot. See

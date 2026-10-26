@@ -19,7 +19,10 @@ const CANARY: [u64; 4] = [
 ];
 
 /// Paint the canary. Call this before anything can use much stack.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     // SAFETY: `__stack_bottom` is inside our own image, and by definition nothing has
     // pushed a frame that deep, or we would already be dead.
     unsafe {
@@ -359,7 +362,7 @@ static BOOT_PAINT_CEILING: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 
 /// Paint the boot stack from above the canary to 512 bytes below the current `sp`.
 ///
-/// Called from `kernel_main` right after [`init`], so the live frames are skipped. Depth used
+/// Called from `kernel_main` right after [`initialize`], so the live frames are skipped. Depth used
 /// before this runs and never reached again is invisible; the report prints the floor. The 512-byte
 /// margin covers the paint loop's own callees, which are real calls in a debug build.
 #[cfg(any(test, feature = "system_tests"))]
@@ -430,12 +433,12 @@ pub(crate) fn report_high_water() {
         );
     }
 
-    // Every seat: `interrupt_stack::init` painted each slot, so an unused one reads 0.
+    // Every seat: `interrupt_stack::initialize` painted each slot, so an unused one reads 0.
     let mut max_interrupt = 0u64;
     for id in 0..crate::cpu::MAX_CPUS {
         let (b, t) = crate::interrupt_stack::span(id);
-        // SAFETY: a slot of the region `interrupt_stack::init` mapped and painted before any core
-        // could switch to one.
+        // SAFETY: a slot of the region `interrupt_stack::initialize` mapped and painted before any
+        // core could switch to one.
         let used = unsafe { high_water(b, t) };
         max_interrupt = max_interrupt.max(used);
         if used > 0 {

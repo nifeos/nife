@@ -35,13 +35,13 @@ pub use fastpath_pad::fastpath_pad_body;
 pub use semihosting::reboot;
 
 mod assembly;
-mod cpu_init;
+mod cpu_initialization;
 mod harts;
 mod percpu;
 mod primitives;
 mod remote_fence;
 
-pub use cpu_init::*;
+pub use cpu_initialization::*;
 pub use harts::*;
 pub use percpu::*;
 pub use primitives::*;

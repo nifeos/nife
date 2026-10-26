@@ -316,7 +316,7 @@ fn the_validator_refuses_more_new_entries_than_the_ring_can_hold() {
 /// refused, so a device cannot write a received packet over the kernel. The in-region buffer that
 /// validates first shows the refusal is about the address, not the direction flag.
 #[test_case]
-fn the_validator_refuses_an_rx_descriptor_that_escapes_the_region() {
+fn the_validator_refuses_a_receive_descriptor_that_escapes_the_region() {
     let (driver, shadow, size) = two_regions();
     let desc = driver + DESC_OFF;
     let avail = driver + AVAIL_OFF;

@@ -13,7 +13,7 @@ boot-check (x86_64): nife self-test: 9 of 13 passed, 3 absent: blockdev clock tr
 ```
 
 The same branch passed at 20:31, and every other `boot-check` around it passed. The job log carries
-only the verdict line, so the check's own line, with the frame counts it compared, was lost.
+only the verdict line, so the check's own line, with the frame counts it compared, did not survive.
 
 ## Which branch of the check failed
 

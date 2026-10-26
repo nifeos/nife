@@ -92,12 +92,12 @@ device never needs, over the one page only the kernel may shape.
 
 ## Discovery differs by arch; the rest is portable
 
-The SMMUv3 is a device-tree platform node, found in `memory::smmu_region` and mapped by `mmu::init`;
-`arch::iommu::init(base)` is called from the aarch64 boot when the node is present. The RISC-V IOMMU
-is itself a PCI function (`riscv-iommu-pci`, Red Hat 1b36:0014), so `pci::init_iommu` enumerates it.
-It places its BAR from a now-shared cursor (two functions need BARs placed, so the cursor can no
-longer reset per device), and hands the base to `arch::iommu::init`. The BAR-placement change is the
-one
+The SMMUv3 is a device-tree platform node, found in `memory::smmu_region` and mapped by
+`mmu::initialize`; `arch::iommu::initialize(base)` is called from the aarch64 boot when the node is
+present. The RISC-V IOMMU is itself a PCI function (`riscv-iommu-pci`, Red Hat 1b36:0014), so
+`pci::initialize_iommu` enumerates it. It places its BAR from a now-shared cursor (two functions
+need BARs placed, so the cursor can no longer reset per device), and hands the base to
+`arch::iommu::initialize`. The BAR-placement change is the one
 piece of PCI plumbing this milestone touched.
 
 ## Making the machine tell the truth: the confinement test

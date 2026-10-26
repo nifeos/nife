@@ -310,7 +310,7 @@ fn map_a_clock_page(space: &mut AddressSpace) -> u64 {
         .expect("no frame for a clock page")
         .addr();
     // SAFETY: a frame this test just allocated, named through the direct map.
-    unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) }.init();
+    unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) }.initialize();
     space
         .map_physical(
             timetable::contract::CLOCK_VA,

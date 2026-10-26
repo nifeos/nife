@@ -35,10 +35,10 @@ spawns a program by accident. The tests that would spawn them skip with the reas
 FILE` into exactly one entry there. `machine_discovery::x86_64::module` decodes it (host-tested,
 three tests, including the 32-byte stride that a one-module list cannot catch), and
 `arch::x86_64::machine::initial_ramdisk` reads entry zero through the direct map. The x86 front end then does
-what `memory::init` does with the tree's answer. It adds the region to the `forbidden` slice so the
-allocator cannot hand out the archive it is about to read, and calls `memory::record_initial_ramdisk`. The
-evidence it works is arithmetic rather than a print: free memory drops from 254 MiB to 249 with a
-4.4 MB archive attached.
+what `memory::initialize` does with the tree's answer. It adds the region to the `forbidden` slice
+so the allocator cannot hand out the archive it is about to read, and calls
+`memory::record_initial_ramdisk`. The evidence it works is arithmetic rather than a print: free
+memory drops from 254 MiB to 249 with a 4.4 MB archive attached.
 
 The first module is taken and any others ignored. PVH permits several; this kernel wants one;
 inventing a policy for a case the machine never produces would be code nobody could test.

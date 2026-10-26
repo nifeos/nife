@@ -2,8 +2,8 @@
 //!
 //! The crate decides what each byte means, host-tested; this file turns the physical address the
 //! loader put in `ebx` into bytes through the direct map, as `console.rs` and `memory.rs` do with
-//! `crates/device_tree_blob`. `memory::init` reaches it through `arch::x86_64::discovery`, which
-//! owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
+//! `crates/device_tree_blob`. `memory::initialize` reaches it through `arch::x86_64::discovery`,
+//! which owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
 //! # BUGS
 //! - The CMOS RTC crosses no seam: it is two I/O ports, not a page, so `memory::RTC_REGION` has
@@ -86,8 +86,8 @@ fn boot_slot(info: &BootInfo) -> Option<u8> {
 /// hand the console its direct-map address.
 ///
 /// Returns what was found and the grid it produced, for the boot line; `None` when the machine said
-/// nothing about a screen, as under QEMU's PVH loader. Must run before `arch::mmu::init`, and runs
-/// first in the tour; see `memory::record_framebuffer`.
+/// nothing about a screen, as under QEMU's PVH loader. Must run before `arch::mmu::initialize`, and
+/// runs first in the tour; see `memory::record_framebuffer`.
 pub(crate) fn attach_screen(at: usize) -> Option<(Framebuffer, u32, u32)> {
     let info = boot_info(at)?;
     let cmdline = cmdline(&info)?;
@@ -101,15 +101,16 @@ pub(crate) fn attach_screen(at: usize) -> Option<(Framebuffer, u32, u32)> {
         crate::console::hold_screen_at_handover();
     }
 
-    // Before the console is armed, not after: this is what makes the mapping survive `mmu::init`,
-    // and a console armed against a window nothing will map is a fault inside `println!`.
+    // Before the console is armed, not after: this is what makes the mapping survive
+    // `mmu::initialize`, and a console armed against a window nothing will map is a fault inside
+    // `println!`.
     crate::memory::record_framebuffer(found.base, span);
 
     // SAFETY: the aperture is `span` bytes at `found.base`, which the loader read out of the
     // firmware's own `EFI_GRAPHICS_OUTPUT_PROTOCOL` and checked against the aperture size the
     // firmware reported. It is mapped now by the boot tables (which cover the low 4 GiB) and after
-    // `mmu::init` by the entry the line above just arranged. Nothing else in the kernel writes
-    // there: the display service's framebuffers are virtio-gpu surfaces in RAM, not this.
+    // `mmu::initialize` by the entry the line above just arranged. Nothing else in the kernel
+    // writes there: the display service's framebuffers are virtio-gpu surfaces in RAM, not this.
     let (cols, rows) = unsafe { crate::console::attach_screen(found, phys_to_virt(found.base))? };
     Some((found, cols, rows))
 }
@@ -326,8 +327,8 @@ unsafe fn phys_slice<'a>(at: u64, len: usize) -> &'a [u8] {
 ///
 /// `boot.s` builds 2048 2 MiB page-directory entries under a four-entry PDPT that both PML4[0]
 /// (identity) and PML4[273] (the direct map `phys_to_virt` names) point at. The ACPI walk runs
-/// before `mmu::init`, so this bound, not the fine map's, applies. Firmware puts its tables near
-/// the top of RAM, which the suite's `-m 256M` does not exercise; see
+/// before `mmu::initialize`, so this bound, not the fine map's, applies. Firmware puts its tables
+/// near the top of RAM, which the suite's `-m 256M` does not exercise; see
 /// notes/x86-port/acpi-and-pci.md.
 const BOOT_DIRECT_MAP_LIMIT: u64 = 0x1_0000_0000;
 
@@ -520,8 +521,8 @@ fn read_mcfg(body: &[u8], into: &mut Acpi) {
 }
 
 fn read_dmar(body: &[u8], into: &mut Acpi) {
-    // The host address width is not kept (`iommu::init` reads `CAP_REG` itself); `INTR_REMAP` is,
-    // in `DmarUnits::platform_interrupt_remapping`. Parsing the fixed part proves the table
+    // The host address width is not kept (`iommu::initialize` reads `CAP_REG` itself); `INTR_REMAP`
+    // is, in `DmarUnits::platform_interrupt_remapping`. Parsing the fixed part proves the table
     // well-formed before its structure list is trusted.
     if parse_dmar(body).is_err() {
         return;
@@ -770,8 +771,8 @@ const LOW_MEGABYTE: u64 = 0x0010_0000;
 
 /// **Bring the frame allocator up from what the loader described.**
 ///
-/// The x86 counterpart of `memory::init`'s device-tree front end: it turns the PVH memory map into
-/// the two slices `memory::bring_up_page_frames` takes, and nothing else.
+/// The x86 counterpart of `memory::initialize`'s device-tree front end: it turns the PVH memory map
+/// into the two slices `memory::bring_up_page_frames` takes, and nothing else.
 ///
 /// Returns how many RAM regions were used, which the boot print reports; a machine describing more
 /// than [`MAX_RAM_REGIONS`] gets the first that many, and saying how many were taken is what makes
@@ -832,7 +833,7 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
         forbidden_count += 1;
         crate::memory::record_boot_file(m.addr, m.size);
     }
-    // Which slot started this image, recorded before `mmu::init` replaces the boot map this
+    // Which slot started this image, recorded before `mmu::initialize` replaces the boot map this
     // reader uses. `user::install_service::confirm` is its one consumer.
     crate::memory::record_boot_slot(boot_slot(info));
     // And whether the boot came from the NVMe disk, the one fact that lets the internal disk be

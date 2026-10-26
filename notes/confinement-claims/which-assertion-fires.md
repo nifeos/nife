@@ -146,11 +146,11 @@ milestone 313 (userspace confinement, read adversarially) found it on 2026-09-17
 hardware does refuse a supervisor fetch from a `U` page, unconditionally. On `x86_64` it does so only
 while `CR4.SMEP` is set, and this kernel had never set it. `XD` is the one execute bit and applies at
 every ring. So the decoder was reporting a user page as not kernel-executable on a machine where ring
-0 could execute it. The bit is set now (`arch::x86_64::init`, on every core whose CPUID offers it).
-That makes the decoder true on the hardware rather than in principle, and the encoder's own comment
-carries the correction. The structural point survives with that caveat. The assertion still cannot
-fail on those two ISAs, and what is wrong is reading one portable test as three ISAs' worth of
-evidence. It is the same distinction 305 drew for row 21: a gap in the evidence, not in the
+0 could execute it. The bit is set now (`arch::x86_64::initialize`, on every core whose CPUID offers
+it). That makes the decoder true on the hardware rather than in principle, and the encoder's own
+comment carries the correction. The structural point survives with that caveat. The assertion still
+cannot fail on those two ISAs, and what is wrong is reading one portable test as three ISAs' worth
+of evidence. It is the same distinction 305 drew for row 21: a gap in the evidence, not in the
 capability.
 
 Row 19's attackers cannot tell a refusal from a probe that was never sent. `fs_test_client`'s

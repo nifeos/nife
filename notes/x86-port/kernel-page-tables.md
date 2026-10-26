@@ -33,10 +33,11 @@ overwrite refusal would report that as `kmem: no memory to wire one`, far from t
 
 `phys_to_virt` means one thing for the machine's whole life. `boot.s` gives the boot tables a
 PML4[273] entry over the low 4 GiB before the first Rust instruction, so the frame bitmap, the PVH
-structure and the ACPI tables keep the pointers they took early. `mmu::init` widens the direct map
-rather than introducing it, and it drops the boot identity map, which was an alias of all physical
-memory in the half user programs get. `boot.s` writes the PML4 index as the literal 273, because a
-32-bit assembler cannot compute it, and a compile-time assertion in `layout.rs` keeps the two equal.
+structure and the ACPI tables keep the pointers they took early. `mmu::initialize` widens the direct
+map rather than introducing it, and it drops the boot identity map, which was an alias of all
+physical memory in the half user programs get. `boot.s` writes the PML4 index as the literal 273,
+because a 32-bit assembler cannot compute it, and a compile-time assertion in `layout.rs` keeps the
+two equal.
 
 ## What the direct map claims, and in which order
 
@@ -126,11 +127,11 @@ implementation that keeps `crates/address_space_identifier`'s reuse contract. Wi
   firmware to keep usable RAM write-back throughout. Device windows and firmware reservations stay
   in 4 KiB leaves, where mixed types live. On QEMU's 256 MiB the page-sized part was 560 KiB of
   tables.
-- `mmu::init` must allocate its tables below 4 GiB, which is all the boot map reaches. A machine
-  whose RAM starts above 4 GiB would fault in `map_everything`.
+- `mmu::initialize` must allocate its tables below 4 GiB, which is all the boot map reaches. A
+  machine whose RAM starts above 4 GiB would fault in `map_everything`.
 - `CR4.PGE` is off. TCG flushes on every `CR3` write regardless and icount cannot see a refill, so
   the cost has no measurement (notes/benchmarks.md). Turning it on is two lines in `init` and
-  `init_secondary`.
+  `initialize_secondary`.
 - `CR4.PCIDE` is off, so `flush_asid` flushes everything. It is not a bit to flip: with PCIDE on,
   `invlpg` and `CR3` writes act on the current PCID only, so `unmap_user_at`, `flush_asid` and the
   NMI shootdown would leave other spaces' stale entries alive until `INVPCID` covers every path.

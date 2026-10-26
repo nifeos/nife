@@ -21,7 +21,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::sync::{IrqSafeMutex, rank};
 
-/// The PLIC's MMIO base (a kernel virtual address in the direct map), stored by [`init`].
+/// The PLIC's MMIO base (a kernel virtual address in the direct map), stored by [`initialize`].
 static PLIC_BASE: AtomicUsize = AtomicUsize::new(0);
 
 const PRIORITY_BASE: usize = 0x0000;
@@ -37,7 +37,7 @@ fn base() -> usize {
 
 /// Read a 32-bit PLIC register at `off` from the base.
 fn read(off: usize) -> u32 {
-    // SAFETY: `off` names a PLIC register within the block `init` mapped and promised.
+    // SAFETY: `off` names a PLIC register within the block `initialize` mapped and promised.
     unsafe { core::ptr::read_volatile((base() + off) as *const u32) }
 }
 
@@ -54,7 +54,10 @@ fn write(off: usize, val: u32) {
 /// # Safety
 /// `base` must be the PLIC's MMIO base as a mapped, device-typed kernel virtual address, and
 /// `context` must be this hart's supervisor context number.
-pub unsafe fn init(base: usize, context: usize) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub unsafe fn initialize(base: usize, context: usize) {
     // The one check [`claim_register`] leans on, made once here instead of on every interrupt.
     assert!(
         base.checked_add(CLAIM_REACH).is_some(),
@@ -67,10 +70,11 @@ pub unsafe fn init(base: usize, context: usize) {
     open_context(context);
 }
 
-/// Open `context`'s threshold so any source with a nonzero priority can interrupt it. [`init`] does
-/// this for the boot context; IRQ affinity (`arch::irq`) calls this for a secondary hart's context
-/// the first time it routes a device source there, so that hart can actually take the interrupt. A
-/// context whose threshold is never opened takes nothing, which is the safe default. Idempotent.
+/// Open `context`'s threshold so any source with a nonzero priority can interrupt it.
+/// [`initialize`] does this for the boot context; IRQ affinity (`arch::irq`) calls this for a
+/// secondary hart's context the first time it routes a device source there, so that hart can
+/// actually take the interrupt. A context whose threshold is never opened takes nothing, which is
+/// the safe default. Idempotent.
 ///
 /// Not serialized: a whole-word store of the constant `0`, with no read, so two racing harts
 /// both leave `0`.
@@ -120,7 +124,8 @@ pub fn enable(source: u32, context: usize) {
 /// acknowledge, so call it exactly once per interrupt. `context` must be the claiming hart's own
 /// context, so a secondary hart claims from its context, not the boot hart's.
 pub fn claim(context: usize) -> u32 {
-    // SAFETY: `claim_register` names `context`'s claim register, inside the block `init` mapped.
+    // SAFETY: `claim_register` names `context`'s claim register, inside the block `initialize`
+    // mapped.
     unsafe { core::ptr::read_volatile(claim_register(context)) }
 }
 
@@ -142,8 +147,8 @@ const CLAIM_REACH: usize = THRESHOLD_BASE + u16::MAX as usize * CONTEXT_STRIDE +
 ///
 /// Wrapping arithmetic, because no wrap can happen and this is inlined into the trap body every
 /// interrupt crosses (release builds check overflow, notes/overflow-checks.md): the offset is under
-/// `CLAIM_REACH` for every context this kernel holds, and `init` refused a base that `CLAIM_REACH`
-/// would carry past the top of the address space.
+/// `CLAIM_REACH` for every context this kernel holds, and `initialize` refused a base that
+/// `CLAIM_REACH` would carry past the top of the address space.
 #[inline(always)]
 fn claim_register(context: usize) -> *mut u32 {
     let off = THRESHOLD_BASE
@@ -179,7 +184,7 @@ mod tests {
 
         assert!(
             base() != 0,
-            "the PLIC base is unset: plic::init has not run, so this test would write to a null \
+            "the PLIC base is unset: plic::initialize has not run, so this test would write to a null \
              device"
         );
 

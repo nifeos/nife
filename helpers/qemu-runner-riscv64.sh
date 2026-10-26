@@ -25,7 +25,7 @@ SMP="${NIFE_SMP:-4}"
 
 # The userspace program rides in as an initial ramdisk, exactly as on aarch64: QEMU loads the file
 # into RAM and writes its address into /chosen/linux,initrd-start in the device tree, where
-# memory::init reads it. Set NIFE_INITIAL_RAMDISK to a riscv64 user ELF (or a nifefs archive) to
+# memory::initialize reads it. Set NIFE_INITIAL_RAMDISK to a riscv64 user ELF (or a nifefs archive) to
 # hand it to the kernel; the milestone-20 boot loads and runs it at U-mode. Unset, the kernel prints
 # "no -initrd" and moves on.
 INITIAL_RAMDISK=""
@@ -299,7 +299,7 @@ fi
 # The RISC-V IOMMU (milestone 16b): the ratified v1.0.1 IOMMU as a PCI function (riscv-iommu-pci,
 # Red Hat 1b36:0014) in front of the PCIe bus. Present on every boot for parity with the aarch64
 # SMMU that is always on the machine; the kernel enumerates it, places its BAR, and brings it up
-# (pci::init_iommu). Idle when no PCI disk is attached. Placed on the command line before the disk
+# (pci::initialize_iommu). Idle when no PCI disk is attached. Placed on the command line before the disk
 # so it fronts the bus the virtio-blk-pci device joins.
 IOMMU="-device riscv-iommu-pci"
 

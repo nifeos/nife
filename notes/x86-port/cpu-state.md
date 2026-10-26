@@ -9,8 +9,8 @@ argument.
 
 ## The control registers each core sets
 
-`cpu_init::init` runs on every core, the boot core and each secondary, because every bit it sets
-is per-CPU state.
+`cpu_initialization::initialize` runs on every core, the boot core and each secondary, because every
+bit it sets is per-CPU state.
 
 ### Write-combining for the framebuffer
 
@@ -25,10 +25,10 @@ MTRRs say about the range, so it does not depend on firmware.
 The SDM asks for a cache flush around a PAT change, because a mapping that already uses the
 changed entry would hold lines of the old type. No mapping uses entry 1 when this runs. `boot.s`'s
 coarse map sets neither `PWT` nor `PCD`, and every fine-map device page is `PCD | PWT` (entry 3).
-On the boot core it runs before `mmu::init` builds the fine map, and on a secondary before
-`mmu::init_secondary` adopts it. Every `x86_64` processor this tree knows of offers the PAT (from
-memory, not a specification citation). Without it, `PWT` alone is write-through, which is merely
-slow for a screen nothing reads back.
+On the boot core it runs before `mmu::initialize` builds the fine map, and on a secondary before
+`mmu::initialize_secondary` adopts it. Every `x86_64` processor this tree knows of offers the PAT
+(from memory, not a specification citation). Without it, `PWT` alone is write-through, which is
+merely slow for a screen nothing reads back.
 
 ### SMEP: ring 0 does not execute ring-3 pages
 
@@ -140,8 +140,8 @@ less than 512 bytes. That is worth doing with the `XCR0` work, not before it.
 The Kani proof `every_fp_edit_changes_exactly_the_bits_it_names` checks the `CR0` and `CR4` edits
 from every starting value. `CR0` carries `PG` and `WP` beside the four FP bits, and `CR4` carries
 `PAE`, `SMEP` and the paging controls beside the two SSE enables. On QEMU most wrong masks land on a
-bit that happens to be clear already, which is why the proof exists. `fp::init` is the only thing
-that sets `TS` before the first thread runs.
+bit that happens to be clear already, which is why the proof exists. `fp::initialize` is the only
+thing that sets `TS` before the first thread runs.
 
 ## CPUID and the three boot gates
 
@@ -157,15 +157,15 @@ went wrong.
 | Feature | Checked | Why there |
 |---|---|---|
 | NX | `boot.s`, before `EFER.NXE` is written | that write is itself the hazard: setting a reserved `EFER` bit on a part without NX is `#GP` with no IDT, which QEMU shows as a silent reset |
-| `syscall` | `isa::init`, just before `arch::init` programs the four MSRs | the console is up, so the refusal can be read |
-| invariant TSC | `isa::init`, before `timer::init_frequency` measures a rate | the same, and under a hypervisor it warns rather than refuses |
+| `syscall` | `isa::initialize`, just before `arch::initialize` programs the four MSRs | the console is up, so the refusal can be read |
+| invariant TSC | `isa::initialize`, before `timer::initialize_frequency` measures a rate | the same, and under a hypervisor it warns rather than refuses |
 
-`isa::init` re-checks NX because the assembly gate can only halt, and this one can say what is
+`isa::initialize` re-checks NX because the assembly gate can only halt, and this one can say what is
 wrong.
 
 The invariant TSC is a different kind of check. NX and `syscall` announce their own absence the
-moment the kernel uses them. The invariant TSC does not. `timer::init_frequency` measures the TSC's
-rate once, against the PIT. On a part without `CPUID.80000007H:EDX[8]` the rate moves with the
+moment the kernel uses them. The invariant TSC does not. `timer::initialize_frequency` measures the
+TSC's rate once, against the PIT. On a part without `CPUID.80000007H:EDX[8]` the rate moves with the
 core's frequency and idle state, so there is no single rate for that measurement to find. The
 error appears later, as time itself being wrong, and measuring harder cannot catch a wrong
 assumption.
@@ -188,7 +188,7 @@ with a different backend (`kernel/src/user/entropy_service.rs`). `isa::draw_rand
 times, the high end of Intel's "between 1 and 100" for an asynchronous caller, because it is a
 one-shot boot-tour probe rather than a service under load.
 
-The record is `None` until `isa::init` writes it, so a read before discovery panics with this
+The record is `None` until `isa::initialize` writes it, so a read before discovery panics with this
 file's name. A zeroed record would decode as a machine that should have been refused, which is the
 worst thing a missed initialization could look like.
 
@@ -223,8 +223,8 @@ Each stack is 16 KiB over a 4 KiB guard page that the fine map leaves unmapped, 
 `verify` refuses a mapped guard. `TSS.ist` points `TOP_RESERVE` bytes below the top, and the top
 word holds the core's per-CPU pointer, so `isr_paranoid` finds the kernel's GS base at a fixed
 offset from its own `rsp` without trusting `gs` or the saved `CS`. `ist::install` runs once per core
-from `segments::init`. On the boot core it runs on the coarse boot map, which covers the region
-writable, and on a secondary on the fine map.
+from `segments::initialize`. On the boot core it runs on the coarse boot map, which covers the
+region writable, and on a secondary on the fine map.
 
 Each vector has its own stack, so one interrupting another corrupts nothing. A double fault inside a
 double fault is a triple fault, and a machine check inside a machine check is a shutdown; neither

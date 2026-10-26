@@ -52,7 +52,7 @@ Each thing it does is something an earlier run got wrong by hand:
   instructions load from a directory and its ancestors, never its descendants, so no `AGENTS.md`
   arrives at turn zero. The file is still in the tree, where a stranger from GitHub would find it.
 - It withholds the answer key: this page, its appendices under `notes/stranger-test/`, and its
-  `notes/README.md` entry. The deletion is amended into the tip, so the working tree is clean.
+  `notes/README.md` entry. It amends the deletion into the tip, so the working tree is clean.
   Markdown links to them elsewhere become plain text, so no link in the clone dangles.
   Mentions of earlier runs elsewhere stay, because cutting them would fabricate a different tree.
 - It writes its own logs to a sibling directory, with no run number in any path.
@@ -64,9 +64,10 @@ Each thing it does is something an earlier run got wrong by hand:
 - It leaves the machine's toolchain links alone. The clone links its own (`nife-dev-nife-<hash>`),
   which the next `cargo xtask std-src` anywhere removes once the clone is gone.
 
-The rubric's questions are read out of this page, so the table below is the only rubric. Only the
-question column ever leaves this file. [The instrument's history](stranger-test/instrument.md)
-records how each of these pieces was learned, and the rubric amendments of 2026-08-18.
+The harness reads the rubric's questions out of this page, so the table below is the only rubric.
+Only the question column ever leaves this file. [The instrument's
+history](stranger-test/instrument.md) records how each of these pieces was learned, and the rubric
+amendments of 2026-08-18.
 
 A run costs one stranger session plus one lane to brief, score and write it up. That is roughly
 200k lane tokens on top of the stranger, and about half an hour of wall clock. The stranger process
@@ -168,7 +169,7 @@ Build half:
   `uefi-test` exited 1 after its own suite passed. The operator's re-run on the same tree passed.
 - B4 failed with six entries. One is that the pinned QEMU has no documented route on macOS.
 
-Mental model: seven answered, M2 absent. M7 was answered by doing it: the stranger added a program
+Mental model: seven answered, M2 absent. The stranger answered M7 by adding a program
 through milestone 150 (adding a program should not need eight hand-maintained lists) on the day it
 landed, and the page held.
 
@@ -182,11 +183,11 @@ findings with their homes, and the four predictions.
 
 ## What still fails a stranger, as of 2026-09-24
 
-- M2 is unanswerable by ordinary work. It was absent for the fourth run in six. `notes/net.md`,
-  which answers it, has never been opened by a stranger. Neither have `notes/scripts.md` or
+- M2 is unanswerable by ordinary work. It was absent for the fourth run in six. No stranger has
+  ever opened `notes/net.md`, which answers it. Nor has any stranger opened `notes/scripts.md` or
   `notes/README.md`. The notes index was cut to one line per note on 2026-09-24; no stranger has met
   that version.
-- `script/apropos` has never been run by a stranger. Run 5 had its name in front of it three times.
+- No stranger has ever run `script/apropos`. Run 5 had its name in front of it three times.
   It was placed in `README.md` and `CONTRIBUTING.md` on 2026-09-19, after run 6's clone was cut, so
   run 7 is the first measurement of that placement.
 - `uefi-test` can exit 1 after its own suite passed, beside fault lines that read as the cause. It
@@ -238,8 +239,8 @@ failed: there was no reading order. The harness's own log names told it which ru
 ### Run 4, 2026-08-18: the harness stopped leaking and the tree took over the job
 
 Green first try, eight of eight answered, B1 passed on the new `## Start here` order. The stranger
-learned it was measured from `notes/adding-a-program.md`'s record of earlier walks.
-`CONTRIBUTING.md`, item 2 of 8, was read sixteenth of twenty-two. [Run 4](stranger-test/run-4.md).
+learned it was measured from `notes/adding-a-program.md`'s record of earlier walks. The stranger
+read `CONTRIBUTING.md`, item 2 of 8, sixteenth of twenty-two. [Run 4](stranger-test/run-4.md).
 
 ### Run 5, 2026-08-18: the first run through the harness, and the machine leaked where the tree did not
 
@@ -257,9 +258,9 @@ Summarized in [the latest result](#the-latest-result-run-6-2026-09-19). [Run
 These are the limits still open on 2026-09-24.
 
 - The fact of the test leaks and always will. `README.md`, `CONTRIBUTING.md` and
-  `notes/adding-a-program.md` cite earlier runs, and each run adds to that record. Only the answer
-  key is withheld. So a stranger's prose is performance for a known reader, and runs 4, 5 and 6 each
-  said so; discount it by default.
+  `notes/adding-a-program.md` cite earlier runs, and each run adds to that record. The harness
+  withholds only the answer key. So a stranger's prose is performance for a known reader, and runs
+  4, 5 and 6 each said so; discount it by default.
 - The withheld key is recoverable from git. `git show HEAD~1:notes/stranger-test.md` returns it.
   Closing that would rewrite every commit, so it is a deliberate trade, recorded in the harness's
   `BUGS`.

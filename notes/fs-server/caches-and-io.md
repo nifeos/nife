@@ -23,19 +23,19 @@ invalidation is one line with nothing to get wrong, and a change is rare next to
 ## The block layer
 
 `BlockIo` is a whole-block transport, and `BlockDisk` bridges RedoxFS's byte-addressed `Disk` calls
-to it. The chunking is written once and host-tested because the repeat-write bug hid in chunking that
-lived only in the EL0 binary. A short final chunk is read, overlaid and written back whole. That
-preserves the bytes past the chunk, as a byte-addressed disk does, and RedoxFS relies on it for
-compressed records.
+to it. The chunking is written once and host-tested because the repeat-write bug hid in chunking
+that lived only in the EL0 binary. The bridge reads, overlays and writes back a short final chunk
+whole. That preserves the bytes past the chunk, as a byte-addressed disk does, and RedoxFS relies on
+it for compressed records.
 
 `CachedDisk` is a direct-mapped, write-through cache of single-block reads (milestone 138 (close the
 read gap) step 2). An LRU would hit more often at the same size, at the cost of a recency list updated
 on every hit. The simpler cache costs nothing measurable while the walk fixture's whole metadata
 working set fits. Its other rules:
 
-- A slot's 4 KiB is allocated when a block first lands in it. The ordinary server has 8 MiB of heap
-  and a crash-test server 2 MiB, and one slot count serves both because a server pays only for what
-  it touched.
+- The cache allocates a slot's 4 KiB when a block first lands in it. The ordinary server has 8 MiB
+  of heap and a crash-test server 2 MiB, and one slot count serves both because a server pays only
+  for what it touched.
 - The header ring is never cached. Its 256 blocks are read once at mount and then only written, one
   per commit. Caching them filled every slot they mapped to at mount, and on a 2 MiB server would have
   spent half the heap. The server opens images whose filesystem starts at block 0, so the ring is
@@ -111,6 +111,6 @@ A badge at or past `fs::CLIENT_WINDOWS` would point outside the mapped windows. 
 first (milestone 726 (an unknown badge fails closed in subtree_scope)); `window_base` folds it onto
 window 0 as a second line, which fails loudly rather than reading unmapped memory.
 
-The heap cap is 8 MiB. RedoxFS's compress buffer is sized by `RECORD_SIZE` (128 KiB), which stays
-the ceiling after milestone 138 lowered the created record level, because the buffer must fit any
-record this build can rewrite.
+The heap cap is 8 MiB. RedoxFS sizes its compress buffer by `RECORD_SIZE` (128 KiB), which stays the
+ceiling after milestone 138 lowered the created record level, because the buffer must fit any record
+this build can rewrite.

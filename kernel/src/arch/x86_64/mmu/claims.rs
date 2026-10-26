@@ -154,8 +154,8 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
     // The screen, when the handoff described one: the console writes to it through the boot map
     // from the first line, so an unmapped framebuffer would fault inside `println!`. Mapped
     // write-combining, which is still device memory to every rule here and selects the PAT entry
-    // `cpu_init` made WC on every core; the console only writes it, and WC reads are as slow as UC
-    // ones. An aperture inside a RAM region is a different problem; see
+    // `cpu_initialization` made WC on every core; the console only writes it, and WC reads are as
+    // slow as UC ones. An aperture inside a RAM region is a different problem; see
     // notes/x86-port/kernel-page-tables.md.
     if let Some((base, size)) = memory::framebuffer() {
         each(Claim {

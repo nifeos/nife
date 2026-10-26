@@ -158,7 +158,7 @@ APIC, is the path worth building for that reason and is its own piece of work.
 
 Milestone 161's roadmap item 1, built 2026-08-24. What `boot.s` leaves behind is enough to run and
 not enough to be a kernel. It has 2 MiB pages, everything present, writable *and* executable, in both
-halves, plus an identity map of the low 4 GiB sitting in the half ring 3 will get. `mmu::init`
+halves, plus an identity map of the low 4 GiB sitting in the half ring 3 will get. `mmu::initialize`
 replaces it with a four-level map built through the shared `paging::Mapper`, exactly as the other
 two architectures do.
 
@@ -191,10 +191,10 @@ and the ACPI tables are read the same way, all before any fine map exists.
 The roadmap's prescribed answer was to carry both aliases across the switch and drop the old one
 afterwards. The answer taken instead was to make the arithmetic never change. `boot.s` writes
 PML4[273] itself, pointing at the same low PDPT the identity map already uses. So the direct map
-exists from before the first Rust instruction and `mmu::init` widens it rather than introducing it.
-Eight bytes, no extra memory, no second step, and nothing to remember. A `const` assertion in
-`mmu.rs` keeps the two constants in agreement by recomputing PML4[273] from `DIRECT_MAP_BASE`, so
-changing one without the other fails the build rather than the boot.
+exists from before the first Rust instruction and `mmu::initialize` widens it rather than
+introducing it. Eight bytes, no extra memory, no second step, and nothing to remember. A `const`
+assertion in `mmu.rs` keeps the two constants in agreement by recomputing PML4[273] from
+`DIRECT_MAP_BASE`, so changing one without the other fails the build rather than the boot.
 
 The one thing that *does* change across the switch is the local APIC page's memory type, from
 the boot map's cacheable to device. `irq.rs` keeps its base as a direct-map address and needs no
@@ -222,8 +222,8 @@ RAM describing its own RAM. Adding larger leaves is a change to the shared forma
 three architectures would want, so it is recorded in `arch/x86_64/mmu.rs`'s `BUGS` rather than
 patched here.
 
-Two other honest limits live in that same `BUGS` section. `mmu::init` must draw its table frames
-from below 4 GiB, because that is all the boot map's direct map reaches and the mapper writes
+Two other honest limits live in that same `BUGS` section. `mmu::initialize` must draw its table
+frames from below 4 GiB, because that is all the boot map's direct map reaches and the mapper writes
 every table through it. (The frame allocator hands out the lowest free frame first, so this holds
 today.) And `CR4.PGE` is off, so the `G` bit the kernel's `Flags` set does nothing and every
 `mov cr3` flushes the whole TLB: correct and slow, and worth revisiting with ring 3, when a context
