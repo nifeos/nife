@@ -1,5 +1,5 @@
 /// Strap register, read only; FreeBSD writes it to order a config-space read before reset.
-/// Bits 5:1 also give the NVM's size ([`super::nvm::Geometry`]).
+/// Bits 5:1 also give the NVM's size ([`super::non_volatile_memory::Geometry`]).
 pub(crate) const STRAP: u64 = 0x0_000c;
 /// MDI control: the MDIO transaction register ([`super::phy`]).
 pub(crate) const MDIC: u64 = 0x0_0020;

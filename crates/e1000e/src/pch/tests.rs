@@ -18,7 +18,7 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
     assert_eq!(h & 1, 1, "other bits survive");
     assert_eq!(ulp::release(h) & ulp::H2ME_ENFORCE_SETTINGS, 0);
     assert!(!ulp::done(ulp::FWSM_ULP_CFG_DONE));
-    assert!(ulp::has_me(ulp::FWSM_FW_VALID));
+    assert!(ulp::has_management_engine(ulp::FWSM_FW_VALID));
 }
 
 #[test]

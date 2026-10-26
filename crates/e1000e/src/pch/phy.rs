@@ -43,7 +43,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-use super::{Hw, regs};
+use super::{Hardware, regs};
 
 /// Why a PHY access failed. FreeBSD collapses these into `-E1000_ERR_PHY`; they are kept apart
 /// here because the bench boot prints them, and each points somewhere different.
@@ -52,7 +52,10 @@ pub enum Error {
     /// `MDIC.READY` never rose: nothing answered on the management bus.
     NotReady,
     /// `MDIC.ERROR`: the PHY, or the MAC on its behalf, refused the transaction.
-    Mdi,
+    ///
+    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`).
+    ManagementDataInterface,
     /// `MDIC` completed for a register other than the one asked for.
     WrongRegister,
     /// The register number is wider than MDIO's five bits.
@@ -159,35 +162,40 @@ pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 pub(crate) const FWSM_RSPCIPHY: u32 = 0x0000_0040;
 
 /// One MDIO read of `reg` at PHY address `phy`, `e1000_read_phy_reg_mdic`.
-pub fn read_mdic(hw: &mut impl Hw, phy: u32, r: u32) -> Result<u16, Error> {
+pub fn read_mdic(hardware: &mut impl Hardware, phy: u32, r: u32) -> Result<u16, Error> {
     if r > MAX_REG {
         return Err(Error::OutOfRange);
     }
-    hw.write(
+    hardware.write(
         regs::MDIC,
         r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_READ,
     );
-    complete(hw, r).map(|v| v as u16)
+    complete(hardware, r).map(|v| v as u16)
 }
 
 /// One MDIO write, `e1000_write_phy_reg_mdic`.
-pub(crate) fn write_mdic(hw: &mut impl Hw, phy: u32, r: u32, data: u16) -> Result<(), Error> {
+pub(crate) fn write_mdic(
+    hardware: &mut impl Hardware,
+    phy: u32,
+    r: u32,
+    data: u16,
+) -> Result<(), Error> {
     if r > MAX_REG {
         return Err(Error::OutOfRange);
     }
-    hw.write(
+    hardware.write(
         regs::MDIC,
         u32::from(data) | r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_WRITE,
     );
-    complete(hw, r).map(|_| ())
+    complete(hardware, r).map(|_| ())
 }
 
 /// Poll `MDIC` for the transaction's end and judge it, the half both FreeBSD functions share.
-fn complete(hw: &mut impl Hw, r: u32) -> Result<u32, Error> {
+fn complete(hardware: &mut impl Hardware, r: u32) -> Result<u32, Error> {
     let mut v = 0;
     for _ in 0..mdic::POLLS {
-        hw.delay_us(mdic::POLL_US);
-        v = hw.read(regs::MDIC);
+        hardware.delay_us(mdic::POLL_US);
+        v = hardware.read(regs::MDIC);
         if v & mdic::READY != 0 {
             break;
         }
@@ -195,7 +203,7 @@ fn complete(hw: &mut impl Hw, r: u32) -> Result<u32, Error> {
     if v & mdic::READY == 0 {
         Err(Error::NotReady)
     } else if v & mdic::ERROR != 0 {
-        Err(Error::Mdi)
+        Err(Error::ManagementDataInterface)
     } else if (v & mdic::REG_MASK) >> mdic::REG_SHIFT != r {
         Err(Error::WrongRegister)
     } else {
@@ -212,39 +220,39 @@ pub struct Swflag(());
 impl Swflag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
-    pub(crate) fn acquire(hw: &mut impl Hw) -> Result<Self, Error> {
+    pub(crate) fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;
         for _ in 0..SWFLAG_FREE_MS {
-            ext = hw.read(regs::EXTCNF_CTRL);
+            ext = hardware.read(regs::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG == 0 {
                 free = true;
                 break;
             }
-            hw.delay_us(1000);
+            hardware.delay_us(1000);
         }
         if !free {
             return Err(Error::SwflagHeld);
         }
         ext |= EXTCNF_CTRL_SWFLAG;
-        hw.write(regs::EXTCNF_CTRL, ext);
+        hardware.write(regs::EXTCNF_CTRL, ext);
         for _ in 0..SWFLAG_TAKE_MS {
-            ext = hw.read(regs::EXTCNF_CTRL);
+            ext = hardware.read(regs::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG != 0 {
                 return Ok(Swflag(()));
             }
-            hw.delay_us(1000);
+            hardware.delay_us(1000);
         }
-        hw.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+        hardware.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
         Err(Error::SwflagRefused)
     }
 
     /// `e1000_release_swflag_ich8lan`. Clears the bit only if it is still set; FreeBSD logs the
     /// other case ("Semaphore unexpectedly released") and so does nothing here.
-    pub fn release(self, hw: &mut impl Hw) {
-        let ext = hw.read(regs::EXTCNF_CTRL);
+    pub fn release(self, hardware: &mut impl Hardware) {
+        let ext = hardware.read(regs::EXTCNF_CTRL);
         if ext & EXTCNF_CTRL_SWFLAG != 0 {
-            hw.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+            hardware.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
         }
     }
 
@@ -266,7 +274,10 @@ pub struct Plan {
     /// The PHY address of the access itself.
     pub phy: u32,
     /// The five-bit register.
-    pub reg: u32,
+    ///
+    /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+    /// `reg` (an abbreviation).
+    pub register: u32,
 }
 
 /// The decomposition `__e1000_read_phy_reg_hv` and `__e1000_write_phy_reg_hv` share, for the pages
@@ -288,49 +299,54 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
     Ok(Plan {
         select,
         phy,
-        reg: r,
+        register: r,
     })
 }
 
 /// Read a PCH PHY register by its paged offset ([`reg`]).
-pub fn read(hw: &mut impl Hw, _held: &Swflag, offset: u32) -> Result<u16, Error> {
+pub fn read(hardware: &mut impl Hardware, _held: &Swflag, offset: u32) -> Result<u16, Error> {
     let p = plan(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hw, 1, PAGE_SELECT, sel)?;
+        write_mdic(hardware, 1, PAGE_SELECT, sel)?;
     }
-    read_mdic(hw, p.phy, p.reg)
+    read_mdic(hardware, p.phy, p.register)
 }
 
 /// Write a PCH PHY register by its paged offset. FreeBSD's 82578 power-down workaround in the
 /// write path is not carried: no part this crate claims has that PHY.
-pub fn write(hw: &mut impl Hw, _held: &Swflag, offset: u32, data: u16) -> Result<(), Error> {
+pub fn write(
+    hardware: &mut impl Hardware,
+    _held: &Swflag,
+    offset: u32,
+    data: u16,
+) -> Result<(), Error> {
     let p = plan(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hw, 1, PAGE_SELECT, sel)?;
+        write_mdic(hardware, 1, PAGE_SELECT, sel)?;
     }
-    write_mdic(hw, p.phy, p.reg, data)
+    write_mdic(hardware, p.phy, p.register, data)
 }
 
 /// Read-modify-write under a held flag.
 pub fn update(
-    hw: &mut impl Hw,
+    hardware: &mut impl Hardware,
     held: &Swflag,
     offset: u32,
     f: impl FnOnce(u16) -> u16,
 ) -> Result<(), Error> {
-    let v = read(hw, held, offset)?;
-    write(hw, held, offset, f(v))
+    let v = read(hardware, held, offset)?;
+    write(hardware, held, offset, f(v))
 }
 
 /// `e1000_check_reset_block_ich8lan`: is firmware blocking a PHY reset? Polls `FWSM.RSPCIPHY` up to
 /// 31 times 10 ms apart, as FreeBSD does.
-pub(crate) fn reset_blocked(hw: &mut impl Hw) -> bool {
+pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
     for i in 0..=30 {
-        if hw.read(super::regs::FWSM) & FWSM_RSPCIPHY != 0 {
+        if hardware.read(super::regs::FWSM) & FWSM_RSPCIPHY != 0 {
             return false;
         }
         if i < 30 {
-            hw.delay_us(10_000);
+            hardware.delay_us(10_000);
         }
     }
     true
@@ -338,9 +354,9 @@ pub(crate) fn reset_blocked(hw: &mut impl Hw) -> bool {
 
 /// Read the PHY identifier at the 82574L's address, the generic MDIO path with no pages and no
 /// semaphore (the 82574L has neither). What QEMU's gates prove of this module.
-pub fn id_at(hw: &mut impl Hw, phy: u32) -> Result<u32, Error> {
-    let hi = read_mdic(hw, phy, r::ID1)?;
-    let lo = read_mdic(hw, phy, r::ID2)?;
+pub fn id_at(hardware: &mut impl Hardware, phy: u32) -> Result<u32, Error> {
+    let hi = read_mdic(hardware, phy, r::ID1)?;
+    let lo = read_mdic(hardware, phy, r::ID2)?;
     Ok((u32::from(hi) << 16 | u32::from(lo)) & ID_MASK)
 }
 
@@ -359,15 +375,15 @@ mod proofs {
         if let Ok(p) = plan(off) {
             let page = off >> PAGE_SHIFT;
             assert!(p.phy == 1 || p.phy == 2);
-            assert!(p.reg == off & MAX_REG);
+            assert!(p.register == off & MAX_REG);
             assert!(page != WAKEUP_PAGE);
             match p.select {
                 Some(sel) => {
-                    assert!(p.reg > MAX_UNPAGED_REG);
+                    assert!(p.register > MAX_UNPAGED_REG);
                     let shown = if page == HV_PAGE_START { 0 } else { page };
                     assert!(u32::from(sel) >> PAGE_SHIFT == shown);
                 }
-                None => assert!(p.reg <= MAX_UNPAGED_REG),
+                None => assert!(p.register <= MAX_UNPAGED_REG),
             }
         }
     }

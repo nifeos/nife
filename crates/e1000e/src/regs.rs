@@ -36,10 +36,15 @@ pub const TDH: u64 = 0x0_3810;
 pub const TDT: u64 = 0x0_3818;
 /// Receive filter control (`EXTEN` selects extended descriptors).
 pub const RFCTL: u64 = 0x0_5008;
-/// Multicast table array, 128 dwords.
+/// Multicast table array: 128 32-bit entries, the DWORDs of Intel's documentation.
 pub const MTA: u64 = 0x0_5200;
-/// How many dwords [`MTA`] has.
-pub const MTA_DWORDS: u64 = 128;
+/// How many 32-bit entries [`MTA`] has.
+///
+/// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
+/// `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the
+/// count names what the table holds).
+#[doc(alias = "dwords")]
+pub const MTA_ENTRIES: u64 = 128;
 /// Receive address low, entry 0 (the MAC address's first four octets).
 pub const RAL0: u64 = 0x0_5400;
 /// Receive address high, entry 0 (the last two octets, and [`super::RAH_AV`]).

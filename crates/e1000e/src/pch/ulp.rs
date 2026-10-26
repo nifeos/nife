@@ -23,6 +23,6 @@ pub const fn done(fwsm: u32) -> bool {
 }
 /// Does this machine have an ME to ask? When it does not, ULP exit is the PHY-register
 /// sequence in [`super::sequence`].
-pub(crate) const fn has_me(fwsm: u32) -> bool {
+pub(crate) const fn has_management_engine(fwsm: u32) -> bool {
     fwsm & FWSM_FW_VALID != 0
 }

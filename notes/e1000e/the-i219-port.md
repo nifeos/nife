@@ -40,10 +40,10 @@ Everything was read from `sys/dev/e1000/` on FreeBSD's `main`: `ulp`, `flush` an
 | `flush` | the descriptor-ring flush SPT parts need before a reset | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` (`if_em.c`) |
 | `reset` | the MAC-register constants around the global reset | `e1000_reset_hw_ich8lan` (`e1000_ich8lan.c`), `e1000_disable_pcie_master_generic` (`e1000_mac.c`) |
 | `phy` | MDIO through `MDIC`, the software/firmware semaphore, the paged PHY registers | below |
-| `nvm` | reading the `GbE` flash region through BAR0, as Sunrise Point does | below |
+| `non_volatile_memory` | reading the `GbE` flash region through BAR0, as Sunrise Point does | below |
 | `sequence` | the bring-up itself, in FreeBSD's order | below |
 
-Every sequence is generic over `pch::Hw`, so it runs on the host against a simulated I219
+Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
 (`pch/sim.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
 `sequence`. It does reach `phy::id_at`, which shares `phy::read_mdic` with everything here, so the
 MDIO primitive is the one piece the QEMU gates prove.
@@ -66,8 +66,8 @@ doc comment names the FreeBSD function it follows.
    then the PHY is configured from the NVM. The sources are `e1000_reset_hw_ich8lan`,
    `e1000_get_cfg_done_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_sw_lcd_config_ich8lan`,
    `e1000_write_smbus_addr` and `e1000_oem_bits_config_ich8lan`.
-3. `init_hw`, before the rings are programmed, and `transmit_errata` once transmit is on. These
-   are `e1000_init_hw_ich8lan`'s hardware bits, `e1000_setup_copper_link_pch_lpt`, and
+3. `init_hardware`, before the rings are programmed, and `transmit_errata` once transmit is on.
+   These are `e1000_init_hw_ich8lan`'s hardware bits, `e1000_setup_copper_link_pch_lpt`, and
    `em_initialize_transmit_unit`'s SPT errata.
 
 ## The PHY layer
@@ -101,8 +101,8 @@ chipset's SPI controller. Two things in the bring-up need it. The post-reset LCD
 replays (register, value) pairs the board vendor stored in the NVM's extended configuration region.
 FreeBSD also checks that an NVM is present after every PHY reset.
 
-The port is read only. Nothing in `nvm` can write or erase the flash, and no write path was ported.
-It comes from the SPT branches of `e1000_ich8lan.c`:
+The port is read only. Nothing in `non_volatile_memory` can write or erase the flash, and no write
+path was ported. It comes from the SPT branches of `e1000_ich8lan.c`:
 
 | item | FreeBSD source |
 |---|---|

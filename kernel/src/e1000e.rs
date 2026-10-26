@@ -105,7 +105,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::init_hw(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
+        ::e1000e::pch::sequence::init_hardware(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
             regs::CTRL,
@@ -117,7 +117,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         .ok_or(refused(Error::NoMacAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
-    for k in 0..regs::MTA_DWORDS {
+    for k in 0..regs::MTA_ENTRIES {
         c.w(regs::MTA + 4 * k, 0);
     }
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
@@ -304,7 +304,7 @@ struct Bar<'a> {
     dev: &'a crate::pci::PciE1000eDevice,
 }
 
-impl ::e1000e::pch::Hw for Bar<'_> {
+impl ::e1000e::pch::Hardware for Bar<'_> {
     fn read(&mut self, off: u64) -> u32 {
         self.c.r(off)
     }

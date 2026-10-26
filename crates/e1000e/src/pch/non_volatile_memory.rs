@@ -4,6 +4,9 @@
 //! [`super::sequence`] needs it for the post-reset LCD configuration and the NVM-present check.
 //! Read only: nothing here can write or erase the flash. Each item names the SPT branch of
 //! FreeBSD's `e1000_ich8lan.c` it follows.
+//!
+//! Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `nvm`
+//! (an abbreviation).
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -38,7 +41,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-use super::Hw;
+use super::Hardware;
 
 /// Why an NVM read failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,7 +81,7 @@ pub mod status {
     pub(crate) const DESCRIPTOR_VALID: u16 = 1 << 14;
 }
 
-/// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the dword at [`HSFSTS`].
+/// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the `u32` at [`HSFSTS`].
 pub mod control {
     /// Start the cycle.
     pub const GO: u16 = 1 << 0;
@@ -91,17 +94,17 @@ pub mod control {
 }
 
 /// `ICH_FLASH_LINEAR_ADDR_MASK`.
-pub(crate) const LINEAR_ADDR_MASK: u32 = 0x00ff_ffff;
+pub(crate) const LINEAR_ADDRESS_MASK: u32 = 0x00ff_ffff;
 /// `ICH_FLASH_READ_COMMAND_TIMEOUT`, in 1 µs polls: ten seconds, FreeBSD's bound.
 pub(crate) const COMMAND_TIMEOUT: u32 = 10_000_000;
 /// `ICH_FLASH_CYCLE_REPEAT_COUNT`.
 pub(crate) const CYCLE_REPEATS: u32 = 10;
 /// The signature word (`E1000_ICH_NVM_SIG_WORD`).
-pub(crate) const SIG_WORD: u32 = 0x13;
+pub(crate) const SIGNATURE_WORD: u32 = 0x13;
 /// `E1000_ICH_NVM_VALID_SIG_MASK`.
-pub(crate) const SIG_MASK: u8 = 0xc0;
+pub(crate) const SIGNATURE_MASK: u8 = 0xc0;
 /// `E1000_ICH_NVM_SIG_VALUE`.
-pub(crate) const SIG_VALUE: u8 = 0x80;
+pub(crate) const SIGNATURE_VALUE: u8 = 0x80;
 /// `E1000_SHADOW_RAM_WORDS`.
 pub const WORDS: u32 = 2048;
 /// `NVM_SIZE_MULTIPLIER`.
@@ -124,50 +127,50 @@ impl Geometry {
         }
     }
     /// Read it from the device.
-    pub fn read(hw: &mut impl Hw) -> Self {
-        Self::from_strap(hw.read(super::regs::STRAP))
+    pub fn read(hardware: &mut impl Hardware) -> Self {
+        Self::from_strap(hardware.read(super::regs::STRAP))
     }
 }
 
-fn status16(hw: &mut impl Hw) -> u16 {
-    hw.read16(FLASH_BASE + HSFSTS)
+fn status_16_bit(hardware: &mut impl Hardware) -> u16 {
+    hardware.read16(FLASH_BASE + HSFSTS)
 }
 
 /// `e1000_flash_cycle_init_ich8lan`, SPT's 32-bit writes.
-fn cycle_init(hw: &mut impl Hw) -> Result<(), Error> {
-    let s = status16(hw);
+fn cycle_init(hardware: &mut impl Hardware) -> Result<(), Error> {
+    let s = status_16_bit(hardware);
     if s & status::DESCRIPTOR_VALID == 0 {
         return Err(Error::NoDescriptor);
     }
     // Clear the cycle and direct-access errors by writing them as one.
     let s = s | status::ERROR | status::DIRECT_ACCESS_ERROR;
-    hw.write(FLASH_BASE + HSFSTS, u32::from(s));
+    hardware.write(FLASH_BASE + HSFSTS, u32::from(s));
     if s & status::IN_PROGRESS == 0 {
-        hw.write(FLASH_BASE + HSFSTS, u32::from(s | status::DONE));
+        hardware.write(FLASH_BASE + HSFSTS, u32::from(s | status::DONE));
         return Ok(());
     }
     for _ in 0..COMMAND_TIMEOUT {
-        let now = status16(hw);
+        let now = status_16_bit(hardware);
         if now & status::IN_PROGRESS == 0 {
-            hw.write(FLASH_BASE + HSFSTS, u32::from(now | status::DONE));
+            hardware.write(FLASH_BASE + HSFSTS, u32::from(now | status::DONE));
             return Ok(());
         }
-        hw.delay_us(1);
+        hardware.delay_us(1);
     }
     Err(Error::Busy)
 }
 
 /// `e1000_flash_cycle_ich8lan`: set GO and wait for DONE.
-fn cycle(hw: &mut impl Hw) -> Result<(), Error> {
-    let ctl = (hw.read(FLASH_BASE + HSFSTS) >> 16) as u16 | control::GO;
-    hw.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
+fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
+    let ctl = (hardware.read(FLASH_BASE + HSFSTS) >> 16) as u16 | control::GO;
+    hardware.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
     let mut s = 0;
     for _ in 0..=COMMAND_TIMEOUT {
-        s = status16(hw);
+        s = status_16_bit(hardware);
         if s & status::DONE != 0 {
             break;
         }
-        hw.delay_us(1);
+        hardware.delay_us(1);
     }
     if s & status::DONE != 0 && s & status::ERROR == 0 {
         Ok(())
@@ -176,25 +179,27 @@ fn cycle(hw: &mut impl Hw) -> Result<(), Error> {
     }
 }
 
-/// `e1000_read_flash_data32_ich8lan`: one dword at byte offset `byte`.
-pub(crate) fn read_dword_at_byte(hw: &mut impl Hw, byte: u32) -> Result<u32, Error> {
-    if byte > LINEAR_ADDR_MASK {
+/// `e1000_read_flash_data32_ich8lan`: one `u32` (a DWORD, in Intel's word sizes) at byte offset
+/// `byte`.
+#[doc(alias = "dword")]
+pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Result<u32, Error> {
+    if byte > LINEAR_ADDRESS_MASK {
         return Err(Error::OutOfRange);
     }
     let mut last = Err(Error::Cycle);
     for _ in 0..=CYCLE_REPEATS {
-        hw.delay_us(1);
-        cycle_init(hw)?;
-        let mut ctl = (hw.read(FLASH_BASE + HSFSTS) >> 16) as u16;
+        hardware.delay_us(1);
+        cycle_init(hardware)?;
+        let mut ctl = (hardware.read(FLASH_BASE + HSFSTS) >> 16) as u16;
         ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
         ctl &= !control::CYCLE_MASK;
-        hw.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
-        hw.write(FLASH_BASE + FADDR, byte & LINEAR_ADDR_MASK);
-        last = cycle(hw);
+        hardware.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
+        hardware.write(FLASH_BASE + FADDR, byte & LINEAR_ADDRESS_MASK);
+        last = cycle(hardware);
         if last.is_ok() {
-            return Ok(hw.read(FLASH_BASE + FDATA0));
+            return Ok(hardware.read(FLASH_BASE + FDATA0));
         }
-        let s = status16(hw);
+        let s = status_16_bit(hardware);
         if s & status::ERROR != 0 {
             continue;
         }
@@ -205,16 +210,17 @@ pub(crate) fn read_dword_at_byte(hw: &mut impl Hw, byte: u32) -> Result<u32, Err
     last.map(|()| 0)
 }
 
-/// `e1000_read_flash_dword_ich8lan`: the dword at word offset `word`.
-pub(crate) fn read_dword(hw: &mut impl Hw, word: u32) -> Result<u32, Error> {
-    read_dword_at_byte(hw, word << 1)
+/// `e1000_read_flash_dword_ich8lan`: the `u32` (Intel's DWORD) at 16-bit word offset `word`.
+#[doc(alias = "dword")]
+pub(crate) fn read_u32(hardware: &mut impl Hardware, word: u32) -> Result<u32, Error> {
+    read_u32_at_byte(hardware, word << 1)
 }
 
 /// `e1000_valid_nvm_bank_detect_ich8lan`'s SPT branch: which bank carries the signature.
-pub(crate) fn valid_bank(hw: &mut impl Hw, g: Geometry) -> Result<u32, Error> {
+pub(crate) fn valid_bank(hardware: &mut impl Hardware, g: Geometry) -> Result<u32, Error> {
     for bank in 0..2 {
-        let d = read_dword(hw, SIG_WORD + bank * g.bank_words)?;
-        if (d >> 8) as u8 & SIG_MASK == SIG_VALUE {
+        let d = read_u32(hardware, SIGNATURE_WORD + bank * g.bank_words)?;
+        if (d >> 8) as u8 & SIGNATURE_MASK == SIGNATURE_VALUE {
             return Ok(bank);
         }
     }
@@ -222,14 +228,18 @@ pub(crate) fn valid_bank(hw: &mut impl Hw, g: Geometry) -> Result<u32, Error> {
 }
 
 /// `e1000_read_nvm_spt` for one word: find the valid bank (bank 0 if none, as FreeBSD assumes),
-/// read the dword holding the word, and take its half.
-pub(crate) fn read_word(hw: &mut impl Hw, g: Geometry, word: u32) -> Result<u16, Error> {
+/// read the `u32` holding the word, and take its half.
+pub(crate) fn read_word(
+    hardware: &mut impl Hardware,
+    g: Geometry,
+    word: u32,
+) -> Result<u16, Error> {
     if word >= WORDS {
         return Err(Error::OutOfRange);
     }
-    let bank = valid_bank(hw, g).unwrap_or(0);
+    let bank = valid_bank(hardware, g).unwrap_or(0);
     let at = bank * g.bank_words + word;
-    let d = read_dword(hw, at - at % 2)?;
+    let d = read_u32(hardware, at - at % 2)?;
     Ok(if at.is_multiple_of(2) {
         d as u16
     } else {

@@ -6,11 +6,23 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
+The rulings that have reached this crate so far, each performed in its own blocks, which the rows
+below copy:
+
+- Ruled 2026-10-26 (UTC), the crate's own names: `Hw` becomes `Hardware`, `pch::nvm` becomes
+  `pch::non_volatile_memory`, and `Mdi`, `Lcd`, `has_me`, the simulator's `firmware_holds_swflag`,
+  `Plan.reg`, `SIG_*`, `LINEAR_ADDR_MASK`, `addr`, `status16` and every `smbus` the crate authors
+  are spelled out. `dword`
+  gives way to the Rust type it is (`read_u32`, `MTA_ENTRIES`), since a word is 16 bits in Intel's
+  documents and 32 in Arm's and RISC-V's. `rctl`, `tctl`, `tipg` and `rxdctl` keep their spelling,
+  as do the register and field names copied from Intel's and FreeBSD's sources and the NVM's
+  `WORDS` (Intel's 16-bit flash word).
+
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-139 names: 133 no block, 5 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+146 names: 129 no block, 5 provisional, 12 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 15 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 13 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -30,7 +42,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `flush` | module | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `hardware` | module | `src/pch/hardware.rs` | provisional. | no | clear |
 | `pch` | module | `src/pch/mod.rs` | unrecorded. | yes | term |
-| `nvm` | module | `src/pch/nvm.rs` | unrecorded. | yes | clear |
+| `non_volatile_memory` | module | `src/pch/non_volatile_memory.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `nvm` (an abbreviation). | yes | clear |
 | `phy` | module | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `regs` | module | `src/pch/regs.rs` | unrecorded. | yes | clear |
 | `reset` | module | `src/pch/reset.rs` | unrecorded. | yes | clear |
@@ -98,18 +110,19 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `rxdctl` | item | `src/pch/flush.rs` | unrecorded. | yes | term |
 | `tail_after` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `tx_word` | item | `src/pch/flush.rs` | unrecorded. | yes | unclear: which word of a transmit descriptor |
-| `Hw` | item | `src/pch/hardware.rs` | unrecorded. | yes | unclear: an abbreviation of hardware |
+| `Hardware` | item | `src/pch/hardware.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Hw` (an abbreviation of hardware). | yes | clear |
 | `is_pch` | item | `src/pch/hardware.rs` | unrecorded. | yes | term |
-| `DONE` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
-| `ERROR` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
-| `Error` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
-| `GO` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
-| `WORDS` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
-| `read` | item | `src/pch/nvm.rs` | unrecorded. | yes | clear |
+| `DONE` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
+| `ERROR` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
+| `Error` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
+| `GO` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
+| `WORDS` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
+| `read` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
 | `CONTROL` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `ERROR` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `Error` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `KMRN_MODE_CTRL` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
+| `ManagementDataInterface` | item | `src/pch/phy.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`). | yes | clear |
 | `POLL_US` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `Plan` | item | `src/pch/phy.rs` | unrecorded. | yes | generic |
 | `READY` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
@@ -119,16 +132,22 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `read` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `read_mdic` | item | `src/pch/phy.rs` | unrecorded. | yes | term |
 | `reg` | item | `src/pch/phy.rs` | unrecorded. | yes | unclear: an abbreviation |
+| `register` | item | `src/pch/phy.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `reg` (an abbreviation). | yes | clear |
 | `release` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `update` | item | `src/pch/phy.rs` | unrecorded. | yes | generic |
 | `write` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
 | `FEXTNVM11` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
 | `RXDCTL` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
 | `Error` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
+| `InSystemManagementBus` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `InSmbus` (an abbreviation of System Management Bus). | yes | clear |
+| `LanConnectedDeviceConfigured` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `LcdConfigured` (`Lcd` reads as a display). | yes | clear |
+| `LanConnectedDeviceNotConfigured` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `LcdNotConfigured` (as `LcdConfigured`). | yes | clear |
+| `NonVolatileMemory` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Nvm` (an abbreviation, as the module's `nvm` was). | yes | clear |
 | `Note` | item | `src/pch/sequence.rs` | unrecorded. | yes | generic |
 | `Reached` | item | `src/pch/sequence.rs` | unrecorded. | yes | generic |
+| `SystemManagementBusFrequencyUnsupported` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `SmbusFrequencyUnsupported` (an abbreviation of System Management Bus). | yes | clear |
 | `global_reset` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
-| `init_hw` | item | `src/pch/sequence.rs` | unrecorded. | yes | unclear: `hw` abbreviates hardware |
+| `init_hardware` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `init_hw` (`hw` abbreviates hardware). | yes | clear |
 | `init_phy_workarounds` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `transmit_errata` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `Sim` | item | `src/pch/sim.rs` | unrecorded. | no | clear |
@@ -142,7 +161,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `ICR` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `IMC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `MTA` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MTA_DWORDS` | item | `src/regs.rs` | unrecorded. | yes | term |
+| `MTA_ENTRIES` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the count names what the table holds). | yes | clear |
 | `RAH0` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `RAL0` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `RCTL` | item | `src/regs.rs` | unrecorded. | yes | term |
@@ -163,9 +182,9 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the inline modules `status` and `control` in `src/pch/nvm.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
+- the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
 - the fields of `DataPlane` (1), `phy::Plan` (3) and the private `Sim` (22);
-- the variants of `TxError` (2), `RxVerdict` (3), `nvm::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
-- the methods of the traits `Region` (4), `Tails` (3) and `Hw` (6).
+- the variants of `TxError` (2), `RxVerdict` (3), `non_volatile_memory::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
+- the methods of the traits `Region` (4), `Tails` (3) and `Hardware` (6).
 
-The `pub use` lines re-export items that have rows where they are defined. The one field of the crate-private `nvm::Geometry` is reachable from nowhere outside.
+The `pub use` lines re-export items that have rows where they are defined. The one field of the crate-private `non_volatile_memory::Geometry` is reachable from nowhere outside.

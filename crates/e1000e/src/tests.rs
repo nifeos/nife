@@ -77,8 +77,8 @@ impl Sim {
             return false;
         }
         let d = layout::rx_descriptor(self.rdh);
-        let addr = self.read_u64(d);
-        let off = addr - PHYS;
+        let address = self.read_u64(d);
+        let off = address - PHYS;
         assert_eq!(
             off,
             layout::rx_buffer(self.rdh),
@@ -96,12 +96,12 @@ impl Sim {
     fn drain_tx(&mut self) {
         while u32::from(self.tdh) != self.tdt {
             let d = layout::tx_descriptor(self.tdh);
-            let addr = self.read_u64(d);
+            let address = self.read_u64(d);
             let word = self.read_u64(d + 8);
             assert_eq!((word >> 24) as u8, TX_COMMAND);
             let len = (word & 0xffff) as usize;
             let mut f = vec![0; len];
-            self.read_bytes(addr - PHYS, &mut f);
+            self.read_bytes(address - PHYS, &mut f);
             self.sent.push(f);
             self.write_u64(d + 8, word | (TX_STATUS_DD as u64) << 32);
             self.tdh = (self.tdh + 1) % TX_ENTRIES;
