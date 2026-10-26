@@ -12,7 +12,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use e1000e::{layout, regs};
+use e1000e::{layout, registers};
 
 use crate::arch::mmu;
 
@@ -27,11 +27,11 @@ pub enum Error {
     /// `CTRL.RST` did not self-clear.
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
-    NoMacAddress,
+    NoStationAddress,
     /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
     Pch(::e1000e::pch::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhysicalLayerDeviceId(::e1000e::pch::phy::Error),
+    PhysicalLayerDeviceId(::e1000e::pch::physical_layer_device::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -51,7 +51,8 @@ pub enum Absent {
 /// A controller reset, programmed, and ready for a data plane.
 #[derive(Debug, Clone, Copy)]
 pub struct Found {
-    /// BAR0's physical base. The process is mapped `bar0 + RX_QUEUE_PAGE` and `+ TX_QUEUE_PAGE`.
+    /// BAR0's physical base. The process is mapped `bar0 + RECEIVE_QUEUE_PAGE` and
+    /// `+ TRANSMIT_QUEUE_PAGE`.
     pub bar0: u64,
     /// The requester id the IOMMU confines.
     pub rid: u32,
@@ -62,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::pch::phy::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::pch::physical_layer_device::read_mdic`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -85,7 +86,8 @@ pub fn bring_up() -> Result<Found, Absent> {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
         use ::e1000e::pch::sequence;
-        let id = sequence::init_phy_workarounds(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
+        let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
+            .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
         flush_descriptor_rings(&c, &dev, region);
         sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
@@ -94,65 +96,70 @@ pub fn bring_up() -> Result<Found, Absent> {
     }
 
     // Reset re-enabled nothing we want; mask again and clear anything pending.
-    c.w(regs::IMC, u32::MAX);
-    let _ = c.r(regs::ICR);
+    c.w(registers::IMC, u32::MAX);
+    let _ = c.r(registers::ICR);
     zero(region);
 
     // Tell management firmware a driver has the device, and bring the link up.
     c.w(
-        regs::CTRL_EXT,
-        c.r(regs::CTRL_EXT) | ::e1000e::CTRL_EXT_DRV_LOAD,
+        registers::CTRL_EXT,
+        c.r(registers::CTRL_EXT) | ::e1000e::CTRL_EXT_DRV_LOAD,
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::init_hw(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
+        ::e1000e::pch::sequence::initialize_hardware(&mut hw)
+            .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
-            regs::CTRL,
-            c.r(regs::CTRL) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
+            registers::CTRL,
+            c.r(registers::CTRL) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
         );
     }
 
-    let mac = ::e1000e::mac_from_receive_address(c.r(regs::RAL0), c.r(regs::RAH0))
-        .ok_or(refused(Error::NoMacAddress))?;
+    let station_address =
+        ::e1000e::station_address_from_receive_address(c.r(registers::RAL0), c.r(registers::RAH0))
+            .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
-    for k in 0..regs::MTA_DWORDS {
-        c.w(regs::MTA + 4 * k, 0);
+    for k in 0..registers::MTA_ENTRIES {
+        c.w(registers::MTA + 4 * k, 0);
     }
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
-    c.w(regs::RFCTL, c.r(regs::RFCTL) & !::e1000e::RFCTL_EXTEN);
+    c.w(
+        registers::RFCTL,
+        c.r(registers::RFCTL) & !::e1000e::RFCTL_EXTEN,
+    );
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let receive_ring = region + layout::RX_RING;
-    let transmit_ring = region + layout::TX_RING;
-    c.w(regs::RDBAL, receive_ring as u32);
-    c.w(regs::RDBAH, (receive_ring >> 32) as u32);
-    c.w(regs::RDLEN, u32::from(::e1000e::RX_ENTRIES) * 16);
-    c.w(regs::RDH, 0);
-    c.w(regs::RDT, 0);
-    c.w(regs::TDBAL, transmit_ring as u32);
-    c.w(regs::TDBAH, (transmit_ring >> 32) as u32);
-    c.w(regs::TDLEN, u32::from(::e1000e::TX_ENTRIES) * 16);
-    c.w(regs::TDH, 0);
-    c.w(regs::TDT, 0);
+    let rx = region + layout::RECEIVE_RING;
+    let tx = region + layout::TRANSMIT_RING;
+    c.w(registers::RDBAL, rx as u32);
+    c.w(registers::RDBAH, (rx >> 32) as u32);
+    c.w(registers::RDLEN, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
+    c.w(registers::RDH, 0);
+    c.w(registers::RDT, 0);
+    c.w(registers::TDBAL, tx as u32);
+    c.w(registers::TDBAH, (tx >> 32) as u32);
+    c.w(registers::TDLEN, u32::from(::e1000e::TRANSMIT_ENTRIES) * 16);
+    c.w(registers::TDH, 0);
+    c.w(registers::TDT, 0);
 
-    c.w(regs::TIPG, ::e1000e::tipg());
-    c.w(regs::TCTL, ::e1000e::tctl());
+    c.w(registers::TIPG, ::e1000e::tipg());
+    c.w(registers::TCTL, ::e1000e::tctl());
     if pch {
         ::e1000e::pch::sequence::transmit_errata(&mut hw);
     }
-    c.w(regs::RCTL, ::e1000e::rctl());
+    c.w(registers::RCTL, ::e1000e::rctl());
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::pch::phy::id_at(&mut hw, 1)
+        None => ::e1000e::pch::physical_layer_device::id_at(&mut hw, 1)
             .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
-        c.r(regs::STATUS) & ::e1000e::STATUS_LU != 0
+        c.r(registers::STATUS) & ::e1000e::STATUS_LU != 0
     });
 
     Ok(Found {
@@ -160,8 +167,8 @@ pub fn bring_up() -> Result<Found, Absent> {
         rid: dev.rid,
         device: dev.device,
         handoff: ::driver_process_contract::e1000e::Handoff {
-            mac,
-            data_plane_phys: region,
+            station_address,
+            data_plane_physical_address: region,
         },
         link_up,
         physical_layer_device_id,
@@ -171,15 +178,17 @@ pub fn bring_up() -> Result<Found, Absent> {
 /// **The 82574L's quiesce and global reset**, unchanged from before the I219 passes existed.
 fn reset_82574(c: &Controller) -> Result<(), Error> {
     // Quiesce: no interrupts, receiver and transmitter off, then a posted-write flush.
-    c.w(regs::IMC, u32::MAX);
-    c.w(regs::RCTL, 0);
-    c.w(regs::TCTL, 0);
-    let _ = c.r(regs::STATUS);
+    c.w(registers::IMC, u32::MAX);
+    c.w(registers::RCTL, 0);
+    c.w(registers::TCTL, 0);
+    let _ = c.r(registers::STATUS);
     spin_ms(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
-    c.w(regs::CTRL, c.r(regs::CTRL) | ::e1000e::CTRL_RST);
+    c.w(registers::CTRL, c.r(registers::CTRL) | ::e1000e::CTRL_RST);
     spin_ms(20);
-    if !wait_ms(RESET_WAIT_MS, || c.r(regs::CTRL) & ::e1000e::CTRL_RST == 0) {
+    if !wait_ms(RESET_WAIT_MS, || {
+        c.r(registers::CTRL) & ::e1000e::CTRL_RST == 0
+    }) {
         return Err(Error::ResetTimeout);
     }
     Ok(())
@@ -227,17 +236,17 @@ fn zero(region: u64) {
 /// `em_flush_desc_rings`. Skipped when the device's transmit ring is not in `region`, since the
 /// dummy descriptor must go where both the device may read and this kernel owns.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
-    use ::e1000e::pch::{flush, regs as pch};
+    use ::e1000e::pch::{flush, registers as pch};
     c.w(
         pch::FEXTNVM11,
         c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
     );
-    let status = || dev.config_read32(flush::DESC_RING_STATUS) as u16;
-    if !flush::required(status(), c.r(regs::TDLEN)) {
+    let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
+    if !flush::required(status(), c.r(registers::TDLEN)) {
         return;
     }
-    let ring = region + layout::TX_RING;
-    let tdba = u64::from(c.r(regs::TDBAL)) | u64::from(c.r(regs::TDBAH)) << 32;
+    let ring = region + layout::TRANSMIT_RING;
+    let tdba = u64::from(c.r(registers::TDBAL)) | u64::from(c.r(registers::TDBAH)) << 32;
     if tdba != ring {
         crate::println!(
             "  e1000e: the rings need flushing and the transmit ring at {tdba:#x} is not this \
@@ -245,31 +254,34 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         );
         return;
     }
-    c.w(regs::TCTL, c.r(regs::TCTL) | 0x2);
-    let tdt = c.r(regs::TDT) % u32::from(::e1000e::TX_ENTRIES);
-    let d = mmu::phys_to_virt(region + layout::tx_descriptor(tdt as u16)) as *mut u64;
+    c.w(registers::TCTL, c.r(registers::TCTL) | 0x2);
+    let tdt = c.r(registers::TDT) % u32::from(::e1000e::TRANSMIT_ENTRIES);
+    let d = mmu::phys_to_virt(region + layout::transmit_descriptor(tdt as u16)) as *mut u64;
     // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
-    // (`layout::tx_descriptor` reduces its index), in the direct map. The device reads it only
-    // after the tail write below, which the barrier orders after these stores.
+    // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
+    // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::tx_word());
+        core::ptr::write_volatile(d.add(1), flush::transmit_word());
     }
     crate::arch::direct_memory_access_write_barrier();
-    c.w(regs::TDT, flush::tail_after(tdt, ::e1000e::TX_ENTRIES));
+    c.w(
+        registers::TDT,
+        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+    );
     spin_us(250);
-    if status() & flush::REQUIRED == 0 {
+    if status() & flush::FLUSH_DESC_REQUIRED == 0 {
         return;
     }
-    let rctl = c.r(regs::RCTL);
-    c.w(regs::RCTL, rctl & !0x2);
-    let _ = c.r(regs::STATUS);
+    let rctl = c.r(registers::RCTL);
+    c.w(registers::RCTL, rctl & !0x2);
+    let _ = c.r(registers::STATUS);
     spin_us(150);
     c.w(pch::RXDCTL, flush::rxdctl(c.r(pch::RXDCTL)));
-    c.w(regs::RCTL, rctl | 0x2);
-    let _ = c.r(regs::STATUS);
+    c.w(registers::RCTL, rctl | 0x2);
+    let _ = c.r(registers::STATUS);
     spin_us(150);
-    c.w(regs::RCTL, rctl & !0x2);
+    c.w(registers::RCTL, rctl & !0x2);
 }
 
 /// BAR0, through the direct map.
@@ -305,7 +317,7 @@ struct Bar<'a> {
     dev: &'a crate::pci::PciE1000eDevice,
 }
 
-impl ::e1000e::pch::Hw for Bar<'_> {
+impl ::e1000e::pch::Hardware for Bar<'_> {
     fn read(&mut self, off: u64) -> u32 {
         self.c.r(off)
     }
@@ -325,8 +337,10 @@ impl ::e1000e::pch::Hw for Bar<'_> {
         use ::e1000e::pch::sequence::Note;
         match n {
             // The identifier in hex, as the bench card compares it.
-            Note::PhyReached { at, id } => {
-                crate::println!("  e1000e: PhyReached {{ at: {at:?}, id: {id:#010x} }}");
+            Note::PhysicalLayerDeviceReached { at, id } => {
+                crate::println!(
+                    "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
+                );
             }
             n => crate::println!("  e1000e: {n:?}"),
         }
