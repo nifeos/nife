@@ -223,7 +223,7 @@ Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.lo
   and nothing else: no CRC error (`DCRC`), no start-bit or end-bit error, no read timeout
   (`DRTO`, `HTO`). `RXDR` is absent, but `Host::read` clears it after each batch it drains, so
   its absence does not say whether any words moved. The card answered and sent its block; the
-  FIFO's accounting between the card and the CPU broke. `FRUN` is in `INT_DATA_ERRORS`, so the
+  FIFO's accounting between the card and the CPU broke. `FRUN` is in `RINTSTS_DATA_ERR`, so the
   driver stopped there.
 - Slot 0: no eMMC answered `CMD1`, consistent with no module fitted.
 

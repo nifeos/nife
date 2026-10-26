@@ -1014,8 +1014,6 @@ crates/designware_mobile_storage/src/partition.rs::scratch
 crates/designware_mobile_storage/src/proofs.rs
 crates/designware_mobile_storage/src/registers.rs::BMOD
 crates/designware_mobile_storage/src/registers.rs::CMD_RESPONSE_EXPECT
-crates/designware_mobile_storage/src/registers.rs::CMD_SEND_INIT
-crates/designware_mobile_storage/src/registers.rs::CMD_START
 crates/designware_mobile_storage/src/registers.rs::CTRL
 crates/designware_mobile_storage/src/registers.rs::RST_N
 crates/designware_mobile_storage/src/registers.rs::STATUS

@@ -334,9 +334,9 @@ fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     if maximum_bus_width >= 4 {
         app_command(host, card)?;
         let r1 = host
-            .command(&Command::new(c::SD_SET_BUS_WIDTH, 2, Response::R1))
-            .map_err(|e| InitializationError::Configure(c::SD_SET_BUS_WIDTH, e))?;
-        r1_ok(c::SD_SET_BUS_WIDTH, r1[0])?;
+            .command(&Command::new(c::SET_BUS_WIDTH, 2, Response::R1))
+            .map_err(|e| InitializationError::Configure(c::SET_BUS_WIDTH, e))?;
+        r1_ok(c::SET_BUS_WIDTH, r1[0])?;
         host.set_bus_width(4);
         card.bus_width = 4;
     }
@@ -396,7 +396,7 @@ fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     loop {
         let operation_conditions = host
             .command(&Command::new(
-                c::MMC_SEND_OP_COND,
+                c::SEND_OP_COND,
                 MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT,
                 Response::R3,
             ))
