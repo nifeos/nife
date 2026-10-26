@@ -1,3 +1,7 @@
+//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
+//! `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
+//! `regs` (an abbreviation).
+
 /// Device control.
 pub const CTRL: u64 = 0x0_0000;
 /// Device status (read only).

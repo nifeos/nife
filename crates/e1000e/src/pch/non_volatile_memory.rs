@@ -128,7 +128,7 @@ impl Geometry {
     }
     /// Read it from the device.
     pub fn read(hardware: &mut impl Hardware) -> Self {
-        Self::from_strap(hardware.read(super::regs::STRAP))
+        Self::from_strap(hardware.read(super::registers::STRAP))
     }
 }
 

@@ -66,5 +66,5 @@ fn a_delay_is_in_milliseconds_and_a_flush_reads_status() {
     delay_ms(&mut s, 3);
     assert_eq!(s.elapsed_us, 3000);
     flush_writes(&mut s);
-    assert_eq!(s.reads, [crate::regs::STATUS]);
+    assert_eq!(s.reads, [crate::registers::STATUS]);
 }

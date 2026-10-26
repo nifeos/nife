@@ -1,3 +1,7 @@
+//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
+//! `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
+//! `regs` (an abbreviation).
+
 /// Strap register, read only; FreeBSD writes it to order a config-space read before reset.
 /// Bits 5:1 also give the NVM's size ([`super::non_volatile_memory::Geometry`]).
 pub(crate) const STRAP: u64 = 0x0_000c;

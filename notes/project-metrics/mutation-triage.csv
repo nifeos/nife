@@ -1186,7 +1186,7 @@ e1000e,read_u32_at_byte,replace | with &,killed,killed by a_flash_read_is_one_fo
 e1000e,read_u32_at_byte,replace | with ^,equivalent,"the byte count (3 << 8) lands in the field just masked out, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,read_mdic,replace > with >=,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
 e1000e,read_mdic,replace | with ^,equivalent,"the register is at most 31 by the check above (bits 16 to 20), the PHY address is MDIO's five bits at 21 (every caller passes 1 or 2), and OP_READ is bit 27; they share no bit; the 2026-10-12 per-crate re-run still reports it"
-e1000e,reg,replace | with ^,equivalent,"page << 5 and r & 0x1f share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,paged_offset,replace | with ^,equivalent,"page << 5 and register & 0x1f share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,reset_blocked,replace < with <=,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with ==,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with >,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds

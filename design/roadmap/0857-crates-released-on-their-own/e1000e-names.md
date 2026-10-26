@@ -1,6 +1,6 @@
 # The names in `e1000e`, for ratification
 
-<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,833 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,979 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
@@ -30,12 +30,14 @@ below copy:
   wherever this tree authors the name (`initialize_hardware`,
   `initialize_physical_layer_device_workarounds`). Intel's `STATUS.LAN_INIT_DONE`, the
   `LanInitTimeout` that names it, and FreeBSD's function names in docs keep their spelling.
+- Ruled 2026-10-26 (UTC), tree-wide: every `regs` module becomes `registers`, e1000e's two and
+  its one-letter inline `r` among them, and the constants inside keep their sources' names.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-155 names: 104 no block, 34 provisional, 17 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+156 names: 101 no block, 35 provisional, 20 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 13 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 12 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -57,14 +59,14 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `pch` | module | `src/pch/mod.rs` | unrecorded. | yes | term |
 | `non_volatile_memory` | module | `src/pch/non_volatile_memory.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `nvm` (an abbreviation). | yes | clear |
 | `physical_layer_device` | module | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as `physical_layer_device`, IEEE 802.3's phrase. Refused `phy` (an abbreviation), `physical_layer` (blurs the chip with the layer). | yes | clear |
-| `regs` | module | `src/pch/regs.rs` | unrecorded. | yes | clear |
+| `registers` | module | `src/pch/registers.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into `registers`, which names e1000e's. The constants inside keep their sources' names. Refused `regs` (an abbreviation). | yes | clear |
 | `reset` | module | `src/pch/reset.rs` | unrecorded. | yes | clear |
 | `sequence` | module | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `sim` | module | `src/pch/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/pch/tests.rs` | unrecorded. | no | clear; private |
 | `ulp` | module | `src/pch/ulp.rs` | unrecorded. | yes | unclear: Intel's ultra low power, an abbreviation |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
-| `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
+| `registers` | module | `src/registers.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into `registers`, which names e1000e's. The constants inside keep their sources' names. Refused `regs` (an abbreviation). | yes | clear |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
 | `CTRL_ASDE` | item | `src/control.rs` | unrecorded. | yes | clear |
 | `CTRL_EXT_DRV_LOAD` | item | `src/control.rs` | unrecorded. | yes | clear |
@@ -143,17 +145,18 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `READY` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `Swflag` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | term |
 | `id_at` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | unclear: what id, at what |
+| `paged_offset` | item | `src/pch/physical_layer_device.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `regs` and `r` are spelled out `registers`; no ruling covers this function. Refused `reg` (an abbreviation, as in FreeBSD's `PHY_REG`). | yes | clear |
 | `physical_layer_device_address` | item | `src/pch/physical_layer_device.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `phy` (an abbreviation, and the field holds the PHY's address, not the PHY). | yes | clear |
 | `plan` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
 | `read` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `read_mdic` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | term |
-| `reg` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | unclear: an abbreviation |
 | `register` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `reg` (an abbreviation). | yes | clear |
+| `registers` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into `registers`, which names e1000e's one-letter `r`. The constants inside keep their sources' names. Refused `r` (a letter, not a name). | yes | clear |
 | `release` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `update` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
 | `write` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
-| `FEXTNVM11` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
-| `RXDCTL` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
+| `FEXTNVM11` | item | `src/pch/registers.rs` | unrecorded. | yes | term |
+| `RXDCTL` | item | `src/pch/registers.rs` | unrecorded. | yes | term |
 | `BlockedAfterPhysicalLayerDeviceReset` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `BlockedAfterPhyReset` (an abbreviation). | yes | clear |
 | `Error` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `InSystemManagementBus` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `InSmbus` (an abbreviation of System Management Bus). | yes | clear |
@@ -178,33 +181,33 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `done` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
 | `release` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
 | `request` | item | `src/pch/ulp.rs` | unrecorded. | yes | clear |
-| `CTRL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CTRL_EXT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `ICR` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `IMC` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MTA` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MTA_ENTRIES` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the count names what the table holds). | yes | clear |
-| `RAH0` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RAL0` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RCTL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RDBAH` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RDBAL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RDH` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RDLEN` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RDT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `RFCTL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `STATUS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TCTL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TDBAH` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TDBAL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TDH` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TDLEN` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TDT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TIPG` | item | `src/regs.rs` | unrecorded. | yes | term |
+| `CTRL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CTRL_EXT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `ICR` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `IMC` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MTA` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MTA_ENTRIES` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the count names what the table holds). | yes | clear |
+| `RAH0` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RAL0` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RCTL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RDBAH` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RDBAL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RDH` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RDLEN` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RDT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `RFCTL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TCTL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TDBAH` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TDBAL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TDH` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TDLEN` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TDT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TIPG` | item | `src/registers.rs` | unrecorded. | yes | term |
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` and `r` in `src/pch/physical_layer_device.rs`, whose constants have rows;
+- the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` in `src/pch/physical_layer_device.rs`, whose constants have rows;
 - the fields of `DataPlane` (1), `physical_layer_device::Plan` (3) and the private `Sim` (22);
 - the variants of `TransmitError` (2), `ReceiveVerdict` (3), `non_volatile_memory::Error` (5), `physical_layer_device::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
 - the methods of the traits `Region` (4), `Tails` (3) and `Hardware` (6).

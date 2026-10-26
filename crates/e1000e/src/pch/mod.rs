@@ -59,7 +59,7 @@ pub mod sequence;
 mod sim;
 
 /// MAC registers the I219 adds. Offsets from FreeBSD's `e1000_regs.h` and `e1000_ich8lan.h`.
-pub mod regs;
+pub mod registers;
 
 /// Leaving ultra-low-power (ULP) mode through the Management Engine.
 pub mod ulp;

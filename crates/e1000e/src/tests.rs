@@ -278,20 +278,20 @@ fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
 
 #[test]
 fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
-    assert_eq!(regs::RDT & !0xfff, RECEIVE_QUEUE_PAGE);
-    assert_eq!(regs::TDT & !0xfff, TRANSMIT_QUEUE_PAGE);
-    assert_eq!(regs::TDT - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
+    assert_eq!(registers::RDT & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(registers::TDT & !0xfff, TRANSMIT_QUEUE_PAGE);
+    assert_eq!(registers::TDT - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
     // The finding: base and tail share a page, so the split cannot keep ring placement.
-    assert_eq!(regs::RDBAL & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(registers::RDBAL & !0xfff, RECEIVE_QUEUE_PAGE);
     for r in [
-        regs::CTRL,
-        regs::STATUS,
-        regs::RCTL,
-        regs::TCTL,
-        regs::IMC,
-        regs::RAL0,
-        regs::RAH0,
-        regs::RFCTL,
+        registers::CTRL,
+        registers::STATUS,
+        registers::RCTL,
+        registers::TCTL,
+        registers::IMC,
+        registers::RAL0,
+        registers::RAH0,
+        registers::RFCTL,
     ] {
         let page = r & !0xfff;
         assert!(

@@ -33,7 +33,7 @@ pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {
 
 /// A posted-write flush (`E1000_WRITE_FLUSH`): any read of BAR0 will do; FreeBSD reads `STATUS`.
 pub(super) fn flush_writes(hardware: &mut impl Hardware) {
-    let _ = hardware.read(crate::regs::STATUS);
+    let _ = hardware.read(crate::registers::STATUS);
 }
 
 /// Is `device` a PCH part (an I219) rather than the 82574L? Every I219 id this crate claims is in

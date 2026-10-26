@@ -47,7 +47,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-use super::{Hardware, regs};
+use super::Hardware;
 
 /// Why a PHY access failed. FreeBSD collapses these into `-E1000_ERR_PHY`; they are kept apart
 /// here because the bench boot prints them, and each points somewhere different.
@@ -112,15 +112,25 @@ pub(crate) const WAKEUP_PAGE: u32 = 800;
 /// higher one; this port refuses it instead. Found while writing this module's Kani harness.
 pub(crate) const MAX_PAGE: u32 = 0x7ff;
 
+/// A page and a register packed into the one offset [`read()`] and [`write()`] take: FreeBSD's
 /// `PHY_REG(page, reg)`.
-pub const fn reg(page: u32, r: u32) -> u32 {
-    page << PAGE_SHIFT | (r & MAX_REG)
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `regs` and `r` are spelled out
+/// `registers`; no ruling covers this function. Refused `reg` (an abbreviation, as in FreeBSD's
+/// `PHY_REG`).
+#[doc(alias = "PHY_REG")]
+pub const fn paged_offset(page: u32, register: u32) -> u32 {
+    page << PAGE_SHIFT | (register & MAX_REG)
 }
 
 /// The PHY's registers this crate addresses, from FreeBSD's `e1000_defines.h`, `e1000_phy.h` and
 /// `e1000_ich8lan.h`.
-pub mod r {
-    use super::reg;
+///
+/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that turns every `regs` module into
+/// `registers`, which names e1000e's one-letter `r`. The constants inside keep their sources'
+/// names. Refused `r` (a letter, not a name).
+pub mod registers {
+    use super::paged_offset;
     /// MII control.
     pub const CONTROL: u32 = 0x00;
     /// PHY identifier, high word.
@@ -136,21 +146,21 @@ pub mod r {
     /// 82577-family control 2 (`I82577_PHY_CTRL_2`).
     pub(crate) const I82577_CTRL_2: u32 = 18;
     /// Kumeran mode control (`HV_KMRN_MODE_CTRL`).
-    pub const KMRN_MODE_CTRL: u32 = reg(769, 16);
+    pub const KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
     /// Port general configuration (`BM_PORT_GEN_CFG`).
-    pub(crate) const PORT_GEN_CFG: u32 = reg(769, 17);
+    pub(crate) const PORT_GEN_CFG: u32 = paged_offset(769, 17);
     /// `SMBus` control (`CV_SMB_CTRL`).
-    pub(crate) const SMB_CTRL: u32 = reg(769, 23);
+    pub(crate) const SMB_CTRL: u32 = paged_offset(769, 23);
     /// Power management control (`HV_PM_CTRL`).
-    pub(crate) const PM_CTRL: u32 = reg(770, 17);
+    pub(crate) const PM_CTRL: u32 = paged_offset(770, 17);
     /// Ultra-low-power configuration 1 (`I218_ULP_CONFIG1`).
-    pub(crate) const ULP_CONFIG1: u32 = reg(779, 16);
+    pub(crate) const ULP_CONFIG1: u32 = paged_offset(779, 16);
     /// OEM bits: LPLU, gigabit disable, restart autonegotiation (`HV_OEM_BITS`).
-    pub(crate) const OEM_BITS: u32 = reg(768, 25);
+    pub(crate) const OEM_BITS: u32 = paged_offset(768, 25);
     /// `SMBus` address (`HV_SMB_ADDR`).
-    pub(crate) const SMB_ADDR: u32 = reg(768, 26);
+    pub(crate) const SMB_ADDR: u32 = paged_offset(768, 26);
     /// LED configuration (`HV_LED_CONFIG`).
-    pub(crate) const LED_CONFIG: u32 = reg(768, 30);
+    pub(crate) const LED_CONFIG: u32 = paged_offset(768, 30);
 }
 
 /// `PHY_REVISION_MASK`: the identifier without its revision nibble.
@@ -165,48 +175,51 @@ pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
 pub(crate) const FWSM_RSPCIPHY: u32 = 0x0000_0040;
 
-/// One MDIO read of `reg` at PHY address `physical_layer_device`, `e1000_read_phy_reg_mdic`.
+/// One MDIO read of `register` at PHY address `physical_layer_device_address`,
+/// `e1000_read_phy_reg_mdic`.
 pub fn read_mdic(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
-    r: u32,
+    register: u32,
 ) -> Result<u16, Error> {
-    if r > MAX_REG {
+    if register > MAX_REG {
         return Err(Error::OutOfRange);
     }
     hardware.write(
-        regs::MDIC,
-        r << mdic::REG_SHIFT | physical_layer_device_address << mdic::PHY_SHIFT | mdic::OP_READ,
+        super::registers::MDIC,
+        register << mdic::REG_SHIFT
+            | physical_layer_device_address << mdic::PHY_SHIFT
+            | mdic::OP_READ,
     );
-    complete(hardware, r).map(|v| v as u16)
+    complete(hardware, register).map(|v| v as u16)
 }
 
 /// One MDIO write, `e1000_write_phy_reg_mdic`.
 pub(crate) fn write_mdic(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
-    r: u32,
+    register: u32,
     data: u16,
 ) -> Result<(), Error> {
-    if r > MAX_REG {
+    if register > MAX_REG {
         return Err(Error::OutOfRange);
     }
     hardware.write(
-        regs::MDIC,
+        super::registers::MDIC,
         u32::from(data)
-            | r << mdic::REG_SHIFT
+            | register << mdic::REG_SHIFT
             | physical_layer_device_address << mdic::PHY_SHIFT
             | mdic::OP_WRITE,
     );
-    complete(hardware, r).map(|_| ())
+    complete(hardware, register).map(|_| ())
 }
 
 /// Poll `MDIC` for the transaction's end and judge it, the half both FreeBSD functions share.
-fn complete(hardware: &mut impl Hardware, r: u32) -> Result<u32, Error> {
+fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
     let mut v = 0;
     for _ in 0..mdic::POLLS {
         hardware.delay_us(mdic::POLL_US);
-        v = hardware.read(regs::MDIC);
+        v = hardware.read(super::registers::MDIC);
         if v & mdic::READY != 0 {
             break;
         }
@@ -215,7 +228,7 @@ fn complete(hardware: &mut impl Hardware, r: u32) -> Result<u32, Error> {
         Err(Error::NotReady)
     } else if v & mdic::ERROR != 0 {
         Err(Error::ManagementDataInterface)
-    } else if (v & mdic::REG_MASK) >> mdic::REG_SHIFT != r {
+    } else if (v & mdic::REG_MASK) >> mdic::REG_SHIFT != register {
         Err(Error::WrongRegister)
     } else {
         Ok(v)
@@ -235,7 +248,7 @@ impl Swflag {
         let mut ext = 0;
         let mut free = false;
         for _ in 0..SWFLAG_FREE_MS {
-            ext = hardware.read(regs::EXTCNF_CTRL);
+            ext = hardware.read(super::registers::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG == 0 {
                 free = true;
                 break;
@@ -246,24 +259,24 @@ impl Swflag {
             return Err(Error::SwflagHeld);
         }
         ext |= EXTCNF_CTRL_SWFLAG;
-        hardware.write(regs::EXTCNF_CTRL, ext);
+        hardware.write(super::registers::EXTCNF_CTRL, ext);
         for _ in 0..SWFLAG_TAKE_MS {
-            ext = hardware.read(regs::EXTCNF_CTRL);
+            ext = hardware.read(super::registers::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG != 0 {
                 return Ok(Swflag(()));
             }
             hardware.delay_us(1000);
         }
-        hardware.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+        hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
         Err(Error::SwflagRefused)
     }
 
     /// `e1000_release_swflag_ich8lan`. Clears the bit only if it is still set; FreeBSD logs the
     /// other case ("Semaphore unexpectedly released") and so does nothing here.
     pub fn release(self, hardware: &mut impl Hardware) {
-        let ext = hardware.read(regs::EXTCNF_CTRL);
+        let ext = hardware.read(super::registers::EXTCNF_CTRL);
         if ext & EXTCNF_CTRL_SWFLAG != 0 {
-            hardware.write(regs::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+            hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
         }
     }
 
@@ -299,14 +312,14 @@ pub struct Plan {
 /// this port carries. Pure, so it is host-tested and model-checked.
 pub const fn plan(offset: u32) -> Result<Plan, Error> {
     let page = offset >> PAGE_SHIFT;
-    let r = offset & MAX_REG;
+    let register = offset & MAX_REG;
     if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAX_PAGE {
         return Err(Error::PageNotPorted);
     }
     let physical_layer_device_address = address_for(page);
     // Page 768 is selected as page 0 (FreeBSD: "if (page == HV_INTC_FC_PAGE_START) page = 0").
     let shown = if page == HV_PAGE_START { 0 } else { page };
-    let select = if r > MAX_UNPAGED_REG {
+    let select = if register > MAX_UNPAGED_REG {
         Some((shown << PAGE_SHIFT) as u16)
     } else {
         None
@@ -314,11 +327,11 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
     Ok(Plan {
         select,
         physical_layer_device_address,
-        register: r,
+        register,
     })
 }
 
-/// Read a PCH PHY register by its paged offset ([`reg`]).
+/// Read a PCH PHY register by its paged offset ([`paged_offset`]).
 pub fn read(hardware: &mut impl Hardware, _held: &Swflag, offset: u32) -> Result<u16, Error> {
     let p = plan(offset)?;
     if let Some(sel) = p.select {
@@ -357,7 +370,7 @@ pub fn update(
 /// 31 times 10 ms apart, as FreeBSD does.
 pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
     for i in 0..=30 {
-        if hardware.read(super::regs::FWSM) & FWSM_RSPCIPHY != 0 {
+        if hardware.read(super::registers::FWSM) & FWSM_RSPCIPHY != 0 {
             return false;
         }
         if i < 30 {
@@ -373,8 +386,8 @@ pub fn id_at(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
 ) -> Result<u32, Error> {
-    let hi = read_mdic(hardware, physical_layer_device_address, r::ID1)?;
-    let lo = read_mdic(hardware, physical_layer_device_address, r::ID2)?;
+    let hi = read_mdic(hardware, physical_layer_device_address, registers::ID1)?;
+    let lo = read_mdic(hardware, physical_layer_device_address, registers::ID2)?;
     Ok((u32::from(hi) << 16 | u32::from(lo)) & ID_MASK)
 }
 
