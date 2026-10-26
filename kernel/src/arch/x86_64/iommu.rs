@@ -13,7 +13,7 @@
 //!
 //! - Only PCI segment 0 is brought up; a unit elsewhere is reported and refused.
 //! - A unit whose scope names only absent devices is still brought up, and may panic at
-//! `initialize`.
+//!   `initialize`.
 //! - An RMRR naming a bridge is mapped only once the device below it is confined.
 //! - The graphics unit translates with only its RMRR mapped; scanout needs the RMRR to cover it.
 //! - No interrupt remapping: `ECAP.IR` is only reported, and no `IRTE` is ever written.

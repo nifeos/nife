@@ -305,7 +305,7 @@ pub(crate) fn print_summary() {
             CHECK_TSC.load(Ordering::Relaxed),
         ),
         CycleCounter::Unknown => {
-            crate::println!("  cycles      : arch::pmu::initialize has not run")
+            crate::println!("  cycles      : arch::pmu::initialize has not run");
         }
     }
 }

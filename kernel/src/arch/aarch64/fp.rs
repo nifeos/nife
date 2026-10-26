@@ -6,7 +6,7 @@
 //!
 //! - **`live` never clears**: a thread that touches FP once pays the save on every switch after.
 //! - **SVE and SME are not saved.** [`initialize`] closes them, and `crate::fp` treats their trap
-//! as a   fault; the emulator's default CPU cannot show it.
+//!   as a fault; the emulator's default CPU cannot show it.
 
 use super::instructions;
 
