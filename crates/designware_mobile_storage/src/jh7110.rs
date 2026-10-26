@@ -25,7 +25,11 @@ pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// The rate both trees assign the `ciu` clock, which the controller divides for the card.
 pub(crate) const CIU_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
-pub const FIFO_DEPTH: u32 = 32;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
+/// authors, and the device tree's `fifo-depth` keeps its spelling; was `FIFO_DEPTH`.
+#[doc(alias = "fifo")]
+pub const QUEUE_DEPTH: u32 = 32;
 /// Mainline's interrupt numbers at the PLIC, slot 0 and slot 1.
 pub const INTERRUPTS: [u32; 2] = [74, 75];
 
@@ -52,7 +56,7 @@ pub struct Slot {
     /// The tree's `bus-width`, 1 when absent.
     pub bus_width: u8,
     /// The tree's `fifo-depth`, if it has one.
-    pub fifo_depth: Option<u32>,
+    pub queue_depth: Option<u32>,
     /// The tree's first `assigned-clock-rates` cell, or [`CIU_HZ`] when absent.
     pub ciu_hz: u32,
     /// Which `compatible` matched.
@@ -118,7 +122,7 @@ impl Slot {
             size,
             interrupt: prop(b"interrupts")?.and_then(be32),
             bus_width,
-            fifo_depth: prop(b"fifo-depth")?.and_then(be32),
+            queue_depth: prop(b"fifo-depth")?.and_then(be32),
             ciu_hz: prop(b"assigned-clock-rates")?
                 .and_then(be32)
                 .filter(|&hz| hz != 0)
@@ -163,7 +167,7 @@ mod tests {
                 size: WINDOW_SIZE,
                 interrupt: Some(75),
                 bus_width: 4,
-                fifo_depth: Some(FIFO_DEPTH),
+                queue_depth: Some(QUEUE_DEPTH),
                 ciu_hz: 100_000_000,
                 compatible: COMPATIBLE_MAINLINE,
                 status_okay: true,

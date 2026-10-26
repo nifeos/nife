@@ -122,7 +122,7 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_threshold_write() {
     let sim = Sim::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
     let (mut h, id) = Host::new(sim, 50_000_000, Some(32)).unwrap();
-    assert_eq!(crate::registers::fifo_offset(id.verid), 0x100);
+    assert_eq!(crate::registers::queue_offset(id.verid), 0x100);
     let card = sd::identify(&mut h, 4).unwrap();
     let data: Vec<u8> = (0..2 * BLOCK).map(|i| (i % 253) as u8).collect();
     sd::write_blocks(&mut h, &card, 7, &data).unwrap();
@@ -130,7 +130,7 @@ fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_thresho
     // A threshold write to 0x100 here would land in the FIFO and shift every word read.
     sd::read_blocks(&mut h, &card, 7, &mut back).unwrap();
     assert_eq!(back, data);
-    assert!(!h.into_registers().stray_fifo_write);
+    assert!(!h.into_registers().stray_queue_write);
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn a_sixteen_bit_fifo_is_refused_at_the_door() {
     let narrow = Narrow(Sim::new(CardKind::SdHighCapacity, 1024, 32));
     assert!(matches!(
         Host::new(narrow, 50_000_000, None),
-        Err(Error::FifoWidth(0))
+        Err(Error::QueueWidth(0))
     ));
 }
 
@@ -305,7 +305,7 @@ fn without_a_tree_depth_the_fifo_depth_is_read_from_its_reset_watermark() {
         None,
     )
     .unwrap();
-    assert_eq!(h.fifo_depth(), 16);
+    assert_eq!(h.queue_depth(), 16);
 }
 
 // **The error paths.** Each test below injects one fault the sim can produce and checks that
