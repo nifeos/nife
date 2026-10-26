@@ -179,7 +179,7 @@ mod tests {
     }
 
     #[test]
-    fn a_gpt_disk_or_a_partition_at_sector_one_has_no_scratch() {
+    fn a_protective_master_boot_record_or_a_partition_at_sector_one_has_no_scratch() {
         let protective = MasterBootRecord::parse(&sector(&[(
             TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE,
             1,
