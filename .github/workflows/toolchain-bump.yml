@@ -104,9 +104,10 @@ jobs:
         run: |
           target="${INPUT_TARGET:-nightly-$(date -u +%Y-%m-%d)}"
           # **A dispatch's `target` is checked before anything reads it** (security audit 2026-10-26,
-          # finding 2). Later steps interpolate `steps.plan.outputs.target` into their scripts, so an
-          # unchecked input would be shell those steps run, in `propose` beside the App token, and a
-          # newline in it would write further step outputs. A nightly's name has one shape.
+          # finding 2). A newline in it would write further step outputs, and the target names a
+          # toolchain that rustup installs and `propose` runs beside the App token. Later steps
+          # take it through `env:` and never as `${{ }}` in a script, so this check is not the only
+          # thing between a dispatch input and the shell. A nightly's name has one shape.
           case "$target" in
             nightly-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
             *) echo "target is not of the form nightly-YYYY-MM-DD; refusing it" >&2; exit 1 ;;
@@ -130,9 +131,15 @@ jobs:
         id: install
         if: steps.plan.outputs.skip == 'false'
         continue-on-error: true  # outcome: exception, a missing nightly is upstream's; the pull request says no restamp ran
+        # Through `env:`, never `${{ }}` in the script, so the plan step's check is not the only
+        # thing between a dispatch input and the shell. `STAMPED` is a space-separated list.
+        env:
+          STAMPED: ${{ steps.plan.outputs.stamped }}
+          TARGET: ${{ steps.plan.outputs.target }}
         run: |
           targets="$(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)"
-          for tc in ${{ steps.plan.outputs.stamped }} ${{ steps.plan.outputs.target }}; do
+          # shellcheck disable=SC2086 # $STAMPED is a deliberate word-split list.
+          for tc in $STAMPED "$TARGET"; do
             rustup toolchain install "$tc" --profile minimal --component rust-src,llvm-tools
             # shellcheck disable=SC2086 # $targets is a deliberate word-split list.
             rustup target add --toolchain "$tc" $targets
@@ -326,7 +333,7 @@ jobs:
           current="$(awk -F'"' '/^channel/ {print $2}' rust-toolchain.toml)"
           target="${INPUT_TARGET:-nightly-$(date -u +%Y-%m-%d)}"
           # The same check as `restamp`'s plan step, and for the same reason: this job's later steps
-          # interpolate the target, and they run beside the App token.
+          # run beside the App token.
           case "$target" in
             nightly-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
             *) echo "target is not of the form nightly-YYYY-MM-DD; refusing it" >&2; exit 1 ;;
@@ -348,15 +355,18 @@ jobs:
         id: install
         if: steps.plan.outputs.skip == 'false'
         continue-on-error: true  # outcome: exception, a missing nightly is upstream's, so nothing to propose today
+        # Through `env:`, never `${{ }}` in the script, for the reason `restamp`'s install step gives.
+        env:
+          TARGET: ${{ steps.plan.outputs.target }}
         run: |
-          rustup toolchain install "${{ steps.plan.outputs.target }}" --profile minimal \
+          rustup toolchain install "$TARGET" --profile minimal \
             --component rust-src,llvm-tools,rustfmt,clippy
           # Every target the pin declares, read from the file rather than spelled here, matching
           # `script/toolchain-bump`. This installs against the NEW toolchain, which rustup does not
           # apply the pin's `targets` array to, so an omission here is not covered the way it is
           # elsewhere: the hand-written list named two and left out `x86_64-unknown-none`, and the
           # first x86_64 build after a bump was what discovered it.
-          rustup target add --toolchain "${{ steps.plan.outputs.target }}" \
+          rustup target add --toolchain "$TARGET" \
             $(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
@@ -376,9 +386,10 @@ jobs:
         continue-on-error: true  # outcome: reported
         env:
           RUSTUP_TOOLCHAIN: ${{ steps.plan.outputs.target }}
+          TARGET: ${{ steps.plan.outputs.target }}
         run: |
           set -o pipefail
-          sed -i "s|^channel = \".*\"|channel = \"${{ steps.plan.outputs.target }}\"|" rust-toolchain.toml
+          sed -i "s|^channel = \".*\"|channel = \"$TARGET\"|" rust-toolchain.toml
           rm -rf target/nife-farm
           # Captured because the failure text IS the deliverable when this step fails: the PR body
           # below quotes it, so the reader gets the compiler's own words rather than a link to a log

@@ -80,12 +80,14 @@ the silence the 2026-08-01 fix in that file exists to prevent.
 
 ### 2. FIXED: the bump workflow took an unchecked dispatch input, and staged the overlay
 
-A `workflow_dispatch` `target` went into `GITHUB_OUTPUT` unchecked, and later steps interpolate that
-output into their scripts with `${{ }}`. A crafted input was shell in `propose` beside the App
+A `workflow_dispatch` `target` went into `GITHUB_OUTPUT` unchecked, and later steps interpolated
+that output into their scripts with `${{ }}`. A crafted input was shell in `propose` beside the App
 token, and a newline in it wrote further step outputs. Dispatch needs write access, so this widened
 a writer's reach to the App's identity rather than a stranger's reach to anything. Both plan steps
 now refuse any target that is not `nightly-YYYY-MM-DD` before they write an output, checked by hand
-against a good name, a short one, a quoted payload and an embedded newline.
+against a good name, a short one, a quoted payload and an embedded newline. Every later script
+takes the target through `env:` as `"$TARGET"`, so a future edit to that check cannot reopen the
+shell.
 
 The same job ran `git add -A patches/std-nife` before committing. No step edits the overlay (a
 repair is a lane's commit, as the job's own body says), so the line could only carry what a build
