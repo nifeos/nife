@@ -63,26 +63,26 @@ impl DirectMemoryAccessRegion for Memory {
     fn bytes(&self) -> u32 {
         u32::try_from(self.bus().bytes.len()).unwrap()
     }
-    fn read_u32(&self, off: u32) -> u32 {
-        let b = &self.bus().bytes[off as usize..off as usize + 4];
+    fn read_u32(&self, offset: u32) -> u32 {
+        let b = &self.bus().bytes[offset as usize..offset as usize + 4];
         u32::from_le_bytes([b[0], b[1], b[2], b[3]])
     }
-    fn write_u32(&mut self, off: u32, v: u32) {
+    fn write_u32(&mut self, offset: u32, value: u32) {
         let mut bus = self.bus();
         bus.cpu_unfenced = true;
-        bus.bytes[off as usize..off as usize + 4].copy_from_slice(&v.to_le_bytes());
+        bus.bytes[offset as usize..offset as usize + 4].copy_from_slice(&value.to_le_bytes());
     }
-    fn read_bytes(&self, off: u32, out: &mut [u8]) {
+    fn read_bytes(&self, offset: u32, out: &mut [u8]) {
         let mut bus = self.bus();
         if bus.device_unfenced {
             bus.unfenced_read = true;
         }
-        out.copy_from_slice(&bus.bytes[off as usize..off as usize + out.len()]);
+        out.copy_from_slice(&bus.bytes[offset as usize..offset as usize + out.len()]);
     }
-    fn write_bytes(&mut self, off: u32, src: &[u8]) {
+    fn write_bytes(&mut self, offset: u32, source: &[u8]) {
         let mut bus = self.bus();
         bus.cpu_unfenced = true;
-        bus.bytes[off as usize..off as usize + src.len()].copy_from_slice(src);
+        bus.bytes[offset as usize..offset as usize + source.len()].copy_from_slice(source);
     }
     fn barrier(&mut self) {
         let mut bus = self.bus();
@@ -741,8 +741,8 @@ impl Sim {
     }
 
     /// The byte offset in memory of `len` bytes at bus address `addr`, if they are all there.
-    fn offset(&self, bus: &Bus, addr: u32, len: usize) -> Option<usize> {
-        let off = usize::try_from(u64::from(addr).checked_sub(bus.base)?).ok()?;
+    fn offset(&self, bus: &Bus, address: u32, len: usize) -> Option<usize> {
+        let off = usize::try_from(u64::from(address).checked_sub(bus.base)?).ok()?;
         (off + len <= bus.bytes.len()).then_some(off)
     }
 

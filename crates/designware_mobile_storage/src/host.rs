@@ -80,8 +80,8 @@ pub(crate) const COMMAND_DEADLINE_US: u64 = 100_000;
 /// to start a write (the SD spec's write timeout for SDHC); half a second is that with slack.
 pub(crate) const DATA_DEADLINE_US: u64 = 500_000;
 
-/// **The card clock divider** for a `target` from a `base`: the smallest `div` with
-/// `base / (2 * div) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when even
+/// **The card clock divider** for a `target` from a `base`: the smallest `divider` with
+/// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when even
 /// 255 is too fast.
 ///
 /// OpenBSD's loop, with its edge closed: OpenBSD exits at `div = 256` and writes that to an
@@ -107,17 +107,21 @@ pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
     }
     // ceil(base / (2 * target)). Saturating, and still exact: a target of 2^31 or more saturates
     // to u32::MAX, and since base > target the quotient is then 1 either way.
-    let div = base.div_ceil(target.saturating_mul(2));
-    if div > 255 { None } else { Some(div as u8) }
+    let divider = base.div_ceil(target.saturating_mul(2));
+    if divider > 255 {
+        None
+    } else {
+        Some(divider as u8)
+    }
 }
 
-/// The card clock a divider gives: `base` at 0, `base / (2 * div)` otherwise.
+/// The card clock a divider gives: `base` at 0, `base / (2 * divider)` otherwise.
 #[must_use]
-pub const fn card_clock(base: u32, div: u8) -> u32 {
-    if div == 0 {
+pub const fn card_clock(base: u32, divider: u8) -> u32 {
+    if divider == 0 {
         base
     } else {
-        base / (2 * div as u32)
+        base / (2 * divider as u32)
     }
 }
 
@@ -302,17 +306,17 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::ClockUpdate`] if the controller does not take either update; `BufferSize` is never
     /// returned. A target no divider reaches runs at the slowest the controller has.
     pub(crate) fn set_clock(&mut self, hz: u32) -> Result<u32, Error> {
-        let div = clock_divider(self.base_hz, hz).unwrap_or(255);
+        let divider = clock_divider(self.base_hz, hz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);
         self.registers.write(registers::CLKSRC, 0);
-        self.registers.write(registers::CLKDIV, u32::from(div));
+        self.registers.write(registers::CLKDIV, u32::from(divider));
         self.update_clock()?;
         self.registers.write(
             registers::CLKENA,
             registers::CLKENA_ENABLE | registers::CLKENA_LOW_POWER,
         );
         self.update_clock()?;
-        Ok(card_clock(self.base_hz, div))
+        Ok(card_clock(self.base_hz, divider))
     }
 
     /// Set the bus width the controller drives: 1, 4 or 8. Anything else is 1.
@@ -340,15 +344,15 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         }
     }
 
-    /// Send `cmd`, its data phase prepared first; `direct_memory_access` arms the IDMAC between the FIFO reset and
+    /// Send `command`, its data phase prepared first; `direct_memory_access` arms the IDMAC between the FIFO reset and
     /// the command.
     pub(crate) fn issue(
         &mut self,
-        cmd: &Command,
+        command: &Command,
         direct_memory_access: bool,
     ) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
-        if let Some(d) = cmd.data {
+        if let Some(d) = command.data {
             self.registers.write(registers::BYTCNT, d.bytes());
             self.registers.write(registers::BLKSIZ, d.block_size);
             let ctrl = self.registers.read(registers::CTRL);
@@ -364,27 +368,27 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             }
         }
         self.registers.write(registers::RINTSTS, registers::INT_ALL);
-        self.registers.write(registers::CMDARG, cmd.arg);
-        self.registers.write(registers::CMD, cmd.word());
+        self.registers.write(registers::CMDARG, command.arg);
+        self.registers.write(registers::CMD, command.word());
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
             registers.read(registers::CMD) & registers::CMD_START == 0
         }) {
-            return Err(Error::CommandNotTaken(cmd.index));
+            return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
             status = registers.read(registers::RINTSTS);
             status & registers::INT_CD != 0
         }) {
-            return Err(Error::CommandTimeout(cmd.index, status));
+            return Err(Error::CommandTimeout(command.index, status));
         }
         if status & registers::INT_RTO != 0 {
-            return Err(Error::NoResponse(cmd.index));
+            return Err(Error::NoResponse(command.index));
         }
         if status & (registers::INT_RCRC | registers::INT_RE) != 0 {
-            return Err(Error::BadResponse(cmd.index, status));
+            return Err(Error::BadResponse(command.index, status));
         }
-        Ok(if cmd.response.is_long() {
+        Ok(if command.response.is_long() {
             [
                 self.registers.read(registers::RESP0),
                 self.registers.read(registers::RESP1),
@@ -400,12 +404,12 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// # Errors
     ///
-    /// Any of the command-phase errors, and [`Error::BufferSize`] if `cmd` has a data phase.
-    pub fn command(&mut self, cmd: &Command) -> Result<[u32; 4], Error> {
-        if cmd.data.is_some() {
+    /// Any of the command-phase errors, and [`Error::BufferSize`] if `command` has a data phase.
+    pub fn command(&mut self, command: &Command) -> Result<[u32; 4], Error> {
+        if command.data.is_some() {
             return Err(Error::BufferSize);
         }
-        self.issue(cmd, false)
+        self.issue(command, false)
     }
 
     /// **Send a command whose data phase reads into `buf`.** `buf` must be exactly the command's
@@ -415,8 +419,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// [`Error::BufferSize`] on a size mismatch or a write command; any command-phase error;
     /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data phase.
-    pub fn read(&mut self, cmd: &Command, buf: &mut [u8]) -> Result<[u32; 4], Error> {
-        let Some(d) = cmd.data else {
+    pub fn read(&mut self, command: &Command, buf: &mut [u8]) -> Result<[u32; 4], Error> {
+        let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
         if d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
@@ -426,17 +430,20 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             if d.bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.idmac_transfer(cmd, d.bytes())?;
+            let resp = self.idmac_transfer(command, d.bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
                 direct_memory_access.region().read_bytes(PAGE, buf);
             }
             return Ok(resp);
         }
-        let resp = self.issue(cmd, false)?;
+        let resp = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buf.len() {
-            let (status, rint) =
-                self.wait_fifo(cmd.index, registers::INT_RXDR, (buf.len() - done) as u32)?;
+            let (status, rint) = self.wait_fifo(
+                command.index,
+                registers::INT_RXDR,
+                (buf.len() - done) as u32,
+            )?;
             let n = fifo_step(status, self.depth, false, (buf.len() - done) as u32) as usize;
             for chunk in buf[done..done + n].as_chunks_mut::<4>().0 {
                 *chunk = self.registers.read(self.fifo).to_le_bytes();
@@ -445,7 +452,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             self.registers
                 .write(registers::RINTSTS, rint & registers::INT_RXDR);
         }
-        self.finish(cmd)?;
+        self.finish(command)?;
         Ok(resp)
     }
 
@@ -454,8 +461,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// # Errors
     ///
     /// As [`Host::read`].
-    pub fn write(&mut self, cmd: &Command, buf: &[u8]) -> Result<[u32; 4], Error> {
-        let Some(d) = cmd.data else {
+    pub fn write(&mut self, command: &Command, buf: &[u8]) -> Result<[u32; 4], Error> {
+        let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
         if !d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
@@ -466,15 +473,18 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 return Err(Error::BufferSize);
             }
             direct_memory_access.region().write_bytes(PAGE, buf);
-            let resp = self.idmac_transfer(cmd, d.bytes())?;
+            let resp = self.idmac_transfer(command, d.bytes())?;
             self.wait_not_busy()?;
             return Ok(resp);
         }
-        let resp = self.issue(cmd, false)?;
+        let resp = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buf.len() {
-            let (status, rint) =
-                self.wait_fifo(cmd.index, registers::INT_TXDR, (buf.len() - done) as u32)?;
+            let (status, rint) = self.wait_fifo(
+                command.index,
+                registers::INT_TXDR,
+                (buf.len() - done) as u32,
+            )?;
             let n = fifo_step(status, self.depth, true, (buf.len() - done) as u32) as usize;
             for chunk in buf[done..done + n].as_chunks::<4>().0 {
                 let w = u32::from_le_bytes(*chunk);
@@ -484,7 +494,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             self.registers
                 .write(registers::RINTSTS, rint & registers::INT_TXDR);
         }
-        self.finish(cmd)?;
+        self.finish(command)?;
         self.wait_not_busy()?;
         Ok(resp)
     }
@@ -517,9 +527,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     }
 
     /// Wait for data-transfer-over, and for the automatic CMD12 after a multi-block transfer.
-    fn finish(&mut self, cmd: &Command) -> Result<(), Error> {
+    fn finish(&mut self, command: &Command) -> Result<(), Error> {
         let mut rint = 0;
-        let want = match cmd.data {
+        let want = match command.data {
             Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
             _ => registers::INT_DTO,
         };
@@ -529,10 +539,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 || rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0
         });
         if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
-            return Err(Error::Data(cmd.index, rint));
+            return Err(Error::Data(command.index, rint));
         }
         if !ok {
-            return Err(Error::DataTimeout(cmd.index, rint, 0));
+            return Err(Error::DataTimeout(command.index, rint, 0));
         }
         Ok(())
     }

@@ -1,5 +1,5 @@
 use crate::host::fifo_step;
-use crate::idmac::{DESCRIPTOR_BYTES, MAX_DESCRIPTORS, PAGE, descriptor, descriptors_for};
+use crate::idmac::{DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for};
 use crate::partition::{Entry, Mbr};
 use crate::sd::in_range;
 
@@ -79,7 +79,7 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
 #[kani::proof]
 fn a_chain_describes_its_bytes_inside_the_region() {
     let pages: u32 = kani::any();
-    kani::assume((1..=MAX_DESCRIPTORS).contains(&pages));
+    kani::assume((1..=MAXIMUM_DESCRIPTORS).contains(&pages));
     let bus: u32 = kani::any();
     kani::assume(bus.is_multiple_of(PAGE));
     kani::assume(u64::from(bus) + u64::from((pages + 1) * PAGE) <= 1 << 32);

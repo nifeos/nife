@@ -190,7 +190,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     bench::read_matrix(&mut h, 4, 2048, &mut buf, |r| {
         rows += 1;
         assert_eq!(r.result, Ok(()), "{r:?}");
-        assert!(r.max_fill > 0, "{r:?}");
+        assert!(r.maximum_fill > 0, "{r:?}");
         assert!(
             r.us > 0,
             "the read took no time on a clock that advances: {r:?}"
@@ -229,17 +229,17 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     // FIFO count in bits 29:17, the full flag in bit 3.
     let mut w = bench::Watch::new(Fixed { status: 5 << 17 });
     w.read(crate::registers::RINTSTS);
-    assert_eq!((w.max_fill, w.full_reads), (0, 0));
+    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
     w.read(crate::registers::STATUS);
-    assert_eq!((w.max_fill, w.full_reads), (5, 0));
+    assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
     let mut w = bench::Watch::new(Fixed {
         status: (128 << 17) | (1 << 3),
     });
     w.read(crate::registers::STATUS);
     w.read(crate::registers::STATUS);
-    assert_eq!((w.max_fill, w.full_reads), (128, 2));
+    assert_eq!((w.maximum_fill, w.full_reads), (128, 2));
     w.clear();
-    assert_eq!((w.max_fill, w.full_reads), (0, 0));
+    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
 }
 
 #[test]

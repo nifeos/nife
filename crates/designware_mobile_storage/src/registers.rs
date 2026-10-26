@@ -28,7 +28,7 @@ pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 
 /// Power enable, one bit per card slot. Slot 0 is the only one on the JH7110.
 pub(crate) const PWREN: u32 = 0x004;
-/// Clock divider 0 in bits 7:0: card clock is `base / (2 * div)`, or `base` itself when 0.
+/// Clock divider 0 in bits 7:0: card clock is `base / (2 * divider)`, or `base` itself when 0.
 pub(crate) const CLKDIV: u32 = 0x008;
 /// Which divider each card uses. Always 0 here.
 pub(crate) const CLKSRC: u32 = 0x00c;

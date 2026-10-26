@@ -117,7 +117,7 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 }
 
 /// **Bring up whatever card is in the slot** and leave it selected, in the transfer state, at
-/// [`TRANSFER_HZ`]. `max_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD slot,
+/// [`TRANSFER_HZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD slot,
 /// 8 on its eMMC slot).
 ///
 /// # Errors
@@ -125,7 +125,7 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 /// The step that failed; see [`InitializationError`].
 pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
-    max_bus_width: u8,
+    maximum_bus_width: u8,
 ) -> Result<Card, InitializationError> {
     let v2 = go_idle_and_check_interface(host)?;
     let (kind, ocr) = power_up(host, v2)?;
@@ -155,7 +155,7 @@ pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
     if kind == Kind::Mmc {
         configure_mmc(host, &mut card, &csd_raw)?;
     } else {
-        configure_sd(host, &mut card, &csd_raw, max_bus_width)?;
+        configure_sd(host, &mut card, &csd_raw, maximum_bus_width)?;
     }
     if card.blocks == 0 {
         return Err(InitializationError::Capacity(Csd::sd(&csd_raw).structure));
@@ -276,7 +276,7 @@ fn configure_mmc<R: Registers, D: DirectMemoryAccessRegion>(
         .set_clock(TRANSFER_HZ)
         .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
     let mut ext = [0u8; BLOCK];
-    let cmd = Command::with_data(
+    let command = Command::with_data(
         c::SEND_IF_COND,
         0,
         Response::R1,
@@ -287,7 +287,7 @@ fn configure_mmc<R: Registers, D: DirectMemoryAccessRegion>(
         },
     );
     let r1 = host
-        .read(&cmd, &mut ext)
+        .read(&command, &mut ext)
         .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
     r1_ok(c::SEND_IF_COND, r1[0])?;
     // Above 2 GB the CSD's size is a placeholder; EXT_CSD's count is the truth.
@@ -304,14 +304,14 @@ fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &mut Card,
     csd_raw: &[u32; 4],
-    max_bus_width: u8,
+    maximum_bus_width: u8,
 ) -> Result<(), InitializationError> {
     let csd = Csd::sd(csd_raw);
     if csd.blocks == 0 {
         return Err(InitializationError::Capacity(csd.structure));
     }
     card.blocks = csd.blocks;
-    if max_bus_width >= 4 {
+    if maximum_bus_width >= 4 {
         app_command(host, card)?;
         let r1 = host
             .command(&Command::new(c::SD_SET_BUS_WIDTH, 2, Response::R1))
