@@ -8,8 +8,6 @@ components/src/swish/witness.rs::removed question-shape
 crates/abi/src/futex.rs::admitted question-shape
 crates/abi/src/virtio.rs::DMA_PHYS_OFFSET spelled-out
 crates/address_space_identifier/src/lib.rs::ASIDS spelled-out
-crates/serial_console/src/exposure.rs::soaked question-shape
-crates/serial_console/src/progress.rs::userspace_ran question-shape
 crates/boot_slot/src/lib.rs::NVME spelled-out
 crates/boot_slot/src/lib.rs::encode_nvme spelled-out
 crates/boot_slot/src/lib.rs::is_nvme spelled-out
@@ -40,9 +38,6 @@ crates/e1000e/src/process.rs::DATA_PLANE_VA spelled-out
 crates/e1000e/src/process.rs::RX_QUEUE_VA spelled-out
 crates/e1000e/src/process.rs::TX_QUEUE_VA spelled-out
 crates/environment_contract/src/lib.rs::ConfigPage spelled-out
-crates/extensible_host_controller_interface/src/dma.rs::dma spelled-out
-crates/extensible_host_controller_interface/src/regs.rs::CONFIG spelled-out
-crates/extensible_host_controller_interface/src/trb.rs::cycle question-shape
 crates/filesystem_contract/src/dir.rs::dir spelled-out
 crates/filesystem_contract/src/dirent.rs::IS_DIR spelled-out
 crates/filesystem_contract/src/grant.rs::spec spelled-out
@@ -99,6 +94,8 @@ crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 crates/program_argument_contract/src/lib.rs::from_va spelled-out
 crates/screen_console/src/lib.rs::copy question-shape
 crates/screen_console/src/lib.rs::copy_wide question-shape
+crates/serial_console/src/exposure.rs::soaked question-shape
+crates/serial_console/src/progress.rs::userspace_ran question-shape
 crates/soak_page/src/lib.rs::VA spelled-out
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE spelled-out
 crates/std_runtime_contract/src/lib.rs::ARGS_SLOT spelled-out

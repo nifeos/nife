@@ -378,13 +378,9 @@ impl Host {
         }
     }
 
-    fn configure(
-        &mut self,
-        slot: u8,
-        port_number: u8,
-        speed: u8,
-        packet0: u16,
-    ) -> Result<Attached, Fail> {
+    /// **Give the device in `slot` fresh rings and contexts, then address it**: the slot context
+    /// and endpoint 0, at the packet size its speed implies until its descriptor says otherwise.
+    fn address(&mut self, slot: u8, port_number: u8, speed: u8, packet0: u16) -> Result<(), Fail> {
         // Fresh rings and contexts for this device: a stale TRB carrying the new lap's cycle bit
         // would be run by the controller as if it had just been written.
         for page in [
@@ -413,6 +409,17 @@ impl Host {
             self.phys(dma::INPUT_CONTEXT),
             slot,
         ))?;
+        Ok(())
+    }
+
+    fn configure(
+        &mut self,
+        slot: u8,
+        port_number: u8,
+        speed: u8,
+        packet0: u16,
+    ) -> Result<Attached, Fail> {
+        self.address(slot, port_number, speed, packet0)?;
 
         // The first eight bytes say endpoint 0's real packet size.
         let n = self.transfer(slot, SetupPacket::get_descriptor(descriptor::DEVICE, 0, 8))?;

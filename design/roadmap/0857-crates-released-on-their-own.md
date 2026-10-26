@@ -128,7 +128,8 @@ close the list as one sitting, since each needs only a line.
 4. `elf` (open too), then `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
 5. `calendar`, revisited under fork 8, since `time` wants a person's words.
 6. `non_volatile_memory_express`, `extensible_host_controller_interface` (no offer to rust-osdev;
-   milestone 820 records why).
+   milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own)
+   records why).
 7. `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
 8. The internal set, `redoxfs`'s bug report question among them.
 

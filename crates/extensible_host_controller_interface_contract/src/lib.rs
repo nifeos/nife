@@ -42,14 +42,17 @@ const INTERRUPTER_BYTES: u64 = 0x20;
 /// **The byte ranges a driver must reach, inclusive**: the capability and operational registers
 /// through the last port's status set, interrupter 0, and every slot's doorbell. What
 /// [`register_window`] checks the mapped pages against.
-const fn needed_ranges(caps: &Capabilities) -> [(u64, u64); 3] {
+const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
     [
-        (0, caps.portsc(caps.max_ports) + 0x0f),
+        (0, capabilities.portsc(capabilities.max_ports) + 0x0f),
         (
-            caps.interrupter(0),
-            caps.interrupter(0) + INTERRUPTER_BYTES - 1,
+            capabilities.interrupter(0),
+            capabilities.interrupter(0) + INTERRUPTER_BYTES - 1,
         ),
-        (caps.doorbell(0), caps.doorbell(caps.max_slots) + 3),
+        (
+            capabilities.doorbell(0),
+            capabilities.doorbell(capabilities.max_slots) + 3,
+        ),
     ]
 }
 
@@ -141,14 +144,14 @@ pub enum WindowRefusal {
 ///
 /// // qemu-xhci's capability registers: 0x40 bytes of them, 64 slots, 4 ports, runtime at 0x1000,
 /// // doorbells at 0x2000.
-/// let caps = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0x0000_7000, 0x2000, 0x1000);
-/// let window = register_window(&caps, 0x4000, &[(0x3000, 0x3000 + 16 * 16), (0x3800, 0x3808)]);
+/// let capabilities = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0x0000_7000, 0x2000, 0x1000);
+/// let window = register_window(&capabilities, 0x4000, &[(0x3000, 0x3000 + 16 * 16), (0x3800, 0x3808)]);
 /// assert_eq!(window, Ok(0b0111));
 /// ```
 ///
 /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 pub fn register_window(
-    caps: &Capabilities,
+    capabilities: &Capabilities,
     bar_bytes: u64,
     withheld: &[(u64, u64)],
 ) -> Result<u64, WindowRefusal> {
@@ -162,7 +165,7 @@ pub fn register_window(
     }
     // Every page each needed range touches, not just its two ends, so a range that spans a
     // withheld page is refused too. The offset named is the first needed byte on the bad page.
-    for (first, last) in needed_ranges(caps) {
+    for (first, last) in needed_ranges(capabilities) {
         for page in first / PAGE_BYTES..=last / PAGE_BYTES {
             let offset = first.max(page * PAGE_BYTES);
             if page >= pages {
@@ -226,8 +229,9 @@ mod tests {
     /// describe, not read from xenon (a bench step on xenon reads its own).
     #[test]
     fn a_sixty_four_kibibyte_bar_maps_sixteen_pages_less_the_table() {
-        let caps = Capabilities::decode(0x0100_0080, 0x1a00_0840, 0, 0x0000_7000, 0x3000, 0x2000);
-        let mask = register_window(&caps, 0x1_0000, &[(0xa000, 0xa000 + 16 * 8)]).unwrap();
+        let capabilities =
+            Capabilities::decode(0x0100_0080, 0x1a00_0840, 0, 0x0000_7000, 0x3000, 0x2000);
+        let mask = register_window(&capabilities, 0x1_0000, &[(0xa000, 0xa000 + 16 * 8)]).unwrap();
         assert_eq!(mask, 0xffff & !(1 << 10));
     }
 
@@ -250,9 +254,9 @@ mod tests {
     #[test]
     fn a_needed_range_crossing_onto_a_withheld_page_is_refused() {
         // 64 slots of doorbells from 0x2f00 run to 0x3003, onto page 3.
-        let caps = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0, 0x2f00, 0x1000);
+        let capabilities = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0, 0x2f00, 0x1000);
         assert_eq!(
-            register_window(&caps, 0x4000, &[(0x3000, 0x3100)]),
+            register_window(&capabilities, 0x4000, &[(0x3000, 0x3100)]),
             Err(WindowRefusal::SharesTheInterruptPage { offset: 0x3000 })
         );
     }
@@ -314,7 +318,7 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(18)]
     fn the_window_never_maps_a_withheld_page() {
-        let caps = Capabilities::decode(
+        let capabilities = Capabilities::decode(
             kani::any(),
             kani::any(),
             kani::any(),
@@ -326,7 +330,7 @@ mod verification {
         let a: u64 = kani::any();
         let len: u64 = kani::any();
         kani::assume(len > 0 && len <= 0x1_0000 && a <= u64::MAX - len);
-        if let Ok(mask) = register_window(&caps, bar, &[(a, a + len)]) {
+        if let Ok(mask) = register_window(&capabilities, bar, &[(a, a + len)]) {
             for page in 0..MAX_REGISTER_PAGES {
                 if mask & (1 << page) != 0 {
                     let (s, e) = (page * PAGE_BYTES, (page + 1) * PAGE_BYTES);
