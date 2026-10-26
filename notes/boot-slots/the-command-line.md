@@ -14,8 +14,8 @@ confirmation is for may no longer be the one `select` names.
 
 `uefi_loader`'s `hvm_start_info` already carries a NUL-terminated command line. It already holds
 more than one word: the screen, and `machine_discovery::framebuffer::SCREEN_HOLD` under the gate's
-feature. The kernel already reads it before `mmu::init`. So `boot-slot=N` is a third word on a line
-that exists, not a new agreement. The other shapes were priced against it:
+feature. The kernel already reads it before `mmu::initialize`. So `boot-slot=N` is a third word on a
+line that exists, not a new agreement. The other shapes were priced against it:
 
 | | cost |
 |---|---|

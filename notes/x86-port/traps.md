@@ -20,10 +20,10 @@ Every vector has a present gate, including the ones no hardware drives. A gate t
 turns an unexpected vector into a general protection fault whose error code is the vector, a second
 puzzle on top of the first. A present gate that prints "vector 87, unexpected" costs 4 KiB.
 
-The IDT is built once, by the first core to reach `exceptions::init`, which is the boot core.
-`smp::bring_up_secondaries` starts no core before the boot core's `arch::init` returns. Every core
-still loads its own IDTR, since `lidt` writes a per-core register. A secondary that rewrote the 256
-gates would race the boot core's interrupt delivery, which stays enabled across bring-up so its
+The IDT is built once, by the first core to reach `exceptions::initialize`, which is the boot core.
+`smp::bring_up_secondaries` starts no core before the boot core's `arch::initialize` returns. Every
+core still loads its own IDTR, since `lidt` writes a per-core register. A secondary that rewrote the
+256 gates would race the boot core's interrupt delivery, which stays enabled across bring-up so its
 timer keeps ticking. A torn gate descriptor read mid-write is a garbled trap, not a compile error.
 
 ## Entering ring 3
@@ -129,16 +129,17 @@ never reaches 0x20. The vector bands are disjoint by construction:
 
 The 8259s are still wired on a PC (`PCAT_COMPAT`). At power-on they raise interrupts on vectors
 8..15, the CPU's own exception vectors, so a PIC IRQ 0 reads as a double fault. They also see every
-line the IO APIC routes. `irq::init_local_apic` masks both before enabling the local APIC. They are
-masked, not remapped, because a live 8259 would deliver a second copy of every routed interrupt.
+line the IO APIC routes. `irq::initialize_local_apic` masks both before enabling the local APIC.
+They are masked, not remapped, because a live 8259 would deliver a second copy of every routed
+interrupt.
 
 ### Proving a device line at boot
 
 The local APIC timer proves the CPU takes an interrupt it did not ask for. A line from outside the
-CPU is a different claim, and `irq::init` proves it with the PIT for about 0.2 s. The PIT is the
-right device twice over. `timer.rs` already drives it for calibration, and its legacy IRQ 0 is the
-line every PC rewires, arriving as GSI 2. Arming redirection entry 0 for "the timer" would arm the
-8259 cascade and produce no interrupts and no error.
+CPU is a different claim, and `irq::initialize` proves it with the PIT for about 0.2 s. The PIT is
+the right device twice over. `timer.rs` already drives it for calibration, and its legacy IRQ 0 is
+the line every PC rewires, arriving as GSI 2. Arming redirection entry 0 for "the timer" would arm
+the 8259 cascade and produce no interrupts and no error.
 
 ### MSI and interrupt remapping
 
@@ -179,7 +180,7 @@ up as a general protection fault on the way back to a program that did nothing w
 assertions in `exceptions.rs` hold the two files in agreement.
 
 Loading a segment register in long mode destroys that segment's base MSR, and `gs`'s base is the
-per-CPU pointer (aarch64's `TPIDR_EL1`, RISC-V's `tp`). `segments::init` saves and restores it
+per-CPU pointer (aarch64's `TPIDR_EL1`, RISC-V's `tp`). `segments::initialize` saves and restores it
 around the reload. When the reload once zeroed it, the symptom was an instruction fetch from the
 middle of a static, several frames away, with a register dump showing a correct GDT, TSS and IDT.
 

@@ -92,14 +92,14 @@ impl DesignWareNic {
     }
 
     /// The next received frame, if the device has written one.
-    pub(crate) fn rx_take(&mut self) -> Option<Vec<u8>> {
+    pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
         let mut buf = [0u8; MAX_FRAME];
         let n = self.plane.receive(&mut Plane, &mut Channel, &mut buf)?;
         Some(buf[..n].to_vec())
     }
 
     /// Queue `frame`, waiting a bounded while for a descriptor if the ring is full.
-    pub(crate) fn tx_send(&mut self, frame: &[u8]) {
+    pub(crate) fn transmit_frame(&mut self, frame: &[u8]) {
         for _ in 0..100_000 {
             if self.plane.can_transmit(&mut Plane) {
                 break;

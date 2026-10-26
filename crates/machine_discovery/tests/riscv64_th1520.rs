@@ -35,8 +35,9 @@ fn the_th1520_plic_is_found_and_its_s_contexts_are_2h_plus_1() {
 }
 
 /// **The register block the kernel maps is found through the same list**, 40 bits up. The kernel's
-/// `memory::init` walks [`COMPATIBLES`] with this call; the address is the reason milestone 89
-/// needs a device window, because `KERNEL_VA_BASE + pa` cannot name it under Sv39.
+/// `memory::initialize` walks [`COMPATIBLES`] with this call; the address is the reason
+/// milestone 89 (Scaleway EM-RV1) needs a device window, because `KERNEL_VA_BASE + pa` cannot name
+/// it under Sv39.
 #[test]
 fn the_th1520_plic_register_block_is_found_40_bits_up() {
     let dt = tree(TH1520);

@@ -51,8 +51,8 @@ static STACKS: Stacks = Stacks(UnsafeCell::new([[0; SLOT]; MAX_CPUS]));
 
 /// Whether the switch is live.
 ///
-/// False until [`init`] runs after the fine kernel map is installed; before that the guard pages
-/// are not holes, and a trap stays on whatever stack it interrupted.
+/// False until [`initialize`] runs after the fine kernel map is installed; before that the guard
+/// pages are not holes, and a trap stays on whatever stack it interrupted.
 static ARMED: AtomicBool = AtomicBool::new(false);
 
 /// The low end of core `id`'s slot, which is its guard page.
@@ -85,7 +85,10 @@ pub fn region() -> (u64, u64) {
 ///
 /// A test build also paints every slot for the high-water report. Every slot is unused here: no
 /// secondary is up and no trap has run with the switch armed.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     #[cfg(any(test, feature = "system_tests"))]
     {
         for id in 0..MAX_CPUS {
@@ -104,7 +107,7 @@ pub fn init() {
 /// Choose the stack a trap runs its handler on.
 ///
 /// `from_user` says whether the trap came from user mode. Returns this core's interrupt-stack top,
-/// or 0 to stay: before [`init`], for a trap from user mode, and when already on an interrupt
+/// or 0 to stay: before [`initialize`], for a trap from user mode, and when already on an interrupt
 /// stack, where resetting `sp` would drop a nested fault through the frames of the handler it hit.
 /// The cheap tests come first because `cpu::id()` is a real division in a debug build, and the
 /// nesting test asks about the whole region because a core only ever stands on its own slot.
@@ -194,7 +197,8 @@ mod tests {
     fn interrupts_are_handled_on_the_interrupt_stack() {
         let used = (0..MAX_CPUS).any(|id| {
             let (bottom, top) = span(id);
-            // SAFETY: a slot of the region `init` mapped and painted, read one word at a time.
+            // SAFETY: a slot of the region `initialize` mapped and painted, read one word at a
+            // time.
             unsafe { crate::stack::high_water(bottom, top) > 0 }
         });
         assert!(

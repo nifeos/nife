@@ -23,10 +23,10 @@ patch, which is the honest half of the record: it is about `table_offset` and ne
 `context_descriptor`.
 
 diff --git a/kernel/src/arch/aarch64/iommu.rs b/kernel/src/arch/aarch64/iommu.rs
-index 2769577a..2407ba0c 100644
+index 162f477..f7e322b 100644
 --- a/kernel/src/arch/aarch64/iommu.rs
 +++ b/kernel/src/arch/aarch64/iommu.rs
-@@ -292,7 +292,7 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
+@@ -313,7 +313,7 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
              | (1 << 14)              // A: and abort the faulting transaction
              | ((asid as u32) << 16),
          ttb as u32 & 0xffff_fff0, //  TTB0[31:4]; the low flag bits stay zero
@@ -34,4 +34,4 @@ index 2769577a..2407ba0c 100644
 +        (ttb >> 31) as u32 & 0xf_ffff, // TTB0[51:32]
          0,                        // TTB1 does not exist
          0,
-         // MAIR0/MAIR1: the same palette mmu::init programs into MAIR_EL1 (slot 0 device, slot 1
+         // MAIR0/MAIR1: the same palette mmu::initialize programs into MAIR_EL1 (slot 0 device, slot

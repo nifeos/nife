@@ -2,10 +2,10 @@
 //!
 //! It writes only what a named mode sends and logs every byte first (calef, 2026-09-19):
 //! [`Escape::observe_line`] is the only sender. The byte ends a self-rebooting soak, and it goes
-//! out only on the arming banner, which `arm_reboot` prints after `console::discard_rx` drains the
-//! UART; a byte sent at `soak-test: started` is about 90 ms early and silently discarded. It then
-//! waits [`CONFIRM_WINDOW`] for `soak-test-reboot: DISARMED`. `--stop` is `--stop-after 1`.
-//! notes/board-console.md, "Writing to a board", has the whole argument.
+//! out only on the arming banner, which `arm_reboot` prints after `console::discard_waiting_bytes`
+//! drains the UART; a byte sent at `soak-test: started` is about 90 ms early and silently
+//! discarded. It then waits [`CONFIRM_WINDOW`] for `soak-test-reboot: DISARMED`. `--stop` is
+//! `--stop-after 1`. notes/board-console.md, "Writing to a board", has the whole argument.
 
 //! # BUGS
 //!
@@ -41,10 +41,11 @@ pub(crate) const CONFIRM_WINDOW: Duration = Duration::from_secs(15);
 
 /// The arming announcement's distinctive phrase, from `kernel/src/soak.rs`'s `arm_reboot`.
 ///
-/// Printed **after** `console::discard_rx`, which is the whole reason this is the trigger; the
-/// module header has the argument. Matched on this phrase rather than on the `soak-test-reboot:`
-/// prefix because that prefix is also on the grace-window announcement, the disarm and the
-/// firmware refusal, and only this line means *the loop is armed and the drain is behind us*.
+/// Printed **after** `console::discard_waiting_bytes`, which is the whole reason this is the
+/// trigger; the module header has the argument. Matched on this phrase rather than on the
+/// `soak-test-reboot:` prefix because that prefix is also on the grace-window announcement, the
+/// disarm and the firmware refusal, and only this line means *the loop is armed and the drain is
+/// behind us*.
 const ARMED: &str = "THIS BUILD REBOOTS THE BOARD";
 
 /// The kernel's acknowledgement, printed from the beat poll and from the grace window alike.

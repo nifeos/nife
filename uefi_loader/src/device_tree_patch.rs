@@ -2,7 +2,7 @@
 //! `/chosen/linux,initrd-start` and `linux,initrd-end` set.
 //!
 //! On aarch64 and riscv64 the kernel finds the userspace archive the way Linux finds an initial
-//! ramdisk, from those two properties (`memory::init`, via `DeviceTreeBlob::initial_ramdisk`).
+//! ramdisk, from those two properties (`memory::initialize`, via `DeviceTreeBlob::initial_ramdisk`).
 //! QEMU's `-initrd` and U-Boot's `booti` write them; **UEFI firmware does not**, because a UEFI
 //! loader places the archive itself and is expected to say so. This is the Linux EFI stub's job
 //! (`drivers/firmware/efi/libstub/fdt.c`, recalled, not read) in its smallest form. The format is

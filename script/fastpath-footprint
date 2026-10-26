@@ -458,7 +458,7 @@ COLD = re.compile(
 # numbers should not read the difference as this port having a leaner decoder.
 #
 # Included, each because a `syscall` fetches its bytes:
-#   x86_syscall_entry    the `IA32_LSTAR` target, written by `init_syscall` in exceptions.rs. The
+#   x86_syscall_entry    the `IA32_LSTAR` target, written by `initialize_syscall` in exceptions.rs. The
 #                        hardware jumps straight here.
 #   x86_syscall_handler  "the one Rust function every `syscall` reaches" (exceptions.rs), which
 #                        bumps the counter and tail-calls the portable dispatcher.

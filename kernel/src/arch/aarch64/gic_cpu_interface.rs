@@ -28,7 +28,7 @@ pub(crate) fn redistributor_affinity() -> u32 {
 /// If `ICC_SRE_EL1.SRE` will not set, which means an EL2 above us has the system-register interface
 /// disabled (`ICC_SRE_EL2.Enable` clear). `boot.s`'s EL2 drop sets it when this kernel was entered
 /// at EL2; a hypervisor we did not write might not.
-pub(crate) fn init_this_cpu() {
+pub(crate) fn initialize_this_cpu() {
     let sre: u64;
     // SAFETY: the adapter calls this only on a machine whose tree names a GICv3 and whose
     // distributor confirmed it. ICC_SRE_EL1 then exists, or its access is UNDEFINED and traps into
@@ -70,9 +70,9 @@ pub(crate) fn init_this_cpu() {
 #[inline]
 pub(crate) fn acknowledge() -> u32 {
     let iar: u64;
-    // SAFETY: the interface is enabled (`init_this_cpu` ran on this core before interrupts were
-    // unmasked). The read has a side effect on the GIC, which is the point, and `dsb sy` completes
-    // it before the handler touches any device (Linux `gic_read_iar_common`).
+    // SAFETY: the interface is enabled (`initialize_this_cpu` ran on this core before interrupts
+    // were unmasked). The read has a side effect on the GIC, which is the point, and `dsb sy`
+    // completes it before the handler touches any device (Linux `gic_read_iar_common`).
     unsafe {
         asm!(
             "mrs {}, icc_iar1_el1",

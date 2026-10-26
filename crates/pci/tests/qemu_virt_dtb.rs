@@ -1,6 +1,6 @@
 //! Hold the kernel's PCI reads and hardcodes against the machine's own device tree.
 //!
-//! The kernel's PCIe windows come from the tree at boot (`memory::init` reads the
+//! The kernel's PCIe windows come from the tree at boot (`memory::initialize` reads the
 //! `pci-host-ecam-generic` node's `reg` and `ranges`; the parse is this crate's
 //! `mem32_window`); the tests here run the same reads over the fixture trees and pin the
 //! answers, so a QEMU layout change fails on the host before the kernel maps the wrong window
@@ -15,7 +15,7 @@ use pci::{intx_irq, mem32_window};
 const QEMU_RISCV_VIRT: &[u8] =
     include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
 
-/// The discovery `memory::init` performs, over the riscv `virt` tree: the node found by its
+/// The discovery `memory::initialize` performs, over the riscv `virt` tree: the node found by its
 /// binding, the ECAM window from its `reg`, the BAR window from its `ranges`. The pinned values
 /// are the constants the kernel carried until the first VisionFive 2 boot (`PCI_ECAM_BASE`,
 /// `PCI_BAR_BASE`), which is the regression claim: on QEMU, discovery changes provenance and
@@ -68,7 +68,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
         dtb.node_prop_compatible(b"pci-host-ecam-generic", b"ranges")
             .unwrap(),
         None,
-        "and no ranges either: both reads memory::init performs come back empty"
+        "and no ranges either: both reads memory::initialize performs come back empty"
     );
 }
 

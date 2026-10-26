@@ -5,7 +5,7 @@ line. Those lines are a contract: they are what `crates/serial_console` matches 
 CI, and they are what a person reads off a photograph of a monitor when there is no serial port.
 
 ```
-nife on aarch64 (EL1, MMU off: physical addresses until mmu::init)   <- the console works
+nife on aarch64 (EL1, MMU off: physical addresses until mmu::initialize)   <- the console works
 ...
 nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz               <- discovery finished
 nife self-test: 10 of 15 passed, 5 absent: ...                       <- the kernel works here

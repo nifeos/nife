@@ -21,7 +21,7 @@ fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
 }
 
 #[test]
-fn radons_vendor_tree_gives_gmac0_its_phy_settings_and_its_address() {
+fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_address() {
     let tree = tree(VENDOR);
     let d = discover(&tree).unwrap().unwrap();
     assert_eq!((d.base, d.size), (GMAC0_BASE, 0x1_0000));
@@ -78,7 +78,7 @@ fn both_trees_name_the_aon_syscon() {
 /// transmit delay takes OpenBSD's 1950 ps (select 13), and the MDIO address is the node's
 /// `reg`. The fixture is synthetic; radon's trees give both delays at address 0.
 #[test]
-fn a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback() {
+fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_fallback() {
     let one_delay = tree(ONE_DELAY);
     let d = discover(&one_delay).unwrap().unwrap();
     assert_eq!(d.phy.source, Source::MainlineTree);
@@ -91,7 +91,7 @@ fn a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback() {
 /// A vendor PHY node that states its address in `reg` is believed. radon's does not, and
 /// reads as 0.
 #[test]
-fn a_vendor_phy_reg_is_its_mdio_address() {
+fn a_vendor_physical_layer_device_reg_is_its_mdio_address() {
     let tree = tree(VENDOR_ADDRESSED);
     let d = discover(&tree).unwrap().unwrap();
     assert_eq!(d.phy.source, Source::VendorTree);

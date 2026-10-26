@@ -114,9 +114,9 @@ Two things the probe settles for whoever builds this:
   the types, and a version that adds wrappers without changing signatures should be rejected as
   worse than nothing, because it looks like a mechanism and is not one.
 - It cannot stop a deliberate wrong unwrap, only the silent interchange.
-- Nothing here types MMIO addresses, which `notes/unsafe-obligations.md` records `gic.rs::init`
-  taking on trust, and which are physical addresses being used as virtual ones through a mapping.
-  That is arguably the next instance of the same problem and is not in scope.
+- Nothing here types MMIO addresses, which `notes/unsafe-obligations.md` records
+  `gic.rs::initialize` taking on trust, and which are physical addresses being used as virtual ones
+  through a mapping. That is arguably the next instance of the same problem and is not in scope.
 - The refactor touches the most delicate code in the project for a benefit that is invisible when
   it works. That is the honest cost, and it is why the sequencing constraint above is not optional.
 

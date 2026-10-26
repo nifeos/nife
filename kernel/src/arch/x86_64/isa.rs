@@ -1,7 +1,7 @@
 //! **What CPU is this, and can it run us**, `x86_64`: the `cpuid` instructions, the record and
 //! the refusal; the decoding is host-tested in [`machine_discovery::x86_64`]. Three features are
 //! gated (milestone 524 (the three `x86_64` boot gates)): NX in `boot.s`, and `syscall` and the
-//! invariant TSC in [`init`], where a hypervisor turns the TSC's refusal into a warning. See
+//! invariant TSC in [`initialize`], where a hypervisor turns the TSC's refusal into a warning. See
 //! notes/x86-port/cpu-state.md.
 //!
 //! # BUGS
@@ -43,8 +43,8 @@ pub(super) fn cpuid_count(leaf: u32, sub_leaf: u32) -> CpuidResult {
     unsafe { core::arch::x86_64::__cpuid_count(leaf, sub_leaf) }
 }
 
-/// The record, written once by [`init`] and read by the boot print, the entropy service and the
-/// tests.
+/// The record, written once by [`initialize`] and read by the boot print, the entropy service and
+/// the tests.
 ///
 /// `None` until then, so a read before discovery is a panic naming this file rather than a
 /// plausible part that reports no features. The same discipline the other two architectures'
@@ -67,7 +67,10 @@ fn words(r: CpuidResult) -> [u32; 4] {
 ///
 /// When the part lacks something the kernel is built on, printing what is missing, what it is
 /// used for and where `CPUID` says so.
-pub fn init(boot_info_pointer: usize) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
 
     // Leaf 0 needs no maximum-leaf check first, because leaf 0 is what reports the maximum; the
@@ -129,10 +132,10 @@ pub fn init(boot_info_pointer: usize) {
     *ISA.lock() = Some(cpu);
 }
 
-/// What [`init`] found. Panics if read before it.
+/// What [`initialize`] found. Panics if read before it.
 pub fn get() -> Isa {
     ISA.lock()
-        .expect("arch::isa::get() before arch::isa::init()")
+        .expect("arch::isa::get() before arch::isa::initialize()")
 }
 
 /// **Draw eight bytes with `RDSEED`, retrying a transient "no data this cycle" result.**
@@ -175,13 +178,13 @@ pub fn draw_random_seed() -> Option<u64> {
 }
 
 /// `CPUID` leaf `0x15`'s TSC rate in Hz, on parts that report one directly: the "ask the CPU
-/// first" half of `timer::init_frequency`, which otherwise calibrates against the PIT.
+/// first" half of `timer::initialize_frequency`, which otherwise calibrates against the PIT.
 ///
 /// `None` when the part's maximum leaf is below `0x15` (reading it would return a lower leaf's
 /// bits), or when `ECX`, the crystal frequency, is zero ("not enumerated"; this port keeps no
 /// model-to-crystal table). Under QEMU TCG with `-cpu max` the maximum leaf is `0xd`, so every boot
-/// today calibrates. The rate is a constant only because [`init`] refuses bare metal without the
-/// invariant TSC. See notes/x86-port/cpu-state.md.
+/// today calibrates. The rate is a constant only because [`initialize`] refuses bare metal without
+/// the invariant TSC. See notes/x86-port/cpu-state.md.
 pub(crate) fn tsc_crystal_hz() -> Option<u64> {
     if get().max_leaf < 0x15 {
         return None;
@@ -239,8 +242,8 @@ mod tests {
     use super::*;
 
     /// **Discovery ran, and it found a part that can run us.** The requirement check is what
-    /// [`init`] would have panicked on, so reaching this test at all is half the assertion; the
-    /// other half is that the record is populated rather than defaulted.
+    /// [`initialize`] would have panicked on, so reaching this test at all is half the assertion;
+    /// the other half is that the record is populated rather than defaulted.
     #[test_case]
     fn the_part_described_itself() {
         let cpu = get();

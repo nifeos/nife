@@ -37,7 +37,7 @@ kernel would only read; both paths go through the same code, because `read_bars`
 assigned bases and the kernel places only the zeros.
 
 The window itself, and the ECAM config window, come from the device tree, not from constants:
-`memory::init` reads the `pci-host-ecam-generic` node's `reg` and `ranges` (the 32-bit
+`memory::initialize` reads the `pci-host-ecam-generic` node's `reg` and `ranges` (the 32-bit
 non-prefetchable entry, parsed by the pci crate's `mem32_window`) and `memory::pci_regions`
 answers everyone else. They were QEMU constants (`PCI_ECAM_BASE`, `PCI_BAR_BASE`) until the
 first VisionFive 2 boot, where 0x4000_0000 is DRAM base and mapping it collided with the direct
@@ -197,8 +197,8 @@ that produced this bug. It issues configuration reads to bus numbers no bridge o
 decodes, and it stops being right on the first machine that numbers its buses differently.
 
 How the kernel knows how much to map before it has read anything. `pci::survey` runs from
-`kernel_main` before `arch::mmu::init`, which is the only window in the boot where the answer is
-free: the x86 boot tables still cover the low 4 GiB indiscriminately, so every bus the MCFG
+`kernel_main` before `arch::mmu::initialize`, which is the only window in the boot where the answer
+is free: the x86 boot tables still cover the low 4 GiB indiscriminately, so every bus the MCFG
 describes is already readable. The survey walks, prints every function it found, and records the
 bus count; `map_everything` a hundred lines later maps exactly that. No lazy mapping, no second
 pass, no arch-specific special case in the walk itself.
@@ -226,9 +226,9 @@ pass, no arch-specific special case in the walk itself.
   bridge. The walk itself is the same code on all three and would follow a bridge the moment one
   appeared, except that it would refuse to descend past the one mapped bus and would say so. The
   survey has no home on those two architectures because there is no equivalent of the x86 boot map.
-  Their MMU is off until `mmu::init`, so there is no moment before the fine map where an arbitrary
-  bus is readable through `phys_to_virt`. If a device-tree board ever grows a root port, that is the
-  problem to solve. Lazy per-bus mapping (`pci::adopt` already maps a page at enumeration time,
-  so the machinery exists) is the likely shape.
+  Their MMU is off until `mmu::initialize`, so there is no moment before the fine map where an
+  arbitrary bus is readable through `phys_to_virt`. If a device-tree board ever grows a root port,
+  that is the problem to solve. Lazy per-bus mapping (`pci::adopt` already maps a page at
+  enumeration time, so the machinery exists) is the likely shape.
 
 - The topology is read once, at boot. Hot plug would change it and nothing re-surveys.

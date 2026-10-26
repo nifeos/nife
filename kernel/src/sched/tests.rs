@@ -98,7 +98,7 @@ fn pending_irq() -> u32 {
 }
 
 /// The console UART's PLIC source, read from the device tree as the rest of the kernel reads it
-/// (`user::uart_irq_and_source`): 10 on QEMU `virt` (the `UART_RX_INTID` fallback), 32 on the
+/// (`user::uart_irq_and_source`): 10 on QEMU `virt` (the `UART_RECEIVE_INTID` fallback), 32 on the
 /// VisionFive 2.
 #[cfg(target_arch = "riscv64")]
 fn delivery_irq() -> u32 {

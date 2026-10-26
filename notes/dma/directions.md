@@ -85,8 +85,8 @@ milestone 32's block write already leaned on: the validator "bounds addresses, n
 receive descriptor aimed at kernel memory would let the device *overwrite* the kernel with an inbound
 packet. A transmit descriptor aimed there would let it *exfiltrate* kernel memory onto the wire. Both
 are refused by the one in-region check, before the device is ever rung. So the "second direction" is
-proved, not implemented. `the_validator_refuses_an_rx_descriptor_that_escapes_the_region` sets the
-device-writable flag and asserts the refusal is about the address, not the flag.
+proved, not implemented. `the_validator_refuses_a_receive_descriptor_that_escapes_the_region` sets
+the device-writable flag and asserts the refusal is about the address, not the flag.
 `a_second_queue_validates_on_its_own_block` proves queue 1 validates on its own block without
 touching queue 0's shadow. Both run on both ISAs.
 

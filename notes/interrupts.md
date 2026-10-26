@@ -48,7 +48,7 @@ its priority is strictly less than PMR.
 So `PMR = 0xff` means "let everything through" and `PMR = 0` means "let nothing through."
 
 Get that comparison backwards and the machine takes no interrupts and gives no clue why. It's also
-why `gic::init` sets PMR before enabling the CPU interface:
+why `gic::initialize` sets PMR before enabling the CPU interface:
 the other order leaves a window where the interface is live with whatever the firmware left in
 PMR, which on a cold boot is often zero.
 

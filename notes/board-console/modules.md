@@ -37,8 +37,8 @@ The arrangements radon drew by hand line up with the count: two clean cores gave
 
 `cargo xtask uefi-boot` asks QEMU for a screendump and reads the boot tour off it with
 `screen::read`. That one read gates the whole framebuffer path on every run: the loader's
-`LocateProtocol`, the byte order, the stride, the mapping surviving `mmu::init`, and the glyphs.
-The graphical `swish-check` leg reads the display terminal's live screen with
+`LocateProtocol`, the byte order, the stride, the mapping surviving `mmu::initialize`, and the
+glyphs. The graphical `swish-check` leg reads the display terminal's live screen with
 `screen::decode_exact`. There is no picture of a live session to predict, so it searches the
 decoded rows for what it typed.
 

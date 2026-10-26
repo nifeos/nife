@@ -40,8 +40,8 @@ Two leaf facts depend on state outside the tables, and the crate cannot check ei
   setting it makes the entry fault. The boot trampoline sets NXE before it builds any table.
 - Sv39 refuses a supervisor fetch from a `U` page unconditionally. x86 does so only while
   `CR4.SMEP` is set; with it clear, a page whose `XD` is clear runs at ring 0 whatever `U/S` says.
-  `arch::x86_64::init` sets SMEP on every core whose CPUID offers it, and says on the console when
-  one does not.
+  `arch::x86_64::initialize` sets SMEP on every core whose CPUID offers it, and says on the console
+  when one does not.
 
 The type is `Ia32e` because "IA-32e paging" is Intel's own name for the mode, a term a reader
 knows from outside this tree, which is the naming tenet's protected class.
