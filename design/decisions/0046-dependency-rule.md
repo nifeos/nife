@@ -8,8 +8,8 @@ ratified_by: calef
 # 46. Thin primitives or whole subsystems; we write everything in between
 
 (three amendments below: 2026-07-31 distinguishes taking from vendoring, 2026-10-04 makes taking
-the default outside the kernel and the crates Kani proves, and 2026-10-25 gives the kernel a bar in
-place of a blanket.)
+the default outside the kernel and the crates Kani proves, 2026-10-25 gives the kernel a bar in
+place of a blanket, and a 2026-10-26 ruling under rule 1 takes register access off the crates.)
 
 Decided 2026-07-30 (calef), after the calendar crate made the absence of a rule visible. The
 practice was already unanimous and written down nowhere, which is the state that produces an
@@ -43,7 +43,10 @@ never write. Nothing in between. Everything in between is written here.
    theorem). `div_euclid` on a symbolic timestamp had to be kept out of the harness entirely. Three
    other lanes hit the same wall the same day (`ntp_proto`'s fixed-point multiply, `gpt`'s
    table-driven CRC) and all three resolved it by changing code. None of that is available in a
-   dependency.
+   dependency. Register access is the second case. Ruled 2026-10-26 (UTC): the kernel spells
+   aarch64's system and MMIO registers in the tree and links no register crate, because a proof
+   stubs an accessor in `arch/aarch64/instructions.rs` and cannot stub another crate's trait
+   method. That replaces §3 (use the crate ecosystem) for register access.
 2. Is it a whole subsystem we would never write? Then take it, vendored, under §34's conditions.
    RedoxFS and smoltcp are the model: a filesystem and a TCP/IP stack are each larger than the thesis
    they would serve, and confining them is the thesis.
@@ -227,9 +230,8 @@ since nothing outside nife implements either. The kernel clause is different.
   parsers of what firmware and boot media hand the kernel: the device tree, ACPI tables, ELF images.
 - Those parsers are where the 2026-10-04 reason is strongest. Exposure buys trust, and the
   bugs that hurt a parser are the inputs nobody thought of.
-- The kernel already links four crates, which a blanket "write it" cannot explain: `spin`,
-  `aarch64-cpu` and `tock-registers`, and on x86_64 `uuid`, which arrives through `boot_slot` and
-  `globally_unique_identifier_partition_table`.
+- The kernel already links crates a blanket "write it" cannot explain: `spin`, and on x86_64
+  `uuid`, which arrives through `boot_slot` and `globally_unique_identifier_partition_table`.
 - "Touches the kernel" was never defined. Milestone 784 read it as anything the kernel uses for
   more than shared constants, which is wider than the rule's words.
 
@@ -258,11 +260,11 @@ or pull request that proposes it shows each one.
    it and its structure defeats Kani, rule 1 decides and we write.
 5. It stays upgradable, under §81 (a dependency stays upgradable).
 
-The four crates the kernel links meet conditions 1, 2, 3 and 5 on the record, and none adds more
-than three crates on any target. `spin`, `aarch64-cpu` and `tock-registers` are thin architectural
-primitives with no parser. `uuid` builds `no_std` with default features off and depends on nothing.
+The two crates the kernel links meet conditions 1, 2, 3 and 5 on the record, and neither adds more
+than three crates on any target. `spin` is a thin architectural primitive with no parser. `uuid`
+builds `no_std` with default features off and depends on nothing.
 The kernel only builds identifiers from bytes the partition table crate has already reordered, and
-calls its text parser nowhere outside tests. None of the four has the listing of `unsafe` that
+calls its text parser nowhere outside tests. Neither has the listing of `unsafe` that
 condition 4 asks for, since they predate it; a proposal that touches one of them writes it. Nothing
 here changes the ABI, capabilities or the verification path.
 
