@@ -433,8 +433,8 @@ pub fn initialize() {
 ///
 /// **Built only under `test` or `--features cycle_counter_grant`** (milestone 237): the grant is
 /// a measurement build the way `soak_test` is. `kernel/Cargo.toml`'s feature block carries the
-/// reasoning and the measured cost. Milestone 228's (the cycle counters are closed by assumption)
-/// closed default at `initialize` is NOT gated.
+/// reasoning and the measured cost. The closed default at `initialize` from milestone 228 (the cycle
+/// counters are closed by assumption) is NOT gated.
 // Asked only by tests today (`sched`'s grant round trip and `user`'s EL0 one), which are the
 // callers that have to skip rather than fault on a part with no counter to grant. Marked rather
 // than deleted: milestone 74's cycle-counter work is the caller that will want it in anger.

@@ -232,8 +232,8 @@ three steps above. That is the second sense of the `HARDWARE` gate, not the firs
   `counter_start` act on the calling hart, and the counter index is that hart's. `pmu::initialize`
   runs once, on the hart that runs `kernel_main`, so `pmu::cycles()` is only meaningful to a reader
   who knows which hart it ran on. The one consumer today is a single-hart bench probe. A per-hart
-  record is real work and belongs with a caller that needs it, which is milestone 147's (a profiler
-  that holds exactly the counters it was granted) shape rather than this one's.
+  record is real work and belongs with a caller that needs it, which is the shape of milestone 147 (a
+  profiler that holds exactly the counters it was granted) rather than this one's.
 - **The counter is never stopped.** It runs for the life of the boot, which is correct for a
   free-running counter read as a difference, and it means `pmu::stop` is exercised only by the test
   that proves the call works.
