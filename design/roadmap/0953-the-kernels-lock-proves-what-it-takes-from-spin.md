@@ -16,8 +16,8 @@ listing that §46 (thin primitives or whole subsystems; we write everything in b
 its kernel bar, condition 4. Title and slug are drafts.
 
 Ruled 2026-10-25 (UTC): option 1. The kernel's lock becomes a small in-tree crate with loom-ready
-atomics, checked by loom models with two and three threads and a falsification that fails when the
-release store goes Relaxed, and the kernel drops `spin`. #2734 built it.
+atomics, and the kernel drops `spin`. Loom checks the crate with two and three threads and a
+falsification that fails when the release store goes Relaxed. #2734 built it.
 
 Reuse: `spin` 0.12.3 itself, whose protocol the new crate keeps; loom, which the tree already uses
 for `work_steal_slot` and `thread_wake_handshake`; Kani, already pinned. Rule 1 of §46 decided
@@ -29,7 +29,7 @@ against taking `spin`, because loom cannot check a crate that uses `core`'s atom
 its lock's Acquire compare-exchange and Release store
 ([notes/memory-ordering.md](../../notes/memory-ordering.md)), and §9 (locking) and §11 (per-CPU run
 queues) lean on them. When this block was raised, that lock was `spin::Mutex`, and nothing in nife
-proved it gave exclusion: the `unsafe` that turns those orderings into a `&mut T` belonged to a
+proved it gave exclusion. The `unsafe` that turns those orderings into a `&mut T` belonged to a
 dependency, checked by upstream Miri and a text pin here on the two orderings.
 
 The bar asks nife to prove any claim that rests on a dependency's `unsafe`: either Kani harnesses
@@ -57,8 +57,8 @@ exclusion between cores. Loom can, but only over atomics it substitutes, and `sp
   are loom's.
 - Five loom models run in `script/interleaving-check`: two takers exhaustively, three takers at
   preemption bound 1, `try_lock` refusing while held, a write before the release reaching the next
-  holder, and the falsification, which runs the crate's own unlock with `Relaxed` and passes only
-  when loom reports the race. [notes/interleaving/what-was-modeled.md](../../notes/interleaving/what-was-modeled.md)
+  holder, and the falsification. The falsification runs the crate's own unlock with `Relaxed` and
+  passes only when loom reports the race. [notes/interleaving/what-was-modeled.md](../../notes/interleaving/what-was-modeled.md)
   records why the three-taker model stops at one preemption.
 - `IrqSafeMutex` wraps `spin_lock::SpinLock`. `cargo tree -e normal -p kernel` shows no `spin` on
   aarch64, riscv64 or x86_64, with or without `--all-features`, and `spin` has left `Cargo.lock`.
