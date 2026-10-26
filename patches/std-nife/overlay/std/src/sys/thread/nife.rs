@@ -74,7 +74,15 @@ impl Thread {
         if !tls::main_is_ready() {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        let stack_size = stack.max(DEFAULT_MIN_STACK_SIZE).next_multiple_of(STACK_ALIGN);
+        // Checked, because `Builder::stack_size` arrives unchanged: rounding `usize::MAX` up would
+        // wrap to zero without overflow checks, and a zero-sized stack is a write below a heap block.
+        let Some(stack_size) = stack.max(DEFAULT_MIN_STACK_SIZE).checked_next_multiple_of(STACK_ALIGN)
+        else {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "the requested thread stack size overflows when rounded",
+            ));
+        };
         // SAFETY: a nonzero, aligned layout.
         let stack_base = unsafe { System.alloc(stack_layout(stack_size)) };
         if stack_base.is_null() {
