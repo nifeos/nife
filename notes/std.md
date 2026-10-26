@@ -273,9 +273,10 @@ One line each. The full entry is in
 - stdout and stderr share one endpoint, so they interleave by 16-byte chunk.
 - The `std-src` patches are string-anchored to the pinned nightly. A bump that reshapes a dispatcher
   fails with "anchor not found", which is the intended tripwire.
-- The legacy `nife-dev` link stays wherever the last pre-2026-10-10 lane put it until the
-  maintainer removes it (above). Nothing in the tree reads it; a person typing `+nife-dev` gets
-  whichever lane that was.
+- The legacy `nife-dev` link stays until the maintainer removes it (above); `+nife-dev` gets
+  whichever lane wrote it last.
+- The pin names a nightly by date, not digest, and the farm never hashes the `rust-src` it patches
+  ([caveats](std/caveats.md#what-the-pin-and-the-farm-trust)).
 - `std-aborts` covers `sys/` only, and proves a body reachable, never a call. A stale or foreign
   build under `std_exerciser/target` (left from before a nightly bump) surfaces as a defect or
   an abort, or compiles the nightly's unpatched std even with `RUSTUP_TOOLCHAIN` set (the farm's

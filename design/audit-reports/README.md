@@ -148,6 +148,7 @@ malformed it.
 | 2026-10-19 | documentation | Decisions read forward: the ten sections minted since the last sweep, §300 (the paused state) to §309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it), each read for what it closed, against the prose that still argued the closed side | fixed 11, minted 2, accepted 4 | [Decisions read forward](2026-10-19-decisions-read-forward.md) |
 | 2026-10-19 | security | The supply chain, read from the package inward: the nine external packages the window added and the gate that should see every graph they enter, then the path by which bytes this tree did not build become authority on the target | fixed 3, minted 0, accepted 2 | [The supply chain, read from the package inward](2026-10-19-supply-chain-read-from-the-package-inward.md) |
 | 2026-10-20 | security | The window the supply-chain audit left unread, as a confined process trying to widen: the device authority minted since 2026-10-03, the ABI names added since then followed into their handlers, and the atlas's six host packages read inward to the tables the target draws | fixed 4, minted 3, accepted 2 | [The window the supply-chain audit left unread](2026-10-20-the-window-the-supply-chain-audit-left-unread.md) |
+| 2026-10-26 | security | The compiler, read as code that runs with authority nobody reviewed: the nightly pin and its path to `main`, the workflow that bumps it, and `patches/std-nife` read as a confined program facing a hostile counterparty | fixed 4, minted 1, accepted 3 | [The compiler](2026-10-26-the-compiler.md) |
 
 ## What the tree looked like when each ran
 
@@ -190,6 +191,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-19 | documentation | 466 | 235 | 97 | 190 |
 | 2026-10-19 | security | 455 | 234 | 97 | 190 |
 | 2026-10-20 | security | 469 | 236 | 97 | 196 |
+| 2026-10-26 | security | 488 | 236 | 97 | 201 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were
@@ -229,10 +231,9 @@ index that took every file called an audit would report a coverage it does not h
 
 1. **Pick the lens the last audit lacked.** That is milestone 43's insight and it is the whole
    reason the `Lens` column exists: read the rows above and ask what they did not look at.
-   Candidates not yet taken: the compiler (the nightly pin, `patches/std-nife` under
-   `-Zbuild-std`, and the workflow that bumps the pin), the graphical drivers' parsers (milestone
-   600 (the graphical terminal stack is built in userspace)), and the device authority radon's
-   peripherals took.
+   Candidates not yet taken: the graphical drivers' parsers (milestone 600 (the graphical terminal
+   stack is built in userspace)), the device authority radon's peripherals took, and the verifier's
+   own pin (Kani, `.kani-version` and the job that bumps it).
 
    **For a `documentation` sweep the lens question has a starting answer rather than a blank**, and
    it is `script/audits --worklist`: it ranks every document by how many of the files it cites have

@@ -119,8 +119,9 @@ pub const STDIN_READ_REQUEST: u64 = 10 << 56;
 pub const STDIN_STREAM_SLOT: u64 = 30;
 
 /// **This program's own process, with `BIND`** (milestone 812 (`std::thread::spawn` runs real
-/// threads in one address space)): what `std::thread::spawn` joins a new thread to. Only if the
-/// program may have threads; without it, a spawn answers `Unsupported`.
+/// threads in one address space)): what `std::thread::spawn` joins a new thread to. The system
+/// initializer places it for every std program it starts (`std_layout`), and `BIND` is full control
+/// of that one process; without it, a spawn answers `Unsupported`.
 pub const PROCESS_SLOT: u64 = 10;
 
 /// **This program's own first thread, with `WRITE`** (milestone 812): what the main thread sets its

@@ -328,6 +328,8 @@ pub(super) fn std_fs_expected(buf: &mut [u8; 768]) -> usize {
         b"absolute is my root\n".as_slice(),
         b"absolute dotdot refused\ndotdot refused\ninner dotdot refused\n".as_slice(),
         b"missing not found\n".as_slice(),
+        // Two names longer together than the shared page: walked, and refused rather than faulted.
+        b"long path refused\n".as_slice(),
         // Milestone 31 phase 2: `create unsupported` became `write create ok`, plus the two
         // refusals that prove CREATE did not widen what a client can reach.
         b"write create ok\ncreate_new refused\n".as_slice(),

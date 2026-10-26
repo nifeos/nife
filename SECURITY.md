@@ -166,7 +166,7 @@ took, its findings by disposition, and a link to the report. `script/audits` say
 is due, from the triggers `design/decisions/0074-audit-cadence.md` decided, and a weekly workflow asks
 the same question so that auditing does not depend on anyone remembering to.
 
-**Eleven** <!--count:security-audits--> security audits are on the record, and reading them first will
+**Twelve** <!--count:security-audits--> security audits are on the record, and reading them first will
 save you time. Each took a lens the previous one did not, deliberately, because the value of an audit
 is the lens the last one lacked. (Documentation audits are in the same index and are not listed here;
 they read the tree for claims that had gone false, which is worth knowing if you find prose and code
@@ -231,7 +231,8 @@ disagreeing.)
   entry in `crates/abi` still said a fixed escape was open. Its follow-up added two more worth
   knowing: the boot shell keeps the seven display capabilities with `GRANT` for its whole life,
   and a real capability delegated to a `CALL` server passes the `NO_CAP` guard, so any client can
-  park `net_stack` or the compositor in `SEND` forever (recorded, proposed, calef's call).
+  park `net_stack` or the compositor in `SEND` forever (recorded and proposed; an architect's
+  call).
 - **design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md**: the nine
   external packages the window added, the gate that should see every graph they enter, and the path
   by which bytes this tree did not build become authority on the target. **The finding to carry off
@@ -239,6 +240,12 @@ disagreeing.)
   `c_library`, which failed it. Fixed by discovering every lockfile. Also: on `main` a vouch still
   endows a native package with the network its note asks for, and the index copy is a vouch, so the
   index's host decides; milestone 892 (a std program at the prompt holds the network and a name resolver) refuses it.
+- **design/audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md**: the device
+  servers and ABI names since 2026-10-03. `Virtio::READ_REGISTER` read any physical address; fixed.
+  Two capability-table races are proposed.
+- **design/audit-reports/2026-10-26-the-compiler.md**: the nightly pin, its bump workflow and the
+  std overlay. The bump builds a new nightly where the App's write token is readable; proposed. A
+  long path overran the page `std::fs` shares; fixed.
 
 The machine-checked half is `script/verify` (Kani harnesses over the capability model, IPC, the MMU
 invariants, the DMA validator). notes/verification.md states what each proof covers and, more

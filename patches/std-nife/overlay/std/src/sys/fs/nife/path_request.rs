@@ -41,7 +41,11 @@ pub(super) fn refused_as_a_path(e: &io::Error) -> bool {
 
 /// The names in `path` joined by `/`: what one request carries. `count_names` has already refused
 /// anything that is not a plain name.
-pub(super) fn joined(path: &Path) -> String {
+///
+/// Returns `None` when the joined path is longer than the page it travels in. `count_names` bounds
+/// each name and not their sum, so a path of several long names fits only the hop-by-hop walk,
+/// which puts one name at a time.
+pub(super) fn joined(path: &Path) -> Option<String> {
     let mut out = String::new();
     for (i, name) in names(path).enumerate() {
         if i > 0 {
@@ -49,7 +53,7 @@ pub(super) fn joined(path: &Path) -> String {
         }
         out.push_str(name);
     }
-    out
+    (out.len() <= PAGE).then_some(out)
 }
 
 /// The [`dir`] rights an `OPEN` needs on the directory holding the name.
@@ -83,8 +87,7 @@ pub(super) fn open_handle(path: &Path, opts: &OpenOptions) -> io::Result<(u64, u
     }
     let mut p = page();
     let want = open_rights(opts);
-    if count_names(path)? > 1 && paths_offered() {
-        let joined = joined(path);
+    if count_names(path)? > 1 && paths_offered() && let Some(joined) = joined(path) {
         p.put(joined.as_bytes());
         match open_reply(proto::req(proto::OPEN, proto::ROOT, joined.len() as u64), want) {
             Err(e) if refused_as_a_path(&e) => {}
