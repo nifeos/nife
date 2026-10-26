@@ -33,10 +33,11 @@ overwrite refusal would report that as `kmem: no memory to wire one`, far from t
 
 `phys_to_virt` means one thing for the machine's whole life. `boot.s` gives the boot tables a
 PML4[273] entry over the low 4 GiB before the first Rust instruction, so the frame bitmap, the PVH
-structure and the ACPI tables keep the pointers they took early. `mmu::init` widens the direct map
-rather than introducing it, and it drops the boot identity map, which was an alias of all physical
-memory in the half user programs get. `boot.s` writes the PML4 index as the literal 273, because a
-32-bit assembler cannot compute it, and a compile-time assertion in `layout.rs` keeps the two equal.
+structure and the ACPI tables keep the pointers they took early. `mmu::initialize` widens the direct
+map rather than introducing it, and it drops the boot identity map, which was an alias of all
+physical memory in the half user programs get. `boot.s` writes the PML4 index as the literal 273,
+because a 32-bit assembler cannot compute it, and a compile-time assertion in `layout.rs` keeps the
+two equal.
 
 ## What the direct map claims, and in which order
 
@@ -56,13 +57,13 @@ and IO APICs, the DMAR's register files, the MCFG's ECAM window. `IA32_APIC_BASE
 and a mapped constant with the hardware elsewhere is a page that reads all-ones.
 
 The framebuffer is the largest window by three orders of magnitude: 1920x1080 is 8 MiB, which is
-2026 leaves, paid once. It must be mapped because the console has written to it through the boot map
-since the tour's first line, and an unmapped framebuffer would fault inside `println!`, whose fault
-handler prints. It is mapped write-combining, which [cpu-state.md](cpu-state.md) explains.
+2026 leaves, paid once. It needs a mapping because the console has written to it through the boot
+map since the tour's first line, and an unmapped framebuffer would fault inside `println!`, whose
+fault handler prints. Its mapping is write-combining, which [cpu-state.md](cpu-state.md) explains.
 
-The initial ramdisk is claimed by its own recorded bounds. Attaching an NVMe controller grows the
-ACPI tables enough that the reserved entry above the top of RAM widens over the ramdisk's last few
-hundred bytes. PVH's loader places the ramdisk at a fixed offset below the top of guest memory,
+The claim for the initial ramdisk uses its own recorded bounds. Attaching an NVMe controller grows
+the ACPI tables enough that the reserved entry above the top of RAM widens over the ramdisk's last
+few hundred bytes. PVH's loader places the ramdisk at a fixed offset below the top of guest memory,
 sized for a smaller device set. Raising the fill ceiling is not the fix, because the ceiling is what
 keeps the fill out of the MMIO hole.
 
@@ -109,11 +110,11 @@ so a process root must carry the kernel's high half, or the `mov cr3` unmaps the
 it. aarch64 needs no copy, because `TTBR1` is a second root every process shares. The kernel half
 is PML4 entries 256 to 511, the `SPLIT_SHIFT = 47` line `Ia32e::is_in_half` tests. Both kernel bases
 live there, so `share_kernel_half` shares the image, the direct map and every device window with one
-copy. The entries point at kernel intermediate tables, so the map itself is shared rather than a
-snapshot of it.
+copy. The entries point at kernel intermediate tables, so processes share the map itself rather than
+a snapshot of it.
 
-PCID, the ASID equivalent, lives in `CR3[11:0]` and is honored only with `CR4.PCIDE` set. It is off,
-so bits 11:5 and 2:0 are reserved-zero and a tag cannot be written at all. `ttbr0_value` drops the
+PCID, the ASID equivalent, lives in `CR3[11:0]` and takes effect only with `CR4.PCIDE` set. It is
+off, so bits 11:5 and 2:0 must be zero and a tag cannot be written at all. `ttbr0_value` drops the
 ASID, and `flush_asid` flushes the whole non-global TLB on every core, which is the only
 implementation that keeps `crates/address_space_identifier`'s reuse contract. With PCIDE on,
 `ttbr0_value` would become `root | (asid & 0xfff)`, and that contract would gain a meaning here.
@@ -126,11 +127,11 @@ implementation that keeps `crates/address_space_identifier`'s reuse contract. Wi
   firmware to keep usable RAM write-back throughout. Device windows and firmware reservations stay
   in 4 KiB leaves, where mixed types live. On QEMU's 256 MiB the page-sized part was 560 KiB of
   tables.
-- `mmu::init` must allocate its tables below 4 GiB, which is all the boot map reaches. A machine
-  whose RAM starts above 4 GiB would fault in `map_everything`.
+- `mmu::initialize` must allocate its tables below 4 GiB, which is all the boot map reaches. A
+  machine whose RAM starts above 4 GiB would fault in `map_everything`.
 - `CR4.PGE` is off. TCG flushes on every `CR3` write regardless and icount cannot see a refill, so
-  the cost is unmeasured (notes/benchmarks.md). Turning it on is two lines in `init` and
-  `init_secondary`.
+  the cost has no measurement (notes/benchmarks.md). Turning it on is two lines in `init` and
+  `initialize_secondary`.
 - `CR4.PCIDE` is off, so `flush_asid` flushes everything. It is not a bit to flip: with PCIDE on,
   `invlpg` and `CR3` writes act on the current PCID only, so `unmap_user_at`, `flush_asid` and the
   NMI shootdown would leave other spaces' stale entries alive until `INVPCID` covers every path.
@@ -138,7 +139,7 @@ implementation that keeps `crates/address_space_identifier`'s reuse contract. Wi
   undescribed gap inside low DRAM would fault.
 - An aperture that firmware also reports as usable RAM panics, naming both ranges, on purpose. The
   fix is excluding it from both the direct map and the allocator, not a second mapping, because two
-  mappings of one frame with different memory types are undefined on x86.
+  mappings of one frame with different memory types have undefined behavior on x86.
 - A gap in the firmware map only promises that firmware did not call it RAM. That is the property
   that keeps device registers off memory the allocator owns, and it is weaker than knowing what the
   host bridge routes. Windows no table names are a residual risk.

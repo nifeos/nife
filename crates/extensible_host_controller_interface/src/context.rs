@@ -91,7 +91,7 @@ pub const fn slot_address(context: &[u32; 8]) -> u8 {
 /// Name: ratified 2026-10-25 (#2720).
 pub const fn endpoint(
     kind: u8,
-    max_packet: u16,
+    maximum_packet: u16,
     interval: u8,
     dequeue: u64,
     average_trb: u16,
@@ -101,11 +101,11 @@ pub const fn endpoint(
     let esit = if kind == CONTROL {
         0
     } else {
-        max_packet as u32
+        maximum_packet as u32
     };
     [
         (interval as u32) << 16,
-        3 << 1 | (kind as u32) << 3 | (max_packet as u32) << 16,
+        3 << 1 | (kind as u32) << 3 | (maximum_packet as u32) << 16,
         dequeue as u32,
         (dequeue >> 32) as u32,
         average_trb as u32 | esit << 16,
@@ -119,8 +119,8 @@ pub const fn endpoint(
 /// `dequeue`: what Evaluate Context takes once the device's descriptor has said its size.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn control_endpoint(max_packet: u16, dequeue: u64) -> [u32; 8] {
-    endpoint(CONTROL, max_packet, 0, dequeue, 8)
+pub const fn control_endpoint(maximum_packet: u16, dequeue: u64) -> [u32; 8] {
+    endpoint(CONTROL, maximum_packet, 0, dequeue, 8)
 }
 
 /// Whether `speed` is one at which `bMaxPacketSize0` is an exponent.

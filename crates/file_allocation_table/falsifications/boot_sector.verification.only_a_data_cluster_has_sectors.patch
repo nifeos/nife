@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!(is_data)`.
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -561,7 +561,7 @@
+@@ -578,7 +578,7 @@
      ///
      /// Name: ratified 2026-10-25 (#2720).
      pub const fn cluster_first_sector(&self, cluster: u32) -> Option<u32> {

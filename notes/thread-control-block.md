@@ -121,9 +121,10 @@ pointer (`Threads::pointer`, `thread::capability_table_of`), never from a `&Thre
 derived from the reference would reach outside its own provenance.
 
 The two inserts initialize the register file and the table in place. The register file's `live` flag
-must be written before anything reads it (`thread::init_fp_state`). That is a fact about a place, so
-it is not in a `Thread` constructor. `insert_at_in_place` hands `build` the destination rather than
-taking a returned `Thread`, because a `Thread` is large and a debug build copies it at every hop.
+must be written before anything reads it (`thread::initialize_fp_state`). That is a fact about a
+place, so it is not in a `Thread` constructor. `insert_at_in_place` hands `build` the destination
+rather than taking a returned `Thread`, because a `Thread` is large and a debug build copies it at
+every hop.
 
 ### Queue tokens
 
@@ -207,6 +208,6 @@ copy lands beside its caller.
 
 ## BUGS
 
-- `thread::init_fp_state`'s doc, and `thread::init_capability_table`'s after it, give "a `kmem`
-  page is not zeroed" as their reason. That is stale: `kmem::page` zeroes a page it recycles, and
-  `memory_region::retype_object_page` zeroes a fresh one.
+- `thread::initialize_fp_state`'s doc, and `thread::initialize_capability_table`'s after it, give "a
+  `kmem` page is not zeroed" as their reason. That is stale: `kmem::page` zeroes a page it recycles,
+  and `memory_region::retype_object_page` zeroes a fresh one.

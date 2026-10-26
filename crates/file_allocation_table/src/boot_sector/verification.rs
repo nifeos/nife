@@ -50,13 +50,16 @@ fn the_fat_type_is_the_cluster_counts() {
         return;
     };
     let clusters = boot.clusters();
-    match boot.fat_type() {
-        FatType::Fat12 => assert!(clusters < 4085),
-        FatType::Fat16 => assert!((4085..65525).contains(&clusters)),
-        FatType::Fat32 => assert!((65525..=0x0FFF_FFF4).contains(&clusters)),
+    match boot.file_allocation_table_type() {
+        FileAllocationTableType::Fat12 => assert!(clusters < 4085),
+        FileAllocationTableType::Fat16 => assert!((4085..65525).contains(&clusters)),
+        FileAllocationTableType::Fat32 => assert!((65525..=0x0FFF_FFF4).contains(&clusters)),
     }
     let cluster_root = matches!(boot.root_directory(), RootDirectory::Cluster(_));
-    assert_eq!(cluster_root, boot.fat_type() == FatType::Fat32);
+    assert_eq!(
+        cluster_root,
+        boot.file_allocation_table_type() == FileAllocationTableType::Fat32
+    );
 }
 
 /// **One table holds an entry for every cluster**, the two reserved entries included, at the
@@ -69,10 +72,10 @@ fn the_table_has_an_entry_for_every_cluster() {
     let Ok(boot) = BootSector::parse(&sector) else {
         return;
     };
-    let bits = match boot.fat_type() {
-        FatType::Fat12 => 12u64,
-        FatType::Fat16 => 16,
-        FatType::Fat32 => 32,
+    let bits = match boot.file_allocation_table_type() {
+        FileAllocationTableType::Fat12 => 12u64,
+        FileAllocationTableType::Fat16 => 16,
+        FileAllocationTableType::Fat32 => 32,
     };
     let held = u64::from(boot.table_sectors()) * boot.sector_size().bytes() as u64 * 8;
     assert!((u64::from(boot.clusters()) + 2) * bits <= held);

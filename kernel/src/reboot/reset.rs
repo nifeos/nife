@@ -39,8 +39,8 @@ pub(crate) fn cold_reset(marker: &str) -> abi::Error {
 ///
 /// On a JH7110, OpenSBI's SBI SRST is an I2C write to the AXP15060 on I2C5, which U-Boot gates and
 /// holds in reset at `Starting kernel` and radon's OpenSBI does not restore. The kernel does it
-/// from the plan `memory::init` read out of the device tree, printing every word it saw. A no-op
-/// with no output on every other machine. Called by the rebooting soak and [`restart`]. See
+/// from the plan `memory::initialize` read out of the device tree, printing every word it saw. A
+/// no-op with no output on every other machine. Called by the rebooting soak and [`restart`]. See
 /// design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md.
 ///
 /// Name: ratified 2026-10-06 (calef, #1783: "`prepare_reset_route`"), from
@@ -70,14 +70,14 @@ pub fn prepare_reset_route(marker: &str) {
             bus.skipped,
             if bus.truncated { ", TRUNCATED" } else { "" },
         );
-        // SAFETY: `memory::init` recorded this window only for a machine whose tree names a
+        // SAFETY: `memory::initialize` recorded this window only for a machine whose tree names a
         // JH7110, and `mmu::map_everything` mapped exactly it, device-typed, in the direct map.
-        // The plan's identifiers were bounded by `SYS` when it was built, and `bring_up` bounds
+        // The plan's identifiers were bounded by `SYSTEM` when it was built, and `bring_up` bounds
         // them again.
         let report = unsafe {
             crate::drivers::jh7110_clock_and_reset::bring_up(
                 crate::arch::mmu::phys_to_virt(sys.base) as usize,
-                &jh7110_clock_and_reset::SYS,
+                &jh7110_clock_and_reset::SYSTEM,
                 bus.plan(),
             )
         };

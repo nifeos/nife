@@ -11,51 +11,60 @@
 use crate::sector::{SectorDevice, SectorSize};
 
 /// The cluster count below which a volume is FAT12, by the specification's rule.
-const FAT16_MIN_CLUSTERS: u32 = 4085;
+const FAT16_MINIMUM_CLUSTERS: u32 = 4085;
 
 /// The cluster count below which a volume is FAT16, and at or above which it is FAT32.
-const FAT32_MIN_CLUSTERS: u32 = 65_525;
+const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
 
 /// The most clusters a FAT32 volume may hold: its highest cluster number, `clusters + 1`, must stay
 /// below the bad-cluster marker `0x0FFF_FFF7` with the specification's margin.
-const FAT32_MAX_CLUSTERS: u32 = 0x0FFF_FFF5 - 1;
+const FAT32_MAXIMUM_CLUSTERS: u32 = 0x0FFF_FFF5 - 1;
 
 /// The bytes of a sector the parse reads: the BPB at the start and the signature at 510.
 const PARSED: usize = 512;
 
-/// **The FAT type**, decided by the count of data clusters and by nothing else.
+/// **The FAT type** (file allocation table type, "FAT: General Overview of On-Disk Format" version
+/// 1.03, section 3, Boot Sector and BPB), decided by the count of data clusters and by nothing
+/// else. The variants keep the specification's spelling, `Fat12`, `Fat16` and `Fat32`, each named
+/// for the width of one table entry in bits.
 ///
 /// The type string at `BS_FilSysType` is informational and never read. A volume whose BPB layout
 /// disagrees with its cluster count is refused (see [`ParseError::LayoutContradictsClusterCount`]).
 ///
-/// Name: ratified 2026-10-25 (#2720).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `FatType` (FAT spelled out, as the crate's
+/// own name is).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum FatType {
-    /// Fewer than 4085 clusters; 12-bit table entries.
+pub enum FileAllocationTableType {
+    /// **FAT12**, the 12-bit file allocation table: fewer than 4085 clusters; 12-bit table entries.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "12-bit file allocation table")]
     Fat12,
-    /// From 4085 up to 65524 clusters; 16-bit table entries.
+    /// **FAT16**, the 16-bit file allocation table: from 4085 up to 65524 clusters; 16-bit table
+    /// entries.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "16-bit file allocation table")]
     Fat16,
-    /// 65525 clusters or more; 32-bit table entries whose top four bits are reserved.
+    /// **FAT32**, the 32-bit file allocation table: 65525 clusters or more; 32-bit table entries
+    /// whose top four bits are reserved.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "32-bit file allocation table")]
     Fat32,
 }
 
-impl FatType {
+impl FileAllocationTableType {
     /// The type the specification assigns to a volume of `clusters` data clusters.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn from_clusters(clusters: u32) -> FatType {
-        if clusters < FAT16_MIN_CLUSTERS {
-            FatType::Fat12
-        } else if clusters < FAT32_MIN_CLUSTERS {
-            FatType::Fat16
+    pub const fn from_clusters(clusters: u32) -> FileAllocationTableType {
+        if clusters < FAT16_MINIMUM_CLUSTERS {
+            FileAllocationTableType::Fat12
+        } else if clusters < FAT32_MINIMUM_CLUSTERS {
+            FileAllocationTableType::Fat16
         } else {
-            FatType::Fat32
+            FileAllocationTableType::Fat32
         }
     }
 
@@ -64,9 +73,9 @@ impl FatType {
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn entry_bits(self) -> u32 {
         match self {
-            FatType::Fat12 => 12,
-            FatType::Fat16 => 16,
-            FatType::Fat32 => 32,
+            FileAllocationTableType::Fat12 => 12,
+            FileAllocationTableType::Fat16 => 16,
+            FileAllocationTableType::Fat32 => 32,
         }
     }
 }
@@ -209,14 +218,14 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{BootSector, FatType, SECTOR_BYTES, VolumeLayout};
+/// use file_allocation_table::{BootSector, FileAllocationTableType, SECTOR_BYTES, VolumeLayout};
 ///
 /// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
 /// let mut sector = [0u8; SECTOR_BYTES];
 /// volume.fill_sector(0, &mut sector);
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
-/// assert_eq!(boot.fat_type(), FatType::Fat32);
+/// assert_eq!(boot.file_allocation_table_type(), FileAllocationTableType::Fat32);
 /// assert_eq!(boot.clusters(), volume.clusters());
 /// ```
 ///
@@ -231,7 +240,7 @@ pub struct BootSector {
     total_sectors: u32,
     media: u8,
     hidden_sectors: u32,
-    fat_type: FatType,
+    file_allocation_table_type: FileAllocationTableType,
     clusters: u32,
     first_data_sector: u32,
     root: RootDirectory,
@@ -249,6 +258,17 @@ fn get16(sector: &[u8], at: usize) -> u16 {
 /// A little-endian `u32` at `at`. The callers pass constant offsets under [`PARSED`].
 fn get32(sector: &[u8], at: usize) -> u32 {
     u32::from_le_bytes([sector[at], sector[at + 1], sector[at + 2], sector[at + 3]])
+}
+
+/// Whether the BPB's layout agrees with the type the cluster count gives: FAT32 has no 16-bit
+/// table size and no fixed root region, and FAT12 and FAT16 have both.
+fn layout_agrees(kind: FileAllocationTableType, table_sectors_16: u16, root_entries: u16) -> bool {
+    match kind {
+        FileAllocationTableType::Fat32 => table_sectors_16 == 0 && root_entries == 0,
+        FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 => {
+            table_sectors_16 != 0 && root_entries != 0
+        }
+    }
 }
 
 /// A reserved-region sector number from FAT32's BPB, or `None` when it names no sector the
@@ -325,23 +345,16 @@ impl BootSector {
             return Err(ParseError::NoClusters);
         }
 
-        let fat_type = FatType::from_clusters(clusters);
-        let layout_is_32 = table_sectors_16 == 0 && root_entries == 0;
-        let layout_is_16 = table_sectors_16 != 0 && root_entries != 0;
-        match fat_type {
-            FatType::Fat32 if !layout_is_32 => {
-                return Err(ParseError::LayoutContradictsClusterCount);
-            }
-            FatType::Fat12 | FatType::Fat16 if !layout_is_16 => {
-                return Err(ParseError::LayoutContradictsClusterCount);
-            }
-            _ => {}
+        let file_allocation_table_type = FileAllocationTableType::from_clusters(clusters);
+        if !layout_agrees(file_allocation_table_type, table_sectors_16, root_entries) {
+            return Err(ParseError::LayoutContradictsClusterCount);
         }
-        if clusters > FAT32_MAX_CLUSTERS {
+        if clusters > FAT32_MAXIMUM_CLUSTERS {
             return Err(ParseError::TooManyClusters);
         }
         // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.
-        let needed_bits = (u64::from(clusters) + 2) * u64::from(fat_type.entry_bits());
+        let needed_bits =
+            (u64::from(clusters) + 2) * u64::from(file_allocation_table_type.entry_bits());
         let held_bits = u64::from(table_sectors) << (sector_size.shift() + 3);
         if needed_bits > held_bits {
             return Err(ParseError::TableTooSmall);
@@ -356,7 +369,7 @@ impl BootSector {
             total_sectors,
             media,
             hidden_sectors: get32(sector, 28),
-            fat_type,
+            file_allocation_table_type,
             clusters,
             first_data_sector,
             root: RootDirectory::Region {
@@ -369,7 +382,7 @@ impl BootSector {
             backup_boot_sector: None,
             volume_id: (sector[38] == 0x29).then(|| get32(sector, 39)),
         };
-        if fat_type == FatType::Fat32 {
+        if file_allocation_table_type == FileAllocationTableType::Fat32 {
             boot.parse_fat32(sector)?;
         }
         Ok(boot)
@@ -445,9 +458,10 @@ impl BootSector {
 
     /// The FAT type, from the cluster count.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const fn fat_type(&self) -> FatType {
-        self.fat_type
+    /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `fat_type` (the same reason as
+    /// `FatType`).
+    pub const fn file_allocation_table_type(&self) -> FileAllocationTableType {
+        self.file_allocation_table_type
     }
 
     /// How many data clusters the volume has. They are numbered 2 to `clusters() + 1`.
@@ -534,9 +548,12 @@ impl BootSector {
         self.hidden_sectors
     }
 
-    /// FAT32's `FSInfo` sector, or `None` when the BPB names none inside the reserved region.
+    /// **FAT32 `FSInfo` sector** (`BPB_FSInfo`, "FAT: General Overview of On-Disk Format" version
+    /// 1.03, section 5, FAT32 `FSInfo` Sector Structure and Backup Boot Sector): the sector holding
+    /// the free-cluster hints, or `None` when the BPB names none inside the reserved region.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "file system information sector")]
     pub const fn fs_info_sector(&self) -> Option<u16> {
         self.fs_info_sector
     }

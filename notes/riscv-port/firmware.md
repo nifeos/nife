@@ -15,12 +15,13 @@ only a boot can do is in `isa.rs`, from three sources in the order they arrive:
 1. The device tree, which is firmware's claim about the silicon.
 2. SBI, which is firmware's claim about itself. `probe_extension` is the only way to know whether
    the `ecall`s the kernel makes unconditionally will do anything at all.
-3. The `satp.ASID` probe, a measurement, which `mmu::init` records later because it needs the real
-   page tables installed.
+3. The `satp.ASID` probe, a measurement, which `mmu::initialize` records later because it needs the
+   real page tables installed.
 
-`kernel_main` runs `isa::init` after `memory::init`, which reads the device tree first, and before
-`mmu::init`, which would build tables a refused machine cannot walk. The summary prints once paging
-is on, before the test, shell or bench branches, so every boot mode reports the machine.
+`kernel_main` runs `isa::initialize` after `memory::initialize`, which reads the device tree first,
+and before `mmu::initialize`, which would build tables a refused machine cannot walk. The summary
+prints once paging is on, before the test, shell or bench branches, so every boot mode reports the
+machine.
 
 A machine missing something the kernel needs is refused with a panic that prints what is missing.
 A kernel that assumed Sv39 on an Sv32 machine, or called SBI RFENCE on firmware without it, would
@@ -57,8 +58,8 @@ memory type zero, which T-Head does not define. With MAEE off and `Sv39Mae`, bit
 reserved, and a set one is a page fault on the first walk of the fine tables.
 
 Linux keys the same errata on `mvendorid` with `marchid` and `mimpid` zero. This kernel reads the
-CSR instead, because the CSR is the hart's own answer. `is_thead` also tells `fp::init` to close
-`XTheadVector`'s own `VS` field, and is false before discovery, the safe default.
+CSR instead, because the CSR is the hart's own answer. `is_thead` also tells `fp::initialize` to
+close `XTheadVector`'s own `VS` field, and is false before discovery, the safe default.
 
 ## The test harness's exit
 

@@ -288,7 +288,7 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
 /// The virtio handshake, then queue 0. The queue is set up **through the kernel**, which programs
 /// the ring addresses to fixed offsets in our region; we never choose them, which is what keeps the
 /// device inside our grant.
-fn init(direct_memory_access_phys: u64) -> (u32, u32) {
+fn initialize(direct_memory_access_phys: u64) -> (u32, u32) {
     if mr(MAGIC) != 0x7472_6976 {
         die(E_NOT_VIRTIO); // not "virt": we are not talking to a virtio device at all
     }
@@ -436,7 +436,7 @@ fn surface_pixel(i: usize) -> u32 {
 /// kernel because the test must know the exact address to look for. See
 /// notes/framebuffer-contract/iommu-escape-test.md.
 fn run_backing_escape(direct_memory_access_phys: u64, victim: u64) -> ! {
-    init(direct_memory_access_phys);
+    initialize(direct_memory_access_phys);
 
     write_hdr(CMD_RESOURCE_CREATE_2D);
     direct_memory_access_write::<u32>(OFF_REQ + HDR_LEN, RESOURCE_ID);
@@ -494,7 +494,7 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
         run_backing_escape(direct_memory_access_phys, arg2);
     }
 
-    let (dw, dh) = init(direct_memory_access_phys);
+    let (dw, dh) = initialize(direct_memory_access_phys);
     bring_up_surface(direct_memory_access_phys);
 
     // The display is up: resource created, backed, and on the scanout. A spawner that never sees

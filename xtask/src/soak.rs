@@ -693,7 +693,7 @@ fn second_boot(
     const STARTED: &str = "soak-test: started";
     const REBOOT: &str = "soak-test-reboot:";
 
-    let rx = console_lines(stdout);
+    let receiver = console_lines(stdout);
 
     let begun = Instant::now();
     let mut starts = 0u32;
@@ -708,7 +708,7 @@ fn second_boot(
             );
             return ExitCode::from(2);
         };
-        let line = match rx.recv_timeout(left) {
+        let line = match receiver.recv_timeout(left) {
             Ok(line) => line,
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => {
@@ -757,11 +757,11 @@ fn second_boot(
 fn console_lines(stdout: std::process::ChildStdout) -> std::sync::mpsc::Receiver<String> {
     use std::io::BufRead;
 
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for line in std::io::BufReader::new(stdout).split(b'\n') {
             let Ok(line) = line else { break };
-            if tx
+            if sender
                 .send(String::from_utf8_lossy(&line).into_owned())
                 .is_err()
             {
@@ -769,7 +769,7 @@ fn console_lines(stdout: std::process::ChildStdout) -> std::sync::mpsc::Receiver
             }
         }
     });
-    rx
+    receiver
 }
 
 /// **Milestone 593's two proofs under QEMU q35**: the watchdog resets a wedged kernel, and it never
@@ -799,7 +799,7 @@ fn watchdog_verdict(
     } else {
         window + Duration::from_secs(120)
     };
-    let rx = console_lines(stdout);
+    let receiver = console_lines(stdout);
     let begun = Instant::now();
     let mut run = WatchdogRun {
         wedge,
@@ -828,7 +828,7 @@ fn watchdog_verdict(
             );
             return ExitCode::from(2);
         };
-        let line = match rx.recv_timeout(left) {
+        let line = match receiver.recv_timeout(left) {
             Ok(line) => line,
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => {

@@ -50,7 +50,7 @@ reset_control_deassert(trng->rst);
 ```
 
 The order is load-bearing, and Linux's own reset driver says why in a comment: *"if the
-associated clock is gated, deasserting might otherwise hang forever"*. `TRNG_BRING_UP` reproduces
+associated clock is gated, deasserting might otherwise hang forever"*. `ENTROPY_BRING_UP` reproduces
 it and a host test pins it, because a plan that deasserted first would wedge a boot on hardware and
 pass every test an emulator can run.
 
@@ -71,7 +71,7 @@ The rebase arithmetic is a host test (`the_two_trees_agree_on_the_identifiers`) 
 paragraph, so a renumbering upstream fails the build instead of surprising somebody at the bench.
 Every URL and fetch date is in `crates/jh7110_clock_and_reset/src/lib.rs`'s header.
 
-All three identifiers are STG-domain, so `TRNG_BRING_UP` means nothing without `STG`, and that
+All three identifiers are STG-domain, so `ENTROPY_BRING_UP` means nothing without `STG`, and that
 coupling is why `Step` has no domain field. A second device in a second domain carries its own plan
 and its own domain beside it; that is the time to decide whether the pair wants a type.
 
@@ -116,8 +116,8 @@ Three things make the clock controller a stronger case for that split than NVMe 
 ### The one genuinely dangerous thing here, and what stops it
 
 `machine_discovery::jh7110::clock_and_reset::discover` **never fails to produce an address**. A tree
-that names no controller gets `STG_BASE` (`0x1023_0000`) with `from_tree: false`. That is
-deliberate: radon's firmware tree is already known to omit and misdescribe things, and a bench
+that names no controller gets `SYSTEM_TOP_GROUP_BASE` (`0x1023_0000`) with `from_tree: false`. That
+is deliberate: radon's firmware tree is already known to omit and misdescribe things, and a bench
 session that comes back with "no controller node, nothing attempted" has spent a trip to the machine
 and learned nothing. Two independently published trees agree on the number, which is a stronger
 warrant than most device-tree reads get.
@@ -126,8 +126,8 @@ But a caller that took that answer unconditionally would store to `0x1023_0000` 
 this kernel boots, and on QEMU's `virt` that address is unmapped. So the guard is one rung up
 from a comment:
 
-- `memory::init` records the window **only when the tree names a JH7110** (a clock controller, or
-  the TRNG whose clocks this exists to ungate). QEMU's `virt` names neither.
+- `memory::initialize` records the window **only when the tree names a JH7110** (a clock controller,
+  or the TRNG whose clocks this exists to ungate). QEMU's `virt` names neither.
 - `mmu::map_everything` maps only what `memory::jh7110_clock_and_reset()` returned, so on any other machine
   there is no mapping to store through.
 - `no_clock_window_is_mapped_where_there_is_no_jh7110` (`system_tests/src/user/entropy_tests.rs`) pins

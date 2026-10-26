@@ -13,7 +13,7 @@ fn events_decode_by_type() {
     assert_eq!(
         Event::decode(t),
         Event::Command {
-            trb: 0x1000,
+            transfer_request_block: 0x1000,
             code: completion::SUCCESS,
             slot: 1
         }
@@ -23,7 +23,7 @@ fn events_decode_by_type() {
     assert_eq!(
         Event::decode(t),
         Event::Transfer {
-            trb: 0x7000,
+            transfer_request_block: 0x7000,
             residual: 2,
             code: completion::SHORT_PACKET,
             slot: 1,
@@ -37,7 +37,7 @@ fn events_decode_by_type() {
     assert!(matches!(
         Event::decode(t),
         Event::Command {
-            trb: 0x2_0000_1000,
+            transfer_request_block: 0x2_0000_1000,
             ..
         }
     ));
@@ -129,7 +129,7 @@ fn a_simulated_controller_runs_exactly_what_was_produced_across_laps() {
         let mut produced = std::vec::Vec::new();
         for _ in 0..burst {
             let p = ring.enqueue(TransferRequestBlock::normal(u64::from(next), 8));
-            memory[p.index as usize] = p.trb;
+            memory[p.index as usize] = p.transfer_request_block;
             if let Some((at, link)) = p.link {
                 memory[at as usize] = link;
             }

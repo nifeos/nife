@@ -12,7 +12,7 @@ pub enum Event {
     /// A transfer finished (or failed).
     Transfer {
         /// The physical address of the TRB it was about.
-        trb: u64,
+        transfer_request_block: u64,
         /// Bytes *not* transferred: zero for a full buffer, positive for a short packet.
         residual: u32,
         /// The completion code.
@@ -25,7 +25,7 @@ pub enum Event {
     /// A command finished.
     Command {
         /// The physical address of the command TRB.
-        trb: u64,
+        transfer_request_block: u64,
         /// The completion code.
         code: u8,
         /// The slot it concerns: for Enable Slot, the slot the controller chose.
@@ -54,14 +54,14 @@ impl Event {
         let slot = (d[3] >> 24) as u8;
         match t.kind() {
             transfer_request_block_type::TRANSFER_EVENT => Event::Transfer {
-                trb: pointer,
+                transfer_request_block: pointer,
                 residual: d[2] & 0x00ff_ffff,
                 code,
                 slot,
                 endpoint: ((d[3] >> 16) & 0x1f) as u8,
             },
             transfer_request_block_type::COMMAND_COMPLETION => Event::Command {
-                trb: pointer,
+                transfer_request_block: pointer,
                 code,
                 slot,
             },

@@ -52,9 +52,9 @@ disagree about a file:
   at `cap_of` its path under that week's `cap` rows and counts `in_body_lines`, for milestone 929
   (comments in the Linux style across first-party Rust). `<dir>` is `kernel`, `crates`,
   `components`, `system_tests`, `xtask`, or `other` for every other directory holding Rust.
-- §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks
-  and `vendor/`. The ceiling is read from the week's own `helpers/line_citations.py`, so the chart
-  draws the ceiling that week's gate held.
+- §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks and
+  `vendor/`. `script/metrics` reads the ceiling from the week's own `helpers/line_citations.py`, so
+  the chart draws the ceiling that week's gate held.
 
 ## Passive voice
 
@@ -87,8 +87,8 @@ would have found then. That is every row's rule here, and it is why no week is b
   roadmap's field tokens are one: `measured` reads both forms, so they do not inflate the median.
 - The line-citation gate landed in 2026W41, so earlier weeks are today's counter on older text.
   They have no ceiling and no marked exceptions, and their Markdown citations were never held.
-- The ceiling compares with the gate's count, which skips a marked code citation and this chart
-  does not. They agree while no code citation is marked, as in 2026W42.
+- The ceiling compares with the gate's count, which skips a marked code citation and this chart does
+  not. They agree while no code citation carries a mark, as in 2026W42.
 - `other` has no ceiling column, and a ceiling on a prefix that is not one of the five named
   directories (`kernel/src/`, `helpers/`) is not charted. Its directories would start their stages
   one at a time, so a partial sum would sit under the group's count and read as a breach.

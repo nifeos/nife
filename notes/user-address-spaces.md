@@ -136,8 +136,8 @@ every `AddressSpace` and pushed `load`'s frame past the 4 KiB guard page on risc
 kernel opens to EL0. `x86_64` measures it and riscv64 reads it from the device tree, which a process
 cannot reach, so on those two the kernel writes one frame and maps it read-only into every process.
 The rate does not change while the machine runs, so one frame is correct. If the rate has not
-resolved (never observed: `init_frequency` runs early in both boot tours), the frame stays zeroed
-and reads as unknown, which keeps every process's layout the same
+resolved (never observed: `initialize_frequency` runs early in both boot tours), the frame stays
+zeroed and reads as unknown, which keeps every process's layout the same
 regardless of boot order.
 
 `load` maps it for the processes it builds. Several kernel paths build a process's space by hand

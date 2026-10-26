@@ -13,8 +13,9 @@ The progenitor builds every boot component from one capability table, and most o
 exists to keep that table's peak at or under `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED`, the
 boot's measured peak, well below the table's size, `kernel::cap::CAPABILITY_TABLE_SLOTS`. Every
 boot prints `capability slots: N of M at peak` (`kernel::cap::report_peak`), and
-`script/swish-check` fails a boot whose peak goes above the recorded one. A build that runs out of slots inside `build_child` fails with no route to
-a person: the boot reaches userspace and prints nothing.
+`script/swish-check` fails a boot whose peak goes above the recorded one. A build that runs out of
+slots inside `build_child` fails with no route to a person: the boot reaches userspace and prints
+nothing.
 
 Three facts drive the order.
 
@@ -22,49 +23,52 @@ Three facts drive the order.
   a grant raises the baseline under every peak that comes before its deletion, not only the step
   that uses it.
 - Every object the boot retypes lands in the first free slot. Once anything has been retyped, "slot
-  N holds something" no longer means the kernel put it there, so every probe of a kernel grant
-  (`is_granted`) is read before the first retype.
+  N holds something" no longer means the kernel put it there. So a probe of a kernel grant
+  (`is_granted`) is sound before the first retype, which is where `boot` probes the mounted tree,
+  the display grants and the kernel-built entropy service. The probes that come later are in BUGS
+  below.
 - The early peak is the terminal plumbing: six objects retyped before the console runs (the
   console's request, reply and shared page, the terminal endpoint and the shell's two pages). The
   shell's build is the next peak, and the login block is the highest.
 
-From those, the steps in `boot_steps.rs` run in this order.
+`boot`, in `boot_sequence.rs`, calls the steps in the order they run, and each step's doc comment
+says what it builds. What follows is why each step comes where it does.
 
-1. The capabilities the kernel granted for the test roles (`for_test_roles`) are deleted first.
-   Only their slots matter, and nothing interactive reads them.
-2. The device services come next: the graphical verdict, the firmware screen probe, entropy and
-   the network. The virtio-rng and virtio-net trios are kernel grants, and this is the one point
-   where their slots and the terminal plumbing's six are never live together. Each trio is
-   released, built or not, before the terminal endpoint is retyped. A kernel-built entropy service
-   is one slot, granted only when the trio was not.
-3. The terminal stack: the console, the system log service and the line discipline. The console's
-   request, reply and shared page are deleted once the console and `line_editor` hold their own
-   narrowed copies.
-4. The keystroke sources. Once `input` holds its narrowed copies, the UART's device and interrupt
-   are deleted. That is a slot and an authority: a progenitor that kept them could hand the UART to
+1. `start_device_services` first deletes the capabilities the kernel granted for the test roles
+   (`for_test_roles`). Only their slots matter, and nothing interactive reads them.
+2. The device services come before the terminal plumbing. The virtio-rng and virtio-net trios are
+   kernel grants, and this is the one point where their slots and the terminal plumbing's six are
+   never live together. The progenitor releases each trio, built or not, before it retypes the
+   terminal endpoint, except on the one path BUGS below records. A kernel-built entropy service is
+   one slot, granted only when the trio was not.
+3. `start_terminal_stack` deletes the console's request, reply and shared page once the console and
+   `line_editor` hold their own narrowed copies, to lower the shell's peak.
+4. `start_keystroke_sources` deletes the UART's device and interrupt once `input` holds its narrowed
+   copies. That is a slot and an authority: a progenitor that kept them could hand the UART to
    anything it later builds.
-5. The spawn channel and the supervision endpoint are retyped only now. Held through the three
-   driver builds, they would raise the early peak.
-6. The shell is built but not started. Its budget copy and its window-0 slice are deleted at once,
-   and the configuration page is placed at a named slot after the build. The machine statistics
-   page goes to the shell before the login block, and the progenitor keeps no copy, because a page
-   held across that block would raise the highest peak.
-7. The terminal's sink adapter, after the shell. Built earlier, it would hold its slots across the
-   shell's build, which is a peak.
-8. The login stack, after the shell has given back its transient capabilities.
-9. The giveaway.
+5. `retype_spawn_channel` runs only after the three driver builds. Held through them, the spawn
+   channel and the supervision endpoint would raise the early peak.
+6. `build_shell` builds the shell but does not start it, and deletes the shell's budget copy and
+   window-0 slice at once. It places the configuration page at
+   `grant_plan::SHELL_CONFIGURATION_SLOT` after the build, because the build list's slots move with
+   what the boot granted, and before the start, because the shell's `_start` probes that slot.
+   `finish_shell_endowment` hands the shell the machine statistics page before the login block and
+   keeps no copy, because a page held across that block would raise the highest peak.
+7. `start_sink_adapter` runs after the shell. Built earlier, the adapter would hold its slots across
+   the shell's build, which is a peak.
+8. `start_login_stack` runs after the shell has given back its transient capabilities.
+9. `give_away_budget`, the giveaway.
 
 Steps 7 and 8 come before the giveaway for a second reason. They are system components, and the
 root untyped is what the system is built from. Built after it, they would come out of
 `PROGENITOR_RESERVED_PAGES`, the scratch budget sized for page tables, and the cost would surface
 later as a child failing to map a scratch page.
 
-Inside the login block, anything that lives past it is placed after the build that peaks there,
-never in the build's `caps`. The run-unvouched endpoint is retyped and placed after `login`'s
-build, into the slot the loader's transient address space has just given back. The durable
-window's page is placed the same way. The identity provisioner's window-0 page is sliced and mapped
-into its space only after the build has given back its request frame. The blobs `login` is handed
-cost no slots: `supervision_protocol`'s `fill_and_map` holds one frame capability at a time.
+Inside the login block, the progenitor places anything that lives past it after the build that
+peaks there, never in the build's `caps`. `place_login_capabilities` does so for the run-unvouched
+endpoint and the durable window's page, and `start_identity_provisioner` for the provisioner's
+window-0 page. Each takes a slot the build has just given back. The blobs `login` is handed cost no
+slots: `supervision_protocol`'s `fill_and_map` holds one frame capability at a time.
 
 ## The stack the boot runs on
 
@@ -73,11 +77,10 @@ progenitor's stack is `PROGENITOR_STACK_PAGES` (`kernel/src/user/progenitor_boot
 overflowed when the boot held more locals. So every step is `#[inline(never)]`, and its temporaries
 are gone before the spawn service starts.
 
-The graphical stack's programs are measured inside `graphical_terminal_grants` and the builders, not
-in the measured pass, for the same reason: three more `elf::Elf`s in `boot`'s frame overflowed it
-under `package install`. Hashing three small programs twice costs less than the stack does.
-`build_grant` is out of line for the spawn service's frame: an install runs `package_archive`'s
-parser beneath it.
+`graphical_terminal_grants` measures the graphical stack's three programs out of line, not in the
+measured pass, for the same reason: three more `elf::Elf`s in `boot`'s frame overflowed it under
+`package install`. `build_grant` is out of line for the spawn service's frame: an install runs
+`package_archive`'s parser beneath it.
 
 ## What the measured pass reads, and what a refusal costs
 
@@ -87,8 +90,8 @@ is worth. Bytes that are not UTF-8 become the empty table, which vouches for not
 then refused and the boot stops. That is the direction a measured boot must be wrong in.
 
 The package catalog and the index sources (`package_index::SOURCES_ENTRY`) are archive entries
-above the table, so they are measured like programs. Each reads as empty when the table refuses it
-or the archive has none, and empty vouches for no package and names no source.
+above the table, so `read_boot_programs` measures them like programs. Each reads as empty when the
+table refuses it or the archive has none, and empty vouches for no package and names no source.
 
 A component the table refuses is treated as a component that is not there. What that costs is
 decided by what the program was for.
@@ -113,38 +116,42 @@ Whether the file server enforces subtree grants itself is read from the note in 
 bytes. Bytes the table refuses, a server with no note and an unreadable note all answer `false`,
 so every doubt ends in a caretaker.
 
-The programs the shell can spawn are measured in the same pass, before the giveaway, because the
-announcement is the only thing the progenitor says. Only an entry the archive has can be a refusal:
-a program the initial ramdisk never packed was never spawnable.
+The progenitor measures the programs the shell can spawn in the same pass, before the giveaway,
+because the announcement is the only thing the progenitor says. Only an entry the archive has can be
+a refusal: a program the initial ramdisk never packed was never spawnable.
 
 `login` needs program bytes it cannot read itself. The archive is reserved RAM that no capability
-names, and `build_child` can map a page only through a `PageFrame` capability. So `login` is handed
-copies as blobs: the subtree caretaker's image, the measurement table, and `user_timetable_keeper`
-with `timetable`. The last two travel together or not at all, and without them `login` answers
-`SCHEDULE` as a plain login. No program a scheduled job runs travels with them: the job runs what
-the live activation generation names (Fork 8, ruled D by calef on 2026-09-27, #1377).
+names, and `build_child` can map a page only through a `PageFrame` capability. So the progenitor
+hands `login` copies as blobs: the subtree caretaker's image, the measurement table, and
+`user_timetable_keeper` with `timetable`. The last two travel together or not at all, and without
+them `login` answers `SCHEDULE` as a plain login. No program a scheduled job runs travels with
+them: the job runs what the live activation generation names (Fork 8, ruled D by calef on
+2026-09-27, #1377).
 
 ## The device services
 
 The boot is the same minimal UART system on every machine, and graphics is launched from the prompt
-(calef, 2026-09-30: *"I don't want graphics at boot and won't for a long time"*). A gpu's four
-grants come together or not at all, probed with `is_granted`. When the table vouches for
-`gpu_driver` and `display_terminal`, the spawn service keeps the four for every session it builds,
-and the shell holds none. A keyboard's three are kept only beside them and only with a vouched
-`keyboard_driver`; without one, a session reads keystrokes from the boot's line discipline. Any
-grant no session can be built from is released at once. A firmware screen's terminal pair and the
-gpu's grants never coexist, because the kernel wires one or the other.
+(calef, 2026-09-30: *"I don't want graphics at boot and won't for a long time"*).
+`graphical_terminal_grants` decides which display grants the spawn service keeps for the sessions it
+builds, and releases the rest at once; the shell holds none. A gpu's four grants come together or
+not at all, and the spawn service keeps them only when the table vouches for `gpu_driver` and
+`display_terminal`. It keeps a keyboard's three only beside them and only with a vouched
+`keyboard_driver`; without one, a session reads keystrokes from the boot's line discipline. A
+firmware screen's terminal pair and the gpu's grants never coexist, because the kernel wires one or
+the other.
 
-A virtio device is probed by reading its transport: `invoke` answers `NoSuchSlot` on an ungranted
-slot, and there is no `START` word left to say whether it was granted. The kernel grants each trio
-whole or not at all. The DMA page carries its own physical base at `abi::virtio::DMA_PHYS_OFFSET`;
-the progenitor maps the page, reads the base, gives the mapping up and delegates the frame.
+`start_virtio_entropy` probes the virtio-rng trio by reading its transport, and `start_network`
+probes the virtio-net trio with `is_granted`. Both rest on `invoke` answering `NoSuchSlot` on an
+ungranted slot, since there is no `START` word left to say whether a trio was granted. The kernel
+grants each trio whole or not at all. No method translates a virtual address, so the DMA page
+carries its own physical base at `abi::virtio::DMA_PHYS_OFFSET`. The progenitor reads it through a
+mapping of its own, which it gives up before the driver holds the page.
 
 The entropy service answers `READY` only after it has fetched a first bufferful from the device, so
-the wait means a client that asks will be answered. The request endpoint is kept for the life of
-the boot: `credentialer` gets a view of it, and the spawn service endows one to every child whose
-manifest declares entropy. The progenitor is the only process that can hand a program a random
-source, as it is the only one that can hand it a clock.
+the wait means a client that asks will be answered. The progenitor keeps the request endpoint for
+the life of the boot: `credentialer` gets a view of it, and the spawn service endows one to every
+child whose manifest declares entropy. The progenitor is the only process that can hand a program a
+random source, as it is the only one that can hand it a clock.
 
 `net_stack` gets exactly what `kernel::user::virtio_service::wire_net_server` gives it, slot for
 slot, because that is the endowment every network test proves. Its listen grant is
@@ -159,25 +166,27 @@ ids, and serves nobody until the spawn service grants a job a zone.
 
 On aarch64 and riscv64 the UART is a page, so the console and `input` map it. On x86 COM1 is a port
 range with nothing to map: each holds it as a `PortRange` capability, which the kernel's TSS I/O
-bitmap reads, and neither invokes it by slot. With a screen beside the UART, the console's slot 2 is
-the screen terminal's endpoint and slots 3 and 4 are its batching pair, a notification and a timer.
-The notification is bound to the console's thread between `build_child` and `start_child`, because a
-running thread cannot bind itself. The pair lets the console paint once per window rather than once
-per write, and the console degrades to one paint per write without it. The console's endowment is
-built as arrays with a count. The screen is a runtime fact and the port range a compile-time one, so
-one literal per case would be one more place to get the slot order wrong.
+bitmap reads, and neither invokes it by slot. With a screen beside the UART, `start_console` also
+gives the console the screen terminal and a batching pair, a notification and a timer. The console's
+slot 2 is the screen terminal's endpoint and slots 3 and 4 are the batching pair; on x86 the port
+range lands after them. The progenitor binds the notification to the console's thread between
+`build_child` and `start_child`: a running thread cannot bind itself, and the progenitor holds the
+console's thread only in that window. The pair lets the console paint once per window rather than
+once per write, and the console degrades to one paint per write without it. `start_console` builds
+the console's endowment as arrays with a count. The screen is a runtime fact and the port range a
+compile-time one, so one literal per case would be one more place to get the slot order wrong.
 
 `system_log` is built right after the console, because until it attaches the kernel prints for
-itself and can splice with the console's bytes. Its ring grants are deleted whether or not it was
-built, so none is carried across the login block.
+itself and can splice with the console's bytes. The progenitor deletes the system log's ring grants
+whether or not it was built, so none is carried across the login block.
 
 The shell's slot 4 is the file service when the boot has one, `WRITE` without `GRANT`, which is all
-`>` and `<` need. Its clock is last whatever else is granted, so the shell is told the slot in its
-third start word. The clock and the configuration page are `READ` without `GRANT`: the shell can
-read them and hand them to nothing it spawns. So manifests decide which children see them, as §43
-(reading the clock is a page, setting it is a page you may write) has it for the clock. The shell
-is built but not started, because the giveaway's negative control is printed through its output
-page.
+`>` and `<` need. Its clock is last whatever else is granted, so the progenitor tells the shell the
+slot in the shell's third start word. The clock and the configuration page are `READ` without
+`GRANT`: the shell can read them and hand them to nothing it spawns. So manifests decide which
+children see them, as §43 (reading the clock is a page, setting it is a page you may write) has it
+for the clock. The shell is built but not started, because the giveaway's negative control is
+printed through its output page.
 
 ## The login stack
 
@@ -187,15 +196,16 @@ order is a chain of things that must exist before something waits on them.
 1. The password is drawn first. With no entropy there is no password, and the whole block is
    abandoned rather than provisioning something weaker.
 2. `credentialer` is built and started, holding its view of the entropy endpoint.
-3. `identity_provisioner` provisions the credential and the demo identity's home. The plaintext is
-   staged in a page the progenitor maps briefly and wiped whatever the outcome.
-4. The store is sealed whatever provisioning did, because `credentialer` must leave its first phase
-   before `VERIFY` answers anything. A login against a partial store then denies cleanly.
-5. Only now is `credentialer`'s readiness report read. It sends `RPT_READY` after `provision()`
-   returns, which is after the seal, so a receive before the seal would never wake. A service that
-   failed at start-up answers with its own failure word instead.
-6. `login_audit_receiver` is started before `login`, so `login`'s blocking audit send has a
-   receiver before anything can reach `login`.
+3. `identity_provisioner` provisions the credential and the demo identity's home. The progenitor
+   stages the plaintext in a page it maps briefly and wipes whatever the outcome.
+4. The progenitor seals the store whatever provisioning did, because `credentialer` must leave its
+   first phase before `VERIFY` answers anything. A login against a partial store then denies
+   cleanly.
+5. Only now does the progenitor read `credentialer`'s readiness report. `credentialer` sends
+   `RPT_READY` after `provision()` returns, which is after the seal, so a receive before the seal
+   would never wake. A service that failed at start-up answers with its own failure word instead.
+6. The progenitor starts `login_audit_receiver` before `login`, so `login`'s blocking audit send
+   has a receiver before anything can reach `login`.
 7. `login` is built. It holds `WRITE` on the file service's page and not `READ`, because the
    progenitor holds only `WRITE | GRANT` and a writable mapping checks `WRITE` alone.
 
@@ -218,11 +228,19 @@ the job is not the top and give back nothing.
 
 It then proves the root is gone from the inside, on the two primitives that build things. Both must
 answer `NoSuchSlot` (-1) rather than `NotPermitted` (-3): the capability is gone, not narrowed.
-`script/swish-check` reads the sentence it prints. The shell's output page is given up with `UNMAP`
-after that line, because `PageFrame::REVOKE` would take it from the shell too.
+`script/swish-check` reads the sentence it prints. After that line, `announce_outcomes` gives up
+the progenitor's mapping of the shell's output page with `UNMAP`, because `PageFrame::REVOKE` would
+take it from the shell too.
 
 ## BUGS
 
 - The boot prompt holds the run-unvouched capability without a login. §221 as amended on 2026-10-06
   (UTC) says no console is the owner's without one. Nothing here builds that yet; milestone 806
   carries it.
+- A boot whose archive has no vouched `entropy` never releases the virtio-rng trio: `start_entropy`
+  reaches the deletes only through `start_virtio_entropy`. Its three slots stay held under every
+  later peak.
+- `start_network`, `start_system_log` and `start_keystroke_sources` probe kernel grants with
+  `is_granted` after the boot has retyped objects. Today the empty endowment slots below each probed
+  slot absorb the live objects. So this entry records an unchecked margin, not a known fault.
+  Nothing checks that a retyped object cannot land in one of those slots on a real boot.

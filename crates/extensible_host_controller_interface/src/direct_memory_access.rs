@@ -6,7 +6,8 @@
 //! [`SCRATCHPAD_ARRAY`] and never touches them, so a process that cannot read the controller's
 //! private memory cannot be confused by it. The IOMMU confines the device to the whole region.
 //!
-//! Name: ratified 2026-10-25 (#2720). Kept as it stands.
+//! Name: ratified 2026-10-26 (UTC), on #2760. Refused `dma` (spelled out, as the acronym test
+//! asks).
 
 /// The device context base address array: one pointer per slot, entry 0 the scratchpad array.
 ///
@@ -69,12 +70,13 @@ pub const REPORTS_QUEUED: u16 = 4;
 
 /// The most scratchpad pages the scratchpad array's one page can name.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const MAX_SCRATCHPADS: u16 = 512;
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_SCRATCHPADS` (max spelled out, as the
+/// tree-wide ruling asks).
+pub const MAXIMUM_SCRATCHPADS: u16 = 512;
 
 // The queued reports fit their page, the ring holds every one of them and its link, and the
 // scratchpad array's page names every scratchpad this layout accepts. Checked by the compiler, so
 // an edit to any one constant that breaks the others fails the build.
 const _: () = assert!(REPORTS_QUEUED as u64 * REPORT_SLOT <= crate::PAGE_BYTES);
 const _: () = assert!(REPORTS_QUEUED < RING_ENTRIES - 1);
-const _: () = assert!(MAX_SCRATCHPADS as u64 * 8 == crate::PAGE_BYTES);
+const _: () = assert!(MAXIMUM_SCRATCHPADS as u64 * 8 == crate::PAGE_BYTES);

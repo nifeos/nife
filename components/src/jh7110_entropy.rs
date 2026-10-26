@@ -39,7 +39,7 @@ use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 use user_mode_runtime::{receive_request, reply, send};
 
 register_structs! {
-    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::regs` (itself transcribed
+    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::registers` (itself transcribed
     /// from the Linux driver), checked at compile time. Unlike the NS16550's, this layout has no
     /// runtime stride or width: [binding] gives one `reg` window (`reg = <0x1600C000 0x4000>`) with
     /// no `reg-shift` or `reg-io-width`. Only the registers this driver touches are named; the rest
@@ -56,7 +56,7 @@ register_structs! {
         (0x08 => MODE: ReadWrite<u32>),
         (0x0c => _reserved_smode),
         (0x10 => IE: ReadWrite<u32>),
-        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::regs::ISTAT`). `RAND_RDY`
+        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::registers::ISTAT`). `RAND_RDY`
         // latches, so a driver that never writes this register sees every generation after the
         // first complete instantly.
         (0x14 => ISTAT: ReadWrite<u32>),
@@ -86,7 +86,7 @@ const READY: u64 = 1;
 
 /// Where the spawner maps the TRNG's register page (a device-typed mapping, the same mechanism
 /// `console.rs`'s `UART_VA` uses), placed by the spawner (rule 2). One page: the binding's window is
-/// `0x4000`, but `jh7110_entropy::regs` reaches only `0x68`. **Must match
+/// `0x4000`, but `jh7110_entropy::registers` reaches only `0x68`. **Must match
 /// `kernel/src/user/entropy_service.rs`'s `TRNG_VA`.**
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
@@ -126,7 +126,7 @@ fn rand_words() -> [u32; 8] {
     ]
 }
 
-/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::regs::ISTAT`),
+/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::registers::ISTAT`),
 /// so writing a mask back clears exactly the bits in it and leaves the rest standing.
 fn ack(bits: u32) {
     regs().ISTAT.set(bits);
@@ -140,7 +140,7 @@ fn ack(bits: u32) {
 ///
 /// Returns `STAT` as read afterwards, the bench diagnostic: `STAT.R256` says whether `MODE.R256`
 /// took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.
-fn init() -> u32 {
+fn initialize() -> u32 {
     let r = regs();
     r.AUTO_AGE.set(0);
     r.AUTO_RQSTS.set(0);
@@ -202,10 +202,10 @@ fn generate() -> Option<[u8; 32]> {
 user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
-    // Put the block in a known state before asking it for anything, then seed it. `init` returns
-    // what `STAT` read back, which is the one snapshot taken before any generation has happened
-    // and so the only one that can say whether `MODE.R256` took.
-    let stat_after_init = init();
+    // Put the block in a known state before asking it for anything, then seed it. `initialize`
+    // returns what `STAT` read back, which is the one snapshot taken before any generation has
+    // happened and so the only one that can say whether `MODE.R256` took.
+    let stat_after_initialize = initialize();
     reseed_and_wait();
 
     // Draw the first 32 bytes before reporting, as `entropy.rs` does, so "up" means a client that
@@ -222,13 +222,14 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // clock, an undeasserted reset, or a base that is not the TRNG); a nonzero `STAT` with `SEEDED`
     // clear says the device is alive and the seeding sequence did not finish.
     let diagnostic = (u64::from(regs().STAT.get()) << 32) | u64::from(regs().ISTAT.get());
-    // Word 1 carries the byte count and, in its high half, the `STAT` seen right after `init`,
-    // whose `R256` says whether the 32 bytes are all device output or only 16 of them.
+    // Word 1 carries the byte count and, in its high half, the `STAT` seen right after
+    // `initialize`, whose `R256` says whether the 32 bytes are all device output or only 16 of
+    // them.
     let bytes_in_hand = pool.remaining() as u64;
     send(
         READY,
         report,
-        (u64::from(stat_after_init) << 32) | bytes_in_hand,
+        (u64::from(stat_after_initialize) << 32) | bytes_in_hand,
         diagnostic,
     );
 

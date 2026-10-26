@@ -9,13 +9,13 @@ argument.
 
 ## The control registers each core sets
 
-`cpu_init::init` runs on every core, the boot core and each secondary, because every bit it sets
-is per-CPU state.
+`cpu_initialization::initialize` runs on every core, the boot core and each secondary, because every
+bit it sets is per-CPU state.
 
 ### Write-combining for the framebuffer
 
-`IA32_PAT` is programmed so that `PWT` alone selects write-combining, the type
-`paging::Flags::write_combining()` encodes and the framebuffer is mapped with. Mapped like a
+The kernel programs `IA32_PAT` so that `PWT` alone selects write-combining, the type
+`paging::Flags::write_combining()` encodes and the framebuffer mapping uses. Mapped like a
 register (`PCD | PWT`, strong uncacheable), every four-byte store is its own bus transaction and
 the MTRRs cannot relax it. xenon's 1920x1080 aperture is 8 MB, so a full redraw is two million
 transactions, and the boot console's scrolling swept visibly down the screen. Write-combining
@@ -25,10 +25,10 @@ MTRRs say about the range, so it does not depend on firmware.
 The SDM asks for a cache flush around a PAT change, because a mapping that already uses the
 changed entry would hold lines of the old type. No mapping uses entry 1 when this runs. `boot.s`'s
 coarse map sets neither `PWT` nor `PCD`, and every fine-map device page is `PCD | PWT` (entry 3).
-On the boot core it runs before `mmu::init` builds the fine map, and on a secondary before
-`mmu::init_secondary` adopts it. Every `x86_64` processor this tree knows of offers the PAT (from
-memory, not a specification citation). Without it, `PWT` alone is write-through, which is merely
-slow for a screen nothing reads back.
+On the boot core it runs before `mmu::initialize` builds the fine map, and on a secondary before
+`mmu::initialize_secondary` adopts it. Every `x86_64` processor this tree knows of offers the PAT
+(from memory, not a specification citation). Without it, `PWT` alone is write-through, which is
+merely slow for a screen nothing reads back.
 
 ### SMEP: ring 0 does not execute ring-3 pages
 
@@ -43,8 +43,8 @@ a user page non-executable in supervisor mode, were true only with this bit on.
 SMEP costs nothing on any path. The fetch unit checks it against the leaf's `U/S` bit, with no
 per-access software toggle. That is what separates it from SMAP, which needs `stac` and `clac`
 around every kernel access to user memory and stays off (`mmu::permit_kernel_access_to_user_pages`
-has the BUGS). SMEP forbids nothing this kernel does: every kernel page is mapped `U/S` clear, and
-user code is only entered through `iretq` or `sysret` at ring 3.
+has the BUGS). SMEP forbids nothing this kernel does: every kernel page has `U/S` clear, and user
+code is only entered through `iretq` or `sysret` at ring 3.
 
 The feature bit is `CPUID.(EAX=7,ECX=0):EBX[7]`: Ivy Bridge and every Intel part since, AMD from
 Excavator, and QEMU's `-cpu max`, HVF and the `q35` defaults. A machine without it gets a boot line
@@ -54,10 +54,10 @@ saying ring 0 can execute ring-3 pages there, because the decoder's answer is wr
 
 `CR4.PCE` (bit 8) makes `RDPMC` legal at every ring. Fixed counter 2 runs at the TSC rate, so an
 open `PCE` is a second path to a cycle-rate instrument the kernel never granted. `boot.s` writes
-only `PAE` into `CR4`, so the bit is whatever firmware left. It is read back, not assumed
-(milestone 228 (the cycle counters are closed by assumption)). QEMU leaves it clear: PVH hands over
-`CR4 = 0x20` and OVMF `0x668`, five bits firmware set that this kernel never wrote. Real firmware is
-unknown.
+only `PAE` into `CR4`, so the bit is whatever firmware left. The kernel reads it back instead of
+assuming it (milestone 228 (the cycle counters are closed by assumption)). QEMU leaves it clear: PVH
+hands over `CR4 = 0x20` and OVMF `0x668`, five bits firmware set that this kernel never wrote. Real
+firmware is unknown.
 
 `CR4.TSD` (bit 2, gating `RDTSC`) stays open on purpose. `user_mode_runtime::now()` is `rdtsc` on
 this architecture, and closing it would take `Instant`, `thread::sleep` and the random seed away.
@@ -70,17 +70,17 @@ has a separate 16-bit port space, reached only by `in` and `out`, with no page t
 it. x86 gates ring 3's access to it two ways. `RFLAGS.IOPL` is all or nothing per privilege level.
 The TSS I/O permission bitmap has one bit per port, which is the granularity a capability needs.
 This kernel uses the bitmap, one per core inside that core's TSS, and installs a thread's grant
-when it is switched in (`segments.rs`, §121 (a device capability when the device has no page: x86
-port I/O)).
+at the switch into that thread (`segments.rs`, §121 (a device capability when the device has no
+page: x86 port I/O)).
 
 ## The boot CPU's id, and the per-CPU pointer
 
-`BOOT_CPU_ID` is stamped once by `boot.s` from `CPUID` leaf 1's initial APIC id, before
-`kernel_main`. It is recorded rather than recomputed because `CPUID` answers "which core am I". A
-caller that asked it after migrating to a secondary would get the secondary's id and call it the
-boot core's. riscv64's `BOOT_HARTID` is the same shape for a different reason: OpenSBI hands the
-hart id over in `a0`, and it is lost unless `boot.s` keeps it. aarch64 needs no record, because its
-boot core is architecturally 0.
+`boot.s` stamps `BOOT_CPU_ID` once from `CPUID` leaf 1's initial APIC id, before
+`kernel_main`. `boot.s` records the id rather than recomputing it because `CPUID` answers "which
+core am I". A caller that asked it after migrating to a secondary would get the secondary's id and
+call it the boot core's. riscv64's `BOOT_HARTID` is the same shape for a different reason: OpenSBI
+hands the hart id over in `a0`, and the id is gone unless `boot.s` keeps it. aarch64 needs no
+record, because its boot core is architecturally 0.
 
 The number has to match the roster, because `smp::seat_cpus_from_acpi` seats each core at the slot
 its local APIC id names. That is the same logical-id-equals-hardware-id rule the other two
@@ -109,18 +109,18 @@ may touch it. The policy is `kernel/src/fp.rs`'s. Four bits matter.
 - `CR4.OSFXSR` says the operating system knows about `fxsave`, `fxrstor` and the `xmm` registers.
   While it is clear, every SSE instruction raises `#UD`.
 - `CR4.OSXMMEXCPT` makes an unmasked SIMD floating-point exception arrive as `#XM` (vector 19)
-  rather than `#UD`. It is set together with `OSFXSR`. A kernel that sets one without the other
+  rather than `#UD`. It comes on together with `OSFXSR`. A kernel that sets one without the other
   reports arithmetic as a bad opcode.
 - `CR0.EM` and `CR0.MP` are the 80387 emulation pair. `EM` must be clear, or SSE raises `#UD`
-  instead of `#NM`. `MP` is set so that `wait` and `fwait` respect `TS` like everything else.
-- `CR0.TS` is the one that matters. While it is set, the next FP or SSE instruction raises `#NM`
+  instead of `#NM`. `MP` is on so that `wait` and `fwait` respect `TS` like everything else.
+- `CR0.TS` is the one that matters. While it is on, the next FP or SSE instruction raises `#NM`
   (vector 7, "device not available"). It is the enable bit, written per thread.
 
 `TS` is also the mechanism behind `LazyFP`, CVE-2018-3665. The vulnerability was not `TS` itself.
 It was using `TS` to defer the restore, so that one thread ran with another thread's `xmm`
 registers still in the file and the `#NM` as the only barrier. Speculative execution reads them
-before the fault is delivered. Here `TS` answers "has this thread ever wanted the unit", which is a
-performance question. The registers always hold either the running thread's values or
+before the CPU delivers the fault. Here `TS` answers "has this thread ever wanted the unit", which
+is a performance question. The registers always hold either the running thread's values or
 `FpState::INITIAL`, so there is nothing behind the trap to speculate at. That is why
 `fp::disable`'s caller owes the scrub. `clts` exists for exactly the lazy scheme, which this kernel
 does not use.
@@ -140,8 +140,8 @@ less than 512 bytes. That is worth doing with the `XCR0` work, not before it.
 The Kani proof `every_fp_edit_changes_exactly_the_bits_it_names` checks the `CR0` and `CR4` edits
 from every starting value. `CR0` carries `PG` and `WP` beside the four FP bits, and `CR4` carries
 `PAE`, `SMEP` and the paging controls beside the two SSE enables. On QEMU most wrong masks land on a
-bit that happens to be clear already, which is why the proof exists. `fp::init` is the only thing
-that sets `TS` before the first thread runs.
+bit that happens to be clear already, which is why the proof exists. `fp::initialize` is the only
+thing that sets `TS` before the first thread runs.
 
 ## CPUID and the three boot gates
 
@@ -157,15 +157,15 @@ went wrong.
 | Feature | Checked | Why there |
 |---|---|---|
 | NX | `boot.s`, before `EFER.NXE` is written | that write is itself the hazard: setting a reserved `EFER` bit on a part without NX is `#GP` with no IDT, which QEMU shows as a silent reset |
-| `syscall` | `isa::init`, just before `arch::init` programs the four MSRs | the console is up, so the refusal can be read |
-| invariant TSC | `isa::init`, before `timer::init_frequency` measures a rate | the same, and under a hypervisor it warns rather than refuses |
+| `syscall` | `isa::initialize`, just before `arch::initialize` programs the four MSRs | the console is up, so the refusal can be read |
+| invariant TSC | `isa::initialize`, before `timer::initialize_frequency` measures a rate | the same, and under a hypervisor it warns rather than refuses |
 
-`isa::init` re-checks NX because the assembly gate can only halt, and this one can say what is
+`isa::initialize` re-checks NX because the assembly gate can only halt, and this one can say what is
 wrong.
 
 The invariant TSC is a different kind of check. NX and `syscall` announce their own absence the
-moment the kernel uses them. The invariant TSC does not. `timer::init_frequency` measures the TSC's
-rate once, against the PIT. On a part without `CPUID.80000007H:EDX[8]` the rate moves with the
+moment the kernel uses them. The invariant TSC does not. `timer::initialize_frequency` measures the
+TSC's rate once, against the PIT. On a part without `CPUID.80000007H:EDX[8]` the rate moves with the
 core's frequency and idle state, so there is no single rate for that measurement to find. The
 error appears later, as time itself being wrong, and measuring harder cannot catch a wrong
 assumption.
@@ -188,7 +188,7 @@ with a different backend (`kernel/src/user/entropy_service.rs`). `isa::draw_rand
 times, the high end of Intel's "between 1 and 100" for an asynchronous caller, because it is a
 one-shot boot-tour probe rather than a service under load.
 
-The record is `None` until `isa::init` writes it, so a read before discovery panics with this
+The record is `None` until `isa::initialize` writes it, so a read before discovery panics with this
 file's name. A zeroed record would decode as a machine that should have been refused, which is the
 worst thing a missed initialization could look like.
 
@@ -204,7 +204,7 @@ reader, and it goes once Kani's rustc is past 2026-02.
 
 - Under a hypervisor the invariant-TSC gate warns and does not refuse, so a guest whose hypervisor
   promises no constant TSC rate boots and is trusted for timekeeping anyway. The gate believes the
-  hypervisor bit, so a hypervisor that hides itself is treated as silicon and refused.
+  hypervisor bit, so the gate treats a hypervisor that hides itself as silicon and refuses it.
 - The gates are checked on the boot CPU only. Secondaries replay the `EFER` write and the
   `syscall` MSRs without re-reading `CPUID`. On a hybrid part (Intel's P-cores and E-cores differ in
   leaf 7) a per-core check would earn its cost. `machine_discovery::riscv64` already solves the
@@ -215,26 +215,26 @@ reader, and it goes once Kani's rustc is past 2026-02.
 Milestone 915 (NMI, double fault and machine check run on their own stacks) gives each of those
 three vectors (2, 8 and 18) a stack per core, named by the TSS's Interrupt Stack Table. None of the three can trust the `rsp` it interrupted. An
 NMI ignores `cli`, arrives on every TLB shootdown, and can land in the two instructions
-`x86_syscall_entry` runs on the user's `rsp`. A double fault usually means a stack could not be
-pushed to. A machine check promises nothing. A gate with a nonzero IST field makes the CPU load
+`x86_syscall_entry` runs on the user's `rsp`. A double fault usually means the CPU could not push to
+a stack. A machine check promises nothing. A gate with a nonzero IST field makes the CPU load
 `rsp` from `TSS.ist[n - 1]` before it pushes anything, from either ring.
 
 Each stack is 16 KiB over a 4 KiB guard page that the fine map leaves unmapped, and the fine map's
 `verify` refuses a mapped guard. `TSS.ist` points `TOP_RESERVE` bytes below the top, and the top
 word holds the core's per-CPU pointer, so `isr_paranoid` finds the kernel's GS base at a fixed
 offset from its own `rsp` without trusting `gs` or the saved `CS`. `ist::install` runs once per core
-from `segments::init`. On the boot core it runs on the coarse boot map, which covers the region
-writable, and on a secondary on the fine map.
+from `segments::initialize`. On the boot core it runs on the coarse boot map, which covers the
+region writable, and on a secondary on the fine map.
 
 Each vector has its own stack, so one interrupting another corrupts nothing. A double fault inside a
 double fault is a triple fault, and a machine check inside a machine check is a shutdown; neither
-handler returns anyway. A second NMI is held off until an `iretq`, and any `iretq` counts, including
-one from an exception taken inside the NMI handler. So the NMI handler takes no exception that
-returns. It serves the shootdown (an `invlpg` or a `CR3` reload, and atomics) and touches nothing
-else. Linux's nested-NMI frame copy exists because its NMI handlers can fault, and this kernel's
-cannot, so it is not built. `exceptions::x86_paranoid_dispatch` checks the rule on every NMI and
-panics if the interrupted `rsp` is on an NMI stack. [ring-3.md](ring-3.md) has the windows this
-closes.
+handler returns anyway. The CPU holds off a second NMI until an `iretq`, and any `iretq` counts,
+including one from an exception taken inside the NMI handler. So the NMI handler takes no exception
+that returns. It serves the shootdown (an `invlpg` or a `CR3` reload, and atomics) and touches
+nothing else. Linux's nested-NMI frame copy exists because its NMI handlers can fault, and this
+kernel's cannot, so it is not built. `exceptions::x86_paranoid_dispatch` checks the rule on every
+NMI and panics if the interrupted `rsp` is on an NMI stack. [ring-3.md](ring-3.md) has the windows
+this closes.
 
 ### BUGS
 

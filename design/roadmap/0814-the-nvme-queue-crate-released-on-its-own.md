@@ -78,7 +78,7 @@ Since #2736 the crate carries five. The three handoff rows below moved with `Han
 | An accepted handoff keeps its doorbells inside the mapped page | `verification::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page` |
 | A transfer command is built only for a block the namespace has | `verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has` |
 
-Not proven: the `Cap` register decode beyond the doorbell stride the handoff harness bounds, the
+Not proven: the `Capabilities` register decode beyond the doorbell stride the handoff harness bounds, the
 status fields of `Completion::from_dwords`, and anything in time (reset, enable, timeouts), which
 lives in the driver's volatile shell. The last three rows proved nife's spawn handoff, not NVMe;
 they left with `Handoff` on 2026-10-26 (#2736).
@@ -174,7 +174,7 @@ names until the ratification pass, so this section keeps the links it carried.
   protocol walk-through is its section "How the protocol works, in one sitting".
 - `src/lib.rs`, `Command::flush`: the silent yes a flush must never give is the one milestone 55
   (Time Machine: SMB3 with Apple's extensions, and mDNS)'s verb exists to forbid.
-- `src/lib.rs`, `lba_format_shift`: the bench rehearsal belongs to milestone 261 (the NVMe driver
+- `src/lib.rs`, `logical_block_address_format_shift`: the bench rehearsal belongs to milestone 261 (the NVMe driver
   leaves the kernel, on the machine that can finally confine it). The format condition is the second
   night-of condition of its fatal risk 6, for the Micron drive.
 - `src/lib.rs`, the admin and data plane banner: the split is milestone 261's and §86 (whether an

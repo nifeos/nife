@@ -59,7 +59,7 @@ pub enum Error {
     /// An MDIO command did not complete.
     Mdio(mdio::Error),
     /// The PHY is not the YT8531 this driver's board settings are for.
-    UnknownPhy {
+    UnknownPhysicalLayerDevice {
         /// What it answered.
         id: u32,
     },
@@ -103,9 +103,9 @@ pub(crate) struct Report {
     /// The DMA's address width.
     pub dma_bits: u8,
     /// The PHY's identifier.
-    pub phy_id: u32,
+    pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub phy: Option<(u32, motorcomm::Source)>,
+    pub physical_layer_device: Option<(u32, motorcomm::Source)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
@@ -129,8 +129,8 @@ impl Report {
             syscon: (0, 0),
             version: 0,
             dma_bits: 0,
-            phy_id: 0,
-            phy: None,
+            physical_layer_device_id: 0,
+            physical_layer_device: None,
             mac: None,
             resets_us: [0; 2],
             coherence: None,
@@ -201,18 +201,18 @@ fn run(
     // Clocks, then resets: the SYS plan is all clocks, and the AON plan ends in both resets, so
     // running SYS first means every clock is up before either reset is released.
     // SAFETY: `memory::jh7110_ethernet` recorded these windows only on a tree that names a JH7110
-    // Ethernet port, and RISC-V's `mmu::init` mapped each device-typed (steps 6c and 6d), which is
-    // `bring_up`'s contract.
+    // Ethernet port, and RISC-V's `mmu::initialize` mapped each device-typed (steps 6c and 6d),
+    // which is `bring_up`'s contract.
     unsafe {
         r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.sys.base) as usize,
-            &crg::SYS,
-            crg::GMAC0_SYS_BRING_UP,
+            &crg::SYSTEM,
+            crg::GMAC0_SYSTEM_BRING_UP,
         );
         r.aon = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.aon.base) as usize,
-            &crg::AON,
-            crg::GMAC0_AON_BRING_UP,
+            &crg::ALWAYS_ON,
+            crg::GMAC0_ALWAYS_ON_BRING_UP,
         );
     }
     if !r.sys.has_clocks_running() || !r.aon.has_clocks_running() {
@@ -252,14 +252,17 @@ fn run(
     r.mac = Some(mac);
     let mac = mac.0;
 
-    let phy = e.port.phy_address;
-    r.phy_id = mdio::phy_id(&mut mdio::Bus(&mut w), phy).map_err(Error::Mdio)?;
-    if r.phy_id != motorcomm::YT8531_ID {
-        return Err(Error::UnknownPhy { id: r.phy_id });
+    let mdio_address = e.port.phy_address;
+    r.physical_layer_device_id =
+        mdio::phy_id(&mut mdio::Bus(&mut w), mdio_address).map_err(Error::Mdio)?;
+    if r.physical_layer_device_id != motorcomm::YT8531_ID {
+        return Err(Error::UnknownPhysicalLayerDevice {
+            id: r.physical_layer_device_id,
+        });
     }
-    let applied =
-        motorcomm::configure(&mut mdio::Bus(&mut w), phy, &e.port.phy).map_err(Error::Mdio)?;
-    r.phy = Some((applied.volt_mv, e.port.phy.source));
+    let applied = motorcomm::configure(&mut mdio::Bus(&mut w), mdio_address, &e.port.phy)
+        .map_err(Error::Mdio)?;
+    r.physical_layer_device = Some((applied.volt_mv, e.port.phy.source));
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
@@ -280,11 +283,11 @@ fn run(
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
     let mut bus = mdio::Bus(&mut w);
-    mdio::restart_autonegotiation(&mut bus, phy).map_err(Error::Mdio)?;
+    mdio::restart_autonegotiation(&mut bus, mdio_address).map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
-        if let Some(l) = motorcomm::link(&mut bus, phy).map_err(Error::Mdio)? {
+        if let Some(l) = motorcomm::link(&mut bus, mdio_address).map_err(Error::Mdio)? {
             break Some(l);
         }
         if crate::arch::timer::now() >= deadline {
@@ -296,7 +299,8 @@ fn run(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(&mut bus, phy, &e.port.phy, l.speed).map_err(Error::Mdio)?;
+        motorcomm::apply_speed(&mut bus, mdio_address, &e.port.phy, l.speed)
+            .map_err(Error::Mdio)?;
         controller::start(&mut w, l, false);
     }
     Ok((

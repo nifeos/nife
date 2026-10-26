@@ -25,7 +25,7 @@ measured `-machine virt,gic-version=3` on 2026-09-02, and the result is the most
 failure has: the kernel boots, brings four cores online, prints `timer: 100 Hz tick, interrupts ON`,
 and then takes zero interrupts and zero preemptions, with nothing faulting and nothing said.
 `memory::gic_regions()` matches `intc@` by name and takes the first two `reg` blocks, so a GICv3 node
-hands it the distributor and the redistributor, and `gic::init_this_cpu` writes `GICC_PMR` and
+hands it the distributor and the redistributor, and `gic::initialize_this_cpu` writes `GICC_PMR` and
 `GICC_CTLR` into registers that are not there.
 
 That was found by a person running a command by hand, not by a gate, and it is why the runner's

@@ -88,9 +88,9 @@ timings is called the median, and a test can only assert it on a clock it contro
 - Control words (14). Each of the four ops is refused for badge 0, and each is refused one past the
   argument or field it accepts. A valid word is not counted as a refusal. The refused counter is
   checked after every word, so an op that was half-applied would show.
-- `handle` and `ingest` (6). A message of another kind is counted each time. `ingest` was never
-  called by any test: a record handed straight to the store is held, numbered by the service and
-  read back, and `held` counts them.
+- `handle` and `ingest` (6). A message of another kind is counted each time. No test ever called
+  `ingest`: a record handed straight to the store is held, numbered by the service and read back,
+  and `held` counts them.
 - `Ring` (7). An entry that exactly fills the ring evicts nothing, and the next evicts exactly one
   (64-byte entries, 1,024 of them). The entry header is 11 bytes. A dropped line counts from the
   reader's cursor. A per-user read matches the whole name and not a prefix. A window that holds a

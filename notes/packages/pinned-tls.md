@@ -80,8 +80,8 @@ of the same pin:
 A client that refused everything would print both refusals. One that accepted everything would
 print the first three. Only a client that does what the pin says prints all five.
 
-The `cost` lines are milestone 501's measurement. They are printed rather than asserted, because a
-number that changes with the host running QEMU is not a pass or a fail.
+The `cost` lines are milestone 501's measurement. `pinned_tls_exerciser` prints them rather than
+asserting them, because a number that changes with the host running QEMU is not a pass or a fail.
 
 The host tests in `pinned_tls_client/tests/peer.rs` run the same `helpers/tls-peer` as a child
 process over its stdin and stdout, which is how slirp runs it per connection. So the peer a guest

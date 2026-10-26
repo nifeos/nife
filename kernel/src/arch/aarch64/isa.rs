@@ -13,7 +13,8 @@ use super::instructions;
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
 
-/// The record, written once by [`init`] and read by the boot print, `mmu::init` and the tests.
+/// The record, written once by [`initialize`] and read by the boot print, `mmu::initialize` and the
+/// tests.
 ///
 /// `None` until then, so a read before discovery panics naming this file rather than reporting a
 /// plausible all-zero machine.
@@ -43,9 +44,12 @@ static PSCI_ID_FROM_PROPERTY: AtomicU8 = AtomicU8::new(0);
 ///
 /// With no 4 KiB granule, or a reserved `ASIDBits` encoding. A machine with no usable `/psci`
 /// does not stop the boot: it runs on one core, and bring-up says so.
-pub fn init(dtb_ptr: usize) {
-    // SAFETY: the pointer firmware handed us, whose magic `memory::init` has already checked (it
-    // runs first and panics otherwise), named through the boot map's direct region.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize(dtb_ptr: usize) {
+    // SAFETY: the pointer firmware handed us, whose magic `memory::initialize` has already checked
+    // (it runs first and panics otherwise), named through the boot map's direct region.
     let dt = unsafe {
         device_tree_blob::DeviceTreeBlob::from_ptr(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
@@ -97,10 +101,10 @@ pub fn init(dtb_ptr: usize) {
     *ISA.lock() = Some(cpu);
 }
 
-/// The record. Panics if read before [`init`].
+/// The record. Panics if read before [`initialize`].
 pub fn get() -> Isa {
     ISA.lock()
-        .expect("arch::isa::get() before arch::isa::init()")
+        .expect("arch::isa::get() before arch::isa::initialize()")
 }
 
 /// **What a `CPU_ON` call needs**: the conduit to make it on and the function id to make it with,
@@ -181,8 +185,8 @@ mod tests {
 
     use super::*;
 
-    /// **Discovery ran, and the part identified itself.** Reaching this test means `init` did not
-    /// refuse; this is the other half, that the record holds a machine rather than a default.
+    /// **Discovery ran, and the part identified itself.** Reaching this test means `initialize` did
+    /// not refuse; this is the other half, that the record holds a machine rather than a default.
     #[test_case]
     fn the_part_identified_itself() {
         let cpu = get();
@@ -250,8 +254,8 @@ mod tests {
 
     /// **`TCR_EL1.IPS` holds what the part reported, and nothing else.**
     ///
-    /// A change that made `mmu::init` write a constant, or read another field, would leave the live
-    /// register disagreeing with the boot line that describes it.
+    /// A change that made `mmu::initialize` write a constant, or read another field, would leave
+    /// the live register disagreeing with the boot line that describes it.
     #[test_case]
     fn the_configured_physical_address_size_is_the_one_the_part_reported() {
         use super::super::{instructions, mmu};

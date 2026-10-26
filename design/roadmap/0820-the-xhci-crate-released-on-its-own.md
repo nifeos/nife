@@ -46,9 +46,9 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - Ruled 2026-10-25 (UTC), on #2720: nife's process plan and the bring-up report leave the crate.
   Pull request #2737 moved `Handoff`, `register_window`, `WindowRefusal`, `MAX_REGISTER_PAGES`,
   `WORK_PAGES`, `region_pages` and two harnesses into a module of the nife-internal crate
-  `driver_process_contract`, which holds each driver's process layout. The `report` module became
-  the nife crate `usb_keyboard_report` (provisional too). The crate's remaining names are
-  all ratified, in the `Name:` blocks of its source.
+  `driver_process_contract`, which holds each driver's process layout. The `report` module's
+  bring-up report sits beside the handoff in that module (ruled 2026-10-26 UTC). The crate's
+  remaining names are all ratified, in the `Name:` blocks of its source.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
@@ -75,7 +75,7 @@ for `driver_process_contract`, which does not publish, so the crate proves 1 of 
 
 The two new rows are this lane's reading of the hostile surface: the controller writes the event
 ring and the capability list. Not proven: event decoding (`Event::decode`), the context builders
-and port decoders (`context`, `port`). The report words left with `usb_keyboard_report`.
+and port decoders (`context`, `port`). The report words left with the handoff for `driver_process_contract`.
 
 ## Release, by #1806's rulings
 

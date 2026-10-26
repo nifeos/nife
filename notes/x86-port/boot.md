@@ -50,8 +50,8 @@ QEMU's PVH loader delivers. So there is one entry point and one handoff structur
 which is why the suite (the [main page](../x86-port.md)'s status) cannot regress under it.
 
 What that buys, beyond a bootable stick: four code paths on *this* side of the boundary had never
-executed, because a hypervisor never took them. `rsdp` arrives non-zero, so `find_rsdp`'s BIOS-area
-scan is skipped. The RSDP is revision 2 with an XSDT root rather than revision 0 with an RSDT.
+executed, because a hypervisor never took them. `rsdp` arrives non-zero, so `find_rsdp` skips its
+BIOS-area scan. The RSDP is revision 2 with an XSDT root rather than revision 0 with an RSDT.
 The MCFG's ECAM window is `0xe0000000` rather than the `0xb0000000` that `arch::mmu::PCI_ECAM_PHYS`
 also happens to say, so "read the table" is finally distinguishable from "used the constant". And
 the memory map is 118 regions rather than nine. See notes/x86-uefi-boot.md, which also carries
@@ -60,8 +60,8 @@ the bench procedure for the OptiPlex.
 ## The trampoline, and why this file is three times its RISC-V twin
 
 PVH (and Multiboot, and GRUB) enter in 32-bit protected mode. A 32-bit instruction stream cannot
-name a 64-bit address at all, so unlike the other two architectures the image cannot simply be
-linked high and use PC-relative addressing until the MMU comes on. The image has two worlds:
+name a 64-bit address at all, so unlike the other two architectures the image cannot simply have a
+high link address and use PC-relative addressing until the MMU comes on. The image has two worlds:
 
 1. `.boot`, linked at its physical address (VA == PA, low), holding the PVH note, the 32-bit
    trampoline, the boot GDT and the boot page tables.
@@ -70,7 +70,7 @@ linked high and use PC-relative addressing until the MMU comes on. The image has
 
 The trampoline zeroes the boot page tables (they are `NOLOAD`, so nothing else has), fills them,
 and turns on PAE then CR3 then EFER.LME then CR0.PG in that exact order. It then far-jumps through a code
-descriptor whose `L` bit is set, and only then jumps to the high alias of itself.
+descriptor with its `L` bit set, and only then jumps to the high alias of itself.
 
 `KERNEL_VA_BASE = 0xffffffff80000000` is not a free choice. `x86_64-unknown-none` has
 `code-model: kernel`, which promises LLVM that every symbol is in the top 2 GiB of the address space
@@ -78,15 +78,15 @@ so it may use the sign-extended 32-bit relocations that make kernel code compact
 breaks every relocation in the image, silently, in a way that looks like random corruption.
 
 The boot map is 4 GiB identity-mapped with 2 MiB pages, the first gigabyte aliased at
-`KERNEL_VA_BASE` (where the image is linked), and the same 4 GiB aliased a third time at
+`KERNEL_VA_BASE` (the image's link address), and the same 4 GiB aliased a third time at
 `DIRECT_MAP_BASE` (where `phys_to_virt` points; see "One base cannot do both jobs" in [what-does-not-fit.md](what-does-not-fit.md)). 4 GiB rather than the 1 GiB
 the image needs, because everything x86 talks to early is above 1 GiB and below 4: the local APIC at
-`0xfee00000`, the IO APIC at `0xfec00000`, and q35's PCIe ECAM window at `0xb0000000`. The identity
-map is dropped by `mmu::init`; the other two survive it, and the direct-map alias costs eight bytes
-because it points at the page directories the identity map already built.
+`0xfee00000`, the IO APIC at `0xfec00000`, and q35's PCIe ECAM window at `0xb0000000`.
+`mmu::initialize` drops the identity map; the other two survive it, and the direct-map alias costs
+eight bytes because it points at the page directories the identity map already built.
 
-When it fails, it fails silently. A wrong page table means the instruction after `mov cr0, eax`
-is fetched through a broken mapping, the CPU takes a page fault with no IDT, escalates to a double
+When it fails, it fails silently. A wrong page table means the CPU fetches the instruction after
+`mov cr0, eax` through a broken mapping, takes a page fault with no IDT, escalates to a double
 fault with no IDT, and triple-faults. On QEMU that is a machine reset with no output. The
 diagnostic is `-d int,cpu_reset -no-reboot`, which prints the full register state at each
 escalation.
@@ -142,10 +142,10 @@ The two `user thread ... killed` blocks are the *faulting* child of each round d
 trap path on its way to `sched::fault`. They are the demo working, not a failure; the tour's
 `userspace` lines are what assert on them.
 
-**The lines after the `mmu` one are the proof, not the `mmu` line itself.** They are printed after
+**The lines after the `mmu` one are the proof, not the `mmu` line itself.** They print after
 the `mov cr3`, through a console the new tables do not describe (COM1 is a port) but from code and a
 stack they do.
 
 The frame numbers and the `rdseed` word change from boot to boot; everything else is stable.
 
-The vendor string is whatever `-cpu` was asked for; `max` on this host reports `AuthenticAMD`.
+The vendor string is whatever `-cpu` requests; `max` on this host reports `AuthenticAMD`.

@@ -942,7 +942,7 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
 
 /// `from_ptr` has to believe the header's `totalsize` before it can check anything, and until the
 /// 2026-09-24 security audit it believed any value: a firmware blob claiming 4 GiB became a 4 GiB
-/// slice and a data abort in `memory::init`. The blob here sits inside a buffer large enough that
+/// slice and a data abort in `memory::initialize`. The blob here sits inside a buffer large enough that
 /// the slice `from_ptr` would build is real memory, so the test is sound whichever way it goes,
 /// and the cap is what decides it.
 #[test]

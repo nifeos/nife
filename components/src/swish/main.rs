@@ -98,6 +98,6 @@ use wiring::*;
 /// `heap.rs`.
 mod heap;
 
-use heap::heap_init;
+use heap::initialize_heap;
 
 user_mode_runtime::panic_handler!();

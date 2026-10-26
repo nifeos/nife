@@ -58,10 +58,10 @@ has always been checked. So a release build refuses to run on a map that lost th
 
 ## What it does not cover
 
-A secondary runs on the coarse boot map from `secondary_boot` until `mmu::init_secondary`, and on
-that map the guard page is inside a 2 MiB block and is mapped. That is a handful of instructions of
-Rust, and the boot stack's own guard has exactly the same window. It is noted here rather than fixed,
-because closing it means fine-grained tables before the MMU is on.
+A secondary runs on the coarse boot map from `secondary_boot` until `mmu::initialize_secondary`, and
+on that map the guard page is inside a 2 MiB block and is mapped. That is a handful of instructions
+of Rust, and the boot stack's own guard has exactly the same window. It is noted here rather than
+fixed, because closing it means fine-grained tables before the MMU is on.
 
 Sizing was not the finding, and it is not taken here. The secondaries run at 12% of 64 KiB. The move
 does make shrinking cheap in a way it was not before. The size is one constant in `smp.rs`, slot

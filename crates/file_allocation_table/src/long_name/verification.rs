@@ -27,7 +27,7 @@ fn the_checksum_is_the_specifications_loop() {
     assert_eq!(checksum(&short), sum);
 }
 
-/// **Every long name's run is well formed, for every name up to [`MAX_UNITS`] units.**
+/// **Every long name's run is well formed, for every name up to [`MAXIMUM_CODE_UNITS`] units.**
 ///
 /// For any units and any length, the run has `ceil(len / 13)` entries. The first on disk carries
 /// the highest ordinal with [`LAST_LONG_ENTRY`], each later one the next ordinal down to 1, and
@@ -39,7 +39,7 @@ fn the_checksum_is_the_specifications_loop() {
 #[kani::unwind(21)]
 fn every_long_name_run_is_well_formed() {
     let len: usize = kani::any();
-    kani::assume((1..=MAX_UNITS).contains(&len));
+    kani::assume((1..=MAXIMUM_CODE_UNITS).contains(&len));
     let name = LongName {
         units: kani::any(),
         len,
@@ -91,7 +91,7 @@ const ALIAS_UNITS: usize = 14;
 fn every_alias_is_a_legal_short_name() {
     let len: usize = kani::any();
     kani::assume((1..=ALIAS_UNITS).contains(&len));
-    let mut units = [0u16; MAX_UNITS];
+    let mut units = [0u16; MAXIMUM_CODE_UNITS];
     let chosen: [u16; ALIAS_UNITS] = kani::any();
     units[..ALIAS_UNITS].copy_from_slice(&chosen);
     let name = LongName { units, len };

@@ -3,14 +3,14 @@
 //! touches. A kernel finds and confines the register file and DMA memory and a
 //! user-space driver drives them; this is the arithmetic between.
 //!
-//! [`regs`] and [`Capabilities`] name the registers; [`dma`] is the DMA region's layout; a
+//! [`registers`] and [`Capabilities`] name the registers; [`direct_memory_access`] is the DMA region's layout; a
 //! Transfer Request Block (TRB, [`TransferRequestBlock`]), [`Event`], [`ProducerRing`] and
 //! [`EventRing`] are the ring discipline (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and
 //! endpoint contexts; [`port`] is the port status register.
 
 //! # BUGS
 //!
-//! - One page size: [`dma`] assumes 4 KiB (`PAGESIZE` bit 0), and the driver refuses otherwise.
+//! - One page size: [`direct_memory_access`] assumes 4 KiB (`PAGESIZE` bit 0), and the driver refuses otherwise.
 //! - No streams, isochronous or bulk: the TRBs a keyboard needs and nothing more.
 //! - Hubs are not modelled (route string 0), so a device behind a hub cannot be addressed.
 //!
@@ -18,11 +18,11 @@
 //! published. Too long for a program name, so the program is `usb_keyboard_driver`.
 
 pub mod context;
-pub mod dma;
+pub mod direct_memory_access;
 pub mod port;
-pub mod regs;
+pub mod registers;
 
-pub use regs::Capabilities;
+pub use registers::Capabilities;
 
 /// The page size every layout here is in.
 ///

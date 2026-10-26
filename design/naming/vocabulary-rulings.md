@@ -266,7 +266,8 @@ Closed records (`BUILT` roadmap blocks, `design/decisions/`, dated audit reports
 used, so a grep for `recv` finds them.
 
 The `operation` ruling of 2026-10-04, the same rule applied to `op`, is in
-[spelled-out-rulings.md](spelled-out-rulings.md).
+[spelled-out-rulings.md](spelled-out-rulings.md), with the ruling of 2026-10-26 (UTC) that spells
+out `rx` and `tx`.
 
 ## We abbreviate on the command line
 

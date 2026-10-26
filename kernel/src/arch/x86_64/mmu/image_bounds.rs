@@ -27,9 +27,9 @@ macro_rules! linker_symbol {
 
 linker_symbol!(
     /// The boot stack's guard page: one page of address space beneath the stack, and a **hole** in
-    /// the map [`init`](super::init) builds. `verify` asserts it is one; before `init` the boot map
-    /// covers it like everything else, which is worth knowing while reading a stack-overflow report
-    /// from the first few steps of the boot tour.
+    /// the map [`initialize`](super::initialize) builds. `verify` asserts it is one; before
+    /// `initialize` the boot map covers it like everything else, which is worth knowing while
+    /// reading a stack-overflow report from the first few steps of the boot tour.
     stack_guard,
     __stack_guard
 );

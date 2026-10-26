@@ -134,12 +134,12 @@ does is in design/roadmap/0227-gicv3-driver.md.
 
 ### Which GIC, and where its lines go
 
-`irq::init` decides the version once, on the boot core, from the device tree's `compatible`. It then
-asks the hardware whether the tree is right (`Gic::confirm`, on the distributor's revision for a
-GICv3 and the CPU interface's for a GICv2) before any configuration write, and a mismatch panics
-naming both sides. A GICv3 driven as a GICv2 boots, prints `interrupts ON` and takes nothing; the
-check turns that into a boot that stops and says why. The version is one byte, written before any
-interrupt is unmasked, so the IRQ path reads it relaxed.
+`irq::initialize` decides the version once, on the boot core, from the device tree's `compatible`.
+It then asks the hardware whether the tree is right (`Gic::confirm`, on the distributor's revision
+for a GICv3 and the CPU interface's for a GICv2) before any configuration write, and a mismatch
+panics naming both sides. A GICv3 driven as a GICv2 boots, prints `interrupts ON` and takes nothing;
+the check turns that into a boot that stops and says why. The version is one byte, written before
+any interrupt is unmasked, so the IRQ path reads it relaxed.
 
 Device lines (SPIs) are spread over the online cores round robin, and each line's target is
 assigned once and reused. The IRQ handler masks a routed line when it fires and the driver's ACK
@@ -210,7 +210,7 @@ registers and parses no firmware. `machine_discovery::aarch64` decodes them, hos
 words real parts report. The boot refuses a part with no 4 KiB granule or a reserved `ASIDBits`
 encoding: both are unreachable on a conforming part and silent if unchecked. The 4 KiB granule the
 page tables use, the ASID width `crates/address_space_identifier` relies on, and the `PARange`
-`mmu::init` writes to `TCR_EL1.IPS` all come from that one record.
+`mmu::initialize` writes to `TCR_EL1.IPS` all come from that one record.
 
 One aarch64 fact is in no ID register and could not be: the PSCI conduit, which depends on what
-runs above the kernel. That is the one thing `isa::init` reads from the device tree.
+runs above the kernel. That is the one thing `isa::initialize` reads from the device tree.

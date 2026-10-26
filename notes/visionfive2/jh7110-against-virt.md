@@ -98,7 +98,7 @@ is still a bench question, because QEMU emulates none of this silicon.
    write while busy and latches a "busy" interrupt. So `init` drains the transmitter (LSR.TEMT,
    bounded) before touching LCR.
 4. The shape is adopted before the first `println!`. `kernel_main` calls
-   `console::configure_from_dtb(dtb)` immediately after `console::init`, so no output is ever
+   `console::configure_from_dtb(dtb)` immediately after `console::initialize`, so no output is ever
    produced with a stale stride. The node is matched by its name, `serial@10000000`, pinned beside
    the equally hardcoded base address. The jh7110 fixture test
    (crates/machine_discovery/tests/riscv64_jh7110.rs) is the witness for both.
@@ -119,8 +119,8 @@ layout is context 0 = hart 0 M, then for U74 hart h in 1..4, context `2h - 1` = 
 
 Built 2026-08-14: the mapping comes from the DTB now. `isa::plic::PlicContexts` decodes
 `interrupts-extended`. Entry k is context k, interrupt 9 marks an S context, and phandles resolve to
-harts through each cpu's `riscv,cpu-intc` child. `arch::irq::init_contexts` records it at boot. The
-`2h + 1` formula survives only as the fallback for a tree that does not state the layout.
+harts through each cpu's `riscv,cpu-intc` child. `arch::irq::initialize_contexts` records it at
+boot. The `2h + 1` formula survives only as the fallback for a tree that does not state the layout.
 
 The PLIC node itself is found by its `sifive,plic-1.0.0` compatible rather than by name. The JH7110
 spells the node `interrupt-controller@c000000` where QEMU says `plic@c000000`, and the old `plic@`
@@ -146,11 +146,11 @@ is not the `pci-host-ecam-generic` device QEMU's `virt` boards expose, and it ha
 Driving it is its own milestone, not a bench fix.
 
 Since 2026-08-14 the kernel's PCIe windows come from the device tree. Those are the ECAM config
-space and the 32-bit memory window BARs are placed in. `memory::init` reads the generic-ECAM node's
-`reg` and `ranges`. `mmu::map_everything` maps the windows only when the node exists. Every probe in
-kernel/src/pci.rs reports nobody home when it does not (notes/pcie.md). On this board there is no
-such node, so nothing PCIe is mapped or touched. That is the honest statement of where the PLDA
-controller stands.
+space and the 32-bit memory window BARs are placed in. `memory::initialize` reads the generic-ECAM
+node's `reg` and `ranges`. `mmu::map_everything` maps the windows only when the node exists. Every
+probe in kernel/src/pci.rs reports nobody home when it does not (notes/pcie.md). On this board there
+is no such node, so nothing PCIe is mapped or touched. That is the honest statement of where the
+PLDA controller stands.
 
 Before that the windows were QEMU constants, and the first bench boot paid for it. The BAR constant
 0x4000_0000 is this board's DRAM base (see the DRAM table above). So `map_everything` tried to lay a

@@ -375,7 +375,7 @@ const REBOOT_GRACE_SECONDS: u64 = 5;
 /// notes/soak/rebooting-soak.md.
 #[cfg(feature = "reboot_soak_test")]
 fn arm_reboot() {
-    crate::console::discard_rx();
+    crate::console::discard_waiting_bytes();
     // What ended the previous boot, from the PMIC's side, which the console cannot show.
     #[cfg(target_arch = "riscv64")]
     crate::reboot::pmic_report(REBOOT_MARKER);
@@ -513,7 +513,7 @@ fn arm_watchdog() -> Option<Watchdog> {
 #[cfg(soak_watchdog)]
 fn discard_stale_bytes() {
     #[cfg(not(feature = "reboot_soak_test"))]
-    crate::console::discard_rx();
+    crate::console::discard_waiting_bytes();
 }
 
 /// The watchdog each architecture's soak arms.
@@ -566,8 +566,8 @@ fn arm_watchdog() -> Option<Watchdog> {
         return None;
     }
     let load = jh7110_watchdog::load_for(WATCHDOG_RESET_AFTER_SECONDS, CORE_CLOCK_HZ)?;
-    // SAFETY: `memory::init` recorded this window only for a tree that names the watchdog, and
-    // `mmu::map_everything` mapped its first page device-typed in the direct map.
+    // SAFETY: `memory::initialize` recorded this window only for a tree that names the watchdog,
+    // and `mmu::map_everything` mapped its first page device-typed in the direct map.
     // `start_watchdog_clocks` has just read both clocks running and both resets released.
     let mut dog = unsafe { Watchdog::new(arch::mmu::phys_to_virt(found.base) as usize) };
     dog.arm(load);
@@ -625,13 +625,13 @@ fn start_watchdog_clocks(
         );
         return false;
     }
-    // SAFETY: `memory::init` recorded this window only for a tree that names the watchdog, and
-    // `mmu::map_everything` mapped it device-typed in the direct map. The plan's identifiers were
-    // bounded by `SYS` when it was built, and `bring_up` bounds them again.
+    // SAFETY: `memory::initialize` recorded this window only for a tree that names the watchdog,
+    // and `mmu::map_everything` mapped it device-typed in the direct map. The plan's identifiers
+    // were bounded by `SYSTEM` when it was built, and `bring_up` bounds them again.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             arch::mmu::phys_to_virt(sys.base) as usize,
-            &jh7110_clock_and_reset::SYS,
+            &jh7110_clock_and_reset::SYSTEM,
             plan.plan(),
         )
     };

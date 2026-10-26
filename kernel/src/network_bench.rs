@@ -84,7 +84,10 @@ fn measure() -> &'static str {
         m[4],
         m[5],
     );
-    println!("network-bench: phy       : id {:#010x}", w.phy_id);
+    println!(
+        "network-bench: phy       : id {:#010x}",
+        w.physical_layer_device_id
+    );
     println!(
         "network-bench: preflight dmar scope : {}",
         if w.confined_by_iommu { "PASS" } else { "FAIL" }
@@ -261,7 +264,7 @@ mod radon {
             },
         );
         let words = |c: &jh7110_clock_and_reset::BringUpReport| {
-            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAX_RECORDED_CLOCKS];
+            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAXIMUM_RECORDED_CLOCKS];
             for (k, w) in s.iter_mut().enumerate().take(c.clocks) {
                 *w = (c.clock_before[k], c.clock_after[k]);
             }
@@ -301,12 +304,15 @@ mod radon {
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",
             r.version, r.dma_bits
         );
-        match r.phy {
+        match r.physical_layer_device {
             Some((mv, source)) => println!(
                 "network-bench: phy       : id {:#010x}, {mv} mV I/O, settings from {source:?}",
-                r.phy_id
+                r.physical_layer_device_id
             ),
-            None => println!("network-bench: phy       : id {:#010x}", r.phy_id),
+            None => println!(
+                "network-bench: phy       : id {:#010x}",
+                r.physical_layer_device_id
+            ),
         }
         if let Some((m, source)) = r.mac {
             println!(

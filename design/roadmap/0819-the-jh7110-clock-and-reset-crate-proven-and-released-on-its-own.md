@@ -40,7 +40,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   "publish with the DesignWare pair" also predates the one-milestone-per-crate ruling.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is codebase rule 2
   (a driver gets what it needs passed in), and the crate now depends on nothing. It holds each
-  tree's spellings (`STG_WINDOW`, `AON_WINDOW`, `SYS_WINDOW`, `PMIC_COMPATIBLES`) and decoders over
+  tree's spellings (`SYSTEM_TOP_GROUP_WINDOW`, `ALWAYS_ON_WINDOW`, `SYSTEM_WINDOW`,
+  `POWER_MANAGEMENT_CHIP_COMPATIBLES`) and decoders over
   raw property values (`WindowLocation::from_regions`, `PmicBus::from_nodes`, `DevicePlan::from_specifiers`,
   which take a phandle lookup from the caller). The walks (`discover`, `discover_aon`,
   `discover_sys`, `pmic_bus`) are `machine_discovery::jh7110::clock_and_reset`'s, with their
@@ -176,12 +177,12 @@ names until the ratification pass, so this section keeps the links it carried.
 
 - The crate doc: the volatile shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`, and the
   story is `notes/jh7110-clock-and-reset.md`.
-- `Step::SelectParent`, `AON`, `GMAC0_SYS_BRING_UP`, `GMAC0_AON_BRING_UP`, `SYSCLK_SDIO0_AHB`,
+- `Step::SelectParent`, `AON`, `GMAC0_SYSTEM_BRING_UP`, `GMAC0_ALWAYS_ON_BRING_UP`, `SYSCLK_SDIO0_AHB`,
   `SDIO_BRING_UP` and `BringUpReport::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
   (the board's own peripherals: network and storage on real silicon).
-- `STG_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
+- `SYSTEM_TOP_GROUP_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
   thing here, and what stops it".
-- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `I2cClockWords`, `COMPATIBLE_SYSCRG` and the direct reset
+- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `I2cClockWords`, `COMPATIBLE_SYSTEM_CRG` and the direct reset
   write's banner: milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write, and the kernel
   sets that write up). Its option B is the direct write, and its 2026-10-10 bench put radon in its
   outcome table's fourth row.

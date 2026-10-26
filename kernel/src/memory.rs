@@ -39,18 +39,22 @@ const MAX_REGIONS: usize = 16;
 ///
 /// One step on all three architectures, read from whatever this machine describes itself with: a
 /// device tree on aarch64 and riscv64, the PVH handoff and ACPI on `x86_64`
-/// (`arch::discovery::init`, milestone 890 (riscv64 and `x86_64` join the shared boot path)). Both
-/// front ends end in [`bring_up_page_frames`], the half that does not care where RAM came from.
-pub fn init() {
+/// (`arch::discovery::initialize`, milestone 890 (riscv64 and `x86_64` join the shared boot path)).
+/// Both front ends end in [`bring_up_page_frames`], the half that does not care where RAM came
+/// from.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     #[cfg(target_arch = "x86_64")]
-    crate::arch::discovery::init();
+    crate::arch::discovery::initialize();
     #[cfg(not(target_arch = "x86_64"))]
-    init_from_device_tree();
+    initialize_from_device_tree();
 }
 
-/// [`init`]'s device-tree front end.
+/// [`initialize`]'s device-tree front end.
 #[cfg(not(target_arch = "x86_64"))]
-fn init_from_device_tree() {
+fn initialize_from_device_tree() {
     // The blob's own physical address, which is claimed as forbidden below so the frame allocator
     // never hands out the tree it was built from.
     let dtb_phys = crate::DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
@@ -123,7 +127,7 @@ fn init_from_device_tree() {
 fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // aarch64's GIC, found by its binding (`machine_discovery::gic`), not by node name: a GICv3's
     // `reg[1]` is the redistributor array, not a CPU interface. An unknown binding is refused by
-    // name, and `arch::irq::init` then checks the hardware agrees with the tree.
+    // name, and `arch::irq::initialize` then checks the hardware agrees with the tree.
     #[cfg(target_arch = "aarch64")]
     match machine_discovery::gic::discover(dtb) {
         Ok(found) => *GIC_REGIONS.lock() = found,
@@ -171,7 +175,8 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     record_jh7110_watchdog(dtb);
 
     // The SMMUv3 (milestone 16b), present only when the machine was started with
-    // `iommu=smmuv3`. Absent, the kernel runs exactly as before; present, iommu::init drives it.
+    // `iommu=smmuv3`. Absent, the kernel runs exactly as before; present, iommu::initialize drives
+    // it.
     {
         let mut smmu = [Region { start: 0, size: 0 }; 1];
         if let Ok(n) = dtb.node_reg(b"smmuv3@", &mut smmu)
@@ -245,10 +250,10 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 /// **Record the JH7110's clock-and-reset windows and the PMIC bus's plan** (milestones 220 and
 /// 592), under the guard the comment above the call describes.
 ///
-/// Its own frame, and `inline(never)` so it stays one: [`init_from_device_tree`] is already close
-/// to the 4,096-byte guard page in an unoptimised build, and the two `Found`s and the `PmicBus`
-/// here pushed it over (`script/stack-frame-check`, 4,352 bytes on aarch64, 2026-09-25). A call
-/// keeps these locals off its frame instead of raising any ceiling.
+/// Its own frame, and `inline(never)` so it stays one: [`initialize_from_device_tree`] is already
+/// close to the 4,096-byte guard page in an unoptimised build, and the two `Found`s and the
+/// `PowerManagementChipBus` here pushed it over (`script/stack-frame-check`, 4,352 bytes on
+/// aarch64, 2026-09-25). A call keeps these locals off its frame instead of raising any ceiling.
 #[inline(never)]
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
@@ -317,7 +322,7 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 }
 
 /// **Bring the frame allocator up over a described machine**, given RAM and everything already
-/// spoken for: the half of [`init`] that does not care where the description came from.
+/// spoken for: the half of [`initialize`] that does not care where the description came from.
 ///
 /// `ram` is all real, allocatable memory; `forbidden` is everything something else already owns,
 /// and **must include the kernel image**. Panics if no RAM run can hold the frame bitmap. See
@@ -526,7 +531,9 @@ fn publish_counts(allocator: &PageFrameAllocator<'_>) {
 
 pub fn free(frame: PageFrame) {
     let mut guard = ALLOCATOR.lock();
-    let allocator = guard.as_mut().expect("freeing a frame before memory::init");
+    let allocator = guard
+        .as_mut()
+        .expect("freeing a frame before memory::initialize");
     allocator.free(frame);
     publish_counts(allocator);
 }
@@ -544,9 +551,10 @@ pub fn free_page_frames() -> usize {
 }
 
 /// **Is the frame at `pa` allocated right now?** `None` when the allocator does not manage that
-/// address at all (outside RAM, or before `memory::init`), which is also the answer that says the
-/// direct map may not cover it. For a kill report walking tables that may have been written over: a
-/// table the space still links whose frame reads as free was handed back while still in use.
+/// address at all (outside RAM, or before `memory::initialize`), which is also the answer that says
+/// the direct map may not cover it. For a kill report walking tables that may have been written
+/// over: a table the space still links whose frame reads as free was handed back while still in
+/// use.
 ///
 /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))] // the x86_64 kill report is the caller
@@ -597,8 +605,8 @@ pub fn is_page_frame_used(frame: PageFrame) -> Option<bool> {
 
 /// **The interrupt controller, as the device tree describes it**: which GIC version its binding
 /// names, and its register blocks in the roles that version gives them, all **physical**. Stashed
-/// at `init` because that is the only moment we have the device tree parsed. `None` on a machine
-/// whose tree names no GIC, and always on RISC-V and `x86_64`. The version travels with the
+/// at `initialize` because that is the only moment we have the device tree parsed. `None` on a
+/// machine whose tree names no GIC, and always on RISC-V and `x86_64`. The version travels with the
 /// addresses because a GICv3's blocks are not a GICv2's.
 #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))] // riscv has a PLIC, x86 an APIC
 pub(crate) fn gic_regions() -> Option<machine_discovery::gic::Gic> {
@@ -606,7 +614,7 @@ pub(crate) fn gic_regions() -> Option<machine_discovery::gic::Gic> {
 }
 
 /// The PLIC's register block (start, size), both **physical**, from the device tree. `None` on
-/// aarch64 or before `init`. RISC-V's `mmu::init` maps it device-typed, like the GIC.
+/// aarch64 or before `initialize`. RISC-V's `mmu::initialize` maps it device-typed, like the GIC.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // the PLIC is riscv's controller; x86 answers with its APIC
 pub(crate) fn plic_region() -> Option<(u64, u64)> {
     *PLIC_REGION.lock()
@@ -615,7 +623,7 @@ pub(crate) fn plic_region() -> Option<(u64, u64)> {
 /// **The JH7110's SD/MMC controllers** (milestone 53 (the board's own peripherals: network and
 /// storage on real silicon)): slot 0 (the eMMC socket) and slot 1 (the microSD slot), each `None`
 /// when the tree does not describe it, and the whole answer `None` on every machine that is not a
-/// JH7110, which is every machine CI boots. RISC-V's `mmu::init` maps the first page of each.
+/// JH7110, which is every machine CI boots. RISC-V's `mmu::initialize` maps the first page of each.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_storage() -> Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]> {
     *JH7110_STORAGE.lock()
@@ -623,7 +631,7 @@ pub(crate) fn jh7110_storage() -> Option<[Option<designware_mobile_storage::jh71
 
 /// The JH7110's STG clock-and-reset window (milestone 220): where it is, and **whether the device
 /// tree said so or the corroborated constant did**. `None` on every machine that is not a
-/// `StarFive` JH7110, which is every machine this repository's CI boots. RISC-V's `mmu::init`
+/// `StarFive` JH7110, which is every machine this repository's CI boots. RISC-V's `mmu::initialize`
 /// maps it device-typed, like the PLIC.
 ///
 /// The whole `Found` rather than a `(start, size)` pair, because `from_tree` is the field a bench
@@ -637,7 +645,7 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowL
 
 /// **The JH7110's SYS clock-and-reset window, and the plan that brings the PMIC's I2C bus back
 /// up** (milestone 592, provisional). `None` on every machine that is not a JH7110, under exactly
-/// [`jh7110_clock_and_reset()`]'s guard. RISC-V's `mmu::init` maps the window device-typed.
+/// [`jh7110_clock_and_reset()`]'s guard. RISC-V's `mmu::initialize` maps the window device-typed.
 ///
 /// The only caller is the rebooting soak, just before SBI SRST: on radon OpenSBI performs every
 /// reset as an I2C write to the AXP15060, and U-Boot hands over with that bus's clock gated and its
@@ -645,14 +653,14 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowL
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_pmic_bus() -> Option<(
     jh7110_clock_and_reset::WindowLocation,
-    jh7110_clock_and_reset::PmicBus,
+    jh7110_clock_and_reset::PowerManagementChipBus,
 )> {
     *JH7110_PMIC_BUS.lock()
 }
 
 /// **The JH7110's first Ethernet port and the windows its bring-up needs** (milestone 53), or
 /// `None` on every machine whose tree names no such port, which is every machine CI boots.
-/// RISC-V's `mmu::init` maps all four windows device-typed.
+/// RISC-V's `mmu::initialize` maps all four windows device-typed.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
     *JH7110_ETHERNET.lock()
@@ -661,7 +669,8 @@ pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
 /// **The SYS clock-and-reset window, if anything on this machine needs it**: the PMIC bus's
 /// (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), the Ethernet port's
 /// (milestone 53) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
-/// they are the same window, and `mmu::init` maps it once through this rather than once per user.
+/// they are the same window, and `mmu::initialize` maps it once through this rather than once per
+/// user.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::WindowLocation> {
     let sys = jh7110_pmic_bus()
@@ -674,7 +683,7 @@ pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::WindowLocati
 
 /// **The JH7110's watchdog and the SYS window that holds its clocks and resets** (milestone 593,
 /// provisional), or `None` on every machine whose tree names no such watchdog, which is every
-/// machine CI boots. RISC-V's `mmu::init` maps both device-typed.
+/// machine CI boots. RISC-V's `mmu::initialize` maps both device-typed.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
 pub(crate) fn jh7110_watchdog() -> Option<(
     jh7110_watchdog::Discovered,
@@ -699,7 +708,7 @@ pub(crate) struct Jh7110Ethernet {
 
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,
 /// all **physical**. ECAM is the config window the bridge's `reg` names; `mem32` is the 32-bit
-/// non-prefetchable memory window BARs are placed in. `None` before `init`, and on a machine
+/// non-prefetchable memory window BARs are placed in. `None` before `initialize`, and on a machine
 /// whose tree describes no `pci-host-ecam-generic` bridge, which is the JH7110's honest state:
 /// its own PCIe controller is a different device, undriven until its own milestone. Absence
 /// degrades the way an absent virtio device does: `mmu::map_everything` maps no window and every
@@ -709,13 +718,13 @@ pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
 }
 
 /// **Record the PCIe host bridge's windows directly**, for a machine with no device tree to read
-/// them from. `x86_64`'s counterpart of `init`'s `pci-host-ecam-generic` node parse: ACPI's MCFG
-/// names the ECAM window, and there is no `_CRS` reader for the BAR window (that needs an AML
+/// them from. `x86_64`'s counterpart of `initialize`'s `pci-host-ecam-generic` node parse: ACPI's
+/// MCFG names the ECAM window, and there is no `_CRS` reader for the BAR window (that needs an AML
 /// interpreter, which this kernel does not have), so `main.rs` supplies both from what it already
 /// knows and fills the same static every consumer already reads. See notes/x86-port/acpi-and-pci.md.
 ///
 /// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from
-/// their device tree inside `init` instead.
+/// their device tree inside `initialize` instead.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) fn record_pci_regions(ecam: (u64, u64), mem32: (u64, u64)) {
     *PCI_REGIONS.lock() = Some((ecam, mem32));
@@ -742,10 +751,10 @@ pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAX
 
 /// **Record one VT-d unit's register block**, for a machine with no device tree to read it from.
 /// `x86_64`'s counterpart of [`record_pci_regions`]: ACPI's DMAR names the DRHDs, and `main.rs`
-/// calls this once per unit before `arch::mmu::init()` runs, so every window is recorded before
-/// `mmu::map_everything` decides what to map. Must run before `mmu::init`; calling it after would
-/// record a fact the fine map can no longer act on. A unit past the array is a panic, not a
-/// silent drop: the DMAR decoder holds no more units than this array does.
+/// calls this once per unit before `arch::mmu::initialize()` runs, so every window is recorded
+/// before `mmu::map_everything` decides what to map. Must run before `mmu::initialize`; calling it
+/// after would record a fact the fine map can no longer act on. A unit past the array is a panic,
+/// not a silent drop: the DMAR decoder holds no more units than this array does.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) fn record_vtd_region(base: u64, size: u64) {
     let mut g = VTD_REGIONS.lock();
@@ -764,7 +773,7 @@ pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::
     *AMD_VI_REGIONS.lock()
 }
 
-/// **Record one AMD-Vi unit's register block.** Must run before `mmu::init`, as
+/// **Record one AMD-Vi unit's register block.** Must run before `mmu::initialize`, as
 /// [`record_vtd_region`] must, and a unit past the array is a panic for the same reason. Name:
 /// provisional (lane `amd-vi`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
@@ -792,7 +801,7 @@ pub(crate) fn framebuffer() -> Option<(u64, u64)> {
 
 /// **Record the screen's aperture**, from the boot command line (`machine_discovery::framebuffer`).
 ///
-/// Must run before `mmu::init`, exactly as [`record_vtd_region`] must, and for the identical
+/// Must run before `mmu::initialize`, exactly as [`record_vtd_region`] must, and for the identical
 /// reason: `mmu::map_everything` reads this to decide what to map, and a fact recorded afterwards
 /// is a fact the fine map can no longer act on. The failure that would cause is unusually nasty,
 /// which is why it is stated twice: the console keeps writing to an address that stopped being
@@ -819,25 +828,25 @@ pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
 /// The console UART's interrupt line, as the machine states it: PLIC source 10 on QEMU's
 /// riscv64 `virt`, 32 on the JH7110, GIC INTID 33 on QEMU's aarch64 `virt`, and on `x86_64` the
 /// global system interrupt COM1's legacy ISA IRQ 4 resolves to (milestone 176), filled by
-/// [`record_uart_irq`] rather than by [`init`] since there is no tree to read. `None` before
+/// [`record_uart_irq`] rather than by [`initialize`] since there is no tree to read. `None` before
 /// either has run, and on a device-tree machine whose tree does not say (no `interrupts`, no
 /// resolvable parent, or an entry shape the decoder refuses; see
-/// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RX_INTID`, the
-/// QEMU constant) and print which source won, so a bench transcript is diagnosable.
+/// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RECEIVE_INTID`,
+/// the QEMU constant) and print which source won, so a bench transcript is diagnosable.
 pub(crate) fn uart_irq() -> Option<u32> {
     *UART_IRQ.lock()
 }
 
 /// **Record the console UART's interrupt line directly**, for a machine with no device tree to
-/// read it from. `x86_64`'s counterpart of `init`'s [`machine_discovery::interrupt_id::of_node`]
-/// call. It takes COM1's **legacy** line, ISA IRQ 4, because that is what an intid is on `x86_64`;
-/// `arch::irq::enable` resolves it through any MADT override when the line is armed. It fills the
-/// same static every consumer already reads (`user::uart_irq_and_source`), which the input driver's
-/// `Irq` capability is minted from since milestone 505 (an x86_64 input driver that never lets the
-/// core idle).
+/// read it from. `x86_64`'s counterpart of `initialize`'s
+/// [`machine_discovery::interrupt_id::of_node`] call. It takes COM1's **legacy** line, ISA IRQ 4,
+/// because that is what an intid is on `x86_64`; `arch::irq::enable` resolves it through any MADT
+/// override when the line is armed. It fills the same static every consumer already reads
+/// (`user::uart_irq_and_source`), which the input driver's `Irq` capability is minted from since
+/// milestone 505 (an x86_64 input driver that never lets the core idle).
 ///
 /// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from
-/// their device tree inside `init` instead.
+/// their device tree inside `initialize` instead.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) fn record_uart_irq(irq: u32) {
     *UART_IRQ.lock() = Some(irq);
@@ -869,7 +878,7 @@ pub fn bitmap_region() -> (u64, u64) {
 /// tree's: `x86_64` reads it from PVH's module list (`arch::x86_64::machine::initial_ramdisk`).
 ///
 /// It does not reserve the region: the caller is already building the `forbidden` slice it hands
-/// [`bring_up_page_frames`]. Dead on the device-tree architectures, which [`init`] serves; an
+/// [`bring_up_page_frames`]. Dead on the device-tree architectures, which [`initialize`] serves; an
 /// `allow` says so rather than a `cfg` that would make a seam look like an x86 detail. See
 /// notes/physical-memory.md.
 ///
@@ -984,7 +993,8 @@ use core::sync::atomic::AtomicUsize;
 /// The RAM map, kept so the MMU can map it.
 ///
 /// One lock for the whole map: it is a constant computed at boot, written once while
-/// single-threaded and read forever after. Fixed-size because `memory::init` runs before the heap.
+/// single-threaded and read forever after. Fixed-size because `memory::initialize` runs before the
+/// heap.
 #[derive(Clone, Copy)]
 struct RamMap {
     regions: [(u64, u64); MAX_REGIONS],
@@ -1005,31 +1015,31 @@ static GIC_REGIONS: IrqSafeMutex<Option<machine_discovery::gic::Gic>> =
     IrqSafeMutex::new(rank::RAM, None);
 
 /// The PLIC's single register block, from the device tree (milestone 20). `None` on aarch64 (no such
-/// node) and until `init` has run.
+/// node) and until `initialize` has run.
 static PLIC_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
 
-/// The JH7110's SD/MMC controllers (milestone 53). `None` until `init`, and on every machine that
-/// is not a JH7110.
+/// The JH7110's SD/MMC controllers (milestone 53). `None` until `initialize`, and on every machine
+/// that is not a JH7110.
 static JH7110_STORAGE: IrqSafeMutex<Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]>> =
     IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
-/// published trees agree on (milestone 220). `None` until `init`, and on every machine that is
-/// not a JH7110.
+/// published trees agree on (milestone 220 (this kernel drives no clock or reset controller)).
+/// `None` until `initialize`, and on every machine that is not a JH7110.
 static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
     IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's SYS clock-and-reset window and the PMIC bus's plan (milestone 592). `None` until
-/// `init`, and on every machine that is not a JH7110.
+/// `initialize`, and on every machine that is not a JH7110.
 static JH7110_PMIC_BUS: IrqSafeMutex<
     Option<(
         jh7110_clock_and_reset::WindowLocation,
-        jh7110_clock_and_reset::PmicBus,
+        jh7110_clock_and_reset::PowerManagementChipBus,
     )>,
 > = IrqSafeMutex::new(rank::RAM, None);
 
-/// The JH7110's watchdog and its SYS window (milestone 593). `None` until `init`, and on every
-/// machine whose tree names no such watchdog.
+/// The JH7110's watchdog and its SYS window (milestone 593). `None` until `initialize`, and on
+/// every machine whose tree names no such watchdog.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
 static JH7110_WATCHDOG: IrqSafeMutex<
     Option<(
@@ -1038,14 +1048,14 @@ static JH7110_WATCHDOG: IrqSafeMutex<
     )>,
 > = IrqSafeMutex::new(rank::RAM, None);
 
-/// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until `init`,
-/// and on every machine whose tree names no such port.
+/// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until
+/// `initialize`, and on every machine whose tree names no such port.
 static JH7110_ETHERNET: IrqSafeMutex<Option<Jh7110Ethernet>> = IrqSafeMutex::new(rank::RAM, None);
 
 /// The generic-ECAM PCIe host bridge's windows: (ecam, mem32), each (base, size). Physical.
 type PciWindows = ((u64, u64), (u64, u64));
 
-/// `None` until `init`, and on a machine whose device tree has no such node (the JH7110).
+/// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110).
 static PCI_REGIONS: IrqSafeMutex<Option<PciWindows>> = IrqSafeMutex::new(rank::RAM, None);
 
 /// The SMMUv3's register block, from the device tree (milestone 16b). `None` unless the machine was
@@ -1057,11 +1067,11 @@ static SMMU_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::R
 /// `x86_64` kernel port), roadmap item 6; every unit since milestone 594 (every VT-d unit
 /// translates its own devices)). All `None` on a machine with no `-device intel-iommu`, or
 /// before they are recorded. `x86_64`'s
-/// counterpart of `SMMU_REGION`: filled by `main.rs`'s boot tour rather than by `init`, for the
-/// same reason [`record_pci_regions`] is, and read by `mmu::map_everything` so the register file
-/// is a mapped device window before `arch::iommu::init` ever reads it (`arch::x86_64::iommu`'s
-/// own accessors go through `phys_to_virt`, which is arithmetic, not a promise the address is
-/// mapped).
+/// counterpart of `SMMU_REGION`: filled by `main.rs`'s boot tour rather than by `initialize`, for
+/// the same reason [`record_pci_regions`] is, and read by `mmu::map_everything` so the register
+/// file is a mapped device window before `arch::iommu::initialize` ever reads it
+/// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
+/// promise the address is mapped).
 static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS]> =
     IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAX_DRHDS]);
 
@@ -1075,12 +1085,13 @@ static AMD_VI_REGIONS: IrqSafeMutex<
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
 static FRAMEBUFFER: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
 
-/// The RTC's register block and binding kind (milestone 51). `None` until `init` has run, and on a
-/// machine whose device tree describes neither RTC we can drive.
+/// The RTC's register block and binding kind (milestone 51 (wall-clock time, the `date` command,
+/// and an NTP service)). `None` until `initialize` has run, and on a machine whose device tree
+/// describes neither RTC we can drive.
 static RTC_REGION: IrqSafeMutex<Option<(u64, u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
 
-/// The console UART's interrupt line, from the device tree. `None` until `init`, and on a tree
-/// that does not say.
+/// The console UART's interrupt line, from the device tree. `None` until `initialize`, and on a
+/// tree that does not say.
 static UART_IRQ: IrqSafeMutex<Option<u32>> = IrqSafeMutex::new(rank::RAM, None);
 
 static BITMAP_START: AtomicUsize = AtomicUsize::new(0);

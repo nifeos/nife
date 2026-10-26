@@ -50,11 +50,12 @@ pub const ROOT_CLUSTER: u32 = 2;
 /// the field follow it. A "FAT32" volume with fewer clusters than this is read as FAT16 by the code
 /// that matters, which is the firmware's, so this crate refuses to build one.
 ///
-/// Name: ratified 2026-10-25 (#2720). Refused `MIN_CLUSTERS` (it is FAT32's floor alone).
-pub const FAT32_MIN_CLUSTERS: u32 = 65_525;
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `FAT32_MIN_CLUSTERS` (min spelled out, as the
+/// tree-wide ruling asks). Refused `MIN_CLUSTERS` (it is FAT32's floor alone).
+pub const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
 
 /// The largest cluster number FAT32 addresses. The top four bits of a 32-bit entry are reserved.
-const MAX_CLUSTER: u32 = 0x0FFF_FFF5;
+const MAXIMUM_CLUSTER: u32 = 0x0FFF_FFF5;
 
 /// The end-of-chain marker written into the last entry of every chain.
 const END_OF_CHAIN: u32 = 0x0FFF_FFFF;
@@ -76,10 +77,13 @@ const DIR_ENTRY: usize = 32;
 /// errors).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutError {
-    /// The partition holds fewer than [`FAT32_MIN_CLUSTERS`] data clusters, so it is not a FAT32 volume
-    /// however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
+    /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
+    /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
+    /// partition holds fewer than [`FAT32_MINIMUM_CLUSTERS`] data clusters, so it is not a FAT32
+    /// volume however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "not a 32-bit file allocation table")]
     NotFat32,
     /// The partition is larger than FAT32 addresses.
     ///
@@ -188,10 +192,10 @@ impl VolumeLayout {
             .checked_sub(TABLE_COUNT * fat_sectors)
             .ok_or(LayoutError::NotFat32)?;
         let clusters = data_sectors / CLUSTER_SECTORS;
-        if clusters < FAT32_MIN_CLUSTERS {
+        if clusters < FAT32_MINIMUM_CLUSTERS {
             return Err(LayoutError::NotFat32);
         }
-        if clusters > MAX_CLUSTER - 2 {
+        if clusters > MAXIMUM_CLUSTER - 2 {
             return Err(LayoutError::TooLarge);
         }
 
@@ -218,7 +222,8 @@ impl VolumeLayout {
         })
     }
 
-    /// How many data clusters the volume has. Below [`FAT32_MIN_CLUSTERS`] [`VolumeLayout::new`] refuses.
+    /// How many data clusters the volume has. Below [`FAT32_MINIMUM_CLUSTERS`]
+    /// [`VolumeLayout::new`] refuses.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn clusters(&self) -> u32 {
@@ -520,7 +525,7 @@ mod tests {
     fn a_512_mib_volume_has_enough_clusters_to_be_fat32() {
         let v = volume();
         assert!(
-            v.clusters() >= FAT32_MIN_CLUSTERS,
+            v.clusters() >= FAT32_MINIMUM_CLUSTERS,
             "{} clusters",
             v.clusters()
         );
@@ -539,7 +544,7 @@ mod tests {
         );
         let just_enough = VolumeLayout::new(600 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI")
             .expect("300 MiB clears the cluster floor");
-        assert!(just_enough.clusters() >= FAT32_MIN_CLUSTERS);
+        assert!(just_enough.clusters() >= FAT32_MINIMUM_CLUSTERS);
     }
 
     #[test]

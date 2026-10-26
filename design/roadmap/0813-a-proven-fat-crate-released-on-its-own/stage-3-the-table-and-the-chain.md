@@ -7,7 +7,7 @@ records what stage 3 built, the oracle's pin and the check its ruling asked for,
 
 - `Volume`, a volume open for reading. It owns the caller's `SectorDevice` and the checked
   `BootSector`, and caches the last table sector it read.
-- `TableEntry` and `Volume::entry`: a data cluster's entry, decoded by the FAT type's width and
+- `TableEntry` and `Volume::table_entry`: a data cluster's entry, decoded by the FAT type's width and
   markers. The decode ignores a FAT32 entry's top four bits, as the specification says. A FAT12 entry
   that starts at a sector's last byte costs two reads, and the second sector is still the table's.
 - `Volume::chain`, the walk. It yields the first cluster and each cluster the table names, and

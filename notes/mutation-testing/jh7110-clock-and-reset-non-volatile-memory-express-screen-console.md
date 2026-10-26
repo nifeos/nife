@@ -82,7 +82,7 @@ names exactly as many windows as `reg` has.
 
 A new fixture, `jh7110-clkgen-vendor-mismatched-names.dts`, gives the vendor clkgen node two `reg`
 windows but three `reg-names` entries. `"stg"` is last, at index 2, one past the two the array
-holds. `discover` over it must fall back to the corroborated `STG_BASE` constant, not read the
+holds. `discover` over it must fall back to the corroborated `SYSTEM_TOP_GROUP_BASE` constant, not read the
 zeroed slot an off-by-one would land on.
 `a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read` checks that.
 
@@ -91,7 +91,7 @@ zeroed slot an off-by-one would land on.
 Before: 137 caught, 26 missed, 0 timeouts, 10 unviable (84.0% of viable). After: 156 caught, 7
 missed, 10 unviable (95.7%). It matches the 2026-09-19 census row for row.
 
-`Command::write` had never been called by a test. `transfer_command`'s own test,
+No test had ever called `Command::write`. `transfer_command`'s own test,
 `the_data_plane_refuses_a_block_the_namespace_does_not_have`, always passes `write: false`. So every
 mutant in `write`'s body survived: the LBA split under `>>` and `<<`, and the block count minus one
 under `-`, `+` and `/`. `a_write_command_encodes_the_spec_dwords` mirrors the existing read-command
@@ -215,7 +215,7 @@ checked at the top of this section do not explain the gap either. They are
 `thread_wake_handshake` and `uefi_loader`, plus `timetable` and `work_steal_slot` from earlier
 parts: exactly the ones "seventeen" should already have excluded.
 
-What was left on 2026-09-21, re-derived rather than assumed:
+What remained on 2026-09-21, re-derived rather than assumed:
 
 - A real, moderate survivor count, not yet re-measured against the current tree: `component_plan`,
   `credentialer`, `loaded_image_check`, `pgrep`, `pmap`, `ps`, `uptime`.

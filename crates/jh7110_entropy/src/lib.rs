@@ -59,7 +59,7 @@
 /// Register byte offsets from the device's base, transcribed from `jh7110-trng.c`'s `#define`s
 /// (\[driver\]). `RAND0..RAND7` are the eight 32-bit words a completed generation leaves behind;
 /// [`output_bytes`] is the order they combine in.
-pub mod regs {
+pub mod registers {
     /// Command register: write [`super::CTRL_GENE_RANDNUM`] or [`super::CTRL_EXEC_RANDRESEED`].
     ///
     /// Name: ratified 2026-10-26 (UTC).
@@ -262,7 +262,7 @@ pub const IE_RQST_ALARM_EN: u32 = 1 << 3;
 pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// `IE` bit 31: the global interrupt enable.
 ///
-/// **The `IE_*` bits gate the IRQ pin, not [`regs::ISTAT`]**, so a polling driver may leave this
+/// **The `IE_*` bits gate the IRQ pin, not [`registers::ISTAT`]**, so a polling driver may leave this
 /// register at zero. \[trm\]'s wording ("interrupt **and/or status** contributions") is not
 /// decisive; the bench settled it on 2026-09-04, when a reseed and a generation were both seen by
 /// polling `ISTAT` with `IE` never written on a VisionFive 2. The completion interrupt needs this
@@ -285,11 +285,11 @@ pub const ISTAT_SEED_DONE: u32 = 1 << 1;
 ///
 /// Mainline's `jh7110-trng.c` does not define it, and a bit with no name leaves a status word
 /// undecodable. [`generation_outcome`] does not act on it, and a bring-up that writes 0 to
-/// [`regs::AUTO_AGE`] never raises it.
+/// [`registers::AUTO_AGE`] never raises it.
 pub(crate) const ISTAT_AGE_ALARM: u32 = 1 << 2;
 /// `ISTAT` bit 3: the auto-reseed **request-count** alarm, the `AUTO_RQSTS` counterpart of
 /// [`ISTAT_AGE_ALARM`] \[trm\], \[netbsd\]. Same status: named, not acted on, and disabled by a
-/// bring-up that writes 0 to [`regs::AUTO_RQSTS`].
+/// bring-up that writes 0 to [`registers::AUTO_RQSTS`].
 pub(crate) const ISTAT_RQST_ALARM: u32 = 1 << 3;
 /// `ISTAT` bit 4: the hardware's own fault signal, an SEU (single-event upset) in the LFSR-based
 /// post-processing stage. The Linux driver treats this as "reseed and try again", never as "trust
@@ -326,7 +326,7 @@ pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-trng";
 /// uses.
 ///
 /// Same window (`0x1600_C000`), interrupt and clocks, a different string: a stale fork, not
-/// different silicon. Accepting it claims the [`regs`] layout, and `StarFive`'s own Linux driver
+/// different silicon. Accepting it claims the [`registers`] layout, and `StarFive`'s own Linux driver
 /// for the block (`drivers/char/hw_random/starfive-trng.c` in `starfive-tech/linux` at
 /// `202b558ae34c`) defines byte-for-byte the same offsets and bits as mainline's. The node, in
 /// `arch/riscv/dts/jh7110.dtsi` of `starfive-tech/u-boot` at `bfbdce9b86a2`, reads
@@ -355,7 +355,7 @@ pub struct Discovered {
     /// Physical base address of the register window (`reg`'s address cell).
     pub reg_base: u64,
     /// Size of the register window in bytes (`reg`'s size cell). \[binding\]'s example claims
-    /// `0x4000`; this crate's [`regs`] only uses the low `0x68` of it.
+    /// `0x4000`; this crate's [`registers`] only uses the low `0x68` of it.
     pub reg_size: u64,
     /// The PLIC interrupt line, if the tree names one. `None` is not an error: a tree with `reg`
     /// but no `interrupts` still names a real device, one a poll-only driver could still use.
@@ -940,12 +940,13 @@ mod tests {
         n: u64,
         mut generate: impl FnMut() -> Option<[u8; 32]> + Send + 'static,
     ) -> (u64, u64) {
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut pool = Pool::new();
-            let _ = tx.send(pool.take(n, &mut generate));
+            let _ = sender.send(pool.take(n, &mut generate));
         });
-        rx.recv_timeout(std::time::Duration::from_secs(5))
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(5))
             .expect("take never returned: its gather loop made no progress")
     }
 }

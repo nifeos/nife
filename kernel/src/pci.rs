@@ -996,10 +996,10 @@ const IOMMU_DEVICE: u16 = 0x0014;
 
 /// Bring up the RISC-V IOMMU, if the machine has one. The ratified RISC-V IOMMU is a PCI function:
 /// the kernel places its BAR0 (the register file) from the shared cursor, enables memory-space
-/// decoding and hands the base to the arch driver's `init`. No such function on the bus, no-op.
-/// No Bus-Master: the IOMMU polices DMA and does not initiate it.
+/// decoding and hands the base to the arch driver's `initialize`. No such function on the bus,
+/// no-op. No Bus-Master: the IOMMU polices DMA and does not initiate it.
 #[cfg(target_arch = "riscv64")]
-pub(crate) fn init_iommu() {
+pub(crate) fn initialize_iommu() {
     if !is_host_bridge_present() {
         return;
     }
@@ -1030,7 +1030,7 @@ pub(crate) fn init_iommu() {
     let cmd = cfg_read32(bdf, pci::COMMAND) as u16;
     cfg_write32(bdf, pci::COMMAND, (cmd | pci::CMD_MEMORY_SPACE) as u32);
 
-    crate::arch::iommu::init(base);
+    crate::arch::iommu::initialize(base);
 }
 
 #[cfg(test)]
@@ -1040,7 +1040,7 @@ mod tests {
 
     /// The discovered PCIe windows are the machine's own, and on QEMU `virt` they equal the old
     /// `PCI_ECAM_BASE` and `PCI_BAR_BASE` constants. A fresh parse of the live DTB must agree with
-    /// what `memory::init` recorded. The JH7110's answer (no generic-ECAM node, no window) is
+    /// what `memory::initialize` recorded. The JH7110's answer (no generic-ECAM node, no window) is
     /// witnessed on the host (`crates/pci/tests/qemu_virt_dtb.rs`). Not on `x86_64`, which has no
     /// device tree; see [`acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge`].
     #[cfg(not(target_arch = "x86_64"))]

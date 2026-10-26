@@ -83,7 +83,7 @@ const VIRTIO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
 const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // Flush: no data buffer at all, just the header and the status byte. Legal only once
 // `VIRTIO_BLK_F_FLUSH` is negotiated, which is why the block server probes for it rather than
-// assuming it (virtio 1.2 §5.2.6; see `init_with_features` and `blk_flush`).
+// assuming it (virtio 1.2 section 5.2.6; see `initialize_with_features` and `blk_flush`).
 const VIRTIO_BLK_T_FLUSH: u32 = 4;
 
 // Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
@@ -125,8 +125,8 @@ fn direct_memory_access_read<T: Copy>(off: u64) -> T {
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
-fn init() {
-    init_with_features(0, false);
+fn initialize() {
+    initialize_with_features(0, false);
 }
 
 /// The handshake, with `driver_features_lo` OR'd into the low feature word. The honest driver
@@ -135,7 +135,7 @@ fn init() {
 ///
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
 /// bit was negotiated. See notes/virtio.md ("Feature negotiation").
-fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
+fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
     mw(STATUS, 0);
@@ -194,7 +194,7 @@ fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 /// }
 /// ```
 pub fn run(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // Read block 0: the nifefs superblock.
     read_block(direct_memory_access_phys, 0);
@@ -242,7 +242,7 @@ fn pattern_byte(i: usize) -> u8 {
 /// look motd up again, so the report also certifies the write did not eat the filesystem around
 /// it. Reports the first 8 bytes of the read-back pattern.
 pub fn run_write(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // The directory tells us where scratch lives; nothing about the sector is hardcoded.
     read_block(direct_memory_access_phys, 0);
@@ -293,7 +293,7 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
 /// interrupt or touching the used ring. The test then runs the full writer against the same device,
 /// which must succeed. See notes/dma.md.
 pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     read_block(direct_memory_access_phys, 0);
     let mut magic = [0u8; 8];
@@ -317,7 +317,7 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
 /// device is never told to go and never touches the address. Reports 1 if the kernel refused
 /// (correct), 0 if the notify went through (a hole). Used by the security test.
 pub fn run_attack(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // The forbidden target: the kernel's own image, which the device would happily DMA over if it
     // were ever handed this address.
@@ -350,7 +350,7 @@ pub fn run_attack(direct_memory_access_phys: u64) -> ! {
 pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     // Ask for indirect descriptors. The kernel strips the bit, but we build the attack anyway to
     // prove the validator refuses the flag even if the feature ever slipped through.
-    init_with_features(F_INDIRECT_DESC_LO, false);
+    initialize_with_features(F_INDIRECT_DESC_LO, false);
 
     const KERNEL_ADDR: u64 = 0xffff_0000_4008_0000;
 
@@ -548,8 +548,8 @@ fn write_desc(i: u64, addr: u64, len: u32, flags: u16, next: u16) {
 // =================================================================================================
 
 /// The two virtqueues, matching the kernel's contract (receive = 0, transmit = 1).
-const NET_RX_Q: u64 = 0;
-const NET_TX_Q: u64 = 1;
+const NET_RECEIVE_Q: u64 = 0;
+const NET_TRANSMIT_Q: u64 = 1;
 
 /// The modern virtio-net header, prepended to every frame in both directions. 12 bytes because we
 /// negotiate `VIRTIO_F_VERSION_1` (the `num_buffers` field is then always present).
@@ -559,18 +559,18 @@ const NET_HDR_LEN: u64 = 12;
 // (RING_BLOCK = 0x200, with desc/avail/used at +0x000/+0x080/+0x100 inside each queue's block, see
 // kernel/src/virtio.rs), and the packet buffers live above both queues' blocks. Everything fits in
 // the one 4 KiB DMA page the spawn service hands us.
-const NET_RX_DESC: u64 = 0x000;
-const NET_RX_AVAIL: u64 = 0x080;
-const NET_RX_USED: u64 = 0x100;
-const NET_TX_DESC: u64 = 0x200;
-const NET_TX_AVAIL: u64 = 0x280;
+const NET_RECEIVE_DESC: u64 = 0x000;
+const NET_RECEIVE_AVAIL: u64 = 0x080;
+const NET_RECEIVE_USED: u64 = 0x100;
+const NET_TRANSMIT_DESC: u64 = 0x200;
+const NET_TRANSMIT_AVAIL: u64 = 0x280;
 // The transmit used ring lives at 0x300 (queue 1's block + USED_OFF), but the driver never reads it:
 // it does not wait on transmit completions, only on the receive side, so there is no constant for it.
 /// One receive buffer: the 12-byte virtio header plus room for a full 1514-byte Ethernet frame.
-const NET_RX_BUF: u64 = 0x400;
-const NET_RX_BUF_LEN: u64 = 0x600;
+const NET_RECEIVE_BUF: u64 = 0x400;
+const NET_RECEIVE_BUF_LEN: u64 = 0x600;
 /// One transmit buffer: the header plus the DHCP frame we build.
-const NET_TX_BUF: u64 = 0xA00;
+const NET_TRANSMIT_BUF: u64 = 0xA00;
 
 /// Our source MAC. Locally administered; slirp does not care what it is, only that DHCP names it.
 const NET_MAC: [u8; 6] = [0x52, 0x54, 0x00, 0x12, 0x34, 0x56];
@@ -614,9 +614,9 @@ fn ip_checksum(off: u64, len: u64) -> u16 {
     !(sum as u16)
 }
 
-/// The virtio-net handshake and both-queue setup. Unlike the disk's `init`, this sets up receive AND
-/// transmit, through the kernel, which places each queue's rings at its own block.
-fn init_net() {
+/// The virtio-net handshake and both-queue setup. Unlike the disk's `initialize`, this sets up
+/// receive AND transmit, through the kernel, which places each queue's rings at its own block.
+fn initialize_net() {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt"
 
     mw(STATUS, 0);
@@ -644,8 +644,8 @@ fn init_net() {
 
     // Both queues, through the kernel: it programs each queue's ring addresses to that queue's block
     // in our DMA region, so we never choose them.
-    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_RX_Q) == 0);
-    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_TX_Q) == 0);
+    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_RECEIVE_Q) == 0);
+    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_TRANSMIT_Q) == 0);
 
     mw(
         STATUS,
@@ -667,53 +667,59 @@ fn write_desc_at(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: 
 /// re-uses descriptor head 0 with a fresh available-ring slot each time, so the device fills the
 /// same buffer again. `direct_memory_access_phys` is the DMA page's physical base (descriptors
 /// speak physical).
-fn post_rx(direct_memory_access_phys: u64, avail_idx: u16) {
+fn post_receive(direct_memory_access_phys: u64, avail_idx: u16) {
     write_desc_at(
-        NET_RX_DESC,
+        NET_RECEIVE_DESC,
         0,
-        direct_memory_access_phys + NET_RX_BUF,
-        NET_RX_BUF_LEN as u32,
+        direct_memory_access_phys + NET_RECEIVE_BUF,
+        NET_RECEIVE_BUF_LEN as u32,
         VIRTQ_DESC_F_WRITE, // the device WRITES the received frame here
         0,
     );
-    direct_memory_access_write::<u16>(NET_RX_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2, 0);
+    direct_memory_access_write::<u16>(
+        NET_RECEIVE_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_RX_AVAIL + 2, avail_idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(NET_RECEIVE_AVAIL + 2, avail_idx.wrapping_add(1));
     virtio_ring_barrier();
     // The kernel validates the receive descriptor (device-writable, in our region).
-    if notify(VIRTIO, NET_RX_Q) < 0 {
+    if notify(VIRTIO, NET_RECEIVE_Q) < 0 {
         report_code(0xE7);
     }
 }
 
-/// Transmit the frame already built at `NET_TX_BUF + NET_HDR_LEN`, of `frame_len` bytes: zero the
-/// virtio header in front of it, post one device-readable descriptor, and ring queue 1.
+/// Transmit the frame already built at `NET_TRANSMIT_BUF + NET_HDR_LEN`, of `frame_len` bytes: zero
+/// the virtio header in front of it, post one device-readable descriptor, and ring queue 1.
 fn send_frame(direct_memory_access_phys: u64, frame_len: u64, avail_idx: u16) {
     for i in 0..NET_HDR_LEN {
-        direct_memory_access_write::<u8>(NET_TX_BUF + i, 0);
+        direct_memory_access_write::<u8>(NET_TRANSMIT_BUF + i, 0);
     }
     write_desc_at(
-        NET_TX_DESC,
+        NET_TRANSMIT_DESC,
         0,
-        direct_memory_access_phys + NET_TX_BUF,
+        direct_memory_access_phys + NET_TRANSMIT_BUF,
         (NET_HDR_LEN + frame_len) as u32,
         0, // device READS the buffer (transmit)
         0,
     );
-    direct_memory_access_write::<u16>(NET_TX_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2, 0);
+    direct_memory_access_write::<u16>(
+        NET_TRANSMIT_AVAIL + 4 + (avail_idx as u64 % QSIZE as u64) * 2,
+        0,
+    );
     virtio_ring_barrier();
-    direct_memory_access_write::<u16>(NET_TX_AVAIL + 2, avail_idx.wrapping_add(1));
+    direct_memory_access_write::<u16>(NET_TRANSMIT_AVAIL + 2, avail_idx.wrapping_add(1));
     virtio_ring_barrier();
-    if notify(VIRTIO, NET_TX_Q) < 0 {
+    if notify(VIRTIO, NET_TRANSMIT_Q) < 0 {
         report_code(0xE8);
     }
 }
 
-/// Build a DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP) at `NET_TX_BUF + NET_HDR_LEN`, and
-/// return the Ethernet frame length. The broadcast flag is set so slirp's OFFER comes back to the
-/// broadcast address, where our single RX buffer will catch it.
+/// Build a DHCP DISCOVER (Ethernet + IPv4 + UDP + BOOTP/DHCP) at `NET_TRANSMIT_BUF + NET_HDR_LEN`,
+/// and return the Ethernet frame length. The broadcast flag is set so slirp's OFFER comes back to
+/// the broadcast address, where our single RX buffer will catch it.
 fn build_dhcp_discover() -> u64 {
-    let f = NET_TX_BUF + NET_HDR_LEN;
+    let f = NET_TRANSMIT_BUF + NET_HDR_LEN;
 
     // --- Ethernet: to broadcast, from us, IPv4 ---
     for i in 0..6u64 {
@@ -791,7 +797,7 @@ fn build_dhcp_discover() -> u64 {
 /// transmit completion (the device's interrupt line is shared across both queues). Returns false if
 /// no receive completion arrives within a bounded number of wakeups. Mirrors the disk's
 /// `complete_block`: the used ring, not the wakeup, is the completion.
-fn wait_rx(rx_used_before: u16) -> bool {
+fn wait_receive(receive_used_before: u16) -> bool {
     for _ in 0..64 {
         // Blocks until the device raises its line.
         interrupt_wait(IRQ);
@@ -800,7 +806,7 @@ fn wait_rx(rx_used_before: u16) -> bool {
         // Re-enable the line the kernel masked when it fired.
         interrupt_acknowledge(IRQ);
         virtio_ring_barrier();
-        if direct_memory_access_read::<u16>(NET_RX_USED + 2) != rx_used_before {
+        if direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2) != receive_used_before {
             return true;
         }
     }
@@ -811,7 +817,7 @@ fn wait_rx(rx_used_before: u16) -> bool {
 /// address (`yiaddr`) on a match, `None` otherwise, so an unrelated broadcast is skipped rather than
 /// mistaken for the reply.
 fn parse_dhcp_offer() -> Option<u32> {
-    let f = NET_RX_BUF + NET_HDR_LEN;
+    let f = NET_RECEIVE_BUF + NET_HDR_LEN;
     if rd_be16(f + 12) != 0x0800 {
         return None; // not IPv4
     }
@@ -835,7 +841,7 @@ fn parse_dhcp_offer() -> Option<u32> {
 
     // Scan the options for message type 53 == 2 (OFFER).
     let mut o = dhcp + 240;
-    let end = NET_RX_BUF + NET_RX_BUF_LEN;
+    let end = NET_RECEIVE_BUF + NET_RECEIVE_BUF_LEN;
     let mut is_offer = false;
     while o + 1 < end {
         let tag = direct_memory_access_read::<u8>(o);
@@ -862,21 +868,21 @@ fn parse_dhcp_offer() -> Option<u32> {
 /// networking's 10.0.2.0/24. TX and RX, both queues, both directions of the confinement, proven end
 /// to end with no TCP/IP stack in the loop.
 pub fn run_net(direct_memory_access_phys: u64) -> ! {
-    init_net();
+    initialize_net();
 
-    let mut rx_avail: u16 = 0;
-    post_rx(direct_memory_access_phys, rx_avail);
-    rx_avail = rx_avail.wrapping_add(1);
+    let mut receive_avail: u16 = 0;
+    post_receive(direct_memory_access_phys, receive_avail);
+    receive_avail = receive_avail.wrapping_add(1);
 
     let frame_len = build_dhcp_discover();
     send_frame(direct_memory_access_phys, frame_len, 0);
 
-    let mut rx_used: u16 = 0;
+    let mut receive_used: u16 = 0;
     for _ in 0..8 {
-        if !wait_rx(rx_used) {
+        if !wait_receive(receive_used) {
             report_code(0xE9); // no receive completion arrived
         }
-        rx_used = direct_memory_access_read::<u16>(NET_RX_USED + 2);
+        receive_used = direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2);
 
         if let Some(yiaddr) = parse_dhcp_offer() {
             send(REPORT, yiaddr as u64, 0, 0);
@@ -884,8 +890,8 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
         }
 
         // Not our OFFER (some other broadcast): re-post the buffer and wait for the next frame.
-        post_rx(direct_memory_access_phys, rx_avail);
-        rx_avail = rx_avail.wrapping_add(1);
+        post_receive(direct_memory_access_phys, receive_avail);
+        receive_avail = receive_avail.wrapping_add(1);
     }
     report_code(0xEA); // frames arrived, but none was our DHCP OFFER
 }
@@ -924,7 +930,7 @@ const CONFIG: u64 = 0x100;
 pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `blk::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
-    let can_flush = init_with_features(0, true);
+    let can_flush = initialize_with_features(0, true);
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
     send(BLK_READY, filesystem_contract::READY, 0, 0);

@@ -18,7 +18,7 @@ use crate::memory;
 /// This architecture's page-table format, which portable code names `arch::mmu::Format`.
 ///
 /// Per machine: the TH1520 build uses `Sv39Mae`, whose leaves carry T-Head memory types because
-/// firmware turns `XTheadMae` on. `arch::isa::init` refuses a hart that disagrees.
+/// firmware turns `XTheadMae` on. `arch::isa::initialize` refuses a hart that disagrees.
 #[cfg(not(feature = "board_th1520"))]
 pub type Format = paging::Sv39;
 #[cfg(feature = "board_th1520")]
@@ -35,7 +35,7 @@ const SATP_ASID_SHIFT: u64 = 44;
 /// `satp.PPN` is the low 44 bits.
 const SATP_PPN_MASK: u64 = (1 << 44) - 1;
 
-/// The kernel's fine-map root, saved by [`init`] so a secondary hart can adopt it.
+/// The kernel's fine-map root, saved by [`initialize`] so a secondary hart can adopt it.
 static KERNEL_ROOT: AtomicU64 = AtomicU64::new(0);
 
 /// Read `satp`. One instruction, in [`instructions`], so a proof can stub it (see `mod proofs`).
@@ -121,7 +121,7 @@ const _: () = {
 };
 
 /// The boot page table: one Sv39 root of RWX gigapage leaves, identity-mapped and aliased at
-/// `KERNEL_VA_BASE`, that lasts until `mmu::init` installs the W^X tables.
+/// `KERNEL_VA_BASE`, that lasts until `mmu::initialize` installs the W^X tables.
 ///
 /// `boot.s` loads its physical address into `satp`, so it is a real static in `.data`. See
 /// notes/riscv-port/memory.md for which gigapages it maps and why.
@@ -167,7 +167,7 @@ const fn boot_table() -> BootTable {
             g += 1;
         }
     }
-    // The device window, high alias only, so a console there can print before `mmu::init`.
+    // The device window, high alias only, so a console there can print before `mmu::initialize`.
     t[511] = giga(DEVICE_WINDOW_PA);
     BootTable(t)
 }
@@ -238,8 +238,8 @@ const fn is_nameable(pa_start: u64, pa_end: u64) -> bool {
 
 /// Panic if any RAM region reaches [`DIRECT_MAP_LIMIT`], where [`phys_to_virt`] would alias it.
 ///
-/// Called first in [`init`], before any frame is named through the direct map. A machine with that
-/// much RAM needs a second window or Sv48.
+/// Called first in [`initialize`], before any frame is named through the direct map. A machine with
+/// that much RAM needs a second window or Sv48.
 fn refuse_unnameable_ram() {
     for (start, size) in memory::ram_regions() {
         let end = start.saturating_add(size);
@@ -269,7 +269,10 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 ///
 /// The fine tables map the same kernel addresses to the same frames as the boot table, so the
 /// switch is seamless. Runs once, on the primary hart, before any secondary or user space exists.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     refuse_unnameable_ram();
     let root = memory::alloc()
         .expect("no frame for the root page table")
@@ -361,10 +364,14 @@ fn probe_asid_bits() -> usize {
     implemented.count_ones() as usize
 }
 
-/// How many `satp.ASID` bits this hardware implements. Panics if read before [`init`] probed.
+/// How many `satp.ASID` bits this hardware implements. Panics if read before [`initialize`] probed.
 pub(crate) fn asid_bits() -> usize {
     let n = ASID_BITS.load(core::sync::atomic::Ordering::Relaxed);
-    assert_ne!(n, usize::MAX, "asid_bits() read before mmu::init probed it");
+    assert_ne!(
+        n,
+        usize::MAX,
+        "asid_bits() read before mmu::initialize probed it"
+    );
     n
 }
 
@@ -374,8 +381,8 @@ pub(crate) fn asid_bits() -> usize {
 /// `arch::riscv64::isa`'s record test checks [`asid_tagging_is_trusted`] against it.
 pub(crate) const ASID_BITS_NEEDED: u32 = (address_space_identifier::ASIDS as u64 - 1).ilog2() + 1;
 
-/// Whether two live address spaces are guaranteed distinct in this hart's TLB. False until [`init`]
-/// probes, so every earlier `satp` write flushes.
+/// Whether two live address spaces are guaranteed distinct in this hart's TLB. False until
+/// [`initialize`] probes, so every earlier `satp` write flushes.
 static ASID_TAGGING_TRUSTED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
@@ -389,7 +396,7 @@ pub(crate) fn asid_tagging_is_trusted() -> bool {
 
 /// Adopt the kernel's W^X map on a secondary hart, switching from the boot table to the shared
 /// `KERNEL_ROOT` the primary built. Nothing per hart is built.
-pub(crate) fn init_secondary() {
+pub(crate) fn initialize_secondary() {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
     // SAFETY: the primary built this root and is running on it; it covers this code, this hart's
     // stack (mapped in the kernel image), and the UART, so the switch is seamless.
@@ -581,7 +588,7 @@ where
     A: FnMut() -> Option<u64>,
     P: Fn(u64) -> *mut PageTable,
 {
-    let here = init as *const () as u64;
+    let here = initialize as *const () as u64;
     let (pa, flags) = m
         .translate(here)
         .expect("the code switching tables is not mapped: we would die on the next fetch");
@@ -704,9 +711,9 @@ pub unsafe fn activate_user(satp: u64) {
 
 /// Remove the user address space from this hart: fall back to the kernel-only reserved root.
 pub fn deactivate_user() {
-    // SAFETY: `reserved_root()` composes `KERNEL_ROOT`, the fine map `init` built and stored, which
-    // is `'static` and contains the kernel high half by construction. Its low half is empty, so
-    // every user address faults, which is the point.
+    // SAFETY: `reserved_root()` composes `KERNEL_ROOT`, the fine map `initialize` built and stored,
+    // which is `'static` and contains the kernel high half by construction. Its low half is empty,
+    // so every user address faults, which is the point.
     unsafe { switch_user_root(reserved_root()) };
 }
 
@@ -899,8 +906,8 @@ static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
 #[allow(clippy::type_complexity)]
 fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTable, Format> {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
-    // SAFETY: `root` is the fine kernel table built by `init`; the direct map makes `phys_to_ptr`
-    // valid for every table frame.
+    // SAFETY: `root` is the fine kernel table built by `initialize`; the direct map makes
+    // `phys_to_ptr` valid for every table frame.
     unsafe {
         Mapper::new(
             root,
