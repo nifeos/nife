@@ -223,8 +223,8 @@ the job is not the top and give back nothing.
 It then proves the root is gone from the inside, on the two primitives that build things. Both must
 answer `NoSuchSlot` (-1) rather than `NotPermitted` (-3): the capability is gone, not narrowed.
 `script/swish-check` reads the sentence it prints. After the last announcement, `announce_outcomes`
-gives up the progenitor's mapping of the shell's output page with `UNMAP`,
-because `PageFrame::REVOKE` would take it from the shell too.
+gives up the progenitor's mapping of the shell's output page with `UNMAP`, because
+`PageFrame::REVOKE` would take it from the shell too.
 
 ## BUGS
 

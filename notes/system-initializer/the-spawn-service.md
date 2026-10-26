@@ -110,10 +110,9 @@ child an empty slot, which is what its second stream reports. `grant_plan::image
 
 `Service::spawn_job` splits a normal job's region before it builds anything. The progenitor builds a
 directory grant's caretaker from the same region as the program it serves (§92 (a caretaker is
-supervised by the client it serves)).
-That is the mechanism of §40 (a supervisor's death is its subtree's death): a child's resources come
-from its supervisor's region. One reclaim ends both, and the caretaker cannot outlive the grant it
-carries.
+supervised by the client it serves)). That is the mechanism of §40 (a supervisor's death is its
+subtree's death): a child's resources come from its supervisor's region. One reclaim ends both, and
+the caretaker cannot outlive the grant it carries.
 
 A `std` program's region is larger, because it is also the heap; see
 `grant_plan::STD_REGION_PAGES` for why one region rather than two. It covers a caretaker too. An
@@ -124,11 +123,11 @@ A directory grant takes the job's own window (milestone 599 (a frame per filesys
 channel)). The window is a page and the file server's endpoint badged with it. The caretaker calls
 with the endpoint, and the caretaker and the job both map the page. When the server enforces grants
 itself, it binds the badge to the grant's directory before the job holds anything (milestone 606 (a
-directory walk costs what it does on Linux), rulings D and T1). Then a directory needs no caretaker,
-and any failure on the way falls back to one. A name set still gets `fs_nameset_caretaker` over the
-bound channel, because the set is what narrows the directory (`spawn_loop.rs:1039`). A grant
-in the second mounted tree takes a window from that tree's pool and always gets a caretaker, since
-that server enforces no subtree.
+directory walk costs what it does on Linux), rulings D and T1). Then a directory grant needs no
+caretaker, and any failure on the way falls back to one. A name set still gets
+`fs_nameset_caretaker` over the bound channel, because the set is what narrows the directory
+(`spawn_loop.rs:1039`). A grant in the second mounted tree takes a window from that tree's pool and
+always gets a caretaker, since that server enforces no subtree.
 
 The window is held until `job_undertaker` reports the job reaped (milestone 685). `label` is the
 name on the job's supervision capability, and the reaped message carries it back. A pool whose every
