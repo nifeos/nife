@@ -167,3 +167,6 @@ stranger meets have no row because `script/names` does not count them: the field
 | `Bad` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "bad cluster" marker. | yes |
 | `EndOfChain` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "end of clusterchain" marker. | yes |
 | `decode` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Turns a raw entry into a `TableEntry`. | yes |
+| `verification` | module | `src/directory/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
+| `verification` | module | `src/reader/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
+| `verification` | module | `src/table/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |

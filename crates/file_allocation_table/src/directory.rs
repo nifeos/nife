@@ -6,8 +6,8 @@
 //! or check its checksum against the short entry that follows. The layouts are those of
 //! Microsoft's "FAT: General Overview of On-Disk Format", version 1.03, sections 6 and 7.
 
-use crate::boot_sector::{FatType, RootDirectory};
-use crate::reader::{ChainError, Volume, Walk};
+use crate::boot_sector::{BootSector, FatType, RootDirectory};
+use crate::reader::{ChainError, Links, Volume, Walk};
 use crate::sector::{SectorDevice, SectorSize};
 
 /// The bytes of one directory slot.
@@ -31,6 +31,10 @@ const LONG_NAME_MASK: u8 = 0x3F;
 const FREE: u8 = 0xE5;
 /// The ordinal bit that marks a long name's last piece, which comes first on disk.
 const LAST_LONG_ENTRY: u8 = 0x40;
+
+/// Where a long-name piece keeps its thirteen units: five in `LDIR_Name1`, six in `LDIR_Name2`
+/// and two in `LDIR_Name3`.
+const UNIT_OFFSETS: [usize; 13] = [1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30];
 
 /// **One directory slot, parsed.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -85,12 +89,7 @@ impl Slot {
         let attributes = slot[11];
         if attributes & LONG_NAME_MASK == LONG_NAME {
             let mut units = [0u16; 13];
-            for (unit, at) in units.iter_mut().zip(
-                (1..11)
-                    .step_by(2)
-                    .chain((14..26).step_by(2))
-                    .chain((28..32).step_by(2)),
-            ) {
+            for (unit, at) in units.iter_mut().zip(UNIT_OFFSETS) {
                 *unit = u16::from_le_bytes([slot[at], slot[at + 1]]);
             }
             return Slot::Used(DirectoryEntry::LongName(LongNameEntry {
@@ -190,6 +189,69 @@ enum Source {
     },
 }
 
+impl Source {
+    /// The root directory's sectors: its region on FAT12 and FAT16, its chain on FAT32.
+    fn root(boot: &BootSector) -> Source {
+        match boot.root_directory() {
+            RootDirectory::Region {
+                first_sector,
+                sectors,
+                ..
+            } => Source::Region {
+                next: first_sector,
+                end: first_sector + sectors,
+            },
+            RootDirectory::Cluster(first) => Source::chain(first),
+        }
+    }
+
+    /// The sectors of the chain that starts at `first`.
+    const fn chain(first: u32) -> Source {
+        Source::Chain {
+            walk: Walk::new(first),
+            next: 0,
+            remaining: 0,
+        }
+    }
+
+    /// **The volume-relative sector to read next**, `None` at the end of the directory, or the
+    /// error that ends a chain. A region yields its own sectors; a chain yields each cluster's
+    /// sectors in turn, for the clusters the bounded walk yields.
+    fn next_sector<L: Links>(
+        &mut self,
+        links: &mut L,
+        boot: &BootSector,
+    ) -> Option<Result<u32, ChainError<L::Error>>> {
+        match self {
+            Source::Region { next, end } => {
+                if *next >= *end {
+                    return None;
+                }
+                *next += 1;
+                Some(Ok(*next - 1))
+            }
+            Source::Chain {
+                walk,
+                next,
+                remaining,
+            } => {
+                if *remaining == 0 {
+                    let cluster = match walk.step(links)? {
+                        Ok(cluster) => cluster,
+                        Err(error) => return Some(Err(error)),
+                    };
+                    // The walk yields only data clusters, which always have sectors.
+                    *next = boot.cluster_first_sector(cluster)?;
+                    *remaining = boot.sectors_per_cluster();
+                }
+                *remaining -= 1;
+                *next += 1;
+                Some(Ok(*next - 1))
+            }
+        }
+    }
+}
+
 /// **A directory, read slot by slot**: what [`Volume::root_directory`] and [`Volume::directory`]
 /// return.
 ///
@@ -209,30 +271,13 @@ pub struct Directory<'v, D> {
 impl<'v, D: SectorDevice> Directory<'v, D> {
     /// The root directory of `volume`.
     pub(crate) fn root(volume: &'v mut Volume<D>) -> Directory<'v, D> {
-        match volume.boot_sector().root_directory() {
-            RootDirectory::Region {
-                first_sector,
-                sectors,
-                ..
-            } => Directory::new(
-                volume,
-                Source::Region {
-                    next: first_sector,
-                    end: first_sector + sectors,
-                },
-            ),
-            RootDirectory::Cluster(first) => Directory::chain(volume, first),
-        }
+        let source = Source::root(volume.boot_sector());
+        Directory::new(volume, source)
     }
 
     /// The directory whose chain starts at `first`.
     pub(crate) fn chain(volume: &'v mut Volume<D>, first: u32) -> Directory<'v, D> {
-        let source = Source::Chain {
-            walk: Walk::new(first),
-            next: 0,
-            remaining: 0,
-        };
-        Directory::new(volume, source)
+        Directory::new(volume, Source::chain(first))
     }
 
     fn new(volume: &'v mut Volume<D>, source: Source) -> Directory<'v, D> {
@@ -245,44 +290,13 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
         }
     }
 
-    /// The volume-relative sector to read next, `None` at the end of the directory.
-    fn next_sector(&mut self) -> Option<Result<u32, ChainError<D::Error>>> {
-        match &mut self.source {
-            Source::Region { next, end } => {
-                if *next >= *end {
-                    return None;
-                }
-                *next += 1;
-                Some(Ok(*next - 1))
-            }
-            Source::Chain {
-                walk,
-                next,
-                remaining,
-            } => {
-                if *remaining == 0 {
-                    let cluster = match walk.step(self.volume)? {
-                        Ok(cluster) => cluster,
-                        Err(error) => return Some(Err(error)),
-                    };
-                    let boot = self.volume.boot_sector();
-                    // The walk yields only data clusters, which always have sectors.
-                    *next = boot.cluster_first_sector(cluster)?;
-                    *remaining = boot.sectors_per_cluster();
-                }
-                *remaining -= 1;
-                *next += 1;
-                Some(Ok(*next - 1))
-            }
-        }
-    }
-
     /// Read the next sector into the buffer: `false` at the end of the directory.
     fn fill(&mut self) -> Result<bool, ChainError<D::Error>> {
-        let Some(sector) = self.next_sector() else {
+        let boot = *self.volume.boot_sector();
+        let Some(sector) = self.source.next_sector(self.volume, &boot) else {
             return Ok(false);
         };
-        let size = self.volume.boot_sector().sector_size().bytes();
+        let size = boot.sector_size().bytes();
         self.volume.read_sector(sector?, &mut self.buffer[..size])?;
         self.at = 0;
         Ok(true)
@@ -325,6 +339,9 @@ impl<D: SectorDevice> Iterator for Directory<'_, D> {
         result
     }
 }
+
+#[cfg(kani)]
+mod verification;
 
 #[cfg(test)]
 mod tests;

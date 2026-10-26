@@ -168,6 +168,37 @@ impl<D: SectorDevice> Volume<D> {
     }
 }
 
+/// **What a chain walk reads**: how many data clusters the volume has, and one table entry at a
+/// time. [`Volume`] is the one implementation; the proofs supply a hostile one.
+pub(crate) trait Links {
+    /// The device's error.
+    type Error;
+
+    /// The volume's data clusters, numbered 2 to `clusters() + 1`.
+    fn clusters(&self) -> u32;
+
+    /// Data cluster `cluster`'s entry.
+    fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<Self::Error>>;
+}
+
+impl<D: SectorDevice> Links for Volume<D> {
+    type Error = D::Error;
+
+    fn clusters(&self) -> u32 {
+        self.boot.clusters()
+    }
+
+    fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
+        Volume::entry(self, cluster)
+    }
+}
+
+/// Whether `cluster` is one of `clusters` data clusters, the same test
+/// [`BootSector::cluster_first_sector`] makes.
+const fn is_data(clusters: u32, cluster: u32) -> bool {
+    cluster >= 2 && cluster - 2 < clusters
+}
+
 /// **Where a chain walk stands**, apart from the volume it reads, so a directory can walk a
 /// chain while it reads the clusters.
 #[derive(Debug, Clone, Copy)]
@@ -191,11 +222,11 @@ impl Walk {
     }
 
     /// The next cluster, `None` at the end, or the error that ends the walk.
-    pub(crate) fn step<D: SectorDevice>(
+    pub(crate) fn step<L: Links>(
         &mut self,
-        volume: &mut Volume<D>,
-    ) -> Option<Result<u32, ChainError<D::Error>>> {
-        let result = self.advance(volume);
+        links: &mut L,
+    ) -> Option<Result<u32, ChainError<L::Error>>> {
+        let result = self.advance(links);
         if !matches!(result, Some(Ok(_))) {
             self.next = None;
             self.last = None;
@@ -203,23 +234,19 @@ impl Walk {
         result
     }
 
-    fn advance<D: SectorDevice>(
-        &mut self,
-        volume: &mut Volume<D>,
-    ) -> Option<Result<u32, ChainError<D::Error>>> {
+    fn advance<L: Links>(&mut self, links: &mut L) -> Option<Result<u32, ChainError<L::Error>>> {
+        let clusters = links.clusters();
         let cluster = match (self.next.take(), self.last) {
             (Some(first), None) => {
-                if volume.boot.cluster_first_sector(first).is_none() {
+                if !is_data(clusters, first) {
                     return Some(Err(ChainError::NotADataCluster(first)));
                 }
                 first
             }
-            (None, Some(last)) => match volume.entry(last) {
+            (None, Some(last)) => match links.entry(last) {
                 Err(error) => return Some(Err(error)),
                 Ok(TableEntry::EndOfChain) => return None,
-                Ok(TableEntry::Next(next)) if volume.boot.cluster_first_sector(next).is_some() => {
-                    next
-                }
+                Ok(TableEntry::Next(next)) if is_data(clusters, next) => next,
                 Ok(entry) => {
                     return Some(Err(ChainError::Broken {
                         cluster: last,
@@ -229,7 +256,7 @@ impl Walk {
             },
             _ => return None,
         };
-        if self.yielded >= volume.boot.clusters() {
+        if self.yielded >= clusters {
             return Some(Err(ChainError::TooLong));
         }
         self.yielded += 1;
@@ -254,6 +281,9 @@ impl<D: SectorDevice> Iterator for Chain<'_, D> {
         self.walk.step(self.volume)
     }
 }
+
+#[cfg(kani)]
+pub(crate) mod verification;
 
 #[cfg(test)]
 pub(crate) mod tests;

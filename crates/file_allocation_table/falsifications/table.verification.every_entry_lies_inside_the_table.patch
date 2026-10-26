@@ -1,0 +1,20 @@
+Falsifies `file_allocation_table::table::verification::every_entry_lies_inside_the_table`.
+
+The defect: FAT12 entries are placed two bytes apart, as FAT16's are, instead of one and a half.
+A table sized for 12-bit entries then runs out a third of the way before the last cluster, and
+the reader would take its entries from the sectors after the table.
+
+Expected to fail: the harness's `assert!(u64::from(at) >= first && u64::from(at) < end)`.
+
+diff --git a/crates/file_allocation_table/src/table.rs b/crates/file_allocation_table/src/table.rs
+--- a/crates/file_allocation_table/src/table.rs
++++ b/crates/file_allocation_table/src/table.rs
+@@ -66,7 +66,7 @@
+     let first = boot.table_first_sector(table)?;
+     let cluster = u64::from(cluster);
+     let offset = match boot.fat_type() {
+-        FatType::Fat12 => cluster + cluster / 2,
++        FatType::Fat12 => cluster * 2,
+         FatType::Fat16 => cluster * 2,
+         FatType::Fat32 => cluster * 4,
+     };

@@ -104,5 +104,8 @@ pub(crate) const fn entry_bytes(fat_type: FatType) -> usize {
     }
 }
 
+#[cfg(kani)]
+mod verification;
+
 #[cfg(test)]
 mod tests;
