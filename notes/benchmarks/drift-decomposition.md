@@ -1,6 +1,9 @@
 # The +6.5% drift, decomposed (milestone 300 (decompose the icount baseline drift))
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 2x2x2 grid that attributed the 2026-09-15 drift to one un-gated switch-tuple residual, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 2x2x2 grid that attributed the
+2026-09-15 drift to one un-gated switch-tuple residual, with the dates, tables and corrections
+behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## 2026-09-15: the baselines drifted +6.5%, and it was one feature's un-gated switch-tuple residual, not the toolchain (milestone 300)
 
@@ -15,7 +18,7 @@ prevent."
 
 A naive `current - baseline` conflates three variables that all changed in the window. They are the
 code, the pinned nightly (`nightly-2026-08-27` -> `nightly-2026-09-15`), and the dev Mac's QEMU
-(`11.0.2` -> `11.1.1`, upgraded 2026-08-28, after the baseline was saved). Since icount counts guest
+(`11.0.2` -> `11.1.1`, upgraded 2026-08-28, after the baseline save). Since icount counts guest
 instructions, in principle the emulator version is part of what a number means. That is why
 `.qemu-version` is pinned and `script/qemu-check` warns on a mismatch. Only 11.1.1 is installable
 locally now, so the QEMU term had to be measured out rather than assumed away.
@@ -155,7 +158,7 @@ floors carry `# toolchain: nightly-2026-09-23`, from commit `a66e8c5f9` on 2026-
 139's estimate was right after all. It estimated *"the compare"* `switch_user_root` already pays
 (~2-3 ticks when nothing is granted), and #885's guess of a non-inlined arch function on the hot path
 was wrong: the arch function ships off and is absent from a feature-off binary. Once the tuple
-residual is removed the delivered cost matches the estimate, to within the noise floor. The 139
+residual is gone the delivered cost matches the estimate, to within the noise floor. The 139
 feature, when built (`--features cycle_counter_grant`), still costs ~136 bytes in the release switch
 (see `kernel/Cargo.toml`). That is its legitimate on-cost.
 
@@ -167,7 +170,7 @@ shipping feature ON. A baseline saved from an opted-in build bakes a cost that n
 tripwire floor. Both directions fail. A shipping feature turned off for a bench understates
 production, and a measurement feature turned on overstates it. The one legitimate bench-only feature
 is `icount` itself, and it draws the line. It instruments observation: it changes how `timer::now()`
-reads the clock, not the switch logic being counted. A bench feature may change how you observe,
+reads the clock, not the switch logic under measurement. A bench feature may change how you observe,
 never what you measure.
 
 ### x86_64 recovered too: the residual was the *shared* tuple, not an aarch64/riscv path

@@ -1,6 +1,10 @@
 # The fastpath footprint gate
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds `script/fastpath-footprint`: what it measures, what it prints, the per-architecture numbers and milestone 188's corrections, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds `script/fastpath-footprint`: what it
+measures, what it prints, the per-architecture numbers and milestone 188's corrections, with the
+dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming
+record](README.md) holds it.*
 
 The target this gate measures against, 4 KiB of IPC fastpath in a 32 KB L1i, is derived in
 [the footprint appendix](kernel-footprint-and-caches.md), under "The target".
@@ -11,8 +15,8 @@ The target this gate measures against, 4 KiB of IPC fastpath in a 32 KB L1i, is 
 the BUGS and the trigger that would turn the gap below into scheduled work.*
 
 An earlier paragraph proposed a gate and named what blocked it: which symbols the hot path is, given
-assembly with no symbol sizes and inlined callees with no symbols at all. That question is answered
-below and the gate exists.
+assembly with no symbol sizes and inlined callees with no symbols at all. The answer is below, and
+the gate exists.
 
 #### The mechanism
 
@@ -31,11 +35,11 @@ below and the gate exists.
   would pull in every object and method in the ABI and measure the syscall surface rather than this
   path. Its own bytes are on every syscall, so they count; its other arms are not, so they do not.
 
-It is gated at 5% growth against `bench/fastpath-<arch>.txt`. That is tighter than the icount
-tripwire's 10% because these numbers are static: icount drifts when the compiler remakes inlining
-decisions for unrelated reasons, where a symbol size moves only when the code moves. DECISIONS §144
-replaces that stored baseline with a delta against `main` plus an absolute 16 KiB ceiling per
-architecture; that decision is made and not yet built.
+The script gates it at 5% growth against `bench/fastpath-<arch>.txt`. That is tighter than the
+icount tripwire's 10% because these numbers are static: icount drifts when the compiler remakes
+inlining decisions for unrelated reasons, where a symbol size moves only when the code moves.
+DECISIONS §144 replaces that stored baseline with a delta against `main` plus an absolute 16 KiB
+ceiling per architecture; that decision is made and not yet built.
 
 ### What the gate prints: distance, not drift (2026-09-21)
 
@@ -75,16 +79,16 @@ milestone 132 (the fast path's footprint) and milestone 188 (the IPC fastpath), 
 The footprint baselines were deliberately not re-saved in the same change, for the same reason.
 
 The footprint baselines are eroding the way the icount ones did. They carry no record of the nightly
-they were measured on. On 2026-09-20's pin every figure on every ISA sits above its baseline, with
+behind their figures. On 2026-09-20's pin every figure on every ISA sits above its baseline, with
 riscv64's `syscall_entry` at +4.7% against a 5% band. One more compiler bump can fail this gate for
 a reason no commit is responsible for. `bench/baseline-*.txt` got the toolchain stamp and
 `script/lint`'s check on 2026-09-21. `bench/fastpath-*.txt` did not, because stamping it means
-re-saving it. It is recorded in the script's own `BUGS`.
+re-saving it. The script's own `BUGS` records it.
 
 #### What "non-cold" means, since 2026-09-04 (milestone 188 phase 3)
 
-Two families. The panic and formatting family is libcore's and is matched by a regex in the script,
-because it carries no attribute anyone can read. Everything else is derived from `#[cold]` in this
+Two families. The panic and formatting family is libcore's, and a regex in the script matches it,
+because it carries no attribute anyone can read. Everything else comes from `#[cold]` in this
 workspace's own source: the script greps for the attribute and excludes exactly those functions.
 Outlining a cold arm is otherwise invisible to a closure walk, which simply follows the new call and
 counts the same bytes under a new name. It also means the exclusion cannot be widened by editing the
@@ -214,14 +218,14 @@ numbers.
 
 ### BUGS
 
-- It is an upper bound, not a footprint. Whole symbol sizes are summed, so a cold tail parked at the
-  end of a hot function counts even though its cache lines are never fetched. The direction is
-  deliberate: a tripwire that over-counts consistently still catches growth.
+- It is an upper bound, not a footprint. The script sums whole symbol sizes, so a cold tail parked
+  at the end of a hot function counts even though its cache lines are never fetched. The direction
+  is deliberate: a tripwire that over-counts consistently still catches growth.
 - Indirect calls are invisible, the same blind spot `script/stack-depth-check` records. A call
   through a function pointer contributes nothing to the closure.
-- The riscv64 tail instruction is assumed to be 4 bytes. That ISA mixes 2- and 4-byte instructions,
-  so the last instruction of each symbol may be over-counted by two bytes. Conservative, and lost in
-  the noise at this scale.
+- The script assumes the riscv64 tail instruction is 4 bytes. That ISA mixes 2- and 4-byte
+  instructions, so the last instruction of each symbol may be over-counted by two bytes.
+  Conservative, and lost in the noise at this scale.
 - The same 4 is a guess in both directions on x86_64, whose instructions are 1 to 15 bytes, so it is
   not strictly an upper bound there. Measured: summing exact symbol sizes instead gives 6,619 against
   6,639 for the closure and 1,632 against 1,637 for the entry set, a 0.3% over-count. The `int3`
@@ -247,4 +251,4 @@ entirely.
 The TX1 is the machine where this becomes measurable: 48 KB L1i, a real PMU, and the platform whose
 published seL4 numbers milestone 25 (cross-OS performance comparison) compares against. The cycle counters of milestone 74 (cycle counters), plus PMU
 cache-miss events on that board would turn this from arithmetic into a measurement, taken next to
-the kernel it is being compared with.
+the kernel under comparison.

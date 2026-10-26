@@ -1,6 +1,10 @@
 # Milestone 138 (close the read gap), steps 1 and 3
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 8 KiB record and the 64 KiB file request, measured before and after, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef), who refused `milestone-138-steps-1-and-3` for this file; [the naming record](README.md) says why.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 8 KiB record and the 64 KiB file
+request, measured before and after, with the dates, tables and corrections behind them. Name:
+ratified 2026-09-24 (calef), who refused `milestone-138-steps-1-and-3` for this file; [the naming
+record](README.md) says why.*
 
 ## Step 1 taken: the record is 8 KiB, and 72% of a read is now the part it does not touch (milestone 138, 2026-08-18)
 
@@ -173,7 +177,7 @@ So nothing left on milestone 138's list moves a bulk read much. The next read wi
 contract. That is step 4, which was a `BUGS` entry rather than a milestone when this was written.
 
 The write residual moved most. The 690 us transaction (allocate, rewrite the node, commit to the
-header ring) is charged once per request, so it went from 690 us per 4 KiB to 43 us per 4 KiB. A
+header ring) costs once per request, so it went from 690 us per 4 KiB to 43 us per 4 KiB. A
 sequential write is 8.02x, the largest number in this milestone, as step 1 predicted for the
 transaction term under a larger transfer.
 
@@ -203,7 +207,7 @@ one command: `sh bench/record-level-sweep.sh 3 0 1 5` with `TRANSFER_PAGES` at 1
 
 ### BUGS
 
-- Sixteen timed requests per phase. Bytes moved are held at 1 MiB, which the fixture image bounds, so
+- Sixteen timed requests per phase. Bytes moved stay at 1 MiB, which the fixture image bounds, so
   a 64 KiB point is 16 iterations where a 4 KiB point is 256. Each is long enough that counter
   resolution is not the issue, but the sample is small. Standard deviations are 0.5% at one page and
   0.7 to 4.5% at sixteen, and `fs_seq_write` is the noisy one.

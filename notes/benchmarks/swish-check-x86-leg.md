@@ -31,8 +31,8 @@ reaches userspace yet; `components/src/input.rs`), so the rotation reached the b
 constantly. The fix is that thread calling `sched::exit()` instead; the idle thread, which halts
 only when nothing else can run, takes the core.
 
-Why aarch64 and riscv64 never showed it is settled by milestone 720 (the boot thread
-cannot halt while it is runnable). Their boot paths also ended in `arch::halt()`, but their input
+Milestone 720 (the boot thread cannot halt while it is runnable) settles why aarch64 and riscv64
+never showed it. Their boot paths also ended in `arch::halt()`, but their input
 is interrupt-driven, so no thread keeps the rotation turning while the shell waits. Milestone 720
 ended both in `sched::exit()`, made `arch::halt` take a token an ordinary boot
 cannot make, and measured both legs before and after; its roadmap block has the numbers.
@@ -60,7 +60,7 @@ What each lead came to:
 - The CPU model. `-cpu max` against a named model with `RDSEED`: no difference. Kept.
 - The IOMMU. Dropping `intel-iommu` and `iommu_platform=on` moved 10 percent, inside the noise
   above, and would take away the confinement the kernel suite runs on this machine. Kept.
-- The paint path. After the fix, the median line is 0.42 s and what is left is proportional to
+- The paint path. After the fix, the median line is 0.42 s and what remains is proportional to
   output: the `caps` lines and the two supervised jobs are the tail. The console still blocks on one
   paint per write because 624's batcher is off (`SCREEN_BATCHING_ENABLED`). That is 624's to finish,
   not this milestone's.
