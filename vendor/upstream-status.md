@@ -21,9 +21,9 @@ Pinned at **0.9.1**, upstream git sha `473b4baeb041`.
 
 **Releases: current.** 0.9.1 is still the newest published version that is neither yanked nor a prerelease.
 
-**Upstream git: 42 non-merge commits** since the pinned sha (plus 17 merge commits, dropped), head `b87b0976ee12`.
+**Upstream git: 43 non-merge commits** since the pinned sha (plus 18 merge commits, dropped), head `c988cb84008b`.
 
-Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/473b4baeb041ebe14504f30693393b1cae52558c...b87b0976ee122036b2ec040159b890e1e06ca139
+Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/473b4baeb041ebe14504f30693393b1cae52558c...c988cb84008bb9dd402c8404331078af47be39af
 
 - 2026-07-05 `57ad275d` Update redox-path
 - 2026-07-07 `d807dd3e` Fix following symlink
@@ -67,8 +67,25 @@ Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/473b4bae
 - 2026-08-31 `cf3ad1db` Fix rename with scheme path
 - 2026-09-06 `5e279a38` Update getrandom
 - 2026-09-06 `9328a9c0` Reduce env_logger deps
+- 2026-10-22 `a55802b0` refactor: Migrate unlinkat, flink and frename to std_fs_call *at variants
 
 **Upstream has edited files our divergence patch also touches**, so a bump is likely to conflict there:
 
 - `Cargo.toml`
 - `src/transaction.rs`
+
+## talc
+
+Pinned at **5.1.1**, upstream git sha `15b2758a4538`.
+
+**Releases: current.** 5.1.1 is still the newest published version that is neither yanked nor a prerelease.
+
+**Upstream git: 1 non-merge commits** since the pinned sha (plus 0 merge commits, dropped), head `4a547f57b75f`.
+
+Full comparison: https://github.com/SFBdragon/talc/compare/15b2758a45388f8a5c9efd4dd7f7493d09284e19...master
+
+- 2026-09-09 `4a547f57b75` fix(BENCHMARKS_WASM.md): broken example
+
+Upstream has not touched any file our divergence patch touches.
+
+**Upstream fix: still open**: https://github.com/SFBdragon/talc/pull/57 (Fix fit check overflows).
