@@ -2,7 +2,8 @@
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
 draining lane of 2026-08-04: the two bugs, the rendezvous limit, the barrier declaration and the
-ways out. It was moved here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
+ways out. The lane that split the file moved it here verbatim from the main page on 2026-09-25
+(UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -43,8 +44,8 @@ A named file did not reach a pipeline stage. `wc report.txt` is `wc < report.txt
 operator left out, and the resolution is the planner's, because deciding that a trailing
 positional is a stream needs the manifest (`InputDeclaration::Required` plus a bare token, in
 `grant_plan::plan_against_with`). `run` read that answer off the plan. `pipeline` did not: it wired
-the head's input off the `Line`, which has no `<` on it, so a planned `Source::File` was thrown away
-and the stage was spawned with an empty input slot.
+the head's input off the `Line`, which has no `<` on it, so it threw away a planned `Source::File`
+and spawned the stage with an empty input slot.
 
 It did not hang, and that is the part worth keeping. A `receive` on an empty slot answers `NoSuchSlot`
 rather than blocking. The error word's top byte is an opcode `byte_sink_contract` does not define,
@@ -52,7 +53,7 @@ so it decodes as `Msg::Malformed`. And every reader in this tree treats a malfor
 end of the document, because a page silently missing a paragraph is worse than a page that stops.
 Three correct local decisions compose into a stage that runs to completion over nothing and reports
 an honest count of an empty stream. `doc page.md | wc` answering `0 0 0` is not a viewer that failed
-to render, it is a viewer that rendered the empty document it was given.
+to render, it is a viewer that rendered the empty document it received.
 
 That is why nothing caught it, and it is the shape to recognize: an empty capability slot on a
 byte stream reads as an empty stream, everywhere, by construction. There is no reader in this
@@ -65,13 +66,13 @@ was `wc out.txt`, which is one stage and goes down `run`. `wc out.txt | wc` is n
 and in `script/swish-check`, and its expected answer is derived from the line above it rather than
 written down.
 
-The output ceiling was two numbers for one job. Printing stopped at 32 sixteen-byte messages
-and a `>` allowed 1024, so the same program's output was cut at 512 bytes on the screen and whole in
-a file, with nothing saying which had happened. The number exists to bound a program that never
-announces end of stream, and that bug is not more tolerable when the bytes are going into a file.
-There is one number now (`MAX_OUTPUT_CHUNKS`, 64 KiB) and the reason on record for the split ("a
-file is where output goes when there is too much of it to read") was a policy about length, which
-the same comment disclaimed in its next sentence.
+The output ceiling was two numbers for one job. Printing stopped at 32 sixteen-byte messages and a
+`>` allowed 1024, so the shell cut the same program's output at 512 bytes on the screen and wrote it
+whole to a file, with nothing saying which had happened. The number exists to bound a program that
+never announces end of stream, and that bug is not more tolerable when the bytes are going into a
+file. There is one number now (`MAX_OUTPUT_CHUNKS`, 64 KiB) and the reason on record for the split
+("a file is where output goes when there is too much of it to read") was a policy about length,
+which the same comment disclaimed in its next sentence.
 
 ### The third one is the rendezvous, and no amount of shell code fixes it
 
@@ -122,8 +123,8 @@ second output stream: `InputDeclaration::Required { writes_while_reading }`, car
 and checked over a whole planned line by `grant_plan::check_chain`. That is because the barrier may
 be any stage in the chain and no single stage can answer the question.
 
-A line with no barrier is `Refusal::NoReaderButThisShell` at the prompt, before any file is
-opened, which matters because a `>` truncates and a line that will not run must not have emptied
+A line with no barrier is `Refusal::NoReaderButThisShell` at the prompt, before the shell opens any
+file, which matters because a `>` truncates and a line that will not run must not have emptied
 one:
 
 ```text
@@ -136,14 +137,14 @@ Updated 2026-08-22 (DECISIONS §106): this transcript is no longer what `doc pag
 The refusal above is still exactly right for the analysis on this page (a shell that is both the
 chain's feeder and its reader has to refuse, or hang). But the analysis had an unstated assumption:
 that the tail's reader, if there is one, is always this shell. §106 gives an unredirected tail
-somewhere else to be read (`terminal_sink_caretaker`), so `doc page.md` renders now; only the
+a reader other than this shell (`terminal_sink_caretaker`), so `doc page.md` renders now; only the
 redirected shape (`doc page.md > out.txt`) still meets this refusal, because a `>` still comes back
 through this shell (DECISIONS §55). See notes/documentation.md's `BUGS` for the current transcript.
 
 It is the same kind of sentence as `InputRequired`'s, one level up: the manifest knows something
 about the program, so the prompt knows something about the line. And it is the same trade, because
 a shell that hangs is strictly worse than a shell that refuses. This kernel has no way to interrupt
-a process blocked in a rendezvous send, so the prompt is gone until the machine is rebooted.
+a process blocked in a rendezvous send, so the prompt is gone until someone reboots the machine.
 
 Nothing in this tree declared `true` until milestone 40's `doc`, which needed one field set and
 is now the reachable proof; see the transcript below (`$ doc motd`, updated by the same decision).
@@ -171,7 +172,7 @@ $ doc motd > page.txt
 Updated 2026-08-22: the third line's answer changed; the fourth's did not. DECISIONS §106 gives
 `doc motd`'s output somewhere to go that is not this shell, so it renders now instead of refusing;
 `doc motd > page.txt` still refuses, because `>` still routes through this shell (DECISIONS §55).
-The transcript above is kept as the record of what milestone 40's own lane found before that
+This note keeps the transcript above as the record of what milestone 40's own lane found before that
 decision; see notes/documentation.md's `BUGS` for the current one.
 
 The second line is the whole claim, and the two numbers are the assertion rather than the fact that
@@ -183,13 +184,13 @@ operand at the head of the same pipeline worked all along.
 The third line was the wall, said out loud instead of hung on, and is now the fourth line's alone. A
 person who wants a page on the screen no longer needs `| wc` in front of it to have one. What they
 get for the redirected shape is still a sentence naming what to type instead, which is worse than a
-pager and far better than a prompt that has to be rebooted.
+pager and far better than a prompt that needs a reboot.
 
 ### The two ways out that were not taken, and the third that was
 
-Neither of the first two is taken here; they are recorded because the refusal above was a wall and
+This page takes neither of the first two; it records them because the refusal above was a wall and
 not an answer, and a person who wants `doc page.md` to render on the screen is asking a reasonable
-thing. A third way, found later and not by this page, is taken: see below.
+thing. A third way, found later and not by this page, is in use: see below.
 
 A pull-based source, which is the exact answer to the constraint. The reason the shell needs two
 wait points is that it holds two channels to one child. Make it one: hand the stage a single
@@ -198,20 +199,19 @@ that either replies with bytes or writes bytes out. One wait point, arbitrary in
 deadlock ever. What it costs is everything [this note](../pipes.md) calls a finding: "a source is
 the sink contract received rather than sent" stops being true, `<` and the right-hand side of `|`
 stop being one convention. The read end and the write end stop being separate capabilities, so the
-program on the right of a `|` could write back up its own input. That last property is called
-load-bearing [in the wire
-section](declarations-and-wire.md#the-wire-and-the-one-thing-the-progenitor-had-to-learn) and it
-would be gone. A design fork, and calef's.
+program on the right of a `|` could write back up its own input. [The wire
+section](declarations-and-wire.md#the-wire-and-the-one-thing-the-progenitor-had-to-learn) calls that
+last property load-bearing and it would be gone. A design fork, and calef's.
 
 A buffering stage, which is the answer the roadmap already predicted. A barrier can be *inserted*
 rather than declared: a component that speaks the sink contract on both sides, takes a memory grant,
-and absorbs what it is given. That is precisely the shape ["Buffering:
+and absorbs what it receives. That is precisely the shape ["Buffering:
 measured"](buffering.md#buffering-measured-and-the-answer-is-to-build-nothing) said a buffer would
 arrive in if it earned its place, and this is the case that earns it. The measurement there says a
-buffer costs roughly double and buys decoupling, not bandwidth, and decoupling is exactly what is
-wanted: that section's own caveat is that the benchmark did not measure the case buffering is for.
-It needs a program, a name, a progenitor entry and a `Program` id, and a document larger than the grant
-deadlocks again, so the bound has to be an honest part of it.
+buffer costs roughly double and buys decoupling, not bandwidth, and decoupling is exactly what the
+case calls for: that section's own caveat is that the benchmark did not measure the case buffering
+is for. It needs a program, a name, a progenitor entry and a `Program` id, and a document larger
+than the grant deadlocks again, so the bound has to be an honest part of it.
 
 What is not a way out is an adapter process at the file end. The obvious move for `doc page.md >
 out.txt` is to give the writing end to a component so the shell is only the producer. It does not
@@ -220,7 +220,7 @@ shell"](the-file-end.md#the-file-behind-a--is-this-shell-and-that-was-not-the-pl
 `filesystem_contract` shares one page between the FS server and its clients, and this line has the
 shell reading the filesystem while the adapter writes it. Same race, same page, and no ordering fix.
 
-The way that was taken: hand an unredirected tail's output to an adapter that already exists
+The way taken: hand an unredirected tail's output to an adapter that already exists
 (DECISIONS §106, 2026-08-22). Not an adapter at the file end, which the paragraph above rules out,
 but at the screen end. It is `terminal_sink_caretaker`, this milestone's own second-stream default
 (DECISIONS §67), given the tail's *primary* output too when the line named neither `>` nor `|` for

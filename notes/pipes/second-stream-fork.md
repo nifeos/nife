@@ -1,8 +1,8 @@
 # `2>`: the fork as it stood open
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
-analysis written while `2>` was undecided, which explains what the built thing is not. It was moved
-here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
+analysis written while `2>` was undecided, which explains what the built thing is not. The lane that
+split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -15,10 +15,10 @@ The records this file cites by number:
 
 ## The fork as it stood open, kept for the reasoning
 
-*Everything from here to the end of this section is the analysis that was written while `2>` was
-still undecided. It is kept because the reasoning is the reusable part and because it explains what
-the built thing is not. "Today" means before 2026-08-03. The section that closes it is "Why this is
-calef's call", and he called it: option (c), the manifest declaration.*
+*Everything from here to the end of this section is the analysis written while `2>` was still
+undecided. This appendix keeps it because the reasoning is the reusable part and because it explains
+what the built thing is not. "Today" means before 2026-08-03. The section that closes it is "Why
+this is calef's call", and he called it: option (c), the manifest declaration.*
 
 ### There is no second stream today, and that is a fact rather than an omission
 
@@ -43,23 +43,23 @@ The thing a person usually reaches for `2>` to save is the shell's own refusals,
 enter a redirection here. `wc < nosuch.txt` is `Say::Failed` printed by the prompt;
 `least_authority_demo 9 > out.txt` is `Refusal::NotAByteStream` printed by the prompt; a spawn that
 fails is `spawnproto::SPAWN_FAILED` printed by the prompt. All of it goes to the terminal, always,
-because the shell is a different process from the thing being redirected and its output was never in
-the substituted slot.
+because the shell is a different process from the thing the line redirects and its output was never
+in the substituted slot.
 
-That is not a small residue. It is most of what fd 2 carries in a Unix shell session, and it is
-separated here by process boundary rather than by convention. That is the stronger separation:
-there is no `2>&1` that could merge them back by accident.
+That is not a small residue. It is most of what fd 2 carries in a Unix shell session, and here the
+process boundary separates it, not convention. That is the stronger separation: there is no `2>&1`
+that could merge them back by accident.
 
 What remains is a program's own diagnostics, which today are indistinguishable from its output.
 
 ### Why fd 2 exists on Unix, and why that reason does not transfer
 
 Unix needs a *numbered convention* because a process cannot ask its parent for a channel. Every
-process gets three descriptors by inheritance, so what fd 2 is has to be agreed in advance by
-everybody, forever. Nothing here is ambient. A program holds an endpoint because the progenitor put
-one in a slot. The progenitor put it there because the shell's plan said to, and the plan came from
-a manifest that already declares what kind of output the program has (`OutputDeclaration`). The mechanism
-for "this program has a second thing to say" is therefore a declaration, not a number.
+process gets three descriptors by inheritance, so everybody has to agree in advance, forever, on
+what fd 2 is. Nothing here is ambient. A program holds an endpoint because the progenitor put one in
+a slot. The progenitor put it there because the shell's plan said to, and the plan came from a
+manifest that already declares what kind of output the program has (`OutputDeclaration`). The
+mechanism for "this program has a second thing to say" is therefore a declaration, not a number.
 
 ### The two shapes it could take, and what each costs
 
