@@ -815,12 +815,13 @@ mod tests {
         n: u64,
         mut generate: impl FnMut() -> Option<[u8; 32]> + Send + 'static,
     ) -> (u64, u64) {
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut pool = Pool::new();
-            let _ = tx.send(pool.take(n, &mut generate));
+            let _ = sender.send(pool.take(n, &mut generate));
         });
-        rx.recv_timeout(std::time::Duration::from_secs(5))
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(5))
             .expect("take never returned: its gather loop made no progress")
     }
 }
