@@ -11,14 +11,14 @@ The ruling of that date ratified every name below. Each row with a refusal names
 ruling turned down and why. The same ruling moved nife's process plan out of the crate: the client
 windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` with its methods, and the `confinement_attackers`
 feature now sit in the nife-internal crate `non_volatile_memory_express_contract`, which does not
-publish, and `can_write` sits in nife's NVMe server. Those names follow nife's ordinary naming and
+publish. `can_write` sits in nife's NVMe server. Those names follow nife's ordinary naming and
 have no row here. A new name in this crate takes a row here, `provisional` until a ruling, and
 `script/lint` fails a module or `pub` item without one.
 
-The column `outside` says whether a caller outside the crate reaches the name. The variants of
-`Doorbell` (`SubmissionTail`, `CompletionHead`) and the fields of `Completion` and
-`IdentifyNamespace`, and the inline modules `regs`, `tests` and `verification`, have no row because
-`script/names` does not count them. The same ruling covers them; the opcodes and register names keep the specification's spelling.
+The column `outside` says whether a caller outside the crate reaches the name. Some names have no row
+because `script/names` does not count them: the variants of `Doorbell` (`SubmissionTail`,
+`CompletionHead`), the fields of `Completion` and `IdentifyNamespace`, and the inline modules
+`regs`, `tests` and `verification`. The same ruling covers them; the opcodes and register names keep the specification's spelling.
 
 | name | kind | path | status | outside |
 |---|---|---|---|---|

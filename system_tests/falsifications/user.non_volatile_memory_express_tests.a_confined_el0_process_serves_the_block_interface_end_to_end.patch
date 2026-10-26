@@ -20,11 +20,10 @@ seven eighths of the first and the first read-back of block 37 comes back wrong 
 
 This replaces the two hand falsifications of milestone 318 (the NVMe boot test on real geometry) as the replayable record. Those were edits
 to the test; this is a defect in the code the test exists to check.
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
-index 316c8e7ce..b1ed87129 100644
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -717,7 +717,7 @@ impl Handoff {
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- a/crates/non_volatile_memory_express_contract/src/lib.rs
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -178,7 +178,7 @@
          if !self.holds_block(block, unit) {
              return None;
          }

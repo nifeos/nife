@@ -935,6 +935,7 @@ name = "non_volatile_memory_express_contract"
 version = "0.1.0"
 dependencies = [
  "non_volatile_memory_express",
+ "non_volatile_memory_express_contract",
 ]
 
 [[package]]

@@ -43,12 +43,11 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   crate or move to the driver is the lane's call, recorded in its pull request, since a stranger's
   kernel has no use for them.
 - Ruled 2026-10-25 (UTC), on #2720: nife's process plan leaves the crate. Pull request #2736 moved
-  the client windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` with `pack`, `unpack`,
-  `holds_block` and `transfer_command`, the `confinement_attackers` feature and the three handoff
-  harnesses into the nife-internal crate `non_volatile_memory_express_contract` (a provisional
-  name), and `can_write` into the EL0 server, its only caller. The crate's remaining names are
-  ratified in
-  [the names record](0857-crates-released-on-their-own/non-volatile-memory-express-names.md).
+  the client windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` and its methods, the
+  `confinement_attackers` feature and the three handoff harnesses into the nife-internal crate
+  `non_volatile_memory_express_contract` (a provisional name). It moved `can_write` into the EL0
+  server, its only caller. [The names record](0857-crates-released-on-their-own/non-volatile-memory-express-names.md)
+  holds the crate's remaining names, all ratified.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
@@ -65,7 +64,7 @@ Each row is a property this crate must prove before it publishes. The harness ce
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
 `crates/non_volatile_memory_express/falsifications/`. Measured 2026-10-11 (UTC): 8 of 8 proven.
-Since #2736 the crate carries five; the three handoff rows below moved with `Handoff` to
+Since #2736 the crate carries five. The three handoff rows below moved with `Handoff` to
 `non_volatile_memory_express_contract`, which does not publish.
 
 | property | harness |
