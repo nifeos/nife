@@ -340,7 +340,7 @@ pub const CHAN_STATUS_RPS: u32 = 1 << 8;
 pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 
 /// The page of the window holding channel 0's registers, which is the page the data plane is
-/// mapped. Every `CHAN_*` and `DMA_*` offset above is inside it.
+/// mapped. Every `CHAN_*` offset, `BUS_MODE` and `SYS_BUS_MODE` is inside it.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`,
 /// replacing `DMA_PAGE`.
@@ -371,8 +371,7 @@ mod tests {
     /// The MAC's administrative registers are not on it: the process cannot reach the MDIO bus
     /// or the station address through the page it is given.
     #[test]
-    fn the_management_data_input_output_bus_and_the_station_address_are_not_on_the_direct_memory_access_register_page()
-     {
+    fn the_administrative_registers_are_off_the_direct_memory_access_register_page() {
         for r in [
             MAC_MDIO_ADDR,
             MAC_MDIO_DATA,

@@ -347,7 +347,10 @@ pub fn configure(
 /// OpenBSD also sets `JE` (jumbo frames). This does not: a jumbo frame cannot fit a 2048-byte
 /// buffer, would span descriptors, and would be dropped by [`crate::receive_verdict`] anyway, so
 /// accepting it into the FIFO only spends ring slots on frames that are thrown away.
-pub const fn mac_conf(current: u32, link: Link, loopback: bool) -> u32 {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `conf` spelled out as `configuration`, replacing
+/// `mac_conf`.
+pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 {
     let mut conf = current
         & !(registers::MAC_CONF_PS
             | registers::MAC_CONF_FES
@@ -385,7 +388,7 @@ pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
         transmit | registers::CHAN_TX_CONTROL_ST,
     );
     let conf = hardware.read(registers::MAC_CONF);
-    hardware.write(registers::MAC_CONF, mac_conf(conf, link, loopback));
+    hardware.write(registers::MAC_CONF, mac_configuration(conf, link, loopback));
 }
 
 /// **Stop the MAC and both DMA channels**, OpenBSD's `dwqe_down` order: receiver off, receive DMA
@@ -571,12 +574,12 @@ mod tests {
             speed: Speed::Thousand,
             full_duplex: true,
         };
-        let c = mac_conf(registers::MAC_CONF_PS | registers::CONFIG_LM, gig, false);
+        let c = mac_configuration(registers::MAC_CONF_PS | registers::CONFIG_LM, gig, false);
         assert_eq!(c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES), 0);
         assert_ne!(c & registers::MAC_CONF_DM, 0);
         assert_eq!(c & registers::CONFIG_LM, 0, "loopback cleared");
         assert_eq!(c & (1 << 16), 0, "JE");
-        let c = mac_conf(
+        let c = mac_configuration(
             0,
             Link {
                 speed: Speed::Hundred,
@@ -771,7 +774,7 @@ mod tests {
     }
 
     /// The MAC word from zero and from all ones: the speed and duplex bits are replaced, every
-    /// bit `mac_conf` sets is set whatever was there, and nothing else moves.
+    /// bit `mac_configuration` sets is set whatever was there, and nothing else moves.
     #[test]
     fn the_mac_word_from_zero_and_from_all_ones() {
         let gig = Link {
@@ -782,11 +785,11 @@ mod tests {
             speed: Speed::Ten,
             full_duplex: false,
         };
-        assert_eq!(mac_conf(0, gig, false), 0x0006_2203);
-        assert_eq!(mac_conf(u32::MAX, gig, false), 0xffff_2fff);
-        assert_eq!(mac_conf(u32::MAX, ten_half, true), 0xffff_9fff);
+        assert_eq!(mac_configuration(0, gig, false), 0x0006_2203);
+        assert_eq!(mac_configuration(u32::MAX, gig, false), 0xffff_2fff);
+        assert_eq!(mac_configuration(u32::MAX, ten_half, true), 0xffff_9fff);
         assert_eq!(
-            mac_conf(
+            mac_configuration(
                 u32::MAX,
                 Link {
                     speed: Speed::Hundred,

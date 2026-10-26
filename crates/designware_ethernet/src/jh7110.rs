@@ -6,7 +6,8 @@
 //! interface select, the PHY's node supplies its delays. radon's U-Boot hands over **the vendor's
 //! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
 //! compatible, PHY as register values, interface select in board code). Both are read here, and
-//! their shared facts agree.
+//! their shared facts agree. A constant copied from a source drops the source's family prefix,
+//! such as `JH7110_`, and its documentation opens with its full name and its source's spelling.
 //!
 //! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
 //! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
@@ -166,14 +167,14 @@ pub fn first_cell(value: &[u8]) -> Option<u32> {
 
 impl Discovered {
     /// **The port, from its node.** `base` and `size` are its `reg`, `compatible` the
-    /// [`COMPATIBLES`] entry it matched, `prop(name)` the port node's property `name`, and
+    /// [`COMPATIBLES`] entry it matched, `property(name)` the port node's property `name`, and
     /// `physical_layer_device` what [`mainline_physical_layer_device`] or
     /// [`vendor_physical_layer_device`] read: mainline's when the node has a `phy-handle`, the
     /// vendor's otherwise.
     ///
     /// # Errors
     ///
-    /// Propagates the first error `prop` returns.
+    /// Propagates the first error `property` returns.
     ///
     /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
     /// tree walk and the process layout left the driver crates.
@@ -181,21 +182,21 @@ impl Discovered {
         base: u64,
         size: u64,
         compatible: &'static [u8],
-        mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+        mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
         physical_layer_device: (u8, Settings),
     ) -> Result<Self, E> {
         let status_okay =
-            prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
-        let station_address = prop(b"local-mac-address")?
+            property(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
+        let station_address = property(b"local-mac-address")?
             .and_then(|b| b.get(..6))
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
         let reduced_gigabit_media_independent_interface =
-            prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
+            property(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
         let (physical_layer_device_address, physical_layer_device) = physical_layer_device;
         Ok(Discovered {
             base,
             size,
-            interrupt: prop(b"interrupts")?.and_then(first_cell),
+            interrupt: property(b"interrupts")?.and_then(first_cell),
             compatible,
             status_okay,
             station_address,
@@ -206,21 +207,21 @@ impl Discovered {
     }
 }
 
-/// **The PHY as mainline describes it**, in physical units: `prop(name)` is the property `name`
+/// **The PHY as mainline describes it**, in physical units: `property(name)` is the property `name`
 /// of the node the port's `phy-handle` names. Gives the MDIO address (its `reg`, else 0) and the
 /// settings; a node with neither internal delay keeps [`Settings::FALLBACK_GMAC0`].
 ///
 /// # Errors
 ///
-/// Propagates the first error `prop` returns.
+/// Propagates the first error `property` returns.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
 /// `physical_layer_device`, replacing `mainline_phy`.
 #[doc(alias = "phy")]
 pub fn mainline_physical_layer_device<'t, E>(
-    mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+    mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
-    let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
+    let mut num = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
     let address = num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
     let (receive, transmit) = (num(b"rx-internal-delay-ps")?, num(b"tx-internal-delay-ps")?);
     if receive.is_none() && transmit.is_none() {
@@ -228,7 +229,7 @@ pub fn mainline_physical_layer_device<'t, E>(
     }
     let receive_clock = num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
     let receive_data = num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
-    let mut has = |name: &[u8]| prop(name).map(|v| v.is_some());
+    let mut has = |name: &[u8]| property(name).map(|v| v.is_some());
     let inverted = if has(b"motorcomm,tx-clk-adj-enabled")? {
         Some([
             has(b"motorcomm,tx-clk-10-inverted")?,
@@ -250,21 +251,21 @@ pub fn mainline_physical_layer_device<'t, E>(
     ))
 }
 
-/// **The PHY as the vendor tree describes it**, in register values: `prop(name)` is the property
-/// `name` of the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`]. Any property it lacks keeps
+/// **The PHY as the vendor tree describes it**, in register values: `property(name)` is the
+/// property `name` of the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`]. Any property it lacks keeps
 /// [`Settings::FALLBACK_GMAC0`]'s value, and a node without `rx_delay_sel` is the fallback whole.
 ///
 /// # Errors
 ///
-/// Propagates the first error `prop` returns.
+/// Propagates the first error `property` returns.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
 /// `physical_layer_device`, replacing `vendor_phy`.
 #[doc(alias = "phy")]
 pub fn vendor_physical_layer_device<'t, E>(
-    mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+    mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
-    let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
+    let mut num = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
     let Some(receive) = num(b"rx_delay_sel")? else {
         return Ok((0, Settings::FALLBACK_GMAC0));
     };

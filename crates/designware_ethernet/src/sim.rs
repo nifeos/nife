@@ -153,12 +153,12 @@ impl Region for Cpu<'_> {
 }
 
 /// The tail registers and a barrier counter.
-pub(crate) struct TailRegs<'a> {
+pub(crate) struct TailRegisters<'a> {
     registers: &'a mut BTreeMap<u32, u32>,
     barriers: &'a mut usize,
 }
 
-impl Tails for TailRegs<'_> {
+impl Tails for TailRegisters<'_> {
     fn set_receive_tail(&mut self, address: u32) {
         self.registers.insert(registers::CHAN_RX_END_ADDR, address);
     }
@@ -365,9 +365,9 @@ impl NetworkInterfaceController {
     }
 
     /// Run `f` with the CPU's handle on the region and the tail registers.
-    pub fn with<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegs<'_>) -> R) -> R {
+    pub fn with<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegisters<'_>) -> R) -> R {
         let mut cpu = Cpu(&self.memory);
-        let mut tails = TailRegs {
+        let mut tails = TailRegisters {
             registers: &mut self.registers,
             barriers: &mut self.barriers,
         };

@@ -33,9 +33,9 @@ pub const MAXIMUM_FRAME: usize = 1514;
 /// The frame check sequence the device leaves on every received frame.
 pub const CRC_BYTES: usize = 4;
 
-/// Receive and transmit, read and write-back formats: descriptor word 3 is the one that carries
-/// ownership, and the only one the data plane judges.
-///
+// Receive and transmit, read and write-back formats: descriptor word 3 is the one that carries
+// ownership, and the only one the data plane judges.
+
 /// **Receive descriptor word 3, owned by the device** (`RDES3_OWN`, `dwqereg.h`). Set by the
 /// driver to hand a descriptor over, cleared by the device's write-back.
 #[doc(alias = "owned by the device")]

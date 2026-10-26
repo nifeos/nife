@@ -263,21 +263,7 @@ fn run(
     let mac = mac.0;
 
     let phy = e.port.physical_layer_device_address;
-    r.phy_id = management_data_input_output::physical_layer_device_id(
-        &mut management_data_input_output::Bus(&mut w),
-        phy,
-    )
-    .map_err(Error::Mdio)?;
-    if r.phy_id != motorcomm::PHY_ID_YT8531 {
-        return Err(Error::UnknownPhy { id: r.phy_id });
-    }
-    let applied = motorcomm::configure(
-        &mut management_data_input_output::Bus(&mut w),
-        phy,
-        &e.port.physical_layer_device,
-    )
-    .map_err(Error::Mdio)?;
-    r.phy = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    bring_up_physical_layer_device(&mut w, e, r)?;
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
@@ -297,7 +283,50 @@ fn run(
     zero(region);
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
-    let mut bus = management_data_input_output::Bus(&mut w);
+    let link = wait_for_link(&mut w, e, phy, r)?;
+    Ok((
+        Handoff {
+            station_address: mac,
+            data_plane_physical_address: region,
+        },
+        link,
+    ))
+}
+
+/// Identify the PHY, refuse any other part, and configure it for the board.
+fn bring_up_physical_layer_device(
+    w: &mut Window,
+    e: &crate::memory::Jh7110Ethernet,
+    r: &mut Report,
+) -> Result<(), Error> {
+    let phy = e.port.physical_layer_device_address;
+    r.phy_id = management_data_input_output::physical_layer_device_id(
+        &mut management_data_input_output::Bus(w),
+        phy,
+    )
+    .map_err(Error::Mdio)?;
+    if r.phy_id != motorcomm::PHY_ID_YT8531 {
+        return Err(Error::UnknownPhy { id: r.phy_id });
+    }
+    let applied = motorcomm::configure(
+        &mut management_data_input_output::Bus(w),
+        phy,
+        &e.port.physical_layer_device,
+    )
+    .map_err(Error::Mdio)?;
+    r.phy = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    Ok(())
+}
+
+/// Restart autonegotiation, wait up to `LINK_WAIT_MS` for a link, and start the controller at its
+/// speed. `None` when no link came up.
+fn wait_for_link(
+    w: &mut Window,
+    e: &crate::memory::Jh7110Ethernet,
+    phy: u8,
+    r: &mut Report,
+) -> Result<Option<Link>, Error> {
+    let mut bus = management_data_input_output::Bus(&mut *w);
     management_data_input_output::restart_autonegotiation(&mut bus, phy).map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
@@ -316,15 +345,9 @@ fn run(
     if let Some(l) = link {
         motorcomm::apply_speed(&mut bus, phy, &e.port.physical_layer_device, l.speed)
             .map_err(Error::Mdio)?;
-        controller::start(&mut w, l, false);
+        controller::start(w, l, false);
     }
-    Ok((
-        Handoff {
-            station_address: mac,
-            data_plane_physical_address: region,
-        },
-        link,
-    ))
+    Ok(link)
 }
 
 /// **The coherence probe** (`designware_ethernet::coherence`'s header): MAC loopback, one frame,

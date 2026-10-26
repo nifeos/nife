@@ -7,8 +7,9 @@ the controller and PHY bring-up sequences, MDIO, and a probe that measures wheth
 coherent with the CPU's caches. It is `no_std` and needs no allocator.
 
 It dereferences no pointer and touches no hardware. You supply register access through the
-`Hardware` trait, the DMA region through `Region`, and the tail-pointer writes and barrier through
-`Tails`; the tests run all of it against a simulated controller. It does not support the older 3.x GMAC.
+`Hardware` trait, the DMA region through `Region`, and the tail-pointer writes and barrier
+through `Tails`; the tests run all of it against a simulated controller. It does not support the
+older 3.x GMAC.
 
 ## What is proven
 
@@ -56,8 +57,8 @@ impl Region for Memory {
 
 struct NoDevice;
 impl Tails for NoDevice {
-    fn set_receive_tail(&mut self, _addr: u32) {}
-    fn set_transmit_tail(&mut self, _addr: u32) {}
+    fn set_receive_tail(&mut self, _address: u32) {}
+    fn set_transmit_tail(&mut self, _address: u32) {}
     fn barrier(&mut self) {}
 }
 

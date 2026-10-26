@@ -15,9 +15,9 @@
 
 use crate::{Hardware, registers};
 
-/// **MDIO clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
+/// **CSR clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
 /// field in [`registers::MAC_MDIO_ADDR`].
-#[doc(alias = "mdio clock range shift")]
+#[doc(alias = "csr clock range shift")]
 pub const CR_SHIFT: u32 = 8;
 /// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
@@ -37,15 +37,15 @@ pub const PA_SHIFT: u32 = 21;
 /// **MDIO register address shift** (`GMAC_MAC_MDIO_ADDR_RDA_SHIFT`, `dwqereg.h`).
 #[doc(alias = "mdio register address shift")]
 pub const RDA_SHIFT: u32 = 16;
-/// **MDIO operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
-#[doc(alias = "mdio operation command, read")]
+/// **GMII operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
+#[doc(alias = "gmii operation command, read")]
 pub const GOC_READ: u32 = 3 << 2;
-/// **MDIO operation command, write** (`GMAC_MAC_MDIO_ADDR_GOC_WRITE`, `dwqereg.h`).
-#[doc(alias = "mdio operation command, write")]
+/// **GMII operation command, write** (`GMAC_MAC_MDIO_ADDR_GOC_WRITE`, `dwqereg.h`).
+#[doc(alias = "gmii operation command, write")]
 pub const GOC_WRITE: u32 = 1 << 2;
-/// **MDIO busy** (`GMAC_MAC_MDIO_ADDR_GB`, `dwqereg.h`): set by the driver to start a command,
+/// **GMII busy** (`GMAC_MAC_MDIO_ADDR_GB`, `dwqereg.h`): set by the driver to start a command,
 /// cleared by the controller when it is done.
-#[doc(alias = "mdio busy")]
+#[doc(alias = "gmii busy")]
 pub const GB: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.

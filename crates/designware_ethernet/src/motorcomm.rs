@@ -308,8 +308,8 @@ pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
 }
 
 /// The I/O voltage the chip configuration word's LDO field states, in millivolts.
-pub(crate) const fn voltage_mv(chip_config: u16) -> u32 {
-    match chip_config & CFG_LDO_MASK {
+pub(crate) const fn voltage_mv(chip_configuration: u16) -> u32 {
+    match chip_configuration & CFG_LDO_MASK {
         CFG_LDO_3V3 => 3300,
         CFG_LDO_2V5 => 2500,
         _ => 1800,
