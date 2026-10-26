@@ -21,6 +21,14 @@ acronyms. The same question settles every abbreviation: does a person say the ex
   outcomes are rows in §154's table.
 - Earned, so they stay: `usb`, `syscall`, `cpu`, `xor` and QEMU.
 - `ipc` was already ruled by §154. The sweep that applies it is owed.
+- Ruled 2026-10-26 (UTC): `ms`, `us`, `id`, `io` and `bios` earn their place and stay; `min`
+  expands to `minimum` and `os` to `operating_system`.
+
+### The rules cover function parameters
+
+Ruled 2026-10-26 (UTC): the naming rules apply to a function's parameters as well as to its public
+items. `data_phys` becomes `data_physical_address`, and a `blocks_per` names what it counts
+(`blocks_per_<what>`).
 
 ### A foreign identifier keeps its owner's spelling, and only that identifier
 
@@ -32,6 +40,22 @@ time expand, because the concept is nife's even when POSIX has a field of the sa
 
 This applies the foreign-spelling rule in [vocabulary-rulings.md](vocabulary-rulings.md) at the
 level of one identifier.
+
+### A kept foreign name carries its expansion
+
+Ruled 2026-10-26 (UTC), tree-wide: a name kept under the foreign-identifier exemption carries its
+expansion in its documentation. The doc comment opens with the full name and the source's heading,
+as in `**System Control Register** (SCTLR_EL1, DDI 0487 <section>): ...`, and the item carries
+`#[doc(alias = "<plain-English name>")]`. The first names under the rule are the aarch64 register
+accessors in `kernel/src/arch/aarch64/instructions.rs`; the riscv64 and x86_64 accessors follow it
+too.
+
+Ruled the same day: the rule extends to a specification's terms of art inside a name this tree
+authors. A term the reader searches for keeps its spelling and takes the expansion and the alias:
+FAT's `Fat12`, `Fat16`, `Fat32` and `NotFat32`, `efi_system_partition`, `EFI_CLUSTER`,
+`fs_info_sector`, NVMe's `prp_pair`, and the JH7110's `COMPATIBLE_*CRG`, `VENDOR_CLKGEN` and
+`VENDOR_RSTGEN`. Other terms expand: NVMe's `NVM_READ`, `NVM_WRITE` and `NVM_FLUSH` become
+`NON_VOLATILE_MEMORY_READ`, `NON_VOLATILE_MEMORY_WRITE` and `NON_VOLATILE_MEMORY_FLUSH`.
 
 ### `VIRTUAL_ADDRESS` and `PHYSICAL_ADDRESS` spell out everywhere
 

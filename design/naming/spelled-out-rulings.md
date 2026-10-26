@@ -63,6 +63,45 @@ kept names and a proposed spelling for each public name are in
 [capability-spelling-worklist.md](capability-spelling-worklist.md). The proposals are not ruled. The ABI names
 (`SEND_CAP`, `RECEIVE_CAP`, `CAP_INSERT`, `SYS_CAP_DELETE`) and the `Cap` type go last, as one batch.
 
+## The tree spells `receive` and `transmit`, never `rx` and `tx`
+
+Ruled 2026-10-26 (UTC), tree-wide: every name this tree authors spells `rx` and `tx` out
+(`receive_*`, `transmit_*`, `ReceiveVerdict`, `TransmitError`). Register and bit names transcribed
+from a datasheet or another project (`RDT`, `TXDCTL`, `CHAN_*`, `DD`, `EOP`) keep their spelling.
+The ruling turns the 2026-09-24 refusal of `rx_waiting` (now `is_byte_waiting` in
+`kernel/src/console.rs`) into the rule, and it follows the `receive` ruling in
+[vocabulary-rulings.md](vocabulary-rulings.md).
+
+## The tree spells `physical_layer_device`, never `phy`
+
+Ruled 2026-10-26 (UTC), tree-wide: where `phy` names the chip, every name this tree authors spells
+it `physical_layer_device`, IEEE 802.3's own phrase (`PhysicalLayerDeviceResetBlocked`,
+`physical_layer_device_id`). Refused `physical_layer`, which would blur the chip with the layer:
+smoltcp's `phy` module is a layer abstraction. Documentation gives "PHY" on first use, so a search
+for it lands. Foreign names keep their spelling: register names, and smoltcp's `phy` module and its
+types.
+
+## The tree spells `initialize`, never `init`
+
+Ruled 2026-10-26 (UTC), tree-wide: where `init` means initialize, every name this tree authors
+spells it `initialize` (`initialize_hardware`, `initialize_physical_layer_device_workarounds`). The
+ruling follows `config` and `arg`, and it ends the split with `system_initializer`. Foreign names
+keep their spelling: Intel's `STATUS.LAN_INIT_DONE` and the e1000e `LanInitTimeout` that names it,
+and Linux's `e1000_init_hw_ich8lan` where documentation quotes it.
+
+## The tree spells `irq` out, by what the name holds
+
+Ruled 2026-10-26 (UTC), tree-wide and ABI included: every name this tree authors spells `irq` out,
+and a renamed item carries `#[doc(alias = "irq")]`. The word follows what the identifier holds:
+
+- `interrupt` for an interrupt itself (`mask_interrupts`, `unmask_interrupts`);
+- `interrupt_number` for an IRQ number;
+- `interrupt_line` for a wired source.
+
+The ABI capability takes `Interrupt` or `InterruptLine` by what it names, and its calls follow
+(`bind_interrupt`, `interrupt_wait`, or the `_line` form). Refused `interrupt_request`: `ipi` and
+`nmi` expanded to "... interrupt" on 2026-10-18 (UTC), and `irq` matches them.
+
 ## Abbreviation sweeps owed under §154
 
 calef ruled on 2026-10-18 (UTC) that `config`, `spec`, `arg`, `mem`, `dir`, `va`, `pa`, `ipi`, `nmi`, `ist` and `msr` expand under §154 (the acronym test is whether the phrase is spoken); the table there holds his words. The rulings are in force; the identifiers are not yet spelled out. Measured on 2026-10-18 in tracked Rust outside `vendor/` and `patches/`, by a broad pattern that over-counts:
