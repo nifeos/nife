@@ -45,11 +45,11 @@ data.
 
 - The endpoint IS the directory capability. A client reaches the FS server only by holding an
   endpoint the server reads on, and that endpoint is bound, in the server, to one directory node
-  (the image root, in phase 2). Every name in an `OPEN` is resolved *under that bound directory*
-  (`Server::open_file`): no absolute path, no `..` escape, no global namespace. A client with no
-  such endpoint can open nothing, and the refusal is "you hold no such capability", not a
-  permission check. Milestone 31 binds new endpoints to subdirectories or single files and hands
-  them out as grant expressions; the server code already carries the bound-directory seam.
+  (the image root, in phase 2). `Server::open_file` resolves every name in an `OPEN` *under that
+  bound directory*: no absolute path, no `..` escape, no global namespace. A client with no such
+  endpoint can open nothing, and the refusal is "you hold no such capability", not a permission
+  check. Milestone 31 (a capability shell) binds new endpoints to subdirectories or single files and
+  hands them out as grant expressions; the server code already carries the bound-directory seam.
 - A handle is a server-minted token. A successful `OPEN` returns a small integer the server
   issued and validates against this session's table (`Server::node`). Forging one is meaningless:
   the server honors only the handles it minted, in exactly one place.
@@ -165,10 +165,10 @@ contract, not a bug in RedoxFS, whose other callers may name entries whatever th
 
 ## Extended attributes are a layer on top, not a change to the engine (milestone 57)
 
-`GETXATTR`, `SETXATTR`, `LISTXATTR` and `REMOVEXATTR` are served by the same loop over the same
-endpoint, and RedoxFS knows nothing about any of them. The server keeps one blob per node in a
-reserved directory of the image, keyed on the node's `TreePtr` id. Three things that belong in this
-note rather than in [xattr.md](xattr.md), because they are facts about *this* server:
+The same loop serves `GETXATTR`, `SETXATTR`, `LISTXATTR` and `REMOVEXATTR` over the same endpoint,
+and RedoxFS knows nothing about any of them. The server keeps one blob per node in a reserved
+directory of the image, keyed on the node's `TreePtr` id. Three things that belong in this note
+rather than in [xattr.md](xattr.md), because they are facts about *this* server:
 
 - The transaction guarantee is what makes it safe. Every mutation runs inside one `fs.tx`, so an
   attribute and the file it is on reach the platter in one commit. That was the check DECISIONS §34
@@ -178,9 +178,9 @@ note rather than in [xattr.md](xattr.md), because they are facts about *this* se
   went, so `unlink` and `rmdir` take the attributes away on `Some` and never have to decide for
   themselves. `rename_node` is the exception: it removes a replaced destination and discards the
   freed id, so `Server::rename` notices that one for itself.
-- The reserved name is enforced at our boundary, in `check_component` and in `read_dir`, for the
-  same reason the one-component rule is ours. It is a rule of *this* contract, not a bug in RedoxFS,
-  whose other callers may name entries whatever they like.
+- `check_component` and `read_dir` enforce the reserved name at our boundary, for the same reason
+  the one-component rule is ours. It is a rule of *this* contract, not a bug in RedoxFS, whose other
+  callers may name entries whatever they like.
 
 ## A per-file grant: the caretaker between the directory and the program
 
