@@ -162,7 +162,7 @@ is a fact about the tool.
 
 The next line, printed by `arch::pmu::print_summary`.
 
-Every outcome is named on the line, so there is nothing here to infer.
+The line names every outcome, so there is nothing here to infer.
 
 | What the line says | What it means | What to do |
 |---|---|---|
