@@ -72,7 +72,7 @@ region, so neither verdict is known.
 | current_cpu_contract | 0 | 0 | 1 | 0 | 0 |
 | generational_table | 0 | 0 | 8 | 2 | 0 |
 | glob | 0 | 0 | 4 | 0 | 0 |
-| intrusive_fifo | 0 | 0 | 1 | 0 | 0 |
+| intrusive_queue | 0 | 0 | 1 | 0 | 0 |
 | job_mix | 0 | 0 | 1 | 0 | 0 |
 | login_contract | 0 | 0 | 4 | 1 | 0 |
 | machine_statistics_contract | 0 | 0 | 1 | 0 | 0 |

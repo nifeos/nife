@@ -51,7 +51,7 @@ graphics_contract 124 6 0 2
 http_response 60 0 0 9
 installed_programs 157 1 0 13
 inter_process_communication 131 3 0 44
-intrusive_fifo 10 0 0 9
+intrusive_queue 10 0 0 9
 jh7110_clock_and_reset 215 8 0 13
 jh7110_entropy 72 6 4 3
 job_mix 40 2 0 7

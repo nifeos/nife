@@ -121,7 +121,7 @@ counterparty; the expiry wakes it; it returns.
 
 A deadline on `Rendezvous::RECEIVE`/`CALL` needs two things the other two do not, and both are concrete:
 
-1. A targeted unlink from an endpoint's wait queue. `crates/intrusive_fifo`'s `Fifo` is
+1. A targeted unlink from an endpoint's wait queue. `crates/intrusive_queue`'s `Queue` is
    singly linked: one `next` per node, `head`/`tail`/`len`, and its whole API is `push_back`,
    `pop_front`, `is_empty`, `len`. `inter_process_communication::Rendezvous` adds only
    `drain_waiters`, which drains *all* of them. Removing one specific waiter is a new method,
@@ -166,7 +166,7 @@ Two caveats that matter for how the number is used:
   the number of consumers in a timed wait, which is single digits. Section 2's table should
   be read at `occ` = 1 to 16, not at 97.
 - 97 is what a targeted unlink walks past. The one place the blocked count is the *right* number
-  is shape 3's `Fifo::remove`, which walks an endpoint's wait queue from the head. This says that
+  is shape 3's `Queue::remove`, which walks an endpoint's wait queue from the head. This says that
   queue can be long, so the walk is O(97) rather than O(3) in the worst case the suite reaches.
 
 ## BUGS

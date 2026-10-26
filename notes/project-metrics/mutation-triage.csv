@@ -896,10 +896,10 @@ inter_process_communication,<impl PartialEq for Send<T>>::eq,replace == with !=,
 inter_process_communication,<impl PartialEq for Wait<T>>::eq,"delete match arm (Wait::Word(x, a), Wait::Word(y, b))",killed,killed by a_wait_verdict_equals_itself_and_no_other
 inter_process_communication,<impl PartialEq for Wait<T>>::eq,replace && with ||,killed,killed by a_wait_verdict_equals_itself_and_no_other
 inter_process_communication,<impl PartialEq for Wait<T>>::eq,replace == with !=,killed,killed by a_wait_verdict_equals_itself_and_no_other
-intrusive_fifo,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool with false,killed,killed by a_token_is_its_nodes_pointer
-intrusive_fifo,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool with true,killed,killed by a_token_is_its_nodes_pointer
-intrusive_fifo,,replace <impl core::fmt::Debug for Unqueued<T>>::fmt -> core::fmt::Result with Ok(Default::default()),killed,killed by a_token_is_its_nodes_pointer
-intrusive_fifo,<impl PartialEq<NonNull<T>> for Unqueued<T>>::eq,replace == with !=,killed,killed by a_token_is_its_nodes_pointer
+intrusive_queue,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool with false,killed,killed by a_token_is_its_nodes_pointer
+intrusive_queue,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool with true,killed,killed by a_token_is_its_nodes_pointer
+intrusive_queue,,replace <impl core::fmt::Debug for Unqueued<T>>::fmt -> core::fmt::Result with Ok(Default::default()),killed,killed by a_token_is_its_nodes_pointer
+intrusive_queue,<impl PartialEq<NonNull<T>> for Unqueued<T>>::eq,replace == with !=,killed,killed by a_token_is_its_nodes_pointer
 jh7110_clock_and_reset,BringUpReport::every_reset_released,replace == with !=,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
 jh7110_clock_and_reset,BringUpReport::every_reset_released,replace Report::every_reset_released -> bool with false,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
 jh7110_clock_and_reset,BringUpReport::every_reset_released,replace Report::every_reset_released -> bool with true,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned

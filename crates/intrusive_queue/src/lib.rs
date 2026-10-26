@@ -8,8 +8,9 @@
 //! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
 //! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue).
 //!
-//! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
-//! `intrusive`, an adjective without its noun; the primary type is `Fifo<T: Node>`.
+//! Name: ratified 2026-10-26 (UTC, the tree-wide `fifo` ruling), renamed before publish from
+//! `intrusive_fifo`, which superseded the 2026-08-23 ratification of that spelling. Before that it
+//! was `intrusive`, an adjective without its noun. The primary type is `Queue<T: Node>`.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -29,7 +30,7 @@ use core::ptr::NonNull;
 ///
 /// ```
 /// use core::ptr::NonNull;
-/// use intrusive_fifo::Node;
+/// use intrusive_queue::Node;
 ///
 /// struct Thread {
 ///     tid: u32,
@@ -56,7 +57,7 @@ pub unsafe trait Node: Sized {
 
 /// Proof that one node is on no queue, and the only thing a queue will take.
 ///
-/// Neither `Clone` nor `Copy`: [`Fifo::push_back`] consumes it and [`Fifo::pop_front`] hands it
+/// Neither `Clone` nor `Copy`: [`Queue::push_back`] consumes it and [`Queue::pop_front`] hands it
 /// back, so a node cannot be on two queues without `unsafe`. `#[repr(transparent)]` over its
 /// [`NonNull`], so `Option<Unqueued<T>>` is one pointer wide. It cannot carry lifetime (rule 2),
 /// which [`Unqueued::new`] discharges once. A dropped token strands its node. See
@@ -111,9 +112,9 @@ impl<T> core::fmt::Debug for Unqueued<T> {
     }
 }
 
-/// The queue: two pointers into nodes it does not own, plus a count.
+/// First in, first out: the queue is two pointers into nodes it does not own, plus a count.
 ///
-/// FIFO because the scheduler's queues are round-robin: threads leave in the order they arrived.
+/// Name: ratified 2026-10-26 (UTC), renamed before publish from `Fifo` with the crate.
 ///
 /// # Examples
 ///
@@ -121,7 +122,7 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 ///
 /// ```
 /// # use core::ptr::NonNull;
-/// # use intrusive_fifo::{Fifo, Node, Unqueued};
+/// # use intrusive_queue::{Queue, Node, Unqueued};
 /// # struct Thread { tid: u32, next: Option<NonNull<Thread>> }
 /// # // SAFETY: plain field storage, which is the whole of the `Node` contract.
 /// # unsafe impl Node for Thread {
@@ -131,7 +132,7 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// // Rule 2, as drop order: the nodes are declared before the queue, so they outlive it.
 /// let mut a = Thread { tid: 1, next: None };
 /// let mut b = Thread { tid: 2, next: None };
-/// let mut q: Fifo<Thread> = Fifo::new();
+/// let mut q: Queue<Thread> = Queue::new();
 ///
 /// // SAFETY: both are live locals declared before `q`, on no queue and with no token yet.
 /// let (ta, tb) = unsafe { (Unqueued::new(NonNull::from(&mut a)), Unqueued::new(NonNull::from(&mut b))) };
@@ -151,7 +152,8 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 ///     .collect();
 /// assert_eq!(order, vec![2, 1]);
 /// ```
-pub struct Fifo<T: Node> {
+#[doc(alias = "fifo")]
+pub struct Queue<T: Node> {
     head: Option<NonNull<T>>,
     tail: Option<NonNull<T>>,
     len: usize,
@@ -160,9 +162,9 @@ pub struct Fifo<T: Node> {
 // SAFETY: the queue owns no data; it holds nodes only under the caller's contract (rule 3: all
 // access serialized by the caller). Same justification as the slab allocator's Send: sharing is
 // the caller's problem, solved with a lock or a single-owner rule.
-unsafe impl<T: Node> Send for Fifo<T> {}
+unsafe impl<T: Node> Send for Queue<T> {}
 
-impl<T: Node> Fifo<T> {
+impl<T: Node> Queue<T> {
     /// An empty queue.
     pub const fn new() -> Self {
         Self {
@@ -191,14 +193,14 @@ impl<T: Node> Fifo<T> {
     ///
     /// ```compile_fail
     /// # use core::ptr::NonNull;
-    /// # use intrusive_fifo::{Fifo, Node, Unqueued};
+    /// # use intrusive_queue::{Queue, Node, Unqueued};
     /// # struct T { next: Option<NonNull<T>> }
     /// # unsafe impl Node for T {
     /// #     fn next(&self) -> Option<NonNull<Self>> { self.next }
     /// #     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
     /// # }
     /// # let mut b = T { next: None };
-    /// # let (mut ready, mut inbox) = (Fifo::<T>::new(), Fifo::<T>::new());
+    /// # let (mut ready, mut inbox) = (Queue::<T>::new(), Queue::<T>::new());
     /// // SAFETY: `b` is live, on no queue, and has no token yet.
     /// let token = unsafe { Unqueued::new(NonNull::from(&mut b)) };
     /// ready.push_back(token);
@@ -242,14 +244,14 @@ impl<T: Node> Fifo<T> {
     }
 }
 
-impl<T: Node> Default for Fifo<T> {
+impl<T: Node> Default for Queue<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
 /// Machine-checked proofs (DECISIONS §14 (the project's direction)). The harness drives the real
-/// `Fifo` with a symbolic operation sequence against a trivially-correct model (an array and two
+/// `Queue` with a symbolic operation sequence against a trivially-correct model (an array and two
 /// counters), covering every push/pop pattern up to the bound, the regrowth-from-empty transitions
 /// included.
 #[cfg(kani)]
@@ -277,9 +279,9 @@ mod verification {
     /// model records the order tags went in; the queue must hand them back in exactly that
     /// order, agree about emptiness and length at every step, and never dereference a stale
     /// link (which Kani would report as an invalid pointer access).
-    /// Falsification: replayable `crates/intrusive_fifo/falsifications/verification.any_push_pop_interleaving_is_fifo_and_lossless.patch`
+    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_queue_ordered_and_lossless.patch`
     #[kani::proof]
-    fn any_push_pop_interleaving_is_fifo_and_lossless() {
+    fn any_push_pop_interleaving_is_queue_ordered_and_lossless() {
         let mut nodes = [
             N { next: None, tag: 0 },
             N { next: None, tag: 1 },
@@ -298,7 +300,7 @@ mod verification {
             ]
         };
 
-        let mut q: Fifo<N> = Fifo::new();
+        let mut q: Queue<N> = Queue::new();
 
         // The model: a ring of tags in push order, and which nodes are currently queued.
         let mut model = [usize::MAX; 6];
@@ -377,7 +379,7 @@ mod tests {
     #[test]
     fn fifo_order() {
         let (mut a, mut b, mut c) = (node(1), node(2), node(3));
-        let mut q: Fifo<N> = Fifo::new();
+        let mut q: Queue<N> = Queue::new();
         assert!(q.is_empty());
 
         q.push_back(token(&mut a));
@@ -407,7 +409,7 @@ mod tests {
     #[test]
     fn drain_then_reuse() {
         let (mut a, mut b) = (node(1), node(2));
-        let mut q: Fifo<N> = Fifo::new();
+        let mut q: Queue<N> = Queue::new();
 
         q.push_back(token(&mut a));
         let ta = q.pop_front().unwrap();
@@ -449,7 +451,7 @@ mod tests {
     #[test]
     fn a_popped_node_carries_no_link() {
         let (mut a, mut b) = (node(1), node(2));
-        let mut q: Fifo<N> = Fifo::new();
+        let mut q: Queue<N> = Queue::new();
         q.push_back(token(&mut a));
         q.push_back(token(&mut b));
         let p = q.pop_front().unwrap();

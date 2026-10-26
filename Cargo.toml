@@ -83,7 +83,7 @@ members = [
     "crates/virtio",
     "crates/walk_pricing",
     "crates/subtree_scope",
-    "crates/intrusive_fifo",
+    "crates/intrusive_queue",
     "crates/line_editor",
     "crates/loaded_image_check",
     "crates/designware_mobile_storage",

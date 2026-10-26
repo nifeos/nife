@@ -1,4 +1,4 @@
-Falsifies `intrusive_fifo::verification::any_push_pop_interleaving_is_fifo_and_lossless`.
+Falsifies `intrusive_queue::verification::any_push_pop_interleaving_is_queue_ordered_and_lossless`.
 
 The defect: popping the last node leaves `tail` pointing at it. The line that clears it reads as
 tidying, because `head` is what `is_empty` and `pop_front` consult and it is already correct;
@@ -11,10 +11,10 @@ behind a node that has already left the queue and `head` stays `None`: the queue
 empty while holding a node, and that node is lost. In the kernel this queue holds runnable
 threads.
 
-diff --git a/crates/intrusive_fifo/src/lib.rs b/crates/intrusive_fifo/src/lib.rs
---- a/crates/intrusive_fifo/src/lib.rs
-+++ b/crates/intrusive_fifo/src/lib.rs
-@@ -212,5 +212,2 @@ impl<T: Node> Fifo<T> {
+diff --git a/crates/intrusive_queue/src/lib.rs b/crates/intrusive_queue/src/lib.rs
+--- a/crates/intrusive_queue/src/lib.rs
++++ b/crates/intrusive_queue/src/lib.rs
+@@ -212,5 +212,2 @@ impl<T: Node> Queue<T> {
              self.head = (*node.as_ptr()).next();
 -            if self.head.is_none() {
 -                self.tail = None;

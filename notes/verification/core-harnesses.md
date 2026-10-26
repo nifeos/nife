@@ -125,8 +125,8 @@ the synchronous-rendezvous state machine: the rendezvous six the table names, in
 those later subsystems added to the same crate (four and three).
 It is the decision core of `sched`'s `Rendezvous`, extracted as pure logic. It was restated over
 the intrusive queues at milestone 14 (kernel objects from untyped) phase A.3, so the rewire did not demote proved code back to
-argued code. The same six properties now hold over real `intrusive::Fifo`s with TCB-shaped nodes,
-composing with the `Fifo`'s own FIFO proof below.
+argued code. The same six properties now hold over real `intrusive::Queue`s with TCB-shaped nodes,
+composing with the `Queue`'s own FIFO proof below.
 
 | Harness | Property |
 |---|---|
@@ -190,14 +190,14 @@ A; see notes/generational-names.md); the table names the three this appendix adj
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | the `(generation, slot)` packing cannot alias two live entries |
 | `a_name_the_table_never_minted_resolves_to_nothing` | for any u64, resolution succeeds only on exactly a name the table issued |
 
-## `crates/intrusive_fifo`
+## `crates/intrusive_queue`
 
-One in `crates/intrusive_fifo/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's queue structure (milestone 14 phase A.2;
+One in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's queue structure (milestone 14 phase A.2;
 see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|
-| `any_push_pop_interleaving_is_fifo_and_lossless` | the real `Fifo`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
+| `any_push_pop_interleaving_is_queue_ordered_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
 
 One harness rather than several, because the operation-sequence shape subsumes the single-step
 properties: a push-preserves-X proof is the sequence of length one.
