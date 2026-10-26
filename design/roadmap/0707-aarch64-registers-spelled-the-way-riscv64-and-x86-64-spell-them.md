@@ -12,11 +12,11 @@ needs_person: yes
 # 707. aarch64 registers spelled the way riscv64 and x86_64 spell them
 
 *Title and slug are drafts.*
-Ruled 2026-10-26 (UTC): built in full. aarch64's system registers and MMIO registers are spelled
+Ruled 2026-10-26 (UTC): built in full. aarch64 spells its system registers and MMIO registers
 the in-tree way, and the kernel links neither `aarch64-cpu` nor `tock-registers`. The ruling
 replaces §3 (use the crate ecosystem) for register access under §46 (thin primitives or whole
 subsystems; we write everything in between) rule 1, and both sections record it. A boot on argon,
-the aarch64 Jetson board, is owed (Follow-on).
+the aarch64 Jetson board, remains (Follow-on).
 
 ## What was built
 
@@ -27,7 +27,7 @@ the aarch64 Jetson board, is owed (Follow-on).
 | `timer.rs`, `exceptions.rs`, `pmu.rs`, `isa.rs`, `percpu.rs`, `thread_pointer.rs`, `primitives.rs`, `semihosting.rs` | call the accessors |
 | `arch::current_el()` | `CurrentEL` behind an `arch::` function, beside `arch::entry_el()`; `boot.rs`, `machine_description.rs` and `tests.rs` call it |
 | `drivers/pl011.rs`, `gic.rs`, `gicv3.rs` | named offsets and bit constants with volatile access, as `ns16550.rs` and `plic.rs` do |
-| `kernel/Cargo.toml` | the aarch64 dependency table is gone |
+| `kernel/Cargo.toml` | no aarch64 dependency table |
 
 Each accessor carries `options(nomem, nostack)`, so a write whose order against memory matters
 sits between `dsb_sy` or `isb` at its call site. A write that changes reachable memory or the trap
@@ -88,9 +88,9 @@ bugs someone wrote down in those words, not bugs fixed silently.
 
 ## Follow-on
 
-- **Owed: an argon boot.** It needs a person at the bench. One `script/test` boot on argon, or a
+- **Recorded.** This block owes an argon boot, which needs a person at the bench. One `script/test` boot on argon, or a
   console boot to the shell, closes it; this block keeps `needs_person: yes` until then.
-- `design/tenets/codebase-rules.md` still names `aarch64-cpu` and `tock-registers` as examples of
+- **Recorded.** `design/tenets/codebase-rules.md` still names `aarch64-cpu` and `tock-registers` as examples of
   thin primitives the kernel takes; design text outside `design/decisions/` is not this lane's to
   edit.
 
