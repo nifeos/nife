@@ -9,7 +9,8 @@ const DONE: &[u8] = b"== redirections done\n";
 /// The script's transcript, run **once** and shared by every assertion below, for
 /// [`pipeline_tests`]'s reason: the assertions are about one run of one script, and re-running
 /// it per test would be the same measurement four times rather than four measurements.
-static TRANSCRIPT: spin::Mutex<Option<([u8; TRANSCRIPT_MAX], usize)>> = spin::Mutex::new(None);
+static TRANSCRIPT: spin_lock::SpinLock<Option<([u8; TRANSCRIPT_MAX], usize)>> =
+    spin_lock::SpinLock::new(None);
 
 /// How much of the script's transcript the assertions read. Level with
 /// `pipeline_service::TRANSCRIPT`, because a smaller number here would truncate the answers that

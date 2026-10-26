@@ -1,10 +1,8 @@
 //! Boot sectors that another tool formatted, the `mkfs` in this crate read back, and one refusal
 //! per checked field with the boundary on each side of it.
-//!
-//! Name: provisional.
 
 use super::*;
-use crate::{SECTOR, Volume};
+use crate::{SECTOR_BYTES, VolumeLayout};
 
 const FAT12_FLOPPY: &[u8; 512] = include_bytes!("../../tests/fixtures/fat12-floppy.boot");
 const FAT16_32M: &[u8; 512] = include_bytes!("../../tests/fixtures/fat16-32m.boot");
@@ -99,7 +97,7 @@ fn a_floppy_mkfs_fat_formatted_is_fat12_with_its_root_region() {
     assert_eq!(boot.clusters(), 2847);
     assert_eq!(boot.total_sectors(), 2880);
     assert_eq!(boot.reserved_sectors(), 1);
-    assert_eq!(boot.tables(), 2);
+    assert_eq!(boot.table_count(), 2);
     assert_eq!(boot.table_sectors(), 9);
     assert_eq!(boot.media(), 0xF0);
     assert_eq!(
@@ -185,21 +183,22 @@ fn a_fat32_layout_under_the_cluster_floor_is_refused() {
 
 #[test]
 fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
-    let volume = Volume::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI").unwrap();
-    let mut sector = [0u8; SECTOR];
+    let volume =
+        VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI").unwrap();
+    let mut sector = [0u8; SECTOR_BYTES];
     for index in [0, 6] {
-        assert!(volume.sector(index, &mut sector));
+        assert!(volume.fill_sector(index, &mut sector));
         let boot = parse(&sector).unwrap();
         assert_eq!(boot.fat_type(), FatType::Fat32);
         assert_eq!(boot.clusters(), volume.clusters());
-        assert_eq!(boot.table_sectors(), volume.fat_sectors());
+        assert_eq!(boot.table_sectors(), volume.table_sectors());
         assert_eq!(
             u64::from(boot.first_data_sector()),
-            volume.data_first_sector()
+            volume.first_data_sector()
         );
         assert_eq!(
             u64::from(boot.cluster_first_sector(5).unwrap()),
-            volume.cluster_sector(5)
+            volume.cluster_first_sector(5)
         );
         assert_eq!(boot.hidden_sectors(), 2048);
         assert_eq!(boot.volume_id(), Some(0x1234_5678));

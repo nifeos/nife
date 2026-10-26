@@ -265,7 +265,7 @@ struct Verdict {
 /// build keeps a copy per by-value hop: with the model in `run_seed`'s frame the x86_64 boot stack's
 /// high-water went from the suite's usual margin to 64,912 of 65,504 bytes, past the 61,440 gate in
 /// `kernel/src/stack.rs`. One seed runs at a time, so one model is enough. Name provisional.
-static FUZZ_MODEL: spin::Mutex<Model> = spin::Mutex::new(Model::new());
+static FUZZ_MODEL: spin_lock::SpinLock<Model> = spin_lock::SpinLock::new(Model::new());
 
 impl Model {
     const fn new() -> Self {
@@ -794,8 +794,8 @@ struct Mail {
     table: [Option<Cap>; SLOTS],
 }
 
-static MAIL: [spin::Mutex<Mail>; ACTORS] = [const {
-    spin::Mutex::new(Mail {
+static MAIL: [spin_lock::SpinLock<Mail>; ACTORS] = [const {
+    spin_lock::SpinLock::new(Mail {
         seq: 0,
         cmd: Cmd::Look,
         answer: Answer::ok(0),

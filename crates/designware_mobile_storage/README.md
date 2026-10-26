@@ -44,7 +44,9 @@ fn first_sector<R: Registers>(regs: R) -> Option<[u8; 512]> {
 
 `partition::Mbr::parse` reads that sector, and `Mbr::scratch` names the sectors before the first
 partition that a write test may use. `Host::with_idmac` moves later transfers through a DMA region
-you supply (`idmac::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's constants.
+you supply (`idmac::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's constants
+and `Slot::from_node`, which decodes one slot from the properties of a device-tree node you found.
+The crate reads no device tree itself.
 
 ## Limitations
 
@@ -58,8 +60,6 @@ you supply (`idmac::DirectMemoryAccessRegion`). The `jh7110` module holds that S
   way.
 - The card bring-up state machine, timing and the CID decode have no proofs; the MBR parse and
   the capacity decoders are not yet proven total.
-- The device-tree fixtures under `tests/fixtures/` are excerpts of the mainline and vendor JH7110
-  trees whose licenses are not yet recorded.
 
 The minimum supported Rust version is 1.88.
 

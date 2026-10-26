@@ -14,7 +14,7 @@ else's driver.
 
 | | |
 |---|---|
-| Sector size | 512 (`SECTOR`); FAT32 permits others and nothing here has met one |
+| Sector size | 512 (`SECTOR_BYTES`); FAT32 permits others and nothing here has met one |
 | Sectors per cluster | 8, so a 4096-byte cluster, which is also `filesystem_contract::blk`'s transfer unit |
 | Reserved sectors | 32, the usual FAT32 figure: boot sector, `FSInfo`, and the backup pair at 6 and 7 |
 | FATs | 2, because every tool writes two and a firmware that reads the second finds it |

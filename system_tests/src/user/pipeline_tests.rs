@@ -8,7 +8,8 @@ const DONE: &[u8] = b"== pipelines done\n";
 /// Cached because running it is expensive (a shell, a spawn service, and several spawned
 /// programs) and because the assertions are about one run of one script: re-running it per test
 /// would not be four independent measurements, it would be the same measurement four times.
-static TRANSCRIPT: spin::Mutex<Option<([u8; 3072], usize)>> = spin::Mutex::new(None);
+static TRANSCRIPT: spin_lock::SpinLock<Option<([u8; 3072], usize)>> =
+    spin_lock::SpinLock::new(None);
 
 /// Run the script if nothing has yet, and hand back everything the shell printed.
 fn transcript(out: &mut [u8; 3072]) -> usize {

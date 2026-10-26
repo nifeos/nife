@@ -50,7 +50,7 @@ where
         // unhandled. `expect` rather than a silent fallback, because a future `hmac` that could
         // fail here should stop the handshake rather than continue with a key nobody chose.
         Box::new(Keyed::<M>(
-            <M as Mac>::new_from_slice(key).expect("HMAC accepts a key of any length (RFC 2104)"),
+            <M as hmac::KeyInit>::new_from_slice(key).expect("HMAC accepts a key of any length (RFC 2104)"),
         ))
     }
 

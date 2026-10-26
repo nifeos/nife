@@ -411,7 +411,7 @@ fn install(boot_file_len: u64) -> ! {
     }
     let volume_id = u32::from_le_bytes([serial[0], serial[1], serial[2], serial[3]]);
 
-    let Ok(volume) = fat::Volume::new(
+    let Ok(volume) = fat::VolumeLayout::new(
         ESP_SECTORS,
         layout.esp_first,
         boot_file_len,
@@ -611,7 +611,7 @@ fn write_table(
 /// device's own transfer blocks line up with no read-modify-write anywhere.
 fn write_efi_system_partition(
     layout: &Layout,
-    volume: &fat::Volume,
+    volume: &fat::VolumeLayout,
     boot_file_len: u64,
 ) -> Result<(), u64> {
     // The metadata: the boot sector, `FSInfo`, their backups, both copies of the table, and the
@@ -632,7 +632,7 @@ fn write_efi_system_partition(
             // Past the end of the metadata the volume answers `false` and the sector stays zero,
             // which is what belongs there: it is the first of the file's own clusters and is about
             // to be overwritten.
-            if !volume.sector(sector + slot, out) {
+            if !volume.fill_sector(sector + slot, out) {
                 out.fill(0);
             }
         }

@@ -32,7 +32,7 @@ the exception. List those crates per target with
     cargo tree -p kernel --target x86_64-unknown-none -e normal,build --prefix none
 
 and the same for `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf`, keeping the
-lines without a path. On 2026-10-25 they were `spin`, `aarch64-cpu`, `tock-registers` and `uuid`.
+lines without a path. On 2026-10-25 (UTC) they were `aarch64-cpu`, `tock-registers` and `uuid`.
 
 - A minor or patch bump of such a crate merges once the pull request carries the kernel-class
   evidence. That means a delta review of the crate's own diff between the two versions, and the
@@ -49,8 +49,8 @@ by never proposing that version again, and it stores that choice on GitHub, outs
 `dependabot.yml`, where the §81 lint cannot see it. Instead:
 
 1. Write a `BUGS` entry beside the code that holds the dependency back: the version, what broke,
-   what would unblock it, and a date to re-argue by. `deny.toml`'s RUSTSEC-2026-0387 entry has the
-   shape to copy.
+   what would unblock it, and a date to re-argue by. `deny.toml`'s RUSTSEC-2023-0071 entry has the
+   shape to copy for the claim and what ends it; it carries no date, so add one.
 2. Leave the pull request open, add the `bump-blocked` label, and link the entry from it.
    Dependabot updates the same pull request when the next version arrives.
 3. When a later version lands, remove the entry in the same change.

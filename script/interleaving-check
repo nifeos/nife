@@ -28,8 +28,10 @@
 # canary's arm/check/disarm serialization, extracted after its two-flag spelling raced; the only
 # retrofit so far whose bug was in the protocol itself), and `crates/memory_regions` (renamed from
 # `regions` 2026-08-23; the untyped region claim, the fourth retrofit and the first on the
-# memory-reclamation path, added by milestone 135 after a real double free). The note carries the
-# survey and each model's honest limits.
+# memory-reclamation path, added by milestone 135 (the region claim, under loom) after a real double
+# free), and `crates/spin_lock` (the lock under the kernel's `IrqSafeMutex`, whose Acquire
+# compare-exchange and Release store supply most of the kernel's happens-before edges; its models
+# contend two and three threads). The note carries the survey and each model's honest limits.
 #
 # **`crates/memory_regions` carries the falsification witness**, which is the one harness in this script
 # that asserts a protocol is BROKEN: `the_pre_fix_protocol_double_frees_and_this_model_finds_it`
@@ -72,4 +74,4 @@ cd "$(dirname "$0")/.."
 echo "==> loom: the hand-rolled atomic protocols, every interleaving"
 RUSTFLAGS="--cfg loom -D warnings" cargo test --release \
     -p work_steal_slot -p clock_contract -p thread_wake_handshake -p memory_corruption_canary_gate \
-    -p memory_regions --lib "$@"
+    -p memory_regions -p spin_lock --lib "$@"

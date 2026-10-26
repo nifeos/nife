@@ -37,4 +37,4 @@ http_response = { path = "../crates/http_response" }
 [dev-dependencies]
 # Already in the graph through `cryptography_provider`; named so a test can recompute the pin's
 # fingerprint. Not a new crate.
-sha2 = { version = "0.10", default-features = false }
+sha2 = { version = "0.11", default-features = false }

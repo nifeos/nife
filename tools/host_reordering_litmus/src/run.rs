@@ -79,6 +79,13 @@ const TESTS: &[Test] = &[
     },
     Test {
         name: "LOCK",
+        ordering: "spin-lock-crate",
+        forbidden: true,
+        messages: None,
+        run: spin_lock::test_kernel_lock,
+    },
+    Test {
+        name: "LOCK",
         ordering: "relaxed-unlock",
         forbidden: false,
         messages: None,

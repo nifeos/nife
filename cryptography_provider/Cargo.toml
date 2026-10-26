@@ -48,25 +48,28 @@ pki_types = { package = "rustls-pki-types", version = "1", default-features = fa
 
 # The record layer. Both carry NCC Group's 2020 audit in their own README, which is the strongest
 # evidence behind any crate in this graph and covers every byte that crosses the wire.
-# `force-soft` on `sha2` is a feature rather than a cfg, so it has to be named in a manifest;
-# notes/cryptography-provider.md records why that is unavoidable.
-aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
-chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
-sha2 = { version = "0.10", default-features = false, features = ["force-soft"] }
-hmac = { version = "0.12", default-features = false }
+# Every portable implementation this graph needs on `x86_64-unknown-nife` is selected by a `--cfg`
+# in `cryptography_exerciser/.cargo/config.toml`, `sha2`'s included; notes/cryptography-provider.md
+# has the table.
+aes-gcm = { version = "0.11", default-features = false, features = ["aes", "alloc"] }
+chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
+sha2 = { version = "0.11", default-features = false }
+hmac = { version = "0.13", default-features = false }
 
 # Key exchange and signature verification. `p256` states in its own README that its curve
 # arithmetic "has never been independently audited"; it is in the path either way, because TLS 1.3
 # negotiates it and because GitHub's certificate chain is ECDSA P-256.
-p256 = { version = "0.13", default-features = false, features = ["ecdsa", "ecdh", "pkcs8"] }
-p384 = { version = "0.13", default-features = false, features = ["ecdsa"] }
-x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"] }
-ed25519-dalek = { version = "2", default-features = false }
+p256 = { version = "0.14", default-features = false, features = ["ecdsa", "ecdh", "pkcs8"] }
+p384 = { version = "0.14", default-features = false, features = ["ecdsa"] }
+x25519-dalek = { version = "3", default-features = false, features = ["static_secrets"] }
+ed25519-dalek = { version = "3", default-features = false }
 
-# The randomness, through the major the ecosystem's key-generation traits still take. `rand_core`
-# 0.6 reaches `getrandom` 0.2, whose hook `entropy_backend` gained at this milestone, over
-# `std::random::SystemRng`, over the entropy service's one endpoint.
-rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
+# The randomness. `getrandom` 0.4's `SysRng` is the `rand_core` 0.10 generator the key-generation
+# traits of `p256` 0.14 and `x25519-dalek` 3 take, and `getrandom::fill` is what `SecureRandom`
+# draws through. Both end in `entropy_backend`'s `__getrandom_v03_custom` hook, over
+# `std::random::SystemRng`, over the entropy service's one endpoint. Every binary that links this
+# provider already has `getrandom` 0.4 through `entropy_backend`.
+getrandom = { version = "0.4", default-features = false, features = ["sys_rng"] }
 
 # **`rsa`, taken on calef's ruling of 2026-09-20 ("Take rsa").** Without it this provider could
 # verify `github.com`, whose chain is ECDSA P-256 throughout, and not the hosts that serve the
@@ -83,6 +86,15 @@ rand_core = { version = "0.6", default-features = false, features = ["getrandom"
 #
 # The `sha2` feature is on for one reason worth naming: PKCS#1 v1.5 prepends a DER `DigestInfo`
 # naming the hash, so verification needs each digest's object identifier. That feature is what
-# associates them, and it resolves to the same `sha2` 0.10 named above, with `force-soft` and
-# `oid` unified onto one copy rather than two.
-rsa = { version = "0.9", default-features = false, features = ["sha2"] }
+# associates them, and it resolves to the same `sha2` named above, with `oid` unified onto one copy
+# rather than two. `encoding` is what parses the PKCS#1 `RSAPublicKey` a certificate carries
+# (`src/verify.rs`'s `public_key`).
+#
+# **A release candidate, pinned exactly.** `rsa` 0.10 is the only release of this crate on the
+# `digest` 0.11, `signature` 3 and `rand_core` 0.10 traits the rest of this graph moved to; 0.9.10
+# would keep a second copy of each of eleven crates, `sha2` among them, which `deny.toml`'s
+# `multiple-versions = "deny"` refuses. The `=` keeps a later candidate from arriving by `cargo
+# update` alone, since a candidate may change its interface; `encoding` brings `pkcs1`
+# 0.8.0-rc.5, the other candidate in this graph. BUGS in notes/cryptography-provider.md has
+# what ends it.
+rsa = { version = "=0.10.0-rc.19", default-features = false, features = ["sha2", "encoding"] }

@@ -4,7 +4,7 @@
 //! kernel implements it over a mapped window and nothing more, so every sequence is tested
 //! against `sim` on a host.
 //! [`jh7110`] has the evidence for the part and the board's constants. Modules: [`regs`],
-//! [`command`], [`host`], [`idmac`], [`card`], [`sd`], [`partition`], [`bench`](mod@bench), [`serve`].
+//! [`command`], [`host`], [`idmac`], [`card`], [`sd`], [`partition`], [`bench`](mod@bench).
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): the databook's name for the part, spelled out as §154
 //! (the acronym test is whether the phrase is spoken) asks; permanent on first publication. The
@@ -42,7 +42,8 @@
 //!   through them; the EL0 server moves its data through the FIFO.
 //! - Default speed only (25 MHz, 4-bit SD, 1-bit eMMC); no tuning, no 8-bit bus. Polled, with
 //!   `INTMASK` zero. A 64-bit FIFO is refused. No card-detect or write-protect handling.
-//! - Which part of radon's card the EL0 server serves ([`serve::Window`]) is an architect's call.
+//! - Which part of radon's card the EL0 server serves is an architect's call; the window and its
+//!   spawn words are nife's, outside this crate.
 
 pub mod bench;
 pub mod card;
@@ -53,7 +54,6 @@ pub mod jh7110;
 pub mod partition;
 pub mod regs;
 pub mod sd;
-pub mod serve;
 
 #[cfg(test)]
 mod sim;

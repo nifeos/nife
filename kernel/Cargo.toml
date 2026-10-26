@@ -101,6 +101,10 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # program's image and stack, and the check that refuses an image that does not fit, shared with the
 # userspace loader so the two cannot disagree about either.
 address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+# Where each device-driver process finds its windows, and the SD/MMC server's spawn words: the
+# process layout around `e1000e`, `designware_ethernet` and `designware_mobile_storage`, which those
+# crates leave to nife (milestone 857 (crates released on their own)).
+driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_contract" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
 # The credential contract (milestone 56, the credential half). The kernel wires the credential
 # service and its provisioner, and its tests read the reply codes the userspace clients report, so
@@ -203,10 +207,10 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 generational_table = { version = "0.1.0", path = "../crates/generational_table" }
-# The lock under `IrqSafeMutex`. Its `unsafe`, what checks it and the claim that rests on it, with
-# `aarch64-cpu`'s, `tock-registers`' and `uuid`'s: notes/kernel-dependency-unsafe.md (§46's kernel
-# bar, condition 4). `script/lint` fails when a bump moves any of it.
-spin = { version = "0.12", default-features = false, features = ["spin_mutex"] }
+# The lock under `IrqSafeMutex`: an Acquire compare-exchange and a Release store, written in the
+# tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
+# checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
+spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,

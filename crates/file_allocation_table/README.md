@@ -35,21 +35,21 @@ is covered by unit tests, and an ignored test has the host's own FAT driver chec
 A 512 MiB EFI system partition at LBA 2048 holding a 9 MB boot file:
 
 ```rust
-use file_allocation_table::{SECTOR, Volume};
+use file_allocation_table::{SECTOR_BYTES, VolumeLayout};
 
-let volume = Volume::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI")
+let volume = VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI")
     .expect("512 MiB is a FAT32 volume");
 
-let mut sector = [0u8; SECTOR];
+let mut sector = [0u8; SECTOR_BYTES];
 for index in 0..volume.metadata_sectors() {
-    assert!(volume.sector(index, &mut sector));
+    assert!(volume.fill_sector(index, &mut sector));
     // write `sector` at partition-relative LBA `index`
 }
 // then the file's own bytes, contiguous, at this LBA:
 assert_eq!(volume.file_first_sector(), volume.metadata_sectors());
 ```
 
-`Volume::new` refuses a partition below 65,525 data clusters (about 256 MiB, since the cluster
+`VolumeLayout::new` refuses a partition below 65,525 data clusters (about 256 MiB, since the cluster
 count decides the FAT type), one too large for FAT32, a name no VFAT entry may carry, and a file
 that does not fit.
 

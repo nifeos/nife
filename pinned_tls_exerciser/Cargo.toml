@@ -21,10 +21,6 @@ publish = false
 pinned_tls_client = { path = "../pinned_tls_client" }
 # Named only to match on the refusal a test expects; already in the graph.
 rustls = { version = "0.23", default-features = false, features = ["std"] }
-# `force-soft` is a feature rather than a cfg, so a binary that links the provider has to name it:
-# cargo unifies features across the graph and no crate below can ask for it.
-# notes/cryptography-provider.md has the x86_64 finding this answers.
-sha2 = { version = "0.10", default-features = false, features = ["force-soft"] }
 # `package_fetch_exerciser`'s index (milestone 801 (packages over the internet)). In-tree and
 # `no_std`.
 package_index = { path = "../crates/package_index" }

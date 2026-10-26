@@ -219,6 +219,7 @@ dependencies = [
  "documentation",
  "domain_name_resolution_contract",
  "domain_name_system",
+ "driver_process_contract",
  "e1000e",
  "elf",
  "entropy_contract",
@@ -389,19 +390,10 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
- "device_tree_blob",
-]
 
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
- "device_tree_blob",
- "filesystem_contract",
-]
 
 [[package]]
 name = "device_tree_blob"
@@ -449,11 +441,16 @@ name = "domain_name_system"
 version = "0.1.0"
 
 [[package]]
-name = "e1000e"
+name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "filesystem_contract",
 ]
+
+[[package]]
+name = "e1000e"
+version = "0.1.0"
 
 [[package]]
 name = "elf"
@@ -753,6 +750,7 @@ dependencies = [
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",
+ "driver_process_contract",
  "e1000e",
  "elf",
  "entropy_contract",
@@ -787,7 +785,7 @@ dependencies = [
  "screen_console",
  "soak_page",
  "socket_contract",
- "spin",
+ "spin_lock",
  "std_runtime_contract",
  "system_log_contract",
  "test_times",
@@ -861,6 +859,8 @@ dependencies = [
 name = "machine_discovery"
 version = "0.1.0"
 dependencies = [
+ "designware_ethernet",
+ "designware_mobile_storage",
  "device_tree_blob",
  "jh7110_clock_and_reset",
  "jh7110_entropy",
@@ -1220,10 +1220,11 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
-name = "spin"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0134f9043ed38b087ac4f7d4af44c79e2c9e5094421fe3164f435ce585953b10"
+name = "spin_lock"
+version = "0.1.0"
+dependencies = [
+ "loom",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -1391,7 +1392,7 @@ dependencies = [
  "pmap",
  "ps",
  "socket_contract",
- "spin",
+ "spin_lock",
  "std_runtime_contract",
  "system_log_contract",
  "timetable",

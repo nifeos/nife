@@ -58,25 +58,22 @@ webpki = { package = "rustls-webpki", version = "0.103", default-features = fals
 pki_types = { package = "rustls-pki-types", version = "1", default-features = false, features = ["alloc"] }
 
 # The primitives, named directly so the vectors can be run against them rather than only through
-# the provider's own tables. `sha2` also has to be named here even though the provider already
-# pulls it, because `force-soft` is a feature and cargo unifies features across the graph: the
-# crate that actually depends on `sha2` has no way to ask for the soft implementation, and on
-# `x86_64-unknown-nife` the SIMD one does not compile at all.
-sha2 = { version = "0.10", default-features = false, features = ["force-soft"] }
-hmac = { version = "0.12", default-features = false }
-hkdf = { version = "0.12", default-features = false }
-aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
-poly1305 = { version = "0.8", default-features = false }
-chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
-x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"] }
-p256 = { version = "0.13", default-features = false, features = ["ecdh", "arithmetic"] }
+# the provider's own tables. Each portable implementation `x86_64-unknown-nife` needs, `sha2`'s
+# included, is a `--cfg` in `.cargo/config.toml` rather than a feature here.
+sha2 = { version = "0.11", default-features = false }
+hmac = { version = "0.13", default-features = false }
+hkdf = { version = "0.13", default-features = false }
+aes-gcm = { version = "0.11", default-features = false, features = ["aes", "alloc"] }
+poly1305 = { version = "0.9", default-features = false }
+chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
+x25519-dalek = { version = "3", default-features = false, features = ["static_secrets"] }
+p256 = { version = "0.14", default-features = false, features = ["ecdh", "arithmetic"] }
 
-# The same `rand_core` major the provider reaches (0.6), named so this program can draw through it
-# on purpose. That is not decoration: `rand_core` 0.6 is what pulls `getrandom` **0.2**, whose
-# custom-backend hook `entropy_backend` only learned to answer at this milestone, and a link is not
-# a draw. Without this the transcript would prove the symbol resolves and nothing about whether the
-# bytes come from the entropy service.
-rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
+# The `getrandom` major the provider draws through (0.4), named so this program can draw through it
+# on purpose. A link is not a draw: without this the transcript would prove the
+# `__getrandom_v03_custom` symbol resolves and nothing about whether the bytes come from the entropy
+# service.
+getrandom = { version = "0.4", default-features = false }
 
 # The randomness itself. See entropy_backend/src/lib.rs: this supplies `getrandom`'s backend for
 # both the 0.3/0.4 symbol and the 0.2 one, over `std::random::SystemRng`, which reaches the entropy

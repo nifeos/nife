@@ -9,7 +9,9 @@
 //! - One wiring at a time: a second bring-up resets the device under the first.
 //! - Proved by one radon bench boot ([`PROVEN_ON_SILICON`]), at a rate its note's `BUGS` records.
 
-use ::designware_ethernet::process::{DATA_PLANE_VA, DMA_PAGE_VA};
+use ::driver_process_contract::designware_ethernet::{
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
+};
 
 use super::*;
 use crate::cap::{Rights, memory_region_cap, notification_cap, rendezvous_cap, timer_cap};
@@ -112,13 +114,13 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
     }; MAPS];
     super::fs_service::map_channel(
         &mut maps[..PLANE],
-        DATA_PLANE_VA,
+        DATA_PLANE_VIRTUAL_ADDRESS,
         found.handoff.data_plane_phys,
         PLANE,
     );
     // Device-typed, because a cached or reordered tail write is a frame the device never hears of.
     maps[PLANE] = Mapping {
-        va: DMA_PAGE_VA,
+        va: DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
         phys: found.dma_page,
         flags: Flags::user_device(),
     };
