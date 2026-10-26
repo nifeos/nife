@@ -260,6 +260,18 @@ fn paths_answer_or_refuse_honestly() {
 const NOT_BEFORE: Duration = Duration::from_secs(1_767_225_600);
 const NOT_AFTER: Duration = Duration::from_secs(4_102_444_800);
 
+/// Two names that each fit the page shared with the FS server and together do not (security audit
+/// 2026-10-26, finding 3). The one-request path cannot carry them, so the PAL walks them name by
+/// name, and the server refuses a name it does not hold. Any refusal is right; a fault or an
+/// overrun of the page is the defect.
+fn long_path_refused() {
+    let long = format!("{}/{}", "a".repeat(2100), "b".repeat(2100));
+    match (File::open(&long), std::fs::read_dir(&long)) {
+        (Err(_), Err(_)) => println!("long path refused"),
+        other => panic!("a path longer than the page was not refused: {other:?}"),
+    }
+}
+
 /// **The `std::fs` transcript** (milestone 27 (Rust `std` on the native ABI) phase two, the FS
 /// half): `File`, `Read`, `read_to_string` and `metadata`, served by the RedoxFS FS server over the
 /// §27 contract through the one directory capability this process holds. `motd` is already open:
@@ -334,6 +346,8 @@ fn fs_demo(mut motd: File) {
         Err(e) if e.kind() == ErrorKind::NotFound => println!("missing not found"),
         other => panic!("a missing name did not read as NotFound: {other:?}"),
     }
+
+    long_path_refused();
 
     // CREATE, then a SHORTER second write (milestone 31 (a capability shell) phase 2): without
     // TRUNCATE the first write's tail would survive. §27's four corrections all trace to that, so

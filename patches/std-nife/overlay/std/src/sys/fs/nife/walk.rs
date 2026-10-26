@@ -163,8 +163,7 @@ pub(super) fn dir_at(p: &mut Page, path: &Path, want: u64) -> io::Result<At> {
     }
     // One `OPENDIR` for the whole path when the server takes paths (milestone 606, ruling A); the
     // server descends each step asking for `DESCEND | want`, which is what the walk below sends.
-    if names_in_path > 1 && paths_offered() {
-        let joined = joined(path);
+    if names_in_path > 1 && paths_offered() && let Some(joined) = joined(path) {
         match descend(p, &At(proto::ROOT), &joined, want) {
             Err(e) if refused_as_a_path(&e) => {}
             done => return done.inspect(|_| paths_seen()),

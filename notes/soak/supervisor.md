@@ -56,10 +56,10 @@ trace counters.
 
 ## The orderings
 
-- Responders are spawned first. A caller whose responder is not yet receiving parks on the
+- The kernel spawns responders first. A caller whose responder is not yet receiving parks on the
   rendezvous, so the order is not load-bearing; it keeps a fresh boot's first beats from reading as
   a stall.
-- Tick routes are bound before any waiter exists, and the signaling is switched on last.
+- The kernel binds the tick routes before any waiter exists, and switches the signaling on last.
   [tick-route.md](tick-route.md) has both halves.
 - The rebooting soak's questions and the watchdog's pet come after the beat's verdict. A failed beat
   panics, and a panic diverges, so a run that found something never resets over its own evidence;
@@ -73,16 +73,16 @@ trace counters.
   would throw that byte away so the series never stopped.
 - On a failure the census prints before the thread dump, and the dump before the panic, because the
   panic handler prints none and a failure with no path into the wedge shows only its end state.
-- The verdicts are tried in this order: a finding about the kernel (the wake gate refused), then
-  about delivery (a mismatch), then about liveness (a stall). The first beat is exempt from the
-  stall check only: a worker not yet scheduled has not started.
+- `verdict_of` tries the verdicts in this order: a finding about the kernel (the wake gate
+  refused), then about delivery (a mismatch), then about liveness (a stall). The first beat is
+  exempt from the stall check only: a worker not yet scheduled has not started.
 - A worker's progress is its two counters summed. A waiter leaves `rounds` at zero and the other
   roles leave `wakes` at zero, and neither counter falls, so an unchanged sum means both were
   unchanged, with no table of who plays which part.
-- `drifted=` is measured against the last census printed, not against spawn. Against spawn it
-  becomes a constant a few beats in (11 of 20 on the aarch64 QEMU leg) and says nothing further.
-  Against the census it returns to zero after each reprint, so a nonzero one means a newer block
-  follows.
+- The supervisor measures `drifted=` against the last census printed, not against spawn. Against
+  spawn it becomes a constant a few beats in (11 of 20 on the aarch64 QEMU leg) and says nothing
+  further. Against the census it returns to zero after each reprint, so a nonzero one means a newer
+  block follows.
 
 ## Which builds reset the machine
 
@@ -108,8 +108,8 @@ never fires.
 
 ## BUGS
 
-- The round-trip total is sampled while workers write it (`soak_page`'s `BUGS`).
-- A panicked worker is reported "stalled", not "died", and is not restarted.
+- The supervisor samples the round-trip total while workers write it (`soak_page`'s `BUGS`).
+- The supervisor reports a panicked worker as "stalled", not "died", and nothing restarts it.
 - The tick route skips the interrupt controller's claim, mask and complete, so a run with it on is a
   different soak, comparable only with the same build.
 - `REBOOT_AFTER_SECONDS` is one draw of the placement lottery, and many draws do not replace one
