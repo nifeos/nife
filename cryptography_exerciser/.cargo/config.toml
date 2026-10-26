@@ -5,14 +5,14 @@
 # 0.2 half needs no flag, only 0.2's `custom` feature, which `entropy_backend`'s own manifest turns
 # on for the whole graph.
 #
-# The five `force_soft` cfgs are `x86_64-unknown-nife` only in effect and unconditional in fact: a
-# `.cargo/config.toml` cannot vary rustflags by target when the target is a JSON specification
-# path. Forcing the portable implementation on all three is the cost, and it is a real one, because
+# The five `*_backend="soft"` cfgs, and `curve25519_dalek_backend="serial"` beside them, are
+# `x86_64-unknown-nife` only in effect and unconditional in fact: a `.cargo/config.toml` cannot vary
+# rustflags by target when the target is a JSON specification path. Forcing the portable implementation on all three is the cost, and it is a real one, because
 # aarch64 and riscv64 then run code their vector units could have done faster. Nothing here
 # measures that; the block for milestone 442 (a crypto provider `rustls` can use on all three
 # bare-metal targets) already carries a `BUGS` entry saying no number exists for what a
 # handshake costs.
-# **`chacha20_force_soft` is here for a second reason, and it is a run-time one rather than a
+# **`chacha20_backend="soft"` is here for a second reason, and it is a run-time one rather than a
 # compile-time one.** The other flags exist because LLVM cannot compile the SIMD paths for this
 # target at all. `chacha20` compiles fine and then **executes an AVX2 instruction in ring 3**, which
 # `x86_64-unknown-nife` has no SSE or AVX state for (its own description says "softfloat ring 3, no
@@ -22,9 +22,10 @@
 [build]
 rustflags = [
     "--cfg", "getrandom_backend=\"custom\"",
-    "--cfg", "polyval_force_soft",
-    "--cfg", "poly1305_force_soft",
-    "--cfg", "chacha20_force_soft",
-    "--cfg", "aes_force_soft",
+    "--cfg", "sha2_backend=\"soft\"",
+    "--cfg", "polyval_backend=\"soft\"",
+    "--cfg", "poly1305_backend=\"soft\"",
+    "--cfg", "chacha20_backend=\"soft\"",
+    "--cfg", "aes_backend=\"soft\"",
     "--cfg", "curve25519_dalek_backend=\"serial\"",
 ]
