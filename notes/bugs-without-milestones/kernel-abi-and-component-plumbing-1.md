@@ -54,7 +54,6 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/load-sensitive-assertions.md | `testing::RegionRun` works only for a root region and nothing stops use on a child (same in free-page-frames-sweep.md; wants a `memory_region` root accessor, kernel surface) | Make RegionRun refuse a child region | S  |
 |  notes/load-sensitive-assertions.md | `ROUTED_IRQS` is a global count; a per-intid delivery count needs the three arch handlers to route through one portable call (same in x86-pci-express-interrupt-counter.md) | Per-intid IRQ delivery count through one portable call | M  |
 |  notes/load-sensitive-assertions/known-residuals.md | 34 of 39 wall-clock/frame-count sites never audited; the frame-count-infers-mechanism question is unasked elsewhere | Audit the remaining load-sensitive assertion sites | M  |
-|  notes/memory-ordering.md | whole rendezvous argument rests on `spin::Mutex` and nothing pins its orderings | Pin the spin::Mutex ordering assumption with a check | S  |
 |  notes/mmu.md | unexplained: a user thread runs under the reserved root with no space in its record (three sightings, riscv64 and x86_64) | Find the space-less kill | M  |
 |  notes/mmu.md | aarch64 kill report prints neither the live root nor a walk, and should before the next sighting | Print root and walk in the aarch64 kill report | S  |
 |  notes/overflow-checks.md | `rendezvous_of` and riscv64/x86_64 `phys_to_virt` callers carry an add check where a range check is what matters | Range-check phys_to_virt callers | S  |

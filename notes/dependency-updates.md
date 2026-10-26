@@ -32,7 +32,7 @@ the exception. List those crates per target with
     cargo tree -p kernel --target x86_64-unknown-none -e normal,build --prefix none
 
 and the same for `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf`, keeping the
-lines without a path. On 2026-10-25 they were `spin`, `aarch64-cpu`, `tock-registers` and `uuid`.
+lines without a path. On 2026-10-25 (UTC) they were `aarch64-cpu`, `tock-registers` and `uuid`.
 
 - A minor or patch bump of such a crate merges once the pull request carries the kernel-class
   evidence. That means a delta review of the crate's own diff between the two versions, and the

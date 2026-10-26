@@ -14,9 +14,9 @@ use super::*;
 /// loop, and an undrained `SEND` deadlocks the boot (notes/credentials/what-is-proven.md).
 pub(super) fn provisioned() -> Option<(cs::Wiring, [u64; 3], [u64; 3])> {
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-    // Plain atomics rather than a lock or a `Once`: the only writer is the test thread, and
-    // the tree's `spin` is built without the `once` feature. Release/Acquire on `DONE` is what
-    // publishes the nine words next to it (rule 4: assume weak ordering).
+    // Plain atomics rather than a lock or a `Once`: the only writer is the test thread, and the
+    // tree has no `Once`. Release/Acquire on `DONE` is what publishes the nine words next to it
+    // (rule 4: assume weak ordering).
     static DONE: AtomicBool = AtomicBool::new(false);
     static OK: AtomicBool = AtomicBool::new(false);
     #[allow(clippy::declare_interior_mutable_const)]

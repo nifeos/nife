@@ -102,6 +102,7 @@ members = [
     "crates/user_mode_runtime",
     "crates/memory_region_heap",
     "crates/thread_wake_handshake",
+    "crates/spin_lock",
     "crates/coremark",
     "crates/video_terminal",
     "crates/swish",

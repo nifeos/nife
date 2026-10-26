@@ -67,16 +67,18 @@ reordering counted is the host's.
   store is Release or Relaxed, the load Acquire or Relaxed. Rates are per million messages sent.
 - SB, in batches of 256 fresh slots. Both loads reading 0 is the reordering; TSO allows it, so it
   is the positive control that the guest cores really ran in parallel.
-- LOCK. All four cores increment one counter under a spinlock shaped like `spin` 0.12.3's
-  `SpinMutex`, which the kernel's `IrqSafeMutex` wraps; unlock Release or Relaxed. Lost updates
-  are the reordering.
+- LOCK. All four cores increment one counter under a spinlock; lost updates are the reordering.
+  Two locks: a copy shaped like the kernel's, its unlock Release or Relaxed, with the counter on
+  its own line; and `crates/spin_lock` itself, the lock under the kernel's `IrqSafeMutex`, with the
+  counter inside it (the `spin-lock-crate` row).
 
 ### The weakened suite
 
-`weaken-spin.sh` points the workspace at a copy of `spin` 0.12.3 with the guard's unlock Relaxed
-(`release`), or that and the lock's compare-exchange Relaxed (`both`). Then `script/test --arch
+`weaken-spin.sh` edits `crates/spin_lock` in place to make its unlock Relaxed (`release`), or
+that and its compare-exchanges Relaxed (`both`). Then `script/test --arch
 aarch64,riscv64 --no-host` runs, `NIFE_SMP` at its default of 4, as many times as fit a bounded
-job. The build logs show the patched crate compiled in.
+job. The suite counts below ran against `spin` 0.12.3 patched the same two ways, before the kernel's
+lock moved into the tree; the build logs show the patched crate compiled in.
 
 ### The hosts
 
@@ -124,6 +126,27 @@ tests (14 skipped in each `system_tests`, as unweakened):
 Two more `release` runs on a local x86_64 machine passed every test and failed only the page frame
 ledger, which the same checkout also fails unweakened. That is a checkout-location effect, now in
 the BUGS of [the page frame budget](../frames/page-frame-budget.md), and not the weakening.
+
+## The kernel's lock, measured beside the shaped copy
+
+Run 40248532720, the same hosts and scale, twice per host, after the kernel's lock became
+`crates/spin_lock`. The shaped copy's `release-unlock` row is the lock as it was; the
+`spin-lock-crate` row is the lock the kernel takes now. Milliseconds of guest time for 48 million
+contended increments, first run / second run, and every lost-update count of both rows is 0:
+
+| guest, host | shaped copy, Release | `crates/spin_lock` | shaped copy, Relaxed: lost per million |
+|---|---|---|---|
+| aarch64, aarch64 host | 5,088 / 6,073 | 5,646 / 5,698 | 99,268 / 139,640 |
+| riscv64, aarch64 host | 1,224 / 1,308 | 1,342 / 1,531 | 474 / 4 |
+| aarch64, x86_64 host | 7,202 / 9,640 | 6,866 / 11,007 | 0 / 0 |
+| riscv64, x86_64 host | 1,732 / 2,687 | 1,806 / 2,552 | 0 / 0 |
+
+The same guest on a local x86_64 machine (Xeon Platinum 8160) gave 22,429 against 17,599 for
+aarch64 and 2,377 against 2,576 for riscv64. The two locks differ by less than one row's own
+spread between its two runs, which reaches 40% on the x86_64 runner, so the timing is a tie within
+noise. The crate keeps its counter on the flag's line, as a kernel lock's data is, where the copy
+does not, so the two are not the same experiment to the cycle. The Relaxed control still loses
+updates on the aarch64 host, so the run could have seen a broken lock.
 
 ## What it means for the arm64 jobs
 
