@@ -84,8 +84,8 @@ keeps every row within the 10% tripwire, and the LOCK test in
 - **Recorded.** The C11 limit of a loom proof lives in `notes/memory-ordering.md`, BUGS.
 - **Recorded.** `force_unlock`'s place outside the models lives in
   `notes/kernel-dependency-unsafe.md`.
-- **Ratified.** The crate's name, `SpinLock`, `SpinLockGuard`, both `new`, `lock`, `try_lock` and
-  `force_unlock` were ruled 2026-10-26 (UTC) as they stand; the `Name:` blocks in
+- **Done.** Ruled 2026-10-26 (UTC): the crate's name, `SpinLock`, `SpinLockGuard`, both `new`,
+  `lock`, `try_lock` and `force_unlock` stand as ratified; the `Name:` blocks in
   `crates/spin_lock/src/lib.rs` record it.
 
 ## Index row
