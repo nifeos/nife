@@ -97,22 +97,20 @@ which names nothing a reader can act on, and which `cargo` reports only as `coul
 sha2 (lib)`. §196 called this class "SIMD paths fail on soft-float x86_64" and guessed it might
 differ on our target. It does not differ; it is the same failure, and it has an answer.
 
-Each crate has an escape hatch, and they are not spelled alike, which is the part worth
-writing down because nothing discovers it for you:
+Each crate has an escape hatch, and nothing discovers it for you:
 
 | crate | how to force the portable implementation |
 |---|---|
-| `sha2` | a cargo **feature**, `force-soft` |
-| `polyval` | `--cfg polyval_force_soft` |
-| `poly1305` | `--cfg poly1305_force_soft` |
-| `aes` (under `aes-gcm`) | `--cfg aes_force_soft` |
+| `sha2` | `--cfg sha2_backend="soft"` |
+| `polyval` | `--cfg polyval_backend="soft"` |
+| `poly1305` | `--cfg poly1305_backend="soft"` |
+| `aes` (under `aes-gcm`) | `--cfg aes_backend="soft"` |
 | `curve25519-dalek` | `--cfg curve25519_dalek_backend="serial"` |
-| `chacha20` | `--cfg chacha20_force_soft`, and it is not like the others: see below |
+| `chacha20` | `--cfg chacha20_backend="soft"`, and it is not like the others: see below |
 
-The feature is the awkward one. A consumer that never names `sha2` still has to name it, because
-cargo unifies features across the graph and the crate that actually depends on it
-(`rustls-rustcrypto`, `p256`, `hmac`) has no way to ask. `cryptography_exerciser/Cargo.toml` names
-it for that reason and says so.
+Every one is a `--cfg` in `cryptography_exerciser/.cargo/config.toml` and its copy in
+`pinned_tls_exerciser`'s. A crate ignores a cfg it does not recognize, silently, so a major that
+renames one restores the SIMD path: read each crate's `check-cfg` list when its major moves.
 
 ### The one that does not fail at build time, and cost most of a day
 
@@ -165,7 +163,7 @@ QEMU on all three architectures.
 | `chacha20-poly1305 ok` | RFC 8439 section 2.8.2 |
 | `x25519 ok` | RFC 7748 section 5.2 |
 | `p256 generator ok` | FIPS 186-4 D.1.2.3 |
-| `entropy 0.2 ok` | no vector exists; two draws differ |
+| `entropy 0.4 ok` | no vector exists; two draws differ |
 | `chain objects.githubusercontent.com ok` | the host's own chain, RSA 2048, captured 2026-09-20 |
 | `chain ghcr.io ok` | the host's own chain, RSA 4096 leaf over a 3072-bit intermediate |
 | `chain refusals ok` | one flipped signature bit, and a certificate offered for another host's name |
@@ -184,9 +182,9 @@ partial block, which is what the AEAD construction does and is not what section 
 host. So the list is: the transcription, the implementation, or the way the test asks, and the
 third is the one that bit.
 
-`entropy 0.2 ok` is the line with no vector and the one that is genuinely new. A linker
-resolving `__getrandom_custom` says nothing about where bytes come from, so the program draws twice
-through `rand_core` 0.6 and asserts the draws differ and are not all zero. That is milestone 56's
+`entropy 0.4 ok` is the line with no vector and the one that is genuinely new. A linker
+resolving `__getrandom_v03_custom` says nothing about where bytes come from, so the program draws
+twice through `getrandom` 0.4, the path the provider's randomness takes, and asserts the draws differ and are not all zero. That is milestone 56's
 claim for `std::random`, made again one layer out, and it is what a silently-stubbed RNG would
 fail. A draw with no entropy capability granted panics rather than weakening. That is
 milestone 56's deliberate choice and is the behavior this tree wants: a provider that quietly
@@ -270,8 +268,9 @@ three architectures, and the milestone's own list is finished.
   failure named itself in one run. `design/roadmap/0496-a-dying-programs-last-words-reach-nobody.md`
   has the shapes a real fix could take, and `std_tests::drain_sink` now carries the warning where a
   reader meets it.
-- The curves sit on crypto-bigint 0.5.5 (RUSTSEC-2026-0387), ignored in `deny.toml` with its
-  argument. The fix is `p256` 0.14, which needs `rand_core` 0.10 and so a newer `getrandom` hook.
+- `rsa` is 0.10.0-rc.19, pinned with `=`, and its `encoding` feature brings `pkcs1` 0.8.0-rc.5.
+  No released `rsa` shares the graph's `digest` 0.11 traits, and 0.9.10 would double eleven crates.
+  Move to 0.10.0 when upstream releases it; re-argue by 2027-01-31.
 - **A vector proves the answer, not the manner.** Nothing measures timing, so a portable fallback
   that is correct and not constant-time passes every line. On x86_64 the fallbacks are exactly what
   runs, and constant-time behavior is the property §46 says is bought by exposure and not by a

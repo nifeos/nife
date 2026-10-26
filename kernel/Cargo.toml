@@ -202,10 +202,10 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 generational_table = { version = "0.1.0", path = "../crates/generational_table" }
-# The lock under `IrqSafeMutex`. Its `unsafe`, what checks it and the claim that rests on it, with
-# `uuid`'s: notes/kernel-dependency-unsafe.md (§46's kernel
-# bar, condition 4). `script/lint` fails when a bump moves any of it.
-spin = { version = "0.12", default-features = false, features = ["spin_mutex"] }
+# The lock under `IrqSafeMutex`: an Acquire compare-exchange and a Release store, written in the
+# tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
+# checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
+spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,

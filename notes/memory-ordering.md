@@ -34,10 +34,12 @@ the number from `script/lint` and not from here.
 
 63 sites is a small number for an SMP kernel on two weakly ordered ISAs, and the reason is
 DECISIONS §9 (locking). Almost everything shared is behind a ranked interrupt-safe lock, and
-`IrqSafeMutex` wraps `spin::Mutex`, which locks with `compare_exchange(false, true, Acquire,
-Relaxed)` and unlocks with `store(false, Release)`. So the overwhelming majority of this kernel's
-happens-before edges are supplied by an acquire/release pair inside a dependency, where nothing
-in this tree names them and no grep over this tree can find them.
+`IrqSafeMutex` wraps `spin_lock::SpinLock`, which locks with `compare_exchange(false, true,
+Acquire, Relaxed)` and unlocks with `store(false, Release)`. So the overwhelming majority of this
+kernel's happens-before edges are supplied by one acquire/release pair in `crates/spin_lock`, which
+no call site names and no grep over the kernel's call sites can find. Loom checks that pair, with
+two and three contending threads ([kernel-dependency-unsafe.md](kernel-dependency-unsafe.md),
+"spin_lock, the in-tree lock").
 
 That fact runs through every adjudication below, so it is worth stating as a rule:
 
@@ -146,7 +148,7 @@ Broadly, no. A per-variable check (every `Acquire` needs a `Release` on the same
 and run on the 63 sites. It raised seven flags, six on correct code, including the best pair in the
 tree, and missed `HWID`, the one genuine finding. A check that fires on the exemplary case and stays
 quiet on the defective one is an anti-check. The reason is structural: the partner is often an IPC
-rendezvous inside `spin::Mutex`, the halves live in different programs, and the defect is an
+rendezvous inside the kernel's lock, the halves live in different programs, and the defect is an
 absence with no token to match. [`checking-pairing.md`](memory-ordering/checking-pairing.md) has the
 measurement.
 
@@ -242,13 +244,10 @@ If there is no matching fence, say what the edge is and name it:
   C11-model argument about happens-before, and so is loom's. `notes/interleaving.md` (milestone 80)
   says the same thing three times and it is worth repeating a fourth: a failure either tool reports
   is real, a clean result is not a proof about the silicon.
-- **The rendezvous argument rests on `spin::Mutex`, which is a dependency.** If `IrqSafeMutex` were
-  ever reimplemented, roughly half the adjudications in this note would need rereading and nothing
-  would fail first. A `spin` bump that weakens the lock's Acquire compare-exchange or Release store
-  fails `script/lint` (`helpers/kernel_dependency_unsafe.py`'s pins), but that is a text match, and
-  nothing proves the lock gives exclusion. This is the largest unproved assumption here; the
-  proposal [the kernel's lock proves what it takes from spin](../design/roadmap/proposals/the-kernels-lock-proves-what-it-takes-from-spin.md)
-  tracks it.
+- **The rendezvous argument rests on `crates/spin_lock`, and loom's proof of it is a C11 proof.**
+  A change that weakens the lock's Acquire compare-exchange or Release store fails
+  `script/interleaving-check`; a lock that keeps both orderings and is still wrong for aarch64 or
+  riscv64 silicon fails nothing, as for every loom model in the tree.
 - The 63-site figure is a count of *syntax*, not of protocols. Nine protocols cover all of it,
   and a tenth could be added tomorrow in `Relaxed` and never appear in this table.
 - Two of the three findings this note describes are fixed elsewhere. The clock seqlock's writer

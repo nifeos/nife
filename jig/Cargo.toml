@@ -51,9 +51,6 @@ user_mode_runtime = { path = "../crates/user_mode_runtime" }
 package_index = { path = "../crates/package_index" }
 pinned_tls_client = { path = "../pinned_tls_client" }
 entropy_backend = { path = "../entropy_backend" }
-# `force-soft` is a feature rather than a cfg, so a binary that links the provider has to name it:
-# `pinned_tls_exerciser/Cargo.toml` says why.
-sha2 = { version = "0.10", default-features = false, features = ["force-soft"] }
 
 # `std_exerciser`'s profile, for its reasons: overflow checks in release (calef, 2026-10-04 (UTC),
 # notes/overflow-checks.md), a small deterministic image, no unwinding.

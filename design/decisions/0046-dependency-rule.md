@@ -17,12 +17,11 @@ inconsistent decision the first time someone does not share the instinct.
 
 ## What the tree actually does
 
-Five external dependencies exist outside `vendor/`:
+Four external dependencies exist outside `vendor/`:
 
 | Crate | Where | Kind |
 |---|---|---|
-| `aarch64-cpu` | kernel | thin: architectural register definitions |
-| `tock-registers` | kernel | thin: an MMIO register abstraction |
+| `tock-registers` | components | thin: an MMIO register abstraction |
 | `spin` | kernel | thin: spinlocks |
 | `smoltcp` | user | whole subsystem: a TCP/IP stack |
 | `redox_syscall` | fs_server | forced by the vendored engine |

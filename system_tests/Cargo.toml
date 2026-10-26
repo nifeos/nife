@@ -106,7 +106,7 @@ domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_
 # grants and the program asks inside, one definition for both.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
 domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
-spin = { version = "0.12", default-features = false, features = ["spin_mutex"] }
+spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
 std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contract" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }

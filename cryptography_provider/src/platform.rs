@@ -7,7 +7,7 @@ use super::*;
 
 /// `rustls`' randomness, which on nife is the entropy service.
 ///
-/// The chain is `rustls` to here, to `rand_core`'s `OsRng`, to `getrandom`, to
+/// The chain is `rustls` to here, to `getrandom`, to
 /// `entropy_backend`'s hook, to `std::random::SystemRng`, to the entropy service's one endpoint,
 /// to the device. Every link but `getrandom`'s is one this project owns.
 #[derive(Debug)]
@@ -15,15 +15,11 @@ pub(crate) struct Entropy;
 
 impl SecureRandom for Entropy {
     fn fill(&self, buf: &mut [u8]) -> Result<(), rustls::crypto::GetRandomFailed> {
-        use rand_core::RngCore;
-        // `try_fill_bytes` rather than `fill_bytes`: the infallible one panics on a failing
-        // source, and a process that cannot get randomness should fail the handshake rather than
+        // `getrandom::fill` returns an error rather than panicking on a failing source, and a process that cannot get randomness should fail the handshake rather than
         // die. On nife a draw with no entropy capability granted panics inside `SystemRng`
         // regardless, which is the deliberate choice of milestone 56 (secrets, credentials, and
         // the entropy to make them safe) and not something this layer can soften.
-        rand_core::OsRng
-            .try_fill_bytes(buf)
-            .map_err(|_| rustls::crypto::GetRandomFailed)
+        getrandom::fill(buf).map_err(|_| rustls::crypto::GetRandomFailed)
     }
 }
 
