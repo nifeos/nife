@@ -7,9 +7,9 @@
 
 use core::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 
-use aarch64_cpu::registers::{ID_AA64ISAR0_EL1, ID_AA64MMFR0_EL1, ID_AA64MMFR2_EL1, MIDR_EL1};
 use machine_discovery::aarch64::{Conduit, Isa, Psci};
-use tock_registers::interfaces::Readable;
+
+use super::instructions;
 
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
@@ -70,10 +70,10 @@ pub fn init(dtb_ptr: usize) {
     }
 
     let cpu = Isa::decode(
-        MIDR_EL1.get(),
-        ID_AA64MMFR0_EL1.get(),
-        ID_AA64MMFR2_EL1.get(),
-        ID_AA64ISAR0_EL1.get(),
+        instructions::read_midr(),
+        instructions::read_id_aa64mmfr0(),
+        instructions::read_id_aa64mmfr2(),
+        instructions::read_id_aa64isar0(),
     );
 
     let missing = cpu.missing_requirements();
@@ -255,10 +255,10 @@ mod tests {
     /// register disagreeing with the boot line that describes it.
     #[test_case]
     fn the_configured_physical_address_size_is_the_one_the_part_reported() {
-        use aarch64_cpu::registers::TCR_EL1;
+        use super::super::{instructions, mmu};
 
         assert_eq!(
-            TCR_EL1.read(TCR_EL1::IPS) as u8,
+            ((instructions::read_tcr() >> mmu::TCR_IPS_SHIFT) & mmu::TCR_IPS_MASK) as u8,
             get().pa_range,
             "TCR_EL1.IPS is ID_AA64MMFR0_EL1.PARange, straight through"
         );

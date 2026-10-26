@@ -49,9 +49,7 @@ fn stack_pointer_is_16_byte_aligned() {
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn running_at_el1() {
-    use aarch64_cpu::registers::CurrentEL;
-    use tock_registers::interfaces::Readable;
-    assert_eq!(CurrentEL.read(CurrentEL::EL), 1);
+    assert_eq!(crate::arch::current_el(), 1);
 }
 
 /// Proves the boot protocol actually delivered a device tree.

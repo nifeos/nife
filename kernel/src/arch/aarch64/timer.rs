@@ -9,8 +9,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use aarch64_cpu::registers::{CNTFRQ_EL0, CNTKCTL_EL1, CNTV_CTL_EL0, CNTV_CVAL_EL0, CNTVCT_EL0};
-use tock_registers::interfaces::{Readable, Writeable};
+use super::instructions;
 
 use crate::cpu::{self, MAX_CPUS};
 
@@ -20,6 +19,11 @@ use crate::cpu::{self, MAX_CPUS};
 /// 16. The virtual timer, not the physical one, because a hypervisor owns the physical timer and
 /// a guest that touches it traps. See notes/virtualization.md.
 pub(crate) const TIMER_INTID: u32 = 27;
+
+// `CNTV_CTL_EL0` (Arm DDI 0487, CNTV_CTL_EL0): bit 0 `ENABLE`, bit 1 `IMASK` (set masks the line,
+// the timer still fires), bit 2 `ISTATUS` (read-only: the condition is met).
+const CNTV_CTL_ENABLE: u64 = 1 << 0;
+const CNTV_CTL_ISTATUS: u64 = 1 << 2;
 
 /// 100 Hz. Ten milliseconds per tick.
 ///
@@ -50,7 +54,7 @@ static COUNTER_OPEN: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) };
 ///
 /// The GIC must already be up: this enables [`TIMER_INTID`] at it.
 pub fn init() {
-    let freq = CNTFRQ_EL0.get();
+    let freq = instructions::read_cntfrq();
     assert!(
         counter_frequency_contract::is_plausible(freq),
         "CNTFRQ_EL0 reports {freq} Hz, which no real part does: firmware never wrote it, or wrote \
@@ -58,10 +62,10 @@ pub fn init() {
     );
 
     // EL0 may read `CNTVCT_EL0` and `CNTFRQ_EL0`, a deliberate exception to §10 (notes/abi.md);
-    // the physical counter and the timer registers stay trapped. `aarch64_cpu` names no fields of
-    // CNTKCTL_EL1, so EL0VCTEN is bit 1 by hand.
+    // the physical counter and the timer registers stay trapped. EL0VCTEN is bit 1 (Arm DDI 0487,
+    // CNTKCTL_EL1).
     const EL0VCTEN: u64 = 1 << 1;
-    CNTKCTL_EL1.set(CNTKCTL_EL1.get() | EL0VCTEN);
+    instructions::write_cntkctl(instructions::read_cntkctl() | EL0VCTEN);
 
     close_cycle_counter_to_el0();
     super::pmu::init_this_cpu();
@@ -143,8 +147,9 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
 ///
 /// `IMASK` clear raises the line; with it set the timer still fires and sets `ISTATUS`.
 fn start(interval: u64) {
-    CNTV_CVAL_EL0.set(CNTVCT_EL0.get() + interval);
-    CNTV_CTL_EL0.write(CNTV_CTL_EL0::ENABLE::SET + CNTV_CTL_EL0::IMASK::CLEAR);
+    instructions::write_cntv_cval(instructions::read_cntvct() + interval);
+    // The whole register: ENABLE set, IMASK clear, ISTATUS read-only.
+    instructions::write_cntv_ctl(CNTV_CTL_ENABLE);
 }
 
 /// Move the deadline forward by exactly one interval.
@@ -152,9 +157,9 @@ fn start(interval: u64) {
 /// **`previous + interval`, not `now + interval`**, so the deadlines stay on the boot grid. A
 /// deadline already past counts a missed tick and re-anchors to now, rather than firing in a loop.
 fn rearm(interval: u64) {
-    let now = CNTVCT_EL0.get();
+    let now = instructions::read_cntvct();
     // Read before the write below: the icount instrument compares the arrival against it.
-    let fired = CNTV_CVAL_EL0.get();
+    let fired = instructions::read_cntv_cval();
     let mut next = fired + interval;
 
     if next <= now {
@@ -165,12 +170,12 @@ fn rearm(interval: u64) {
         next = now + interval;
     }
 
-    CNTV_CVAL_EL0.set(next);
+    instructions::write_cntv_cval(next);
 
     // After the deadline is armed, so the span measured is the whole handler. See
     // kernel/src/icount.rs.
     #[cfg(feature = "icount")]
-    crate::icount::tick_trace::record(fired, now, CNTVCT_EL0.get());
+    crate::icount::tick_trace::record(fired, now, instructions::read_cntvct());
 }
 
 /// **Instructions between a deadline and the handler observing it** (milestone 78's instrument),
@@ -240,7 +245,7 @@ pub fn missed_ticks_on(cpu: usize) -> u64 {
     allow(dead_code)
 )]
 pub fn deadline() -> u64 {
-    CNTV_CVAL_EL0.get()
+    instructions::read_cntv_cval()
 }
 
 /// Why a miss happened, kept only in test builds.
@@ -308,11 +313,11 @@ pub(crate) fn ticks_on(cpu: usize) -> u64 {
 
 /// The raw counter: monotonic, and counting while interrupts are masked.
 pub fn now() -> u64 {
-    CNTVCT_EL0.get()
+    instructions::read_cntvct()
 }
 
 pub fn frequency() -> u64 {
-    CNTFRQ_EL0.get()
+    instructions::read_cntfrq()
 }
 
 /// **Refuse the boot if `CNTFRQ_EL0` and the device tree's timer rate disagree.**
@@ -344,7 +349,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
     };
     let stated = u64::from(u32::from_be_bytes(cell));
 
-    let register = CNTFRQ_EL0.get();
+    let register = instructions::read_cntfrq();
     assert_eq!(
         stated, register,
         "the device tree says this timer runs at {stated} Hz and CNTFRQ_EL0 says {register} Hz; \
@@ -357,7 +362,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
 /// Not `ticks() * 10`, which undercounts every missed tick.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // this file's tests are the callers
 pub fn uptime_ms() -> u64 {
-    let freq = CNTFRQ_EL0.get();
+    let freq = instructions::read_cntfrq();
     if freq == 0 {
         return 0;
     }
@@ -375,7 +380,7 @@ pub fn uptime_ms() -> u64 {
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_tick_pending() -> bool {
-    CNTV_CTL_EL0.is_set(CNTV_CTL_EL0::ISTATUS)
+    instructions::read_cntv_ctl() & CNTV_CTL_ISTATUS != 0
 }
 
 /// Busy-wait `counter_ticks` on the counter, so it works with interrupts masked. A `bench` boot

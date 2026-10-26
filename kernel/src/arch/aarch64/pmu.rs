@@ -18,8 +18,7 @@
 
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
-use aarch64_cpu::registers::{CNTVCT_EL0, ID_AA64DFR0_EL1};
-use tock_registers::interfaces::Readable;
+use super::instructions;
 
 use crate::cpu::{self, MAX_CPUS};
 
@@ -106,6 +105,11 @@ static CHECK_ELAPSED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_
 /// TX1 figures counted whatever firmware left here. See notes/pmu.md, "Why `PMCCFILTR_EL0` is zero".
 static FIRMWARE_FILTER: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
+/// `ID_AA64DFR0_EL1.PMUVer`, bits 11:8 (Arm DDI 0487, ID_AA64DFR0_EL1).
+fn pmu_version() -> u64 {
+    (instructions::read_id_aa64dfr0() >> 8) & 0xf
+}
+
 /// **Does this core implement `PMUv3`**, and therefore every register this module and
 /// `timer::close_cycle_counter_to_el0` write?
 ///
@@ -113,7 +117,7 @@ static FIRMWARE_FILTER: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MA
 /// `PMUv3` and so carries none of these registers either. Per core, because `PMUVer` is a per-PE ID
 /// register and this kernel does not assume a homogeneous machine anywhere else.
 pub(super) fn is_pmuv3_present() -> bool {
-    let pmuver = ID_AA64DFR0_EL1.read(ID_AA64DFR0_EL1::PMUVer);
+    let pmuver = pmu_version();
     pmuver != 0 && pmuver != 0xf
 }
 
@@ -158,11 +162,11 @@ pub(crate) fn init_this_cpu() {
 
     // Does it count? A short window on the generic timer, the one clock this kernel has that does
     // not depend on the answer.
-    let (first, t0) = (read_counter(), CNTVCT_EL0.get());
+    let (first, t0) = (read_counter(), instructions::read_cntvct());
     let mut t1 = t0;
     while t1.wrapping_sub(t0) < CHECK_TICKS {
         core::hint::spin_loop();
-        t1 = CNTVCT_EL0.get();
+        t1 = instructions::read_cntvct();
     }
     let moved = read_counter().wrapping_sub(first);
     CHECK_CYCLES[cpu].store(moved, Ordering::Relaxed);
@@ -271,7 +275,7 @@ pub(crate) fn print_summary() {
         ),
         CycleCounter::NoPmuV3 => crate::println!(
             "  cycles      : no PMUv3 (ID_AA64DFR0_EL1.PMUVer {:#x}); ticks only",
-            ID_AA64DFR0_EL1.read(ID_AA64DFR0_EL1::PMUVer)
+            pmu_version()
         ),
         CycleCounter::Unknown => {
             crate::println!(
@@ -412,8 +416,8 @@ mod tests {
             crate::arch::interrupts::restore(irqs);
             return;
         };
-        let t0 = CNTVCT_EL0.get();
-        while CNTVCT_EL0.get().wrapping_sub(t0) < 1000 {
+        let t0 = instructions::read_cntvct();
+        while instructions::read_cntvct().wrapping_sub(t0) < 1000 {
             core::hint::spin_loop();
         }
         let second = cycles().expect("the counter did not vanish mid-test");

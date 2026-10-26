@@ -5,9 +5,7 @@
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use aarch64_cpu::asm::barrier;
-use aarch64_cpu::registers::{ESR_EL1, FAR_EL1, VBAR_EL1};
-use tock_registers::interfaces::{Readable, Writeable};
+use super::instructions;
 
 use super::{irq, timer};
 use crate::arch::{UserFault, UserFaultAccess};
@@ -257,11 +255,13 @@ pub fn init() {
     }
 
     let base = (&raw const exception_vectors) as u64;
-    VBAR_EL1.set(base);
+    // SAFETY: `exception_vectors` is `vectors.s`'s table, 2 KiB aligned by its `.balign 0x800`,
+    // and every entry is a handler.
+    unsafe { instructions::write_vbar(base) };
 
     // Without the `isb` the VBAR_EL1 write need not be in effect for the next instruction, which is
     // when a fault might arrive. See notes/exceptions.md, "The ISB that is easy to forget".
-    barrier::isb(barrier::SY);
+    instructions::isb();
 }
 
 /// Vector slot 5: Current EL, `SP_ELx`, IRQ. **The kernel being interrupted.**
@@ -314,7 +314,7 @@ extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
         return true;
     }
 
-    let esr = ESR_EL1.get();
+    let esr = instructions::read_esr();
     let class = (esr >> 26) & 0x3f;
 
     match class {
@@ -426,7 +426,7 @@ fn classify(esr: u64) -> UserFault {
 /// notes/exceptions.md, "A user fault is published, then counted".
 fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
     let class = (esr >> 26) & 0x3f;
-    let far = FAR_EL1.get();
+    let far = instructions::read_far();
 
     // The record first, the counter last, as the release: PAIR with the fence in
     // [`last_user_fault`].
@@ -540,12 +540,12 @@ fn fatal(frame: &TrapFrame, index: u64, esr: u64) -> ! {
     if far_is_meaningful {
         println!(
             "  FAR_EL1   {:#018x}   the address that faulted",
-            FAR_EL1.get()
+            instructions::read_far()
         );
         // The interrupted `SP_EL1` is the frame's address plus its size; the live `sp` may be the
         // interrupt stack.
         let trapped_sp = frame as *const TrapFrame as u64 + size_of::<TrapFrame>() as u64;
-        crate::stack::warn_if_guard_page(FAR_EL1.get(), trapped_sp);
+        crate::stack::warn_if_guard_page(instructions::read_far(), trapped_sp);
     } else {
         println!("  FAR_EL1   (not meaningful for this exception class)");
     }
@@ -596,15 +596,14 @@ mod tests {
     /// The CPU computes `VBAR_EL1 + offset` assuming the low 11 bits are zero.
     #[test_case]
     fn vbar_el1_points_at_our_vector_table() {
-        use aarch64_cpu::registers::VBAR_EL1;
-        use tock_registers::interfaces::Readable;
+        use super::super::instructions;
 
         unsafe extern "C" {
             static exception_vectors: core::ffi::c_void;
         }
         let expected = (&raw const exception_vectors) as u64;
 
-        assert_eq!(VBAR_EL1.get(), expected, "VBAR_EL1 not installed");
+        assert_eq!(instructions::read_vbar(), expected, "VBAR_EL1 not installed");
         assert_eq!(expected % 2048, 0, "vector table misaligned: {expected:#x}");
     }
 
