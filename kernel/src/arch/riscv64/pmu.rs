@@ -83,6 +83,9 @@ static CYCLE_BITS: AtomicU32 = AtomicU32::new(0);
 /// Called once from `kernel_main`, after [`super::isa::initialize`] probed the SBI extensions.
 /// Without SBI PMU, [`cycles`] answers `None`. A refused counter is stopped. See
 /// notes/riscv-cycle-counters.md.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     CYCLE_CSR.store(NO_CSR, Ordering::Relaxed);

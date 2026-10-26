@@ -10,6 +10,9 @@ use super::*;
 /// Bring this CPU's architecture state up: the GDT and TSS, then the IDT. The order is forced: an
 /// IDT entry names a code selector, so the GDT that selector indexes must be installed before any
 /// trap can be delivered through it.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     // First, before this core prints anything or adopts the fine map: the fine map's framebuffer
     // pages select PAT entry 1, and on a core that has not run this, entry 1 is write-through.

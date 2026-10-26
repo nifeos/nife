@@ -10,6 +10,9 @@ use super::*;
 ///
 /// Installs the exception vectors, so a fault produces a report. The console must already be up,
 /// because the fault handler's job is to print.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     exceptions::initialize();
 }

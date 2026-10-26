@@ -89,6 +89,9 @@ const SSTATUS_XTHEADVECTOR_VS: u64 = 0b11 << 23;
 /// Called per hart from `sched::initialize` and `sched::adopt_secondary_idle`, not
 /// `arch::initialize`, which the RISC-V boot does not pass through; firmware may leave `FS` open.
 /// The call site says why.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     disable();
     instructions::clear_sstatus(SSTATUS_VS);

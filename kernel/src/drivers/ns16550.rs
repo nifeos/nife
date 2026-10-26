@@ -228,6 +228,9 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// A shape with `divisor == 0` touches neither LCR nor the divisor latch (see
     /// [`Shape::divisor`]). On the DW part the transmitter is drained, bounded, before LCR is
     /// written, since the part ignores LCR writes while busy.
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
     pub fn initialize(&self) {
         self.write(IER, 0x00); // interrupts off: the console polls LSR
 

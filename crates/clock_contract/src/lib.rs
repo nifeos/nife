@@ -194,6 +194,9 @@ impl ClockPage {
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognise (and reports unknown) or a fully initialised one. Never
     /// a recognised page with garbage in it.
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
     pub fn initialize(&self) {
         self.word(W_SEQ).store(0, Ordering::Relaxed);
         self.word(W_STATE).store(state::UNKNOWN, Ordering::Relaxed);

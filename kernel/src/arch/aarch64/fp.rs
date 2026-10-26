@@ -98,6 +98,9 @@ const ZEN_AND_SMEN: u64 = (0b11 << 16) | (0b11 << 24);
 /// Called per core from `sched::initialize` and `sched::adopt_secondary_idle`: `CPACR_EL1` is
 /// banked and resets to an UNKNOWN value. QEMU resets it to the value this writes, so no test sees
 /// a part that reset it open; see notes/aarch64-port.md, "Floating point and SIMD".
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     instructions::write_cpacr_synchronized(instructions::read_cpacr() & !(FPEN | ZEN_AND_SMEN));
 }

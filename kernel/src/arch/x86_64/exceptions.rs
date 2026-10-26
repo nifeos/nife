@@ -379,6 +379,9 @@ static IDT_BUILT: AtomicBool = AtomicBool::new(false);
 /// The table is built once, by the first core here (the boot core), and every core `lidt`s its
 /// own IDTR. A secondary rebuilding it would race the boot core's live interrupt delivery, which
 /// stays enabled across `bring_up_secondaries`. See notes/x86-port/traps.md.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     if !IDT_BUILT.swap(true, Ordering::AcqRel) {
         // SAFETY: guarded by the swap above, so at most one core ever runs this loop, and it runs

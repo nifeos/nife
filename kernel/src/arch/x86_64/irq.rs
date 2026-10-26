@@ -656,6 +656,9 @@ pub(crate) fn initialize_contexts(boot_info_pointer: usize) {
 /// which tests the override table (notes/x86-port/traps.md). It is here because every build reaches
 /// it and the window it needs, the scheduler up and the tick not yet armed, exists only here.
 /// `cargo xtask uefi-boot` reads the `device irq` line it prints.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     let (io_apic, isa_irqs) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_irqs));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {

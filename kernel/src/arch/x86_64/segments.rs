@@ -158,6 +158,9 @@ pub(crate) struct DescriptorTablePointer {
 /// (this fills `TSS`/`GDT` at `cpu::id()`'s own slot, and restores this core's per-CPU pointer
 /// afterward; see below), before anything depends on the GDT: it replaces the boot GDT that
 /// `boot.s` installed, and the old one goes away.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub unsafe fn initialize() {
     let id = crate::cpu::id();
 

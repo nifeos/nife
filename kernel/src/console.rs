@@ -158,6 +158,8 @@ static CONSOLE: IrqSafeMutex<KernelConsole> = IrqSafeMutex::new(
     },
 );
 
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     CONSOLE.lock().uart.initialize();
 }

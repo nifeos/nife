@@ -269,6 +269,9 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 ///
 /// The fine tables map the same kernel addresses to the same frames as the boot table, so the
 /// switch is seamless. Runs once, on the primary hart, before any secondary or user space exists.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     refuse_unnameable_ram();
     let root = memory::alloc()

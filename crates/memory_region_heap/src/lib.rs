@@ -94,6 +94,9 @@ impl MemoryRegionHeap {
     /// Wire the heap to its budget: pages come from the untyped in `memory_region_slot`, mapped at
     /// `[base, base + max_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
     pub fn initialize(&self, memory_region_slot: u64, base: u64, max_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();

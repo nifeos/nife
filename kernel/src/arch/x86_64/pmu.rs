@@ -101,6 +101,9 @@ static CHECK_TSC: AtomicU64 = AtomicU64::new(0);
 /// the check spins against the TSC, the counter the answer must not be. On a part with no
 /// performance monitoring [`cycles`] answers `None` forever. Every outcome is in [`outcome`] and
 /// printed by [`print_summary`].
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     COUNTER_BITS.store(0, Ordering::Relaxed);

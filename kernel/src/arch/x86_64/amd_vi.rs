@@ -528,6 +528,9 @@ fn enable(u: &mut Unit) {
 /// 3. Each unit is enabled and its caches emptied.
 ///
 /// One `amd-vi` line per unit.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize(ivrs: &IvrsUnits) {
     *IVRS.lock() = Some(*ivrs);
     {

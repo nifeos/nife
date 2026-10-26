@@ -54,6 +54,9 @@ fn write(off: usize, val: u32) {
 /// # Safety
 /// `base` must be the PLIC's MMIO base as a mapped, device-typed kernel virtual address, and
 /// `context` must be this hart's supervisor context number.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub unsafe fn initialize(base: usize, context: usize) {
     // The one check [`claim_register`] leans on, made once here instead of on every interrupt.
     assert!(

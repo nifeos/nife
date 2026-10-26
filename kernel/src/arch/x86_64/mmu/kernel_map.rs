@@ -92,6 +92,9 @@ static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
 /// The fine table maps the same kernel VAs to the same frames as the boot table, so the `mov cr3`
 /// is seamless; [`verify`] checks that before the switch. COM1 is an I/O port, not a mapping, so
 /// nothing here can silence the console.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()

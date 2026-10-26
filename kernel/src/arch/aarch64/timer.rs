@@ -53,6 +53,9 @@ static COUNTER_OPEN: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) };
 /// Start the heartbeat.
 ///
 /// The GIC must already be up: this enables [`TIMER_INTID`] at it.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     let freq = instructions::read_cntfrq();
     assert!(

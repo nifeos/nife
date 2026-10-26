@@ -85,6 +85,9 @@ impl Pl011 {
     }
 
     /// Configure the UART: 8 data bits, no parity, one stop bit, FIFOs on.
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
     pub fn initialize(&self) {
         // Turn the UART off while we reconfigure it.
         self.write(CR, 0);

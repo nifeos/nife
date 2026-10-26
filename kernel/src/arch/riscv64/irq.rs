@@ -153,6 +153,9 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
 ///
 /// The PLIC base is stored before `sie.SEIE` is set, so no claim goes through a zero base. Every
 /// source stays disabled until [`enable`] routes it.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     if let Some((plic_phys, _)) = crate::memory::plic_region() {
         // SAFETY: `mmu::initialize` mapped the PLIC device-typed in the direct map, and this is its

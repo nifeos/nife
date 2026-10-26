@@ -11,6 +11,9 @@ use super::*;
 /// and interrupt unmasking are separate steps in `secondary_main`. The boot hart reaches it as the
 /// first step of the shared `bring_up_machine` (milestone 890 (riscv64 and `x86_64` join the shared
 /// boot path)), and a secondary takes the same path.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     exceptions::initialize();
 }

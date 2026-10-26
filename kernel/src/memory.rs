@@ -42,6 +42,9 @@ const MAX_REGIONS: usize = 16;
 /// (`arch::discovery::initialize`, milestone 890 (riscv64 and `x86_64` join the shared boot path)).
 /// Both front ends end in [`bring_up_page_frames`], the half that does not care where RAM came
 /// from.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     #[cfg(target_arch = "x86_64")]
     crate::arch::discovery::initialize();

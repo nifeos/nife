@@ -132,6 +132,9 @@ pub fn interval() -> u64 {
 /// Start the periodic timer: arm the first deadline through SBI, and enable the S-mode timer
 /// interrupt in `sie`. The caller enables interrupts globally (`sstatus.SIE`) when it is ready to
 /// take them.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     // Anchor this hart's grid before arming it: `rearm` adds whole intervals to this value.
     let first = now() + interval();

@@ -407,6 +407,9 @@ pub(crate) fn apic_timer_frequency() -> u64 {
 ///
 /// # Panics
 /// If [`initialize_frequency`] has not run, for the same reason [`frequency`] does.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     let apic_hz = APIC_TIMER_HZ.load(Ordering::Relaxed);
     assert!(

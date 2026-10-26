@@ -132,6 +132,9 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 ///
 /// Replaces boot.s's coarse map with the fine one in TTBR1, verified first, and points TTBR0 at
 /// the empty reserved table. Called already running at high virtual addresses.
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
     let root = memory::alloc()
         .expect("no frame for the root page table")
