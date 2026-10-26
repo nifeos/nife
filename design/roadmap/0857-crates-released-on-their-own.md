@@ -104,7 +104,7 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
   provenance, requires a README, both license files and a `rust-version`, and replays the
   falsifications. It runs while the crate is still here.
 - Provenance. Ruled 2026-10-25 (UTC): names are ratified before a crate breaks out. Its `Name:`
-  blocks stay in its source until then, and the breaking-out change strips them (Decision 44,
+  blocks stay in its source until then, and the breaking-out change strips them (ruled
   2026-10-26 UTC). Each milestone's "What the crate no longer cites" keeps every other link.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual

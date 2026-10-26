@@ -1,12 +1,12 @@
-//! Name: ratified 2026-09-17 (#1806). NVMe spelled out, as the acronym test asks; permanent once
-//! published.
-
 #![no_std]
 //! **NVMe queue mechanics, as pure logic**: everything an NVMe driver computes and nothing it
 //! touches. The register file, the doorbells and the queues' DMA memory are the caller's (a thin
 //! volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol
 //! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
 //! admin queue and PRPs) is what this crate implements, and no more of it.
+//!
+//! Name: ratified 2026-09-17 (#1806). NVMe spelled out, as the acronym test asks; permanent once
+//! published.
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).

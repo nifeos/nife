@@ -151,6 +151,54 @@ which the ratification pass settles.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The cut removed `jh7110::discover`, which took a `DeviceTreeBlob`.
 
+## Names a stranger may misread, open before release
+
+The crate's names are read against design/naming.md's tests and Fork 5 of milestone 857,
+which asks for names that stand on their own. The lines below are the names read as something other
+than clear or a term, as of 2026-10-26 (UTC), copied as they stand. Each stays open until a ruling
+keeps or changes it. No record of a release-track crate's names is kept in the tree (ruled
+2026-10-26 UTC), so this list is the open work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `layout` (`src/layout.rs`): nife: nife's own process plan
+- `DMA_PAGE` (`src/regs.rs`): nife: nife's own process plan
+- `WINDOW` (`src/regs.rs`): nife: nife's own process plan
+
+### Belongs to something else
+
+- `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a MAC crate
+- `motorcomm` (`src/motorcomm.rs`): scope: one vendor's PHY in a MAC crate
+- `first_cell` (`src/jh7110.rs`): scope: a device-tree cell reader in a MAC crate
+- `FALLBACK_GMAC0` (`src/motorcomm.rs`): scope: one board's PHY values in a MAC crate
+- `YT8531_ID` (`src/motorcomm.rs`): scope: one vendor's PHY in a MAC crate
+
+### Generic
+
+- `Observation` (`src/coherence.rs`): generic
+- `POSTED` (`src/coherence.rs`): generic
+- `Verdict` (`src/coherence.rs`): generic
+- `classify` (`src/coherence.rs`): generic
+- `delivered` (`src/coherence.rs`): generic
+- `observe` (`src/coherence.rs`): generic
+- `prepare` (`src/coherence.rs`): generic
+- `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
+- `interface` (`src/jh7110.rs`): generic
+- `Bus` (`src/mdio.rs`): generic: two `Bus` types in two modules
+- `Applied` (`src/motorcomm.rs`): generic
+- `Drive` (`src/motorcomm.rs`): generic
+- `Settings` (`src/motorcomm.rs`): generic
+- `Source` (`src/motorcomm.rs`): generic
+
+### Unclear
+
+- `dma_bits` (`src/controller.rs`): unclear: `dma` and an unstated unit
+- `Hw` (`src/hardware.rs`): unclear: an abbreviation of hardware
+- `mainline_phy` (`src/jh7110.rs`): unclear: reads as a PHY; it reads a PHY node into settings
+- `vendor_phy` (`src/jh7110.rs`): unclear: reads as a PHY; it reads a PHY node into settings
+- `read_ext` (`src/motorcomm.rs`): unclear: `ext` abbreviates extended
+- `write_ext` (`src/motorcomm.rs`): unclear: `ext` abbreviates extended
+
 ## Exit
 
 A check proves it. In nife, `cargo tree --locked -i designware_ethernet` resolves to `v0.1.x` from

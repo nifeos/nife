@@ -144,6 +144,38 @@ blocks, which the ratification pass settles.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The addresses taken from `address_space_map` left with the cut.
 
+## Names a stranger may misread, open before release
+
+The crate's names are read against design/naming.md's tests and Fork 5 of milestone 857,
+which asks for names that stand on their own. The lines below are the names read as something other
+than clear or a term, as of 2026-10-26 (UTC), copied as they stand. Each stays open until a ruling
+keeps or changes it. No record of a release-track crate's names is kept in the tree (ruled
+2026-10-26 UTC), so this list is the open work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `layout` (`src/layout.rs`): nife: nife's own process plan
+
+### Generic
+
+- `REQUIRED` (`src/pch/flush.rs`): generic
+- `required` (`src/pch/flush.rs`): generic
+- `Plan` (`src/pch/phy.rs`): generic
+- `plan` (`src/pch/phy.rs`): generic
+- `update` (`src/pch/phy.rs`): generic
+- `Note` (`src/pch/sequence.rs`): generic
+- `Reached` (`src/pch/sequence.rs`): generic
+
+### Unclear
+
+- `ulp` (`src/pch/ulp.rs`): unclear: Intel's ultra low power, an abbreviation
+- `tx_word` (`src/descriptor.rs`): unclear: which word of a transmit descriptor
+- `tx_word` (`src/pch/flush.rs`): unclear: which word of a transmit descriptor
+- `Hw` (`src/pch/hardware.rs`): unclear: an abbreviation of hardware
+- `id_at` (`src/pch/phy.rs`): unclear: what id, at what
+- `reg` (`src/pch/phy.rs`): unclear: an abbreviation
+- `init_hw` (`src/pch/sequence.rs`): unclear: `hw` abbreviates hardware
+
 ## Exit
 
 A check proves it. In nife, `cargo tree --locked -i e1000e` resolves to `v0.1.x` from crates.io with

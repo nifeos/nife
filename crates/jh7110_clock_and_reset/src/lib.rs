@@ -1,5 +1,3 @@
-//! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
-
 #![cfg_attr(not(test), no_std)]
 //! The `StarFive` JH7110's clock and reset generator, as pure logic: register offsets, bit
 //! positions, the bring-up plans, and what each of the chip's two device trees calls the
@@ -28,6 +26,8 @@
 //! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
 //! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
+//!
+//! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
 /// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).

@@ -115,27 +115,29 @@ _NAME_LINE = re.compile(r'^\s*(//[!/]|#) ?Name:')
 
 
 def strip_name_blocks(text):
-    """`text` without its `Name:` blocks, as the change that breaks a crate out will leave it.
+    """`text` with its `Name:` blocks blanked, as the change that breaks a crate out will leave it.
 
     A block is a `Name:` line behind `//!`, `///` or `#`, with the continuation lines that carry the
-    same marker, and the bare marker line that set it off. Decision 44 (ruled 2026-10-26 UTC): a
-    crate that leaves is a third-party crate and nife keeps no record of its names.
+    same marker, and the bare marker line that set it off. Each such line becomes an empty line, so
+    a line number in the result is a line number in the file. A ruling of 2026-10-26 (UTC): a crate
+    that leaves is a third-party crate and nife keeps no record of its names.
     """
-    lines, out, i = text.split('\n'), [], 0
+    lines, i = text.split('\n'), 0
     while i < len(lines):
         m = _NAME_LINE.match(lines[i])
         if not m:
-            out.append(lines[i])
             i += 1
             continue
         marker = m.group(1)
-        if out and out[-1].strip() == marker:
-            out.pop()
+        if i and lines[i - 1].strip() == marker:
+            lines[i - 1] = ''
+        lines[i] = ''
         i += 1
         while i < len(lines) and lines[i].lstrip().startswith(marker) \
                 and lines[i].lstrip()[len(marker):].strip():
+            lines[i] = ''
             i += 1
-    return '\n'.join(out)
+    return '\n'.join(lines)
 
 
 def citation_findings(files):

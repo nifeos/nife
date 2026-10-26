@@ -23,11 +23,13 @@
 # 0. The names. `script/names <crate>` must report the crate's name ratified, because the copy, the
 #    `nifeos/<name>` repository and the crates.io package all carry it (calef, 2026-10-11 UTC: "We
 #    should ensure that we ratify the crate names before we break them out."). And every name a
-#    stranger meets in it is ratified too: every `Name:` block in the crate must read `ratified`,
-#    and every module and `pub` item must have one (Decision 44, ruled 2026-10-26 UTC: a crate that
-#    leaves is a third-party crate and nife keeps no record of its names, so the blocks in its
-#    source are the only record until it breaks out). Ratification is a pull request whose body
-#    carries `python3 helpers/name_release.py --draft <crate>`.
+#    stranger meets in it is ratified too: every module and `pub` item must have a `Name:` block
+#    (ruled 2026-10-25 UTC: every name a stranger meets is ratified), and every block in the crate
+#    must read `ratified` (ruled 2026-10-26 UTC: a crate that leaves is a third-party crate and
+#    nife keeps no record of its names, so the blocks in its source are the only record until it
+#    breaks out). Ratification is a pull request whose body carries
+#    `python3 helpers/name_release.py --draft <crate>`. A crate's release milestone holds its open
+#    name flags (the names a stranger may misread).
 # 1. The manifest. Fails on a path dependency that leaves the copy, on a key inherited from the
 #    workspace (`license.workspace = true`, `[lints] workspace = true`), on a missing `rust-version`,
 #    and on a feature whose name says `nife`. Inherited keys are then inlined from the workspace
@@ -35,8 +37,9 @@
 # 2. Files a stranger needs: a README, and `LICENSE-MIT` and `LICENSE-APACHE` at the crate's root
 #    with `license = "MIT OR Apache-2.0"` in the manifest, nife's own license.
 # 3. Citations of this tree, in every shipped text file (and an `include_bytes!` or `include_str!`
-#    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths into `design/`,
-#    `notes/`, `script/`, `helpers/` or `briefs/`, the architect's name, and `cfg(target_os = "nife")`.
+#    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths
+#    into `design/`, `notes/`, `script/`, `helpers/` or `briefs/`, the architect's name, and
+#    `cfg(target_os = "nife")`.
 #    A stranger can follow none of them. `Name:` blocks are not reported: the text scanned has them
 #    stripped (`crate_release.strip_name_blocks`), because the change that breaks the crate out
 #    strips them from the outgoing copy. The copy on disk keeps them, since a falsification patch

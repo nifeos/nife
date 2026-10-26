@@ -1,6 +1,3 @@
-//! Name: ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once
-//! published. Too long for a program name, so the program is `usb_keyboard_driver`.
-
 #![no_std]
 //! **xHCI, as pure logic**: everything a USB host controller driver computes, with nothing it
 //! touches. A kernel finds and confines the register file and DMA memory and a
@@ -16,6 +13,9 @@
 //! - One page size: [`dma`] assumes 4 KiB (`PAGESIZE` bit 0), and the driver refuses otherwise.
 //! - No streams, isochronous or bulk: the TRBs a keyboard needs and nothing more.
 //! - Hubs are not modelled (route string 0), so a device behind a hub cannot be addressed.
+//!
+//! Name: ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once
+//! published. Too long for a program name, so the program is `usb_keyboard_driver`.
 
 pub mod context;
 pub mod dma;

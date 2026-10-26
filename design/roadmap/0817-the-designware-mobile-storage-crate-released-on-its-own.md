@@ -159,6 +159,61 @@ blocks, which the ratification pass settles.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   nothing. `serve`, which spoke nife's block protocol, left with the cut.
 
+## Names a stranger may misread, open before release
+
+The crate's names are read against design/naming.md's tests and Fork 5 of milestone 857,
+which asks for names that stand on their own. The lines below are the names read as something other
+than clear or a term, as of 2026-10-26 (UTC), copied as they stand. Each stays open until a ruling
+keeps or changes it. No record of a release-track crate's names is kept in the tree (ruled
+2026-10-26 UTC), so this list is the open work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `role` (`src/jh7110.rs`): nife: nife's own process plan
+- `WINDOW_USED` (`src/regs.rs`): nife: nife's own process plan
+
+### Belongs to something else
+
+- `bench` (`src/bench.rs`): scope: a bench
+- `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a host controller crate
+- `partition` (`src/partition.rs`): scope: partitions
+- `IdmacReport` (`src/bench.rs`): scope: a bench
+- `MATRIX_BLOCKS` (`src/bench.rs`): scope: a bench
+- `MATRIX_HZ` (`src/bench.rs`): scope: a bench
+- `MatrixRow` (`src/bench.rs`): scope: a bench
+- `ReadFailure` (`src/bench.rs`): scope: a bench
+- `ReadReport` (`src/bench.rs`): scope: a bench
+- `SCRATCH_SECTORS` (`src/bench.rs`): scope: a bench
+- `Watch` (`src/bench.rs`): scope: a bench
+- `WriteVerdict` (`src/bench.rs`): scope: a bench
+- `idmac_read` (`src/bench.rs`): scope: a bench
+- `pattern` (`src/bench.rs`): scope: a bench
+- `read_matrix` (`src/bench.rs`): scope: a bench
+- `read_only` (`src/bench.rs`): scope: a bench
+- `scratch_write` (`src/bench.rs`): scope: a bench
+- `Entry` (`src/partition.rs`): scope: partitions
+- `SIGNATURE` (`src/partition.rs`): scope: partitions
+- `is_used` (`src/partition.rs`): scope: partitions
+- `scratch` (`src/partition.rs`): scope: partitions
+
+### Generic
+
+- `bits` (`src/card.rs`): generic
+- `Data` (`src/command.rs`): generic
+- `word` (`src/command.rs`): generic
+- `Refusal` (`src/idmac.rs`): generic
+- `Kind` (`src/sd.rs`): generic
+
+### Unclear
+
+- `Mbr` (`src/partition.rs`): unclear: master boot record is a phrase people say (the acronym test); scope as above
+- `dma_64bit` (`src/regs.rs`): unclear: `dma` and a bare width
+
+### Clear, with a caveat
+
+- `DirectMemoryAccessRegion` (`src/idmac.rs`): clear, though `idmac` and `dma_64bit` beside it keep the acronym
+- `NoDirectMemoryAccess` (`src/idmac.rs`): clear, though `idmac` and `dma_64bit` beside it keep the acronym
+
 ## Exit
 
 A check proves it. In nife, `cargo tree --locked -i designware_mobile_storage` resolves to `v0.1.x`

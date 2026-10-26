@@ -11,4 +11,7 @@ read. These files hold what its prose budget has no room for.
   a commit touching each release-track crate also touches code outside it, and the order that
   suggests.
 
+A crate's own release milestone holds its open name flags, the names a stranger may misread, in a
+section of that name; no names record is kept in this directory.
+
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default.*

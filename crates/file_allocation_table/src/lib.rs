@@ -1,6 +1,3 @@
-//! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
-//! published.
-
 #![no_std]
 //! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Two halves exist today.
 //!
@@ -38,6 +35,9 @@
 //! - A FAT32 layout under 65525 clusters (which `mkfs.fat -F 32` makes with a warning) is refused,
 //!   because Linux reads it as FAT32 and the specification as FAT16.
 //! - Not crash-atomic and no journal, which is FAT.
+//!
+//! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
+//! published.
 
 mod boot_sector;
 mod directory;

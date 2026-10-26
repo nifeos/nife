@@ -1,6 +1,3 @@
-//! Name: ratified 2026-09-13. Chip-qualified rather than generic, since `trng` alone could name
-//! almost anything; kept as the crates.io name (#1806).
-
 #![cfg_attr(not(test), no_std)]
 //! The `StarFive` JH7110 TRNG, as pure logic: the register layout, what each of the chip's two
 //! device trees calls the block, and the decision of whether a generation succeeded, failed or is
@@ -55,6 +52,9 @@
 //! let both = ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP;
 //! assert_eq!(generation_outcome(STAT_SEEDED, both, [0; 8]), GenerationOutcome::Lockup);
 //! ```
+//!
+//! Name: ratified 2026-09-13. Chip-qualified rather than generic, since `trng` alone could name
+//! almost anything; kept as the crates.io name (#1806).
 
 /// Register byte offsets from the device's base, transcribed from `jh7110-trng.c`'s `#define`s
 /// (\[driver\]). `RAND0..RAND7` are the eight 32-bit words a completed generation leaves behind;

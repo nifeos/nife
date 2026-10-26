@@ -41,7 +41,7 @@ this stage reads no macOS-made boot sector. Stage 4 reads both images to their h
 ## Names
 
 The crate's sources carry `Name:` blocks until the crate breaks out, when the change that breaks it
-out strips them (Decision 44, ruled 2026-10-26 UTC). The ruling of 2026-10-25 (UTC) ratified every
+out strips them (ruled 2026-10-26 UTC). The ruling of 2026-10-25 (UTC) ratified every
 name below and refused `tables` for `BootSector::table_count`. The table gives the reason for each:
 
 | name | why this one |

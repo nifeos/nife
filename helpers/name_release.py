@@ -1,9 +1,9 @@
-"""The table a pull request carries when a release-track crate's names are ratified, for `script/names`.
+"""The table a ratifying pull request carries for a release-track crate's names, for `script/names`.
 
 **Why this file exists.** A crate on the release track (milestones 813 to 820, the eight crates of
-milestone 857 (crates released on their own)) leaves for its own repository. Decision 44 (ruled
-2026-10-26 UTC) settles what happens to its names: once the crate leaves it is a third-party
-crate, and nife keeps no record of a third-party crate's names. So a track crate has no names
+milestone 857 (crates released on their own)) leaves for its own repository. A ruling of 2026-10-26
+(UTC) settles what happens to its names: once the crate leaves it is a third-party crate, and nife
+keeps no record of a third-party crate's names. So a track crate has no names
 record in the tree. Its `Name:` blocks stay in its source, censused like any other crate's, until
 the crate breaks out, and the change that breaks it out strips them from the outgoing copy.
 
@@ -75,7 +75,7 @@ def _tree():
 
 
 def rows(crate, paths, read):
-    """`[(name, kind, path, status)]` for `crate` from its blocks as they stand, or None off the track.
+    """`[(name, kind, path, status)]` for `crate` from its blocks, or None off the track.
 
     `path` is relative to the crate. The status is the first line of a block's text, or `no block`.
     """
@@ -107,7 +107,7 @@ def rows(crate, paths, read):
 
 
 def draft(crate):
-    """Print the table for `crate` from today's blocks, for the body of the ratifying pull request."""
+    """Print the table for `crate` from today's blocks, for the ratifying pull request's body."""
     paths, read = _tree()
     table = rows(crate, paths, read)
     if table is None:
@@ -147,6 +147,10 @@ def selftest():
         ("a feature has a row and no block", got[("std", "feature")] == ("Cargo.toml", "no block")),
         ("paths are relative to the crate", got[("a", "module")][0] == "src/a.rs"),
         ("a crate off the track has no table", table(base, "other") is None),
+        ("blanked blocks keep every line number",
+         crate_release.strip_name_blocks(
+             "//! A.\n//!\n//! Name: provisional. Long\n//! more.\n\nfn f() {}\n")
+         == "//! A.\n\n\n\n\nfn f() {}\n"),
         ("no record file is read: a stale one changes nothing",
          table(dict(base, **{"design/roadmap/0857-crates-released-on-their-own/fat-names.md":
                              "Ratified: 2026-11-02 (#1).\n"})) == table(base)),
