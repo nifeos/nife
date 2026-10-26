@@ -53,11 +53,11 @@ These two iterators are the same shape twice: `[type, length, ..]` entries, self
 until the body runs out. Both read firmware bytes on the x86 boot path, and nothing else checks the
 lengths they trust.
 
-`at + 2 > body.len()` was alive under `>=`, and `len < 2` under `<=`. Both were killed by a body of
-exactly `MADT_FIXED_LEN + 2` holding the shortest entry the format allows. The DMAR's pair needed
-two four-byte structures rather than one. That is what tells a cursor that advanced wrongly
-(`at += len` under `*=`) from a walk that stopped early (`at + len > body.len()` under `<`). With
-a single entry, both mutants and the original all end the walk in the same place.
+`at + 2 > body.len()` was alive under `>=`, and `len < 2` under `<=`. A body of exactly
+`MADT_FIXED_LEN + 2` holding the shortest entry the format allows killed both. The DMAR's pair
+needed two four-byte structures rather than one. That is what tells a cursor that advanced wrongly
+(`at += len` under `*=`) from a walk that stopped early (`at + len > body.len()` under `<`). With a
+single entry, both mutants and the original all end the walk in the same place.
 
 The four `len >= N` match guards were alive under `true`. That decodes a processor entry that has
 no flags word and reads the bytes after it. Closed by
@@ -203,7 +203,7 @@ shipped with `tests/gic_versions.rs` covering both bindings, both refusal shapes
 redistributor-region gap and the hardware cross-check. Cargo-mutants found nothing there to
 survive on.
 
-No untriaged survivor is left in this crate. The milestone 326 roadmap block's follow-on entry for
+No untriaged survivor remains in this crate. The milestone 326 roadmap block's follow-on entry for
 this crate is current and needs no correction beyond noting this re-check. There is no code change
 to land. (Checked 2026-09-24: the 2026-09-21 census, run 35589550926, agrees; it scores
 `machine_discovery` 97.0% with the same 19 missed.)
