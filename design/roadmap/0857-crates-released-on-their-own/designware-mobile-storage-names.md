@@ -6,7 +6,7 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-118 names: 88 no block, 29 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 84 no block, 33 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 29 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -48,8 +48,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `read_matrix` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
 | `read_only` | item | `src/bench.rs` | unrecorded. | yes | scope: a bench |
 | `scratch_write` | item | `src/bench.rs` | unrecorded. | yes | scope: a bench |
-| `Cid` | item | `src/card.rs` | unrecorded. | yes | term |
-| `Csd` | item | `src/card.rs` | unrecorded. | yes | term |
+| `CardIdentification` | item | `src/card.rs` | provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells out, with the specification's abbreviation as a `doc(alias)`; was `Cid`. | yes | clear |
+| `CardSpecificData` | item | `src/card.rs` | provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells out, with the specification's abbreviation as a `doc(alias)`; was `Csd`. | yes | clear |
 | `R1_ERRORS` | item | `src/card.rs` | unrecorded. | yes | clear |
 | `R1_READY_FOR_DATA` | item | `src/card.rs` | unrecorded. | yes | clear |
 | `STATE_TRANSFER` | item | `src/card.rs` | unrecorded. | yes | term |
@@ -98,7 +98,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `role` | item | `src/jh7110.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `Entry` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
-| `Mbr` | item | `src/partition.rs` | unrecorded. | yes | unclear: master boot record is a phrase people say (the acronym test); scope as above |
+| `MasterBootRecord` | item | `src/partition.rs` | provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells out, with the specification's abbreviation as a `doc(alias)`; was `Mbr`. | yes | scope: partitions |
 | `SIGNATURE` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
 | `contains` | item | `src/partition.rs` | unrecorded. | yes | clear |
 | `is_used` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
@@ -116,7 +116,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `TBBCNT` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `TCBCNT` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `UHS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `ULTRA_HIGH_SPEED` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells out, with the specification's abbreviation as a `doc(alias)`; was `UHS`. | yes | clear |
 | `WINDOW_USED` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `WRTPRT` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `uses_64_bit_direct_memory_access` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it; was `dma_64bit`. | yes | clear |
@@ -140,7 +140,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the fields of `ReadReport` (7), `InternalDirectMemoryAccessReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
+- the fields of `ReadReport` (7), `InternalDirectMemoryAccessReport` (3), `Watch` (2), `MatrixRow` (8), `CardSpecificData` (2), `CardIdentification` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `MasterBootRecord` (1) and `Card` (10), and those of the private module `sim`'s types;
 - the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitializationError` (9), `IoError` (4) and the private `Fault` (4);
 - the methods of the traits `Registers` (3) and `DirectMemoryAccessRegion` (7).
 
@@ -186,3 +186,15 @@ Each renamed row's status says which ruling renamed it and what it was.
   `control_resets_cleared` and `bus_mode_resets_cleared`, and `ReadReport::fs_type`
   `file_system_type`. `arg` becomes `argument` (the `Command` field and its constructors'
   argument) and `buf` becomes `buffer`. `Hz` stays.
+- Ruled 2026-10-26 (UTC), the SD and MMC vocabulary: `sd` is earned and stays (the module,
+  `SdV1`, `SdV2`, `SdHighCapacity`, `configure_sd`); `mmc` becomes `multimedia_card` (`Kind::Mmc`,
+  `configure_mmc`, `mmc_power_up`, the `mmc` decoders, the `MMC_*` constants this crate authors).
+  The card registers spell out, each with the specification's abbreviation as its alias. `Cid` and
+  `cid_raw` become `CardIdentification` and `card_identification_raw`, and `Csd` and `csd_raw`
+  become `CardSpecificData` and `card_specific_data_raw`. `ext_csd` becomes
+  `extended_card_specific_data` and `ocr` becomes `operation_conditions`. `rca` and `rca_arg`
+  become `relative_card_address` and `relative_card_address_argument`, `IF_COND_ARG` becomes
+  `INTERFACE_CONDITION_ARGUMENT` and `UHS` becomes `ULTRA_HIGH_SPEED`. `raw` stays. The partition table's `Mbr` becomes `MasterBootRecord`
+  and `TYPE_PROTECTIVE_GPT` becomes
+  `TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE`. The device tree's `mmc@` node
+  names and `starfive,jh7110-mmc` keep their spelling.

@@ -735,7 +735,7 @@ mod tests {
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
         let report = crate::bench::ReadReport {
             card,
-            mbr: None,
+            master_boot_record: None,
             partition_boot_signature: false,
             file_system_type: [0; 8],
             timed_from: 2048,

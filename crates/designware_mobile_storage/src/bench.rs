@@ -1,15 +1,15 @@
-//! The bench step's two halves, as logic: the read-only probe and the scratch write test that
-//! a kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
+//! The bench step's two halves, as logic: the read-only probe and the scratch write test that a
+//! kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
 //! safety argument, is tested on a host rather than first tried on the card radon boots from.
 //! [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
-//! [`scratch_write`] writes only inside [`Mbr::scratch`]'s range, after reading what is there: a
-//! pattern, read back, then the original, read back too. A card with no gap is refused, not
-//! written.
+//! [`scratch_write`] writes only inside [`MasterBootRecord::scratch`]'s range, after reading what
+//! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
+//! not written.
 
 use crate::host::{Host, Registers};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
-use crate::partition::Mbr;
+use crate::partition::MasterBootRecord;
 use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
 
 /// How many sectors the write test uses at most: 4 KiB, one multi-block command each way.
@@ -21,7 +21,7 @@ pub struct ReadReport {
     /// The card, identified.
     pub card: Card,
     /// Sector 0, parsed, if it holds an MBR.
-    pub mbr: Option<Mbr>,
+    pub master_boot_record: Option<MasterBootRecord>,
     /// The first partition's first sector ends in `55 aa` (a FAT boot sector does).
     pub partition_boot_signature: bool,
     /// The first partition's first sector's bytes 82..90 (FAT32's `"FAT32   "` file system
@@ -59,8 +59,10 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     let card = sd::identify(host, bus_width).map_err(ReadFailure::Initialization)?;
     let mut sector = [0u8; BLOCK];
     sd::read_blocks(host, &card, 0, &mut sector).map_err(|e| ReadFailure::Read(0, e))?;
-    let mbr = Mbr::parse(&sector);
-    let first = mbr.and_then(|m| m.first_start()).map_or(0, u64::from);
+    let master_boot_record = MasterBootRecord::parse(&sector);
+    let first = master_boot_record
+        .and_then(|m| m.first_start())
+        .map_or(0, u64::from);
     let mut partition_boot_signature = false;
     let mut file_system_type = [0u8; 8];
     if first != 0 {
@@ -72,7 +74,7 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     let (timed, timed_us) = timed_read(host, &card, first, buffer, timed_blocks)?;
     Ok(ReadReport {
         card,
-        mbr,
+        master_boot_record,
         partition_boot_signature,
         file_system_type,
         timed_from: first,
@@ -182,16 +184,16 @@ pub enum WriteVerdict {
     Failed(u8, IoError),
 }
 
-/// **The scratch write test.** `mbr` is what [`read_only`] parsed from this card; `original` and
-/// `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
+/// **The scratch write test.** `master_boot_record` is what [`read_only`] parsed from this card;
+/// `original` and `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
 pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
-    mbr: Option<&Mbr>,
+    master_boot_record: Option<&MasterBootRecord>,
     original: &mut [u8],
     scratch: &mut [u8],
 ) -> WriteVerdict {
-    let Some((first, count)) = mbr.and_then(|m| m.scratch(SCRATCH_SECTORS)) else {
+    let Some((first, count)) = master_boot_record.and_then(|m| m.scratch(SCRATCH_SECTORS)) else {
         return WriteVerdict::Refused;
     };
     let bytes = count as usize * BLOCK;

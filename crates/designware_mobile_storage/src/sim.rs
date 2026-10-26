@@ -118,7 +118,7 @@ pub(crate) enum CardKind {
     /// An SD 2.0 card of standard capacity: answers CMD8, byte addressed.
     SdV2,
     /// An eMMC: ignores CMD8 in idle and CMD55, answers CMD1, takes its address from the host.
-    Mmc,
+    MultimediaCard,
     /// An empty slot: nothing answers.
     Empty,
 }
@@ -153,7 +153,7 @@ struct Transfer {
     moved: usize,
     auto_stop: bool,
     buffer: Vec<u8>,
-    ext_csd: bool,
+    extended_card_specific_data: bool,
 }
 
 /// The simulation. Public fields are what a test sets up or checks.
@@ -167,7 +167,7 @@ pub struct Sim {
     state: State,
     app: bool,
     power_up_polls: u32,
-    rca: u16,
+    relative_card_address: u16,
     busy_reads: u32,
     /// The card in the slot.
     pub kind: CardKind,
@@ -226,9 +226,9 @@ pub struct Sim {
     pub late_acd: u32,
     acd_pending: u32,
     /// An eMMC of 2 GB or less: byte addressed, its OCR without the sector-mode bit.
-    pub mmc_byte_addressed: bool,
+    pub multimedia_card_byte_addressed: bool,
     /// What `EXT_CSD`'s `SEC_COUNT` reports, if not the card's real size.
-    pub ext_csd_sectors: Option<u32>,
+    pub extended_card_specific_data_sectors: Option<u32>,
     /// Store one block of one write command wrongly: `(write command, from 0; block)`.
     pub mangle_write: Option<(usize, u64)>,
     /// Microseconds per call to `now_us`.
@@ -274,7 +274,7 @@ impl Sim {
             state: State::Idle,
             app: false,
             power_up_polls: 0,
-            rca: 0,
+            relative_card_address: 0,
             busy_reads: 0,
             kind,
             storage: vec![[0u8; 512]; blocks],
@@ -303,8 +303,8 @@ impl Sim {
             crc_error_at_end: false,
             late_acd: 0,
             acd_pending: 0,
-            mmc_byte_addressed: false,
-            ext_csd_sectors: None,
+            multimedia_card_byte_addressed: false,
+            extended_card_specific_data_sectors: None,
             mangle_write: None,
             clock_step: 1,
             memory: None,
@@ -354,7 +354,7 @@ impl Sim {
 
     fn high_capacity(&self) -> bool {
         !matches!(self.kind, CardKind::SdV1 | CardKind::SdV2)
-            && !(self.kind == CardKind::Mmc && self.mmc_byte_addressed)
+            && !(self.kind == CardKind::MultimediaCard && self.multimedia_card_byte_addressed)
     }
 
     fn r1(&self) -> u32 {
@@ -368,7 +368,7 @@ impl Sim {
         (state << 9) | (1 << 8) | if self.app { 1 << 5 } else { 0 }
     }
 
-    fn csd(&self) -> [u32; 4] {
+    fn card_specific_data(&self) -> [u32; 4] {
         let blocks = self.storage.len() as u64;
         let mut r = [0u32; 4];
         let mut put = |start: u32, len: u32, v: u64| {
@@ -398,7 +398,7 @@ impl Sim {
         r
     }
 
-    fn cid(&self) -> [u32; 4] {
+    fn card_identification(&self) -> [u32; 4] {
         // Manufacturer 0x1b, product "NIFE1", serial 0x1234_5678.
         let mut r = [0x1234_5678u32 << 24, 0x1234_5678 >> 8, 0, 0x1b00_0000];
         for (i, b) in b"NIFE1".iter().enumerate() {
@@ -432,44 +432,45 @@ impl Sim {
             (8, false, CardKind::SdHighCapacity | CardKind::SdV2) if self.state == State::Idle => {
                 short(argument & 0xfff)
             }
-            (55, _, CardKind::Mmc) => None,
+            (55, _, CardKind::MultimediaCard) => None,
             (55, _, _) => {
                 self.app = true;
                 short(self.r1() | 1 << 5)
             }
-            (41, true, _) | (1, false, CardKind::Mmc) => {
+            (41, true, _) | (1, false, CardKind::MultimediaCard) => {
                 self.power_up_polls += 1;
-                let mut ocr = 0x00ff_8000;
+                let mut operation_conditions = 0x00ff_8000;
                 if self.power_up_polls > self.busy_polls {
-                    ocr |= 1 << 31;
+                    operation_conditions |= 1 << 31;
                     if self.high_capacity() && (index == 1 || argument & (1 << 30) != 0) {
-                        ocr |= 1 << 30;
+                        operation_conditions |= 1 << 30;
                     }
                     self.state = State::Ready;
                 }
-                short(ocr)
+                short(operation_conditions)
             }
             (2, false, _) if self.state == State::Ready => {
                 self.state = State::Ident;
-                Some(self.cid())
+                Some(self.card_identification())
             }
-            (3, false, CardKind::Mmc) if self.state == State::Ident => {
-                self.rca = (argument >> 16) as u16;
+            (3, false, CardKind::MultimediaCard) if self.state == State::Ident => {
+                self.relative_card_address = (argument >> 16) as u16;
                 let r = self.r1();
                 self.state = State::Standby;
                 short(r)
             }
             (3, false, _) if self.state == State::Ident => {
-                self.rca = 0xb368;
+                self.relative_card_address = 0xb368;
                 self.state = State::Standby;
-                short(u32::from(self.rca) << 16 | 0x0500)
+                short(u32::from(self.relative_card_address) << 16 | 0x0500)
             }
             (9, false, _)
-                if self.state == State::Standby && (argument >> 16) as u16 == self.rca =>
+                if self.state == State::Standby
+                    && (argument >> 16) as u16 == self.relative_card_address =>
             {
-                Some(self.csd())
+                Some(self.card_specific_data())
             }
-            (7, false, _) if (argument >> 16) as u16 == self.rca => {
+            (7, false, _) if (argument >> 16) as u16 == self.relative_card_address => {
                 let r = self.r1();
                 self.state = State::Transfer;
                 short(r)
@@ -477,7 +478,7 @@ impl Sim {
             (6, true, _) | (16, false, _) | (13, false, _) if self.state == State::Transfer => {
                 short(self.r1())
             }
-            (8, false, CardKind::Mmc) | (17 | 18 | 24 | 25, false, _)
+            (8, false, CardKind::MultimediaCard) | (17 | 18 | 24 | 25, false, _)
                 if self.state == State::Transfer =>
             {
                 short(self.r1())
@@ -534,10 +535,10 @@ impl Sim {
             {
                 m.bus().unfenced_start = true;
             }
-            let ext_csd = index == 8;
+            let extended_card_specific_data = index == 8;
             let mut t = Transfer {
                 write,
-                first_logical_block_address: if ext_csd {
+                first_logical_block_address: if extended_card_specific_data {
                     0
                 } else {
                     self.logical_block_address(argument)
@@ -546,12 +547,14 @@ impl Sim {
                 moved: 0,
                 auto_stop: word & registers::CMD_SEND_AUTO_STOP != 0,
                 buffer: Vec::new(),
-                ext_csd,
+                extended_card_specific_data,
             };
             if !write {
-                if ext_csd {
+                if extended_card_specific_data {
                     let mut e = vec![0u8; 512];
-                    let sectors = self.ext_csd_sectors.unwrap_or(self.storage.len() as u32);
+                    let sectors = self
+                        .extended_card_specific_data_sectors
+                        .unwrap_or(self.storage.len() as u32);
                     e[212..216].copy_from_slice(&sectors.to_le_bytes());
                     t.buffer = e;
                 } else {
@@ -626,7 +629,7 @@ impl Sim {
                 *self.register(registers::RINTSTS) |= registers::INT_FRUN | registers::INT_DTO;
                 return;
             }
-            if self.fail_next_read_crc && !t.ext_csd {
+            if self.fail_next_read_crc && !t.extended_card_specific_data {
                 self.fail_next_read_crc = false;
                 *self.register(registers::RINTSTS) |= registers::INT_DCRC | registers::INT_DTO;
                 return;

@@ -196,8 +196,14 @@ pub(crate) const USRID: u32 = 0x068;
 pub(crate) const VERID: u32 = 0x06c;
 /// Hardware configuration: FIFO width, address width, how many slots.
 pub(crate) const HCON: u32 = 0x070;
-/// UHS-I register: per-slot DDR mode (bit 16) and 1.8 V signaling (bit 0).
-pub const UHS: u32 = 0x074;
+/// **The ultra high speed register** (`UHS_REG` in OpenBSD's `dwmmc.c` and Linux's `dw_mmc.h`),
+/// for the SD bus's UHS-I modes: per-slot DDR mode (bit 16) and 1.8 V signaling (bit 0).
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
+/// out, with the specification's abbreviation as a `doc(alias)`; was `UHS`.
+#[doc(alias = "uhs")]
+#[doc(alias = "UHS_REG")]
+pub const ULTRA_HIGH_SPEED: u32 = 0x074;
 /// Per-slot hardware reset line to an eMMC device, active low.
 pub const RST_N: u32 = 0x078;
 /// Internal DMA bus mode.

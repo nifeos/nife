@@ -181,7 +181,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
             blk::FLUSH => {
                 let status = host.command(&c::Command::new(
                     c::SEND_STATUS,
-                    u32::from(card.rca) << 16,
+                    u32::from(card.relative_card_address) << 16,
                     c::Response::R1,
                 ));
                 match status {

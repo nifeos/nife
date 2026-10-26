@@ -1215,29 +1215,29 @@ e1000e,write_smbus_addr,replace << with >>,killed,killed by the_smbus_address_co
 e1000e,write_smbus_addr,replace | with ^,equivalent,"^ binds tighter than |: the first mutant xors the masked word (bits 7 and up) with the address (at most 0x7f), the others xor the address with PEC_EN (0x200) or PEC_EN with VALID (0x80); none share a bit; the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,,replace << with >>,equivalent,"the survivors are the constants written 1 << 0 (CTRL_CONTROLLER_RESET, CLKENA_ENABLE, CTYPE_4BIT, CARDTHRCTL_READ_ENABLE, BMOD_SOFTWARE_RESET, IDSTS_TI), and 1 >> 0 is 1; every other shifted constant in registers.rs and card.rs is killed by the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs or r1_state_and_errors"
 designware_mobile_storage,,replace | with &,killed,killed by the_register_bits_are_the_databooks and an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd and a_clock_update_the_controller_never_takes_is_an_error
-designware_mobile_storage,,replace | with ^,equivalent,"every survivor ORs single-bit constants that share no bit (OCR_VOLTAGE_WINDOW, SD_OP_COND_ARG, UPDATE_CLOCK, CTRL_ALL_RESET, INT_DATA_ERRORS, INT_DATA_TIMEOUTS, IDSTS_ERRORS), so | and ^ agree; their values are pinned by the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs and a_short_response_is_not_asked_for_as_a_long_one; the 2026-10-12 per-crate re-run still reports it"
-designware_mobile_storage,Card::rca_arg,replace << with >>,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
-designware_mobile_storage,Card::rca_arg,replace Card::rca_arg -> u32 with 0,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
-designware_mobile_storage,Card::rca_arg,replace Card::rca_arg -> u32 with 1,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
-designware_mobile_storage,Cid::mmc,replace * with +,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
-designware_mobile_storage,Cid::mmc,replace - with +,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
-designware_mobile_storage,Cid::mmc,replace - with /,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
-designware_mobile_storage,Cid::mmc,replace < with ==,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
-designware_mobile_storage,Cid::mmc,replace < with >,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
-designware_mobile_storage,Cid::sd,replace < with <=,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,,replace | with ^,equivalent,"every survivor ORs single-bit constants that share no bit (OPERATION_CONDITIONS_VOLTAGE_WINDOW, SD_OPERATION_CONDITIONS_ARGUMENT, UPDATE_CLOCK, CTRL_ALL_RESET, INT_DATA_ERRORS, INT_DATA_TIMEOUTS, IDSTS_ERRORS), so | and ^ agree; their values are pinned by the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs and a_short_response_is_not_asked_for_as_a_long_one; the 2026-10-12 per-crate re-run still reports it"
+designware_mobile_storage,Card::relative_card_address_argument,replace << with >>,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
+designware_mobile_storage,Card::relative_card_address_argument,replace Card::relative_card_address_argument -> u32 with 0,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
+designware_mobile_storage,Card::relative_card_address_argument,replace Card::relative_card_address_argument -> u32 with 1,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
+designware_mobile_storage,CardIdentification::multimedia_card,replace * with +,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,CardIdentification::multimedia_card,replace - with +,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,CardIdentification::multimedia_card,replace - with /,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,CardIdentification::multimedia_card,replace < with ==,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,CardIdentification::multimedia_card,replace < with >,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
+designware_mobile_storage,CardIdentification::sd,replace < with <=,killed,killed by an_sd_name_is_five_bytes_and_an_emmc_name_six
 designware_mobile_storage,Command::word,replace | with ^,equivalent,"CMD_START (bit 31), CMD_USE_HOLD_REG (bit 29) and the index masked to bits 5:0 are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_mobile_storage,Csd::mmc,replace + with *,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::mmc,replace + with -,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::mmc,replace - with +,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::mmc,replace - with /,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::mmc,replace < with <=,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::mmc,replace << with >>,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
-designware_mobile_storage,Csd::sd,delete match arm 2,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
-designware_mobile_storage,Csd::sd,replace * with +,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
-designware_mobile_storage,Csd::sd,replace * with /,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
-designware_mobile_storage,Csd::sd,replace + with *,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
-designware_mobile_storage,Csd::sd,replace + with -,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
-designware_mobile_storage,Csd::sd,replace - with /,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace + with *,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace + with -,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace - with +,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace - with /,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace < with <=,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::multimedia_card,replace << with >>,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
+designware_mobile_storage,CardSpecificData::sd,delete match arm 2,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
+designware_mobile_storage,CardSpecificData::sd,replace * with +,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
+designware_mobile_storage,CardSpecificData::sd,replace * with /,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
+designware_mobile_storage,CardSpecificData::sd,replace + with *,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
+designware_mobile_storage,CardSpecificData::sd,replace + with -,killed,killed by an_sduc_card_is_sized_from_a_28_bit_count
+designware_mobile_storage,CardSpecificData::sd,replace - with /,killed,killed by a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone
 designware_mobile_storage,Entry::contains,replace && with ||,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace + with *,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace + with -,killed,killed by a_partition_contains_its_own_sectors_and_no_others
@@ -1296,8 +1296,8 @@ designware_mobile_storage,"Host<R, D>::write",replace & with ^,equivalent,"the c
 designware_mobile_storage,"Host<R, D>::write",replace & with |,equivalent,"as for & with ^: TXDR only gates when to write, room comes from STATUS, and no bit the wider clear could drop (DTO) is set before the last word is written; the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,"Host<R, D>::write",replace - with +,killed,killed by a_stalled_transfer_times_out_owing_what_did_not_move and the_last_fifo_step_moves_only_what_is_owed
 designware_mobile_storage,"Host<R, D>::write",replace || with &&,killed,killed by a_buffer_or_direction_that_does_not_match_the_command_is_refused_unsent
-designware_mobile_storage,Mbr::parse,replace + with -,killed,killed by an_entry_is_read_from_all_four_bytes_of_each_word
-designware_mobile_storage,Mbr::scratch,replace < with <=,equivalent,at want == gap both arms give the same count; the 2026-10-12 per-crate re-run still reports it
+designware_mobile_storage,MasterBootRecord::parse,replace + with -,killed,killed by an_entry_is_read_from_all_four_bytes_of_each_word
+designware_mobile_storage,MasterBootRecord::scratch,replace < with <=,equivalent,at want == gap both arms give the same count; the 2026-10-12 per-crate re-run still reports it
 designware_mobile_storage,Response::is_long,replace Response::is_long -> bool with true,killed,killed by a_short_response_is_not_asked_for_as_a_long_one
 designware_mobile_storage,bits,replace && with ||,killed,killed by a_length_above_32_reads_32_bits_and_a_field_past_the_end_reads_zero_there
 designware_mobile_storage,bits,replace + with *,killed,killed by a_length_above_32_reads_32_bits_and_a_field_past_the_end_reads_zero_there
@@ -1320,8 +1320,8 @@ designware_mobile_storage,identify,replace & with |,killed,killed by an_emmc_is_
 designware_mobile_storage,identify,replace && with ||,killed,killed by an_emmc_is_sized_by_ext_csd_only_when_it_is_sector_addressed
 designware_mobile_storage,identify,replace == with !=,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,in_range,replace > with >=,killed,killed by the_last_block_is_in_range_and_the_one_after_it_is_not
-designware_mobile_storage,mmc_power_up,replace > with ==,killed,killed by an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps
-designware_mobile_storage,mmc_power_up,replace > with >=,equivalent,"giving up at elapsed == deadline rather than after it: the error is the same PowerUp with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond (the == mutant is killed by an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps); the 2026-10-12 per-crate re-run still reports it"
+designware_mobile_storage,multimedia_card_power_up,replace > with ==,killed,killed by an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps
+designware_mobile_storage,multimedia_card_power_up,replace > with >=,equivalent,"giving up at elapsed == deadline rather than after it: the error is the same PowerUp with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond (the == mutant is killed by an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps); the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,pattern,replace >> with <<,killed,killed by the_write_pattern_is_the_formula_and_its_halves_differ
 designware_mobile_storage,pattern,replace ^ with &,killed,killed by the_write_pattern_is_the_formula_and_its_halves_differ
 designware_mobile_storage,pattern,replace ^ with |,equivalent,"the survivor is 0x5a ^ (i >> 8): i is below 512, so i >> 8 is 0 or 1, and 0x5a's bit 0 is clear, so | and ^ agree; the other two ^ are killed by the_write_pattern_is_the_formula_and_its_halves_differ; the 2026-10-12 per-crate re-run still reports it"
@@ -1336,7 +1336,7 @@ designware_mobile_storage,scratch_write,replace || with &&,killed,killed by the_
 designware_mobile_storage,sd_power_up,delete !,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace & with ^,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace & with |,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
-designware_mobile_storage,sd_power_up,replace > with >=,equivalent,"as for mmc_power_up: the same PowerUp error with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond; the 2026-10-12 per-crate re-run still reports it"
+designware_mobile_storage,sd_power_up,replace > with >=,equivalent,"as for multimedia_card_power_up: the same PowerUp error with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond; the 2026-10-12 per-crate re-run still reports it"
 e1000e,ulp::done,replace & with |,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 e1000e,ulp::done,replace ulp::done -> bool with false,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 e1000e,ulp::has_me,replace & with |,killed,"killed by without_an_me_ulp_is_left_by_phy_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
