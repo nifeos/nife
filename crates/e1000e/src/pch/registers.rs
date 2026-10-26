@@ -50,7 +50,7 @@ pub(crate) const PBECCSTS: u64 = 0x0_100c;
 pub const RXDCTL: u64 = 0x0_2828;
 /// **AFE Band Gap Transmit Reference Data** (`E1000_KABGTXD`, FreeBSD's `e1000_regs.h`). AFE is the
 /// analog front end.
-#[doc(alias = "afe band gap transmit reference data")]
+#[doc(alias = "analog front end band gap transmit reference data")]
 pub(crate) const KABGTXD: u64 = 0x0_3004;
 /// **Transmit Descriptor Control** (`E1000_TXDCTL(0)`, FreeBSD's `e1000_regs.h`). Queue 0.
 #[doc(alias = "transmit descriptor control")]
