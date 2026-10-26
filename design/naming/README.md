@@ -2,7 +2,8 @@
 
 [`design/naming.md`](../naming.md) is the page to read; it is written so a reader can act without
 opening anything here. These files hold the mechanisms, measurements and histories behind the
-naming rules, and the table below is their index.
+naming rules, and the table below is their index. Every former section of naming.md kept its
+heading, so a citation by section name resolves in the file listed.
 
 *Name: provisional, minted 2026-09-24 by the lane that split the file (`2ea02d231`), for the
 directory and every stem in it. Each appendix's own preamble says the same of its stem. Also
@@ -20,7 +21,7 @@ that two indexes offer (milestone 809 (the package client becomes a program)). N
 | [vocabulary-rulings.md](vocabulary-rulings.md) | the rulings in naming.md's table, the received abbreviation, and the casing of `nife` |
 | [convention-rulings.md](convention-rulings.md) | new, 2026-10-17: the rules calef ratified for a class of names, with his words |
 | [precedents-set-by-example.md](precedents-set-by-example.md) | new, 2026-10-18: the rules the tier 1 review's rulings imply |
-| [spelled-out-rulings.md](spelled-out-rulings.md) | new, 2026-10-04: `op`, `cap`, `rx`, `tx`, `phy`, `init`, `irq` and `fifo` spelled out |
+| [spelled-out-rulings.md](spelled-out-rulings.md) | `op` and `cap` (2026-10-04), then `rx`, `tx`, `phy`, `init`, `irq` and `fifo` (2026-10-26), spelled out |
 | [command-line-rulings.md](command-line-rulings.md) | `jig`'s |
 | [capability-spelling-worklist.md](capability-spelling-worklist.md) | the `cap` sweep's worklist |
 | [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md) | new, 2026-09-24: the argument for functions that answer yes or no |

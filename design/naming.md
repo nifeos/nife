@@ -35,8 +35,8 @@ Name against three failure modes:
   has never read this tree would recognise the name.
 - Generic words that could name almost anything in an operating system: `compose`, `measure`,
   `regions`, `slots`, `caps`, `frames`.
-- On the other side of the line, standard terms a reader already knows are the best names
-  available: `elf`, `pci`, `paging`, `glob`. That covers shape too, so `supply-chain` keeps its
+- Against both, standard terms a reader already knows are the best names available: `elf`,
+  `pci`, `paging`, `glob`. That covers shape too, so `supply-chain` keeps its
   hyphen. This rule is not a licence to rename everything.
 
 ### The acronym test
@@ -49,9 +49,10 @@ recursively), ruled 2026-09-18. Ask it again of any acronym inside the expansion
 
 The test applies to names this tree authors. A name that arrives across somebody else's interface
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
-stops there: inside, `initrd` is `initial_ramdisk` (#1842). A kept name's doc comment opens with
-its full name and carries a `doc(alias)`, as does a specification's term of art in names this
-tree authors (2026-10-26 UTC, [precedents](naming/precedents-set-by-example.md)).
+stops there: inside, `initrd` is `initial_ramdisk` (#1842). Ruled 2026-10-26 (UTC): a kept
+name's doc comment opens with its full name and the source's heading, and carries a `doc(alias)`,
+as does a specification's term of art in names this tree authors
+([precedents](naming/precedents-set-by-example.md)).
 
 ### Nouns, not verbs
 
