@@ -27,6 +27,7 @@ The names in each release-track crate, one file per crate, in the record format
 - [`file-allocation-table-names.md`](file-allocation-table-names.md)
 - [`jh7110-clock-and-reset-names.md`](jh7110-clock-and-reset-names.md)
 - [`jh7110-entropy-names.md`](jh7110-entropy-names.md)
+- [`non-volatile-memory-express-names.md`](non-volatile-memory-express-names.md)
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, and each names
 file takes its crate's name.*

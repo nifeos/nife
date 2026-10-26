@@ -172,7 +172,7 @@ pub(crate) fn offer() {
 /// a no-op on a boot no chooser started. It is called once the filesystem server has mounted the
 /// installed disk and the progenitor is built: as late as a machine with no person can check. The
 /// write is `system_installer`'s [`ROLE_CONFIRM`], holding the report endpoint, the disk's `blk`
-/// endpoint badged with its own transfer window (`non_volatile_memory_express::INSTALLER_WINDOW`),
+/// endpoint badged with its own transfer window (`non_volatile_memory_express_contract::INSTALLER_WINDOW`),
 /// that window, and a map budget; no entropy and no boot file. A `blk` endpoint is the whole disk,
 /// as `system_installer`'s `BUGS` records. What it writes is the partition table, which the
 /// filesystem server never reads after mounting, so the two never contend for a block. See
@@ -273,8 +273,9 @@ fn spawn_system_installer(
         .expect("no budget for system_installer");
     // The installer's own window, so a confirm beside a live filesystem server stages in pages
     // that server never reads.
-    let blk_capability = disk.client_capability(::non_volatile_memory_express::INSTALLER_WINDOW);
-    let blk_shared = disk.window_phys(::non_volatile_memory_express::INSTALLER_WINDOW);
+    let blk_capability =
+        disk.client_capability(::non_volatile_memory_express_contract::INSTALLER_WINDOW);
+    let blk_shared = disk.window_phys(::non_volatile_memory_express_contract::INSTALLER_WINDOW);
     let ep = entropy.unwrap_or_default();
 
     crate::sched::spawn(move || {

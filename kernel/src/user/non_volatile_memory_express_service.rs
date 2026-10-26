@@ -33,7 +33,7 @@ const DOORBELL_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
 
 /// How many pages the data plane is mapped: the two I/O rings, then every client's transfer window.
 const DATA_PLANE_PAGES: usize = 2 + crate::non_volatile_memory_express::TRANSFER_PAGES as usize
-    * ::non_volatile_memory_express::CLIENT_WINDOWS;
+    * ::non_volatile_memory_express_contract::CLIENT_WINDOWS;
 
 /// Everything one wiring of the server is, from the outside.
 pub struct Wiring {
@@ -44,7 +44,7 @@ pub struct Wiring {
     /// holds READ. Nothing about it names the device, the doorbells, or the DMA region.
     pub request: RendezvousId,
     /// The **physical** base of window 0's transfer buffer
-    /// (`non_volatile_memory_express::FILESYSTEM_WINDOW`), the window an unbadged request stages
+    /// (`non_volatile_memory_express_contract::FILESYSTEM_WINDOW`), the window an unbadged request stages
     /// in: the filesystem server's, and the kernel's own when it plays a client. The other
     /// windows follow it contiguously; [`Wiring::window_phys`] names one.
     pub transfer_phys: u64,
@@ -62,7 +62,7 @@ pub struct Wiring {
     /// always in `1..=8` for a server that started (fatal risk 6's second night-of condition).
     pub blocks_per: u16,
     /// The namespace's size in bytes as the admin plane read it from IDENTIFY, the number
-    /// [`non_volatile_memory_express::Handoff`] carried into ring 3. Tests compare against this, so
+    /// [`non_volatile_memory_express_contract::Handoff`] carried into ring 3. Tests compare against this, so
     /// they hold on QEMU's 8 MiB image and on a 256 GB disk alike.
     pub size_bytes: u64,
 }
@@ -160,7 +160,7 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
         run(
             image,
             Spawn {
-                arg0: words[0], // the packed geometry: see `non_volatile_memory_express::Handoff`
+                arg0: words[0], // the packed geometry: see `non_volatile_memory_express_contract::Handoff`
                 arg1: words[1], // the data plane's PHYSICAL base: PRP fields speak physical
                 arg2: words[2], // the namespace's size in bytes, the `SIZE` answer
                 grants: &[
@@ -312,7 +312,7 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
     // reached through the direct map.
     unsafe {
         let p = crate::arch::mmu::phys_to_virt(transfer_phys) as *mut u64;
-        p.write_volatile(non_volatile_memory_express::ESCAPE_MAGIC);
+        p.write_volatile(non_volatile_memory_express_contract::ESCAPE_MAGIC);
         p.add(1).write_volatile(victim);
     }
 
@@ -375,7 +375,7 @@ impl Wiring {
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
     pub fn window_phys(&self, window: u64) -> u64 {
         assert!(
-            ::non_volatile_memory_express::client_window(window).is_some(),
+            ::non_volatile_memory_express_contract::client_window(window).is_some(),
             "no NVMe client was given window {window}",
         );
         self.transfer_phys
@@ -388,7 +388,7 @@ impl Wiring {
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
     pub fn client_capability(&self, window: u64) -> crate::cap::Cap {
-        assert!(::non_volatile_memory_express::client_window(window).is_some());
+        assert!(::non_volatile_memory_express_contract::client_window(window).is_some());
         crate::cap::rendezvous_cap_badged(self.request, Rights::WRITE, window)
     }
 
