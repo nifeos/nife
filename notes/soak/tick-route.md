@@ -58,11 +58,11 @@ a summary gets quoted.
 
 ## The soak-only interrupt numbers
 
-Group `g`'s route is bound to intid `255 - g`. None of those names hardware or can be delivered on
-any of the three architectures. On aarch64 and riscv64 a routed interrupt arrives only if something
-enabled it at the controller, and nothing enables these. On x86_64 the top of the band is the local
-APIC's spurious vector, answered in its own arm before `irq_route` is asked. The rest sit at the far
-end of an MSI band allocated upward from 0xc0.
+`bind_tick_routes` binds group `g`'s route to intid `255 - g`. None of those names hardware or can
+be delivered on any of the three architectures. On aarch64 and riscv64 a routed interrupt arrives
+only if something enabled it at the controller, and nothing enables these. On x86_64 the top of the
+band is the local APIC's spurious vector, answered in its own arm before `irq_route` is asked. The
+rest sit at the far end of an MSI band allocated upward from 0xc0.
 
 None of that is what makes it safe. `soak::bind_tick_routes` asks `sched::irq_route` about every
 number before it takes any of them. It refuses to start a soak whose routes would steal somebody
@@ -84,12 +84,12 @@ nothing pops. A rendezvous per group means a backlog can only ever belong to the
 accumulated for. A shared rendezvous passes on an idle machine: the starvation needs a busy host to
 appear at all.
 
-Routes are bound before the first waiter is spawned, and the signaling is switched on last. Arming
-last is correct for the *signaling*. A route signaled before anyone waits on it hands the first
-waiter a backlog, and makes the first beat measure setup. It is wrong for the *routing*. A waiter
-that reaches `Irq::WAIT` before its route exists gets `WrongObject`, and with no channel to report
-a refusal on, it stops counting. The run fails a beat later with workers apparently wedged. aarch64
-tolerates the race and riscv64 does not, which is the ordinary shape of this class.
+The kernel binds the routes before it spawns the first waiter, and switches the signaling on last.
+Arming last is correct for the *signaling*. A route signaled before anyone waits on it hands the
+first waiter a backlog, and makes the first beat measure setup. It is wrong for the *routing*. A
+waiter that reaches `Irq::WAIT` before its route exists gets `WrongObject`, and with no channel to
+report a refusal on, it stops counting. The run fails a beat later with workers apparently wedged.
+aarch64 tolerates the race and riscv64 does not, which is the ordinary shape of this class.
 
 ## What it establishes about risk 5, and what it does not
 
