@@ -230,7 +230,7 @@ since nothing outside nife implements either. The kernel clause is different.
 - The kernel already links three crates, which a blanket "write it" cannot explain:
   `aarch64-cpu` and `tock-registers`, and on x86_64 `uuid`, which arrives through `boot_slot` and
   `globally_unique_identifier_partition_table`. Its lock is the in-tree `crates/spin_lock`, which
-  rule 1 decided under this bar (milestone 953, the kernel's lock proves what it takes from
+  rule 1 decided under this bar in milestone 953 (the kernel's lock proves what it takes from
   spin).
 - "Touches the kernel" was never defined. Milestone 784 read it as anything the kernel uses for
   more than shared constants, which is wider than the rule's words.
