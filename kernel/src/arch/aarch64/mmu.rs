@@ -8,18 +8,80 @@
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use aarch64_cpu::asm::barrier;
-use aarch64_cpu::registers::{MAIR_EL1, SCTLR_EL1, TCR_EL1, TTBR0_EL1, TTBR1_EL1};
 use paging::aarch64::mair;
 use paging::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
+use super::instructions;
 use crate::{memory, println};
 
 /// This architecture's page-table format. Portable code that must name the format (the user-VA gate
 /// in syscall.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
 /// of format lives in `arch/`, not in the portable kernel. See notes/riscv-port.md (leak #2).
 pub type Format = Aarch64;
-use tock_registers::interfaces::{Readable, Writeable};
+
+// ---- the translation registers' fields ----
+//
+// Each from the Arm Architecture Reference Manual (Arm DDI 0487), under the register's own
+// heading, and checked against Linux's `arch/arm64/include/asm/pgtable-hwdef.h` (v6.16).
+
+/// `SCTLR_EL1.M`, bit 0: stage 1 translation at EL1 and EL0 is on (Arm DDI 0487, `SCTLR_EL1`).
+const SCTLR_M: u64 = 1 << 0;
+
+/// `TTBR0_EL1.BADDR` and `TTBR1_EL1.BADDR`, bits 47:1: the table's address. Bits 63:48 are the
+/// ASID and bit 0 is `CnP` (Arm DDI 0487, `TTBR0_EL1` and `TTBR1_EL1`).
+const TTBR_BADDR: u64 = 0x0000_ffff_ffff_fffe;
+
+// `TCR_EL1` (Arm DDI 0487, TCR_EL1). The low half's fields sit in bits 15:0, the high half's in
+// 31:16, at the same positions plus 16. `EPD0` (bit 7) and `EPD1` (bit 23) stay clear: both halves
+// are walked, and TTBR0 holds an empty table rather than having its walks disabled
+// (RESERVED_TTBR0), so no switch rewrites TCR.
+
+/// `T0SZ`, bits 5:0, and `T1SZ`, bits 21:16: the region is 2^(64 - `TxSZ`) bytes.
+const TCR_T0SZ_SHIFT: u32 = 0;
+const TCR_T1SZ_SHIFT: u32 = 16;
+/// `IRGN0`, bits 9:8, and `IRGN1`, bits 25:24: table walks are inner write-back,
+/// read-allocate, write-allocate cacheable (encoding 0b01).
+const TCR_IRGN0_WBWA: u64 = 0b01 << 8;
+const TCR_IRGN1_WBWA: u64 = 0b01 << 24;
+/// `ORGN0`, bits 11:10, and `ORGN1`, bits 27:26: the same, outer (encoding 0b01).
+const TCR_ORGN0_WBWA: u64 = 0b01 << 10;
+const TCR_ORGN1_WBWA: u64 = 0b01 << 26;
+/// `SH0`, bits 13:12, and `SH1`, bits 29:28: inner shareable (encoding 0b11).
+const TCR_SH0_INNER: u64 = 0b11 << 12;
+const TCR_SH1_INNER: u64 = 0b11 << 28;
+/// `TG0`, bits 15:14: a 4 KiB granule is 0b00. `TG1`, bits 31:30: a 4 KiB granule is 0b10. The two
+/// fields encode the same granule differently.
+const TCR_TG0_4K: u64 = 0b00 << 14;
+const TCR_TG1_4K: u64 = 0b10 << 30;
+/// `IPS`, bits 34:32: the intermediate physical address size, in `ID_AA64MMFR0_EL1.PARange`'s
+/// encoding.
+pub(super) const TCR_IPS_SHIFT: u32 = 32;
+pub(super) const TCR_IPS_MASK: u64 = 0b111;
+
+/// 48-bit halves: `TxSZ` = 64 - 48.
+const TCR_TXSZ_48_BIT: u64 = 16;
+
+/// Everything `install` writes to `TCR_EL1` except `IPS`, which is the part's own.
+const TCR_FIXED: u64 = TCR_TXSZ_48_BIT << TCR_T0SZ_SHIFT
+    | TCR_TG0_4K
+    | TCR_SH0_INNER
+    | TCR_ORGN0_WBWA
+    | TCR_IRGN0_WBWA
+    | TCR_TXSZ_48_BIT << TCR_T1SZ_SHIFT
+    | TCR_TG1_4K
+    | TCR_SH1_INNER
+    | TCR_ORGN1_WBWA
+    | TCR_IRGN1_WBWA;
+
+/// The table root `TTBR0_EL1` holds, without its ASID.
+fn ttbr0_root() -> u64 {
+    instructions::read_ttbr0() & TTBR_BADDR
+}
+
+/// The table root `TTBR1_EL1` holds.
+fn ttbr1_root() -> u64 {
+    instructions::read_ttbr1() & TTBR_BADDR
+}
 
 /// Where the kernel lives, virtually.
 ///
@@ -127,7 +189,7 @@ pub(crate) fn init_secondary() {
     // `.bss`), and the UART. The `isb` after the TTBR write makes it effective before the next
     // fetch; the local `tlbi vmalle1` drops the coarse translations this core cached.
     unsafe {
-        TTBR1_EL1.set_baddr(root);
+        instructions::write_ttbr1(root & TTBR_BADDR);
         core::arch::asm!(
             "dsb ish",
             "isb",
@@ -371,35 +433,23 @@ where
 /// and the UART. `verify` checks all three.
 unsafe fn install(root: u64) {
     // The table walker is a separate observer: the table stores must reach it first.
-    barrier::dsb(barrier::SY);
+    instructions::dsb_sy();
 
-    // boot.s set the same value; this file owns the definition, and a disagreement would map the
-    // UART as cacheable.
-    MAIR_EL1.set(mair::VALUE);
+    // IPS larger than the part supports is UNPREDICTABLE, so it is the part's own `PARange`.
+    let tcr = TCR_FIXED | (super::isa::get().pa_range as u64 & TCR_IPS_MASK) << TCR_IPS_SHIFT;
 
-    // TG0 and TG1 encode 4 KiB differently (0b00, 0b10), both spelled `KiB_4` by the crate. IPS
-    // larger than the part supports is UNPREDICTABLE, so it is the part's own `PARange`.
-    TCR_EL1.write(
-        TCR_EL1::T0SZ.val(16)
-            + TCR_EL1::TG0::KiB_4
-            + TCR_EL1::SH0::Inner
-            + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            // Enabled: TTBR0 points at an empty table, so no switch rewrites TCR (RESERVED_TTBR0).
-            + TCR_EL1::EPD0::EnableTTBR0Walks
-            + TCR_EL1::T1SZ.val(16)
-            + TCR_EL1::TG1::KiB_4
-            + TCR_EL1::SH1::Inner
-            + TCR_EL1::ORGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::IRGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::EPD1::EnableTTBR1Walks
-            + TCR_EL1::IPS.val(super::isa::get().pa_range as u64),
-    );
-
-    TTBR1_EL1.set_baddr(root);
+    // SAFETY: boot.s set the same MAIR value, so no live entry changes meaning; this file owns the
+    // definition, and a disagreement would map the UART as cacheable. The TCR value describes the
+    // 4 KiB, 48-bit tables `root` heads, and this function's contract is that `root` maps what the
+    // next fetch needs.
+    unsafe {
+        instructions::write_mair(mair::VALUE);
+        instructions::write_tcr(tcr);
+        instructions::write_ttbr1(root & TTBR_BADDR);
+    }
 
     // The system register writes must take effect before the TLB work below.
-    barrier::isb(barrier::SY);
+    instructions::isb();
 
     // SAFETY: TLB maintenance is always sound.
     unsafe {
@@ -485,10 +535,11 @@ pub(crate) fn share_kernel_half(_root: u64) {}
 /// all zero, and the ASID must be the one that owns those mappings.
 unsafe fn set_ttbr0(ttbr: u64) {
     // The table walker is a separate observer: the table stores must reach it first.
-    barrier::dsb(barrier::SY);
+    instructions::dsb_sy();
 
-    TTBR0_EL1.set(ttbr);
-    barrier::isb(barrier::SY);
+    // SAFETY: this function's contract is `write_ttbr0`'s.
+    unsafe { instructions::write_ttbr0(ttbr) };
+    instructions::isb();
 }
 
 /// Discard every TLB entry tagged with `asid`, on every core. The teardown half of the ASID
@@ -595,7 +646,7 @@ unsafe fn can_el0_access(va: u64, write: bool) -> bool {
 
 /// The root of whatever user address space is currently installed, read back from the CPU.
 pub fn current_user_root() -> u64 {
-    TTBR0_EL1.get_baddr()
+    ttbr0_root()
 }
 
 /// Unmap one page at `va` from the user address space rooted at `root`, discharging the TLB
@@ -689,7 +740,7 @@ impl UserMapBatch {
         flags: Flags,
         alloc: impl FnMut() -> Option<u64>,
     ) -> Result<(), MapError> {
-        let root = TTBR0_EL1.get_baddr();
+        let root = ttbr0_root();
         // SAFETY: as `map_current_user_page_frame`.
         let mut mapper =
             unsafe { Mapper::<_, _, Aarch64>::new(root, Half::Low, alloc, phys_to_ptr) };
@@ -724,7 +775,7 @@ pub(crate) fn map_current_user_page_frame(
     flags: Flags,
     alloc: impl FnMut() -> Option<u64>,
 ) -> Result<(), MapError> {
-    let root = TTBR0_EL1.get_baddr();
+    let root = ttbr0_root();
 
     // SAFETY: `root` is the live low-half table this thread owns; Half::Low refuses a high
     // address; the direct map makes `phys_to_ptr` valid for any page `alloc` returns.
@@ -754,7 +805,7 @@ pub(crate) fn reserved_root() -> u64 {
 /// executed at EL0 until some later write to `TTBR0_EL1` replaces it. Why this is a contract and
 /// not a type is in notes/mmu.md.
 pub(crate) unsafe fn switch_user_root(ttbr: u64) {
-    if TTBR0_EL1.get() == ttbr {
+    if instructions::read_ttbr0() == ttbr {
         return;
     }
 
@@ -778,7 +829,7 @@ static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
 // verbose and cannot be a `type` alias without TAIT; the shape is the point, not a problem.
 #[allow(clippy::type_complexity)]
 fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTable, Aarch64> {
-    let root = TTBR1_EL1.get_baddr();
+    let root = ttbr1_root();
 
     // SAFETY: TTBR1_EL1 holds the root we installed, and the direct map makes `phys_to_ptr`
     // valid for any frame.
@@ -835,14 +886,14 @@ pub(crate) fn flush_tlb(va: u64) {
 }
 
 pub(crate) fn is_enabled() -> bool {
-    SCTLR_EL1.is_set(SCTLR_EL1::M)
+    instructions::read_sctlr() & SCTLR_M != 0
 }
 
 /// Ask the live **kernel** page tables what a high virtual address maps to.
 ///
 /// Reads `TTBR1_EL1` back out of the hardware, so tests check the tables the CPU walks.
 pub fn translate(va: u64) -> Option<(u64, Flags)> {
-    let root = TTBR1_EL1.get_baddr();
+    let root = ttbr1_root();
 
     // SAFETY: TTBR1_EL1 holds the root we installed, and the direct map makes `phys_to_ptr`
     // valid.
@@ -868,7 +919,7 @@ pub fn is_mapped(va: u64) -> bool {
 /// is either a process's or the empty reserved table.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the address-space tests are the only callers
 pub fn translate_user(va: u64) -> Option<(u64, Flags)> {
-    let root = TTBR0_EL1.get_baddr();
+    let root = ttbr0_root();
 
     // SAFETY: TTBR0_EL1 holds a root we installed, and the direct map makes `phys_to_ptr` valid.
     let mapper = unsafe { Mapper::<_, _, Aarch64>::new(root, Half::Low, || None, phys_to_ptr) };

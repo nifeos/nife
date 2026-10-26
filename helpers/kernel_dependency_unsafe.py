@@ -41,14 +41,13 @@ maintainer/kernel-dependency-unsafe-listing.
 BUGS
 
 - Text, not a parser. A `macro_rules!` whose body names `unsafe` through a fragment
-  (`$vis unsafe`) is found; one that builds the keyword some other way is not. None of the three
-  crates does that today.
+  (`$vis unsafe`) is found; one that builds the keyword some other way is not. `uuid` does not
+  do that today.
 - The function column is the nearest `fn` name above the site, which for a site in an `impl`
   block's associated constant or a closure is the function before it.
 - An expansion is counted where the crate invokes its own macro. A macro the crate exports and a
-  caller invokes is counted once, at its definition; the kernel invokes none of the three crates'
-  macros that hold unsafe code (`tock-registers`' `register_structs!` and `register_bitfields!`
-  generate none).
+  caller invokes is counted once, at its definition; the kernel invokes none of `uuid`'s macros
+  that hold unsafe code.
 """
 import json
 import os
