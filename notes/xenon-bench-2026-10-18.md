@@ -118,7 +118,7 @@ Only after step 1 ended `LEASED-AND-MEASURED`. On a branch from the commit under
 
 ```sh
 git switch -c lane/i219-proven-on-xenon
-sed -i '' 's/^pub const PCH_PROVEN_ON_SILICON: bool = false;/pub const PCH_PROVEN_ON_SILICON: bool = true;/' kernel/src/user/e1000e_service.rs
+sed -i '' 's/^pub(crate) const PCH_PROVEN_ON_SILICON: bool = false;/pub(crate) const PCH_PROVEN_ON_SILICON: bool = true;/' kernel/src/user/e1000e_service.rs
 git commit -am "e1000e: the I219 is proven on xenon (bench log <file>, verdict LEASED-AND-MEASURED)"
 cargo xtask uefi-image --release                            # step 3's image, in target/esp
 shasum -a 256 target/esp/EFI/BOOT/BOOTX64.EFI
