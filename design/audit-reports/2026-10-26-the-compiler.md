@@ -111,8 +111,10 @@ the kernel suite compares byte for byte. Every other `put` caller stays inside t
 unchanged. Without overflow checks a size near `usize::MAX` wrapped to 0, the allocator returned a
 small block, and the new thread's first push wrote below it: undefined behavior from safe code.
 Only the program chooses the size (the environment carries no `RUST_MIN_STACK`), and this tree's
-release profile enables overflow checks, so here it panicked instead. It is
-`checked_next_multiple_of` now, refused as `InvalidInput`.
+release profile enables overflow checks, so here it panicked instead. A size that rounded to more
+than `isize::MAX` without wrapping panicked in `Layout::from_size_align`'s `expect`. `Thread::new`
+now builds the layout once, fallibly (`checked_next_multiple_of`, then `from_size_align`), refuses
+any size with no layout as `InvalidInput`, and frees the stack with that same layout.
 
 ### 5. FIXED: three records said less, or other, than the code
 
