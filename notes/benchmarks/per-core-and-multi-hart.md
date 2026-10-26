@@ -1,6 +1,9 @@
 # Per-core magnitudes and the multi-hart bench
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds why `--real` is single-hart, the 2026-07-29 refresh, and the `smp_*` placement numbers, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds why `--real` is single-hart, the
+2026-07-29 refresh, and the `smp_*` placement numbers, with the dates, tables and corrections behind
+them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The one bench that is legitimately multi-hart: §28 (SMP placement)
 
@@ -19,7 +22,7 @@ Run them with `script/bench --real --smp` (HVF, 4 harts). Plain `--real` is sing
 
 Two structural reasons. First, they run only when `online_count() > 1`, which is only the
 `--real --smp` boot. Under the icount instrument (`-smp 1`) and the default single-hart `--real` run,
-`smp_throughput` returns immediately. So no `smp_*` line is emitted there and the committed baseline
+`smp_throughput` returns immediately. So no `smp_*` line appears there and the committed baseline
 never sees them (verified: `--check` output has no `smp_*` rows). Second, a wall-clock throughput
 number is not defined under `-icount` (one shared clock). TCG also serializes all vCPUs onto one
 host thread, so there is no real parallelism to measure. Only HVF gives each core its own counter and
@@ -48,10 +51,10 @@ smp_compute_all   ~40,000 ticks / 4,800,000 iters    (16x the work, across the m
 
 Sixteen workers is sixteen times the work. Run one at a time it would take
 `16 x 8,886 = 142,176` ticks; it finishes in ~40,000, a 3.5x speedup (≈89% of the 4x ceiling). The
-lost ~11% is expected. 16 does not divide into 4 waves cleanly (the last wave runs four workers where
-earlier waves were full), and spawn, reap and the barrier cost something. A CPU-bound worker makes no
-cross-core wake once placed, so the host keeps every busy vCPU on a real core. What is left to
-measure is placement filling the machine, which no hart-pinned primitive can show.
+lost ~11% is no surprise. 16 does not divide into 4 waves cleanly (the last wave runs four workers
+where earlier waves were full), and spawn, reap and the barrier cost something. A CPU-bound worker
+makes no cross-core wake once placed, so the host keeps every busy vCPU on a real core. What remains
+to measure is placement filling the machine, which no hart-pinned primitive can show.
 
 ### Synchronous IPC pipelines do not scale under HVF, and the reason is the host
 
@@ -71,7 +74,7 @@ cross-core wake: an SGI to a vCPU the host descheduled because the guest looked 
 earlier. Waking a descheduled vCPU costs host reschedule latency the co-located pair never pays. So
 the IPC-heavy parallel workload spends its time in HVF's wake path, not in the kernel.
 
-The icount suite is pinned to one hart, and a same-machine seL4 number is deferred to real hardware,
+The icount suite runs on one hart, and a same-machine seL4 number waits for real hardware,
 for the same reason: the instrument underneath sets the ceiling, not nife. On real silicon with four
 dedicated cores and no descheduling, the pipelines should scale the way compute does here. Measuring
 that is a real-hardware follow-up (milestone 16 (real hardware and IOMMU-backed driver isolation)), and the bench already reports it.

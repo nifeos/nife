@@ -1,11 +1,14 @@
 # The kernel footprint and the cache question
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds image size, the hot path by symbol, the L1i figures, and the 4 KiB target, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds image size, the hot path by symbol, the
+L1i figures, and the 4 KiB target, with the dates, tables and corrections behind them. Name:
+ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The kernel's memory footprint, and the cache question Mach got wrong (2026-08-17)
 
 calef asked how large the kernel is in memory. He then asked the better question: what size avoids
-the cache thrashing that made Mach slow, which L4 and seL4 were built to fix. The two questions have
+the cache thrashing that made Mach slow, which L4 and seL4 set out to fix. The two questions have
 different answers.
 
 Measured on `main` at 6e97bb1, release profile, both ISAs.
@@ -29,7 +32,7 @@ zero file bytes.
 
 The stacks are 70% of the total and are not a code-size fact. `.secondary_stacks` is `MAX_CPUS` (8)
 times `SECONDARY_STACK_SLOT` (64 KiB plus a 4 KiB guard) = 557,056. `.interrupt_stacks` is 8 times
-(`interrupt_stack::SIZE` 16 KiB plus a 4 KiB guard) = 163,840. Both are reserved for eight cores
+(`interrupt_stack::SIZE` 16 KiB plus a 4 KiB guard) = 163,840. Both hold room for eight cores
 whether eight exist or not, so a single-hart boot never touches seven eighths of 704 KiB. Runtime
 allocation is separate again: page tables, and 28 KiB per thread for a kernel stack
 (`thread::STACK_PAGES` is 6, plus a guard page).
@@ -106,7 +109,7 @@ considerably more. What changed in our favor is L2 more than headroom. A large o
 overflowing L1 now costs tens of cycles rather than a trip to DRAM, a safety net Liedtke's low-end
 targets did not have.
 
-These board figures should still be confirmed against the silicon. The TX1's are worth taking from
+These board figures still need confirming against the silicon. The TX1's are worth taking from
 the machine when it arrives rather than from a datasheet summary.
 
 ### Where the frontier actually is, which sharpens the paragraph above (2026-08-18)
@@ -138,7 +141,7 @@ generation.
 One figure was refused rather than repeated. A search result claimed the Ventana Veyron V2 has
 512 KB of L1 instruction cache. No shipping core has an L1i anywhere near that, and it is
 inconsistent with every other datapoint in the table, so it is almost certainly garbled or
-mis-attributed. It is recorded here because the next person to look this up will hit the same
+mis-attributed. It appears here because the next person to look this up will hit the same
 result.
 
 This does not move the target. The machines this project runs on are not frontier parts: the U74's

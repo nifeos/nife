@@ -1,6 +1,9 @@
 # icount drift, and what a baseline was read against
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds why the tripwire is 10%, the toolchain and emulator stamps, and the 2026-07-28 `-smp 4` artifact, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds why the tripwire is 10%, the toolchain
+and emulator stamps, and the 2026-07-28 `-smp 4` artifact, with the dates, tables and corrections
+behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## What the icount instrument cannot see
 
@@ -21,10 +24,10 @@ mechanism:
 
 - A dead function added to `bench.rs` moved nothing. So it is not raw code layout (addresses do not
   change instruction counts anyway).
-- The shifts are non-uniform and opposite in sign across benchmarks. So it is not a common-mode
-  offset that could be subtracted out.
+- The shifts are non-uniform and opposite in sign across benchmarks. So it is no common-mode offset
+  to subtract out.
 
-What is left is the compiler's whole-crate decisions. Adding live code that calls into shared
+What remains is the compiler's whole-crate decisions. Adding live code that calls into shared
 functions (`sched::spawn`, `user::run`) changes inlining and monomorphization elsewhere. So other
 functions' executed-instruction counts move, each its own way. The session's drift also held a real
 increase from the 19f object-capability refactor, which genuinely grew the scheduler and thread hot
@@ -32,7 +35,7 @@ paths. The instrument cannot separate that from the codegen churn.
 
 ### The fix (milestone 25)
 
-`--check` was demoted from a 2% gate to a coarse 10% tripwire. It still catches a gross regression
+`--check` became a coarse 10% tripwire in place of a 2% gate. It still catches a gross regression
 ("you 3x'd IPC"). It no longer pretends to attribute a 3% wiggle to the commit in front of it. The
 `--real` medians, read by a human, are the fine signal, and a few-percent codegen shuffle is already
 in their noise.
@@ -49,19 +52,19 @@ Ideas not taken, and why:
 A toolchain bump revalues every number in `bench/baseline-*.txt`, and no commit is responsible for
 it. icount counts guest instructions, and a new compiler emits different ones for the same source.
 On 2026-09-15 the pin went to `nightly-2026-09-15` with the floors left alone, and most of the
-headroom went with it. The tree was bumped again to `nightly-2026-09-20` before anybody acted, and
-the drift then happened to evaporate. Measured 2026-09-21, the worst margin was +0.02% on aarch64
-and +2.27% on x86_64, with riscv64's `rfence_self` 7.49% faster than its floor (see
+headroom went with it. The tree took another bump, to `nightly-2026-09-20`, before anybody acted,
+and the drift then happened to evaporate. Measured 2026-09-21, the worst margin was +0.02% on
+aarch64 and +2.27% on x86_64, with riscv64's `rfence_self` 7.49% faster than its floor (see
 [the `rfence_self` appendix](rfence-self-row.md)).
 
 So each baseline carries a `# toolchain: nightly-YYYY-MM-DD` line. `cargo xtask bench --save`
 writes it from the pin rather than from whichever compiler happens to be running. `script/lint`
 fails when that line and `rust-toolchain.toml` disagree. It can only fire on a branch that raises
-the pin: that is where the delta is caused, where a human is already deciding something, and where
+the pin: that is where the delta arises, where a human is already deciding something, and where
 re-recording is attributable. A general staleness check would have failed branches that caused
 nothing.
 
-Auto-re-saving on a bump is refused (calef, 2026-09-21). The refusal is written where somebody would
+Auto-re-saving on a bump is refused (calef, 2026-09-21). The refusal appears where somebody would
 reach for it, in `script/toolchain-bump` and `.github/workflows/toolchain-bump.yml`. A floor that
 tracks the compiler by construction moves by exactly as much as a nightly moved the kernel. A
 nightly that made this kernel slower would then report nothing, and catching that is most of what
@@ -135,9 +138,9 @@ refused) takes for names. Every baseline carried it on 2026-09-21, because nobod
 which QEMU produced those counts. The check fires at full strength from the first honest `--save`
 onward, and never on a number nobody stamped.
 
-A failure does not mean "upgrade something". A re-record and the pin have to be settled in the same
+A failure does not mean "upgrade something". A re-record and the pin have to land in the same
 commit, because CI builds the pinned emulator (`script/ci-qemu`) and reads these floors on it. Which
-version to run was left as an architect's call.
+version to run stayed an architect's call.
 
 *Correction, 2026-09-24: both open points above have since closed. `e9c8723c3` (2026-09-21) pinned
 `.qemu-version` to 11.1.1, the version this machine had been running. All three
