@@ -70,7 +70,7 @@ The riscv64 three need the patched Kani that pull request #1287 builds (`script/
   hosts their file is not compiled, which is the parent note's item 3 and is silent.
 - The x86_64 harness is `unfalsified`: this lane had no x86_64 host with Kani. Its doc comment
   names the three mutations to attest it with.
-- aarch64 reaches most system registers through the `aarch64-cpu` crate (`TTBR0_EL1`, the timer),
-  and those are not wrappers here. A harness that reaches one still fails.
+- aarch64's system registers are accessors in `arch/aarch64/instructions.rs` (`TTBR0_EL1`, the
+  timer), and no harness stubs one yet. The timer re-arm is the obvious first.
 - `sbi::call` has no harness yet. The logic around it (`flush_asid`'s remote half) also reads
   `cpu::id()` and the online-hart mask, which need models of their own.

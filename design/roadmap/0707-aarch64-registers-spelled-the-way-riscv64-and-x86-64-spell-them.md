@@ -1,9 +1,10 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-10-03
+built: 2026-10-26
 promoted_from: aarch64-registers-spelled-the-way-riscv64-and-x86-64-spell-them
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 3, 46
 machine_requirements: aarch64 silicon
 specific_machine: none
 needs_person: yes
@@ -11,53 +12,60 @@ needs_person: yes
 # 707. aarch64 registers spelled the way riscv64 and x86_64 spell them
 
 *Title and slug are drafts.*
-Raised 2026-10-03 (UTC) by the maintainer at calef's request, while PR #1477 (the kernel declares
-each dependency where it is used) moved `tock-registers` into the aarch64 target table. calef's call
-was to file this, not launch it. Title and slug are drafts.
+Ruled 2026-10-26 (UTC): built in full. aarch64 spells its system registers and MMIO registers
+the in-tree way, and the kernel links neither `aarch64-cpu` nor `tock-registers`. The ruling
+replaces §3 (use the crate ecosystem) for register access under §46 (thin primitives or whole
+subsystems; we write everything in between) rule 1, and both sections record it. A boot on argon,
+the aarch64 Jetson board, remains (Follow-on).
 
-## Today
+## What was built
 
-Measured on `d6a902a9b` with `grep` under `kernel/src`.
+| Where | What |
+|---|---|
+| `arch/aarch64/instructions.rs` | one accessor per system register the arch code reads or writes whole: the generic timer, `MAIR`, `SCTLR`, `TCR`, `TTBR0`, `TTBR1`, `ESR`, `FAR`, `VBAR`, the ID registers, `TPIDR_EL0`, `TPIDR_EL1` and `CurrentEL`, plus `wfi`, `dsb sy` and `isb` |
+| `arch/aarch64/mmu.rs` | field constants for `SCTLR_EL1.M`, every `TCR_EL1` field the kernel writes, and `TTBRn_EL1.BADDR` |
+| `timer.rs`, `exceptions.rs`, `pmu.rs`, `isa.rs`, `percpu.rs`, `thread_pointer.rs`, `primitives.rs`, `semihosting.rs` | call the accessors |
+| `arch::current_el()` | `CurrentEL` behind an `arch::` function, beside `arch::entry_el()`; `boot.rs`, `machine_description.rs` and `tests.rs` call it |
+| `drivers/pl011.rs`, `gic.rs`, `gicv3.rs` | named offsets and bit constants with volatile access, as `ns16550.rs` and `plic.rs` do |
+| `kernel/Cargo.toml` | no aarch64 dependency table |
 
-| | aarch64 | riscv64 | x86_64 |
-|---|---|---|---|
-| `asm!` sites in `arch/<isa>/` | 61, in 11 files | 49, in 9 files | 43, in 12 files |
-| Control-register access | `aarch64-cpu` (20 registers named) plus `asm!` | 80 lines naming a `csr*` instruction | 53 `rdmsr`/`wrmsr`/`cr*` sites, behind `read_cr0`-style functions in `instructions.rs` |
-| MMIO register blocks | `tock-registers` (`pl011`, `gic`, `gicv3`) | named offsets and volatile access | named offsets and volatile access |
+Each accessor carries `options(nomem, nostack)`, so a write whose order against memory matters
+sits between `dsb_sy` or `isb` at its call site. A write that changes reachable memory or the trap
+target is an `unsafe fn`, as riscv64's `write_satp` is. Every bit constant cites the Arm document
+that defines it by the register's heading: Arm DDI 0487 for system registers, DDI 0183 for the
+PL011, IHI 0048B for the GICv2 and IHI 0069 for the GICv3. Each also agrees with Linux v6.16's
+headers (`arch/arm64/tools/sysreg`, `pgtable-hwdef.h`, `arm_arch_timer.h`, `amba/serial.h`,
+`arm-gic.h`, `arm-gic-v3.h`).
 
-So aarch64 alone reaches registers two ways, and alone carries two third-party crates for it.
-DECISIONS §3 (use the crate ecosystem) chose both on 2026-07-13, before the in-tree pattern existed.
-`kernel/Cargo.toml`'s comment on the aarch64 table calls the asymmetry history rather than a
-decision. It has a visible cost: an unconditional `aarch64-cpu` pins Kani, and so CI, to an aarch64 runner,
-which is why it is target-gated (milestone 193 (put `kernel/src` within reach of the prover,
-because today the proofs cannot see it)).
+New names, all provisional: `arch::current_el`, the `instructions::read_*`/`write_*` accessors,
+`instructions::{wfi, dsb_sy, isb}`, `gicv3`'s `Frame` and `Width`, and the register constants.
 
-**A second cost is current.** `arch/aarch64/instructions.rs` exists so a proof can stub each
-instruction. Its own header says registers reached through `aarch64-cpu` are not moved there, so
-"a harness that reaches one still fails".
+## Evidence
 
-## Proposal
+Measured 2026-10-26 (UTC) on this branch merged with `2a3cc0dbd`, against `2a3cc0dbd` itself.
 
-Spell aarch64's system registers and MMIO the in-tree way, and remove both `aarch64-cpu` and
-`tock-registers`. That is DECISIONS §46 (thin primitives or whole subsystems; we write everything in
-between) applied as written: register access is on the verification path, and we cannot restructure
-another crate's trait methods so a prover can stub them.
+- `cargo tree -e normal -p kernel`: aarch64 none, riscv64 none, x86_64 `uuid` 1.28.0.
+- `script/test` passed on all three architectures, both images each.
+- `script/fastpath-footprint`: identical to the byte on all three. aarch64 `ipc_send_receive`
+  4916 B, `ipc_call_reply` 6316 B, `syscall_entry` 1684 B, `.text.hot` 11992 B, on both trees.
+- `script/bench --check` passed on all three. riscv64 and x86_64 compile no changed code. On
+  aarch64 every row that crosses a register access fell 1 to 3 percent and `coremark` did not move:
 
-What moves, from `grep -rn 'aarch64_cpu\|tock_registers' kernel/src`:
-
-| File | Uses today | Change |
+| benchmark | before | after |
 |---|---|---|
-| `arch/aarch64/timer.rs` | 5 registers, 14 typed accesses | accessor functions in `instructions.rs` |
-| `arch/aarch64/mmu.rs` | 5 registers (`MAIR`, `SCTLR`, `TCR`, `TTBR0`, `TTBR1`), `barrier`, 18 accesses | same, plus field constants for `SCTLR` and `TCR` |
-| `arch/aarch64/exceptions.rs` | `ESR`, `FAR`, `VBAR`, `barrier`, 6 accesses | same |
-| `arch/aarch64/pmu.rs`, `isa.rs`, `mod.rs` | 6 more registers, `wfi`, `dsb`, 13 accesses | same |
-| `lib.rs` | `CurrentEL`, read in three `cfg(target_arch = "aarch64")` blocks | an `arch::` function, which also takes a system register out of `lib.rs` (codebase rule 1) |
-| `drivers/pl011.rs`, `gic.rs`, `gicv3.rs` | 189 lines of `register_structs!`/`register_bitfields!`, 51 accesses | named offsets and bit constants, the way `ns16550.rs` already does it |
-| `kernel/Cargo.toml` | two dependencies | both removed |
+| `yield_switch` | 547 | 534 |
+| `ipc_rtt` | 1023 | 1005 |
+| `null_syscall` | 18 | 17 |
+| `ctx_switch` | 592 | 576 |
+| `ipc_rtt_el0` | 2085 | 2039 |
+| `coremark` | 81660 | 81660 |
 
-The estimate is 11 source files and roughly 600 to 900 changed lines: about 40 small accessor
-functions, a few dozen field constants, and the three drivers rewritten. That is an estimate from
-the counts above, not a diff.
+  The bench image is a `dev` build. There the crates' trait methods (`Readable::get`, a field's
+  `read`) stayed calls, and the accessors here are `#[inline(always)]`. The release footprint
+  above shows optimized code did not change, so the gain belongs to the debug instrument only and
+  the baseline is left as it is.
+- `script/lint` passed, including the unsafe density ceiling outside `arch/`, which now counts the
+  drivers' volatile accesses.
 
 ## Refused: typed wrappers for riscv64 and x86_64 instead
 
@@ -70,29 +78,22 @@ plus a grep of `notes/` and `design/roadmap/`. It found only mutation-test descr
 commit saying its bit positions were checked against QEMU's source. That search is shallow: it finds
 bugs someone wrote down in those words, not bugs fixed silently.
 
-## Costs and risks
+## BUGS
 
-- Churn in 11 working files whose behavior is proven under QEMU and HVF (nothing has run on argon,
-  the aarch64 Jetson board). A wrong
-  `SCTLR` or `TCR` bit is a boot that never prints, so the failure is loud but slow to diagnose.
-- It reverses DECISIONS §3, so it needs a written decision before it is built; that is the
-  `unwritten` dependency above.
-- Proof plan: `script/test` on all three architectures; `script/bench` floors unchanged or each
-  difference explained; `script/fastpath-footprint` unchanged; a boot on argon. If argon is not
-  available, the boot is recorded as owed in the block's follow-on, which is why `needs_person` is
-  `yes`.
+- No Kani harness stubs an aarch64 register accessor yet. They are stubbable now; the timer re-arm
+  is the obvious first harness, and it still needs its arithmetic lifted out of the accesses
+  (notes/kernel-proofs.md, "Why these two and not the timer").
+- Nothing has booted this on silicon. QEMU and the suite exercise every accessor and driver path,
+  and a wrong `SCTLR` or `TCR` bit on a real part is a boot that never prints.
 
-## Priority
+## Follow-on
 
-Off the customer path and behind the swish-check work; calef's call on 2026-10-03 was to file it,
-not launch it. At equal cost the elegance case holds: one pattern on three architectures, two fewer
-dependencies, and every register access stubbable by a proof. The only argument against is timing.
-
-## Blocked by
-
-A decision that replaces DECISIONS §3. `tock-registers` is already in the aarch64 target table
-(PR #1477).
+- **Recorded.** This block owes an argon boot, which needs a person at the bench. One `script/test` boot on argon, or a
+  console boot to the shell, closes it; this block keeps `needs_person: yes` until then.
+- **Recorded.** `design/tenets/codebase-rules.md` still names `aarch64-cpu` and `tock-registers` as examples of
+  thin primitives the kernel takes; design text outside `design/decisions/` is not this lane's to
+  edit.
 
 ## Index row
 
-aarch64 alone reaches its control and MMIO registers through `aarch64-cpu` and `tock-registers`, while riscv64 and x86_64 spell theirs in the tree. Proposed: spell aarch64's the same way, filed rather than launched at calef's request.
+aarch64 reaches its system registers through accessors in `arch/aarch64/instructions.rs` and its device registers through named offsets, as riscv64 and x86_64 do, and the kernel links no register crate. Built; an argon boot is owed.

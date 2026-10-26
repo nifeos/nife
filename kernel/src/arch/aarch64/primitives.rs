@@ -15,7 +15,7 @@ use super::*;
 #[cfg_attr(any(test, feature = "system_tests"), allow(dead_code))]
 pub fn halt(_: crate::arch::HaltReason) -> ! {
     loop {
-        aarch64_cpu::asm::wfi();
+        instructions::wfi();
     }
 }
 
@@ -28,7 +28,7 @@ pub fn halt(_: crate::arch::HaltReason) -> ! {
 ///
 /// `wfi`, not `wfe`, for the reason in [`halt`].
 pub fn wait_for_interrupt() {
-    aarch64_cpu::asm::wfi();
+    instructions::wfi();
 }
 
 /// This core's current stack pointer. Reading `sp` is arch-specific (rule 1), so the stack-overflow
@@ -54,7 +54,7 @@ pub fn spsel() -> u64 {
 /// globally visible before the MMIO notify lands. `dsb sy` guarantees it. On QEMU DMA is coherent
 /// and this is nearly free; on hardware it is load-bearing.
 pub fn direct_memory_access_write_barrier() {
-    aarch64_cpu::asm::barrier::dsb(aarch64_cpu::asm::barrier::SY);
+    instructions::dsb_sy();
 }
 
 /// Make the instruction fetcher aware of code we just wrote as data, over `[va, va+len)`.

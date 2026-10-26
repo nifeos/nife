@@ -120,8 +120,8 @@ a stranger's pages. A newtype only `AddressSpace::ttbr0` and `reserved_root` cou
 would express it, and the scheduler cannot hold one: `sched::switch` reads the root under
 `IPC_TABLES` and releases the lock before the switch, on purpose.
 
-`TCR_EL1` has one trap worth naming: 4 KiB is `0b00` for `TG0` and `0b10` for `TG1`. The
-`aarch64-cpu` crate spells both `KiB_4`. `IPS` comes from the ISA record, and `arch::isa::init`
+`TCR_EL1` has one trap worth naming: 4 KiB is `0b00` for `TG0` and `0b10` for `TG1`, which
+`mmu.rs` names `TCR_TG0_4K` and `TCR_TG1_4K`. `IPS` comes from the ISA record, and `arch::isa::init`
 refuses a part with no 4 KiB granule, so `TG0` and `TG1` are a checked assumption.
 
 Asking the silicon whether EL0 could read an address: `AT S1E0R` translates an address as EL0

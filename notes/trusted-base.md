@@ -143,7 +143,7 @@ not longer**, and every deletion has a reason in the architecture rather than in
 | their category | nife | where |
 |---|---|---|
 | **Context switches** | yes, and the assembly is separated from the Rust | `kernel/src/arch/<isa>/context.s` holds the register save/restore; `context.rs` has **zero** `unsafe` blocks, because the unsafety is in the `.s` file the Rust calls |
-| **Memory-mapped I/O and structures** | yes | `kernel/src/drivers/` (`pl011.rs`, `ns16550.rs`, `gic.rs`, `gicv3.rs`, `plic.rs`, `ramfb.rs`), over `tock-registers 0.10`, **which is Tock's own crate**: this tree took the abstraction and not the kernel |
+| **Memory-mapped I/O and structures** | yes | `kernel/src/drivers/` (`pl011.rs`, `ns16550.rs`, `gic.rs`, `gicv3.rs`, `plic.rs`, `ramfb.rs`): volatile accesses at named offsets, each under a `SAFETY` comment, and no register crate |
 | **The memory allocator** | **no. The kernel has no allocator** | there is no `#[global_allocator]` anywhere in `kernel/src`. milestone 14 (kernel objects from untyped: remove the kernel heap) is the decision; `kernel/src/kmem.rs` is a fixed carve, not a heap; `notes/kernel-budget.md` has the one draw it missed and how 19c.1 closed it |
 | **Userspace buffers** | **no. No pointer crosses the boundary** | `kernel/src/syscall.rs`'s own header: *"Today every argument is a scalar in a register ... so the kernel follows no user pointer and there is no deputy to confuse."* The console is a userspace server, milestone 8 (the console driver leaves the kernel). The primitive is kept (`mmu::user_can_read`) for the next syscall that needs it |
 | **Interrupt and exception handlers** | yes | `kernel/src/arch/<isa>/exceptions.rs` (10 `unsafe` blocks on aarch64), `vectors.s`, `irq.rs` |

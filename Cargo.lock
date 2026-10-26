@@ -3,15 +3,6 @@
 version = 4
 
 [[package]]
-name = "aarch64-cpu"
-version = "11.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44171e22925ec72b63d86747bc3655c7849a5b8d865c980222128839f45ac034"
-dependencies = [
- "tock-registers",
-]
-
-[[package]]
 name = "abi"
 version = "0.1.0"
 
@@ -722,7 +713,6 @@ version = "0.1.0"
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "aarch64-cpu",
  "abi",
  "address_space_identifier",
  "address_space_map",
@@ -782,7 +772,6 @@ dependencies = [
  "system_log_contract",
  "test_times",
  "thread_wake_handshake",
- "tock-registers",
  "usb_keyboard_report",
  "video_terminal",
  "work_steal_slot",

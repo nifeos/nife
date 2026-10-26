@@ -4,13 +4,14 @@
 read. These files hold what its prose budget has no room for.
 
 The names in each release-track crate still waiting for ratification, one file per crate in the
-record format `helpers/name_release.py` reads, inert until a ruling dates its `Ratified:` line:
+record format `helpers/name_release.py` reads, inert until a ruling dates its `Ratified:` line. Each
+gives its count of names and how many it flags as something other than `clear` or `term`:
 
-- [`jh7110-entropy-names.md`](jh7110-entropy-names.md)
-- [`jh7110-clock-and-reset-names.md`](jh7110-clock-and-reset-names.md)
-- [`e1000e-names.md`](e1000e-names.md)
-- [`designware-ethernet-names.md`](designware-ethernet-names.md)
-- [`designware-mobile-storage-names.md`](designware-mobile-storage-names.md)
+- [`jh7110-entropy-names.md`](jh7110-entropy-names.md): 59 names, 6 flagged.
+- [`jh7110-clock-and-reset-names.md`](jh7110-clock-and-reset-names.md): 67 names, 8 flagged.
+- [`e1000e-names.md`](e1000e-names.md): 145 names, 21 flagged.
+- [`designware-ethernet-names.md`](designware-ethernet-names.md): 161 names, 34 flagged.
+- [`designware-mobile-storage-names.md`](designware-mobile-storage-names.md): 118 names, 30 flagged.
 
 - [`what-nife-does-at-each-extraction.md`](what-nife-does-at-each-extraction.md): the checklist
   each extraction runs.

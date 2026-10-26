@@ -65,10 +65,10 @@ All 33 `unsafe fn`s are in `kernel/` and `crates/`. The program packages have **
 spec's "across `kernel/`, `crates/`, and `user/`" (then `user/`, now `components/` and `fixtures/`)
 was right.
 
-Twenty-two have at least one explicit `unsafe {}` in the body. Every one of those blocks has a
+Twenty-three have at least one explicit `unsafe {}` in the body. Every one of those blocks has a
 SAFETY comment, and clippy reproves it on each run, with the single exception of `inter_process_communication`'s `seed`,
 which is `#[cfg(kani)]` and therefore never compiled by the gate (see BUGS below). The other
-eleven have no unsafe block at all, and since the lint is clean, that means their bodies
+ten have no unsafe block at all, and since the lint is clean, that means their bodies
 contain **no unsafe operation**:
 
 | Site | Why it is `unsafe fn` anyway |
@@ -77,7 +77,6 @@ contain **no unsafe operation**:
 | `crates/paging/src/lib.rs:323` `assume_no_stale_entry` | the name is the contract: the caller asserts a TLB fact |
 | `crates/paging/src/lib.rs:410` `Mapper::new` | the caller promises `root` is a live table |
 | `crates/user_mode_runtime/src/heap.rs:193` `GlobalAlloc::alloc` | unsafe because the trait method is |
-| `kernel/src/arch/aarch64/mmu.rs:599` `set_ttbr0` | `aarch64-cpu` exposes `TTBR0_EL1.set` as **safe** |
 | `kernel/src/arch/riscv64/mmu.rs:513` `activate_user` | forwards to `write_satp`, which is a safe fn |
 | `kernel/src/drivers/gic.rs:149` `init` | takes two MMIO virtual addresses on trust |
 | `kernel/src/drivers/ns16550.rs:55` `Ns16550::new` | takes an MMIO base on trust |
@@ -85,10 +84,9 @@ contain **no unsafe operation**:
 | `kernel/src/drivers/plic.rs:83` `init` | takes an MMIO base and a hart context on trust |
 | `kernel/src/sync.rs:263` `force_reset_ranks` | breaks lock-order bookkeeping, which is not a memory operation |
 
-For these eleven the lint composition buys nothing, and that is not a defect in them. Their
+For these ten the lint composition buys nothing, and that is not a defect in them. Their
 unsafety is a **contract about meaning**, not a memory operation the compiler can point at: writing
-`TTBR0_EL1` is the most consequential thing in the kernel and `aarch64-cpu` hands it over as a safe
-call. The invariant lives in the `# Safety` section of the rustdoc and nowhere else, so **for a
+`Mapper::new` trusts that `root` heads a live table, and no operation in its body says so. The invariant lives in the `# Safety` section of the rustdoc and nowhere else, so **for a
 third of the tree's `unsafe fn`s the doc comment is the only enforcement there is**. Read them
 accordingly when you change one.
 
