@@ -31,7 +31,7 @@ pub fn entry_el() -> u64 {
 /// **Which exception level is this core running at now?** 1 everywhere after `boot.s`, which
 /// drops from EL2; the boot banner prints it beside [`entry_el`], and a test asserts it.
 ///
-/// `CurrentEL.EL` is bits 3:2 (Arm DDI 0487, CurrentEL).
+/// `CurrentEL.EL` is bits 3:2 (Arm DDI 0487, `CurrentEL`).
 ///
 /// Name: provisional (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64 spell
 /// them)), the twin of [`entry_el`].

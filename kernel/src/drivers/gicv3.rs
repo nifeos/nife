@@ -111,7 +111,7 @@ impl Frame {
     fn register<T: Width>(self, offset: usize) -> usize {
         let size = core::mem::size_of::<T>();
         assert!(
-            offset % size == 0 && offset + size <= FRAME as usize,
+            offset.is_multiple_of(size) && offset + size <= FRAME as usize,
             "gicv3: no {size}-byte register at {offset:#x}"
         );
         self.0 as usize + offset

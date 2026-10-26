@@ -104,7 +104,7 @@ static CHECK_ELAPSED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_
 /// TX1 figures counted whatever firmware left here. See notes/pmu.md, "Why `PMCCFILTR_EL0` is zero".
 static FIRMWARE_FILTER: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
-/// `ID_AA64DFR0_EL1.PMUVer`, bits 11:8 (Arm DDI 0487, ID_AA64DFR0_EL1).
+/// `ID_AA64DFR0_EL1.PMUVer`, bits 11:8 (Arm DDI 0487, `ID_AA64DFR0_EL1`).
 fn pmu_version() -> u64 {
     (instructions::read_id_aa64dfr0() >> 8) & 0xf
 }

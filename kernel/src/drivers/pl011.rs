@@ -53,7 +53,7 @@ const ICR_ALL: u32 = 0x7ff;
 /// This is just a pointer. Constructing it is free, which is why the console can
 /// mint one per `print!` instead of holding global mutable state.
 pub(crate) struct Pl011 {
-    base: *mut u8,
+    base: *mut u32,
 }
 
 // SAFETY: the pointer names MMIO, not memory Rust manages. Moving the handle between
@@ -67,7 +67,7 @@ impl Pl011 {
     /// `base` must be the address of a real, mapped PL011 register block.
     pub const unsafe fn new(base: usize) -> Self {
         Self {
-            base: base as *mut u8,
+            base: base as *mut u32,
         }
     }
 
@@ -75,13 +75,13 @@ impl Pl011 {
     fn read(&self, offset: usize) -> u32 {
         // SAFETY: `new`'s contract makes `base` a mapped PL011, and `offset` is one of the register
         // offsets above, all inside its 4 KiB block and 4-byte aligned.
-        unsafe { core::ptr::read_volatile(self.base.wrapping_add(offset).cast::<u32>()) }
+        unsafe { core::ptr::read_volatile(self.base.wrapping_byte_add(offset)) }
     }
 
     /// Write the 32-bit register at `offset`.
     fn write(&self, offset: usize, value: u32) {
         // SAFETY: as `read`.
-        unsafe { core::ptr::write_volatile(self.base.wrapping_add(offset).cast::<u32>(), value) }
+        unsafe { core::ptr::write_volatile(self.base.wrapping_byte_add(offset), value) }
     }
 
     /// Configure the UART: 8 data bits, no parity, one stop bit, FIFOs on.

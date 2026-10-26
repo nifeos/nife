@@ -24,11 +24,11 @@ pub type Format = Aarch64;
 // Each from the Arm Architecture Reference Manual (Arm DDI 0487), under the register's own
 // heading, and checked against Linux's `arch/arm64/include/asm/pgtable-hwdef.h` (v6.16).
 
-/// `SCTLR_EL1.M`, bit 0: stage 1 translation at EL1 and EL0 is on (Arm DDI 0487, SCTLR_EL1).
+/// `SCTLR_EL1.M`, bit 0: stage 1 translation at EL1 and EL0 is on (Arm DDI 0487, `SCTLR_EL1`).
 const SCTLR_M: u64 = 1 << 0;
 
 /// `TTBR0_EL1.BADDR` and `TTBR1_EL1.BADDR`, bits 47:1: the table's address. Bits 63:48 are the
-/// ASID and bit 0 is `CnP` (Arm DDI 0487, TTBR0_EL1 and TTBR1_EL1).
+/// ASID and bit 0 is `CnP` (Arm DDI 0487, `TTBR0_EL1` and `TTBR1_EL1`).
 const TTBR_BADDR: u64 = 0x0000_ffff_ffff_fffe;
 
 // `TCR_EL1` (Arm DDI 0487, TCR_EL1). The low half's fields sit in bits 15:0, the high half's in
@@ -36,7 +36,7 @@ const TTBR_BADDR: u64 = 0x0000_ffff_ffff_fffe;
 // are walked, and TTBR0 holds an empty table rather than having its walks disabled
 // (RESERVED_TTBR0), so no switch rewrites TCR.
 
-/// `T0SZ`, bits 5:0, and `T1SZ`, bits 21:16: the region is 2^(64 - TxSZ) bytes.
+/// `T0SZ`, bits 5:0, and `T1SZ`, bits 21:16: the region is 2^(64 - `TxSZ`) bytes.
 const TCR_T0SZ_SHIFT: u32 = 0;
 const TCR_T1SZ_SHIFT: u32 = 16;
 /// `IRGN0`, bits 9:8, and `IRGN1`, bits 25:24: table walks are inner write-back,
