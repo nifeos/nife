@@ -335,6 +335,16 @@ fn fs_demo(mut motd: File) {
         other => panic!("a missing name did not read as NotFound: {other:?}"),
     }
 
+    // Two names that each fit the page shared with the FS server and together do not (security
+    // audit 2026-10-26, finding 3). The one-request path cannot carry them, so the PAL walks them
+    // name by name, and the server refuses a name it does not hold. Any refusal is right; a fault
+    // or an overrun of the page is the defect.
+    let long = format!("{}/{}", "a".repeat(2100), "b".repeat(2100));
+    match (File::open(&long), std::fs::read_dir(&long)) {
+        (Err(_), Err(_)) => println!("long path refused"),
+        other => panic!("a path longer than the page was not refused: {other:?}"),
+    }
+
     // CREATE, then a SHORTER second write (milestone 31 (a capability shell) phase 2): without
     // TRUNCATE the first write's tail would survive. §27's four corrections all trace to that, so
     // it is pinned here.
