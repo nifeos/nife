@@ -35,7 +35,7 @@ requirements are known.
    squander it.
 
 6. Taking a dependency is a decision, not a convenience: DECISIONS §46 (thin primitives or whole
-   subsystems). The tree's shape is thin architectural primitives (`aarch64-cpu`, `spin`,
+   subsystems). The tree's shape is thin architectural primitives (`aarch64-cpu`,
    `tock-registers`) or whole subsystems we would never write (`smoltcp`, vendored RedoxFS), with
    nothing in between: most crates here have no external dependencies at all. Write it if it is
    on the verification path, because you cannot restructure someone else's crate to make a model

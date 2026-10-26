@@ -61,10 +61,9 @@ right.
 - **Recorded.** `notes/memory-ordering.md`: the 243 relaxed sites are not adjudicated. Only the
   compare-exchanges were checked, so a relaxed store used as a publication flag with data behind it
   would be this milestone's own bug and is outside the inventory.
-- **Recorded.** `notes/memory-ordering.md` names the largest unpinned assumption: roughly half the
-  soundness arguments rest on `spin::Mutex`'s orderings, which belong to a dependency, so a
-  reimplemented `IrqSafeMutex` or a weakened `spin` would need them reread and nothing would fail
-  first.
+- **Milestone 953.** Roughly half the soundness arguments rest on the kernel lock's orderings.
+  The lock is the in-tree `crates/spin_lock`, whose loom models fail when its release store or its
+  acquire weakens.
 - **Recorded.** `notes/memory-ordering.md`: nothing in the inventory is a proof about aarch64 or
   riscv64. Every soundness argument in it is a C11-model argument about happens-before.
 

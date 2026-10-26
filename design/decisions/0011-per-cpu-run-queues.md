@@ -28,10 +28,11 @@ load-balancing, and migration costs an IPI, neither of which matters on a 4-core
 
 Two earlier decisions paid forward, and the starting point is cleaner for it:
 
-- `IrqSafeMutex` is already a real cross-core spinlock. Its inner primitive is `spin::Mutex`
-  (sync.rs), which provides mutual exclusion and the acquire/release fences on lock and unlock.
-  Anything touched under a lock is already correct across cores. §9's "every kernel lock is an
-  `IrqSafeMutex`" was SMP groundwork we didn't label as such.
+- `IrqSafeMutex` is already a real cross-core spinlock. Its inner primitive is
+  `spin_lock::SpinLock` (`crates/spin_lock`), which provides mutual exclusion and the
+  acquire/release fences on lock and unlock. Anything touched under a lock is already correct
+  across cores. §9's "every kernel lock is an `IrqSafeMutex`" was SMP groundwork we didn't label
+  as such.
 - TLB invalidation is already broadcast. Every `tlbi` we emit is the inner-shareable form
   (`vmalle1is`, `vaae1is`); `flush_tlb`'s own comment says "wait for every core." aarch64's DVM
   broadcasts invalidation in hardware, so cross-core TLB shootdown needs no IPI for the cases DVM
@@ -72,7 +73,7 @@ Two consequences fall out:
 - **The run queue needs no cross-core lock at all.** Only its owning core reads or writes it, and
   reentrancy from that core's own timer/IRQ is handled by masking IRQs around the access. §9's
   `IrqSafeMutex` masks IRQs *and* spinlocks; here the spinlock half is simply unnecessary. A per-CPU
-  `VecDeque` behind IRQ-masking, not a `spin::Mutex`.
+  `VecDeque` behind IRQ-masking, not a spinlock.
 - **The hot path holds no lock.** `schedule()` pops from its own queue (IRQs masked) and switches; it
   touches no global structure. To make that true, a run-queue entry is a small
   `RunNode { tid, ctx: *mut Context, kstack_top, ttbr0 }` carrying everything a switch needs, cached
@@ -117,7 +118,7 @@ Memory ordering, as one invariant. The rule that keeps this tractable:
 > **Per-CPU state is touched only by its own core. All cross-core work movement is exactly: lock
 > the target's inbox, push a Tid, unlock, SGI.**
 
-The inbox's `spin::Mutex` supplies the acquire/release fences for the Tid handoff, and the SGI is an
+The inbox's `IrqSafeMutex` supplies the acquire/release fences for the Tid handoff, and the SGI is an
 event the receiver observes only after the push is visible. So the per-CPU lock-free atomics
 (`need_resched`, `idle`) stay single-core-accessed and need nothing above `Relaxed`. The audit is
 mechanical: any lock-free atomic read or written by more than one core either becomes per-CPU or gets

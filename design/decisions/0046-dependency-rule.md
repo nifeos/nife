@@ -23,7 +23,7 @@ Five external dependencies exist outside `vendor/`:
 |---|---|---|
 | `aarch64-cpu` | kernel | thin: architectural register definitions |
 | `tock-registers` | kernel | thin: an MMIO register abstraction |
-| `spin` | kernel | thin: spinlocks |
+| `uuid` | kernel, x86_64 | thin: identifiers |
 | `smoltcp` | user | whole subsystem: a TCP/IP stack |
 | `redox_syscall` | fs_server | forced by the vendored engine |
 
@@ -227,9 +227,10 @@ since nothing outside nife implements either. The kernel clause is different.
   parsers of what firmware and boot media hand the kernel: the device tree, ACPI tables, ELF images.
 - Those parsers are where the 2026-10-04 reason is strongest. Exposure buys trust, and the
   bugs that hurt a parser are the inputs nobody thought of.
-- The kernel already links four crates, which a blanket "write it" cannot explain: `spin`,
+- The kernel already links three crates, which a blanket "write it" cannot explain:
   `aarch64-cpu` and `tock-registers`, and on x86_64 `uuid`, which arrives through `boot_slot` and
-  `globally_unique_identifier_partition_table`.
+  `globally_unique_identifier_partition_table`. Its lock is the in-tree `crates/spin_lock`, which
+  rule 1 decided under this bar (milestone 953).
 - "Touches the kernel" was never defined. Milestone 784 read it as anything the kernel uses for
   more than shared constants, which is wider than the rule's words.
 
@@ -258,12 +259,12 @@ or pull request that proposes it shows each one.
    it and its structure defeats Kani, rule 1 decides and we write.
 5. It stays upgradable, under §81 (a dependency stays upgradable).
 
-The four crates the kernel links meet conditions 1, 2, 3 and 5 on the record, and none adds more
-than three crates on any target. `spin`, `aarch64-cpu` and `tock-registers` are thin architectural
+The three crates the kernel links meet conditions 1, 2, 3 and 5 on the record, and none adds more
+than three crates on any target. `aarch64-cpu` and `tock-registers` are thin architectural
 primitives with no parser. `uuid` builds `no_std` with default features off and depends on nothing.
 The kernel only builds identifiers from bytes the partition table crate has already reordered, and
-calls its text parser nowhere outside tests. None of the four has the listing of `unsafe` that
-condition 4 asks for, since they predate it; a proposal that touches one of them writes it. Nothing
+calls its text parser nowhere outside tests. Their listing of `unsafe` for condition 4 is
+`notes/kernel-dependency-unsafe.md`, and a proposal that touches one of them rereads it. Nothing
 here changes the ABI, capabilities or the verification path.
 
 The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in
