@@ -233,6 +233,17 @@ fn a_device_error_ends_the_walk_with_the_devices_own_error() {
 }
 
 #[test]
+fn an_entry_inside_one_sector_reads_only_that_sector() {
+    // Cluster 2's entry sits at bytes 3 and 4 of the first table sector; the next sector, the
+    // table's second, is refused, so a read that strays into it fails.
+    let mut image = Image::fat12();
+    image.set(2, 0xFFF);
+    image.refuse = Some(2);
+    let mut volume = Volume::open(image).unwrap();
+    assert_eq!(volume.entry(2), Ok(TableEntry::EndOfChain));
+}
+
+#[test]
 fn the_cache_reloads_when_a_walk_moves_between_table_sectors() {
     let mut image = Image::fat12();
     image.link(&[345, 3, 346, 4]);

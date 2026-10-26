@@ -5,6 +5,10 @@ use super::*;
 use crate::reader::tests::{FIRST_DATA, Image};
 use crate::table::TableEntry;
 
+/// More slots than any directory here holds. Every read is capped at it, so a reader that stops
+/// advancing fails an assertion rather than hanging the suite.
+const MOST: usize = 1 << 14;
+
 /// A short entry's 32 bytes.
 fn short(name: &[u8; 11], attributes: u8, high: u16, low: u16, size: u32) -> [u8; 32] {
     let mut slot = [0u8; 32];
@@ -169,7 +173,7 @@ fn the_root_region_yields_used_slots_and_stops_at_the_end_slot() {
     assert_eq!(sub.first_cluster(), 20);
     assert!(root.next().is_none());
     assert!(root.next().is_none());
-    assert_eq!(volume.directory(0).count(), 3);
+    assert_eq!(volume.directory(0).take(MOST).count(), 3);
 }
 
 #[test]
@@ -178,7 +182,7 @@ fn a_full_root_region_ends_at_its_last_slot() {
     let slots = [short(b"FILE    TXT", 0x20, 0, 3, 1); 16];
     put(&mut image, 5 * 512, &slots);
     let mut volume = Volume::open(image).unwrap();
-    assert_eq!(volume.root_directory().count(), 16);
+    assert_eq!(volume.root_directory().take(MOST).count(), 16);
 }
 
 #[test]
@@ -197,7 +201,7 @@ fn a_subdirectory_reads_across_its_clusters() {
     );
     let mut volume = Volume::open(image).unwrap();
     let mut count = 0;
-    for entry in volume.directory(20) {
+    for entry in volume.directory(20).take(MOST) {
         assert!(matches!(entry, Ok(DirectoryEntry::Short(_))));
         count += 1;
     }
@@ -214,7 +218,7 @@ fn a_subdirectory_without_an_end_slot_ends_with_its_chain() {
         &[short(b"FILE    TXT", 0x20, 0, 3, 1); 16],
     );
     let mut volume = Volume::open(image).unwrap();
-    assert_eq!(volume.directory(20).count(), 16);
+    assert_eq!(volume.directory(20).take(MOST).count(), 16);
 }
 
 #[test]
@@ -229,7 +233,7 @@ fn a_looping_directory_chain_ends_with_an_error() {
     let mut volume = Volume::open(image).unwrap();
     let mut entries = 0usize;
     let mut last = None;
-    for entry in volume.directory(20) {
+    for entry in volume.directory(20).take(MOST) {
         match entry {
             Ok(_) => entries += 1,
             Err(error) => last = Some(error),

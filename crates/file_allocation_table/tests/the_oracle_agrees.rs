@@ -207,8 +207,11 @@ fn read_file(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32, size: u6
 
 /// Everything this crate reads under the directory starting at `first` (0 for the root).
 fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec<Record> {
+    // The specification caps a directory at 65,536 slots; a reader that stops advancing then fails
+    // the comparison rather than hanging the suite.
     let entries: Vec<DirectoryEntry> = volume
         .directory(first)
+        .take(65_536)
         .map(|e| e.expect("the directory reads"))
         .collect();
     let mut out = Vec::new();
