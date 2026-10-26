@@ -20,7 +20,7 @@ Six Kani harnesses, in the `verification` module:
 - `prp_pair_is_total_and_page_disciplined`: for any base, length and page size, the PRP pair
   either refuses or covers the transfer; the second pointer is zero when one page suffices, and
   otherwise the page boundary right after the base.
-- `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: `transfer_command` builds a
+- `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: `Namespace::transfer_command` builds a
   command only for a block whose last byte lies inside the namespace, and never overflows
   computing its LBA, for any block number, buffer address and namespace size.
 - `identify_parse_is_total_and_bounds_the_shift`: no controller response panics the IDENTIFY

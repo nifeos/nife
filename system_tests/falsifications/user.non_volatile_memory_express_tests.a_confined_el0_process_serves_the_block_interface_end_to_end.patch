@@ -2,9 +2,9 @@ Falsifies `system_tests::user::non_volatile_memory_express_tests::a_confined_el0
 
 Architecture: aarch64
 
-The defect is the block-to-LBA conversion in `non_volatile_memory_express::transfer_command` dropped: the server sends
+The defect is the block-to-LBA conversion in `non_volatile_memory_express::Namespace::transfer_command` dropped: the server sends
 a filesystem block number to the controller as if it were a logical block address, so block 37
-starts at LBA 37 rather than LBA `37 * blocks_per`. This is the classic factor-of-8 confusion
+starts at LBA 37 rather than LBA `37 * blocks_per_transfer`. This is the classic factor-of-8 confusion
 between a 4096-byte filesystem block and a 512-byte LBA, and it is the exact failure the test's own
 comment on block 37 says it is placed to catch. The size, the range check, the PRP pair and the
 completion path all still work, so the server comes up, reports the right geometry and answers
@@ -23,12 +23,12 @@ to the test; this is a defect in the code the test exists to check.
 diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
 --- a/crates/non_volatile_memory_express/src/lib.rs
 +++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -317,7 +317,7 @@ pub fn transfer_command(
-     if !namespace_holds_block(size_bytes, block, unit) {
-         return None;
-     }
--    let slba = block.checked_mul(blocks_per as u64)?;
-+    let slba = block;
-     let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
-     Some(if write {
-         Command::write(cid, nsid, slba, blocks_per, prp1, prp2)
+@@ -323,7 +323,7 @@
+         if !self.holds_block(block, unit) {
+             return None;
+         }
+-        let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
++        let slba = block;
+         let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
+         let blocks = self.blocks_per_transfer;
+         Some(if write {

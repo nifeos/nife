@@ -3,7 +3,7 @@
 //! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
 //! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
 //! host-tested and Kani-reachable, including the block-range check
-//! [`non_volatile_memory_express::transfer_command`] applies; what is left here is volatile access,
+//! [`non_volatile_memory_express::Namespace::transfer_command`] applies; what is left here is volatile access,
 //! two barriers and a bounded poll.
 
 //! # Capability contract
@@ -42,7 +42,7 @@ use driver_process_contract::non_volatile_memory_express::{
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue, transfer_command,
+    Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -226,21 +226,16 @@ impl Plane {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
         let data_phys = self.handoff.data_plane_phys + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
-        let cmd = transfer_command(
-            self.handoff.size_bytes,
-            self.handoff.blocks_per,
-            cid,
-            NSID,
-            block,
-            PAGE,
-            data_phys,
-            PAGE,
-            write,
-        )
-        // `None` means the block is outside the namespace or the arithmetic would not close;
-        // either way it is the caller's request that is wrong, and the crate refused to build
-        // a command rather than let the controller answer for it.
-        .ok_or(u16::MAX)?;
+        let namespace = Namespace {
+            size_bytes: self.handoff.size_bytes,
+            blocks_per_transfer: self.handoff.blocks_per,
+        };
+        let cmd = namespace
+            .transfer_command(cid, NSID, block, PAGE, data_phys, PAGE, write)
+            // `None` means the block is outside the namespace or the arithmetic would not close;
+            // either way it is the caller's request that is wrong, and the crate refused to build
+            // a command rather than let the controller answer for it.
+            .ok_or(u16::MAX)?;
         self.transact(cmd)
     }
 }
@@ -354,7 +349,7 @@ fn serve(mut plane: Plane) -> ! {
 /// **Aim DMA outside this server's region, both directions, and report what the controller did**
 /// (milestone 261 (the NVMe driver leaves the kernel)'s Outstanding item; milestone 202 (every
 /// confinement test is a ritual until somebody breaks the confinement)). It goes around
-/// [`transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
+/// [`Namespace::transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
 /// its own, `victim`, a physical address outside this process's DMA window: a `READ` would
 /// overwrite a frame this server was never granted, a `WRITE` would leak `victim` onto the disk.
 /// With the IOMMU confining the controller to its own region both fault, and the kernel test reads

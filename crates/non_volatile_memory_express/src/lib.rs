@@ -259,71 +259,79 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     }
 }
 
-/// **Is `block` a whole `unit`-byte block inside a namespace of `size_bytes` bytes?** A driver's
-/// own bounds check, run before a command is built rather than left to the controller's status
-/// field, because a driver that asks for an LBA past the end learns about it far from where it
-/// computed it.
-///
-/// `false` for any `block` whose transfer would run past `size_bytes`, for one whose end
-/// overflows a `u64`, and for a `unit` of zero.
+/// **What a transfer needs to know about the namespace it addresses**: its capacity and how many
+/// logical blocks one transfer unit covers. A driver fills it once from IDENTIFY
+/// ([`IdentifyNamespace::capacity_bytes`], [`IdentifyNamespace::blocks_per_transfer`]) and asks it
+/// whether a block exists and for the command that moves one.
 ///
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::namespace_holds_block;
+/// use non_volatile_memory_express::{NVM_READ, Namespace};
 ///
-/// // An 8 MiB namespace holds 2048 blocks of 4096 bytes, numbered 0 to 2047.
-/// assert!(namespace_holds_block(8 << 20, 2047, 4096));
-/// assert!(!namespace_holds_block(8 << 20, 2048, 4096));
+/// // An 8 MiB namespace of 512-byte logical blocks holds 2048 blocks of 4096 bytes, numbered 0 to
+/// // 2047, and each one is 8 logical blocks.
+/// let namespace = Namespace { size_bytes: 8 << 20, blocks_per_transfer: 8 };
+/// assert!(namespace.holds_block(2047, 4096));
+/// assert!(!namespace.holds_block(2048, 4096));
+///
+/// let cmd = namespace.transfer_command(7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
+/// assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+/// assert!(namespace.transfer_command(7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
 /// ```
-pub fn namespace_holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
-    match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
-        Some(end) => end <= size_bytes,
-        None => false,
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Namespace {
+    /// The namespace's capacity in bytes.
+    pub size_bytes: u64,
+    /// The logical blocks in one transfer unit, the `unit` every call on this value passes.
+    pub blocks_per_transfer: u16,
 }
 
-/// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
-/// close: a block outside the namespace ([`namespace_holds_block`]), an LBA that overflows, or a buffer that
-/// is not expressible as a PRP pair (which for a page-aligned `unit`-byte buffer with
-/// `unit <= 2 * page_size` it always is; see [`prp_pair`]).
-///
-/// `size_bytes` is the namespace's capacity, `blocks_per` the logical blocks in one `unit`-byte
-/// block ([`IdentifyNamespace::blocks_per_transfer`]), `data_phys` the buffer's bus address, and
-/// `write` picks [`Command::write`] over [`Command::read`].
-///
-/// # Examples
-///
-/// ```
-/// use non_volatile_memory_express::{NVM_READ, transfer_command};
-///
-/// // The last 4096-byte block of an 8 MiB namespace of 512-byte logical blocks.
-/// let cmd = transfer_command(8 << 20, 8, 7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
-/// assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
-/// assert!(transfer_command(8 << 20, 8, 7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
-/// ```
-#[allow(clippy::too_many_arguments)]
-pub fn transfer_command(
-    size_bytes: u64,
-    blocks_per: u16,
-    cid: u16,
-    nsid: u32,
-    block: u64,
-    unit: u64,
-    data_phys: u64,
-    page_size: u64,
-    write: bool,
-) -> Option<Command> {
-    if !namespace_holds_block(size_bytes, block, unit) {
-        return None;
+impl Namespace {
+    /// **Is `block` a whole `unit`-byte block inside this namespace?** A driver's own bounds
+    /// check, run before a command is built rather than left to the controller's status field,
+    /// because a driver that asks for an LBA past the end learns about it far from where it
+    /// computed it.
+    ///
+    /// `false` for any `block` whose transfer would run past [`Namespace::size_bytes`], for one
+    /// whose end overflows a `u64`, and for a `unit` of zero.
+    pub fn holds_block(&self, block: u64, unit: u64) -> bool {
+        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
+            Some(end) => end <= self.size_bytes,
+            None => false,
+        }
     }
-    let slba = block.checked_mul(blocks_per as u64)?;
-    let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
-    Some(if write {
-        Command::write(cid, nsid, slba, blocks_per, prp1, prp2)
-    } else {
-        Command::read(cid, nsid, slba, blocks_per, prp1, prp2)
-    })
+
+    /// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
+    /// close: a block outside the namespace ([`Namespace::holds_block`]), an LBA that overflows,
+    /// or a buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte
+    /// buffer with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
+    ///
+    /// `cid` and `nsid` go to the command as they are, `data_phys` is the buffer's bus address,
+    /// and `write` picks [`Command::write`] over [`Command::read`].
+    #[allow(clippy::too_many_arguments)]
+    pub fn transfer_command(
+        &self,
+        cid: u16,
+        nsid: u32,
+        block: u64,
+        unit: u64,
+        data_phys: u64,
+        page_size: u64,
+        write: bool,
+    ) -> Option<Command> {
+        if !self.holds_block(block, unit) {
+            return None;
+        }
+        let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
+        let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
+        let blocks = self.blocks_per_transfer;
+        Some(if write {
+            Command::write(cid, nsid, slba, blocks, prp1, prp2)
+        } else {
+            Command::read(cid, nsid, slba, blocks, prp1, prp2)
+        })
+    }
 }
 
 // --- completions ----------------------------------------------------------------------------
@@ -631,7 +639,7 @@ mod tests {
     #[test]
     fn a_write_command_encodes_the_spec_dwords() {
         // The mirror of `a_read_command_encodes_the_spec_dwords`, and `Command::write` had no
-        // test of its own: `transfer_command`'s own test always passes `write: false`, so this
+        // test of its own: `Namespace::transfer_command`'s own test always passes `write: false`, so this
         // whole function's body had never run under a host test.
         let c = Command::write(7, 1, 0x1_0000_0008, 8, 0xdead_b000, 0);
         assert_eq!(c.0[0], 0x01 | 7 << 16, "opcode and cid share dword 0");
@@ -750,20 +758,27 @@ mod tests {
     fn a_transfer_command_refuses_a_block_the_namespace_does_not_have() {
         const SIZE: u64 = 8 * 1024 * 1024;
         const LAST: u64 = SIZE / 4096 - 1;
-        assert!(namespace_holds_block(SIZE, LAST, 4096));
-        assert!(!namespace_holds_block(SIZE, LAST + 1, 4096));
+        let namespace = Namespace {
+            size_bytes: SIZE,
+            blocks_per_transfer: 8,
+        };
+        assert!(namespace.holds_block(LAST, 4096));
+        assert!(!namespace.holds_block(LAST + 1, 4096));
         assert!(
-            !namespace_holds_block(SIZE, u64::MAX, 4096),
+            !namespace.holds_block(u64::MAX, 4096),
             "no overflow, no wrap-around"
         );
 
         // And the command the last block produces addresses the LBA the geometry says it should.
-        let cmd = transfer_command(SIZE, 8, 7, 1, LAST, 4096, 0x4001_5000, 4096, false)
+        let cmd = namespace
+            .transfer_command(7, 1, LAST, 4096, 0x4001_5000, 4096, false)
             .expect("the last block is servable");
         assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
         assert_eq!(cmd.0[10] as u64 | (cmd.0[11] as u64) << 32, LAST * 8);
         assert!(
-            transfer_command(SIZE, 8, 7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false).is_none()
+            namespace
+                .transfer_command(7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false)
+                .is_none()
         );
     }
 
@@ -988,29 +1003,22 @@ mod verification {
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.a_transfer_command_is_only_built_for_a_block_the_namespace_has.patch`
     #[kani::proof]
     fn a_transfer_command_is_only_built_for_a_block_the_namespace_has() {
-        let size_bytes: u64 = kani::any();
-        let blocks_per: u16 = kani::any();
-        kani::assume((1..=8).contains(&blocks_per));
+        let namespace = Namespace {
+            size_bytes: kani::any(),
+            blocks_per_transfer: kani::any(),
+        };
+        kani::assume((1..=8).contains(&namespace.blocks_per_transfer));
         let block: u64 = kani::any();
         let data_phys: u64 = kani::any();
         kani::assume(data_phys.is_multiple_of(4096) && data_phys < u64::MAX - 8192);
-        if transfer_command(
-            size_bytes,
-            blocks_per,
-            1,
-            1,
-            block,
-            4096,
-            data_phys,
-            4096,
-            kani::any(),
-        )
-        .is_some()
+        if namespace
+            .transfer_command(1, 1, block, 4096, data_phys, 4096, kani::any())
+            .is_some()
         {
-            assert!(namespace_holds_block(size_bytes, block, 4096));
+            assert!(namespace.holds_block(block, 4096));
             // The transfer's last byte is inside the namespace, which is the property
-            // `namespace_holds_block` exists to state and the one a wrap would quietly break.
-            assert!((block + 1) * 4096 <= size_bytes);
+            // `holds_block` exists to state and the one a wrap would quietly break.
+            assert!((block + 1) * 4096 <= namespace.size_bytes);
         }
     }
 
