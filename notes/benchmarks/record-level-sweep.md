@@ -144,7 +144,7 @@ moving 64 KiB rather than 4 KiB into the client's pages: sixteen pages is 13 us 
   either way. With a multi-page transfer the record level stops mattering for aligned bulk IO. Option
   2 then collapses into "do not fetch more than the request asked for", which every level from 0 to 4
   satisfies.
-- Option 3, replace the store: this sweep gives it nothing. The 32x behind that blame is a parameter
+- Option 3, replace the store: this sweep gives it nothing. The 32x it was blamed for is a parameter
   the format already carries. What survives once that parameter drops is 208 us of RedoxFS
   re-reading its own metadata from the device on every request, about 5.3 block reads. That is the
   absence of a cache, which milestone 138 puts out of scope on purpose. Swapping the store to acquire

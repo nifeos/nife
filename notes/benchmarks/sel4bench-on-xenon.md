@@ -56,7 +56,7 @@ to 2026-10-21, the call mean falls in 714 to 725 in 123 runs and in 741 to 745 i
 likewise, 574 to 586 and 597 to 601. Every run sits wholly in one mode, all five iterations
 together, so each boot has one mode. Every high-mode run is from 2026-09-22 or later, and the
 published run is one of them. Within a mode their spread is under 2%. A single xenon boot may land
-in either mode, so read it against both.
+in either mode, so it is read against both.
 
 The effective configuration, read from the CMake cache of our build of the same command. These
 are the values a reader would otherwise have to guess, and the Default and MCS rows differ only in

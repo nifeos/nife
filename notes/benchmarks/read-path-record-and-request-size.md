@@ -34,7 +34,7 @@ ns per 4 KiB, mean of six, MiB/s in brackets:
 The model reproduced independently. Fitting `cost = a + b x 2^level` through levels 1 and 5 gives a
 fixed term of 205.7 us and a per-block term of 39.1 us for a sequential read. The earlier sweep gave
 207.7 and 39.0, from six points on a loaded machine. The write terms land at 690.1/53.4 and 745.9/79.5
-against 672.2/53.7 and 769.2/80.0. Nothing needed tuning; they are two runs on two different days.
+against 672.2/53.7 and 769.2/80.0. Nothing was tuned; they are two runs on two different days.
 
 Level 0 is still above the line and by the same amount: +6.7 to +8.1% across the five phases, against
 the sweep's +4.6 to +8.1%. That is the indirect-pointer cost the sweep identified, arriving twice.

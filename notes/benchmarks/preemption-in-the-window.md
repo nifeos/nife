@@ -103,7 +103,7 @@ All three were closed the same day by milestone 541 (a timed window that exclude
 whose entry is directly below. They stay as written because the second one was wrong.
 
 - This entry attributes the number and does not fix the benchmark. `map_new`'s window is short
-  enough that whether a preemption lands in it dominates it, which is a defect in the benchmark
+  enough to be dominated by whether a preemption lands in it, which is a defect in the benchmark
   rather than in either spelling of `schedule()`. See
   [design/roadmap/541](../../design/roadmap/0541-a-timed-window-that-excludes-preemption.md) (a timed
   window that excludes preemption), which is this proposal promoted and built.

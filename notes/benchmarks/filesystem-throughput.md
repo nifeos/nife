@@ -95,7 +95,7 @@ under HVF on four harts. Run-to-run spread is in the fourth column.
 
 The last column is arithmetic on one measured constant: 46.2 us per 4 KiB block through the confined
 block server. That is `fs_record_read` divided by the 32 blocks a 128 KiB record holds. Everything
-else falls out of it and nothing needed fitting:
+else falls out of it and nothing was fitted:
 
 - A read is 32 blocks, flat. Sequential, random and record-aligned reads agree to within 3%. That is
   also the proof that this path has no cache and no readahead: `IpcDisk` is a bare `Disk` with no

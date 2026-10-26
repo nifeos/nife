@@ -38,8 +38,8 @@ change to run on this ISA. What was missing is everything around it:
 
 Every EL0-plane bench (`null_syscall_el0`, `ctx_switch_el0`, `ipc_rtt_el0`, `sink_throughput`,
 `map_el0`, `spawn_el0`) self-skips on this leg through its existing mechanism. `crate::user::program`
-finds nothing, because `crates/user_mode_runtime` has no `x86_64` arms yet, so it took no new
-gating. `fs_read`, `fs_throughput` and `smp_throughput` self-skip as they do on a single-hart
+finds nothing, because `crates/user_mode_runtime` has no `x86_64` arms yet, so no new gating was
+needed. `fs_read`, `fs_throughput` and `smp_throughput` self-skip as they do on a single-hart
 `--real` run elsewhere. What runs cleanly is the kernel-thread plane: `yield_switch`, `ipc_rtt`,
 `relay_rtt`, `call_reply`, `broker_rtt`, `spawn_reap`, `map_new`, `coremark`, plus one new x86-only
 bench.

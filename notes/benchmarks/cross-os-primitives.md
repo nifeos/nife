@@ -117,9 +117,9 @@ first-touch page fault, which allocates and zeroes a fresh page; `map_el0` skips
 ~91 ns is the pure mapping mechanism, genuinely lean, and not comparable to Linux's ~534 ns, most of
 which is zeroing. The like-for-like comparison is our `map_new` (allocate + zero + map), ~524 ns,
 plus one trap (~28 ns) for the EL0 crossing the host's fault includes. That gives ~552 ns, against
-Linux ~534 ns and macOS ~556 ns: a three-way tie. Zeroing 4 KiB dominates page provisioning, the
-same silicon and bandwidth for all three. Nobody can win it without zeroing memory faster. A fair
-EL0 map that provisions a fresh page waits on retype-from-untyped reaching userspace (a later
+Linux ~534 ns and macOS ~556 ns: a three-way tie. Page provisioning is dominated by zeroing 4 KiB,
+the same silicon and bandwidth for all three. Nobody can win it without zeroing memory faster. A
+fair EL0 map that provisions a fresh page waits on retype-from-untyped reaching userspace (a later
 milestone). Until then the kernel-side `map_new` is the stand-in.
 
 *Later reading, 2026-07-29: `map_new` measured ~470 ns in
@@ -192,8 +192,8 @@ number stands with its meaning: building a process is cheap when a process is a 
 2026-09-21 reading" and derived ~8.2 µs and ~2.4x from it after the current-CPU page made the path
 6.3% longer ([the spawn appendix](spawn-el0.md)). Both parts are wrong. The ~7.7 µs dates from
 2026-07-26. [The 2026-07-29 refresh](per-core-and-multi-hart.md) measured the settled per-core median
-at ~4.4 µs and called 7.7 a single sample on a busier machine. So the ~8.2 µs came from a stale
-figure. The latest measured HVF value is ~4.4 µs (2026-07-29). The icount path has moved
+at ~4.4 µs and called 7.7 a single sample on a busier machine. So the ~8.2 µs was computed from a
+stale figure. The latest measured HVF value is ~4.4 µs (2026-07-29). The icount path has moved
 since (-41% on 2026-08-27, +6.3% on 2026-09-21), and no HVF reading postdates it.
 
 ### The context switch, the softest of the three

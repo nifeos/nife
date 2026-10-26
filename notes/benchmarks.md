@@ -229,8 +229,8 @@ underneath, an L1 large enough to hide any footprint effect. argon's PMU is wher
   from nothing, paying about ten traps to Unix's two. Most of the gap is that structural difference.
   The 4.4 us is also older than the path: icount has since measured it 41% shorter (2026-08-27), then
   6.3% longer for the current-CPU page (2026-09-21) ([`spawn_el0`](benchmarks/spawn-el0.md)).
-- The context switch comes by subtraction from two different mechanisms, a yield on our side and
-  a pipe pass on theirs. Read the gap as a direction.
+- The context switch is derived by subtraction from two different mechanisms, a yield on our side
+  and a pipe pass on theirs. Read the gap as a direction.
 - Our IPC is a synchronous five-word rendezvous; `lat_pipe` is a buffered byte stream. A Mach port
   would likely beat the pipe. XNU is a hybrid whose syscalls are mostly in-kernel BSD calls.
 - Against seL4 on one core: their round trip is two syscalls with a fastpath; a service here issues

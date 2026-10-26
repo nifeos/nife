@@ -212,7 +212,7 @@ The cost of phase 3, measured: +0.17% retired instructions on `ipc_rtt` and +0.2
 6 to 10% off the footprint, and no cache effect anyone here can observe.
 
 Where that leaves the 4 KiB target: `ipc_call_reply` is 5,936 to 8,122 bytes, so the shape the
-system runs is still 48% to 103% over, after the cheap method. Milestone 188's own
+system runs is still 48% to 103% over, after the cheap method has been applied. Milestone 188's own
 recommendation reads that as the case for eventually hearing phase 4, and the block says so with the
 numbers.
 

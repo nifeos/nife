@@ -115,7 +115,7 @@ in it, 39.0 us per block, comes from the sweep and carries that sweep's conditio
 
 Not going all the way down avoids two of the three costs milestone 138 named.
 
-Level 0 gives up compression, and only level 0 does. RedoxFS compresses a record when its stored
+Compression is given up at level 0 and only at level 0. RedoxFS compresses a record when its stored
 level is above zero (`write_node_inner_records`: `if decomp_level.0 > 0`). So a one-block record is
 never compressed and an 8 KiB record still is. Level 1 keeps lz4 and reads 8% slower than level 0,
 against the 5.6x either of them buys. It writes sequentially faster (769,266 ns against 790,317).

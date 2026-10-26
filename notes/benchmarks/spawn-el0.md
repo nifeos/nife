@@ -112,7 +112,7 @@ untouched, because one more mapped page does not change that structural differen
 an implication, not a re-measurement. The HVF reading wants a quiet machine, and this one was 1.7x
 oversubscribed.
 
-*Correction, 2026-09-24: the ~8.2 µs came from a stale figure. The 2026-07-29 refresh
+*Correction, 2026-09-24: the ~8.2 µs was computed from a stale figure. The 2026-07-29 refresh
 ([per-core magnitudes](per-core-and-multi-hart.md)) had already called ~7.7 µs a single sample from a
 busier machine, and put the settled per-core `spawn_el0` median at ~4.4 µs. HVF has not been
 re-measured since, and the icount path has moved both ways in between (-41% on 2026-08-27 above,

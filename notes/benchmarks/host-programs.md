@@ -83,9 +83,9 @@ nife's FS server holds no data cache. A record body is always a virtio round tri
 milestone 138 (close the read gap) step 4 but never answered from memory. Every write is its own RedoxFS transaction that
 commits before the reply. It does hold a small metadata cache since step 2 (`CachedDisk`, 64 blocks,
 about 257 KiB, as of 2026-08-22). That answers a repeated read of one file's tree spine from memory, so `fs_read`, a
-repeated read of one small inline file, is not comparable to a cold read. Record bodies dominate the
-four phases and the metadata cache never touches them, so the comparison holds for them.
-It would not hold for a workload that mostly reopens hot metadata.
+repeated read of one small inline file, is not comparable to a cold read. The four phases are
+dominated by record bodies, which the metadata cache never touches, so the comparison holds for
+them. It would not hold for a workload that mostly reopens hot metadata.
 
 Linux by default is the opposite on both counts. The page cache absorbs reads, writeback absorbs
 writes, and a 1 MiB file fits in the cache whole. A single ext4 number would answer a question nobody

@@ -89,8 +89,8 @@ why a 12 KB kernel was a tight fit. The machines this project actually runs on:
 | Apple M-series P-core | far larger | far larger | many MB | the bench and dev host |
 
 \*xenon's row is from the Kaby Lake microarchitecture's published figures and has not been read off
-the machine, the distinction this tree's fabricated-quote scar exists to keep. xenon can settle it
-the moment it boots: `CPUID` leaf 4 reports cache size, ways and line size per level, and the boot
+the machine, the distinction this tree's fabricated-quote scar exists to keep. It can be settled the
+moment xenon boots: `CPUID` leaf 4 reports cache size, ways and line size per level, and the boot
 tour already decodes `CPUID`. Until then treat the asterisked cells as a strong prior rather than a
 measurement.
 

@@ -63,7 +63,7 @@ order was checked in the disassembly: the compiler keeps program order for every
 reordering counted is the host's.
 
 - MP, streamed, two pairs at once. The writer stores `data = i` then `flag = i`; the reader loads
-  `flag` then `data` and counts `data < flag`, impossible unless a pair reordered. The flag
+  `flag` then `data` and counts `data < flag`, impossible unless a pair was reordered. The flag
   store is Release or Relaxed, the load Acquire or Relaxed. Rates are per million messages sent.
 - SB, in batches of 256 fresh slots. Both loads reading 0 is the reordering; TSO allows it, so it
   is the positive control that the guest cores really ran in parallel.

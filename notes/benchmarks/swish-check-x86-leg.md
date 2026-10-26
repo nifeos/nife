@@ -107,7 +107,7 @@ spend their time on the same thing. Not measured further, because the fix remove
 
 Milestone 722 (swish-check fails a leg that costs five times the others per line), provisional,
 adds one. Nothing gated the cost of a leg for the two weeks the defect lasted, because the per-line bound is
-sized to catch a hang and the job's wall time moves whenever a line joins it. Each boot of 20 lines
+sized to catch a hang and the job's wall time moves whenever a line is added. Each boot of 20 lines
 or more now prints its median seconds a line beside its baseline, and fails above five times that
 baseline (`LEG_COST_BASELINE` in `xtask/src/swish_check/verdict.rs`, with the CI runs each row came from). The
 defect here was about 30 times its KVM row, so it fails; it was 2.7 times its TCG row, so under TCG

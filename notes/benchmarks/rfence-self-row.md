@@ -34,7 +34,7 @@ other riscv64 row at `28e165e2` reproduces what `28e165e2` recorded, several to 
 (`spawn_reap 34277`, `ctx_switch 504958`, `spawn_el0 203942`). So the file came from a real run of
 that tree, and one row in it did not.
 
-Checks follow for each way the number could be fragile:
+Each way the number could be fragile was checked:
 
 | checked | result |
 |---|---|
@@ -149,7 +149,7 @@ call. *(Since then: `a66e8c5f9`, 2026-09-23, re-recorded the row at 5991 under
 
 Measured by the same lane: up ~6% on both aarch64 and riscv64, bit-identical across repeats, under
 the 10% tripwire. Bit-identical repeats say it is the compiler and not the host. Being under the
-tripwire means nothing stops the next floor from absorbing it.
+tripwire means nothing stops it being folded into the next floor.
 
 ### Why this is recorded here rather than proposed as work
 

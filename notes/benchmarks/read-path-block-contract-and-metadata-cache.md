@@ -66,11 +66,11 @@ The absolute savings agree with the per-block marginal cost measured twice befor
 Eight round trips at ~37 us each predict ~296 us saved. `fs_seq_read`, `fs_rand_read` and
 `fs_record_read` each saved 284,304 to 302,165 ns, within 6%.
 
-The finding, as a sentence a reader can act on: the record size bounds step 4's batching, not the
-file-level request size, because RedoxFS only ever asks its `Disk` for one record's worth of bytes
-at a time. Step 1 chose an 8 KiB record to keep lz4 compression, and that caps what step 4 alone can
-batch per record at two blocks. Most of what remains (5 of 6 to 7 calls per record) is the tree walk,
-which is step 2's target.
+The finding, as a sentence a reader can act on: step 4's batching is bounded by the record size, not
+the file-level request size, because RedoxFS only ever asks its `Disk` for one record's worth of
+bytes at a time. Step 1 chose an 8 KiB record to keep lz4 compression, and that caps what step 4
+alone can batch per record at two blocks. Most of what remains (5 of 6 to 7 calls per record) is the
+tree walk, which is step 2's target.
 
 ### Crash consistency, re-run at the new geometry
 
@@ -162,7 +162,7 @@ buffered Linux (7,141 MiB/s) is the page-cache gap this milestone was never scop
 
 `redoxfs_server/tests/crash_consistency.rs`, unchanged pass: 0 silently wrong. The reason is the one
 steps 3 and 4 gave: the host-side model drives `BlockDisk<Recording>` below `CachedDisk`, so the cache
-is not on its path. At the device level the property that matters is an argument, not a re-run. The
+is not on its path. At the device level the property that matters is argued, not re-run. The
 recovery mount of milestone 37 (prove RedoxFS's crash consistency) is a fresh process, so it builds
 a fresh, cold `CachedDisk` and can never observe what the killed process's cache held. A cache that
 survived its process's death would be the hazard; one that cannot outlive its process is not.

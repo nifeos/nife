@@ -14,7 +14,7 @@ This section is that leg. It corrects the 2026-08-24 entry in [the TSS appendix]
 which inferred, untested, that nothing pins x86's virtual clock to the instruction stream on `q35`.
 Measuring showed the inference was backwards.
 
-Two different questions had run together, and they have different answers.
+Two different questions were being conflated, and they have different answers.
 
 - Does `icount()` (the instrument of milestone 78 (the load-sensitive assertions), `kernel/src/icount.rs`) work on `x86_64`? No, and
   this has not changed. Its claims compare an interrupt's arrival, and a re-armed deadline, against
