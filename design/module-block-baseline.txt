@@ -965,8 +965,6 @@ crates/designware_mobile_storage/src/bench.rs::pattern
 crates/designware_mobile_storage/src/bench.rs::read_only
 crates/designware_mobile_storage/src/bench.rs::scratch_write
 crates/designware_mobile_storage/src/card.rs
-crates/designware_mobile_storage/src/card.rs::Cid
-crates/designware_mobile_storage/src/card.rs::Csd
 crates/designware_mobile_storage/src/card.rs::R1_ERRORS
 crates/designware_mobile_storage/src/card.rs::R1_READY_FOR_DATA
 crates/designware_mobile_storage/src/card.rs::STATE_TRANSFER
@@ -1009,7 +1007,6 @@ crates/designware_mobile_storage/src/jh7110.rs::WINDOW_SIZE
 crates/designware_mobile_storage/src/jh7110.rs::role
 crates/designware_mobile_storage/src/partition.rs
 crates/designware_mobile_storage/src/partition.rs::Entry
-crates/designware_mobile_storage/src/partition.rs::Mbr
 crates/designware_mobile_storage/src/partition.rs::SIGNATURE
 crates/designware_mobile_storage/src/partition.rs::contains
 crates/designware_mobile_storage/src/partition.rs::is_used
@@ -1025,7 +1022,6 @@ crates/designware_mobile_storage/src/registers.rs::RST_N
 crates/designware_mobile_storage/src/registers.rs::STATUS
 crates/designware_mobile_storage/src/registers.rs::TBBCNT
 crates/designware_mobile_storage/src/registers.rs::TCBCNT
-crates/designware_mobile_storage/src/registers.rs::UHS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 crates/designware_mobile_storage/src/registers.rs::WRTPRT
 crates/designware_mobile_storage/src/sd.rs

@@ -369,7 +369,7 @@ fn write_and_idmac(
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Outcome::NoMemory;
         };
-        let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
+        let v = bench::scratch_write(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test: {v:?}");
         Some(v)
     } else {
@@ -419,7 +419,7 @@ fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
     let Some(image) = crate::trust::require_program("designware_mobile_storage") else {
         return El0::NoProgram;
     };
-    let Some(mbr) = r.mbr else {
+    let Some(mbr) = r.master_boot_record else {
         return El0::NoWindow;
     };
     let Some(window) = el0_window(&mbr, write) else {
@@ -462,7 +462,7 @@ fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
 /// The window the EL0 server serves: the scratch range in a write build, else the first used
 /// partition, rounded down to whole blocks. `None` when the card has neither.
 fn el0_window(
-    mbr: &designware_mobile_storage::partition::Mbr,
+    mbr: &designware_mobile_storage::partition::MasterBootRecord,
     write: bool,
 ) -> Option<driver_process_contract::designware_mobile_storage::Window> {
     use driver_process_contract::designware_mobile_storage::Window;
@@ -572,30 +572,30 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
 fn print_read(slot: &Slot, r: &ReadReport) {
     let c = &r.card;
     let name = c
-        .cid
+        .card_identification
         .name
         .map(|b| if b.is_ascii_graphic() { b } else { b'.' });
     say!(
         slot,
         "card {:?}, manufacturer {:#04x} \"{}\" serial {:#010x}, {} blocks ({} MiB), {}-addressed, {}-bit at {} Hz, OCR {:#010x}",
         c.kind,
-        c.cid.manufacturer,
+        c.card_identification.manufacturer,
         core::str::from_utf8(&name).unwrap_or("?"),
-        c.cid.serial,
+        c.card_identification.serial,
         c.blocks,
         c.blocks * BLOCK as u64 / (1 << 20),
         if c.block_addressed { "block" } else { "byte" },
         c.bus_width,
         c.clock_hz,
-        c.ocr,
+        c.operation_conditions,
     );
-    if c.kind == Kind::Mmc {
+    if c.kind == Kind::MultimediaCard {
         say!(
             slot,
             "an eMMC answered; this boot reads it and never writes it"
         );
     }
-    match r.mbr {
+    match r.master_boot_record {
         None => say!(slot, "sector 0 carries no MBR signature"),
         Some(m) => {
             for (i, e) in m.entries.iter().enumerate().filter(|(_, e)| e.is_used()) {
@@ -714,7 +714,7 @@ fn through_idmac(
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Dma::NoMemory;
         };
-        let v = bench::scratch_write(&mut host, &r.card, r.mbr.as_ref(), a, b);
+        let v = bench::scratch_write(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test through the IDMAC: {v:?}");
         Some(v)
     } else {
