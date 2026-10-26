@@ -44,7 +44,7 @@ whether to send the SGI, and both made it with interrupts enabled:
   interrupts before the comparison runs.
 
 Between the two reads a preemption can land the calling thread back on its own core's run queue,
-and a work steal (§28.3) can then hand it to an idle core. It resumes somewhere else holding a stale
+and a work steal (§28.3 (SMP placement)) can then hand it to an idle core. It resumes somewhere else holding a stale
 answer. In the direction that hurts, the first read said "local" and the placement went remote: the
 thread lands in a core's inbox and nothing pokes that core.
 

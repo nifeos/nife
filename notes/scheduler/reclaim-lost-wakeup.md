@@ -24,7 +24,7 @@ let got = crate::sched::ipc_receive(report)[0];   // waits for the child's SEND
 That comment was true when it was written and stopped being true when DECISIONS §16 was amended.
 A refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every
 live thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down.
-§24's `^C` escalation builds on exactly that. So the probe marked the child `killed`, and
+§24 (interrupting the foreground process)'s `^C` escalation builds on exactly that. So the probe marked the child `killed`, and
 `schedule()` converts a killed thread to a corpse at its next preemption:
 
 ```rust

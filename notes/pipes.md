@@ -20,7 +20,7 @@ number everybody has to agree on. See ["`2>`: built as a
 declaration"](pipes/second-stream.md).
 
 **The draining lane came after all of them, on 2026-08-04**, and it is the only one that somebody
-trying to *use* this raised. Milestone 40 built a documentation viewer, could not show a page
+trying to *use* this raised. Milestone 40 (documentation as a system service) built a documentation viewer, could not show a page
 at the prompt, and spent three boot-gate failures finding out that all three reasons were here. Two
 were bugs, now fixed; the third is not a bug at all, and naming it correctly is the reusable
 part. See ["One wait point, and what it decides about a
