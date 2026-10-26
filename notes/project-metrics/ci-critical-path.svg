@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="568" viewBox="0 0 860 568" role="img" aria-label="Where a merge-group build’s time goes, 2026W42">
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="588" viewBox="0 0 860 588" role="img" aria-label="Where a merge-group build’s time goes, 2026W43">
 <style>
   .bg{fill:#ffffff} .fg{fill:#1f2328} .mut{fill:#59636e} .grid{stroke:#d1d9e0} .wall{stroke:#1f2328} .other{fill:#b1bac4}
   .val{paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round}
@@ -7,88 +7,91 @@
     .bg{fill:#0d1117} .fg{fill:#e6edf3} .mut{fill:#9198a1} .grid{stroke:#30363d} .wall{stroke:#e6edf3} .other{fill:#57606a} .val{stroke:#0d1117} .s0{fill:#3987e5} .s1{fill:#d95926} .s2{fill:#199e70} .s3{fill:#c98500} .s4{fill:#d55181} .s5{fill:#008300} .s6{fill:#9085e9} .s7{fill:#94a5b7}}
   text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
 </style>
-<rect class="bg" width="860" height="568"/>
-<text class="fg" x="20" y="26" font-size="16" font-weight="600">Where a merge-group build’s time goes, 2026W42</text>
-<text class="mut" x="20" y="44" font-size="11">median start and length of each job over the week’s 389 green builds, or the (n of them) that ran it; the last to end on top; 9 jobs under half a minute not drawn</text>
-<line class="grid" x1="230.0" y1="80" x2="230.0" y2="524" stroke-width="1"/>
-<text class="mut" x="230.0" y="538" font-size="10" text-anchor="middle">0</text>
-<line class="grid" x1="355.0" y1="80" x2="355.0" y2="524" stroke-width="1"/>
-<text class="mut" x="355.0" y="538" font-size="10" text-anchor="middle">5</text>
-<line class="grid" x1="480.0" y1="80" x2="480.0" y2="524" stroke-width="1"/>
-<text class="mut" x="480.0" y="538" font-size="10" text-anchor="middle">10</text>
-<line class="grid" x1="605.0" y1="80" x2="605.0" y2="524" stroke-width="1"/>
-<text class="mut" x="605.0" y="538" font-size="10" text-anchor="middle">15</text>
-<line class="grid" x1="730.0" y1="80" x2="730.0" y2="524" stroke-width="1"/>
-<text class="mut" x="730.0" y="538" font-size="10" text-anchor="middle">20</text>
-<text class="mut" x="480.0" y="554" font-size="10" text-anchor="middle">minutes after the build’s first job starts</text>
-<text class="fg" x="222" y="98" font-size="11" text-anchor="end">prove (verify)</text>
-<rect class="s1" x="249.6" y="88" width="349.6" height="12" rx="2"><title>prove (verify): starts at 0.8, takes 14.0</title></rect>
-<text class="mut val" x="603.2" y="98" font-size="10">14 (136 of 389)</text>
-<text class="fg" x="222" y="118" font-size="11" text-anchor="end">cpu-matrix-shard</text>
-<rect class="s3" x="237.1" y="108" width="356.5" height="12" rx="2"><title>cpu-matrix-shard: starts at 0.3, takes 14.3</title></rect>
-<text class="mut val" x="597.5" y="118" font-size="10">14.3 (302 of 389)</text>
+<rect class="bg" width="860" height="588"/>
+<text class="fg" x="20" y="26" font-size="16" font-weight="600">Where a merge-group build’s time goes, 2026W43</text>
+<text class="mut" x="20" y="44" font-size="11">median start and length of each job over the week’s 321 green builds, or the (n of them) that ran it; the last to end on top; 9 jobs under half a minute not drawn</text>
+<line class="grid" x1="230.0" y1="80" x2="230.0" y2="544" stroke-width="1"/>
+<text class="mut" x="230.0" y="558" font-size="10" text-anchor="middle">0</text>
+<line class="grid" x1="355.0" y1="80" x2="355.0" y2="544" stroke-width="1"/>
+<text class="mut" x="355.0" y="558" font-size="10" text-anchor="middle">5</text>
+<line class="grid" x1="480.0" y1="80" x2="480.0" y2="544" stroke-width="1"/>
+<text class="mut" x="480.0" y="558" font-size="10" text-anchor="middle">10</text>
+<line class="grid" x1="605.0" y1="80" x2="605.0" y2="544" stroke-width="1"/>
+<text class="mut" x="605.0" y="558" font-size="10" text-anchor="middle">15</text>
+<line class="grid" x1="730.0" y1="80" x2="730.0" y2="544" stroke-width="1"/>
+<text class="mut" x="730.0" y="558" font-size="10" text-anchor="middle">20</text>
+<text class="mut" x="480.0" y="574" font-size="10" text-anchor="middle">minutes after the build’s first job starts</text>
+<text class="fg" x="222" y="98" font-size="11" text-anchor="end">cpu-matrix-shard</text>
+<rect class="s3" x="239.0" y="88" width="345.4" height="12" rx="2"><title>cpu-matrix-shard: starts at 0.4, takes 13.8</title></rect>
+<text class="mut val" x="588.4" y="98" font-size="10">13.8 (256 of 321)</text>
+<text class="fg" x="222" y="118" font-size="11" text-anchor="end">prove (verify)</text>
+<rect class="s1" x="251.9" y="108" width="342.7" height="12" rx="2"><title>prove (verify): starts at 0.9, takes 13.7</title></rect>
+<text class="mut val" x="598.6" y="118" font-size="10">13.7 (128 of 321)</text>
 <text class="fg" x="222" y="138" font-size="11" text-anchor="end">test-shard</text>
-<rect class="s2" x="237.1" y="128" width="303.3" height="12" rx="2"><title>test-shard: starts at 0.3, takes 12.1</title></rect>
-<text class="mut val" x="544.4" y="138" font-size="10">12.1 (281 of 389)</text>
+<rect class="s2" x="238.3" y="128" width="317.9" height="12" rx="2"><title>test-shard: starts at 0.3, takes 12.7</title></rect>
+<text class="mut val" x="560.2" y="138" font-size="10">12.7 (256 of 321)</text>
 <text class="fg" x="222" y="158" font-size="11" text-anchor="end">fuzz</text>
-<rect class="s4" x="236.2" y="148" width="297.1" height="12" rx="2"><title>fuzz: starts at 0.2, takes 11.9</title></rect>
-<text class="mut val" x="537.3" y="158" font-size="10">11.9 (302 of 389)</text>
-<text class="fg" x="222" y="178" font-size="11" text-anchor="end">falsify-shard (verify)</text>
-<rect class="s0" x="250.8" y="168" width="250.4" height="12" rx="2"><title>falsify-shard (verify): starts at 0.8, takes 10.0</title></rect>
-<text class="mut val" x="505.2" y="178" font-size="10">10 (135 of 389)</text>
-<text class="fg" x="222" y="198" font-size="11" text-anchor="end">swish-check</text>
-<rect class="s5" x="237.1" y="188" width="259.8" height="12" rx="2"><title>swish-check: starts at 0.3, takes 10.4</title></rect>
-<text class="mut val" x="500.9" y="198" font-size="10">10.4 (302 of 389)</text>
-<text class="fg" x="222" y="218" font-size="11" text-anchor="end">lint</text>
-<rect class="other" x="236.2" y="208" width="177.5" height="12" rx="2"><title>lint: starts at 0.2, takes 7.1</title></rect>
-<text class="mut val" x="417.8" y="218" font-size="10">7.1</text>
-<text class="fg" x="222" y="238" font-size="11" text-anchor="end">swish-check-x86_64</text>
-<rect class="other" x="236.2" y="228" width="164.4" height="12" rx="2"><title>swish-check-x86_64: starts at 0.2, takes 6.6</title></rect>
-<text class="mut val" x="404.6" y="238" font-size="10">6.6 (302 of 389)</text>
-<text class="fg" x="222" y="258" font-size="11" text-anchor="end">rg-threads</text>
-<rect class="other" x="237.1" y="248" width="163.8" height="12" rx="2"><title>rg-threads: starts at 0.3, takes 6.5</title></rect>
-<text class="mut val" x="404.8" y="258" font-size="10">6.5 (247 of 389)</text>
-<text class="fg" x="222" y="278" font-size="11" text-anchor="end">stack-frame-check</text>
-<rect class="other" x="236.2" y="268" width="50.4" height="12" rx="2"><title>stack-frame-check: starts at 0.2, takes 2.0</title></rect>
-<text class="mut val" x="290.7" y="278" font-size="10">2 (302 of 389)</text>
-<text class="fg" x="222" y="298" font-size="11" text-anchor="end">bench</text>
-<rect class="other" x="236.2" y="288" width="43.8" height="12" rx="2"><title>bench: starts at 0.2, takes 1.8</title></rect>
-<text class="mut val" x="284.0" y="298" font-size="10">1.8 (302 of 389)</text>
-<text class="fg" x="222" y="318" font-size="11" text-anchor="end">coverage</text>
-<rect class="other" x="236.2" y="308" width="40.0" height="12" rx="2"><title>coverage: starts at 0.2, takes 1.6</title></rect>
-<text class="mut val" x="280.2" y="318" font-size="10">1.6 (302 of 389)</text>
-<text class="fg" x="222" y="338" font-size="11" text-anchor="end">boot-check</text>
-<rect class="s6" x="237.1" y="328" width="37.5" height="12" rx="2"><title>boot-check: starts at 0.3, takes 1.5</title></rect>
-<text class="mut val" x="278.6" y="338" font-size="10">1.5 (302 of 389)</text>
-<text class="fg" x="222" y="358" font-size="11" text-anchor="end">prove-kernel-aarch64 (verify)</text>
-<rect class="other" x="250.8" y="348" width="17.9" height="12" rx="2"><title>prove-kernel-aarch64 (verify): starts at 0.8, takes 0.7</title></rect>
-<text class="mut val" x="272.8" y="358" font-size="10">0.7 (136 of 389)</text>
-<text class="fg" x="222" y="378" font-size="11" text-anchor="end">prove-kernel-riscv64 (verify)</text>
-<rect class="other" x="250.8" y="368" width="19.2" height="12" rx="2"><title>prove-kernel-riscv64 (verify): starts at 0.8, takes 0.8</title></rect>
-<text class="mut val" x="274.0" y="378" font-size="10">0.8 (136 of 389)</text>
-<text class="fg" x="222" y="398" font-size="11" text-anchor="end">fastpath-footprint</text>
-<rect class="other" x="236.2" y="388" width="27.1" height="12" rx="2"><title>fastpath-footprint: starts at 0.2, takes 1.1</title></rect>
-<text class="mut val" x="267.3" y="398" font-size="10">1.1 (302 of 389)</text>
-<text class="fg" x="222" y="418" font-size="11" text-anchor="end">boot-file-size-check</text>
-<rect class="other" x="236.2" y="408" width="26.7" height="12" rx="2"><title>boot-file-size-check: starts at 0.2, takes 1.1</title></rect>
-<text class="mut val" x="266.9" y="418" font-size="10">1.1 (302 of 389)</text>
-<text class="fg" x="222" y="438" font-size="11" text-anchor="end">image-permissions</text>
-<rect class="other" x="236.2" y="428" width="22.1" height="12" rx="2"><title>image-permissions: starts at 0.2, takes 0.9</title></rect>
-<text class="mut val" x="262.3" y="438" font-size="10">0.9 (302 of 389)</text>
-<text class="fg" x="222" y="458" font-size="11" text-anchor="end">interleavings</text>
-<rect class="other" x="236.2" y="448" width="18.8" height="12" rx="2"><title>interleavings: starts at 0.2, takes 0.8</title></rect>
-<text class="mut val" x="259.0" y="458" font-size="10">0.8 (302 of 389)</text>
-<text class="fg" x="222" y="478" font-size="11" text-anchor="end">build-is-reproducible</text>
-<rect class="other" x="236.2" y="468" width="17.9" height="12" rx="2"><title>build-is-reproducible: starts at 0.2, takes 0.7</title></rect>
-<text class="mut val" x="258.2" y="478" font-size="10">0.7 (302 of 389)</text>
-<text class="fg" x="222" y="498" font-size="11" text-anchor="end">fmt</text>
-<rect class="other" x="236.2" y="488" width="15.4" height="12" rx="2"><title>fmt: starts at 0.2, takes 0.6</title></rect>
-<text class="mut val" x="255.7" y="498" font-size="10">0.6 (302 of 389)</text>
+<rect class="s4" x="238.8" y="148" width="298.8" height="12" rx="2"><title>fuzz: starts at 0.3, takes 11.9</title></rect>
+<text class="mut val" x="541.5" y="158" font-size="10">11.9 (256 of 321)</text>
+<text class="fg" x="222" y="178" font-size="11" text-anchor="end">swish-check</text>
+<rect class="s6" x="238.3" y="168" width="272.9" height="12" rx="2"><title>swish-check: starts at 0.3, takes 10.9</title></rect>
+<text class="mut val" x="515.2" y="178" font-size="10">10.9 (256 of 321)</text>
+<text class="fg" x="222" y="198" font-size="11" text-anchor="end">falsify-shard (verify)</text>
+<rect class="s0" x="252.5" y="188" width="227.5" height="12" rx="2"><title>falsify-shard (verify): starts at 0.9, takes 9.1</title></rect>
+<text class="mut val" x="484.0" y="198" font-size="10">9.1 (125 of 321)</text>
+<text class="fg" x="222" y="218" font-size="11" text-anchor="end">boot-check</text>
+<rect class="s7" x="238.5" y="208" width="210.4" height="12" rx="2"><title>boot-check: starts at 0.3, takes 8.4</title></rect>
+<text class="mut val" x="453.0" y="218" font-size="10">8.4 (256 of 321)</text>
+<text class="fg" x="222" y="238" font-size="11" text-anchor="end">lint</text>
+<rect class="other" x="237.1" y="228" width="180.8" height="12" rx="2"><title>lint: starts at 0.3, takes 7.2</title></rect>
+<text class="mut val" x="421.9" y="238" font-size="10">7.2</text>
+<text class="fg" x="222" y="258" font-size="11" text-anchor="end">rg-threads-x86_64</text>
+<rect class="other" x="249.4" y="248" width="187.9" height="12" rx="2"><title>rg-threads-x86_64: starts at 0.8, takes 7.5</title></rect>
+<text class="mut val" x="441.3" y="258" font-size="10">7.5 (164 of 321)</text>
+<text class="fg" x="222" y="278" font-size="11" text-anchor="end">rg-threads</text>
+<rect class="other" x="238.5" y="268" width="176.9" height="12" rx="2"><title>rg-threads: starts at 0.3, takes 7.1</title></rect>
+<text class="mut val" x="419.4" y="278" font-size="10">7.1 (256 of 321)</text>
+<text class="fg" x="222" y="298" font-size="11" text-anchor="end">swish-check-x86_64</text>
+<rect class="other" x="237.5" y="288" width="168.3" height="12" rx="2"><title>swish-check-x86_64: starts at 0.3, takes 6.7</title></rect>
+<text class="mut val" x="409.8" y="298" font-size="10">6.7 (256 of 321)</text>
+<text class="fg" x="222" y="318" font-size="11" text-anchor="end">bench</text>
+<rect class="s5" x="238.3" y="308" width="85.2" height="12" rx="2"><title>bench: starts at 0.3, takes 3.4</title></rect>
+<text class="mut val" x="327.5" y="318" font-size="10">3.4 (256 of 321)</text>
+<text class="fg" x="222" y="338" font-size="11" text-anchor="end">boot-file-size-check</text>
+<rect class="other" x="238.8" y="328" width="45.2" height="12" rx="2"><title>boot-file-size-check: starts at 0.3, takes 1.8</title></rect>
+<text class="mut val" x="288.0" y="338" font-size="10">1.8 (256 of 321)</text>
+<text class="fg" x="222" y="358" font-size="11" text-anchor="end">stack-frame-check</text>
+<rect class="other" x="238.1" y="348" width="46.2" height="12" rx="2"><title>stack-frame-check: starts at 0.3, takes 1.9</title></rect>
+<text class="mut val" x="288.4" y="358" font-size="10">1.9 (256 of 321)</text>
+<text class="fg" x="222" y="378" font-size="11" text-anchor="end">coverage</text>
+<rect class="other" x="239.0" y="368" width="40.4" height="12" rx="2"><title>coverage: starts at 0.4, takes 1.6</title></rect>
+<text class="mut val" x="283.4" y="378" font-size="10">1.6 (256 of 321)</text>
+<text class="fg" x="222" y="398" font-size="11" text-anchor="end">prove-kernel-aarch64 (verify)</text>
+<rect class="other" x="253.1" y="388" width="20.4" height="12" rx="2"><title>prove-kernel-aarch64 (verify): starts at 0.9, takes 0.8</title></rect>
+<text class="mut val" x="277.5" y="398" font-size="10">0.8 (128 of 321)</text>
+<text class="fg" x="222" y="418" font-size="11" text-anchor="end">prove-kernel-riscv64 (verify)</text>
+<rect class="other" x="252.9" y="408" width="19.6" height="12" rx="2"><title>prove-kernel-riscv64 (verify): starts at 0.9, takes 0.8</title></rect>
+<text class="mut val" x="276.5" y="418" font-size="10">0.8 (128 of 321)</text>
+<text class="fg" x="222" y="438" font-size="11" text-anchor="end">fastpath-footprint</text>
+<rect class="other" x="238.3" y="428" width="28.1" height="12" rx="2"><title>fastpath-footprint: starts at 0.3, takes 1.1</title></rect>
+<text class="mut val" x="270.5" y="438" font-size="10">1.1 (256 of 321)</text>
+<text class="fg" x="222" y="458" font-size="11" text-anchor="end">build-is-reproducible</text>
+<rect class="other" x="238.8" y="448" width="18.8" height="12" rx="2"><title>build-is-reproducible: starts at 0.3, takes 0.8</title></rect>
+<text class="mut val" x="261.5" y="458" font-size="10">0.8 (256 of 321)</text>
+<text class="fg" x="222" y="478" font-size="11" text-anchor="end">interleavings</text>
+<rect class="other" x="238.5" y="468" width="19.0" height="12" rx="2"><title>interleavings: starts at 0.3, takes 0.8</title></rect>
+<text class="mut val" x="261.5" y="478" font-size="10">0.8 (256 of 321)</text>
+<text class="fg" x="222" y="498" font-size="11" text-anchor="end">image-permissions</text>
+<rect class="other" x="238.5" y="488" width="17.5" height="12" rx="2"><title>image-permissions: starts at 0.3, takes 0.7</title></rect>
+<text class="mut val" x="260.0" y="498" font-size="10">0.7 (256 of 321)</text>
 <text class="fg" x="222" y="518" font-size="11" text-anchor="end">supply-chain</text>
-<rect class="other" x="236.2" y="508" width="14.4" height="12" rx="2"><title>supply-chain: starts at 0.2, takes 0.6</title></rect>
-<text class="mut val" x="254.6" y="518" font-size="10">0.6 (302 of 389)</text>
-<line x1="730.0" y1="80" x2="730.0" y2="524" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
+<rect class="other" x="238.8" y="508" width="15.4" height="12" rx="2"><title>supply-chain: starts at 0.3, takes 0.6</title></rect>
+<text class="mut val" x="258.2" y="518" font-size="10">0.6 (256 of 321)</text>
+<text class="fg" x="222" y="538" font-size="11" text-anchor="end">fmt</text>
+<rect class="other" x="239.4" y="528" width="12.5" height="12" rx="2"><title>fmt: starts at 0.4, takes 0.5</title></rect>
+<text class="mut val" x="255.9" y="538" font-size="10">0.5 (264 of 321)</text>
+<line x1="730.0" y1="80" x2="730.0" y2="544" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
 <text class="fg val" x="730.0" y="62" font-size="10" text-anchor="middle">build lid 20</text>
-<line class="wall" x1="599.2" y1="80" x2="599.2" y2="524" stroke-width="1.5"/>
-<text class="fg val" x="599.2" y="76" font-size="10" text-anchor="middle">median build 14.8</text>
+<line class="wall" x1="619.6" y1="80" x2="619.6" y2="544" stroke-width="1.5"/>
+<text class="fg val" x="619.6" y="76" font-size="10" text-anchor="middle">median build 15.6</text>
 </svg>
