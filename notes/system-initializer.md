@@ -68,7 +68,7 @@ and `std` layouts of a child's table.
   one runs a `std` job or a second session gets "could not spawn". `^C` cannot end a session, and one
   whose build fails after its first driver started may keep those drivers' pages until the boot
   ends. A keyboard session whose line discipline cannot be built traps the progenitor
-  (`build_terminal`, `children.rs:810`), where every other failed session is a refused spawn.
+  (`build_terminal`), where every other failed session is a refused spawn.
 - Scratch windows are unmapped through slot 28 once a child holds them; a kernel that grants no
   slot 28 leaves them all mapped.
 - A boot with a NIC waits for DHCP before the prompt, with no console to say why.

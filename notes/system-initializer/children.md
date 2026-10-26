@@ -28,8 +28,8 @@ one-time reports are taken in the order the drivers send them (`UP`, `TERM_UP`, 
 with §16's kill armed and one preemption later succeeds. It is bounded and silent where
 `job_undertaker` traps: this is the spawn service, and a trap here would take the prompt down over
 one command's memory. A session that could not come up is a refused spawn for the same reason, never
-a trap. The exception is a session whose line discipline cannot be built: `build_terminal` traps
-(`children.rs:810`), as the crate's BUGS records.
+a trap. The exception is a session whose line discipline cannot be built: `build_terminal` traps, as
+the crate's BUGS records.
 
 A session without a keyboard reads the boot's line discipline through a copy badged
 `proto::RAW_ONLY_BADGE`. The discipline answers only raw-mode operations on that badge, so the

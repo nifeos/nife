@@ -232,9 +232,8 @@ gives up the progenitor's mapping of the shell's output page with `UNMAP`, becau
   (UTC) says no console is the owner's without one. Nothing here builds that yet; milestone 806
   carries it.
 - A boot whose archive has no vouched `entropy` never releases the virtio-rng trio: `start_entropy`
-  reaches the deletes only through `start_virtio_entropy` (`boot_steps.rs:354`). Its three slots
-  stay held under every later peak.
+  reaches the deletes only through `start_virtio_entropy`. Its three slots stay held under every
+  later peak.
 - `start_network`, `start_system_log`, `start_keystroke_sources` and `spawn_channels` probe kernel
-  grants with `is_granted` after the boot has retyped objects (`boot_steps.rs:456`, `:637`, `:764`
-  and `boot_sequence.rs:416`). Nothing checks whether a retyped object can land in one of those
-  slots on a real boot.
+  grants with `is_granted` after the boot has retyped objects. Nothing checks whether a retyped
+  object can land in one of those slots on a real boot.

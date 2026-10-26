@@ -126,8 +126,8 @@ itself, it binds the badge to the grant's directory before the job holds anythin
 directory walk costs what it does on Linux), rulings D and T1). Then a directory grant needs no
 caretaker, and any failure on the way falls back to one. A name set still gets
 `fs_nameset_caretaker` over the bound channel, because the set is what narrows the directory
-(`spawn_loop.rs:1039`). A grant in the second mounted tree takes a window from that tree's pool and
-always gets a caretaker, since that server enforces no subtree.
+(`Service::wire_directory`). A grant in the second mounted tree takes a window from that tree's pool
+and always gets a caretaker, since that server enforces no subtree.
 
 The window is held until `job_undertaker` reports the job reaped (milestone 685). `label` is the
 name on the job's supervision capability, and the reaped message carries it back. A pool whose every
