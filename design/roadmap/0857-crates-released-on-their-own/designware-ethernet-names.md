@@ -2,13 +2,13 @@
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 816 (proven DesignWare Ethernet QoS logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
-This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-25 (UTC). `python3 helpers/name_release.py --draft designware_ethernet` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
+This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-26 (UTC). `python3 helpers/name_release.py --draft designware_ethernet` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
 
 Ratified: not yet.
 
-154 names: 148 no block, 5 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+161 names: 143 no block, 17 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 33 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 34 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -30,7 +30,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `mdio` | module | `src/mdio.rs` | unrecorded. | yes | term |
 | `motorcomm` | module | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
-| `process` | module | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
 | `sim` | module | `src/sim.rs` | unrecorded. | no | clear; private |
@@ -98,16 +97,25 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `pack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `unpack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `Hw` | item | `src/hardware.rs` | unrecorded. | yes | unclear: an abbreviation of hardware |
+| `AON_SYSCON_NODE` | item | `src/jh7110.rs` | provisional. | yes | term |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
+| `COMPATIBLES` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `COMPATIBLE_AON_SYSCON` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `Discovered` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC0_SYSCON_OFFSET` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `Syscon` | item | `src/jh7110.rs` | unrecorded. | yes | term |
-| `discover` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `discover_aon_syscon` | item | `src/jh7110.rs` | unrecorded. | yes | term |
+| `VENDOR_PHY_NODE` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `fallback` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `first_cell` | item | `src/jh7110.rs` | provisional. | yes | scope: a device-tree cell reader in a MAC crate |
+| `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `interface` | item | `src/jh7110.rs` | unrecorded. | yes | generic |
+| `mainline_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `select_rgmii` | item | `src/jh7110.rs` | unrecorded. | yes | term |
+| `vendor_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `rx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
@@ -131,6 +139,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `restart_autonegotiation` | item | `src/mdio.rs` | unrecorded. | yes | clear |
 | `Applied` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Drive` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
+| `FALLBACK_GMAC0` | item | `src/motorcomm.rs` | provisional. | yes | scope: one board's PHY values in a MAC crate |
 | `Link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `SPECIFIC_STATUS` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `STATUS_DUPLEX` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
@@ -148,8 +157,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `mbps` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `read_ext` | item | `src/motorcomm.rs` | unrecorded. | yes | unclear: `ext` abbreviates extended |
 | `write_ext` | item | `src/motorcomm.rs` | unrecorded. | yes | unclear: `ext` abbreviates extended |
-| `DATA_PLANE_VA` | item | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `DMA_PAGE_VA` | item | `src/process.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `CHAN_CUR_RX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_CUR_TX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_RX_TAIL` | item | `src/regs.rs` | unrecorded. | yes | term |
@@ -173,3 +180,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `WINDOW` | item | `src/regs.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `mac_hw_feature` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `with` | item | `src/sim.rs` | unrecorded. | no | clear |
+
+Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
+
+- the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Handoff` (2), `Discovered` (9), `Syscon` (3), `Link` (2), `Settings` (7) and `Applied` (3);
+- the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `RxVerdict` (3), `mdio::Error` (1), `TxError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
+- the methods of the traits `Region` (4), `Tails` (3), `Hw` (3) and `Mdio` (2).
+
+The `pub use` lines re-export items that have rows where they are defined. The one `pub` field in `src/sim.rs` belongs to a crate-private type.

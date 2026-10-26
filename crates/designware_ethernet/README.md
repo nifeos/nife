@@ -74,6 +74,9 @@ assert_eq!(plane.receive(&mut region, &mut tails, &mut buf), None);
 
 - The tests run only against the simulator, not against a device.
 - One receive and one transmit queue, polled: no interrupts, offloads, jumbo frames or multicast.
+- The crate reads no device tree. The `jh7110` module names the compatible strings and node names
+  to look for, and `Discovered::from_node`, `mainline_phy` and `vendor_phy` decode the properties
+  of a node you found.
 - On the JH7110 only `gmac0` (`16030000`) is wired; `gmac1`'s clocks have no plan.
 - The API may still change while the driver built on it is finished.
 - Minimum Rust version: 1.88.

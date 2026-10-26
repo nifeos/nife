@@ -87,13 +87,11 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
     // is not. See notes/boot-ladder.md.
     #[cfg(target_arch = "aarch64")]
     {
-        use aarch64_cpu::registers::CurrentEL;
-        use tock_registers::interfaces::Readable;
         println!();
         println!(
             "{}aarch64 (EL{}, MMU off: physical addresses until mmu::init)",
             boot_ladder::BANNER,
-            CurrentEL.read(CurrentEL::EL),
+            arch::current_el(),
         );
         screen::print_summary(&screen);
     }

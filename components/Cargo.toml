@@ -624,6 +624,10 @@ workspace = true
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
 address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
+# Where each device-driver process finds its windows, and the SD/MMC server's spawn words: the
+# process layout around `e1000e`, `designware_ethernet` and `designware_mobile_storage`, which those
+# crates leave to nife (milestone 857 (crates released on their own)).
+driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
 designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mobile_storage" }

@@ -462,8 +462,8 @@ fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
 fn el0_window(
     mbr: &designware_mobile_storage::partition::Mbr,
     write: bool,
-) -> Option<designware_mobile_storage::serve::Window> {
-    use designware_mobile_storage::serve::Window;
+) -> Option<driver_process_contract::designware_mobile_storage::Window> {
+    use driver_process_contract::designware_mobile_storage::Window;
 
     let window = if write {
         match mbr.scratch(bench::SCRATCH_SECTORS) {
@@ -504,7 +504,7 @@ fn read_only_checks(call: &impl Fn(u64, u64) -> i64, shared: &[u8], r: &ReadRepo
 fn write_cycle_checks(
     call: &impl Fn(u64, u64) -> i64,
     shared: &mut [u8],
-    window: designware_mobile_storage::serve::Window,
+    window: driver_process_contract::designware_mobile_storage::Window,
 ) -> El0 {
     use filesystem_contract::blk;
 

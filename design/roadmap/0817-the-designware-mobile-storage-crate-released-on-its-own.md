@@ -42,6 +42,12 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `components/src/designware_mobile_storage.rs`, or stay with the two constants inlined; the lane
   picks and records why. The tests also `include_bytes!` a fixture from
   `../../device_tree_blob/tests/fixtures/`, outside the package.
+- Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
+  the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
+- Cut on 2026-10-25 (UTC) by #2719. `Slot::from_node` decodes one slot from a node's properties,
+  and `machine_discovery::jh7110::designware_mobile_storage` walks the tree, with the fixtures
+  beside its tests. `serve` and its harness moved to `crates/driver_process_contract`, a contract
+  crate, because the kernel and the EL0 driver in `components/` both link it.
 - Its consumers: `kernel/src/designware_mobile_storage.rs`, `kernel/src/storage_bench.rs`,
   `kernel/src/memory.rs`, `kernel/src/arch/riscv64/mmu.rs`,
   `kernel/src/user/designware_mobile_storage_service.rs`, and
@@ -63,19 +69,20 @@ Each row is a property this crate must prove before it publishes. The harness ce
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
 `crates/designware_mobile_storage/falsifications/`. Measured 2026-10-11 (UTC): 4 of 6 proven.
+Measured 2026-10-25 (UTC), after the cut: 3 of 5 proven.
 
 | property | harness |
 |---|---|
 | The scratch range never touches a partition or sector zero | `proofs::the_scratch_range_never_touches_a_partition_or_sector_zero` |
-| A served block never leaves its window | `proofs::a_served_block_never_leaves_its_window` |
 | A FIFO step never overruns the FIFO or the buffer | `proofs::a_fifo_step_never_overruns_the_fifo_or_the_buffer` |
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
 | The MBR parse (`partition::Mbr::parse`) is total, and every entry it accepts lies inside the card | none yet |
 | The capacity decoders (`card::Csd`, `card::ext_csd_sectors`) are total for any register or EXT_CSD bytes | none yet |
 
 The last two rows are this lane's reading of the hostile surface: a stranger's SD card supplies
-its partition table and its registers. The served-block row proves `serve`, nife's module; if
-`serve` moves to the driver, that row moves with it. Not proven: the card bring-up state machine
+its partition table and its registers. The served-block row left with `serve` on 2026-10-25: its
+harness is `designware_mobile_storage::proofs::a_served_block_never_leaves_its_window` in
+`crates/driver_process_contract`. Not proven: the card bring-up state machine
 (`sd`, `command`), timing, and the CID decode, which names the card and sizes nothing.
 
 ## Release, by #1806's rulings
@@ -141,11 +148,16 @@ citations left sit in `Name:` blocks, which stay until the ratification pass. `a
 `filesystem_contract` and `device_tree_blob` are still path dependencies, so the copy does not
 build; the second half of the cut removes them.
 
+Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
+crate builds for the host and the three targets on 1.88. Stock Kani proves all 4 harnesses, and
+each falsification patch makes its harness fail. The only failures left are citations in `Name:`
+blocks, which the ratification pass settles.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `serve` speaks nife's block protocol (`filesystem_contract::blk`); the cut moves it or inlines it.
+  nothing. `serve`, which spoke nife's block protocol, left with the cut.
 
 ## Exit
 
@@ -166,7 +178,6 @@ its own assertion, replayable in the crate's own repository with stock Kani.
 
 The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
 names until the ratification pass, so this section keeps the links it carried.
-`src/serve.rs` keeps its own citations until it moves into nife.
 
 - `Cargo.toml`, the package comment: the `no_std` and host-test split is the pure-logic split of
   §7 (Testing: QEMU harness + host-testable crates, from commit one) that every driver crate here

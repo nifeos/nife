@@ -39,6 +39,12 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `discover_aon_syscon` reading a `DeviceTreeBlob`. The device-tree queries move to the kernel side,
   which already depends on `device_tree_blob`. The tests also `include_bytes!` a fixture from
   `../../device_tree_blob/tests/fixtures/`, outside the package, which `cargo package` cannot ship.
+- Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
+  the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
+- Cut on 2026-10-25 (UTC) by #2719. The crate names the compatible strings and node names, and
+  `Discovered::from_node`, `mainline_phy` and `vendor_phy` decode a node's properties. The walk
+  is `machine_discovery::jh7110::designware_ethernet`, and the fixtures moved with its tests. The
+  two virtual addresses that `pair_page` placed moved to `crates/driver_process_contract`.
 - Its consumers: `kernel/src/designware_ethernet.rs` (clocks, reset, PHY, coherence, rings),
   `kernel/src/user/designware_ethernet_service.rs`, `kernel/src/memory.rs`,
   `kernel/src/network_bench.rs`, and in `components/`, `designware_ethernet_transport.rs` and
@@ -134,12 +140,16 @@ citations left sit in `Name:` blocks, which stay until the ratification pass. `a
 and `device_tree_blob` are still path dependencies, so the copy does not build; the second half of
 the cut removes them.
 
+Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
+crate builds for the host and the three targets on 1.88. Stock Kani proves both harnesses, and each
+falsification patch makes its harness fail. The only failures left are citations in `Name:` blocks,
+which the ratification pass settles.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `Handoff`, and `jh7110::discover` taking a `DeviceTreeBlob`, are nife's; the cut removes the
-  second.
+  `Handoff` is nife's spawn ABI. The cut removed `jh7110::discover`, which took a `DeviceTreeBlob`.
 
 ## Exit
 

@@ -30,26 +30,6 @@ fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
     }
 }
 
-/// No block request the server translates reaches a sector outside its window.
-///
-/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_served_block_never_leaves_its_window.patch`
-#[kani::proof]
-fn a_served_block_never_leaves_its_window() {
-    let w = crate::serve::Window {
-        first: kani::any(),
-        sectors: kani::any(),
-        writable: kani::any(),
-    };
-    kani::assume(w.first.checked_add(w.sectors).is_some());
-    let block: u64 = kani::any();
-    let count: u64 = kani::any();
-    if let Some(lba) = w.translate(block, count) {
-        assert!(lba >= w.first);
-        let span = count * crate::serve::SECTORS_PER_BLOCK;
-        assert!(lba + span <= w.first + w.sectors);
-    }
-}
-
 /// A FIFO step never moves more than is owed, and a write step never more than the FIFO has
 /// room for, whatever `STATUS` says.
 ///

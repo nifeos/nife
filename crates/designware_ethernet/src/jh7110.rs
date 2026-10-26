@@ -7,17 +7,32 @@
 //! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
 //! compatible, PHY as register values, interface select in board code). Both are read here, and
 //! their shared facts agree.
-
-use device_tree_blob::DeviceTreeBlob;
+//!
+//! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
+//! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle`
+//! for [`mainline_phy`], or the node [`VENDOR_PHY_NODE`] for [`vendor_phy`]. The AON syscon is
+//! mainline's [`COMPATIBLE_AON_SYSCON`] node or the vendor's node named [`AON_SYSCON_NODE`], and
+//! [`Syscon::fallback`] answers for a tree that names neither.
 
 use crate::controller::Bus;
 use crate::motorcomm::{Drive, Settings, Source};
 use crate::regs;
 
 /// Mainline's compatible for both ports.
-pub(crate) const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-dwmac";
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-dwmac";
 /// The vendor U-Boot's compatible for both ports, the one radon's firmware serves.
-pub(crate) const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
+/// Both spellings, in the order to try them: mainline's first.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
 /// `gmac0`'s window, in both trees and in OpenBSD's port table.
 pub const GMAC0_BASE: u64 = 0x1603_0000;
@@ -49,7 +64,15 @@ pub(crate) const AON_SYSCON_BASE: u64 = 0x1701_0000;
 /// Its size.
 pub(crate) const AON_SYSCON_SIZE: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
-pub(crate) const COMPATIBLE_AON_SYSCON: &[u8] = b"starfive,jh7110-aon-syscon";
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const COMPATIBLE_AON_SYSCON: &[u8] = b"starfive,jh7110-aon-syscon";
+/// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const AON_SYSCON_NODE: &[u8] = b"aon_syscon@";
 /// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
 /// the vendor's `AON_SYSCFG_12`.
 pub const GMAC0_SYSCON_OFFSET: u64 = 0xc;
@@ -101,60 +124,86 @@ pub struct Discovered {
 /// other: OpenBSD's `1950`.
 const DEFAULT_DELAY_PS: u32 = 1950;
 
-fn be32(bytes: &[u8]) -> Option<u32> {
-    Some(u32::from_be_bytes(bytes.get(..4)?.try_into().ok()?))
+/// `gmac0`'s PHY in the vendor tree: `gmac0`'s child, found by node name because the vendor tree
+/// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s PHY is
+/// `ethernet-phy@1`, so the first `ethernet-phy@0` is `gmac0`'s.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const VENDOR_PHY_NODE: &[u8] = b"ethernet-phy@0";
+
+/// The first cell of a property, big-endian, as every device-tree cell is: `interrupts`'s first
+/// interrupt, `phy-handle`'s phandle, a `reg`'s first word.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+#[must_use]
+pub fn first_cell(value: &[u8]) -> Option<u32> {
+    Some(u32::from_be_bytes(value.get(..4)?.try_into().ok()?))
 }
 
-/// **Find the first port in `tree`**: mainline's spelling first, then the vendor's, the order
-/// `jh7110_entropy::discover` uses and for its reason. `Ok(None)` when neither names a node.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, device_tree_blob::Error> {
-    for compatible in [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR] {
-        let mut regions = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-        if tree.node_reg_compatible(compatible, &mut regions)? == 0 {
-            continue;
-        }
-        let prop = |name: &[u8]| tree.node_prop_compatible(compatible, name);
+impl Discovered {
+    /// **The port, from its node.** `base` and `size` are its `reg`, `compatible` the
+    /// [`COMPATIBLES`] entry it matched, `prop(name)` the port node's property `name`, and `phy`
+    /// what [`mainline_phy`] or [`vendor_phy`] read: mainline's when the node has a `phy-handle`,
+    /// the vendor's otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Propagates the first error `prop` returns.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
+    /// tree walk and the process layout left the driver crates.
+    pub fn from_node<'t, E>(
+        base: u64,
+        size: u64,
+        compatible: &'static [u8],
+        mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+        phy: (u8, Settings),
+    ) -> Result<Self, E> {
         let status_okay =
             prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
         let mac = prop(b"local-mac-address")?
             .and_then(|b| b.get(..6))
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
         let rgmii = prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
-        let (phy_address, phy) = match prop(b"phy-handle")?.and_then(be32) {
-            Some(handle) => mainline_phy(tree, handle)?,
-            None => vendor_phy(tree)?,
-        };
-        return Ok(Some(Discovered {
-            base: regions[0].start,
-            size: regions[0].size,
-            interrupt: prop(b"interrupts")?.and_then(be32),
+        let (phy_address, phy) = phy;
+        Ok(Discovered {
+            base,
+            size,
+            interrupt: prop(b"interrupts")?.and_then(first_cell),
             compatible,
             status_okay,
             mac,
             rgmii,
             phy_address,
             phy,
-        }));
+        })
     }
-    Ok(None)
 }
 
-/// The PHY as mainline describes it: through `phy-handle`, in physical units.
-fn mainline_phy(
-    tree: &DeviceTreeBlob<'_>,
-    handle: u32,
-) -> Result<(u8, Settings), device_tree_blob::Error> {
-    let num = |name: &[u8]| tree.phandle_prop(handle, name).map(|v| v.and_then(be32));
-    let has = |name: &[u8]| tree.phandle_prop(handle, name).map(|v| v.is_some());
+/// **The PHY as mainline describes it**, in physical units: `prop(name)` is the property `name`
+/// of the node the port's `phy-handle` names. Gives the MDIO address (its `reg`, else 0) and the
+/// settings; a node with neither internal delay keeps [`Settings::FALLBACK_GMAC0`].
+///
+/// # Errors
+///
+/// Propagates the first error `prop` returns.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub fn mainline_phy<'t, E>(
+    mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<(u8, Settings), E> {
+    let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
     let address = num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
     let (rx, tx) = (num(b"rx-internal-delay-ps")?, num(b"tx-internal-delay-ps")?);
     if rx.is_none() && tx.is_none() {
         return Ok((address, Settings::FALLBACK_GMAC0));
     }
+    let rx_clock = num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
+    let rx_data = num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
+    let mut has = |name: &[u8]| prop(name).map(|v| v.is_some());
     let inverted = if has(b"motorcomm,tx-clk-adj-enabled")? {
         Some([
             has(b"motorcomm,tx-clk-10-inverted")?,
@@ -169,20 +218,27 @@ fn mainline_phy(
         Settings::from_mainline(
             rx.unwrap_or(DEFAULT_DELAY_PS),
             tx.unwrap_or(DEFAULT_DELAY_PS),
-            num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0),
-            num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0),
+            rx_clock,
+            rx_data,
             inverted,
         ),
     ))
 }
 
-/// The PHY as the vendor tree describes it: `gmac0`'s child `ethernet-phy@0`, in register
-/// values. Found by node name, because the vendor tree gives it no `phy-handle`; `gmac0` precedes
-/// `gmac1` in that tree, and `gmac1`'s PHY is `ethernet-phy@1`, so the first `ethernet-phy@0` is
-/// `gmac0`'s. Any property it lacks keeps [`Settings::FALLBACK_GMAC0`]'s value.
-fn vendor_phy(tree: &DeviceTreeBlob<'_>) -> Result<(u8, Settings), device_tree_blob::Error> {
-    const NODE: &[u8] = b"ethernet-phy@0";
-    let num = |name: &[u8]| tree.node_prop(NODE, name).map(|v| v.and_then(be32));
+/// **The PHY as the vendor tree describes it**, in register values: `prop(name)` is the property
+/// `name` of the node [`VENDOR_PHY_NODE`]. Any property it lacks keeps
+/// [`Settings::FALLBACK_GMAC0`]'s value, and a node without `rx_delay_sel` is the fallback whole.
+///
+/// # Errors
+///
+/// Propagates the first error `prop` returns.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub fn vendor_phy<'t, E>(
+    mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<(u8, Settings), E> {
+    let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
     let Some(rx) = num(b"rx_delay_sel")? else {
         return Ok((0, Settings::FALLBACK_GMAC0));
     };
@@ -215,100 +271,209 @@ pub struct Syscon {
     pub base: u64,
     /// Size.
     pub size: u64,
-    /// True when a tree node named it; false when this is [`AON_SYSCON_BASE`].
+    /// True when a tree node named it; false when this is [`Syscon::fallback`].
     pub from_tree: bool,
 }
 
-/// **Find the AON syscon**: mainline's compatible, then the vendor's node name, then the constant
-/// both trees agree on. Like `machine_discovery::jh7110::clock_and_reset::discover`, never fails to
-/// produce an address, so an answer here is not evidence the machine is a JH7110.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<Syscon, device_tree_blob::Error> {
-    let mut regions = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-    if tree.node_reg_compatible(COMPATIBLE_AON_SYSCON, &mut regions)? == 1
-        || tree.node_reg(b"aon_syscon@", &mut regions)? == 1
-    {
-        return Ok(Syscon {
-            base: regions[0].start,
-            size: regions[0].size,
-            from_tree: true,
-        });
+impl Syscon {
+    /// **The constant both trees agree on**, `0x1701_0000`, `0x1000` long, with `from_tree`
+    /// false. An answer here is not evidence the machine is a JH7110.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
+    /// tree walk and the process layout left the driver crates.
+    #[must_use]
+    pub const fn fallback() -> Self {
+        Syscon {
+            base: AON_SYSCON_BASE,
+            size: AON_SYSCON_SIZE,
+            from_tree: false,
+        }
     }
-    Ok(Syscon {
-        base: AON_SYSCON_BASE,
-        size: AON_SYSCON_SIZE,
-        from_tree: false,
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const VENDOR: &[u8] = include_bytes!("../tests/fixtures/jh7110-gmac-vendor.dtb");
-    const MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-gmac-mainline.dtb");
-    const ONE_DELAY: &[u8] = include_bytes!("../tests/fixtures/jh7110-gmac-one-delay.dtb");
-    const VENDOR_ADDRESSED: &[u8] =
-        include_bytes!("../tests/fixtures/jh7110-gmac-vendor-addressed.dtb");
-    const QEMU_RISCV64_VIRT: &[u8] =
-        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+    /// A property table standing in for one node: each name and its value.
+    fn node<'t>(
+        table: &'t [(&'static [u8], &'t [u8])],
+    ) -> impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, ()> + 't {
+        move |name| Ok(table.iter().find(|(n, _)| *n == name).map(|(_, v)| *v))
+    }
+
+    const ZERO: &[u8] = &[0, 0, 0, 0];
+    const ONE: &[u8] = &[0, 0, 0, 1];
 
     #[test]
-    fn radons_vendor_tree_gives_gmac0_its_phy_settings_and_its_address() {
-        let tree = DeviceTreeBlob::from_bytes(VENDOR).unwrap();
-        let d = discover(&tree).unwrap().unwrap();
-        assert_eq!((d.base, d.size), (GMAC0_BASE, 0x1_0000));
-        assert_eq!(d.compatible, COMPATIBLE_VENDOR);
-        assert_eq!(d.interrupt, Some(7));
+    fn a_port_node_reads_its_status_address_mode_and_interrupt() {
+        let table: &[(&[u8], &[u8])] = &[
+            (b"status", b"okay\0"),
+            (b"local-mac-address", &[0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]),
+            (b"phy-mode", b"rgmii-id\0"),
+            (b"interrupts", &[0, 0, 0, 7, 0, 0, 0, 6]),
+        ];
+        let phy = (0, Settings::FALLBACK_GMAC0);
+        let d = Discovered::from_node(GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR, node(table), phy)
+            .unwrap();
+        assert_eq!(
+            (d.base, d.size, d.compatible),
+            (GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR)
+        );
         assert!(d.status_okay && d.rgmii);
         assert_eq!(d.mac, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]));
-        assert_eq!(d.phy_address, 0);
-        assert_eq!(d.phy.source, Source::VendorTree);
+        assert_eq!(d.interrupt, Some(7));
+        assert_eq!((d.phy_address, d.phy), phy);
+    }
+
+    #[test]
+    fn a_bare_port_node_is_okay_with_no_address_and_no_rgmii() {
+        let d = Discovered::from_node(
+            1,
+            2,
+            COMPATIBLE_MAINLINE,
+            node(&[]),
+            (3, Settings::FALLBACK_GMAC0),
+        )
+        .unwrap();
+        assert!(d.status_okay);
+        assert!(!d.rgmii);
+        assert_eq!((d.mac, d.interrupt, d.phy_address), (None, None, 3));
+        let table: &[(&[u8], &[u8])] = &[
+            (b"status", b"disabled\0"),
+            (b"local-mac-address", &[1, 2, 3]),
+            (b"phy-mode", b"rmii\0"),
+        ];
+        let d = Discovered::from_node(
+            1,
+            2,
+            COMPATIBLE_MAINLINE,
+            node(table),
+            (0, Settings::FALLBACK_GMAC0),
+        )
+        .unwrap();
+        assert!(!d.status_okay && !d.rgmii);
+        assert_eq!(d.mac, None);
+        for okay in [&b"ok\0"[..], b"ok", b"okay"] {
+            let table: &[(&[u8], &[u8])] = &[(b"status", okay)];
+            let d = Discovered::from_node(
+                1,
+                2,
+                COMPATIBLE_MAINLINE,
+                node(table),
+                (0, Settings::FALLBACK_GMAC0),
+            )
+            .unwrap();
+            assert!(d.status_okay);
+        }
+    }
+
+    #[test]
+    fn a_mainline_phy_reads_its_delays_drive_and_inversions() {
+        let table: &[(&[u8], &[u8])] = &[
+            (b"reg", &[0, 0, 0, 0x23]),
+            (b"rx-internal-delay-ps", &1500u32.to_be_bytes()),
+            (b"tx-internal-delay-ps", &1500u32.to_be_bytes()),
+            (b"motorcomm,rx-clk-drv-microamp", &3970u32.to_be_bytes()),
+            (b"motorcomm,rx-data-drv-microamp", &2910u32.to_be_bytes()),
+            (b"motorcomm,tx-clk-adj-enabled", b""),
+            (b"motorcomm,tx-clk-100-inverted", b""),
+            (b"motorcomm,tx-clk-1000-inverted", b""),
+        ];
+        let (address, s) = mainline_phy(node(table)).unwrap();
+        assert_eq!(address, 3, "the address is five bits");
         assert_eq!(
-            Settings {
-                source: Source::Fallback,
-                ..d.phy
-            },
-            Settings::FALLBACK_GMAC0,
-            "the vendor's gmac0 values are the fallback's, field for field"
+            s,
+            Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]))
+        );
+        assert_eq!(s.source, Source::MainlineTree);
+    }
+
+    #[test]
+    fn a_mainline_phy_with_one_delay_takes_the_default_for_the_other() {
+        let table: &[(&[u8], &[u8])] = &[(b"rx-internal-delay-ps", &1500u32.to_be_bytes())];
+        let (address, s) = mainline_phy(node(table)).unwrap();
+        assert_eq!(address, 0);
+        assert_eq!(
+            s,
+            Settings::from_mainline(1500, DEFAULT_DELAY_PS, 0, 0, None)
+        );
+        let table: &[(&[u8], &[u8])] = &[(b"tx-internal-delay-ps", &1500u32.to_be_bytes())];
+        assert_eq!(
+            mainline_phy(node(table)).unwrap().1,
+            Settings::from_mainline(DEFAULT_DELAY_PS, 1500, 0, 0, None)
+        );
+        let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
+        assert_eq!(
+            mainline_phy(node(table)).unwrap(),
+            (1, Settings::FALLBACK_GMAC0)
         );
     }
 
     #[test]
-    fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
-        let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
-        let d = discover(&tree).unwrap().unwrap();
-        assert_eq!(d.base, GMAC0_BASE);
-        assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
-        assert_eq!(d.mac, None);
-        assert_eq!(d.phy.source, Source::MainlineTree);
-        assert_eq!(d.phy.rx_delay, 0xa);
-        assert_eq!(d.phy.tx_delay, 0xa);
-        assert!(!d.phy.rx_fixed_delay);
-        assert_eq!(d.phy.tx_clock_inverted, [false, true, true]);
-        assert_eq!(crate::motorcomm::drive_code(1800, d.phy.rx_clock_drive), 6);
+    fn a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest() {
+        let table: &[(&[u8], &[u8])] = &[
+            (b"reg", &[0, 0, 0, 0x23]),
+            (b"rx_delay_sel", &[0, 0, 0, 0x1b]),
+            (b"tx_delay_sel", &[0, 0, 0, 0x15]),
+            (b"rxc_dly_en", ONE),
+            (b"rgmii_sw_dr_rxc", &[0, 0, 0, 0xe]),
+            (b"rgmii_sw_dr", &[0, 0, 0, 0xb]),
+            (b"tx_inverted_10", ONE),
+            (b"tx_inverted_100", ZERO),
+        ];
+        let f = Settings::FALLBACK_GMAC0;
+        let (address, s) = vendor_phy(node(table)).unwrap();
+        assert_eq!(address, 3);
+        assert_eq!((s.rx_delay, s.tx_delay), (0xb, 0x5), "four-bit selects");
+        assert!(s.rx_fixed_delay);
+        assert_eq!(
+            (s.rx_clock_drive, s.rx_data_drive),
+            (Drive::Code(6), Drive::Code(3))
+        );
+        assert_eq!(s.tx_clock_inverted, [true, false, f.tx_clock_inverted[2]]);
+        assert_eq!(s.source, Source::VendorTree);
+        let table: &[(&[u8], &[u8])] = &[(b"rx_delay_sel", ZERO), (b"rxc_dly_en", ZERO)];
+        let (address, s) = vendor_phy(node(table)).unwrap();
+        assert_eq!(address, 0);
+        assert!(!s.rx_fixed_delay);
+        assert_eq!(
+            (s.tx_delay, s.rx_clock_drive),
+            (f.tx_delay, f.rx_clock_drive)
+        );
+        let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
+        assert_eq!(vendor_phy(node(table)).unwrap(), (0, f));
     }
 
     #[test]
-    fn qemu_virt_has_no_port_and_the_syscon_falls_back_and_says_so() {
-        let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
-        assert_eq!(discover(&tree).unwrap(), None);
-        let s = discover_aon_syscon(&tree).unwrap();
-        assert_eq!(s.base, AON_SYSCON_BASE);
-        assert!(!s.from_tree);
+    fn a_reader_error_reaches_the_caller() {
+        let failing = |_: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(9) };
+        assert_eq!(mainline_phy(failing), Err(9));
+        assert_eq!(vendor_phy(failing), Err(9));
+        let phy = (0, Settings::FALLBACK_GMAC0);
+        assert_eq!(
+            Discovered::from_node(0, 0, COMPATIBLE_MAINLINE, failing, phy),
+            Err(9)
+        );
     }
 
     #[test]
-    fn both_trees_name_the_aon_syscon() {
-        for blob in [VENDOR, MAINLINE] {
-            let tree = DeviceTreeBlob::from_bytes(blob).unwrap();
-            let s = discover_aon_syscon(&tree).unwrap();
-            assert_eq!((s.base, s.size), (AON_SYSCON_BASE, AON_SYSCON_SIZE));
-            assert!(s.from_tree);
-        }
+    fn the_first_cell_is_big_endian_and_needs_four_bytes() {
+        assert_eq!(first_cell(&[0, 0, 1, 2, 9]), Some(0x102));
+        assert_eq!(first_cell(&[0, 0, 1]), None);
+    }
+
+    #[test]
+    fn the_syscon_falls_back_to_the_window_both_trees_name() {
+        assert_eq!(
+            Syscon::fallback(),
+            Syscon {
+                base: 0x1701_0000,
+                size: 0x1000,
+                from_tree: false
+            }
+        );
+        assert_eq!(COMPATIBLES, [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR]);
     }
 
     #[test]
@@ -326,29 +491,5 @@ mod tests {
     #[test]
     fn radons_burst_lengths_are_all_four_bits() {
         assert_eq!(BUS.burst_lengths, 0xf0);
-    }
-
-    /// **One delay is enough to read a mainline PHY node**: the receive delay given is used, the
-    /// transmit delay takes OpenBSD's 1950 ps (select 13), and the MDIO address is the node's
-    /// `reg`. The fixture is synthetic; radon's trees give both delays at address 0.
-    #[test]
-    fn a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback() {
-        let tree = DeviceTreeBlob::from_bytes(ONE_DELAY).unwrap();
-        let d = discover(&tree).unwrap().unwrap();
-        assert_eq!(d.phy.source, Source::MainlineTree);
-        assert_eq!((d.phy.rx_delay, d.phy.tx_delay), (10, 13));
-        assert_eq!(d.phy_address, 3);
-        let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
-        assert_eq!(discover(&tree).unwrap().unwrap().phy_address, 0);
-    }
-
-    /// A vendor PHY node that states its address in `reg` is believed. radon's does not, and
-    /// reads as 0.
-    #[test]
-    fn a_vendor_phy_reg_is_its_mdio_address() {
-        let tree = DeviceTreeBlob::from_bytes(VENDOR_ADDRESSED).unwrap();
-        let d = discover(&tree).unwrap().unwrap();
-        assert_eq!(d.phy.source, Source::VendorTree);
-        assert_eq!(d.phy_address, 3);
     }
 }

@@ -171,7 +171,10 @@ const STEP_PS: u32 = 150;
 impl Settings {
     /// **radon's `gmac0`, from the table in this module's header.** Both trees give these values,
     /// so a tree that names neither spelling still gets the board it is on, and says so.
-    pub(crate) const FALLBACK_GMAC0: Settings = Settings {
+    ///
+    /// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the
+    /// device-tree walk that compares against it left the crate.
+    pub const FALLBACK_GMAC0: Settings = Settings {
         rx_delay: 0xa,
         rx_fixed_delay: false,
         tx_delay: 0xa,
