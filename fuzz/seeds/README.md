@@ -13,7 +13,7 @@ tree**, committed for their own reasons and tested by their own tests:
 |---|---|---|
 | `device_tree_blob_walk` | `crates/device_tree_blob/tests/fixtures/` | three real device trees, dumped from the boards we boot |
 | `globally_unique_identifier_partition_table` | `crates/globally_unique_identifier_partition_table/tests/fixtures/` | two real disks, formatted by `sgdisk` and by Apple's Disk Utility |
-| `file_allocation_table_boot_sector` | `crates/file_allocation_table/tests/fixtures/` | six boot sectors dosfstools' `mkfs.fat` formatted: FAT12, FAT16 and FAT32, at 512 and 4096 bytes |
+| `file_allocation_table_boot_sector` | `crates/file_allocation_table/tests/fixtures/`, and here | six boot sectors dosfstools' `mkfs.fat` formatted: FAT12, FAT16 and FAT32, at 512 and 4096 bytes; and `small-tree.img`, below |
 | `elf_parse` | here | the three files below, because nothing else in the tree is a small ELF |
 | `domain_name_system_reply` | `crates/domain_name_system/tests/fixtures/` | three real replies captured from 1.1.1.1: two A records, a CNAME chain with compression, and NXDOMAIN |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |
@@ -110,3 +110,12 @@ PY
 owns the bug, where it runs in milliseconds forever and where a reader meets it next to the code.
 `crates/device_tree_blob/tests/hostile.rs` is the worked example. A hand-built blob with a docstring saying what
 it attacks is worth more than a 7,642-byte file named after its SHA-1.
+
+## `file_allocation_table_boot_sector/small-tree.img`
+
+6 KiB: a FAT12 volume of eight one-sector clusters, the smallest that reaches every path of the
+target's tree walk. It holds the volume label, a long name on a directory, a directory inside it,
+a file chained over three clusters, a free slot, and two free clusters. `make-fat12-tree.py` in
+this directory places every byte by the specification's layout and rebuilds it byte for byte, and
+`fsck.fat -n` accepts it. The script sits beside the directory, not in it, so the fuzzer never
+reads it as an input.

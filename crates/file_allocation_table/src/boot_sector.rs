@@ -461,4 +461,4 @@ impl BootSector {
 mod verification;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

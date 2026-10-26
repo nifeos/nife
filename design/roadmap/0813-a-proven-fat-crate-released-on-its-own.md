@@ -46,10 +46,12 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
 2. The sector interface, boot sector and BPB parse, and FAT type by cluster count, with a
    per-sector no-panic harness and the reader's first fuzz target. The oracle's dev-dependency pin
    is ruled here. Built: [stage-2-the-reader-begins.md](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
-   has what landed and the names it minted. The pin is still open, and stage 3 needs it.
-3. FAT entry decode and the bounded chain walk.
-4. Directories: entries, long-name assembly with the checksum checked, and #1803's macOS images
-   read to their recorded hashes.
+   has what landed.
+3. FAT entry decode, the bounded chain walk, and directory slots read as stored, with the oracle
+   tests in both directions. Built: [stage-3-the-table-and-the-chain.md](0813-a-proven-fat-crate-released-on-its-own/stage-3-the-table-and-the-chain.md)
+   has what landed, the oracle's pin and its `fsck` check.
+4. Directories: long-name assembly with the checksum checked, and #1803's macOS images read to
+   their recorded hashes.
 5. File read and the MBR. Milestone 140's read-only FAT stratum can start here.
 6. Allocation, write, extend, truncate and delete, with FSInfo and the dirty bit, and the
    round-trip harness. Two pull requests.
@@ -96,15 +98,17 @@ recorded at the copied item with its source, commit and license.
 
 | crate | license | use here |
 |---|---|---|
-| rust-fatfs (main line) | MIT | the oracle: host tests read what this crate wrote, and this crate reads what it wrote |
-| lamfat 0.4.2 | MIT | rust-fatfs's main line republished; the way to pin it as a dev-dependency if a git pin will not do |
+| rust-fatfs (main line), as lamfat 0.4.3 | MIT | the oracle: host tests read what this crate wrote, and this crate reads what it wrote |
 | hadris-fat 3.0.0-rc.1 | MIT | a second reader, and the exFAT reference for the later crate |
 | embedded-sdmmc 0.10.0 | MIT or Apache-2.0 | a reference for FAT16/32 without allocation. Its project bans AI-generated contributions, so per #1806 fork 8 it gets bug reports only |
 | simple-fatfs 0.1.0-alpha.2 | MIT | a `no_std` reference; alpha, last updated 2025-09-14 |
 
 The specification is Microsoft's "FAT: General Overview of On-Disk Format" (version 1.03), which the
-existing crate already cites. A dev-dependency is still a dependency under §46, so the lane names
-the oracle's pin in its pull request for calef's ruling.
+existing crate already cites.
+
+The oracle's pin, ruled 2026-10-25 (UTC): `lamfat = "=0.4.3"` from crates.io is a
+`[dev-dependencies]` line of this crate only, pinned by checksum in `Cargo.lock`, outside the base
+graph. Its `fsck` condition held; the stage 3 appendix has the run.
 
 ## Scope
 
@@ -136,8 +140,8 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 
 | property | harness |
 |---|---|
-| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FSInfo, FAT entry, directory entry, long-name run: none yet |
-| Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | none yet |
+| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; FSInfo, long-name run: none yet |
+| Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the FAT and directory consistent | none yet |
 | Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: none yet |
 
@@ -151,6 +155,7 @@ more. Not proven, by design: crash consistency (FAT has none), and the caller's 
 - Write a tree (long names, nested directories, a file spanning many clusters, a delete, a rename)
   and check it two ways: rust-fatfs reads back the same names and bytes, and `fsck_msdos` exits 0.
   Where CI runs Linux, `fsck.fat` from dosfstools stands in, run as a tool and never linked.
+  Until stage 6 writes a tree, `tests/the_oracle_agrees.rs` checks the other direction.
 - FAT12 and FAT16 volumes made by `newfs_msdos` or `mkfs.fat`, since #1803's images are FAT32 only.
   No test image is made by this crate.
 
@@ -275,11 +280,9 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Stages 3 to 9. Checked 2026-10-25 (UTC): `crates/file_allocation_table/src/`
-  holds the boot-sector reader and the `mkfs`, and nothing reads a table, a directory or a file.
-- **Outstanding.** The oracle's pin of rust-fatfs as a dev-dependency waits on calef, and stage 3
-  needs it. [The stage 2 appendix](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
-  gives three options and recommends `lamfat = "=0.4.3"` from crates.io.
+- **Outstanding.** Stages 4 to 9. Checked 2026-10-26 (UTC): `crates/file_allocation_table/src/`
+  reads the boot sector, the table, chains and directory slots, and holds the `mkfs`; nothing
+  assembles a long name or reads a file.
 
 ## BUGS
 

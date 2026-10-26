@@ -3225,6 +3225,36 @@ if bad:
 print(f"kernel dependencies: {len(deps)} normal, none used only by tests, no fixture unconditional")
 KDEPEOF
 
+# **A test oracle stays a dev-dependency of the one crate it judges** (milestone 813 (a proven FAT
+# crate, released on its own), ruled 2026-10-25 UTC). deny.toml's `wrappers` refuses the crate to
+# every other dependent in every graph, but it cannot see a dependency's kind; this reads the kind,
+# so `lamfat` moving from `[dev-dependencies]` to `[dependencies]` is a red gate, not a review catch.
+echo "==> test oracles stay dev-dependencies of the crate they judge"
+python3 - <<'ORACLEEOF' || exit 1
+import json, subprocess, sys
+ORACLES = {'lamfat': 'file_allocation_table'}
+run = subprocess.run(['cargo', 'metadata', '--no-deps', '--offline', '--format-version', '1'],
+                     capture_output=True, text=True)
+if run.returncode != 0:
+    sys.exit("lint: cargo metadata failed, so no oracle's dependency kind was read:\n" + run.stderr)
+bad = []
+for package in json.loads(run.stdout)['packages']:
+    for dep in package['dependencies']:
+        judged = ORACLES.get(dep['name'])
+        if judged is None:
+            continue
+        if package['name'] != judged:
+            bad.append(f"{package['name']} depends on {dep['name']}, the test oracle of {judged} alone")
+        elif dep['kind'] != 'dev':
+            bad.append(f"{judged} takes {dep['name']} as a {dep['kind'] or 'normal'} dependency; it is a [dev-dependencies] line only")
+if bad:
+    print("lint: a test oracle left the test graph:", file=sys.stderr)
+    for b in bad:
+        print("  " + b, file=sys.stderr)
+    sys.exit(1)
+print(f"test oracles: {len(ORACLES)}, each a dev-dependency of the crate it judges and of nothing else")
+ORACLEEOF
+
 # 14. **Every tracked .rs file under a crate is declared by a module tree** (milestone 743 (no
 #     orphaned rust source), provisional number; helpers/orphan_rust.py). rustc compiles only what
 #     `mod` reaches, so a file nothing declares is silently dead. Commit d0b1ff821 dropped

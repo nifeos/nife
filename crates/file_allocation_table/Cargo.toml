@@ -17,6 +17,12 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 
 [dependencies]
 
+# The test oracle and nothing else: rust-fatfs's main line, republished on crates.io as `lamfat`
+# (MIT). Pinned to one version, and its checksum is in Cargo.lock. It never builds into anything
+# that ships; deny.toml refuses it to every other crate.
+[dev-dependencies]
+lamfat = "=0.4.3"
+
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
