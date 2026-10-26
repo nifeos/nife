@@ -222,7 +222,10 @@ fn transmit_sends_exact_bytes_and_reports_full_until_the_device_catches_up() {
     let mut queued = Vec::new();
     loop {
         // A bound, so a transmit that never reports a full ring fails here instead of hanging.
-        assert!(queued.len() < TRANSMIT_ENTRIES as usize, "the ring never filled");
+        assert!(
+            queued.len() < TRANSMIT_ENTRIES as usize,
+            "the ring never filled"
+        );
         let f = frame(queued.len() as u8, 60 + queued.len() * 90);
         match sim.with(|s, r| dp.transmit(s, r, &f)) {
             Ok(()) => queued.push(f),
