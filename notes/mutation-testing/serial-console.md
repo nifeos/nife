@@ -94,8 +94,8 @@ The `stty()` boundary had nine mutants collapsed to one line; this module's own 
 it only through `open`/`configure` against a regular file. Those tests check the complaint text only
 for presence, which every mutant's `Some(...)` also produces. A direct call with a flag no `stty`
 accepts is a real, portable failure that needs no board. Checking that the exit status is neither
-the empty string nor the mutants' `"xyzzy"` placeholder kills all nine at once. Asserting exact
-OS-specific wording kills none of them.
+the empty string nor the mutants' `"xyzzy"` placeholder kills all nine at once. None of them is
+killed by asserting exact OS-specific wording.
 
 Two of the three `port.rs` mutants left are `candidates`'s trivial delegation, recorded as gaps.
 `scan`'s tests prove the logic. But `candidates() = scan(Path::new("/dev"))` still depends on what

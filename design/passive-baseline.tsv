@@ -1911,7 +1911,7 @@ notes/model-comparison/pilot-protocol.md	25
 notes/multicore-defect-curve.md	20
 notes/multicore-defect-curve/radon-rows-2026-10-22.md	5
 notes/mutation-census.md	22
-notes/mutation-testing.md	25
+notes/mutation-testing.md	24
 notes/mutation-testing/a-memory-bound-per-mutant.md	11
 notes/mutation-testing/baseline-2026-08-03.md	17
 notes/mutation-testing/baseline-ledger.md	5
@@ -1921,8 +1921,7 @@ notes/mutation-testing/census-2026-09-21-triage.md	12
 notes/mutation-testing/census-2026-10-03-triage-part-2.md	13
 notes/mutation-testing/census-2026-10-03-triage-part-3.md	16
 notes/mutation-testing/census-2026-10-03-triage-part-4.md	23
-notes/mutation-testing/census-2026-10-03-triage-part-5.md	7
-notes/mutation-testing/census-2026-10-03-triage.md	5
+notes/mutation-testing/census-2026-10-03-triage-part-5.md	6
 notes/mutation-testing/census-2026-10-12-residue.md	3
 notes/mutation-testing/documentation.md	19
 notes/mutation-testing/first-weekly-runs.md	18
@@ -1935,7 +1934,7 @@ notes/mutation-testing/measured-boot.md	3
 notes/mutation-testing/new-crate-backlog.md	28
 notes/mutation-testing/regressions-2026-09-14-capability-to-device-tree-blob.md	17
 notes/mutation-testing/regressions-2026-09-14-clock-contract-swish-filesystem-contract.md	16
-notes/mutation-testing/serial-console.md	16
+notes/mutation-testing/serial-console.md	17
 notes/mutation-testing/uefi-loader.md	8
 notes/mutation-testing/video-terminal.md	9
 notes/name-resolution.md	24

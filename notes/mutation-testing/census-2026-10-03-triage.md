@@ -46,10 +46,11 @@ the crates the 2026-09-21 triage never reached come first.
 
 8 missed: 4 killed, 4 equivalent.
 
-- `firmware_configuration`: a name that fills all 56 bytes kills `DirectoryEntry::is`'s `>` against
-  `>=` (`a_name_that_fills_the_field_is_compared_without_reading_past_it`; the mutant indexes past
-  the field). The four `|` to `^` mutants in `DmaCommand::read` and `write` are equivalent:
-  `key << 16`, `SELECT` and `READ` or `WRITE` occupy disjoint bits.
+- `firmware_configuration`: a name that fills all 56 bytes
+  (`a_name_that_fills_the_field_is_compared_without_reading_past_it`; the mutant indexes past the
+  field) kills `DirectoryEntry::is`'s `>` against `>=`. The four `|` to `^` mutants in
+  `DmaCommand::read` and `write` are equivalent: `key << 16`, `SELECT` and `READ` or `WRITE` occupy
+  disjoint bits.
 - `sealed_pair` (3, killed): `Unreadable`'s `Display` returning an empty string, `explain`'s
   vouched count (`== Vouch::Yes` against `!=`), and the `!disagreements.is_empty()` guard replaced
   by `true`. The tests are `an_unreadable_pair_says_which_way`, an assertion on the sealed line's
@@ -59,10 +60,10 @@ the crates the 2026-09-21 triage never reached come first.
 
 3 missed: 2 killed, 1 equivalent.
 
-- writing past the buffer directly kills `uptime`'s `Writer::push_bytes` bound (`<` against `<=`);
+- Writing past the buffer directly kills `uptime`'s `Writer::push_bytes` bound (`<` against `<=`);
   `format` itself can never get there (29 bytes of 40).
-- reading the `.bss` marker back kills `loaded_image_check::verify` replaced by `()`, which
-  `verify` sets to 1 and nothing else touches.
+- Reading back the `.bss` marker, which `verify` sets to 1 and nothing else touches, kills
+  `loaded_image_check::verify` replaced by `()`.
 - `stack_works -> true` is equivalent as a value: every path of the function returns true, and its
   job is to touch stack, which only a run inside the guest can show.
 

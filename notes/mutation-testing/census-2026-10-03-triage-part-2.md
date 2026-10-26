@@ -161,7 +161,7 @@ The 27 equivalents are the shapes the earlier ledger already names.
 - `clamp_cols` and `clamp_rows` at the maximum (2): the clamp returns the maximum either way.
 - `push_scrollback_row`'s `row * cols` (1): `row` is always 0 at its one call site.
 - The `0x20..=0x2f | 0x3c..=0x3f` arm (1), `erase_display`'s `to > from` (1), `extended_colour`'s
-  `i < n` (1), and `pixel`'s `col < cols` (1): the check beside it subsumes each.
+  `i < n` (1), and `pixel`'s `col < cols` (1): the check beside each subsumes it.
 - `scroll_damage`'s `r > 0` guard and its `r - 1` cell (3): `take_damage` damages the same cell
   from the drawn position, and the box is a bounding box.
 

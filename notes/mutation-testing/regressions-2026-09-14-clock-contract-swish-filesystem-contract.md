@@ -94,7 +94,8 @@ equivalent instead.
 - `Sequence::is_empty` under a constant `false` (1). The function is documented "never true",
   and the invariant holds. `split` always produces at least one segment, so `self.n == 0` is
   `false` for every value this type can take. The assertions added beside `is_plain` kill `-> true`
-  and `==` under `!=`. This third one cannot be, because it is what the function already does.
+  and `==` under `!=`. No test can kill this third one, because it is what the function already
+  does.
 
 The 11 timeouts are hangs, the same loop-control family as `dtb` and `clock_contract`. They are
 `echo`'s word cursor under `-=` and `*=`, `write_found`'s digit loop under `>=`, `pad`'s

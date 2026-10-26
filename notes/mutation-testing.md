@@ -210,10 +210,10 @@ This is the note's `BUGS` section.
   against that pull request found 4; the crate already carried 73 before it merged. Compare
   censuses with `script/mutation-census --compare` instead, which milestone 518 (a census that
   cannot be attributed) built for this.
-- Timeouts are auto-derived by cargo-mutants from each package's own build and test time. A mutant
-  that makes a loop spin forever is recorded as `timeout`. The baseline's timeouts were checked and
-  are detected hangs, mostly cursor arithmetic in walkers. A timeout on a mutant that could not
-  hang would be triaged as a survivor.
+- Timeouts are auto-derived by cargo-mutants from each package's own build and test time.
+  cargo-mutants records a mutant that makes a loop spin forever as `timeout`. The baseline's
+  timeouts were checked and are detected hangs, mostly cursor arithmetic in walkers. A timeout on a
+  mutant that could not hang would be triaged as a survivor.
 - A mutant that hangs is not a mutant that survived, and this instrument cannot say so. The only
   limits cargo-mutants 27.1.0 offers are clocks: `--timeout`, `--build-timeout`, their two
   multipliers and `--minimum-test-timeout`, as milestone 277 checked. So a deadlocked suite and a

@@ -156,9 +156,9 @@ Thirty, recorded as gaps rather than equivalents:
   `before_unit` are the four places `col` is read again before `line_start` resets it. The three
   passes above killed the ones that reach zero or move a visible wrap. What remains needs the cursor
   wrong by an amount that lands on a wrap boundary.
-- `past_quote`'s loop bound (2). The blank-quoted-line test above separates its three length tests.
-  The two on the loop condition itself want a fence opened at a depth greater than the markers any
-  line inside it carries, at the exact byte where the line ends.
+- `past_quote`'s loop bound (2). The blank-quoted-line test above separates `past_quote`'s three
+  length tests. The two on the loop condition itself want a fence opened at a depth greater than the
+  markers any line inside it carries, at the exact byte where the line ends.
 
 A mutation of any of these changes behavior only for an input this repository's markdown does not
 contain. That is also the limit of the renderer's own argument. It was written instead of taking
