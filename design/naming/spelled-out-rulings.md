@@ -70,7 +70,9 @@ Ruled 2026-10-26 (UTC), tree-wide: every name this tree authors spells `rx` and 
 from a datasheet or another project (`RDT`, `TXDCTL`, `CHAN_*`, `DD`, `EOP`) keep their spelling.
 The ruling turns the 2026-09-24 refusal of `rx_waiting` (now `is_byte_waiting` in
 `kernel/src/console.rs`) into the rule, and it follows the `receive` ruling in
-[vocabulary-rulings.md](vocabulary-rulings.md).
+[vocabulary-rulings.md](vocabulary-rulings.md). Where the word is a side rather than a direction,
+the name says what it holds: the pipe ends of c_library's `End` are `read_pipe` and `write_pipe`,
+after `read`, `write`, `readers` and `writers` (Decision 43, ruled 2026-10-26 (UTC)).
 
 ## The tree spells `physical_layer_device`, never `phy`
 
@@ -107,7 +109,9 @@ The ABI capability takes `Interrupt` or `InterruptLine` by what it names, and it
 Ruled 2026-10-26 (UTC), tree-wide: where a name this tree authors says `fifo`, it says `queue`
 (`receive_queue_bytes`, `transmit_queue_bytes` and `queue_bytes`, after the databook's RQS and
 TQS), and the renamed item carries `#[doc(alias = "fifo")]`. Register names copied from a
-datasheet (`FIFOTH`) keep their spelling.
+datasheet (`FIFOTH`) keep their spelling. The ruling reaches the crate ratified on 2026-08-23
+(Decision 41, ruled 2026-10-26 (UTC)): `intrusive_fifo` becomes `intrusive_queue` and its `Fifo`
+becomes `Queue`, with `#[doc(alias = "fifo")]`, applied by the second sweep.
 
 ## Abbreviation sweeps owed under §154
 
