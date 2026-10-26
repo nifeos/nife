@@ -84,5 +84,4 @@ harness covers up to three clusters of up to four sectors. Whole images are the 
 
 ## Names minted
 
-Every new public name is provisional, with its reason, in
-[the FAT names record](../0857-crates-released-on-their-own/file-allocation-table-names.md).
+Every new public name is provisional, with its reason, in its `Name:` block.

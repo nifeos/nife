@@ -5,12 +5,18 @@
 //! name. This module reports each long-name piece as it stands; it does not assemble a long name
 //! or check its checksum against the short entry that follows. The layouts are those of
 //! Microsoft's "FAT: General Overview of On-Disk Format", version 1.03, sections 6 and 7.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's word for
+//! the structure the module parses.
 
 use crate::boot_sector::{BootSector, FatType, RootDirectory};
 use crate::reader::{ChainError, Links, Volume, Walk};
 use crate::sector::{SectorDevice, SectorSize};
 
 /// The bytes of one directory slot.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The size of one slot,
+/// spelled like `SECTOR_BYTES`.
 pub const SLOT_BYTES: usize = 32;
 
 /// `DIR_Attr`'s read-only bit.
@@ -37,26 +43,48 @@ const LAST_LONG_ENTRY: u8 = 0x40;
 const UNIT_OFFSETS: [usize; 13] = [1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30];
 
 /// **One directory slot, parsed.**
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. One 32-byte position in a
+/// directory, used or not; the specification calls only a used one an entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Slot {
     /// The first name byte is 0: this slot and every slot after it are free, and a reader stops.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The first-byte-zero
+    /// marker the specification describes as the end of the directory.
     End,
     /// The first name byte is `0xE5`: a free slot, deleted or never used, between used ones.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's term
+    /// for a slot whose first byte is `0xE5`.
     Free,
     /// A short entry or a long-name piece.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The opposite of `Free`.
     Used(DirectoryEntry),
 }
 
 /// **A used directory slot**: a short entry, or one piece of a long name.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's name for
+/// a used 32-byte slot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DirectoryEntry {
     /// An 8.3 entry: a file, a directory, `.` or `..`, or the volume label.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's
+    /// "short directory entry".
     Short(ShortEntry),
     /// Thirteen UTF-16 units of a long name, which sits in the slots ahead of its short entry.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's
+    /// "long name directory entry".
     LongName(LongNameEntry),
 }
 
 /// **A short (8.3) directory entry.**
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same, as a type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ShortEntry {
     name: [u8; 11],
@@ -66,6 +94,9 @@ pub struct ShortEntry {
 }
 
 /// **One piece of a long file name.**
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. One piece of a long name, as
+/// the specification's section 7 names it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LongNameEntry {
     order: u8,
@@ -80,6 +111,9 @@ impl Slot {
     /// its high half from `DIR_FstClusHI` only on FAT32; FAT12 and FAT16 leave that word to other
     /// uses, so it is ignored there. The cluster is not checked against any volume here; a reader
     /// that follows it does that.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The verb
+    /// `BootSector::parse` already uses for hostile bytes.
     pub fn parse(slot: &[u8; SLOT_BYTES], fat_type: FatType) -> Slot {
         match slot[0] {
             0 => return Slot::End,
@@ -121,32 +155,46 @@ impl Slot {
 impl ShortEntry {
     /// The name as stored: eight bytes of base and three of extension, each padded with spaces,
     /// with a stored `0x05` read back as `0xE5`.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_Name`.
     pub const fn name(&self) -> [u8; 11] {
         self.name
     }
 
     /// `DIR_Attr`, every bit as stored.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_Attr`.
     pub const fn attributes(&self) -> u8 {
         self.attributes
     }
 
     /// Whether the entry is a directory.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `ATTR_DIRECTORY`.
     pub const fn is_directory(&self) -> bool {
         self.attributes & DIRECTORY != 0
     }
 
     /// Whether the entry is the volume label, which names no file and owns no cluster.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `ATTR_VOLUME_ID`, named
+    /// for what it marks rather than for the bit.
     pub const fn is_volume_label(&self) -> bool {
         self.attributes & VOLUME_ID != 0
     }
 
     /// The first cluster of the entry's chain, or 0 for an empty file and for a `..` whose parent
     /// is the root. Not checked against the volume.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_FstClusHI` and
+    /// `DIR_FstClusLO` joined.
     pub const fn first_cluster(&self) -> u32 {
         self.first_cluster
     }
 
     /// The file's length in bytes; 0 for a directory.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_FileSize`.
     pub const fn size(&self) -> u32 {
         self.size
     }
@@ -155,22 +203,33 @@ impl ShortEntry {
 impl LongNameEntry {
     /// The piece's place in its name, counting from 1 at the piece nearest the short entry. The
     /// last-piece bit is cleared; the specification allows 1 to 20, and this value is not checked.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LDIR_Ord` with the
+    /// last-piece bit cleared.
     pub const fn ordinal(&self) -> u8 {
         self.order & !LAST_LONG_ENTRY
     }
 
     /// Whether this is the name's last piece, which sits first on disk.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LAST_LONG_ENTRY`, the
+    /// bit it reads.
     pub const fn is_last(&self) -> bool {
         self.order & LAST_LONG_ENTRY != 0
     }
 
     /// The checksum of the short name this piece belongs to, as stored.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LDIR_Chksum`.
     pub const fn checksum(&self) -> u8 {
         self.checksum
     }
 
     /// The piece's thirteen UTF-16 units, as stored: the name ends at a `0x0000` unit, and
     /// `0xFFFF` pads the rest.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The UTF-16 code units it
+    /// holds, which are not characters.
     pub const fn units(&self) -> [u16; 13] {
         self.units
     }
@@ -258,6 +317,9 @@ impl Source {
 /// It yields every used slot in order, skips free ones, and stops at an end slot or at the end
 /// of the region or chain. A chain is walked with [`Volume::chain`]'s bound, so the read ends
 /// whatever the table holds. After an error it yields nothing more.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A directory being read; it
+/// reads, so it is named for what it reads.
 #[derive(Debug)]
 pub struct Directory<'v, D> {
     volume: &'v mut Volume<D>,

@@ -1,3 +1,6 @@
+//! Name: ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once
+//! published. Too long for a program name, so the program is `usb_keyboard_driver`.
+
 #![no_std]
 //! **xHCI, as pure logic**: everything a USB host controller driver computes, with nothing it
 //! touches. A kernel finds and confines the register file and DMA memory and a
@@ -22,6 +25,8 @@ pub mod regs;
 pub use regs::Capabilities;
 
 /// The page size every layout here is in.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `PAGE` (it reads as a page and holds a size).
 pub const PAGE_BYTES: u64 = 4096;
 
 /// Transfer Request Block (TRB) type codes (xHCI 1.2 Table 6-91).

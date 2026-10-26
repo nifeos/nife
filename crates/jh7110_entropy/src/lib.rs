@@ -1,3 +1,6 @@
+//! Name: ratified 2026-09-13. Chip-qualified rather than generic, since `trng` alone could name
+//! almost anything; kept as the crates.io name (#1806).
+
 #![cfg_attr(not(test), no_std)]
 //! The `StarFive` JH7110 TRNG, as pure logic: the register layout, what each of the chip's two
 //! device trees calls the block, and the decision of whether a generation succeeded, failed or is
@@ -58,8 +61,12 @@
 /// [`output_bytes`] is the order they combine in.
 pub mod regs {
     /// Command register: write [`super::CTRL_GENE_RANDNUM`] or [`super::CTRL_EXEC_RANDRESEED`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const CTRL: u64 = 0x00;
     /// Status register: read-only, [`super::STAT_SEEDED`] / `RAND_GENERATING` / `RAND_SEEDING`.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const STAT: u64 = 0x04;
     /// Output width mode: [`super::MODE_R256`] selects a 256-bit rather than a 128-bit `RAND`
     /// answer.
@@ -70,74 +77,118 @@ pub mod regs {
     /// answer, which is why \[driver\] clamps its read to four words without `R256`.
     /// `STAT.R256` ([`super::STAT_R256`]) reports the current width, and all three cited drivers
     /// write `MODE` during bring-up.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const MODE: u64 = 0x08;
     /// Status-mode register: `MISSION_MODE`, `NONCE_MODE` and `MAX_REJECTS` per \[trm\]. None of
     /// the three drivers cited here writes a value of its own into it (mainline leaves it alone
     /// entirely and the vendor driver writes back what it read), so this crate names the offset
     /// and [`super::SMODE_MISSION_MODE`] without proposing a write.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const SMODE: u64 = 0x0C;
     /// Interrupt enable: the four `super::IE_*` contribution bits plus [`super::IE_GLBL_EN`].
     /// **Enabling a contribution here is about the IRQ pin, not about whether [`ISTAT`] latches**;
     /// see [`super::ISTAT_ALL`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const IE: u64 = 0x10;
     /// Interrupt status, and **\[trm\]'s register map marks it `R/W1C`**: a bit is acknowledged by
     /// writing a one to it, as \[driver\] and \[netbsd\] both do. A driver that only ever reads
     /// this register sees `RAND_RDY` stay set forever after the first generation.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const ISTAT: u64 = 0x14;
     /// Build-time parameter enumerations, read-only: `MISSION_MODE_RESET_STATE`,
     /// `RAND_SEED_AVAIL` and `MAX_RAND_LENGTH` \[trm\]. Offset named so a bench session can dump
     /// it; nothing here reads it.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const FEATURES: u64 = 0x1C;
     /// The eight output words. Populated once `ISTAT.RAND_RDY` is set. See [`RAND1`]..[`RAND7`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND0: u64 = 0x20;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND1: u64 = 0x24;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND2: u64 = 0x28;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND3: u64 = 0x2C;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND4: u64 = 0x30;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND5: u64 = 0x34;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND6: u64 = 0x38;
     /// See [`RAND0`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const RAND7: u64 = 0x3C;
     /// The eight seed words, used to load a host-generated nonce seed and, per \[trm\], "in
     /// several test modes to access internal data". This crate never seeds by nonce (it asks the
     /// ring oscillator for a random reseed instead), so these are offsets only.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const SEED0: u64 = 0x40;
     /// See [`SEED0`]. The set runs `SEED0`..`SEED7` at `0x40`..`0x5C`.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const SEED7: u64 = 0x5C;
     /// Auto-reseed request-count threshold, and **zero is what disables it**: \[trm\] says a
     /// `RQSTS` field of 0 means "disable the `AUTO_RQSTS` alarm feature", other values are a
     /// reload value for the internal counter. \[driver\] writes its `autoreq` module parameter
     /// here during init, which defaults to 0, so upstream's default bring-up disables the alarm
     /// rather than leaving whatever the reset value is in place.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const AUTO_RQSTS: u64 = 0x60;
     /// Auto-reseed age (time) threshold. Same shape as [`AUTO_RQSTS`]: 0 disables the `AUTO_AGE`
     /// alarm, and \[driver\] writes 0 there at init via its `autoage` parameter.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const AUTO_AGE: u64 = 0x64;
     /// Build-time configuration enumerations, read-only \[trm\]. The highest offset the register
     /// map defines, which is why one 4 KiB page covers this device with room to spare.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub const BUILD_CONFIG: u64 = 0x68;
 }
 
 /// `CTRL`: execute a NOP. \[trm\] lists it as one of the command encodings; the vendor driver
 /// issues it once between programming the mode registers and asking for a reseed. Named for
 /// completeness rather than used, since \[driver\] and \[netbsd\] both skip it.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const CTRL_EXEC_NOP: u32 = 0x0;
 /// `CTRL`: ask the device for a fresh random number, 256-bit or 128-bit according to
 /// [`MODE_R256`].
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const CTRL_GENE_RANDNUM: u32 = 0x1;
 /// `CTRL`: force a reseed from the ring oscillator. The driver issues this once at init and again
 /// on every [`GenerationOutcome::Lockup`].
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const CTRL_EXEC_RANDRESEED: u32 = 0x2;
 /// `CTRL`: reseed from the host-written `SEED0..SEED7` words instead of from the ring oscillator
 /// \[trm\]. **Named so it is visibly not used**: a nonce reseed makes the output a function of
 /// bytes the host chose, which is the opposite of what an entropy source is for, and nothing in
 /// this tree should reach for it.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const CTRL_EXEC_NONCE_RESEED: u32 = 0x3;
 
 /// `MODE` bit 3: select a 256-bit `RAND0..RAND7` answer rather than a 128-bit `RAND0..RAND3` one.
@@ -146,40 +197,68 @@ pub const CTRL_EXEC_NONCE_RESEED: u32 = 0x3;
 /// width after reset is a build-time parameter of the silicon (\[trm\]'s
 /// `BUILD_CONFIG.PRNG_LEN_AFTER_RST`), so it cannot be assumed either way from documentation;
 /// [`STAT_R256`] is how a driver finds out what it actually got.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const MODE_R256: u32 = 1 << 3;
 
 /// `SMODE` bit 8: mission mode (1) rather than test mode (0). In test mode \[trm\] gives the host
 /// "access to internal state and test fields", which is not a mode an entropy source should serve
 /// from. None of the three drivers cited writes this bit, so this crate names it and leaves the
 /// reset value alone; [`STAT_MISSION_MODE`] reports which mode the block is in.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SMODE_MISSION_MODE: u32 = 1 << 8;
 
 /// `STAT` bit 2: nonce mode is enabled, reflecting `SMODE.NONCE_MODE`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_NONCE_MODE: u32 = 1 << 2;
 /// `STAT` bit 3: the `RAND` register set is currently 256 bits wide, reflecting [`MODE_R256`].
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_R256: u32 = 1 << 3;
 /// `STAT` bit 8: the block is in mission mode, reflecting [`SMODE_MISSION_MODE`].
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_MISSION_MODE: u32 = 1 << 8;
 /// `STAT` bit 9: the device has been seeded at least once and may be asked to generate.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_SEEDED: u32 = 1 << 9;
 /// `STAT` bit 27: there is an unacknowledged service request \[trm\].
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_SRVC_RQST: u32 = 1 << 27;
 /// `STAT` bit 30: a generation is in flight. The driver's `wait_idle` polls this (and
 /// `RAND_SEEDING`) clear before issuing a new command, so two commands are never in flight at
 /// once.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_RAND_GENERATING: u32 = 1 << 30;
 /// `STAT` bit 31: a reseed is in flight.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STAT_RAND_SEEDING: u32 = 1 << 31;
 
 /// `IE` bit 0: include `RAND_RDY` in the interrupt the block drives.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_RAND_RDY_EN: u32 = 1 << 0;
 /// `IE` bit 1: include `SEED_DONE`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_SEED_DONE_EN: u32 = 1 << 1;
 /// `IE` bit 2: include `AGE_ALARM`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_AGE_ALARM_EN: u32 = 1 << 2;
 /// `IE` bit 3: include `RQST_ALARM`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_RQST_ALARM_EN: u32 = 1 << 3;
 /// `IE` bit 4: include `LFSR_LOCKUP`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// `IE` bit 31: the global interrupt enable.
 ///
@@ -189,11 +268,17 @@ pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// polling `ISTAT` with `IE` never written on a VisionFive 2. The completion interrupt needs this
 /// bit plus the contribution bits, at PLIC line 30 (\[binding\]'s `interrupts = <30>`); a polling
 /// driver needs none of them.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const IE_GLBL_EN: u32 = 1 << 31;
 
 /// `ISTAT` bit 0: a generation completed and `RAND0..RAND7` hold a fresh answer.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const ISTAT_RAND_RDY: u32 = 1 << 0;
 /// `ISTAT` bit 1: a reseed completed.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const ISTAT_SEED_DONE: u32 = 1 << 1;
 /// `ISTAT` bit 2: the auto-reseed **age** alarm, a reminder that `AUTO_AGE` counted down to zero
 /// and the seed is stale \[trm\], \[netbsd\].
@@ -213,6 +298,8 @@ pub(crate) const ISTAT_RQST_ALARM: u32 = 1 << 3;
 /// must not be read as an answer). See the module doc's "Health testing" section: this is the one
 /// hardware self-check the datasheet documents, and it is not a substitute for a statistical
 /// health test over the bitstream, which the datasheet does not claim either.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const ISTAT_LFSR_LOCKUP: u32 = 1 << 4;
 
 /// Every `ISTAT` bit this crate can name, for the write-1-to-clear that starts a bring-up.
@@ -221,6 +308,8 @@ pub const ISTAT_LFSR_LOCKUP: u32 = 1 << 4;
 /// boot, a stale `RAND_RDY`). \[netbsd\] writes `~0`; this names the five documented bits instead,
 /// so the constant says what it acknowledges and an undocumented bit shows up as a residue a
 /// driver can report.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const ISTAT_ALL: u32 =
     ISTAT_RAND_RDY | ISTAT_SEED_DONE | ISTAT_AGE_ALARM | ISTAT_RQST_ALARM | ISTAT_LFSR_LOCKUP;
 
@@ -228,6 +317,9 @@ pub const ISTAT_ALL: u32 =
 /// as a fallback compatible (the JH8100 reuses the same TRNG IP), which is out of scope: this
 /// crate names the JH7110's own string only, never the fallback, so it says nothing about a `SoC`
 /// it has no board for.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `COMPATIBLE` (it did not say which tree's string; the
+/// sibling crates spell mainline's `COMPATIBLE_MAINLINE`).
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-trng";
 
 /// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control tree
@@ -240,11 +332,15 @@ pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-trng";
 /// `arch/riscv/dts/jh7110.dtsi` of `starfive-tech/u-boot` at `bfbdce9b86a2`, reads
 /// `trng: trng@1600C000 { compatible = "starfive,trng"; reg = <0x0 0x1600C000 0x0 0x4000>;
 /// interrupts = <30>; status = "disabled"; }`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,trng";
 
 /// Both spellings, in the order a caller should try them: mainline's first. A tree that carries
 /// the standardized binding is describing itself in that language, and that is the one to
 /// believe.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
 /// Where a tree says the TRNG is: the register window's physical base and size (from `reg`), and
@@ -252,6 +348,8 @@ pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 ///
 /// A caller fills one in from its own device-tree walk, reading every property from the one node
 /// whose `compatible` matched, so an unrelated node under the other spelling never contributes.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Discovered {
     /// Physical base address of the register window (`reg`'s address cell).
@@ -278,6 +376,9 @@ pub struct Discovered {
 
 /// Decode a node's `interrupts` property to the PLIC line, \[binding\]'s single big-endian cell.
 /// `None` when the property is shorter than one cell.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `interrupt` (it read as raising an interrupt; it
+/// decodes the line a node names).
 pub fn interrupt_line(value: &[u8]) -> Option<u32> {
     value
         .get(0..4)
@@ -293,6 +394,9 @@ pub fn interrupt_line(value: &[u8]) -> Option<u32> {
 /// The value is a NUL-terminated string in the tree, so both the terminated and the unterminated
 /// forms are matched rather than trimmed: a four-way `matches!` says exactly which byte strings
 /// count, where a trim would have to decide what an empty or multi-string value means.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `status_okay` for the function (it answers yes or no,
+/// so it asks as a question). The `Discovered.status_okay` field keeps its name.
 pub fn is_status_okay(value: Option<&[u8]>) -> bool {
     value.is_none_or(|v| matches!(v, b"okay\0" | b"ok\0" | b"okay" | b"ok"))
 }
@@ -302,6 +406,9 @@ pub fn is_status_okay(value: Option<&[u8]>) -> bool {
 /// Deliberately not `Result`: neither variant is this crate's idea of an error. `NotReady` is the
 /// expected answer on every poll but the last; `Lockup` is a real, documented hardware condition a
 /// caller is expected to handle (retry after reseed), not a bug.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `Outcome` (a word that could name almost anything; it
+/// is the outcome of one generation).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GenerationOutcome {
     /// A generation completed cleanly. The 32 bytes are `RAND0..RAND7`, little-endian, word 0
@@ -331,6 +438,9 @@ pub enum GenerationOutcome {
 /// file the hardware is re-seeding must not be read as a clean answer. `SEEDED` beats `RAND_RDY`,
 /// because `RAND_RDY` is a latched write-1-to-clear bit that can be standing from before this
 /// driver ran, while `STAT.SEEDED` is live state; that is why `stat` is a parameter.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `interpret` (a word that could name almost anything; it
+/// returns the generation's outcome).
 pub fn generation_outcome(stat: u32, istat: u32, rand: [u32; 8]) -> GenerationOutcome {
     if istat & ISTAT_LFSR_LOCKUP != 0 {
         GenerationOutcome::Lockup
@@ -348,6 +458,9 @@ pub fn generation_outcome(stat: u32, istat: u32, rand: [u32; 8]) -> GenerationOu
 /// would change the bytes without adding unpredictability an attacker could not undo. Conditioning,
 /// if a caller wants it, belongs to the caller's entropy pool. This is data movement, not
 /// conditioning.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `assemble` (it did not say what it assembles; it
+/// returns the output bytes).
 pub fn output_bytes(rand: [u32; 8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     for (i, word) in rand.iter().enumerate() {
@@ -359,6 +472,8 @@ pub fn output_bytes(rand: [u32; 8]) -> [u8; 32] {
 /// How many bytes fit in the one word [`Pool::take`] answers with. Eight, one
 /// `u64`: this crate is the device's logic and knows nothing about any wire format, so a caller
 /// whose protocol carries a different count clamps to its own.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const WORD_BYTES: u64 = 8;
 
 /// **The 32 bytes in hand, and how many are still ours to give**, testable here without a
@@ -390,6 +505,8 @@ pub const WORD_BYTES: u64 = 8;
 /// #     .recv_timeout(std::time::Duration::from_secs(5))
 /// #     .expect("the example panicked (see above), or take never returned");
 /// ```
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pool {
     buf: [u8; 32],
@@ -405,6 +522,8 @@ impl Default for Pool {
 
 impl Pool {
     /// An empty pool: the first [`take`](Pool::take) generates.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub const fn new() -> Self {
         Pool {
@@ -416,6 +535,8 @@ impl Pool {
 
     /// How many bytes are left before the next generation. Test and diagnostic support; the
     /// program reports it once, in its readiness message.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub const fn remaining(&self) -> usize {
         self.filled - self.cursor
@@ -423,6 +544,8 @@ impl Pool {
 
     /// Fill from `generate`, discarding whatever was left. `false` when the generator would not
     /// answer, which the caller reports rather than retries forever.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub fn refill(&mut self, generate: &mut impl FnMut() -> Option<[u8; 32]>) -> bool {
         match generate() {
             Some(bytes) => {
@@ -444,6 +567,8 @@ impl Pool {
     /// clamp; it is here because a
     /// public function that shifts by `8 * n` must not be callable into an overflow, and the first
     /// host test written against this API found exactly that edge.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub fn take(&mut self, n: u64, generate: &mut impl FnMut() -> Option<[u8; 32]>) -> (u64, u64) {
         let n = n.min(WORD_BYTES);
         let mut word = 0u64;

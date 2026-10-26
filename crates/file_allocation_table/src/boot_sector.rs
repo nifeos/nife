@@ -5,6 +5,8 @@
 //! accepts describes a volume whose regions lie in order inside its own sector count and whose
 //! table has an entry for every cluster. The offsets and the type rule are those of Microsoft's
 //! "FAT: General Overview of On-Disk Format", version 1.03.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use crate::sector::{SectorDevice, SectorSize};
 
@@ -25,18 +27,28 @@ const PARSED: usize = 512;
 ///
 /// The type string at `BS_FilSysType` is informational and never read. A volume whose BPB layout
 /// disagrees with its cluster count is refused (see [`ParseError::LayoutContradictsClusterCount`]).
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FatType {
     /// Fewer than 4085 clusters; 12-bit table entries.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Fat12,
     /// From 4085 up to 65524 clusters; 16-bit table entries.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Fat16,
     /// 65525 clusters or more; 32-bit table entries whose top four bits are reserved.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Fat32,
 }
 
 impl FatType {
     /// The type the specification assigns to a volume of `clusters` data clusters.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn from_clusters(clusters: u32) -> FatType {
         if clusters < FAT16_MIN_CLUSTERS {
             FatType::Fat12
@@ -48,6 +60,8 @@ impl FatType {
     }
 
     /// The width of one table entry in bits: 12, 16 or 32.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn entry_bits(self) -> u32 {
         match self {
             FatType::Fat12 => 12,
@@ -58,9 +72,13 @@ impl FatType {
 }
 
 /// **Where the root directory lives**, which is the one structural difference FAT32 makes.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RootDirectory {
     /// FAT12 and FAT16: a fixed region between the last table and the first cluster.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Region {
         /// The volume-relative sector the region begins at.
         first_sector: u32,
@@ -70,61 +88,109 @@ pub enum RootDirectory {
         entries: u16,
     },
     /// FAT32: an ordinary cluster chain starting at this cluster.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Cluster(u32),
 }
 
 /// **Why a sector is not a boot sector this crate will read.** Each names the field it failed on.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ParseError {
     /// The buffer holds fewer than 512 bytes.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     TooShort,
     /// Bytes 510 and 511 are not `0x55 0xAA`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoSignature,
     /// `BS_jmpBoot` is neither `0xEB ?? 0x90` nor `0xE9 ?? ??`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoJump,
     /// `BPB_BytsPerSec` is not 512, 1024, 2048 or 4096.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     SectorSize,
     /// `BPB_SecPerClus` is not a power of two from 1 to 128.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     ClusterSize,
     /// `BPB_RsvdSecCnt` is zero, which would put the table over the boot sector.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoReservedSectors,
     /// `BPB_NumFATs` is zero.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoTables,
     /// `BPB_Media` is not `0xF0` or `0xF8` to `0xFF`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Media,
     /// Both `BPB_TotSec16` and `BPB_TotSec32` are zero.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoSectors,
     /// Both `BPB_FATSz16` and `BPB_FATSz32` are zero.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoTableSectors,
     /// The reserved sectors, the tables and the root directory region end past the volume's last
     /// sector.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     MetadataPastEnd,
     /// The data region holds no whole cluster.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NoClusters,
     /// The BPB is laid out for one FAT type and the cluster count makes the volume another: a FAT32
     /// layout (`BPB_FATSz16` and `BPB_RootEntCnt` zero) under 65525 clusters, or a FAT12 or FAT16
     /// layout at or over it. Drivers disagree about such a volume, so this crate reads none.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     LayoutContradictsClusterCount,
     /// More clusters than FAT32 can number.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     TooManyClusters,
     /// One table is too short to hold an entry for every cluster.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     TableTooSmall,
     /// FAT32's `BPB_RootClus` is not a data cluster of this volume.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     RootCluster,
     /// FAT32's `BPB_FSVer` is not 0.0, the only version the specification defines.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Version,
     /// FAT32's `BPB_ExtFlags` names an active table the volume does not have.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     ActiveTable,
 }
 
 /// **Why [`BootSector::read`] failed**: the device's error, or the sector it returned.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ReadError<E> {
     /// The device refused the read; its own error, unchanged.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Device(E),
     /// Sector 0 is not a boot sector this crate will read.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Refused(ParseError),
     /// The volume's `BPB_BytsPerSec` differs from the device's sector size.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     SectorSizeMismatch {
         /// What the device reports.
         device: SectorSize,
@@ -153,6 +219,8 @@ pub enum ReadError<E> {
 /// assert_eq!(boot.fat_type(), FatType::Fat32);
 /// assert_eq!(boot.clusters(), volume.clusters());
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BootSector {
     sector_size: SectorSize,
@@ -195,6 +263,8 @@ impl BootSector {
     ///
     /// Returns the volume's geometry, or the first field that makes it unreadable. Never panics
     /// and never reads past byte 511, whatever `sector` holds.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn parse(sector: &[u8]) -> Result<BootSector, ParseError> {
         let sector = sector.get(..PARSED).ok_or(ParseError::TooShort)?;
         if sector[510] != 0x55 || sector[511] != 0xAA {
@@ -335,6 +405,8 @@ impl BootSector {
     ///
     /// Refuses a volume whose `BPB_BytsPerSec` is not the device's sector size, since every later
     /// read would land at the wrong offset.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn read<D: SectorDevice>(device: &mut D) -> Result<BootSector, ReadError<D::Error>> {
         let size = device.sector_size();
         let mut buffer = [0u8; SectorSize::MAX];
@@ -351,52 +423,73 @@ impl BootSector {
     }
 
     /// The volume's sector size, from `BPB_BytsPerSec`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn sector_size(&self) -> SectorSize {
         self.sector_size
     }
 
     /// Sectors per cluster: a power of two from 1 to 128.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn sectors_per_cluster(&self) -> u32 {
         1 << self.cluster_shift
     }
 
     /// Bytes per cluster: from 512 to 512 KiB.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn bytes_per_cluster(&self) -> u32 {
         (self.sector_size.bytes() as u32) << self.cluster_shift
     }
 
     /// The FAT type, from the cluster count.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn fat_type(&self) -> FatType {
         self.fat_type
     }
 
     /// How many data clusters the volume has. They are numbered 2 to `clusters() + 1`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn clusters(&self) -> u32 {
         self.clusters
     }
 
     /// The volume's sector count, from `BPB_TotSec16` or `BPB_TotSec32`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn total_sectors(&self) -> u32 {
         self.total_sectors
     }
 
     /// Sectors ahead of the first table, the boot sector among them.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn reserved_sectors(&self) -> u16 {
         self.reserved_sectors
     }
 
     /// How many copies of the table the volume holds.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `tables` (it counts the copies of the table,
+    /// which the name did not say).
     pub const fn table_count(&self) -> u8 {
         self.tables
     }
 
     /// Sectors in one copy of the table.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn table_sectors(&self) -> u32 {
         self.table_sectors
     }
 
     /// The volume-relative sector table `index` begins at, or `None` when the volume has no such
     /// table.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn table_first_sector(&self, index: u8) -> Option<u32> {
         if index >= self.tables {
             return None;
@@ -406,42 +499,58 @@ impl BootSector {
 
     /// The one table a FAT32 volume keeps live, when `BPB_ExtFlags` turns mirroring off; `None`
     /// when every table is a mirror, which FAT12 and FAT16 always are.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn active_table(&self) -> Option<u8> {
         self.active_table
     }
 
     /// The volume-relative sector cluster 2 begins at.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn first_data_sector(&self) -> u32 {
         self.first_data_sector
     }
 
     /// Where the root directory lives.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn root_directory(&self) -> RootDirectory {
         self.root
     }
 
     /// The media descriptor byte, `BPB_Media`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn media(&self) -> u8 {
         self.media
     }
 
     /// `BPB_HiddSec`: the sectors ahead of the volume on its disk, as the formatter recorded them.
     /// Informational; nothing in this crate reads through it.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn hidden_sectors(&self) -> u32 {
         self.hidden_sectors
     }
 
     /// FAT32's `FSInfo` sector, or `None` when the BPB names none inside the reserved region.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn fs_info_sector(&self) -> Option<u16> {
         self.fs_info_sector
     }
 
     /// FAT32's backup boot sector, or `None` when the BPB names none inside the reserved region.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn backup_boot_sector(&self) -> Option<u16> {
         self.backup_boot_sector
     }
 
     /// The volume serial number, when the extended boot signature `0x29` says it is present.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn volume_id(&self) -> Option<u32> {
         self.volume_id
     }
@@ -449,6 +558,8 @@ impl BootSector {
     /// **The volume-relative sector `cluster` begins at**, or `None` when `cluster` is not one of
     /// this volume's data clusters (2 to `clusters() + 1`). The cluster's
     /// [`BootSector::sectors_per_cluster`] sectors all lie inside the volume.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn cluster_first_sector(&self, cluster: u32) -> Option<u32> {
         if cluster < 2 || cluster - 2 >= self.clusters {
             return None;

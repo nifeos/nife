@@ -6,6 +6,9 @@
 //! Overview of On-Disk Format", version 1.03, section 4.
 //!
 //! This module computes and decodes; [`crate::Volume`] does the reading.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The file allocation table,
+//! spelled out as the crate spells FAT (`table_sectors`, `TABLE_COUNT`).
 
 use crate::boot_sector::{BootSector, FatType};
 
@@ -14,18 +17,36 @@ use crate::boot_sector::{BootSector, FatType};
 /// A value that names a cluster is reported as [`TableEntry::Next`] whether or not the volume has
 /// that cluster; the chain walk checks it against the volume, since only the volume knows its
 /// cluster count.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "FAT
+/// entry", spelled out the same way.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TableEntry {
     /// The cluster is free: entry value 0.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Entry value 0, which the
+    /// specification calls free.
     Free,
     /// Entry value 1, which the specification reserves and no chain may hold.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Entry value 1, which the
+    /// specification reserves.
     Reserved,
     /// The chain continues at this cluster number, at least 2 and below the bad-cluster marker.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The next cluster of the
+    /// chain.
     Next(u32),
     /// The cluster is marked bad: `0xFF7`, `0xFFF7` or `0x0FFF_FFF7` by the FAT type.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "bad
+    /// cluster" marker.
     Bad,
     /// The chain ends with this cluster: any value from the bad marker plus one to the type's
     /// maximum.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "end
+    /// of clusterchain" marker.
     EndOfChain,
 }
 
@@ -34,6 +55,9 @@ impl TableEntry {
     ///
     /// A FAT12 entry keeps its low 12 bits and a FAT16 entry its low 16. A FAT32 entry keeps its
     /// low 28: the top four bits are reserved, and the specification says a reader ignores them.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Turns a raw entry into a
+    /// `TableEntry`.
     pub const fn decode(fat_type: FatType, raw: u32) -> TableEntry {
         let (value, bad) = match fat_type {
             FatType::Fat12 => (raw & 0xFFF, 0xFF7),

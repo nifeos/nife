@@ -1,5 +1,7 @@
 //! Boot sectors that another tool formatted, the `mkfs` in this crate read back, and one refusal
 //! per checked field with the boundary on each side of it.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
 use crate::{SECTOR_BYTES, VolumeLayout};

@@ -1,4 +1,6 @@
 //! The markers of each FAT type at their boundaries, and where entries lie in the table.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`.
 
 use super::*;
 use crate::boot_sector::tests::fat32_with_active_table;

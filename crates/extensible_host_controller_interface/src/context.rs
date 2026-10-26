@@ -7,17 +7,25 @@
 //! command: an input control context saying which contexts to add or drop, then a slot context
 //! and endpoint contexts in the same order, one index along. A context is 32 or 64 bytes depending
 //! on the controller (`HCCPARAMS1.CSZ`); only the first 32 carry fields.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use crate::port;
 use crate::port::speed;
 
 /// Endpoint type: control, bidirectional (xHCI 1.2 Table 6-9).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CONTROL: u8 = 4;
 /// Endpoint type: interrupt IN.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const INTERRUPT_IN: u8 = 7;
 
 /// **The device context index** of endpoint `address` (direction bit included). Endpoint 0 is 1
 /// in either direction.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn endpoint_index(address: u8) -> u8 {
     let number = address & 0x0f;
     if number == 0 {
@@ -29,23 +37,31 @@ pub const fn endpoint_index(address: u8) -> u8 {
 
 /// Byte offset of the input control context's successor `index` in an input context: the slot
 /// context is index 1, DCI `n` is index `n + 1`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn input_offset(index: u8, context_bytes: u64) -> u64 {
     index as u64 * context_bytes
 }
 
 /// Byte offset of a context in a device (output) context: the slot is 0, DCI `n` is `n`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn device_offset(dci: u8, context_bytes: u64) -> u64 {
     dci as u64 * context_bytes
 }
 
 /// **The input control context**: `add` and `drop` are bitmaps of context indices (bit 0 the slot
 /// context, bit `n` DCI `n`).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn input_control(add: u32, drop: u32) -> [u32; 8] {
     [drop, add, 0, 0, 0, 0, 0, 0]
 }
 
 /// **A slot context for a device on root port `port`** (numbered from 1) at `speed`, whose highest
 /// context is DCI `entries`. Route string 0: the device is on a root port, not behind a hub.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
     [
         (speed as u32 & 0xf) << 20 | (entries as u32 & 0x1f) << 27,
@@ -61,6 +77,8 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
 
 /// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn slot_address(context: &[u32; 8]) -> u8 {
     context[3] as u8
 }
@@ -69,6 +87,8 @@ pub const fn slot_address(context: &[u32; 8]) -> u8 {
 /// 0 (`ProducerRing::dequeue_pointer`). `interval` is already the xHCI exponent
 /// (`crate::interrupt_interval`). Three retries on error, which is the specification's suggested
 /// value for everything but isochronous.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn endpoint(
     kind: u8,
     max_packet: u16,
@@ -97,11 +117,15 @@ pub const fn endpoint(
 
 /// Endpoint 0's context with a new packet size, everything else as [`endpoint`] built it for
 /// `dequeue`: what Evaluate Context takes once the device's descriptor has said its size.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn control_endpoint(max_packet: u16, dequeue: u64) -> [u32; 8] {
     endpoint(CONTROL, max_packet, 0, dequeue, 8)
 }
 
 /// Whether `speed` is one at which `bMaxPacketSize0` is an exponent.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn is_superspeed(s: u8) -> bool {
     s == speed::SUPER || s == speed::SUPER_PLUS
 }
@@ -113,6 +137,8 @@ pub const fn is_superspeed(s: u8) -> bool {
 /// largest exponent whose period does not exceed it, clamped to the specification's 3 (1 ms) to
 /// 10 (128 ms). High-speed and `SuperSpeed` devices already state an exponent, plus one (1 to 16),
 /// so the field is that minus one.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn interrupt_interval(speed: u8, b_interval: u8) -> u8 {
     if speed == port::speed::FULL || speed == port::speed::LOW {
         let microframes = (if b_interval == 0 { 1 } else { b_interval }) as u32 * 8;

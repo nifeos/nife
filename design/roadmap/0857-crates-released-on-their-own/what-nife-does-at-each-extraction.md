@@ -12,10 +12,12 @@ released on its own), and every later extraction runs the same list.
   the form §277 (cite a heading or a symbol, never a line number) allows. Until it does, repointing
   the citations below fails `script/lint`.
 - The crate's name is ratified (Fork 5), and so is every name a stranger meets in it (ruled
-  2026-10-25 UTC). The record is `<crate, hyphenated>-names.md` beside this file, and once it
-  carries a dated `Ratified:` line, `script/names` reads the crate's names there and its `Name:`
-  blocks leave its shipped files. `helpers/name_release.py` holds the format. Then
-  `script/crate-standalone` exits 0.
+  2026-10-25 UTC). Nife keeps no record of a third-party crate's names (Decision 44, ruled
+  2026-10-26 UTC), so the `Name:` blocks in the crate's source are the record until it breaks
+  out. Ratification is a pull request: its body carries the table `python3 helpers/name_release.py
+  --draft <crate>` prints, and it sets each block to `ratified <date> (#PR)`. Then
+  `script/crate-standalone` exits 0, and the change that breaks the crate out strips the blocks
+  from the outgoing copy.
 
 ## At each extraction
 

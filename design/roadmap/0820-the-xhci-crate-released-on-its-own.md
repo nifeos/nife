@@ -47,9 +47,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   Pull request #2737 moved `Handoff`, `register_window`, `WindowRefusal`, `MAX_REGISTER_PAGES`,
   `WORK_PAGES`, `region_pages` and two harnesses into a module of the nife-internal crate
   `driver_process_contract`, which holds each driver's process layout. The `report` module became
-  the nife crate `usb_keyboard_report` (provisional too). [The names
-  record](0857-crates-released-on-their-own/extensible-host-controller-interface-names.md) holds
-  the crate's remaining names, all ratified.
+  the nife crate `usb_keyboard_report` (provisional too). The crate's remaining names are
+  all ratified, in the `Name:` blocks of its source.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),

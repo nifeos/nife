@@ -46,8 +46,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the client windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` and its methods, the
   `confinement_attackers` feature and the three handoff harnesses into the nife-internal crate
   `non_volatile_memory_express_contract` (a provisional name). It moved `can_write` into the EL0
-  server, its only caller. [The names record](0857-crates-released-on-their-own/non-volatile-memory-express-names.md)
-  holds the crate's remaining names, all ratified.
+  server, its only caller. The crate's remaining names are all
+  ratified, in the `Name:` blocks of its source.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),

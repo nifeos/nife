@@ -6,6 +6,9 @@
 //! runs on a FAT12 volume of up to three clusters of up to four sectors, over the chain walk's
 //! hostile table, the bound Kani needs to unroll it. The slots inside a sector are read at fixed
 //! offsets below the sector's size; whole images are the fuzz target's.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as
+//! `boot_sector` and `long_name` name theirs.
 
 use super::*;
 use crate::reader::verification::HostileTable;

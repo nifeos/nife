@@ -1,6 +1,9 @@
 //! **An open volume**: a device, its checked boot sector, and the reads every later structure
 //! makes through them. It reads the table entry by entry and walks cluster chains with a bound
 //! no table contents can defeat.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The module that reads
+//! through a device, beside `volume`, which lays one out.
 
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
@@ -8,15 +11,27 @@ use crate::sector::{SectorDevice, SectorSize};
 use crate::table::{self, TableEntry};
 
 /// **Why a table read or a chain walk stopped.**
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Why a chain walk stopped,
+/// beside `ParseError` and `ReadError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChainError<E> {
     /// The device refused a read; its own error, unchanged.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same variant
+    /// `ReadError` has.
     Device(E),
     /// The cluster asked for, or a chain's first cluster, is not one of this volume's data
     /// clusters (2 to `clusters() + 1`).
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The condition, in the
+    /// words of `cluster_first_sector`'s doc.
     NotADataCluster(u32),
     /// `cluster`'s table entry cannot continue a chain: it is free, reserved or bad, or names a
     /// cluster the volume does not have.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A chain that cannot
+    /// continue.
     Broken {
         /// The cluster whose entry was read.
         cluster: u32,
@@ -24,6 +39,9 @@ pub enum ChainError<E> {
         entry: TableEntry,
     },
     /// The chain has more clusters than the volume holds, so it revisits one: the table loops.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. What the bound detects:
+    /// more clusters than the volume holds. Not `Loop`, since the walk never compares clusters.
     TooLong,
 }
 
@@ -57,6 +75,10 @@ pub enum ChainError<E> {
 /// let clusters: Vec<u32> = volume.chain(5).map(Result::unwrap).collect();
 /// assert_eq!(clusters, [5, 6]);
 /// ```
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. An open volume to read. The
+/// ruling of 2026-10-25 refused it for the writer as "a volume to be written, not one read", which
+/// leaves it to the reader.
 #[derive(Debug)]
 pub struct Volume<D> {
     device: D,
@@ -70,6 +92,9 @@ impl<D: SectorDevice> Volume<D> {
     ///
     /// Refuses what [`BootSector::read`] refuses, including a volume whose sector size is not the
     /// device's.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. What a caller does to a
+    /// volume before reading it.
     pub fn open(mut device: D) -> Result<Volume<D>, ReadError<D::Error>> {
         let boot = BootSector::read(&mut device)?;
         Ok(Volume {
@@ -81,11 +106,17 @@ impl<D: SectorDevice> Volume<D> {
     }
 
     /// The volume's boot sector, as [`Volume::open`] checked it.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Returns the `BootSector`
+    /// the volume holds.
     pub const fn boot_sector(&self) -> &BootSector {
         &self.boot
     }
 
     /// Give the device back.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The `into_` convention
+    /// for giving back what a value owns.
     pub fn into_device(self) -> D {
         self.device
     }
@@ -119,6 +150,8 @@ impl<D: SectorDevice> Volume<D> {
     ///
     /// Refuses a cluster that is not a data cluster of this volume, and passes on the device's
     /// error. A FAT12 entry that straddles two sectors costs two reads.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Reads one `TableEntry`.
     pub fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
         let (sector, within) = table::entry_position(&self.boot, cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
@@ -144,6 +177,9 @@ impl<D: SectorDevice> Volume<D> {
     /// entry. It ends with an error at an entry that cannot continue a chain, at a cluster the
     /// volume does not have, or once it would yield more clusters than the volume holds, which
     /// only a loop can make. After an error it yields nothing more.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's
+    /// "cluster chain".
     pub fn chain(&mut self, first: u32) -> Chain<'_, D> {
         Chain {
             volume: self,
@@ -152,6 +188,9 @@ impl<D: SectorDevice> Volume<D> {
     }
 
     /// **The root directory**: a region of FAT12 and FAT16, a chain of FAT32.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same word as
+    /// `BootSector::root_directory`, which says where it lives.
     pub fn root_directory(&mut self) -> Directory<'_, D> {
         Directory::root(self)
     }
@@ -159,6 +198,9 @@ impl<D: SectorDevice> Volume<D> {
     /// **The directory whose first cluster is `first`**, as a short entry's
     /// `first_cluster` names it. Cluster 0 is the root, the value a `..` entry holds in a
     /// directory whose parent is the root.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A directory by its first
+    /// cluster.
     pub fn directory(&mut self, first: u32) -> Directory<'_, D> {
         if first == 0 {
             Directory::root(self)
@@ -268,6 +310,9 @@ impl Walk {
 /// **A cluster chain, walked one cluster at a time**: what [`Volume::chain`] returns.
 ///
 /// It yields at most `clusters()` clusters and then ends, whatever the table holds.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The iterator `chain`
+/// returns.
 #[derive(Debug)]
 pub struct Chain<'v, D> {
     volume: &'v mut Volume<D>,

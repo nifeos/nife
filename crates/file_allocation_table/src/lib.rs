@@ -1,3 +1,6 @@
+//! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
+//! published.
+
 #![no_std]
 //! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Two halves exist today.
 //!

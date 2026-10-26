@@ -1,5 +1,7 @@
 //! The crate's host tests: the arithmetic, the plans, the report, and the device-tree decoders
 //! on hand-built property values. The SD/MMC test is at the end.
+//!
+//! Name: ratified 2026-10-26 (UTC).
 
 use super::*;
 
