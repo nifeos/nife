@@ -26,7 +26,8 @@ pub const BLOCK: usize = 512;
 /// How long `ACMD41` or `CMD1` may report busy before the card is declared dead: the SD spec gives
 /// a card one second from the first `ACMD41`.
 pub(crate) const POWER_UP_DEADLINE_US: u64 = 1_000_000;
-/// The relative card address (RCA) the host gives an eMMC.
+/// The relative card address the host assigns an eMMC with `CMD3`. An SD card proposes its own
+/// instead.
 #[doc(alias = "rca")]
 pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 
