@@ -18,12 +18,8 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 # device tree says). Host-tested against a simulated controller; nothing here dereferences a
 # pointer.
 
-[dependencies]
-# For the virtual addresses the kernel maps and `net_stack` reads, which rule 7 puts here rather
-# than in a "must match" comment on each side, as `e1000e` does.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
-# The device-tree query in `jh7110`, read against the same parser every other JH7110 crate uses.
-device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
+# No dependencies: the device-tree walk and the process layout around this driver are the
+# caller's.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

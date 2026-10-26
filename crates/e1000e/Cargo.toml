@@ -16,10 +16,8 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 # traits. The caller supplies the volatile register accesses; everything they compute is here,
 # host-tested against a simulated device and reachable by the model checker.
 
-[dependencies]
-# For the two virtual addresses the kernel maps and `net_stack` reads, which rule 7 puts here
-# rather than in a "must match" comment on each side.
-address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# No dependencies: the device-tree walk and the process layout around this driver are the
+# caller's.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

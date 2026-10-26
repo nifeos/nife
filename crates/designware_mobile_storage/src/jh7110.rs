@@ -7,8 +7,9 @@
 //! VisionFive 2 `mmc0` is the 8-bit eMMC socket and `mmc1` the 4-bit microSD slot, both at 50 MHz.
 //! The part is `DW_mshc` (Linux's `dw_mmc`), not the SDHCI-compatible `DWC_mshc`
 //! (`sdhci-of-dwcmshc`).
-
-use device_tree_blob::{DeviceTreeBlob, Region};
+//!
+//! The crate reads no device tree. The caller finds the node named for a slot in [`NODE_NAMES`]
+//! and hands [`Slot::from_node`] its `reg` and its properties.
 
 /// Mainline's `compatible`.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-mmc";
@@ -29,7 +30,10 @@ pub const FIFO_DEPTH: u32 = 32;
 pub const INTERRUPTS: [u32; 2] = [74, 75];
 
 /// The node names each slot goes by: mainline's first, then the vendor's.
-const NAMES: [[&[u8]; 2]; 2] = [
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
+/// walk and the process layout left the driver crates.
+pub const NODE_NAMES: [[&[u8]; 2]; 2] = [
     [b"mmc@16010000", b"sdio0@16010000"],
     [b"mmc@16020000", b"sdio1@16020000"],
 ];
@@ -74,48 +78,44 @@ fn be32(bytes: &[u8]) -> Option<u32> {
     Some(u32::from_be_bytes(bytes.get(..4)?.try_into().ok()?))
 }
 
-/// **Find slot `index` (0 or 1) in `tree`**, or `None` when the tree names no such controller
-/// under either spelling, or names one whose `compatible` is neither of the two above.
-///
-/// No constant fallback, unlike the clock and reset windows: a tree that does not describe the
-/// controller is not a tree for a board this driver knows the wiring of, and guessing a bus width
-/// for a slot nobody described is how a write lands on the wrong device.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover(
-    tree: &DeviceTreeBlob<'_>,
-    index: u8,
-) -> Result<Option<Slot>, device_tree_blob::Error> {
-    let Some(names) = NAMES.get(usize::from(index)) else {
-        return Ok(None);
-    };
-    for name in names {
-        let mut reg = [Region { start: 0, size: 0 }; 1];
-        if tree.node_reg(name, &mut reg)? == 0 {
-            continue;
-        }
-        let prop = |p: &[u8]| tree.node_prop(name, p);
+impl Slot {
+    /// **Slot `index`, from the node named for it**: `base` and `size` are its `reg`, and
+    /// `prop(name)` is the node's property `name`. `None` when the node's `compatible` names
+    /// neither binding, since a node at the slot's name under another binding is not this
+    /// controller. An absent `bus-width` is 1, and an absent or zero `assigned-clock-rates` is
+    /// the 50 MHz both trees assign.
+    ///
+    /// # Errors
+    ///
+    /// Propagates the first error `prop` returns.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
+    /// tree walk and the process layout left the driver crates.
+    pub fn from_node<'t, E>(
+        index: u8,
+        base: u64,
+        size: u64,
+        mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+    ) -> Result<Option<Slot>, E> {
         let Some(compat) = prop(b"compatible")? else {
-            continue;
+            return Ok(None);
         };
         let compatible = if compat.split(|&b| b == 0).any(|s| s == COMPATIBLE_MAINLINE) {
             COMPATIBLE_MAINLINE
         } else if compat.split(|&b| b == 0).any(|s| s == COMPATIBLE_VENDOR) {
             COMPATIBLE_VENDOR
         } else {
-            continue;
+            return Ok(None);
         };
         let status_okay =
             prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
         let bus_width = prop(b"bus-width")?
             .and_then(be32)
             .map_or(1, |w| u8::try_from(w).unwrap_or(1));
-        return Ok(Some(Slot {
+        Ok(Some(Slot {
             index,
-            base: reg[0].start,
-            size: reg[0].size,
+            base,
+            size,
             interrupt: prop(b"interrupts")?.and_then(be32),
             bus_width,
             fifo_depth: prop(b"fifo-depth")?.and_then(be32),
@@ -126,65 +126,89 @@ pub fn discover(
             compatible,
             status_okay,
             non_removable: prop(b"non-removable")?.is_some(),
-        }));
+        }))
     }
-    Ok(None)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const VENDOR: &[u8] = include_bytes!("../tests/fixtures/jh7110-mmc-vendor.dtb");
-    const MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-mmc-mainline.dtb");
-
-    #[test]
-    fn radons_vendor_tree_names_both_slots_with_the_generic_binding_and_no_interrupt() {
-        let tree = DeviceTreeBlob::from_bytes(VENDOR).unwrap();
-        let sd = discover(&tree, 1).unwrap().unwrap();
-        assert_eq!((sd.base, sd.size), (SDIO1_BASE, WINDOW_SIZE));
-        assert_eq!(sd.compatible, COMPATIBLE_VENDOR);
-        assert_eq!(sd.bus_width, 4);
-        assert_eq!(sd.fifo_depth, Some(FIFO_DEPTH));
-        assert_eq!(sd.ciu_hz, CIU_HZ);
-        assert_eq!(sd.interrupt, None);
-        assert!(sd.status_okay);
-        let emmc = discover(&tree, 0).unwrap().unwrap();
-        assert_eq!((emmc.base, emmc.bus_width), (SDIO0_BASE, 8));
-        assert_eq!(emmc.role(), "eMMC socket");
+    /// A property table standing in for one node.
+    fn node<'t>(
+        table: &'t [(&'static [u8], &'t [u8])],
+    ) -> impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, ()> + 't {
+        move |name| Ok(table.iter().find(|(n, _)| *n == name).map(|(_, v)| *v))
     }
 
     #[test]
-    fn mainline_names_the_jh7110_binding_and_the_interrupts() {
-        let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
-        let sd = discover(&tree, 1).unwrap().unwrap();
-        assert_eq!(sd.compatible, COMPATIBLE_MAINLINE);
-        assert_eq!(sd.interrupt, Some(INTERRUPTS[1]));
-        assert_eq!(sd.bus_width, 4);
-        let emmc = discover(&tree, 0).unwrap().unwrap();
-        assert_eq!(emmc.interrupt, Some(INTERRUPTS[0]));
+    fn a_mainline_node_reads_every_property() {
+        let table: &[(&[u8], &[u8])] = &[
+            (b"compatible", b"starfive,jh7110-mmc\0"),
+            (b"interrupts", &[0, 0, 0, 75]),
+            (b"bus-width", &[0, 0, 0, 4]),
+            (b"fifo-depth", &[0, 0, 0, 32]),
+            (b"assigned-clock-rates", &100_000_000u32.to_be_bytes()),
+            (b"status", b"okay\0"),
+            (b"non-removable", b""),
+        ];
+        let slot = Slot::from_node(1, SDIO1_BASE, WINDOW_SIZE, node(table))
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            slot,
+            Slot {
+                index: 1,
+                base: SDIO1_BASE,
+                size: WINDOW_SIZE,
+                interrupt: Some(75),
+                bus_width: 4,
+                fifo_depth: Some(FIFO_DEPTH),
+                ciu_hz: 100_000_000,
+                compatible: COMPATIBLE_MAINLINE,
+                status_okay: true,
+                non_removable: true,
+            }
+        );
+        assert_eq!(slot.role(), "microSD slot");
     }
 
     #[test]
-    fn a_tree_without_the_controller_or_a_third_slot_finds_nothing() {
-        let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
-        assert_eq!(discover(&tree, 2).unwrap(), None);
-        let qemu = DeviceTreeBlob::from_bytes(include_bytes!(
-            "../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb"
-        ))
-        .unwrap();
-        assert_eq!(discover(&qemu, 0).unwrap(), None);
-        assert_eq!(discover(&qemu, 1).unwrap(), None);
+    fn a_vendor_node_with_nothing_but_its_binding_takes_the_defaults() {
+        let table: &[(&[u8], &[u8])] = &[(b"compatible", b"snps,dw-mshc\0")];
+        let slot = Slot::from_node(0, SDIO0_BASE, WINDOW_SIZE, node(table))
+            .unwrap()
+            .unwrap();
+        assert_eq!(slot.compatible, COMPATIBLE_VENDOR);
+        assert_eq!(
+            (slot.bus_width, slot.ciu_hz, slot.interrupt),
+            (1, CIU_HZ, None)
+        );
+        assert!(slot.status_okay && !slot.non_removable);
+        assert_eq!(slot.role(), "eMMC socket");
+        let table: &[(&[u8], &[u8])] = &[
+            (b"compatible", b"snps,dw-mshc\0"),
+            (b"assigned-clock-rates", &[0, 0, 0, 0]),
+            (b"bus-width", &[0, 0, 1, 0]),
+            (b"status", b"disabled\0"),
+        ];
+        let slot = Slot::from_node(0, 0, 0, node(table)).unwrap().unwrap();
+        assert_eq!((slot.ciu_hz, slot.bus_width), (CIU_HZ, 1));
+        assert!(!slot.status_okay);
     }
 
-    /// A node at a slot's name with neither binding is not this controller, and a stated clock
-    /// rate is used rather than the default.
     #[test]
-    fn a_foreign_binding_is_skipped_and_a_stated_rate_is_kept() {
-        let tree =
-            DeviceTreeBlob::from_bytes(include_bytes!("../tests/fixtures/jh7110-mmc-odd.dtb"))
-                .unwrap();
-        assert_eq!(discover(&tree, 0).unwrap(), None);
-        assert_eq!(discover(&tree, 1).unwrap().unwrap().ciu_hz, 100_000_000);
+    fn a_node_under_another_binding_or_none_is_not_this_controller() {
+        let table: &[(&[u8], &[u8])] = &[(b"compatible", b"vendor,other\0")];
+        assert_eq!(Slot::from_node(0, 0, 0, node(table)).unwrap(), None);
+        assert_eq!(Slot::from_node(0, 0, 0, node(&[])).unwrap(), None);
+        let failing = |_: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(4) };
+        assert_eq!(Slot::from_node(0, 0, 0, failing), Err(4));
+    }
+
+    #[test]
+    fn each_slot_is_named_mainline_first() {
+        assert_eq!(NODE_NAMES[0], [&b"mmc@16010000"[..], b"sdio0@16010000"]);
+        assert_eq!(NODE_NAMES[1], [&b"mmc@16020000"[..], b"sdio1@16020000"]);
     }
 }

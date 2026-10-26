@@ -37,6 +37,11 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `address_space_map::pair_page`, its one use (`src/lib.rs`, in the handoff). That function places
   nife's virtual addresses, so the handoff it serves is nife's spawn ABI; whether the handoff stays
   in the published crate or moves to the driver is the lane's call, recorded in its pull request.
+- Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
+  the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
+- Cut on 2026-10-25 (UTC) by #2719. The handoff stays in the crate, since it is the driver's own
+  spawn record. The three virtual addresses that `pair_page` placed moved to
+  `crates/driver_process_contract`, which the kernel and the components link.
 - Its consumers: `kernel/src/e1000e.rs` (reset, MAC address, ring bases), `kernel/src/pci.rs`,
   `kernel/src/user/e1000e_service.rs`, `kernel/src/network_bench.rs`, and in `components/`,
   `e1000e_transport.rs` and `net_stack.rs` (descriptors and tails).
@@ -128,11 +133,16 @@ Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass
 citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map` is
 still a path dependency, so the copy does not build; the second half of the cut removes it.
 
+Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
+crate builds for the host and the three targets on 1.88. Stock Kani proves all 4 harnesses, and
+each falsification patch makes its harness fail. The only failures left are citations in `Name:`
+blocks, which the ratification pass settles.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `Handoff` and the addresses taken from `address_space_map` are nife's spawn ABI and address map.
+  `Handoff` is nife's spawn ABI. The addresses taken from `address_space_map` left with the cut.
 
 ## Exit
 

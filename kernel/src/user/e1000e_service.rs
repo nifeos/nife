@@ -9,7 +9,9 @@
 //! - The ring base registers are on the queue pages, so the IOMMU is the whole DMA confinement.
 //! - One wiring at a time ([`Absent::Busy`]): a test that keeps its holding blocks every later one.
 
-use ::e1000e::process::{DATA_PLANE_VA, RX_QUEUE_VA, TX_QUEUE_VA};
+use ::driver_process_contract::e1000e::{
+    DATA_PLANE_VIRTUAL_ADDRESS, RX_QUEUE_VIRTUAL_ADDRESS, TX_QUEUE_VIRTUAL_ADDRESS,
+};
 
 use super::*;
 use crate::cap::{Rights, memory_region_cap, notification_cap, rendezvous_cap, timer_cap};
@@ -157,18 +159,18 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     }; MAPS];
     super::fs_service::map_channel(
         &mut maps[..PLANE],
-        DATA_PLANE_VA,
+        DATA_PLANE_VIRTUAL_ADDRESS,
         found.handoff.data_plane_phys,
         PLANE,
     );
     // Device-typed, because a cached or reordered tail write is a frame the device never hears of.
     maps[PLANE] = Mapping {
-        va: RX_QUEUE_VA,
+        va: RX_QUEUE_VIRTUAL_ADDRESS,
         phys: found.bar0 + ::e1000e::RX_QUEUE_PAGE,
         flags: Flags::user_device(),
     };
     maps[PLANE + 1] = Mapping {
-        va: TX_QUEUE_VA,
+        va: TX_QUEUE_VIRTUAL_ADDRESS,
         phys: found.bar0 + ::e1000e::TX_QUEUE_PAGE,
         flags: Flags::user_device(),
     };
