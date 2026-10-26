@@ -36,12 +36,6 @@ interfaces = ["jh7110_clock_and_reset", "spin_lock"]
 [[exception]]
 date = 2026-09-27
 member = "kernel"
-crate = "non_volatile_memory_express"
-reason = "the kernel hands the driver non_volatile_memory_express::Handoff, a contract living in a driver crate"
-
-[[exception]]
-date = 2026-09-27
-member = "kernel"
 crate = "coremark"
 reason = "the bench feature runs coremark inside the kernel; a benchmark is a fixture a release kernel should not link"
 

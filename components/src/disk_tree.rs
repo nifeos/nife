@@ -21,7 +21,7 @@ use filesystem_contract::{blk, fs, reply_err};
 use user_mode_runtime::{call, receive_request, reply, send};
 
 /// Slot 0: the NVMe server's request endpoint, `WRITE`, badged
-/// `non_volatile_memory_express::DISK_TREE_WINDOW`, so this server stages in a window of its own
+/// `non_volatile_memory_express_contract::DISK_TREE_WINDOW`, so this server stages in a window of its own
 /// beside the filesystem server and the NVMe server refuses it a write.
 const BLK: u64 = 0;
 /// Slot 1: the request endpoint, `READ`. Clients `CALL` it with `filesystem_contract::fs`.

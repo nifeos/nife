@@ -1,6 +1,6 @@
 Falsifies `non_volatile_memory_express::verification::cq_pop_stays_in_bounds_and_flips_only_at_the_wrap`.
 
-The defect: `CqState::pop` wraps one slot early (`>= entries - 1`), so the last completion slot is
+The defect: `CompletionQueue::pop` wraps one slot early (`>= entries - 1`), so the last completion slot is
 never read and the phase flips a slot too soon. **This patch does not turn the original harness
 red**: the head stays in bounds, the returned value equals the head and the phase flips exactly
 when the head reads zero, all of which an early wrap satisfies. The record is for the harness as
@@ -14,7 +14,7 @@ diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile
 index 61231abef..1d1e1c043 100644
 --- a/crates/non_volatile_memory_express/src/lib.rs
 +++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -518,3 +518,3 @@ impl CqState {
+@@ -518,3 +518,3 @@ impl CompletionQueue {
          self.head += 1;
 -        if self.head == self.entries {
 +        if self.head >= self.entries - 1 {

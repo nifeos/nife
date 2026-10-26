@@ -1,4 +1,4 @@
-Falsifies `non_volatile_memory_express::verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has`.
+Falsifies `non_volatile_memory_express_contract::verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has`.
 
 The defect: `holds_block` drops its `checked_add(1)`, so it bounds the block's first byte rather than
 its last. The block one past the end of the namespace is then accepted and a command is built
@@ -8,11 +8,10 @@ Expected to fail: the harness's `assert!((block + 1) * 4096 <= h.size_bytes)`. T
 4096` also overflows for a huge `block` under this patch, so Kani reports that check too; both
 are the same escape seen from the harness's side.
 
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
-index 7827ea4e1..f4832c004 100644
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -708,3 +708,3 @@ impl Handoff {
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- a/crates/non_volatile_memory_express_contract/src/lib.rs
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -151,3 +151,3 @@
      pub fn holds_block(&self, block: u64, unit: u64) -> bool {
 -        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
 +        match Some(block).and_then(|n| n.checked_mul(unit)) {

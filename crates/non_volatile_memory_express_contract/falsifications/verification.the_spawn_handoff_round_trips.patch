@@ -1,15 +1,14 @@
-Falsifies `non_volatile_memory_express::verification::the_spawn_handoff_round_trips`.
+Falsifies `non_volatile_memory_express_contract::verification::the_spawn_handoff_round_trips`.
 
 The defect: `Handoff::pack` shifts `blocks_per` by 17 where `unpack` reads from bit 16. The data
 plane then addresses twice the LBA it was told, and nothing between the two halves notices.
 
 Expected to fail: the harness's `assert_eq!(Handoff::unpack(h.pack()), Some(h))`.
 
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
-index 7827ea4e1..2b191cf62 100644
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -674,3 +674,3 @@ impl Handoff {
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- a/crates/non_volatile_memory_express_contract/src/lib.rs
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -113,3 +113,3 @@
          [
 -            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,
 +            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 17 | self.entries as u64,
