@@ -13,10 +13,10 @@
 //! sit this way. The argument and the refusals are recorded once, beside the crate, in
 //! `crates/non_volatile_memory_express`.
 
+use driver_process_contract::non_volatile_memory_express::Handoff;
 use non_volatile_memory_express::{
     Cap, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace, SubmissionQueue, regs,
 };
-use non_volatile_memory_express_contract::Handoff;
 
 use crate::arch::mmu;
 
@@ -27,7 +27,7 @@ pub const BLOCK_SIZE: usize = filesystem_contract::blk::BLOCK_SIZE;
 /// The EL0 server's client windows (milestone 834 (ioping on nife and Linux)), named here for the
 /// NVMe system tests.
 #[cfg(feature = "system_tests")]
-pub use ::non_volatile_memory_express_contract::{
+pub use ::driver_process_contract::non_volatile_memory_express::{
     CLIENT_WINDOWS, DISK_TREE_WINDOW, FILESYSTEM_WINDOW, INSTALLER_WINDOW,
 };
 
@@ -48,8 +48,8 @@ const IO_CQ_PAGE: u64 = 4;
 /// same offset from what it was handed; the constant is duplicated there against this one because
 /// the two live in different address spaces and nothing but the spawn contract joins them.
 pub(crate) const TRANSFER_PAGES: u64 = filesystem_contract::blk::TRANSFER_BLOCKS as u64;
-const DMA_PAGES: u64 =
-    5 + TRANSFER_PAGES * ::non_volatile_memory_express_contract::CLIENT_WINDOWS as u64;
+const DMA_PAGES: u64 = 5 + TRANSFER_PAGES
+    * ::driver_process_contract::non_volatile_memory_express::CLIENT_WINDOWS as u64;
 
 /// A frame outside the DMA region that [`bring_up`] adds to the controller's IOMMU domain; zero in
 /// every shipped boot and passing test.
@@ -98,7 +98,8 @@ pub enum Error {
     UnsupportedNamespace { lba_shift: u8, blocks: u64 },
     /// CAP describes a controller this driver cannot drive: queues too shallow, a minimum page
     /// size above the kernel's 4 KiB frames, or a doorbell stride whose file would not fit the
-    /// one page of BAR0 an EL0 data plane is mapped (`non_volatile_memory_express::MAX_DSTRD`).
+    /// one page of BAR0 an EL0 data plane is mapped
+    /// (`driver_process_contract::non_volatile_memory_express::MAX_DSTRD`).
     UnsupportedController,
 }
 
@@ -153,7 +154,8 @@ impl NonVolatileMemoryExpress {
         // naming the controller, not in a process that cannot reach its doorbells (`MAX_DSTRD`).
         if cap.max_queue_entries() < ENTRIES as u32
             || cap.min_page_size() > page_frames::FRAME_SIZE
-            || cap.doorbell_stride() > non_volatile_memory_express::MAX_DSTRD
+            || cap.doorbell_stride()
+                > driver_process_contract::non_volatile_memory_express::MAX_DSTRD
         {
             return Err(Error::UnsupportedController);
         }
@@ -259,7 +261,7 @@ impl NonVolatileMemoryExpress {
     }
 
     /// **Everything the EL0 data plane is told**, and the whole of what it could not compute for
-    /// itself. See [`non_volatile_memory_express_contract::Handoff`] for why it is three words.
+    /// itself. See [`driver_process_contract::non_volatile_memory_express::Handoff`] for why it is three words.
     pub(crate) fn handoff(&self) -> Handoff {
         Handoff {
             dstrd: self.dstrd,

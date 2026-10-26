@@ -627,7 +627,7 @@ network_time_protocol,Packet::to_bytes,replace | with ^,equivalent,"| over opera
 non_volatile_memory_express,enabled_controller_configuration,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
 non_volatile_memory_express,Command::create_io_completion_queue,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
 non_volatile_memory_express,Command::create_io_submission_queue,replace | with ^,equivalent,argued in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md; the 2026-10-07 per-crate re-run still reports it
-non_volatile_memory_express_contract,Handoff::pack,replace | with ^,equivalent,"dstrd is shifted to bit 32, blocks_per to bit 16 and entries is a u16 in bits 0 to 15, so | and ^ agree; argued for the crate it left in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md"
+driver_process_contract::non_volatile_memory_express,Handoff::pack,replace | with ^,equivalent,"dstrd is shifted to bit 32, blocks_per to bit 16 and entries is a u16 in bits 0 to 15, so | and ^ agree; argued for the crate it left in notes/mutation-testing/jh7110-clock-and-reset-non-volatile-memory-express-screen-console.md"
 page_frames,PageFrameAllocator<'a>::alloc,replace + with *,equivalent,"hint = i rather than i + 1: slot i was just taken, so the next scan steps over it and finds the same first free frame"
 page_frames,PageFrameAllocator<'a>::alloc_contiguous,replace || with &&,equivalent,argued in notes/mutation-testing/baseline-survivors-abi-to-ipc.md; the 2026-10-07 per-crate re-run still reports it
 page_frames,PageFrameAllocator<'a>::largest_free_run,replace > with >=,equivalent,a tie in a running maximum assigns the same value
@@ -688,11 +688,11 @@ designware_ethernet,DataPlane::start,replace + with -,killed,killed by tests::st
 designware_ethernet,DataPlane::start,replace - with +,killed,killed by tests::start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring
 designware_ethernet,DataPlane::start,replace - with /,killed,killed by tests::start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring
 designware_ethernet,DataPlane::transmit,replace > with >=,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance
-designware_ethernet,Handoff::is_role,replace & with ^,killed,killed by tests::the_handoff_round_trips_and_each_refusal_stands_alone
-designware_ethernet,Handoff::is_role,replace & with |,killed,killed by tests::the_handoff_round_trips_and_each_refusal_stands_alone
-designware_ethernet,Handoff::is_role,replace Handoff::is_role -> bool with false,killed,killed by tests::the_handoff_round_trips_and_each_refusal_stands_alone
-designware_ethernet,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG is below bit 16 and the MAC is shifted above it, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,Handoff::unpack,replace || with &&,killed,killed by tests::the_handoff_round_trips_and_each_refusal_stands_alone
+driver_process_contract::designware_ethernet,Handoff::is_role,replace & with ^,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
+driver_process_contract::designware_ethernet,Handoff::is_role,replace & with |,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
+driver_process_contract::designware_ethernet,Handoff::is_role,replace Handoff::is_role -> bool with false,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
+driver_process_contract::designware_ethernet,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG is below bit 16 and the MAC is shifted above it, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract::designware_ethernet,Handoff::unpack,replace || with &&,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
 designware_ethernet,Identity::dma_bits,delete match arm 2,killed,killed by controller::tests::every_address_width_encoding_and_a_saturating_fifo
 designware_ethernet,Settings::from_mainline,replace / with %,killed,killed by motorcomm::tests::a_delay_rounds_to_the_nearest_step
 designware_ethernet,Speed::mbps,replace Speed::mbps -> u32 with 0,killed,killed by motorcomm::tests::each_speed_is_its_megabits
@@ -1056,8 +1056,8 @@ e1000e,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 0,killed,ki
 e1000e,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 1,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
 e1000e,DataPlane::start,replace + with *,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
 e1000e,DataPlane::start,replace + with -,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
-e1000e,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG (0xe1e0) is below bit 16 and the MAC address is shifted left by 16, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,Handoff::unpack,replace || with &&,killed,killed by the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone
+driver_process_contract::e1000e,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG (0xe1e0) is below bit 16 and the MAC address is shifted left by 16, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract::e1000e,Handoff::unpack,replace || with &&,killed,killed by the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone
 e1000e,flush::rxdctl,replace | with ^,equivalent,"^ binds tighter than |, so each mutant xors two operands that share no bit: the masked register (bits 14 and up) with 0x1f, or two of 0x1f, 1 << 8 and 0x0100_0000; the 2026-10-12 per-crate re-run still reports it"
 e1000e,flush::tail_after,replace flush::tail_after -> u32 with 0,killed,killed by the_flush_values_are_freebsds
 e1000e,flush::tx_word,replace << with >>,killed,killed by the_flush_values_are_freebsds
@@ -1247,11 +1247,12 @@ designware_mobile_storage,Entry::contains,replace < with >,killed,killed by a_pa
 designware_mobile_storage,Entry::contains,replace >= with <,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with false,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with true,killed,killed by a_partition_contains_its_own_sectors_and_no_others
-driver_process_contract,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it. The xHCI module's Handoff::pack shares this key: dma_pages is a u32 in bits 0 to 31 and registers is shifted to 32 and up, so | and ^ agree there too"
-driver_process_contract,needed_ranges,replace + with -,killed,killed by the_needed_ranges_end_at_their_last_byte
-driver_process_contract,needed_ranges,replace - with +,killed,killed by the_needed_ranges_end_at_their_last_byte
-driver_process_contract,needed_ranges,replace - with /,killed,killed by the_needed_ranges_end_at_their_last_byte
-driver_process_contract,register_window,replace < with <=,killed,killed by qemus_window_withholds_the_msix_page_and_nothing_else (a withheld range ending exactly at page 4 leaves page 4 mapped)
+driver_process_contract::designware_mobile_storage,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract::extensible_host_controller_interface,Handoff::pack,replace | with ^,equivalent,"dma_pages is a u32 in bits 0 to 31 and registers is shifted to 32 and up, so | and ^ agree"
+driver_process_contract::extensible_host_controller_interface,needed_ranges,replace + with -,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract::extensible_host_controller_interface,needed_ranges,replace - with +,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract::extensible_host_controller_interface,needed_ranges,replace - with /,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract::extensible_host_controller_interface,register_window,replace < with <=,killed,killed by qemus_window_withholds_the_msix_page_and_nothing_else (a withheld range ending exactly at page 4 leaves page 4 mapped)
 designware_mobile_storage,"Host<R, D>::finish",replace != with ==,killed,killed by a_data_error_at_the_end_of_a_write_is_reported_promptly
 designware_mobile_storage,"Host<R, D>::finish",replace & with ^,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
 designware_mobile_storage,"Host<R, D>::finish",replace & with |,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop

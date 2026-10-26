@@ -380,8 +380,7 @@ capability_manifest_note	131	a manifest note has one encoding, and decoding host
 package_archive	6	a package file is refused or read entirely inside itself, on bytes the solver chose
 measured_boot	66	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	26	config-space decode on hostile-device input
-non_volatile_memory_express	5	the queue rings never index out, and the doorbell/PRP arithmetic is total
-non_volatile_memory_express_contract	3	the spawn handoff round-trips, keeps its doorbells in the mapped page, and builds commands only for blocks the namespace has
+non_volatile_memory_express	5	the queue rings never index out, the doorbell/PRP arithmetic is total, and a transfer command names only a block the namespace has
 e1000e	2	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 usb	168	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
@@ -400,7 +399,10 @@ capability_plan	14	no wiring grants a right its declaration did not ask for
 timetable	44	the scheduler's fire arithmetic: strictly forward, minimal, and a stall costs one fire
 jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
 designware_mobile_storage	4	the SD write test never lands in a partition, the FIFO is never overrun, no admitted block wraps its address
-driver_process_contract	1	no block the SD card server translates leaves the window the kernel chose, the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
+driver_process_contract::designware_mobile_storage	1	no block the SD card server translates leaves the window the kernel chose
+driver_process_contract::e1000e	3	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
+driver_process_contract::extensible_host_controller_interface	25	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
+driver_process_contract::non_volatile_memory_express	2	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
 kernel	8	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	7	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	493	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
@@ -484,6 +486,13 @@ for c in $crates; do
                 extra="$(git grep -lF '#[kani::proof]' -- 'components/src/*.rs' \
                     | sed 's|components/src/||; s|\.rs$||' \
                     | sed 's|^|--bin |' | tr '\n' ' ')" ;;
+        # **A row named `<crate>::<module>` proves one module's harnesses** (2026-10-26 UTC):
+        # `driver_process_contract` is one crate with a module per driver, so each driver's proofs
+        # get their own seconds and their own description. Kani's `--harness` matches a substring
+        # of the harness's path, and every harness of the module sits under `<module>::`. A module
+        # with harnesses and no row is the invisible failure above, so `script/lint`'s table check
+        # compares such a crate's rows against its modules, not against the crate.
+        *::*)   extra="--harness ${c#*::}::" ;;
         *)      extra="" ;;
     esac
     echo "==> kani: $c ($desc)"
@@ -491,7 +500,7 @@ for c in $crates; do
     # Unquoted on purpose: `extra` is either empty or two flags, and quoting it would hand cargo one
     # argument that is the empty string.
     # shellcheck disable=SC2086
-    kani -p "$c" $extra "$@"
+    kani -p "${c%%::*}" $extra "$@"
     # One line per crate, the measurement the table above is refreshed from
     # (helpers/verify_times.py reads it out of CI logs). Wall clock, compile included.
     secs=$(( $(date +%s) - started ))

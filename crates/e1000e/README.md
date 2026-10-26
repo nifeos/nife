@@ -10,14 +10,11 @@ simulated device. It was written for the nife kernel.
 
 ## What is proven
 
-Four Kani harnesses cover the input a device or a caller controls:
+Three Kani harnesses cover the input a device or a caller controls:
 
 - `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room`: for every status word a device
   can write and every caller buffer size, a frame that `rx_verdict` delivers fits both the receive
   buffer and the caller's space.
-- `proofs::the_handoff_round_trips_and_accepts_only_what_pack_can_make`: `Handoff::unpack` accepts
-  only a page-aligned, nonzero DMA base and a unicast MAC address, and what it accepts packs and
-  unpacks to itself.
 - `proofs::every_ring_offset_is_inside_the_region`: for any index, every descriptor and buffer
   offset lies inside its part of the DMA region.
 - `pch::phy::proofs::a_paged_access_selects_the_offsets_own_page_and_register`: every paged PHY
@@ -60,8 +57,7 @@ drive a `DataPlane` with `start`, `receive` and `transmit`.
 - The I219 port has run on real hardware once, with no cable; otherwise it is proven only against
   the simulator, which is this crate's reading of FreeBSD.
 - Legacy descriptors on the I219 are an assumption from the 8254x lineage.
-- `Handoff` encodes one kernel's spawn arguments and may leave the crate. The API may still change
-  before 1.0.
+- The API may still change before 1.0.
 
 The minimum supported Rust version is 1.88.
 

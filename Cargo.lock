@@ -235,7 +235,6 @@ dependencies = [
  "network_time_protocol",
  "nifefs",
  "non_volatile_memory_express",
- "non_volatile_memory_express_contract",
  "pgrep",
  "pmap",
  "ps",
@@ -436,8 +435,10 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",
+ "non_volatile_memory_express",
 ]
 
 [[package]]
@@ -765,7 +766,6 @@ dependencies = [
  "memory_regions",
  "nifefs",
  "non_volatile_memory_express",
- "non_volatile_memory_express_contract",
  "page_frames",
  "paging",
  "pci",
@@ -934,14 +934,6 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0"
-
-[[package]]
-name = "non_volatile_memory_express_contract"
-version = "0.1.0"
-dependencies = [
- "non_volatile_memory_express",
- "non_volatile_memory_express_contract",
-]
 
 [[package]]
 name = "nu-ansi-term"

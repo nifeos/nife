@@ -6,9 +6,11 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-145 names: 138 no block, 6 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 13 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 21 rows say something other than `clear` or `term`. This file renames nothing.
+139 names: 133 no block, 5 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 15 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -24,7 +26,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `data_plane` | module | `src/data_plane.rs` | provisional. | no | clear |
 | `descriptor` | module | `src/descriptor.rs` | provisional. | no | clear |
 | `device` | module | `src/device.rs` | provisional. | no | clear |
-| `handoff` | module | `src/handoff.rs` | provisional. | no | nife: nife's own process plan |
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `flush` | module | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `hardware` | module | `src/pch/hardware.rs` | provisional. | no | clear |
@@ -80,11 +81,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `VENDOR_INTEL` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `is_supported` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `model` | item | `src/device.rs` | unrecorded. | yes | clear |
-| `Handoff` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `ROLE_TAG` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `is_role` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `pack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `unpack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `RX_BUFFERS` | item | `src/layout.rs` | unrecorded. | yes | clear |
@@ -168,7 +164,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
 - the inline modules `status` and `control` in `src/pch/nvm.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
-- the fields of `DataPlane` (1), `Handoff` (2), `phy::Plan` (3) and the private `Sim` (22);
+- the fields of `DataPlane` (1), `phy::Plan` (3) and the private `Sim` (22);
 - the variants of `TxError` (2), `RxVerdict` (3), `nvm::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
 - the methods of the traits `Region` (4), `Tails` (3) and `Hw` (6).
 

@@ -3,8 +3,8 @@
 //! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
 //! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
 //! host-tested and Kani-reachable, including the block-range check
-//! [`non_volatile_memory_express_contract::Handoff::transfer_command`] applies; what is left here is
-//! volatile access, two barriers and a bounded poll.
+//! [`non_volatile_memory_express::transfer_command`] applies; what is left here is volatile access,
+//! two barriers and a bounded poll.
 
 //! # Capability contract
 //!
@@ -37,12 +37,12 @@
 #![allow(missing_docs)]
 #![no_main]
 
+use driver_process_contract::non_volatile_memory_express::{
+    CLIENT_WINDOWS, DISK_TREE_WINDOW, Handoff, client_window,
+};
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue,
-};
-use non_volatile_memory_express_contract::{
-    CLIENT_WINDOWS, DISK_TREE_WINDOW, Handoff, client_window,
+    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue, transfer_command,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -226,13 +226,21 @@ impl Plane {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
         let data_phys = self.handoff.data_plane_phys + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
-        let cmd = self
-            .handoff
-            .transfer_command(cid, NSID, block, PAGE, data_phys, PAGE, write)
-            // `None` means the block is outside the namespace or the arithmetic would not close;
-            // either way it is the caller's request that is wrong, and the crate refused to build
-            // a command rather than let the controller answer for it.
-            .ok_or(u16::MAX)?;
+        let cmd = transfer_command(
+            self.handoff.size_bytes,
+            self.handoff.blocks_per,
+            cid,
+            NSID,
+            block,
+            PAGE,
+            data_phys,
+            PAGE,
+            write,
+        )
+        // `None` means the block is outside the namespace or the arithmetic would not close;
+        // either way it is the caller's request that is wrong, and the crate refused to build
+        // a command rather than let the controller answer for it.
+        .ok_or(u16::MAX)?;
         self.transact(cmd)
     }
 }
@@ -261,7 +269,8 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-dma-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if DATA.r64(TRANSFER_OFF) == non_volatile_memory_express_contract::ESCAPE_MAGIC {
+    if DATA.r64(TRANSFER_OFF) == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC
+    {
         let victim = DATA.r64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
@@ -345,7 +354,7 @@ fn serve(mut plane: Plane) -> ! {
 /// **Aim DMA outside this server's region, both directions, and report what the controller did**
 /// (milestone 261 (the NVMe driver leaves the kernel)'s Outstanding item; milestone 202 (every
 /// confinement test is a ritual until somebody breaks the confinement)). It goes around
-/// [`Handoff::transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
+/// [`transfer_command`]'s refusal and hands [`Command::read`]/[`Command::write`] a PRP of
 /// its own, `victim`, a physical address outside this process's DMA window: a `READ` would
 /// overwrite a frame this server was never granted, a `WRITE` would leak `victim` onto the disk.
 /// With the IOMMU confining the controller to its own region both fault, and the kernel test reads

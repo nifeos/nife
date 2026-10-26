@@ -60,7 +60,6 @@ mod tests;
 
 mod data_plane;
 mod descriptor;
-mod handoff;
 mod hardware;
 
 pub use data_plane::{DataPlane, Region, Tails, TxError};
@@ -71,7 +70,6 @@ pub use descriptor::{
     TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS, TDES3_LS, TDES3_OWN, TX_ENTRIES,
     rx_descriptor_words, rx_verdict, tx_descriptor_words,
 };
-pub use handoff::{Handoff, ROLE_TAG};
 pub use hardware::Hw;
 
 #[cfg(kani)]

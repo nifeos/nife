@@ -30,10 +30,10 @@ Each wants its shared half in a crate in `contracts`, leaving the tool or driver
 Rule 7 of `AGENTS.md` already says this ("anything two binaries must agree on is a crate"). These
 satisfy its letter, being crates, and miss its intent, being the wrong crates.
 
-On 2026-10-26 (UTC) pull request #2736 settled the NVMe row. `Handoff` and the client windows moved
-to `non_volatile_memory_express_contract` (a provisional name). That crate and
-`non_volatile_memory_express` became `drivers` interfaces, the way `jh7110_entropy` already was,
-since the kernel still links the queue crate to bring the controller up. Its `[[exception]]` is gone.
+The NVMe row is settled. `Handoff` and the client windows sit in the `non_volatile_memory_express`
+module of `driver_process_contract` (ruled 2026-10-26 UTC, milestone 857), a `contracts` interface.
+`non_volatile_memory_express` is a `drivers` interface, the way `jh7110_entropy` already was, since
+the kernel still links the queue crate to bring the controller up. Its `[[exception]]` is gone.
 
 ## Done when
 

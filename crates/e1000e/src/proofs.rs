@@ -15,21 +15,6 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     }
 }
 
-/// **The handoff round-trips, and anything it accepts is page aligned with a unicast MAC.**
-///
-/// Falsification: replayable `crates/e1000e/falsifications/proofs.the_handoff_round_trips_and_accepts_only_what_pack_can_make.patch`
-#[kani::proof]
-fn the_handoff_round_trips_and_accepts_only_what_pack_can_make() {
-    let a0: u64 = kani::any();
-    let a1: u64 = kani::any();
-    if let Some(h) = Handoff::unpack(a0, a1) {
-        assert!(h.data_plane_phys.is_multiple_of(PAGE) && h.data_plane_phys != 0);
-        assert!(h.mac[0] & 1 == 0);
-        let [p0, p1] = h.pack();
-        assert!(Handoff::unpack(p0, p1) == Some(h));
-    }
-}
-
 /// **Every descriptor and buffer offset, for any index, lies inside the region.**
 ///
 /// Falsification: replayable `crates/e1000e/falsifications/proofs.every_ring_offset_is_inside_the_region.patch`
