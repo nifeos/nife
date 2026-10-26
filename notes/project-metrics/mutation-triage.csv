@@ -790,44 +790,23 @@ extensible_host_controller_interface,,replace << with >>,killed,"killed by the_r
 extensible_host_controller_interface,,replace | with &,killed,killed by the_portsc_bits_are_where_the_specification_puts_them (CHANGES) and the_register_bits_are_where_the_specification_puts_them (LEGACY_SMI_ENABLES)
 extensible_host_controller_interface,,replace | with ^,equivalent,"every site ORs bit fields that do not overlap (the CHANGES flags at 17 to 23, PRESERVE's eight disjoint fields, LEGACY_SMI_ENABLES's bits 0, 4 and 13 to 15), so | and ^ agree on every value; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,Capabilities::decode,replace | with ^,equivalent,"the scratchpad high field is shifted to bits 5 to 9 and the low field is HCSPARAMS2 >> 27, bits 0 to 4, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Capabilities::needed_ranges,replace + with -,killed,killed by the_needed_ranges_end_at_their_last_byte
-extensible_host_controller_interface,Capabilities::needed_ranges,replace - with +,killed,killed by the_needed_ranges_end_at_their_last_byte
-extensible_host_controller_interface,Capabilities::needed_ranges,replace - with /,killed,killed by the_needed_ranges_end_at_their_last_byte
 extensible_host_controller_interface,Event::decode,replace << with >>,killed,killed by events_decode_by_type (a command TRB above 4 GiB)
 extensible_host_controller_interface,Event::decode,replace | with ^,equivalent,"the pointer joins dword 0 (bits 0 to 31) with dword 1 shifted to 32, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,EventRing::index,replace EventRing::index -> u16 with 0,killed,killed by the_event_ring_laps
 extensible_host_controller_interface,EventRing::segment_table_entry,replace >> with <<,killed,killed by the_event_ring_laps (a ring above 4 GiB)
-extensible_host_controller_interface,Handoff::pack,replace | with ^,equivalent,"dma_pages is a u32 in bits 0 to 31 and registers is shifted to 32 and up, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,ProducerRing::dequeue_pointer,replace | with ^,equivalent,"a ring entry's address is base + 16 * index and every ring base is at least 16-byte aligned (xHCI 1.2 section 6.5, and the DMA layout puts rings on page boundaries), so bit 0 is clear and | and ^ with the cycle bit agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Step::describe,"replace Step::describe -> &'static str with ""xyzzy""",killed,"killed by every_step_round_trips_through_its_byte, which now asserts no two steps describe themselves alike"
-extensible_host_controller_interface,Step::from_code,delete match arm 1,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 10,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 11,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 12,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 13,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 14,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 15,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 17,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 2,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 3,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 4,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 5,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 6,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 7,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 8,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Step::from_code,delete match arm 9,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-extensible_host_controller_interface,Trb::address_device,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::configure_endpoint,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::data,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the direction at bit 16 and ISP at bit 2, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::disable_slot,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::evaluate_context,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::link,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and Toggle Cycle at bit 1, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::normal,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, IOC at bit 5 and ISP at bit 2, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::reset_endpoint,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the u8 endpoint at 16 to 23 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::set_dequeue,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the u8 endpoint at 16 to 23 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::setup,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, IDT at bit 6 and the transfer type (at most 3) at 16 to 17, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::status,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the direction at bit 16 and IOC at bit 5, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,Trb::with_cycle,replace | with ^,equivalent,"(d[3] & !1) clears bit 0 before the cycle bit is ORed into it, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::address_device,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::configure_endpoint,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::data,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the direction at bit 16 and ISP at bit 2, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::disable_slot,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::evaluate_context,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::link,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15 and Toggle Cycle at bit 1, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::normal,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, IOC at bit 5 and ISP at bit 2, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::reset_endpoint,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the u8 endpoint at 16 to 23 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::set_dequeue,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the u8 endpoint at 16 to 23 and the slot at 24 to 31, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::setup,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, IDT at bit 6 and the transfer type (at most 3) at 16 to 17, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::status,replace | with ^,equivalent,"the TRB type sits at bits 10 to 15, the direction at bit 16 and IOC at bit 5, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+extensible_host_controller_interface,TransferRequestBlock::with_cycle,replace | with ^,equivalent,"(d[3] & !1) clears bit 0 before the cycle bit is ORed into it, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,endpoint,replace >> with <<,killed,killed by an_interrupt_endpoint_context_carries_type_size_interval_and_ring (a ring above 4 GiB)
 extensible_host_controller_interface,endpoint,replace | with ^,equivalent,"dword 1's fields are bits 1 to 2, 3 to 10 (a u8 kind) and 16 to 31, and dword 4's are a u16 below 16 and esit shifted to 16, all disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,find_extended,replace * with +,killed,killed by the_next_pointer_is_in_dwords_and_the_limit_is_inclusive
@@ -836,12 +815,28 @@ extensible_host_controller_interface,interrupt_interval,replace < with <=,equiva
 extensible_host_controller_interface,interrupt_interval,replace < with ==,equivalent,"microframes is at least 8, so the exponent is never below 3; exponent == 3 replaces 3 with 3; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,interrupt_interval,replace > with ==,equivalent,"bInterval is at most 255, so microframes is at most 2040 and the exponent at most 10; exponent == 10 replaces 10 with 10; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,interrupt_interval,replace > with >=,equivalent,"both sites are clamps whose bound equals the clamped value at the tie (exponent 10 to 10, bInterval 16 to 16), so > and >= give the same result; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,keyboard,replace | with ^,equivalent,"port (bits 0 to 7), speed (8 to 15), vendor (16 to 31) and product (32 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,ports,replace | with ^,equivalent,"ports (bits 0 to 7), connected (8 to 15) and settled (16) are disjoint, so | and ^ agree"
-extensible_host_controller_interface,refusal,replace | with ^,equivalent,"step (bits 0 to 7), port (8 to 15) and detail (16 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,register_window,replace < with <=,killed,killed by qemus_window_withholds_the_msix_page_and_nothing_else (a withheld range ending exactly at page 4 leaves page 4 mapped)
 extensible_host_controller_interface,slot,replace | with ^,equivalent,"speed is masked to 4 bits at 20 and entries to 5 bits at 27, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,write_value,replace | with ^,killed,killed by writing_a_preserved_bit_again_keeps_it
+usb_keyboard_report,BringUpStep::sentence,"replace BringUpStep::sentence -> &'static str with ""xyzzy""",killed,"killed by every_step_round_trips_through_its_byte, which now asserts no two steps describe themselves alike"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 1,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 10,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 11,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 12,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 13,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 14,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 15,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 17,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 2,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 3,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 4,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 5,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 6,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 7,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 8,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,BringUpStep::from_code,delete match arm 9,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+usb_keyboard_report,keyboard_report,replace | with ^,equivalent,"port (bits 0 to 7), speed (8 to 15), vendor (16 to 31) and product (32 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+usb_keyboard_report,ports_report,replace | with ^,equivalent,"ports (bits 0 to 7), connected (8 to 15) and settled (16) are disjoint, so | and ^ agree"
+usb_keyboard_report,failure_report,replace | with ^,equivalent,"step (bits 0 to 7), port (8 to 15) and detail (16 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,Verb::mutates,replace | with ^,equivalent,"dir::WRITE, CREATE and REMOVE are bits 2, 3 and 4, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,encode,replace | with ^,equivalent,"a name is at most grant::MAX_NAME (16) bytes, below IS_DIR (bit 7), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,rename_dst,replace | with ^,equivalent,"(handle & 0xffff) << 40 and len & ((1 << 40) - 1) occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
@@ -1250,7 +1245,11 @@ designware_mobile_storage,Entry::contains,replace < with >,killed,killed by a_pa
 designware_mobile_storage,Entry::contains,replace >= with <,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with false,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with true,killed,killed by a_partition_contains_its_own_sectors_and_no_others
-driver_process_contract,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it. The xHCI module's Handoff::pack shares this key: dma_pages is a u32 in bits 0 to 31 and registers is shifted to 32 and up, so | and ^ agree there too"
+driver_process_contract,needed_ranges,replace + with -,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract,needed_ranges,replace - with +,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract,needed_ranges,replace - with /,killed,killed by the_needed_ranges_end_at_their_last_byte
+driver_process_contract,register_window,replace < with <=,killed,killed by qemus_window_withholds_the_msix_page_and_nothing_else (a withheld range ending exactly at page 4 leaves page 4 mapped)
 designware_mobile_storage,"Host<R, D>::finish",replace != with ==,killed,killed by a_data_error_at_the_end_of_a_write_is_reported_promptly
 designware_mobile_storage,"Host<R, D>::finish",replace & with ^,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
 designware_mobile_storage,"Host<R, D>::finish",replace & with |,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
