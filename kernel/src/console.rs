@@ -311,7 +311,7 @@ fn hold_screen_for_host() {
     const HOLD_POLLS: u32 = 1_000_000;
 
     // Drained before the announcement, so the byte this waits for was sent in answer to it.
-    CONSOLE.lock().uart.discard_rx();
+    CONSOLE.lock().uart.discard_waiting_bytes();
     crate::println!(
         "{}send any byte on this line to release it",
         boot_ladder::SCREEN_HELD
@@ -338,7 +338,7 @@ fn hold_screen_for_host() {
         }
     }
     // Taken, or the line editor on this wire would echo it at the prompt.
-    CONSOLE.lock().uart.discard_rx();
+    CONSOLE.lock().uart.discard_waiting_bytes();
 }
 
 /// Take the screen back to say why the kernel is dying. Panic path only; call after
@@ -425,7 +425,7 @@ pub(crate) fn uart_register_shape() -> abi::uart::RegisterShape {
 }
 
 /// Has anyone typed at the console? True while a byte sits unread in the console UART's receive
-/// buffer; reads nothing, so the answer stays true until [`discard_rx`] takes it.
+/// buffer; reads nothing, so the answer stays true until [`discard_waiting_bytes`] takes it.
 ///
 /// The stop button of a self-rebooting soak (`soak::watch`), and of the watchdog soak: a serial
 /// cable and one LSR read every five seconds, on every architecture.
@@ -439,15 +439,14 @@ pub fn is_byte_waiting() -> bool {
 
 /// Throw away whatever is already in the console UART's receive buffer, so that [`is_byte_waiting`]
 /// answers about what arrives from now on. Called once, when a rebooting soak arms itself; see
-/// `Ns16550::discard_rx` for why U-Boot's leftovers are the thing being cleared.
+/// `Ns16550::discard_waiting_bytes` for why U-Boot's leftovers are the thing being cleared.
 ///
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `discard_waiting_bytes`, because it drops the bytes
-/// `is_byte_waiting` would have reported.
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes `is_byte_waiting`
+/// would have reported.
 #[cfg(any(feature = "reboot_soak_test", soak_watchdog))]
-pub fn discard_rx() {
-    CONSOLE.lock().uart.discard_rx();
+pub fn discard_waiting_bytes() {
+    CONSOLE.lock().uart.discard_waiting_bytes();
 }
 
 /// Raise the console UART's own interrupt line, for the RISC-V interrupt-delivery tests. Test
@@ -458,7 +457,7 @@ pub fn discard_rx() {
 /// to disturb. See notes/interrupts.md, "Testing it on RISC-V, which has no SGI".
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "riscv64"))]
 pub(crate) fn raise_uart_interrupt() {
-    CONSOLE.lock().uart.enable_tx_interrupt();
+    CONSOLE.lock().uart.enable_transmit_interrupt();
 }
 
 /// Quiet the line [`raise_uart_interrupt`] raised. Test builds only.
@@ -588,19 +587,18 @@ pub(crate) fn catch_up_stalled_ring() {
 /// Bytes handed to the console transmitter since boot, counted after each `write_str` completes.
 /// `write_byte`'s THRE poll is unbounded, so a wedged transmitter shows as a hanging print, never
 /// as a count with no wire bytes behind it.
-static TX_BYTES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+static BYTES_WRITTEN: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
-/// The [`TX_BYTES`] counter. Diagnostic; racy reads are fine.
+/// The [`BYTES_WRITTEN`] counter. Diagnostic; racy reads are fine.
 ///
 /// No reader; the counter is still kept true on every print, for the reason `sched::canary` is.
 ///
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `bytes_written`, because it counts what the kernel wrote to
-/// the console, and its static `TX_BYTES` becomes `BYTES_WRITTEN` with it.
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; `bytes_written` counts what the kernel wrote to the
+/// console, and the static is `BYTES_WRITTEN` with it.
 #[allow(dead_code)]
-pub fn tx_bytes() -> u64 {
-    TX_BYTES.load(core::sync::atomic::Ordering::Relaxed)
+pub fn bytes_written() -> u64 {
+    BYTES_WRITTEN.load(core::sync::atomic::Ordering::Relaxed)
 }
 
 /// The UART and the kernel's screen, without the line being assembled: what a routed byte is
@@ -650,7 +648,7 @@ struct CountedWrites<'a, 'b>(&'a mut Wire<'b>);
 impl core::fmt::Write for CountedWrites<'_, '_> {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         self.0.write_str(s)?;
-        TX_BYTES.fetch_add(s.len() as u64, core::sync::atomic::Ordering::Relaxed);
+        BYTES_WRITTEN.fetch_add(s.len() as u64, core::sync::atomic::Ordering::Relaxed);
         // A test that announces a skip is seen here. See testing::note_printed.
         #[cfg(any(test, feature = "system_tests"))]
         crate::testing::note_printed(s);

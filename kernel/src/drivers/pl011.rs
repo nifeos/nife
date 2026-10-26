@@ -106,7 +106,7 @@ impl Pl011 {
     }
 
     /// **Is a byte waiting to be read?** Reads FR and consumes nothing, so the answer stays true
-    /// until [`discard_rx`](Self::discard_rx) takes the byte.
+    /// until [`discard_waiting_bytes`](Self::discard_waiting_bytes) takes the byte.
     ///
     /// The PL011 half of `console::hold_screen_for_host` (milestone 445 (the screen check stops sampling and starts asking)), and the twin of
     /// `Ns16550::is_byte_waiting`, whose comment on the equivalent NS16550 bit has the reasoning.
@@ -126,13 +126,12 @@ impl Pl011 {
     /// Bounded, because an unbounded drain on a wire somebody is typing into would never return.
     /// Sixteen is the PL011's FIFO depth; four times that is slack for a part with a deeper one and
     /// is still a fixed number of register reads. Same shape and same number as
-    /// `Ns16550::discard_rx`, deliberately.
+    /// `Ns16550::discard_waiting_bytes`, deliberately.
     ///
-    /// Name: provisional since milestone 445, flagged again 2026-09-25 by the lane that re-derived
-    /// the x86 port falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`").
-    /// calef asked what `rx` stands for in his #1255 review; recommended `discard_waiting_bytes`,
-    /// because it drops the bytes `is_byte_waiting` would have reported.
-    pub fn discard_rx(&self) {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes
+    /// `is_byte_waiting` would have reported.
+    pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;
         while self.read(FR) & FR_RXFE == 0 && bound > 0 {
             let _ = self.read(DR);

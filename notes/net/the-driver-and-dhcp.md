@@ -30,7 +30,7 @@ The short version:
   read descriptor aimed at the kernel stops a receive descriptor aimed there. This is the property
   milestone 32's block write already relied on, now proved for the device-as-writer direction.
 
-Tests (both ISAs): `the_validator_refuses_an_rx_descriptor_that_escapes_the_region` and
+Tests (both ISAs): `the_validator_refuses_a_receive_descriptor_that_escapes_the_region` and
 `a_second_queue_validates_on_its_own_block`, beside the existing confinement suite.
 
 ## Piece 2: the virtio-net driver (built, both ISAs)
@@ -115,15 +115,15 @@ IOMMU and `crates/direct_memory_access_validator` confine where the device may t
 nothing about what it may say, and the used ring sits inside the driver's own DMA page, which the
 device is entitled to write.
 
-An unchecked `id` walks `rx_buf(id) = 0x400 + id * 0x2C0` out of the one-page DMA region. At
+An unchecked `id` walks `receive_buf(id) = 0x400 + id * 0x2C0` out of the one-page DMA region. At
 `id = 4` it is already past the page. Near 1.5 million it lands on the process's heap, so a lying
 device could have the driver copy its own memory into a frame and hand it to smoltcp, which may put
 it on the wire. An unchecked `total` reads past the buffer and asks the allocator for up to 4 GiB.
 Neither needs a race; the device only has to lie once.
 
-So `rx_take` fails closed. A completion naming a buffer never posted is consumed and dropped, and a
-count larger than a buffer is truncated to the buffer, as `entropy.rs` clamps its own length. The
-dropped completion's buffer is not re-posted, because a bogus `id` does not say which buffer it
+So `receive_frame` fails closed. A completion naming a buffer never posted is consumed and dropped,
+and a count larger than a buffer is truncated to the buffer, as `entropy.rs` clamps its own length.
+The dropped completion's buffer is not re-posted, because a bogus `id` does not say which buffer it
 was. Each lie costs one receive buffer. That is the right trade: a device that lies has already
 stopped being a network card.
 

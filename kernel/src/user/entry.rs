@@ -47,8 +47,9 @@ pub struct Spawn<'a> {
 /// aarch64: SGI 3, distinct from the scheduler's RESCHED (0) and the endpoint SGIs (1, 2). RISC-V
 /// has no software-generated interrupt a test can raise on itself (the SBI IPI arrives down the
 /// software-interrupt arm, never touching `irq_route`), so it names the console UART's own line,
-/// the same number as [`UART_RX_INTID`] there; [`spawn_elf_child_builder`] binds that route once
-/// and grants two capabilities naming it. `sched::tests`' `DELIVERY_IRQ` reaches the same answer.
+/// the same number as [`UART_RECEIVE_INTID`] there; [`spawn_elf_child_builder`] binds that route
+/// once and grants two capabilities naming it. `sched::tests`' `DELIVERY_IRQ` reaches the same
+/// answer.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names. It is
 /// an SGI only on aarch64, which the name no longer claims.
@@ -97,11 +98,11 @@ pub fn spawn_elf_child_builder(
     // And the UART receive interrupt (19d.2c), the machine's own number, printed with its source.
     // On QEMU RISC-V it is the same source as DELEGATED_TEST_INTERRUPT, and binding it twice would
     // leave the first endpoint routed to nothing, so bind once and grant twice.
-    let (uart_rx_intid, uart_irq_source) = uart_irq_and_source();
-    crate::println!("  uart irq  : {uart_rx_intid} ({uart_irq_source})");
-    if uart_rx_intid != DELEGATED_TEST_INTERRUPT {
-        crate::sched::bind_irq(uart_rx_intid, crate::sched::create_rendezvous());
-        crate::arch::irq::enable(uart_rx_intid);
+    let (uart_receive_intid, uart_irq_source) = uart_irq_and_source();
+    crate::println!("  uart irq  : {uart_receive_intid} ({uart_irq_source})");
+    if uart_receive_intid != DELEGATED_TEST_INTERRUPT {
+        crate::sched::bind_irq(uart_receive_intid, crate::sched::create_rendezvous());
+        crate::arch::irq::enable(uart_receive_intid);
     }
 
     // Measured before the thread exists, so the check decides whether one is created at all
@@ -198,7 +199,7 @@ pub fn spawn_elf_child_builder(
         .expect("grant test irq");
         // The number the route above was bound with, or the cap names a source no endpoint serves.
         crate::sched::grant(crate::cap::irq_cap_rights(
-            uart_rx_intid,
+            uart_receive_intid,
             crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
         ))
         .expect("grant uart rx irq");

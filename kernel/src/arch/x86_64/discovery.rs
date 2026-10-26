@@ -67,7 +67,7 @@ pub(crate) fn init() {
 
     // COM1's interrupt line, as the legacy number 4 and not its GSI: `arch::irq::enable` resolves a
     // legacy IRQ through the MADT's overrides, so recording the GSI would resolve it twice.
-    crate::memory::record_uart_irq(crate::user::UART_RX_INTID);
+    crate::memory::record_uart_irq(crate::user::UART_RECEIVE_INTID);
 
     // The IOMMUs' register windows, recorded now because `mmu::map_everything` maps them
     // device-typed and the BAR window below must not overlap them; the units themselves come up

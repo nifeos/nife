@@ -822,8 +822,8 @@ pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
 /// [`record_uart_irq`] rather than by [`init`] since there is no tree to read. `None` before
 /// either has run, and on a device-tree machine whose tree does not say (no `interrupts`, no
 /// resolvable parent, or an entry shape the decoder refuses; see
-/// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RX_INTID`, the
-/// QEMU constant) and print which source won, so a bench transcript is diagnosable.
+/// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RECEIVE_INTID`,
+/// the QEMU constant) and print which source won, so a bench transcript is diagnosable.
 pub(crate) fn uart_irq() -> Option<u32> {
     *UART_IRQ.lock()
 }

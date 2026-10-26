@@ -31,7 +31,8 @@ const LSR_TEMT: u8 = 0b0100_0000;
 // write, so it is a mailbox a slow poll cannot miss (the soak's stop button, the screen hold).
 const LSR_DR: u8 = 0b0000_0001;
 // Interrupt Enable bit: Enable Transmitter Holding Register Empty Interrupt. Asserts as soon as it is
-// set if LSR.THRE is already set. See `enable_tx_interrupt`. Test builds only, its one caller's.
+// set if LSR.THRE is already set. See `enable_transmit_interrupt`. Test builds only, its one
+// caller's.
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; a unit-test boot on some ISAs does not
 const IER_ETBEI: u8 = 0b0000_0010;
@@ -273,7 +274,8 @@ impl<S: RegisterSpace> Ns16550<S> {
     }
 
     /// Is a byte waiting to be read? Reads LSR and consumes nothing, so the answer stays true
-    /// until [`discard_rx`](Self::discard_rx) takes the byte. Any byte counts; needs no interrupt.
+    /// until [`discard_waiting_bytes`](Self::discard_waiting_bytes) takes the byte. Any byte
+    /// counts; needs no interrupt.
     ///
     /// Name: ratified 2026-09-24 (calef, #1255 review), provisional from milestone 249 (the boot
     /// lottery is sampled by a person walking to the board) until then.
@@ -299,12 +301,10 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// [`is_byte_waiting`](Self::is_byte_waiting) reports (U-Boot's leftovers, for a soak arming).
     /// Bounded at 64 reads, four times the FIFO depth, so a busy wire cannot hold it forever.
     ///
-    /// Name: provisional since milestone 249 (the boot lottery is sampled by a person walking to
-    /// the board), flagged again 2026-09-25 by the lane that re-derived the x86 port falsifications
-    /// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx`
-    /// stands for in his #1255 review; recommended `discard_waiting_bytes`, because it drops the
-    /// bytes `is_byte_waiting` would have reported.
-    pub fn discard_rx(&self) {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes
+    /// `is_byte_waiting` would have reported.
+    pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;
         while self.read(LSR) & LSR_DR != 0 && bound > 0 {
             let _ = self.read(THR); // THR on write is RBR on read; this is the byte.
@@ -320,11 +320,11 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// arms the interrupt for the next 0-to-1 edge, which a polling console may never make. QEMU
     /// has no transmit latency and never shows it. See notes/uart.md, "The NS16550 driver".
     ///
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `enable_transmit_interrupt`.
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `enable_transmit_interrupt` names the interrupt it
+    /// raises.
     #[cfg(any(test, feature = "system_tests"))]
-    pub fn enable_tx_interrupt(&self) {
+    pub fn enable_transmit_interrupt(&self) {
         let mut spins = 1_000_000u32;
         while self.read(LSR) & LSR_THRE == 0 && spins > 0 {
             core::hint::spin_loop();
@@ -334,8 +334,9 @@ impl<S: RegisterSpace> Ns16550<S> {
     }
 
     /// Mask every interrupt source in this UART, quieting a line raised by
-    /// [`enable_tx_interrupt`]. The console is a polling console, so all-off is its resting state
-    /// (`init` writes the same value). Test builds only, for the same reason as its partner above.
+    /// [`enable_transmit_interrupt`]. The console is a polling console, so all-off is its resting
+    /// state (`init` writes the same value). Test builds only, for the same reason as its partner
+    /// above.
     #[cfg(any(test, feature = "system_tests"))]
     pub(crate) fn disable_interrupts(&self) {
         self.write(IER, 0x00);

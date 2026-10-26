@@ -375,7 +375,7 @@ const REBOOT_GRACE_SECONDS: u64 = 5;
 /// notes/soak/rebooting-soak.md.
 #[cfg(feature = "reboot_soak_test")]
 fn arm_reboot() {
-    crate::console::discard_rx();
+    crate::console::discard_waiting_bytes();
     // What ended the previous boot, from the PMIC's side, which the console cannot show.
     #[cfg(target_arch = "riscv64")]
     crate::reboot::pmic_report(REBOOT_MARKER);
@@ -513,7 +513,7 @@ fn arm_watchdog() -> Option<Watchdog> {
 #[cfg(soak_watchdog)]
 fn discard_stale_bytes() {
     #[cfg(not(feature = "reboot_soak_test"))]
-    crate::console::discard_rx();
+    crate::console::discard_waiting_bytes();
 }
 
 /// The watchdog each architecture's soak arms.

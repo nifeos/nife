@@ -469,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn a_device_writable_rx_buffer_is_bounded_the_same_as_a_tx_buffer() {
+    fn a_device_writable_receive_buffer_is_bounded_the_same_as_a_transmit_buffer() {
         // An in-region receive buffer validates; the same buffer aimed at the kernel is refused.
         let mut r = Rings::new();
         r.set_desc(0, BASE + 0x400, 1514, F_WRITE, 0);

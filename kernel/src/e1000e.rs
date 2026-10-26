@@ -124,15 +124,15 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(regs::RFCTL, c.r(regs::RFCTL) & !::e1000e::RFCTL_EXTEN);
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RX_RING;
-    let tx = region + layout::TX_RING;
-    c.w(regs::RDBAL, rx as u32);
-    c.w(regs::RDBAH, (rx >> 32) as u32);
+    let receive_ring = region + layout::RX_RING;
+    let transmit_ring = region + layout::TX_RING;
+    c.w(regs::RDBAL, receive_ring as u32);
+    c.w(regs::RDBAH, (receive_ring >> 32) as u32);
     c.w(regs::RDLEN, u32::from(::e1000e::RX_ENTRIES) * 16);
     c.w(regs::RDH, 0);
     c.w(regs::RDT, 0);
-    c.w(regs::TDBAL, tx as u32);
-    c.w(regs::TDBAH, (tx >> 32) as u32);
+    c.w(regs::TDBAL, transmit_ring as u32);
+    c.w(regs::TDBAH, (transmit_ring >> 32) as u32);
     c.w(regs::TDLEN, u32::from(::e1000e::TX_ENTRIES) * 16);
     c.w(regs::TDH, 0);
     c.w(regs::TDT, 0);
