@@ -182,7 +182,7 @@ rule does not apply and the verb stays. By place:
 - **crates, 23**: `push` (twice), `keep_smallest`, `descend`, `ascend`, `step`, `encode`,
   `sector`, the `Pages::page` trait method, `remove_sender`, `remove_receiver`, `take_aborted`,
   `claim`, `grow`, `map_page_frame`, `memory_region_destroy`, `start_child`, `fill_entropy`, and
-  virtio's `initialize_with_features`, `wait_rx`, `blk_flush` and `complete_flush`.
+  virtio's `initialize_with_features`, `wait_receive`, `blk_flush` and `complete_flush`.
 - **elsewhere, 10, and one in the std overlay**: `fixtures` (`start_child`, `write_marker`, `destroy_with_retry`),
   `uefi_loader` (`write_back`, `write`, `flush`, `paint_handoff`), `std_exerciser` (`udp_ok`,
   `tcp_echo_ok`, which perform the round trip they name), `redoxfs_server`'s `grow`, and the std
