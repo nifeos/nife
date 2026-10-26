@@ -1,0 +1,21 @@
+[package]
+name = "driver_process_contract"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# What the kernel and a device-driver process agree on: where the process finds each window the
+# kernel maps for it, and the spawn words that describe what it may touch. Both sides link this
+# crate, so the numbers are written once rather than in a "must match" comment on each side. The
+# device crates it serves (`e1000e`, `designware_ethernet`, `designware_mobile_storage`) carry
+# none of it, because they ship on their own and nife's process layout is nife's.
+
+[dependencies]
+# Each window is a pair page, checked at compile time against the address-space map.
+address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# The block server answers `blk`, and its block size sets how many card sectors a block is.
+filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+
+[lints]
+workspace = true
