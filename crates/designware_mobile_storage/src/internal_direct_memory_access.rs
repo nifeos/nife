@@ -440,7 +440,7 @@ mod tests {
     /// The 4 GiB edge is the one an 8 GB radon could reach: a region ending exactly there is
     /// usable, one a page later is not, and neither is anything a 32-bit descriptor cannot hold.
     #[test]
-    fn a_region_the_idmac_cannot_reach_or_describe_is_refused() {
+    fn a_region_the_internal_direct_memory_access_engine_cannot_reach_or_describe_is_refused() {
         let id = |hcon| Identity {
             verid: 0,
             hcon,
@@ -479,7 +479,7 @@ mod tests {
     /// card on its own, so it is the reference here. Nine blocks leave the last descriptor a
     /// 512-byte tail. Every transfer is fenced on both sides and leaves every descriptor closed.
     #[test]
-    fn a_chain_moves_the_cards_bytes_in_both_directions_as_the_fifo_does() {
+    fn a_chain_moves_the_cards_bytes_in_both_directions_as_the_queue_does() {
         let (mut h, card, memory) = polled(4);
         let first = pattern(0x5a, 9 * 512);
         sd::write_blocks(&mut h, &card, 100, &first).unwrap();
@@ -546,7 +546,8 @@ mod tests {
     /// the next test's. Afterwards the IDMAC is deselected and disabled, the FIFO is the CPU's
     /// again, a card that resumes moves nothing into memory, and the next transfer works.
     #[test]
-    fn every_failed_transfer_stops_the_idmac_and_the_next_one_works() {
+    fn every_failed_transfer_stops_the_internal_direct_memory_access_engine_and_the_next_one_works()
+    {
         type Inject = fn(&mut Sim);
         type Expect = fn(&Error) -> bool;
         let cases: [(Inject, Expect); 3] = [
@@ -627,7 +628,7 @@ mod tests {
     /// written whole; stopping clears both DMA bits, resets the DMA interface and the FIFO, and
     /// puts the polled thresholds back. A single block finishes on `DTO` alone.
     #[test]
-    fn one_transfer_arms_and_stops_the_idmac_register_by_register() {
+    fn one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register() {
         let (mut h, card, memory) = polled(2);
         let firmware = 1 << 8 | registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
         h.registers().write(registers::CTRL, firmware);
@@ -692,7 +693,7 @@ mod tests {
     /// A reset that never clears is reported, not assumed done, with the word that holds it:
     /// `BMOD` when arming, and when stopping `BMOD` or `CTRL`, whichever is held.
     #[test]
-    fn an_idmac_reset_that_never_clears_is_reported_with_its_register() {
+    fn an_internal_direct_memory_access_reset_that_never_clears_is_reported_with_its_register() {
         type Hold = fn(&mut Sim);
         type Word = fn(u32) -> bool;
         // Whether the read command reached the card: a stuck arming reset stops before it.
@@ -729,7 +730,7 @@ mod tests {
     /// 64 KiB against the polled read of it, not whatever the timed read leaves in the buffer. A
     /// bus that corrupts is a mismatch, and the timed read still runs.
     #[test]
-    fn the_bench_compares_the_idmac_read_with_the_polled_one() {
+    fn the_bench_compares_the_internal_direct_memory_access_read_with_the_polled_one() {
         let (mut h, card, memory) = polled(17);
         let data = pattern(0x11, 128 * 512);
         sd::write_blocks(&mut h, &card, 2048, &data).unwrap();

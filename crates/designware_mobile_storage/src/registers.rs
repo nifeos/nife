@@ -320,14 +320,14 @@ pub(crate) const VERID: u32 = 0x06c;
 /// many slots.
 #[doc(alias = "hardware configuration register")]
 pub(crate) const HCON: u32 = 0x070;
-/// **The ultra high speed register** (`UHS_REG` in OpenBSD's `dwmmc.c` and Linux's `dw_mmc.h`),
-/// for the SD bus's UHS-I modes: per-slot DDR mode (bit 16) and 1.8 V signaling (bit 0).
+/// **Ultra High Speed mode register** (databook `UHS_REG`, offset 0x74; Linux's `SDMMC_UHS_REG`):
+/// 1.8 V select and DDR mode per card. Per slot, DDR mode is bit 16 and 1.8 V signaling is bit 0.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `UHS`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): a register name copied from a cited source keeps the
+/// source's spelling; the register is the databook's `UHS_REG`; was `UHS`.
 #[doc(alias = "uhs")]
-#[doc(alias = "UHS_REG")]
-pub const ULTRA_HIGH_SPEED: u32 = 0x074;
+#[doc(alias = "ultra_high_speed")]
+pub const UHS_REG: u32 = 0x074;
 /// **Hardware Reset Register** (Linux's `SDMMC_RST_N`; OpenBSD writes `SDMMC_RST_n`): per-slot
 /// hardware reset line to an eMMC device, active low.
 #[doc(alias = "hardware reset register")]
@@ -491,7 +491,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn hcon_names_every_fifo_width_and_refuses_the_reserved_codes() {
+    fn hcon_names_every_queue_width_and_refuses_the_reserved_codes() {
         assert_eq!(queue_width(0), Some(2));
         assert_eq!(queue_width(1 << 7), Some(4));
         assert_eq!(queue_width(2 << 7), Some(8));
@@ -513,7 +513,7 @@ mod tests {
     /// that does not divide the FIFO's free half would overrun it. Depth 32 is radon's tree; 48
     /// leaves a free half of 24, which 16 does not divide.
     #[test]
-    fn the_dma_burst_divides_a_block_and_the_free_half_of_the_fifo() {
+    fn the_direct_memory_access_burst_divides_a_block_and_the_free_half_of_the_queue() {
         assert_eq!(
             fifoth_for_direct_memory_access(32),
             (3 << 28) | (15 << 16) | 16
@@ -535,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn the_fifo_moves_at_release_2_40a_and_the_pio_thresholds_straddle_half() {
+    fn the_queue_moves_at_release_2_40a_and_the_pio_thresholds_straddle_half() {
         assert_eq!(queue_offset(0x5342_2309), 0x100);
         assert_eq!(queue_offset(0x5342_240a), 0x200);
         assert_eq!(queue_offset(0x5342_290a), 0x200);

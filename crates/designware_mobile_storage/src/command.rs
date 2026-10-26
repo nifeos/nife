@@ -266,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn the_ocr_is_not_crc_checked_because_it_has_none() {
+    fn the_operation_conditions_are_not_crc_checked_because_they_have_none() {
         let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).word();
         assert_ne!(w & CMD_RESPONSE_EXPECT, 0);
         assert_eq!(w & CMD_CHECK_RESPONSE_CRC, 0);
