@@ -809,3 +809,27 @@ fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         "power-up neither finished nor gave up"
     );
 }
+
+/// The SD twin of the test above: `ACMD41` polled for a card that stays busy gives up whatever
+/// the clock steps, so the loop's deadline is `>` and never `==`.
+#[test]
+fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
+    assert_ne!(sd::POWER_UP_DEADLINE_US % 7, 0);
+    let (sender, receiver) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let mut sim = Sim::new(CardKind::SdHighCapacity, 4096, 32);
+        sim.busy_polls = u32::MAX;
+        sim.clock_step = 7;
+        let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
+        let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
+        let _ = sender.send(matches!(
+            sd::identify(&mut h, 8),
+            Err(InitializationError::PowerUp(conditions)) if conditions & busy_done == 0
+        ));
+    });
+    assert_eq!(
+        receiver.recv_timeout(std::time::Duration::from_secs(10)),
+        Ok(true),
+        "power-up neither finished nor gave up"
+    );
+}

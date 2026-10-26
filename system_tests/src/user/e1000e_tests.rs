@@ -48,7 +48,7 @@ fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
     // Every runner gives this NIC `mac=52:54:00:e1:00:0e`, which is neither QEMU's default nor the
     // virtio server's constant: seeing it here proves the address came from the device's
     // receive-address register, through the kernel, into the handoff.
-    assert_eq!(w.mac, [0x52, 0x54, 0x00, 0xe1, 0x00, 0x0e]);
+    assert_eq!(w.station_address, [0x52, 0x54, 0x00, 0xe1, 0x00, 0x0e]);
     // QEMU's 82574L PHY identifies as 0x0141:0x0cb1 (`hw/net/e1000x_regs.h`,
     // `E1000_PHY_ID2_82574x`). Reading it proves the MDIO primitive the I219 bring-up stands on
     // (`crates/e1000e/src/pch/phy.rs`'s `read_mdic`) against a device rather than a simulation.
