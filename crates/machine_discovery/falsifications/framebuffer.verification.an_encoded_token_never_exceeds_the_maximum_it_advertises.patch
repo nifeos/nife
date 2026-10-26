@@ -19,12 +19,13 @@ Expected to fail: the bounds check inside `encode`'s `put` closure, on a base ne
 `u64::MAX` with three ten-digit fields.
 
 diff --git a/crates/machine_discovery/src/framebuffer.rs b/crates/machine_discovery/src/framebuffer.rs
+index fff36c7c0..a8bb8f312 100644
 --- a/crates/machine_discovery/src/framebuffer.rs
 +++ b/crates/machine_discovery/src/framebuffer.rs
-@@ -85,7 +85,7 @@ impl Framebuffer {
-     /// with their commas, and a four-character order. Rounded up rather than derived, so nothing
-     /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
+@@ -87,7 +87,7 @@ impl Framebuffer {
      /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
+     ///
+     /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
 -    pub const MAXIMUM_LEN: usize = 72;
 +    pub const MAXIMUM_LEN: usize = 62;
  

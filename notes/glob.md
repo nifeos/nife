@@ -231,7 +231,7 @@ The unit tests exist for these. Every one is a place a real glob implementation 
   granted.
 - No `**`, no qualifiers, no POSIX classes, no locale, no case folding, no path separator.
 - **No grant.** The attenuated-to-a-name-set work, the shell's expansion, `grant_plan::plan` seeing the
-  expanded set rather than the pattern, and `ARG_MAXIMUM` as a capability limit are milestone 47's
+  expanded set rather than the pattern, and `ARG_MAXIMUM` as a capability limit are milestone 47 (navigation and naming)'s
   globbing lane, built on top of this crate and written up in [glob-grant.md](glob-grant.md). This
   crate is the part with no authority in it, which is why it could be finished and proved on its own,
   and it did not change by one line when the granting arrived. It did not change by one line when
