@@ -210,3 +210,8 @@ Each renamed row's status says which ruling renamed it and what it was.
   name. `fifoth_rx_watermark` becomes `fifoth_receive_watermark`, and the watermark locals in the
   `FIFOTH` functions follow. The tests' channel ends become `sender` and `receiver`, the names of
   the standard library's own types.
+- Ruled 2026-10-26 (UTC): a name kept because it copies a source carries its expansion in its
+  documentation. Each register, bit and descriptor constant's doc opens with the databook's full
+  name and the name it copies, and carries a plain-English `doc(alias)`. Each command's doc opens
+  with its number and full name, and each `Response` kind's with what it carries and the
+  specifications' sections.

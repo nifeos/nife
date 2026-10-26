@@ -79,15 +79,25 @@ pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
 pub(crate) const MAXIMUM_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
 
-/// Descriptor word 0: the IDMAC owns this descriptor. Cleared by the IDMAC when it closes it.
+/// **Own, descriptor word 0** (OpenBSD's `DES0_OWN`): the IDMAC owns this descriptor. Cleared by
+/// the IDMAC when it closes it.
+#[doc(alias = "owned by the controller")]
 pub(crate) const DES0_OWN: u32 = 1 << 31;
-/// Word 0: word 3 holds the next descriptor's address, not a second buffer.
+/// **Second address chained, descriptor word 0** (OpenBSD's `DES0_CH`): word 3 holds the next
+/// descriptor's address, not a second buffer.
+#[doc(alias = "chained")]
 pub(crate) const DES0_CH: u32 = 1 << 4;
-/// Word 0: the first descriptor of a transfer.
+/// **First descriptor, descriptor word 0** (OpenBSD's `DES0_FS`): the first descriptor of a
+/// transfer.
+#[doc(alias = "first descriptor")]
 pub(crate) const DES0_FS: u32 = 1 << 3;
-/// Word 0: the last descriptor of a transfer. The IDMAC stops after it.
+/// **Last descriptor, descriptor word 0** (OpenBSD's `DES0_LD`): the last descriptor of a transfer.
+/// The IDMAC stops after it.
+#[doc(alias = "last descriptor")]
 pub(crate) const DES0_LD: u32 = 1 << 2;
-/// Word 0: do not raise `TI`/`RI` when this descriptor closes.
+/// **Disable interrupt on completion, descriptor word 0** (OpenBSD's `DES0_DIC`): do not raise
+/// `TI`/`RI` when this descriptor closes.
+#[doc(alias = "no completion interrupt")]
 pub(crate) const DES0_DIC: u32 = 1 << 1;
 /// Word 1: the first buffer's size in bytes, bits 12:0.
 pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;

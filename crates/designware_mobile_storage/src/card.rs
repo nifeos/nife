@@ -27,13 +27,16 @@ pub(crate) const MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT: u32 = 0x40ff_808
 /// pattern `0xaa`. A card that understands it echoes both.
 pub(crate) const INTERFACE_CONDITION_ARGUMENT: u32 = 0x1aa;
 
-/// The R1 bits that report a failure, Linux's error mask: out of range, address, block length,
-/// erase sequence and parameter, write-protect violation, lock failure, CRC, illegal command, ECC,
-/// controller error, unknown error, CSD overwrite, write-protect erase skip, and the
-/// authentication sequence error. `CARD_IS_LOCKED` (bit 25) is a state, not an error, and is not
-/// in the mask.
+/// **Card status errors** (SD section 4.10.1): the R1 bits that report a failure, Linux's error
+/// mask: out of range, address, block length, erase sequence and parameter, write-protect
+/// violation, lock failure, CRC, illegal command, ECC, controller error, unknown error, CSD
+/// overwrite, write-protect erase skip, and the authentication sequence error. `CARD_IS_LOCKED`
+/// (bit 25) is a state, not an error, and is not in the mask.
+#[doc(alias = "card status errors")]
 pub const R1_ERRORS: u32 = 0xfdf9_8008;
-/// The R1 bit saying the card is ready for data.
+/// **Ready for data, card status bit 8** (Linux's `R1_READY_FOR_DATA`, SD section 4.10.1): the R1
+/// bit saying the card is ready for data.
+#[doc(alias = "ready for data")]
 pub const R1_READY_FOR_DATA: u32 = 1 << 8;
 
 /// The R1 word's current state, bits 12:9: 4 is transfer, 5 sending data, 6 receive data, 7
