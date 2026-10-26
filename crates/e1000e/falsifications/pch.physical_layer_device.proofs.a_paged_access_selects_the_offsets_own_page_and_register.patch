@@ -12,10 +12,10 @@ diff --git a/crates/e1000e/src/pch/physical_layer_device.rs b/crates/e1000e/src/
 +++ b/crates/e1000e/src/pch/physical_layer_device.rs
 @@ -313,7 +313,7 @@
  pub const fn plan(offset: u32) -> Result<Plan, Error> {
-     let page = offset >> PAGE_SHIFT;
-     let register = offset & MAX_REG;
--    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAXIMUM_PAGE {
-+    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > 0xffff {
+     let page = offset >> PHY_PAGE_SHIFT;
+     let register = offset & MAX_PHY_REG_ADDRESS;
+-    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
++    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > 0xffff {
          return Err(Error::PageNotPorted);
      }
      let physical_layer_device_address = address_for(page);

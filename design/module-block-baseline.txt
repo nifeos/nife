@@ -1284,9 +1284,7 @@ crates/e1000e/src/layout.rs
 crates/e1000e/src/layout.rs::BYTES
 crates/e1000e/src/layout.rs::PAGES
 crates/e1000e/src/pch/flush.rs
-crates/e1000e/src/pch/flush.rs::DESC_RING_STATUS
 crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
-crates/e1000e/src/pch/flush.rs::REQUIRED
 crates/e1000e/src/pch/flush.rs::required
 crates/e1000e/src/pch/flush.rs::rxdctl
 crates/e1000e/src/pch/flush.rs::tail_after
@@ -1298,10 +1296,8 @@ crates/e1000e/src/pch/non_volatile_memory.rs::Error
 crates/e1000e/src/pch/non_volatile_memory.rs::GO
 crates/e1000e/src/pch/non_volatile_memory.rs::WORDS
 crates/e1000e/src/pch/non_volatile_memory.rs::read
-crates/e1000e/src/pch/physical_layer_device.rs::CONTROL
 crates/e1000e/src/pch/physical_layer_device.rs::ERROR
 crates/e1000e/src/pch/physical_layer_device.rs::Error
-crates/e1000e/src/pch/physical_layer_device.rs::KMRN_MODE_CTRL
 crates/e1000e/src/pch/physical_layer_device.rs::POLL_US
 crates/e1000e/src/pch/physical_layer_device.rs::Plan
 crates/e1000e/src/pch/physical_layer_device.rs::READY

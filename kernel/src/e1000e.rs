@@ -240,7 +240,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         pch::FEXTNVM11,
         c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
     );
-    let status = || dev.config_read32(flush::DESC_RING_STATUS) as u16;
+    let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
     if !flush::required(status(), c.r(registers::TDLEN)) {
         return;
     }
@@ -269,7 +269,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
     spin_us(250);
-    if status() & flush::REQUIRED == 0 {
+    if status() & flush::FLUSH_DESC_REQUIRED == 0 {
         return;
     }
     let rctl = c.r(registers::RCTL);

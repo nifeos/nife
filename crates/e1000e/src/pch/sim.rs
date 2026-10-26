@@ -105,20 +105,20 @@ impl Sim {
         // FW_VALID when there is an ME; RSPCIPHY set, so firmware does not block PHY resets.
         s.mac.insert(
             registers::FWSM,
-            physical_layer_device::FWSM_RSPCIPHY
+            physical_layer_device::ICH_FWSM_RSPCIPHY
                 | if management_engine {
-                    super::ulp::FWSM_FW_VALID
+                    super::ulp::ICH_FWSM_FW_VALID
                 } else {
                     0
                 },
         );
         s.mac.insert(registers::STRAP, STRAP_VALUE);
         s.physical_layer_device_registers.insert(
-            physical_layer_device::registers::ID1,
+            physical_layer_device::registers::PHY_ID1,
             (PHYSICAL_LAYER_DEVICE_ID >> 16) as u16,
         );
         s.physical_layer_device_registers.insert(
-            physical_layer_device::registers::ID2,
+            physical_layer_device::registers::PHY_ID2,
             PHYSICAL_LAYER_DEVICE_ID as u16 | 0x3,
         );
         // Bank 0 carries the valid signature (word 0x13, high byte 0b10xx_xxxx).
@@ -145,11 +145,11 @@ impl Sim {
                 .insert(mac_mdic(), value | mdic::READY | mdic::ERROR);
             return;
         }
-        let offset = if address == 1 && reg == physical_layer_device::PAGE_SELECT {
+        let offset = if address == 1 && reg == physical_layer_device::IGP01E1000_PHY_PAGE_SELECT {
             None
         } else if address == 1 {
             let page = if self.page == 0 {
-                physical_layer_device::HV_PAGE_START
+                physical_layer_device::HV_INTC_FC_PAGE_START
             } else {
                 self.page
             };
@@ -160,11 +160,11 @@ impl Sim {
         if value & mdic::OP_WRITE != 0 {
             let data = value as u16;
             match offset {
-                None => self.page = u32::from(data) >> physical_layer_device::PAGE_SHIFT,
+                None => self.page = u32::from(data) >> physical_layer_device::PHY_PAGE_SHIFT,
                 Some(o) => {
                     self.physical_layer_device_registers.insert(o, data);
                     self.physical_layer_device_writes.push((o, data));
-                    if o == physical_layer_device::registers::SMB_CTRL && data & 1 == 0 {
+                    if o == physical_layer_device::registers::CV_SMB_CTRL && data & 1 == 0 {
                         self.physical_layer_device_in_system_management_bus = false;
                     }
                 }
@@ -237,12 +237,13 @@ impl Sim {
     }
 
     fn flash_end_cycle(&mut self) {
-        let byte = self.get(non_volatile_memory::FLASH_BASE + non_volatile_memory::FADDR) as usize;
+        let byte =
+            self.get(non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FADDR) as usize;
         let w = byte / 2;
         let lo = *self.non_volatile_memory.get(w).unwrap_or(&0xffff);
         let hi = *self.non_volatile_memory.get(w + 1).unwrap_or(&0xffff);
         self.mac.insert(
-            non_volatile_memory::FLASH_BASE + non_volatile_memory::FDATA0,
+            non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FDATA0,
             u32::from(hi) << 16 | u32::from(lo),
         );
         if self.flash_failing_cycles > 0 {
@@ -261,7 +262,7 @@ fn mac_mdic() -> u64 {
 
 impl Hardware for Sim {
     fn read(&mut self, offset: u64) -> u32 {
-        if offset == non_volatile_memory::FLASH_BASE + non_volatile_memory::HSFSTS {
+        if offset == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS {
             if self.flash_pending > 0 {
                 if self.flash_pending != u32::MAX {
                     self.flash_pending -= 1;
@@ -298,7 +299,7 @@ impl Hardware for Sim {
                 };
                 self.mac.insert(offset, keep);
             }
-            o if o == non_volatile_memory::FLASH_BASE + non_volatile_memory::HSFSTS => {
+            o if o == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS => {
                 self.flash_write(value);
             }
             o if o == registers::STRAP => self.strap_writes.push(value),
@@ -336,7 +337,7 @@ mod tests {
     #[test]
     fn a_paged_register_is_reached_through_a_page_select_at_address_one() {
         assert_eq!(
-            plan(physical_layer_device::registers::SMB_CTRL),
+            plan(physical_layer_device::registers::CV_SMB_CTRL),
             Ok(physical_layer_device::Plan {
                 select: Some((769 << 5) as u16),
                 physical_layer_device_address: 1,
@@ -345,13 +346,13 @@ mod tests {
         );
         // Page 768 is selected as page 0; page 0 lives at address 2 and needs no select.
         assert_eq!(
-            plan(physical_layer_device::registers::SMB_ADDR)
+            plan(physical_layer_device::registers::HV_SMB_ADDR)
                 .unwrap()
                 .select,
             Some(0)
         );
         assert_eq!(
-            plan(physical_layer_device::registers::ID1),
+            plan(physical_layer_device::registers::PHY_ID1),
             Ok(physical_layer_device::Plan {
                 select: None,
                 physical_layer_device_address: 2,
@@ -372,12 +373,12 @@ mod tests {
         physical_layer_device::write(
             &mut s,
             &f,
-            physical_layer_device::registers::PM_CTRL,
+            physical_layer_device::registers::HV_PM_CTRL,
             0x4000,
         )
         .unwrap();
         assert_eq!(
-            physical_layer_device::read(&mut s, &f, physical_layer_device::registers::PM_CTRL),
+            physical_layer_device::read(&mut s, &f, physical_layer_device::registers::HV_PM_CTRL),
             Ok(0x4000)
         );
         f.release(&mut s);
@@ -434,7 +435,8 @@ mod tests {
     fn the_last_register_and_the_last_page_are_reachable_and_one_past_is_not() {
         let mut s = Sim::new(Start::Healthy, true);
         assert!(
-            physical_layer_device::read_mdic(&mut s, 2, physical_layer_device::MAX_REG).is_ok()
+            physical_layer_device::read_mdic(&mut s, 2, physical_layer_device::MAX_PHY_REG_ADDRESS)
+                .is_ok()
         );
         assert!(plan(paged_offset(physical_layer_device::MAXIMUM_PAGE, 1)).is_ok());
         assert_eq!(
@@ -442,15 +444,18 @@ mod tests {
             Err(PhysicalLayerDeviceError::PageNotPorted)
         );
         assert_eq!(
-            plan(paged_offset(769, physical_layer_device::MAX_UNPAGED_REG))
-                .unwrap()
-                .select,
+            plan(paged_offset(
+                769,
+                physical_layer_device::MAX_PHY_MULTI_PAGE_REG
+            ))
+            .unwrap()
+            .select,
             None
         );
         assert!(
             plan(paged_offset(
                 769,
-                physical_layer_device::MAX_UNPAGED_REG + 1
+                physical_layer_device::MAX_PHY_MULTI_PAGE_REG + 1
             ))
             .unwrap()
             .select
@@ -458,8 +463,8 @@ mod tests {
         );
     }
 
-    /// **The PHY identifier is `ID1:ID2` with the revision nibble cleared**, the path QEMU's
-    /// 82574L takes and the one value the gates see from this module.
+    /// **The PHY identifier is `PHY_ID1:PHY_ID2` with the revision nibble cleared**, the path
+    /// QEMU's 82574L takes and the one value the gates see from this module.
     #[test]
     fn the_physical_layer_device_id_is_both_words_without_the_revision() {
         let mut s = Sim::new(Start::Healthy, true);
@@ -579,7 +584,7 @@ mod tests {
 
         let mut s = Sim::new(Start::Dead, true);
         s.mac
-            .insert(registers::FWSM, super::super::ulp::FWSM_FW_VALID); // RSPCIPHY clear
+            .insert(registers::FWSM, super::super::ulp::ICH_FWSM_FW_VALID); // RSPCIPHY clear
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Err(Error::LanphypcBlocked)
@@ -592,9 +597,9 @@ mod tests {
     fn without_an_me_ulp_is_left_by_physical_layer_device_registers() {
         let mut s = Sim::new(Start::InSystemManagementBus, false);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::ULP_CONFIG1, 0x1ff4);
+            .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff4);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::SMB_CTRL, 0x0001);
+            .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0001);
         s.mac.insert(registers::FEXTNVM7, 0x20);
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
@@ -603,18 +608,19 @@ mod tests {
         assert!(s.notes.contains(&Note::UlpBySoftware(Ok(()))));
         assert!(s.lanphypc_toggles >= 1);
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::SMB_CTRL] & 1,
+            s.physical_layer_device_registers[&physical_layer_device::registers::CV_SMB_CTRL] & 1,
             0
         );
         assert_ne!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PM_CTRL] & 0x4000,
+            s.physical_layer_device_registers[&physical_layer_device::registers::HV_PM_CTRL]
+                & 0x4000,
             0,
             "K1 re-enabled"
         );
         let ulp: Vec<u16> = s
             .physical_layer_device_writes
             .iter()
-            .filter(|w| w.0 == physical_layer_device::registers::ULP_CONFIG1)
+            .filter(|w| w.0 == physical_layer_device::registers::I218_ULP_CONFIG1)
             .map(|w| w.1)
             .collect();
         let cleared = 0x1ff4 & !0x1d74;
@@ -639,7 +645,7 @@ mod tests {
 
         let mut s = Sim::new(Start::Healthy, true);
         s.mac
-            .insert(registers::FWSM, super::super::ulp::FWSM_FW_VALID);
+            .insert(registers::FWSM, super::super::ulp::ICH_FWSM_FW_VALID);
         sequence::global_reset(&mut s, 1000).unwrap();
         assert_eq!((s.global_resets, s.physical_layer_device_resets), (1, 0));
     }
@@ -690,12 +696,12 @@ mod tests {
             0x0042
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::LED_CONFIG],
+            s.physical_layer_device_registers[&physical_layer_device::registers::HV_LED_CONFIG],
             0x8484
         );
         // SMBus address 2 from STRAP, PEC and valid set, frequency 3 - 1 = 2 into bit 12.
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::SMB_ADDR],
+            s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
             0x0002 | 0x0200 | 0x0080 | 0x1000
         );
         assert!(swflag_free(&s));
@@ -705,20 +711,20 @@ mod tests {
     fn the_copper_link_advertises_every_speed_without_pause_and_restarts_autonegotiation() {
         let mut s = Sim::new(Start::Healthy, true);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::AUTONEG_ADV, 0x0c01);
+            .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0c01);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::CTRL_1000T, 0x0100);
+            .insert(physical_layer_device::registers::PHY_1000T_CTRL, 0x0100);
         sequence::initialize_hardware(&mut s).unwrap();
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::AUTONEG_ADV],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_AUTONEG_ADV],
             0x0001 | 0x01e0
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CTRL_1000T],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_1000T_CTRL],
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CONTROL],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
             0x1200
         );
         assert_ne!(s.get(mac::CTRL) & crate::CTRL_SLU, 0);
@@ -775,7 +781,7 @@ mod tests {
             non_volatile_memory::read_u32(&mut s, 0x30).map(|d| d as u16),
             Ok(0xbeef)
         );
-        s.flash_failing_cycles = non_volatile_memory::CYCLE_REPEATS + 1;
+        s.flash_failing_cycles = non_volatile_memory::CYCLE_REPEAT_COUNT + 1;
         assert_eq!(
             non_volatile_memory::read_u32(&mut s, 0x30),
             Err(non_volatile_memory::Error::Cycle)
@@ -812,7 +818,8 @@ mod tests {
         s.non_volatile_memory[0x20] = 0x1234;
         s.non_volatile_memory[0x21] = 0x5678;
         assert_eq!(non_volatile_memory::read_u32(&mut s, 0x20), Ok(0x5678_1234));
-        let flash = non_volatile_memory::FLASH_BASE..non_volatile_memory::FLASH_BASE + 0x100;
+        let flash =
+            non_volatile_memory::FLASH_BASE_ADDR..non_volatile_memory::FLASH_BASE_ADDR + 0x100;
         assert!(s.reads.iter().all(|o| flash.contains(o)), "{:x?}", s.reads);
         assert!(
             s.writes.iter().all(|(o, _)| flash.contains(o)),

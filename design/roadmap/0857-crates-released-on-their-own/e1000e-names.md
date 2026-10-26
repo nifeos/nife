@@ -1,6 +1,6 @@
 # The names in `e1000e`, for ratification
 
-<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 4,066 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 4,220 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
@@ -37,12 +37,16 @@ below copy:
 - Ruled 2026-10-26 (UTC), tree-wide: the naming rules apply to function parameters as well as
   public items, so `off`, `v`, `len`, `src`, `i`, `e`, `g`, `n`, `f`, `s` and
   `data_plane_phys` are spelled out where they are parameters. They have no rows here.
+- Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source keeps the source's
+  spelling, strictly, apart from a prefix the module states once. Each constant was checked against
+  FreeBSD's headers; the shortened copies now carry FreeBSD's full names (`PHY_CONTROL`,
+  `HV_KMRN_MODE_CTRL`, `PCICFG_DESC_RING_STATUS`, `FLUSH_DESC_REQUIRED` among the public ones).
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-156 names: 100 no block, 35 provisional, 21 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+156 names: 96 no block, 35 provisional, 25 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 12 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 11 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -125,9 +129,9 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `receive_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `rx_descriptor` (rx abbreviates receive). | yes | clear |
 | `transmit_buffer` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_buffer` (tx abbreviates transmit). | yes | clear |
 | `transmit_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_descriptor` (tx abbreviates transmit). | yes | clear |
-| `DESC_RING_STATUS` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `FEXTNVM11_DISABLE_MULR_FIX` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
-| `REQUIRED` | item | `src/pch/flush.rs` | unrecorded. | yes | generic |
+| `FLUSH_DESC_REQUIRED` | item | `src/pch/flush.rs` | ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED` (a shortened copy). | yes | term |
+| `PCICFG_DESC_RING_STATUS` | item | `src/pch/flush.rs` | ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a cited source, strictly: FreeBSD's `PCICFG_DESC_RING_STATUS` (`if_em.h`). Refused `DESC_RING_STATUS` (a shortened copy). | yes | term |
 | `required` | item | `src/pch/flush.rs` | unrecorded. | yes | generic |
 | `rxdctl` | item | `src/pch/flush.rs` | unrecorded. | yes | term |
 | `tail_after` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
@@ -140,11 +144,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GO` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
 | `WORDS` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
 | `read` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
-| `CONTROL` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `ERROR` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `Error` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
-| `KMRN_MODE_CTRL` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `HV_KMRN_MODE_CTRL` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`). Refused `KMRN_MODE_CTRL` (a shortened copy). | yes | term |
 | `ManagementDataInterface` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`). | yes | clear |
+| `PHY_CONTROL` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused `CONTROL` (a shortened copy). | yes | term |
 | `POLL_US` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `Plan` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
 | `READY` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |

@@ -213,9 +213,9 @@ const RCTL_RDMTS_HEX: u32 = 0x0001_0000;
 const TARC0_CB_MULTIQ_3_REQ: u32 = 0x3000_0000;
 const TARC0_CB_MULTIQ_2_REQ: u32 = 0x2000_0000;
 // PHY register bits.
-const SMB_CTRL_FORCE_SMBUS: u16 = 0x0001;
-const PM_CTRL_K1_ENABLE: u16 = 0x4000;
-const ULP_CONFIG1_START: u16 = 0x0001;
+const CV_SMB_CTRL_FORCE_SMBUS: u16 = 0x0001;
+const HV_PM_CTRL_K1_ENABLE: u16 = 0x4000;
+const I218_ULP_CONFIG1_START: u16 = 0x0001;
 const ULP_CONFIG1_CLEARED: u16 = 0x0004 // IND
     | 0x0010 // STICKY_ULP
     | 0x0100 // RESET_TO_SMBUS
@@ -224,16 +224,16 @@ const ULP_CONFIG1_CLEARED: u16 = 0x0004 // IND
     | 0x0400 // EN_ULP_LANPHYPC
     | 0x0800 // DIS_CLR_STICKY_ON_PERST
     | 0x1000; // DISABLE_SMB_PERST
-const PORT_GEN_CFG_HOST_WU: u16 = 1 << 4;
-const SMB_ADDR_MASK: u16 = 0x007f;
-const SMB_ADDR_PEC_EN: u16 = 0x0200;
-const SMB_ADDR_VALID: u16 = 0x0080;
-const SMB_ADDR_FREQ_MASK: u16 = 0x1100;
-const SMB_ADDR_FREQ_LOW_SHIFT: u16 = 8;
-const SMB_ADDR_FREQ_HIGH_SHIFT: u16 = 12;
-const OEM_BITS_GBE_DIS: u16 = 0x0040;
-const OEM_BITS_LPLU: u16 = 0x0004;
-const OEM_BITS_RESTART_AN: u16 = 0x0400;
+const BM_WUC_HOST_WU_BIT: u16 = 1 << 4;
+const HV_SMB_ADDR_MASK: u16 = 0x007f;
+const HV_SMB_ADDR_PEC_EN: u16 = 0x0200;
+const HV_SMB_ADDR_VALID: u16 = 0x0080;
+const HV_SMB_ADDR_FREQ_MASK: u16 = 0x1100;
+const HV_SMB_ADDR_FREQ_LOW_SHIFT: u16 = 8;
+const HV_SMB_ADDR_FREQ_HIGH_SHIFT: u16 = 12;
+const HV_OEM_BITS_GBE_DIS: u16 = 0x0040;
+const HV_OEM_BITS_LPLU: u16 = 0x0004;
+const HV_OEM_BITS_RESTART_AN: u16 = 0x0400;
 const I82577_CFG_ASSERT_CRS_ON_TX: u16 = 1 << 15;
 const I82577_CFG_ENABLE_DOWNSHIFT: u16 = 3 << 10;
 const I82577_PHY_CTRL2_MDIX_CFG_MASK: u16 = 0x0600;
@@ -365,7 +365,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
         let v = match physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::SMB_CTRL,
+            physical_layer_device::registers::CV_SMB_CTRL,
         ) {
             Ok(v) => v,
             Err(_) => {
@@ -374,7 +374,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
                 physical_layer_device::read(
                     hardware,
                     &f,
-                    physical_layer_device::registers::SMB_CTRL,
+                    physical_layer_device::registers::CV_SMB_CTRL,
                 )?
             }
         };
@@ -382,37 +382,40 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::SMB_CTRL,
-            v & !SMB_CTRL_FORCE_SMBUS,
+            physical_layer_device::registers::CV_SMB_CTRL,
+            v & !CV_SMB_CTRL_FORCE_SMBUS,
         );
         clear(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
         // "When ULP mode was previously entered, K1 was disabled by the hardware. Re-Enable K1
         // in the PHY when exiting ULP."
-        let pm =
-            physical_layer_device::read(hardware, &f, physical_layer_device::registers::PM_CTRL)?;
+        let pm = physical_layer_device::read(
+            hardware,
+            &f,
+            physical_layer_device::registers::HV_PM_CTRL,
+        )?;
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::PM_CTRL,
-            pm | PM_CTRL_K1_ENABLE,
+            physical_layer_device::registers::HV_PM_CTRL,
+            pm | HV_PM_CTRL_K1_ENABLE,
         );
         // Clear the ULP configuration, then commit it by starting auto ULP configuration.
         let u = physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::ULP_CONFIG1,
+            physical_layer_device::registers::I218_ULP_CONFIG1,
         )? & !ULP_CONFIG1_CLEARED;
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::ULP_CONFIG1,
+            physical_layer_device::registers::I218_ULP_CONFIG1,
             u,
         );
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::ULP_CONFIG1,
-            u | ULP_CONFIG1_START,
+            physical_layer_device::registers::I218_ULP_CONFIG1,
+            u | I218_ULP_CONFIG1_START,
         );
         clear(hardware, registers::FEXTNVM7, FEXTNVM7_DISABLE_SMB_PERST);
         Ok(())
@@ -434,17 +437,19 @@ fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool
     let mut seen = 0u32;
     let mut last = Ok(0);
     for _ in 0..2 {
-        last = physical_layer_device::read(hardware, flag, physical_layer_device::registers::ID1);
+        last =
+            physical_layer_device::read(hardware, flag, physical_layer_device::registers::PHY_ID1);
         let Ok(hi) = last else { continue };
         if hi == 0xffff {
             continue;
         }
-        last = physical_layer_device::read(hardware, flag, physical_layer_device::registers::ID2);
+        last =
+            physical_layer_device::read(hardware, flag, physical_layer_device::registers::PHY_ID2);
         let Ok(lo) = last else { continue };
         if lo == 0xffff {
             continue;
         }
-        seen = (u32::from(hi) << 16 | u32::from(lo)) & physical_layer_device::ID_MASK;
+        seen = (u32::from(hi) << 16 | u32::from(lo)) & physical_layer_device::PHY_REVISION_MASK;
         break;
     }
     let known = *id != 0;
@@ -457,14 +462,16 @@ fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool
         last.is_ok()
     };
     if ok && !has_management_engine(hardware) {
-        if let Ok(v) =
-            physical_layer_device::read(hardware, flag, physical_layer_device::registers::SMB_CTRL)
-        {
+        if let Ok(v) = physical_layer_device::read(
+            hardware,
+            flag,
+            physical_layer_device::registers::CV_SMB_CTRL,
+        ) {
             let _ = physical_layer_device::write(
                 hardware,
                 flag,
-                physical_layer_device::registers::SMB_CTRL,
-                v & !SMB_CTRL_FORCE_SMBUS,
+                physical_layer_device::registers::CV_SMB_CTRL,
+                v & !CV_SMB_CTRL_FORCE_SMBUS,
             );
         }
         clear(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
@@ -640,14 +647,14 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
         match physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::PORT_GEN_CFG,
+            physical_layer_device::registers::BM_PORT_GEN_CFG,
         ) {
             Ok(v) => {
                 let _ = physical_layer_device::write(
                     hardware,
                     &f,
-                    physical_layer_device::registers::PORT_GEN_CFG,
-                    v & !PORT_GEN_CFG_HOST_WU,
+                    physical_layer_device::registers::BM_PORT_GEN_CFG,
+                    v & !BM_WUC_HOST_WU_BIT,
                 );
             }
             Err(e) => hardware.note(Note::HostWakeupUnread(e)),
@@ -682,7 +689,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
         physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::LED_CONFIG,
+            physical_layer_device::registers::HV_LED_CONFIG,
             led,
         )?;
         let g = non_volatile_memory::Geometry::read(hardware);
@@ -695,7 +702,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
                 g,
                 word + i * 2 + 1,
             )?);
-            if at == physical_layer_device::PAGE_SELECT {
+            if at == physical_layer_device::IGP01E1000_PHY_PAGE_SELECT {
                 // Save the page for the writes that follow; it is already `page << 5`.
                 page = u32::from(value);
                 continue;
@@ -703,7 +710,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::write(
                 hardware,
                 &f,
-                (at & physical_layer_device::MAX_REG) | page,
+                (at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,
                 value,
             )?;
         }
@@ -729,21 +736,24 @@ fn write_system_management_bus_address(
     let freq = ((strap & STRAP_SMT_FREQ_MASK) >> STRAP_SMT_FREQ_SHIFT) as u16;
     let address = ((strap & STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK)
         >> STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT) as u16;
-    let mut v =
-        physical_layer_device::read(hardware, flag, physical_layer_device::registers::SMB_ADDR)?;
-    v = (v & !SMB_ADDR_MASK) | address | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
+    let mut v = physical_layer_device::read(
+        hardware,
+        flag,
+        physical_layer_device::registers::HV_SMB_ADDR,
+    )?;
+    v = (v & !HV_SMB_ADDR_MASK) | address | HV_SMB_ADDR_PEC_EN | HV_SMB_ADDR_VALID;
     if freq != 0 {
         let fq = freq - 1;
-        v &= !SMB_ADDR_FREQ_MASK;
-        v |= (fq & 1) << SMB_ADDR_FREQ_LOW_SHIFT;
-        v |= (fq & 2) << (SMB_ADDR_FREQ_HIGH_SHIFT - 1);
+        v &= !HV_SMB_ADDR_FREQ_MASK;
+        v |= (fq & 1) << HV_SMB_ADDR_FREQ_LOW_SHIFT;
+        v |= (fq & 2) << (HV_SMB_ADDR_FREQ_HIGH_SHIFT - 1);
     } else {
         hardware.note(Note::SystemManagementBusFrequencyUnsupported);
     }
     physical_layer_device::write(
         hardware,
         flag,
-        physical_layer_device::registers::SMB_ADDR,
+        physical_layer_device::registers::HV_SMB_ADDR,
         v,
     )?;
     Ok(())
@@ -758,19 +768,26 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
             return Ok(());
         }
         let pc = hardware.read(registers::PHY_CTRL);
-        let mut v =
-            physical_layer_device::read(hardware, &f, physical_layer_device::registers::OEM_BITS)?
-                & !(OEM_BITS_GBE_DIS | OEM_BITS_LPLU);
+        let mut v = physical_layer_device::read(
+            hardware,
+            &f,
+            physical_layer_device::registers::HV_OEM_BITS,
+        )? & !(HV_OEM_BITS_GBE_DIS | HV_OEM_BITS_LPLU);
         if pc & PHY_CTRL_GBE_DISABLE != 0 {
-            v |= OEM_BITS_GBE_DIS;
+            v |= HV_OEM_BITS_GBE_DIS;
         }
         if pc & PHY_CTRL_D0A_LPLU != 0 {
-            v |= OEM_BITS_LPLU;
+            v |= HV_OEM_BITS_LPLU;
         }
         if !physical_layer_device::reset_blocked(hardware) {
-            v |= OEM_BITS_RESTART_AN;
+            v |= HV_OEM_BITS_RESTART_AN;
         }
-        physical_layer_device::write(hardware, &f, physical_layer_device::registers::OEM_BITS, v)
+        physical_layer_device::write(
+            hardware,
+            &f,
+            physical_layer_device::registers::HV_OEM_BITS,
+            v,
+        )
     })();
     f.release(hardware);
     Ok(out?)
@@ -844,19 +861,19 @@ pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Erro
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::I82577_CFG,
+            physical_layer_device::registers::I82577_CFG_REG,
             |v| v | I82577_CFG_ASSERT_CRS_ON_TX | I82577_CFG_ENABLE_DOWNSHIFT,
         )?;
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::I82577_CTRL_2,
+            physical_layer_device::registers::I82577_PHY_CTRL_2,
             |v| (v & !I82577_PHY_CTRL2_MDIX_CFG_MASK) | I82577_PHY_CTRL2_AUTO_MDI_MDIX,
         )?;
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::AUTONEG_ADV,
+            physical_layer_device::registers::PHY_AUTONEG_ADV,
             |v| {
                 (v & !(NWAY_AR_ASM_DIR | NWAY_AR_PAUSE))
                     | NWAY_AR_10T_HD_CAPS
@@ -868,13 +885,13 @@ pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Erro
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::CTRL_1000T,
+            physical_layer_device::registers::PHY_1000T_CTRL,
             |v| (v & !CR_1000T_HD_CAPS) | CR_1000T_FD_CAPS,
         )?;
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::CONTROL,
+            physical_layer_device::registers::PHY_CONTROL,
             |v| v | MII_CR_AUTO_NEG_EN | MII_CR_RESTART_AUTO_NEG,
         )
     })();
@@ -958,9 +975,10 @@ mod tests {
     #[test]
     fn the_me_gets_two_and_a_half_seconds_to_leave_ulp() {
         let mut hardware = Inert::default();
-        hardware
-            .registers
-            .insert(registers::FWSM, ulp::FWSM_FW_VALID | ulp::FWSM_ULP_CFG_DONE);
+        hardware.registers.insert(
+            registers::FWSM,
+            ulp::ICH_FWSM_FW_VALID | ulp::FWSM_ULP_CFG_DONE,
+        );
         leave_ulp(&mut hardware);
         assert_eq!(hardware.elapsed_us, 2_500_000);
         // One read to ask whether there is an ME, then the 251 polls.
@@ -981,7 +999,7 @@ mod tests {
         let mut hardware = Inert::default();
         hardware
             .registers
-            .insert(registers::FWSM, ulp::FWSM_FW_VALID);
+            .insert(registers::FWSM, ulp::ICH_FWSM_FW_VALID);
         leave_ulp(&mut hardware);
         assert_eq!(hardware.elapsed_us, 0);
         assert_eq!(hardware.notes, [Note::UlpByMe { cleared: true }]);
@@ -1051,7 +1069,7 @@ mod tests {
         let mut hardware = Inert::default();
         hardware
             .registers
-            .insert(registers::FWSM, physical_layer_device::FWSM_RSPCIPHY);
+            .insert(registers::FWSM, physical_layer_device::ICH_FWSM_RSPCIPHY);
         hardware
             .registers
             .insert(mac::STATUS, reset::STATUS_GIO_MASTER_ENABLE);
@@ -1074,12 +1092,12 @@ mod tests {
     fn the_post_reset_clears_host_wakeup_and_replays_only_when_asked() {
         let mut s = Sim::new(Start::Healthy, true);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::PORT_GEN_CFG, 0x0011);
+            .insert(physical_layer_device::registers::BM_PORT_GEN_CFG, 0x0011);
         s.mac.insert(registers::EXTCNF_CTRL, 0x40 << 16);
         s.mac.insert(registers::EXTCNF_SIZE, 3 << 16);
         global_reset(&mut s, 1000).unwrap();
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PORT_GEN_CFG],
+            s.physical_layer_device_registers[&physical_layer_device::registers::BM_PORT_GEN_CFG],
             0x0001
         );
         assert!(s.notes.contains(&Note::LanConnectedDeviceNotConfigured));
@@ -1105,12 +1123,12 @@ mod tests {
             let mut s = Sim::new(Start::Healthy, true);
             s.mac.insert(registers::STRAP, strap(2, freq));
             s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::SMB_ADDR, preset);
+                .insert(physical_layer_device::registers::HV_SMB_ADDR, preset);
             let f = Swflag::acquire(&mut s).unwrap();
             write_system_management_bus_address(&mut s, &f).unwrap();
             f.release(&mut s);
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::SMB_ADDR],
+                s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
                 want,
                 "frequency field {freq}"
             );
@@ -1129,7 +1147,7 @@ mod tests {
     fn the_oem_bits_follow_the_mac() {
         let sw = FEXTNVM_SW_CONFIG_ICH8M;
         let both = PHY_CTRL_GBE_DISABLE | PHY_CTRL_D0A_LPLU;
-        // (FEXTNVM, PHY_CTRL, OEM_BITS before, firmware blocks resets, OEM_BITS after)
+        // (FEXTNVM, PHY_CTRL, HV_OEM_BITS before, firmware blocks resets, HV_OEM_BITS after)
         for (fextnvm, pc, before, blocked, after) in [
             (sw, both, 0x0000, false, 0x0444),
             (sw | 1, 0, 0x8044, false, 0x8400),
@@ -1143,10 +1161,10 @@ mod tests {
                 s.mac.insert(registers::FWSM, 0);
             }
             s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::OEM_BITS, before);
+                .insert(physical_layer_device::registers::HV_OEM_BITS, before);
             oem_bits(&mut s).unwrap();
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::OEM_BITS],
+                s.physical_layer_device_registers[&physical_layer_device::registers::HV_OEM_BITS],
                 after,
                 "{fextnvm:#x} {pc:#x} {before:#x}"
             );
@@ -1160,7 +1178,7 @@ mod tests {
     fn initialize_hardware_writes_freebsds_values_from_any_starting_state() {
         let mut s = Sim::new(Start::Healthy, true);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::AUTONEG_ADV, 0x0c01);
+            .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0c01);
         initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, mac::CTRL_EXT),
@@ -1179,23 +1197,23 @@ mod tests {
         assert_eq!(mac(&s, registers::PBECCSTS), 0x0001_0000);
         assert_eq!(mac(&s, mac::CTRL), 0x0008_0040, "MEHE and SLU");
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG],
+            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG_REG],
             0x8c00
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CTRL_2],
+            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_PHY_CTRL_2],
             0x0400
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::AUTONEG_ADV],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_AUTONEG_ADV],
             0x01e1
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CTRL_1000T],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_1000T_CTRL],
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CONTROL],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
             0x1200
         );
 
@@ -1207,15 +1225,15 @@ mod tests {
         s.mac
             .insert(mac::CTRL, crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::I82577_CFG, 0x8c01);
+            .insert(physical_layer_device::registers::I82577_CFG_REG, 0x8c01);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::I82577_CTRL_2, 0x0601);
+            .insert(physical_layer_device::registers::I82577_PHY_CTRL_2, 0x0601);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::AUTONEG_ADV, 0x0de1);
+            .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0de1);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::CTRL_1000T, 0x0300);
+            .insert(physical_layer_device::registers::PHY_1000T_CTRL, 0x0300);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::CONTROL, 0x1200);
+            .insert(physical_layer_device::registers::PHY_CONTROL, 0x1200);
         initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, registers::TARC1),
@@ -1226,23 +1244,23 @@ mod tests {
         assert_eq!(mac(&s, mac::RFCTL), 0x00c0);
         assert_eq!(mac(&s, mac::CTRL), 0x0008_0040, "speed and duplex unforced");
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG],
+            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG_REG],
             0x8c01
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CTRL_2],
+            s.physical_layer_device_registers[&physical_layer_device::registers::I82577_PHY_CTRL_2],
             0x0401
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::AUTONEG_ADV],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_AUTONEG_ADV],
             0x01e1
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CTRL_1000T],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_1000T_CTRL],
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::CONTROL],
+            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
             0x1200
         );
     }
@@ -1266,11 +1284,11 @@ mod tests {
     fn leaving_ulp_without_an_me_changes_only_the_bits_it_names() {
         let mut s = Sim::new(Start::InSystemManagementBus, false);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::SMB_CTRL, 0x0101);
+            .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0101);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::PM_CTRL, 0x4001);
+            .insert(physical_layer_device::registers::HV_PM_CTRL, 0x4001);
         s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::ULP_CONFIG1, 0x1ff5);
+            .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff5);
         assert!(initialize_physical_layer_device_workarounds(&mut s).is_ok());
         let to = |reg: u32| -> Vec<u16> {
             s.physical_layer_device_writes
@@ -1279,14 +1297,14 @@ mod tests {
                 .map(|w| w.1)
                 .collect()
         };
-        let smb = to(physical_layer_device::registers::SMB_CTRL);
+        let smb = to(physical_layer_device::registers::CV_SMB_CTRL);
         assert!(
             !smb.is_empty() && smb.iter().all(|&v| v == 0x0100),
             "{smb:x?}"
         );
-        assert_eq!(to(physical_layer_device::registers::PM_CTRL), [0x4001]);
+        assert_eq!(to(physical_layer_device::registers::HV_PM_CTRL), [0x4001]);
         assert_eq!(
-            to(physical_layer_device::registers::ULP_CONFIG1),
+            to(physical_layer_device::registers::I218_ULP_CONFIG1),
             [0x0281, 0x0281]
         );
         assert_eq!(s.physical_layer_device_resets, 2);

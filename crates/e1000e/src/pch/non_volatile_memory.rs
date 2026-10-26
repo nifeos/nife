@@ -59,7 +59,7 @@ pub enum Error {
 }
 
 /// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
-pub(crate) const FLASH_BASE: u64 = 0xe000;
+pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
 /// Hardware sequencing flash status, low half; control, high half (`ICH_FLASH_HSFSTS`).
 pub(crate) const HSFSTS: u64 = 0x04;
 /// Flash linear address (`ICH_FLASH_FADDR`).
@@ -96,9 +96,9 @@ pub mod control {
 /// `ICH_FLASH_LINEAR_ADDR_MASK`.
 pub(crate) const LINEAR_ADDRESS_MASK: u32 = 0x00ff_ffff;
 /// `ICH_FLASH_READ_COMMAND_TIMEOUT`, in 1 µs polls: ten seconds, FreeBSD's bound.
-pub(crate) const COMMAND_TIMEOUT: u32 = 10_000_000;
+pub(crate) const READ_COMMAND_TIMEOUT: u32 = 10_000_000;
 /// `ICH_FLASH_CYCLE_REPEAT_COUNT`.
-pub(crate) const CYCLE_REPEATS: u32 = 10;
+pub(crate) const CYCLE_REPEAT_COUNT: u32 = 10;
 /// The signature word (`E1000_ICH_NVM_SIG_WORD`).
 pub(crate) const SIGNATURE_WORD: u32 = 0x13;
 /// `E1000_ICH_NVM_VALID_SIG_MASK`.
@@ -108,7 +108,7 @@ pub(crate) const SIGNATURE_VALUE: u8 = 0x80;
 /// `E1000_SHADOW_RAM_WORDS`.
 pub const WORDS: u32 = 2048;
 /// `NVM_SIZE_MULTIPLIER`.
-pub(crate) const SIZE_MULTIPLIER: u32 = 4096;
+pub(crate) const NVM_SIZE_MULTIPLIER: u32 = 4096;
 
 /// The NVM's size, from `STRAP` on SPT.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -121,7 +121,7 @@ impl Geometry {
     /// `e1000_init_nvm_params_ich8lan`'s SPT branch: `STRAP` bits 5:1 hold the size in 4 KiB
     /// units, minus one; the NVM is two banks.
     pub(crate) const fn from_strap(strap: u32) -> Self {
-        let bytes = ((strap >> 1 & 0x1f) + 1) * SIZE_MULTIPLIER;
+        let bytes = ((strap >> 1 & 0x1f) + 1) * NVM_SIZE_MULTIPLIER;
         Geometry {
             bank_words: bytes / 2 / 2,
         }
@@ -133,7 +133,7 @@ impl Geometry {
 }
 
 fn status_16_bit(hardware: &mut impl Hardware) -> u16 {
-    hardware.read16(FLASH_BASE + HSFSTS)
+    hardware.read16(FLASH_BASE_ADDR + HSFSTS)
 }
 
 /// `e1000_flash_cycle_init_ich8lan`, SPT's 32-bit writes.
@@ -144,15 +144,15 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
     }
     // Clear the cycle and direct-access errors by writing them as one.
     let s = s | status::ERROR | status::DIRECT_ACCESS_ERROR;
-    hardware.write(FLASH_BASE + HSFSTS, u32::from(s));
+    hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(s));
     if s & status::IN_PROGRESS == 0 {
-        hardware.write(FLASH_BASE + HSFSTS, u32::from(s | status::DONE));
+        hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(s | status::DONE));
         return Ok(());
     }
-    for _ in 0..COMMAND_TIMEOUT {
+    for _ in 0..READ_COMMAND_TIMEOUT {
         let now = status_16_bit(hardware);
         if now & status::IN_PROGRESS == 0 {
-            hardware.write(FLASH_BASE + HSFSTS, u32::from(now | status::DONE));
+            hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(now | status::DONE));
             return Ok(());
         }
         hardware.delay_us(1);
@@ -162,10 +162,10 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// `e1000_flash_cycle_ich8lan`: set GO and wait for DONE.
 fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let ctl = (hardware.read(FLASH_BASE + HSFSTS) >> 16) as u16 | control::GO;
-    hardware.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
+    let ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16 | control::GO;
+    hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(ctl) << 16);
     let mut s = 0;
-    for _ in 0..=COMMAND_TIMEOUT {
+    for _ in 0..=READ_COMMAND_TIMEOUT {
         s = status_16_bit(hardware);
         if s & status::DONE != 0 {
             break;
@@ -187,17 +187,17 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
         return Err(Error::OutOfRange);
     }
     let mut last = Err(Error::Cycle);
-    for _ in 0..=CYCLE_REPEATS {
+    for _ in 0..=CYCLE_REPEAT_COUNT {
         hardware.delay_us(1);
         initialize_cycle(hardware)?;
-        let mut ctl = (hardware.read(FLASH_BASE + HSFSTS) >> 16) as u16;
+        let mut ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16;
         ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
         ctl &= !control::CYCLE_MASK;
-        hardware.write(FLASH_BASE + HSFSTS, u32::from(ctl) << 16);
-        hardware.write(FLASH_BASE + FADDR, byte & LINEAR_ADDRESS_MASK);
+        hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(ctl) << 16);
+        hardware.write(FLASH_BASE_ADDR + FADDR, byte & LINEAR_ADDRESS_MASK);
         last = cycle(hardware);
         if last.is_ok() {
-            return Ok(hardware.read(FLASH_BASE + FDATA0));
+            return Ok(hardware.read(FLASH_BASE_ADDR + FDATA0));
         }
         let s = status_16_bit(hardware);
         if s & status::ERROR != 0 {

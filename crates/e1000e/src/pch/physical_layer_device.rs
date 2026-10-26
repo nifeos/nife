@@ -95,17 +95,17 @@ pub mod mdic {
 }
 
 /// The highest MDIO register number (`MAX_PHY_REG_ADDRESS`).
-pub(crate) const MAX_REG: u32 = 0x1f;
+pub(crate) const MAX_PHY_REG_ADDRESS: u32 = 0x1f;
 /// Registers above this one sit behind a page select (`MAX_PHY_MULTI_PAGE_REG`).
-pub(crate) const MAX_UNPAGED_REG: u32 = 0xf;
+pub(crate) const MAX_PHY_MULTI_PAGE_REG: u32 = 0xf;
 /// The page-select register (`IGP01E1000_PHY_PAGE_SELECT`).
-pub(crate) const PAGE_SELECT: u32 = 0x1f;
+pub(crate) const IGP01E1000_PHY_PAGE_SELECT: u32 = 0x1f;
 /// How a page and a register pack into one offset (`PHY_PAGE_SHIFT`).
-pub(crate) const PAGE_SHIFT: u32 = 5;
+pub(crate) const PHY_PAGE_SHIFT: u32 = 5;
 /// The first page reached at PHY address 1 rather than 2 (`HV_INTC_FC_PAGE_START`).
-pub(crate) const HV_PAGE_START: u32 = 768;
+pub(crate) const HV_INTC_FC_PAGE_START: u32 = 768;
 /// The host wakeup page (`BM_WUC_PAGE`), refused.
-pub(crate) const WAKEUP_PAGE: u32 = 800;
+pub(crate) const BM_WUC_PAGE: u32 = 800;
 
 /// The highest page whose select value (`page << 5`) fits the 16-bit `MDIC` data field. FreeBSD
 /// passes `page << IGP_PAGE_SHIFT` to `e1000_set_page_igp` as a `u16` and so silently truncates a
@@ -120,7 +120,7 @@ pub(crate) const MAXIMUM_PAGE: u32 = 0x7ff;
 /// `PHY_REG`).
 #[doc(alias = "PHY_REG")]
 pub const fn paged_offset(page: u32, register: u32) -> u32 {
-    page << PAGE_SHIFT | (register & MAX_REG)
+    page << PHY_PAGE_SHIFT | (register & MAX_PHY_REG_ADDRESS)
 }
 
 /// The PHY's registers this crate addresses, from FreeBSD's `e1000_defines.h`, `e1000_phy.h` and
@@ -132,39 +132,47 @@ pub const fn paged_offset(page: u32, register: u32) -> u32 {
 pub mod registers {
     use super::paged_offset;
     /// MII control.
-    pub const CONTROL: u32 = 0x00;
+    ///
+    /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
+    /// a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused `CONTROL` (a
+    /// shortened copy).
+    pub const PHY_CONTROL: u32 = 0x00;
     /// PHY identifier, high word.
-    pub(crate) const ID1: u32 = 0x02;
+    pub(crate) const PHY_ID1: u32 = 0x02;
     /// PHY identifier, low word and revision.
-    pub(crate) const ID2: u32 = 0x03;
+    pub(crate) const PHY_ID2: u32 = 0x03;
     /// Autonegotiation advertisement.
-    pub(crate) const AUTONEG_ADV: u32 = 0x04;
+    pub(crate) const PHY_AUTONEG_ADV: u32 = 0x04;
     /// 1000BASE-T control.
-    pub(crate) const CTRL_1000T: u32 = 0x09;
+    pub(crate) const PHY_1000T_CTRL: u32 = 0x09;
     /// 82577-family configuration (`I82577_CFG_REG`).
-    pub(crate) const I82577_CFG: u32 = 22;
+    pub(crate) const I82577_CFG_REG: u32 = 22;
     /// 82577-family control 2 (`I82577_PHY_CTRL_2`).
-    pub(crate) const I82577_CTRL_2: u32 = 18;
+    pub(crate) const I82577_PHY_CTRL_2: u32 = 18;
     /// Kumeran mode control (`HV_KMRN_MODE_CTRL`).
-    pub const KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
+    ///
+    /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
+    /// a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`). Refused
+    /// `KMRN_MODE_CTRL` (a shortened copy).
+    pub const HV_KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
     /// Port general configuration (`BM_PORT_GEN_CFG`).
-    pub(crate) const PORT_GEN_CFG: u32 = paged_offset(769, 17);
+    pub(crate) const BM_PORT_GEN_CFG: u32 = paged_offset(769, 17);
     /// `SMBus` control (`CV_SMB_CTRL`).
-    pub(crate) const SMB_CTRL: u32 = paged_offset(769, 23);
+    pub(crate) const CV_SMB_CTRL: u32 = paged_offset(769, 23);
     /// Power management control (`HV_PM_CTRL`).
-    pub(crate) const PM_CTRL: u32 = paged_offset(770, 17);
+    pub(crate) const HV_PM_CTRL: u32 = paged_offset(770, 17);
     /// Ultra-low-power configuration 1 (`I218_ULP_CONFIG1`).
-    pub(crate) const ULP_CONFIG1: u32 = paged_offset(779, 16);
+    pub(crate) const I218_ULP_CONFIG1: u32 = paged_offset(779, 16);
     /// OEM bits: LPLU, gigabit disable, restart autonegotiation (`HV_OEM_BITS`).
-    pub(crate) const OEM_BITS: u32 = paged_offset(768, 25);
+    pub(crate) const HV_OEM_BITS: u32 = paged_offset(768, 25);
     /// `SMBus` address (`HV_SMB_ADDR`).
-    pub(crate) const SMB_ADDR: u32 = paged_offset(768, 26);
+    pub(crate) const HV_SMB_ADDR: u32 = paged_offset(768, 26);
     /// LED configuration (`HV_LED_CONFIG`).
-    pub(crate) const LED_CONFIG: u32 = paged_offset(768, 30);
+    pub(crate) const HV_LED_CONFIG: u32 = paged_offset(768, 30);
 }
 
 /// `PHY_REVISION_MASK`: the identifier without its revision nibble.
-pub(crate) const ID_MASK: u32 = 0xffff_fff0;
+pub(crate) const PHY_REVISION_MASK: u32 = 0xffff_fff0;
 
 /// How long to wait for someone else's `SWFLAG` to clear, in ms (`PHY_CFG_TIMEOUT`).
 pub(crate) const SWFLAG_FREE_MS: u32 = 100;
@@ -173,7 +181,7 @@ pub(crate) const SWFLAG_TAKE_MS: u32 = 1000;
 /// `EXTCNF_CTRL.SWFLAG`.
 pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
-pub(crate) const FWSM_RSPCIPHY: u32 = 0x0000_0040;
+pub(crate) const ICH_FWSM_RSPCIPHY: u32 = 0x0000_0040;
 
 /// One MDIO read of `register` at PHY address `physical_layer_device_address`,
 /// `e1000_read_phy_reg_mdic`.
@@ -182,7 +190,7 @@ pub fn read_mdic(
     physical_layer_device_address: u32,
     register: u32,
 ) -> Result<u16, Error> {
-    if register > MAX_REG {
+    if register > MAX_PHY_REG_ADDRESS {
         return Err(Error::OutOfRange);
     }
     hardware.write(
@@ -201,7 +209,7 @@ pub(crate) fn write_mdic(
     register: u32,
     data: u16,
 ) -> Result<(), Error> {
-    if register > MAX_REG {
+    if register > MAX_PHY_REG_ADDRESS {
         return Err(Error::OutOfRange);
     }
     hardware.write(
@@ -287,7 +295,7 @@ impl Swflag {
 
 /// Which PHY address a page lives at (`e1000_get_phy_addr_for_hv_page`).
 pub(crate) const fn address_for(page: u32) -> u32 {
-    if page >= HV_PAGE_START { 1 } else { 2 }
+    if page >= HV_INTC_FC_PAGE_START { 1 } else { 2 }
 }
 
 /// What one paged access does on the bus: the page-select write, if any, then the register.
@@ -311,16 +319,20 @@ pub struct Plan {
 /// The decomposition `__e1000_read_phy_reg_hv` and `__e1000_write_phy_reg_hv` share, for the pages
 /// this port carries. Pure, so it is host-tested and model-checked.
 pub const fn plan(offset: u32) -> Result<Plan, Error> {
-    let page = offset >> PAGE_SHIFT;
-    let register = offset & MAX_REG;
-    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAXIMUM_PAGE {
+    let page = offset >> PHY_PAGE_SHIFT;
+    let register = offset & MAX_PHY_REG_ADDRESS;
+    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
         return Err(Error::PageNotPorted);
     }
     let physical_layer_device_address = address_for(page);
     // Page 768 is selected as page 0 (FreeBSD: "if (page == HV_INTC_FC_PAGE_START) page = 0").
-    let shown = if page == HV_PAGE_START { 0 } else { page };
-    let select = if register > MAX_UNPAGED_REG {
-        Some((shown << PAGE_SHIFT) as u16)
+    let shown = if page == HV_INTC_FC_PAGE_START {
+        0
+    } else {
+        page
+    };
+    let select = if register > MAX_PHY_MULTI_PAGE_REG {
+        Some((shown << PHY_PAGE_SHIFT) as u16)
     } else {
         None
     };
@@ -335,7 +347,7 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
 pub fn read(hardware: &mut impl Hardware, _held: &Swflag, offset: u32) -> Result<u16, Error> {
     let p = plan(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hardware, 1, PAGE_SELECT, sel)?;
+        write_mdic(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
     }
     read_mdic(hardware, p.physical_layer_device_address, p.register)
 }
@@ -350,7 +362,7 @@ pub fn write(
 ) -> Result<(), Error> {
     let p = plan(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hardware, 1, PAGE_SELECT, sel)?;
+        write_mdic(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
     }
     write_mdic(hardware, p.physical_layer_device_address, p.register, data)
 }
@@ -370,7 +382,7 @@ pub fn update(
 /// 31 times 10 ms apart, as FreeBSD does.
 pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
     for i in 0..=30 {
-        if hardware.read(super::registers::FWSM) & FWSM_RSPCIPHY != 0 {
+        if hardware.read(super::registers::FWSM) & ICH_FWSM_RSPCIPHY != 0 {
             return false;
         }
         if i < 30 {
@@ -386,9 +398,9 @@ pub fn id_at(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
 ) -> Result<u32, Error> {
-    let hi = read_mdic(hardware, physical_layer_device_address, registers::ID1)?;
-    let lo = read_mdic(hardware, physical_layer_device_address, registers::ID2)?;
-    Ok((u32::from(hi) << 16 | u32::from(lo)) & ID_MASK)
+    let hi = read_mdic(hardware, physical_layer_device_address, registers::PHY_ID1)?;
+    let lo = read_mdic(hardware, physical_layer_device_address, registers::PHY_ID2)?;
+    Ok((u32::from(hi) << 16 | u32::from(lo)) & PHY_REVISION_MASK)
 }
 
 #[cfg(kani)]
@@ -404,17 +416,21 @@ mod proofs {
     fn a_paged_access_selects_the_offsets_own_page_and_register() {
         let off: u32 = kani::any();
         if let Ok(p) = plan(off) {
-            let page = off >> PAGE_SHIFT;
+            let page = off >> PHY_PAGE_SHIFT;
             assert!(p.physical_layer_device_address == 1 || p.physical_layer_device_address == 2);
-            assert!(p.register == off & MAX_REG);
-            assert!(page != WAKEUP_PAGE);
+            assert!(p.register == off & MAX_PHY_REG_ADDRESS);
+            assert!(page != BM_WUC_PAGE);
             match p.select {
                 Some(sel) => {
-                    assert!(p.register > MAX_UNPAGED_REG);
-                    let shown = if page == HV_PAGE_START { 0 } else { page };
-                    assert!(u32::from(sel) >> PAGE_SHIFT == shown);
+                    assert!(p.register > MAX_PHY_MULTI_PAGE_REG);
+                    let shown = if page == HV_INTC_FC_PAGE_START {
+                        0
+                    } else {
+                        page
+                    };
+                    assert!(u32::from(sel) >> PHY_PAGE_SHIFT == shown);
                 }
-                None => assert!(p.register <= MAX_UNPAGED_REG),
+                None => assert!(p.register <= MAX_PHY_MULTI_PAGE_REG),
             }
         }
     }
