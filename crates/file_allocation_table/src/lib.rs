@@ -38,6 +38,7 @@
 
 mod boot_sector;
 mod directory;
+#[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod long_name;
 mod reader;

@@ -145,11 +145,14 @@ pub(crate) const AON_BASE: u64 = 0x1700_0000;
 /// The AON window's size, `0x10000` in every tree that names it.
 pub(crate) const AON_SIZE: u64 = 0x1_0000;
 
-/// Mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
+/// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
+/// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
+#[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_AONCRG: &[u8] = b"starfive,jh7110-aoncrg";
 
 /// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
-/// `clkgen`, `"aoncrg"` in `rstgen`; \[vendor-dts\]).
+/// `clkgen`, the clock generator node, and `"aoncrg"` in `rstgen`, the reset generator node;
+/// \[vendor-dts\]).
 const VENDOR_CLKGEN_AON_NAME: &[u8] = b"aon";
 const VENDOR_RSTGEN_AON_NAME: &[u8] = b"aoncrg";
 
@@ -1053,16 +1056,21 @@ pub struct WindowLocation {
     pub compatible: Option<&'static [u8]>,
 }
 
-/// Mainline's dedicated STG clock-and-reset controller node \[mainline-dts\].
+/// **STG clock and reset generator** (CRG, the device tree's `stgcrg` node, \[mainline-dts\]):
+/// mainline's dedicated STG clock-and-reset controller node.
+#[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_STGCRG: &[u8] = b"starfive,jh7110-stgcrg";
 
-/// The vendor U-Boot's single clock controller covering sys, stg and aon \[vendor-dts\]. This is
-/// the one radon's firmware actually serves, if it serves either.
+/// **Vendor clock generator** (the `clkgen` node, \[vendor-dts\]): the vendor U-Boot's single
+/// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
+/// if it serves either.
+#[doc(alias = "clock generator")]
 pub const COMPATIBLE_VENDOR_CLKGEN: &[u8] = b"starfive,jh7110-clkgen";
 
-/// The vendor U-Boot's separate reset controller, whose `reg` list covers the same windows
-/// \[vendor-dts\]. Tried last: it names the same address as the clkgen node, so it is only
-/// reached by a tree that carries one and not the other.
+/// **Vendor reset generator** (the `rstgen` node, \[vendor-dts\]): the vendor U-Boot's separate
+/// reset controller, whose `reg` list covers the same windows. Tried last: it names the same
+/// address as the clkgen node, so it is only reached by a tree that carries one and not the other.
+#[doc(alias = "reset generator")]
 pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
 
 /// The `reg-names` entry naming the STG window, in each vendor node's own spelling
@@ -1070,8 +1078,9 @@ pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
 const VENDOR_CLKGEN_STG_NAME: &[u8] = b"stg";
 const VENDOR_RSTGEN_STG_NAME: &[u8] = b"stgcrg";
 
-/// Mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`
-/// (\[mainline-dts\]).
+/// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
+/// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
+#[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_SYSCRG: &[u8] = b"starfive,jh7110-syscrg";
 
 /// The `reg-names` entry naming the SYS window, in each vendor node's own spelling (`"sys"` in

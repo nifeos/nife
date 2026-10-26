@@ -21,17 +21,25 @@ const FAT32_MAX_CLUSTERS: u32 = 0x0FFF_FFF5 - 1;
 /// The bytes of a sector the parse reads: the BPB at the start and the signature at 510.
 const PARSED: usize = 512;
 
-/// **The FAT type**, decided by the count of data clusters and by nothing else.
+/// **The FAT type** (file allocation table type, "FAT: General Overview of On-Disk Format" version
+/// 1.03, section 3, Boot Sector and BPB), decided by the count of data clusters and by nothing
+/// else. The variants keep the specification's spelling, `Fat12`, `Fat16` and `Fat32`, each named
+/// for the width of one table entry in bits.
 ///
 /// The type string at `BS_FilSysType` is informational and never read. A volume whose BPB layout
 /// disagrees with its cluster count is refused (see [`ParseError::LayoutContradictsClusterCount`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FileAllocationTableType {
-    /// Fewer than 4085 clusters; 12-bit table entries.
+    /// **FAT12**, the 12-bit file allocation table: fewer than 4085 clusters; 12-bit table entries.
+    #[doc(alias = "12-bit file allocation table")]
     Fat12,
-    /// From 4085 up to 65524 clusters; 16-bit table entries.
+    /// **FAT16**, the 16-bit file allocation table: from 4085 up to 65524 clusters; 16-bit table
+    /// entries.
+    #[doc(alias = "16-bit file allocation table")]
     Fat16,
-    /// 65525 clusters or more; 32-bit table entries whose top four bits are reserved.
+    /// **FAT32**, the 32-bit file allocation table: 65525 clusters or more; 32-bit table entries
+    /// whose top four bits are reserved.
+    #[doc(alias = "32-bit file allocation table")]
     Fat32,
 }
 
@@ -432,7 +440,10 @@ impl BootSector {
         self.hidden_sectors
     }
 
-    /// FAT32's `FSInfo` sector, or `None` when the BPB names none inside the reserved region.
+    /// **FAT32 `FSInfo` sector** (`BPB_FSInfo`, "FAT: General Overview of On-Disk Format" version
+    /// 1.03, section 5, FAT32 `FSInfo` Sector Structure and Backup Boot Sector): the sector holding
+    /// the free-cluster hints, or `None` when the BPB names none inside the reserved region.
+    #[doc(alias = "file system information sector")]
     pub const fn fs_info_sector(&self) -> Option<u16> {
         self.fs_info_sector
     }

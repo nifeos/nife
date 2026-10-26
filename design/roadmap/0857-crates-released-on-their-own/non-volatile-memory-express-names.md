@@ -53,9 +53,9 @@ The fields of `Namespace` (`size_bytes`, `blocks_per_transfer`) are provisional 
 | `ADMIN_IDENTIFY` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
 | `ADMIN_CREATE_IO_CQ` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
 | `ADMIN_CREATE_IO_SQ` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
-| `NVM_READ` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
-| `NVM_WRITE` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
-| `NVM_FLUSH` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
+| `NON_VOLATILE_MEMORY_READ` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `NVM_READ` (NVM spelled out, as §154's row for NVMe does). | yes |
+| `NON_VOLATILE_MEMORY_WRITE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `NVM_WRITE` (NVM spelled out, as §154's row for NVMe does). | no |
+| `NON_VOLATILE_MEMORY_FLUSH` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `NVM_FLUSH` (NVM spelled out, as §154's row for NVMe does). | no |
 | `CNS_NAMESPACE` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `CNS_CONTROLLER` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
 | `Command` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |

@@ -116,15 +116,18 @@ pub const ADMIN_CREATE_IO_CQ: u8 = 0x05;
 /// Fetch a controller or namespace data structure ([`CNS_CONTROLLER`], [`CNS_NAMESPACE`]).
 pub const ADMIN_IDENTIFY: u8 = 0x06;
 
-/// NVM (I/O) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
+/// Non-volatile memory (NVM, the I/O command set's) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
 /// requires every controller to implement it, which is why the block server can offer
 /// `filesystem_contract::blk::FLUSH` unconditionally where the virtio one has to negotiate a
 /// feature bit and refuse when it is absent.
-pub const NVM_FLUSH: u8 = 0x00;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_FLUSH: u8 = 0x00;
 /// Write logical blocks.
-pub const NVM_WRITE: u8 = 0x01;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_WRITE: u8 = 0x01;
 /// Read logical blocks.
-pub const NVM_READ: u8 = 0x02;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_READ: u8 = 0x02;
 
 /// Identify CNS values: the namespace data structure, and the controller's.
 pub const CNS_NAMESPACE: u32 = 0x00;
@@ -190,7 +193,7 @@ impl Command {
     /// get the off-by-one wrong. `blocks` must be nonzero (asserted: zero would wrap to 65536).
     pub fn read(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
-        let mut c = Self::new(NVM_READ, cid, nsid, prp1, prp2);
+        let mut c = Self::new(NON_VOLATILE_MEMORY_READ, cid, nsid, prp1, prp2);
         c.0[10] = slba as u32;
         c.0[11] = (slba >> 32) as u32;
         c.0[12] = (blocks - 1) as u32;
@@ -206,13 +209,13 @@ impl Command {
     /// volatile write cache completes it as a no-op, and that is a truthful yes rather than the
     /// silent one a flush verb exists to forbid: the data really is durable.
     pub fn flush(cid: u16, nsid: u32) -> Self {
-        Self::new(NVM_FLUSH, cid, nsid, 0, 0)
+        Self::new(NON_VOLATILE_MEMORY_FLUSH, cid, nsid, 0, 0)
     }
 
     /// WRITE (I/O): the same addressing as [`Command::read`], the other direction.
     pub fn write(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
-        let mut c = Self::new(NVM_WRITE, cid, nsid, prp1, prp2);
+        let mut c = Self::new(NON_VOLATILE_MEMORY_WRITE, cid, nsid, prp1, prp2);
         c.0[10] = slba as u32;
         c.0[11] = (slba >> 32) as u32;
         c.0[12] = (blocks - 1) as u32;
@@ -220,8 +223,9 @@ impl Command {
     }
 }
 
-/// The two PRP words for one data transfer of `len` bytes at physical `base`, against `page_size`
-/// pages. PRP1 may carry an offset; every later page pointer must not. One page of data needs only
+/// **Physical Region Page pair** (PRP1 and PRP2, NVMe 1.4 section 4.3, Physical Region Page Entry
+/// and List): the two PRP words for one data transfer of `len` bytes at physical `base`, against
+/// `page_size` pages. PRP1 may carry an offset; every later page pointer must not. One page of data needs only
 /// PRP1; a transfer spilling into a second page puts that page in PRP2; anything longer needs a
 /// PRP *list*, which this driver does not build (its unit is one 4096-byte filesystem block), so
 /// `None` says "not expressible", and the caller treats it as a bug rather than a device error.
@@ -241,6 +245,7 @@ impl Command {
 /// // Three pages would need a list. Not expressible, and said so.
 /// assert_eq!(prp_pair(0x4000_0000, 3 * 4096, 4096), None);
 /// ```
+#[doc(alias = "physical region page")]
 pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     assert!(page_size.is_power_of_two() && page_size >= 512);
     if len == 0 {
@@ -267,7 +272,7 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::{NVM_READ, Namespace};
+/// use non_volatile_memory_express::{NON_VOLATILE_MEMORY_READ, Namespace};
 ///
 /// // An 8 MiB namespace of 512-byte logical blocks holds 2048 blocks of 4096 bytes, numbered 0 to
 /// // 2047, and each one is 8 logical blocks.
@@ -276,7 +281,7 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
 /// assert!(!namespace.holds_block(2048, 4096));
 ///
 /// let cmd = namespace.transfer_command(7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
-/// assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+/// assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
 /// assert!(namespace.transfer_command(7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -780,7 +785,7 @@ mod tests {
         let cmd = namespace
             .transfer_command(7, 1, LAST, 4096, 0x4001_5000, 4096, false)
             .expect("the last block is servable");
-        assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+        assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
         assert_eq!(cmd.0[10] as u64 | (cmd.0[11] as u64) << 32, LAST * 8);
         assert!(
             namespace

@@ -57,8 +57,11 @@ const DIR_ENTRY: usize = 32;
 /// which is the only kind of refusal worth making about a disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutError {
-    /// The partition holds fewer than [`FAT32_MIN_CLUSTERS`] data clusters, so it is not a FAT32 volume
+    /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
+    /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
+    /// partition holds fewer than [`FAT32_MIN_CLUSTERS`] data clusters, so it is not a FAT32 volume
     /// however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
+    #[doc(alias = "not a 32-bit file allocation table")]
     NotFat32,
     /// The partition is larger than FAT32 addresses.
     TooLarge,
