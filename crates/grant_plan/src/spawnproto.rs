@@ -530,11 +530,12 @@ pub struct Wiring {
     /// **The machine statistics page follows as the last delegated capability** (milestone 126).
     /// See [`MACHINE_BIT`].
     pub machine: bool,
-    /// **The gpu's four capabilities follow, and the graphical terminal session is to be built from
-    /// them** (milestone 632 (provisional)). See [`GRAPHICS_BIT`].
+    /// **This is a graphical terminal launch, and no capability follows** (milestone 632
+    /// (provisional)): the spawn service builds the session from its own copies. See
+    /// [`GRAPHICS_BIT`].
     pub graphics: bool,
-    /// **A virtio keyboard's three follow beside the gpu's four** (milestone 632 (provisional)).
-    /// See [`KEYBOARD_BIT`]; meaningless unless `graphics` is also set.
+    /// **Unused, and a request that sets it is refused; no capability follows** (milestone 715
+    /// (provisional)). See [`KEYBOARD_BIT`]; meaningless unless `graphics` is also set.
     pub keyboard: bool,
 }
 

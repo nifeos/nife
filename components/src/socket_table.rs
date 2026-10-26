@@ -57,7 +57,7 @@ pub(crate) const TCP_RECEIVE_BUF: usize = 16 * 1024;
 const _: () = {
     let segment = 1460;
     assert!(TCP_RECEIVE_BUF <= (designware_ethernet::RX_ENTRIES as usize - 1) * segment);
-    assert!(TCP_RECEIVE_BUF <= (e1000e::RX_ENTRIES as usize - 1) * segment);
+    assert!(TCP_RECEIVE_BUF <= (e1000e::RECEIVE_ENTRIES as usize - 1) * segment);
 };
 
 /// Every socket open at once, each a TCP connection, must leave a quarter of the heap for smoltcp's
