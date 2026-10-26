@@ -11,7 +11,7 @@ check.
     python3 helpers/file_length_ratchet.py --check          # what script/lint runs
     python3 helpers/file_length_ratchet.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/file_length_ratchet.py --selftest       # the rules, as fixtures
-    python3 helpers/file_length_ratchet.py --init           # write the baseline from scratch (milestone 841 only)
+    python3 helpers/file_length_ratchet.py --initialize           # write the baseline from scratch (milestone 841 only)
 
 Name: provisional, minted by milestone 841's lane on 2026-10-08. A shared python module under
 `helpers/`, which `script/names` puts out of its own scope, so its provenance is this paragraph
@@ -260,19 +260,19 @@ def run_check():
     return 0
 
 
-def bank(init=False):
-    if init and os.path.exists(BASELINE):
-        print(f'file-length ratchet: {BASELINE} already exists. --init wrote it once, in '
+def bank(initialize=False):
+    if initialize and os.path.exists(BASELINE):
+        print(f'file-length ratchet: {BASELINE} already exists. --initialize wrote it once, in '
               f'milestone 841; it is refused now, and --bank is the verb that never raises',
               file=sys.stderr)
         return 2
-    if not init and not os.path.exists(BASELINE):
+    if not initialize and not os.path.exists(BASELINE):
         print(f'file-length ratchet: {BASELINE} does not exist; there is nothing to bank',
               file=sys.stderr)
         return 2
     counts = line_counts(tracked_rust(),
                          lambda p: open(p, encoding='utf-8', errors='replace').read())
-    if init:
+    if initialize:
         rows = {p: n for p, n in counts.items() if n > CEILING}
     else:
         rows = banked(read_baseline(open(BASELINE).read()), counts)
@@ -370,8 +370,8 @@ def main(argv):
         return selftest()
     if not argv or argv[0] == '--check':
         return run_check()
-    if argv[0] in ('--bank', '--init'):
-        return bank(init=argv[0] == '--init')
+    if argv[0] in ('--bank', '--initialize', '--init'):
+        return bank(initialize=argv[0] in ('--initialize', '--init'))
     print(__doc__.split('\n\n')[1], file=sys.stderr)
     return 2
 

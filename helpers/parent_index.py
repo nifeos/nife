@@ -12,7 +12,7 @@ base, and a selftest that runs before the check.
     python3 helpers/parent_index.py --list           # every parent, and each item it holds
     python3 helpers/parent_index.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/parent_index.py --selftest       # the rules, as fixtures
-    python3 helpers/parent_index.py --init           # write the baseline anew (§282's lane only)
+    python3 helpers/parent_index.py --initialize           # write the baseline anew (§282's lane only)
 
 Name: provisional, minted 2026-10-11 by lane/split-parent-is-an-index, as is the baseline's,
 `design/parent-index-baseline.tsv`, and the mark's wording. A shared python module under
@@ -641,17 +641,17 @@ def run_list():
     return 0
 
 
-def bank(init=False):
-    if init and os.path.exists(BASELINE):
-        print(f'parent-index check: {BASELINE} already exists. --init wrote it once, for §282; it '
+def bank(initialize=False):
+    if initialize and os.path.exists(BASELINE):
+        print(f'parent-index check: {BASELINE} already exists. --initialize wrote it once, for §282; it '
               f'is refused now, and --bank is the verb that never raises', file=sys.stderr)
         return 2
-    if not init and not os.path.exists(BASELINE):
+    if not initialize and not os.path.exists(BASELINE):
         print(f'parent-index check: {BASELINE} does not exist; there is nothing to bank',
               file=sys.stderr)
         return 2
     _paths, judged = judge_tree()
-    if init:
+    if initialize:
         rows = {p: j['number'] for p, j in judged.items() if j['number']}
     else:
         rows = banked(read_baseline(read(BASELINE)), judged)
@@ -833,8 +833,8 @@ def main(argv):
         return run_check()
     if argv[0] == '--list':
         return run_list()
-    if argv[0] in ('--bank', '--init'):
-        return bank(init=argv[0] == '--init')
+    if argv[0] in ('--bank', '--initialize', '--init'):
+        return bank(initialize=argv[0] in ('--initialize', '--init'))
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 

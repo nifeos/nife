@@ -7,9 +7,9 @@ checked it: a lane moved facts into notes already over the cap and each note gre
     python3 helpers/prose_ratchet.py --check          # what script/lint runs
     python3 helpers/prose_ratchet.py --report PATH..  # one document's measures, and why
     python3 helpers/prose_ratchet.py --bank           # lower the baseline to the tree; never raises
-    python3 helpers/prose_ratchet.py --init           # write the baseline from scratch (milestone 586 only)
+    python3 helpers/prose_ratchet.py --initialize           # write the baseline from scratch (milestone 586 only)
     python3 helpers/prose_ratchet.py --remeasure      # once, in the change that bumps MEASURE (see there)
-    python3 helpers/prose_ratchet.py --init-passive   # write the passive baseline (milestone 952 only)
+    python3 helpers/prose_ratchet.py --initialize-passive   # write the passive baseline (milestone 952 only)
     python3 helpers/prose_ratchet.py --remeasure-passive  # once, with a PASSIVE_MEASURE bump
 
 Name: provisional, minted by milestone 586's lane on 2026-09-24. A shared python module under
@@ -38,7 +38,7 @@ because §212's rule is "may not grow", not "may not exceed a number written dow
 A."). `helpers/passive_voice.py` counts passives over the prose the sentence limits read (blocks,
 quotes out, inline code one word). A document of at least 200 prose words over 2 per 1,000 fails,
 unless `design/passive-baseline.tsv` holds a row for it, and then its count may not rise above the
-row nor above its count at the merge base. That file is its own: `--init-passive` wrote it once,
+row nor above its count at the merge base. That file is its own: `--initialize-passive` wrote it once,
 `--bank` lowers it, and nothing raises it. No touch rule applies, unlike bold: ruling A holds an
 existing document to a count that only falls, and a document gains no allowance by being edited.
 
@@ -1017,7 +1017,7 @@ PASSIVE_FAMILY = 'writing-standards'
 PASSIVE_HEADER = """\
 # The passive-voice baseline: milestone 952 (a passive-voice ratchet in lint), for rule 6 of §213
 # (writing standards): at most 2 passive constructions per 1,000 prose words.
-# One row per document over that limit when `python3 helpers/prose_ratchet.py --init-passive`
+# One row per document over that limit when `python3 helpers/prose_ratchet.py --initialize-passive`
 # wrote this file. A count is a ceiling that only goes DOWN: `--bank` lowers it and drops a row
 # whose document has reached the limit. A row may be removed; a row may not be added and a count
 # may not rise (script/lint compares against the merge base). A document under 200 prose words is
@@ -1087,7 +1087,7 @@ def passive_baseline_problems(base, renames):
         return []
     old_text = at(base, PASSIVE_BASELINE)
     if old_text is None:
-        return []  # the change that writes the file once (`--init-passive`)
+        return []  # the change that writes the file once (`--initialize-passive`)
     now_text = open(PASSIVE_BASELINE).read()
     if baseline_measure(old_text) < PASSIVE_MEASURE == baseline_measure(now_text):
         return []  # a re-measurement, once, with the counter change that moved it
@@ -1390,10 +1390,10 @@ def remeasure():
     return moved
 
 
-def bank_passive(init=False):
-    """Write the passive baseline. `init` writes every document over the limit, once; otherwise
+def bank_passive(initialize=False):
+    """Write the passive baseline. `initialize` writes every document over the limit, once; otherwise
     each row falls to the document's count, a row at or under the limit goes, and none is added."""
-    old = {} if init else read_passive_baseline(
+    old = {} if initialize else read_passive_baseline(
         open(PASSIVE_BASELINE).read() if os.path.exists(PASSIVE_BASELINE) else '')
     rows = {}
     for path in documents(tracked()):
@@ -1401,7 +1401,7 @@ def bank_passive(init=False):
         m = measured(path, text)
         if not passive_over(m) or PASSIVE_FAMILY in exceptions(text):
             continue
-        if init:
+        if initialize:
             rows[path] = m['passives']
         elif path in old:
             rows[path] = min(m['passives'], old[path])
@@ -1426,9 +1426,9 @@ def remeasure_passive():
     return moved
 
 
-def bank(init=False):
+def bank(initialize=False):
     docs = documents(tracked())
-    old = {} if init or not os.path.exists(BASELINE) else read_baseline(open(BASELINE).read())
+    old = {} if initialize or not os.path.exists(BASELINE) else read_baseline(open(BASELINE).read())
     rows = {}
     for path in docs:
         text = open(path).read()
@@ -1436,7 +1436,7 @@ def bank(init=False):
         o = {c: v for c, v in over(measured(path, text)).items() if FAMILY[c] not in exc}
         if not o:
             continue
-        if init:
+        if initialize:
             rows[path] = o
             continue
         if path not in old:
@@ -1673,21 +1673,21 @@ def main(argv):
         moved = remeasure()
         print(f'prose ratchet: re-measured {len(moved)} rows under measure {MEASURE}')
         return 0
-    if argv[0] in ('--bank', '--init'):
-        rows = bank(init=argv[0] == '--init')
+    if argv[0] in ('--bank', '--initialize', '--init'):
+        rows = bank(initialize=argv[0] in ('--initialize', '--init'))
         print(f'prose ratchet: {len(rows)} rows written to {BASELINE}')
         if argv[0] == '--bank' and os.path.exists(PASSIVE_BASELINE):
             rows = bank_passive()
             print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
         return 0
-    if argv[0] == '--init-passive':
+    if argv[0] in ('--initialize-passive', '--init-passive'):
         # Once, by milestone 952. A second run would reset every ceiling to today's count, which
         # is the raise the baseline exists to refuse.
         if os.path.exists(PASSIVE_BASELINE):
             print(f'prose ratchet: {PASSIVE_BASELINE} exists, and it is written once; '
                   f'--bank lowers it', file=sys.stderr)
             return 1
-        rows = bank_passive(init=True)
+        rows = bank_passive(initialize=True)
         print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
         return 0
     if argv[0] == '--remeasure-passive':

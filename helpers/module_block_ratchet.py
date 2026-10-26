@@ -326,7 +326,7 @@ def main(argv):
         return run_check()
     if argv[0] == '--bank':
         return bank()
-    if argv[0] == '--init' and not os.path.exists(BASELINE):
+    if argv[0] in ('--initialize', '--init') and not os.path.exists(BASELINE):
         write_baseline(tree_modules()[1])
         print(f'module-block ratchet: wrote {BASELINE}')
         return 0
