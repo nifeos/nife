@@ -21,9 +21,9 @@ pub trait Region {
 /// The two tail pointers, and the ordering between them and the region: the only register writes
 /// the data plane makes.
 pub trait Tails {
-    /// Write the receive tail pointer's low 32 bits ([`regs::CHAN_RX_TAIL`]).
+    /// Write the receive tail pointer's low 32 bits ([`registers::CHAN_RX_TAIL`]).
     fn set_receive_tail(&mut self, addr: u32);
-    /// Write the transmit tail pointer's low 32 bits ([`regs::CHAN_TX_TAIL`]).
+    /// Write the transmit tail pointer's low 32 bits ([`registers::CHAN_TX_TAIL`]).
     fn set_transmit_tail(&mut self, addr: u32);
     /// Order every region access before this against every access after it, as seen by the
     /// device. Called between filling a descriptor and the tail write that announces it, and

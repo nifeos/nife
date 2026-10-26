@@ -12,11 +12,15 @@ use address_space_map::{PAGE, pair_page};
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as design/naming.md asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
-/// The controller's DMA page (`designware_ethernet::regs::DMA_PAGE`), device memory.
+/// The controller's DMA (direct memory access) register page
+/// (`designware_ethernet::registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE`), device memory.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `DMA_PAGE_VA`, renamed to spell out the address as design/naming.md asks.
-pub const DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_0000);
+/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`; this
+/// lane added `REGISTER` to match the crate's `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, replacing
+/// `DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS`.
+#[doc(alias = "dma_page")]
+pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS: u64 =
+    pair_page(0x0000_0000_009c_0000);
 
 /// The role word's low half when `arg0` is this server's handoff. Disjoint from `net_stack`'s
 /// existing roles: 0 is the virtio server, small integers are socket clients, `0xe1e0` is

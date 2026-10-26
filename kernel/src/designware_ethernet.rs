@@ -31,7 +31,7 @@ use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm::{self, Link, Speed};
 use ::designware_ethernet::{
     DataPlane, Hardware, Region, Tails, coherence, jh7110, layout, management_data_input_output,
-    regs,
+    registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
@@ -187,7 +187,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let (handoff, link) = outcome.map_err(Absent::Refused)?;
     Ok(Found {
         handoff,
-        dma_page: e.port.base + u64::from(regs::DMA_PAGE),
+        dma_page: e.port.base + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
         link,
     })
 }
@@ -242,7 +242,7 @@ fn run(
     let mut w = Window(mmu::phys_to_virt(e.port.base));
     let id = Identity::read(&mut w);
     r.version = id.version;
-    r.dma_bits = id.dma_bits();
+    r.dma_bits = id.direct_memory_access_address_bits();
     if id.version == 0 || id.version == u32::MAX {
         return Err(Error::Silent {
             version: id.version,
@@ -252,9 +252,12 @@ fn run(
     // The address before the reset, which returns the registers to all ones.
     let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
-        None => controller::station_address(w.read(regs::MAC_ADDR0_HI), w.read(regs::MAC_ADDR0_LO))
-            .map(|m| (m, AddressSource::Registers))
-            .ok_or(Error::NoStationAddress)?,
+        None => controller::station_address(
+            w.read(registers::MAC_ADDR0_HI),
+            w.read(registers::MAC_ADDR0_LO),
+        )
+        .map(|m| (m, AddressSource::Registers))
+        .ok_or(Error::NoStationAddress)?,
     };
     r.mac = Some(mac);
     let mac = mac.0;
@@ -352,7 +355,7 @@ fn probe(
     while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
-    let status = w.read(regs::CHAN_STATUS);
+    let status = w.read(registers::CHAN_STATUS);
     let o = coherence::observe(&plane, mac, status);
     let v = coherence::classify(&o);
     r.coherence = Some((v, o));
@@ -392,13 +395,13 @@ struct Window(u64);
 
 impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
-        assert!(off + 4 <= regs::WINDOW);
+        assert!(off + 4 <= registers::WINDOW);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its
         // 64 KiB.
         unsafe { core::ptr::read_volatile((self.0 + u64::from(off)) as *const u32) }
     }
     fn write(&mut self, off: u32, v: u32) {
-        assert!(off + 4 <= regs::WINDOW);
+        assert!(off + 4 <= registers::WINDOW);
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }
@@ -412,10 +415,10 @@ struct TailRegs(u64);
 
 impl Tails for TailRegs {
     fn set_receive_tail(&mut self, addr: u32) {
-        Window(self.0).write(regs::CHAN_RX_TAIL, addr);
+        Window(self.0).write(registers::CHAN_RX_TAIL, addr);
     }
     fn set_transmit_tail(&mut self, addr: u32) {
-        Window(self.0).write(regs::CHAN_TX_TAIL, addr);
+        Window(self.0).write(registers::CHAN_TX_TAIL, addr);
     }
     fn barrier(&mut self) {
         crate::arch::direct_memory_access_write_barrier();

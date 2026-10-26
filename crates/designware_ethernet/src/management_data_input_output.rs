@@ -7,9 +7,9 @@
 //! first on a write, then the address with the busy bit set, then wait for the controller to clear
 //! it. The clause 22 register numbers and bits are the standard's.
 
-use crate::{Hardware, regs};
+use crate::{Hardware, registers};
 
-/// The MDC clock range field's shift in [`regs::MAC_MDIO_ADDR`].
+/// The MDC clock range field's shift in [`registers::MAC_MDIO_ADDR`].
 pub const CR_SHIFT: u32 = 8;
 /// **The clock range this driver always programs**: `0b0111`, "CSR clock 500 to 800 MHz",
 /// which divides the CSR clock by 324.
@@ -101,7 +101,7 @@ impl<H: Hardware> Bus<'_, H> {
     fn wait(&mut self, physical_layer_device: u8, reg: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
-            if self.0.read(regs::MAC_MDIO_ADDR) & GB == 0 {
+            if self.0.read(registers::MAC_MDIO_ADDR) & GB == 0 {
                 return Ok(());
             }
             if waited >= COMMAND_LIMIT_US {
@@ -121,18 +121,18 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
         self.wait(physical_layer_device, reg)?;
         self.0.write(
-            regs::MAC_MDIO_ADDR,
+            registers::MAC_MDIO_ADDR,
             command(physical_layer_device, reg, false),
         );
         self.wait(physical_layer_device, reg)?;
-        Ok(self.0.read(regs::MAC_MDIO_DATA) as u16)
+        Ok(self.0.read(registers::MAC_MDIO_DATA) as u16)
     }
 
     fn write(&mut self, physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
         self.wait(physical_layer_device, reg)?;
-        self.0.write(regs::MAC_MDIO_DATA, u32::from(v));
+        self.0.write(registers::MAC_MDIO_DATA, u32::from(v));
         self.0.write(
-            regs::MAC_MDIO_ADDR,
+            registers::MAC_MDIO_ADDR,
             command(physical_layer_device, reg, true),
         );
         self.wait(physical_layer_device, reg)
@@ -221,7 +221,7 @@ mod tests {
     impl Hardware for Pair {
         fn read(&mut self, off: u32) -> u32 {
             match off {
-                regs::MAC_MDIO_ADDR => {
+                registers::MAC_MDIO_ADDR => {
                     if self.addr & GB != 0 && !self.stuck {
                         if self.busy_reads == 0 {
                             self.addr &= !GB;
@@ -234,15 +234,15 @@ mod tests {
                     }
                     self.addr
                 }
-                regs::MAC_MDIO_DATA => self.data,
+                registers::MAC_MDIO_DATA => self.data,
                 _ => panic!("MDIO touched {off:#x}, outside its two registers"),
             }
         }
         fn write(&mut self, off: u32, v: u32) {
             self.writes.push((off, v));
             match off {
-                regs::MAC_MDIO_ADDR => self.addr = v,
-                regs::MAC_MDIO_DATA => self.data = v,
+                registers::MAC_MDIO_ADDR => self.addr = v,
+                registers::MAC_MDIO_DATA => self.data = v,
                 _ => panic!("MDIO wrote {off:#x}, outside its two registers"),
             }
         }
@@ -257,7 +257,7 @@ mod tests {
         assert_eq!(Bus(&mut hardware).read(4, BMSR), Ok(0xbeef));
         assert_eq!(
             hardware.writes,
-            [(regs::MAC_MDIO_ADDR, command(4, BMSR, false))]
+            [(registers::MAC_MDIO_ADDR, command(4, BMSR, false))]
         );
         assert_eq!(
             hardware.waited_us,
@@ -274,8 +274,8 @@ mod tests {
         assert_eq!(
             hardware.writes,
             [
-                (regs::MAC_MDIO_DATA, 0x1200),
-                (regs::MAC_MDIO_ADDR, command(1, BMCR, true))
+                (registers::MAC_MDIO_DATA, 0x1200),
+                (registers::MAC_MDIO_ADDR, command(1, BMCR, true))
             ]
         );
     }
@@ -321,7 +321,7 @@ mod tests {
 
     /// A clause 22 register file with a latched-low link bit, for the helpers above the bus.
     struct Latched {
-        regs: [u16; 32],
+        registers: [u16; 32],
         link_now: bool,
         dropped_since_read: bool,
     }
@@ -333,10 +333,10 @@ mod tests {
                 self.dropped_since_read = false;
                 return Ok(if up { BMSR_LINK } else { 0 });
             }
-            Ok(self.regs[reg as usize])
+            Ok(self.registers[reg as usize])
         }
         fn write(&mut self, _physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
-            self.regs[reg as usize] = v;
+            self.registers[reg as usize] = v;
             Ok(())
         }
     }
@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn a_link_that_dropped_and_came_back_reads_up_on_the_second_read() {
         let mut physical_layer_device = Latched {
-            regs: [0; 32],
+            registers: [0; 32],
             link_now: true,
             dropped_since_read: true,
         };
@@ -356,12 +356,12 @@ mod tests {
     #[test]
     fn the_identifier_is_the_high_register_then_the_low() {
         let mut physical_layer_device = Latched {
-            regs: [0; 32],
+            registers: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.regs[PHYSID1 as usize] = 0x4f51;
-        physical_layer_device.regs[PHYSID2 as usize] = 0xe91b;
+        physical_layer_device.registers[PHYSID1 as usize] = 0x4f51;
+        physical_layer_device.registers[PHYSID2 as usize] = 0xe91b;
         assert_eq!(
             physical_layer_device_id(&mut physical_layer_device, 0),
             Ok(0x4f51_e91b)
@@ -371,14 +371,14 @@ mod tests {
     #[test]
     fn restarting_autonegotiation_keeps_the_other_control_bits() {
         let mut physical_layer_device = Latched {
-            regs: [0; 32],
+            registers: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.regs[BMCR as usize] = 0x0100; // full duplex, set by someone else
+        physical_layer_device.registers[BMCR as usize] = 0x0100; // full duplex, set by someone else
         restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
         assert_eq!(
-            physical_layer_device.regs[BMCR as usize],
+            physical_layer_device.registers[BMCR as usize],
             0x0100 | BMCR_ANENABLE | BMCR_ANRESTART
         );
     }
@@ -395,13 +395,13 @@ mod tests {
     #[test]
     fn restarting_a_negotiation_already_running_keeps_it_running() {
         let mut physical_layer_device = Latched {
-            regs: [0; 32],
+            registers: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.regs[BMCR as usize] = 0x1300;
+        physical_layer_device.registers[BMCR as usize] = 0x1300;
         restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
-        assert_eq!(physical_layer_device.regs[BMCR as usize], 0x1300);
+        assert_eq!(physical_layer_device.registers[BMCR as usize], 0x1300);
     }
 
     /// Clause 22's bits as IEEE 802.3 numbers them (22.2.4.1 and 22.2.4.2), written out: the

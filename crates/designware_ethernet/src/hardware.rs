@@ -4,8 +4,8 @@
 
 /// **The controller's register window, as a driver reaches it.** The kernel's implementation is a
 /// pair of volatile accesses into the direct map; the tests' is `sim`. Offsets are bytes from the
-/// window's base, and every one this crate passes is a constant from [`regs`](crate::regs), below
-/// [`regs::WINDOW`](crate::regs::WINDOW).
+/// window's base, and every one this crate passes is a constant from
+/// [`registers`](crate::registers), below [`registers::WINDOW`](crate::registers::WINDOW).
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing `Hw`.
 pub trait Hardware {

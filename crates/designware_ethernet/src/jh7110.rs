@@ -18,7 +18,7 @@
 
 use crate::controller::Bus;
 use crate::motorcomm::{Drive, Settings, Source};
-use crate::regs;
+use crate::registers;
 
 /// Mainline's compatible for both ports.
 ///
@@ -52,10 +52,10 @@ pub const BUS: Bus = Bus {
     transmit_channel_burst_length: 16,
     receive_channel_burst_length: 16,
     threshold_mode: true,
-    bus_burst_lengths: regs::DMA_SYSBUS_MODE_BLEN_256
-        | regs::DMA_SYSBUS_MODE_BLEN_128
-        | regs::DMA_SYSBUS_MODE_BLEN_64
-        | regs::DMA_SYSBUS_MODE_BLEN_32,
+    bus_burst_lengths: registers::DMA_SYSBUS_MODE_BLEN_256
+        | registers::DMA_SYSBUS_MODE_BLEN_128
+        | registers::DMA_SYSBUS_MODE_BLEN_64
+        | registers::DMA_SYSBUS_MODE_BLEN_32,
     read_outstanding: 0xf,
     write_outstanding: 0xf,
 };

@@ -21,20 +21,21 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::{DataPlane, MAXIMUM_FRAME, Region, Tails, layout, regs};
+use designware_ethernet::{DataPlane, MAXIMUM_FRAME, Region, Tails, layout, registers};
 use driver_process_contract::designware_ethernet::{
-    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, Handoff,
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
 // SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at
 // DATA_PLANE_VIRTUAL_ADDRESS, and the controller's DMA page device-typed at
-// DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, before `_start` runs (`designware_ethernet_service`).
+// DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, before `_start` runs
+// (`designware_ethernet_service`).
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
 const DMA: MappedWindow =
-    unsafe { MappedWindow::new(DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, PAGE) };
+    unsafe { MappedWindow::new(DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
@@ -59,10 +60,16 @@ struct Channel;
 
 impl Tails for Channel {
     fn set_receive_tail(&mut self, addr: u32) {
-        DMA.w32(u64::from(regs::CHAN_RX_TAIL - regs::DMA_PAGE), addr);
+        DMA.w32(
+            u64::from(registers::CHAN_RX_TAIL - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            addr,
+        );
     }
     fn set_transmit_tail(&mut self, addr: u32) {
-        DMA.w32(u64::from(regs::CHAN_TX_TAIL - regs::DMA_PAGE), addr);
+        DMA.w32(
+            u64::from(registers::CHAN_TX_TAIL - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            addr,
+        );
     }
     fn barrier(&mut self) {
         doorbell_barrier();

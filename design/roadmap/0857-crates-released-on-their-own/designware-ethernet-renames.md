@@ -42,3 +42,8 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   `Discovered`'s fields, the `Timeout` field and every parameter), with `doc(alias = "phy")`. The
   docs keep "PHY". Register names (`PHYSID1`, `PHY_ID_YT8531`) and device-tree strings keep their
   spelling.
+- Ruled 2026-10-26 (UTC), Decision 33: the module `regs` becomes `registers`, and its constants keep
+  their sources' names. `dma`, wherever this crate authors it, spells out as `direct_memory_access`:
+  `dma_bits` becomes `direct_memory_access_address_bits` and `DMA_PAGE` becomes
+  `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, with `doc(alias)`. Register names copied from a source
+  (`DMA_SYSBUS_MODE`, `DMA_MODE`) keep their spelling.

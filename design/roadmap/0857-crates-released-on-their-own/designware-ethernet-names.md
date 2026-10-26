@@ -35,7 +35,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Refused `mdio` (ruled 2026-10-26 UTC). | yes | clear |
 | `motorcomm` | module | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
-| `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
+| `registers` | module | `src/registers.rs` | provisional. Refused `regs` (ruled 2026-10-26 UTC). | yes | clear |
 | `sim` | module | `src/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
 | `Observation` | item | `src/coherence.rs` | unrecorded. | yes | generic |
@@ -53,7 +53,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `Identity` | item | `src/controller.rs` | unrecorded. | yes | clear |
 | `configure` | item | `src/controller.rs` | unrecorded. | yes | clear |
 | `core_version` | item | `src/controller.rs` | unrecorded. | yes | clear |
-| `dma_bits` | item | `src/controller.rs` | unrecorded. | yes | unclear: `dma` and an unstated unit |
+| `direct_memory_access_address_bits` | item | `src/controller.rs` | provisional. Refused `dma_bits` (ruled 2026-10-26 UTC). | yes | clear |
 | `mac_conf` | item | `src/controller.rs` | unrecorded. | yes | term |
 | `read` | item | `src/controller.rs` | unrecorded. | yes | clear |
 | `soft_reset` | item | `src/controller.rs` | unrecorded. | yes | clear |
@@ -156,28 +156,28 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `mbps` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `read_extended` | item | `src/motorcomm.rs` | provisional. Refused `read_ext` (ruled 2026-10-26 UTC). | yes | clear |
 | `write_extended` | item | `src/motorcomm.rs` | provisional. Refused `write_ext` (ruled 2026-10-26 UTC). | yes | clear |
-| `CHAN_CUR_RX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_CUR_TX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_RX_TAIL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_STATUS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_STATUS_RPS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_STATUS_TPS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CHAN_TX_TAIL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `DMA_PAGE` | item | `src/regs.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `MAC_ADDR0_HI` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_ADDR0_LO` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_BE` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_DCRS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_DM` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_FES` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_JD` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_LM` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_CONF_PS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_MDIO_ADDR` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_MDIO_DATA` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `MAC_VERSION` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `WINDOW` | item | `src/regs.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `mac_hw_feature` | item | `src/regs.rs` | unrecorded. | yes | term |
+| `CHAN_CUR_RX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_CUR_TX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_RX_TAIL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_STATUS_RPS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_STATUS_TPS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_TX_TAIL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` | item | `src/registers.rs` | provisional. Refused `DMA_PAGE` (ruled 2026-10-26 UTC). | yes | clear |
+| `MAC_ADDR0_HI` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_ADDR0_LO` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_BE` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_DCRS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_DM` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_FES` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_JD` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_LM` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_CONF_PS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_MDIO_ADDR` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_MDIO_DATA` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `MAC_VERSION` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `WINDOW` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
+| `mac_hw_feature` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `with` | item | `src/sim.rs` | unrecorded. | no | clear |
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:

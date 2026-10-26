@@ -9,7 +9,7 @@ ring's tail pointer is kept. Each fact here is also the reason for a line of cod
 
 ## Where the register pages fall
 
-The register map in `regs.rs` is transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (commit
+The register map in `registers.rs` is transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (commit
 `59ec3ab4d107`, 2026-07-31). That is the header OpenBSD's JH7110 driver is built on. Two bits come
 from elsewhere: Linux's `stmmac/dwmac4.h` names `MAC_CONF_LM`, which OpenBSD does not, and U-Boot's
 `dwc_eth_qos.h` gives the receive buffer size field, `CHAN_RX_CONTROL_RBSZ_SHIFT`, which OpenBSD never

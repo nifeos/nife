@@ -7,6 +7,9 @@
 //! MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring bases
 //! and the controller's software reset, and there is no IOMMU, so a process given that page can
 //! repoint a ring and reset the MAC.
+//!
+//! Name: provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes
+//! `registers`, replacing `regs`.
 
 /// MAC configuration.
 pub(crate) const MAC_CONF: u32 = 0x0000;
@@ -194,7 +197,11 @@ pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 
 /// The page of the window holding channel 0's registers, which is the page the data plane is
 /// mapped. Every `CHAN_*` and `DMA_*` offset above is inside it.
-pub const DMA_PAGE: u32 = 0x1000;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`,
+/// replacing `DMA_PAGE`.
+#[doc(alias = "dma_page")]
+pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
 /// The window's size, `reg`'s `0x10000` in both JH7110 trees.
 pub const WINDOW: u32 = 0x1_0000;
 
@@ -205,7 +212,7 @@ mod tests {
     /// Every register the data plane writes or reads is on the DMA page, which is the one page
     /// the process is mapped; a register that moved off it would be a store into nothing.
     #[test]
-    fn the_data_plane_registers_are_all_on_the_dma_page() {
+    fn the_data_plane_registers_are_all_on_the_direct_memory_access_register_page() {
         for r in [
             CHAN_TX_TAIL,
             CHAN_RX_TAIL,
@@ -213,14 +220,15 @@ mod tests {
             CHAN_CUR_RX_DESC,
             DMA_MODE,
         ] {
-            assert_eq!(r & !0xfff, DMA_PAGE, "{r:#x}");
+            assert_eq!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
         }
     }
 
     /// The MAC's administrative registers are not on it: the process cannot reach the MDIO bus
     /// or the station address through the page it is given.
     #[test]
-    fn the_management_data_input_output_bus_and_the_station_address_are_not_on_the_dma_page() {
+    fn the_management_data_input_output_bus_and_the_station_address_are_not_on_the_direct_memory_access_register_page()
+     {
         for r in [
             MAC_MDIO_ADDR,
             MAC_MDIO_DATA,
@@ -228,7 +236,7 @@ mod tests {
             MAC_PACKET_FILTER,
             MAC_CONF,
         ] {
-            assert_ne!(r & !0xfff, DMA_PAGE, "{r:#x}");
+            assert_ne!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
         }
     }
 

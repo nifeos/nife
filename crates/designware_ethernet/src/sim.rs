@@ -17,7 +17,7 @@ use crate::management_data_input_output::{self, ManagementDataInputOutput};
 use crate::motorcomm::{self, Link, Speed};
 use crate::{
     Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, Region, TDES2_BUF1_LEN, TDES2_IC, TDES3_OWN,
-    Tails, layout, regs,
+    Tails, layout, registers,
 };
 
 const LINE: u64 = 64;
@@ -153,16 +153,16 @@ impl Region for Cpu<'_> {
 
 /// The tail registers and a barrier counter.
 pub(crate) struct TailRegs<'a> {
-    regs: &'a mut BTreeMap<u32, u32>,
+    registers: &'a mut BTreeMap<u32, u32>,
     barriers: &'a mut usize,
 }
 
 impl Tails for TailRegs<'_> {
     fn set_receive_tail(&mut self, addr: u32) {
-        self.regs.insert(regs::CHAN_RX_TAIL, addr);
+        self.registers.insert(registers::CHAN_RX_TAIL, addr);
     }
     fn set_transmit_tail(&mut self, addr: u32) {
-        self.regs.insert(regs::CHAN_TX_TAIL, addr);
+        self.registers.insert(registers::CHAN_TX_TAIL, addr);
     }
     fn barrier(&mut self) {
         // A fence orders; it cleans and invalidates nothing. On a non-coherent machine it is not
@@ -173,7 +173,7 @@ impl Tails for TailRegs<'_> {
 
 /// A YT8531 on the MDIO bus: clause 22 registers, the extended-register window, and a link.
 pub(crate) struct PhysicalLayerDevice {
-    regs: [u16; 32],
+    registers: [u16; 32],
     extended: BTreeMap<u16, u16>,
     link: Option<Link>,
 }
@@ -182,9 +182,10 @@ impl PhysicalLayerDevice {
     /// A YT8531 strapped to 1.8 V I/O, with every bit this driver clears set, so a test sees
     /// each one cleared.
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
-        let mut regs = [0; 32];
-        regs[management_data_input_output::PHYSID1 as usize] = (motorcomm::YT8531_ID >> 16) as u16;
-        regs[management_data_input_output::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
+        let mut registers = [0; 32];
+        registers[management_data_input_output::PHYSID1 as usize] =
+            (motorcomm::YT8531_ID >> 16) as u16;
+        registers[management_data_input_output::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
         let mut extended = BTreeMap::new();
         extended.insert(
             motorcomm::EXT_CHIP_CONFIG,
@@ -201,18 +202,18 @@ impl PhysicalLayerDevice {
         );
         extended.insert(motorcomm::EXT_PAD_DRIVE, 0xffff);
         PhysicalLayerDevice {
-            regs,
+            registers,
             extended,
             link: None,
         }
     }
     /// Set a clause 22 register directly.
     pub(crate) fn write_raw(&mut self, reg: u8, v: u16) {
-        self.regs[reg as usize] = v;
+        self.registers[reg as usize] = v;
     }
     /// Read a clause 22 register directly.
     pub(crate) fn raw(&self, reg: u8) -> u16 {
-        self.regs[reg as usize]
+        self.registers[reg as usize]
     }
     /// An extended register's value.
     pub(crate) fn extended(&self, addr: u16) -> u16 {
@@ -232,7 +233,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<u16, management_data_input_output::Error> {
         let reg = reg & 0x1f;
         Ok(match reg {
-            motorcomm::EXT_DATA => self.extended(self.regs[motorcomm::EXT_ADDR as usize]),
+            motorcomm::EXT_DATA => self.extended(self.registers[motorcomm::EXT_ADDR as usize]),
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LINK
@@ -256,7 +257,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
                         0
                     }
             }),
-            r => self.regs[r as usize],
+            r => self.registers[r as usize],
         })
     }
     fn write(
@@ -269,13 +270,13 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
         match reg {
             motorcomm::EXT_DATA => {
                 self.extended
-                    .insert(self.regs[motorcomm::EXT_ADDR as usize], v);
+                    .insert(self.registers[motorcomm::EXT_ADDR as usize], v);
             }
             management_data_input_output::BMCR => {
-                self.regs[0] = v & !(management_data_input_output::BMCR_ANRESTART
+                self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
                     | management_data_input_output::BMCR_RESET);
             }
-            r => self.regs[r as usize] = v,
+            r => self.registers[r as usize] = v,
         }
         Ok(())
     }
@@ -283,7 +284,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
 
 /// The controller.
 pub(crate) struct NetworkInterfaceController {
-    regs: BTreeMap<u32, u32>,
+    registers: BTreeMap<u32, u32>,
     mem: Memory,
     /// The PHY behind the MDIO pair.
     pub physical_layer_device: PhysicalLayerDevice,
@@ -307,7 +308,7 @@ impl NetworkInterfaceController {
     /// the controller learns it from the base registers like the real one.
     pub(crate) fn new(_region: u64, mem: Memory) -> NetworkInterfaceController {
         let mut nic = NetworkInterfaceController {
-            regs: BTreeMap::new(),
+            registers: BTreeMap::new(),
             mem,
             physical_layer_device: PhysicalLayerDevice::yt8531_at_1v8(),
             reset_polls: 1,
@@ -325,11 +326,12 @@ impl NetworkInterfaceController {
     }
 
     fn reset_registers(&mut self) {
-        self.regs.clear();
-        self.regs.insert(regs::MAC_VERSION, VERSION);
-        self.regs.insert(regs::mac_hw_feature(1), FEATURE1);
-        self.regs.insert(regs::MAC_ADDR0_HI, 0xffff);
-        self.regs.insert(regs::MAC_ADDR0_LO, 0xffff_ffff);
+        self.registers.clear();
+        self.registers.insert(registers::MAC_VERSION, VERSION);
+        self.registers
+            .insert(registers::mac_hw_feature(1), FEATURE1);
+        self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
+        self.registers.insert(registers::MAC_ADDR0_LO, 0xffff_ffff);
         self.receive_cursor = 0;
         self.transmit_cursor = 0;
     }
@@ -352,11 +354,11 @@ impl NetworkInterfaceController {
     }
     /// A register's current value.
     pub(crate) fn reg(&self, off: u32) -> u32 {
-        self.regs.get(&off).copied().unwrap_or(0)
+        self.registers.get(&off).copied().unwrap_or(0)
     }
     /// The receive tail register.
     pub(crate) fn receive_tail(&self) -> u32 {
-        self.reg(regs::CHAN_RX_TAIL)
+        self.reg(registers::CHAN_RX_TAIL)
     }
     /// How many barriers the data plane has taken.
     pub(crate) fn barriers(&self) -> usize {
@@ -371,7 +373,7 @@ impl NetworkInterfaceController {
     pub fn with<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegs<'_>) -> R) -> R {
         let mut cpu = Cpu(&self.mem);
         let mut tails = TailRegs {
-            regs: &mut self.regs,
+            registers: &mut self.registers,
             barriers: &mut self.barriers,
         };
         f(&mut cpu, &mut tails)
@@ -424,15 +426,15 @@ impl NetworkInterfaceController {
     }
 
     fn status(&mut self, bit: u32) {
-        *self.regs.entry(regs::CHAN_STATUS).or_insert(0) |= bit;
+        *self.registers.entry(registers::CHAN_STATUS).or_insert(0) |= bit;
     }
 
     /// How many receive descriptors the device could fill right now.
     pub(crate) fn receive_available(&self) -> usize {
         let (base, n) = self.ring(
-            regs::CHAN_RX_BASE,
-            regs::CHAN_RX_BASE_HI,
-            regs::CHAN_RX_RING_LEN,
+            registers::CHAN_RX_BASE,
+            registers::CHAN_RX_BASE_HI,
+            registers::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let mut i = self.receive_cursor;
@@ -445,8 +447,8 @@ impl NetworkInterfaceController {
     }
 
     fn receiving(&self) -> bool {
-        self.reg(regs::CHAN_RX_CONTROL) & regs::CHAN_RX_CONTROL_SR != 0
-            && self.reg(regs::MAC_CONF) & regs::MAC_CONF_RE != 0
+        self.reg(registers::CHAN_RX_CONTROL) & registers::CHAN_RX_CONTROL_SR != 0
+            && self.reg(registers::MAC_CONF) & registers::MAC_CONF_RE != 0
     }
 
     /// Deliver `wire` (frame and CRC) into the next receive descriptor, if the device owns one.
@@ -455,14 +457,14 @@ impl NetworkInterfaceController {
             return false;
         }
         let (base, n) = self.ring(
-            regs::CHAN_RX_BASE,
-            regs::CHAN_RX_BASE_HI,
-            regs::CHAN_RX_RING_LEN,
+            registers::CHAN_RX_BASE,
+            registers::CHAN_RX_BASE_HI,
+            registers::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let at = base + u64::from(self.receive_cursor) * 16;
         if self.receive_cursor == tail || self.descriptor(at)[3] & RDES3_OWN == 0 {
-            self.status(regs::CHAN_STATUS_RBU);
+            self.status(registers::CHAN_STATUS_RBU);
             return false;
         }
         let d = self.descriptor(at);
@@ -470,7 +472,7 @@ impl NetworkInterfaceController {
         self.mem.device_write(buffer, wire);
         let es = if error { RDES3_ES } else { 0 };
         self.set_descriptor(at, [0, 0, 0, RDES3_FD | RDES3_LD | es | wire.len() as u32]);
-        self.status(regs::CHAN_STATUS_RI);
+        self.status(registers::CHAN_STATUS_RI);
         self.receive_cursor = (self.receive_cursor + 1) % n;
         true
     }
@@ -491,23 +493,23 @@ impl NetworkInterfaceController {
 
     /// Run the transmit DMA until it suspends.
     pub(crate) fn step(&mut self) {
-        if self.reg(regs::CHAN_TX_CONTROL) & regs::CHAN_TX_CONTROL_ST == 0 {
+        if self.reg(registers::CHAN_TX_CONTROL) & registers::CHAN_TX_CONTROL_ST == 0 {
             return;
         }
         let (base, n) = self.ring(
-            regs::CHAN_TX_BASE,
-            regs::CHAN_TX_BASE_HI,
-            regs::CHAN_TX_RING_LEN,
+            registers::CHAN_TX_BASE,
+            registers::CHAN_TX_BASE_HI,
+            registers::CHAN_TX_RING_LEN,
         );
         loop {
-            let tail = self.index_of_tail(base, self.reg(regs::CHAN_TX_TAIL), n);
+            let tail = self.index_of_tail(base, self.reg(registers::CHAN_TX_TAIL), n);
             if self.transmit_cursor == tail {
                 return;
             }
             let at = base + u64::from(self.transmit_cursor) * 16;
             let d = self.descriptor(at);
             if d[3] & TDES3_OWN == 0 {
-                self.status(regs::CHAN_STATUS_TBU);
+                self.status(registers::CHAN_STATUS_TBU);
                 return;
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
@@ -515,17 +517,17 @@ impl NetworkInterfaceController {
             self.mem.device_read(buffer, &mut frame);
             self.set_descriptor(at, [0, 0, 0, d[3] & !TDES3_OWN]);
             if d[2] & TDES2_IC != 0 {
-                self.status(regs::CHAN_STATUS_TI);
+                self.status(registers::CHAN_STATUS_TI);
             }
             self.transmit_cursor = (self.transmit_cursor + 1) % n;
-            let conf = self.reg(regs::MAC_CONF);
-            if conf & regs::MAC_CONF_LM != 0 {
+            let conf = self.reg(registers::MAC_CONF);
+            if conf & registers::MAC_CONF_LM != 0 {
                 if !self.loopback_broken {
                     let mut w = frame.clone();
                     w.extend_from_slice(&[0xc0, 0xff, 0xee, 0x00]);
                     self.deliver(&w, false);
                 }
-            } else if conf & regs::MAC_CONF_TE != 0 {
+            } else if conf & registers::MAC_CONF_TE != 0 {
                 self.wire.push(frame);
             }
         }
@@ -535,21 +537,21 @@ impl NetworkInterfaceController {
 impl Hardware for NetworkInterfaceController {
     fn read(&mut self, off: u32) -> u32 {
         match off {
-            regs::DMA_MODE => {
+            registers::DMA_MODE => {
                 if let Some(left) = self.reset_left {
                     if self.receive_clock && left <= 1 {
                         self.reset_left = None;
-                        let v = self.reg(off) & !regs::DMA_MODE_SWR;
-                        self.regs.insert(off, v);
+                        let v = self.reg(off) & !registers::DMA_MODE_SWR;
+                        self.registers.insert(off, v);
                     } else if self.receive_clock {
                         self.reset_left = Some(left - 1);
                     }
                 }
                 self.reg(off)
             }
-            regs::MTL_TXQ0_OP_MODE if !self.flush_wedged => {
-                let v = self.reg(off) & !regs::MTL_TXQ_OP_MODE_FTQ;
-                self.regs.insert(off, v);
+            registers::MTL_TXQ0_OP_MODE if !self.flush_wedged => {
+                let v = self.reg(off) & !registers::MTL_TXQ_OP_MODE_FTQ;
+                self.registers.insert(off, v);
                 v
             }
             _ => self.reg(off),
@@ -558,12 +560,12 @@ impl Hardware for NetworkInterfaceController {
 
     fn write(&mut self, off: u32, v: u32) {
         match off {
-            regs::DMA_MODE if v & regs::DMA_MODE_SWR != 0 => {
+            registers::DMA_MODE if v & registers::DMA_MODE_SWR != 0 => {
                 self.reset_registers();
-                self.regs.insert(off, v);
+                self.registers.insert(off, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            regs::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
+            registers::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
                 let physical_layer_device =
                     ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
                 let reg = ((v >> management_data_input_output::RDA_SHIFT) & 0x1f) as u8;
@@ -572,21 +574,23 @@ impl Hardware for NetworkInterfaceController {
                         .physical_layer_device
                         .read(physical_layer_device, reg)
                         .unwrap();
-                    self.regs.insert(regs::MAC_MDIO_DATA, u32::from(r));
+                    self.registers
+                        .insert(registers::MAC_MDIO_DATA, u32::from(r));
                 } else {
-                    let data = self.reg(regs::MAC_MDIO_DATA) as u16;
+                    let data = self.reg(registers::MAC_MDIO_DATA) as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, reg, data)
                         .unwrap();
                 }
-                self.regs.insert(off, v & !management_data_input_output::GB);
+                self.registers
+                    .insert(off, v & !management_data_input_output::GB);
             }
-            regs::CHAN_STATUS => {
+            registers::CHAN_STATUS => {
                 let s = self.reg(off) & !v;
-                self.regs.insert(off, s);
+                self.registers.insert(off, s);
             }
             _ => {
-                self.regs.insert(off, v);
+                self.registers.insert(off, v);
             }
         }
     }

@@ -10,7 +10,7 @@
 
 use crate::{
     CRC_BYTES, DataPlane, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict, Region, TDES3_OWN, Tails,
-    TransmitError, layout, receive_verdict, regs,
+    TransmitError, layout, receive_verdict, registers,
 };
 
 /// The probe frame's `EtherType`: IEEE 802's first local experimental type, which no real
@@ -86,7 +86,7 @@ pub struct Observation {
     pub receive_descriptor_word_3: u32,
     /// Transmit descriptor 0's word 3, read by the CPU.
     pub transmit_descriptor_word_3: u32,
-    /// [`regs::CHAN_STATUS`], read through MMIO.
+    /// [`registers::CHAN_STATUS`], read through MMIO.
     pub status: u32,
     /// Receive buffer 0, judged.
     pub payload: Payload,
@@ -146,7 +146,7 @@ pub enum Verdict {
 /// **Compare the two accounts.**
 pub fn classify(o: &Observation) -> Verdict {
     let s = o.status;
-    if s & regs::CHAN_STATUS_FBE != 0 {
+    if s & registers::CHAN_STATUS_FBE != 0 {
         return Verdict::BusError;
     }
     if o.receive_descriptor_word_3 & RDES3_OWN == 0 {
@@ -159,11 +159,12 @@ pub fn classify(o: &Observation) -> Verdict {
             _ => Verdict::TransmittedPayloadStale,
         };
     }
-    if s & regs::CHAN_STATUS_RI != 0 {
+    if s & registers::CHAN_STATUS_RI != 0 {
         return Verdict::CpuCannotSeeDeviceWrites;
     }
-    let transmit_refused = s & regs::CHAN_STATUS_TBU != 0 && s & regs::CHAN_STATUS_TI == 0;
-    let receive_refused = s & regs::CHAN_STATUS_RBU != 0;
+    let transmit_refused =
+        s & registers::CHAN_STATUS_TBU != 0 && s & registers::CHAN_STATUS_TI == 0;
+    let receive_refused = s & registers::CHAN_STATUS_RBU != 0;
     if transmit_refused || receive_refused {
         return Verdict::DeviceCannotSeeCpuWrites;
     }
@@ -216,7 +217,7 @@ mod tests {
             nic.delay_us(1000);
             waited += 1000;
         }
-        let status = nic.read(regs::CHAN_STATUS);
+        let status = nic.read(registers::CHAN_STATUS);
         let o = nic.with(|r, _| observe(r, STATION_ADDRESS, status));
         classify(&o)
     }
@@ -260,7 +261,7 @@ mod tests {
         let o = Observation {
             receive_descriptor_word_3: RDES3_FD | RDES3_LD | (PROBE_LENGTH + CRC_BYTES) as u32,
             transmit_descriptor_word_3: 0,
-            status: regs::CHAN_STATUS_RI | regs::CHAN_STATUS_TI,
+            status: registers::CHAN_STATUS_RI | registers::CHAN_STATUS_TI,
             payload: Payload::Other,
         };
         assert_eq!(classify(&o), Verdict::TransmittedPayloadStale);
@@ -270,7 +271,7 @@ mod tests {
         };
         assert_eq!(classify(&o), Verdict::ReceivedPayloadStale);
         let o = Observation {
-            status: o.status | regs::CHAN_STATUS_FBE,
+            status: o.status | registers::CHAN_STATUS_FBE,
             ..o
         };
         assert_eq!(classify(&o), Verdict::BusError);
@@ -283,7 +284,7 @@ mod tests {
         let o = Observation {
             receive_descriptor_word_3: RDES3_OWN,
             transmit_descriptor_word_3: 0,
-            status: regs::CHAN_STATUS_TI | regs::CHAN_STATUS_TBU,
+            status: registers::CHAN_STATUS_TI | registers::CHAN_STATUS_TBU,
             payload: Payload::Poison,
         };
         assert_eq!(classify(&o), Verdict::Inconclusive);
