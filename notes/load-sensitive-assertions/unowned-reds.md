@@ -93,8 +93,8 @@ refuses to reclaim a region whose children are still carved out of it. So a stal
 child was gone first.
 
 The open question above is answered by construction rather than by investigation, and it is no
-longer worth a lane. The assertion can no longer be moved by a neighbor at all. If it ever goes red,
-the answer is "a leak", with nothing else to rule out first.
+longer worth a lane. A neighbor can no longer move the assertion at all. If it ever goes red, the
+answer is "a leak", with nothing else to rule out first.
 
 ### `system_tests/src/user/current_cpu_tests.rs:134`, `the_page_is_returned_when_the_space_is_dropped` (FIXED 2026-09-23)
 
@@ -145,11 +145,11 @@ by this space, set by `attach_current_cpu_page` and cleared only by `Drop`.
 
 Leak sensitivity is not merely preserved; it is sharper. A frame `Drop` never returned stays marked
 used forever, so the defect fails this assertion on every run, not only on runs where the arithmetic
-happens to be visible. Unlike the old form, a leak here cannot be masked by somebody else freeing the
-same number of frames in the same window (the coincidence caveat in
-[the known residuals](known-residuals.md) for the `<=` sites). The vacuity guard before the drop keeps
-the inversion honest. `Some(true)` proves the address names a frame this allocator owns, so a wrong
-direct-map inversion fails loudly instead of returning `None` and reading as "not used".
+happens to be visible. Unlike the old form, somebody else freeing the same number of frames in the
+same window cannot mask a leak here (the coincidence caveat in
+[the known residuals](known-residuals.md) for the `<=` sites). The vacuity guard before the drop
+keeps the inversion honest. `Some(true)` proves the address names a frame this allocator owns, so a
+wrong direct-map inversion fails loudly instead of returning `None` and reading as "not used".
 
 The exposure that replaces the old one is far smaller, and it is recorded rather than hidden. A
 neighbor that allocated this exact frame in the microseconds between the drop and the check would

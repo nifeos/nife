@@ -30,8 +30,8 @@ yet, so it can only make a count lower than the test expected.
   outside the measured window tripped it. The usual source is a neighboring test's teardown
   landing late.
 
-A negative failure cannot be fixed by a margin: widening the bound only hides the defect. That is
-§61 (a lint is adopted on evidence), applied to assertions.
+A margin cannot fix a negative failure: widening the bound only hides the defect. That is §61 (a
+lint is adopted on evidence), applied to assertions.
 
 ### 2. Is a yield count standing in for a duration?
 
@@ -81,10 +81,10 @@ with the core count and the oversubscription factor
 
 1. Wait on the property, not on a proxy for it. Bound the wait with `smp.rs`'s `wait_for` (a
    clock) or with `testing::TickBudget` (delivered ticks). Assert that the wait succeeded.
-2. Ask about the object, not the machine. A thread is asked about by its generational `ThreadId`
-   (`is_thread_present`). A region is asked about by `memory_region::usage`, or by its own frames
-   through `testing::RegionRun`. A single frame is asked about through `memory::is_page_frame_used`.
-   A held tick is asked about through `timer::is_tick_pending`
+2. Ask about the object, not the machine. Ask about a thread by its generational `ThreadId`
+   (`is_thread_present`). Ask about a region with `memory_region::usage`, or about its own frames
+   through `testing::RegionRun`. Ask about a single frame through `memory::is_page_frame_used`. Ask
+   about a held tick through `timer::is_tick_pending`
    ([preemption window](load-sensitive-assertions/preemption-window-tick.md)).
 3. Denominate a budget in what the guest actually received. A descheduled emulator delivers fewer
    ticks per second, so a tick budget stretches under exactly the load that broke a counter

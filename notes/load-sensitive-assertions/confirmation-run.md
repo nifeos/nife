@@ -9,8 +9,8 @@ commit has the text verbatim.)*
 Milestone 62 (tests that assert on time) named exactly one thing left after
 [the 2026-08-18 disposition](timer-assertion-disposition.md). It needed a repeat count under load of
 the tree as it now stands, at the 45-run standard [the first acceptance run](first-loaded-acceptance-run.md)
-set. The block's own BUGS section says a flake cannot be shown fixed by a green run, and the same
-rule applies to the change that removed one. This is that run.
+set. The block's own BUGS section says a green run cannot show a flake fixed, and the same rule
+applies to the change that removed one. This is that run.
 
 `script/repeat-under-load -n 45 -s 8`: the same recipe and the same host as 2026-08-17, on the tree
 with both the assertion disposition and [the migration-drain fix](migration-drain-tick-budget.md)

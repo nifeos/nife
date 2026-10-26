@@ -34,7 +34,7 @@ register rather than in the test's own file. Whoever picks this up should start 
 dispositions.
 
 The three network checks fail in the same runs and recover in the same runs (`inbound`, `multicast`,
-`smb`: connection refused or reset for the whole window). So the cluster should be read as one
+`smb`: connection refused or reset for the whole window). So readers should treat the cluster as one
 host-load event, not four independent regressions.
 
 ## The disposition, 2026-08-28: the teardown wait is a yield count, and now it is a clock
@@ -65,9 +65,9 @@ budget's comment is where that fact had been living.
 
 The hypothesis: `DESTROY` refuses a region that still holds a live thread, and a session's worth of
 threads can outrun the client's patience under load. It reproduced on the first instrumented run, so
-the shape is confirmed. The mechanism is not what the words say. The patience is not too small for
-the number of threads: there is only ever one thread in that region. It is denominated in the wrong
-thing:
+the reproduction confirms the shape. The mechanism is not what the words say. The patience is not
+too small for the number of threads: there is only ever one thread in that region. It is denominated
+in the wrong thing:
 
 ```rust
 fn destroy_with_retry(ut: u64) -> bool {
@@ -215,8 +215,8 @@ attempts over the same §16 refusal. Its own comment makes the claim this lane's
 "one preemption is enough" is true, and sixty-four yields is not a way to buy one. It was left alone
 deliberately. The two failures are different sizes: a test client that gives up early fails a run,
 while that one gives up quietly and strands `DIR_JOB_REGION_PAGES` until the machine stops. And
-changing the boot path was not this lane's brief. The measurement is recorded in a BUGS section at
-`RECLAIM_ATTEMPTS`, where the next reader of that constant meets it.
+changing the boot path was not this lane's brief. A BUGS section at `RECLAIM_ATTEMPTS` records the
+measurement, where the next reader of that constant meets it.
 
 It is not alone: there are five of these, and two of them trap. Every one waits on the same refusal,
 and none has a clock in it.
@@ -241,5 +241,5 @@ note. `user/live_swap_tests.rs:263`, "reclaiming the operator's budget returned 
 a negative-direction failure against a global count. The first diagnostic points straight at a wait
 written against something wider than the property. `arch/aarch64/timer.rs:680`, "the timer is not
 ticking at all", killed a run before it reached the suite's userspace half. It is a sibling of the
-assertions milestone 62 dispositioned, and it was not one of them. Both are recorded in full in
-[the unowned reds](unowned-reds.md).
+assertions milestone 62 dispositioned, and it was not one of them.
+[The unowned reds](unowned-reds.md) record both in full.
