@@ -27,7 +27,7 @@ that names none gets `RegisterWindow::fallback`, the address both trees agree on
 Do not store through a fallback on a machine your tree does not name as a JH7110.
 
 The PMIC is `x-powers,axp15060` in mainline and `stf,axp15060-regulator` in the vendor tree
-(`PMIC_COMPATIBLES`). `PmicBus::from_nodes` and `DevicePlan::from_specifiers` turn a node's `clocks`
+(`POWER_MANAGEMENT_CHIP_COMPATIBLES`). `PowerManagementChipBus::from_nodes` and `DevicePlan::from_specifiers` turn a node's `clocks`
 and `resets` into steps, calling back for each phandle's `#clock-cells`, `#reset-cells` and
 `compatible`. A specifier for another provider, or an id past the domain's bounds (the vendor
 tree's virtual clock 298), is counted in `skipped` and never becomes a store.

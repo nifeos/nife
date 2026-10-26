@@ -6,8 +6,8 @@
 //! board-shaped fixtures and the tree every CI boot uses.
 
 use jh7110_clock_and_reset::{
-    AON_WINDOW, COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR, COMPATIBLE_STGCRG,
-    COMPATIBLE_SYSCRG, COMPATIBLE_VENDOR_CLKGEN, STG_WINDOW, SYS_WINDOW, Step,
+    AON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE, COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
+    COMPATIBLE_STGCRG, COMPATIBLE_SYSCRG, COMPATIBLE_VENDOR_CLKGEN, STG_WINDOW, SYS_WINDOW, Step,
 };
 use machine_discovery::jh7110::clock_and_reset::{discover, discover_aon, discover_sys, pmic_bus};
 
@@ -46,7 +46,10 @@ fn radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipp
         &[Step::EnableClock(143), Step::DeassertReset(81)]
     );
     assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR)
+    );
     assert_eq!(bus.skipped, 1, "clock 298, and nothing else");
     assert!(!bus.truncated);
 }
@@ -70,7 +73,10 @@ fn mainlines_pmic_bus_gives_the_same_plan_through_syscrg() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE)
+    );
     assert_eq!(bus.skipped, 0);
     let found = discover_sys(&tree).unwrap();
     assert_eq!(found.base, SYS_WINDOW.base);
@@ -86,7 +92,10 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_says_so() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE)
+    );
     // aoncrg 3, syscrg 190, then 36 - 16 = 20 bytes read as three eight-byte strides, then
     // syscrg 126 in `resets`.
     assert_eq!(bus.skipped, 2 + 3 + 1);
@@ -117,7 +126,7 @@ fn qemus_virt_board_has_no_pmic_and_gets_the_constant_plan_unclaimed() {
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.plan(), CONSTANT_PLAN);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, None);
+    assert_eq!(bus.power_management_chip, None);
     assert!(!discover_sys(&tree).unwrap().from_tree);
 }
 
@@ -209,7 +218,7 @@ fn radons_pmic_bus_also_names_the_controller_window_and_the_pmic_address() {
     let tree = tree(PMIC_BUS_RADON);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
 #[test]
@@ -217,7 +226,7 @@ fn the_mainline_tree_names_the_same_controller_and_address() {
     let tree = tree(PMIC_BUS_MAINLINE);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
 #[test]
@@ -225,5 +234,5 @@ fn the_foreign_tree_names_neither() {
     let tree = tree(PMIC_BUS_FOREIGN);
     let bus = pmic_bus(&tree).unwrap();
     assert_eq!(bus.controller, None);
-    assert_eq!(bus.pmic_address, None);
+    assert_eq!(bus.power_management_chip_address, None);
 }

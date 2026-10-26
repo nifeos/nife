@@ -18,10 +18,10 @@ Each renamed row names the spelling the ruling turned down and why. A new name i
 row here, `provisional` until a ruling, and `script/lint` fails a module or `pub` item without one.
 
 The column `outside` says whether a caller outside the crate reaches the name. Some names have no
-row because `script/names` does not count them: the fields of `ResetBit`, `Domain`, `PmicBus`,
+row because `script/names` does not count them: the fields of `ResetBit`, `Domain`, `PowerManagementChipBus`,
 `DevicePlan`, `I2cClockWords`, `StandardMode`, `BringUpReport`, `WindowLocation`, `WindowSpelling`
 and `RegisterWindow`, and the variants of `Step`. The same ruling covers them. The row `plan`
-covers both `PmicBus::plan` and `DevicePlan::plan`.
+covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 
 | name | kind | path | status | outside |
 |---|---|---|---|---|
@@ -32,8 +32,8 @@ covers both `PmicBus::plan` and `DevicePlan::plan`.
 | `BringUpReport` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it reports one bring-up). | yes |
 | `CLOCK_ENABLE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `COMPATIBLE_AONCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `COMPATIBLE_PMIC_MAINLINE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `COMPATIBLE_PMIC_VENDOR` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE` | item | `src/lib.rs` | provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant. | yes |
+| `COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR` | item | `src/lib.rs` | provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`. | yes |
 | `COMPATIBLE_STGCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `COMPATIBLE_SYSCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `COMPATIBLE_VENDOR_CLKGEN` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
@@ -46,10 +46,10 @@ covers both `PmicBus::plan` and `DevicePlan::plan`.
 | `MAX_DEVICE_STEPS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `MAX_RECORDED_CLOCKS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `MAX_REG_ENTRIES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `MAX_WINDOWS` (it bounds a node's `reg` entries, not windows). | yes |
-| `PMIC_COMPATIBLES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `PMIC_RESET_BIT` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `PMIC_RESET_REG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `PmicBus` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `POWER_MANAGEMENT_CHIP_COMPATIBLES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_COMPATIBLES` (PMIC spelled out; `chip` for integrated circuit, and not `power_management_bus`, which is the PMBus standard's name). | yes |
+| `POWER_MANAGEMENT_CHIP_RESET_BIT` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_BIT` (PMIC spelled out). | yes |
+| `POWER_MANAGEMENT_CHIP_RESET_REGISTER` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_REG` (PMIC and `reg` spelled out) and `PMIC_RESET_REGISTER` (PMIC spelled out). | yes |
+| `PowerManagementChipBus` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and `PowerManagementBus` (it collides with the PMBus standard's name). | yes |
 | `RegisterWindow` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Window` (a register window, which the name did not say). | yes |
 | `ResetBit` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SDCARD_DIVIDER_MAX` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
@@ -91,4 +91,4 @@ covers both `PmicBus::plan` and `DevicePlan::plan`.
 | `was_already_up` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `with_divider` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `with_parent` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `without_pmic` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `without_power_management_chip` | item | `src/lib.rs` | provisional. Follows `PowerManagementChipBus`; the ruling named the type and the constants, not this method. | yes |

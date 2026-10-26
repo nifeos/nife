@@ -11,8 +11,8 @@
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
-    AON_WINDOW, MAX_REG_ENTRIES, PMIC_COMPATIBLES, PmicBus, RegisterWindow, STG_WINDOW, SYS_WINDOW,
-    WindowLocation,
+    AON_WINDOW, MAX_REG_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES, PowerManagementChipBus,
+    RegisterWindow, STG_WINDOW, SYS_WINDOW, WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -84,10 +84,11 @@ fn discover_window(
     Ok(window.fallback())
 }
 
-/// **Read the PMIC's I2C bus's clocks and resets out of `tree`**: the `clocks`, `resets` and
-/// `reg` of the AXP15060's parent bus and the PMIC's own `reg`, mainline's `compatible` tried
-/// first, handed to [`PmicBus::from_nodes`]. A tree naming no known PMIC gets
-/// [`PmicBus::without_pmic`]. Like [`discover`], an answer is not evidence of a JH7110.
+/// **Read the PMIC's I2C bus's clocks and resets out of `tree`**: the `clocks`, `resets` and `reg`
+/// of the AXP15060's parent bus and the PMIC's own `reg`, mainline's `compatible` tried first,
+/// handed to [`PowerManagementChipBus::from_nodes`]. A tree naming no known PMIC gets
+/// [`PowerManagementChipBus::without_power_management_chip`]. Like [`discover`], an answer is not
+/// evidence of a JH7110.
 ///
 /// # Errors
 ///
@@ -95,8 +96,8 @@ fn discover_window(
 ///
 /// Name: recorded (milestone 592), which wrote it as `jh7110_clock_and_reset::pmic_bus`. calef
 /// has not ruled on it.
-pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PmicBus, Error> {
-    for pmic in PMIC_COMPATIBLES {
+pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PowerManagementChipBus, Error> {
+    for pmic in POWER_MANAGEMENT_CHIP_COMPATIBLES {
         if tree.node_prop_compatible(pmic, b"compatible")?.is_none() {
             continue;
         }
@@ -106,9 +107,14 @@ pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PmicBus, Error> {
         // fails leaves each unstated rather than failing the plan.
         let pmic_reg = tree.node_prop_compatible(pmic, b"reg").ok().flatten();
         let bus_reg = tree.parent_prop_compatible(pmic, b"reg").ok().flatten();
-        return PmicBus::from_nodes(pmic, pmic_reg, bus_reg, clocks, resets, |phandle, name| {
-            tree.phandle_prop(phandle, name)
-        });
+        return PowerManagementChipBus::from_nodes(
+            pmic,
+            pmic_reg,
+            bus_reg,
+            clocks,
+            resets,
+            |phandle, name| tree.phandle_prop(phandle, name),
+        );
     }
-    Ok(PmicBus::without_pmic())
+    Ok(PowerManagementChipBus::without_power_management_chip())
 }

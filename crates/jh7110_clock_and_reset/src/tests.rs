@@ -33,9 +33,12 @@ fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
 
 #[test]
 fn the_pmic_plan_ungates_before_it_releases() {
-    assert!(matches!(PMIC_BUS_BRING_UP[0], Step::EnableClock(_)));
     assert!(matches!(
-        PMIC_BUS_BRING_UP[PMIC_BUS_BRING_UP.len() - 1],
+        POWER_MANAGEMENT_CHIP_BUS_BRING_UP[0],
+        Step::EnableClock(_)
+    ));
+    assert!(matches!(
+        POWER_MANAGEMENT_CHIP_BUS_BRING_UP[POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len() - 1],
         Step::DeassertReset(_)
     ));
 }
@@ -605,8 +608,8 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
     // writing "word 298" would be a store past every clock and reset word.
     let clocks = specs(&[(2, 298), (2, 143)]);
     let resets = specs(&[(3, 81)]);
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_VENDOR,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
         Some(&clocks),
@@ -614,19 +617,22 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
         provider,
     )
     .unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR)
+    );
     assert_eq!(bus.skipped, 1);
     assert!(!bus.truncated);
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
 #[test]
 fn a_mainline_shaped_bus_gives_the_same_plan_through_syscrg() {
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_MAINLINE,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         None,
         None,
         Some(&specs(&[(1, 143)])),
@@ -634,10 +640,13 @@ fn a_mainline_shaped_bus_gives_the_same_plan_through_syscrg() {
         provider,
     )
     .unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(bus.from_tree);
     assert_eq!(bus.skipped, 0);
-    assert_eq!((bus.controller, bus.pmic_address), (None, None));
+    assert_eq!(
+        (bus.controller, bus.power_management_chip_address),
+        (None, None)
+    );
 }
 
 #[test]
@@ -647,8 +656,8 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
     // bounds, a provider naming no `compatible`, and a clock provider asked for a reset.
     let clocks = specs(&[(4, 3), (1, 190), (5, 143), (1, 143)]);
     let resets = specs(&[(1, 126), (6, 81), (2, 81)]);
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_MAINLINE,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
         Some(&clocks),
@@ -656,21 +665,27 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
         provider,
     )
     .unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE)
+    );
     // aoncrg 3, syscrg 190, then the two strides from the two-cell provider on; syscrg 126,
     // the provider without `compatible`, then the clkgen node asked for `#reset-cells`.
     assert_eq!(bus.skipped, 2 + 2 + 3);
-    assert_eq!((bus.controller, bus.pmic_address), (None, None));
+    assert_eq!(
+        (bus.controller, bus.power_management_chip_address),
+        (None, None)
+    );
 }
 
 #[test]
 fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
     let mut clocks = specs(&[(1, 143)]);
     clocks.extend_from_slice(&[0, 0, 0, 1]);
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_MAINLINE,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         None,
         None,
         Some(&clocks),
@@ -686,8 +701,8 @@ fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
 #[test]
 fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() {
     let clocks = specs(&[(1, 140), (1, 141), (1, 142), (1, 143), (1, 144)]);
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_MAINLINE,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         None,
         None,
         Some(&clocks),
@@ -710,8 +725,8 @@ fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() 
 
 #[test]
 fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() {
-    let bus = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_VENDOR,
+    let bus = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
         None,
@@ -719,14 +734,17 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
         provider,
     )
     .unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(
+        bus.power_management_chip,
+        Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR)
+    );
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
+    assert_eq!(bus.power_management_chip_address, Some(0x36));
     // A `reg` too short to hold its value is not stated.
-    let short = PmicBus::from_nodes(
-        COMPATIBLE_PMIC_VENDOR,
+    let short = PowerManagementChipBus::from_nodes(
+        COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0x36]),
         Some(&BUS_REG[..7]),
         None,
@@ -734,19 +752,25 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
         provider,
     )
     .unwrap();
-    assert_eq!((short.controller, short.pmic_address), (None, None));
+    assert_eq!(
+        (short.controller, short.power_management_chip_address),
+        (None, None)
+    );
 }
 
 #[test]
 fn a_tree_without_a_pmic_gets_the_constant_plan_unclaimed() {
-    let bus = PmicBus::without_pmic();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    let bus = PowerManagementChipBus::without_power_management_chip();
+    assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, None);
+    assert_eq!(bus.power_management_chip, None);
     assert_eq!(bus.skipped, 0);
     assert_eq!(
-        PMIC_COMPATIBLES,
-        [COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR]
+        POWER_MANAGEMENT_CHIP_COMPATIBLES,
+        [
+            COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
+            COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR
+        ]
     );
 }
 
@@ -755,8 +779,8 @@ fn a_provider_error_stops_the_walk_and_reaches_the_caller() {
     let failing = |_: u32, _: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(7) };
     let clocks = specs(&[(1, 143)]);
     assert_eq!(
-        PmicBus::from_nodes(
-            COMPATIBLE_PMIC_MAINLINE,
+        PowerManagementChipBus::from_nodes(
+            COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
             None,
             None,
             Some(&clocks),

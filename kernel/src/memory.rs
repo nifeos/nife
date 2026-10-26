@@ -246,9 +246,9 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 /// 592), under the guard the comment above the call describes.
 ///
 /// Its own frame, and `inline(never)` so it stays one: [`init_from_device_tree`] is already close
-/// to the 4,096-byte guard page in an unoptimised build, and the two `Found`s and the `PmicBus`
-/// here pushed it over (`script/stack-frame-check`, 4,352 bytes on aarch64, 2026-09-25). A call
-/// keeps these locals off its frame instead of raising any ceiling.
+/// to the 4,096-byte guard page in an unoptimised build, and the two `Found`s and the
+/// `PowerManagementChipBus` here pushed it over (`script/stack-frame-check`, 4,352 bytes on
+/// aarch64, 2026-09-25). A call keeps these locals off its frame instead of raising any ceiling.
 #[inline(never)]
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
@@ -645,7 +645,7 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowL
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_pmic_bus() -> Option<(
     jh7110_clock_and_reset::WindowLocation,
-    jh7110_clock_and_reset::PmicBus,
+    jh7110_clock_and_reset::PowerManagementChipBus,
 )> {
     *JH7110_PMIC_BUS.lock()
 }
@@ -1024,7 +1024,7 @@ static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> 
 static JH7110_PMIC_BUS: IrqSafeMutex<
     Option<(
         jh7110_clock_and_reset::WindowLocation,
-        jh7110_clock_and_reset::PmicBus,
+        jh7110_clock_and_reset::PowerManagementChipBus,
     )>,
 > = IrqSafeMutex::new(rank::RAM, None);
 

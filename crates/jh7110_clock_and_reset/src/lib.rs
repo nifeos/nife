@@ -13,11 +13,12 @@
 //!
 //! The crate reads no device tree. The caller finds a node and hands this crate its property
 //! values. Mainline names one controller node per domain (`starfive,jh7110-stgcrg`, `-aoncrg`,
-//! `-syscrg`); the vendor U-Boot names one clock node (`starfive,jh7110-clkgen`) and one reset
-//! node (`starfive,jh7110-reset`), each carrying several windows told apart by `reg-names`. Each
-//! [`RegisterWindow`] lists its spellings in the order to try them, and [`WindowLocation::from_regions`] picks the
-//! window out of a matched node's `reg`. [`PmicBus::from_nodes`] and [`DevicePlan::from_specifiers`]
-//! turn a node's `clocks` and `resets` into steps, asking the caller to look each phandle up.
+//! `-syscrg`); the vendor U-Boot names one clock node (`starfive,jh7110-clkgen`) and one reset node
+//! (`starfive,jh7110-reset`), each carrying several windows told apart by `reg-names`. Each
+//! [`RegisterWindow`] lists its spellings in the order to try them, and
+//! [`WindowLocation::from_regions`] picks the window out of a matched node's `reg`.
+//! [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] turn a node's
+//! `clocks` and `resets` into steps, asking the caller to look each phandle up.
 //!
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/master/arch/riscv/boot/dts/starfive/jh7110.dtsi
 //! [mainline-trng]: https://github.com/torvalds/linux/blob/master/drivers/char/hw_random/jh7110-trng.c
@@ -311,7 +312,7 @@ pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 /// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
 /// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
 /// gated clock "might otherwise hang forever".
-pub(crate) const PMIC_BUS_BRING_UP: &[Step] = &[
+pub(crate) const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
@@ -361,38 +362,48 @@ pub const fn clock_divider(word: u32) -> u32 {
     word & 0x00ff_ffff
 }
 
-/// The PMIC as radon's vendor tree spells it (U-Boot SDK `VF2_v2.10.4`, `starfive_visionfive2.dts`:
+/// The PMIC (power management integrated circuit) as radon's vendor tree spells it (U-Boot SDK
+/// `VF2_v2.10.4`, `starfive_visionfive2.dts`:
 /// `pmic: axp15060_reg@36 { compatible = "stf,axp15060-regulator"; reg = <0x36>; }` under
 /// `&i2c5`). This is also the string radon's OpenSBI matches to find its reset device.
-pub const COMPATIBLE_PMIC_VENDOR: &[u8] = b"stf,axp15060-regulator";
+#[doc(alias = "pmic")]
+pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
 /// The same PMIC in mainline's `jh7110-common.dtsi`: `axp15060: pmic@36 { compatible =
 /// "x-powers,axp15060"; }` under `&i2c5`.
-pub const COMPATIBLE_PMIC_MAINLINE: &[u8] = b"x-powers,axp15060";
+#[doc(alias = "pmic")]
+pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE: &[u8] = b"x-powers,axp15060";
 
-/// Both PMIC spellings, in the order to try them: mainline's first.
-pub const PMIC_COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR];
+/// Both PMIC (power management integrated circuit) spellings, in the order to try them: mainline's
+/// first.
+#[doc(alias = "pmic")]
+pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
+    COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
+    COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
+];
 
 /// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
 /// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
-pub(crate) const MAX_PMIC_BUS_STEPS: usize = 4;
+pub(crate) const MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
-/// **The plan for the PMIC's bus, and where it came from.**
+/// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
+/// circuit) is radon's AXP15060, on I2C5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PmicBus {
-    steps: [Step; MAX_PMIC_BUS_STEPS],
+#[doc(alias = "pmic")]
+pub struct PowerManagementChipBus {
+    steps: [Step; MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS],
     len: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
     /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
     /// bench transcript must carry, for [`WindowLocation::from_tree`]'s reason.
     pub from_tree: bool,
     /// Which PMIC `compatible` was found, or `None` when the tree names no known PMIC.
-    pub pmic: Option<&'static [u8]>,
+    pub power_management_chip: Option<&'static [u8]>,
     /// Clock or reset specifiers the bus named that are **not** a SYS-domain gate or line, and
     /// were skipped rather than written: radon's virtual clock 298 is the expected one. A provider
     /// this crate does not recognise, or an id past [`SYS`]'s bounds, lands here, never in a store.
     pub skipped: usize,
-    /// True when the bus named more usable steps than [`MAX_PMIC_BUS_STEPS`].
+    /// True when the bus named more usable steps than [`MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
@@ -400,28 +411,29 @@ pub struct PmicBus {
     pub controller: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
     /// trees. `None` when the tree names no known PMIC at all.
-    pub pmic_address: Option<u32>,
+    pub power_management_chip_address: Option<u32>,
 }
 
-impl PmicBus {
+impl PowerManagementChipBus {
     /// The steps to walk, clocks before resets.
     #[must_use]
     pub fn plan(&self) -> &[Step] {
         &self.steps[..self.len]
     }
 
-    fn fallback(pmic: Option<&'static [u8]>, skipped: usize) -> Self {
-        let mut bus = PmicBus {
-            steps: [Step::EnableClock(0); MAX_PMIC_BUS_STEPS],
-            len: PMIC_BUS_BRING_UP.len(),
+    fn fallback(power_management_chip: Option<&'static [u8]>, skipped: usize) -> Self {
+        let mut bus = PowerManagementChipBus {
+            steps: [Step::EnableClock(0); MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS],
+            len: POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len(),
             from_tree: false,
-            pmic,
+            power_management_chip,
             skipped,
             truncated: false,
             controller: None,
-            pmic_address: None,
+            power_management_chip_address: None,
         };
-        bus.steps[..PMIC_BUS_BRING_UP.len()].copy_from_slice(PMIC_BUS_BRING_UP);
+        bus.steps[..POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len()]
+            .copy_from_slice(POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
         bus
     }
 }
@@ -448,43 +460,47 @@ fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
     }
 }
 
-impl PmicBus {
+impl PowerManagementChipBus {
     /// **The plan when the tree names no known PMIC**: the constant I2C5 plan, with `from_tree`
-    /// false and `pmic` `None`.
+    /// false and `power_management_chip` `None`.
     #[must_use]
-    pub fn without_pmic() -> Self {
-        PmicBus::fallback(None, 0)
+    pub fn without_power_management_chip() -> Self {
+        PowerManagementChipBus::fallback(None, 0)
     }
 
-    /// **The plan for the PMIC `pmic`, from what its node and its parent bus node say.**
+    /// **The plan for the PMIC `power_management_chip`, from what its node and its parent bus node
+    /// say.**
     ///
-    /// `pmic` is the [`PMIC_COMPATIBLES`] entry the caller matched. `pmic_reg` is the PMIC node's
-    /// own `reg` (its I2C address, one cell), and `bus_reg`, `clocks` and `resets` are its parent
-    /// bus node's properties; each is `None` when the tree does not state it. A `<phandle id>`
-    /// pair becomes a step only for a known one-cell SYS provider and an id inside [`SYS`]'s
-    /// bounds (the vendor numbers SYS first, so one bound serves both trees); the rest are counted
-    /// in [`PmicBus::skipped`]. `provider(phandle, name)` returns the property `name` of the node
-    /// carrying `phandle`, as the caller's device-tree reader finds it. With no usable step the
-    /// answer is the constant plan with `from_tree` false. An answer is not evidence of a JH7110.
+    /// `power_management_chip` is the [`POWER_MANAGEMENT_CHIP_COMPATIBLES`] entry the caller
+    /// matched. `power_management_chip_reg` is the PMIC node's own `reg` (its I2C address, one
+    /// cell), and `bus_reg`, `clocks` and `resets` are its parent bus node's properties; each is
+    /// `None` when the tree does not state it. A `<phandle id>` pair becomes a step only for a
+    /// known one-cell SYS provider and an id inside [`SYS`]'s bounds (the vendor numbers SYS first,
+    /// so one bound serves both trees); the rest are counted in
+    /// [`PowerManagementChipBus::skipped`]. `provider(phandle, name)` returns the property `name`
+    /// of the node carrying `phandle`, as the caller's device-tree reader finds it. With no usable
+    /// step the answer is the constant plan with `from_tree` false. An answer is not evidence of a
+    /// JH7110.
     ///
     /// # Errors
     ///
     /// Propagates the first error `provider` returns.
     pub fn from_nodes<'t, E>(
-        pmic: &'static [u8],
-        pmic_reg: Option<&[u8]>,
+        power_management_chip: &'static [u8],
+        power_management_chip_reg: Option<&[u8]>,
         bus_reg: Option<&[u8]>,
         clocks: Option<&[u8]>,
         resets: Option<&[u8]>,
         mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
     ) -> Result<Self, E> {
-        let mut bus = PmicBus::fallback(Some(pmic), 0);
+        let mut bus = PowerManagementChipBus::fallback(Some(power_management_chip), 0);
         // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`.
         // Both of radon's trees spell it `<0x36>`.
-        if let Some(cells) = pmic_reg
+        if let Some(cells) = power_management_chip_reg
             && cells.len() >= 4
         {
-            bus.pmic_address = Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
+            bus.power_management_chip_address =
+                Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
         if let Some(cells) = bus_reg {
             bus.controller = parse_reg(cells);
@@ -498,7 +514,10 @@ impl PmicBus {
         bus.skipped = collected.skipped;
         bus.truncated = collected.truncated;
         if bus.len == 0 {
-            return Ok(PmicBus::fallback(Some(pmic), bus.skipped));
+            return Ok(PowerManagementChipBus::fallback(
+                Some(power_management_chip),
+                bus.skipped,
+            ));
         }
         bus.from_tree = true;
         Ok(bus)
@@ -512,10 +531,10 @@ struct Collected {
     truncated: bool,
 }
 
-/// **Turn a node's `clocks` and `resets` into SYS-domain steps**, clocks first, into `steps`.
-/// The one walk [`PmicBus::from_nodes`] and [`DevicePlan::from_specifiers`] share, so a specifier
-/// is classified the same way whichever device named it: see [`Spec`] for what is kept, counted
-/// or abandoned.
+/// **Turn a node's `clocks` and `resets` into SYS-domain steps**, clocks first, into `steps`. The
+/// one walk [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] share, so a
+/// specifier is classified the same way whichever device named it: see [`Spec`] for what is kept,
+/// counted or abandoned.
 fn collect_sys_steps<'t, E>(
     clocks: Option<&[u8]>,
     resets: Option<&[u8]>,
@@ -553,9 +572,9 @@ fn collect_sys_steps<'t, E>(
 /// How many steps a [`DevicePlan`] holds. The watchdog names two clocks and two resets.
 pub const MAX_DEVICE_STEPS: usize = 4;
 
-/// **A device's own SYS-domain clocks and resets, as its node names them.** Unlike [`PmicBus`]
-/// there is no constant fallback: an empty plan means the tree named nothing usable, and the
-/// caller decides what that costs.
+/// **A device's own SYS-domain clocks and resets, as its node names them.** Unlike
+/// [`PowerManagementChipBus`] there is no constant fallback: an empty plan means the tree named
+/// nothing usable, and the caller decides what that costs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DevicePlan {
     steps: [Step; MAX_DEVICE_STEPS],
@@ -574,9 +593,9 @@ impl DevicePlan {
     }
 
     /// **A device node's `clocks` and `resets`, as SYS-domain steps.** Either property may be
-    /// `None`, and a node naming neither gives an empty plan. Specifiers are classified exactly
-    /// as [`PmicBus::from_nodes`] classifies its bus's, so a vendor `clkgen`/`rstgen` pair and
-    /// mainline's `syscrg` both answer; `provider` is the same phandle lookup.
+    /// `None`, and a node naming neither gives an empty plan. Specifiers are classified exactly as
+    /// [`PowerManagementChipBus::from_nodes`] classifies its bus's, so a vendor `clkgen`/`rstgen`
+    /// pair and mainline's `syscrg` both answer; `provider` is the same phandle lookup.
     ///
     /// # Errors
     ///
@@ -828,14 +847,16 @@ pub const fn standard_mode_100k(ic_clk: u64) -> StandardMode {
     }
 }
 
-/// The AXP15060 register OpenSBI's reset and shutdown both go through, `0x32`, and the bit that
-/// resets: bit 6 (bit 7 powers off), as read on a VisionFive 2 bench on 2026-10-09 and 2026-10-10.
-/// The caller writes the reset bit alone, read-modify-write, so the
-/// register's other bits keep whatever the PMIC already holds.
-pub const PMIC_RESET_REG: u8 = 0x32;
+/// The AXP15060 PMIC (power management integrated circuit) register OpenSBI's reset and shutdown
+/// both go through, `0x32`, and the bit that resets: bit 6 (bit 7 powers off), as read on a
+/// VisionFive 2 bench on 2026-10-09 and 2026-10-10. The caller writes the reset bit alone,
+/// read-modify-write, so the register's other bits keep whatever the PMIC already holds.
+#[doc(alias = "pmic")]
+pub const POWER_MANAGEMENT_CHIP_RESET_REGISTER: u8 = 0x32;
 
-/// The reset bit of [`PMIC_RESET_REG`].
-pub const PMIC_RESET_BIT: u8 = 6;
+/// The reset bit of [`POWER_MANAGEMENT_CHIP_RESET_REGISTER`].
+#[doc(alias = "pmic")]
+pub const POWER_MANAGEMENT_CHIP_RESET_BIT: u8 = 6;
 
 /// What one `<phandle id>` specifier turned out to be.
 enum Spec {
