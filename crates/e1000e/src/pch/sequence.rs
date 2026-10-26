@@ -76,14 +76,14 @@ pub enum Error {
 }
 
 impl From<physical_layer_device::Error> for Error {
-    fn from(e: physical_layer_device::Error) -> Self {
-        Error::PhysicalLayerDevice(e)
+    fn from(error: physical_layer_device::Error) -> Self {
+        Error::PhysicalLayerDevice(error)
     }
 }
 
 impl From<non_volatile_memory::Error> for Error {
-    fn from(e: non_volatile_memory::Error) -> Self {
-        Error::NonVolatileMemory(e)
+    fn from(error: non_volatile_memory::Error) -> Self {
+        Error::NonVolatileMemory(error)
     }
 }
 
@@ -249,14 +249,14 @@ const NWAY_AR_ASM_DIR: u16 = 0x0800;
 const CR_1000T_HD_CAPS: u16 = 0x0100;
 const CR_1000T_FD_CAPS: u16 = 0x0200;
 
-fn set(hardware: &mut impl Hardware, off: u64, bits: u32) {
-    let v = hardware.read(off);
-    hardware.write(off, v | bits);
+fn set(hardware: &mut impl Hardware, offset: u64, bits: u32) {
+    let v = hardware.read(offset);
+    hardware.write(offset, v | bits);
 }
 
-fn clear(hardware: &mut impl Hardware, off: u64, bits: u32) {
-    let v = hardware.read(off);
-    hardware.write(off, v & !bits);
+fn clear(hardware: &mut impl Hardware, offset: u64, bits: u32) {
+    let v = hardware.read(offset);
+    hardware.write(offset, v & !bits);
 }
 
 fn has_management_engine(hardware: &mut impl Hardware) -> bool {
@@ -430,16 +430,16 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
 ///
 /// FreeBSD's quirk is kept: an identifier that reads as `0xffff` without an `MDIC` error counts as
 /// accessible on a first probe (its `ret_val` is zero), so does this.
-fn accessible(hardware: &mut impl Hardware, f: &Swflag, id: &mut u32) -> bool {
+fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool {
     let mut seen = 0u32;
     let mut last = Ok(0);
     for _ in 0..2 {
-        last = physical_layer_device::read(hardware, f, physical_layer_device::registers::ID1);
+        last = physical_layer_device::read(hardware, flag, physical_layer_device::registers::ID1);
         let Ok(hi) = last else { continue };
         if hi == 0xffff {
             continue;
         }
-        last = physical_layer_device::read(hardware, f, physical_layer_device::registers::ID2);
+        last = physical_layer_device::read(hardware, flag, physical_layer_device::registers::ID2);
         let Ok(lo) = last else { continue };
         if lo == 0xffff {
             continue;
@@ -458,11 +458,11 @@ fn accessible(hardware: &mut impl Hardware, f: &Swflag, id: &mut u32) -> bool {
     };
     if ok && !has_management_engine(hardware) {
         if let Ok(v) =
-            physical_layer_device::read(hardware, f, physical_layer_device::registers::SMB_CTRL)
+            physical_layer_device::read(hardware, flag, physical_layer_device::registers::SMB_CTRL)
         {
             let _ = physical_layer_device::write(
                 hardware,
-                f,
+                flag,
                 physical_layer_device::registers::SMB_CTRL,
                 v & !SMB_CTRL_FORCE_SMBUS,
             );
@@ -723,14 +723,14 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
 #[doc(alias = "smbus")]
 fn write_system_management_bus_address(
     hardware: &mut impl Hardware,
-    f: &Swflag,
+    flag: &Swflag,
 ) -> Result<(), Error> {
     let strap = hardware.read(registers::STRAP);
     let freq = ((strap & STRAP_SMT_FREQ_MASK) >> STRAP_SMT_FREQ_SHIFT) as u16;
     let address = ((strap & STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK)
         >> STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT) as u16;
     let mut v =
-        physical_layer_device::read(hardware, f, physical_layer_device::registers::SMB_ADDR)?;
+        physical_layer_device::read(hardware, flag, physical_layer_device::registers::SMB_ADDR)?;
     v = (v & !SMB_ADDR_MASK) | address | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
     if freq != 0 {
         let fq = freq - 1;
@@ -740,7 +740,12 @@ fn write_system_management_bus_address(
     } else {
         hardware.note(Note::SystemManagementBusFrequencyUnsupported);
     }
-    physical_layer_device::write(hardware, f, physical_layer_device::registers::SMB_ADDR, v)?;
+    physical_layer_device::write(
+        hardware,
+        flag,
+        physical_layer_device::registers::SMB_ADDR,
+        v,
+    )?;
     Ok(())
 }
 
@@ -911,16 +916,16 @@ mod tests {
     }
 
     impl Hardware for Inert {
-        fn read(&mut self, off: u64) -> u32 {
-            self.reads.push(off);
-            *self.registers.get(&off).unwrap_or(&0)
+        fn read(&mut self, offset: u64) -> u32 {
+            self.reads.push(offset);
+            *self.registers.get(&offset).unwrap_or(&0)
         }
-        fn write(&mut self, off: u64, v: u32) {
-            self.writes.push((off, v));
-            self.registers.insert(off, v);
+        fn write(&mut self, offset: u64, value: u32) {
+            self.writes.push((offset, value));
+            self.registers.insert(offset, value);
         }
-        fn read16(&mut self, off: u64) -> u16 {
-            self.read(off) as u16
+        fn read16(&mut self, offset: u64) -> u16 {
+            self.read(offset) as u16
         }
         fn delay_us(&mut self, us: u64) {
             self.elapsed_us += us;
@@ -928,23 +933,23 @@ mod tests {
         fn pci_vendor_id(&mut self) -> u16 {
             0x8086
         }
-        fn note(&mut self, n: Note) {
-            self.notes.push(n);
+        fn note(&mut self, note: Note) {
+            self.notes.push(note);
         }
     }
 
     impl Inert {
-        fn written(&self, off: u64) -> Vec<u32> {
+        fn written(&self, offset: u64) -> Vec<u32> {
             self.writes
                 .iter()
-                .filter(|w| w.0 == off)
+                .filter(|w| w.0 == offset)
                 .map(|w| w.1)
                 .collect()
         }
     }
 
-    fn mac(s: &Sim, off: u64) -> u32 {
-        *s.mac.get(&off).unwrap_or(&0)
+    fn mac(sim: &Sim, offset: u64) -> u32 {
+        *sim.mac.get(&offset).unwrap_or(&0)
     }
 
     /// **An ME that never finishes is given FreeBSD's whole 2.5 s** (250 waits of 10 ms over 251

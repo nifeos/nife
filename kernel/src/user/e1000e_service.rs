@@ -160,7 +160,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     super::fs_service::map_channel(
         &mut maps[..PLANE],
         DATA_PLANE_VIRTUAL_ADDRESS,
-        found.handoff.data_plane_phys,
+        found.handoff.data_plane_physical_address,
         PLANE,
     );
     // Device-typed, because a cached or reordered tail write is a frame the device never hears of.

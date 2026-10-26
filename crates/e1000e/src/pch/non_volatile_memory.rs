@@ -217,9 +217,9 @@ pub(crate) fn read_u32(hardware: &mut impl Hardware, word: u32) -> Result<u32, E
 }
 
 /// `e1000_valid_nvm_bank_detect_ich8lan`'s SPT branch: which bank carries the signature.
-pub(crate) fn valid_bank(hardware: &mut impl Hardware, g: Geometry) -> Result<u32, Error> {
+pub(crate) fn valid_bank(hardware: &mut impl Hardware, geometry: Geometry) -> Result<u32, Error> {
     for bank in 0..2 {
-        let d = read_u32(hardware, SIGNATURE_WORD + bank * g.bank_words)?;
+        let d = read_u32(hardware, SIGNATURE_WORD + bank * geometry.bank_words)?;
         if (d >> 8) as u8 & SIGNATURE_MASK == SIGNATURE_VALUE {
             return Ok(bank);
         }
@@ -231,14 +231,14 @@ pub(crate) fn valid_bank(hardware: &mut impl Hardware, g: Geometry) -> Result<u3
 /// read the `u32` holding the word, and take its half.
 pub(crate) fn read_word(
     hardware: &mut impl Hardware,
-    g: Geometry,
+    geometry: Geometry,
     word: u32,
 ) -> Result<u16, Error> {
     if word >= WORDS {
         return Err(Error::OutOfRange);
     }
-    let bank = valid_bank(hardware, g).unwrap_or(0);
-    let at = bank * g.bank_words + word;
+    let bank = valid_bank(hardware, geometry).unwrap_or(0);
+    let at = bank * geometry.bank_words + word;
     let d = read_u32(hardware, at - at % 2)?;
     Ok(if at.is_multiple_of(2) {
         d as u16

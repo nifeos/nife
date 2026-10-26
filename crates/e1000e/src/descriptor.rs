@@ -127,10 +127,10 @@ pub fn receive_verdict(word: u64, room: usize) -> ReceiveVerdict {
     ReceiveVerdict::Frame(len)
 }
 
-/// A transmit descriptor's second word: `len` bytes, [`TRANSMIT_COMMAND`], status cleared.
+/// A transmit descriptor's second word: `length` bytes, [`TRANSMIT_COMMAND`], status cleared.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
 /// covers the rest of the name. Refused `tx_word` (tx abbreviates transmit).
-pub const fn transmit_word(len: u16) -> u64 {
-    len as u64 | (TRANSMIT_COMMAND as u64) << 24
+pub const fn transmit_word(length: u16) -> u64 {
+    length as u64 | (TRANSMIT_COMMAND as u64) << 24
 }

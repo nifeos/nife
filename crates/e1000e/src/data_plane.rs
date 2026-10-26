@@ -9,14 +9,14 @@ use super::*;
 /// base; an implementation bounds them (the EL0 one is a `MappedWindow`, which panics on an
 /// out-of-window offset rather than touching memory it was not given).
 pub trait Region {
-    /// Read the little-endian `u64` at `off`.
-    fn read_u64(&self, off: u64) -> u64;
-    /// Write `v` at `off`, little-endian.
-    fn write_u64(&mut self, off: u64, v: u64);
-    /// Copy `out.len()` bytes starting at `off` into `out`.
-    fn read_bytes(&self, off: u64, out: &mut [u8]);
-    /// Copy `src` to `off`.
-    fn write_bytes(&mut self, off: u64, src: &[u8]);
+    /// Read the little-endian `u64` at `offset`.
+    fn read_u64(&self, offset: u64) -> u64;
+    /// Write `value` at `offset`, little-endian.
+    fn write_u64(&mut self, offset: u64, value: u64);
+    /// Copy `out.len()` bytes starting at `offset` into `out`.
+    fn read_bytes(&self, offset: u64, out: &mut [u8]);
+    /// Copy `source` to `offset`.
+    fn write_bytes(&mut self, offset: u64, source: &[u8]);
 }
 
 /// The two tail registers, and the ordering between them and the region. The only register writes
@@ -26,12 +26,12 @@ pub trait Tails {
     ///
     /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
     /// ruling covers the rest of the name. Refused `set_rx_tail` (rx abbreviates receive).
-    fn set_receive_tail(&mut self, v: u32);
+    fn set_receive_tail(&mut self, value: u32);
     /// Write the transmit tail (`TDT`).
     ///
     /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
     /// ruling covers the rest of the name. Refused `set_tx_tail` (tx abbreviates transmit).
-    fn set_transmit_tail(&mut self, v: u32);
+    fn set_transmit_tail(&mut self, value: u32);
     /// Order every region access before this against every access after it, as seen by the device.
     /// Called between filling a descriptor and the tail write that announces it, and between
     /// reading a status and reading the bytes it covers.
@@ -55,7 +55,7 @@ pub enum TransmitError {
 /// device.
 #[derive(Debug)]
 pub struct DataPlane {
-    phys: u64,
+    physical_address: u64,
     receive_next: u16,
     transmit_next: u16,
     transmit_clean: u16,
@@ -64,11 +64,11 @@ pub struct DataPlane {
 }
 
 impl DataPlane {
-    /// A data plane over the region at `data_plane_phys`. Call [`DataPlane::start`] before
-    /// anything else.
-    pub fn new(data_plane_phys: u64) -> DataPlane {
+    /// A data plane over the region at `data_plane_physical_address`. Call [`DataPlane::start`]
+    /// before anything else.
+    pub fn new(data_plane_physical_address: u64) -> DataPlane {
         DataPlane {
-            phys: data_plane_phys,
+            physical_address: data_plane_physical_address,
             receive_next: 0,
             transmit_next: 0,
             transmit_clean: 0,
@@ -92,7 +92,7 @@ impl DataPlane {
     pub fn start(&mut self, region: &mut impl Region, tails: &mut impl Tails) {
         for i in 0..RECEIVE_ENTRIES {
             let d = layout::receive_descriptor(i);
-            region.write_u64(d, self.phys + layout::receive_buffer(i));
+            region.write_u64(d, self.physical_address + layout::receive_buffer(i));
             region.write_u64(d + 8, 0);
         }
         for i in 0..TRANSMIT_ENTRIES {
@@ -134,7 +134,10 @@ impl DataPlane {
             };
             // Repost: the address again (a device may write back over it), the status cleared,
             // then hand the slot back by making it the tail.
-            region.write_u64(d, self.phys + layout::receive_buffer(self.receive_next));
+            region.write_u64(
+                d,
+                self.physical_address + layout::receive_buffer(self.receive_next),
+            );
             region.write_u64(d + 8, 0);
             tails.barrier();
             tails.set_receive_tail(u32::from(self.receive_next));
@@ -162,7 +165,10 @@ impl DataPlane {
         }
         region.write_bytes(layout::transmit_buffer(self.transmit_next), frame);
         let d = layout::transmit_descriptor(self.transmit_next);
-        region.write_u64(d, self.phys + layout::transmit_buffer(self.transmit_next));
+        region.write_u64(
+            d,
+            self.physical_address + layout::transmit_buffer(self.transmit_next),
+        );
         region.write_u64(d + 8, transmit_word(frame.len() as u16));
         tails.barrier();
         self.transmit_next = next;

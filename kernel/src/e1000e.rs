@@ -167,7 +167,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         device: dev.device,
         handoff: ::driver_process_contract::e1000e::Handoff {
             mac,
-            data_plane_phys: region,
+            data_plane_physical_address: region,
         },
         link_up,
         phy_id,

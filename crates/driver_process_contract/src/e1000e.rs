@@ -41,7 +41,10 @@ pub const ROLE_TAG: u64 = 0xe1e0;
 /// ```
 /// use driver_process_contract::e1000e::Handoff;
 ///
-/// let h = Handoff { mac: [0x52, 0x54, 0x00, 0x12, 0x34, 0x57], data_plane_phys: 0x4012_3000 };
+/// let h = Handoff {
+///     mac: [0x52, 0x54, 0x00, 0x12, 0x34, 0x57],
+///     data_plane_physical_address: 0x4012_3000,
+/// };
 /// let [role, phys] = h.pack();
 /// assert_eq!(Handoff::unpack(role, phys), Some(h));
 /// // Role 0 is the virtio server and 1..=6 are socket clients; neither unpacks as this.
@@ -59,7 +62,12 @@ pub struct Handoff {
     pub mac: [u8; 6],
     /// The DMA region's physical base. Descriptors speak physical addresses (identity-mapped by
     /// the IOMMU domain), so the process cannot compute them from its virtual window.
-    pub data_plane_phys: u64,
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: the naming rules apply to parameters
+    /// and fields as well as public items, and `data_phys` becomes `data_physical_address`; no
+    /// ruling covers the rest of the name. Refused `data_plane_phys` (`phys` abbreviates physical
+    /// address).
+    pub data_plane_physical_address: u64,
 }
 
 impl Handoff {
@@ -71,7 +79,7 @@ impl Handoff {
         mac[..6].copy_from_slice(&self.mac);
         [
             ROLE_TAG | u64::from_le_bytes(mac) << 16,
-            self.data_plane_phys,
+            self.data_plane_physical_address,
         ]
     }
 
@@ -90,7 +98,7 @@ impl Handoff {
         }
         Some(Handoff {
             mac,
-            data_plane_phys: arg1,
+            data_plane_physical_address: arg1,
         })
     }
 
@@ -118,7 +126,7 @@ mod tests {
         }
         let h = Handoff {
             mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
-            data_plane_phys: PHYS,
+            data_plane_physical_address: PHYS,
         };
         assert!(Handoff::is_role(h.pack()[0]));
     }
@@ -129,7 +137,7 @@ mod tests {
     fn the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone() {
         let h = Handoff {
             mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
-            data_plane_phys: PHYS,
+            data_plane_physical_address: PHYS,
         };
         let [role, phys] = h.pack();
         assert_eq!(Handoff::unpack(role, phys), Some(h));

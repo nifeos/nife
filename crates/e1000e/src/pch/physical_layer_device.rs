@@ -360,10 +360,10 @@ pub fn update(
     hardware: &mut impl Hardware,
     held: &Swflag,
     offset: u32,
-    f: impl FnOnce(u16) -> u16,
+    change: impl FnOnce(u16) -> u16,
 ) -> Result<(), Error> {
     let v = read(hardware, held, offset)?;
-    write(hardware, held, offset, f(v))
+    write(hardware, held, offset, change(v))
 }
 
 /// `e1000_check_reset_block_ich8lan`: is firmware blocking a PHY reset? Polls `FWSM.RSPCIPHY` up to

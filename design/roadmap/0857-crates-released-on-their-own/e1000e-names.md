@@ -1,6 +1,6 @@
 # The names in `e1000e`, for ratification
 
-<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 4,024 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 4,066 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
@@ -34,6 +34,9 @@ below copy:
   its one-letter inline `r` among them, and the constants inside keep their sources' names.
 - Ruled 2026-10-26 (UTC), tree-wide: `min` and `max` are spelled out `minimum` and `maximum`
   (`MAXIMUM_FRAME`), and names copied from a source (`TXDCTL_MAX_TX_DESC_PREFETCH`) keep theirs.
+- Ruled 2026-10-26 (UTC), tree-wide: the naming rules apply to function parameters as well as
+  public items, so `off`, `v`, `len`, `src`, `i`, `e`, `g`, `n`, `f`, `s` and
+  `data_plane_phys` are spelled out where they are parameters. They have no rows here.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 

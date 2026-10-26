@@ -73,7 +73,7 @@ pub(crate) const PHYSICAL_LAYER_DEVICE_ID: u32 = 0x0154_00a0;
 const STRAP_VALUE: u32 = 0x0004_3000;
 
 impl Sim {
-    pub fn new(start: Start, me: bool) -> Self {
+    pub fn new(start: Start, management_engine: bool) -> Self {
         let mut s = Sim {
             mac: HashMap::new(),
             physical_layer_device_registers: HashMap::new(),
@@ -105,7 +105,12 @@ impl Sim {
         // FW_VALID when there is an ME; RSPCIPHY set, so firmware does not block PHY resets.
         s.mac.insert(
             registers::FWSM,
-            physical_layer_device::FWSM_RSPCIPHY | if me { super::ulp::FWSM_FW_VALID } else { 0 },
+            physical_layer_device::FWSM_RSPCIPHY
+                | if management_engine {
+                    super::ulp::FWSM_FW_VALID
+                } else {
+                    0
+                },
         );
         s.mac.insert(registers::STRAP, STRAP_VALUE);
         s.physical_layer_device_registers.insert(
@@ -121,8 +126,8 @@ impl Sim {
         s
     }
 
-    fn get(&self, off: u64) -> u32 {
-        *self.mac.get(&off).unwrap_or(&0)
+    fn get(&self, offset: u64) -> u32 {
+        *self.mac.get(&offset).unwrap_or(&0)
     }
 
     fn physical_layer_device_answers(&self) -> bool {
@@ -131,12 +136,13 @@ impl Sim {
             && self.physical_layer_device_in_system_management_bus == forced
     }
 
-    fn mdic(&mut self, v: u32) {
-        self.mdic_log.push(v);
-        let reg = (v & mdic::REG_MASK) >> mdic::REG_SHIFT;
-        let address = v >> mdic::PHY_SHIFT & 0x1f;
+    fn mdic(&mut self, value: u32) {
+        self.mdic_log.push(value);
+        let reg = (value & mdic::REG_MASK) >> mdic::REG_SHIFT;
+        let address = value >> mdic::PHY_SHIFT & 0x1f;
         if !self.physical_layer_device_answers() {
-            self.mac.insert(mac_mdic(), v | mdic::READY | mdic::ERROR);
+            self.mac
+                .insert(mac_mdic(), value | mdic::READY | mdic::ERROR);
             return;
         }
         let offset = if address == 1 && reg == physical_layer_device::PAGE_SELECT {
@@ -151,8 +157,8 @@ impl Sim {
         } else {
             Some(reg)
         };
-        if v & mdic::OP_WRITE != 0 {
-            let data = v as u16;
+        if value & mdic::OP_WRITE != 0 {
+            let data = value as u16;
             match offset {
                 None => self.page = u32::from(data) >> physical_layer_device::PAGE_SHIFT,
                 Some(o) => {
@@ -163,22 +169,24 @@ impl Sim {
                     }
                 }
             }
-            self.mac.insert(mac_mdic(), v | mdic::READY);
+            self.mac.insert(mac_mdic(), value | mdic::READY);
         } else {
             let data = offset.map_or(0, |o| {
                 *self.physical_layer_device_registers.get(&o).unwrap_or(&0)
             });
-            self.mac
-                .insert(mac_mdic(), (v & !0xffff) | u32::from(data) | mdic::READY);
+            self.mac.insert(
+                mac_mdic(),
+                (value & !0xffff) | u32::from(data) | mdic::READY,
+            );
         }
     }
 
-    fn ctrl(&mut self, v: u32) {
+    fn ctrl(&mut self, value: u32) {
         const OVERRIDE: u32 = 0x0001_0000;
         const VALUE: u32 = 0x0002_0000;
-        if v & OVERRIDE != 0 && v & VALUE == 0 {
+        if value & OVERRIDE != 0 && value & VALUE == 0 {
             self.lanphypc_low = true;
-        } else if self.lanphypc_low && v & OVERRIDE == 0 {
+        } else if self.lanphypc_low && value & OVERRIDE == 0 {
             self.lanphypc_low = false;
             self.lanphypc_toggles += 1;
             self.physical_layer_device_dead = false;
@@ -186,13 +194,13 @@ impl Sim {
             let e = self.get(mac::CTRL_EXT);
             self.mac.insert(mac::CTRL_EXT, e | 0x4); // LPCD
         }
-        let mut stored = v;
-        if v & 0x8000_0000 != 0 {
+        let mut stored = value;
+        if value & 0x8000_0000 != 0 {
             self.physical_layer_device_resets += 1;
             let s = self.get(mac::STATUS);
             self.mac.insert(mac::STATUS, s | 0x600); // PHYRA, LAN_INIT_DONE
         }
-        if v & crate::CTRL_RST != 0 {
+        if value & crate::CTRL_RST != 0 {
             self.global_resets += 1;
             stored &= !crate::CTRL_RST; // self-clears in the model at once
             // The reset drops the semaphore; the configuration pointer is reloaded from the NVM.
@@ -207,14 +215,14 @@ impl Sim {
         self.mac.insert(mac::CTRL, stored);
     }
 
-    fn flash_write(&mut self, v: u32) {
-        let low = v as u16;
+    fn flash_write(&mut self, value: u32) {
+        let low = value as u16;
         // Write one to clear: done, error, direct access error.
         self.flash_status &= !(low
             & (non_volatile_memory::status::DONE
                 | non_volatile_memory::status::ERROR
                 | non_volatile_memory::status::DIRECT_ACCESS_ERROR));
-        self.flash_ctl = (v >> 16) as u16;
+        self.flash_ctl = (value >> 16) as u16;
         if self.flash_ctl & non_volatile_memory::control::GO != 0 {
             if self.flash_busy_reads > 0 || self.flash_pending > 0 {
                 self.flash_go_while_busy += 1;
@@ -252,8 +260,8 @@ fn mac_mdic() -> u64 {
 }
 
 impl Hardware for Sim {
-    fn read(&mut self, off: u64) -> u32 {
-        if off == non_volatile_memory::FLASH_BASE + non_volatile_memory::HSFSTS {
+    fn read(&mut self, offset: u64) -> u32 {
+        if offset == non_volatile_memory::FLASH_BASE + non_volatile_memory::HSFSTS {
             if self.flash_pending > 0 {
                 if self.flash_pending != u32::MAX {
                     self.flash_pending -= 1;
@@ -274,33 +282,33 @@ impl Hardware for Sim {
             }
             return u32::from(self.flash_ctl) << 16 | u32::from(st);
         }
-        self.reads.push(off);
-        self.get(off)
+        self.reads.push(offset);
+        self.get(offset)
     }
-    fn write(&mut self, off: u64, v: u32) {
-        self.writes.push((off, v));
-        match off {
-            o if o == registers::MDIC => self.mdic(v),
-            o if o == mac::CTRL => self.ctrl(v),
+    fn write(&mut self, offset: u64, value: u32) {
+        self.writes.push((offset, value));
+        match offset {
+            o if o == registers::MDIC => self.mdic(value),
+            o if o == mac::CTRL => self.ctrl(value),
             o if o == registers::EXTCNF_CTRL => {
                 let keep = if self.firmware_holds_software_flag {
-                    v & !physical_layer_device::EXTCNF_CTRL_SWFLAG
+                    value & !physical_layer_device::EXTCNF_CTRL_SWFLAG
                 } else {
-                    v
+                    value
                 };
-                self.mac.insert(off, keep);
+                self.mac.insert(offset, keep);
             }
             o if o == non_volatile_memory::FLASH_BASE + non_volatile_memory::HSFSTS => {
-                self.flash_write(v);
+                self.flash_write(value);
             }
-            o if o == registers::STRAP => self.strap_writes.push(v),
+            o if o == registers::STRAP => self.strap_writes.push(value),
             _ => {
-                self.mac.insert(off, v);
+                self.mac.insert(offset, value);
             }
         }
     }
-    fn read16(&mut self, off: u64) -> u16 {
-        self.read(off) as u16
+    fn read16(&mut self, offset: u64) -> u16 {
+        self.read(offset) as u16
     }
     fn delay_us(&mut self, us: u64) {
         self.elapsed_us += us;
@@ -308,8 +316,8 @@ impl Hardware for Sim {
     fn pci_vendor_id(&mut self) -> u16 {
         0x8086
     }
-    fn note(&mut self, n: Note) {
-        self.notes.push(n);
+    fn note(&mut self, note: Note) {
+        self.notes.push(note);
     }
 }
 
@@ -321,8 +329,8 @@ mod tests {
     use super::super::sequence::{self, Error, Reached};
     use super::*;
 
-    fn swflag_free(s: &Sim) -> bool {
-        s.get(registers::EXTCNF_CTRL) & physical_layer_device::EXTCNF_CTRL_SWFLAG == 0
+    fn swflag_free(sim: &Sim) -> bool {
+        sim.get(registers::EXTCNF_CTRL) & physical_layer_device::EXTCNF_CTRL_SWFLAG == 0
     }
 
     #[test]
@@ -420,8 +428,8 @@ mod tests {
     }
 
     /// The edges of MDIO's register field and of the pages this port reaches: register 31 is the
-    /// last one there is, page `MAXIMUM_PAGE` is the last whose select fits, and register 15 is the last
-    /// one reached without a page select.
+    /// last one there is, page `MAXIMUM_PAGE` is the last whose select fits, and register 15 is the
+    /// last one reached without a page select.
     #[test]
     fn the_last_register_and_the_last_page_are_reachable_and_one_past_is_not() {
         let mut s = Sim::new(Start::Healthy, true);

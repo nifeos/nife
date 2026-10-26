@@ -92,7 +92,7 @@ pub(crate) struct GigabitNic {
 impl GigabitNic {
     /// Post the receive buffers and clear the transmit ring; the device is already running.
     pub fn bring_up(handoff: Handoff) -> GigabitNic {
-        let mut plane = DataPlane::new(handoff.data_plane_phys);
+        let mut plane = DataPlane::new(handoff.data_plane_physical_address);
         plane.start(&mut Plane, &mut Queues);
         GigabitNic {
             plane,

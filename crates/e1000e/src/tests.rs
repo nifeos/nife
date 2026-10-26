@@ -21,31 +21,31 @@ struct Sim {
 }
 
 impl Region for Sim {
-    fn read_u64(&self, off: u64) -> u64 {
-        let o = off as usize;
+    fn read_u64(&self, offset: u64) -> u64 {
+        let o = offset as usize;
         u64::from_le_bytes(self.mem[o..o + 8].try_into().unwrap())
     }
-    fn write_u64(&mut self, off: u64, v: u64) {
-        let o = off as usize;
-        self.mem[o..o + 8].copy_from_slice(&v.to_le_bytes());
+    fn write_u64(&mut self, offset: u64, value: u64) {
+        let o = offset as usize;
+        self.mem[o..o + 8].copy_from_slice(&value.to_le_bytes());
     }
-    fn read_bytes(&self, off: u64, out: &mut [u8]) {
-        let o = off as usize;
+    fn read_bytes(&self, offset: u64, out: &mut [u8]) {
+        let o = offset as usize;
         out.copy_from_slice(&self.mem[o..o + out.len()]);
     }
-    fn write_bytes(&mut self, off: u64, src: &[u8]) {
-        let o = off as usize;
-        self.mem[o..o + src.len()].copy_from_slice(src);
+    fn write_bytes(&mut self, offset: u64, source: &[u8]) {
+        let o = offset as usize;
+        self.mem[o..o + source.len()].copy_from_slice(source);
     }
 }
 
 struct Regs<'a>(&'a mut u32, &'a mut u32, &'a mut usize);
 impl Tails for Regs<'_> {
-    fn set_receive_tail(&mut self, v: u32) {
-        *self.0 = v;
+    fn set_receive_tail(&mut self, value: u32) {
+        *self.0 = value;
     }
-    fn set_transmit_tail(&mut self, v: u32) {
-        *self.1 = v;
+    fn set_transmit_tail(&mut self, value: u32) {
+        *self.1 = value;
     }
     fn barrier(&mut self) {
         *self.2 += 1;
@@ -64,15 +64,15 @@ impl Sim {
             sent: Vec::new(),
         }
     }
-    fn with<R>(&mut self, f: impl FnOnce(&mut Sim, &mut Regs<'_>) -> R) -> R {
+    fn with<R>(&mut self, action: impl FnOnce(&mut Sim, &mut Regs<'_>) -> R) -> R {
         let (mut rdt, mut tdt, mut b) = (self.rdt, self.tdt, self.barriers);
-        let r = f(self, &mut Regs(&mut rdt, &mut tdt, &mut b));
+        let r = action(self, &mut Regs(&mut rdt, &mut tdt, &mut b));
         (self.rdt, self.tdt, self.barriers) = (rdt, tdt, b);
         r
     }
     /// The device receives `frame` off the wire with `status` and `errors`, if it owns a
     /// descriptor; false when the ring is full (head has caught the tail).
-    fn deliver(&mut self, frame: &[u8], len: u16, status: u8, errors: u8) -> bool {
+    fn deliver(&mut self, frame: &[u8], length: u16, status: u8, errors: u8) -> bool {
         if u32::from(self.rdh) == self.rdt {
             return false;
         }
@@ -87,7 +87,7 @@ impl Sim {
         self.write_bytes(off, frame);
         self.write_u64(
             d + 8,
-            len as u64 | (status as u64) << 32 | (errors as u64) << 40,
+            length as u64 | (status as u64) << 32 | (errors as u64) << 40,
         );
         self.rdh = (self.rdh + 1) % RECEIVE_ENTRIES;
         true
@@ -116,8 +116,8 @@ fn started() -> (Sim, DataPlane) {
     (sim, dp)
 }
 
-fn frame(tag: u8, len: usize) -> Vec<u8> {
-    (0..len).map(|k| tag ^ k as u8).collect()
+fn frame(tag: u8, length: usize) -> Vec<u8> {
+    (0..length).map(|k| tag ^ k as u8).collect()
 }
 
 const GOOD: u8 = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;

@@ -11,20 +11,20 @@ use super::*;
 /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Hw`
 /// (an abbreviation of hardware).
 pub trait Hardware {
-    /// Read the 32-bit register at `off` in BAR0.
-    fn read(&mut self, off: u64) -> u32;
+    /// Read the 32-bit register at `offset` in BAR0.
+    fn read(&mut self, offset: u64) -> u32;
     /// Write it.
-    fn write(&mut self, off: u64, v: u32);
-    /// Read the 16-bit register at `off`. Only the flash status word
+    fn write(&mut self, offset: u64, value: u32);
+    /// Read the 16-bit register at `offset`. Only the flash status word
     /// ([`non_volatile_memory::HSFSTS`]) is read this way, as FreeBSD reads it.
-    fn read16(&mut self, off: u64) -> u16;
+    fn read16(&mut self, offset: u64) -> u16;
     /// Wait at least `us` microseconds.
     fn delay_us(&mut self, us: u64);
     /// The function's PCI vendor id, read from configuration space. The read is the point: it is
     /// the delay `e1000_reset_hw_ich8lan` needs around the global reset.
     fn pci_vendor_id(&mut self) -> u16;
     /// Something the bench boot should show. Never needed for correctness.
-    fn note(&mut self, n: sequence::Note);
+    fn note(&mut self, note: sequence::Note);
 }
 
 pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {
