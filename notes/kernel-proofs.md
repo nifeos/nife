@@ -120,17 +120,17 @@ and no two share a byte. Both were falsified with patches that leave every test 
 constants are unproved, and a property proved of the SMMUv3 is not proved of the other two IOMMUs.
 The detail is in [kernel-proofs/smmu-proofs.md](kernel-proofs/smmu-proofs.md).
 
-### And two in `kernel/src/arch/x86_64/irq.rs` (milestone 304)
+### And two in `kernel/src/arch/x86_64/interrupt_controller.rs` (milestone 304)
 
 The first properties this tree has checked on `arch/x86_64/`, which no Kani job compiled before
 milestone 304 added an x86_64 runner. `no_vector_belongs_to_two_bands` is `MSI_VECTOR_BASE`'s claim
 that the three vector bands are "disjoint by construction rather than by anybody remembering".
 `an_owned_gsi_routes_inside_the_io_apic_band` found a defect, which the harness carries as an
 assumption: a second IO APIC owning GSIs from 200 lets `gsi_vector(210)` wrap onto vector 2, the
-NMI. It is not fixed here; see `irq.rs`'s module `BUGS` and
+NMI. It is not fixed here; see `interrupt_controller.rs`'s module `BUGS` and
 `design/roadmap/proposals/the-gsi-vector-map-wraps-on-a-second-io-apic.md`. Both were falsified by
 hand and are recorded `attested`, because the sweep cannot run an x86_64 harness on an aarch64 host.
-The detail is in [kernel-proofs/x86-irq-proofs.md](kernel-proofs/x86-irq-proofs.md).
+The detail is in [kernel-proofs/x86-interrupt-controller-proofs.md](kernel-proofs/x86-interrupt-controller-proofs.md).
 
 ## Which architecture the prover actually sees
 
@@ -140,7 +140,7 @@ as more coverage than it is.
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
 | aarch64 (dev Mac; `ubuntu-24.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 7: two in `syscall.rs`, two in each `iommu.rs`, one in `fp.rs` |
-| x86_64 (cordoba; the `ubuntu-24.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `irq.rs`, one in `fp.rs` |
+| x86_64 (cordoba; the `ubuntu-24.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
 | either, via script/verify-riscv64 | `arch/riscv64/`, natively | 7: two in `syscall.rs`, two in `iommu.rs`, three in `mmu.rs` |
 
 Ten distinct harnesses, not twelve: `syscall.rs`'s two pass identically on both hosts.
@@ -235,7 +235,7 @@ place rather than an assertion that they are.
 
 - `kernel/src/arch/` is very nearly unproved, and the part that is proved is two files.
   Milestone 255 put two harnesses into `arch/aarch64/iommu.rs` and milestone 304 two into
-  `arch/x86_64/irq.rs`; that is 1,279 of 16,225 lines. The corpus's own timer re-arm drift is still
+  `arch/x86_64/interrupt_controller.rs`; that is 1,279 of 16,225 lines. The corpus's own timer re-arm drift is still
   on the far side of the `asm!` boundary and nothing here touches it. (This entry used to pair it
   with "the VisionFive 2 undelivered wake." That reading is retracted,
   `notes/visionfive2.md`'s fifth bench stop, 2026-08-15: it was a completed tour's terminal state,

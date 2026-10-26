@@ -22,7 +22,7 @@ writes `Blocked`:
 | `Receiver` | the endpoint's receiver `Fifo` | `Endpoint::send`, `Endpoint::signal`, `drain_waiters` |
 | `Reply` | no queue at all | `sched::ipc_reply`, addressed by tid |
 
-There is no fourth. An `Irq::WAIT` is `sched::ipc_receive` on a routed endpoint, so it is a `Receiver`.
+There is no fourth. An `Interrupt::WAIT` is `sched::ipc_receive` on a routed endpoint, so it is a `Receiver`.
 `handshake.wait_on` carries `(EpId, WaitRole)` and `endpoint_of` resolves the `EpId`, so from a bare
 `Tid` the kernel can say exactly which queue, if any, holds that thread.
 

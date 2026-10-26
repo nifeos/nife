@@ -26,7 +26,8 @@ pub enum Object {
     /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACK` it; the kernel's
     /// handler masks the line and turns the interrupt into a message, so a driver owns an interrupt
     /// without owning any privilege.
-    Irq(u32),
+    #[doc(alias = "irq")]
+    Interrupt(u32),
 
     /// A contiguous run of physical pages, by base address and page count, that the holder may map
     /// and delegate: the shared-memory capability of §10 (process model: capability-based,
@@ -301,9 +302,10 @@ pub fn rendezvous_cap_badged(ep: crate::sched::RendezvousId, rights: Rights, bad
 }
 
 /// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACK` it.
-pub fn irq_cap(intid: u32) -> Cap {
+#[doc(alias = "irq")]
+pub fn interrupt_cap(intid: u32) -> Cap {
     Cap {
-        object: Object::Irq(intid),
+        object: Object::Interrupt(intid),
         rights: Rights::READ,
     }
 }
@@ -311,9 +313,10 @@ pub fn irq_cap(intid: u32) -> Cap {
 /// An interrupt capability with explicit rights (milestone 19d.2b): the progenitor holds one with `GRANT`
 /// so it can delegate the interrupt to a driver it builds.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub fn irq_cap_rights(intid: u32, rights: Rights) -> Cap {
+#[doc(alias = "irq")]
+pub fn interrupt_cap_rights(intid: u32, rights: Rights) -> Cap {
     Cap {
-        object: Object::Irq(intid),
+        object: Object::Interrupt(intid),
         rights,
     }
 }
@@ -385,7 +388,7 @@ pub(crate) fn virtio_cap(id: usize) -> Cap {
 
 /// A virtio transport capability with explicit rights (DECISIONS §120's 2026-08-26 amendment):
 /// The progenitor holds one with `GRANT` so it can delegate the device to an entropy service it builds,
-/// [`irq_cap_rights`]'s own reason one object type over.
+/// [`interrupt_cap_rights`]'s own reason one object type over.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn virtio_cap_rights(id: usize, rights: Rights) -> Cap {
     Cap {

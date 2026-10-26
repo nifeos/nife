@@ -69,7 +69,7 @@ pub enum WakeVerdict {
     Deferred,
     /// The thread is `Ready` and off every queue: the caller must queue it now, on whatever
     /// core its policy picks (the waker's core for a rendezvous, the least-loaded for a device
-    /// IRQ).
+    /// Interrupt).
     Queue,
 }
 

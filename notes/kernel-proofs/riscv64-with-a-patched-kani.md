@@ -69,7 +69,7 @@ hold on riscv64 exactly as elsewhere. Counts are from the milestone 589 (Kani ca
 - The four `.s` files: boot, context switch, trap entry and FP save, 790 lines. No Kani on any host
   reads them, and `--ignore-global-asm` drops them.
 
-So the reach without stubs is the asm-free, MMIO-light logic. That means `context.rs`, `irq.rs`, the
+So the reach without stubs is the asm-free, MMIO-light logic. That means `context.rs`, `interrupt_controller.rs`, the
 logic of `iommu.rs`, and pure functions inside asm-bearing files, such as composing `satp`.
 
 ## BUGS

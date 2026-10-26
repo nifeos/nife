@@ -71,12 +71,12 @@ standard rotation ("swizzle"). Device `d` pin `p` lands on line `(d + p - 1) % 4
 maps the four lines onto interrupt controller inputs (32..35 on riscv `virt`). It is
 level-triggered: the line stays asserted until the ISR byte is read. That plugs directly into the
 kernel's existing model. The PLIC delivery masks the source, the driver's WAIT wakes, its
-INTERRUPT_STATUS read (the ISR, via the transport) deasserts the line, and its Irq-capability ACK
+INTERRUPT_STATUS read (the ISR, via the transport) deasserts the line, and its Interrupt-capability ACK
 re-enables the source. MSI-X (the device writes a message to raise an interrupt, many vectors,
 no sharing) is the modern mechanism and a deliberate later step. Nothing we drive needs it.
 
 The swizzle is a hardcoded formula with a **witness**: host tests parse the riscv fixture's
-device tree and hold `intx_irq` against all sixteen of the machine's own `interrupt-map` entries
+device tree and hold `intx_interrupt_number` against all sixteen of the machine's own `interrupt-map` entries
 (crates/pci/tests/qemu_virt_dtb.rs), the UART pattern. The ECAM base was a constant held the same
 way; it is now parsed from the tree (above), and the same test pins the parse to the old value.
 
@@ -138,7 +138,7 @@ BAR that runs into RAM on a span it has sized. Counting functions is not bringin
 `count_block_devices` and the NVMe count read config space only, since bring-up would disturb
 whichever driver owns the function.
 
-How a function interrupts is the machine's answer. `arch::irq::alloc_msi_vector` is asked first. On
+How a function interrupts is the machine's answer. `arch::interrupt_controller::alloc_msi_vector` is asked first. On
 `x86_64` it reserves a local APIC vector and the kernel programs the function's MSI-X table. A
 legacy pin on `q35` goes through a PIRQ router only ACPI's `_PRT` describes, and `_PRT` is AML. A
 hardcoded swizzle that matches `q35` may not match a real board. MSI-X has no board-specific
@@ -148,7 +148,7 @@ PLIC (sources 32..35) on riscv and GIC SPIs (INTIDs 35..38) on aarch64; host-run
 against each machine's tree.
 
 A machine that answered `Some` has no INTx route, so a function with no MSI-X is refused rather
-than swizzled. There `PCI_IRQ_BASE` is 0, and the swizzle would resolve to the PIT's line and arm a
+than swizzled. There `PCI_INTERRUPT_NUMBER_BASE` is 0, and the swizzle would resolve to the PIT's line and arm a
 driver on the timer. A function with MSI and no MSI-X, such as the xHCI on an Intel PCH, takes
 plain MSI when its caller allows it. Virtio functions do not, because a virtio queue names its
 vector by MSI-X table index. That vector travels with the transport: the queue is told it at

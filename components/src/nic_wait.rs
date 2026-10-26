@@ -52,12 +52,12 @@ pub(super) fn wait_for_nic(
         (Some(timer), Some(left)) => Some(timer.min(left)),
         (timer, left) => timer.or(left),
     }) else {
-        interrupt_wait(IRQ);
-        dev.ack_irq();
+        interrupt_wait(INTERRUPT);
+        dev.acknowledge_interrupt();
         return;
     };
     // Wait for a frame **or** that deadline, whichever comes first: the notification in `WAKE` is
-    // bound to this thread, so `Irq::WAIT` ends on either and the hart is idle in between.
+    // bound to this thread, so `Interrupt::WAIT` ends on either and the hart is idle in between.
     let micros = delay.total_micros();
     let ticks = abi::timer::counter_ticks_for(
         micros / 1_000_000,
@@ -65,7 +65,7 @@ pub(super) fn wait_for_nic(
         cntfrq(),
     );
     if timer_arm(RETRANSMIT, now().saturating_add(ticks), WAKE, 1) == 0 {
-        interrupt_wait(IRQ); // 1: a frame; BOUND: the deadline
+        interrupt_wait(INTERRUPT); // 1: a frame; BOUND: the deadline
         // Whichever ended the wait, leave nothing behind: disarm, and clear a fire that raced the
         // frame, so a stale deadline never ends the next `receive_cap(STACK)` as a bound delivery.
         if timer_cancel(RETRANSMIT) == 0 {
@@ -76,7 +76,7 @@ pub(super) fn wait_for_nic(
         // re-polls and smoltcp's timer still fires, at a hart's cost.
         user_mode_runtime::yield_now();
     }
-    dev.ack_irq();
+    dev.acknowledge_interrupt();
 }
 
 /// **A polled NIC's wait** (milestone 494 (a driver for the network card a PC actually has)): the

@@ -95,7 +95,7 @@ than about the kernel. The split costs no new syscall surface at all, because NV
 put a page boundary where the authority boundary belongs. The controller registers (`CC`,
 `CSTS`, `AQA`, `ASQ`, `ACQ`) are below offset `1000h` and the first doorbell is at `1000h`. So the
 kernel maps one page of BAR0 into the server and not the other, and the server holds no
-`DeviceFrame`, no `PageFrame`, no `Irq` and no `Virtio` capability. Both windows arrive as
+`DeviceFrame`, no `PageFrame`, no `Interrupt` and no `Virtio` capability. Both windows arrive as
 mappings installed before `_start` runs, the way milestone 159's TRNG driver's register page does.
 
 What the split actually withholds, stated precisely because it is easy to overclaim. Creating
@@ -252,7 +252,7 @@ anything is staged.
   interrupt-as-message path the virtio drivers use. Right for QEMU (which completes synchronously
   inside the doorbell write) and for a boot test; wrong for a shared machine under load. The
   controller is created with IEN=0 and no MSI-X table is touched, so interrupts are additive later.
-  It also keeps `Object::Irq` off the EL0 server's grant list, which is a smaller authority, and
+  It also keeps `Object::Interrupt` off the EL0 server's grant list, which is a smaller authority, and
   §86's interrupt finding is the reason not to reach for MSI-X casually. An MSI write is a memory
   write to an architecturally special address. This tree runs `intel-iommu` with no
   `intremap=on` and `gic-version=2` with no ITS, so nothing would confine one a userspace driver

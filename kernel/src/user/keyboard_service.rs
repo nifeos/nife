@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, irq_cap, rendezvous_cap, virtio_cap};
+use crate::cap::{Rights, interrupt_cap, rendezvous_cap, virtio_cap};
 use crate::sched::RendezvousId;
 
 /// Where the driver maps its DMA page and the input ring. Must match `components/src/keyboard_driver.rs`.
@@ -18,7 +18,7 @@ pub struct Wiring {
     /// The input ring's frame, so the kernel can read what was typed.
     pub ring: u64,
     /// The rendezvous the keyboard's interrupt is bound to.
-    pub irq: RendezvousId,
+    pub interrupt_ep: RendezvousId,
     head: u32,
 }
 
@@ -34,7 +34,7 @@ pub(crate) struct KeyboardDevice {
     /// `abi::virtio::DMA_PHYS_OFFSET`.
     pub dma: u64,
     /// The rendezvous the interrupt is bound to, which a bench row watches.
-    pub irq: RendezvousId,
+    pub interrupt_ep: RendezvousId,
 }
 
 /// Find the keyboard, build its DMA page, route its interrupt and register its confined
@@ -50,9 +50,9 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     // rather than from `arg1`, so a supervisor that holds only the frame capability can build it.
     super::write_dma_phys(dma);
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(d.intid, irq_ep);
-    crate::arch::irq::enable(d.intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(d.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(d.intid);
 
     let vid = crate::virtio::register(
         crate::virtio::Transport::pci(&d),
@@ -64,7 +64,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
         vid,
         intid: d.intid,
         dma,
-        irq: irq_ep,
+        interrupt_ep,
     })
 }
 
@@ -77,7 +77,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
         vid,
         intid,
         dma,
-        irq,
+        interrupt_ep,
     } = wire_device()?;
     let ring = crate::memory::alloc_zeroed()
         .expect("no frame for the input ring")
@@ -107,7 +107,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE),   // slot 0: status
-                    irq_cap(intid),                          // slot 1: the event interrupt
+                    interrupt_cap(intid),                    // slot 1: the event interrupt
                     virtio_cap(vid),                         // slot 2: the confined transport
                     rendezvous_cap(doorbell, Rights::WRITE), // slot 3: ring the compositor
                 ],
@@ -121,7 +121,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
         report,
         doorbell,
         ring,
-        irq,
+        interrupt_ep,
         head: 0,
     })
 }

@@ -75,7 +75,7 @@ DesignWare DW_apb_uart, an 8250 derivative [dtsi]:
 | reg-shift | 0 (byte registers, consecutive) | 2 (registers 4 bytes apart) [dtsi] |
 | reg-io-width | 1 | 4 (32-bit accesses) [dtsi] |
 | clock | 3.6864 MHz (QEMU ignores the divisor anyway) | 24 MHz [uboot-cfg] |
-| PLIC irq | 10 | 32 [dtsi] |
+| PLIC interrupt | 10 | 32 [dtsi] |
 
 `drivers/ns16550.rs` grew four things on 2026-08-14, built and QEMU-proven. The JH7110 side of each
 is still a bench question, because QEMU emulates none of this silicon.
@@ -119,7 +119,7 @@ layout is context 0 = hart 0 M, then for U74 hart h in 1..4, context `2h - 1` = 
 
 Built 2026-08-14: the mapping comes from the DTB now. `isa::plic::PlicContexts` decodes
 `interrupts-extended`. Entry k is context k, interrupt 9 marks an S context, and phandles resolve to
-harts through each cpu's `riscv,cpu-intc` child. `arch::irq::initialize_contexts` records it at
+harts through each cpu's `riscv,cpu-intc` child. `arch::interrupt_controller::initialize_contexts` records it at
 boot. The `2h + 1` formula survives only as the fallback for a tree that does not state the layout.
 
 The PLIC node itself is found by its `sifive,plic-1.0.0` compatible rather than by name. The JH7110

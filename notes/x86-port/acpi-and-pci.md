@@ -108,7 +108,7 @@ is driving.
 
 What is deliberately not decoded is AML, the bytecode in the DSDT that describes everything with
 no fixed table, including PCI interrupt routing (`_PRT`). AML needs an interpreter, which is a
-project rather than a parser. That is the reason `arch::mmu::PCI_IRQ_BASE` is zero and honest about
+project rather than a parser. That is the reason `arch::mmu::PCI_INTERRUPT_NUMBER_BASE` is zero and honest about
 it: a PCI function's legacy interrupt goes through a router the `_PRT` describes, and MSI bypasses
 the routing entirely by writing a vector straight to the local APIC.
 
@@ -138,9 +138,9 @@ bring-up step reads its part of it where the device-tree machines re-read the tr
 |---|---|---|
 | RAM, reservations | `memory::initialize` | `memory::initialize` -> `machine::bring_up_memory` (shared consumer) |
 | Core roster | `smp::read_cpu_list`, from the tree | `smp::read_cpu_list`, from the kept MADT |
-| Interrupt controller | `memory::initialize` -> `GIC_REGIONS`/`PLIC_REGION` | the kept MADT: `irq::initialize_contexts` brings up the local APIC before `mmu::initialize`, `irq::initialize` the IO APIC after it, and `mmu::claims` maps both from the same table |
+| Interrupt controller | `memory::initialize` -> `GIC_REGIONS`/`PLIC_REGION` | the kept MADT: `interrupt_controller::initialize_contexts` brings up the local APIC before `mmu::initialize`, `interrupt_controller::initialize` the IO APIC after it, and `mmu::claims` maps both from the same table |
 | PCIe ECAM window | `memory::initialize` -> `PCI_REGIONS` | MCFG -> `memory::record_pci_regions` inside `memory::initialize`. The BAR half has no ACPI or AML source and is derived from the machine (`arch::mmu::memory_mapped_io_window`, milestone 256 (x86_64 places PCI BARs in a hardcoded window)). |
-| Console UART interrupt | `memory::initialize` -> `UART_IRQ` | `memory::record_uart_irq` inside `memory::initialize`: legacy IRQ 4, resolved through the MADT's overrides when it is armed (milestone 176 (the x86_64 discovery seam's wide half)) |
+| Console UART interrupt | `memory::initialize` -> `UART_INTERRUPT_NUMBER` | `memory::record_uart_interrupt_number` inside `memory::initialize`: legacy interrupt 4, resolved through the MADT's overrides when it is armed (milestone 176 (the x86_64 discovery seam's wide half)) |
 | IOMMU | `memory::initialize` -> `SMMU_REGION` | DMAR or IVRS: windows recorded in `memory::initialize`, units brought up by `discovery::bring_up_iommus` after `mmu::initialize` |
 
 The type at the seam is another loose end worth naming. `Region` is `device_tree_blob::Region`, which is a plain
@@ -152,9 +152,9 @@ naming a device-tree type is a smell rather than a design.
 Milestone 215, and it is the piece that turned this port's PCI bus from a thing the kernel can
 enumerate into a thing a userspace driver can operate.
 
-The failure it fixed was a wrong answer that looked like a right one. `pci::intx_irq(base, dev,
-pin)` is `base + ((dev + pin - 1) % 4)`, and `arch::mmu::PCI_IRQ_BASE` was `0`, so the virtio-blk
-function at device 4 pin 1 resolved to intid `0`, and `irq::enable(0)` put that through
+The failure it fixed was a wrong answer that looked like a right one. `pci::intx_interrupt_number(base, dev,
+pin)` is `base + ((dev + pin - 1) % 4)`, and `arch::mmu::PCI_INTERRUPT_NUMBER_BASE` was `0`, so the virtio-blk
+function at device 4 pin 1 resolved to intid `0`, and `interrupt_controller::enable(0)` put that through
 `isa_routing` to the PIT's line. A confined block server was armed on the timer and waited
 forever. Nothing anywhere said so: the wiring succeeded, the driver blocked, and the suite wedged.
 
@@ -175,21 +175,21 @@ the direction real x86 systems went twenty years ago. It won on the OptiPlex ris
 it happens to also be less work than the honest version of the alternative.
 
 The design that fell out, and it is the part worth stealing. An x86 intid was already two
-things: a *vector* for a local APIC source (there is no controller input to name) and a *legacy IRQ
+things: a *vector* for a local APIC source (there is no controller input to name) and a *legacy interrupt
 number* for an IO APIC line. An MSI is a local APIC source in the only sense that matters, because
 the device writes the vector straight to the APIC. So an MSI intid is its vector, and three
 things collapse:
 
-- `irq::enable` has nothing to do for one, which is correct rather than a stub: the message is
-  edge-delivered and already over. A driver's `Irq::ACK` is correspondingly a no-op.
-- The trap handler can ask `sched::irq_route(vector)` directly. The vector-to-intid inversion
+- `interrupt_controller::enable` has nothing to do for one, which is correct rather than a stub: the message is
+  edge-delivered and already over. A driver's `Interrupt::ACK` is correspondingly a no-op.
+- The trap handler can ask `sched::interrupt_route(vector)` directly. The vector-to-intid inversion
   an IO APIC line would need (and which `exceptions.rs` still records as owed for one) never
   arises, because there is no line in between to have named it.
-- Nothing above `arch/` changed shape. `kernel/src/pci.rs` asks `arch::irq::alloc_msi_vector`,
+- Nothing above `arch/` changed shape. `kernel/src/pci.rs` asks `arch::interrupt_controller::alloc_msi_vector`,
   which answers `None` on both `virt` boards and leaves their INTx swizzle exactly as it was.
 
 A refusal, not a fallback. If a machine answers `Some` and the function has no MSI-X, bring-up
-fails and says so. Falling back to `intx_irq(0, ..)` there is the original bug, and it is the kind
+fails and says so. Falling back to `intx_interrupt_number(0, ..)` there is the original bug, and it is the kind
 that reads as a graceful degradation.
 
 What only real hardware can confirm. One of the three, now (milestone 195): that the OptiPlex's

@@ -1,10 +1,10 @@
 # The x86_64 port: the trap path, the interrupt controllers, and the TSS
 
-This appendix carries the design behind `kernel/src/arch/x86_64/exceptions.rs`, `irq.rs` and
+This appendix carries the design behind `kernel/src/arch/x86_64/exceptions.rs`, `interrupt_controller.rs` and
 `segments.rs`. The doc comments there state each item's contract and link here for the reasoning.
 [`ring-3.md`](ring-3.md) has how ring 3 was first reached, and
 [`interrupts-and-the-fine-map.md`](interrupts-and-the-fine-map.md) has the IO APIC's register
-interface and the legacy-IRQ trap in depth.
+interface and the legacy-interrupt trap in depth.
 
 ## Why x86 needs 256 stubs
 
@@ -81,7 +81,7 @@ different stacks. RISC-V does the same job with `sscratch`; aarch64 banks `SP_EL
   written as kernel threads.
 - **The timer and the reschedule IPI.** Both record and defer (§9 (locking)): the trap body returns `true`
   and `x86_trap_dispatch` runs `schedule()` one frame out, on the thread's own stack, after the EOI.
-  Neither counts in `ROUTED_IRQS`, so a tick cannot satisfy a test waiting for a device.
+  Neither counts in `ROUTED_INTERRUPTS`, so a tick cannot satisfy a test waiting for a device.
 - **The self-test vectors.** The local APIC delivers a vector to its own core through the ICR, the
   IRR, the ISR and an EOI, so the interrupt is the hardware's and not a function call. aarch64
   proves the same with a software-generated interrupt. RISC-V can raise nothing from S-mode
@@ -90,9 +90,9 @@ different stacks. RISC-V does the same job with `sscratch`; aarch64 banks `SP_EL
 - **MSI.** An MSI vector is its own intid. The device writes the vector to the local APIC with no
   controller input in between, so no inversion is owed and nothing is masked. The used-ring loop in
   `crates/virtio` decides a request is complete.
-- **IO APIC lines.** `irq::intid_of_vector` maps the vector back to the intid that armed it.
-  Subtraction alone gives the redirection index, and an index is not a legacy IRQ. COM1's receive
-  line, legacy IRQ 4, is the one this was built for: the input driver waits on it rather than
+- **IO APIC lines.** `interrupt_controller::intid_of_vector` maps the vector back to the intid that armed it.
+  Subtraction alone gives the redirection index, and an index is not a legacy interrupt. COM1's receive
+  line, legacy interrupt 4, is the one this was built for: the input driver waits on it rather than
   polling the port.
 - **The spurious vector** is never acknowledged. The local APIC sets no in-service bit for it, so an
   EOI would acknowledge whatever genuinely is in service.
@@ -108,15 +108,15 @@ class from `ESR_EL1` and RISC-V derives it by walking the tables. Here the CPU p
 | 3 (`RSVD`) | a reserved bit was set in some entry of the walk |
 | 4 (`I/D`) | the access was an instruction fetch |
 
-## Naming an interrupt: vectors and legacy IRQs
+## Naming an interrupt: vectors and legacy interrupts
 
 On x86 an intid is one of two things. A local APIC source (the reschedule IPI, the two self-test
 vectors) has no controller input, so it is named by the vector it raises, and the ICR takes a
 vector. An MSI is the same case, more strongly: the device writes to the local APIC's message
-address, with no redirection entry, swizzle or `_PRT` anywhere. Everything else is a legacy IRQ,
-0..15, which `irq::enable` resolves through the MADT's overrides to a GSI.
+address, with no redirection entry, swizzle or `_PRT` anywhere. Everything else is a legacy interrupt,
+0..15, which `interrupt_controller::enable` resolves through the MADT's overrides to a GSI.
 
-The two ranges cannot collide. The local APIC's own sources live at 0x20..0x2f and a legacy IRQ
+The two ranges cannot collide. The local APIC's own sources live at 0x20..0x2f and a legacy interrupt
 never reaches 0x20. The vector bands are disjoint by construction:
 
 | vectors | what |
@@ -128,16 +128,16 @@ never reaches 0x20. The vector bands are disjoint by construction:
 | 0xff | spurious |
 
 The 8259s are still wired on a PC (`PCAT_COMPAT`). At power-on they raise interrupts on vectors
-8..15, the CPU's own exception vectors, so a PIC IRQ 0 reads as a double fault. They also see every
-line the IO APIC routes. `irq::initialize_local_apic` masks both before enabling the local APIC.
+8..15, the CPU's own exception vectors, so a PIC interrupt 0 reads as a double fault. They also see every
+line the IO APIC routes. `interrupt_controller::initialize_local_apic` masks both before enabling the local APIC.
 They are masked, not remapped, because a live 8259 would deliver a second copy of every routed
 interrupt.
 
 ### Proving a device line at boot
 
 The local APIC timer proves the CPU takes an interrupt it did not ask for. A line from outside the
-CPU is a different claim, and `irq::initialize` proves it with the PIT for about 0.2 s. The PIT is
-the right device twice over. `timer.rs` already drives it for calibration, and its legacy IRQ 0 is
+CPU is a different claim, and `interrupt_controller::initialize` proves it with the PIT for about 0.2 s. The PIT is
+the right device twice over. `timer.rs` already drives it for calibration, and its legacy interrupt 0 is
 the line every PC rewires, arriving as GSI 2. Arming redirection entry 0 for "the timer" would arm
 the 8259 cascade and produce no interrupts and no error.
 
@@ -158,10 +158,10 @@ firmware turns it on.
 ### Edge lines and masking
 
 A GIC keeps an interrupt pending while it is disabled. An IO APIC drops an edge that arrives on a
-masked entry. COM1's IRQ 4 is edge-triggered on every PC, and a 16550 holds its line high until the
+masked entry. COM1's interrupt 4 is edge-triggered on every PC, and a 16550 holds its line high until the
 driver drains it. Masking it would turn a byte that arrives between the driver's last read and its
 ACK into silence: the line is already high when the entry is unmasked, so no new edge comes. Left
-live, the byte raises a fresh edge after the drain. So `irq::disable` masks only a level-triggered
+live, the byte raises a fresh edge after the drain. So `interrupt_controller::disable` masks only a level-triggered
 line.
 
 ## The GDT, the TSS and the stack on a ring change
@@ -212,15 +212,15 @@ take-back yet.
 ## BUGS
 
 - The IO APIC's index and data window are a pair with nothing serializing them. A driver's
-  `Irq::ACK` reaches `irq::enable` on whichever core ran the syscall, and the trap handler calls
-  `irq::disable` on whichever core took the line. With two cores these can interleave, and each
+  `Interrupt::ACK` reaches `interrupt_controller::enable` on whichever core ran the syscall, and the trap handler calls
+  `interrupt_controller::disable` on whichever core took the line. With two cores these can interleave, and each
   reads or writes the other's register.
 - One IO APIC: the first the MADT lists. `route_gsi` refuses a GSI a second one owns. The
   nonzero-base arithmetic is proved (`proofs::an_owned_gsi_routes_inside_the_io_apic_band`) and
   unit-tested on a pretend part based at 200, and never booted.
-- Every redirection entry targets the core that called `irq::enable`, and every MSI the core that
+- Every redirection entry targets the core that called `interrupt_controller::enable`, and every MSI the core that
   ran `alloc_msi_vector`, in physical mode. Nothing distributes interrupts.
-- Revoking a driver's `Irq` does not mask its line, so a dead input driver's COM1 line stays armed
+- Revoking a driver's `Interrupt` does not mask its line, so a dead input driver's COM1 line stays armed
   into a rendezvous nobody waits on.
 - An MSI vector is never handed back: a device brought up twice spends two of the band's 63.
 - Recovering from a correctable machine check is not built; every machine check is fatal.

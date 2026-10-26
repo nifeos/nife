@@ -60,11 +60,11 @@ pub fn percpu() -> usize {
     instructions::read_tpidr_el1() as usize
 }
 
-/// **This core's `PerCpu::current`, read with IRQs masked**, so no interrupt can fall between
+/// **This core's `PerCpu::current`, read with interrupts masked**, so no interrupt can fall between
 /// finding the block and reading the field (notes/mmu.md, BUGS).
 ///
 /// [`percpu()`] then a load is two steps, and a thread migrated between them reads another core's
-/// block. aarch64 has no load relative to a system register, so this masks IRQs across the pair,
+/// block. aarch64 has no load relative to a system register, so this masks interrupts across the pair,
 /// in one `asm!` block because the icount gate measures an opt-level 0 kernel. Returns
 /// `PerCpu::current`; restores `DAIF` whole. See notes/aarch64-port.md, "The per-CPU block".
 ///
@@ -74,7 +74,7 @@ pub fn read_current_thread() -> u64 {
     let v: u64;
     // SAFETY: `TPIDR_EL1` holds this core's `PerCpu` (`set_percpu`, written once per core at boot),
     // and `CURRENT_OFF` is the offset of an aligned `AtomicU64` in it, so the `ldr` is a relaxed
-    // atomic load. IRQs are masked from before the `mrs` to after the `ldr`, so both happen on one
+    // atomic load. Interrupts are masked from before the `mrs` to after the `ldr`, so both happen on one
     // core, and the saved `DAIF` is restored unchanged. Nothing in memory is written.
     unsafe {
         core::arch::asm!(

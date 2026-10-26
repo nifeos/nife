@@ -45,7 +45,7 @@ pub(super) fn map_new() {
     let preemptions_before = sched::preemptions_here();
 
     let window = TickWindow::open("map_new");
-    let irqs_were_on = crate::arch::interrupts::disable();
+    let interrupts_were_on = crate::arch::interrupts::disable();
     measure("map_new", MAP_ITERS, || {
         for i in 0..MAP_ITERS {
             let page = space
@@ -58,7 +58,7 @@ pub(super) fn map_new() {
             TOTAL.fetch_add(page[0] as u64, Ordering::Relaxed);
         }
     });
-    crate::arch::interrupts::restore(irqs_were_on);
+    crate::arch::interrupts::restore(interrupts_were_on);
     window.close();
 
     // A probe, not a row: a count. Nonzero is the tick deferred to `restore`, not one inside.

@@ -22,7 +22,7 @@ rest of the kernel calls through `crate::arch`:
   user-mapping surface (`map_current_user_page/frame`, `unmap_user_at`, `translate_at`,
   `map_page`/`unmap_page`, `activate_user`/`deactivate_user`, `switch_user_root`, `reserved_root`,
   `flush_asid`, `flush_tlb`, `user_can_read`/`write`, `current_user_root`,
-  `translate`/`translate_user`, `is_enabled`), and the `VIRTIO_MMIO_BASE`/`SIZE`/`IRQ_BASE` consts.
+  `translate`/`translate_user`, `is_enabled`), and the `VIRTIO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
 - `timer`: `TIMER_INTID`, `TICK_HZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_ms`,
   `spin_for`, `interval`, `missed_ticks`.
@@ -47,7 +47,7 @@ and every one is closed. The full account of each is in
    `arch::sync_icache`, `arch::current_sp`, `arch::enter_user`) replaced them. `enter_user` must be
    `#[inline(always)]`, because the user-entry frame sits on the caller's own kernel stack.
 4. The syscall ABI read `frame.x[8]`; it now goes through `TrapFrame::{syscall_nr, arg, set_arg}`.
-5. Portable code named `drivers::gic`; it now names `arch::irq`, with the GIC and the PLIC behind it.
+5. Portable code named `drivers::gic`; it now names `arch::interrupt_controller`, with the GIC and the PLIC behind it.
 
 Where the user-entry frame goes was wrong on RISC-V for a year (milestone 71 (thread-start fault),
 2026-08-03). The port placed it below the live `sp`, where a trap frame could overwrite it, and the
@@ -148,7 +148,7 @@ one, and the bugs each surfaced, are in [riscv-port/bring-up-log.md](riscv-port/
 4. MMU: Sv39 kernel tables, W^X, high half, and the kernel mapping surface.
 5. Timer and interrupts: SBI TIME at 100 Hz, then the PLIC for device interrupts.
 6. The capability core: U-mode programs, capability invocation, preemption, a compiled ELF, an init
-   that builds its children from its own budget, and a userspace UART driver on an `Irq` capability.
+   that builds its children from its own budget, and a userspace UART driver on an `Interrupt` capability.
 
 The port is complete. Boot, MMU, traps, timer, scheduler, preemption, U-mode user programs,
 capability invocation, userspace-built processes (init loads and builds children), and device

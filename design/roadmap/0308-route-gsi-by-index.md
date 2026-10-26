@@ -166,7 +166,7 @@ not wrong, and calef names public items. Proposed, not performed, and said out l
   `arch::x86_64::machine` keeps only the first IO APIC, so a machine with two has the second's whole
   range refused by `route_gsi`. Routing by index is a precondition for supporting one; it is not
   support for one.
-- **Recorded.** `kernel/src/arch/x86_64/irq.rs`, module `BUGS`. The multi-IO-APIC path ships
+- **Recorded.** `kernel/src/arch/x86_64/interrupt_controller.rs`, module `BUGS`. The multi-IO-APIC path ships
   unexecuted, and cannot be executed on any machine this project owns, so its correctness rests on
   the proof and on the ACPI spec rather than on a boot. Accepted by calef, 2026-09-16, and recorded
   where a reader meets the feature rather than closed by the fix landing.

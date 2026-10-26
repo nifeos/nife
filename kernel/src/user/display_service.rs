@@ -12,8 +12,8 @@ use core::num::NonZeroU64;
 
 use super::*;
 use crate::cap::{
-    Rights, irq_cap, memory_region_cap, page_frame_run_cap, page_frame_run_len, rendezvous_cap,
-    virtio_cap,
+    Rights, interrupt_cap, memory_region_cap, page_frame_run_cap, page_frame_run_len,
+    rendezvous_cap, virtio_cap,
 };
 use crate::sched::RendezvousId;
 
@@ -40,7 +40,8 @@ const MAP_BUDGET_PAGES: u64 = 24;
 
 // The driver's capability table. Must match components/src/gpu_driver.rs.
 const DRIVER_SLOT_REPORT: u64 = 0;
-const DRIVER_SLOT_IRQ: u64 = 1;
+#[doc(alias = "irq")]
+const DRIVER_SLOT_INTERRUPT: u64 = 1;
 const DRIVER_SLOT_VIRTIO: u64 = 2;
 const DRIVER_SLOT_DISPLAY: u64 = 3;
 const DRIVER_SLOT_BUDGET: u64 = 4;
@@ -196,9 +197,9 @@ pub(crate) fn wire_device() -> Option<GpuDevice> {
     let surface = dma + FRAME_SIZE; // page 1 onward: the frames the client also maps
 
     // Routed to an endpoint, so the driver's WAIT receives the interrupt as a message.
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(d.intid, irq_ep);
-    crate::arch::irq::enable(d.intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(d.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(d.intid);
 
     // Register the transport: the kernel keeps the registers and the two DMA-critical powers,
     // and confines the device in hardware to exactly this region plus the shadow page.
@@ -241,7 +242,7 @@ fn wire_driver(
             rendezvous_cap(driver_report, Rights::WRITE),
         )
         .expect("driver slot 0 was occupied");
-        crate::sched::grant_at(DRIVER_SLOT_IRQ, irq_cap(intid))
+        crate::sched::grant_at(DRIVER_SLOT_INTERRUPT, interrupt_cap(intid))
             .expect("driver slot 1 was occupied");
         crate::sched::grant_at(DRIVER_SLOT_VIRTIO, virtio_cap(vid))
             .expect("driver slot 2 was occupied");

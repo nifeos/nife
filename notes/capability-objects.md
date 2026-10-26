@@ -25,7 +25,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
   because `PageFrame` is already that wide.
 - `MemoryRegion`: raw physical memory the holder retypes into pages and objects. Invoking it grows
   the holder's address space out of its own budget, and the kernel allocates nothing to do it.
-- `Irq`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACK` it once the device
+- `Interrupt`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACK` it once the device
   is serviced. The kernel's handler does nothing device-specific: it masks the line and turns the
   interrupt into a message. A driver owns an interrupt without owning any privilege.
 - `PageFrame`: a contiguous run of physical pages, by base address and count. IPC carries control

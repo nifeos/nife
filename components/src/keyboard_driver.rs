@@ -39,8 +39,9 @@ use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 /// Capability slots, by convention with `kernel/src/user/keyboard_service.rs`. Slot 0, the report
 /// endpoint: how this driver tells its spawner it came up.
 const REPORT: u64 = 0;
-/// Slot 1, an `Irq`: the device's event interrupt.
-const IRQ: u64 = 1;
+/// Slot 1, an `Interrupt`: the device's event interrupt.
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1;
 /// Slot 2, a `Virtio`: the confined transport, and the only way this driver can reach the device.
 const VIRTIO: u64 = 2;
 /// Slot 3, held `WRITE`: the compositor's doorbell in [`MODE_RING`], `line_editor`'s served
@@ -232,7 +233,7 @@ fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
         direct_n: 0,
     };
     loop {
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
 
         let typed = events.drain();
 
@@ -240,7 +241,7 @@ fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
         // driver's discipline, and the reason an interrupt does not immediately re-fire.
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ); // re-enable the interrupt the kernel masked when it fired
+        interrupt_acknowledge(INTERRUPT); // re-enable the interrupt the kernel masked when it fired
 
         events.flush(typed);
     }

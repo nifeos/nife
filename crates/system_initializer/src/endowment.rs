@@ -15,8 +15,8 @@ pub struct BootEndowment {
     pub untyped: u64,
     /// The UART's registers, a device capability to map into the console and input drivers.
     pub uart_dev: u64,
-    /// The UART receive interrupt, an `Irq` capability to delegate into the input driver.
-    pub uart_irq: u64,
+    /// The UART receive interrupt, an `Interrupt` capability to delegate into the input driver.
+    pub uart_interrupt: u64,
     /// **The wall clock**: a `PageFrame` capability with `READ` alone, granted on every boot ahead
     /// of the filesystem pair so its slot never moves. With no clock service it is a zeroed page,
     /// which reads as `clock_contract::state::UNKNOWN`. Handed on, `READ` alone, to a child whose
@@ -49,7 +49,7 @@ pub struct BootEndowment {
     /// GRANT`, routed by the kernel but left unenabled on riscv64 (`kernel::user::VirtioBootGrant`'s
     /// own doc: the board's hart-lottery hazard means only the kernel, which knows the true boot
     /// hart, may enable it, and it already did before granting this).
-    pub virtio_rng_irq: u64,
+    pub virtio_rng_interrupt: u64,
     /// **The DMA page the kernel wrote `direct_memory_access_phys` into**, at its own last eight bytes; see
     /// [`virtio_rng`](BootEndowment::virtio_rng). `READ | WRITE | GRANT`: this process maps it to
     /// read that value back out (entropy needs its own DMA region's physical base as a plain
@@ -81,7 +81,7 @@ pub struct BootEndowment {
     /// boot when no session can be built. `kernel::user::boot_progenitor` says why it is granted.
     pub gpu: u64,
     /// The gpu's completion interrupt, `READ | GRANT`, routed and enabled by the kernel.
-    pub gpu_irq: u64,
+    pub gpu_interrupt: u64,
     /// The gpu's whole DMA region: one `PageFrame` capability naming the run (DECISIONS §102 (a Frame names a run of pages)), rings
     /// and control buffers in the first page and the surface after it. `READ | WRITE | GRANT`. The
     /// region carries its own physical base at `abi::virtio::DMA_PHYS_OFFSET`, which `gpu_driver`
@@ -94,7 +94,7 @@ pub struct BootEndowment {
     /// the UART. Only ever granted beside [`gpu`](BootEndowment::gpu).
     pub keyboard: u64,
     /// The keyboard's event interrupt, `READ | GRANT`.
-    pub keyboard_irq: u64,
+    pub keyboard_interrupt: u64,
     /// The keyboard's one DMA page, `READ | WRITE | GRANT`, carrying its own physical base at
     /// `abi::virtio::DMA_PHYS_OFFSET` as [`gpu_dma`](BootEndowment::gpu_dma) does.
     pub keyboard_dma: u64,
@@ -105,8 +105,8 @@ pub struct BootEndowment {
     /// it probes for the rng.
     pub virtio_net: u64,
     /// The network card's interrupt, `READ | GRANT`; see [`virtio_net`](BootEndowment::virtio_net)
-    /// and, for why it arrives unenabled on riscv64, [`virtio_rng_irq`](BootEndowment::virtio_rng_irq).
-    pub virtio_net_irq: u64,
+    /// and, for why it arrives unenabled on riscv64, [`virtio_rng_interrupt`](BootEndowment::virtio_rng_interrupt).
+    pub virtio_net_interrupt: u64,
     /// The network card's DMA page, with its own physical base written at its last eight bytes;
     /// [`virtio_rng_dma`](BootEndowment::virtio_rng_dma)'s shape and reason. `READ | WRITE | GRANT`.
     pub virtio_net_dma: u64,

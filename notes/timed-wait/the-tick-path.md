@@ -18,7 +18,7 @@ save.
 |---|---|---|---|
 | `exception_dispatch` | 76 | `riscv_trap_dispatch` | 69 |
 | `exception_body` | 127 | `riscv_trap_body` | 238 |
-| `handle_irq` | 79 | | |
+| `handle_interrupt` | 79 | | |
 | `gic::acknowledge` | 31 | | |
 | `gic::end_of_interrupt` | 29 | | |
 | `timer::tick` | 31 | `timer::tick` | 30 |
@@ -54,7 +54,7 @@ what this tree gates.
 ## The error bar, stated plainly
 
 The 491 and 400 totals are static whole-function counts, and therefore over-count. They include
-arms of `exception_body` and `handle_irq` that a timer tick does not take. The +30 / +31 figures do
+arms of `exception_body` and `handle_interrupt` that a timer tick does not take. The +30 / +31 figures do
 not have that problem, because they were read off the executed path of one function. So the ratio
 "+30 on ~491" is a lower bound on the percentage. The percentage is somewhere above 6% of the Rust
 half of the tick handler, and the absolute number is exact.

@@ -85,8 +85,8 @@ restores it on the way in.
 
 ### The trampoline must unmask interrupts, but AFTER `finish_switch`, not before
 
-A brand-new thread must unmask interrupts by hand. We arrive from inside the timer IRQ handler (or a
-`schedule()` that ran there), IRQs masked. Unlike a *resumed* thread there is no `SPSR_EL1` to
+A brand-new thread must unmask interrupts by hand. We arrive from inside the timer interrupt handler (or a
+`schedule()` that ran there), interrupts masked. Unlike a *resumed* thread there is no `SPSR_EL1` to
 restore the interrupt state from: the thread was never interrupted, it has never run at all.
 Without unmasking, the first thread you spawn runs with interrupts masked forever, never preempted:
 a cooperative scheduler with extra steps.
@@ -94,7 +94,7 @@ a cooperative scheduler with extra steps.
 The trap, and a real intermittent hang it caused (found by a watchdog dumping thread states, see
 notes/deadlock.md): the trampoline first called `thread_entry`, whose first act is `finish_switch`,
 and it unmasked interrupts before that call. `finish_switch` reaps the predecessor and completes
-any wake it deferred, by reading this core's `switched_from`. If a timer IRQ lands between an early
+any wake it deferred, by reading this core's `switched_from`. If a timer interrupt lands between an early
 unmask and `finish_switch`, it runs `schedule()`, which overwrites `switched_from` with the fresh
 thread: the predecessor is stranded. Its `on_cpu` never clears, so every future wake for it is
 deferred forever (`wake_pending` set, never completed). It blocks on some later IPC and never wakes.
@@ -115,15 +115,15 @@ extern "C" fn thread_entry(...) {
 ```
 
 For a user thread the unmask is even freer: `finish_switch` runs masked, and the `eret` that
-drops to EL0 restores an `SPSR` with IRQs on, so the EL0 thread is preemptible from its first
+drops to EL0 restores an `SPSR` with interrupts on, so the EL0 thread is preemptible from its first
 instruction with no explicit `enable`. Same rule either way: `finish_switch` runs masked. The
-general statement is that the whole switch, from `schedule` masking IRQs to the successor's
+general statement is that the whole switch, from `schedule` masking interrupts to the successor's
 `finish_switch` completing, is one atomic region; a fresh thread's entry is inside that region and
 must not open it early.
 
 ## Preemption is four lines, because milestone 2 did the hard part
 
-At the bottom of the IRQ handler:
+At the bottom of the interrupt handler:
 
 ```rust
 gic::end_of_interrupt(intid);

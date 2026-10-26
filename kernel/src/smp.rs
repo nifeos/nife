@@ -291,7 +291,7 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
 ///
 /// A filled slot holds its own index by construction, so a `Some` is always `Some(id)`; the `None`
 /// is what distinguishes a seat the machine filled. Used outside tests only on `x86_64`, where
-/// `arch::x86_64::irq::send_reschedule` looks up a target's local APIC id; aarch64 and RISC-V send
+/// `arch::x86_64::interrupt_controller::send_reschedule` looks up a target's local APIC id; aarch64 and RISC-V send
 /// their reschedule IPIs by logical id.
 #[cfg_attr(
     not(any(test, feature = "system_tests", target_arch = "x86_64")),
@@ -435,7 +435,7 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 
     // 5. This core's interrupt hardware: its GIC CPU interface, then its timer (the PPI is banked,
     //    so this arms THIS core's tick, which is this core's source of preemption).
-    crate::arch::irq::initialize_this_cpu();
+    crate::arch::interrupt_controller::initialize_this_cpu();
     arch::timer::initialize();
 
     // 6. (tests only) Prove this core schedules from its OWN queue. `spawn_on`, not `spawn`:

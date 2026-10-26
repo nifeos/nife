@@ -20,7 +20,7 @@ the record.
 Two real defects were caught while harnesses were being written, which is the proofs working
 exactly as designed and is invisible in any defect list. `dtb::be32`/`be64` had an unchecked `at + 4`
 that panicked on a near-`usize::MAX` offset out of a corrupt device tree, on the kernel's boot path,
-before there is any way to report a failure. `pci::intx_irq` underflowed on a pin of 0 and panicked
+before there is any way to report a failure. `pci::intx_interrupt_number` underflowed on a pin of 0 and panicked
 in debug builds. Both were found by trying to state totality and discovering it was false, and both
 were hardened rather than merely proved. That is the survivorship asymmetry milestone 191's block
 predicted, and it is the reason the answer is amber rather than red.

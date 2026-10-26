@@ -34,7 +34,7 @@ Three things change from GICv2, and two of them are `gicv3.rs`:
 
 The split follows the first rule of §4 (kernel shape: monolithic, deferred, with two cheap rules).
 `msr` and `mrs` are architecture code, so the CPU interface lives under `arch/`, and everything
-reached through a pointer stays a driver handed its addresses. `arch::irq` holds both and decides
+reached through a pointer stays a driver handed its addresses. `arch::interrupt_controller` holds both and decides
 which version the machine has. design/roadmap/0227-gicv3-driver.md has the placement and what lost.
 
 Each core has a frame pair: `RD_base` (control, identity, power) and `SGI_base` 64 KiB above it (the
@@ -57,7 +57,7 @@ bound, so a controller that is not answering does not look like a boot that stop
 
 The sixteen SGIs are enabled and never disabled. Linux disables them and enables them one by one as
 IPIs, but QEMU's GICv2 model forces SGIs enabled (`hw/intc/arm_gic.c`), and so does the GIC-400.
-The Irq capability's mask-on-fire, unmask-on-ACK protocol relies on that in its SGI tests, where the
+The Interrupt capability's mask-on-fire, unmask-on-ACK protocol relies on that in its SGI tests, where the
 mask and the unmask can run on different cores. An SGI is an edge a core raises on purpose and
 cannot storm, so the reason to mask a line does not apply to it.
 
@@ -74,7 +74,7 @@ PLIC (`hw/intc/sifive_plic.c`) completes whatever it is given, so only silicon s
 difference. That is why the interrupt path never disables a source.
 
 Context numbers are the board's, read from the tree's `interrupts-extended` by
-`arch::irq::initialize_contexts`. On QEMU's `virt` S-mode is `2*hart + 1` (`2*hart` is M-mode,
+`arch::interrupt_controller::initialize_contexts`. On QEMU's `virt` S-mode is `2*hart + 1` (`2*hart` is M-mode,
 OpenSBI's); on the JH7110 the disabled S7 core contributes only an M context, and S-mode is
 `2*hart`.
 
@@ -90,10 +90,10 @@ Only one register needs serializing (finding 3 of notes/arch-audit.md):
 Two interleaved enable updates lose one, and a lost enable leaves a device masked forever. It is
 reachable: `enable` runs in thread context on any hart, and affinity puts several sources on each
 context. The GIC needs no such lock, because its set-enable and clear-enable registers are
-write-1-to-set and write-1-to-clear. The lock is an `IrqSafeMutex` though no handler takes it: the
+write-1-to-set and write-1-to-clear. The lock is an `InterruptSafeMutex` though no handler takes it: the
 section is two MMIO accesses, so masking costs nothing, and a handler that took a plain spinlock
 here would be the deadlock §9 (locking: IrqSafeMutex, plus a discipline) forbids. Its rank is
-`IRQ_CONTROLLER`, the GIC's, and it is a leaf taken holding nothing; `bind_irq` and
+`INTERRUPT_CONTROLLER`, the GIC's, and it is a leaf taken holding nothing; `bind_interrupt` and
 `create_rendezvous` drop `IPC_TABLES` before they call. It guards `()` rather than the base, so
 claim and complete, the hot path, never take it.
 
@@ -103,7 +103,7 @@ enabled. QEMU's PLIC (11.1.1) re-evaluates on a priority write, a threshold writ
 a rising line, but not on an enable write. With the priority first, the re-evaluation ran while the
 bit was clear and the interrupt stayed pending until another line rose. Written second, the priority
 write is the re-evaluation, and on a PLIC that follows the specification the order costs nothing.
-An Irq capability's ACK with a claim outstanding is a completion (`arch::irq::enable` calls
+An Interrupt capability's ACK with a claim outstanding is a completion (`arch::interrupt_controller::enable` calls
 `complete` on the claiming context), which QEMU does re-evaluate on; the enable path is taken only
 at setup or when nothing is claimed.
 notes/usb.md has the keyboard stall this caused.

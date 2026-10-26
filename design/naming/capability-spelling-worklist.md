@@ -62,8 +62,8 @@ becomes `capability`, `caps` becomes `capabilities`, `Cap` becomes `Capability`,
 | Today | Proposed | Note |
 |---|---|---|
 | module `cap` (`kernel/src/cap.rs`) | `capability_object` | `capability` would shadow the `capability` crate the module imports. The file's own header calls it "the set of nouns" a capability points at. |
-| `rendezvous_cap`, `memory_region_cap`, `page_frame_cap`, `page_frame_run_cap`, `device_frame_cap`, `port_range_cap`, `irq_cap`, `timer_cap`, `notification_cap`, `address_space_cap`, `thread_control_block_cap`, `virtio_cap`, `reply_cap`, `memory_region_root_cap` | `rendezvous_capability` and so on | the constructors in the module |
-| `rendezvous_cap_badged`, `irq_cap_rights`, `virtio_cap_rights`, `memory_region_cap_rights` | `rendezvous_capability_badged` and so on | |
+| `rendezvous_cap`, `memory_region_cap`, `page_frame_cap`, `page_frame_run_cap`, `device_frame_cap`, `port_range_cap`, `interrupt_cap`, `timer_cap`, `notification_cap`, `address_space_cap`, `thread_control_block_cap`, `virtio_cap`, `reply_cap`, `memory_region_root_cap` | `rendezvous_capability` and so on | the constructors in the module |
+| `rendezvous_cap_badged`, `interrupt_cap_rights`, `virtio_cap_rights`, `memory_region_cap_rights` | `rendezvous_capability_badged` and so on | |
 | `current_cap`, `delete_current_cap`, `enter_current_cap`, `leave_current_cap`, `current_cap_totals` | `current_capability` and so on | |
 | `thread_control_block_insert_cap`, `thread_control_block_cap_insert`, `thread_control_block_delegate_cap` | `thread_control_block_insert_capability` and so on | |
 | `ipc_send_cap`, `ipc_send_cap_from`, `ipc_receive_cap`, `ipc_delegate_cap` | `ipc_send_capability` and so on | |

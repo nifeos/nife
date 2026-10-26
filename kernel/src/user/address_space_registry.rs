@@ -109,9 +109,9 @@ impl BoundSpace {
 /// and the region sweep ([`reap_address_spaces_in_region`]). `Table::remove` hands the space out
 /// once and kills the name in the same step, so a double free is not representable. Deleting a
 /// capability removes nothing (§249's amendment (a)).
-static USER_SPACES: crate::sync::IrqSafeMutex<
+static USER_SPACES: crate::sync::InterruptSafeMutex<
     generational_table::Table<Registered, MAX_USER_SPACES>,
-> = crate::sync::IrqSafeMutex::new(
+> = crate::sync::InterruptSafeMutex::new(
     crate::sync::rank::ADDRESS_SPACES,
     generational_table::Table::new(),
 );

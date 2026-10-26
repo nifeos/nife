@@ -12,7 +12,7 @@
 //! # How it crosses cores
 //!
 //! A saturated workload never crosses cores (§138 (how a saturated workload is made to hand threads
-//! across cores)), so a waiter role blocks through `Irq::WAIT` on a rendezvous the kernel signals
+//! across cores)), so a waiter role blocks through `Interrupt::WAIT` on a rendezvous the kernel signals
 //! from `sched::on_tick`. The waiter is deliberately trivial; the mechanism is the kernel's wake
 //! path, and what crosses is the waiters, not the pairs. Each worker spins a pseudo-random number
 //! of iterations between round trips (xorshift, seeded from `arg2`, distinct per worker), so pairs
@@ -20,7 +20,7 @@
 
 //! # What it holds
 //!
-//! Slot 0 is the request endpoint, `WRITE` for a caller and `READ` for a responder, or an `Irq`
+//! Slot 0 is the request endpoint, `WRITE` for a caller and `READ` for a responder, or an `Interrupt`
 //! naming the tick route for a waiter; nothing else, not the console, clock or peer. The shared
 //! page at [`soak_page::VA`] is where it publishes its counters for the kernel to read. It never
 //! exits.
@@ -50,12 +50,13 @@ use user_mode_runtime::{call, interrupt_wait, receive_request, reply};
 /// The one capability a soaker holds: the request endpoint, in slot 0.
 const ENDPOINT: u64 = 0;
 
-/// The one capability a **waiter** holds: the tick route's `Irq`, also in slot 0 (milestone 221).
+/// The one capability a **waiter** holds: the tick route's `Interrupt`, also in slot 0 (milestone 221).
 ///
 /// The same slot, a different object, and that is the point rather than a collision: a waiter can
 /// no more `CALL` its group's endpoint than a caller can `WAIT` on the tick route, because neither
 /// holds the other's capability. One slot each is the least authority the role needs.
-const TICK_IRQ: u64 = 0;
+#[doc(alias = "irq")]
+const TICK_INTERRUPT: u64 = 0;
 
 /// `arg0`: this soaker answers calls.
 const ROLE_RESPONDER: u64 = 0;
@@ -100,13 +101,13 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
     loop {
         if role == ROLE_WAITER {
             // The waiter role (milestone 221 (the soak never crosses cores, so build the hook that
-            // makes it)): `interrupt_wait` is the `Irq::WAIT` a driver uses, and the kernel's soak
+            // makes it)): `interrupt_wait` is the `Interrupt::WAIT` a driver uses, and the kernel's soak
             // build signals the route from `sched::on_tick` on every core. No
             // `interrupt_acknowledge`: there is no line and nothing was masked, so an ack would be
             // a real controller write for an interrupt that does not exist. A refusal
             // (`abi::Error`) stops the counting rather than retrying, and the kernel's stall check
             // reports it at the next beat, as every other failure here surfaces.
-            if interrupt_wait(TICK_IRQ) < 0 {
+            if interrupt_wait(TICK_INTERRUPT) < 0 {
                 loop {
                     core::hint::spin_loop();
                 }

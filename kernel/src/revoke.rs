@@ -8,7 +8,7 @@
 //! notes/mapping-log.md.
 
 use crate::arch::mmu;
-use crate::sync::{IrqSafeGuard, IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeGuard, InterruptSafeMutex, rank};
 
 /// One recorded mapping: `va` in the owning space maps `phys`, under the capability whose run
 /// starts at `object`. `phys == 0` is a tombstone (no real frame is 0). The run's base names a
@@ -240,7 +240,8 @@ pub(crate) const MAX_SPACES: usize = crate::sched::MAX_THREADS + 32;
 
 /// The registry of live address spaces: the fixed index that finds each space's log, whose records
 /// live in the spaces' own regions.
-static SPACES: IrqSafeMutex<Registry> = IrqSafeMutex::new(rank::MAPPINGS, Registry::new());
+static SPACES: InterruptSafeMutex<Registry> =
+    InterruptSafeMutex::new(rank::MAPPINGS, Registry::new());
 
 /// The registry array plus one past its highest live slot, so a walk costs the occupied prefix
 /// rather than [`MAX_SPACES`], which grows with `sched::MAX_THREADS` (notes/mapping-log.md has the
@@ -336,7 +337,7 @@ pub(crate) fn forget_root(root: u64) {
 ///
 /// A caller can still read with `sched::current_cap` outside a hold and map with it.
 pub struct MappingHold {
-    spaces: IrqSafeGuard<'static, Registry>,
+    spaces: InterruptSafeGuard<'static, Registry>,
 }
 
 /// Take the mapping registry. See [`MappingHold`]: hold it from the frame read through the record.

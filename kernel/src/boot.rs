@@ -254,7 +254,7 @@ fn x86_64_banner(boot_info_pointer: usize) {
 /// keeps (`arch::discovery`). What riscv64 and `x86_64` need that aarch64 does not is a few calls
 /// into their own `arch/`, each `cfg`-gated beside the aarch64-only line: the interrupt contexts
 /// and the timer's rate before the MMU, the ISA line and the cycle counter after it, and their
-/// IOMMUs. Each port's `arch::irq::initialize` is reached through [`initialize_interrupts`].
+/// IOMMUs. Each port's `arch::interrupt_controller::initialize` is reached through [`initialize_interrupts`].
 fn bring_up_machine(boot_info_pointer: usize) {
     arch::initialize();
     stack::initialize();
@@ -287,7 +287,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
     // APIC comes first.
     #[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
     {
-        arch::irq::initialize_contexts(boot_info_pointer);
+        arch::interrupt_controller::initialize_contexts(boot_info_pointer);
         arch::timer::initialize_frequency(boot_info_pointer);
     }
 
@@ -340,14 +340,14 @@ fn bring_up_machine(boot_info_pointer: usize) {
 /// Bring up the interrupt controller and the timer, then **unmask interrupts**.
 ///
 /// This is the line the whole locking discipline was written for. From here, a timer interrupt
-/// can land between any two instructions in the kernel, and every `IrqSafeMutex` starts
+/// can land between any two instructions in the kernel, and every `InterruptSafeMutex` starts
 /// actually masking something. See DECISIONS §9 and notes/locking.md.
 fn initialize_interrupts(_dtb: usize) {
-    use crate::arch::{interrupts, irq, timer};
+    use crate::arch::{interrupt_controller, interrupts, timer};
 
     // The interrupt controller before the timer: on `x86_64` its bring-up drives one device
     // interrupt through the IO APIC while the tick is not yet armed.
-    irq::initialize();
+    interrupt_controller::initialize();
 
     timer::initialize();
 

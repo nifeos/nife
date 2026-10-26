@@ -87,7 +87,7 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
   teardown is in flight when this brackets the count.
 - `blockdev` has a user-level driver read `motd` off virtio disk 0, through a nifefs parse of its
   own. The hand-over's file service takes disk 1, so they do not collide.
-- `deviceirq` reads the count `x86_64` took from the PIT through the IO APIC at bring-up, the one
+- `device_interrupt` reads the count `x86_64` took from the PIT through the IO APIC at bring-up, the one
   window with the scheduler up and the tick not yet armed. On aarch64 and riscv64 no device
   interrupts without input or a disk, so the input driver and `blockdev` prove a line there.
 - `clock` and `trng` come from one JH7110 bring-up. `clock` is the clock-and-reset controller's

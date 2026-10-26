@@ -411,9 +411,9 @@ mod tests {
     /// reads so both are on this core.
     #[test_case]
     fn a_running_counter_advances() {
-        let irqs = crate::arch::interrupts::disable();
+        let interrupts_were_enabled = crate::arch::interrupts::disable();
         let Some(first) = cycles() else {
-            crate::arch::interrupts::restore(irqs);
+            crate::arch::interrupts::restore(interrupts_were_enabled);
             return;
         };
         let t0 = instructions::read_cntvct();
@@ -421,7 +421,7 @@ mod tests {
             core::hint::spin_loop();
         }
         let second = cycles().expect("the counter did not vanish mid-test");
-        crate::arch::interrupts::restore(irqs);
+        crate::arch::interrupts::restore(interrupts_were_enabled);
         assert!(
             second.wrapping_sub(first) > 0,
             "PMCCNTR_EL0 read {first} twice across 1000 ticks; something stopped it after boot"

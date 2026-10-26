@@ -35,7 +35,8 @@ pub const fn virtio_slots() -> u64 {
 }
 /// The interrupt the first virtio-mmio slot would raise. Unreachable with no slots.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub const VIRTIO_IRQ_BASE: u32 = 0;
+#[doc(alias = "irq")]
+pub const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 0;
 
 /// Bytes of PCI BAR space the kernel maps for device registers, matching what the other two
 /// architectures reserve. 2 MiB covers every BAR QEMU hands out here; where the window goes is
@@ -47,10 +48,11 @@ pub const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The first interrupt a PCI function raises: zero, and nothing on this architecture reads it.
 ///
-/// A function's interrupt is bound by `arch::x86_64::irq::alloc_msi_vector`, which hands
+/// A function's interrupt is bound by `arch::x86_64::interrupt_controller::alloc_msi_vector`, which hands
 /// `kernel/src/pci.rs` the address and data for the function's MSI-X table, so there is no
 /// board-specific routing to encode. q35's legacy INTx reaches an IO APIC input named only in AML,
 /// which this tree cannot interpret. The constant survives because portable code names it; `pci.rs`
 /// reaches it only when `alloc_msi_vector` answers `None`, which it never does here.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub const PCI_IRQ_BASE: u32 = 0;
+#[doc(alias = "irq")]
+pub const PCI_INTERRUPT_NUMBER_BASE: u32 = 0;

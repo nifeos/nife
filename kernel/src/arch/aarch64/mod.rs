@@ -13,12 +13,13 @@ pub mod exceptions;
 mod fastpath_pad;
 pub mod fp;
 mod instructions;
-// The GICv3 CPU interface, `ICC_*` system registers (milestone 227). Private: `irq` is its only
+// The GICv3 CPU interface, `ICC_*` system registers (milestone 227). Private: `interrupt` is its only
 // caller, and the one place that knows which GIC version this machine has.
 mod gic_cpu_interface;
+#[doc(alias = "irq")]
+pub mod interrupt_controller;
 pub mod interrupts;
 pub mod iommu;
-pub mod irq;
 pub mod isa;
 pub mod mmu;
 pub mod pmu;

@@ -69,7 +69,7 @@ reordering counted is the host's.
   is the positive control that the guest cores really ran in parallel.
 - LOCK. All four cores increment one counter under a spinlock; lost updates are the reordering.
   Two locks: a copy shaped like the kernel's, its unlock Release or Relaxed, with the counter on
-  its own line; and `crates/spin_lock` itself, the lock under the kernel's `IrqSafeMutex`, with the
+  its own line; and `crates/spin_lock` itself, the lock under the kernel's `InterruptSafeMutex`, with the
   counter inside it (the `spin-lock-crate` row).
 
 ### The weakened suite
@@ -157,7 +157,7 @@ ordering, and it spends runner time in the queue that waits longest.
 
 The exposure is real and cheap to use. The LOCK test, a minute of guest time, turns a Relaxed
 unlock into 20% lost updates on an aarch64 host and nothing on x86_64. A kernel test of that shape
-(cores contending one `IrqSafeMutex` and checking the data it guards, with `weaken-spin.sh` as its
+(cores contending one `InterruptSafeMutex` and checking the data it guards, with `weaken-spin.sh` as its
 falsification) would make one arm64 job earn its place. Without it, loom, review and the HVF runs on
 Apple silicon hold rule 4 of the codebase rules, and CI's host does not.
 

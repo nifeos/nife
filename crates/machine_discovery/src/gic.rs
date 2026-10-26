@@ -13,7 +13,7 @@
 //! # BUGS
 //!
 //! - One redistributor region: several is [`Refusal::SeveralRedistributorRegions`].
-//! - The GICv2 list is the three strings an aarch64 GICv2 carries (Linux `irq-gic.c`, v6.16).
+//! - The GICv2 list is the three strings an aarch64 GICv2 carries (Linux `interrupt-gic.c`, v6.16).
 //! - The ITS is not read; milestone 317 (the interrupt-remapping flags) says why it matters.
 //! - This is aarch64's question: on RISC-V an `interrupt-controller@...` node is the PLIC.
 //!

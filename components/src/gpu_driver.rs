@@ -42,8 +42,9 @@ use user_mode_runtime::{
 /// Capability slots, by convention with `kernel/src/user/display_service.rs`. Slot 0, the report
 /// endpoint: how this driver tells its spawner it came up, and what it flushed.
 const REPORT: u64 = 0;
-/// Slot 1, an `Irq`: the device's completion interrupt, arriving as a message.
-const IRQ: u64 = 1;
+/// Slot 1, an `Interrupt`: the device's completion interrupt, arriving as a message.
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1;
 /// Slot 2, a `Virtio`: the confined transport. The device's registers are not mapped here, so this
 /// process cannot program a queue address or ring a doorbell; the kernel does both, and validates
 /// every descriptor first (notes/dma.md).
@@ -273,10 +274,10 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
     // the kill-mid-write section). The bound turns "no completion ever" into a legible failure
     // instead of a hang the watchdog has to catch.
     for _ in 0..64 {
-        interrupt_wait(IRQ); // blocks until the device raises its line
+        interrupt_wait(INTERRUPT); // blocks until the device raises its line
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ); // re-enable the line the kernel masked when it fired
+        interrupt_acknowledge(INTERRUPT); // re-enable the line the kernel masked when it fired
         virtio_ring_barrier();
         if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
             return direct_memory_access_read::<u32>(OFF_RESP);

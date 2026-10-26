@@ -3,7 +3,7 @@
 //!
 //! Cut out of `mmu.rs` unchanged by lane `maintainer/last-three-over-2000`, which left the
 //! parent an index (§282 (when a file is split, the parent becomes an index)) and under §266 (a
-//! Rust source file stays under 2,000 lines). `super::instructions`, `super::irq` and
+//! Rust source file stays under 2,000 lines). `super::instructions`, `super::interrupt_controller` and
 //! `super::segments` name the `x86_64` items the index imports, as in `mmu.rs`.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
@@ -17,7 +17,7 @@ pub(super) const SHOOTDOWN_ALL: u64 = u64::MAX;
 
 /// **The one shootdown in flight**, and the lock that makes it one.
 ///
-/// A raw `AtomicBool` rather than an [`crate::sync::IrqSafeMutex`], deliberately, and the reason is
+/// A raw `AtomicBool` rather than an [`crate::sync::InterruptSafeMutex`], deliberately, and the reason is
 /// the whole design below: a core spinning here is still reachable, because the message that ends
 /// the spin is an NMI. [`broadcast`] masks interrupts itself for as long as it holds this, because
 /// not every caller arrives masked (see its own comment for the hang that taught that).
@@ -96,21 +96,21 @@ pub(in crate::arch::x86_64) fn revoke_port_grant_others(base: u16, count: u16) {
 fn broadcast(kind: u8, word: u64) {
     // Nothing to tell, or nothing to tell it with. `is_local_apic_ready` is the earlier of the two:
     // `mmu::initialize` maps the whole machine before `initialize_local_apic` runs.
-    if !super::irq::is_local_apic_ready() {
+    if !super::interrupt_controller::is_local_apic_ready() {
         return;
     }
 
     // Masked for the whole round, whatever the caller held: `flush_asid` calls this unmasked, and a
     // tick in the ack wait could preempt the holder of `SHOOTDOWN_LOCK` into a reap that comes back
     // here and spins on it. Masking also pins the `cpu::id()` read below to this core.
-    let irqs_were_enabled = crate::arch::interrupts::disable();
+    let interrupts_were_enabled = crate::arch::interrupts::disable();
     #[cfg(test)]
     if crate::arch::interrupts::is_enabled() {
         ROUND_RAN_UNMASKED.store(true, Ordering::Relaxed);
     }
     let others = crate::smp::online_harts_mask() & !(1usize << crate::cpu::id());
     if others == 0 {
-        crate::arch::interrupts::restore(irqs_were_enabled);
+        crate::arch::interrupts::restore(interrupts_were_enabled);
         return;
     }
 
@@ -137,7 +137,7 @@ fn broadcast(kind: u8, word: u64) {
             Some(cpu as u64),
             "shootdown addressed cpu {cpu}, whose local APIC id is not its own id"
         );
-        super::irq::send_nmi(cpu as u8);
+        super::interrupt_controller::send_nmi(cpu as u8);
     }
 
     while SHOOTDOWN_PENDING.load(Ordering::Acquire) != 0 {
@@ -145,7 +145,7 @@ fn broadcast(kind: u8, word: u64) {
     }
 
     SHOOTDOWN_LOCK.store(false, Ordering::Release);
-    crate::arch::interrupts::restore(irqs_were_enabled);
+    crate::arch::interrupts::restore(interrupts_were_enabled);
 }
 
 /// **Serve a shootdown NMI**: the receiving half of [`shoot_down_others`], called from the trap
@@ -157,7 +157,7 @@ fn broadcast(kind: u8, word: u64) {
 ///
 /// Context: NMI; takes no lock and prints nothing.
 pub fn serve_shootdown_nmi() -> bool {
-    let me = super::irq::local_apic_id() as usize;
+    let me = super::interrupt_controller::local_apic_id() as usize;
     let bit = 1usize << me;
 
     // Acquire: pairs with the sender's `Release` store, so seeing our bit means seeing its `va`.

@@ -72,7 +72,7 @@ birth, and 754 doubled both.
 Two changes, at `main` `43a2d16e1`, percent of the row:
 
 - **The table is copied once**, from a static image, in `thread::write_empty_capability_table`.
-- **`IrqSafeMutex::lock_masked` is always inlined.** 761 split `lock` in two, which at -O0 is a
+- **`InterruptSafeMutex::lock_masked` is always inlined.** 761 split `lock` in two, which at -O0 is a
   second call on every acquisition of every lock. A profile of 761's yield put +56 instructions a
   round trip on it.
 

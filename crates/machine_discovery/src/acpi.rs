@@ -42,8 +42,9 @@ pub use dmar::{
 pub use fadt::{ArmBoot, ResetRegister, ResetSpace, parse_arm_boot, parse_fadt_reset};
 pub use gtdt::{GTDT_ACTIVE_LOW, GTDT_EDGE_TRIGGERED, Gtdt, parse_gtdt};
 pub use madt::{
-    INTI_POLARITY_MASK, INTI_TRIGGER_MASK, ISA_BUS, ISA_IRQ_COUNT, IsaIrqRouting, MADT_PCAT_COMPAT,
-    Madt, MadtEntries, MadtEntry, MsiSpis, isa_irq_table, madt_entries, parse_madt,
+    INTI_POLARITY_MASK, INTI_TRIGGER_MASK, ISA_BUS, ISA_INTERRUPT_COUNT, IsaInterruptRouting,
+    MADT_PCAT_COMPAT, Madt, MadtEntries, MadtEntry, MsiSpis, isa_interrupt_table, madt_entries,
+    parse_madt,
 };
 pub use mcfg::{McfgEntry, mcfg_entry};
 pub use root::{RSDP_SIGNATURE, Rsdp, parse_rsdp, root_entry, root_entry_count};

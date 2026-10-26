@@ -90,7 +90,7 @@ eighth_pass_delegation_race_tests	14	21	33
 ninth_pass_revocation_tests	13	20	36
 ninth_pass_authority_tests	11	16	16
 revocation_in_flight_tests	10	16	14
-irq_send_refusal_tests	10	14	14
+interrupt_send_refusal_tests	10	14	14
 seventh_pass_delegation_tests	8	14	12
 eighth_pass_endpoint_usurper_tests	8	13	14
 ninth_pass_mapping_tests	7	12	11

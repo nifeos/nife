@@ -58,7 +58,7 @@ nothing behind the value:
 
 - `kernel/src/sched.rs`'s thread-budget reservation.
 - `kernel/src/pci.rs`'s BAR cursor.
-- The interrupt-routing lottery in `kernel/src/arch/*/irq.rs`, where the loser of the race reads
+- The interrupt-routing lottery in `kernel/src/arch/*/interrupt_controller.rs`, where the loser of the race reads
   the winner's answer out of the compare-exchange's own failure return.
 
 In all three the value is the whole protocol.

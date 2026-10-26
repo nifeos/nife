@@ -59,7 +59,7 @@ the code each row names.
 | Kernel runs at | 0x8020_0000 | 0x8020_0000 | Image header `text_offset = 0x40200000`, so `booti` relocates there |
 | UART reg-shift, io-width | 0, 1 | 2, 4 [dtsi] | `Shape` read from the DTB before the first `println!` |
 | UART clock | 3.6864 MHz | 24 MHz [uboot-cfg] | divisor only from a stated clock (13 at 24 MHz) |
-| UART PLIC irq | 10 | 32 [dtsi] | read from the console node's `interrupts` |
+| UART PLIC interrupt | 10 | 32 [dtsi] | read from the console node's `interrupts` |
 | PLIC S context of hart h | `2h + 1` | `2h` | decoded from `interrupts-extended` |
 | Hart 0 | a normal hart | the S7: no MMU, no S-mode | refused by `status` and by its `riscv,isa` |
 | Timebase | 10 MHz | 4 MHz [dtsi] | read from the DTB |
@@ -289,7 +289,7 @@ The bench history, boot by boot, is in
 - An interrupt test fails on the board. `an_interrupt_that_arrives_before_the_wait_is_not_lost`
   never reaches the trap handler after the THRE fix. The PLIC/hart affinity path is the next place
   to look, not the UART; start by printing `crate::cpu::id()` and the assigned context inside
-  `arch::irq::target_context` on the board.
+  `arch::interrupt_controller::target_context` on the board.
 - The shell path's userspace input driver (`components/src/input.rs`) still reads the UART at
   QEMU's byte stride, so on the board the shell's input reads garbage. It bites at the shell
   milestone.

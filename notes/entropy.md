@@ -33,7 +33,7 @@ generator". A client cannot program the queue, cannot map the page the device wr
 cannot ask the device for anything the service did not ask on its behalf.
 
 The service's whole authority is four things placed before it ran: the request endpoint (RECEIVE), an
-`Irq`, a `Virtio` transport, and a readiness endpoint. No initrd, no budget, no filesystem, no
+`Interrupt`, a `Virtio` transport, and a readiness endpoint. No initrd, no budget, no filesystem, no
 network. A compromised entropy service is a machine whose random numbers an attacker chooses, which
 is exactly as much damage as owning the entropy source should be worth, and it is the reason the
 device is not sitting inside every program.
@@ -138,8 +138,8 @@ machine's key material comes from, so an unconfined device writing it is the las
 leave unchecked.
 
 The driver looks at the used ring before it blocks, which is a change from the disk driver's
-shape and a fact about the board rather than an optimization. `pci::intx_irq` swizzles INTx by
-device number modulo four; `sched::bind_irq` routes an intid to exactly one endpoint; the test leg
+shape and a fact about the board rather than an optimization. `pci::intx_interrupt_number` swizzles INTx by
+device number modulo four; `sched::bind_interrupt` routes an intid to exactly one endpoint; the test leg
 now attaches five PCI functions. There is no unshared line left, so a driver that blocked before
 looking would be betting on owning its line, and losing that bet is a hang rather than a wrong
 answer. The interrupt wait is still there and is what a genuinely asynchronous device gets. QEMU
@@ -195,7 +195,7 @@ it.
   tour spawns the driver when the machine's device tree describes the device. On every machine this
   repository boots it does not, so what CI exercises is the skip. Its authority is the
   smallest of any backend here: two rendezvous capabilities and one page of device memory, no DMA
-  page, no `Irq` capability, no `Virtio` capability. The buffer that hands bytes to clients moved
+  page, no `Interrupt` capability, no `Virtio` capability. The buffer that hands bytes to clients moved
   into the crate the same day (`jh7110_entropy::Pool`), so the one part of the driver that could serve
   a byte twice is host-tested rather than merely written. What is left in the program is the
   volatile accesses and two unmeasured polling bounds. What the datasheet still does not settle:

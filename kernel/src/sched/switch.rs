@@ -172,7 +172,7 @@ pub(super) fn install_port_grant(grant: Option<(u16, u16)>) {
 /// Pick another thread and go there.
 ///
 /// May be called from normal context (a voluntary `yield_now`) or from the tail of the timer
-/// IRQ handler (a preemption); the two paths are identical from here down. Returns when some
+/// Interrupt handler (a preemption); the two paths are identical from here down. Returns when some
 /// later switch comes back to this thread. See notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES`, never across the switch; masks interrupts across the decision
@@ -416,7 +416,7 @@ pub(crate) fn finish_switch() {
         SwitchOutVerdict::WakeCompleted => {
             trace::record(trace::Event::WakeCompleted, prev, 0);
             // A deferred wake was deferred precisely because the waker did NOT queue it, so the
-            // token is still on the thread. IRQs are still masked on both callers' paths.
+            // token is still on the thread. Interrupts are still masked on both callers' paths.
             let Some(token) = t.own_token.take() else {
                 missing_token()
             };
@@ -439,7 +439,7 @@ pub(crate) fn finish_switch() {
 #[cold]
 #[inline(never)]
 pub(super) fn reap_switched_out(
-    guard: crate::sync::IrqSafeGuard<'_, Option<IpcTables>>,
+    guard: crate::sync::InterruptSafeGuard<'_, Option<IpcTables>>,
     prev: ThreadId,
 ) {
     let process = guard

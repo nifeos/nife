@@ -71,7 +71,7 @@ fi
 # PROVISIONAL, a lane's to propose and an architect's to ratify.
 #
 # The kernel no longer cares which: `machine_discovery::gic` reads the device tree's `compatible`
-# (`arm,cortex-a15-gic` for 2, `arm,gic-v3` for 3), and `arch::irq::initialize` confirms it against the
+# (`arm,cortex-a15-gic` for 2, `arm,gic-v3` for 3), and `arch::interrupt_controller::initialize` confirms it against the
 # hardware before driving it, panicking with both sides named if they disagree. Before 227 a
 # GICv3 booted, printed `interrupts ON` and took no interrupts at all (`notes/interrupts.md`).
 #

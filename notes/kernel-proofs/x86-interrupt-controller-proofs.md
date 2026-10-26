@@ -1,4 +1,4 @@
-# Two proofs in `kernel/src/arch/x86_64/irq.rs` (milestone 304)
+# Two proofs in `kernel/src/arch/x86_64/interrupt_controller.rs` (milestone 304)
 
 An appendix to [`notes/kernel-proofs.md`](../kernel-proofs.md), which states what is proved. These
 two came from milestone 304 (`cargo kani -p kernel` only ever compiled one architecture).
@@ -24,7 +24,7 @@ The second one found a defect, and the harness carries the finding as an assumpt
 `kani::assume(base == 0)` it fails: a second IO APIC owning global interrupts from 200, with the 24
 entries every real part has, admits GSI 210, and `gsi_vector(210)` wraps onto vector 2, the NMI.
 `MAX_REDIRECTION_ENTRIES`' doc says this cannot happen and bounds the wrong quantity. Not fixed
-here, because the fix costs `gsi_vector` its `const fn` and its total signature: see `irq.rs`'s
+here, because the fix costs `gsi_vector` its `const fn` and its total signature: see `interrupt_controller.rs`'s
 module `BUGS` and
 `design/roadmap/proposals/the-gsi-vector-map-wraps-on-a-second-io-apic.md`.
 

@@ -30,7 +30,7 @@ That has not been true since 2026-08-30. Milestone 193 (put `kernel/src` within 
 prover, because today the proofs cannot see it) opened the door for four changes, three of them
 one-line `cfg`s. Milestone 255 (a quarter of `kernel/src/arch/` has no assembly in it, and none of it
 is proved) put two harnesses inside `arch/aarch64/iommu.rs`. Milestone 304 (`cargo kani -p kernel`
-only ever compiled one architecture, and it was the runner's) put two inside `arch/x86_64/irq.rs` and
+only ever compiled one architecture, and it was the runner's) put two inside `arch/x86_64/interrupt_controller.rs` and
 added an x86_64 verify job. `notes/kernel-proofs.md` is the record, and this lane confirmed it runs.
 
 So the question is not *"can Kani reach `kernel/src`"*. It is "what is left after milestone 193,

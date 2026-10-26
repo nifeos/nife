@@ -113,7 +113,7 @@ can say a machine has more cores than the build was sized for instead of quietly
 
 ## The online set is not contiguous
 
-`online_cpus` is the online mask as an iterator, and every per-cpu loop, both IRQ-affinity
+`online_cpus` is the online mask as an iterator, and every per-cpu loop, both interrupt-affinity
 round-robins and the spawn and wake placement go through it or through `nth_online`. The RISC-V
 RFENCE calls mask with `online_harts_mask` directly; aarch64's `tlbi ..., is` broadcasts in
 hardware and needs no mask. A loop over `0..online_count()` is the bug: on the VisionFive 2 the

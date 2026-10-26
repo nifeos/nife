@@ -46,7 +46,7 @@ Three properties fall out of the existing design rather than needing to be built
 naming because each is a question a reader will ask:
 
 1. A timer armed at a notification that dies first is already harmless. The expiry signal goes
-   through `sched::irq_notify`, whose own comment is *"a stale name ... is simply dropped: an
+   through `sched::interrupt_notify`, whose own comment is *"a stale name ... is simply dropped: an
    interrupt with no live rendezvous has nowhere to go, which is not an error."* Generational
    naming does the work; nothing is owed here.
 2. The cached earliest deadline may be early but never late, so the reap does not have to

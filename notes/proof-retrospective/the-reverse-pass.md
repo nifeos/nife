@@ -15,8 +15,8 @@ Two real defects, both found at harness-writing time.
   an untrusted blob. Trying to state `be32_is_total` made it fail, and the readers were hardened to a
   checked add returning `Truncated`. This is a panic on the kernel's boot path, reachable from
   firmware, in the first parser that runs on both ISAs. Real, and found by the attempt to prove.
-- `pci::intx_irq`. The pin-0 case underflowed and panicked in debug builds. Hardened with
-  saturating arithmetic while writing `intx_irq_is_total_and_bounded`. The comment records the honest
+- `pci::intx_interrupt_number`. The pin-0 case underflowed and panicked in debug builds. Hardened with
+  saturating arithmetic while writing `intx_interrupt_number_is_total_and_bounded`. The comment records the honest
   scope: every caller checks `pin == 0` first, so this is defense in depth rather than a live hole.
 
 One proof obligation closed, marked honestly as not a bug. `paging::domain::grant_pages` gained a

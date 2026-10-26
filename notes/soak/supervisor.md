@@ -27,7 +27,7 @@ trace counters.
   core, and at least two so a single-core QEMU leg still runs more than one endpoint.
 - Each worker's seed is distinct, odd and well spread. The jitter it drives keeps the pairs from
   locking into one interleaving, and two workers given one seed would defeat it for that pair.
-- `TICK_ROUTES` holds each rendezvous plus one, as `sched::IRQ_ROUTES` does, because a rendezvous
+- `TICK_ROUTES` holds each rendezvous plus one, as `sched::INTERRUPT_ROUTES` does, because a rendezvous
   name may be zero. They are plain atomics because the reader is an interrupt handler on every core,
   and a lock taken to learn whether there is anything to do is one more thing that can go wrong. The
   boot thread writes each once, after every worker exists. `TICK_CURSOR` is global rather than keyed

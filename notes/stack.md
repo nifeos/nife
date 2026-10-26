@@ -238,7 +238,7 @@ The question each port has to answer: can an interrupt, an NMI or an asynchronou
 while the stack pointer, or the per-CPU pointer, still holds a value the kernel did not choose?
 
 - aarch64: no. An exception from EL0 lands on `SP_EL1`, which EL0 cannot write, and the kernel
-  runs at EL1 with `SPSel=1` throughout, so every vector (IRQ, FIQ, SError included) pushes on a
+  runs at EL1 with `SPSel=1` throughout, so every vector (Interrupt, FIQ, SError included) pushes on a
   kernel stack. The per-CPU pointer is `TPIDR_EL1`, which EL0 cannot write either, so there is no
   swap and no window. The kernel uses no NMI: GIC priority masking runs wide open (`ICC_PMR_EL1` =
   `0xff`) and TLB maintenance is broadcast in hardware.

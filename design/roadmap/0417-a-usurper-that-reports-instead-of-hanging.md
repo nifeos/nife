@@ -19,7 +19,7 @@ merge queue lands it.)*
 built `Timer::ARM`, and [§101 (notification objects)](../decisions/0101-notification-objects.md)'s
 binding ends a blocked `RECEIVE_CAP` at the deadline it signals.
 `kernel/src/sched/notification.rs` records that the binding wakes `RECEIVE`, `RECEIVE_CAP` and
-`Irq::WAIT` alike. The reporting
+`Interrupt::WAIT` alike. The reporting
 usurper is therefore buildable on surface that exists: arm a timer, bind the notification, and the
 receive returns either a capability it should not have or the deadline. The first-class
 non-blocking receive this block priced stays unwritten until a consumer that cannot arm a timer

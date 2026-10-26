@@ -231,7 +231,7 @@ pub struct SoakBeat {
     /// **Cumulative tick-route wakes**, and the reason a soak crosses cores at all.
     ///
     /// A soak build signals a rendezvous from `sched::on_tick` and one worker per group blocks on
-    /// it through `Irq::WAIT`, so every wake takes the device-interrupt path through
+    /// it through `Interrupt::WAIT`, so every wake takes the device-interrupt path through
     /// `sched::wake_load_aware`, where the one observed multicore defect was. Zero in a log from a
     /// kernel without tick-route wakes. Not part of [`rounds`](Self::rounds): a wake is not a round
     /// trip.

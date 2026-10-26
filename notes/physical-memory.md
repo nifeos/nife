@@ -155,7 +155,7 @@ The kernel has no heap: no `Vec` and no `Box` (`kmem` is a fixed carve, see
 fixed-size arrays of `MAX_REGIONS` entries, because a fixed-size array is what you use when there
 is no allocator.
 
-`ALLOCATOR` is an `IrqSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)), not a
+`ALLOCATOR` is an `InterruptSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)), not a
 bare spinlock. An interrupt handler that tried to allocate while the interrupted code held a bare
 spinlock would spin forever for a lock only the code it interrupted can release. The discipline
 that goes with it: interrupt handlers do not allocate. They record what happened and defer the

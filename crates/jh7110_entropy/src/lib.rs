@@ -77,7 +77,7 @@ pub mod regs {
     /// and [`super::SMODE_MISSION_MODE`] without proposing a write.
     pub const SMODE: u64 = 0x0C;
     /// Interrupt enable: the four `super::IE_*` contribution bits plus [`super::IE_GLBL_EN`].
-    /// **Enabling a contribution here is about the IRQ pin, not about whether [`ISTAT`] latches**;
+    /// **Enabling a contribution here is about the interrupt pin, not about whether [`ISTAT`] latches**;
     /// see [`super::ISTAT_ALL`].
     pub const IE: u64 = 0x10;
     /// Interrupt status, and **\[trm\]'s register map marks it `R/W1C`**: a bit is acknowledged by
@@ -183,7 +183,7 @@ pub const IE_RQST_ALARM_EN: u32 = 1 << 3;
 pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// `IE` bit 31: the global interrupt enable.
 ///
-/// **The `IE_*` bits gate the IRQ pin, not [`regs::ISTAT`]**, so a polling driver may leave this
+/// **The `IE_*` bits gate the interrupt pin, not [`regs::ISTAT`]**, so a polling driver may leave this
 /// register at zero. \[trm\]'s wording ("interrupt **and/or status** contributions") is not
 /// decisive; the bench settled it on 2026-09-04, when a reseed and a generation were both seen by
 /// polling `ISTAT` with `IE` never written on a VisionFive 2. The completion interrupt needs this

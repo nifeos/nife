@@ -12,7 +12,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use super::irq;
+use super::interrupt_controller;
 use super::port::{in8, out8};
 
 /// Ticks per second the scheduler asks for. The same 100 Hz both other architectures use.
@@ -72,12 +72,13 @@ const PIT_CHANNEL0: u16 = 0x40;
 /// rather than the one-shot mode 0 the calibration uses.
 const PIT_CHANNEL0_RATE: u8 = 0b0011_0100;
 
-/// **The legacy ISA IRQ number channel 0's output carries.** Zero, on every PC.
+/// **The legacy ISA interrupt number channel 0's output carries.** Zero, on every PC.
 ///
 /// It is emphatically **not** the IO APIC input the line arrives on: the MADT's interrupt source
 /// overrides say the PIT is wired to global system interrupt 2, because pin 0 carries the 8259
-/// cascade. See `arch/x86_64/irq.rs`.
-pub(crate) const PIT_IRQ: u32 = 0;
+/// cascade. See `arch/x86_64/interrupt_controller.rs`.
+#[doc(alias = "irq")]
+pub(crate) const PIT_INTERRUPT_NUMBER: u32 = 0;
 
 /// The TSC's frequency in hertz, established by [`initialize_frequency`]. Zero until then.
 static TSC_HZ: AtomicU64 = AtomicU64::new(0);
@@ -90,7 +91,7 @@ static TSC_HZ: AtomicU64 = AtomicU64::new(0);
 static TSC_HZ_FROM_CPUID: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-/// The local APIC timer's frequency in hertz, at the divider `irq` programs. Zero until measured.
+/// The local APIC timer's frequency in hertz, at the divider `interrupt` programs. Zero until measured.
 static APIC_TIMER_HZ: AtomicU64 = AtomicU64::new(0);
 
 /// Every window's implied TSC rate, in the order timed; only the first [`CALIBRATION_TAKEN`] mean
@@ -142,8 +143,8 @@ fn measure_against_the_pit() -> (u64, u32) {
     // Start the APIC timer as a free-running masked counter from its maximum, so it cannot wrap
     // during a window this short: at any plausible bus clock, 0xffffffff ticks divided by 16 is
     // minutes, not milliseconds.
-    irq::start_timer_for_calibration(u32::MAX);
-    let apic_start = irq::timer_current_count();
+    interrupt_controller::start_timer_for_calibration(u32::MAX);
+    let apic_start = interrupt_controller::timer_current_count();
 
     // SAFETY: the PIT and its gate port are fixed ISA devices present on every x86 machine. The
     // speaker bit is explicitly cleared, so nothing audible happens; the gate is toggled low then
@@ -167,7 +168,7 @@ fn measure_against_the_pit() -> (u64, u32) {
     }
 
     let tsc_end = rdtsc();
-    let apic_end = irq::timer_current_count();
+    let apic_end = interrupt_controller::timer_current_count();
 
     // SAFETY: put the gate back down so channel 2 is not left running.
     unsafe {
@@ -212,7 +213,7 @@ pub(super) fn calibration_has_converged(samples: &[u64]) -> bool {
 pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
     assert!(
-        irq::is_local_apic_ready(),
+        interrupt_controller::is_local_apic_ready(),
         "the timer calibrates the local APIC's counter, so the APIC must be up first",
     );
 
@@ -292,7 +293,7 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
 ///
 /// The divisor is an integer, so 100 Hz is really 100.0035 Hz, and the achieved rate is returned.
 /// This does not route the interrupt: the 8259s are masked, and the IO APIC delivers nothing until
-/// `irq::enable` arms the entry the MADT's override names.
+/// `interrupt_controller::enable` arms the entry the MADT's override names.
 ///
 /// Name: provisional (milestone 161 (the kernel port)).
 pub fn start_pit_ticking(hz: u64) -> u64 {
@@ -403,7 +404,7 @@ pub(crate) fn apic_timer_frequency() -> u64 {
     APIC_TIMER_HZ.load(Ordering::Relaxed)
 }
 
-/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector `irq` chose.
+/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector `interrupt` chose.
 ///
 /// # Panics
 /// If [`initialize_frequency`] has not run, for the same reason [`frequency`] does.
@@ -422,7 +423,7 @@ pub fn initialize() {
         count != 0,
         "the measured APIC timer rate is below the tick rate, which cannot be right",
     );
-    irq::arm_periodic_timer(count);
+    interrupt_controller::arm_periodic_timer(count);
 }
 
 /// **Can a thread on this core be granted the cycle counter at all?** Yes, and it already has it:
@@ -458,7 +459,7 @@ pub fn is_cycle_counter_grantable() -> bool {
 #[cfg(any(test, feature = "system_tests", feature = "cycle_counter_grant"))]
 pub(crate) fn set_cycle_counter_grant(_granted: bool) {}
 
-/// **Take one tick.** Called from the trap handler when [`irq::TIMER_VECTOR`] arrives.
+/// **Take one tick.** Called from the trap handler when [`interrupt_controller::TIMER_VECTOR`] arrives.
 ///
 /// It does not write the EOI: the trap handler does that for every interrupt vector, in one place,
 /// because a missed EOI is a hang rather than an error and one place is easier to be sure about
@@ -486,7 +487,7 @@ pub fn ticks() -> u64 {
 /// `tick_pending` (a bare participle reads as a getter, and Rust asks the question with `is_`).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_tick_pending() -> bool {
-    irq::is_timer_pending()
+    interrupt_controller::is_timer_pending()
 }
 
 /// Spin for `counter_ticks` of the TSC.

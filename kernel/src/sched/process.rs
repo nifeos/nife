@@ -324,7 +324,7 @@ fn release(process: &mut ProcessPage) -> Option<u64> {
 /// Free a finished thread that no core stands on: its stack, its thread page, and its space or its
 /// share of its process's. Takes the held `guard` and releases it before any `Drop`.
 pub(super) fn reap_corpse(
-    mut guard: crate::sync::IrqSafeGuard<'_, Option<IpcTables>>,
+    mut guard: crate::sync::InterruptSafeGuard<'_, Option<IpcTables>>,
     prev: ThreadId,
 ) {
     let Some(sched) = guard.as_mut() else {

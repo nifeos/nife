@@ -34,7 +34,7 @@ use system_initializer::BootEndowment;
 const GRANTS: BootEndowment = BootEndowment {
     untyped: 0,
     uart_dev: 1,
-    uart_irq: 2,
+    uart_interrupt: 2,
     clock_page: 3,
     config_page: 4,
     fs_ep: 5,
@@ -45,7 +45,7 @@ const GRANTS: BootEndowment = BootEndowment {
     // tells it apart from a granted one. Fixed past the filesystem pair's own max reach (slot 6),
     // not slot 5, because the inert-configuration page (slot 4) shifted that pair down by one.
     virtio_rng: 7,
-    virtio_rng_irq: 8,
+    virtio_rng_interrupt: 8,
     virtio_rng_dma: 9,
     // A terminal on the firmware's screen (milestone 198 (a package manager)'s rung 1b), past the virtio-rng trio's
     // floor (slot 9) for that trio's reason: a boot whose console has no screen leaves both empty.
@@ -59,7 +59,7 @@ const GRANTS: BootEndowment = BootEndowment {
     // slot 12 floor for the same reason again: a boot with no virtio-net device leaves all three
     // empty, and `system_initializer::boot` probes for it.
     virtio_net: 13,
-    virtio_net_irq: 14,
+    virtio_net_interrupt: 14,
     virtio_net_dma: 15,
     // An entropy service the kernel built on the CPU's seed instruction (milestone 595
     // (provisional)), granted only on a boot with no virtio-rng, so a boot has one of slot 7's trio
@@ -74,10 +74,10 @@ const GRANTS: BootEndowment = BootEndowment {
     // GPU; the keyboard's three are empty when a session's keystrokes would come from the UART,
     // which is every real board.
     gpu: 17,
-    gpu_irq: 18,
+    gpu_interrupt: 18,
     gpu_dma: 19,
     keyboard: 20,
-    keyboard_irq: 21,
+    keyboard_interrupt: 21,
     keyboard_dma: 22,
     // The machine statistics page (milestone 126 (the `procps` package), DECISIONS §225 (`free`
     // sees the machine and your share)), granted on every boot, past the keyboard's trio. Slot 23

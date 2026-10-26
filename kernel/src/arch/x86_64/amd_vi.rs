@@ -22,7 +22,7 @@
 use machine_discovery::acpi::ivrs::{IvrsUnits, MAX_IVHDS};
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- MMIO register offsets (section 3.3.1). ---
 const DEVICE_TABLE_BASE: u64 = 0x0000;
@@ -168,12 +168,12 @@ enum Slot {
     Refused(&'static str),
 }
 
-static UNITS: IrqSafeMutex<[Slot; MAX_IVHDS]> =
-    IrqSafeMutex::new(rank::IOMMU, [const { Slot::Absent }; MAX_IVHDS]);
+static UNITS: InterruptSafeMutex<[Slot; MAX_IVHDS]> =
+    InterruptSafeMutex::new(rank::IOMMU, [const { Slot::Absent }; MAX_IVHDS]);
 
 /// The IVRS as [`initialize`] read it, kept so `attach` can route a device to its unit. Never held
 /// at the same time as [`UNITS`].
-static IVRS: IrqSafeMutex<Option<IvrsUnits>> = IrqSafeMutex::new(rank::IOMMU, None);
+static IVRS: InterruptSafeMutex<Option<IvrsUnits>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r64(base: u64, off: u64) -> u64 {
     // SAFETY: the unit's register file lies inside the direct map, mapped device-typed by

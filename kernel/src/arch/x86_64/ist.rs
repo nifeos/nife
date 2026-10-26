@@ -196,7 +196,7 @@ mod tests {
     /// APIC send reads a static, and the wait reads an atomic. An NMI from another core's shootdown
     /// can still land in the window, which is the case under test.
     fn an_nmi_under_a_decoy_gs_base() -> Option<(usize, u64)> {
-        let me = super::super::irq::local_apic_id();
+        let me = super::super::interrupt_controller::local_apic_id();
         let was = crate::arch::interrupts::disable();
         // SAFETY: `IA32_GS_BASE` exists on every long-mode CPU. Between the decoy write and the
         // restore nothing on this core reads `gs` except the NMI handler under test.
@@ -205,7 +205,7 @@ mod tests {
         // except the NMI handler, whose entry is what this test is about.
         unsafe { super::super::write_msr(super::super::IA32_GS_BASE, DECOY.as_ptr() as u64) };
         TEST_NMI_PENDING.store(true, Ordering::Release);
-        super::super::irq::send_nmi(me);
+        super::super::interrupt_controller::send_nmi(me);
         let mut spins = 0u64;
         while TEST_NMI_PENDING.load(Ordering::Acquire) && spins < 1 << 28 {
             core::hint::spin_loop();

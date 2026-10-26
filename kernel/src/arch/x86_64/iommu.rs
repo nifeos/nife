@@ -28,7 +28,7 @@ use paging::PageFormat;
 use paging::x86_64::Vtd;
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the DRHD's register base; Intel VT-d spec chapter 10, and
 // QEMU's hw/i386/intel_iommu_internal.h, which is this driver's ground truth for what q35's
@@ -258,7 +258,7 @@ impl Units {
     }
 }
 
-static IOMMU: IrqSafeMutex<Units> = IrqSafeMutex::new(
+static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
     rank::IOMMU,
     Units {
         slots: [const { Slot::Absent }; MAX_DRHDS],
@@ -269,7 +269,7 @@ static IOMMU: IrqSafeMutex<Units> = IrqSafeMutex::new(
 /// Every unit, device scope and RMRR the DMAR described, so [`attach`] can route a device to its
 /// owner and [`scope_of`] can say which unit that is. Recorded by [`initialize`]; never held at the
 /// same time as [`IOMMU`], because resolving a scope path reads configuration space.
-static DMAR: IrqSafeMutex<Option<DmarUnits>> = IrqSafeMutex::new(rank::IOMMU, None);
+static DMAR: InterruptSafeMutex<Option<DmarUnits>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the DRHD's register file lies inside the direct map (it is ordinary MMIO below the

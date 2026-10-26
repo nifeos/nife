@@ -28,7 +28,7 @@ use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Returns the
 /// dispatcher's `Result` and the frame, so a caller that cares about the delivered message words
-/// (none here do) can read them. Copied in shape from `irq_send_refusal_tests::call`.
+/// (none here do) can read them. Copied in shape from `interrupt_send_refusal_tests::call`.
 fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, method, a0, a1, a2)

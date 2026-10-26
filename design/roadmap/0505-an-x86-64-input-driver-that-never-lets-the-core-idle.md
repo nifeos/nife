@@ -105,7 +105,7 @@ x86_64 shell image, and the two gauges are the direct evidence that the core now
 
 ## Follow-on
 
-- **Recorded.** Both BUGS above, in this block and in `kernel/src/arch/x86_64/irq.rs`.
+- **Recorded.** Both BUGS above, in this block and in `kernel/src/arch/x86_64/interrupt_controller.rs`.
 
 ## Index row
 

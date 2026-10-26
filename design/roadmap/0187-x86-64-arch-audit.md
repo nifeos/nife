@@ -115,11 +115,11 @@ The bounding facts to re-establish here, which is the first hour's work and not 
   already cleared. So the class transfers to x86_64 with an instance that has no precedent in the
   note, which is the best possible sign that the lens is still worth aiming.
 
-Pass 2: masking and the interrupt-controller adapter (1,722 lines). `irq.rs` (789),
+Pass 2: masking and the interrupt-controller adapter (1,722 lines). `interrupt_controller.rs` (789),
 `mod.rs` (411), `timer.rs` (351), `port.rs` (109), `interrupts.rs` (62). Second because finding 3 is
 the shape most likely to repeat: it was not a missing barrier, it was one ISA's driver written as if
 its hardware gave a guarantee it does not. The asymmetry that points here is a line count.
-`irq.rs` is 789 lines on x86_64 against 90 on aarch64 and 208 on riscv64, because it holds the LAPIC
+`interrupt_controller.rs` is 789 lines on x86_64 against 90 on aarch64 and 208 on riscv64, because it holds the LAPIC
 and IOAPIC where the others hold a thin adapter over a driver in `drivers/`. Eight times aarch64's
 adapter is eight times the surface for finding 3's shape, and none of it has a `drivers/gic.rs` to
 have taken a lock already.

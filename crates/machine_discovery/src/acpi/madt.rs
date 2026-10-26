@@ -1,5 +1,5 @@
 //! **The MADT** (signature `APIC`): where the interrupt controllers are, and how the legacy ISA
-//! IRQs reach them once its interrupt source overrides are applied.
+//! Interrupts reach them once its interrupt source overrides are applied.
 //!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
@@ -52,10 +52,10 @@ pub enum MadtEntry {
     /// An IO APIC: where device interrupts arrive. `gsi_base` is the first global system interrupt
     /// this one owns, which is how a machine with several of them divides the space.
     IoApic { id: u8, address: u32, gsi_base: u32 },
-    /// **A legacy IRQ has been rewired.** The ISA interrupt `source` actually arrives as global
+    /// **A legacy interrupt has been rewired.** The ISA interrupt `source` actually arrives as global
     /// system interrupt `gsi`, with `flags` giving polarity and trigger mode. This is the entry that
-    /// makes "COM1 is IRQ 4" not mean "COM1 is IO APIC input 4": on almost every machine the timer's
-    /// IRQ 0 is remapped, and reading this wrong arms the wrong line.
+    /// makes "COM1 is interrupt 4" not mean "COM1 is IO APIC input 4": on almost every machine the timer's
+    /// Interrupt 0 is remapped, and reading this wrong arms the wrong line.
     InterruptSourceOverride {
         bus: u8,
         source: u8,
@@ -170,7 +170,7 @@ pub fn madt_entries(body: &[u8]) -> MadtEntries<'_> {
 /// The walk without the decode: each entry's type byte and its bytes. It is separate so a reader
 /// that wants one kind can skip decoding the others, and that is a proof cost rather than a
 /// runtime one: CBMC encodes every arm of [`MadtEntries`]'s `match` at every unwound step, so a
-/// harness over [`isa_irq_table`] would otherwise pay for each GIC kind added to it.
+/// harness over [`isa_interrupt_table`] would otherwise pay for each GIC kind added to it.
 struct EntryWalk<'a> {
     body: &'a [u8],
     at: usize,
@@ -279,7 +279,7 @@ fn interrupt_source_override(e: &[u8]) -> MadtEntry {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Legacy IRQ numbers, and the overrides that make them a lie.
+// Legacy interrupt numbers, and the overrides that make them a lie.
 // ---------------------------------------------------------------------------------------------
 
 /// **The polarity field of an MPS INTI flags word**, bits 1:0. `00` means "whatever this bus
@@ -295,25 +295,27 @@ pub const INTI_TRIGGER_MASK: u16 = 0b11 << 2;
 const INTI_TRIGGER_LEVEL: u16 = 0b11 << 2;
 
 /// The bus number an [`MadtEntry::InterruptSourceOverride`] uses for the ISA bus. It is the only
-/// value ACPI defines for that field, which is why the overrides are exactly the legacy IRQs.
+/// value ACPI defines for that field, which is why the overrides are exactly the legacy interrupts.
 pub const ISA_BUS: u8 = 0;
 
-/// How many legacy ISA IRQs there are: two cascaded 8259s, eight lines each.
-pub const ISA_IRQ_COUNT: usize = 16;
+/// How many legacy ISA interrupts there are: two cascaded 8259s, eight lines each.
+#[doc(alias = "irq")]
+pub const ISA_INTERRUPT_COUNT: usize = 16;
 
 /// **How one ISA interrupt actually reaches an IO APIC.**
 ///
-/// The whole point of this type is that `gsi` is very often *not* the IRQ number it was looked up
-/// by. On essentially every PC the timer's IRQ 0 arrives as global system interrupt 2, because the
+/// The whole point of this type is that `gsi` is very often *not* the interrupt number it was looked up
+/// by. On essentially every PC the timer's interrupt 0 arrives as global system interrupt 2, because the
 /// PIT is wired to the IO APIC's pin 2 while pin 0 carries the 8259 cascade. A kernel that armed
 /// redirection entry 0 for "the timer" would arm a line nothing drives, and would see no
 /// interrupts and no error.
 ///
 /// Name: provisional (milestone 161 (the kernel port)), along with the two fields and
-/// [`isa_irq_table`].
+/// [`isa_interrupt_table`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct IsaIrqRouting {
-    /// The global system interrupt this IRQ arrives on.
+#[doc(alias = "irq")]
+pub struct IsaInterruptRouting {
+    /// The global system interrupt this interrupt arrives on.
     pub gsi: u32,
     /// The line is asserted low rather than high.
     pub active_low: bool,
@@ -321,13 +323,13 @@ pub struct IsaIrqRouting {
     pub level_triggered: bool,
 }
 
-impl IsaIrqRouting {
-    /// **What an ISA IRQ is when nothing overrides it**: identity-mapped onto the global interrupt
+impl IsaInterruptRouting {
+    /// **What an ISA interrupt is when nothing overrides it**: identity-mapped onto the global interrupt
     /// space, active high, edge triggered. That is the ISA bus's own convention, which is what the
     /// `00` ("conforms to the specifications of the bus") encoding in an override's flags means.
-    pub const fn isa_default(irq: u8) -> Self {
+    pub const fn isa_default(interrupt_number: u8) -> Self {
         Self {
-            gsi: irq as u32,
+            gsi: interrupt_number as u32,
             active_low: false,
             level_triggered: false,
         }
@@ -347,17 +349,20 @@ impl IsaIrqRouting {
     }
 }
 
-/// **Resolve all sixteen legacy ISA IRQs through the MADT's interrupt source overrides.** `body`
+/// **Resolve all sixteen legacy ISA interrupts through the MADT's interrupt source overrides.** `body`
 /// begins after the SDT header.
 ///
 /// Returned as a whole table rather than one lookup at a time because the overrides are a list that
 /// has to be walked to answer any single question, and the caller (an interrupt controller being
 /// brought up) wants the answers to outlive the table's bytes.
 ///
-/// An override naming a source outside 0..16 is ignored: the field is a legacy IRQ number and there
-/// are sixteen of those, so a larger one is a malformed table rather than a seventeenth IRQ.
-pub fn isa_irq_table(body: &[u8]) -> [IsaIrqRouting; ISA_IRQ_COUNT] {
-    let mut table = core::array::from_fn(|irq| IsaIrqRouting::isa_default(irq as u8));
+/// An override naming a source outside 0..16 is ignored: the field is a legacy interrupt number and there
+/// are sixteen of those, so a larger one is a malformed table rather than a seventeenth interrupt.
+#[doc(alias = "irq")]
+pub fn isa_interrupt_table(body: &[u8]) -> [IsaInterruptRouting; ISA_INTERRUPT_COUNT] {
+    let mut table = core::array::from_fn(|interrupt_number| {
+        IsaInterruptRouting::isa_default(interrupt_number as u8)
+    });
     // A plain loop over the walk, not `filter`: `Filter::next` loops inside each step, which nests a
     // second loop under the proof's unwind bound and multiplies what CBMC unrolls.
     for (kind, e) in entry_walk(body) {
@@ -372,9 +377,9 @@ pub fn isa_irq_table(body: &[u8]) -> [IsaIrqRouting; ISA_IRQ_COUNT] {
             flags,
         } = entry
             && bus == ISA_BUS
-            && (source as usize) < ISA_IRQ_COUNT
+            && (source as usize) < ISA_INTERRUPT_COUNT
         {
-            table[source as usize] = IsaIrqRouting {
+            table[source as usize] = IsaInterruptRouting {
                 gsi,
                 active_low: false,
                 level_triggered: false,
@@ -422,23 +427,23 @@ mod verification {
         assert!(seen <= N / 2);
     }
 
-    /// **No interrupt source override can write outside the sixteen legacy IRQs.**
+    /// **No interrupt source override can write outside the sixteen legacy interrupts.**
     ///
-    /// [`isa_irq_table`] indexes a fixed sixteen-entry array with `source`, a byte straight out of
+    /// [`isa_interrupt_table`] indexes a fixed sixteen-entry array with `source`, a byte straight out of
     /// the table, and the only thing between firmware writing `source = 200` and an out-of-bounds
     /// store is one `<` in a chained `if let`. This proves it holds for every body.
     ///
     /// Could plausibly have been false: the guard sits in the middle of a four-clause `let`-chain
     /// added in one commit, and a reader rewriting that chain as a `match` on the entry has to carry
     /// it across by hand. The existing test covers `source = 200` and nothing else.
-    /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.madt.verification.no_override_writes_outside_the_sixteen_legacy_irqs.patch`
+    /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.madt.verification.no_override_writes_outside_the_sixteen_legacy_interrupts.patch`
     #[kani::proof]
     #[kani::unwind(20)]
-    fn no_override_writes_outside_the_sixteen_legacy_irqs() {
+    fn no_override_writes_outside_the_sixteen_legacy_interrupts() {
         let body: [u8; N] = kani::any();
-        let table = isa_irq_table(&body);
+        let table = isa_interrupt_table(&body);
         // The claim as an assertion, because an unsatisfied `cover!` leaves a Kani harness green
-        // (Kani 0.67.0, found by the printenv harness): an IRQ no ISA override names keeps the ISA
+        // (Kani 0.67.0, found by the printenv harness): an interrupt no ISA override names keeps the ISA
         // bus's own convention, so no override wrote anywhere it did not name. The out-of-bounds
         // store the doc names is the other half, and CBMC's bounds check on `table[source]` catches
         // it on its own.
@@ -450,19 +455,22 @@ mod verification {
             if let MadtEntry::InterruptSourceOverride { bus, source, .. } =
                 interrupt_source_override(e)
                 && bus == ISA_BUS
-                && (source as usize) < ISA_IRQ_COUNT
+                && (source as usize) < ISA_INTERRUPT_COUNT
             {
                 named |= 1 << source;
             }
         }
-        for (irq, routing) in table.iter().enumerate() {
-            if named & (1 << irq) == 0 {
-                assert_eq!(*routing, IsaIrqRouting::isa_default(irq as u8));
+        for (interrupt_number, routing) in table.iter().enumerate() {
+            if named & (1 << interrupt_number) == 0 {
+                assert_eq!(
+                    *routing,
+                    IsaInterruptRouting::isa_default(interrupt_number as u8)
+                );
             }
         }
         kani::cover!(
-            table[0] != IsaIrqRouting::isa_default(0),
-            "some body overrides IRQ 0, which is the case every PC exercises"
+            table[0] != IsaInterruptRouting::isa_default(0),
+            "some body overrides interrupt 0, which is the case every PC exercises"
         );
     }
 }
@@ -642,11 +650,11 @@ mod tests {
         );
     }
 
-    /// **The entry list decodes, including the overrides that make legacy IRQ numbers a lie.** On
-    /// almost every machine the timer's IRQ 0 arrives as GSI 2, and a kernel that armed input 0
+    /// **The entry list decodes, including the overrides that make legacy interrupt numbers a lie.** On
+    /// almost every machine the timer's interrupt 0 arrives as GSI 2, and a kernel that armed input 0
     /// would arm nothing.
     #[test]
-    fn the_madt_entries_decode_and_the_overrides_rewire_legacy_irqs() {
+    fn the_madt_entries_decode_and_the_overrides_rewire_legacy_interrupts() {
         let body = q35_madt_body();
         let mut it = madt_entries(&body);
         assert_eq!(
@@ -674,7 +682,7 @@ mod tests {
                 gsi: 2,
                 flags: 0,
             }),
-            "IRQ 0 is remapped on essentially every PC"
+            "interrupt 0 is remapped on essentially every PC"
         );
         assert_eq!(
             it.next(),
@@ -724,32 +732,32 @@ mod tests {
         );
     }
 
-    /// **The trap, resolved.** IRQ 0 is the timer and it is not IO APIC input 0; the override says
+    /// **The trap, resolved.** interrupt 0 is the timer and it is not IO APIC input 0; the override says
     /// it arrives as GSI 2. A kernel that armed redirection entry 0 would arm the 8259 cascade and
     /// see nothing at all, with no error anywhere to say why.
     #[test]
-    fn the_timers_irq_0_resolves_to_gsi_2() {
-        let table = isa_irq_table(&q35_madt_body());
+    fn the_timers_interrupt_0_resolves_to_gsi_2() {
+        let table = isa_interrupt_table(&q35_madt_body());
         assert_eq!(
             table[0],
-            IsaIrqRouting {
+            IsaInterruptRouting {
                 gsi: 2,
                 active_low: false,
                 level_triggered: false,
             },
-            "IRQ 0 is remapped on essentially every PC"
+            "interrupt 0 is remapped on essentially every PC"
         );
     }
 
-    /// An IRQ with no override keeps its number and the ISA bus's own polarity and trigger mode.
+    /// An interrupt with no override keeps its number and the ISA bus's own polarity and trigger mode.
     #[test]
-    fn an_irq_with_no_override_is_identity_mapped_edge_triggered_and_active_high() {
-        let table = isa_irq_table(&q35_madt_body());
-        for irq in [1usize, 4, 8, 15] {
+    fn an_interrupt_with_no_override_is_identity_mapped_edge_triggered_and_active_high() {
+        let table = isa_interrupt_table(&q35_madt_body());
+        for interrupt_number in [1usize, 4, 8, 15] {
             assert_eq!(
-                table[irq],
-                IsaIrqRouting::isa_default(irq as u8),
-                "IRQ {irq} has no override in this MADT"
+                table[interrupt_number],
+                IsaInterruptRouting::isa_default(interrupt_number as u8),
+                "interrupt {interrupt_number} has no override in this MADT"
             );
         }
         assert_eq!(table[4].gsi, 4, "COM1 really is GSI 4 on a PC");
@@ -761,10 +769,10 @@ mod tests {
     /// "active low, level" here, which is a redirection entry that never fires.
     #[test]
     fn the_inti_flags_are_two_two_bit_fields_not_two_bits() {
-        let table = isa_irq_table(&q35_madt_body());
+        let table = isa_interrupt_table(&q35_madt_body());
         assert_eq!(
             table[5],
-            IsaIrqRouting {
+            IsaInterruptRouting {
                 gsi: 5,
                 active_low: false,
                 level_triggered: true,
@@ -777,7 +785,7 @@ mod tests {
     fn active_low_is_the_11_encoding() {
         let mut body = q35_madt_body();
         body[46..48].copy_from_slice(&0b1111u16.to_le_bytes());
-        let table = isa_irq_table(&body);
+        let table = isa_interrupt_table(&body);
         assert!(table[5].active_low);
         assert!(table[5].level_triggered);
     }
@@ -788,42 +796,48 @@ mod tests {
     #[test]
     fn a_conforms_to_the_bus_override_keeps_the_isa_defaults_but_takes_the_new_gsi() {
         let mut body = q35_madt_body();
-        // Rewrite the second override: IRQ 9 -> GSI 9, flags 0 (conforms).
+        // Rewrite the second override: interrupt 9 -> GSI 9, flags 0 (conforms).
         body[41] = 9;
         body[42..46].copy_from_slice(&9u32.to_le_bytes());
         body[46..48].copy_from_slice(&0u16.to_le_bytes());
-        let table = isa_irq_table(&body);
-        assert_eq!(table[9], IsaIrqRouting::isa_default(9));
+        let table = isa_interrupt_table(&body);
+        assert_eq!(table[9], IsaInterruptRouting::isa_default(9));
         assert_eq!(
             table[5],
-            IsaIrqRouting::isa_default(5),
-            "IRQ 5 is back to itself"
+            IsaInterruptRouting::isa_default(5),
+            "interrupt 5 is back to itself"
         );
     }
 
-    /// An override naming a source outside the sixteen legacy IRQs is a malformed table, not a
-    /// seventeenth IRQ, and must not index past the end of the table.
+    /// An override naming a source outside the sixteen legacy interrupts is a malformed table, not a
+    /// seventeenth interrupt, and must not index past the end of the table.
     #[test]
     fn an_override_for_a_source_above_15_is_ignored() {
         let mut body = q35_madt_body();
         body[41] = 200;
-        let table = isa_irq_table(&body);
-        for (irq, routing) in table.iter().enumerate().skip(1) {
-            assert_eq!(*routing, IsaIrqRouting::isa_default(irq as u8));
+        let table = isa_interrupt_table(&body);
+        for (interrupt_number, routing) in table.iter().enumerate().skip(1) {
+            assert_eq!(
+                *routing,
+                IsaInterruptRouting::isa_default(interrupt_number as u8)
+            );
         }
         assert_eq!(table[0].gsi, 2, "the well-formed override still applied");
     }
 
-    /// **Only a type-2 entry rewires a legacy IRQ.** An IO APIC entry with id 0 has a zero at
+    /// **Only a type-2 entry rewires a legacy interrupt.** An IO APIC entry with id 0 has a zero at
     /// both of the offsets an override keeps its bus and source in, so read as an override it
-    /// would send IRQ 0 to the IO APIC's address. Id 0 is what a single-IO-APIC PC usually has.
+    /// would send interrupt 0 to the IO APIC's address. Id 0 is what a single-IO-APIC PC usually has.
     #[test]
     fn an_io_apic_entry_is_never_read_as_an_override() {
         let mut body = [0u8; MADT_FIXED_LEN + 12];
         body[MADT_FIXED_LEN..].copy_from_slice(&[1, 12, 0, 0, 0x00, 0x00, 0xC0, 0xFE, 0, 0, 0, 0]);
-        let table = isa_irq_table(&body);
-        for (irq, routing) in table.iter().enumerate() {
-            assert_eq!(*routing, IsaIrqRouting::isa_default(irq as u8));
+        let table = isa_interrupt_table(&body);
+        for (interrupt_number, routing) in table.iter().enumerate() {
+            assert_eq!(
+                *routing,
+                IsaInterruptRouting::isa_default(interrupt_number as u8)
+            );
         }
     }
 
@@ -834,9 +848,12 @@ mod tests {
     fn a_short_override_leaves_the_isa_table_alone() {
         let mut body = [0u8; MADT_FIXED_LEN + 8];
         body[MADT_FIXED_LEN..].copy_from_slice(&[2, 8, ISA_BUS, 3, 9, 0, 0, 0]);
-        let table = isa_irq_table(&body);
-        for (irq, routing) in table.iter().enumerate() {
-            assert_eq!(*routing, IsaIrqRouting::isa_default(irq as u8));
+        let table = isa_interrupt_table(&body);
+        for (interrupt_number, routing) in table.iter().enumerate() {
+            assert_eq!(
+                *routing,
+                IsaInterruptRouting::isa_default(interrupt_number as u8)
+            );
         }
     }
 
@@ -900,16 +917,19 @@ mod tests {
     }
 
     /// **An override naming source 16 is ignored**, and 16 is the number that has to be exact.
-    /// There are sixteen legacy IRQs, so 16 is the first value that is not one of them, and a
+    /// There are sixteen legacy interrupts, so 16 is the first value that is not one of them, and a
     /// bound read as inclusive writes past the sixteen-entry table. The existing refusal test uses
     /// 200, which any reading of the bound turns away.
     #[test]
     fn an_override_for_the_first_source_past_the_legacy_sixteen_is_ignored() {
         let mut body = q35_madt_body();
         body[41] = 16;
-        let table = isa_irq_table(&body);
-        for (irq, routing) in table.iter().enumerate().skip(1) {
-            assert_eq!(*routing, IsaIrqRouting::isa_default(irq as u8));
+        let table = isa_interrupt_table(&body);
+        for (interrupt_number, routing) in table.iter().enumerate().skip(1) {
+            assert_eq!(
+                *routing,
+                IsaInterruptRouting::isa_default(interrupt_number as u8)
+            );
         }
         assert_eq!(table[0].gsi, 2, "the well-formed override still applied");
     }

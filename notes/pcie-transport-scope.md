@@ -29,7 +29,7 @@ Concrete addresses (QEMU riscv `virt`, from the DTB `pci@30000000`):
 ECAM config space   0x3000_0000, size 0x1000_0000   (256 buses x 4 KB per function)
 32-bit MMIO window   0x4000_0000, size 0x4000_0000   (where BARs are assigned)
 64-bit MMIO window   0x4_0000_0000                    (large BARs)
-INTx -> PLIC          irqs 0x20..0x23 (32..35), by (device, pin) via interrupt-map
+INTx -> PLIC          interrupts 0x20..0x23 (32..35), by (device, pin) via interrupt-map
 host bridge          compatible = "pci-host-ecam-generic", bus-range 0..255
 ```
 
@@ -71,15 +71,15 @@ Effort is session-sized: S = part of a session, M = one to two, L = several.
 ### P3. Interrupt routing (INTx via the PLIC): S-M, medium risk.
 
 - Read the device's Interrupt Pin (config 0x3D: 1 = INTA). Resolve INTA for this device through the
-  DTB `interrupt-map` / `interrupt-map-mask` (device number and pin select a PLIC irq in 32..35 on
-  riscv `virt`). Then reuse the existing path: `bind_irq` the PLIC irq to an endpoint, grant the
-  driver an `Irq` capability.
+  DTB `interrupt-map` / `interrupt-map-mask` (device number and pin select a PLIC interrupt in 32..35 on
+  riscv `virt`). Then reuse the existing path: `bind_interrupt` the PLIC interrupt to an endpoint, grant the
+  driver an `Interrupt` capability.
 - INTx first, not MSI-X. Legacy INTx is a wire that routes through the PLIC, which is exactly the
   interrupt model you already have (the userspace UART driver's `WAIT`/`ACK`). MSI-X (the device
   writes a message to raise an interrupt) is more scalable and more modern, but it is a separate,
   larger piece; add it later if a device needs many vectors.
 - Proves: a virtqueue completion on the PCIe device reaches a userspace driver as a message,
-  through the same `Irq` capability mechanism as an mmio device.
+  through the same `Interrupt` capability mechanism as an mmio device.
 
 ### P4. Wire virtio-pci to the driver and the DMA confinement: L, medium-high risk.
 
@@ -103,7 +103,7 @@ Effort is session-sized: S = part of a session, M = one to two, L = several.
 
 ## Decisions to raise before building
 
-1. INTx vs MSI-X. Recommend INTx first (matches the PLIC/`Irq`-cap model; MSI-X is a later
+1. INTx vs MSI-X. Recommend INTx first (matches the PLIC/`Interrupt`-cap model; MSI-X is a later
    enhancement).
 2. One driver, two transports, or two drivers. Recommend a thin transport abstraction so the
    virtqueue/DMA/confinement logic and the userspace block driver are shared between mmio and pci.

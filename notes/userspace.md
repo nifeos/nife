@@ -157,7 +157,7 @@ a forged frame, and no new code at all.
   is no EL0h.)
 - `DAIF = 0` → interrupts unmasked.
 
-That last one is the interesting bit. IRQs are live the instant we land in EL0. If they were
+That last one is the interesting bit. Interrupts are live the instant we land in EL0. If they were
 masked, a user program in a tight loop could never be preempted, and the machine would be gone.
 Which is precisely the failure [DECISIONS §5](../design/decisions/0005-preemptive-threads.md) spent a whole milestone refusing
 to accept.

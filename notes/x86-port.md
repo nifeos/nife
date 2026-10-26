@@ -113,7 +113,7 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 |---|---|
 | [boot.md](x86-port/boot.md) | Why the kernel boots by PVH and not Multiboot, the real-firmware path through `uefi_loader`, and the 32-bit trampoline into long mode. |
 | [acpi-and-pci.md](x86-port/acpi-and-pci.md) | The PVH memory map, the ACPI tables as q35 reports them, the discovery seam milestone 20 (a portable HAL) promised, and why a PCI function's interrupt is MSI-X rather than the legacy pin. |
-| [interrupts-and-the-fine-map.md](x86-port/interrupts-and-the-fine-map.md) | The PIT-calibrated clock, the IO APIC and its legacy-IRQ trap, the W^X kernel page tables, and the direct map in blocks. |
+| [interrupts-and-the-fine-map.md](x86-port/interrupts-and-the-fine-map.md) | The PIT-calibrated clock, the IO APIC and its legacy-interrupt trap, the W^X kernel page tables, and the direct map in blocks. |
 | [traps.md](x86-port/traps.md) | The IDT and its 256 stubs, the syscall ABI and why it returns by `iretq`, the vector bands, MSI, the GDT and TSS, and port grants in the TSS bitmap. |
 | [ring-3.md](x86-port/ring-3.md) | Address spaces, `swapgs`, the `syscall` pair, and the hand-assembled probe that first ran at CPL 3. |
 | [scheduler.md](x86-port/scheduler.md) | The trap-path split, `TSS.RSP0`, the self-IPI, and four places portable code was wrong for a third architecture. |
@@ -164,7 +164,7 @@ would.
   HANDLER_BOUND, calibration_loop, deadline, missed_ticks}`, and this port has none of the five.
   The cause is the timer. The instrument checks every tick against the deadline the kernel armed
   (notes/instruction-clock.md). Here the local APIC timer is a periodic hardware reload
-  (`irq::arm_periodic_timer`), so there is no armed deadline to read and no missed tick to count.
+  (`interrupt_controller::arm_periodic_timer`), so there is no armed deadline to read and no missed tick to count.
   Porting it means first changing how this port ticks, to the APIC's one-shot or TSC-deadline mode.
   That is a timer redesign rather than a port, and neither mode has been tried under TCG here. A
   partial port to the periodic tick would have to redefine claim 2, whose span starts at the armed

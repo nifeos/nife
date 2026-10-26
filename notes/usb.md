@@ -77,7 +77,7 @@ on a machine with no IOMMU, and this driver does not run at all, because it name
 `kernel/src/user/usb_keyboard_service.rs` is what the driver is handed, and its `Spawn` literal is
 the whole of the confinement claim.
 
-- Slot 0, the controller's interrupt (`Irq`, WAIT and ACK).
+- Slot 0, the controller's interrupt (`Interrupt`, WAIT and ACK).
 - Slot 1, an attach endpoint (READ). The one message it receives there carries the endpoint its
   keystrokes go to, delegated by the progenitor once the line discipline exists. So a driver the
   kernel starts before the progenitor holds `WRITE` on an endpoint the progenitor creates, and the
@@ -93,7 +93,7 @@ The scratchpad pages are the controller's private memory; the driver writes thei
 never their contents. It cannot reach PCI configuration space, so it cannot change bus mastering,
 move a BAR or touch MSI. It holds no budget, filesystem, console or clock.
 
-The kernel enables the interrupt through the arch layer, as the `Irq` capability's ACK does. On
+The kernel enables the interrupt through the arch layer, as the `Interrupt` capability's ACK does. On
 riscv64 that is the source's stable round-robin hart (`target_context`). A source enabled on the
 boot hart's context instead is moved by its first ACK, and no keystroke after the first arrives.
 
@@ -125,7 +125,7 @@ riscv64 that stalls the echo of `echo hello` mid-line about one boot in thirty, 
 releases the held keys.
 
 It looks like a lost wakeup of `line_editor` across harts, and it is not one. A thread dump at the
-stall shows nobody sending to `line_editor`; the driver sits in `Irq::WAIT`, and its PLIC source is
+stall shows nobody sending to `line_editor`; the driver sits in `Interrupt::WAIT`, and its PLIC source is
 pending, enabled, above threshold and undelivered. `kernel/src/drivers/plic.rs` has the reasoning,
 and `sched::tests::an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack` holds it on
 all three architectures.

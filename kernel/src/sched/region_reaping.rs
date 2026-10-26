@@ -300,8 +300,8 @@ impl ReclaimRefusal {
 }
 
 #[cfg(feature = "system_tests")]
-static LAST_REFUSAL: crate::sync::IrqSafeMutex<Option<ReclaimRefusal>> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::RECLAIM_REFUSAL, None);
+static LAST_REFUSAL: crate::sync::InterruptSafeMutex<Option<ReclaimRefusal>> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::RECLAIM_REFUSAL, None);
 
 #[cfg_attr(not(feature = "system_tests"), allow(unused_variables))]
 fn record_refusal(why: ReclaimRefusal) {

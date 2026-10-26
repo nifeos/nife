@@ -99,17 +99,19 @@ pub(super) fn read_daif() -> u64 {
     daif
 }
 
-/// `msr daifset, #2`: mask IRQs.
+/// `msr daifset, #2`: mask interrupts.
 #[inline(always)]
-pub(super) fn mask_irqs() {
-    // SAFETY: masking IRQs is always sound.
+#[doc(alias = "irq")]
+pub(super) fn mask_interrupts() {
+    // SAFETY: masking interrupts is always sound.
     unsafe { asm!("msr daifset, #2", options(nomem, nostack)) };
 }
 
-/// `msr daifclr, #2`: unmask IRQs.
+/// `msr daifclr, #2`: unmask interrupts.
 #[inline(always)]
-pub(super) fn unmask_irqs() {
-    // SAFETY: unmasking IRQs is sound; whether it is wise is the caller's question.
+#[doc(alias = "irq")]
+pub(super) fn unmask_interrupts() {
+    // SAFETY: unmasking interrupts is sound; whether it is wise is the caller's question.
     unsafe { asm!("msr daifclr, #2", options(nomem, nostack)) };
 }
 

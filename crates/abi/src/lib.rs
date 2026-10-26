@@ -201,7 +201,7 @@ pub mod fault;
 /// [`cycle_counter::CycleMeaning`]s before comparing cycle figures across architectures.
 pub mod cycle_counter;
 
-/// Methods on an `Irq` capability. **How a userspace driver owns an interrupt.**
+/// Methods on an `Interrupt` capability. **How a userspace driver owns an interrupt.**
 pub mod interrupt;
 
 /// Methods on a `Virtio` capability. **How a driver operates a device it cannot point out of its

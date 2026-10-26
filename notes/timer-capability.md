@@ -53,7 +53,7 @@ the code behind each verdict are in [specifications.md](timer-capability/specifi
 
 ## The other route: an MMIO timer the kernel already knows how to delegate
 
-An MMIO timer block is a `DeviceFrame` plus an `Object::Irq`, which is how every userspace driver
+An MMIO timer block is a `DeviceFrame` plus an `Object::Interrupt`, which is how every userspace driver
 here already owns a device, so a machine with a spare one can give it to a userspace service today.
 argon has fourteen channels and radon four, each with its own interrupt line. xenon's HPET is
 presumed and not confirmed. QEMU's aarch64 `virt` has none, and its riscv64 `virt` has only the
@@ -121,7 +121,7 @@ was written (milestone 151, BUILT since; see the note under the title). What the
 assumes about it:
 
 1. That the signal target is a `Rendezvous`, not a separate object. The scaffold signaled through
-   `sched::irq_notify`, which takes a `RendezvousId`, because that is what exists today. §101's whole
+   `sched::interrupt_notify`, which takes a `RendezvousId`, because that is what exists today. §101's whole
    argument is that a notification should be *its own object with its own queue*, separate from the
    endpoint. If 151 builds that, `Timer::ARM`'s second argument names a `Notification` and not a
    `Rendezvous`, and the dispatch arm's capability check changes shape. The byte figures do not

@@ -370,34 +370,38 @@ fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
     reclaim(r);
 }
 
-/// **A kernel-originated signal wakes a driver blocked in `Irq::WAIT`, through the syscall
+/// **A kernel-originated signal wakes a driver blocked in `Interrupt::WAIT`, through the syscall
 /// layer's registers.** This is the case of milestone 106 (a wait that ends on either the interrupt or the deadline), per §147 (a timer a userspace service cannot hold): `net_stack` blocks on its interrupt,
 /// and a timer expiry must be able to end that wait. The signal comes through
 /// [`sched::signal_notification_from_interrupt`], the entry 106's tick will call; it is invoked from
 /// a kernel thread here, not from a real interrupt, so what this proves is the load-aware wake and
-/// the `Irq::WAIT` registers, not the interrupt-stack context (which `irq_notify` already shares).
+/// the `Interrupt::WAIT` registers, not the interrupt-stack context (which `interrupt_notify` already shares).
 ///
 /// The interrupt number is one no device on any of the three machines raises, chosen because a
 /// route is global and this test must not steal a real device's.
+///
+/// Falsification: unfalsified. Renamed by the `irq` spelling sweep (it was
+/// `a_kernel_signal_ends_an_irq_wait_with_the_word_in_x1_and_the_tag_in_x4`), which ran it green
+/// and changed nothing it asserts; no defect has been injected to turn it red.
 #[test_case]
-fn a_kernel_signal_ends_an_irq_wait_with_the_word_in_x1_and_the_tag_in_x4() {
+fn a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4() {
     const QUIET_INTID: u32 = 251;
     static RESULT: [AtomicU64; 3] = [const { AtomicU64::new(u64::MAX) }; 3];
 
     let r = region();
     let n = sched::create_notification_from(r).expect("notification");
-    let ep = match sched::irq_route(QUIET_INTID) {
+    let ep = match sched::interrupt_route(QUIET_INTID) {
         Some(ep) => ep,
         None => {
             let ep = sched::create_rendezvous_from(r).expect("rendezvous");
-            sched::bind_irq(QUIET_INTID, ep);
+            sched::bind_interrupt(QUIET_INTID, ep);
             ep
         }
     };
 
     let driver = sched::spawn(move || {
-        let slot = sched::grant(crate::cap::irq_cap_rights(QUIET_INTID, Rights::READ))
-            .expect("grant the irq");
+        let slot = sched::grant(crate::cap::interrupt_cap_rights(QUIET_INTID, Rights::READ))
+            .expect("grant the interrupt");
         let (answer, frame) = invoke(slot, abi::interrupt::WAIT, 0);
         RESULT[0].store(answer.map_or(u64::MAX - 1, |v| v as u64), Ordering::SeqCst);
         RESULT[1].store(frame.arg(1), Ordering::SeqCst);
@@ -412,7 +416,7 @@ fn a_kernel_signal_ends_an_irq_wait_with_the_word_in_x1_and_the_tag_in_x4() {
             w,
             Some(Wait::Rendezvous(e, WaitRole::Receiver)) if e == ep
         ))),
-        "the driver never blocked in Irq::WAIT"
+        "the driver never blocked in Interrupt::WAIT"
     );
     sched::signal_notification_from_interrupt(n, 0x8000);
     assert!(wait_for(|| RESULT[2].load(Ordering::SeqCst) != u64::MAX));

@@ -198,11 +198,12 @@ pub(super) fn process_invoke(
     }
 }
 
-/// `Irq::WAIT`: block on the endpoint the kernel routed this interrupt to; the interrupt arrives
-/// as a message (`sched::irq_notify`). `WrongObject` when the line has no route.
+/// `Interrupt::WAIT`: block on the endpoint the kernel routed this interrupt to; the interrupt arrives
+/// as a message (`sched::interrupt_notify`). `WrongObject` when the line has no route.
 #[inline(never)]
-pub(super) fn irq_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, Error> {
-    let ep = sched::irq_route(intid).ok_or(Error::WrongObject)?;
+#[doc(alias = "irq")]
+pub(super) fn interrupt_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, Error> {
+    let ep = sched::interrupt_route(intid).ok_or(Error::WrongObject)?;
     let m = sched::ipc_receive(ep);
     // Unconditional: a bound notification's wake carries `BOUND` and its word here, and an
     // interrupt's mailbox has zeros in both, which an unbound driver reads as before.
@@ -211,11 +212,12 @@ pub(super) fn irq_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, Error> 
     Ok(m[0] as i64)
 }
 
-/// `Irq::ACK`: unmask the interrupt at the controller, which masked it when it fired, once the
+/// `Interrupt::ACK`: unmask the interrupt at the controller, which masked it when it fired, once the
 /// driver has serviced the device.
 #[inline(never)]
-pub(super) fn irq_ack(intid: u32) -> Result<i64, Error> {
-    crate::arch::irq::enable(intid);
+#[doc(alias = "irq")]
+pub(super) fn interrupt_acknowledge(intid: u32) -> Result<i64, Error> {
+    crate::arch::interrupt_controller::enable(intid);
     Ok(0)
 }
 

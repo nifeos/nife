@@ -202,7 +202,7 @@ the recorded bug.
 
 ## `crates/spin_lock`, the kernel's lock (2026-10-25)
 
-`IrqSafeMutex` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that it
+`InterruptSafeMutex` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that it
 takes `spin_lock::SpinLock`: a flag set with an Acquire compare-exchange and cleared with a Release
 store. Most of the kernel's happens-before edges come from that pair
 ([memory-ordering.md](../memory-ordering.md)). The crate is the protocol and nothing else, so the

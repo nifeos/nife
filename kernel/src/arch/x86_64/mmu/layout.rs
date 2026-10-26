@@ -98,7 +98,7 @@ pub(crate) const COM1_PORT: usize = 0x3f8;
 pub(crate) const LOCAL_APIC_PHYS: u64 = 0xfee0_0000;
 
 /// The IO APIC's default physical base on a PC-compatible machine, used only when the ACPI MADT
-/// did not say. `irq::io_apic_phys()` is what the machine actually reported, and q35 reports
+/// did not say. `interrupt_controller::io_apic_phys()` is what the machine actually reported, and q35 reports
 /// exactly this.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) const IO_APIC_PHYS: u64 = 0xfec0_0000;

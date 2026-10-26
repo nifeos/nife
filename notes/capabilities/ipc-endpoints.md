@@ -51,7 +51,7 @@ let runnable = state == Some(State::Running);
 // ...only requeue `current` if runnable...
 ```
 
-`schedule()` can be called from the timer IRQ *while a thread is halfway through blocking itself*:
+`schedule()` can be called from the timer interrupt *while a thread is halfway through blocking itself*:
 it has marked itself `Blocked` and joined an endpoint queue but has not yet reached its own
 `schedule()` call. The timer must not helpfully requeue it. One equality check is the whole
 defense, and a test (`a_receiver_blocks_until_a_sender_arrives`) fails loudly without it: with the
@@ -77,7 +77,7 @@ register and a message is three. Writing the trap frame is writing the user's re
 Every worry that makes IPC hard on a real machine: a sender and receiver racing on the queue, a
 message half-delivered: cannot arise on one core, because only one thread runs at a time. Between a
 thread releasing the scheduler lock and calling `schedule()` to block, the *only* thing that can run
-there is the timer IRQ, and the one-line `runnable` check handles that. nife runs on many cores
+there is the timer interrupt, and the one-line `runnable` check handles that. nife runs on many cores
 under §11 (SMP).
 
 What it costs now that cores are real is written down rather than left to inference.

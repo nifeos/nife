@@ -11,9 +11,10 @@ pub mod exceptions;
 mod fastpath_pad;
 pub mod fp;
 mod instructions;
+#[doc(alias = "irq")]
+pub mod interrupt_controller;
 pub mod interrupts;
 pub mod iommu;
-pub mod irq;
 pub mod isa;
 pub mod machine;
 pub mod mmu;

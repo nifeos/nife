@@ -841,7 +841,7 @@ impl Conductor {
                         escape!(self, "fuzzer {x} holds region {r:#x} it was never granted");
                     }
                 }
-                Object::Irq(_) | Object::DeviceFrame(_) => {
+                Object::Interrupt(_) | Object::DeviceFrame(_) => {
                     escape!(self, "fuzzer {x} holds {:?}, which no grant names", obj);
                 }
                 Object::Reply(tid) if !self.fuzzers.iter().any(|f| f.tid == *tid) => {

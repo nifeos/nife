@@ -25,7 +25,7 @@ themselves stay exactly where `pick_spawn_target` put them.
   run queue (§28 (SMP placement), part 2: the message is in registers and the cache is warm). So a communicating
   set converges onto one core within a few exchanges and stays there.
 - `wake_load_aware`, the load-aware placement, is for device interrupts only. It is the function the
-  one real defect was in, and no user workload can reach it: it takes an IRQ to get there.
+  one real defect was in, and no user workload can reach it: it takes an interrupt to get there.
 - A work steal needs an idle core and a queued thread elsewhere. A rendezvous keeps at most two
   threads runnable per group, so run queues are almost always empty and there is nothing to give.
   Add compute threads to fill the queues, and no core is idle to ask. Both ends of the condition are

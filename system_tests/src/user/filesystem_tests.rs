@@ -30,17 +30,17 @@ use crate::sched;
 ///
 /// The driver at EL0 gets the device registers, a DMA page and an interrupt, reads `motd` off
 /// the nifefs image, and reports its first bytes: real disk data crossed DMA and the EL0 boundary.
-/// `ROUTED_IRQS` must rise, so the interrupt path (9a) carried the completion, and the scheduler
+/// `ROUTED_INTERRUPTS` must rise, so the interrupt path (9a) carried the completion, and the scheduler
 /// idles rather than declaring a deadlock while the driver waits with nothing else to run.
 // RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // Sampled before the device is wired, not after. The pcie test further down this file
     // carries the argument for why that ordering, and not a longer wait, is the whole fix.
-    let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtio_service::start(blk_image()) else {
         // No disk attached to this run. Nothing to test; do not fail.
@@ -56,11 +56,11 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
         b"nife: re",
         "the driver reported the wrong file contents",
     );
-    let irqs_after = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
-        irqs_after > irqs_before,
+        interrupts_after > interrupts_before,
         "the read completed but no device interrupt was delivered as a message \
-         ({irqs_before} routed before the device was wired, {irqs_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the report)",
     );
 }
 

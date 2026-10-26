@@ -7,16 +7,16 @@
 //!
 
 //! GICv2 only: a GICv3 is `gicv3.rs` plus `arch/aarch64/gic_cpu_interface.rs`, and
-//! `arch/aarch64/irq.rs` picks one from the device tree and confirms it against the hardware.
+//! `arch/aarch64/interrupt_controller.rs` picks one from the device tree and confirms it against the hardware.
 //!
 //! # BUGS
 //!
 //! - [`send_sgi`] issues no barrier before the `SGIR` write, so the Device store is not ordered
 //!   after the Normal stores the target core will read (the GICv3 path has the `dsb`). TCG does
 //!   not model the reordering; argon, a GIC-400, would. The fix is one `dsb ishst` in
-//!   `arch::irq::send_sgi` ahead of the GICv2 call.
+//!   `arch::interrupt_controller::send_sgi` ahead of the GICv2 call.
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // Register offsets and bits from the GIC architecture specification, version 2 (Arm IHI 0048B),
 // chapter 4, under each register's own heading, and checked against Linux's
@@ -75,7 +75,8 @@ pub(crate) struct Gic {
     gicc: u64,
 }
 
-static GIC: IrqSafeMutex<Option<Gic>> = IrqSafeMutex::new(rank::IRQ_CONTROLLER, None);
+static GIC: InterruptSafeMutex<Option<Gic>> =
+    InterruptSafeMutex::new(rank::INTERRUPT_CONTROLLER, None);
 
 impl Gic {
     /// Write the distributor's 32-bit register at `offset`.
@@ -106,7 +107,7 @@ impl Gic {
     }
 }
 
-/// `GICC_IIDR` at `gicc`, read before anything else is trusted: `arch::irq` hands it to
+/// `GICC_IIDR` at `gicc`, read before anything else is trusted: `arch::interrupt_controller` hands it to
 /// `machine_discovery::gic::Gic::confirm`, so a tree naming the wrong block fails at boot instead
 /// of booting and taking nothing.
 ///
@@ -159,7 +160,7 @@ pub(crate) fn initialize_this_cpu() {
 ///
 /// `target_cpu` is the core the distributor should deliver this SPI to (bit N of `ITARGETSR`). The
 /// policy that chooses it (spreading device lines across cores so they do not all funnel through
-/// core 0) lives one level up in `arch::irq::enable`; this driver only writes the register it is
+/// core 0) lives one level up in `arch::interrupt_controller::enable`; this driver only writes the register it is
 /// told to, keeping the choice out of the GIC (DECISIONS §4: a driver reaches into no kernel
 /// global, including the online-core count). PPIs and SGIs are per-core, so `target_cpu` is ignored
 /// for them.
@@ -182,7 +183,7 @@ pub fn enable(intid: u32, target_cpu: usize) {
 /// Disable one interrupt source, at the distributor.
 ///
 /// How a userspace driver's interrupt is masked the moment it fires, so a level-triggered line
-/// cannot storm before the driver services it; its `Irq` capability's `ACK` re-enables it. See
+/// cannot storm before the driver services it; its `Interrupt` capability's `ACK` re-enables it. See
 /// notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {
     let guard = GIC.lock();
@@ -213,7 +214,7 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
 }
 
 /// Take the interrupt. **Reading `IAR` is what acknowledges it**, so this has a side effect
-/// and must be called exactly once per IRQ.
+/// and must be called exactly once per interrupt.
 ///
 /// Returns [`SPURIOUS`] (1023) if the GIC changed its mind. Do nothing with that, and in
 /// particular do **not** call [`end_of_interrupt`]: signalling completion for an interrupt you

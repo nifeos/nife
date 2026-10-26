@@ -11,7 +11,7 @@ sources, read on 2026-09-05.
 
 The parent's specification verdicts are about the *architected* timer on each ISA. There is a second
 route that needs no new mechanism at all, because this tree already has it. An MMIO timer block is a
-`DeviceFrame` plus an `Object::Irq`, which is exactly how every userspace driver in this system
+`DeviceFrame` plus an `Object::Interrupt`, which is exactly how every userspace driver in this system
 already owns a device. If a machine has a spare MMIO timer, a userspace timer service can hold it
 today.
 
@@ -24,7 +24,7 @@ Linux bindings and QEMU's own source:
 | radon, VisionFive 2 (JH7110) | yes, `timer@13050000` (`si5_timer`) | 4, 24 MHz | yes, 4 distinct PLIC lines |
 | xenon, OptiPlex 7050 | HPET, presumed present, not confirmed on this machine | up to 32; the spec's recommended minimum is 3 | yes, per-timer routing when the legacy route is off |
 | QEMU `virt`, aarch64 | none | | |
-| QEMU `virt`, riscv64 | the goldfish RTC's alarm only | 1 comparator | yes, IRQ 11 |
+| QEMU `virt`, riscv64 | the goldfish RTC's alarm only | 1 comparator | yes, interrupt 11 |
 
 Sources and the exact text:
 

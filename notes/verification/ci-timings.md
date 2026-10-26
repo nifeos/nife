@@ -12,7 +12,7 @@ parent conflicted on every merge that added a harness. Some history of the count
 - Milestone 198 (a package manager) added two harnesses on 2026-09-23, in `crates/package_archive`.
   Both take 4 seconds.
 - Milestone 304 (`cargo kani -p kernel` only ever compiled one architecture) added two, in
-  `kernel/src/arch/x86_64/irq.rs`. Only an x86_64 host runs them, which means the `prove` shards
+  `kernel/src/arch/x86_64/interrupt_controller.rs`. Only an x86_64 host runs them, which means the `prove` shards
   since milestone 587 (most CI jobs do not need an arm64 host). So the count is of the tree, not of
   any one run, and no single host compiles all of them.
 - Milestone 161 (the x86_64 kernel port) added eight on 2026-09-19, the block-leaf proofs in

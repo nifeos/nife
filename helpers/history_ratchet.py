@@ -255,7 +255,7 @@ def selftest():
         ('This bullet used to say the row was missing.', ['used to']),
         ('It was called init until #1500.', ['was until']),
         ('The lint job was named `clippy` until 2026-10-08 (UTC).', ['was until']),
-        ('`rank::IRQ_CONTROLLER` (renamed from `rank::GIC`); nife, formerly cricker-os.',
+        ('`rank::INTERRUPT_CONTROLLER` (renamed from `rank::GIC`); nife, formerly cricker-os.',
          ['renamed', 'renamed']),
         ('An appendix of [x](../x.md), moved from its section "Y" on 2026-10-12.', ['moved from']),
         ('Moved whole from [`notes/a.md`](../a.md).', ['moved from']),

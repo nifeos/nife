@@ -26,7 +26,7 @@ button and the POST keyboard halt.
 for sel4bench-manifest `11d0fc2c`. Its Skylake rows, Default configuration, "without meltdown
 mitigation":
 
-| row | IPC call | IPC reply | Notify | IRQ invoke |
+| row | IPC call | IPC reply | Notify | interrupt invoke |
 |---|---|---|---|---|
 | Default | 743 (23) | 597 (2) | 756 (7) | 1605 (61) |
 | MCS | 769 (30) | 663 (2) | 1065 (7) | 1948 (61) |
@@ -158,7 +158,7 @@ the path milestone 260 (boot xenon over the network) built (`bench/xenon-netboot
 
 ### What UEFI changes for sel4bench itself, found in rehearsal
 
-sel4bench's IRQ benchmark (`apps/irquser`) programs a timer through libplatsupport's
+sel4bench's interrupt benchmark (`apps/irquser`) programs a timer through libplatsupport's
 `ltimer_default_init`. That finds the HPET through ACPI, and its `acpi_init` finds ACPI only by
 scanning the legacy BIOS area, `0xE0000` to `0xFFFFF`, for the root pointer. It never asks seL4,
 which has the pointer from GRUB. UEFI firmware need not put a copy there. Without one the timer
@@ -171,7 +171,7 @@ Whether xenon's firmware keeps a legacy copy of the root pointer is not recorded
 answers it. If it does not, the `-noirq` configurations are the same command with
 `-DIRQUSER=OFF`. `build.sh` refuses to finish unless their kernel and every other benchmark binary,
 the IPC one included, are byte-identical to the full build's, so they time exactly the published
-code and lose only the IRQ invoke column.
+code and lose only the interrupt invoke column.
 
 ### The rehearsal under OVMF, and what it cannot reach
 
@@ -186,7 +186,7 @@ On patagonia, on 2026-10-21:
   past this point of the published images can run under emulation.
 - So the rest was rehearsed on images built from the same command plus `-DKernelSupportPCID=OFF`,
   which serve no other purpose. Booted the same way, seL4 started, sel4bench ran all five IPC
-  iterations, and the IRQ benchmark failed as described above. With `-DIRQUSER=OFF` and the slow
+  iterations, and the interrupt benchmark failed as described above. With `-DIRQUSER=OFF` and the slow
   apps off as well, the run printed its `JSON OUTPUT` block and `All is well in the universe.`, and
   the Foundation's `print_results.py` read that serial log against their `PC99_64_noksw_skylake`
   series.
@@ -257,7 +257,7 @@ xenon at the nominal ratio, take the means of IPC call and IPC reply, Default an
 - **Not validated**: any beyond 15%, or the shape wrong (reply above call, a standard deviation
   ten times theirs).
 
-Notify and IRQ invoke are read but not judged: IRQ invoke goes through the interrupt controller and
+Notify and interrupt invoke are read but not judged: interrupt invoke goes through the interrupt controller and
 the timer, which differ by chipset, and neither enters the thesis's IPC claim.
 
 ## What this changes for milestones 127 and 25

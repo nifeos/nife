@@ -7,7 +7,7 @@
 /// The console UART's receive interrupt on QEMU `virt`, which the progenitor routes to the input
 /// driver it builds. aarch64's PL011 is SPI 1 = INTID 33; RISC-V's NS16550 is PLIC source 10.
 ///
-/// A fallback, not the answer: the boot paths ask the machine first ([`uart_irq_and_source`]), and
+/// A fallback, not the answer: the boot paths ask the machine first ([`uart_interrupt_number_and_source`]), and
 /// on the JH7110 UART0 is PLIC line 32 (notes/visionfive2.md, BUGS).
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
@@ -18,7 +18,7 @@ pub const UART_RECEIVE_INTID: u32 = 33;
 /// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "riscv64")]
 pub const UART_RECEIVE_INTID: u32 = 10;
-/// `x86_64`: COM1 is ISA IRQ 4, the legacy line. It is neither the IO APIC input it may be
+/// `x86_64`: COM1 is ISA interrupt 4, the legacy line. It is neither the IO APIC input it may be
 /// remapped to (the ACPI MADT's overrides say, unread here) nor the IDT vector that input raises.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
@@ -27,11 +27,12 @@ pub const UART_RECEIVE_INTID: u32 = 10;
 pub const UART_RECEIVE_INTID: u32 = 4;
 
 /// The console UART's interrupt line and which source decided it: the machine's own answer when
-/// it gave one (`memory::uart_irq`, a device tree on aarch64/riscv64 or ACPI on `x86_64`), else
+/// it gave one (`memory::uart_interrupt_number`, a device tree on aarch64/riscv64 or ACPI on `x86_64`), else
 /// [`UART_RECEIVE_INTID`], QEMU `virt`'s constant. The source string is for a bench transcript to
 /// print, so the number's origin is diagnosable.
-pub(crate) fn uart_irq_and_source() -> (u32, &'static str) {
-    match crate::memory::uart_irq() {
+#[doc(alias = "irq")]
+pub(crate) fn uart_interrupt_number_and_source() -> (u32, &'static str) {
+    match crate::memory::uart_interrupt_number() {
         Some(n) => (n, "machine description"),
         None => (
             UART_RECEIVE_INTID,

@@ -94,7 +94,7 @@ Two cores come up under OVMF, and `uefi-boot` gates it on every boot with `smp: 
 [uefi-boot-two-core-rate.md](../uefi-boot-two-core-rate.md)). The second local APIC also answers a
 question for xenon from the BUGS of milestone 215 (a PCI function's interrupt reaches nothing on
 x86_64). It asks whether device interrupts still reach the boot core's id, and the tour's `device
-irq` line is that answer.
+Interrupt` line is that answer.
 
 The suite under OVMF keeps the runner's one-core default. Two defects made two cores flake, and both
 are fixed: `boot_cpu_id`, by milestone 316 (which core booted), and `cpu_start` re-reading its count

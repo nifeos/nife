@@ -128,7 +128,7 @@ is in [interrupts.md](interrupts.md). The binding allows several redistributor r
 only past 123 cores, and the kernel's `cpu::MAX_CPUS` is eight, so the decoder refuses more than one.
 The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
 `arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's `IRQCHIP_DECLARE` table in
-`drivers/irqchip/irq-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
+`drivers/irqchip/interrupt-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
 machines.
 
 ## The screen token

@@ -5,13 +5,13 @@
 //! # BUGS
 //! - One IO APIC: [`route_gsi`] refuses a GSI a second owns (proved, unit-tested, never booted).
 //! - Every line and MSI targets the core that armed it, in physical mode; nothing is distributed.
-//! - Revoking a driver's `Irq` does not [`mask_gsi`], so a dead driver's COM1 line stays armed.
+//! - Revoking a driver's `Interrupt` does not [`mask_gsi`], so a dead driver's COM1 line stays armed.
 //! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps), out of a band of 63.
 //! - Interrupt remapping is assumed off; a VT-d unit with it on rejects these MSI messages.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use machine_discovery::acpi::{ISA_IRQ_COUNT, IsaIrqRouting};
+use machine_discovery::acpi::{ISA_INTERRUPT_COUNT, IsaInterruptRouting};
 
 use super::mmu::phys_to_virt;
 use super::port::{in8, out8};
@@ -150,7 +150,7 @@ fn write(offset: u64, value: u32) {
 
 /// **Mask every line on both 8259 PICs.**
 ///
-/// Their power-on vector base overlaps the CPU's own exception vectors (a PIC IRQ 0 arrives as
+/// Their power-on vector base overlaps the CPU's own exception vectors (a PIC interrupt 0 arrives as
 /// vector 8, which is the double fault), so an interrupt from one of these is not merely unowned, it
 /// is *misread as a fault the kernel takes seriously*. Masking is enough because nothing here wants
 /// to use them; a kernel that did would remap them to 0x20..0x30 first.
@@ -268,7 +268,7 @@ pub(crate) fn mask_timer() {
 /// pair and the device is stateful.
 ///
 /// # BUGS
-/// Nothing serializes the pair. A driver's `Irq::ACK` (`enable`) and the trap handler (`disable`)
+/// Nothing serializes the pair. A driver's `Interrupt::ACK` (`enable`) and the trap handler (`disable`)
 /// can run on two cores at once, and each would read or write the other's register.
 mod io_reg {
     /// The index register, at offset 0. Write the number of the register you want.
@@ -312,7 +312,7 @@ pub const GSI_VECTOR_BASE: u8 = 0x30;
 /// The first vector a PCI function's MSI-X message delivers on (milestone 215): 0xc0, above every
 /// redirection entry and below [`SPURIOUS_VECTOR`]. The three bands are disjoint by construction:
 /// 0x20..0x30 the local APIC's own sources, [`GSI_VECTOR_BASE`]..0xc0 the IO APIC's lines, and
-/// 0xc0..0xff MSI. So an intid means one thing: a legacy IRQ for an IO APIC line, and the vector
+/// 0xc0..0xff MSI. So an intid means one thing: a legacy interrupt for an IO APIC line, and the vector
 /// itself for a local APIC source or an MSI, which the device writes straight to the local APIC.
 ///
 /// Name: provisional (milestone 215 (a PCI function's interrupt reaches nothing)): calef
@@ -340,7 +340,7 @@ const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 /// Returns the intid a driver binds, which here is the vector, and the message; `None` when the
 /// band is spent (aarch64 and riscv64 always answer `None`, and `kernel/src/pci.rs` uses INTx). The
 /// address is `0xfee0_0000 | (local APIC id << 12)` with physical destination and no redirection;
-/// the data is the vector, `Fixed` delivery, edge trigger, so `enable` and a driver's `Irq::ACK`
+/// the data is the vector, `Fixed` delivery, edge trigger, so `enable` and a driver's `Interrupt::ACK`
 /// have nothing to do. With VT-d interrupt remapping on, these messages are rejected (this
 /// module's BUGS). See notes/x86-port/traps.md.
 ///
@@ -391,8 +391,8 @@ static IO_APIC_ENTRIES: AtomicU32 = AtomicU32::new(0);
 /// driver bound. [`NO_OWNER`] until [`enable`] arms the entry.
 ///
 /// A table rather than arithmetic, because the arithmetic has no unique answer: the vector gives the
-/// redirection index and so the GSI, but a GSI is not a legacy IRQ. The MADT's overrides can send two
-/// legacy numbers to one GSI (IRQ 0 and IRQ 2 both resolve to GSI 2 on most PCs), and GSI 0 has no
+/// redirection index and so the GSI, but a GSI is not a legacy interrupt. The MADT's overrides can send two
+/// legacy numbers to one GSI (interrupt 0 and interrupt 2 both resolve to GSI 2 on most PCs), and GSI 0 has no
 /// legacy owner at all. The intid that armed the line is the one a driver bound, which is the
 /// question the handler asks. Written by `enable`, read in interrupt context, so atomics and no lock.
 static GSI_OWNER: [AtomicU32; MAX_REDIRECTION_ENTRIES as usize] =
@@ -401,15 +401,15 @@ static GSI_OWNER: [AtomicU32; MAX_REDIRECTION_ENTRIES as usize] =
 /// The value in [`GSI_OWNER`] that means "nothing armed this entry".
 const NO_OWNER: u32 = u32::MAX;
 
-/// **The sixteen legacy ISA IRQs as the MADT resolved them**, packed one to a word so the table can
+/// **The sixteen legacy ISA interrupts as the MADT resolved them**, packed one to a word so the table can
 /// live in a static without a lock: the GSI in bits 15:0, "active low" in bit 16, "level triggered"
 /// in bit 17. [`NO_ROUTING`] means [`record_isa_routing`] has not run.
 ///
-/// Packed rather than held as a `[IsaIrqRouting; 16]` behind a mutex because it is written once,
+/// Packed rather than held as a `[IsaInterruptRouting; 16]` behind a mutex because it is written once,
 /// during single-threaded boot, and read from interrupt-controller code where taking a lock would
 /// be the more surprising thing.
-static ISA_ROUTING: [AtomicU32; ISA_IRQ_COUNT] =
-    [const { AtomicU32::new(NO_ROUTING) }; ISA_IRQ_COUNT];
+static ISA_ROUTING: [AtomicU32; ISA_INTERRUPT_COUNT] =
+    [const { AtomicU32::new(NO_ROUTING) }; ISA_INTERRUPT_COUNT];
 
 /// The value in [`ISA_ROUTING`] that means "the MADT has not been read".
 const NO_ROUTING: u32 = u32::MAX;
@@ -585,13 +585,13 @@ pub(crate) fn mask_gsi(gsi: u32) {
     io_apic_write(at, io_apic_read(at) | REDIR_MASKED);
 }
 
-/// **Record how the MADT's interrupt source overrides resolve the sixteen legacy ISA IRQs**, so
+/// **Record how the MADT's interrupt source overrides resolve the sixteen legacy ISA interrupts**, so
 /// that [`enable`] can take a legacy number the way the arch contract's callers do.
 ///
 /// Called once, after ACPI has been walked and before any line is armed. Without it [`enable`]
 /// falls back to the identity map, which is wrong for the timer on every PC ever built.
-pub(crate) fn record_isa_routing(table: &[IsaIrqRouting; ISA_IRQ_COUNT]) {
-    for (irq, routing) in table.iter().enumerate() {
+pub(crate) fn record_isa_routing(table: &[IsaInterruptRouting; ISA_INTERRUPT_COUNT]) {
+    for (interrupt_number, routing) in table.iter().enumerate() {
         let mut packed = routing.gsi & 0xffff;
         if routing.active_low {
             packed |= PACKED_ACTIVE_LOW;
@@ -599,20 +599,20 @@ pub(crate) fn record_isa_routing(table: &[IsaIrqRouting; ISA_IRQ_COUNT]) {
         if routing.level_triggered {
             packed |= PACKED_LEVEL;
         }
-        ISA_ROUTING[irq].store(packed, Ordering::Relaxed);
+        ISA_ROUTING[interrupt_number].store(packed, Ordering::Relaxed);
     }
 }
 
-/// How legacy IRQ `irq` reaches this machine's IO APIC, falling back to the ISA bus's own defaults
-/// when [`record_isa_routing`] has not run or the number is not a legacy IRQ.
-pub(crate) fn isa_routing(irq: u32) -> IsaIrqRouting {
-    let fallback = IsaIrqRouting::isa_default(irq as u8);
-    let Some(slot) = ISA_ROUTING.get(irq as usize) else {
+/// How legacy interrupt `interrupt` reaches this machine's IO APIC, falling back to the ISA bus's own defaults
+/// when [`record_isa_routing`] has not run or the number is not a legacy interrupt.
+pub(crate) fn isa_routing(interrupt_number: u32) -> IsaInterruptRouting {
+    let fallback = IsaInterruptRouting::isa_default(interrupt_number as u8);
+    let Some(slot) = ISA_ROUTING.get(interrupt_number as usize) else {
         return fallback;
     };
     match slot.load(Ordering::Relaxed) {
         NO_ROUTING => fallback,
-        packed => IsaIrqRouting {
+        packed => IsaInterruptRouting {
             gsi: packed & 0xffff,
             active_low: packed & PACKED_ACTIVE_LOW != 0,
             level_triggered: packed & PACKED_LEVEL != 0,
@@ -652,15 +652,15 @@ pub(crate) fn initialize_contexts(boot_info_pointer: usize) {
 /// device interrupt through it, before the shared `initialize_interrupts` arms the tick and
 /// unmasks.
 ///
-/// The PIT's line proves an interrupt from outside the CPU arrives, and its IRQ 0 arrives as GSI 2,
+/// The PIT's line proves an interrupt from outside the CPU arrives, and its interrupt 0 arrives as GSI 2,
 /// which tests the override table (notes/x86-port/traps.md). It is here because every build reaches
 /// it and the window it needs, the scheduler up and the tick not yet armed, exists only here.
-/// `cargo xtask uefi-boot` reads the `device irq` line it prints.
+/// `cargo xtask uefi-boot` reads the `device interrupt` line it prints.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/spelled-out-rulings.md.
 pub fn initialize() {
-    let (io_apic, isa_irqs) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_irqs));
+    let (io_apic, isa_interrupts) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_interrupts));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {
         crate::println!("  io apic     : skipped, the MADT did not describe one");
         return;
@@ -668,7 +668,7 @@ pub fn initialize() {
     // SAFETY: the address and global-interrupt base came from the machine's own ACPI MADT, and
     // `mmu::initialize` mapped that page device-typed (`mmu::claims`, from the same table).
     unsafe { initialize_io_apic(io_addr as u64, gsi_base) };
-    record_isa_routing(&isa_irqs);
+    record_isa_routing(&isa_interrupts);
     let chip_id = io_apic_id();
     crate::println!(
         "  io apic     : id {chip_id} at {io_addr:#x} up, version {:#x}, {} redirection entries, gsi base {gsi_base}",
@@ -693,9 +693,9 @@ fn prove_a_device_line() {
     // Masked so the count is the PIT's alone; `timer::initialize` rewrites the LVT unmasked right
     // after.
     mask_timer();
-    let pit = isa_routing(timer::PIT_IRQ);
+    let pit = isa_routing(timer::PIT_INTERRUPT_NUMBER);
     let hz = timer::start_pit_ticking(timer::TICK_HZ);
-    enable(timer::PIT_IRQ);
+    enable(timer::PIT_INTERRUPT_NUMBER);
     // Read after `enable` rather than before, which is what makes the `expect` honest: `enable`
     // has just routed this GSI and panics with a named reason if the IO APIC does not own it. It
     // also makes the line's field the vector that was programmed, not one computed beside it.
@@ -711,11 +711,11 @@ fn prove_a_device_line() {
     interrupts::disable();
     mask_gsi(pit.gsi);
 
-    let delivered = exceptions::DEVICE_IRQS.load(Ordering::Relaxed);
+    let delivered = exceptions::DEVICE_INTERRUPTS.load(Ordering::Relaxed);
     DEVICE_LINE_INTERRUPTS.store(delivered as u64, Ordering::Relaxed);
     crate::println!(
-        "  device irq  : pit irq {} -> gsi {} on vector {vector:#x}: {delivered} interrupts in ~0.2s at {hz} Hz",
-        timer::PIT_IRQ,
+        "  device interrupt  : pit interrupt {} -> gsi {} on vector {vector:#x}: {delivered} interrupts in ~0.2s at {hz} Hz",
+        timer::PIT_INTERRUPT_NUMBER,
         pit.gsi,
     );
 }
@@ -726,7 +726,7 @@ static DEVICE_LINE_INTERRUPTS: AtomicU64 = AtomicU64::new(u64::MAX);
 
 /// **How many interrupts a device line delivered at bring-up**: the PIT's, routed through the IO
 /// APIC by [`initialize`]. `None` when no line was proved, which on this port means the MADT named
-/// no IO APIC. `self_test`'s `deviceirq` check reads it, because the window the proof needs (the
+/// no IO APIC. `self_test`'s `device_interrupt` check reads it, because the window the proof needs (the
 /// scheduler up, the tick not yet armed) exists only inside `initialize`.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
@@ -758,9 +758,9 @@ pub(crate) fn initialize_this_cpu() {
 ///
 /// A local APIC source ([`RESCHEDULE_VECTOR`], [`SELF_TEST_VECTOR`] and its `_B` twin) or an MSI
 /// vector names itself by vector and has no controller input, so for it this is a no-op. Any other
-/// intid is a legacy IRQ, 0..15: [`isa_routing`] turns it into the GSI the MADT says it arrives on,
+/// intid is a legacy interrupt, 0..15: [`isa_routing`] turns it into the GSI the MADT says it arrives on,
 /// with polarity and trigger mode, and the entry is routed to [`gsi_vector`]'s vector on this core.
-/// IRQ 0 becomes GSI 2. The ranges cannot collide, since local sources start at 0x20. See
+/// Interrupt 0 becomes GSI 2. The ranges cannot collide, since local sources start at 0x20. See
 /// notes/x86-port/traps.md.
 pub fn enable(intid: u32) {
     if is_local_apic_source(intid) || is_msi_vector(intid as u64) {
@@ -805,13 +805,13 @@ pub fn intid_of_vector(vector: u64) -> Option<u32> {
     }
 }
 
-/// Hold a routed line off until its driver ACKs, undone by [`enable`]; aarch64's `irq::disable`.
+/// Hold a routed line off until its driver ACKs, undone by [`enable`]; aarch64's `interrupt_controller::disable`.
 ///
 /// Only a level-triggered line is masked: an IO APIC drops an edge that arrives on a masked entry,
-/// where a GIC keeps it pending. COM1's edge-triggered IRQ 4 stays high until the 16550 is drained,
+/// where a GIC keeps it pending. COM1's edge-triggered interrupt 4 stays high until the 16550 is drained,
 /// so a masked COM1 would lose a byte arriving before the ACK and never interrupt again.
 ///
-/// Name: recorded (aarch64's `arch::irq::disable`): the arch contract's name for the same step, which
+/// Name: recorded (aarch64's `arch::interrupt_controller::disable`): the arch contract's name for the same step, which
 /// is why it is not named for the edge/level split. Provisional on this architecture (milestone 505's
 /// lane).
 pub fn disable(intid: u32) {
@@ -1055,12 +1055,12 @@ mod proofs {
     ///
     /// Falsification: attested 2026-09-16. On cordoba (x86_64 Linux), and the patch is written
     /// down, which is unusual for an `attested` record and is the point:
-    /// `kernel/falsifications/arch.x86_64.irq.tests.a_gsi_on_a_second_io_apic_routes_inside_the_band.patch`
+    /// `kernel/falsifications/arch.x86_64.interrupt_controller.tests.a_gsi_on_a_second_io_apic_routes_inside_the_band.patch`
     /// restores `GSI_VECTOR_BASE.wrapping_add(gsi as u8)` and turns **both** this harness and the
     /// kernel test it names red. Here it fires **both** assertions in the `if let` below, the one
     /// whose message begins "a GSI the IO APIC owns" and the one beginning "a vector this kernel
-    /// routed". Named rather than numbered because the lines move: they were `irq.rs:1164` and
-    /// `irq.rs:1168` when this was measured. The second red is that assertion earning its place:
+    /// routed". Named rather than numbered because the lines move: they were `interrupt_controller.rs:1164` and
+    /// `interrupt_controller.rs:1168` when this was measured. The second red is that assertion earning its place:
     /// the two functions really did disagree, rather than merely looking as though they might.
     /// It is filed against the test rather than against this, because a
     /// `#[kani::proof]` compiles for the HOST and `kernel/src/arch/mod.rs` selects its subtree by
@@ -1122,7 +1122,7 @@ mod tests {
     /// part; a GSI-based map sends it to `0x30.wrapping_add(210)`, which is 2, the NMI. The two
     /// statics are this machine's real IO APIC state, so they are saved and put back.
     ///
-    /// Falsification: replayable `kernel/falsifications/arch.x86_64.irq.tests.a_gsi_on_a_second_io_apic_routes_inside_the_band.patch`
+    /// Falsification: replayable `kernel/falsifications/arch.x86_64.interrupt_controller.tests.a_gsi_on_a_second_io_apic_routes_inside_the_band.patch`
     #[test_case]
     fn a_gsi_on_a_second_io_apic_routes_inside_the_band() {
         let saved_base = IO_APIC_GSI_BASE.load(Ordering::Relaxed);

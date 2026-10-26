@@ -54,7 +54,7 @@ own few interrupts. The switch count is not affected, because the tick copies th
 - A counter written before `publish` is lost, by the design above.
 - Interrupts are counted where they reach the scheduler: the tick, a cross-core poke, and a device
   interrupt routed to a driver. A spurious or unrouted interrupt is not counted. The soak build's
-  timer-driven `irq_notify` counts as a device interrupt, because it takes the same path on purpose
+  timer-driven `interrupt_notify` counts as a device interrupt, because it takes the same path on purpose
   (`kernel/src/soak.rs`).
 - There is no swap counter, because nife does not page out. There is no page cache or block I/O
   counter either, because the filesystem and the block driver are userspace programs.

@@ -191,7 +191,7 @@ machine_discovery::an_encoded_token_never_exceeds_the_maximum_it_advertises	8.3
 machine_discovery::an_rsdp_is_accepted_only_when_its_bytes_sum_to_zero	5.5
 machine_discovery::every_hex_field_the_loader_writes_is_one_the_kernel_reads_back	448.2
 machine_discovery::no_length_of_handoff_bytes_makes_the_decode_read_past_its_end	2.4
-machine_discovery::no_override_writes_outside_the_sixteen_legacy_irqs	57.2
+machine_discovery::no_override_writes_outside_the_sixteen_legacy_interrupts	57.2
 machine_discovery::the_dmar_fixed_part_decodes_without_arithmetic_overflow	1.8
 machine_discovery::the_dmar_walk_terminates_and_stays_inside_the_body	6.9
 machine_discovery::the_madt_walk_terminates_and_stays_inside_the_body	157.3
@@ -253,7 +253,7 @@ paging::the_two_halves_are_disjoint	0.4
 paging::the_user_va_gate_admits_only_the_aligned_low_half	0.4
 pci::a_fresh_bus_queue_holds_the_root_and_nothing_else	0.6
 pci::ecam_offset_stays_inside_the_window	0.4
-pci::intx_irq_is_total_and_bounded	0.4
+pci::intx_interrupt_number_is_total_and_bounded	0.4
 pci::read_bars_is_total_for_any_device	0.8
 pci::the_bus_queue_stays_inside_its_array_on_any_firmware	1.0
 pci::the_capability_walk_terminates_on_any_device	5.4

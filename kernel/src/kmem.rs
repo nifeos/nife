@@ -8,7 +8,7 @@
 
 use page_frames::FRAME_SIZE;
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The carve: 2048 pages (8 MiB). A thread costs 7 pages here (six of stack, see thread.rs
 /// `STACK_PAGES`, and one of TCB), so `sched::MAX_THREADS` (256) takes 1792, endpoints about 60,
@@ -29,7 +29,7 @@ struct Pool {
 /// region lock: 60 -> 59 -> 58, a legal descent). Shares 59 with INBOX and MAPPINGS, with which
 /// it is never nested: inboxes are scheduling traffic, the mapping registry is user-space
 /// bookkeeping, and this is the kernel shopping for its own pages.
-static POOL: IrqSafeMutex<Pool> = IrqSafeMutex::new(
+static POOL: InterruptSafeMutex<Pool> = InterruptSafeMutex::new(
     rank::KMEM,
     Pool {
         region: None,

@@ -601,7 +601,7 @@ mod reap_tests;
 /// **Notification objects** (milestone 151 (notification objects), DECISIONS §101 (notification objects)): the kernel half of the binding, the
 /// syscall layer's rights and registers, teardown, and a program binding a notification to itself
 /// through the real boundary. Cross-ISA: nothing here is architecture-specific except the register
-/// each `TrapFrame::arg` names, which is exactly what the `Irq::WAIT` and program tests read.
+/// each `TrapFrame::arg` names, which is exactly what the `Interrupt::WAIT` and program tests read.
 #[cfg(test)]
 mod notification_tests;
 
@@ -639,14 +639,14 @@ mod survey_record_tests;
 
 /// **An endpoint that carries an interrupt refuses every send** (milestone 603 (an interrupt's
 /// endpoint refuses every send), DECISIONS §101 (notification objects) ruling B). Driven through
-/// the real dispatcher (`syscall::invoke`) on the sending side and through `Irq::WAIT` on the
+/// the real dispatcher (`syscall::invoke`) on the sending side and through `Interrupt::WAIT` on the
 /// driver's, because the ruling is about what a program can do at the boundary.
 ///
 /// Cross-ISA, and it has to be: the refusal is `Rendezvous::send`'s and the error mapping is
-/// `syscall`'s, neither under `arch/`. The interrupt is delivered with `sched::irq_notify`, the
+/// `syscall`'s, neither under `arch/`. The interrupt is delivered with `sched::interrupt_notify`, the
 /// function every ISA's handler calls, which keeps the test off each machine's interrupt wiring.
 #[cfg(test)]
-mod irq_send_refusal_tests;
+mod interrupt_send_refusal_tests;
 
 /// **What the CPU-time record's number means** (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
 ///

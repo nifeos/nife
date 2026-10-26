@@ -403,7 +403,7 @@ fn start_virtio_entropy(
                 &ChildEndowment {
                     caps: &[
                         (request, abi::rights::READ),
-                        (g.virtio_rng_irq, abi::rights::READ),
+                        (g.virtio_rng_interrupt, abi::rights::READ),
                         (g.virtio_rng, abi::rights::WRITE),
                         (ready, abi::rights::WRITE),
                     ],
@@ -418,7 +418,7 @@ fn start_virtio_entropy(
                 direct_memory_access_phys,
                 0,
             ));
-            cap_delete(g.virtio_rng_irq);
+            cap_delete(g.virtio_rng_interrupt);
             cap_delete(g.virtio_rng);
             cap_delete(g.virtio_rng_dma);
             // `READY` comes after the service's first bufferful from the device.
@@ -432,7 +432,7 @@ fn start_virtio_entropy(
                 None
             }
         } else {
-            cap_delete(g.virtio_rng_irq);
+            cap_delete(g.virtio_rng_interrupt);
             cap_delete(g.virtio_rng);
             cap_delete(g.virtio_rng_dma);
             None
@@ -457,7 +457,7 @@ fn start_network(
         if let Some(net_program) = net_elf {
             network = Some(build_net_stack(ut, net_program, g));
         }
-        for trio in [g.virtio_net_irq, g.virtio_net, g.virtio_net_dma] {
+        for trio in [g.virtio_net_interrupt, g.virtio_net, g.virtio_net_dma] {
             cap_delete(trio);
         }
     } else if is_granted(g.net_stack_ep) {
@@ -734,7 +734,7 @@ pub(super) fn start_keystroke_sources(
     let (in_caps, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
-            (g.uart_irq, abi::rights::READ),
+            (g.uart_interrupt, abi::rights::READ),
         ],
         &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_RO)],
     );
@@ -742,7 +742,7 @@ pub(super) fn start_keystroke_sources(
     let (in_caps, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
-            (g.uart_irq, abi::rights::READ),
+            (g.uart_interrupt, abi::rights::READ),
             (g.uart_dev, abi::rights::WRITE), // COM1's port range, read by the TSS I/O bitmap
         ],
         &[],
@@ -768,7 +768,7 @@ pub(super) fn start_keystroke_sources(
 
     // Before the shell is built, and so that no later child can be handed the UART.
     cap_delete(g.uart_dev);
-    cap_delete(g.uart_irq);
+    cap_delete(g.uart_interrupt);
 }
 
 /// Retype the spawn channel and the supervision endpoint, after the drivers are built: held

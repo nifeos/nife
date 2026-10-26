@@ -91,7 +91,7 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
     "supervised",
     "teardown",
     "blockdev",
-    "deviceirq",
+    "device_interrupt",
     "clock",
     "trng",
     "entropy",

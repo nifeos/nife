@@ -26,9 +26,9 @@ one line.
   is who wins the right to reclaim a region. That the winner then frees the *right* pages, exactly
   once, is `destroy_outcome`'s Kani proof plus the kernel's own tests, and the two arguments meet
   only in the reader's head. Covering both would need the frame allocator lifted too.
-- The region model's lock is not the kernel's lock. `IrqSafeMutex` masks interrupts and carries
+- The region model's lock is not the kernel's lock. `InterruptSafeMutex` masks interrupts and carries
   a rank for the deadlock order; `loom::sync::Mutex` has neither. So the model says the protocol is
-  correct *given* mutual exclusion, and says nothing about whether `IrqSafeMutex` provides it or
+  correct *given* mutual exclusion, and says nothing about whether `InterruptSafeMutex` provides it or
   whether the rank is right. That is `script/lint`'s rank check and [locking.md](../locking.md), and
   it is the same division `thread_wake_handshake` records for `SCHED`.
 - The gate on `untyped.rs` is narrower than the property it protects. Milestone 136 (one decision

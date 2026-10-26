@@ -67,7 +67,7 @@ hypothesis in without the fix being able to flatter itself.
 
 This is the design point, and it is not a preference.
 
-`mmu::unmap_page` takes `KERNEL_MMU`, which is an `IrqSafeMutex`: it masks interrupts and then
+`mmu::unmap_page` takes `KERNEL_MMU`, which is an `InterruptSafeMutex`: it masks interrupts and then
 acquires. So the core sending a shootdown has interrupts off, and so does every other core running
 the same code. Now the deadlock, which is certain rather than theoretical because two cores spawning
 and reaping threads do this continuously:
@@ -95,7 +95,7 @@ architecture rather than made by taste.
 
 `mmu::shoot_down_others`, and it is small on purpose.
 
-- A raw `AtomicBool` lock, so one round is in flight at a time. Not an `IrqSafeMutex`: interrupts are
+- A raw `AtomicBool` lock, so one round is in flight at a time. Not an `InterruptSafeMutex`: interrupts are
   already masked by the caller, there is nothing left to mask and no rank to check, and a core
   spinning here is still reachable by the only message that matters.
 - `SHOOTDOWN_VA`, one page or a sentinel meaning "everything" (`flush_asid`'s case, which reloads

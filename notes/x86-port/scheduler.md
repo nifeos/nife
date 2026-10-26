@@ -51,17 +51,17 @@ unrepresentable rather than a duty somebody has to remember at each context swit
 and needs no device; RISC-V can raise nothing at all and has to assert its console UART's transmit
 line. x86 is aarch64's case: the local APIC's Interrupt Command Register has a "self" destination
 shorthand, so any vector can be delivered to the CPU executing the write, through the real path (the
-ICR, the IRR, the ISR, an EOI). `irq::raise_self_interrupt` is the whole of it, and the same ICR code
-is `irq::send_reschedule`, which stopped being `unimplemented!()`.
+ICR, the IRR, the ISR, an EOI). `interrupt_controller::raise_self_interrupt` is the whole of it, and the same ICR code
+is `interrupt_controller::send_reschedule`, which stopped being `unimplemented!()`.
 
 The intid for such a source is its vector, and that is the naming rule this architecture needs
-because `irq::enable` takes a *legacy IRQ number* instead. The two domains cannot collide: legacy
-IRQs are 0..15 and the local APIC's own vectors are 0x20..0x2f.
+because `interrupt_controller::enable` takes a *legacy interrupt number* instead. The two domains cannot collide: legacy
+Interrupts are 0..15 and the local APIC's own vectors are 0x20..0x2f.
 
 A device line still cannot become a message here, and the missing piece is an inversion rather
-than a mechanism. The flat vector map makes the GSI recoverable by subtraction, but a legacy IRQ is
+than a mechanism. The flat vector map makes the GSI recoverable by subtraction, but a legacy interrupt is
 not. GSI 0 is the 8259 cascade and has no legacy owner, so an inversion falling back to the
-GSI would answer 0 for both it and the PIT's IRQ 0. Nothing needs it until there is a userspace
+GSI would answer 0 for both it and the PIT's interrupt 0. Nothing needs it until there is a userspace
 driver here.
 
 ### Four things portable code got right for two architectures and wrong for three

@@ -1,6 +1,6 @@
 //! The interrupt controller, RISC-V: the PLIC.
 //!
-//! The arch side of the portable `arch::irq` surface, the twin of aarch64's GIC adapter, resolving
+//! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC adapter, resolving
 //! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
 //! monolithic, deferred)). See notes/riscv-port/traps.md.
 
@@ -74,7 +74,8 @@ static SOURCE_CTX: [AtomicU16; MAX_SOURCES] =
 
 /// Round-robin cursor spreading device sources over the online harts, the twin of the GIC's
 /// `ITARGETSR` distribution.
-static NEXT_IRQ_HART: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+static NEXT_INTERRUPT_HART: AtomicUsize = AtomicUsize::new(0);
 
 /// The PLIC context `source` targets: its stable assignment, or else the next online hart's S
 /// context, opened and recorded. Only online harts, which set `SEIE`, are chosen.
@@ -85,7 +86,7 @@ fn target_context(source: u32) -> usize {
         return existing as usize;
     }
     // The k-th online hart, not hart k: the VisionFive 2's online set is {1,2,3}.
-    let hart = crate::smp::nth_online(NEXT_IRQ_HART.fetch_add(1, Ordering::Relaxed));
+    let hart = crate::smp::nth_online(NEXT_INTERRUPT_HART.fetch_add(1, Ordering::Relaxed));
     let ctx = s_context_of(hart);
     // Open it before the first source lands. Threshold registers are global MMIO and opening is
     // idempotent, so any hart may do it and a race is harmless.
@@ -112,7 +113,7 @@ pub(crate) fn hold_claim(source: u32, context: usize) {
     CLAIM_CTX[source as usize % MAX_SOURCES].store(context as u16, Ordering::Release);
 }
 
-/// An `Irq` capability's ACK for `intid`, and its arming at setup.
+/// An `Interrupt` capability's ACK for `intid`, and its arming at setup.
 ///
 /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
 /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).
@@ -125,7 +126,7 @@ pub fn enable(intid: u32) {
 
 /// Reserve a vector a PCI function may deliver an MSI-X message on: `None` on this architecture.
 ///
-/// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_IRQ_BASE`, which
+/// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_INTERRUPT_NUMBER_BASE`, which
 /// `kernel/src/pci.rs` falls back to. A board with the AIA's IMSIC would implement this. See
 /// notes/riscv-port/traps.md.
 pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
@@ -139,7 +140,7 @@ pub(crate) fn boot_s_context() -> usize {
 }
 
 /// How many interrupts a device line delivered at bring-up: `None`, because no device here
-/// interrupts without input or a disk, so `self_test`'s `deviceirq` check reports itself absent.
+/// interrupts without input or a disk, so `self_test`'s `device_interrupt` check reports itself absent.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)

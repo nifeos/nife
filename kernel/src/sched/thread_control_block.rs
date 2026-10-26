@@ -162,7 +162,7 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
     }
     drop(guard);
     if let Some(target) = remote {
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
     Ok(())
 }

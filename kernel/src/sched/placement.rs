@@ -158,7 +158,7 @@ pub fn serve_steal_request() {
         let mut inbox = cpu::inbox_of(requester).lock();
         inbox.push_back(t);
         cpu::of(requester).note_inbox_len(inbox.len());
-        crate::arch::irq::send_reschedule(requester);
+        crate::arch::interrupt_controller::send_reschedule(requester);
     }
 }
 
@@ -186,7 +186,7 @@ pub(super) fn try_initiate_steal() {
     if let Some(v) = victim
         && cpu::of(v).steal_request.claim(me as u32)
     {
-        crate::arch::irq::send_reschedule(v);
+        crate::arch::interrupt_controller::send_reschedule(v);
     }
 }
 
@@ -262,7 +262,7 @@ pub(super) fn wake_load_aware(sched: &mut IpcTables, tid: ThreadId) -> Option<us
                 missing_token()
             };
             trace::record(trace::Event::Wake, tid, 0);
-            // `place_on`'s answer is the only thing that may tell `irq_notify` to poke the target.
+            // `place_on`'s answer is the only thing that may tell `interrupt_notify` to poke the target.
             place_on(pick_wake_target(), token)
         }
     }

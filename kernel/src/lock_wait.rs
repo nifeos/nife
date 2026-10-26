@@ -63,7 +63,7 @@ fn bump(counter: &AtomicU64, by: u64) {
 
 /// Count one contended acquisition of a lock of `rank` that spun for `ticks`.
 ///
-/// Context: `IrqSafeMutex::lock`, after the contended lock is taken; interrupts masked, that lock
+/// Context: `InterruptSafeMutex::lock`, after the contended lock is taken; interrupts masked, that lock
 /// held.
 pub(crate) fn contended(rank: u32, ticks: u64) {
     if !ARMED.load(Ordering::Relaxed) {

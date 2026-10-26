@@ -4,13 +4,13 @@
 //! `pci-host-ecam-generic` node's `reg` and `ranges`; the parse is this crate's
 //! `mem32_window`); the tests here run the same reads over the fixture trees and pin the
 //! answers, so a QEMU layout change fails on the host before the kernel maps the wrong window
-//! on the machine. What is still a hardcode under witness: `PCI_IRQ_BASE` in each
-//! kernel/src/arch/*/mmu.rs and the swizzle in this crate (`intx_irq`); a bare-metal crate
+//! on the machine. What is still a hardcode under witness: `PCI_INTERRUPT_NUMBER_BASE` in each
+//! kernel/src/arch/*/mmu.rs and the swizzle in this crate (`intx_interrupt_number`); a bare-metal crate
 //! cannot be a dev-dependency, so those values are asserted as literals, the same
 //! hardcode-with-a-witness pattern as the UART test in the `device_tree_blob` crate.
 
 use device_tree_blob::{DeviceTreeBlob, Region};
-use pci::{intx_irq, mem32_window};
+use pci::{intx_interrupt_number, mem32_window};
 
 const QEMU_RISCV_VIRT: &[u8] =
     include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
@@ -72,7 +72,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
     );
 }
 
-/// `intx_irq`'s swizzle formula reproduces every entry of the machine's own `interrupt-map`.
+/// `intx_interrupt_number`'s swizzle formula reproduces every entry of the machine's own `interrupt-map`.
 ///
 /// The map is the authoritative routing table: entries of six 32-bit cells here
 /// (child-addr:3, whose high cell carries the device number at bits 11+; pin:1; the PLIC
@@ -100,7 +100,7 @@ fn the_intx_swizzle_matches_the_interrupt_map() {
         let pin = cell(at + 3) as u8;
         let plic_input = cell(at + 5);
         assert_eq!(
-            intx_irq(32, dev, pin), // 32 = PCI_IRQ_BASE in arch/riscv64/mmu.rs
+            intx_interrupt_number(32, dev, pin), // 32 = PCI_INTERRUPT_NUMBER_BASE in arch/riscv64/mmu.rs
             plic_input,
             "swizzle disagrees with the machine for device {dev} pin {pin}",
         );
@@ -144,7 +144,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
 /// six: the GIC's `#interrupt-cells = 3` (type, number, flags) where the PLIC's is 1, plus a
 /// two-cell parent unit address because the GIC also declares `#address-cells = 2` (the spec
 /// says a map entry carries the parent's address cells; the PLIC declares zero). Every entry
-/// must be a type-0 (SPI) interrupt, and `intx_irq(35, dev, pin)` (INTID 32 + SPI 3 as the
+/// must be a type-0 (SPI) interrupt, and `intx_interrupt_number(35, dev, pin)` (INTID 32 + SPI 3 as the
 /// base, from arch/aarch64/mmu.rs) must reproduce `32 + SPI` for all sixteen.
 #[test]
 fn the_intx_swizzle_matches_the_aarch64_interrupt_map() {
@@ -168,8 +168,8 @@ fn the_intx_swizzle_matches_the_aarch64_interrupt_map() {
         let spi = cell(at + 8);
         assert_eq!(gic_type, 0, "PCI INTx must arrive as an SPI");
         assert_eq!(
-            intx_irq(35, dev, pin), // 35 = PCI_IRQ_BASE in arch/aarch64/mmu.rs
-            32 + spi,               // SPIs start at INTID 32
+            intx_interrupt_number(35, dev, pin), // 35 = PCI_INTERRUPT_NUMBER_BASE in arch/aarch64/mmu.rs
+            32 + spi,                            // SPIs start at INTID 32
             "swizzle disagrees with the machine for device {dev} pin {pin}",
         );
     }

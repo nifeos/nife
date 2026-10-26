@@ -212,7 +212,7 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 generational_table = { version = "0.1.0", path = "../crates/generational_table" }
-# The lock under `IrqSafeMutex`: an Acquire compare-exchange and a Release store, written in the
+# The lock under `InterruptSafeMutex`: an Acquire compare-exchange and a Release store, written in the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
 # checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
 spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }

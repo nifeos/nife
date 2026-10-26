@@ -22,7 +22,7 @@ The short list a bench session looks up.
 | Boot List Option | UEFI | IMG_4027 | The stick is `\EFI\BOOT\BOOTX64.EFI`; Legacy would look for an MBR boot sector that is not there |
 | Secure Boot Enable | Disabled | IMG_4058 | The image is unsigned and nothing in this tree signs it |
 | Enable Legacy Option ROMs | unticked | IMG_4028 | Off is what UEFI boot mode wants, and Secure Boot forbids it being on |
-| Serial Port | COM1 (`3F8h`, IRQ 4) | IMG_4032 | Exactly where `arch::x86_64::port` and `drivers/ns16550.rs` look |
+| Serial Port | COM1 (`3F8h`, interrupt 4) | IMG_4032 | Exactly where `arch::x86_64::port` and `drivers/ns16550.rs` look |
 | Enable USB Boot Support | ticked | IMG_4036 | Without it the stick is not a boot device |
 | Enable VT for Direct I/O | ticked | IMG_4084 | VT-d is on. See below |
 | Enable Intel Virtualization Technology | ticked | IMG_4083 | |

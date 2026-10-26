@@ -4,7 +4,7 @@
 Linux style across first-party Rust).*
 
 An appendix to [notes/riscv-port.md](../riscv-port.md). It carries the design behind
-`kernel/src/arch/riscv64/exceptions.rs` and `irq.rs`, the S-mode analog of aarch64's `VBAR` table
+`kernel/src/arch/riscv64/exceptions.rs` and `interrupt_controller.rs`, the S-mode analog of aarch64's `VBAR` table
 and `ESR` decode. The portable side is [notes/exceptions.md](../exceptions.md).
 
 ## One entry, and a frame trap.s fills
@@ -147,7 +147,7 @@ using the interrupted `sp` from `x[2]`, since the live `sp` may be this hart's i
 
 ## The PLIC adapter
 
-`irq.rs` is the arch side of the portable `arch::irq` surface, the twin of aarch64's GIC adapter,
+`interrupt_controller.rs` is the arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC adapter,
 and thin by design: `drivers::plic` does the work.
 
 Each hart's S-mode PLIC context comes from the device tree's `interrupts-extended`, held in a
@@ -185,7 +185,7 @@ it there. Nothing here needs it, and a routing path with no consumer cannot be k
 ([milestone 215 (a PCI function's interrupt reaches nothing on
 x86_64)](../../design/roadmap/0215-x86-64-pci-interrupt-routing.md) says why x86_64 differs).
 
-No device here interrupts at bring-up without input or a disk, so the self-test's `deviceirq` check
+No device here interrupts at bring-up without input or a disk, so the self-test's `device_interrupt` check
 reports itself absent. A device line is proved where one exists: the user-level input driver at the
 hand-over, and the `blockdev` check's driver when a disk is attached.
 

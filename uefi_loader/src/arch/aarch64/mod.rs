@@ -566,7 +566,7 @@ fn say_acpi_machine(table: &SystemTable, machine: &device_tree_from_acpi::Machin
     if machine.uart.is_none() {
         say(
             table,
-            "uefi_loader:   no SPCR names a PL011; the kernel will fall back for its console irq\r\n",
+            "uefi_loader:   no SPCR names a PL011; the kernel will fall back for its console interrupt\r\n",
         );
     }
     if machine.psci_hvc.is_none() {

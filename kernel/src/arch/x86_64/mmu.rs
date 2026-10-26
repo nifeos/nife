@@ -25,7 +25,9 @@ use paging::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 // The `x86_64` modules the children name as `super::isa` and the like. Imported here so that a
 // path written when this code lived in `mmu.rs` still means what it meant: the children's `super`
 // is this module, and these are what it would have reached.
-use super::{ap_boot, current_sp, discovery, instructions, irq, isa, machine, segments};
+use super::{
+    ap_boot, current_sp, discovery, instructions, interrupt_controller, isa, machine, segments,
+};
 use crate::memory;
 
 /// This architecture's page-table format. Portable code names it as `arch::mmu::Format`.

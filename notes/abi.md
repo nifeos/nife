@@ -63,7 +63,7 @@ live per object type in `crates/abi`:
   the child's capability table), `START` (see §3).
 - AddressSpace (`address_space::MAP_INTO`, with modes `MAP_RO` / `MAP_RW` / `MAP_CODE`): map a
   frame into an address space at a chosen virtual address with chosen permissions.
-- Irq (`interrupt::WAIT` / `ACK`): block until an interrupt the capability names fires, then
+- Interrupt (`interrupt::WAIT` / `ACK`): block until an interrupt the capability names fires, then
   re-enable it. This is how a userspace driver owns its device's interrupt.
 - Rights (`rights::READ` / `WRITE` / `GRANT`): the authority a capability carries, checked on
   every invoke. A capability can be delegated with *narrowed* rights but never widened.

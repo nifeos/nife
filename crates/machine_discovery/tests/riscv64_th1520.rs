@@ -91,7 +91,8 @@ fn four_c910s_parse_as_rv64gc_sv39_without_v_sstc_or_zicbom() {
 /// cell must not be mistaken for the line.
 #[test]
 fn the_uart_interrupt_is_36_through_a_two_cell_specifier() {
-    let irq = machine_discovery::interrupt_id::of_node(&tree(TH1520), b"serial@ffe7014000")
-        .expect("the tree walks");
-    assert_eq!(irq, Some(36));
+    let interrupt_number =
+        machine_discovery::interrupt_id::of_node(&tree(TH1520), b"serial@ffe7014000")
+            .expect("the tree walks");
+    assert_eq!(interrupt_number, Some(36));
 }

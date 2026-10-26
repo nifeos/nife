@@ -1835,7 +1835,7 @@ notes/kernel-proofs/riscv64-from-an-aarch64-host.md	8
 notes/kernel-proofs/riscv64-with-a-patched-kani.md	3
 notes/kernel-proofs/smmu-proofs.md	5
 notes/kernel-proofs/stubbing-an-instruction.md	3
-notes/kernel-proofs/x86-irq-proofs.md	3
+notes/kernel-proofs/x86-interrupt-controller-proofs.md	3
 notes/kernel-ring-drain.md	15
 notes/kernel-suite-time.md	9
 notes/kernel-test-harness.md	11

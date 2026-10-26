@@ -174,7 +174,7 @@ has what the machine's own menus said about each step.
    [`turning-secure-boot-off.md`](turning-secure-boot-off.md).
 2. Boot List Option: UEFI, not Legacy, in the lower half of *General → Boot Sequence*.
 3. Serial port: COM1, a single radio under *System Configuration → Serial Port*. COM1 is I/O port
-   `0x3f8` with IRQ 4, which is where the kernel's console driver looks.
+   `0x3f8` with interrupt 4, which is where the kernel's console driver looks.
 4. Leave the rest alone on the first attempt, the integrated NIC and SATA mode included.
 
 One hazard the four steps do not name: xenon stops at POST and waits for a keypress when it finds no

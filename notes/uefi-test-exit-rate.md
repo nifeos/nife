@@ -109,7 +109,7 @@ carried four of them. They were the only fault-looking lines on the stranger's s
 `xtask/src/uefi.rs`'s `exit_verdict_lines` (unit tests pin it in `exit_verdict_tests`) classifies
 the status against the protocol above and prints, at every failure:
 
-- first, that the run's `qemu-system-x86_64` VT-d lines (`Interrupt Mask set, irq is not
+- first, that the run's `qemu-system-x86_64` VT-d lines (`Interrupt Mask set, interrupt is not
   generated`, `vtd_iommu_translate: detected translation failure`) are the escape test's own
   expected faults (milestone 215), not a cause;
 - then the reading. A 1 after a green summary points past the verdict: the panic arm, or QEMU's

@@ -70,11 +70,12 @@ pub mod rank {
     /// The ASID allocator, taken alone at address-space creation and teardown.
     pub(crate) const ASIDS: u32 = 15;
 
-    /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the IRQ handler,
+    /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the interrupt handler,
     /// which may print while holding it. One rank for two drivers that never coexist; `x86_64`
     /// never takes it. See notes/locking.md.
     #[cfg_attr(target_arch = "x86_64", allow(dead_code))] // the GIC and PLIC drivers are its only takers
-    pub const IRQ_CONTROLLER: u32 = 20;
+    #[doc(alias = "irq")]
+    pub const INTERRUPT_CONTROLLER: u32 = 20;
 
     /// The ISA record, written once at boot. A leaf above the console; the boot print copies it out
     /// and releases before printing.
@@ -142,12 +143,13 @@ fn lock_order_violation(rank: u32, held: u32) -> ! {
 ///
 /// Every lock in the kernel should be one of these. Keep the critical section short: interrupts are
 /// off for the whole of it (DECISIONS §9).
-pub struct IrqSafeMutex<T> {
+#[doc(alias = "irq")]
+pub struct InterruptSafeMutex<T> {
     inner: spin_lock::SpinLock<T>,
     rank: u32,
 }
 
-impl<T> IrqSafeMutex<T> {
+impl<T> InterruptSafeMutex<T> {
     /// Make a lock of `rank`, from [`rank`], holding `value`.
     pub const fn new(rank: u32, value: T) -> Self {
         Self {
@@ -163,17 +165,17 @@ impl<T> IrqSafeMutex<T> {
     ///
     /// Context: any, interrupt handlers included.
     #[inline]
-    pub fn lock(&self) -> IrqSafeGuard<'_, T> {
+    pub fn lock(&self) -> InterruptSafeGuard<'_, T> {
         // ORDER: mask first, THEN acquire. Reversing these reintroduces the deadlock.
-        let irqs_were_enabled = interrupts::disable();
-        self.lock_masked(irqs_were_enabled)
+        let interrupts_were_enabled = interrupts::disable();
+        self.lock_masked(interrupts_were_enabled)
     }
 
     /// [`lock`](Self::lock) after the caller has masked interrupts, with the state it found, which
     /// the guard restores. Private: [`lock_found`] is the one other caller. Always inlined, so
     /// `lock` is one call in the gate's -O0 build.
     #[inline(always)]
-    fn lock_masked(&self, irqs_were_enabled: bool) -> IrqSafeGuard<'_, T> {
+    fn lock_masked(&self, interrupts_were_enabled: bool) -> InterruptSafeGuard<'_, T> {
         // Interrupts are off until the guard's `drop`, so nothing else touches this held-rank.
         let held_rank = &crate::cpu::current().held_rank;
         let held = held_rank.load(Ordering::Relaxed);
@@ -200,9 +202,9 @@ impl<T> IrqSafeMutex<T> {
         #[cfg(not(feature = "lock_wait"))]
         let guard = self.inner.lock();
 
-        IrqSafeGuard {
+        InterruptSafeGuard {
             guard: ManuallyDrop::new(guard),
-            irqs_were_enabled,
+            interrupts_were_enabled,
             previous_rank: held,
         }
     }
@@ -227,24 +229,25 @@ impl<T> IrqSafeMutex<T> {
 /// restored, when `find` does. The guard restores the state found before `find` ran.
 #[inline]
 pub(crate) fn lock_found<'a, T>(
-    find: impl FnOnce() -> Option<&'a IrqSafeMutex<T>>,
-) -> Option<IrqSafeGuard<'a, T>> {
-    let irqs_were_enabled = interrupts::disable();
+    find: impl FnOnce() -> Option<&'a InterruptSafeMutex<T>>,
+) -> Option<InterruptSafeGuard<'a, T>> {
+    let interrupts_were_enabled = interrupts::disable();
     if let Some(mutex) = find() {
-        Some(mutex.lock_masked(irqs_were_enabled))
+        Some(mutex.lock_masked(interrupts_were_enabled))
     } else {
-        interrupts::restore(irqs_were_enabled);
+        interrupts::restore(interrupts_were_enabled);
         None
     }
 }
 
-pub struct IrqSafeGuard<'a, T> {
+#[doc(alias = "irq")]
+pub struct InterruptSafeGuard<'a, T> {
     guard: ManuallyDrop<spin_lock::SpinLockGuard<'a, T>>,
-    irqs_were_enabled: bool,
+    interrupts_were_enabled: bool,
     previous_rank: u32,
 }
 
-impl<T> Drop for IrqSafeGuard<'_, T> {
+impl<T> Drop for InterruptSafeGuard<'_, T> {
     /// Release the lock, restore the rank found, then restore interrupts.
     ///
     /// `#[inline(always)]` so it lands in `.text.hot` with its caller on every build
@@ -264,18 +267,18 @@ impl<T> Drop for IrqSafeGuard<'_, T> {
             .store(self.previous_rank, Ordering::Relaxed);
 
         // RESTORE, not enable. See the module docs.
-        interrupts::restore(self.irqs_were_enabled);
+        interrupts::restore(self.interrupts_were_enabled);
     }
 }
 
-impl<T> Deref for IrqSafeGuard<'_, T> {
+impl<T> Deref for InterruptSafeGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         &self.guard
     }
 }
 
-impl<T> DerefMut for IrqSafeGuard<'_, T> {
+impl<T> DerefMut for InterruptSafeGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         &mut self.guard
     }
@@ -287,27 +290,30 @@ mod tests {
 
     /// The lock masks interrupts for as long as it is held (notes/locking.md).
     #[test_case]
-    fn irq_safe_mutex_masks_interrupts_while_held() {
+    fn interrupt_safe_mutex_masks_interrupts_while_held() {
         use crate::arch::interrupts;
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 7);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 7);
 
         interrupts::enable();
-        assert!(interrupts::is_enabled(), "test setup: IRQs should be on");
+        assert!(
+            interrupts::is_enabled(),
+            "test setup: interrupts should be on"
+        );
 
         {
             let guard = M.lock();
             assert_eq!(*guard, 7);
             assert!(
                 !interrupts::is_enabled(),
-                "IRQs are still live while the lock is held: this is the deadlock"
+                "interrupts are still live while the lock is held: this is the deadlock"
             );
         }
 
         assert!(
             interrupts::is_enabled(),
-            "IRQs were not restored after the guard dropped"
+            "interrupts were not restored after the guard dropped"
         );
     }
 
@@ -316,13 +322,13 @@ mod tests {
     /// A lock released where interrupts were already masked, in a handler or under an outer lock,
     /// must leave them masked.
     #[test_case]
-    fn irq_safe_mutex_restores_rather_than_enables() {
+    fn interrupt_safe_mutex_restores_rather_than_enables() {
         use crate::arch::interrupts;
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
-        // Pretend we are inside an interrupt handler: IRQs already masked.
+        // Pretend we are inside an interrupt handler: interrupts already masked.
         let outer = interrupts::disable();
         assert!(!interrupts::is_enabled());
 
@@ -333,7 +339,7 @@ mod tests {
 
         assert!(
             !interrupts::is_enabled(),
-            "dropping the guard ENABLED interrupts inside an IRQ-disabled context"
+            "dropping the guard ENABLED interrupts inside an interrupt-disabled context"
         );
 
         interrupts::restore(outer);
@@ -343,11 +349,11 @@ mod tests {
     #[test_case]
     fn nested_locks_restore_correctly() {
         use crate::arch::interrupts;
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
         // A is taken first, so A must outrank B.
-        static A: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::STACK_VA, 1);
-        static B: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 2);
+        static A: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::STACK_VA, 1);
+        static B: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 2);
 
         interrupts::enable();
 
@@ -361,7 +367,7 @@ mod tests {
             }
             assert!(
                 !interrupts::is_enabled(),
-                "the inner guard re-enabled IRQs while the outer lock is still held"
+                "the inner guard re-enabled interrupts while the outer lock is still held"
             );
         }
 
@@ -386,9 +392,9 @@ mod tests {
     /// The rank tracker follows the locks.
     #[test_case]
     fn taking_a_lock_records_its_rank() {
-        use crate::sync::{IrqSafeMutex, current_rank, rank};
+        use crate::sync::{InterruptSafeMutex, current_rank, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         assert_eq!(current_rank(), rank::NONE);
         {
@@ -405,9 +411,9 @@ mod tests {
     /// While holding a lock, only a strictly lower rank may be taken (notes/deadlock.md).
     #[test_case]
     fn the_hierarchy_permits_only_strictly_decreasing_ranks() {
-        use crate::sync::{IrqSafeMutex, rank, would_violate};
+        use crate::sync::{InterruptSafeMutex, rank, would_violate};
 
-        static FRAMES: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static FRAMES: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         let _g = FRAMES.lock();
 
@@ -433,10 +439,10 @@ mod tests {
     /// be checked against the wrong ceiling.
     #[test_case]
     fn releasing_an_inner_lock_restores_the_outer_rank() {
-        use crate::sync::{IrqSafeMutex, current_rank, rank};
+        use crate::sync::{InterruptSafeMutex, current_rank, rank};
 
-        static OUTER: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::STACK_VA, 0);
-        static INNER: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static OUTER: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::STACK_VA, 0);
+        static INNER: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         let _o = OUTER.lock();
         assert_eq!(current_rank(), rank::STACK_VA);

@@ -56,7 +56,7 @@ userspace driver, and it is where the milestone-9a interrupt-as-message machiner
 again. The input driver:
 
 1. Enables the PL011's receive interrupt.
-2. Blocks on it (its `Irq` capability's `WAIT`).
+2. Blocks on it (its `Interrupt` capability's `WAIT`).
 3. When a character arrives, reads the receive FIFO, buffers it, and on a newline hands the line to
    the shell over an endpoint. The bytes travel in a page shared with the shell, and the length
    crosses the endpoint: control by message, data by shared memory, §10 (process model: capability-based, microkernel) again.

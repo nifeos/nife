@@ -63,7 +63,11 @@ fn finds_the_plics_context_list_by_compatible() {
         .unwrap()
         .expect("the PLIC states its context wiring");
 
-    assert_eq!(prop.len(), 16, "two (phandle, irq) entries of two cells");
+    assert_eq!(
+        prop.len(),
+        16,
+        "two (phandle, interrupt) entries of two cells"
+    );
     let cell = |i: usize| u32::from_be_bytes(prop[i * 4..i * 4 + 4].try_into().unwrap());
     assert_eq!(cell(1), 11, "context 0 is a machine external");
     assert_eq!(cell(3), 9, "context 1 is the hart's supervisor external");

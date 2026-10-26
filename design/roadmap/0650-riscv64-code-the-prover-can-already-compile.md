@@ -70,7 +70,7 @@ The file compiled unchanged, and the one failure is the probe's. Then each other
 |---|---:|---:|---|---|
 | `iommu.rs` | 379 | 0 | compiles, harness runs | nothing |
 | `context.rs` | 105 | 0 | compiles | nothing |
-| `irq.rs` | 252 | 0 | 8 errors | **siblings**: `error[E0433]: could not find \`plic\` in \`drivers\`` (the PLIC driver is gated to riscv64 in `drivers/mod.rs`); `cannot find function \`boot_hartid\` in module \`super\`` |
+| `interrupt_controller.rs` | 252 | 0 | 8 errors | **siblings**: `error[E0433]: could not find \`plic\` in \`drivers\`` (the PLIC driver is gated to riscv64 in `drivers/mod.rs`); `cannot find function \`boot_hartid\` in module \`super\`` |
 | `isa.rs` | 356 | 1 | 6 errors | **target**: `error: invalid register \`a7\`: unknown register` at `isa.rs:222` |
 | `pmu.rs` | 616 | 2 | 10 errors | **target**: the same, at `pmu.rs:417` |
 
@@ -115,7 +115,7 @@ assembly in it, and none of it is proved) said "can be written and cannot be run
 context's address fields round-trip, and no device id reaches another's entry. Measured cost:
 five lines in `arch/mod.rs` and one harness. The probe run's wall time was not taken separately;
 the row it joins is 7.25 seconds.
-Extending to `irq.rs` costs its 8 resolve errors, most likely by compiling the PLIC driver under
+Extending to `interrupt_controller.rs` costs its 8 resolve errors, most likely by compiling the PLIC driver under
 the same `cfg` (unmeasured). The ceiling was 736 lines, 12.5% of `arch/riscv64/`'s 5,879 Rust
 lines by `wc -l`. This said 6% of 11,746, a total that counted every file twice. Both predate
 milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs), which grew

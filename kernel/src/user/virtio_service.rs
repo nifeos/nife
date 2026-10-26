@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, irq_cap, notification_cap, rendezvous_cap, timer_cap, virtio_cap};
+use crate::cap::{Rights, interrupt_cap, notification_cap, rendezvous_cap, timer_cap, virtio_cap};
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -34,9 +34,9 @@ fn wire(
         .expect("no DMA frame for the virtio driver")
         .addr();
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(intid, irq_ep);
-    crate::arch::irq::enable(intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(intid);
 
     let report = crate::sched::create_rendezvous();
 
@@ -51,7 +51,7 @@ fn wire(
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE), // slot 0: SEND the result
-                    irq_cap(intid),                        // slot 1: WAIT / ACK the interrupt
+                    interrupt_cap(intid),                  // slot 1: WAIT / ACK the interrupt
                     virtio_cap(vid),                       // slot 2: drive the device, confined
                 ],
                 maps: &[Mapping {
@@ -195,9 +195,10 @@ fn wire_net_server(
     // spends an armed kill (§16 (object revocation)), and only reclaiming this region aborts the
     // waiter. Six pages: three endpoints, the timer and its notification, and one spare.
     let ep_region = crate::memory_region::create(6).expect("no endpoint region for net_stack");
-    let irq_ep = crate::sched::create_rendezvous_from(ep_region).expect("no irq endpoint");
-    crate::sched::bind_irq(intid, irq_ep);
-    crate::arch::irq::enable(intid);
+    let interrupt_ep =
+        crate::sched::create_rendezvous_from(ep_region).expect("no interrupt endpoint");
+    crate::sched::bind_interrupt(intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(intid);
 
     let report = crate::sched::create_rendezvous_from(ep_region).expect("no report endpoint");
     let stack = crate::sched::create_rendezvous_from(ep_region).expect("no stack endpoint");
@@ -243,7 +244,7 @@ fn wire_net_server(
                 arg2: listen_grant, // which ports this stack's clients may listen on, if any
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE), // slot 0: report the acquired address
-                    irq_cap(intid),                        // slot 1: WAIT / ACK the interrupt
+                    interrupt_cap(intid),                  // slot 1: WAIT / ACK the interrupt
                     virtio_cap(vid),                       // slot 2: the confined transport
                     memory_region_cap(budget),             // slot 3: the heap's budget
                     rendezvous_cap(stack, Rights::READ),   // slot 4: serve clients' requests
@@ -593,8 +594,8 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE),
-                    irq_cap(dev.intid), // slot 1 (unused by the attacker; keeps virtio at slot 2)
-                    virtio_cap(vid),    // slot 2
+                    interrupt_cap(dev.intid), // slot 1 (unused by the attacker; keeps virtio at slot 2)
+                    virtio_cap(vid),          // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,
@@ -638,8 +639,8 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE),
-                    irq_cap(dev.intid), // slot 1 (unused; keeps virtio at slot 2)
-                    virtio_cap(vid),    // slot 2
+                    interrupt_cap(dev.intid), // slot 1 (unused; keeps virtio at slot 2)
+                    virtio_cap(vid),          // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,

@@ -34,7 +34,7 @@ Twenty ticks in a fifth of a second at 100 Hz is the number that proves the whol
 not just the clock. An interrupt the CPU did not ask for arrived, the IDT dispatched it by vector,
 and the handler acknowledged it so a second could follow. A missed EOI is a hang rather than an
 error on this architecture, so exactly one tick would have been the failure to expect. The 62 MHz
-APIC timer is 1 GHz divided by 16, which is the divider `irq.rs` programs, so the two measurements
+APIC timer is 1 GHz divided by 16, which is the divider `interrupt_controller.rs` programs, so the two measurements
 agree with each other as well as with the emulator's nominal rate.
 
 Two obligations the ACPI tables state and this code honors, both of which would otherwise show up
@@ -59,7 +59,7 @@ The whole device is a 4 KiB page with two 32-bit registers in it. `IOREGSEL` at 
 *number* of the register you want; `IOWIN` at offset 0x10 is a window onto whatever `IOREGSEL` last
 named. So every access is a pair, the device is stateful, and two CPUs doing this concurrently would
 interleave and each read the other's register. Nothing here is concurrent yet (one CPU,
-single-threaded boot), and `irq.rs` says out loud that a lock belongs there the day SMP lands.
+single-threaded boot), and `interrupt_controller.rs` says out loud that a lock belongs there the day SMP lands.
 
 What is behind the window:
 
@@ -74,17 +74,17 @@ The "minus one" in the version register is the field's definition rather than an
 correct for: a 24-entry part reports 23. And the two words are written high first, so the
 destination is in place before the low word's mask bit clears and the line goes live.
 
-### A legacy IRQ number is not a pin number, and this is the whole trap
+### A legacy interrupt number is not a pin number, and this is the whole trap
 
-The PIT's IRQ 0 does not arrive on IO APIC input 0. On q35, and on essentially every PC:
+The PIT's interrupt 0 does not arrive on IO APIC input 0. On q35, and on essentially every PC:
 
 ```
                 io apic 0 at 0xfec00000, gsi base 0
-                isa irq 0 -> gsi 2 (active high, edge)
-                isa irq 5 -> gsi 5 (active high, level)
-                isa irq 9 -> gsi 9 (active high, level)
-                isa irq 10 -> gsi 10 (active high, level)
-                isa irq 11 -> gsi 11 (active high, level)
+                isa interrupt 0 -> gsi 2 (active high, edge)
+                isa interrupt 5 -> gsi 5 (active high, level)
+                isa interrupt 9 -> gsi 9 (active high, level)
+                isa interrupt 10 -> gsi 10 (active high, level)
+                isa interrupt 11 -> gsi 11 (active high, level)
 ```
 
 The PIT is wired to pin 2 because pin 0 carries the 8259 cascade. A kernel that armed redirection
@@ -92,24 +92,24 @@ entry 0 for "the timer" would have armed a line nothing drives, and the failure 
 no interrupts, no error, nothing anywhere to say why.
 
 Resolving that is pure logic over table bytes, so it is in the crate rather than in the kernel:
-`machine_discovery::acpi::isa_irq_table` walks the MADT's interrupt source overrides once and
-returns all sixteen legacy IRQs resolved, with six host tests holding it. `irq::record_isa_routing`
-copies the answer into a static, and `irq::enable(intid)` takes a *legacy IRQ number* the way the
+`machine_discovery::acpi::isa_interrupt_table` walks the MADT's interrupt source overrides once and
+returns all sixteen legacy interrupts resolved, with six host tests holding it. `interrupt_controller::record_isa_routing`
+copies the answer into a static, and `interrupt_controller::enable(intid)` takes a *legacy interrupt number* the way the
 arch contract's other two implementations take an INTID or a PLIC source.
 
 The flags word is two two-bit fields, not two bits, and reading it as two bits gets both wrong.
 Bits 1:0 are polarity (`00` conforms to the bus, `01` active high, `11` active low) and bits 3:2 are
-trigger mode (`00` conforms, `01` edge, `11` level). QEMU emits `0x000d` for the PCI-link IRQs,
+trigger mode (`00` conforms, `01` edge, `11` level). QEMU emits `0x000d` for the PCI-link interrupts,
 which is `0b1101`: active high, level. A decoder that tested bit 1 for polarity would answer
 "active low" and arm a line that never asserts. There is a test named for exactly that misreading.
 
 `00` meaning "conforms to the bus" is also not a synonym for "active high, edge" even though the two
-coincide on the ISA bus; the default lives in one place (`IsaIrqRouting::isa_default`) so a future
+coincide on the ISA bus; the default lives in one place (`IsaInterruptRouting::isa_default`) so a future
 reader cannot change it in only one of the two.
 
 ### What it was proved with, and why the PIT
 
-The PIT twice over: `timer.rs` already drives it for calibration, and IRQ 0 is the one line every PC
+The PIT twice over: `timer.rs` already drives it for calibration, and interrupt 0 is the one line every PC
 rewires, so routing it is simultaneously the easiest device to reach and the strongest test of the
 override table. Channel 0 is the one whose output goes to the interrupt controller, which is
 exactly why calibration cannot use it and why this can use nothing else. Mode 2 (rate generator)
@@ -120,7 +120,7 @@ the PIT's alone:
 
 ```
   io apic     : id 0 at 0xfec00000 up, version 0x20, 24 redirection entries, gsi base 0
-  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 20 interrupts in ~0.2s at 100 Hz
+  device interrupt  : pit interrupt 0 -> gsi 2 on vector 0x32: 20 interrupts in ~0.2s at 100 Hz
 ```
 
 Twenty is the same number the local APIC timer produces in the same window against the same TSC,
@@ -197,7 +197,7 @@ constants are kept in agreement by a `const` assertion in `mmu.rs` that recomput
 `DIRECT_MAP_BASE`, so changing one without the other fails the build rather than the boot.
 
 The one thing that *does* change across the switch is the local APIC page's memory type, from
-the boot map's cacheable to device. `irq.rs` keeps its base as a direct-map address and needs no
+the boot map's cacheable to device. `interrupt_controller.rs` keeps its base as a direct-map address and needs no
 re-derivation.
 
 ### What made it debuggable
