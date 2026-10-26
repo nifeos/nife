@@ -29,7 +29,7 @@ place a newcomer might meet it is `notes/scripts.md`'s table, behind item 8 of t
 order, and item 8 points at `notes/README.md`, which no stranger has opened.
 
 Run 4 was the first to see `CONTRIBUTING.md` and the `## Start here` order. The failure to watch is
-run 4's: `CONTRIBUTING.md` is item 2 of 8, and run 4's stranger read it sixteenth of twenty-two.
+run 4's: `CONTRIBUTING.md` is item 2 of 8 and was read sixteenth of twenty-two.
 
 ### The machine is uncontended
 

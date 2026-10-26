@@ -20,7 +20,7 @@ stranger it is measured is run 4's finding acted on, not a softening. The `nife-
 restored because a stranger's `script/test` takes it like any other lane, and unlike a lane its tree
 is disposable.
 
-The harness reads the rubric out of the note and does not copy it into the script. So the note's
+The harness reads the rubric out of the note rather than from a copy in the script. So the note's
 table stays the only rubric, and an amendment is asked at the next debrief without anyone editing
 the harness. The first draft of that extraction matched every `| M<n> |` row in the note. That swept
 the *scoring* tables of runs 3 and 4 into the stranger's own question list. The `--smoke` run caught

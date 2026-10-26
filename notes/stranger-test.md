@@ -148,7 +148,7 @@ toolchain and both QEMUs, and ends in a debrief a person scores. CI can do none 
 - `.github/workflows/stranger-cadence.yml` asks it every Monday, in its own workflow, because a due
   run is information about the tree and not a defect in that week's commit.
 - `script/stranger-test --check` runs in `script/lint`. It checks that the cadence sentence appears
-  once, that the run headings start at 1 and have no gap, and that their dates are in order.
+  once, that the run headings are numbered from 1 without a gap, and that their dates are in order.
   A malformed record is a defect in the commit that malformed it.
 
 Red means run the test. Closing it by editing a heading is available, cheap, and the one thing that
@@ -184,7 +184,7 @@ findings with their homes, and the four predictions.
 ## What still fails a stranger, as of 2026-09-24
 
 - M2 is unanswerable by ordinary work. It was absent for the fourth run in six. No stranger has
-  ever opened `notes/net.md`, which answers it. Neither have `notes/scripts.md` or
+  ever opened `notes/net.md`, which answers it. Nor has any stranger opened `notes/scripts.md` or
   `notes/README.md`. The notes index was cut to one line per note on 2026-09-24; no stranger has met
   that version.
 - No stranger has ever run `script/apropos`. Run 5 had its name in front of it three times.
