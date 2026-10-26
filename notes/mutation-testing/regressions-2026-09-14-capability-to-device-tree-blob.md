@@ -133,9 +133,9 @@ The headline first, because the block asked for it. `design/fatal-risks/README.m
 `next_after` as its strongest counterfactual: the milestone 6 (threads, the context switch, and
 preemption) timer drift, proved over code the timer does not call. Milestone 326 put this crate
 second on its list for that reason, not for its rate. **No survivor touched `next_after`, the phase
-arithmetic, or the firing decision.** Every mutant in that function was caught before this lane
-touched anything, by `next_after_is_strictly_in_the_future_and_keeps_its_phase` and the doctest
-beside it. That is evidence against risk 2 in the one place the roadmap thought it most likely.
+arithmetic, or the firing decision.** `next_after_is_strictly_in_the_future_and_keeps_its_phase` and
+the doctest beside it caught every mutant in that function before this lane touched anything. That
+is evidence against risk 2 in the one place the roadmap thought it most likely.
 
 Thirty-six of the 48 were the crate's own Kani harnesses, which is a defect in the instrument.
 `.cargo/mutants.toml` excludes `verification::` and `proofs::` as module paths, because
@@ -167,8 +167,9 @@ The twelve real survivors sat in the parser, the admission check and the plan wr
   seven-digit interval pushes past the column. There the first underflows, the second truncates the
   text and the third pads it.
 - `e.mem_pages > 0` under `>=` and `e.arg != 0` under `==` (2). Both were only ever exercised
-  true, so nothing proved the lines are omitted for an entry that asks for neither. All eight
-  mutants above are closed by `the_plan_prints_milliseconds_long_intervals_and_the_absent_grants`.
+  true, so nothing proved the lines are omitted for an entry that asks for neither.
+  `the_plan_prints_milliseconds_long_intervals_and_the_absent_grants` closes all eight mutants
+  above.
 - `admit`'s `Holdings { dir: held.dir, .. }` with the field deleted (1), falling back to the
   default `false`. A scheduler that holds a directory would have reported every `rm` line as
   unbackable. Closed by `a_designation_is_backed_by_the_directory_the_scheduler_holds`.
@@ -177,7 +178,7 @@ The twelve real survivors sat in the parser, the admission check and the plan wr
   `unbacked` then re-tests. So a plan needing a directory the scheduler lacks is refused during
   planning, and never reaches the check that would name it unbacked. `Unbacked::File` has a second
   reason: no shipped program declares a `FileSpec::Required`, so `Endowment::file` is `None` for
-  every plan this crate can build. The mutants are killed by calling `unbacked` directly. The
+  every plan this crate can build. Calling `unbacked` directly kills the mutants. The
   reachability is recorded in a `BUGS` section on `Unbacked` itself, where a reader meets the
   variants. Whether `admit` should stop pre-consuming the holding is a behavior change, not a test,
   so it is recorded and not made.

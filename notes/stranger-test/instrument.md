@@ -20,11 +20,11 @@ stranger it is measured is run 4's finding acted on, not a softening. The `nife-
 restored because a stranger's `script/test` takes it like any other lane, and unlike a lane its tree
 is disposable.
 
-The rubric is read out of the note, not copied into the script. So the note's table stays the only
-rubric, and an amendment is asked at the next debrief without anyone editing the harness. The first
-draft of that extraction matched every `| M<n> |` row in the note. That swept the *scoring* tables
-of runs 3 and 4 into the stranger's own question list. The `--smoke` run caught it, in the reply,
-and that is the argument for `--smoke` existing.
+The harness reads the rubric out of the note rather than from a copy in the script. So the note's
+table stays the only rubric, and an amendment is asked at the next debrief without anyone editing
+the harness. The first draft of that extraction matched every `| M<n> |` row in the note. That swept
+the *scoring* tables of runs 3 and 4 into the stranger's own question list. The `--smoke` run caught
+it, in the reply, and that is the argument for `--smoke` existing.
 
 What the harness cannot do is in its own `BUGS` section, where a reader meets the tool. Two of those
 bound what any future run can claim, so the note repeats them. The harness cannot make the operator

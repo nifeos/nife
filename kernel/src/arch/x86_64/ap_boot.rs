@@ -67,10 +67,11 @@ pub(crate) unsafe fn prepare(stack_top: u64) {
     // the secondary stacks, both of which are mutated at runtime), and `mmu::map_everything` maps
     // exactly this range into the direct map by name ([`trampoline_lma`]'s own doc explains why it
     // needs to: neither the general direct-map rule nor either neighboring section's own mapping
-    // reaches it). `dst..dst+len` is the low megabyte, which `mmu::init`'s `map_firmware_regions`
-    // maps writable (`Flags::kernel_data()`) and which the frame allocator never hands out
-    // (`machine::LOW_MEGABYTE`), so nothing else owns those bytes. Non-overlapping: `dst` is a
-    // fixed low page (`AP_TRAMPOLINE_PHYS`) and `src` sits beside `.rodata`, comfortably above 1 MiB.
+    // reaches it). `dst..dst+len` is the low megabyte, which `mmu::initialize`'s
+    // `map_firmware_regions` maps writable (`Flags::kernel_data()`) and which the frame allocator
+    // never hands out (`machine::LOW_MEGABYTE`), so nothing else owns those bytes. Non-overlapping:
+    // `dst` is a fixed low page (`AP_TRAMPOLINE_PHYS`) and `src` sits beside `.rodata`, comfortably
+    // above 1 MiB.
     unsafe {
         core::ptr::copy_nonoverlapping(
             phys_to_virt(src) as *const u8,

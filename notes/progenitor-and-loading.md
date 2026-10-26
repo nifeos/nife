@@ -124,9 +124,9 @@ RAM boot and the eventual disk boot share one parser.
 
 ### The archive carries stripped ELFs (2026-07-30, milestone 23)
 
-**The initrd is reserved RAM**: `memory::init` tells the frame allocator to keep its hands off it,
-so every byte in the archive is a byte the running system does not have, for the whole boot. That
-was free until it was not.
+**The initrd is reserved RAM**: `memory::initialize` tells the frame allocator to keep its hands off
+it, so every byte in the archive is a byte the running system does not have, for the whole boot.
+That was free until it was not.
 
 A debug build is almost entirely debug information. `rust_swappable` is 720 KB, of which 3 KB is
 `.text` plus `.rodata` and the other 717 KB is `.debug_*`. Twenty-odd programs like that made a 26

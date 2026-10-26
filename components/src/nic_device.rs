@@ -36,38 +36,38 @@ impl Nic {
             v.ack_irq();
         }
     }
-    fn rx_take(&mut self) -> Option<alloc::vec::Vec<u8>> {
+    fn receive_frame(&mut self) -> Option<alloc::vec::Vec<u8>> {
         let frame = match self {
             // virtio's wait is its interrupt; only a polled NIC's wait reads the stamp below.
-            Nic::Virtio(v) => return v.rx_take(),
-            Nic::Gigabit(n) => n.rx_take(),
-            Nic::DesignWare(n) => n.rx_take(),
+            Nic::Virtio(v) => return v.receive_frame(),
+            Nic::Gigabit(n) => n.receive_frame(),
+            Nic::DesignWare(n) => n.receive_frame(),
         };
         if frame.is_some() {
             nic_wait::frame_taken();
         }
         frame
     }
-    fn tx_send(&mut self, frame: &[u8]) {
+    fn transmit_frame(&mut self, frame: &[u8]) {
         match self {
-            Nic::Virtio(v) => v.tx_send(frame),
-            Nic::Gigabit(n) => n.tx_send(frame),
-            Nic::DesignWare(n) => n.tx_send(frame),
+            Nic::Virtio(v) => v.transmit_frame(frame),
+            Nic::Gigabit(n) => n.transmit_frame(frame),
+            Nic::DesignWare(n) => n.transmit_frame(frame),
         }
     }
 }
 
 impl smoltcp::phy::Device for Nic {
-    type RxToken<'a> = NicRxToken;
-    type TxToken<'a> = NicTxToken;
+    type RxToken<'a> = NicReceiveToken;
+    type TxToken<'a> = NicTransmitToken;
 
-    fn receive(&mut self, _timestamp: Instant) -> Option<(NicRxToken, NicTxToken)> {
-        let frame = self.rx_take()?;
-        Some((NicRxToken { frame }, NicTxToken { dev: self }))
+    fn receive(&mut self, _timestamp: Instant) -> Option<(NicReceiveToken, NicTransmitToken)> {
+        let frame = self.receive_frame()?;
+        Some((NicReceiveToken { frame }, NicTransmitToken { dev: self }))
     }
 
-    fn transmit(&mut self, _timestamp: Instant) -> Option<NicTxToken> {
-        Some(NicTxToken { dev: self })
+    fn transmit(&mut self, _timestamp: Instant) -> Option<NicTransmitToken> {
+        Some(NicTransmitToken { dev: self })
     }
 
     fn capabilities(&self) -> smoltcp::phy::DeviceCapabilities {
@@ -82,11 +82,15 @@ impl smoltcp::phy::Device for Nic {
     }
 }
 
-pub(crate) struct NicRxToken {
+/// The frame a receive handed smoltcp, as its `phy::RxToken`.
+///
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; smoltcp owns the trait's name, and this tree the type's.
+pub(crate) struct NicReceiveToken {
     frame: alloc::vec::Vec<u8>,
 }
 
-impl smoltcp::phy::RxToken for NicRxToken {
+impl smoltcp::phy::RxToken for NicReceiveToken {
     fn consume<R, F>(self, f: F) -> R
     where
         F: FnOnce(&[u8]) -> R,
@@ -95,11 +99,15 @@ impl smoltcp::phy::RxToken for NicRxToken {
     }
 }
 
-pub(crate) struct NicTxToken {
+/// The right to transmit one frame, as smoltcp's `phy::TxToken`.
+///
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; smoltcp owns the trait's name, and this tree the type's.
+pub(crate) struct NicTransmitToken {
     dev: *mut Nic,
 }
 
-impl smoltcp::phy::TxToken for NicTxToken {
+impl smoltcp::phy::TxToken for NicTransmitToken {
     fn consume<R, F>(self, len: usize, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
@@ -110,7 +118,7 @@ impl smoltcp::phy::TxToken for NicTxToken {
         // produced the token has ended (the token is an owned value). `virtio_net_transport`'s own
         // token made the same argument before this enum took its place.
         unsafe {
-            (*self.dev).tx_send(&buf);
+            (*self.dev).transmit_frame(&buf);
         }
         r
     }

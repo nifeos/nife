@@ -97,7 +97,7 @@ const HEADER_LEN: usize = 40;
 ///
 /// `from_ptr` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
-/// 4 GiB slice read past the end of RAM, a data abort in `memory::init` before any handler can say
+/// 4 GiB slice read past the end of RAM, a data abort in `memory::initialize` before any handler can say
 /// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
 /// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
 /// 64 KiB. See notes/device-tree.md ("The parser's bounds").

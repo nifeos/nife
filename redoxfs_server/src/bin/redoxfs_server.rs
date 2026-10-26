@@ -402,7 +402,7 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
         inject::AFTER_BLOCKS.store(crash_after_blocks, Ordering::Relaxed);
         inject::TEAR_BYTES.store(crash_tear_bytes, Ordering::Relaxed);
     }
-    HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // A bad image, or a block server that never answers correctly, faults here; the server never
     // creates. CachedDisk holds the tree spine's single-block reads (milestone 138 step 2).

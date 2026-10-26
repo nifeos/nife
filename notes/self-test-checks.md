@@ -47,10 +47,10 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
   `arch::exceptions::self_test` from their ports' start; aarch64 had the machinery and gained the
   function. Returning onto the trapping instruction instead of past it would be an infinite loop.
 - `mapping` maps a page at an address computed from this machine's RAM: one gigabyte above the
-  direct map's last byte, past anything `mmu::init` claimed and in the kernel half on all three. A
-  constant there was the third QEMU-shaped address the VisionFive 2 caught in one bench session.
-  It uses `phys_to_virt` because the three architectures spell the direct map differently. On
-  failure the frame is leaked, because one whose mapping state is unknown must not be reused.
+  direct map's last byte, past anything `mmu::initialize` claimed and in the kernel half on all
+  three. A constant there was the third QEMU-shaped address the VisionFive 2 caught in one bench
+  session. It uses `phys_to_virt` because the three architectures spell the direct map differently.
+  On failure the frame is leaked, because one whose mapping state is unknown must not be reused.
 - `frames` takes one frame out of the allocator and back. Every allocation comes through it, and
   it catches a bitmap whose free and used counts have drifted, a leak that reads as plenty of memory.
 - `timer` makes two claims in one 20 ms window, two tick periods: the counter moves (the time

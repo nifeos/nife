@@ -236,7 +236,7 @@ the process's own untyped budget. The pair that landed:
   `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
 - `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
-  static the program wires with one call, `HEAP.init(untyped_slot, base_va, max_bytes)`, first
+  static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, max_bytes)`, first
   thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via `untyped::MAP`
   (one page per invoke, zeroed by the kernel, paid from the budget). It grows geometrically (double,
   at least 8 pages, never past `max_bytes`). The first run is talc's `claim`, holding its bins;

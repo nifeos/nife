@@ -93,8 +93,8 @@ refuses to reclaim a region whose children are still carved out of it. So a stal
 child was gone first.
 
 The open question above is answered by construction rather than by investigation, and it is no
-longer worth a lane. The assertion can no longer be moved by a neighbor at all. If it ever goes red,
-the answer is "a leak", with nothing else to rule out first.
+longer worth a lane. A neighbor can no longer move the assertion at all. If it ever goes red, the
+answer is "a leak", with nothing else to rule out first.
 
 ### `system_tests/src/user/current_cpu_tests.rs:134`, `the_page_is_returned_when_the_space_is_dropped` (FIXED 2026-09-23)
 

@@ -15,7 +15,7 @@ pub mod amd_vi;
 // header, and `boot.s`'s `secondary_boot` for what it prepares.
 pub mod ap_boot;
 pub mod context;
-// What the loader and ACPI describe, read once inside `memory::init` (milestone 890 (riscv64
+// What the loader and ACPI describe, read once inside `memory::initialize` (milestone 890 (riscv64
 // and `x86_64` join the shared boot path)).
 pub mod discovery;
 pub mod exceptions;
@@ -66,13 +66,13 @@ pub use reset::reboot;
 
 mod assembly;
 mod bring_up;
-mod cpu_init;
+mod cpu_initialization;
 mod msr;
 mod percpu;
 mod primitives;
 
 pub use bring_up::*;
-pub use cpu_init::*;
+pub use cpu_initialization::*;
 pub use msr::*;
 pub use percpu::*;
 pub use primitives::*;

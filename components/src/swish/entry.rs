@@ -65,7 +65,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
     // After the probes, which must see the table as its builder left it. The two witness roles
     // hold no budget at slot 3.
     if !matches!(role, ROLE_NAVIGATE | ROLE_GLOB) {
-        heap_init();
+        initialize_heap();
     }
     // Probed here too: see [`HOLDS_MACHINE_PAGE`].
     HOLDS_MACHINE_PAGE.store(

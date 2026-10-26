@@ -56,16 +56,16 @@ The equivalents are `|` against `^` over disjoint constants (`abi`, `e1000e`,
 
 - `portable_executable`'s `put64` writes `ImageBase` 0 into a buffer made of zeros, and it has no
   other call.
-- `documentation`'s `write_table_rule` `+= with *=` has two copies. The `+= *width` copy is killed
-  by the zero-width table. The survivor is `+= 3` between columns. The column already holds the
-  margin by then, and `close_line` only asks whether it is past zero.
+- `documentation`'s `write_table_rule` `+= with *=` has two copies. The zero-width table kills the
+  `+= *width` copy. The survivor is `+= 3` between columns. The column already holds the margin by
+  then, and `close_line` only asks whether it is past zero.
 - `uefi_loader`'s `Walk::prop` `> with >=` refuses a property that ends exactly at the structure
   block's end one token early. The walk refuses the next token with the same `Truncated` error,
-  since no room is left for `END`.
+  since no room remains for `END`.
 
 ## BUGS
 
-- `swish`'s `write_slot` key is killed by a direct call with slot 10. No preview row passes 10
+- A direct call with slot 10 kills `swish`'s `write_slot` key. No preview row passes 10
   today, so the test guards the padding for the first row that does.
 - `put64` has one call, which writes a zero. It is kept because it states the header field. A
   second call would make its mutant killable.

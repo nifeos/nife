@@ -364,9 +364,9 @@ fn ring_flags(seq: u64) -> u8 {
 /// §175 (where the kernel's own output goes)'s ruling B "with a fallback").
 ///
 /// The test plays the drainer by writing the cursor page itself. With a drainer attached and
-/// caught up, a `println!` reaches the ring and not the UART (`console::tx_bytes` does not move).
-/// Left unread past `STALL_NANOS`, the next line finds the drainer stalled: it prints the held line
-/// and itself, flags both `DIRECT`, and counts two fallbacks.
+/// caught up, a `println!` reaches the ring and not the UART (`console::bytes_written` does not
+/// move). Left unread past `STALL_NANOS`, the next line finds the drainer stalled: it prints the
+/// held line and itself, flags both `DIRECT`, and counts two fallbacks.
 #[test_case]
 fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() {
     use system_log_contract::kernel_ring::DETACHED;
@@ -381,26 +381,26 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     let fallbacks = crate::kernel_log::fallback_count();
     crate::kernel_log::test_set_cursor(next);
-    let tx = crate::console::tx_bytes();
+    let written = crate::console::bytes_written();
     crate::println!("  kernel log probe: held for the drainer");
-    let held_tx = crate::console::tx_bytes();
+    let held_written = crate::console::bytes_written();
     let held_flags = ring_flags(next);
     spin_for(crate::kernel_log::STALL_NANOS + 100_000_000);
     crate::println!("  kernel log probe: after the stall");
-    let after_tx = crate::console::tx_bytes();
+    let after_written = crate::console::bytes_written();
     let (flags_then, flags_now) = (ring_flags(next), ring_flags(next + 1));
     let counted = crate::kernel_log::fallback_count() - fallbacks;
     crate::kernel_log::test_set_cursor(DETACHED);
 
     assert_eq!(
-        held_tx, tx,
+        held_written, written,
         "a line held for a live drainer reached the UART anyway"
     );
     assert_eq!(held_flags & flags::DIRECT, 0);
     assert_ne!(held_flags & flags::KERNEL, 0);
     let both = "  kernel log probe: held for the drainer\n  kernel log probe: after the stall\n";
     assert_eq!(
-        after_tx - held_tx,
+        after_written - held_written,
         both.len() as u64,
         "the fallback did not print both lines"
     );
@@ -433,23 +433,23 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     crate::kernel_log::test_set_cursor(next);
     let line = "  kernel log probe: the last line before the drainer stopped\n";
     crate::print!("{line}");
-    let held_tx = crate::console::tx_bytes();
+    let held_written = crate::console::bytes_written();
     // The stall test needs `STALL_NANOS` and the poll runs once a second; three seconds bounds
     // both with room for a loaded emulator. The poll may run on another core and writes the text
     // and its newline separately, so the loop waits for the whole line, not the first byte.
     let hz = crate::arch::timer::frequency();
     let until = crate::arch::timer::now() + 3 * hz;
-    while crate::console::tx_bytes() - held_tx < line.len() as u64
+    while crate::console::bytes_written() - held_written < line.len() as u64
         && crate::arch::timer::now() < until
     {
         core::hint::spin_loop();
     }
-    let rescued_tx = crate::console::tx_bytes();
+    let rescued_written = crate::console::bytes_written();
     let rescued_flags = ring_flags(next);
     crate::kernel_log::test_set_cursor(DETACHED);
 
     assert_eq!(
-        rescued_tx - held_tx,
+        rescued_written - held_written,
         line.len() as u64,
         "the held line never reached the UART without a later print"
     );
@@ -471,24 +471,24 @@ fn a_panic_prints_the_held_lines_first_and_holds_nothing_after() {
     let mut text = [0u8; system_log_contract::record::TEXT_MAX];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     crate::kernel_log::test_set_cursor(next);
-    let tx = crate::console::tx_bytes();
+    let written = crate::console::bytes_written();
     crate::println!("  kernel log probe: held when the panic came");
-    let held_tx = crate::console::tx_bytes();
+    let held_written = crate::console::bytes_written();
     crate::console::enter_panic();
-    let flushed_tx = crate::console::tx_bytes();
+    let flushed_written = crate::console::bytes_written();
     crate::println!("  kernel log probe: after the panic");
-    let after_tx = crate::console::tx_bytes();
+    let after_written = crate::console::bytes_written();
     crate::kernel_log::test_leave_panic();
     crate::kernel_log::test_set_cursor(DETACHED);
 
-    assert_eq!(held_tx, tx);
+    assert_eq!(held_written, written);
     assert_eq!(
-        flushed_tx - held_tx,
+        flushed_written - held_written,
         "  kernel log probe: held when the panic came\n".len() as u64,
         "the panic path did not print the line the drainer had not"
     );
     assert_eq!(
-        after_tx - flushed_tx,
+        after_written - flushed_written,
         "  kernel log probe: after the panic\n".len() as u64,
         "a line printed after the panic was held"
     );

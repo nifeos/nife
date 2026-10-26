@@ -45,9 +45,9 @@ pub(crate) const POLL_MS: u64 = 1;
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
-const RX_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const RECEIVE_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 // SAFETY: as above.
-const TX_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const TRANSMIT_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
@@ -72,10 +72,10 @@ struct Queues;
 
 impl Tails for Queues {
     fn set_rx_tail(&mut self, v: u32) {
-        RX_QUEUE.w32(TAIL_IN_PAGE, v);
+        RECEIVE_QUEUE.w32(TAIL_IN_PAGE, v);
     }
     fn set_tx_tail(&mut self, v: u32) {
-        TX_QUEUE.w32(TAIL_IN_PAGE, v);
+        TRANSMIT_QUEUE.w32(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
         doorbell_barrier();
@@ -105,14 +105,14 @@ impl GigabitNic {
     }
 
     /// The next received frame, if the device has written one.
-    pub(crate) fn rx_take(&mut self) -> Option<Vec<u8>> {
+    pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
         let mut buf = [0u8; MAX_FRAME];
         let n = self.plane.receive(&mut Plane, &mut Queues, &mut buf)?;
         Some(buf[..n].to_vec())
     }
 
     /// Queue `frame`, waiting a bounded while for a descriptor if the ring is full.
-    pub(crate) fn tx_send(&mut self, frame: &[u8]) {
+    pub(crate) fn transmit_frame(&mut self, frame: &[u8]) {
         for _ in 0..100_000 {
             if self.plane.can_transmit(&mut Plane) {
                 break;

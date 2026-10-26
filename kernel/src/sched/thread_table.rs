@@ -180,14 +180,15 @@ impl Threads {
             built = build(tid, ptr);
             if built {
                 // In place, not in a constructor: this is a fact about the page, and the register
-                // file's `live` flag must be written before anything reads it (`init_fp_state`).
+                // file's `live` flag must be written before anything reads it
+                // (`initialize_fp_state`).
                 //
                 // SAFETY: `ptr` is the start of a page this insert exclusively owns, and `build`
                 // has just written a live `Thread` at it.
-                unsafe { crate::thread::init_fp_state(ptr) };
+                unsafe { crate::thread::initialize_fp_state(ptr) };
                 // SAFETY: as above; the name is not yet handed to anyone, so nothing else can
                 // reach the table.
-                unsafe { crate::thread::init_capability_table(ptr) };
+                unsafe { crate::thread::initialize_capability_table(ptr) };
             }
             ThreadControlBlockPointer(ptr)
         })?;
@@ -216,11 +217,11 @@ impl Threads {
             // And its register file beside it; see `insert_at_in_place` for why here.
             //
             // SAFETY: as above, with the `Thread` now live at `ptr`.
-            unsafe { crate::thread::init_fp_state(ptr) };
+            unsafe { crate::thread::initialize_fp_state(ptr) };
             // And its capability table, past the register file, for the same reason.
             //
             // SAFETY: as above; the name is not yet handed to anyone.
-            unsafe { crate::thread::init_capability_table(ptr) };
+            unsafe { crate::thread::initialize_capability_table(ptr) };
             ThreadControlBlockPointer(ptr)
         });
         if let Some(name) = name {

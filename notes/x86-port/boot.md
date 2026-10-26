@@ -82,8 +82,8 @@ The boot map is 4 GiB identity-mapped with 2 MiB pages, the first gigabyte alias
 `DIRECT_MAP_BASE` (where `phys_to_virt` points; see "One base cannot do both jobs" in [what-does-not-fit.md](what-does-not-fit.md)). 4 GiB rather than the 1 GiB
 the image needs, because everything x86 talks to early is above 1 GiB and below 4: the local APIC at
 `0xfee00000`, the IO APIC at `0xfec00000`, and q35's PCIe ECAM window at `0xb0000000`. The identity
-map is dropped by `mmu::init`; the other two survive it, and the direct-map alias costs eight bytes
-because it points at the page directories the identity map already built.
+map is dropped by `mmu::initialize`; the other two survive it, and the direct-map alias costs eight
+bytes because it points at the page directories the identity map already built.
 
 When it fails, it fails silently. A wrong page table means the instruction after `mov cr0, eax`
 is fetched through a broken mapping, the CPU takes a page fault with no IDT, escalates to a double

@@ -87,7 +87,8 @@ fn the_captured_extlinux_failure_is_u_boot_giving_up() {
 #[test]
 fn the_ladder_climbs_banner_machine_self_test_prompt() {
     let mut progress = BootProgress::default();
-    progress.observe_line("nife on aarch64 (EL1, MMU off: physical addresses until mmu::init)");
+    progress
+        .observe_line("nife on aarch64 (EL1, MMU off: physical addresses until mmu::initialize)");
     assert_eq!(progress.reached(), Stage::Banner);
     progress.observe_line("nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz");
     assert_eq!(progress.reached(), Stage::Machine);
@@ -105,7 +106,7 @@ fn the_ladder_climbs_banner_machine_self_test_prompt() {
 fn every_architecture_reaches_the_self_test_verdict() {
     for (banner, machine) in [
         (
-            "nife on aarch64 (EL1, MMU off: physical addresses until mmu::init)",
+            "nife on aarch64 (EL1, MMU off: physical addresses until mmu::initialize)",
             "nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz",
         ),
         (

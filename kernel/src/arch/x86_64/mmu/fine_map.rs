@@ -240,7 +240,7 @@ where
 {
     // The code we are executing right now. If this is wrong, the instruction after `mov cr3` never
     // gets fetched.
-    let here = init as *const () as u64;
+    let here = initialize as *const () as u64;
     let (pa, flags) = m
         .translate(here)
         .expect("the code switching tables is not mapped: we would die on the next fetch");

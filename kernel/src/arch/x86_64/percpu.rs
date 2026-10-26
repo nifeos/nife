@@ -23,8 +23,8 @@ pub(super) static BOOT_CPU_ID: core::sync::atomic::AtomicUsize =
 /// Read from [`BOOT_CPU_ID`]. It must agree with the roster's seating (`smp::seat_cpus_from_acpi`
 /// seats every core at the slot its local APIC id names), and nothing guarantees the boot CPU's
 /// local APIC id is 0. Callable from the kernel's first Rust statement, as
-/// `cpu::init_this_cpu(arch::boot_cpu_id())` needs: `boot.s` stamps the record before it calls
-/// `kernel_main`, so this never reads the zero default.
+/// `cpu::initialize_this_cpu(arch::boot_cpu_id())` needs: `boot.s` stamps the record before it
+/// calls `kernel_main`, so this never reads the zero default.
 pub(crate) fn boot_cpu_id() -> usize {
     BOOT_CPU_ID.load(core::sync::atomic::Ordering::Relaxed)
 }

@@ -84,7 +84,10 @@ fn measure() -> &'static str {
         m[4],
         m[5],
     );
-    println!("network-bench: phy       : id {:#010x}", w.phy_id);
+    println!(
+        "network-bench: phy       : id {:#010x}",
+        w.physical_layer_device_id
+    );
     println!(
         "network-bench: preflight dmar scope : {}",
         if w.confined_by_iommu { "PASS" } else { "FAIL" }
@@ -299,14 +302,17 @@ mod radon {
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",
-            r.version, r.dma_bits
+            r.version, r.direct_memory_access_address_bits
         );
-        match r.phy {
+        match r.physical_layer_device {
             Some((mv, source)) => println!(
                 "network-bench: phy       : id {:#010x}, {mv} mV I/O, settings from {source:?}",
-                r.phy_id
+                r.physical_layer_device_id
             ),
-            None => println!("network-bench: phy       : id {:#010x}", r.phy_id),
+            None => println!(
+                "network-bench: phy       : id {:#010x}",
+                r.physical_layer_device_id
+            ),
         }
         if let Some((m, source)) = r.mac {
             println!(

@@ -39,11 +39,12 @@ static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 static INTERVAL: AtomicU64 = AtomicU64::new(0);
 
 /// **Does this core have `PMUSERENR_EL0`**, the register the cycle-counter grant writes? Recorded
-/// per core by `init` from `ID_AA64DFR0_EL1.PMUVer`, so the context switch reads no ID register.
+/// per core by `initialize` from `ID_AA64DFR0_EL1.PMUVer`, so the context switch reads no ID
+/// register.
 static PMU_PRESENT: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// **What this core last wrote to `PMUSERENR_EL0`**, as a bool: open (`CR` set) or closed (zero).
-/// `init` writes zero, so `false` is the truth at boot on every core.
+/// `initialize` writes zero, so `false` is the truth at boot on every core.
 ///
 /// A cache, not a read-back, because without `FEAT_PMUv3` reading the register is UNDEFINED.
 /// Nothing but this file writes `PMUSERENR_EL0`, so the cache cannot go stale.
@@ -52,7 +53,10 @@ static COUNTER_OPEN: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) };
 /// Start the heartbeat.
 ///
 /// The GIC must already be up: this enables [`TIMER_INTID`] at it.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     let freq = instructions::read_cntfrq();
     assert!(
         counter_frequency_contract::is_plausible(freq),
@@ -67,7 +71,7 @@ pub fn init() {
     instructions::write_cntkctl(instructions::read_cntkctl() | EL0VCTEN);
 
     close_cycle_counter_to_el0();
-    super::pmu::init_this_cpu();
+    super::pmu::initialize_this_cpu();
 
     let interval = freq / TICK_HZ;
     INTERVAL.store(interval, Ordering::Relaxed);
@@ -330,8 +334,9 @@ pub fn frequency() -> u64 {
 ///
 /// If the tree's rate and the register disagree, naming both, or if the tree is unreadable.
 pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
-    // SAFETY: the pointer firmware handed us, whose magic `memory::init` has already checked, named
-    // through the boot map's direct region. Same read `isa::init` makes of the same pointer.
+    // SAFETY: the pointer firmware handed us, whose magic `memory::initialize` has already checked,
+    // named through the boot map's direct region. Same read `isa::initialize` makes of the same
+    // pointer.
     let dt = unsafe {
         device_tree_blob::DeviceTreeBlob::from_ptr(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8

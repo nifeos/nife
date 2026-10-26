@@ -62,7 +62,7 @@ pub enum Error {
     /// An MDIO command did not complete.
     Mdio(management_data_input_output::Error),
     /// The PHY is not the YT8531 this driver's board settings are for.
-    UnknownPhy {
+    UnknownPhysicalLayerDevice {
         /// What it answered.
         id: u32,
     },
@@ -104,11 +104,11 @@ pub(crate) struct Report {
     /// The controller's version register.
     pub version: u32,
     /// The DMA's address width.
-    pub dma_bits: u8,
+    pub direct_memory_access_address_bits: u8,
     /// The PHY's identifier.
-    pub phy_id: u32,
+    pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub phy: Option<(u32, motorcomm::Source)>,
+    pub physical_layer_device: Option<(u32, motorcomm::Source)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
@@ -131,9 +131,9 @@ impl Report {
             aon: crg::BringUpReport::default(),
             syscon: (0, 0),
             version: 0,
-            dma_bits: 0,
-            phy_id: 0,
-            phy: None,
+            direct_memory_access_address_bits: 0,
+            physical_layer_device_id: 0,
+            physical_layer_device: None,
             mac: None,
             resets_us: [0; 2],
             coherence: None,
@@ -204,8 +204,8 @@ fn run(
     // Clocks, then resets: the SYS plan is all clocks, and the AON plan ends in both resets, so
     // running SYS first means every clock is up before either reset is released.
     // SAFETY: `memory::jh7110_ethernet` recorded these windows only on a tree that names a JH7110
-    // Ethernet port, and RISC-V's `mmu::init` mapped each device-typed (steps 6c and 6d), which is
-    // `bring_up`'s contract.
+    // Ethernet port, and RISC-V's `mmu::initialize` mapped each device-typed (steps 6c and 6d),
+    // which is `bring_up`'s contract.
     unsafe {
         r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.sys.base) as usize,
@@ -242,7 +242,7 @@ fn run(
     let mut w = Window(mmu::phys_to_virt(e.port.base));
     let id = Identity::read(&mut w);
     r.version = id.version;
-    r.dma_bits = id.direct_memory_access_address_bits();
+    r.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
     if id.version == 0 || id.version == u32::MAX {
         return Err(Error::Silent {
             version: id.version,
@@ -262,7 +262,6 @@ fn run(
     r.mac = Some(mac);
     let mac = mac.0;
 
-    let phy = e.port.physical_layer_device_address;
     bring_up_physical_layer_device(&mut w, e, r)?;
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
@@ -283,7 +282,7 @@ fn run(
     zero(region);
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
-    let link = wait_for_link(&mut w, e, phy, r)?;
+    let link = wait_for_link(&mut w, e, r)?;
     Ok((
         Handoff {
             station_address: mac,
@@ -299,22 +298,24 @@ fn bring_up_physical_layer_device(
     e: &crate::memory::Jh7110Ethernet,
     r: &mut Report,
 ) -> Result<(), Error> {
-    let phy = e.port.physical_layer_device_address;
-    r.phy_id = management_data_input_output::physical_layer_device_id(
+    let physical_layer_device_address = e.port.physical_layer_device_address;
+    r.physical_layer_device_id = management_data_input_output::physical_layer_device_id(
         &mut management_data_input_output::Bus(w),
-        phy,
+        physical_layer_device_address,
     )
     .map_err(Error::Mdio)?;
-    if r.phy_id != motorcomm::PHY_ID_YT8531 {
-        return Err(Error::UnknownPhy { id: r.phy_id });
+    if r.physical_layer_device_id != motorcomm::PHY_ID_YT8531 {
+        return Err(Error::UnknownPhysicalLayerDevice {
+            id: r.physical_layer_device_id,
+        });
     }
     let applied = motorcomm::configure(
         &mut management_data_input_output::Bus(w),
-        phy,
+        physical_layer_device_address,
         &e.port.physical_layer_device,
     )
     .map_err(Error::Mdio)?;
-    r.phy = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    r.physical_layer_device = Some((applied.voltage_mv, e.port.physical_layer_device.source));
     Ok(())
 }
 
@@ -323,15 +324,18 @@ fn bring_up_physical_layer_device(
 fn wait_for_link(
     w: &mut Window,
     e: &crate::memory::Jh7110Ethernet,
-    phy: u8,
     r: &mut Report,
 ) -> Result<Option<Link>, Error> {
+    let physical_layer_device_address = e.port.physical_layer_device_address;
     let mut bus = management_data_input_output::Bus(&mut *w);
-    management_data_input_output::restart_autonegotiation(&mut bus, phy).map_err(Error::Mdio)?;
+    management_data_input_output::restart_autonegotiation(&mut bus, physical_layer_device_address)
+        .map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
-        if let Some(l) = motorcomm::link(&mut bus, phy).map_err(Error::Mdio)? {
+        if let Some(l) =
+            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+        {
             break Some(l);
         }
         if crate::arch::timer::now() >= deadline {
@@ -343,8 +347,13 @@ fn wait_for_link(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(&mut bus, phy, &e.port.physical_layer_device, l.speed)
-            .map_err(Error::Mdio)?;
+        motorcomm::apply_speed(
+            &mut bus,
+            physical_layer_device_address,
+            &e.port.physical_layer_device,
+            l.speed,
+        )
+        .map_err(Error::Mdio)?;
         controller::start(w, l, false);
     }
     Ok(link)

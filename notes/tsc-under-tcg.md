@@ -50,10 +50,10 @@ suite is one instrument and the bench is another, and they answer this note's qu
 
 The TSC cannot validate itself, and neither can the device the boot already calibrates against.
 
-- The 8254 PIT is disqualified twice over. `timer::init_frequency` derives the stored rate from
-  it, so agreement would be the calibration agreeing with itself; and in QEMU the i8254 is driven
-  from `QEMU_CLOCK_VIRTUAL`, which is the same clock the TSC comes from. It is the same opinion behind a
-  different device model.
+- The 8254 PIT is disqualified twice over. `timer::initialize_frequency` derives the stored rate
+  from it, so agreement would be the calibration agreeing with itself; and in QEMU the i8254 is
+  driven from `QEMU_CLOCK_VIRTUAL`, which is the same clock the TSC comes from. It is the same
+  opinion behind a different device model.
 - The local APIC timer is disqualified for the same reason, and worse. Its own frequency is itself
   measured against the PIT in the same 10 ms window. That is why the `apic timer NN MHz`
   figure on the boot line moves in lockstep with the TSC figure in every transcript below.
@@ -187,10 +187,10 @@ Ten boots with the host deliberately saturated (16 spinners, load average 10 ris
 So the stored rate ranges from +0.1% to +333% of the truth, and a single ad-hoc run earlier the
 same afternoon caught 1326 MHz on an unloaded machine. Twenty-two boots of twenty-two reported a
 rate above the true one and not one reported below it, which is the tell that says what the
-mechanism is. `init_frequency` times one 10 ms PIT window by polling, and the poll can only ever
-notice the terminal count *late*. The whole of the resulting TSC delta is then attributed to 10 ms. One
-host descheduling of the QEMU thread inside that window inflates the answer without bound. A 4330
-MHz reading is a 43 ms window reported as a 10 ms one.
+mechanism is. `initialize_frequency` times one 10 ms PIT window by polling, and the poll can only
+ever notice the terminal count *late*. The whole of the resulting TSC delta is then attributed to 10
+ms. One host descheduling of the QEMU thread inside that window inflates the answer without bound. A
+4330 MHz reading is a 43 ms window reported as a 10 ms one.
 
 `timer.rs`'s `BUGS` already said "a single 10 ms window on a busy host under TCG can be off by a per
 cent or so". A per cent is the good case; the distribution has no right tail to speak of. The
@@ -247,10 +247,10 @@ there is nothing for them to be at parity *with*.
 
 The harness is in the tree, behind the `tsc_probe` cargo feature, which is off by default and in no
 gate. It is `kernel/src/arch/x86_64/tsc_probe.rs`, plus a call site at the end of `x86_64`'s
-`arch::timer::init_frequency` that halts the boot when the measurement is done. It is an instrument rather than a
-test, the same shape `bench` and `icount` are, because the question it answers takes thirty-five
-seconds of wall clock and has no pass/fail. This note is its owner, and the calibration fix
-proposed above is what it exists to be measured against.
+`arch::timer::initialize_frequency` that halts the boot when the measurement is done. It is an
+instrument rather than a test, the same shape `bench` and `icount` are, because the question it
+answers takes thirty-five seconds of wall clock and has no pass/fail. This note is its owner, and
+the calibration fix proposed above is what it exists to be measured against.
 
 ```sh
 cargo build -p kernel --features tsc_probe --target x86_64-unknown-none

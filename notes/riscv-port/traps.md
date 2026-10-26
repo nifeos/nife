@@ -110,12 +110,12 @@ Only the first-use handler has to set the frame's copy as well. Every later swit
 from `crate::fp::hand_over` to match the incoming thread, whose frame carries the same value because
 it was captured while the same flag held.
 
-`fp::init` also turns off `sstatus.VS`, the vector unit's enable, because nothing saves vector
+`fp::initialize` also turns off `sstatus.VS`, the vector unit's enable, because nothing saves vector
 state; a hart arriving from firmware with it open would let a thread keep vector state nobody saves
 or scrubs. The C906 and C910 implement vector 0.7.1 and keep its enable at bits 24:23 instead, so on
 a T-Head hart those are cleared too. Elsewhere they are reserved and the kernel does not write
-them. `fp::init` runs per hart from `sched::init` and `sched::adopt_secondary_idle`, because the
-RISC-V boot installs `stvec` directly and never passes through `arch::init`.
+them. `fp::initialize` runs per hart from `sched::initialize` and `sched::adopt_secondary_idle`,
+because the RISC-V boot installs `stvec` directly and never passes through `arch::initialize`.
 
 ## Breakpoints and faults
 
