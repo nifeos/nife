@@ -235,12 +235,12 @@ mod tests {
     /// Every body runs on a worker with a deadline: `lock` spins until it wins, so a mutant that
     /// breaks the release would hang the suite rather than fail it.
     fn bounded(what: &str, body: impl FnOnce() + Send + 'static) {
-        let (tx, rx) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
         thread::spawn(move || {
             body();
-            let _ = tx.send(());
+            let _ = sender.send(());
         });
-        match rx.recv_timeout(Duration::from_secs(5)) {
+        match receiver.recv_timeout(Duration::from_secs(5)) {
             Ok(()) => {}
             Err(RecvTimeoutError::Disconnected) => {
                 panic!("{what}: the body panicked; its own message is above")

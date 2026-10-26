@@ -9,14 +9,13 @@ how each residual was found and closed. The main page's BUGS section carries wha
 
 ## BUGS
 
-- The `<=` frame assertions can be masked by a coincidence. A real leak of `k` frames passes if a
-  neighbor's late teardown frees at least `k` frames inside the same window. The window is seconds
-  wide and re-rolled every run. A persistent leak (every batch leaks, which is what the milestone 6
-  (threads, the context switch, and preemption) bug was) fails essentially every run regardless, so
-  the trap still bites. But a one-shot coincidence pass is possible in a way `assert_eq` did not
-  permit. The trade is deliberate. Equality bought that exactness by also asserting that the rest of
-  the machine held still, which is false on any loaded run and was producing red CI on documentation
-  PRs.
+- A coincidence can mask the `<=` frame assertions. A real leak of `k` frames passes if a neighbor's
+  late teardown frees at least `k` frames inside the same window. The window is seconds wide and
+  re-rolled every run. A persistent leak (every batch leaks, which is what the milestone 6 (threads,
+  the context switch, and preemption) bug was) fails essentially every run regardless, so the trap
+  still bites. But a one-shot coincidence pass is possible in a way `assert_eq` did not permit. The
+  trade is deliberate. Equality bought that exactness by also asserting that the rest of the machine
+  held still, which is false on any loaded run and was producing red CI on documentation PRs.
 - `the_page_is_returned_when_the_space_is_dropped` can still be failed by a neighbor, and it takes
   an allocation rather than a free. Asking `is_page_frame_used` about one named frame is immune to
   the freeing neighbor that produced every observed failure of the old global form. But a neighbor
@@ -158,14 +157,14 @@ how each residual was found and closed. The main page's BUGS section carries wha
   coincidence pass is possible in a way `assert_eq` did not permit, and the equality was demanding
   that the rest of the machine hold still.
 - `work_can_be_placed_on_every_cpu` no longer proves that a specific core executed a specific
-  thread, and nothing else does either. That is the second round's honest cost. Delivery to the
-  named core is asserted exactly. Execution is asserted for every core, but over the population of
-  threads rather than per placement. Closing it needs a pin, which §28 (SMP placement) deliberately
-  deferred. While placement is a hint, "this thread ran on that core" is not a property the
-  scheduler has, and a test asserting it is asserting a coincidence.
-- The adoption counter can in principle be moved by something other than the placement under test.
-  Serving a steal pushes into the requester's inbox, so a target that stole from a third core in the
-  same window would also increment. The test closes that by construction, not by the counter being
+  thread, and nothing else does either. That is the second round's honest cost. The test asserts
+  delivery to the named core exactly. Execution is asserted for every core, but over the population
+  of threads rather than per placement. Closing it needs a pin, which §28 (SMP placement)
+  deliberately deferred. While placement is a hint, "this thread ran on that core" is not a property
+  the scheduler has, and a test asserting it is asserting a coincidence.
+- Something other than the placement under test can in principle move the adoption counter. Serving
+  a steal pushes into the requester's inbox, so a target that stole from a third core in the same
+  window would also increment. The test closes that by construction, not by the counter being
   unambiguous: one placement in flight at a time, each followed to a reap, so nothing else is
   runnable to steal. A version that placed several at once would have to reason about this again.
 - Two siblings were checked against the same question and left alone, as the milestone's scope note

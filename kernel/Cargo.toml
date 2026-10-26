@@ -148,7 +148,7 @@ entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 jh7110_entropy = { version = "0.1.0", path = "../crates/jh7110_entropy" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
-# `memory::init`'s discovery of the controller's window. Pure logic; the volatile half is the
+# `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
 # kernel driver. On radon the TRNG's register file read as all zeros on 2026-09-04 because
 # nothing had ungated its clocks, which is the whole reason this is a dependency.
 jh7110_clock_and_reset = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset" }
@@ -515,7 +515,7 @@ single_hart = []
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 # The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional): its sequences,
-# arithmetic and discovery, for `drivers::jh7110_watchdog` and `memory::init`. Pure logic; only a
+# arithmetic and discovery, for `drivers::jh7110_watchdog` and `memory::initialize`. Pure logic; only a
 # riscv64 build whose soak arms the watchdog reaches it, and that is every riscv64 soak but an
 # `unwatched_soak_test` one. Not optional, because a cargo feature cannot add a dependency for one
 # target only, and the default is decided per target in `build.rs`.

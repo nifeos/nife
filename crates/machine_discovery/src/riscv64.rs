@@ -402,7 +402,7 @@ pub const SBI_TABLE: [SbiRow; 5] = [
         bit: SBI_TIME,
         eid: EID_TIME,
         required: true,
-        why: "arch::timer::init arms every tick through sbi_set_timer",
+        why: "arch::timer::initialize arms every tick through sbi_set_timer",
     },
     SbiRow {
         name: "IPI",
@@ -583,11 +583,11 @@ pub struct Isa {
     /// Did the answer come from the deprecated `riscv,isa` string rather than
     /// `riscv,isa-extensions`? Changes how an absent `zicsr` should be read (see the module BUGS).
     pub legacy_isa_string: bool,
-    /// Tier 2, filled by `arch::mmu::init`'s probe. `0` until it runs. This is the fact no emulator
-    /// can tell us: QEMU reports 16 implemented `satp.ASID` bits on every CPU model it offers,
-    /// including `sifive-u54`, so the number here is only interesting on real silicon.
+    /// Tier 2, filled by `arch::mmu::initialize`'s probe. `0` until it runs. This is the fact no
+    /// emulator can tell us: QEMU reports 16 implemented `satp.ASID` bits on every CPU model it
+    /// offers, including `sifive-u54`, so the number here is only interesting on real silicon.
     pub asid_bits: u8,
-    /// Firmware, filled by `arch::isa::init` over SBI.
+    /// Firmware, filled by `arch::isa::initialize` over SBI.
     pub sbi: Sbi,
 }
 

@@ -95,7 +95,7 @@ pub(in crate::arch::x86_64) fn revoke_port_grant_others(base: u16, count: u16) {
 /// `shoot_down_others` is the design, because that is the caller the design was written for.
 fn broadcast(kind: u8, word: u64) {
     // Nothing to tell, or nothing to tell it with. `is_local_apic_ready` is the earlier of the two:
-    // `mmu::init` maps the whole machine before `init_local_apic` runs.
+    // `mmu::initialize` maps the whole machine before `initialize_local_apic` runs.
     if !super::irq::is_local_apic_ready() {
         return;
     }

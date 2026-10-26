@@ -5,9 +5,9 @@
 //! portable seam (`paging::domain` via `crate::iommu`); this module owns the register file, the stream table,
 //! the context descriptors, and the command and event queues the SMMU is driven by.
 //!
-//! Default deny: `init` sets `GBPA.ABORT`, installs an all-invalid stream table and only then sets
-//! `SMMUEN`, so every stream aborts until `attach` writes its STE. See notes/iommu.md, "The two
-//! arch drivers, structural twins", and its honest limits.
+//! Default deny: `initialize` sets `GBPA.ABORT`, installs an all-invalid stream table and only then
+//! sets `SMMUEN`, so every stream aborts until `attach` writes its STE. See notes/iommu.md, "The
+//! two arch drivers, structural twins", and its honest limits.
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{IrqSafeMutex, rank};
@@ -137,7 +137,10 @@ fn cr0_set(base: u64, bits: u32) {
 
 /// Bring the SMMU up: queues live, stream table installed all-invalid, translation enabled.
 /// `base` is the register page from the device tree. Everything aborts until `attach`.
-pub fn init(base: u64) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize(base: u64) {
     let mut g = SMMU.lock();
     assert!(g.is_none(), "SMMU initialized twice");
 
@@ -316,8 +319,8 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
         (ttb >> 32) as u32 & 0xf_ffff, // TTB0[51:32]
         0,                        // TTB1 does not exist
         0,
-        // MAIR0/MAIR1: the same palette mmu::init programs into MAIR_EL1 (slot 0 device, slot 1
-        // normal write-back). QEMU does not model attributes; real silicon reads these.
+        // MAIR0/MAIR1: the same palette mmu::initialize programs into MAIR_EL1 (slot 0 device, slot
+        // 1 normal write-back). QEMU does not model attributes; real silicon reads these.
         paging::aarch64::mair::VALUE as u32,
         (paging::aarch64::mair::VALUE >> 32) as u32,
     ]
@@ -340,7 +343,7 @@ const fn stream_table_entry(ctxptr: u64) -> [u32; 16] {
 /// domain. After this returns, the device can reach exactly what the domain maps.
 pub fn attach(rid: u32, ttb: u64, asid: u16) {
     let mut g = SMMU.lock();
-    let s = g.as_mut().expect("SMMU attach before init");
+    let s = g.as_mut().expect("SMMU attach before initialize");
     let off = table_offset(rid);
 
     let cd = phys_to_virt(s.cds + off) as *mut u32;
@@ -406,7 +409,7 @@ pub fn take_fault() -> Option<Fault> {
 /// **Proofs over the word-building that decides which physical addresses a device may touch**
 /// (`design/fatal-risks/README.md` risk 7).
 ///
-/// The register accessors are unreachable to a harness, so `init`, `cmd_push`, `attach` and
+/// The register accessors are unreachable to a harness, so `initialize`, `cmd_push`, `attach` and
 /// `take_fault` are unproved; so are the register offsets and bit constants, which only Arm IHI
 /// 0070 states. Nothing here covers the RISC-V IOMMU or VT-d. See notes/iommu.md, "What is proved,
 /// as against tested", and notes/kernel-proofs.md, "The stub boundary, enumerated".

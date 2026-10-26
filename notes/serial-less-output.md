@@ -56,7 +56,7 @@ is on the host, and only the address arithmetic is in the kernel.
 | the sentence | `crates/machine_discovery/src/framebuffer.rs` | `Framebuffer` and its one command-line token, **written** by the loader and **parsed** by the kernel, round-tripped in host tests |
 | the question | `uefi_loader::find_screen` | one `LocateProtocol` call and three field reads |
 | the painter | `crates/screen_console` | a cursor over a `&mut [u8]`, with `bitmap_font`'s glyphs |
-| the seam | `kernel::console`, `arch::x86_64::machine::attach_screen` | tee `print!` to the screen; record the aperture so `mmu::init` carries the mapping |
+| the seam | `kernel::console`, `arch::x86_64::machine::attach_screen` | tee `print!` to the screen; record the aperture so `mmu::initialize` carries the mapping |
 | the gate | `serial_console::screen`, `cargo xtask uefi-boot` | a screendump, decoded back into text, judged by `serial_console::progress` |
 
 The address rides PVH's existing command line (`cmdline_paddr`) as one `screen=` token, rather than
@@ -86,7 +86,7 @@ threshold to tune and no confidence to report.
 That gives `cargo xtask uefi-boot` an assertion nothing else in this tree could make. The serial
 transcript it already checked would read identically if the screen were black. The screen check
 fails if the loader's `LocateProtocol` regressed, if the pixel order flipped, if the stride were taken as
-the width, or if `mmu::init` stopped carrying the aperture's mapping.
+the width, or if `mmu::initialize` stopped carrying the aperture's mapping.
 
 Measured 2026-09-04 under OVMF on QEMU 11.x with `-display none`, it read 96 non-blank rows of text
 back off the framebuffer, ending at the tour's last lines; the transcript is in

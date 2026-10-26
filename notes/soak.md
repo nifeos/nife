@@ -98,10 +98,10 @@ bound after the waiters spawned). [`soak/tick-route.md`](soak/tick-route.md) has
 
 ## Where the threads are (milestone 240 (soak))
 
-The soak prints a `soak-test-census:` block at start: where each worker was placed, one line per
-core, `R`/`C`/`G`/`W` plus a group number. Every beat carries `drifted=`, the count of threads off
-the last census's core, and a fresh block prints whenever it is nonzero. Under QEMU the start census
-goes stale within five seconds, and what tracks the rate is how IPC groups share cores.
+The soak prints a `soak-test-census:` block at start: where the kernel placed each worker, one line
+per core, `R`/`C`/`G`/`W` plus a group number. Every beat carries `drifted=`, the count of threads
+off the last census's core, and a fresh block prints whenever it is nonzero. Under QEMU the start
+census goes stale within five seconds, and what tracks the rate is how IPC groups share cores.
 [`soak/placement-census.md`](soak/placement-census.md) has the format and the four QEMU runs.
 
 ## radon, on real silicon, 2026-09-03: the first run off a board
@@ -144,7 +144,7 @@ still prints on time, with a `rate` that says it is crawling. A machine doing no
 its `stalled` count fires. So silence means the thing that prints is itself wedged, which is the only
 thing silence is allowed to mean.
 
-`crates/serial_console` is the other half. Its `Stage::Soak` is reached by the kernel's own
+`crates/serial_console` is the other half. It reaches `Stage::Soak` on the kernel's own
 `soak-test: started` line, and reaching it re-arms the quiet check that a completed boot tour
 suppresses: a halted kernel is supposed to be quiet and a soaking one is not. That is a one-word
 change (`< Stage::Tour` became `!= Stage::Tour`) and it is the whole agreement. Beat interval five
@@ -187,7 +187,7 @@ and the U-Boot commands, and changes only two things about it.
 2. Copy the image to the microSD card and put it back in the board, exactly as the runbook says.
    The archive must be the one built beside this kernel or the measured-boot gate refuses it.
 
-3. Start the watcher before powering the board, so the boot itself is captured:
+3. Start the watcher before powering the board, so `script/board-console` captures the boot itself:
 
    ```
    script/board-console --for 8h --until none --log target/radon-soak-$(date +%s).log

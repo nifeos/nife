@@ -36,8 +36,8 @@ Specification v3.0 (ratified 2025-07-16), `src/ext-pmu.adoc`, read 2026-09-03 fr
 
 ## What `kernel/src/arch/riscv64/pmu.rs` does
 
-Four calls, in this order, once, on the boot hart, right after `arch::isa::init` has probed which
-SBI extensions firmware implements.
+Four calls, in this order, once, on the boot hart, right after `arch::isa::initialize` has probed
+which SBI extensions firmware implements.
 
 1. **`sbi_pmu_num_counters`** (FID #0). How many logical counters this hart has, hardware and
    firmware together.
@@ -114,13 +114,13 @@ fresh `counter_config_matching` it reads zero forever, because QEMU-TCG does not
 programmable counters. Everything a kernel could check by asking said the counter was fine.
 
 A benchmark reporting 0 cycles for everything is worse than one that says there is no cycle
-counter. So `pmu::init` reads the counter twice across a short `time` CSR spin and refuses it if
-it has not moved; a cycle counter cannot fail that check on a hart that is executing instructions.
-And because refusing has five distinguishable causes that need five different responses, on a board
-where nobody can attach a debugger, the reason is a value (`CycleCounter`) rather than a silence,
-and the boot line prints it. That deleted a step from the procedure below, which used to tell a
-reader to add a print of the SBI error and the raw `counter_info` word when the answer was
-disappointing.
+counter. So `pmu::initialize` reads the counter twice across a short `time` CSR spin and refuses it
+if it has not moved; a cycle counter cannot fail that check on a hart that is executing
+instructions. And because refusing has five distinguishable causes that need five different
+responses, on a board where nobody can attach a debugger, the reason is a value (`CycleCounter`)
+rather than a silence, and the boot line prints it. That deleted a step from the procedure below,
+which used to tell a reader to add a print of the SBI error and the raw `counter_info` word when the
+answer was disappointing.
 
 ## The bench procedure
 
@@ -162,7 +162,7 @@ is a fact about the tool.
 
 The next line, printed by `arch::pmu::print_summary`.
 
-Every outcome is named on the line, so there is nothing here to infer.
+The line names every outcome, so there is nothing here to infer.
 
 | What the line says | What it means | What to do |
 |---|---|---|
@@ -172,7 +172,7 @@ Every outcome is named on the line, so there is nothing here to infer.
 | `SBI PMU present, no counter can count CPU cycles` | firmware answered `SBI_ERR_NOT_SUPPORTED` to the match, or reported zero counters | record the OpenSBI version and stop. This firmware cannot serve the milestone |
 | `SBI PMU offered a firmware counter; refused (an ecall per read)` | the only counter firmware has for this event is one it maintains itself | recorded limitation, see BUGS. Reading it would cost an `ecall` per read and the measurement would be of the `ecall` |
 | `SBI PMU named a CSR outside the counter block` | firmware named a CSR this kernel cannot put in an instruction | a real oddity worth reporting upstream; record the raw number |
-| `arch::pmu::init has not run` | the boot printed the line without running the probe, which is a code ordering bug | should be unreachable; `kernel_main` calls `init` immediately before `print_summary` |
+| `arch::pmu::initialize has not run` | the boot printed the line without running the probe, which is a code ordering bug | should be unreachable; `kernel_main` calls `initialize` immediately before `print_summary` |
 | no `cycles` line at all | the boot did not reach `arch::pmu::print_summary`, so this is a boot problem and not a PMU one | notes/visionfive2.md's failure-triage ladder |
 
 ### Step 3: is the number plausible?
@@ -229,11 +229,11 @@ three steps above. That is the second sense of the `HARDWARE` gate, not the firs
   `mcycle` and `minstret` run (read 2026-09-03). The shipped flash is a different build and a
   possibly much older one.
 - **The boot hart only.** SBI PMU counters are per-hart: `counter_config_matching` and
-  `counter_start` act on the calling hart, and the counter index is that hart's. `pmu::init` runs
-  once, on the hart that runs `kernel_main`, so `pmu::cycles()` is only meaningful to a reader who
-  knows which hart it ran on. The one consumer today is a single-hart bench probe. A per-hart record
-  is real work and belongs with a caller that needs it, which is milestone 147's shape rather than
-  this one's.
+  `counter_start` act on the calling hart, and the counter index is that hart's. `pmu::initialize`
+  runs once, on the hart that runs `kernel_main`, so `pmu::cycles()` is only meaningful to a reader
+  who knows which hart it ran on. The one consumer today is a single-hart bench probe. A per-hart
+  record is real work and belongs with a caller that needs it, which is the shape of milestone 147 (a
+  profiler that holds exactly the counters it was granted) rather than this one's.
 - **The counter is never stopped.** It runs for the life of the boot, which is correct for a
   free-running counter read as a difference, and it means `pmu::stop` is exercised only by the test
   that proves the call works.

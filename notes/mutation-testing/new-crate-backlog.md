@@ -110,7 +110,7 @@ checker of its own; this names code that is compiled into nothing.
 
 Before and after: 14 mutants, 13 caught, 1 unviable. Nothing was owed and nothing was done. The
 block listed this crate first and called its number suspect. The number was the `mod interleavings`
-block, which part 1's exclusion removes. What is left is a crate whose tests kill everything.
+block, which part 1's exclusion removes. What remains is a crate whose tests kill everything.
 
 ### `memory_corruption_canary_gate`: 8 survivors, 6 killed, 2 equivalent
 

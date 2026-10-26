@@ -332,9 +332,9 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
 #[cfg(target_arch = "riscv64")]
 fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     let crg = crate::memory::jh7110_clock_and_reset()?;
-    // SAFETY: `memory::init` recorded this region only for a machine whose tree names a JH7110,
-    // and `mmu::map_everything` mapped exactly it, device-typed, in the direct map. The domain
-    // and the plan are the same crate's, so every identifier in the plan is in range for it.
+    // SAFETY: `memory::initialize` recorded this region only for a machine whose tree names a
+    // JH7110, and `mmu::map_everything` mapped exactly it, device-typed, in the direct map. The
+    // domain and the plan are the same crate's, so every identifier in the plan is in range for it.
     Some(unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(crg.base) as usize,

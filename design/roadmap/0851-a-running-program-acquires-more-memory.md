@@ -220,7 +220,7 @@ below.
 
 | option | verdict |
 |---|---|
-| A. Yes, opt-in: `MemoryRegionHeap::init` takes an optional broker account; boot servers keep fixed budgets | ruled |
+| A. Yes, opt-in: `MemoryRegionHeap::initialize` takes an optional broker account; boot servers keep fixed budgets | ruled |
 | B. `std` programs only | refused |
 | C. Every program, boot servers included | refused |
 

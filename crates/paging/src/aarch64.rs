@@ -65,7 +65,7 @@ const UXN: u64 = 1 << 54;
 const ADDR_MASK: u64 = 0x0000_ffff_ffff_f000;
 
 /// Which `MAIR_EL1` slot describes what. Set up in the kernel; the numbers must agree. Kept public
-/// because the kernel's `mmu::init` programs `MAIR_EL1` from these and a test cross-checks the UART.
+/// because the kernel's `mmu::initialize` programs `MAIR_EL1` from these and a test cross-checks the UART.
 pub mod mair {
     /// Slot 0: device memory, nGnRnE (no gathering, reordering, or early write ack): the strictest
     /// ordering, which MMIO needs. Mapping the UART as normal memory would let the CPU cache and

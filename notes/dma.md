@@ -192,10 +192,11 @@ region, so a device writing it is a device doing its job.
 Milestone 43's audit (notes/shared-page-audit.md, finding 6) found two drivers reading that as a
 guarantee it never was. `components/src/virtio_net_transport.rs` and
 `components/src/keyboard_driver.rs` took the 32-bit buffer index out of the used ring and used it
-unchecked. `rx_buf(id) = 0x400 + id * 0x2C0` leaves the one-page DMA region at `id = 4` and lands on
-the driver's own heap around 1.5 million. So a device that lies once makes the network driver copy
-its heap into a frame and hand it to smoltcp. The receive length was unbounded the same way. Both
-now fail closed, and `entropy.rs` had always clamped, so the shape was an omission and not a policy.
+unchecked. `receive_buf(id) = 0x400 + id * 0x2C0` leaves the one-page DMA region at `id = 4` and
+lands on the driver's own heap around 1.5 million. So a device that lies once makes the network
+driver copy its heap into a frame and hand it to smoltcp. The receive length was unbounded the same
+way. Both now fail closed, and `entropy.rs` had always clamped, so the shape was an omission and not
+a policy.
 
 What is still missing is the negative control. This tree tests DMA confinement by making the
 *driver* attack (`crates/virtio`'s `run_attack` and the indirect-descriptor variant, both proving

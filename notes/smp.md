@@ -65,15 +65,15 @@ The stacks live in their own `.secondary_stacks` section for two reasons.
 `__secondary_stacks_end` around whatever the section holds, and
 `the_secondary_stack_region_is_the_size_the_linker_reserved` holds the two together. On the coarse
 boot map the guards sit inside a 2 MiB block and are mapped; a secondary is on that map only
-between `secondary_boot` and `mmu::init_secondary`, the same window the boot stack's guard has (see
-[stack-high-water.md](stack-high-water.md)).
+between `secondary_boot` and `mmu::initialize_secondary`, the same window the boot stack's guard has
+(see [stack-high-water.md](stack-high-water.md)).
 
 ## The roster is seated by hardware id
 
 `read_cpu_list` reads `/cpus` out of the device tree once, on the boot core, before
 `bring_up_secondaries`. It has to run while the tree is reachable, which is through the coarse boot
-map that `mmu::init` replaces. On `x86_64` the same step reads the ACPI MADT's `LocalApic` entries
-from the walk `memory::init` kept (`seat_cpus_from_acpi`).
+map that `mmu::initialize` replaces. On `x86_64` the same step reads the ACPI MADT's `LocalApic`
+entries from the walk `memory::initialize` kept (`seat_cpus_from_acpi`).
 
 A core's "id" is whatever the start call names it by: an `MPIDR_EL1[39:0]` affinity value on
 aarch64, a hart id on riscv64, a local APIC id on `x86_64`. Each described core is seated **at the

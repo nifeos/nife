@@ -1,11 +1,14 @@
 # RISC-V `map_new` and the RFENCE probe
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 2026-08-15 `map_new` +15.6% and the 2026-08-17 probe that refuted its first reading, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 2026-08-15 `map_new` +15.6% and the
+2026-08-17 probe that refuted its first reading, with the dates, tables and corrections behind them.
+Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## 2026-08-15: `map_new` moved 15.6% on RISC-V, and the movement was a bug rather than a cost
 
 The earlier re-saves ([the service-path appendix](service-path.md) holds two) are about the
-instrument measuring a cost: a correctness fix that had to be paid for, or a win it could not see.
+instrument measuring a cost: a correctness fix with a price to pay, or a win it could not see.
 This is the first time it caught a defect. It did so on a benchmark nobody was looking at, in a
 change whose entire test suite was green.
 
@@ -41,8 +44,8 @@ single-hart machine, from a mask that over-reports which harts are online. (Refu
 below.)
 
 Rebaselining was one command away. It would have written 2731 into `bench/baseline-riscv64.txt`,
-and every later run of the tripwire would have been silent on the defect it had just caught. A
-green tripwire is read as evidence, and this one would have been evidence of nothing.
+and every later run of the tripwire would have been silent on the defect it had just caught. A green
+tripwire counts as evidence, and this one would have been evidence of nothing.
 
 ### What was proven, what was inferred, and what would settle it
 
@@ -72,7 +75,7 @@ the job's five minutes come up for debate.
 
 ## 2026-08-17: the RFENCE probe was built, and it refuted the reading above
 
-Both instruments the 2026-08-15 section named are built now: `arch::riscv64::remote_fence_count`,
+Both instruments the 2026-08-15 section named exist now: `arch::riscv64::remote_fence_count`,
 the `bench-probe:` lines beside `map_new`, and `rfence_self`. The answer is not the one the reading
 predicted.
 
@@ -111,8 +114,8 @@ fences per map, which is not a whole number of anything.
 ### What is proven, what is not, and what to run next
 
 Proven: three trees, including the accused one, issue zero remote RFENCEs during `map_new` and
-carry a correct single-bit mask. One RFENCE costs ~9 ticks. The 2026-08-15 inference is refuted for
-PR #176's tree.
+carry a correct single-bit mask. One RFENCE costs ~9 ticks. The 2026-08-15 inference fails for PR
+#176's tree.
 
 The confound, and why it turned out small: the three runs above are on QEMU 8.2.2 with
 `-device riscv-iommu-pci` removed. The QEMU in that container is not the pinned 11.0.2 and does not
@@ -135,7 +138,7 @@ counter and the machine-sensitivity say zero independently. So the container's 2
 `pull/176/head` is very unlikely to be a machine artifact, and the refutation stands.
 
 Still unexplained is the observation: CI measured 2731 to 2732 on four branches, reproducibly, in
-August, and no live hypothesis is left. The experiment that would speak to it is the probe run
+August, and no live hypothesis remains. The experiment that would speak to it is the probe run
 against `pull/176/head` in CI, on the pinned machine; a lane can do that deliberately and nothing
 does it by accident. Until then the 2026-08-15 diagnosis is withdrawn rather than replaced.
 

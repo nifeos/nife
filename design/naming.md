@@ -3,12 +3,11 @@
 What the tree's names mean, which conventions are rules, and which of those a machine checks.
 
 This file is the authority for naming conventions, per §155 (the naming conventions move out of the
-constitution, and the note becomes the rule). `AGENTS.md` keeps only the authority: naming is an
-architect's call, ship a provisional one and say so, never rename on your own initiative. Where the
-two disagree, this file is the rule and `AGENTS.md` is the bug. The headline rule is
+constitution, and the note becomes the rule). `AGENTS.md` keeps only the authority. Where
+the two disagree, this file is the rule and `AGENTS.md` is the bug. The headline rule is
 [§39 (a component is named for what it is)](decisions/0039-component-names.md).
 
-The argument, examples and refusals live in the [appendices](#appendices).
+The [appendices](#appendices) hold the argument, examples and refusals.
 
 ## Who names things
 
@@ -36,8 +35,8 @@ Name against three failure modes:
   has never read this tree would recognise the name.
 - Generic words that could name almost anything in an operating system: `compose`, `measure`,
   `regions`, `slots`, `caps`, `frames`.
-- On the other side of the line, standard terms a reader already knows are the best names
-  available: `elf`, `pci`, `paging`, `glob`. That covers shape too, so `supply-chain` keeps its
+- Against both, standard terms a reader already knows are the best names available: `elf`,
+  `pci`, `paging`, `glob`. That covers shape too, so `supply-chain` keeps its
   hyphen. This rule is not a licence to rename everything.
 
 ### The acronym test
@@ -50,7 +49,10 @@ recursively), ruled 2026-09-18. Ask it again of any acronym inside the expansion
 
 The test applies to names this tree authors. A name that arrives across somebody else's interface
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
-stops there: inside, `initrd` is `initial_ramdisk` (#1842).
+stops there: inside, `initrd` is `initial_ramdisk` (#1842). Ruled 2026-10-26 (UTC): a kept
+name's doc comment opens with its full name and the source's heading, and carries a `doc(alias)`,
+as does a specification's term of art in names this tree authors
+([precedents](naming/precedents-set-by-example.md)).
 
 ### Nouns, not verbs
 
@@ -144,7 +146,9 @@ Each sets a test that reaches past the word. The arguments are in
 
 ### Precedents set by example
 
-The 2026-10-18 rulings, as rules: [precedents-set-by-example.md](naming/precedents-set-by-example.md).
+The 2026-10-18 and 2026-10-26 (UTC) rulings, `max` and parameters included:
+[precedents-set-by-example.md](naming/precedents-set-by-example.md). `rx`, `tx`, `phy`, `init`,
+`irq` and `fifo` spell out: [spelled-out-rulings.md](naming/spelled-out-rulings.md).
 
 ## Where a name's provenance lives
 
@@ -316,8 +320,7 @@ or renamed name passes each check, and lanes rename unratified violators, still
 
 ## Appendices
 
-Every former section kept its heading, so a citation by section name resolves in the file listed.
-The directory and stems are provisional. The table is in [naming/README.md](naming/README.md).
+[naming/README.md](naming/README.md) indexes them.
 
 ## BUGS
 

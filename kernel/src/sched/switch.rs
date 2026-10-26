@@ -13,11 +13,15 @@ use super::*;
 /// notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES` twice. The idle thread is built in place under the second hold.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     // The FP unit is shut before any thread exists: a core that starts with it open never takes
-    // the first-use trap that marks a thread `live`. Here, not in `arch::init`, because RISC-V's
-    // boot hart never calls `arch::init` and OpenSBI hands it over with `sstatus.FS` set.
-    crate::arch::fp::init();
+    // the first-use trap that marks a thread `live`. Here, not in `arch::initialize`, because
+    // RISC-V's boot hart never calls `arch::initialize` and OpenSBI hands it over with `sstatus.FS`
+    // set.
+    crate::arch::fp::initialize();
 
     // The machine statistics page begins where threads begin (DECISIONS §225 (`free` sees the
     // machine and your share)).

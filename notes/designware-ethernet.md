@@ -179,7 +179,7 @@ Each way it can end, by the last lines:
 | `refused at bring-up: NotCoherent(..)` | radon is not coherent, in the direction named | stop: 655's proposal above applies, and this is a finding for fatal risk 6 |
 | `refused at bring-up: ClocksNotRunning` or `ResetsHeld` | the clock words did not read back | the `clocks` and `resets` lines say which; a lane |
 | `refused at bring-up: Silent { version: .. }` | the controller's window reads as nothing | clocks or resets are not what the plans say; a lane, with the log |
-| `refused at bring-up: UnknownPhy { id: .. }` | not a YT8531 at address 0 | record the id; a lane |
+| `refused at bring-up: UnknownPhysicalLayerDevice { id: .. }` | not a YT8531 at address 0 | record the id; a lane |
 | `refused at bring-up: Mdio(Timeout ..)` | the MDIO bus did not answer | a lane, with the log |
 | `refused at bring-up: Controller(ResetTimeout)` | the software reset needs the PHY's receive clock and did not get it | check the cable; a lane |
 | `FAILED: no link` | the port came up and no link resolved in 5 s | the cable and the port it is in; the `phy` line says the PHY answered |

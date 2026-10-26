@@ -13,13 +13,14 @@ whether a source is enabled at all. Each core has a CPU interface (GICC, `0x0801
 address, banked by the hardware, for acknowledge, priority mask and end-of-interrupt. That banking
 is what lets the hardware route an interrupt to core 3 without the software knowing.
 
-`init_this_cpu` writes the priority mask before the enable. The other order leaves the interface
-live with whatever PMR the firmware left, which on a cold boot is often 0, "deliver nothing", and
-the timer is silent with no clue why. Enables are a bitmap (`ISENABLER`, 32 a register) and
-priorities an array of bytes (`IPRIORITYR`), different strides in one device. `ITARGETSR` means
-something only for SPIs, since PPIs and SGIs are per-core by definition. `GICC_IIDR` is read before
-anything else is trusted: its `ArchitectureVersion` is 2 on a GIC-400 and on QEMU's model, and a
-GICv3 redistributor frame answers zero there, so a tree naming the wrong block fails at boot.
+`initialize_this_cpu` writes the priority mask before the enable. The other order leaves the
+interface live with whatever PMR the firmware left, which on a cold boot is often 0, "deliver
+nothing", and the timer is silent with no clue why. Enables are a bitmap (`ISENABLER`, 32 a
+register) and priorities an array of bytes (`IPRIORITYR`), different strides in one device.
+`ITARGETSR` means something only for SPIs, since PPIs and SGIs are per-core by definition.
+`GICC_IIDR` is read before anything else is trusted: its `ArchitectureVersion` is 2 on a GIC-400 and
+on QEMU's model, and a GICv3 redistributor frame answers zero there, so a tree naming the wrong
+block fails at boot.
 
 ## GICv3
 
@@ -73,8 +74,9 @@ PLIC (`hw/intc/sifive_plic.c`) completes whatever it is given, so only silicon s
 difference. That is why the interrupt path never disables a source.
 
 Context numbers are the board's, read from the tree's `interrupts-extended` by
-`arch::irq::init_contexts`. On QEMU's `virt` S-mode is `2*hart + 1` (`2*hart` is M-mode, OpenSBI's);
-on the JH7110 the disabled S7 core contributes only an M context, and S-mode is `2*hart`.
+`arch::irq::initialize_contexts`. On QEMU's `virt` S-mode is `2*hart + 1` (`2*hart` is M-mode,
+OpenSBI's); on the JH7110 the disabled S7 core contributes only an M context, and S-mode is
+`2*hart`.
 
 Only one register needs serializing (finding 3 of notes/arch-audit.md):
 

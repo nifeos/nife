@@ -63,10 +63,10 @@ already existed for the canary.
 
 | Stack | Where declared | Size | Guarded? | Painted |
 |---|---|---|---|---|
-| Boot stack (boot core) | `link-aarch64.ld` / `link-riscv64.ld`, `__stack_bottom`..`__stack_top` | 64 KiB | guard page below | at `stack::init` time, canary to a margin below live `sp` |
+| Boot stack (boot core) | `link-aarch64.ld` / `link-riscv64.ld`, `__stack_bottom`..`__stack_top` | 64 KiB | guard page below | at `stack::initialize` time, canary to a margin below live `sp` |
 | Secondary stacks (per core) | `SECONDARY_STACKS` in `kernel/src/smp.rs`, `.secondary_stacks` | 64 KiB x MAX_CPUS | guard page below (milestone 90 (a guard page under the per-CPU secondary stacks)) | whole stack, before `CPU_ON` |
 | Kernel thread stacks | `KernelStack` in `kernel/src/thread.rs` | 24 KiB (6 pages) | guard page below | whole stack, at allocation |
-| Interrupt stacks (per core) | `kernel/src/interrupt_stack.rs`, `.interrupt_stacks` | 16 KiB x MAX_CPUS | guard page below | whole region, at `interrupt_stack::init` |
+| Interrupt stacks (per core) | `kernel/src/interrupt_stack.rs`, `.interrupt_stacks` | 16 KiB x MAX_CPUS | guard page below | whole region, at `interrupt_stack::initialize` |
 
 The trap frame is built on the interrupted stack on both ISAs. aarch64's `vectors.s` builds its
 272-byte frame on `SP_EL1`, which is whatever kernel stack is live (the hardware banks `SP_EL0`
@@ -90,8 +90,8 @@ faulting. The stacks now live in their own page-aligned `(NOLOAD)` region, one 4
 64 KiB stack per slot, and the mapper skips each guard. It cost 16 KiB of address space and no
 physical frames. A page-table walk on both ISAs proves each guard does not translate, and
 `mmu::verify` refuses a map that lost the holes. On the coarse boot map, before
-`mmu::init_secondary`, the guard is still mapped. The layout, the proof and the re-measurement are
-in [stack-high-water/secondary-guard-page.md](stack-high-water/secondary-guard-page.md).
+`mmu::initialize_secondary`, the guard is still mapped. The layout, the proof and the re-measurement
+are in [stack-high-water/secondary-guard-page.md](stack-high-water/secondary-guard-page.md).
 
 ## Honest limits
 

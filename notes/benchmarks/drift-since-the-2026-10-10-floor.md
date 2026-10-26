@@ -74,7 +74,7 @@ which way two ticks happened to fall.
 | `f7b50a1d4`, `83b761954` (#2331) | the suspension check in `schedule` | +2,000 (+0.18%) | | yes; the first cut cost +40,375 and the second commit took it back |
 
 These sum to the whole tick-free drift on `yield_switch`, `ipc_rtt`, `relay_rtt`, `call_reply`,
-`broker_rtt`, `null_syscall` and `ctx_switch`, each to within two ticks. What is left over is
+`broker_rtt`, `null_syscall` and `ctx_switch`, each to within two ticks. What remains is
 `ipc_rtt_el0` +17,463 (+0.16%), `sink_throughput` +8,750 (+0.20%), `spawn_reap` +1,386 (+0.61%),
 and `spawn_el0` -14,241 (-1.01%), which commits after these four took back. Those four remainders
 are not attributed.

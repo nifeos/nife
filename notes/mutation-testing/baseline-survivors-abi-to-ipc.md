@@ -259,8 +259,8 @@ so `|` and `^` agree on every reachable input:
 
 All 26 were checked against the constants, and 14 were hand-mutated, one per distinct expression.
 Two more are the `verb::TABLE` order check inside a `const _: ()` block. Both mutants only make the
-loop vacuous, and a `const` item has no runtime observable, so no test can reach them. The property
-is pinned at runtime by `every_verb_has_a_row_that_says_what_its_words_mean`.
+loop vacuous, and a `const` item has no runtime observable, so no test can reach them.
+`every_verb_has_a_row_that_says_what_its_words_mean` pins the property at runtime.
 
 **The audit found one claim that was wrong.** `xattr::store::write_record`'s guard is not a mask.
 With its second `||` turned into `&&`, the value limit stops being enforced, because the name clause

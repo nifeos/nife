@@ -56,8 +56,9 @@ entry in one line.
 - The instrument is `cfg(test)` only: a shell or bench boot measures nothing. The guard pages are
   not: they are in every build, which is what milestone 90 bought.
 - The guards are absent on the coarse boot map. So a secondary is unprotected between
-  `secondary_boot` and `mmu::init_secondary`, and the boot core between `_start` and `mmu::init`.
-  Both windows are a few frames deep and neither has ever been the problem, but neither is zero.
+  `secondary_boot` and `mmu::initialize_secondary`, and the boot core between `_start` and
+  `mmu::initialize`. Both windows are a few frames deep and neither has ever been the problem, but
+  neither is zero.
 - Nothing checks the guards after boot except the suite. `mmu::verify` runs once, before the map is
   installed. A later mapping that filled a guard page in would not be noticed until the test build
   ran. Nothing does this today, and the mapper refuses to overwrite.

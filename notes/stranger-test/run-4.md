@@ -151,17 +151,17 @@ definition. The gates observation above came from the same document.
 
 ### What it read, and in what order, which is B1
 
-Twenty-two files. Six were reached through the `## Start here` order, and five more through links
-from `notes/adding-a-program.md`. `AGENTS.md` was seventh, against run 3's twelfth.
+Twenty-two files. The stranger reached six through the `## Start here` order, and five more through
+links from `notes/adding-a-program.md`. `AGENTS.md` was seventh, against run 3's twelfth.
 `notes/capabilities.md` was eighth; run 3 never opened it. `README.md` was still first by
 expectation, not by any pointer, which no reading order can fix.
 
 So B1 passes for the first time, and it leaves one specific failure. The stranger did not follow the
 order. It used the order as an index and read the items in the sequence its work needed, which the
-section's own last line invites. The cost is one item: `CONTRIBUTING.md`, item 2 of 8, was read
-sixteenth of twenty-two. Its gates paragraph arrived after the gates had been run. The one document
-written for a person deciding whether to work here is the one the reading order failed to get read
-early.
+section's own last line invites. The cost is one item: the stranger read `CONTRIBUTING.md`, item 2
+of 8, sixteenth of twenty-two. Its gates paragraph arrived after the stranger had run the gates. The
+one document written for a person deciding whether to work here is the one the reading order failed
+to get read early.
 
 Still unopened after four runs: every file under `design/decisions/`, `notes/net.md`,
 `design/naming.md`, and `notes/README.md` itself.

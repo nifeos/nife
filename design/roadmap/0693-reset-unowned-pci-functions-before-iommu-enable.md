@@ -41,14 +41,14 @@ mechanism, some of what firmware touched can still be bus-mastering when the IOM
 
 ## The production question
 
-`arch::iommu::init` brings VT-d up with an all-invalid root table (default-deny for translation:
-a device with no context entry faults). It does not touch Bus Master Enable on any function. A
-device that firmware left driving DMA, with BME already set and a queue firmware configured, can
-therefore attempt real transactions the moment translation turns on, and (milestone 612) can occupy
-`CAP.NFR`'s one fault-recording register indefinitely. This is not a confinement bypass: default-
-deny still blocks every one of that device's addresses. It is a fault-*visibility* problem, and it
-would sit in the way of any future code that reads faults expecting to see its own device's, the
-same way it sat in the way of milestone 612's test.
+`arch::iommu::initialize` brings VT-d up with an all-invalid root table (default-deny for
+translation: a device with no context entry faults). It does not touch Bus Master Enable on any
+function. A device that firmware left driving DMA, with BME already set and a queue firmware
+configured, can therefore attempt real transactions the moment translation turns on, and (milestone
+612) can occupy `CAP.NFR`'s one fault-recording register indefinitely. This is not a confinement
+bypass: default- deny still blocks every one of that device's addresses. It is a fault-*visibility*
+problem, and it would sit in the way of any future code that reads faults expecting to see its own
+device's, the same way it sat in the way of milestone 612's test.
 
 Should the kernel clear Bus Master Enable (`COMMAND` bit 2) on every PCI function it does not
 immediately confine, as part of bringing the IOMMU up, before `GCMD.TE`? `pci::bring_up` already
@@ -70,13 +70,13 @@ ground, not a pattern this tree or its nearest prior art already follows.
 ## Options
 
 - **A. Clear BME for every PCI function this kernel does not immediately bring up**, in
-  `arch::iommu::init` or the PCI bus-walk beside it (`pci::bar_census`/`pci::survey` already read
-  every function on the bus this way, read-only; this would add one write per function). Cheap and
-  reversible as code. The risk is not reversibility, it is correctness on real hardware. A function
-  mid-transaction when firmware hands off (a legacy USB controller under SMM "USB legacy support",
-  an NVMe or AHCI controller firmware left initializing) may not tolerate having its bus mastering
-  pulled out from under it. That failure mode is a hang or a chipset-level SMI, not a clean
-  fault. This wants a real-hardware test (xenon) before it ships, not just a QEMU boot.
+  `arch::iommu::initialize` or the PCI bus-walk beside it (`pci::bar_census`/`pci::survey` already
+  read every function on the bus this way, read-only; this would add one write per function). Cheap
+  and reversible as code. The risk is not reversibility, it is correctness on real hardware. A
+  function mid-transaction when firmware hands off (a legacy USB controller under SMM "USB legacy
+  support", an NVMe or AHCI controller firmware left initializing) may not tolerate having its bus
+  mastering pulled out from under it. That failure mode is a hang or a chipset-level SMI, not a
+  clean fault. This wants a real-hardware test (xenon) before it ships, not just a QEMU boot.
 - **B. Function-Level Reset (FLR)** on every unowned function that advertises the capability,
   going further than BME alone. Same shape as A, strictly more invasive, same real-hardware risk,
   and adds a capability-list walk this driver does not do today.

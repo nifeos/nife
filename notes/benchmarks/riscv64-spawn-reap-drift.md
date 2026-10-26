@@ -15,7 +15,7 @@ each cost meant? riscv64 `yield_switch`, at +5.6% unexplained, was answered from
 
 riscv64 icount on QEMU 11.1.2 and `nightly-2026-10-21`, at every point, from `52d21046e` (the
 merge that brought the 2026-09-26 floor) to `main` at `43a2d16e1`, 1,119 first-parent merges. The
-compiler is held fixed: the floor commit reads 34,490 on today's nightly against its saved 34,489.
+compiler stays fixed: the floor commit reads 34,490 on today's nightly against its saved 34,489.
 Each step was found by recursive bisection, so every step is found, not only the first. A tick is
 100 instructions on riscv64 ([icount-tick-scales](icount-tick-scales.md)), and a `spawn_reap`
 reading is 64 iterations. The kernel is the -O0 build the gate measures.
@@ -28,7 +28,7 @@ disk image it never reads.
 ## The tick is a fifth of the drift
 
 `spawn_reap`'s window is about 3.8 million instructions and the tick comes every 10 million, so
-whether one lands inside is decided by where unrelated code left the timer's phase. On `main` one
+where unrelated code left the timer's phase decides whether one lands inside. On `main` one
 does: 37,702 ticks with the tick against 36,940 without, a 2.1% term that is no code's cost.
 
 It moves the floors on its own. Tick-free, #1525 and #1611 cost nothing and #1632 saves nothing,
@@ -38,7 +38,7 @@ Milestone 939 (the icount bench runs without a preemption tick in its windows) i
 ## The merges
 
 Each step against the merge's parent, in ticks of 64 iterations. "With tick" is what the floors
-saw; "cost" is tick-free. Merges that move neither by more than 10 are left out.
+saw; "cost" is tick-free. The table omits merges that move neither by more than 10.
 
 | merge | with tick | cost | what |
 |---|---:|---:|---|
@@ -63,9 +63,9 @@ Inside the merge, each milestone on its own base: milestone 754 (the table grows
 +140, milestone 761 (capability lookup off the global lock) +23. Together +917. A per-function profile of 64
 iterations (a QEMU plugin counting each translation block, the run at 128 iterations minus the run
 at 64) put +82,560 of the difference in `memcpy`. 761 moved the table out of the `Thread` and into
-`init_capability_table`'s `ptr::write` of a constant. At -O0 that write is a call, so the constant
-is built into a temporary and then copied again: two copies of 2 KiB on every thread's birth, and
-754 doubled both.
+`initialize_capability_table`'s `ptr::write` of a constant. At -O0 that write is a call, so the
+constant is built into a temporary and then copied again: two copies of 2 KiB on every thread's
+birth, and 754 doubled both.
 
 ## What was fixed
 

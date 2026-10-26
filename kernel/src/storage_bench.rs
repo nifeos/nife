@@ -226,7 +226,7 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         );
         return slot.ciu_hz;
     }
-    // SAFETY: `mmu::init` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
+    // SAFETY: `mmu::initialize` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
     // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
     let c = unsafe {
         crate::drivers::jh7110_clock_and_reset::set_card_clock(
@@ -270,9 +270,9 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::NoClockWindow;
     };
     let plan = jh7110_clock_and_reset::SDIO_BRING_UP[usize::from(slot.index)];
-    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::init` step 6c mapped
-    // exactly this window device-typed. The plan and the domain are the same crate's, so every
-    // identifier is in range; every step is idempotent on a controller already up.
+    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::initialize` step 6c
+    // mapped exactly this window device-typed. The plan and the domain are the same crate's, so
+    // every identifier is in range; every step is idempotent on a controller already up.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(sys.base) as usize,
@@ -301,7 +301,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
 
     let ciu_hz = card_clock(slot, sys.base);
 
-    // SAFETY: step 10 of `mmu::init` mapped this slot's first page from the same
+    // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
     let (mut host, id) = match Host::new(window, ciu_hz, slot.fifo_depth) {

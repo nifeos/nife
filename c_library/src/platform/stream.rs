@@ -79,24 +79,29 @@ impl Pipe {
 /// What a descriptor from `pipe` or `socketpair` holds: the pipe it reads, the pipe it writes, or
 /// (for a socket) both. Dropping it, which `close` does, gives up its sides.
 pub(crate) struct End {
-    rx: Option<Arc<Pipe>>,
-    tx: Option<Arc<Pipe>>,
+    read_pipe: Option<Arc<Pipe>>,
+    write_pipe: Option<Arc<Pipe>>,
     nonblock: AtomicBool,
     /// A socket answers `fstat` as one, and a pipe end as a FIFO.
     pub(crate) socket: bool,
 }
 
 impl End {
-    fn new(rx: Option<Arc<Pipe>>, tx: Option<Arc<Pipe>>, socket: bool, nonblock: bool) -> Self {
-        if let Some(p) = &rx {
+    fn new(
+        read_pipe: Option<Arc<Pipe>>,
+        write_pipe: Option<Arc<Pipe>>,
+        socket: bool,
+        nonblock: bool,
+    ) -> Self {
+        if let Some(p) = &read_pipe {
             p.lock().readers += 1;
         }
-        if let Some(p) = &tx {
+        if let Some(p) = &write_pipe {
             p.lock().writers += 1;
         }
         Self {
-            rx,
-            tx,
+            read_pipe,
+            write_pipe,
             nonblock: AtomicBool::new(nonblock),
             socket,
         }
@@ -113,7 +118,7 @@ impl End {
     /// Whether this end can be read, written, or both, as `O_RDONLY`, `O_WRONLY` or `O_RDWR`.
     pub(crate) fn access(&self) -> c_int {
         use crate::header::fcntl::{O_RDONLY, O_RDWR, O_WRONLY};
-        match (self.rx.is_some(), self.tx.is_some()) {
+        match (self.read_pipe.is_some(), self.write_pipe.is_some()) {
             (true, true) => O_RDWR,
             (false, true) => O_WRONLY,
             _ => O_RDONLY,
@@ -123,7 +128,7 @@ impl End {
     /// **`read`**: what is queued, up to `buf.len()`; 0 once every writer is gone; otherwise wait
     /// for bytes, or `EAGAIN` if this end does not block.
     pub(crate) fn read(&self, buf: &mut [u8]) -> Result<usize> {
-        let Some(pipe) = &self.rx else {
+        let Some(pipe) = &self.read_pipe else {
             return Err(Errno(crate::header::errno::EBADF));
         };
         if buf.is_empty() {
@@ -155,7 +160,7 @@ impl End {
     /// a longer one may be split. `EPIPE` once every reader is gone. A non-blocking end writes what
     /// fits now and answers `EAGAIN` if nothing does.
     pub(crate) fn write(&self, buf: &[u8]) -> Result<usize> {
-        let Some(pipe) = &self.tx else {
+        let Some(pipe) = &self.write_pipe else {
             return Err(Errno(crate::header::errno::EBADF));
         };
         let atomic = buf.len() <= PIPE_BUF as usize;
@@ -197,7 +202,7 @@ impl End {
     /// reports whether asked or not).
     pub(crate) fn revents(&self, events: c_short) -> c_short {
         let mut r = 0;
-        if let Some(p) = &self.rx {
+        if let Some(p) = &self.read_pipe {
             let st = p.lock();
             if !st.bytes.is_empty() {
                 r |= events & (POLLIN | POLLRDNORM);
@@ -206,7 +211,7 @@ impl End {
                 r |= POLLHUP;
             }
         }
-        if let Some(p) = &self.tx {
+        if let Some(p) = &self.write_pipe {
             let st = p.lock();
             if st.readers == 0 {
                 r |= POLLERR;
@@ -220,11 +225,11 @@ impl End {
 
 impl Drop for End {
     fn drop(&mut self) {
-        if let Some(p) = &self.rx {
+        if let Some(p) = &self.read_pipe {
             p.lock().readers -= 1;
             p.changed();
         }
-        if let Some(p) = &self.tx {
+        if let Some(p) = &self.write_pipe {
             p.lock().writers -= 1;
             p.changed();
         }

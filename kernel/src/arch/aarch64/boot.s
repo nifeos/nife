@@ -363,7 +363,7 @@ enter_el1:
     //     it. That is Linux's `__init_el2_gicv3` (arch/arm64/include/asm/el2_setup.h, v6.16),
     //     including the guard: `ID_AA64PFR0_EL1.GIC` (bits 27:24) zero means the core has no
     //     system-register interface, the registers do not exist, and touching them is UNDEFINED.
-    //     So a GICv2 machine, argon's, skips the whole step. `gic_cpu_interface::init_this_cpu`
+    //     So a GICv2 machine, argon's, skips the whole step. `gic_cpu_interface::initialize_this_cpu`
     //     asserts the EL1 half actually stuck.
     mrs     x0, id_aa64pfr0_el1
     ubfx    x0, x0, #24, #4
@@ -382,7 +382,7 @@ enter_el1:
     //     which is EL1h: EL1 using SP_EL1, the same stack pointer arrangement `_boot_el1` and
     //     `_secondary_el1` then write with `mov sp, x`. Masked interrupts are what EL1 entry
     //     looks like on the QEMU path too, and nothing is ready to take one until
-    //     `exceptions::init` writes VBAR_EL1.
+    //     `exceptions::initialize` writes VBAR_EL1.
     //
     //     No `isb` before the `eret`: an `eret` is itself a context synchronization event, so
     //     every write above is in effect for the first instruction at EL1.

@@ -25,22 +25,23 @@ pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// The `time` CSR frequency in Hz, read from `/cpus/timebase-frequency`.
 ///
-/// Holds zero until [`init_frequency`] runs, and its readers ([`frequency`], [`interval`]) assert
-/// it nonzero, so a boot that never read the machine panics rather than running at a guessed rate.
+/// Holds zero until [`initialize_frequency`] runs, and its readers ([`frequency`], [`interval`])
+/// assert it nonzero, so a boot that never read the machine panics rather than running at a guessed
+/// rate.
 static TIMEBASE_HZ: AtomicU64 = AtomicU64::new(0);
 
 /// Read the counter rate out of the device tree at `dtb_ptr` (a physical address).
 ///
-/// Called once, on the boot hart, before [`init`] arms the first deadline there. Secondaries share
-/// its reading. See notes/riscv-port/timer.md, BUGS.
+/// Called once, on the boot hart, before [`initialize`] arms the first deadline there. Secondaries
+/// share its reading. See notes/riscv-port/timer.md, BUGS.
 ///
 /// # Panics
 ///
 /// If the tree is unreadable, states no frequency, or states one no real part runs at.
-pub(crate) fn init_frequency(dtb_ptr: usize) {
+pub(crate) fn initialize_frequency(dtb_ptr: usize) {
     // SAFETY: the pointer OpenSBI handed us in `a1`, named through the boot table's direct map.
-    // `DeviceTreeBlob::from_ptr` re-checks the magic, and this runs on the same map `memory::init`
-    // uses.
+    // `DeviceTreeBlob::from_ptr` re-checks the magic, and this runs on the same map
+    // `memory::initialize` uses.
     let dt = unsafe {
         device_tree_blob::DeviceTreeBlob::from_ptr(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
@@ -60,13 +61,13 @@ pub(crate) fn init_frequency(dtb_ptr: usize) {
     TIMEBASE_HZ.store(hz, Ordering::Relaxed);
 }
 
-/// The counter rate the machine stated. Panics if read before [`init_frequency`], as
+/// The counter rate the machine stated. Panics if read before [`initialize_frequency`], as
 /// `arch::isa::get` does.
 fn timebase_hz() -> u64 {
     let hz = TIMEBASE_HZ.load(Ordering::Relaxed);
     assert!(
         hz > 0,
-        "arch::timer used before arch::timer::init_frequency"
+        "arch::timer used before arch::timer::initialize_frequency"
     );
     hz
 }
@@ -84,8 +85,8 @@ static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 /// elapsed inside the handler or a critical section.
 static MISSED_TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
-/// The absolute `time` value each hart's next tick is due at: the grid, anchored by [`init`]. SBI's
-/// `set_timer` cannot be read back, so this is the only copy.
+/// The absolute `time` value each hart's next tick is due at: the grid, anchored by [`initialize`].
+/// SBI's `set_timer` cannot be read back, so this is the only copy.
 static DEADLINE: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// Arm this hart's S-mode timer interrupt for when `time` reaches `next`, through SBI TIME
@@ -114,7 +115,7 @@ pub fn frequency() -> u64 {
     timebase_hz()
 }
 
-/// How many counter ticks make a second, or `None` if [`init_frequency`] has not run yet.
+/// How many counter ticks make a second, or `None` if [`initialize_frequency`] has not run yet.
 ///
 /// The non-panicking [`frequency`], for the timebase page (`kernel::user::timebase_page_phys`), the
 /// same as `arch::x86_64::timer::frequency_checked`. It is `Some` before any process loads.
@@ -131,7 +132,10 @@ pub fn interval() -> u64 {
 /// Start the periodic timer: arm the first deadline through SBI, and enable the S-mode timer
 /// interrupt in `sie`. The caller enables interrupts globally (`sstatus.SIE`) when it is ready to
 /// take them.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     // Anchor this hart's grid before arming it: `rearm` adds whole intervals to this value.
     let first = now() + interval();
     DEADLINE[cpu::id()].store(first, Ordering::Relaxed);
@@ -388,7 +392,7 @@ mod tests {
     /// The cycle-counter grant opens and closes `scounteren.CY` and leaves `TM` open.
     ///
     /// Each call is made twice, because the context switch repeats it and the no-change path must
-    /// be right too. Leaves `CY` closed, as `init` did.
+    /// be right too. Leaves `CY` closed, as `initialize` did.
     #[test_case]
     fn the_cycle_counter_grant_moves_cy_and_leaves_tm_alone() {
         super::set_cycle_counter_grant(true);

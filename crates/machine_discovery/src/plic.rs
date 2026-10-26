@@ -23,7 +23,7 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 use crate::cpu_list::CpuList;
 
 /// Every `compatible` string this tree accepts as a PLIC, in the order they are tried. Read here
-/// and by the kernel's `memory::init`, so the two cannot disagree.
+/// and by the kernel's `memory::initialize`, so the two cannot disagree.
 ///
 /// - `sifive,plic-1.0.0`: QEMU `virt` and the mainline JH7110 dtsi.
 /// - `riscv,plic0`: the older generic binding, and the only one radon's U-Boot control DTB states.

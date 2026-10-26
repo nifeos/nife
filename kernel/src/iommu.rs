@@ -4,8 +4,8 @@
 //! lives under `arch/`.
 //!
 //! [`confine`] maps exactly the regions it is given, identity (IOVA == PA), so any other address
-//! the device emits faults. Each driver's `init` denies every unattached device, so the window
-//! between Bus-Master Enable and `confine` is closed by the hardware. See notes/iommu.md.
+//! the device emits faults. Each driver's `initialize` denies every unattached device, so the
+//! window between Bus-Master Enable and `confine` is closed by the hardware. See notes/iommu.md.
 
 use paging::domain::{DmaRegion, build_identity_domain};
 
@@ -134,7 +134,7 @@ fn zeroed_page_frame() -> u64 {
 ///
 /// `rid` is the PCIe requester id (bus/dev/fn), which both IOMMUs key their tables on (each `virt`
 /// board's device tree gives an identity `iommu-map`). The caller must have checked [`is_active`];
-/// attaching before the driver's `init` panics.
+/// attaching before the driver's `initialize` panics.
 pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) {
     // The grant plus the firmware's reserved regions for this device: VT-d 4.1 section 3.16 wants
     // an RMRR identity-mapped in its device's domain, or the firmware's own DMA faults. One that

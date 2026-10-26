@@ -1,8 +1,8 @@
 # What the tests prove, and the gate for the boot
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds what the
-guest tests assert on both ISAs and why `script/swish-check` exists. It was moved here verbatim from
-the main page on 2026-09-25 (UTC), under [§212 (a prose
+guest tests assert on both ISAs and why `script/swish-check` exists. The lane that split the file
+moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -21,7 +21,7 @@ of a keyboard, with the interactive endowment slot for slot. The kernel plays th
 other ends: it serves the terminal contract and collects every byte the shell prints, and a second
 thread serves `grant_plan::spawnproto` as the progenitor.
 
-So the assertions are made against what a person would see, and the headline one is not a
+So the assertions check what a person would see, and the headline one is not a
 constant:
 
 - `date` alone: the shell prints N bytes.
@@ -39,8 +39,8 @@ identical grants except for what is behind slot 1:
 
 - a pipe: the kernel sends the transcript on an endpoint itself, sixteen bytes at a time, then
   `OPERATION_EOF`. That is exactly what a program on the left of a `|` does.
-- a file: the same transcript is written into a real file on the real RedoxFS image by `sink`'s
-  file role, then read back out by its source role, which streams it over the same contract. That is
+- a file: `sink`'s file role writes the same transcript into a real file on the real RedoxFS image,
+  and its source role then reads it back out and streams it over the same contract. That is
   `wc < report.txt` minus the shell that would name the file.
 
 The second arm crosses two userspace processes, an FS server, a block server and a virtio disk; the
@@ -54,12 +54,13 @@ own.
 the same four slots, plus a directory at slot 4 narrowed by a `fs_subtree_caretaker` to one subtree
 of the real RedoxFS image. Three claims, and none of them is "it printed something":
 
-- One builtin, two destinations. `ls > out.txt` writes a listing into a file and prints nothing;
-  the `ls` after it prints the same listing; `wc < out.txt` has to agree with what was printed, once
-  the prompt's two-space indent comes off. The expected counts are *derived from the transcript*, so
-  a `>` that dropped every second byte fails even though it would still produce a file.
+- One builtin, two destinations. `ls > out.txt` writes a listing into a file and prints nothing; the
+  `ls` after it prints the same listing; `wc < out.txt` has to agree with what the shell printed,
+  once the prompt's two-space indent comes off. The expected counts are *derived from the
+  transcript*, so a `>` that dropped every second byte fails even though it would still produce a
+  file.
 - One program, two destinations. `date` printed and `date > date.txt` counted, and the file's
-  byte count has to be the length of what was printed.
+  byte count has to be the length of what the shell printed.
 - The refusals a directory does not rescue. `wc < nosuch.txt` is the filesystem's own sentence (a
   `<` does not create, because a `wc` that truthfully reported zero for a file that is not there is
   a number a person would believe), and `least_authority_demo 9 > out.txt` is still
@@ -87,7 +88,7 @@ And the gap runs the other way too, which milestone 86 found. The kernel's stand
 spawned program's argument in `arg0`; both real inits put it in `arg1`, and
 `components/src/least_authority_demo.rs` reads `arg1`. Nothing failed for two milestones, because no
 line in either script ever spawned a program that *takes* an argument: `date`, `wc` and `echo` take
-none, and `least_authority_demo 9 | wc` is refused at the prompt before anything is built. The first
+none, and the prompt refuses `least_authority_demo 9 | wc` before it builds anything. The first
 script to type `time least_authority_demo 3` got `3*3 = 0` back. So a harness that "the shell cannot
 tell apart" can still be wrong in a way no shell would notice, and the fix is the same one as above:
 the scripts have to exercise the shapes the boot exercises.
@@ -117,13 +118,13 @@ answer has to equal the `<` line's, because it is the same designation with the 
 The pair is what makes that a claim about the machine rather than an assertion: one line reaches the
 file through an operator and one through a name, so if they disagree, one of them opened something
 else. `wc` alone is the negative control the pair would be weaker without, refused at the prompt
-before anything is spawned.
+before the shell spawns anything.
 
 The last two arrived with milestone 51's wiring lane and check a different half of the same boot.
 `date`'s answer cannot be a constant, so the assertion is `UTC`. `Format::Human` ends in the
 offset's name and neither unknown-clock sentence contains those three letters. So one word fails the
 gate if the clock service did not run, if the kernel granted the progenitor no page, if the
-progenitor did not endow `date`, or if `date` was handed a page nobody published to. `caps date`
+progenitor did not endow `date`, or if `date` got a page nobody published to. `caps date`
 then requires that the shell's own visibility surface names the capability, because `caps` claims to
 print a process's whole authority and a clock endowed but not printed would make that claim false.
 
@@ -134,9 +135,9 @@ harness gets wrong quietly:
   for a line yet. So a harness that types ahead produces a transcript in which a command's echo
   appears *before* the `$ ` that should introduce it, and then fails to find its own echo. The gate
   waits for the transcript to end in a bare prompt, which is the unambiguous "ready".
-- The script types `wc < gate.txt` twice on purpose, so every search is anchored at a cursor
-  rather than run over the whole transcript. An unanchored search found the first answer for both
-  lines, and would have passed a `>>` that truncated.
+- The script types `wc < gate.txt` twice on purpose, so the gate anchors every search at a cursor
+  rather than running it over the whole transcript. An unanchored search found the first answer for
+  both lines, and would have passed a `>>` that truncated.
 
 It drives `helpers/qemu-runner-aarch64.sh` directly rather than `cargo run`, so the process it owns
 is QEMU (the runner `exec`s it) and the kill lands on the emulator instead of on cargo. It is not

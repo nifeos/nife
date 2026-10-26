@@ -10,36 +10,33 @@
 /// A fallback, not the answer: the boot paths ask the machine first ([`uart_irq_and_source`]), and
 /// on the JH7110 UART0 is PLIC line 32 (notes/visionfive2.md, BUGS).
 ///
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `UART_RECEIVE_INTID`; `INTID` is the GIC's own term and
-/// stays.
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "aarch64")]
-pub const UART_RX_INTID: u32 = 33;
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `UART_RECEIVE_INTID`; `INTID` is the GIC's own term and
-/// stays.
+pub const UART_RECEIVE_INTID: u32 = 33;
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "riscv64")]
-pub const UART_RX_INTID: u32 = 10;
+pub const UART_RECEIVE_INTID: u32 = 10;
 /// `x86_64`: COM1 is ISA IRQ 4, the legacy line. It is neither the IO APIC input it may be
 /// remapped to (the ACPI MADT's overrides say, unread here) nor the IDT vector that input raises.
 ///
-/// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port falsifications
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked what `rx` stands
-/// for in his #1255 review; recommended `UART_RECEIVE_INTID`; `INTID` is the GIC's own term and
-/// stays.
+/// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "x86_64")]
-pub const UART_RX_INTID: u32 = 4;
+pub const UART_RECEIVE_INTID: u32 = 4;
 
 /// The console UART's interrupt line and which source decided it: the machine's own answer when
 /// it gave one (`memory::uart_irq`, a device tree on aarch64/riscv64 or ACPI on `x86_64`), else
-/// [`UART_RX_INTID`], QEMU `virt`'s constant. The source string is for a bench transcript to
+/// [`UART_RECEIVE_INTID`], QEMU `virt`'s constant. The source string is for a bench transcript to
 /// print, so the number's origin is diagnosable.
 pub(crate) fn uart_irq_and_source() -> (u32, &'static str) {
     match crate::memory::uart_irq() {
         Some(n) => (n, "machine description"),
-        None => (UART_RX_INTID, "QEMU-virt fallback; the machine did not say"),
+        None => (
+            UART_RECEIVE_INTID,
+            "QEMU-virt fallback; the machine did not say",
+        ),
     }
 }
 

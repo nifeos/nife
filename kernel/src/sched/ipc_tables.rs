@@ -109,8 +109,9 @@ pub(super) const MAX_KERNEL_EP_CHUNKS: usize =
 pub(super) static IPC_TABLES: IrqSafeMutex<Option<IpcTables>> =
     IrqSafeMutex::new(rank::IPC_TABLES, None);
 
-/// The scheduler before anything is in it, a `.rodata` aggregate [`init`] copies from instead of a
-/// value built on the boot stack, which keeps the boot frame under its gate at [`MAX_THREADS`].
+/// The scheduler before anything is in it, a `.rodata` aggregate [`initialize`] copies from instead
+/// of a value built on the boot stack, which keeps the boot frame under its gate at
+/// [`MAX_THREADS`].
 pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),

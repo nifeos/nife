@@ -1,6 +1,10 @@
 # The fixed term: five blocks per request
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 208 us identified, what option 2 costs, and why 4 KiB was the only transfer size the system had, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef), who refused `the-fixed-term` for this file; [the naming record](README.md) says why.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 208 us identified, what option 2
+costs, and why 4 KiB was the only transfer size the system had, with the dates, tables and
+corrections behind them. Name: ratified 2026-09-24 (calef), who refused `the-fixed-term` for this
+file; [the naming record](README.md) says why.*
 
 These sections continue [the record-level sweep](record-level-sweep.md) of milestone 138 (close the read gap), all dated
 2026-08-18 unless marked.
@@ -27,8 +31,8 @@ through `read_node`:
 | 4 | L0 | one block per 256 node ids |
 | 5 | the node | the file's own `Node`, one block, one per file |
 
-`TREE_LIST_SHIFT` is 8 (`vendor/redoxfs/src/tree.rs`), so the fanout is 256 per level. The first four
-blocks are shared by every file whose node id falls in the same 256. In the fixture below, two 1 MiB
+`TREE_LIST_SHIFT` is 8 (`vendor/redoxfs/src/tree.rs`), so the fanout is 256 per level. Every file
+whose node id falls in the same 256 shares the first four blocks. In the fixture below, two 1 MiB
 files and a `motd` share blocks 1 through 4 and differ only in block 5.
 
 #### How it was counted
@@ -72,8 +76,8 @@ of it. The remaining ~13 us is the file-IPC round trip and the server's own work
 touches. `fs_read` says the same from the other direction: it reads an inline `motd`, does exactly
 these five reads and nothing else, and costs 203 to 208 us.
 
-The cache is not a large object. Four of the five blocks are the tree spine and are shared by every
-file. A filesystem with 65,536 nodes has a spine of 1 + 1 + 1 + 256 = 259 blocks, about 1 MiB. The
+The cache is not a large object. Four of the five blocks are the tree spine, and every file shares
+them. A filesystem with 65,536 nodes has a spine of 1 + 1 + 1 + 256 = 259 blocks, about 1 MiB. The
 fifth block is the node, one per open handle, which a server holding handles could keep without a
 cache at all.
 
@@ -109,7 +113,7 @@ in it, 39.0 us per block, comes from the sweep and carries that sweep's conditio
 
 ### What option 2 costs, and why level 1 beats level 0
 
-Two of the three costs milestone 138 named are avoided by not going all the way down.
+Not going all the way down avoids two of the three costs milestone 138 named.
 
 Compression is given up at level 0 and only at level 0. RedoxFS compresses a record when its stored
 level is above zero (`write_node_inner_records`: `if decomp_level.0 > 0`). So a one-block record is

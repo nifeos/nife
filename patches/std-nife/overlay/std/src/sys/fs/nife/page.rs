@@ -42,8 +42,10 @@ impl Page {
     /// across it or is assumed unchanged by it. The volatile loop bought nothing on top of that
     /// and cost a load or store per byte: 334 KB of them in a walk that reads the fixture tree.
     pub(super) fn put(&mut self, bytes: &[u8]) {
-        // SAFETY: PAGE_VA is a mapped, writable page of `PAGE` bytes; callers clamp to it, and it
-        // cannot overlap `bytes`, which is this process's own memory.
+        // Callers clamp to the page; this holds the copy below to it if one does not.
+        assert!(bytes.len() <= PAGE, "a request is longer than the page shared with the FS server");
+        // SAFETY: PAGE_VA is a mapped, writable page of `PAGE` bytes, `bytes` fits it (asserted
+        // above), and it cannot overlap `bytes`, which is this process's own memory.
         unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), PAGE_VA as *mut u8, bytes.len()) };
     }
 

@@ -62,7 +62,7 @@
 #   - It builds the kernel test binary itself rather than reusing CI's, because the measurement needs
 #     `-Z emit-stack-sizes` and that flag changes the build. Costs one extra kernel build per arch.
 #   - **x86_64 is reachable (`--arch x86_64`) but not in the default set.** It found a real offender
-#     the first time it ran: `kernel::arch::x86_64::iommu::init` at 12504 bytes, over 3x the ceiling,
+#     the first time it ran: `kernel::arch::x86_64::iommu::initialize` at 12504 bytes, over 3x the ceiling,
 #     from `Iommu { ctx: [Option<u64>; 256], .. }`, one context-table root per PCI bus, the same
 #     `[T; MAX]`-sized-to-a-table-maximum shape this file's first BUGS entry describes. Whether to
 #     fix that offender, except it, or something else is not this gate's call; until it is decided,
@@ -173,10 +173,10 @@ def is_test_body(name):
 # Functions over the ceiling that provably do not run on a kernel thread stack. Each states why, and
 # a reader who makes one of these reachable from a thread has to come here and say so.
 EXCEPT = {
-    "kernel::sched::switch::init":
+    "kernel::sched::switch::initialize":
         "boot only: brings the scheduler up before any thread stack exists",
     "<generational_table::Table<u64, 512>>::new":
-        "boot only: constructs the endpoint table, called from sched::switch::init",
+        "boot only: constructs the endpoint table, called from sched::switch::initialize",
     "kernel::user::disk_service::devices":
         "boot stack: called by roster_page below, before its sched::spawn",
     "kernel::user::disk_service::roster_page":

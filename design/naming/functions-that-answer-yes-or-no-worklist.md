@@ -116,35 +116,31 @@ does not show: `script/names` skips `patches/` on purpose, so that entry is visi
 ## `rx` and `tx`
 
 The pass renamed `is_rx_waiting` to `is_byte_waiting` after calef's review of #1255 asked what
-`rx` stands for, and left every other public `rx` or `tx` name alone because none is a predicate.
-They are listed here, 2026-09-25, so the abbreviation is ruled once rather than name by name. Each
-definition carries a `/// Name: provisional` marker naming the recommendation, so all of them queue
-on `script/names --unratified`. None is a wire format: every one is a function or constant inside
-one program, and `UART_RX_INTID`'s value is what other code agrees on, not its spelling.
+`rx` stands for. The other public `rx` and `tx` names waited for one ruling on the abbreviation,
+which came on 2026-10-26 (UTC) and spells both out
+([spelled-out-rulings.md](spelled-out-rulings.md)). The first six names below carry the spellings this page
+recommended. The smoltcp tokens spell out too, though this page had recommended keeping them,
+because the type names are this tree's and only the traits are smoltcp's. Each has a `/// Name:
+provisional` marker, so all of them queue on `script/names --unratified`. None is a wire format: every one is a function or constant inside one
+program, and the value of `UART_RECEIVE_INTID` is what other code agrees on, not its spelling.
 
-| Now | Defined in | Visibility | Sites | Recommended | Why |
-|---|---|---|---|---|---|
-| `rx_get` | `components/src/input.rs` (three architectures) | pub in a private `mod uart` | 5 | `read_byte` | it reads the byte `is_byte_waiting` reports, so the pair reads as one vocabulary |
-| `arm_rx_interrupt` | `components/src/input.rs` (aarch64, riscv64) | pub in a private `mod uart` | 4 | `arm_receive_interrupt` | the word both UART manuals spell out |
-| `discard_rx` | `kernel/src/console.rs`, `kernel/src/drivers/{ns16550,pl011}.rs` | pub | 16 | `discard_waiting_bytes` | it drops the bytes `is_byte_waiting` would have reported |
-| `rx_enable` | `kernel/src/console.rs` | pub | 3 | `enable_receive_interrupt` | it enables an interrupt, which the current name does not say; matches the driver method it calls |
-| `enable_rx_interrupt` | `kernel/src/drivers/ns16550.rs` | pub | 3 | `enable_receive_interrupt` | as above |
-| `enable_tx_interrupt` | `kernel/src/drivers/ns16550.rs` | pub, `#[cfg(test)]` | 5 | `enable_transmit_interrupt` | the transmit twin of the row above |
-| `tx_bytes` | `kernel/src/console.rs` | pub | 1 | `bytes_written` | it counts what the kernel wrote to the console; the private static `TX_BYTES` becomes `BYTES_WRITTEN` with it |
-| `UART_RX_INTID` | `kernel/src/user.rs` (three architectures) | pub | 12 | `UART_RECEIVE_INTID` | `INTID` is the GIC's own term and stays |
-| `VnetRxToken`, `VnetTxToken` | `components/src/virtio_net_transport.rs` | pub | 13 | keep | they implement smoltcp's `phy::RxToken` and `phy::TxToken`, and the upstream word is what a reader of smoltcp looks for |
+| Name | Defined in | Visibility | Why |
+|---|---|---|---|
+| `read_byte` | `components/src/input.rs` (three architectures) | pub in a private `mod uart` | it reads the byte `is_byte_waiting` reports, so the pair reads as one vocabulary |
+| `arm_receive_interrupt` | `components/src/input.rs` (aarch64, riscv64) | pub in a private `mod uart` | the word both UART manuals spell out |
+| `discard_waiting_bytes` | `kernel/src/console.rs`, `kernel/src/drivers/{ns16550,pl011}.rs` | pub | it drops the bytes `is_byte_waiting` would have reported |
+| `enable_transmit_interrupt` | `kernel/src/drivers/ns16550.rs` | pub, test and system-test builds only | the transmit interrupt is the one it raises |
+| `bytes_written` | `kernel/src/console.rs` | pub | it counts what the kernel wrote to the console; the private static is `BYTES_WRITTEN` |
+| `UART_RECEIVE_INTID` | `kernel/src/user/console_device.rs` (three architectures) | pub | `INTID` is the GIC's own term and stays |
+| `NicReceiveToken`, `NicTransmitToken` | `components/src/nic_device.rs` | `pub(crate)` | they implement smoltcp's `phy::RxToken` and `phy::TxToken`, whose names smoltcp owns |
 
-Sites are `git grep -w` hits on 2026-09-25 outside `design/roadmap/` and this directory, code and
-notes together; roadmap blocks keep the old names under the rename procedure.
-
-Private names this table leaves out, because the review question was about public ones: the
-virtio-net queue constants (`NET_RX_*`, `NET_TX_*` in `crates/virtio`, `RX_*`, `TX_*` in
-`components/src/virtio_net_transport.rs`) and the helpers beside them (`post_rx`, `wait_rx`,
-`rx_take`, `tx_send`, `rx_buf`, `tx_buf`). They follow the virtio specification's own
-`receiveq`/`transmitq` shorthand. `tools/redoxfs_host`'s `ls_tx`, `put_tx` and the rest are a
-different word: there `tx` means a RedoxFS transaction, which is the best argument that the
-abbreviation does not decode itself. If calef rules `rx` out, these are the next pass, and none of
-them needs a marker to be found again: `git grep -wiE '[a-z_]*(rx|tx)[a-z_]*'` is the census.
+The private names followed under the same ruling: the virtio-net queue constants
+(`NET_RECEIVE_*`, `NET_TRANSMIT_*` in `crates/virtio`, `RECEIVE_*`, `TRANSMIT_*` in
+`components/src/virtio_net_transport.rs`) and the helpers beside them (`post_receive`,
+`wait_receive`, `receive_frame`, `transmit_frame`, `receive_buf`, `transmit_buf`).
+`tools/redoxfs_host`'s `ls_tx`, `put_tx` and the rest are a different word: there `tx` means a
+RedoxFS transaction, the closure argument of RedoxFS's own `Filesystem::tx`. That is the best
+argument that the abbreviation does not decode itself.
 
 ## Fits as written
 
@@ -186,7 +182,7 @@ rule does not apply and the verb stays. By place:
 - **crates, 23**: `push` (twice), `keep_smallest`, `descend`, `ascend`, `step`, `encode`,
   `sector`, the `Pages::page` trait method, `remove_sender`, `remove_receiver`, `take_aborted`,
   `claim`, `grow`, `map_page_frame`, `memory_region_destroy`, `start_child`, `fill_entropy`, and
-  virtio's `init_with_features`, `wait_rx`, `blk_flush` and `complete_flush`.
+  virtio's `initialize_with_features`, `wait_receive`, `blk_flush` and `complete_flush`.
 - **elsewhere, 10, and one in the std overlay**: `fixtures` (`start_child`, `write_marker`, `destroy_with_retry`),
   `uefi_loader` (`write_back`, `write`, `flush`, `paint_handoff`), `std_exerciser` (`udp_ok`,
   `tcp_echo_ok`, which perform the round trip they name), `redoxfs_server`'s `grow`, and the std

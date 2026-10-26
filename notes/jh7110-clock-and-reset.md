@@ -126,8 +126,8 @@ But a caller that took that answer unconditionally would store to `0x1023_0000` 
 this kernel boots, and on QEMU's `virt` that address is unmapped. So the guard is one rung up
 from a comment:
 
-- `memory::init` records the window **only when the tree names a JH7110** (a clock controller, or
-  the TRNG whose clocks this exists to ungate). QEMU's `virt` names neither.
+- `memory::initialize` records the window **only when the tree names a JH7110** (a clock controller,
+  or the TRNG whose clocks this exists to ungate). QEMU's `virt` names neither.
 - `mmu::map_everything` maps only what `memory::jh7110_clock_and_reset()` returned, so on any other machine
   there is no mapping to store through.
 - `no_clock_window_is_mapped_where_there_is_no_jh7110` (`system_tests/src/user/entropy_tests.rs`) pins
