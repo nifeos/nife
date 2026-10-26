@@ -13,7 +13,8 @@
 //! refused rather than ported, as [`Error::PageNotPorted`]: page 800, the host wakeup page with its
 //! own address and data opcode protocol (`e1000_access_phy_wakeup_reg_bm`), and pages 1 to 767,
 //! the 82577 and 82578 debug registers (`e1000_access_phy_debug_regs_hv`). Nothing in
-//! [`super::sequence`] addresses either; only an NVM-supplied LCD configuration word could.
+//! [`super::sequence`] addresses either. Only an NVM-supplied LCD configuration word could, and
+//! that returns [`Error::PageNotPorted`] rather than writing somewhere unexamined.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

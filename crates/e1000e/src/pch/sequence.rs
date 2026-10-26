@@ -228,9 +228,13 @@ fn has_me(hw: &mut impl Hw) -> bool {
 /// through the Management Engine if there is one, through PHY registers if not. It makes sure the
 /// MAC-PHY interconnect is PCIe rather than `SMBus`. If the PHY does not answer, it forces `SMBus`,
 /// and if the PHY still does not answer, it power-cycles the PHY with `LANPHYPC`. Then it resets
-/// the PHY so it starts from a known state. Refuses with [`Error::LanphypcBlocked`] when firmware
-/// blocks that power cycle, [`Error::PhyInaccessible`] when the PHY never answers, and
-/// [`Error::BlockedAfterPhyReset`] when firmware takes the PHY after its reset.
+/// the PHY so it starts from a known state, unless firmware blocks PHY resets: then it skips the
+/// reset, notes [`Note::PhyResetBlocked`] and returns the identifier.
+///
+/// Refuses with [`Error::LanphypcBlocked`] when firmware blocks that power cycle,
+/// [`Error::PhyInaccessible`] when the PHY never answers, [`Error::BlockedAfterPhyReset`] when
+/// firmware takes the PHY after its reset, [`Error::Phy`] when the semaphore cannot be taken, and
+/// [`Error::Nvm`] when no NVM bank is valid after the reset.
 pub fn init_phy_workarounds(hw: &mut impl Hw) -> Result<u32, Error> {
     // Gate automatic PHY configuration by hardware; this driver configures it in `global_reset`.
     set(hw, regs::EXTCNF_CTRL, EXTCNF_CTRL_GATE_PHY_CFG);
@@ -474,6 +478,10 @@ fn config_done(hw: &mut impl Hw) -> Result<(), Error> {
 
 /// **`e1000_reset_hw_ich8lan`** for the SPT class, preceded by `em_reset`'s packet-buffer
 /// allocation and followed by nothing the kernel does not already do for the 82574L.
+///
+/// The MAC and PHY reset together, unless firmware blocks PHY resets, in which case the MAC resets
+/// alone. After a PHY reset the PHY is configured from the NVM: `config_done` waits for it and
+/// checks a bank is valid, and `post_phy_reset` replays the NVM's configuration and the OEM bits.
 ///
 /// One addition: FreeBSD does not wait for `CTRL.RST` to self-clear (its configuration-done wait
 /// covers it); this waits up to `reset_wait_ms` first, so a reset that never completes is reported
