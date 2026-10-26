@@ -299,7 +299,7 @@ fi
 # The RISC-V IOMMU (milestone 16b): the ratified v1.0.1 IOMMU as a PCI function (riscv-iommu-pci,
 # Red Hat 1b36:0014) in front of the PCIe bus. Present on every boot for parity with the aarch64
 # SMMU that is always on the machine; the kernel enumerates it, places its BAR, and brings it up
-# (pci::init_iommu). Idle when no PCI disk is attached. Placed on the command line before the disk
+# (pci::initialize_iommu). Idle when no PCI disk is attached. Placed on the command line before the disk
 # so it fronts the bus the virtio-blk-pci device joins.
 IOMMU="-device riscv-iommu-pci"
 

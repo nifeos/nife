@@ -10,7 +10,7 @@
 use abi::cycle_counter::CycleMeaning;
 
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
-/// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::init` and notes/abi.md); the
+/// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::initialize` and notes/abi.md); the
 /// read is a plain register move, no syscall. Pair with [`cntfrq`] to turn tick deltas into seconds.
 #[cfg(target_arch = "aarch64")]
 pub fn now() -> u64 {
@@ -62,7 +62,7 @@ pub fn cntfrq_checked() -> Option<u64> {
 /// into every process at [`counter_frequency_contract::PAGE_VA`]: a plain load, no syscall.
 ///
 /// RISC-V has no register that reports the timebase, so the kernel reads the device tree's
-/// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::init_frequency`) and publishes it
+/// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::initialize_frequency`) and publishes it
 /// (`kernel::user::timebase_page_phys`). No constant stands in: radon runs at 4 MHz. See
 /// notes/user-mode-runtime/time.md.
 ///
@@ -114,7 +114,7 @@ pub fn now() -> u64 {
 /// The counter frequency in Hz (`x86_64`), read from the **timebase page** the kernel maps
 /// read-only into every process at [`counter_frequency_contract::PAGE_VA`]: a plain load, no
 /// syscall. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
-/// `0x15` or calibrates (`arch::x86_64::timer::init_frequency`), and a child's page carries its
+/// `0x15` or calibrates (`arch::x86_64::timer::initialize_frequency`), and a child's page carries its
 /// parent's rate. See notes/user-mode-runtime/time.md.
 ///
 /// # Panics

@@ -172,7 +172,7 @@ The line names every outcome, so there is nothing here to infer.
 | `SBI PMU present, no counter can count CPU cycles` | firmware answered `SBI_ERR_NOT_SUPPORTED` to the match, or reported zero counters | record the OpenSBI version and stop. This firmware cannot serve the milestone |
 | `SBI PMU offered a firmware counter; refused (an ecall per read)` | the only counter firmware has for this event is one it maintains itself | recorded limitation, see BUGS. Reading it would cost an `ecall` per read and the measurement would be of the `ecall` |
 | `SBI PMU named a CSR outside the counter block` | firmware named a CSR this kernel cannot put in an instruction | a real oddity worth reporting upstream; record the raw number |
-| `arch::pmu::initialize has not run` | the boot printed the line without running the probe, which is a code ordering bug | should be unreachable; `kernel_main` calls `init` immediately before `print_summary` |
+| `arch::pmu::initialize has not run` | the boot printed the line without running the probe, which is a code ordering bug | should be unreachable; `kernel_main` calls `initialize` immediately before `print_summary` |
 | no `cycles` line at all | the boot did not reach `arch::pmu::print_summary`, so this is a boot problem and not a PMU one | notes/visionfive2.md's failure-triage ladder |
 
 ### Step 3: is the number plausible?

@@ -14,7 +14,7 @@ use crate::{
     Flags, PageFormat, PageSize,
 };
 
-/// **What the eight PAT entries mean**, as `arch::x86_64::init` programs `IA32_PAT` on every core.
+/// **What the eight PAT entries mean**, as `arch::x86_64::initialize` programs `IA32_PAT` on every core.
 /// The same role as aarch64's `mair` module: the encoder below selects an entry by its `PWT`,
 /// `PCD` and `PAT` bits, and the value here is what that entry then means, so the two are one
 /// definition.
@@ -105,7 +105,7 @@ impl Ia32e {
         }
         // One execute permission, at whichever ring `U/S` names: XD only for a page nobody
         // executes, as on Sv39. A user page is not kernel-executable only while `CR4.SMEP` is set,
-        // which `arch::x86_64::init` sets on every core that offers it; this crate cannot check.
+        // which `arch::x86_64::initialize` sets on every core that offers it; this crate cannot check.
         if flags.is_kernel_executable() {
             bits |= SW_KERNEL_EXEC;
         } else if !flags.is_user_executable() {

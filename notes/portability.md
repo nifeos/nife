@@ -87,8 +87,8 @@ by glob re-export. The list was derived from the tree, not designed: every `arch
 portable kernel names, kept where aarch64, riscv64 and x86_64 all define it.
 
 Boot and per-CPU state:
-- `init()`: install this core's trap vectors; run on every core before anything can trap.
-- `isa::{init(ptr), get, print_summary}`: discover the ISA from the boot handoff (a device
+- `initialize()`: install this core's trap vectors; run on every core before anything can trap.
+- `isa::{initialize(ptr), get, print_summary}`: discover the ISA from the boot handoff (a device
   tree, or x86_64's boot information) and refuse a CPU the kernel cannot use.
 - `boot_cpu_id()`: the logical id of the boot core, which is not always 0.
 - `set_percpu(ptr)`, `percpu()`, `read_current_thread()`: the per-core block pointer, and
@@ -111,24 +111,24 @@ Context switch and per-thread registers:
   the other thread.
 - `thread_pointer::{hand_over, set_live}`: the user thread-pointer register, swapped at a
   switch and rewritten for a thread that sets its own.
-- `fp::{FpState, REGISTERS, init, enable, disable, is_enabled, save, restore, touch}`: lazy
-  FP state. `init` leaves FP trapped; `disable` does not scrub, the caller does.
+- `fp::{FpState, REGISTERS, initialize, enable, disable, is_enabled, save, restore, touch}`: lazy
+  FP state. `initialize` leaves FP trapped; `disable` does not scrub, the caller does.
 
 Traps and interrupts:
 - `exceptions::TrapFrame`: the saved user state, a layout shared with the arch's assembly.
-- `exceptions::{init, self_test}`.
+- `exceptions::{initialize, self_test}`.
 - `exceptions::{user_pc, set_user_arg}`: read a trapped thread's PC and write its return
   registers, through the frame at its kernel stack top.
 - `exceptions::{last_user_fault, USER_FAULTS, ROUTED_IRQS, SPURIOUS_IRQS}`: diagnostics.
 - `interrupts::{disable, restore, enable, is_enabled}`: `disable` returns the prior state
   and callers `restore` it; `enable` is for first enabling only.
-- `irq::{init, initialize_this_cpu, print_summary}`: the interrupt controller, then each core.
+- `irq::{initialize, initialize_this_cpu, print_summary}`: the interrupt controller, then each core.
 - `irq::enable(id)`: unmask a source the handler masked, at an `Irq` capability's ACK.
 - `irq::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
 - `irq::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board uses INTx.
 
 Time:
-- `timer::{init, frequency, interval, TICK_HZ}`: the periodic tick and its rate.
+- `timer::{initialize, frequency, interval, TICK_HZ}`: the periodic tick and its rate.
 - `timer::now()`: the raw counter, which keeps counting with interrupts masked.
 - `timer::{ticks, ticks_on(cpu), is_tick_pending}`: per-core tick counts and the pending bit.
 - `timer::spin_for(ticks)`: a busy-wait that works with interrupts masked.
@@ -138,7 +138,7 @@ Time:
 
 Memory:
 - `mmu::Format`: this architecture's page-table format from the `paging` crate.
-- `mmu::{init, initialize_secondary, print_summary}`: the kernel's tables, then each core onto them.
+- `mmu::{initialize, initialize_secondary, print_summary}`: the kernel's tables, then each core onto them.
 - `mmu::{phys_to_virt, virt_to_phys}`: the direct map, both ways.
 - `mmu::{map_page, unmap_page}`: one kernel page. Map refuses to overwrite and unmap
   invalidates the TLB, which is what holds break-before-make.
@@ -150,7 +150,7 @@ Memory:
   its own root register).
 - `mmu::map_current_user_page_frame(..)`: map an owned frame into the caller's space.
 - `mmu::{THREAD_STACK_AREA, PCI_ECAM_BUSES, PCI_IRQ_BASE}`: layout and bus constants.
-- `iommu::{init, is_active, print_summary, build_domain, attach, scope_of,
+- `iommu::{initialize, is_active, print_summary, build_domain, attach, scope_of,
   for_each_reserved_region}`: build a DMA domain in the unit's own format, bind a requester
   to it, and report firmware-reserved regions.
 

@@ -127,7 +127,7 @@ The dropped completion's buffer is not re-posted, because a bogus `id` does not 
 was. Each lie costs one receive buffer. That is the right trade: a device that lies has already
 stopped being a network card.
 
-The DMA-page layout (`RX_DESC` to `TX_USED`, at a 0x200 stride) restates the validator's
+The DMA-page layout (`RECEIVE_DESC` to `TRANSMIT_USED`, at a 0x200 stride) restates the validator's
 `DESC_OFF`, `AVAIL_OFF`, `USED_OFF` and `RING_BLOCK` as literals. The kernel aliases those
 constants, while `entropy.rs` and `crates/virtio`'s own net driver spell the same numbers again.
 Nothing checks the copies against the crate. Consuming the constants takes a `components` to

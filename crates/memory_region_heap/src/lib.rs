@@ -5,7 +5,7 @@
 //! #[global_allocator]
 //! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
 //! // first thing in _start:
-//! HEAP.init(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
+//! HEAP.initialize(MEMORY_REGION_SLOT, memory_region_heap::DEFAULT_BASE, 4 * 1024 * 1024);
 //! ```
 //!
 //! Name: provisional (lane/784-talc, 2026-10-21 UTC), for the type it holds; calef has not ruled

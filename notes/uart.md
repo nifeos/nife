@@ -42,7 +42,7 @@ You pay 10 bits to send 8. Start + 8 data + stop. So 115200 baud is ~11,520 byte
 not 14,400.
 
 8N1 (8 data bits, No parity, 1 stop bit) is the near-universal configuration, and it's
-what our `init()` sets up.
+what our `initialize()` sets up.
 
 ## Our code, line by line
 
