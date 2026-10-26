@@ -19,5 +19,6 @@ workspace = true
 # The identifier every entry and the header carry. This crate owns only how a GPT stores one
 # (mixed-endian, `guid::from_disk`/`to_disk`); the type and its text form are RFC 9562's, taken
 # from `uuid` with default features off (calef's "A" on #2548, §46 (thin primitives or whole
-# subsystems)).
+# subsystems)). The x86_64 kernel links it through this crate, so its `unsafe` is listed in
+# notes/kernel-dependency-unsafe.md.
 uuid = { version = "1.28.0", default-features = false }

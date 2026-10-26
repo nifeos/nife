@@ -68,7 +68,7 @@ repository and crates.io. No upstream named here carries a Kani harness.
 | `elf` | `elf` (cole14) | 2025-05-14; 2025-11-29 | none published | contribute |
 | `network_time_protocol` | `sntpc` | 2026-07-06; 2026-07-06 | none on AI | contribute |
 | `network_time_protocol` | `ntp-proto` | 2026-06-12; 2026-10-22 | dismisses heavily AI-written work | bug reports only, and it needs `tokio` |
-| `device_tree_blob` | `dtoolkit` | 2026-09-25; 2026-10-22 | Google's CLA | contribute (`fdt` is MPL-2.0) |
+| `device_tree_blob` | `dtoolkit` | 2026-09-25; 2026-10-22 | Google's CLA | contribute (`fdt` is MPL-2.0); measured in [`dtoolkit` against `device_tree_blob`](dtoolkit-against-device-tree-blob.md) |
 | `glob` | `wildmatch` | 2026-10-20; 2026-10-20 | none on AI | std only, and ours serves `no_std` grants |
 | `domain_name_system` | `hickory-proto`, `simple-dns` | 2026-09-10, 2026-07-26; both active | none on AI | contribute (`domain`'s NLnet Labs policy refuses LLM-written code) |
 

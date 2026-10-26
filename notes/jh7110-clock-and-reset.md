@@ -1,6 +1,8 @@
 # Programming a clock and a reset line, for the first time
 
-Milestone 220. `crates/jh7110_clock_and_reset` (the offsets, the plan, the device-tree query),
+Milestone 220 (this kernel drives no clock or reset controller, and the first real device will
+need one). `crates/jh7110_clock_and_reset` (the offsets, the plans, each tree's spellings),
+`crates/machine_discovery/src/jh7110/clock_and_reset.rs` (the device-tree walk),
 `kernel/src/drivers/jh7110_clock_and_reset.rs` (the stores), `kernel/src/user/entropy_service.rs` (the caller).
 
 **This has never run against silicon.** QEMU's riscv64 `virt` machine has no clock or reset
@@ -113,12 +115,12 @@ Three things make the clock controller a stronger case for that split than NVMe 
 
 ### The one genuinely dangerous thing here, and what stops it
 
-`jh7110_clock_and_reset::discover` **never fails to produce an address**. A tree that names no controller gets
-`STG_BASE` (`0x1023_0000`) with `from_tree: false`. That is deliberate: radon's firmware tree is
-already known to omit and misdescribe things, and a bench session that comes back with "no
-controller node, nothing attempted" has spent a trip to the machine and learned nothing. Two
-independently published trees agree on the number, which is a stronger warrant than most
-device-tree reads get.
+`machine_discovery::jh7110::clock_and_reset::discover` **never fails to produce an address**. A tree
+that names no controller gets `STG_BASE` (`0x1023_0000`) with `from_tree: false`. That is
+deliberate: radon's firmware tree is already known to omit and misdescribe things, and a bench
+session that comes back with "no controller node, nothing attempted" has spent a trip to the machine
+and learned nothing. Two independently published trees agree on the number, which is a stronger
+warrant than most device-tree reads get.
 
 But a caller that took that answer unconditionally would store to `0x1023_0000` on every board
 this kernel boots, and on QEMU's `virt` that address is unmapped. So the guard is one rung up
@@ -136,8 +138,9 @@ from a comment:
 
 ### How a window is found
 
-`discover`, `discover_aon` and `discover_sys` try three spellings, mainline's first, as
-`jh7110_entropy::discover` does. A tree that carries the standardized binding is describing itself
+`discover`, `discover_aon` and `discover_sys` (in `machine_discovery::jh7110::clock_and_reset`)
+try the three spellings of a `jh7110_clock_and_reset::Window`, mainline's first, as the TRNG's
+discovery does. A tree that carries the standardized binding is describing itself
 in that binding's language, so it is the one to believe. The two vendor nodes carry several windows
 and are indexed by `reg-names` rather than by position, because a position that happens to be right
 today is a fact nobody wrote down. `pmic_bus` reads the same way, and one id bound serves both

@@ -6,7 +6,7 @@
 //! `stmmac/dwmac4.h` and [`CHAN_RX_CONTROL_RBSZ_SHIFT`] from U-Boot's `dwc_eth_qos.h`. The MAC and
 //! MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring bases
 //! and the controller's software reset, and there is no IOMMU, so a process given that page can
-//! repoint a ring and reset the MAC. See notes/designware-ethernet/the-hardware.md.
+//! repoint a ring and reset the MAC.
 
 /// MAC configuration.
 pub(crate) const MAC_CONF: u32 = 0x0000;

@@ -2,25 +2,35 @@
 name = "e1000e"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "Intel e1000e-family (82574L, I219) network controller logic: registers, descriptors and ring logic behind small traits, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# no_std for the kernel and for `net_stack`, std for host tests, like every pure-logic crate under §7 (the testing harness). It
-# owns what the two halves of the Intel `e1000e`-family driver agree on (milestone 494 (a driver for the network card a PC actually has)): register
-# offsets and bits, the descriptor formats, the DMA region's layout, the spawn handoff, and the
-# whole receive and transmit ring logic behind two small traits. The kernel supplies the volatile
-# register accesses at bring-up and `net_stack` supplies them on the data path; everything they
-# compute is here, host-tested against a simulated device and reachable by the model checker.
-#
-# Name: PROVISIONAL (milestone 494's lane, 2026-10-04). `e1000e` is the family name QEMU's
-# `-device e1000e` and Linux's driver directory both use, so it arrives across somebody else's
-# interface (design/naming.md, the acronym test's second paragraph). An architect may prefer a
-# name for what it is rather than whose driver it resembles.
-
-[lints]
-workspace = true
+# no_std for a kernel and a network stack, std for host tests. It owns what the two halves of an
+# Intel e1000e-family driver agree on: register offsets and bits, the descriptor formats, the DMA
+# region's layout, the spawn handoff, and the whole receive and transmit ring logic behind two small
+# traits. The caller supplies the volatile register accesses; everything they compute is here,
+# host-tested against a simulated device and reachable by the model checker.
 
 [dependencies]
 # For the two virtual addresses the kernel maps and `net_stack` reads, which rule 7 puts here
 # rather than in a "must match" comment on each side.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

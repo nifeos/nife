@@ -97,9 +97,7 @@ impl Frame {
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's
     /// bounds check rather than running past the frame.
     pub fn payload_write(&self, bytes: &[u8]) {
-        for (i, &b) in bytes.iter().enumerate() {
-            self.window.w8(OFF_PAYLOAD + i as u64, b);
-        }
+        self.window.copy_from_slice(OFF_PAYLOAD, bytes);
     }
 
     /// Read up to `n` bytes of payload into `out`, returning how many were read. `n` is usually
@@ -107,9 +105,7 @@ impl Frame {
     /// `out.len()` is the bounds check's first line rather than the caller's job.
     pub fn payload_read(&self, n: usize, out: &mut [u8]) -> usize {
         let n = n.min(out.len());
-        for (i, b) in out[..n].iter_mut().enumerate() {
-            *b = self.window.r8(OFF_PAYLOAD + i as u64);
-        }
+        self.window.copy_to_slice(OFF_PAYLOAD, &mut out[..n]);
         n
     }
 }

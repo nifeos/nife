@@ -4,10 +4,10 @@
 2026-09-27 (UTC): "What I want are good metrics for capturing the stability of our interface."
 calef, 2026-10-16 (UTC): the headline is the boundary a program outside the tree is written
 against, not every public item in the tree. The numbers are on [the metrics
-page](project-metrics.md#interface-stability), per crate in [the
+page](project-metrics.md#interface-stability), per crate and per package in [the
 appendix](project-metrics/interface-stability.md), and produced by
-`helpers/interface_stability.py`. The note's name, the program's, both CSVs' and every column's
-are provisional.*
+`helpers/interface_stability.py`. The note's name, the program's, the three CSVs' and every
+column's are provisional.*
 
 ## What the interface is
 
@@ -55,6 +55,7 @@ commit (the same commit `script/metrics` picks) is compared with the previous we
 | `interface_contract_commits`, `_crossing`, `_cochange_pct` | co-change, below |
 | `interface_cochange_pct_excluding_mass` | the same without mass mechanical commits |
 | `interface_crates_unmeasured` | crates rustdoc could not document on either side |
+| `interface_package_commits`, `_crossing`, `_cochange_pct` | per-package co-change, below, each commit once |
 
 An item is anything a consumer names. That is a function, a constant or a type, and each struct
 field, enum variant, trait item, inherent method, and trait a type implements. "Changed" means its
@@ -63,8 +64,8 @@ a constant's spelling (`1 << 2` for `4`) are not part of it. A crate rename is o
 per item, because it is one decision and every consumer fixes it with one line.
 
 **How it is read.** rustdoc's JSON output, on the pinned nightly, for
-`aarch64-unknown-none-softfloat`, over a `git archive` of each week's tree in `target/`. Nothing
-is checked out. The toolchain is always HEAD's, so every week's JSON has one format. A constant
+`aarch64-unknown-none-softfloat`, over a `git archive` of each week's tree in `target/`. The helper
+checks nothing out. The toolchain is always HEAD's, so every week's JSON has one format. A constant
 rustdoc cannot evaluate (it writes `_` for `*b"CRKR0002"`) is read from the source its span points
 at, which is how the one format bump in the history was found. Old crate names follow git's rename
 detection to today's name, preferring the renamed `src/lib.rs` over the renamed `Cargo.toml`,
@@ -96,6 +97,30 @@ contract's older directory names, which raises the window to 378 commits and mov
 may not compile on next month's, and a past number must not change for that reason. `--backfill`
 restates every week from the per-week surface caches, rebuilding any week whose cache is missing
 or does not cover every crate in the interface.
+
+## Co-change per package
+
+§235 (the OS is built and updated from packages, and the tree divides by what releases together)
+sizes a home by what changes together, and no package moves before this measurement exists. A package is
+what §235 and `packages/` mean by one: a `packages/*.package.toml` file, which claims crate
+directories, program sources and paths. Each Cargo package has a row too, because a crate
+released on its own (milestone 857 (crates released on their own)) leaves as one.
+
+The method is the contracts' co-change with each unit in the contracts' place. A commit touches a
+unit when one of its non-documentation paths belongs to it. It crosses when another of those paths
+does not, and it touches another when that path belongs to a different unit of the same kind. A
+path that `packages/homes.toml` claims, such as `script/`, crosses but is no other package. The
+weekly cells count each commit once: commits touching any package, and those crossing one.
+
+`notes/project-metrics/interface-stability-packages.csv` holds one row per unit for each week a commit
+touched it. `kind` is `package` or `crate`, then `commits`, `commits_crossing`,
+`commits_touching_another`, and the first two again without mass mechanical commits. The appendix
+lists every package with the partner it most often shares a commit with, and the release-track
+crates. These cells need no build, so every run restates them from git under today's declarations.
+
+The first reading, 2026W29 to 2026W43: 34% of commits touching a package crossed one over the last
+four weeks, down from 65% in 2026W29. With mass changes excluded, only `kernel` crosses on fewer
+than half its commits. The commonest pair is `kernel` and `contracts`, in 295 commits.
 
 ## The amendment ledger
 
@@ -183,5 +208,16 @@ either, and taking one is a §46 (thin primitives or whole subsystems) decision 
   member, so neither its life nor its deletion is counted.
 - The first-half co-change finding in the maintainer's measurement (87.8% against 76.5%) used
   today's directory names only; this series' early weeks include older names and read differently.
+- Per-package co-change places a past path by today's declarations, following crate directory
+  renames only. A path that has since gone, or moved outside `crates/`, belongs to no unit,
+  so a commit touching only such paths counts for nothing, and one touching them beside a unit crosses.
+- A workspace file (`Cargo.lock`, the root `Cargo.toml`) is outside every unit, so adding a
+  dependency crosses even when no other code moved. After a split the same commit would still
+  touch two repositories' lock files, so it stays counted.
+- A crate's figure rests on a few dozen commits at most, and a lane editing several release-track
+  crates at once makes them co-change with each other by schedule, not by coupling.
+- The contracts' walk counts a documentation file inside a contract directory (a crate's
+  `README.md`) as a contract commit, while the method excludes documentation from both sides and
+  the per-package walk does. A commit touching only such a file counts there and not here.
 - `--update` recomputes only the current week and missing weeks. A ledger entry dated in a past
   week reaches the series only on a `--backfill`.

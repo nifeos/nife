@@ -129,7 +129,11 @@ copy, and each falsification patch, applied with `-p3`, turns its harness red. I
 and files only, plus 25 lines citing this tree: 12 `§N`, 8 `milestone N`, 2 tree paths, 2 naming
 calef and 1 provenance block.
 
-Name: `non_volatile_memory_express` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `non_volatile_memory_express` ratified (checked 2026-10-25).
+
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, the build passes
+on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
+ratification pass. With Kani, every harness proves and every falsification patch fails its harness.
 
 ## Review before release
 
@@ -152,6 +156,45 @@ carry a ratified name. Before the move, `script/crate-standalone non_volatile_me
 whose falsification patch makes it fail. No crate publishes without Kani harnesses covering its
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
+
+- `src/lib.rs`, the crate doc: the design is in notes/non-volatile-memory-express.md, and the
+  protocol walk-through is its section "How the protocol works, in one sitting".
+- `src/lib.rs`, `Command::flush`: the silent yes a flush must never give is the one milestone 55
+  (Time Machine: SMB3 with Apple's extensions, and mDNS)'s verb exists to forbid.
+- `src/lib.rs`, `lba_format_shift`: the bench rehearsal belongs to milestone 261 (the NVMe driver
+  leaves the kernel, on the machine that can finally confine it). The format condition is the second
+  night-of condition of its fatal risk 6, for the Micron drive.
+- `src/lib.rs`, the admin and data plane banner: the split is milestone 261's and §86 (whether an
+  NVMe driver can leave the kernel, and what capability would let it)'s option 2a. Its history is
+  notes/non-volatile-memory-express.md, "The driver left the kernel, 2026-09-17".
+- `src/lib.rs`, `MAX_DSTRD`: the one page of BAR0 is §86's option 2a, and the bound's bug is in
+  the BUGS of notes/non-volatile-memory-express.md.
+- `src/lib.rs`, `CLIENT_WINDOWS`: the windows came from milestone 834 (ioping on nife and Linux).
+  calef ruled "Per-client window" on nifeos/nife#2371, 2026-10-18 23:06 UTC. A frame per client
+  channel is milestone 599 (a frame per filesystem client channel)'s pattern.
+- `src/lib.rs`, `can_write`: calef ruled the disk tree a read-only view on 2026-10-18 at
+  21:36 UTC.
+- `src/lib.rs`, `client_window`: the corruption is `redoxfs_server`'s lesson from milestone 599.
+- `src/lib.rs`, `ESCAPE_MAGIC`: its caller is milestone 261's Outstanding item, under milestone
+  202 (every confinement test is a ritual until somebody breaks the confinement and watches it
+  fail)'s convention.
+- `src/lib.rs`, the `verification` module: `script/verify` runs the proofs, and
+  notes/verification.md describes them.
+- `src/lib.rs`, `the_spawn_handoff_round_trips`: the handoff is milestone 261's, and the split is
+  §86's option 2a.
+- `src/lib.rs`, `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: the data plane
+  that leans on this bounds check is §86's option 2a.
+- `Cargo.toml`, the manifest comment: the crate is a pure-logic crate under §7 (testing: QEMU
+  harness + host-testable crates, from commit one).
+- `Cargo.toml`, the `confinement_attackers` feature: calef ratified the feature name on 2026-10-05
+  (#1647). `components/confinement_attackers` (the server that reads `ESCAPE_MAGIC`) and the
+  kernel's `system_tests` (the wiring that writes it) turn it on, and nothing a shipped image is
+  built from does. The `documentation` build also compiles the crate with it.
 
 ## BUGS
 

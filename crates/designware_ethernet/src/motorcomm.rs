@@ -6,7 +6,7 @@
 //! `drivers/net/phy/motorcomm.c`, read as facts about the part; why this driver writes them is at
 //! each. The vendor tree states register values and mainline states physical quantities, and for
 //! `gmac0` they agree. [`Settings::FALLBACK_GMAC0`] is used only when a tree states neither, and
-//! [`Settings::source`] says which happened. See notes/designware-ethernet/the-hardware.md.
+//! [`Settings::source`] says which happened.
 
 use crate::mdio::{self, Mdio};
 

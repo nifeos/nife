@@ -6,8 +6,7 @@
 //! the poison when the device writes), queue [`probe_frame`], poll receive descriptor 0 for up to
 //! [`WAIT_US`], then read the channel status register. [`classify`] compares the two accounts; the
 //! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
-//! fails in a way that names the direction. See notes/designware-ethernet.md, "Is radon's DMA
-//! coherent? Yes, by measurement".
+//! fails in a way that names the direction.
 
 use crate::{
     CRC_BYTES, DataPlane, RDES3_OWN, RX_ENTRIES, Region, RxVerdict, TDES3_OWN, Tails, TxError,
