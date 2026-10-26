@@ -99,9 +99,10 @@ A kernel does almost nothing else.
 | `CurrentEL` | Which exception level am I running at? | 2 |
 | `HCR_EL2`, `SPSR_EL2`, `ELR_EL2`, `CNTVOFF_EL2`, `VMPIDR_EL2` (and the rest of `enter_el1`'s list) | Only touched when firmware entered us at EL2, on the way down to EL1 | 127 |
 
-The `aarch64-cpu` crate is a typed Rust wrapper over exactly these, so we write
-`SCTLR_EL1.modify(SCTLR_EL1::M::Enable)` instead of hand-writing assembly and getting a
-bit position wrong.
+`kernel/src/arch/aarch64/instructions.rs` holds one accessor for each of these the Rust side
+touches, so a proof can stub it. The field constants sit beside their users (`SCTLR_M` and the
+`TCR_*` fields in `mmu.rs`), each citing the Arm Architecture Reference Manual by the register's
+heading, so a bit position is checked against its source.
 
 ## Control flow: `b`, `bl`, `ret`
 

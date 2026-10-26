@@ -247,9 +247,9 @@ manual_let_else = "warn"
 #
 # All 43 hits in this tree are the same shape, and it is a shape this codebase chose on purpose:
 #
-#     // `aarch64_cpu` gives CNTKCTL_EL1 no named fields, so set the bit by hand: EL0VCTEN is bit 1.
+#     // EL0VCTEN is bit 1 (Arm DDI 0487, CNTKCTL_EL1).
 #     const EL0VCTEN: u64 = 1 << 1;
-#     CNTKCTL_EL1.set(CNTKCTL_EL1.get() | EL0VCTEN);
+#     instructions::write_cntkctl(instructions::read_cntkctl() | EL0VCTEN);
 #
 # The constant sits beside its use, under the comment that explains it. Obeying the lint would hoist
 # all 43 to the tops of their functions, separating each from the paragraph that says what it is and
