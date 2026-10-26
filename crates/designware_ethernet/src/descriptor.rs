@@ -89,9 +89,9 @@ pub const TDES3_ES: u32 = 1 << 15;
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
 /// `rx_descriptor_words`.
-pub const fn receive_descriptor_words(buffer_phys: u64) -> [u64; 2] {
+pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] {
     [
-        buffer_phys,
+        buffer_physical_address,
         ((RDES3_OWN | RDES3_IOC | RDES3_BUF1V) as u64) << 32,
     ]
 }
@@ -102,11 +102,14 @@ pub const fn receive_descriptor_words(buffer_phys: u64) -> [u64; 2] {
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
 /// `tx_descriptor_words`.
-pub const fn transmit_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
-    let len = len as u32 & TDES3_FRAME_LEN;
-    let des2 = (len & TDES2_BUF1_LEN) | TDES2_IC;
-    let des3 = TDES3_OWN | TDES3_FS | TDES3_LS | len;
-    [buffer_phys, des2 as u64 | (des3 as u64) << 32]
+pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {
+    let length = length as u32 & TDES3_FRAME_LEN;
+    let des2 = (length & TDES2_BUF1_LEN) | TDES2_IC;
+    let descriptor_word_3 = TDES3_OWN | TDES3_FS | TDES3_LS | length;
+    [
+        buffer_physical_address,
+        des2 as u64 | (descriptor_word_3 as u64) << 32,
+    ]
 }
 
 /// What a receive descriptor's word 3 says, judged.
@@ -142,21 +145,22 @@ pub enum ReceiveVerdict {
 /// ```
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_verdict`.
-pub fn receive_verdict(des3: u32, room: usize) -> ReceiveVerdict {
-    if des3 & RDES3_OWN != 0 {
+pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
+    if descriptor_word_3 & RDES3_OWN != 0 {
         return ReceiveVerdict::NotYet;
     }
-    let whole = des3 & (RDES3_FD | RDES3_LD) == RDES3_FD | RDES3_LD;
-    if des3 & RDES3_CTXT != 0 || !whole || des3 & RDES3_ES != 0 {
+    let whole = descriptor_word_3 & (RDES3_FD | RDES3_LD) == RDES3_FD | RDES3_LD;
+    if descriptor_word_3 & RDES3_CTXT != 0 || !whole || descriptor_word_3 & RDES3_ES != 0 {
         return ReceiveVerdict::Drop;
     }
-    let wire = (des3 & RDES3_LENGTH) as usize;
-    let Some(len) = wire.checked_sub(CRC_BYTES) else {
+    let wire = (descriptor_word_3 & RDES3_LENGTH) as usize;
+    let Some(length) = wire.checked_sub(CRC_BYTES) else {
         return ReceiveVerdict::Drop;
     };
-    let fits = (14..=MAXIMUM_FRAME).contains(&len) && len <= room && wire as u64 <= BUFFER_SIZE;
+    let fits =
+        (14..=MAXIMUM_FRAME).contains(&length) && length <= room && wire as u64 <= BUFFER_SIZE;
     if !fits {
         return ReceiveVerdict::Drop;
     }
-    ReceiveVerdict::Frame(len)
+    ReceiveVerdict::Frame(length)
 }

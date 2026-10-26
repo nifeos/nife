@@ -66,17 +66,17 @@ pub enum Error {
         /// The PHY addressed.
         physical_layer_device: u8,
         /// The register addressed.
-        reg: u8,
+        register: u8,
     },
 }
 
 /// **An MDIO command word**: the clock range, the PHY and register addresses, the operation, and
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
 /// rather than spilling into the neighbors.
-pub const fn command(physical_layer_device: u8, reg: u8, write: bool) -> u32 {
+pub const fn command(physical_layer_device: u8, register: u8, write: bool) -> u32 {
     (CR_500_800 << CR_SHIFT)
         | (((physical_layer_device & 0x1f) as u32) << PA_SHIFT)
-        | (((reg & 0x1f) as u32) << RDA_SHIFT)
+        | (((register & 0x1f) as u32) << RDA_SHIFT)
         | if write { GOC_WRITE } else { GOC_READ }
         | GB
 }
@@ -88,17 +88,17 @@ pub const fn command(physical_layer_device: u8, reg: u8, write: bool) -> u32 {
 /// `Mdio`.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
-    /// Read register `reg` of the PHY at `physical_layer_device`.
-    fn read(&mut self, physical_layer_device: u8, reg: u8) -> Result<u16, Error>;
-    /// Write `v` to register `reg` of the PHY at `physical_layer_device`.
-    fn write(&mut self, physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error>;
+    /// Read register `register` of the PHY at `physical_layer_device`.
+    fn read(&mut self, physical_layer_device: u8, register: u8) -> Result<u16, Error>;
+    /// Write `v` to register `register` of the PHY at `physical_layer_device`.
+    fn write(&mut self, physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error>;
 }
 
 /// The MAC's MDIO registers, through whatever [`Hardware`] reaches the controller.
 pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
 impl<H: Hardware> Bus<'_, H> {
-    fn wait(&mut self, physical_layer_device: u8, reg: u8) -> Result<(), Error> {
+    fn wait(&mut self, physical_layer_device: u8, register: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
             if self.0.read(registers::MAC_MDIO_ADDR) & GB == 0 {
@@ -107,7 +107,7 @@ impl<H: Hardware> Bus<'_, H> {
             if waited >= COMMAND_LIMIT_US {
                 return Err(Error::Timeout {
                     physical_layer_device,
-                    reg,
+                    register,
                 });
             }
             self.0.delay_us(POLL_US);
@@ -117,25 +117,25 @@ impl<H: Hardware> Bus<'_, H> {
 }
 
 impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
-    fn read(&mut self, physical_layer_device: u8, reg: u8) -> Result<u16, Error> {
+    fn read(&mut self, physical_layer_device: u8, register: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
-        self.wait(physical_layer_device, reg)?;
+        self.wait(physical_layer_device, register)?;
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device, reg, false),
+            command(physical_layer_device, register, false),
         );
-        self.wait(physical_layer_device, reg)?;
+        self.wait(physical_layer_device, register)?;
         Ok(self.0.read(registers::MAC_MDIO_DATA) as u16)
     }
 
-    fn write(&mut self, physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
-        self.wait(physical_layer_device, reg)?;
+    fn write(&mut self, physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error> {
+        self.wait(physical_layer_device, register)?;
         self.0.write(registers::MAC_MDIO_DATA, u32::from(v));
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device, reg, true),
+            command(physical_layer_device, register, true),
         );
-        self.wait(physical_layer_device, reg)
+        self.wait(physical_layer_device, register)
     }
 }
 
@@ -148,9 +148,9 @@ pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device: u8,
 ) -> Result<u32, Error> {
-    let hi = bus.read(physical_layer_device, PHYSID1)?;
-    let lo = bus.read(physical_layer_device, PHYSID2)?;
-    Ok(u32::from(hi) << 16 | u32::from(lo))
+    let high = bus.read(physical_layer_device, PHYSID1)?;
+    let low = bus.read(physical_layer_device, PHYSID2)?;
+    Ok(u32::from(high) << 16 | u32::from(low))
 }
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
@@ -195,7 +195,7 @@ mod tests {
     /// busy bit stays set for `busy_reads` reads of the address register, and a read command
     /// leaves `answer` in the data register when it completes.
     struct Pair {
-        addr: u32,
+        address: u32,
         data: u32,
         answer: u16,
         busy_reads: u32,
@@ -207,7 +207,7 @@ mod tests {
     impl Pair {
         fn new(answer: u16, busy_reads: u32) -> Pair {
             Pair {
-                addr: 0,
+                address: 0,
                 data: 0,
                 answer,
                 busy_reads,
@@ -219,31 +219,31 @@ mod tests {
     }
 
     impl Hardware for Pair {
-        fn read(&mut self, off: u32) -> u32 {
-            match off {
+        fn read(&mut self, offset: u32) -> u32 {
+            match offset {
                 registers::MAC_MDIO_ADDR => {
-                    if self.addr & GB != 0 && !self.stuck {
+                    if self.address & GB != 0 && !self.stuck {
                         if self.busy_reads == 0 {
-                            self.addr &= !GB;
-                            if self.addr & (0x3 << 2) == GOC_READ {
+                            self.address &= !GB;
+                            if self.address & (0x3 << 2) == GOC_READ {
                                 self.data = u32::from(self.answer);
                             }
                         } else {
                             self.busy_reads -= 1;
                         }
                     }
-                    self.addr
+                    self.address
                 }
                 registers::MAC_MDIO_DATA => self.data,
-                _ => panic!("MDIO touched {off:#x}, outside its two registers"),
+                _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
             }
         }
-        fn write(&mut self, off: u32, v: u32) {
-            self.writes.push((off, v));
-            match off {
-                registers::MAC_MDIO_ADDR => self.addr = v,
+        fn write(&mut self, offset: u32, v: u32) {
+            self.writes.push((offset, v));
+            match offset {
+                registers::MAC_MDIO_ADDR => self.address = v,
                 registers::MAC_MDIO_DATA => self.data = v,
-                _ => panic!("MDIO wrote {off:#x}, outside its two registers"),
+                _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
         fn delay_us(&mut self, us: u64) {
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn a_command_still_busy_from_someone_else_is_waited_out_not_overwritten() {
         let mut hardware = Pair::new(0x1234, 2);
-        hardware.addr = command(7, 9, false); // firmware's read, in flight
+        hardware.address = command(7, 9, false); // firmware's read, in flight
         assert_eq!(Bus(&mut hardware).read(0, PHYSID1), Ok(0x1234));
         // Nothing was written until the firmware's command had cleared its busy bit.
         assert_eq!(hardware.writes.len(), 1);
@@ -294,12 +294,12 @@ mod tests {
     fn a_busy_bit_that_never_clears_is_a_bounded_timeout_naming_the_access() {
         let mut hardware = Pair::new(0, 0);
         hardware.stuck = true;
-        hardware.addr = GB;
+        hardware.address = GB;
         assert_eq!(
             Bus(&mut hardware).read(3, BMSR),
             Err(Error::Timeout {
                 physical_layer_device: 3,
-                reg: BMSR
+                register: BMSR
             })
         );
         assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
@@ -313,7 +313,7 @@ mod tests {
             Bus(&mut hardware).write(2, BMCR, 1),
             Err(Error::Timeout {
                 physical_layer_device: 2,
-                reg: BMCR
+                register: BMCR
             })
         );
         assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
@@ -327,16 +327,16 @@ mod tests {
     }
 
     impl ManagementDataInputOutput for Latched {
-        fn read(&mut self, _physical_layer_device: u8, reg: u8) -> Result<u16, Error> {
-            if reg == BMSR {
+        fn read(&mut self, _physical_layer_device: u8, register: u8) -> Result<u16, Error> {
+            if register == BMSR {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
                 return Ok(if up { BMSR_LINK } else { 0 });
             }
-            Ok(self.registers[reg as usize])
+            Ok(self.registers[register as usize])
         }
-        fn write(&mut self, _physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
-            self.registers[reg as usize] = v;
+        fn write(&mut self, _physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error> {
+            self.registers[register as usize] = v;
             Ok(())
         }
     }

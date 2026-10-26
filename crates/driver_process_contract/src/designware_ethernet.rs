@@ -40,7 +40,7 @@ pub struct Handoff {
     pub station_address: [u8; 6],
     /// The DMA region's physical base. Descriptors speak physical addresses (there is no IOMMU
     /// on the JH7110), so the process cannot compute them from its virtual window.
-    pub data_plane_phys: u64,
+    pub data_plane_physical_address: u64,
 }
 
 impl Handoff {
@@ -52,7 +52,7 @@ impl Handoff {
         station_address[..6].copy_from_slice(&self.station_address);
         [
             ROLE_TAG | u64::from_le_bytes(station_address) << 16,
-            self.data_plane_phys,
+            self.data_plane_physical_address,
         ]
     }
 
@@ -66,7 +66,7 @@ impl Handoff {
     ///
     /// let h = Handoff {
     ///     station_address: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
-    ///     data_plane_phys: 0x4012_3000,
+    ///     data_plane_physical_address: 0x4012_3000,
     /// };
     /// let [role, phys] = h.pack();
     /// assert_eq!(Handoff::unpack(role, phys), Some(h));
@@ -86,7 +86,7 @@ impl Handoff {
         }
         Some(Handoff {
             station_address,
-            data_plane_phys: arg1,
+            data_plane_physical_address: arg1,
         })
     }
 
@@ -106,7 +106,7 @@ mod tests {
     fn the_handoff_refuses_a_multicast_or_absent_address() {
         let h = Handoff {
             station_address: [0x01, 0, 0, 0, 0, 1],
-            data_plane_phys: 0x4000_0000,
+            data_plane_physical_address: 0x4000_0000,
         };
         let [r, p] = h.pack();
         assert_eq!(Handoff::unpack(r, p), None);
@@ -126,7 +126,7 @@ mod tests {
     fn the_handoff_round_trips_and_each_refusal_stands_alone() {
         let h = Handoff {
             station_address: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
-            data_plane_phys: 0x4800_0000,
+            data_plane_physical_address: 0x4800_0000,
         };
         let [r, p] = h.pack();
         assert!(Handoff::is_role(r));

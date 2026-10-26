@@ -9,10 +9,10 @@
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing `Hw`.
 pub trait Hardware {
-    /// Read the 32-bit register at `off`.
-    fn read(&mut self, off: u32) -> u32;
-    /// Write `v` to the 32-bit register at `off`.
-    fn write(&mut self, off: u32, v: u32);
+    /// Read the 32-bit register at `offset`.
+    fn read(&mut self, offset: u32) -> u32;
+    /// Write `v` to the 32-bit register at `offset`.
+    fn write(&mut self, offset: u32, v: u32);
     /// Wait at least `us` microseconds.
     fn delay_us(&mut self, us: u64);
 }

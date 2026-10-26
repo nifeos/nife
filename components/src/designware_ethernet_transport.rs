@@ -85,7 +85,7 @@ pub(crate) struct DesignWareNic {
 impl DesignWareNic {
     /// Post the receive buffers and clear the transmit ring; the channels are already running.
     pub fn bring_up(handoff: Handoff) -> DesignWareNic {
-        let mut plane = DataPlane::new(handoff.data_plane_phys);
+        let mut plane = DataPlane::new(handoff.data_plane_physical_address);
         plane.start(&mut Plane, &mut Channel);
         DesignWareNic {
             plane,

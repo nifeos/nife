@@ -111,9 +111,9 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
 /// **The station address in the two address registers**, OpenBSD's `dwqe_lladdr_read` byte order,
 /// or `None` when they hold nothing a station could own: all zero or all ones (the reset value),
 /// or a multicast address.
-pub fn station_address(hi: u32, lo: u32) -> Option<[u8; 6]> {
-    let [a, b, c, d] = lo.to_le_bytes();
-    let [e, f, _, _] = hi.to_le_bytes();
+pub fn station_address(high: u32, low: u32) -> Option<[u8; 6]> {
+    let [a, b, c, d] = low.to_le_bytes();
+    let [e, f, _, _] = high.to_le_bytes();
     let station_address = [a, b, c, d, e, f];
     if station_address == [0; 6] || station_address == [0xff; 6] || a & 1 != 0 {
         return None;
@@ -202,18 +202,18 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
     mode
 }
 
-/// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at `phys`,
-/// with tail pointers that only carry the low 32 bits?
+/// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at
+/// `physical_address`, with tail pointers that only carry the low 32 bits?
 pub(crate) const fn region_in_reach(
-    phys: u64,
+    physical_address: u64,
     bytes: u64,
     direct_memory_access_address_bits: u8,
 ) -> bool {
-    let Some(end) = phys.checked_add(bytes) else {
+    let Some(end) = physical_address.checked_add(bytes) else {
         return false;
     };
     let last = end - 1;
-    last >> direct_memory_access_address_bits == 0 && phys >> 32 == last >> 32
+    last >> direct_memory_access_address_bits == 0 && physical_address >> 32 == last >> 32
 }
 
 /// **Configure a controller just reset**, with nothing started: the DMA's bus mode, channel 0's
@@ -324,9 +324,9 @@ pub fn configure(
     );
     hardware.write(registers::MAC_RXQ_CTRL0, registers::MAC_RXQ_CTRL0_Q0_DCB);
 
-    let (hi, lo) = address_words(station_address);
-    hardware.write(registers::MAC_ADDR0_HI, hi);
-    hardware.write(registers::MAC_ADDR0_LO, lo);
+    let (high, low) = address_words(station_address);
+    hardware.write(registers::MAC_ADDR0_HI, high);
+    hardware.write(registers::MAC_ADDR0_LO, low);
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
     hardware.write(registers::MAC_PACKET_FILTER, 0);
 
@@ -431,32 +431,37 @@ mod tests {
     use crate::jh7110::BUS;
     use crate::sim::{Memory, NetworkInterfaceController};
 
-    const PHYS: u64 = 0x4800_0000;
+    const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
 
     #[test]
     fn a_reset_that_completes_reports_how_long_it_took() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         // The fifth read sees the bit clear, after four 10 µs waits.
         nic.set_reset_polls(5);
         let waited = soft_reset(&mut nic).unwrap();
         assert_eq!(waited, 40);
-        assert_eq!(nic.reg(registers::DMA_MODE) & registers::DMA_MODE_SWR, 0);
+        assert_eq!(
+            nic.register(registers::DMA_MODE) & registers::DMA_MODE_SWR,
+            0
+        );
     }
 
     #[test]
     fn a_reset_with_no_receive_clock_times_out_rather_than_hanging() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         nic.stop_receive_clock();
         assert_eq!(soft_reset(&mut nic), Err(Error::ResetTimeout));
     }
 
     #[test]
     fn the_station_address_round_trips_through_its_registers() {
-        let (hi, lo) = address_words(STATION_ADDRESS);
-        assert_eq!(hi, 0x2c47);
-        assert_eq!(lo, 0x0039_cf6c);
-        assert_eq!(station_address(hi, lo), Some(STATION_ADDRESS));
+        let (high, low) = address_words(STATION_ADDRESS);
+        assert_eq!(high, 0x2c47);
+        assert_eq!(low, 0x0039_cf6c);
+        assert_eq!(station_address(high, low), Some(STATION_ADDRESS));
         assert_eq!(station_address(0xffff_ffff, 0xffff_ffff), None);
         assert_eq!(station_address(0, 0), None);
         assert_eq!(station_address(0, 1), None, "multicast");
@@ -489,52 +494,56 @@ mod tests {
 
     #[test]
     fn configure_programs_the_rings_with_nothing_available_and_every_interrupt_masked() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
-        assert_eq!(nic.reg(registers::CHAN_RX_BASE), PHYS as u32);
+        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         assert_eq!(
-            nic.reg(registers::CHAN_TX_BASE),
-            (PHYS + layout::TRANSMIT_RING) as u32
+            nic.register(registers::CHAN_RX_BASE),
+            PHYSICAL_ADDRESS as u32
         );
         assert_eq!(
-            nic.reg(registers::CHAN_RX_TAIL),
-            nic.reg(registers::CHAN_RX_BASE)
+            nic.register(registers::CHAN_TX_BASE),
+            (PHYSICAL_ADDRESS + layout::TRANSMIT_RING) as u32
         );
         assert_eq!(
-            nic.reg(registers::CHAN_TX_TAIL),
-            nic.reg(registers::CHAN_TX_BASE)
+            nic.register(registers::CHAN_RX_TAIL),
+            nic.register(registers::CHAN_RX_BASE)
         );
-        assert_eq!(nic.reg(registers::CHAN_RX_RING_LEN), 15);
         assert_eq!(
-            nic.reg(registers::CHAN_RX_CONTROL) >> 1 & registers::CHAN_RX_CONTROL_RBSZ_MASK,
+            nic.register(registers::CHAN_TX_TAIL),
+            nic.register(registers::CHAN_TX_BASE)
+        );
+        assert_eq!(nic.register(registers::CHAN_RX_RING_LEN), 15);
+        assert_eq!(
+            nic.register(registers::CHAN_RX_CONTROL) >> 1 & registers::CHAN_RX_CONTROL_RBSZ_MASK,
             2048
         );
-        assert_eq!(nic.reg(registers::CHAN_INTR_ENA), 0);
-        assert_eq!(nic.reg(registers::MAC_INT_EN), 0);
+        assert_eq!(nic.register(registers::CHAN_INTR_ENA), 0);
+        assert_eq!(nic.register(registers::MAC_INT_EN), 0);
         assert_eq!(
-            nic.reg(registers::MAC_RXQ_CTRL0),
+            nic.register(registers::MAC_RXQ_CTRL0),
             registers::MAC_RXQ_CTRL0_Q0_DCB
         );
         assert_eq!(
             station_address(
-                nic.reg(registers::MAC_ADDR0_HI),
-                nic.reg(registers::MAC_ADDR0_LO)
+                nic.register(registers::MAC_ADDR0_HI),
+                nic.register(registers::MAC_ADDR0_LO)
             ),
             Some(STATION_ADDRESS)
         );
         // radon's bus: fixed burst, no PBLx8, 16-beat bursts, threshold mode.
         assert_ne!(
-            nic.reg(registers::DMA_SYSBUS_MODE) & registers::DMA_SYSBUS_MODE_FB,
+            nic.register(registers::DMA_SYSBUS_MODE) & registers::DMA_SYSBUS_MODE_FB,
             0
         );
         assert_eq!(
-            nic.reg(registers::CHAN_CONTROL) & registers::CHAN_CONTROL_PBLX8,
+            nic.register(registers::CHAN_CONTROL) & registers::CHAN_CONTROL_PBLX8,
             0
         );
-        assert_eq!(nic.reg(registers::CHAN_TX_CONTROL) >> 16 & 0x3f, 16);
+        assert_eq!(nic.register(registers::CHAN_TX_CONTROL) >> 16 & 0x3f, 16);
         assert_eq!(
-            nic.reg(registers::MTL_RXQ0_OP_MODE) & registers::MTL_RXQ_OP_MODE_RSF,
+            nic.register(registers::MTL_RXQ0_OP_MODE) & registers::MTL_RXQ_OP_MODE_RSF,
             0,
             "threshold mode"
         );
@@ -583,9 +592,10 @@ mod tests {
 
     #[test]
     fn stop_quiesces_and_reports_a_flush_that_never_finishes() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
+        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         start(
             &mut nic,
             Link {
@@ -596,10 +606,13 @@ mod tests {
         );
         assert!(stop(&mut nic).is_ok());
         assert_eq!(
-            nic.reg(registers::CHAN_RX_CONTROL) & registers::CHAN_RX_CONTROL_SR,
+            nic.register(registers::CHAN_RX_CONTROL) & registers::CHAN_RX_CONTROL_SR,
             0
         );
-        assert_eq!(nic.reg(registers::MAC_CONF) & registers::MAC_CONF_TE, 0);
+        assert_eq!(
+            nic.register(registers::MAC_CONF) & registers::MAC_CONF_TE,
+            0
+        );
         nic.wedge_transmit_flush();
         assert_eq!(stop(&mut nic), Err(Error::FlushTimeout));
     }
@@ -622,18 +635,18 @@ mod tests {
                 writes: std::vec::Vec::new(),
             }
         }
-        fn reg(&self, off: u32) -> u32 {
-            self.registers.get(&off).copied().unwrap_or(self.fill)
+        fn register(&self, offset: u32) -> u32 {
+            self.registers.get(&offset).copied().unwrap_or(self.fill)
         }
     }
 
     impl Hardware for Seeded {
-        fn read(&mut self, off: u32) -> u32 {
-            self.reg(off)
+        fn read(&mut self, offset: u32) -> u32 {
+            self.register(offset)
         }
-        fn write(&mut self, off: u32, v: u32) {
-            self.writes.push((off, v));
-            self.registers.insert(off, v);
+        fn write(&mut self, offset: u32, v: u32) {
+            self.writes.push((offset, v));
+            self.registers.insert(offset, v);
         }
         fn delay_us(&mut self, _us: u64) {}
     }
@@ -679,7 +692,7 @@ mod tests {
         let region = 0x1_4800_0000;
         let zero = configured(0, &FORTY_BIT, &BUS, region);
         let ones = configured(u32::MAX, &FORTY_BIT, &BUS, region);
-        for (reg, from_zero, from_ones) in [
+        for (register, from_zero, from_ones) in [
             (registers::DMA_SYSBUS_MODE, 0x0f0f_08f1, 0xffff_ffff),
             (registers::CHAN_CONTROL, 0, 0xfffe_ffff),
             (registers::CHAN_TX_CONTROL, 0x0010_0010, 0xffd0_ffff),
@@ -689,14 +702,22 @@ mod tests {
             (registers::MAC_Q0_TX_FLOW_CTRL, 0xffff_0001, 0xffff_ffff),
             (registers::MAC_RX_FLOW_CTRL, 1, 0xffff_ffff),
         ] {
-            assert_eq!(zero.reg(reg), from_zero, "{reg:#x} from zero");
-            assert_eq!(ones.reg(reg), from_ones, "{reg:#x} from all ones");
+            assert_eq!(
+                zero.register(register),
+                from_zero,
+                "{register:#x} from zero"
+            );
+            assert_eq!(
+                ones.register(register),
+                from_ones,
+                "{register:#x} from all ones"
+            );
         }
         for hardware in [&zero, &ones] {
-            assert_eq!(hardware.reg(registers::CHAN_TX_BASE_HI), 1);
-            assert_eq!(hardware.reg(registers::CHAN_TX_BASE), 0x4800_1000);
-            assert_eq!(hardware.reg(registers::CHAN_RX_BASE_HI), 1);
-            assert_eq!(hardware.reg(registers::CHAN_RX_BASE), 0x4800_0000);
+            assert_eq!(hardware.register(registers::CHAN_TX_BASE_HI), 1);
+            assert_eq!(hardware.register(registers::CHAN_TX_BASE), 0x4800_1000);
+            assert_eq!(hardware.register(registers::CHAN_RX_BASE_HI), 1);
+            assert_eq!(hardware.register(registers::CHAN_RX_BASE), 0x4800_0000);
         }
     }
 
@@ -705,9 +726,9 @@ mod tests {
     /// thresholds a 4 KiB receive FIFO gets.
     #[test]
     fn configure_masks_each_bus_field_to_its_width() {
-        let zero = configured(0, &THIRTY_TWO_BIT, &ODD, PHYS);
-        let ones = configured(u32::MAX, &THIRTY_TWO_BIT, &ODD, PHYS);
-        for (reg, from_zero, from_ones) in [
+        let zero = configured(0, &THIRTY_TWO_BIT, &ODD, PHYSICAL_ADDRESS);
+        let ones = configured(u32::MAX, &THIRTY_TWO_BIT, &ODD, PHYSICAL_ADDRESS);
+        for (register, from_zero, from_ones) in [
             (registers::DMA_SYSBUS_MODE, 0x0503_0010, 0xf5f3_ffff),
             (registers::CHAN_CONTROL, 0x0001_0000, 0xffff_ffff),
             (registers::CHAN_TX_CONTROL, 0x0008_0010, 0xffc8_ffff),
@@ -715,8 +736,16 @@ mod tests {
             (registers::MTL_RXQ0_OP_MODE, 0x00f0_c1a0, 0xc0f0_c1ff),
             (registers::MTL_TXQ0_OP_MODE, 0x000f_000a, 0xfe0f_fffb),
         ] {
-            assert_eq!(zero.reg(reg), from_zero, "{reg:#x} from zero");
-            assert_eq!(ones.reg(reg), from_ones, "{reg:#x} from all ones");
+            assert_eq!(
+                zero.register(register),
+                from_zero,
+                "{register:#x} from zero"
+            );
+            assert_eq!(
+                ones.register(register),
+                from_ones,
+                "{register:#x} from all ones"
+            );
         }
     }
 
@@ -780,8 +809,8 @@ mod tests {
         for (fill, set, cleared) in [(0, 1, 0), (u32::MAX, u32::MAX, 0xffff_fffe)] {
             let mut hardware = Seeded::new(fill);
             start(&mut hardware, gig, false);
-            assert_eq!(hardware.reg(registers::CHAN_RX_CONTROL), set);
-            assert_eq!(hardware.reg(registers::CHAN_TX_CONTROL), set);
+            assert_eq!(hardware.register(registers::CHAN_RX_CONTROL), set);
+            assert_eq!(hardware.register(registers::CHAN_TX_CONTROL), set);
             let mut hardware = Seeded::new(fill);
             assert_eq!(stop(&mut hardware), Err(Error::FlushTimeout));
             assert_eq!(

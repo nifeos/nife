@@ -51,3 +51,10 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   (`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`, `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` and the window's
   base and size), with `doc(alias = "aon")`. Device-tree strings and the vendor's `AON_SYSCFG_12`
   keep their spelling.
+- Ruled 2026-10-26 (UTC), Decision 36: the naming rules govern parameters as well as public items.
+  `data_plane_phys` becomes `data_plane_physical_address` (the handoff's field and
+  `DataPlane::new`'s parameter), and `phys` and `buffer_phys` take `physical_address`. The
+  parameters `addr`, `off`, `len`, `reg`, `src`, `mem`, `des3`, `dp`, `hi`, `lo` and `base_hi`
+  spell out. They become `address`, `offset`, `length`, `register`, `source`, `memory`,
+  `descriptor_word_3`, `data_plane`, `high`, `low` and `base_high`, and `Error::Timeout`'s `reg`
+  field follows. No `max` or `min` remains in the crate.

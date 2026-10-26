@@ -6,9 +6,9 @@ use super::*;
 /// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_delivered_frame_always_fits_the_buffer_and_the_room.patch`
 #[kani::proof]
 fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
-    let des3: u32 = kani::any();
+    let descriptor_word_3: u32 = kani::any();
     let room: usize = kani::any();
-    if let ReceiveVerdict::Frame(n) = receive_verdict(des3, room) {
+    if let ReceiveVerdict::Frame(n) = receive_verdict(descriptor_word_3, room) {
         assert!(n <= room);
         assert!(n <= MAXIMUM_FRAME);
         assert!(n as u64 + CRC_BYTES as u64 <= BUFFER_SIZE);

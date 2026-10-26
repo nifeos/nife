@@ -46,12 +46,12 @@ pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 /// probe frame. The controller must already be configured and started in loopback; the receive
 /// tail write in step 1 and the transmit tail write in step 3 are what set it moving.
 pub fn prepare(
-    dp: &mut DataPlane,
+    data_plane: &mut DataPlane,
     region: &mut impl Region,
     tails: &mut impl Tails,
     station_address: [u8; 6],
 ) -> Result<(), TransmitError> {
-    dp.start(region, tails);
+    data_plane.start(region, tails);
     let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
     region.write_bytes(layout::receive_buffer(0), &poison);
     // A copy of the poison, so the read-back covers exactly the bytes poisoned: a second length
@@ -59,7 +59,7 @@ pub fn prepare(
     // hide a short one.
     let mut back = poison;
     region.read_bytes(layout::receive_buffer(0), &mut back);
-    dp.transmit(region, tails, &probe_frame(station_address))
+    data_plane.transmit(region, tails, &probe_frame(station_address))
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
@@ -192,7 +192,7 @@ mod tests {
     use crate::sim::{Memory, NetworkInterfaceController};
     use crate::{Hardware, RDES3_FD, RDES3_LD};
 
-    const PHYS: u64 = 0x4800_0000;
+    const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
     const GIG: Link = Link {
         speed: Speed::Thousand,
@@ -202,15 +202,15 @@ mod tests {
     /// The whole probe, as the kernel runs it, against a controller whose memory behaves as
     /// `memory` says and whose loopback works when `loops` is true.
     fn run(memory: Memory, loops: bool) -> Verdict {
-        let mut nic = NetworkInterfaceController::new(PHYS, memory);
+        let mut nic = NetworkInterfaceController::new(PHYSICAL_ADDRESS, memory);
         if !loops {
             nic.break_loopback();
         }
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
-        let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+        let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
+        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         let mut waited = 0;
         while !nic.with(|r, _| delivered(r)) && waited < WAIT_US {
@@ -224,13 +224,16 @@ mod tests {
 
     #[test]
     fn a_coherent_machine_reads_coherent() {
-        assert_eq!(run(Memory::coherent(PHYS), true), Verdict::Coherent);
+        assert_eq!(
+            run(Memory::coherent(PHYSICAL_ADDRESS), true),
+            Verdict::Coherent
+        );
     }
 
     #[test]
     fn a_write_back_cache_the_device_does_not_snoop_is_caught_on_the_way_out() {
         assert_eq!(
-            run(Memory::write_back_unsnooped(PHYS), true),
+            run(Memory::write_back_unsnooped(PHYSICAL_ADDRESS), true),
             Verdict::DeviceCannotSeeCpuWrites
         );
     }
@@ -238,14 +241,17 @@ mod tests {
     #[test]
     fn a_cache_the_device_writes_around_is_caught_on_the_way_in() {
         assert_eq!(
-            run(Memory::write_through_unsnooped(PHYS), true),
+            run(Memory::write_through_unsnooped(PHYSICAL_ADDRESS), true),
             Verdict::CpuCannotSeeDeviceWrites
         );
     }
 
     #[test]
     fn a_loopback_that_never_runs_is_inconclusive_not_coherent() {
-        assert_eq!(run(Memory::coherent(PHYS), false), Verdict::Inconclusive);
+        assert_eq!(
+            run(Memory::coherent(PHYSICAL_ADDRESS), false),
+            Verdict::Inconclusive
+        );
     }
 
     #[test]
@@ -307,12 +313,13 @@ mod tests {
     /// Step 3 has queued the frame and the device has not run yet: descriptor 0 is still its.
     #[test]
     fn prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
-        let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+        let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
+        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         nic.with(|r, _| {
             let mut b = [0u8; PROBE_LENGTH + CRC_BYTES + 1];
@@ -329,12 +336,13 @@ mod tests {
     /// descriptor 0's write-back: first and last, its length, no ownership.
     #[test]
     fn a_completed_loopback_is_seen_on_both_rings() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
+        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         controller::start(&mut nic, GIG, true);
-        let mut dp = DataPlane::new(PHYS);
-        nic.with(|r, t| prepare(&mut dp, r, t, STATION_ADDRESS))
+        let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
+        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         nic.step();
         let o = nic.with(|r, _| {
@@ -357,7 +365,8 @@ mod tests {
     /// the frame.
     #[test]
     fn a_buffer_is_judged_poison_only_when_every_byte_is() {
-        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let mut nic =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let judged = |nic: &mut NetworkInterfaceController, fill: u8| {
             nic.with(|r, _| {
                 r.write_bytes(layout::receive_buffer(0), &[fill; PROBE_LENGTH]);
