@@ -755,7 +755,7 @@ impl Sim {
         }
     }
 
-    /// The byte offset in memory of `len` bytes at bus address `addr`, if they are all there.
+    /// The byte offset in memory of `len` bytes at bus address `address`, if they are all there.
     fn offset(&self, bus: &Bus, address: u32, len: usize) -> Option<usize> {
         let off = usize::try_from(u64::from(address).checked_sub(bus.base)?).ok()?;
         (off + len <= bus.bytes.len()).then_some(off)

@@ -270,8 +270,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             return Ok(());
         };
         self.registers.write(registers::BMOD, registers::BMOD_SWR);
-        if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::BMOD) & registers::BMOD_SWR == 0
+        if !self.wait(COMMAND_DEADLINE_US, |window| {
+            window.read(registers::BMOD) & registers::BMOD_SWR == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::BMOD)));
         }
@@ -350,11 +350,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers::CTRL,
             ctrl | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET,
         );
-        let quiet = self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CTRL)
-                & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET)
+        let quiet = self.wait(COMMAND_DEADLINE_US, |window| {
+            window.read(registers::CTRL) & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET)
                 == 0
-                && registers.read(registers::BMOD) & registers::BMOD_SWR == 0
+                && window.read(registers::BMOD) & registers::BMOD_SWR == 0
         });
         self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
         self.registers

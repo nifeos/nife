@@ -117,7 +117,9 @@ impl MasterBootRecord {
     /// use designware_mobile_storage::partition::{Entry, MasterBootRecord};
     ///
     /// let fat = Entry { kind: 0x0b, start: 2048, sectors: 1 << 20 };
-    /// let mbr = MasterBootRecord { entries: [fat, Entry::default(), Entry::default(), Entry::default()] };
+    /// let mbr = MasterBootRecord {
+    ///     entries: [fat, Entry::default(), Entry::default(), Entry::default()],
+    /// };
     /// assert_eq!(mbr.scratch(8), Some((2040, 8)));
     /// ```
     #[must_use]

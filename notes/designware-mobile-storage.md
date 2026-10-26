@@ -32,11 +32,11 @@ node-by-node evidence.
 
 ## What was reused, and what was not
 
-Reuse: adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` (revision 1.33, 2026-03-11, ISC), which
-matches both compatibles above and so already drives this part on this board. Its register map,
-reset, clock and bus-width sequences, command flags and polled FIFO transfer are the crate's
-`registers`, `command` and `host` modules; the identification order follows its `sdmmc_mem.c`. The ISC
-notice is in the crate root.
+Reuse: adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` (revision 1.33, 2026-03-11, ISC), which matches
+both compatibles above and so already drives this part on this board. Its register map, reset, clock
+and bus-width sequences, command flags and polled FIFO transfer are the crate's `registers`,
+`command` and `host` modules; the identification order follows its `sdmmc_mem.c`. The ISC notice is
+in the crate root.
 
 The crates.io candidate, `starfive-jh7110-dwmmc` 0.1.8 (Apache-2.0, from `rcore-os/tgoskits`), was
 read and not taken. It is 333 lines of JH7110 policy over `dwmmc-host` 0.4.2 (5,253 lines), which
@@ -67,8 +67,9 @@ in the controller or the card protocol, not in DMA as well.
 `Host::with_internal_direct_memory_access` hands each data phase to the controller's own DMA engine,
 the IDMAC; `crates/designware_mobile_storage/src/internal_direct_memory_access.rs` holds its
 sequence. It waited on two things, both met: radon's DMA is coherent with its caches
-(`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC), notes/designware-ethernet.md),
-so a `fence` each way is all the ordering it needs, and the polled read works (Results, below).
+(`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC),
+notes/designware-ethernet.md), so a `fence` each way is all the ordering it needs, and the polled
+read works (Results, below).
 
 - One region: a page of descriptors, then up to 256 data pages, one descriptor each. Reads are
   copied out of it and writes in. `InternalDirectMemoryAccess::new` refuses a controller without

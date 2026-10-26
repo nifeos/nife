@@ -364,9 +364,10 @@ fn a_card_that_never_finishes_power_up_is_reported_with_its_last_ocr() {
         let mut sim = Sim::new(kind, 16_384, 32);
         sim.busy_polls = u32::MAX;
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
+        let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
         assert!(matches!(
             sd::identify(&mut h, 4),
-            Err(InitializationError::PowerUp(operation_conditions)) if operation_conditions & card::OPERATION_CONDITIONS_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(conditions)) if conditions & busy_done == 0
         ));
     }
 }
@@ -449,9 +450,11 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
         8192,
         &[(7, 0, Fault::ErrorStatus)],
     );
-    assert!(
-        matches!(sd::identify(&mut h, 4), Err(InitializationError::Status(7, r)) if r & (1 << 19) != 0)
-    );
+    let controller_error = 1 << 19;
+    assert!(matches!(
+        sd::identify(&mut h, 4),
+        Err(InitializationError::Status(7, r)) if r & controller_error != 0
+    ));
     let mut h = faulty(
         CardKind::MultimediaCard,
         16_384,
@@ -770,9 +773,10 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         sim.busy_polls = u32::MAX;
         sim.clock_step = 7;
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
+        let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
         let _ = sender.send(matches!(
             sd::identify(&mut h, 8),
-            Err(InitializationError::PowerUp(operation_conditions)) if operation_conditions & card::OPERATION_CONDITIONS_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(conditions)) if conditions & busy_done == 0
         ));
     });
     assert_eq!(

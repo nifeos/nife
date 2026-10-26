@@ -122,9 +122,10 @@ pub struct InternalDirectMemoryAccessReport {
 
 /// **The IDMAC's half of the read-only probe**, on a host
 /// [`Host::with_internal_direct_memory_access`] made from the one [`read_only`] ran on and reported
-/// `r`. `reference` is the polled host's read of `reference.len()` bytes from `r.timed_from`; the
-/// same blocks are read through the IDMAC and compared, then [`read_only`]'s timed read runs again
-/// from there in `buffer.len()`-byte commands, so the two rates differ only in the data path.
+/// `report`. `reference` is the polled host's read of `reference.len()` bytes from
+/// `report.timed_from`; the same blocks are read through the IDMAC and compared, then
+/// [`read_only`]'s timed read runs again from there in `buffer.len()`-byte commands, so the two
+/// rates differ only in the data path.
 ///
 /// # Errors
 ///
@@ -135,12 +136,12 @@ pub struct InternalDirectMemoryAccessReport {
 #[doc(alias = "idmac")]
 pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
-    r: &ReadReport,
+    report: &ReadReport,
     reference: &[u8],
     buffer: &mut [u8],
     timed_blocks: u64,
 ) -> Result<InternalDirectMemoryAccessReport, ReadFailure> {
-    let (card, first) = (&r.card, r.timed_from);
+    let (card, first) = (&report.card, report.timed_from);
     let n = reference.len().min(buffer.len());
     sd::read_blocks(host, card, first, &mut buffer[..n])
         .map_err(|e| ReadFailure::Read(first, e))?;
