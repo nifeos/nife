@@ -30,14 +30,14 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         }
         let interrupt = tree
             .node_prop_compatible(compatible, b"interrupts")?
-            .and_then(jh7110_entropy::interrupt);
+            .and_then(jh7110_entropy::interrupt_line);
         let status = tree.node_prop_compatible(compatible, b"status")?;
         return Ok(Some(Discovered {
             reg_base: regions[0].start,
             reg_size: regions[0].size,
             interrupt,
             compatible,
-            status_okay: jh7110_entropy::status_okay(status),
+            status_okay: jh7110_entropy::is_status_okay(status),
         }));
     }
     Ok(None)

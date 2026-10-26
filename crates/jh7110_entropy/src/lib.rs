@@ -6,14 +6,7 @@
 //! It never dereferences a pointer, so it is host-testable and Kani-reachable; the caller maps the
 //! register window and does the volatile reads. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is
 //! set (NetBSD's rule), and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is
-//! [`Outcome::Lockup`]. None of it has run on silicon.
-//!
-//! Name: ratified 2026-09-13 (calef); kept as the crates.io name (calef, 2026-10-07 UTC, #1806).
-//! The argument its minting lane gave (the lane of milestone 159 (a real hardware entropy source:
-//! the JH7110's TRNG), 2026-08-24): chip-qualified and unambiguous rather than generic, since
-//! `trng` alone would be a generic word that could name almost anything, the same reasoning that
-//! keeps `non_volatile_memory_express` and `pci` named for the specification rather than for
-//! "storage" or "bus".
+//! [`GenerationOutcome::Lockup`]. None of it has run on silicon.
 
 //! # Sources
 //!
@@ -31,38 +24,38 @@
 
 //! # The two device trees
 //!
-//! Mainline Linux describes the block as `compatible = "starfive,jh7110-trng"` ([`COMPATIBLE`]).
+//! Mainline Linux describes the block as `compatible = "starfive,jh7110-trng"` ([`COMPATIBLE_MAINLINE`]).
 //! The vendor U-Boot's control tree, which a VisionFive 2 boots with, spells the same block
 //! `"starfive,trng"` ([`COMPATIBLE_VENDOR`]) at the same window (`0x1600_C000`, `0x4000` bytes)
 //! with the same interrupt (30), and marks it `status = "disabled"` because U-Boot has no driver
 //! for it. [`COMPATIBLES`] lists both in the order to try them. A caller walks its own tree for a
-//! node carrying one of them, decodes `interrupts` with [`interrupt`] and `status` with
-//! [`status_okay`], and fills in a [`Discovered`].
+//! node carrying one of them, decodes `interrupts` with [`interrupt_line`] and `status` with
+//! [`is_status_okay`], and fills in a [`Discovered`].
 
 //! # Examples
 //!
 //! ```
-//! use jh7110_entropy::{Outcome, interpret, ISTAT_RAND_RDY, ISTAT_LFSR_LOCKUP, STAT_SEEDED};
+//! use jh7110_entropy::{GenerationOutcome, generation_outcome, ISTAT_RAND_RDY, ISTAT_LFSR_LOCKUP, STAT_SEEDED};
 //!
 //! // Seeded, but the generation has not finished.
-//! assert_eq!(interpret(STAT_SEEDED, 0, [0; 8]), Outcome::NotReady);
+//! assert_eq!(generation_outcome(STAT_SEEDED, 0, [0; 8]), GenerationOutcome::NotReady);
 //!
 //! // The eight output words assemble little-endian, word 0 first.
 //! let rand = [0x0403_0201, 0x0807_0605, 0, 0, 0, 0, 0, 0];
-//! match interpret(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
-//!     Outcome::Ready(bytes) => assert_eq!(&bytes[..8], &[1, 2, 3, 4, 5, 6, 7, 8]),
+//! match generation_outcome(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
+//!     GenerationOutcome::Ready(bytes) => assert_eq!(&bytes[..8], &[1, 2, 3, 4, 5, 6, 7, 8]),
 //!     other => panic!("expected Ready, got {other:?}"),
 //! }
 //!
 //! // A latched RAND_RDY on a core never seeded is not an answer, and a fault beats a stale one.
-//! assert_eq!(interpret(0, ISTAT_RAND_RDY, rand), Outcome::Unseeded);
+//! assert_eq!(generation_outcome(0, ISTAT_RAND_RDY, rand), GenerationOutcome::Unseeded);
 //! let both = ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP;
-//! assert_eq!(interpret(STAT_SEEDED, both, [0; 8]), Outcome::Lockup);
+//! assert_eq!(generation_outcome(STAT_SEEDED, both, [0; 8]), GenerationOutcome::Lockup);
 //! ```
 
 /// Register byte offsets from the device's base, transcribed from `jh7110-trng.c`'s `#define`s
 /// (\[driver\]). `RAND0..RAND7` are the eight 32-bit words a completed generation leaves behind;
-/// [`assemble`] is the order they combine in.
+/// [`output_bytes`] is the order they combine in.
 pub mod regs {
     /// Command register: write [`super::CTRL_GENE_RANDNUM`] or [`super::CTRL_EXEC_RANDRESEED`].
     pub const CTRL: u64 = 0x00;
@@ -139,7 +132,7 @@ pub const CTRL_EXEC_NOP: u32 = 0x0;
 /// [`MODE_R256`].
 pub const CTRL_GENE_RANDNUM: u32 = 0x1;
 /// `CTRL`: force a reseed from the ring oscillator. The driver issues this once at init and again
-/// on every [`Outcome::Lockup`].
+/// on every [`GenerationOutcome::Lockup`].
 pub const CTRL_EXEC_RANDRESEED: u32 = 0x2;
 /// `CTRL`: reseed from the host-written `SEED0..SEED7` words instead of from the ring oscillator
 /// \[trm\]. **Named so it is visibly not used**: a nonce reseed makes the output a function of
@@ -206,7 +199,7 @@ pub const ISTAT_SEED_DONE: u32 = 1 << 1;
 /// and the seed is stale \[trm\], \[netbsd\].
 ///
 /// Mainline's `jh7110-trng.c` does not define it, and a bit with no name leaves a status word
-/// undecodable. [`interpret`] does not act on it, and a bring-up that writes 0 to
+/// undecodable. [`generation_outcome`] does not act on it, and a bring-up that writes 0 to
 /// [`regs::AUTO_AGE`] never raises it.
 pub(crate) const ISTAT_AGE_ALARM: u32 = 1 << 2;
 /// `ISTAT` bit 3: the auto-reseed **request-count** alarm, the `AUTO_RQSTS` counterpart of
@@ -215,7 +208,7 @@ pub(crate) const ISTAT_AGE_ALARM: u32 = 1 << 2;
 pub(crate) const ISTAT_RQST_ALARM: u32 = 1 << 3;
 /// `ISTAT` bit 4: the hardware's own fault signal, an SEU (single-event upset) in the LFSR-based
 /// post-processing stage. The Linux driver treats this as "reseed and try again", never as "trust
-/// the RAND registers anyway"; [`interpret`] gives it priority over `RAND_RDY` in the same
+/// the RAND registers anyway"; [`generation_outcome`] gives it priority over `RAND_RDY` in the same
 /// snapshot for the same reason (a register file that says both "ready" and "faulted" at once
 /// must not be read as an answer). See the module doc's "Health testing" section: this is the one
 /// hardware self-check the datasheet documents, and it is not a substitute for a statistical
@@ -235,10 +228,7 @@ pub const ISTAT_ALL: u32 =
 /// as a fallback compatible (the JH8100 reuses the same TRNG IP), which is out of scope: this
 /// crate names the JH7110's own string only, never the fallback, so it says nothing about a `SoC`
 /// it has no board for.
-///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, made public when the
-/// device-tree walk left the crate. The binding's own word for the property it holds.
-pub const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
+pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-trng";
 
 /// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control tree
 /// uses.
@@ -255,10 +245,7 @@ pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,trng";
 /// Both spellings, in the order a caller should try them: mainline's first. A tree that carries
 /// the standardized binding is describing itself in that language, and that is the one to
 /// believe.
-///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone: both spellings, in the
-/// order to try them.
-pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE, COMPATIBLE_VENDOR];
+pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
 /// Where a tree says the TRNG is: the register window's physical base and size (from `reg`), and
 /// the PLIC interrupt number if the tree gives one (`interrupts`, \[binding\]'s single cell).
@@ -275,11 +262,11 @@ pub struct Discovered {
     /// The PLIC interrupt line, if the tree names one. `None` is not an error: a tree with `reg`
     /// but no `interrupts` still names a real device, one a poll-only driver could still use.
     pub interrupt: Option<u32>,
-    /// Which `compatible` string matched: [`COMPATIBLE`] or [`COMPATIBLE_VENDOR`]. Carried rather
+    /// Which `compatible` string matched: [`COMPATIBLE_MAINLINE`] or [`COMPATIBLE_VENDOR`]. Carried rather
     /// than discarded because the two spellings say which firmware's tree is in hand: the vendor
     /// U-Boot's control tree, or something fuller.
     pub compatible: &'static [u8],
-    /// What the node's `status` property says, decoded by [`status_okay`] to the one question a
+    /// What the node's `status` property says, decoded by [`is_status_okay`] to the one question a
     /// driver has: may this device be used?
     ///
     /// **A caller reports this and need not act on it.** The vendor control tree marks the TRNG
@@ -291,10 +278,7 @@ pub struct Discovered {
 
 /// Decode a node's `interrupts` property to the PLIC line, \[binding\]'s single big-endian cell.
 /// `None` when the property is shorter than one cell.
-///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the property it
-/// decodes.
-pub fn interrupt(value: &[u8]) -> Option<u32> {
+pub fn interrupt_line(value: &[u8]) -> Option<u32> {
     value
         .get(0..4)
         .and_then(|b| b.try_into().ok())
@@ -309,10 +293,7 @@ pub fn interrupt(value: &[u8]) -> Option<u32> {
 /// The value is a NUL-terminated string in the tree, so both the terminated and the unterminated
 /// forms are matched rather than trimmed: a four-way `matches!` says exactly which byte strings
 /// count, where a trim would have to decide what an empty or multi-string value means.
-///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the `Discovered`
-/// field it fills.
-pub fn status_okay(value: Option<&[u8]>) -> bool {
+pub fn is_status_okay(value: Option<&[u8]>) -> bool {
     value.is_none_or(|v| matches!(v, b"okay\0" | b"ok\0" | b"okay" | b"ok"))
 }
 
@@ -322,9 +303,9 @@ pub fn status_okay(value: Option<&[u8]>) -> bool {
 /// expected answer on every poll but the last; `Lockup` is a real, documented hardware condition a
 /// caller is expected to handle (retry after reseed), not a bug.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Outcome {
+pub enum GenerationOutcome {
     /// A generation completed cleanly. The 32 bytes are `RAND0..RAND7`, little-endian, word 0
-    /// first: see [`assemble`].
+    /// first: see [`output_bytes`].
     Ready([u8; 32]),
     /// `ISTAT.LFSR_LOCKUP` was set: an SEU, per \[driver\]'s own comment. The caller should issue
     /// `CTRL_EXEC_RANDRESEED` and retry, bounded: ask again a few times, then tell the truth.
@@ -345,20 +326,20 @@ pub enum Outcome {
 
 /// Decide what one `(STAT, ISTAT)` snapshot means, given the `RAND` words alongside it.
 ///
-/// A pure decode: the same `(stat, istat, rand)` always decides the same [`Outcome`]. The
+/// A pure decode: the same `(stat, istat, rand)` always decides the same [`GenerationOutcome`]. The
 /// precedence is fault, then seeded, then ready. A lockup beats everything, because a register
 /// file the hardware is re-seeding must not be read as a clean answer. `SEEDED` beats `RAND_RDY`,
 /// because `RAND_RDY` is a latched write-1-to-clear bit that can be standing from before this
 /// driver ran, while `STAT.SEEDED` is live state; that is why `stat` is a parameter.
-pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
+pub fn generation_outcome(stat: u32, istat: u32, rand: [u32; 8]) -> GenerationOutcome {
     if istat & ISTAT_LFSR_LOCKUP != 0 {
-        Outcome::Lockup
+        GenerationOutcome::Lockup
     } else if stat & STAT_SEEDED == 0 {
-        Outcome::Unseeded
+        GenerationOutcome::Unseeded
     } else if istat & ISTAT_RAND_RDY != 0 {
-        Outcome::Ready(assemble(rand))
+        GenerationOutcome::Ready(output_bytes(rand))
     } else {
-        Outcome::NotReady
+        GenerationOutcome::NotReady
     }
 }
 
@@ -367,7 +348,7 @@ pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
 /// would change the bytes without adding unpredictability an attacker could not undo. Conditioning,
 /// if a caller wants it, belongs to the caller's entropy pool. This is data movement, not
 /// conditioning.
-pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
+pub fn output_bytes(rand: [u32; 8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     for (i, word) in rand.iter().enumerate() {
         out[i * 4..i * 4 + 4].copy_from_slice(&word.to_le_bytes());
@@ -490,10 +471,13 @@ mod tests {
 
     #[test]
     fn not_ready_when_neither_bit_is_set() {
-        assert_eq!(interpret(STAT_SEEDED, 0, [0; 8]), Outcome::NotReady);
         assert_eq!(
-            interpret(STAT_SEEDED, ISTAT_SEED_DONE, [0xffff_ffff; 8]),
-            Outcome::NotReady
+            generation_outcome(STAT_SEEDED, 0, [0; 8]),
+            GenerationOutcome::NotReady
+        );
+        assert_eq!(
+            generation_outcome(STAT_SEEDED, ISTAT_SEED_DONE, [0xffff_ffff; 8]),
+            GenerationOutcome::NotReady
         );
     }
 
@@ -509,8 +493,8 @@ mod tests {
             0x1c1b_1a19,
             0x201f_1e1d,
         ];
-        match interpret(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
-            Outcome::Ready(bytes) => {
+        match generation_outcome(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
+            GenerationOutcome::Ready(bytes) => {
                 let expected: [u8; 32] = core::array::from_fn(|i| (i + 1) as u8);
                 assert_eq!(bytes, expected);
             }
@@ -524,14 +508,14 @@ mod tests {
         // standing from before this driver ran. Believing it on a core whose `STAT` says it was
         // never seeded is how a driver serves a register file nobody put entropy into.
         assert_eq!(
-            interpret(0, ISTAT_RAND_RDY, [0xffff_ffff; 8]),
-            Outcome::Unseeded
+            generation_outcome(0, ISTAT_RAND_RDY, [0xffff_ffff; 8]),
+            GenerationOutcome::Unseeded
         );
         // ...and a fault still outranks it, because a reseeding register file is not a "just
         // reseed it" situation, it is one already in progress.
         assert_eq!(
-            interpret(0, ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP, [0; 8]),
-            Outcome::Lockup
+            generation_outcome(0, ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP, [0; 8]),
+            GenerationOutcome::Lockup
         );
     }
 
@@ -555,20 +539,20 @@ mod tests {
     #[test]
     fn lockup_beats_ready_in_the_same_snapshot() {
         assert_eq!(
-            interpret(
+            generation_outcome(
                 STAT_SEEDED,
                 ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP,
                 [0xffff_ffff; 8]
             ),
-            Outcome::Lockup
+            GenerationOutcome::Lockup
         );
     }
 
     #[test]
     fn lockup_alone_is_reported_even_with_no_rand_rdy() {
         assert_eq!(
-            interpret(STAT_SEEDED, ISTAT_LFSR_LOCKUP, [0; 8]),
-            Outcome::Lockup
+            generation_outcome(STAT_SEEDED, ISTAT_LFSR_LOCKUP, [0; 8]),
+            GenerationOutcome::Lockup
         );
     }
 
@@ -577,8 +561,8 @@ mod tests {
         // SEED_DONE (bit 1) and RAND_RDY (bit 0) are adjacent; a shift-by-one bug here would pass
         // every other test in this file and fail silently on real hardware after a reseed.
         assert_eq!(
-            interpret(STAT_SEEDED, ISTAT_SEED_DONE, [0; 8]),
-            Outcome::NotReady
+            generation_outcome(STAT_SEEDED, ISTAT_SEED_DONE, [0; 8]),
+            GenerationOutcome::NotReady
         );
     }
 
@@ -588,27 +572,27 @@ mod tests {
     /// turns "the firmware never ungated this device's clocks" into an unexplained window of zeros.
     #[test]
     fn status_is_decoded_the_way_the_specification_defines_it() {
-        assert!(status_okay(None));
-        assert!(status_okay(Some(b"okay\0")));
-        assert!(status_okay(Some(b"ok\0")));
-        assert!(status_okay(Some(b"okay")));
-        assert!(status_okay(Some(b"ok")));
-        assert!(!status_okay(Some(b"disabled\0")));
-        assert!(!status_okay(Some(b"fail\0")));
-        assert!(!status_okay(Some(b"")));
+        assert!(is_status_okay(None));
+        assert!(is_status_okay(Some(b"okay\0")));
+        assert!(is_status_okay(Some(b"ok\0")));
+        assert!(is_status_okay(Some(b"okay")));
+        assert!(is_status_okay(Some(b"ok")));
+        assert!(!is_status_okay(Some(b"disabled\0")));
+        assert!(!is_status_okay(Some(b"fail\0")));
+        assert!(!is_status_okay(Some(b"")));
     }
 
     /// `interrupts` is one big-endian cell; a short property names no line, and a longer one
     /// is read from its first cell only.
     #[test]
     fn the_interrupt_is_the_first_big_endian_cell() {
-        assert_eq!(interrupt(&[0, 0, 0, 30]), Some(30));
+        assert_eq!(interrupt_line(&[0, 0, 0, 30]), Some(30));
         assert_eq!(
-            interrupt(&[0, 0, 1, 2, 0xff, 0xff, 0xff, 0xff]),
+            interrupt_line(&[0, 0, 1, 2, 0xff, 0xff, 0xff, 0xff]),
             Some(0x102)
         );
-        assert_eq!(interrupt(&[0, 0, 30]), None);
-        assert_eq!(interrupt(&[]), None);
+        assert_eq!(interrupt_line(&[0, 0, 30]), None);
+        assert_eq!(interrupt_line(&[]), None);
     }
 
     /// Mainline's spelling is tried first, and the two spellings are the two trees' own.
@@ -842,15 +826,15 @@ mod tests {
 }
 
 /// Machine-checked proofs, run with `cargo kani`.
-/// The unit tests sample `interpret` at chosen bit patterns; `ISTAT` is a register a fault could
-/// set to anything, and `interpret` is a few comparisons over two `u32`s, so these exhaust the
+/// The unit tests sample `generation_outcome` at chosen bit patterns; `ISTAT` is a register a fault could
+/// set to anything, and `generation_outcome` is a few comparisons over two `u32`s, so these exhaust the
 /// whole input space instead.
 #[cfg(kani)]
 mod verification {
     use super::*;
 
     /// **A hardware fault is never read as a clean answer.** For every `istat` with
-    /// `LFSR_LOCKUP` set, `interpret` returns `Lockup`, regardless of what `RAND_RDY` or any other
+    /// `LFSR_LOCKUP` set, `generation_outcome` returns `Lockup`, regardless of what `RAND_RDY` or any other
     /// bit says and regardless of what the `RAND` words happen to hold. This is the property the
     /// module doc's "Health testing" section argues for in prose; here it holds for the full
     /// `2^32` space of `istat`, not the two combinations the unit tests above pick.
@@ -861,7 +845,10 @@ mod verification {
         let istat: u32 = kani::any();
         kani::assume(istat & ISTAT_LFSR_LOCKUP != 0);
         let rand: [u32; 8] = kani::any();
-        assert_eq!(interpret(stat, istat, rand), Outcome::Lockup);
+        assert_eq!(
+            generation_outcome(stat, istat, rand),
+            GenerationOutcome::Lockup
+        );
     }
 
     /// **`Ready` is returned exactly when the register file says so, and carries exactly those
@@ -876,12 +863,12 @@ mod verification {
         kani::assume(istat & ISTAT_LFSR_LOCKUP == 0 && istat & ISTAT_RAND_RDY != 0);
         kani::assume(stat & STAT_SEEDED != 0);
         let rand: [u32; 8] = kani::any();
-        let Outcome::Ready(bytes) = interpret(stat, istat, rand) else {
+        let GenerationOutcome::Ready(bytes) = generation_outcome(stat, istat, rand) else {
             panic!("RAND_RDY set and LFSR_LOCKUP clear did not read as Ready");
         };
-        // **The layout written out, not `assemble` compared with itself.**
-        // `interpret` calls `assemble`, so `assert_eq!(interpret(..), Ready(assemble(rand)))`
-        // is satisfied by any consistently wrong `assemble`: a byte-swap, a word reversal or a
+        // **The layout written out, not `output_bytes` compared with itself.**
+        // `generation_outcome` calls `output_bytes`, so `assert_eq!(generation_outcome(..), Ready(output_bytes(rand)))`
+        // is satisfied by any consistently wrong `output_bytes`: a byte-swap, a word reversal or a
         // silent truncation would leave both sides equal and this harness green, while the doc
         // above claims the bytes are little-endian with nothing reordered. Indexing the words
         // by hand states that claim in terms the implementation cannot pick.
@@ -907,13 +894,16 @@ mod verification {
         kani::assume(istat & ISTAT_LFSR_LOCKUP == 0 && istat & ISTAT_RAND_RDY == 0);
         kani::assume(stat & STAT_SEEDED != 0);
         let rand: [u32; 8] = kani::any();
-        assert_eq!(interpret(stat, istat, rand), Outcome::NotReady);
+        assert_eq!(
+            generation_outcome(stat, istat, rand),
+            GenerationOutcome::NotReady
+        );
     }
 
     /// **An unseeded core never yields bytes, whatever `ISTAT` claims**. For every
-    /// `istat` with `LFSR_LOCKUP` clear, if `STAT.SEEDED` is clear then `interpret` returns
+    /// `istat` with `LFSR_LOCKUP` clear, if `STAT.SEEDED` is clear then `generation_outcome` returns
     /// `Unseeded` rather than `Ready`, so no path exists from a latched `RAND_RDY` on an unseeded
-    /// device to 32 bytes handed to a caller. This is the property `Outcome::Unseeded`'s doc
+    /// device to 32 bytes handed to a caller. This is the property `GenerationOutcome::Unseeded`'s doc
     /// argues for in prose, over the full `2^64` space of the two status words.
     /// Falsification: replayable `crates/jh7110_entropy/falsifications/verification.an_unseeded_core_never_yields_bytes.patch`
     #[kani::proof]
@@ -923,6 +913,9 @@ mod verification {
         kani::assume(istat & ISTAT_LFSR_LOCKUP == 0);
         kani::assume(stat & STAT_SEEDED == 0);
         let rand: [u32; 8] = kani::any();
-        assert_eq!(interpret(stat, istat, rand), Outcome::Unseeded);
+        assert_eq!(
+            generation_outcome(stat, istat, rand),
+            GenerationOutcome::Unseeded
+        );
     }
 }

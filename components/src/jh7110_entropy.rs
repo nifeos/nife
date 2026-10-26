@@ -30,8 +30,8 @@
 
 use entropy_contract as proto;
 use jh7110_entropy::{
-    CTRL_EXEC_RANDRESEED, CTRL_GENE_RANDNUM, ISTAT_ALL, ISTAT_RAND_RDY, ISTAT_SEED_DONE, MODE_R256,
-    Outcome, Pool, interpret,
+    CTRL_EXEC_RANDRESEED, CTRL_GENE_RANDNUM, GenerationOutcome, ISTAT_ALL, ISTAT_RAND_RDY,
+    ISTAT_SEED_DONE, MODE_R256, Pool, generation_outcome,
 };
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::register_structs;
@@ -51,7 +51,7 @@ register_structs! {
         (0x00 => CTRL: WriteOnly<u32>),
         // `STAT` is read on **every** poll now, not only for the bring-up diagnostic: it carries
         // `SEEDED`, which is what says a latched `RAND_RDY` is an answer rather than a leftover.
-        // See `jh7110_entropy::Outcome::Unseeded`.
+        // See `jh7110_entropy::GenerationOutcome::Unseeded`.
         (0x04 => STAT: ReadOnly<u32>),
         (0x08 => MODE: ReadWrite<u32>),
         (0x0c => _reserved_smode),
@@ -152,7 +152,7 @@ fn init() -> u32 {
 
 /// Force a reseed and wait (bounded) for `ISTAT.SEED_DONE`, acknowledging it. Called once at
 /// bring-up, mirroring the init sequence in `jh7110_entropy`'s module doc, and again whenever
-/// [`generate`] sees [`jh7110_entropy::Outcome::Lockup`] or [`jh7110_entropy::Outcome::Unseeded`].
+/// [`generate`] sees [`jh7110_entropy::GenerationOutcome::Lockup`] or [`jh7110_entropy::GenerationOutcome::Unseeded`].
 /// `false` on a bound-out: the caller decides what that means. `SEED_DONE` is latched, so it is
 /// acknowledged on both sides; an unacked one makes every later reseed appear to complete at once.
 fn reseed_and_wait() -> bool {
@@ -180,19 +180,19 @@ fn generate() -> Option<[u8; 32]> {
         ack(ISTAT_RAND_RDY);
         regs().CTRL.set(CTRL_GENE_RANDNUM);
         for _ in 0..POLL_TRIES {
-            match interpret(regs().STAT.get(), regs().ISTAT.get(), rand_words()) {
-                Outcome::Ready(bytes) => {
+            match generation_outcome(regs().STAT.get(), regs().ISTAT.get(), rand_words()) {
+                GenerationOutcome::Ready(bytes) => {
                     ack(ISTAT_RAND_RDY);
                     return Some(bytes);
                 }
                 // Both of these mean "the core is not in a state to answer, seed it and ask
                 // again", and they are bounded together because a device that keeps returning to
                 // either one is a device to tell the caller about rather than to spin on.
-                Outcome::Lockup | Outcome::Unseeded => {
+                GenerationOutcome::Lockup | GenerationOutcome::Unseeded => {
                     reseed_and_wait();
                     break; // out of the poll loop; the outer loop's next iteration retries GENE_RANDNUM
                 }
-                Outcome::NotReady => continue,
+                GenerationOutcome::NotReady => continue,
             }
         }
     }

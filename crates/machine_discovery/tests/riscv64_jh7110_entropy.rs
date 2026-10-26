@@ -4,7 +4,7 @@
 //! walks the tree. These pin the walk against the board-shaped fixtures and the tree every CI boot
 //! uses.
 
-use jh7110_entropy::{COMPATIBLE, COMPATIBLE_VENDOR};
+use jh7110_entropy::{COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR};
 use machine_discovery::jh7110::entropy::discover;
 
 const JH7110_TRNG_PRESENT: &[u8] = include_bytes!("fixtures/jh7110-trng-present.dtb");
@@ -24,7 +24,7 @@ fn discover_finds_the_device_on_a_tree_shaped_like_the_real_board() {
     assert_eq!(found.reg_base, 0x1600_C000);
     assert_eq!(found.reg_size, 0x4000);
     assert_eq!(found.interrupt, Some(30));
-    assert_eq!(found.compatible, COMPATIBLE);
+    assert_eq!(found.compatible, COMPATIBLE_MAINLINE);
     // Mainline's binding example states no `status`, and the device-tree specification's default
     // for an absent `status` is "okay".
     assert!(found.status_okay);
