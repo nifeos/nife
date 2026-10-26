@@ -11,7 +11,7 @@ A row whose status refuses a spelling took its name from a ruling of 2026-10-26 
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `designware_ethernet` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-155 names: 138 no block, 16 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 7 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+155 names: 103 no block, 51 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 7 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 28 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -32,7 +32,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `hardware` | module | `src/hardware.rs` | provisional. | no | clear |
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a MAC crate |
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Refused `mdio` (ruled 2026-10-26 UTC). | yes | clear |
+| `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Refused `mdio` (ruled 2026-10-26 UTC). | yes | term |
 | `motorcomm` | module | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `registers` | module | `src/registers.rs` | provisional. Refused `regs` (ruled 2026-10-26 UTC). | yes | clear |
@@ -96,7 +96,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `receive_verdict` | item | `src/descriptor.rs` | provisional. Refused `rx_verdict` (ruled 2026-10-26 UTC). | yes | clear |
 | `transmit_descriptor_words` | item | `src/descriptor.rs` | provisional. Refused `tx_descriptor_words` (ruled 2026-10-26 UTC). | yes | clear |
 | `Hardware` | item | `src/hardware.rs` | provisional. Refused `Hw` (ruled 2026-10-26 UTC). | yes | clear |
-| `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Refused `AON_SYSCON_NODE` (ruled 2026-10-26 UTC). | yes | clear |
+| `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Refused `AON_SYSCON_NODE` (ruled 2026-10-26 UTC). | yes | term |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLES` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Refused `COMPATIBLE_AON_SYSCON` (ruled 2026-10-26 UTC). | yes | clear |
@@ -106,14 +106,14 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GMAC0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC0_SYSTEM_CONTROLLER_OFFSET` | item | `src/jh7110.rs` | provisional. Refused `GMAC0_SYSCON_OFFSET` (ruled 2026-10-26 UTC). | yes | clear |
 | `GMAC1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `SystemController` | item | `src/jh7110.rs` | provisional. Refused `Syscon` (ruled 2026-10-26 UTC). | yes | clear |
+| `SystemController` | item | `src/jh7110.rs` | provisional. Refused `Syscon` (ruled 2026-10-26 UTC). | yes | term |
 | `VENDOR_PHYSICAL_LAYER_DEVICE_NODE` | item | `src/jh7110.rs` | provisional. Refused `VENDOR_PHY_NODE` (ruled 2026-10-26 UTC). | yes | clear |
 | `fallback` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `first_cell` | item | `src/jh7110.rs` | provisional. | yes | scope: a device-tree cell reader in a MAC crate |
 | `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `interface` | item | `src/jh7110.rs` | unrecorded. | yes | generic |
 | `mainline_physical_layer_device` | item | `src/jh7110.rs` | provisional. Refused `mainline_phy` (ruled 2026-10-26 UTC). | yes | unclear: reads as a PHY; it reads a PHY node into settings |
-| `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Refused `select_rgmii` (ruled 2026-10-26 UTC). | yes | clear |
+| `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Refused `select_rgmii` (ruled 2026-10-26 UTC). | yes | term |
 | `vendor_physical_layer_device` | item | `src/jh7110.rs` | provisional. Refused `vendor_phy` (ruled 2026-10-26 UTC). | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
@@ -129,7 +129,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GB` | item | `src/management_data_input_output.rs` | unrecorded. | yes | term |
 | `GOC_READ` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `GOC_WRITE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
-| `ManagementDataInputOutput` | item | `src/management_data_input_output.rs` | provisional. Refused `Mdio` (ruled 2026-10-26 UTC). | yes | clear |
+| `ManagementDataInputOutput` | item | `src/management_data_input_output.rs` | provisional. Refused `Mdio` (ruled 2026-10-26 UTC). | yes | term |
 | `PA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `RDA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `command` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
@@ -148,7 +148,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `Settings` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Source` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Speed` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `PHY_ID_YT8531` | item | `src/motorcomm.rs` | provisional. Refused `YT8531_ID` (ruled 2026-10-26 UTC). | yes | clear |
+| `PHY_ID_YT8531` | item | `src/motorcomm.rs` | provisional. Refused `YT8531_ID` (ruled 2026-10-26 UTC). | yes | scope: one vendor's PHY in a MAC crate |
 | `apply_speed` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `configure` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
@@ -158,12 +158,12 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `write_extended` | item | `src/motorcomm.rs` | provisional. Refused `write_ext` (ruled 2026-10-26 UTC). | yes | clear |
 | `CHAN_CUR_RX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_CUR_TX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CHAN_RX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_RX_TAIL` (ruled 2026-10-26 UTC). | yes | clear |
+| `CHAN_RX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_RX_TAIL` (ruled 2026-10-26 UTC). | yes | term |
 | `CHAN_STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_STATUS_RPS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_STATUS_TPS` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CHAN_TX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_TX_TAIL` (ruled 2026-10-26 UTC). | yes | clear |
-| `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` | item | `src/registers.rs` | provisional. Refused `DMA_PAGE` (ruled 2026-10-26 UTC). | yes | clear |
+| `CHAN_TX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_TX_TAIL` (ruled 2026-10-26 UTC). | yes | term |
+| `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` | item | `src/registers.rs` | provisional. Refused `DMA_PAGE` (ruled 2026-10-26 UTC). | yes | nife: nife's own process plan |
 | `MAC_ADDR0_HI` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_ADDR0_LO` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_CONF_BE` | item | `src/registers.rs` | unrecorded. | yes | term |
@@ -171,11 +171,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `MAC_CONF_DM` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_CONF_FES` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_CONF_JD` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CONFIG_LM` | item | `src/registers.rs` | provisional. Refused `MAC_CONF_LM` (ruled 2026-10-26 UTC). | yes | clear |
+| `CONFIG_LM` | item | `src/registers.rs` | provisional. Refused `MAC_CONF_LM` (ruled 2026-10-26 UTC). | yes | term |
 | `MAC_CONF_PS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_MDIO_ADDR` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_MDIO_DATA` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `VERSION` | item | `src/registers.rs` | provisional. Refused `MAC_VERSION` (ruled 2026-10-26 UTC). | yes | clear |
+| `VERSION` | item | `src/registers.rs` | provisional. Refused `MAC_VERSION` (ruled 2026-10-26 UTC). | yes | term |
 | `WINDOW` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `mac_hw_feature` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `with` | item | `src/sim.rs` | unrecorded. | no | clear |
