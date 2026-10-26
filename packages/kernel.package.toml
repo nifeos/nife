@@ -29,7 +29,9 @@ crates = [
 # `jh7110_clock_and_reset` names the JH7110 clock controllers' spellings and decodes their
 # properties; the device-tree walk in `machine_discovery` (contracts) reads the tree with them and
 # fills in its types. Two packages link it, so it is an interface.
-interfaces = ["jh7110_clock_and_reset"]
+# `spin_lock` is the kernel's lock; `host_reordering_litmus` (host-tools) runs it in a bare-metal
+# guest to measure it, so two packages link it and it is an interface.
+interfaces = ["jh7110_clock_and_reset", "spin_lock"]
 
 [[exception]]
 date = 2026-10-04

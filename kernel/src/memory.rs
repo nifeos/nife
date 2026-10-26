@@ -232,7 +232,7 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         return;
     }
     let slot = |i| {
-        designware_mobile_storage::jh7110::discover(dtb, i)
+        machine_discovery::jh7110::designware_mobile_storage::discover(dtb, i)
             .ok()
             .flatten()
     };
@@ -283,13 +283,13 @@ fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 #[inline(never)]
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110_ethernet(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
-    let Ok(Some(port)) = designware_ethernet::jh7110::discover(dtb) else {
+    let Ok(Some(port)) = machine_discovery::jh7110::designware_ethernet::discover(dtb) else {
         return;
     };
     if let (Ok(aon), Ok(sys), Ok(syscon)) = (
         machine_discovery::jh7110::clock_and_reset::discover_aon(dtb),
         machine_discovery::jh7110::clock_and_reset::discover_sys(dtb),
-        designware_ethernet::jh7110::discover_aon_syscon(dtb),
+        machine_discovery::jh7110::designware_ethernet::discover_aon_syscon(dtb),
     ) {
         *JH7110_ETHERNET.lock() = Some(Jh7110Ethernet {
             port,

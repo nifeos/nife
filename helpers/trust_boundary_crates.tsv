@@ -51,8 +51,8 @@ credentialer	userspace	components
 crickerfs	shared	retired
 current_cpu_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 current_cpu_protocol	shared	retired
-designware_ethernet	shared	components,kernel
-designware_mobile_storage	shared	components,kernel
+designware_ethernet	shared	components,kernel,uefi_loader
+designware_mobile_storage	shared	components,kernel,uefi_loader
 device_tree_blob	shared	components,kernel,uefi_loader
 direct_memory_access_validator	kernel	kernel
 disk_tree	userspace	components
@@ -60,6 +60,7 @@ dma_validator	kernel	retired
 documentation	userspace	components,mdr
 domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	components,kernel
 elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
@@ -153,6 +154,7 @@ soak_page	shared	fixtures,kernel
 socket_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
+spin_lock	kernel	kernel
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
 std_runtime_protocol	shared	retired
 steal_request	kernel	retired

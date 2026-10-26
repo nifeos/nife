@@ -34,7 +34,7 @@ const VECTORS: &[&str] = &[
     "chacha20-poly1305 ok",
     "x25519 ok",
     "p256 generator ok",
-    "entropy 0.2 ok",
+    "entropy 0.4 ok",
     // **The two real chains, which are why `rsa` is in the graph at all** (calef, 2026-09-20:
     // "Take rsa"). `github.com` is ECDSA P-256 throughout and would have needed none of it; the
     // hosts that actually serve a release asset are RSA 2048 and RSA 4096, so a client without
@@ -49,7 +49,7 @@ const VECTORS: &[&str] = &[
 
 /// **A `rustls` crypto provider's algorithms compute what their specifications say, here.**
 ///
-/// `entropy 0.2 ok` has no published vector: the program draws twice through `getrandom` 0.2 and
+/// `entropy 0.4 ok` has no published vector: the program draws twice through `getrandom` 0.4 and
 /// asserts the draws differ, the claim milestone 56 (secrets, credentials, and the entropy to make
 /// them safe) made for `std::random`, which a silently stubbed backend fails. `provider ok` is the
 /// object §196's ruling is about, this tree's own `cryptography_provider`: three TLS 1.3 suites,

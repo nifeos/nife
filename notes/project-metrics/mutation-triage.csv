@@ -733,9 +733,9 @@ designware_ethernet,mac_hw_feature,replace + with *,killed,killed by regs::tests
 designware_ethernet,mac_hw_feature,replace + with -,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace mac_hw_feature -> u32 with 0,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace mac_hw_feature -> u32 with 1,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
-designware_ethernet,mainline_phy,replace & with ^,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback
-designware_ethernet,mainline_phy,replace & with |,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback
-designware_ethernet,mainline_phy,replace && with ||,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback
+designware_ethernet,mainline_phy,replace & with ^,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
+designware_ethernet,mainline_phy,replace & with |,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
+designware_ethernet,mainline_phy,replace && with ||,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_takes_the_default_for_the_other
 designware_ethernet,modify_ext,replace | with ^,equivalent,"private, and every caller passes a set that is a subset of clear, so (v & !clear) has none of set's bits and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,observe,replace + with *,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
 designware_ethernet,observe,replace + with -,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
@@ -772,8 +772,8 @@ designware_ethernet,tx_queue_mode,replace &= with |=,killed,killed by controller
 designware_ethernet,tx_queue_mode,replace | with &,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
 designware_ethernet,tx_queue_mode,replace | with ^,equivalent,"TSF (bit 1) and the TTC mask (bits 6:4) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,tx_queue_mode,replace |= with &=,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
-designware_ethernet,vendor_phy,replace & with ^,killed,killed by jh7110::tests::a_vendor_phy_reg_is_its_mdio_address
-designware_ethernet,vendor_phy,replace & with |,killed,killed by jh7110::tests::a_vendor_phy_reg_is_its_mdio_address
+designware_ethernet,vendor_phy,replace & with ^,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
+designware_ethernet,vendor_phy,replace & with |,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
 designware_ethernet,volt_mv,delete match arm CHIP_CONFIG_LDO_2V5,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
 designware_ethernet,volt_mv,delete match arm CHIP_CONFIG_LDO_3V3,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
 designware_ethernet,volt_mv,replace & with |,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
@@ -1250,7 +1250,7 @@ designware_mobile_storage,Entry::contains,replace < with >,killed,killed by a_pa
 designware_mobile_storage,Entry::contains,replace >= with <,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with false,killed,killed by a_partition_contains_its_own_sectors_and_no_others
 designware_mobile_storage,Entry::contains,replace Entry::contains -> bool with true,killed,killed by a_partition_contains_its_own_sectors_and_no_others
-designware_mobile_storage,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract,Handoff::pack,replace | with ^,equivalent,"ROLE << 48, the u8 fifo_depth << 40, writable << 39, (bus_width & 0xf) << 32 and the u32 ciu_hz occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,"Host<R, D>::finish",replace != with ==,killed,killed by a_data_error_at_the_end_of_a_write_is_reported_promptly
 designware_mobile_storage,"Host<R, D>::finish",replace & with ^,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
 designware_mobile_storage,"Host<R, D>::finish",replace & with |,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
@@ -1307,8 +1307,8 @@ designware_mobile_storage,check,replace / with *,killed,killed by one_command_mo
 designware_mobile_storage,check,replace > with ==,killed,killed by one_command_moves_no_more_blocks_than_a_32_bit_byte_count_holds
 designware_mobile_storage,check,replace > with >=,killed,killed by one_command_moves_no_more_blocks_than_a_32_bit_byte_count_holds
 designware_mobile_storage,clock_divider,replace > with >=,killed,killed by the_divider_never_runs_the_card_faster_than_asked
-designware_mobile_storage,discover,replace != with ==,killed,killed by a_foreign_binding_is_skipped_and_a_stated_rate_is_kept
-designware_mobile_storage,discover,replace == with !=,killed,killed by a_foreign_binding_is_skipped_and_a_stated_rate_is_kept
+designware_mobile_storage,Slot::from_node,replace != with ==,killed,killed by jh7110::tests::a_vendor_node_with_nothing_but_its_binding_takes_the_defaults (a zero clock rate is the default) and a_node_under_another_binding_or_none_is_not_this_controller
+designware_mobile_storage,Slot::from_node,replace == with !=,killed,killed by jh7110::tests::a_vendor_node_with_nothing_but_its_binding_takes_the_defaults (a zero clock rate is the default) and a_node_under_another_binding_or_none_is_not_this_controller
 designware_mobile_storage,fifo_step,replace < with <=,equivalent,at bytes == remaining both arms give the same count; the 2026-10-12 per-crate re-run still reports it
 designware_mobile_storage,fifo_step,replace > with >=,equivalent,at filled == depth the clamp yields depth either way; the 2026-10-12 per-crate re-run still reports it
 designware_mobile_storage,fifoth_for_pio,replace | with ^,equivalent,"2 << 28, (rx & 0xfff) << 16 and half & 0xfff occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
@@ -1497,3 +1497,4 @@ file_allocation_table,LongName::alias,replace + with *,equivalent,"with i * 1 th
 file_allocation_table,LongName::entry,replace | with ^,equivalent,"an ordinal is at most 20, below LAST_LONG_ENTRY (0x40), so the two bits never overlap and xor equals or"
 grant_plan,Expander<'a>::offer,replace > with >=,equivalent,"differs only for a name equal to the set's last, and a name already in the set returned at offer's first check (set.contains), so it never reaches this comparison; re-run with cargo mutants on crates/grant_plan/src/expand.rs still reports it"
 loaded_image_check,stack_aligned,replace stack_aligned -> bool with true,gap,"a host test process always enters with an aligned stack, and every program spawned in QEMU now enters through program_entry!, so nothing reaches the false branch; the check is there for a future _start that skips the macro"
+spin_lock,pause,replace pause with (),equivalent,"off loom the body is core::hint::spin_loop(), a scheduling hint with no semantic effect: the wait loop still spins on the flag and nothing can observe whether the hint was issued (memory_corruption_canary_gate's pause, the same function). Under loom the body is a yield the models need, and script/interleaving-check is its checker. Reported by the mutation gate on #2734 and again by a local cargo mutants -p spin_lock on 2026-10-26"

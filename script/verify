@@ -399,7 +399,8 @@ credential_contract	2	no request word reads outside the page; nothing but MATCH 
 capability_plan	14	no wiring grants a right its declaration did not ask for
 timetable	41	the scheduler's fire arithmetic: strictly forward, minimal, and a stall costs one fire
 jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
-designware_mobile_storage	4	the SD write test never lands in a partition, no served block leaves its window, the FIFO is never overrun, no admitted block wraps its address
+designware_mobile_storage	4	the SD write test never lands in a partition, the FIFO is never overrun, no admitted block wraps its address
+driver_process_contract	2	no block the SD card server translates leaves the window the kernel chose
 kernel	7	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	8	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	690	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string

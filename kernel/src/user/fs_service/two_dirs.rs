@@ -8,7 +8,7 @@ use super::*;
 /// The last pair [`start_granted_two_dirs`] built: both grants as asked for, both narrowed
 /// endpoints, and the shared file-channel frame. See the reuse note there.
 #[allow(clippy::type_complexity)]
-static TWO_DIRS: spin::Mutex<
+static TWO_DIRS: spin_lock::SpinLock<
     Option<(
         (&'static str, u64),
         (&'static str, u64),
@@ -16,7 +16,7 @@ static TWO_DIRS: spin::Mutex<
         RendezvousId,
         u64,
     )>,
-> = spin::Mutex::new(None);
+> = spin_lock::SpinLock::new(None);
 
 /// Two directory grants for one confined program: slot 0 is always [`TwoDirGrant::a`] and slot 1
 /// always [`TwoDirGrant::b`], which is the whole of what tells them apart.

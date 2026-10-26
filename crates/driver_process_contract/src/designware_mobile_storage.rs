@@ -1,25 +1,42 @@
-//! What the kernel and the EL0 block server agree on: where the server's two windows sit, the part
-//! of the card it may serve, and the three spawn words that say so. The server
+//! What the kernel and the EL0 SD/MMC block server agree on: where the server's two windows sit,
+//! the part of the card it may serve, and the three spawn words that say so. The server
 //! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::blk`, the four
 //! verbs the virtio and NVMe block servers answer, so the FS server cannot tell which disk it has.
 //! Its blocks are 4096 bytes; the card's are 512. A request names blocks inside a window the kernel
 //! chose at spawn, never a card address, and [`Window::translate`] is the one place a block becomes
 //! a sector; a Kani harness proves no request reaches outside it. Which window radon's filesystem
-//! gets is a fact two programs must agree on, so an architect's call (the crate root's BUGS and
-//! the block of milestone 53 (the board's own peripherals)).
+//! gets is a fact two programs must agree on, so an architect's call (`designware_mobile_storage`'s
+//! BUGS and the block of milestone 53 (the board's own peripherals: network and storage on real
+//! silicon)).
+//!
+//! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
+//! serves; the module was `designware_mobile_storage::serve` until the process layout left that
+//! crate.
 
 use filesystem_contract::blk;
 
 /// Where the server finds the controller's first page, mapped device-typed.
-pub const REGISTER_VA: u64 = address_space_map::pair_page(0x0060_0000);
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
+/// driver crate's `REGISTER_VA`, renamed to spell out the address as design/naming.md asks.
+pub const REGISTER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0060_0000);
 /// Where the server finds the transfer region it shares with its client, [`blk::TRANSFER_BLOCKS`]
 /// pages.
-pub const TRANSFER_VA: u64 = address_space_map::pair_page(0x0070_0000);
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
+/// driver crate's `TRANSFER_VA`, renamed to spell out the address as design/naming.md asks.
+pub const TRANSFER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0070_0000);
 
-/// Card sectors in one `blk` block.
-pub const SECTORS_PER_BLOCK: u64 = (blk::BLOCK_SIZE / crate::sd::BLOCK) as u64;
+/// Card sectors in one `blk` block. An SD card's sector is `blk`'s 512-byte sector.
+///
+/// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+/// crate, where the name had no block.
+pub const SECTORS_PER_BLOCK: u64 = blk::SECTORS_PER_BLOCK;
 
 /// **The part of the card a server may touch**, in card sectors.
+///
+/// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+/// crate, where the name had no block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Window {
     /// The first sector.
@@ -32,6 +49,9 @@ pub struct Window {
 
 impl Window {
     /// How many `blk` blocks the window holds.
+    ///
+    /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+    /// crate, where the name had no block.
     #[must_use]
     pub const fn blocks(&self) -> u64 {
         self.sectors / SECTORS_PER_BLOCK
@@ -41,13 +61,16 @@ impl Window {
     /// outside the window (or `count` is 0).
     ///
     /// ```
-    /// use designware_mobile_storage::serve::Window;
+    /// use driver_process_contract::designware_mobile_storage::Window;
     ///
     /// let w = Window { first: 2048, sectors: 64, writable: false };
     /// assert_eq!(w.translate(1, 2), Some(2056));
     /// assert_eq!(w.translate(7, 1), Some(2104));
     /// assert_eq!(w.translate(7, 2), None);
     /// ```
+    ///
+    /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+    /// crate, where the name had no block.
     #[must_use]
     pub const fn translate(&self, block: u64, count: u64) -> Option<u64> {
         let Some(end) = block.checked_add(count) else {
@@ -63,10 +86,16 @@ impl Window {
 }
 
 /// The spawn words' tag, so a server handed some other program's words refuses them.
+///
+/// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+/// crate, where the name had no block.
 pub const ROLE: u64 = 0x5d17;
 
 /// **Everything the server is told at spawn**: the window, and the three facts about the slot the
 /// controller needs that the server cannot read for itself.
+///
+/// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+/// crate, where the name had no block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// The part of the card to serve.
@@ -82,6 +111,9 @@ pub struct Handoff {
 impl Handoff {
     /// The three spawn words: `[ROLE << 48 | fifo_depth << 40 | writable << 39 | bus_width << 32
     /// | ciu_hz, first, sectors]`.
+    ///
+    /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+    /// crate, where the name had no block.
     #[must_use]
     pub const fn pack(&self) -> [u64; 3] {
         [
@@ -98,6 +130,9 @@ impl Handoff {
     /// **The handoff `pack` made, or `None`**: a wrong tag, a bus width that is not 1, 4 or 8, a
     /// zero clock or FIFO, an empty window, a window that is not whole blocks, or one whose end
     /// does not fit in 64 bits.
+    ///
+    /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
+    /// crate, where the name had no block.
     #[must_use]
     pub const fn unpack(words: [u64; 3]) -> Option<Handoff> {
         let [w0, first, sectors] = words;
@@ -122,6 +157,9 @@ impl Handoff {
         if ok { Some(h) } else { None }
     }
 }
+
+#[cfg(kani)]
+mod proofs;
 
 #[cfg(test)]
 mod tests {

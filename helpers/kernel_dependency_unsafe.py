@@ -28,9 +28,9 @@ macro outside another macro's body is an `expansion` row, since that is where th
 lands; a macro that only invokes another unsafe one counts as unsafe too. A site inside a
 `#[cfg(test)]` module is marked, since no kernel build compiles it.
 
-**Pinned facts.** `PINS` names facts in a crate's source that a nife claim rests on, such as the
-orderings of `spin`'s lock. `--check` and `--write` both fail when one stops holding, so a bump
-cannot regenerate its way past the claim.
+**Pinned facts.** `PINS` names facts in a crate's source that a nife claim rests on. `--check` and
+`--write` both fail when one stops holding, so a bump cannot regenerate its way past the claim. It
+is empty: no claim in nife rests on a fact in these crates' source.
 
 **What this does not say.** It cannot tell which sites the kernel reaches, which `cfg` compiles
 out, or what checks them; the note says each of those by hand, and a bump re-reads it.
@@ -41,12 +41,12 @@ maintainer/kernel-dependency-unsafe-listing.
 BUGS
 
 - Text, not a parser. A `macro_rules!` whose body names `unsafe` through a fragment
-  (`$vis unsafe`) is found; one that builds the keyword some other way is not. None of the four
+  (`$vis unsafe`) is found; one that builds the keyword some other way is not. None of the three
   crates does that today.
 - The function column is the nearest `fn` name above the site, which for a site in an `impl`
   block's associated constant or a closure is the function before it.
 - An expansion is counted where the crate invokes its own macro. A macro the crate exports and a
-  caller invokes is counted once, at its definition; the kernel invokes none of the four crates'
+  caller invokes is counted once, at its definition; the kernel invokes none of the three crates'
   macros that hold unsafe code (`tock-registers`' `register_structs!` and `register_bitfields!`
   generate none).
 """
@@ -83,15 +83,7 @@ crate\tversion\ttargets\tpath\tline\tkind\tfunction\tmacro\ttest
 # `--write`. Each is (crate, file, pattern, how many times it must match, the claim). A bump that
 # changes one fails here even after the table is regenerated, because rereading the claim is the
 # point. notes/kernel-dependency-unsafe.md lists them with the claims.
-PINS = [
-    ('spin', 'src/mutex/spin.rs',
-     r'compare_exchange(?:_weak)?\(\s*false,\s*true,\s*Ordering::Acquire,\s*Ordering::Relaxed\s*\)',
-     2, 'SpinMutex takes the lock with an Acquire compare-exchange, strong and weak '
-        "(notes/memory-ordering.md, section 'Where this kernel's ordering actually lives')"),
-    ('spin', 'src/mutex/spin.rs', r'\.store\(\s*false,\s*Ordering::Release\s*\)',
-     2, 'SpinMutex releases the lock with a Release store, in the guard\'s drop and in '
-        'force_unlock (notes/memory-ordering.md)'),
-]
+PINS = []
 
 _UNSAFE = re.compile(r'\bunsafe\b')
 _ASM = re.compile(r'\b(?:asm|global_asm|naked_asm)\s*!')

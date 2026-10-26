@@ -67,10 +67,10 @@ fn check(bytes: &[u8], size: SectorSize) {
         per_cluster * size.bytes() as u64
     );
 
-    for index in 0..=boot.tables() {
+    for index in 0..=boot.table_count() {
         match boot.table_first_sector(index) {
             Some(first) => assert!(u64::from(first) + u64::from(boot.table_sectors()) <= total),
-            None => assert_eq!(index, boot.tables()),
+            None => assert_eq!(index, boot.table_count()),
         }
     }
     if let RootDirectory::Cluster(root) = boot.root_directory() {

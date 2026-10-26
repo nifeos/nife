@@ -5,9 +5,15 @@
 //! (notes/cryptography-provider.md), and X25519 is what almost every modern server prefers for the
 //! exchange. The ephemeral secret comes from the primitive crate, not `rustls`' `SecureRandom`, as
 //! `rustls` documents ("it is assumed that the cryptography library provides for this itself"). Both
-//! draw through `rand_core`'s `OsRng`, which on nife is `entropy_backend` and the entropy service.
+//! draw through `getrandom`'s `SysRng`, which on nife is `entropy_backend` and the entropy service.
+//! `UnwrapErr` panics on a failing source, which is what `OsRng` did here before: these crates take
+//! an infallible generator and have no error to return.
 
 use alloc::{boxed::Box, vec::Vec};
+
+use getrandom::SysRng;
+use getrandom::rand_core::UnwrapErr;
+use p256::elliptic_curve::Generate as _;
 
 use rustls::crypto::{ActiveKeyExchange, SharedSecret, SupportedKxGroup};
 use rustls::{Error, NamedGroup, PeerMisbehaved};
@@ -22,7 +28,7 @@ pub struct P256;
 
 impl SupportedKxGroup for X25519 {
     fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, Error> {
-        let secret = x25519_dalek::EphemeralSecret::random_from_rng(rand_core::OsRng);
+        let secret = x25519_dalek::EphemeralSecret::random_from_rng(&mut UnwrapErr(SysRng));
         let public = x25519_dalek::PublicKey::from(&secret);
         Ok(Box::new(ActiveX25519 {
             secret,
@@ -44,8 +50,8 @@ impl SupportedKxGroup for X25519 {
 
 impl SupportedKxGroup for P256 {
     fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, Error> {
-        let secret = p256::ecdh::EphemeralSecret::random(&mut rand_core::OsRng);
-        let public = p256::EncodedPoint::from(secret.public_key());
+        let secret = p256::ecdh::EphemeralSecret::generate_from_rng(&mut UnwrapErr(SysRng));
+        let public = p256::Sec1Point::from(secret.public_key());
         Ok(Box::new(ActiveP256 {
             secret,
             public: public.as_bytes().to_vec(),
@@ -82,7 +88,7 @@ impl ActiveKeyExchange for ActiveX25519 {
         // **A contributory-behaviour check, which RFC 8446 section 7.4.2 requires for X25519.**
         // An all-zero shared secret means the peer sent a low-order point, and the specification
         // says to abort rather than continue with a secret an attacker chose.
-        if !bool::from(shared.was_contributory()) {
+        if !shared.was_contributory() {
             return Err(Error::PeerMisbehaved(PeerMisbehaved::InvalidKeyShare));
         }
         Ok(SharedSecret::from(shared.as_bytes().as_slice()))

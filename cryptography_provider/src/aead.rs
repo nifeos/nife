@@ -11,7 +11,7 @@
 
 use alloc::boxed::Box;
 
-use aes_gcm::AeadInPlace;
+use aes_gcm::AeadInOut;
 use aes_gcm::aead::consts::{U12, U16};
 use aes_gcm::aead::{AeadCore, KeyInit};
 use rustls::crypto::cipher::{
@@ -75,7 +75,7 @@ pub struct Algorithm<C> {
 // a 96-bit nonce (RFC 8446 section 5.3) and a 128-bit tag for all three of its AEADs.
 impl<C> Tls13AeadAlgorithm for Algorithm<C>
 where
-    C: KeyInit + AeadInPlace + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
+    C: KeyInit + AeadInOut + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
 {
     fn encrypter(&self, key: AeadKey, iv: Iv) -> Box<dyn MessageEncrypter> {
         Box::new(Encrypter::<C> {
@@ -126,7 +126,7 @@ struct Encrypter<C> {
 
 impl<C> MessageEncrypter for Encrypter<C>
 where
-    C: AeadInPlace + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
+    C: AeadInOut + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
 {
     fn encrypt(
         &mut self,
@@ -149,7 +149,7 @@ where
 
         let tag = self
             .cipher
-            .encrypt_in_place_detached(&nonce, &aad, payload.as_mut())
+            .encrypt_inout_detached(&nonce, &aad, payload.as_mut().into())
             .map_err(|_| Error::EncryptError)?;
         payload.extend_from_slice(&tag);
 
@@ -174,7 +174,7 @@ struct Decrypter<C> {
 
 impl<C> MessageDecrypter for Decrypter<C>
 where
-    C: AeadInPlace + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
+    C: AeadInOut + AeadCore<NonceSize = U12, TagSize = U16> + Send + Sync + 'static,
 {
     fn decrypt<'a>(
         &mut self,
@@ -193,10 +193,10 @@ where
 
         let cipher_len = payload.len() - TAG_LEN;
         let (ciphertext, tag) = payload.split_at_mut(cipher_len);
-        let tag = aes_gcm::Tag::<U16>::clone_from_slice(tag);
+        let tag = aes_gcm::Tag::<U16>::try_from(&*tag).map_err(|_| Error::DecryptError)?;
 
         self.cipher
-            .decrypt_in_place_detached(&nonce, &aad, ciphertext, &tag)
+            .decrypt_inout_detached(&nonce, &aad, ciphertext.into(), &tag)
             .map_err(|_| Error::DecryptError)?;
 
         payload.truncate(cipher_len);
@@ -211,7 +211,7 @@ mod tests {
     use super::*;
     // `USIZE` lives on `Unsigned`, typenum's trait for a compile-time number. Imported rather than
     // hard-coding 16 twice, which is what this test exists to stop.
-    use aes_gcm::aes::cipher::Unsigned;
+    use aes_gcm::aead::array::typenum::Unsigned;
 
     /// **The tag length is asserted rather than trusted**, because `TAG_LEN` is a constant this
     /// file wrote and everything above sizes buffers with it. A cipher whose tag were a different
