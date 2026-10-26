@@ -1,6 +1,9 @@
 # The service path: what a userspace server costs
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds `relay_rtt`, `broker_rtt`, `fs_read`, and two small re-saves from July and August, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds `relay_rtt`, `broker_rtt`, `fs_read`,
+and two small re-saves from July and August, with the dates, tables and corrections behind them.
+Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The service-path benchmarks: what a userspace-server architecture costs (2026-07-29)
 
@@ -39,7 +42,7 @@ Milestone 23 (a capability-routed component OS with live replacement), DECISIONS
 "opt-in per channel, never the default" a rule rather than a preference.
 
 The default rung has no benchmark of its own, because it has no cost of its own. A client holds a
-capability to a stable *endpoint*, and whoever is parked in `RECEIVE_CAP` on it answers; a swap changes
+capability to a stable *endpoint*, and whoever waits in `RECEIVE_CAP` on it answers; a swap changes
 who that is. No process stands in the data path, so the steady state is `call_reply` exactly, and the
 swap adds nothing to it. The kernel's own sender queue buffers the down window: requests that arrive
 while nobody is receiving park there, and the replacement drains them.
@@ -62,9 +65,9 @@ both ISAs, like `relay_rtt`.
 Two notes. First, `broker_rtt` and `relay_rtt` measure the same shape (one confined intermediary) in
 the two idioms the codebase uses, `CALL`/`Reply` and `SEND`/`RECEIVE` pairs. They land within 2.5% of
 each other, a small cross-check that the Reply-capability path costs about what a pre-wired reply
-endpoint does. Second, what is measured is the broker's pass-through. During a down window it does
-strictly less work per request (one rendezvous, an enqueue, an immediate answer). That is not the
-number to quote, because the steady state is where a channel spends its life.
+endpoint does. Second, what the broker bench measures is the broker's pass-through. During a down
+window it does strictly less work per request (one rendezvous, an enqueue, an immediate answer).
+That is not the number to quote, because the steady state is where a channel spends its life.
 
 Adding this bench shifted the other kernel-side numbers by a couple of percent through whole-crate
 codegen (`spawn_reap` -2.3%, `ipc_rtt_el0` +0.3%), all sub-tripwire. Both baselines were re-saved in
