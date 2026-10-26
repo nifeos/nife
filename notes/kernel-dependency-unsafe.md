@@ -34,8 +34,7 @@ them, and which claims rest on them.
 
 `--all-features` gives the same set. `uuid` arrives on x86_64 through `boot_slot` and
 `globally_unique_identifier_partition_table`, and pulls no procedural macro or build script into
-the kernel. §46's table also names `spin`, which the kernel does not link; the
-kernel's lock is `crates/spin_lock`, listed below.
+the kernel. The kernel's lock is `crates/spin_lock`, listed below.
 
 ## How a site is counted
 
