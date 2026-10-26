@@ -47,6 +47,11 @@ Build where no write credential exists, and push from a job that builds nothing:
 3. `propose-kani` gets the same `persist-credentials: false`; `script/kani-bump` reads a release
    list and compiles nothing, but nothing should be able to read the token.
 
+Setting `persist-credentials: false` in `propose` alone is not enough, because the build and the
+push would still share one runner. A compromised build step can plant a hook in `.git/hooks` or
+edit a tree script, and the push step then runs it with `GH_TOKEN` set. Two jobs give the push a
+fresh checkout that no build has touched.
+
 ## Exit test
 
 On `main`, a scheduled or dispatched run opens or updates the bump pull request as before, and the
