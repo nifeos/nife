@@ -10,7 +10,7 @@ pin every region above it. Inside the client's region, the client's one reap end
 endpoints must come from that region too: `sched::reap_region_objects` sweeps a region's endpoints
 before its threads, and that sweep is what wakes a caretaker parked in `RECEIVE`.
 
-The caretaker is built with no fault slot. Its region is collected by the client's reap. A second
+`build_caretaker` gives the caretaker no fault slot. The client's reap collects its region. A second
 death message for a thread that reap already took would have `job_undertaker` collect a tid the
 scheduler no longer knows, which it traps on. A `graphical_terminal` session's drivers and line
 discipline are unsupervised for the same reason; the session program alone is born on `deaths`, and
@@ -24,11 +24,12 @@ deadline; `kernel::user::fs_service::wait_for_caretaker` has the same exposure. 
 one-time reports are taken in the order the drivers send them (`UP`, `TERM_UP`, the driver's
 `FLUSHED`, `KEYBOARD_UP`), because a report nobody receives parks its sender for ever.
 
-`reclaim` retries a region's destroy, because a destroy of a region holding a live thread is
-refused with §16's kill armed and one preemption later succeeds. It is bounded and silent where
+`reclaim` retries a region's destroy, because a destroy of a region holding a live thread is refused
+with §16's kill armed and one preemption later succeeds. It is bounded and silent where
 `job_undertaker` traps: this is the spawn service, and a trap here would take the prompt down over
 one command's memory. A session that could not come up is a refused spawn for the same reason, never
-a trap.
+a trap. The exception is a session whose line discipline cannot be built: `build_terminal` traps, as
+the crate's BUGS records.
 
 A session without a keyboard reads the boot's line discipline through a copy badged
 `proto::RAW_ONLY_BADGE`. The discipline answers only raw-mode operations on that badge, so the
@@ -60,5 +61,6 @@ waits only once the request in hand has been read to its end, when the shell is 
 endpoint and only the undertaker can send. It waits only while a finished job's reap is due. A due
 reap is one whose job the shell has had the whole answer from, which an exiting program follows at
 once. A job that blocks after answering is never reaped, and a request waiting on it waits with it;
-`^C` cannot help, because the shell is parked. Image frames are mapped when they arrive and copied
-only later, for the same reason: the copy's carve may wait.
+`^C` cannot help, because the shell is parked. `Service::read_request` maps image frames when they
+arrive and `Service::carve_image` copies them only later, for the same reason: the copy's carve may
+wait.
