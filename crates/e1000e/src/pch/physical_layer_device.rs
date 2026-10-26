@@ -131,43 +131,66 @@ pub const fn paged_offset(page: u32, register: u32) -> u32 {
 /// names. Refused `r` (a letter, not a name).
 pub mod registers {
     use super::paged_offset;
-    /// MII control.
+    /// **Control Register** (`PHY_CONTROL`, FreeBSD's `e1000_defines.h`). MII register 0.
     ///
     /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
     /// a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused `CONTROL` (a
     /// shortened copy).
+    #[doc(alias = "control register")]
     pub const PHY_CONTROL: u32 = 0x00;
-    /// PHY identifier, high word.
+    /// **PHY Identifier, Word 1** (`PHY_ID1`, FreeBSD's `e1000_defines.h`). The high word.
+    #[doc(alias = "phy identifier, word 1")]
     pub(crate) const PHY_ID1: u32 = 0x02;
-    /// PHY identifier, low word and revision.
+    /// **PHY Identifier, Word 2** (`PHY_ID2`, FreeBSD's `e1000_defines.h`). The low word and the
+    /// revision.
+    #[doc(alias = "phy identifier, word 2")]
     pub(crate) const PHY_ID2: u32 = 0x03;
-    /// Autonegotiation advertisement.
+    /// **Autonegotiation Advertisement** (`PHY_AUTONEG_ADV`, FreeBSD's `e1000_defines.h`).
+    #[doc(alias = "autonegotiation advertisement")]
     pub(crate) const PHY_AUTONEG_ADV: u32 = 0x04;
-    /// 1000BASE-T control.
+    /// **1000BASE-T Control** (`PHY_1000T_CTRL`, FreeBSD's `e1000_defines.h`).
+    #[doc(alias = "1000base-t control")]
     pub(crate) const PHY_1000T_CTRL: u32 = 0x09;
-    /// 82577-family configuration (`I82577_CFG_REG`).
+    /// **82577 Configuration** (`I82577_CFG_REG`, FreeBSD's `e1000_phy.h`).
+    #[doc(alias = "82577 configuration")]
     pub(crate) const I82577_CFG_REG: u32 = 22;
-    /// 82577-family control 2 (`I82577_PHY_CTRL_2`).
+    /// **82577 PHY Control 2** (`I82577_PHY_CTRL_2`, FreeBSD's `e1000_phy.h`).
+    #[doc(alias = "82577 phy control 2")]
     pub(crate) const I82577_PHY_CTRL_2: u32 = 18;
-    /// Kumeran mode control (`HV_KMRN_MODE_CTRL`).
+    /// **Kumeran Mode Control** (`HV_KMRN_MODE_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 769,
+    /// register 16.
     ///
     /// Name: ratified 2026-10-26 (UTC), in the ruling that keeps a register or bit name copied from
     /// a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`). Refused
     /// `KMRN_MODE_CTRL` (a shortened copy).
+    #[doc(alias = "kumeran mode control")]
     pub const HV_KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
-    /// Port general configuration (`BM_PORT_GEN_CFG`).
+    /// **Port General Configuration** (`BM_PORT_GEN_CFG`, FreeBSD's `e1000_ich8lan.h`). Page 769,
+    /// register 17.
+    #[doc(alias = "port general configuration")]
     pub(crate) const BM_PORT_GEN_CFG: u32 = paged_offset(769, 17);
-    /// `SMBus` control (`CV_SMB_CTRL`).
+    /// **System Management Bus Control** (`CV_SMB_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 769,
+    /// register 23.
+    #[doc(alias = "system management bus control")]
     pub(crate) const CV_SMB_CTRL: u32 = paged_offset(769, 23);
-    /// Power management control (`HV_PM_CTRL`).
+    /// **Power Management Control** (`HV_PM_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 770, register
+    /// 17.
+    #[doc(alias = "power management control")]
     pub(crate) const HV_PM_CTRL: u32 = paged_offset(770, 17);
-    /// Ultra-low-power configuration 1 (`I218_ULP_CONFIG1`).
+    /// **Ultra-Low-Power Configuration 1** (`I218_ULP_CONFIG1`, FreeBSD's `e1000_ich8lan.h`). Page
+    /// 779, register 16.
+    #[doc(alias = "ultra-low-power configuration 1")]
     pub(crate) const I218_ULP_CONFIG1: u32 = paged_offset(779, 16);
-    /// OEM bits: LPLU, gigabit disable, restart autonegotiation (`HV_OEM_BITS`).
+    /// **OEM Bits** (`HV_OEM_BITS`, FreeBSD's `e1000_ich8lan.h`). LPLU, gigabit disable and restart
+    /// autonegotiation; page 768, register 25.
+    #[doc(alias = "oem bits")]
     pub(crate) const HV_OEM_BITS: u32 = paged_offset(768, 25);
-    /// `SMBus` address (`HV_SMB_ADDR`).
+    /// **System Management Bus Address** (`HV_SMB_ADDR`, FreeBSD's `e1000_ich8lan.h`). Page 768,
+    /// register 26.
+    #[doc(alias = "system management bus address")]
     pub(crate) const HV_SMB_ADDR: u32 = paged_offset(768, 26);
-    /// LED configuration (`HV_LED_CONFIG`).
+    /// **LED Configuration** (`HV_LED_CONFIG`, FreeBSD's `e1000_ich8lan.h`). Page 768, register 30.
+    #[doc(alias = "led configuration")]
     pub(crate) const HV_LED_CONFIG: u32 = paged_offset(768, 30);
 }
 

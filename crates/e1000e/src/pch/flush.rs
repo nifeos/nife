@@ -36,8 +36,10 @@ pub const fn transmit_word() -> u64 {
 pub const fn tail_after(tdt: u32, entries: u16) -> u32 {
     (tdt + 1) % entries as u32
 }
-/// `RXDCTL` for the receive flush: prefetch threshold 31, host threshold 1, granularity in
-/// descriptors, the rest of the register kept.
+/// **Receive Descriptor Control** (`E1000_RXDCTL`, FreeBSD's `e1000_regs.h`) for the receive flush:
+/// prefetch threshold 31, host threshold 1, granularity in descriptors, the rest of the register
+/// kept.
+#[doc(alias = "receive descriptor control")]
 pub const fn rxdctl(rxdctl: u32) -> u32 {
     (rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
 }

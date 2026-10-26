@@ -24,9 +24,11 @@ pub const RFCTL_EXTEN: u32 = 0x0000_8000;
 /// `RAH`: the address in this entry is valid.
 pub const RAH_AV: u32 = 0x8000_0000;
 
-/// `RCTL` as the kernel programs it: enabled, broadcast accepted (DHCP's offer is broadcast),
-/// 2048-byte buffers (size field zero), the CRC stripped. **Not** promiscuous: unicast is filtered
-/// to receive-address entry 0, which the process cannot write.
+/// **Receive Control** (`E1000_RCTL`, Linux's `regs.h`) as the kernel programs it: enabled,
+/// broadcast accepted (DHCP's offer is broadcast), 2048-byte buffers (size field zero), the CRC
+/// stripped. **Not** promiscuous: unicast is filtered to receive-address entry 0, which the process
+/// cannot write.
+#[doc(alias = "receive control")]
 pub const fn rctl() -> u32 {
     const EN: u32 = 0x0000_0002;
     const BAM: u32 = 0x0000_8000;
@@ -34,15 +36,18 @@ pub const fn rctl() -> u32 {
     EN | BAM | SECRC
 }
 
-/// `TCTL` as the kernel programs it: enabled, short frames padded, collision threshold 15 and
-/// distance 63 (Linux's full-duplex values, `defines.h`).
+/// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel programs it: enabled, short
+/// frames padded, collision threshold 15 and distance 63 (Linux's full-duplex values, `defines.h`).
+#[doc(alias = "transmit control")]
 pub const fn tctl() -> u32 {
     const EN: u32 = 0x0000_0002;
     const PSP: u32 = 0x0000_0008;
     EN | PSP | 15 << 4 | 63 << 12
 }
 
-/// `TIPG` for copper: IPGT 8, IPGR1 8, IPGR2 6 (Linux's `DEFAULT_82543_TIPG_*`).
+/// **Transmit Inter-Packet Gap** (`E1000_TIPG`, Linux's `regs.h`) for copper: IPGT 8, IPGR1 8,
+/// IPGR2 6 (Linux's `DEFAULT_82543_TIPG_*`).
+#[doc(alias = "transmit inter-packet gap")]
 pub const fn tipg() -> u32 {
     8 | 8 << 10 | 6 << 20
 }
