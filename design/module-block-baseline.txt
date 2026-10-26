@@ -855,7 +855,6 @@ crates/designware_ethernet/src/descriptor.rs::RDES3_BUF1V
 crates/designware_ethernet/src/descriptor.rs::RDES3_CTXT
 crates/designware_ethernet/src/descriptor.rs::RDES3_ES
 crates/designware_ethernet/src/descriptor.rs::RDES3_FD
-crates/designware_ethernet/src/descriptor.rs::RDES3_IOC
 crates/designware_ethernet/src/descriptor.rs::RDES3_LD
 crates/designware_ethernet/src/descriptor.rs::RDES3_LENGTH
 crates/designware_ethernet/src/descriptor.rs::RDES3_OWN
@@ -875,9 +874,7 @@ crates/designware_ethernet/src/jh7110.rs::interface
 crates/designware_ethernet/src/layout.rs
 crates/designware_ethernet/src/layout.rs::BYTES
 crates/designware_ethernet/src/layout.rs::PAGES
-crates/designware_ethernet/src/management_data_input_output.rs
 crates/designware_ethernet/src/management_data_input_output.rs::BMCR_RESET
-crates/designware_ethernet/src/management_data_input_output.rs::BMSR_ANEG_COMPLETE
 crates/designware_ethernet/src/management_data_input_output.rs::Bus
 crates/designware_ethernet/src/management_data_input_output.rs::COMMAND_LIMIT_US
 crates/designware_ethernet/src/management_data_input_output.rs::CR_500_800
@@ -895,15 +892,9 @@ crates/designware_ethernet/src/motorcomm.rs
 crates/designware_ethernet/src/motorcomm.rs::Applied
 crates/designware_ethernet/src/motorcomm.rs::Drive
 crates/designware_ethernet/src/motorcomm.rs::Link
-crates/designware_ethernet/src/motorcomm.rs::SPECIFIC_STATUS
-crates/designware_ethernet/src/motorcomm.rs::STATUS_DUPLEX
-crates/designware_ethernet/src/motorcomm.rs::STATUS_LINK
-crates/designware_ethernet/src/motorcomm.rs::STATUS_RESOLVED
-crates/designware_ethernet/src/motorcomm.rs::STATUS_SPEED_SHIFT
 crates/designware_ethernet/src/motorcomm.rs::Settings
 crates/designware_ethernet/src/motorcomm.rs::Source
 crates/designware_ethernet/src/motorcomm.rs::Speed
-crates/designware_ethernet/src/motorcomm.rs::YT8531_ID
 crates/designware_ethernet/src/motorcomm.rs::apply_speed
 crates/designware_ethernet/src/motorcomm.rs::configure
 crates/designware_ethernet/src/motorcomm.rs::link
@@ -912,11 +903,9 @@ crates/designware_ethernet/src/motorcomm.rs::mbps
 crates/designware_ethernet/src/proofs.rs
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_TX_DESC
-crates/designware_ethernet/src/registers.rs::CHAN_RX_TAIL
 crates/designware_ethernet/src/registers.rs::CHAN_STATUS
 crates/designware_ethernet/src/registers.rs::CHAN_STATUS_RPS
 crates/designware_ethernet/src/registers.rs::CHAN_STATUS_TPS
-crates/designware_ethernet/src/registers.rs::CHAN_TX_TAIL
 crates/designware_ethernet/src/registers.rs::MAC_ADDR0_HI
 crates/designware_ethernet/src/registers.rs::MAC_ADDR0_LO
 crates/designware_ethernet/src/registers.rs::MAC_CONF_BE
@@ -924,11 +913,9 @@ crates/designware_ethernet/src/registers.rs::MAC_CONF_DCRS
 crates/designware_ethernet/src/registers.rs::MAC_CONF_DM
 crates/designware_ethernet/src/registers.rs::MAC_CONF_FES
 crates/designware_ethernet/src/registers.rs::MAC_CONF_JD
-crates/designware_ethernet/src/registers.rs::MAC_CONF_LM
 crates/designware_ethernet/src/registers.rs::MAC_CONF_PS
 crates/designware_ethernet/src/registers.rs::MAC_MDIO_ADDR
 crates/designware_ethernet/src/registers.rs::MAC_MDIO_DATA
-crates/designware_ethernet/src/registers.rs::MAC_VERSION
 crates/designware_ethernet/src/registers.rs::WINDOW
 crates/designware_ethernet/src/registers.rs::mac_hw_feature
 crates/designware_ethernet/src/sim.rs

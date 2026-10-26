@@ -33,7 +33,7 @@ pub(crate) const RESET_LIMIT_US: u64 = 300_000;
 /// What the controller says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identity {
-    /// [`registers::MAC_VERSION`].
+    /// [`registers::VERSION`].
     pub version: u32,
     /// The four hardware feature registers.
     pub features: [u32; 4],
@@ -47,7 +47,7 @@ impl Identity {
             *f = hardware.read(registers::mac_hw_feature(i as u32));
         }
         Identity {
-            version: hardware.read(registers::MAC_VERSION),
+            version: hardware.read(registers::VERSION),
             features,
         }
     }
@@ -93,11 +93,11 @@ const fn queue_bytes(field: u32) -> u32 {
 
 /// **Reset the whole controller** and wait for the reset to finish. Returns how long it took.
 pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
-    let mode = hardware.read(registers::DMA_MODE);
-    hardware.write(registers::DMA_MODE, mode | registers::DMA_MODE_SWR);
+    let mode = hardware.read(registers::BUS_MODE);
+    hardware.write(registers::BUS_MODE, mode | registers::BUS_MODE_SWR);
     let mut waited = 0;
     loop {
-        if hardware.read(registers::DMA_MODE) & registers::DMA_MODE_SWR == 0 {
+        if hardware.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0 {
             return Ok(waited);
         }
         if waited >= RESET_LIMIT_US {
@@ -153,7 +153,7 @@ pub struct Bus {
     pub receive_channel_burst_length: u32,
     /// `snps,force_thresh_dma_mode`: threshold mode rather than store and forward.
     pub threshold_mode: bool,
-    /// The system bus's permitted burst lengths: the [`registers::DMA_SYSBUS_MODE`] `BLEN` bits
+    /// The system bus's permitted burst lengths: the [`registers::SYS_BUS_MODE`] `BLEN` bits
     /// `snps,blen` names, a different setting from the channels' burst lengths.
     pub bus_burst_lengths: u32,
     /// `snps,rd_osr_lmt`.
@@ -168,14 +168,15 @@ pub struct Bus {
 pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
-        mode &= !(registers::MTL_RXQ_OP_MODE_RSF | registers::MTL_RXQ_OP_MODE_RTC_MASK);
-        mode |= registers::MTL_RXQ_OP_MODE_RTC_128;
+        mode &= !(registers::MTL_CHAN_RX_OP_MODE_RSF | registers::MTL_CHAN_RX_OP_MODE_RTC_MASK);
+        mode |= registers::MTL_CHAN_RX_OP_MODE_RTC_128;
     } else {
-        mode |= registers::MTL_RXQ_OP_MODE_RSF;
+        mode |= registers::MTL_CHAN_RX_OP_MODE_RSF;
     }
     let rqs = (queue_bytes / 256).saturating_sub(1);
-    mode &= !registers::MTL_RXQ_OP_MODE_RQS_MASK;
-    mode |= (rqs << registers::MTL_RXQ_OP_MODE_RQS_SHIFT) & registers::MTL_RXQ_OP_MODE_RQS_MASK;
+    mode &= !registers::MTL_CHAN_RX_OP_MODE_RQS_MASK;
+    mode |=
+        (rqs << registers::MTL_CHAN_RX_OP_MODE_RQS_SHIFT) & registers::MTL_CHAN_RX_OP_MODE_RQS_MASK;
     if queue_bytes >= 4096 {
         // EHFC, then RFD = 3 and RFA = 1: OpenBSD's flow control thresholds.
         mode |= 1 << 7;
@@ -189,16 +190,17 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
-        mode &= !(registers::MTL_TXQ_OP_MODE_TSF | registers::MTL_TXQ_OP_MODE_TTC_MASK);
-        mode |= registers::MTL_TXQ_OP_MODE_TTC_512;
+        mode &= !(registers::MTL_CHAN_TX_OP_MODE_TSF | registers::MTL_CHAN_TX_OP_MODE_TTC_MASK);
+        mode |= registers::MTL_CHAN_TX_OP_MODE_TTC_512;
     } else {
-        mode |= registers::MTL_TXQ_OP_MODE_TSF;
+        mode |= registers::MTL_CHAN_TX_OP_MODE_TSF;
     }
-    mode &= !registers::MTL_TXQ_OP_MODE_TXQEN_MASK;
-    mode |= registers::MTL_TXQ_OP_MODE_TXQEN;
+    mode &= !registers::MTL_CHAN_TX_OP_MODE_TXQEN_MASK;
+    mode |= registers::MTL_CHAN_TX_OP_MODE_TXQEN;
     let tqs = (queue_bytes / 256).saturating_sub(1);
-    mode &= !registers::MTL_TXQ_OP_MODE_TQS_MASK;
-    mode |= (tqs << registers::MTL_TXQ_OP_MODE_TQS_SHIFT) & registers::MTL_TXQ_OP_MODE_TQS_MASK;
+    mode &= !registers::MTL_CHAN_TX_OP_MODE_TQS_MASK;
+    mode |=
+        (tqs << registers::MTL_CHAN_TX_OP_MODE_TQS_SHIFT) & registers::MTL_CHAN_TX_OP_MODE_TQS_MASK;
     mode
 }
 
@@ -242,87 +244,86 @@ pub fn configure(
         });
     }
 
-    let mut mode = hardware.read(registers::DMA_SYSBUS_MODE);
+    let mut mode = hardware.read(registers::SYS_BUS_MODE);
     if bus.fixed_burst {
-        mode |= registers::DMA_SYSBUS_MODE_FB;
+        mode |= registers::SYS_BUS_MODE_FB;
     }
     if id.direct_memory_access_address_bits() > 32 {
-        mode |= registers::DMA_SYSBUS_MODE_EAME;
+        mode |= registers::SYS_BUS_MODE_EAME;
     }
-    let osr = registers::DMA_SYSBUS_MODE_OSR_LMT_MASK;
-    mode &= !(osr << registers::DMA_SYSBUS_MODE_RD_OSR_LMT_SHIFT
-        | osr << registers::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT);
-    mode |= (bus.read_outstanding & osr) << registers::DMA_SYSBUS_MODE_RD_OSR_LMT_SHIFT
-        | (bus.write_outstanding & osr) << registers::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT
+    mode &= !(registers::SYS_BUS_MODE_RD_OSR_LMT_MASK | registers::SYS_BUS_MODE_WR_OSR_LMT_MASK);
+    mode |= (bus.read_outstanding << registers::SYS_BUS_MODE_RD_OSR_LMT_SHIFT)
+        & registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
+        | (bus.write_outstanding << registers::SYS_BUS_MODE_WR_OSR_LMT_SHIFT)
+            & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK
         | bus.bus_burst_lengths;
-    hardware.write(registers::DMA_SYSBUS_MODE, mode);
+    hardware.write(registers::SYS_BUS_MODE, mode);
 
     let control = hardware.read(registers::CHAN_CONTROL);
     hardware.write(
         registers::CHAN_CONTROL,
         if bus.channel_burst_length_times_8 {
-            control | registers::CHAN_CONTROL_PBLX8
+            control | registers::CHAN_CONTROL_8XPBL
         } else {
-            control & !registers::CHAN_CONTROL_PBLX8
+            control & !registers::CHAN_CONTROL_8XPBL
         },
     );
-    let pbl = registers::CHAN_PBL_MASK;
-    let transmit =
-        hardware.read(registers::CHAN_TX_CONTROL) & !(pbl << registers::CHAN_TX_CONTROL_PBL_SHIFT);
+    let transmit = hardware.read(registers::CHAN_TX_CONTROL) & !registers::CHAN_TX_CONTROL_PBL_MASK;
     hardware.write(
         registers::CHAN_TX_CONTROL,
         transmit
-            | (bus.transmit_channel_burst_length & pbl) << registers::CHAN_TX_CONTROL_PBL_SHIFT
+            | (bus.transmit_channel_burst_length << registers::CHAN_TX_CONTROL_PBL_SHIFT)
+                & registers::CHAN_TX_CONTROL_PBL_MASK
             | registers::CHAN_TX_CONTROL_OSP,
     );
     // The buffer size is written, not inherited (OpenBSD inherits it): a size left by firmware is
     // a fact about whoever ran last, and the device writes a frame up to it.
-    let rbsz = registers::CHAN_RX_CONTROL_RBSZ_MASK << registers::CHAN_RX_CONTROL_RBSZ_SHIFT;
-    let receive = hardware.read(registers::CHAN_RX_CONTROL)
-        & !(pbl << registers::CHAN_RX_CONTROL_PBL_SHIFT | rbsz);
+    let rbsz = registers::DMA_CH0_RX_CONTROL_RBSZ_MASK << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT;
+    let receive =
+        hardware.read(registers::CHAN_RX_CONTROL) & !(registers::CHAN_RX_CONTROL_RPBL_MASK | rbsz);
     hardware.write(
         registers::CHAN_RX_CONTROL,
         receive
-            | (bus.receive_channel_burst_length & pbl) << registers::CHAN_RX_CONTROL_PBL_SHIFT
-            | (BUFFER_SIZE as u32) << registers::CHAN_RX_CONTROL_RBSZ_SHIFT,
+            | (bus.receive_channel_burst_length << registers::CHAN_RX_CONTROL_RPBL_SHIFT)
+                & registers::CHAN_RX_CONTROL_RPBL_MASK
+            | (BUFFER_SIZE as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
     );
 
     let transmit_ring = region + layout::TRANSMIT_RING;
     let receive_ring = region + layout::RECEIVE_RING;
-    hardware.write(registers::CHAN_TX_BASE_HI, (transmit_ring >> 32) as u32);
-    hardware.write(registers::CHAN_TX_BASE, transmit_ring as u32);
+    hardware.write(
+        registers::CHAN_TX_BASE_ADDR_HI,
+        (transmit_ring >> 32) as u32,
+    );
+    hardware.write(registers::CHAN_TX_BASE_ADDR, transmit_ring as u32);
     hardware.write(registers::CHAN_TX_RING_LEN, u32::from(TRANSMIT_ENTRIES) - 1);
-    hardware.write(registers::CHAN_TX_TAIL, transmit_ring as u32);
-    hardware.write(registers::CHAN_RX_BASE_HI, (receive_ring >> 32) as u32);
-    hardware.write(registers::CHAN_RX_BASE, receive_ring as u32);
+    hardware.write(registers::CHAN_TX_END_ADDR, transmit_ring as u32);
+    hardware.write(registers::CHAN_RX_BASE_ADDR_HI, (receive_ring >> 32) as u32);
+    hardware.write(registers::CHAN_RX_BASE_ADDR, receive_ring as u32);
     hardware.write(registers::CHAN_RX_RING_LEN, u32::from(RECEIVE_ENTRIES) - 1);
-    hardware.write(registers::CHAN_RX_TAIL, receive_ring as u32);
+    hardware.write(registers::CHAN_RX_END_ADDR, receive_ring as u32);
 
     let receive_mode = receive_queue_mode(
-        hardware.read(registers::MTL_RXQ0_OP_MODE),
+        hardware.read(registers::MTL_CHAN_RX_OP_MODE),
         bus,
         id.receive_queue_bytes(),
     );
-    hardware.write(registers::MTL_RXQ0_OP_MODE, receive_mode);
+    hardware.write(registers::MTL_CHAN_RX_OP_MODE, receive_mode);
     let transmit_mode = transmit_queue_mode(
-        hardware.read(registers::MTL_TXQ0_OP_MODE),
+        hardware.read(registers::MTL_CHAN_TX_OP_MODE),
         bus,
         id.transmit_queue_bytes(),
     );
-    hardware.write(registers::MTL_TXQ0_OP_MODE, transmit_mode);
+    hardware.write(registers::MTL_CHAN_TX_OP_MODE, transmit_mode);
 
-    let flow = hardware.read(registers::MAC_Q0_TX_FLOW_CTRL);
+    let flow = hardware.read(registers::QX_TX_FLOW_CTRL);
     hardware.write(
-        registers::MAC_Q0_TX_FLOW_CTRL,
-        flow | 0xffff << registers::MAC_Q0_TX_FLOW_CTRL_PT_SHIFT
-            | registers::MAC_Q0_TX_FLOW_CTRL_TFE,
+        registers::QX_TX_FLOW_CTRL,
+        flow | 0xffff << registers::QX_TX_FLOW_CTRL_PT_SHIFT | registers::QX_TX_FLOW_CTRL_TFE,
     );
-    let flow = hardware.read(registers::MAC_RX_FLOW_CTRL);
-    hardware.write(
-        registers::MAC_RX_FLOW_CTRL,
-        flow | registers::MAC_RX_FLOW_CTRL_RFE,
-    );
-    hardware.write(registers::MAC_RXQ_CTRL0, registers::MAC_RXQ_CTRL0_Q0_DCB);
+    let flow = hardware.read(registers::RX_FLOW_CTRL);
+    hardware.write(registers::RX_FLOW_CTRL, flow | registers::RX_FLOW_CTRL_RFE);
+    hardware.write(registers::RXQ_CTRL0, registers::RXQ_CTRL0_DCB_QUEUE_EN);
 
     let (high, low) = address_words(station_address);
     hardware.write(registers::MAC_ADDR0_HI, high);
@@ -330,7 +331,7 @@ pub fn configure(
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
     hardware.write(registers::MAC_PACKET_FILTER, 0);
 
-    hardware.write(registers::MAC_INT_EN, 0);
+    hardware.write(registers::INT_EN, 0);
     hardware.write(registers::CHAN_INTR_ENA, 0);
     hardware.write(registers::MMC_RX_INT_MASK, u32::MAX);
     hardware.write(registers::MMC_TX_INT_MASK, u32::MAX);
@@ -351,7 +352,7 @@ pub const fn mac_conf(current: u32, link: Link, loopback: bool) -> u32 {
         & !(registers::MAC_CONF_PS
             | registers::MAC_CONF_FES
             | registers::MAC_CONF_DM
-            | registers::MAC_CONF_LM);
+            | registers::CONFIG_LM);
     conf |= match link.speed {
         Speed::Thousand => 0,
         Speed::Hundred => registers::MAC_CONF_PS | registers::MAC_CONF_FES,
@@ -361,7 +362,7 @@ pub const fn mac_conf(current: u32, link: Link, loopback: bool) -> u32 {
         conf |= registers::MAC_CONF_DM;
     }
     if loopback {
-        conf |= registers::MAC_CONF_LM;
+        conf |= registers::CONFIG_LM;
     }
     conf | registers::MAC_CONF_BE
         | registers::MAC_CONF_JD
@@ -402,14 +403,14 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
         registers::CHAN_TX_CONTROL,
         transmit & !registers::CHAN_TX_CONTROL_ST,
     );
-    let q = hardware.read(registers::MTL_TXQ0_OP_MODE);
+    let q = hardware.read(registers::MTL_CHAN_TX_OP_MODE);
     hardware.write(
-        registers::MTL_TXQ0_OP_MODE,
-        q | registers::MTL_TXQ_OP_MODE_FTQ,
+        registers::MTL_CHAN_TX_OP_MODE,
+        q | registers::MTL_CHAN_TX_OP_MODE_FTQ,
     );
     let mut flushed = false;
     for _ in 0..10_000 {
-        if hardware.read(registers::MTL_TXQ0_OP_MODE) & registers::MTL_TXQ_OP_MODE_FTQ == 0 {
+        if hardware.read(registers::MTL_CHAN_TX_OP_MODE) & registers::MTL_CHAN_TX_OP_MODE_FTQ == 0 {
             flushed = true;
             break;
         }
@@ -443,7 +444,7 @@ mod tests {
         let waited = soft_reset(&mut nic).unwrap();
         assert_eq!(waited, 40);
         assert_eq!(
-            nic.register(registers::DMA_MODE) & registers::DMA_MODE_SWR,
+            nic.register(registers::BUS_MODE) & registers::BUS_MODE_SWR,
             0
         );
     }
@@ -499,31 +500,31 @@ mod tests {
         let id = Identity::read(&mut nic);
         configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
         assert_eq!(
-            nic.register(registers::CHAN_RX_BASE),
+            nic.register(registers::CHAN_RX_BASE_ADDR),
             PHYSICAL_ADDRESS as u32
         );
         assert_eq!(
-            nic.register(registers::CHAN_TX_BASE),
+            nic.register(registers::CHAN_TX_BASE_ADDR),
             (PHYSICAL_ADDRESS + layout::TRANSMIT_RING) as u32
         );
         assert_eq!(
-            nic.register(registers::CHAN_RX_TAIL),
-            nic.register(registers::CHAN_RX_BASE)
+            nic.register(registers::CHAN_RX_END_ADDR),
+            nic.register(registers::CHAN_RX_BASE_ADDR)
         );
         assert_eq!(
-            nic.register(registers::CHAN_TX_TAIL),
-            nic.register(registers::CHAN_TX_BASE)
+            nic.register(registers::CHAN_TX_END_ADDR),
+            nic.register(registers::CHAN_TX_BASE_ADDR)
         );
         assert_eq!(nic.register(registers::CHAN_RX_RING_LEN), 15);
         assert_eq!(
-            nic.register(registers::CHAN_RX_CONTROL) >> 1 & registers::CHAN_RX_CONTROL_RBSZ_MASK,
+            nic.register(registers::CHAN_RX_CONTROL) >> 1 & registers::DMA_CH0_RX_CONTROL_RBSZ_MASK,
             2048
         );
         assert_eq!(nic.register(registers::CHAN_INTR_ENA), 0);
-        assert_eq!(nic.register(registers::MAC_INT_EN), 0);
+        assert_eq!(nic.register(registers::INT_EN), 0);
         assert_eq!(
-            nic.register(registers::MAC_RXQ_CTRL0),
-            registers::MAC_RXQ_CTRL0_Q0_DCB
+            nic.register(registers::RXQ_CTRL0),
+            registers::RXQ_CTRL0_DCB_QUEUE_EN
         );
         assert_eq!(
             station_address(
@@ -534,16 +535,16 @@ mod tests {
         );
         // radon's bus: fixed burst, no PBLx8, 16-beat bursts, threshold mode.
         assert_ne!(
-            nic.register(registers::DMA_SYSBUS_MODE) & registers::DMA_SYSBUS_MODE_FB,
+            nic.register(registers::SYS_BUS_MODE) & registers::SYS_BUS_MODE_FB,
             0
         );
         assert_eq!(
-            nic.register(registers::CHAN_CONTROL) & registers::CHAN_CONTROL_PBLX8,
+            nic.register(registers::CHAN_CONTROL) & registers::CHAN_CONTROL_8XPBL,
             0
         );
         assert_eq!(nic.register(registers::CHAN_TX_CONTROL) >> 16 & 0x3f, 16);
         assert_eq!(
-            nic.register(registers::MTL_RXQ0_OP_MODE) & registers::MTL_RXQ_OP_MODE_RSF,
+            nic.register(registers::MTL_CHAN_RX_OP_MODE) & registers::MTL_CHAN_RX_OP_MODE_RSF,
             0,
             "threshold mode"
         );
@@ -554,13 +555,13 @@ mod tests {
         // 262144 bytes, the vendor tree's rx-fifo-depth, is 1023 in a 10-bit field: it would fit,
         // and it would be a lie. The hardware's 2048 is 7.
         let mode = receive_queue_mode(0, &BUS, 2048);
-        assert_eq!(mode >> registers::MTL_RXQ_OP_MODE_RQS_SHIFT & 0x3ff, 7);
+        assert_eq!(mode >> registers::MTL_CHAN_RX_OP_MODE_RQS_SHIFT & 0x3ff, 7);
         assert_eq!(mode & 1 << 7, 0, "no flow control thresholds below 4 KiB");
         let mode = transmit_queue_mode(0, &BUS, 2048);
-        assert_eq!(mode >> registers::MTL_TXQ_OP_MODE_TQS_SHIFT & 0x1ff, 7);
+        assert_eq!(mode >> registers::MTL_CHAN_TX_OP_MODE_TQS_SHIFT & 0x1ff, 7);
         assert_eq!(
-            mode & registers::MTL_TXQ_OP_MODE_TXQEN_MASK,
-            registers::MTL_TXQ_OP_MODE_TXQEN
+            mode & registers::MTL_CHAN_TX_OP_MODE_TXQEN_MASK,
+            registers::MTL_CHAN_TX_OP_MODE_TXQEN
         );
     }
 
@@ -570,10 +571,10 @@ mod tests {
             speed: Speed::Thousand,
             full_duplex: true,
         };
-        let c = mac_conf(registers::MAC_CONF_PS | registers::MAC_CONF_LM, gig, false);
+        let c = mac_conf(registers::MAC_CONF_PS | registers::CONFIG_LM, gig, false);
         assert_eq!(c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES), 0);
         assert_ne!(c & registers::MAC_CONF_DM, 0);
-        assert_eq!(c & registers::MAC_CONF_LM, 0, "loopback cleared");
+        assert_eq!(c & registers::CONFIG_LM, 0, "loopback cleared");
         assert_eq!(c & (1 << 16), 0, "JE");
         let c = mac_conf(
             0,
@@ -587,7 +588,7 @@ mod tests {
             c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES | registers::MAC_CONF_DM),
             registers::MAC_CONF_PS | registers::MAC_CONF_FES
         );
-        assert_ne!(c & registers::MAC_CONF_LM, 0);
+        assert_ne!(c & registers::CONFIG_LM, 0);
     }
 
     #[test]
@@ -666,7 +667,7 @@ mod tests {
         transmit_channel_burst_length: 0x48,
         receive_channel_burst_length: 0x41,
         threshold_mode: false,
-        bus_burst_lengths: registers::DMA_SYSBUS_MODE_BLEN_32,
+        bus_burst_lengths: registers::SYS_BUS_MODE_BLEN_32,
         read_outstanding: 0x13,
         write_outstanding: 0x25,
     };
@@ -693,14 +694,14 @@ mod tests {
         let zero = configured(0, &FORTY_BIT, &BUS, region);
         let ones = configured(u32::MAX, &FORTY_BIT, &BUS, region);
         for (register, from_zero, from_ones) in [
-            (registers::DMA_SYSBUS_MODE, 0x0f0f_08f1, 0xffff_ffff),
+            (registers::SYS_BUS_MODE, 0x0f0f_08f1, 0xffff_ffff),
             (registers::CHAN_CONTROL, 0, 0xfffe_ffff),
             (registers::CHAN_TX_CONTROL, 0x0010_0010, 0xffd0_ffff),
             (registers::CHAN_RX_CONTROL, 0x0010_1000, 0xffd0_9001),
-            (registers::MTL_RXQ0_OP_MODE, 0x0070_0018, 0xc07f_ffdf),
-            (registers::MTL_TXQ0_OP_MODE, 0x0007_0078, 0xfe07_fff9),
-            (registers::MAC_Q0_TX_FLOW_CTRL, 0xffff_0001, 0xffff_ffff),
-            (registers::MAC_RX_FLOW_CTRL, 1, 0xffff_ffff),
+            (registers::MTL_CHAN_RX_OP_MODE, 0x0070_0018, 0xc07f_ffdf),
+            (registers::MTL_CHAN_TX_OP_MODE, 0x0007_0078, 0xfe07_fff9),
+            (registers::QX_TX_FLOW_CTRL, 0xffff_0001, 0xffff_ffff),
+            (registers::RX_FLOW_CTRL, 1, 0xffff_ffff),
         ] {
             assert_eq!(
                 zero.register(register),
@@ -714,10 +715,10 @@ mod tests {
             );
         }
         for hardware in [&zero, &ones] {
-            assert_eq!(hardware.register(registers::CHAN_TX_BASE_HI), 1);
-            assert_eq!(hardware.register(registers::CHAN_TX_BASE), 0x4800_1000);
-            assert_eq!(hardware.register(registers::CHAN_RX_BASE_HI), 1);
-            assert_eq!(hardware.register(registers::CHAN_RX_BASE), 0x4800_0000);
+            assert_eq!(hardware.register(registers::CHAN_TX_BASE_ADDR_HI), 1);
+            assert_eq!(hardware.register(registers::CHAN_TX_BASE_ADDR), 0x4800_1000);
+            assert_eq!(hardware.register(registers::CHAN_RX_BASE_ADDR_HI), 1);
+            assert_eq!(hardware.register(registers::CHAN_RX_BASE_ADDR), 0x4800_0000);
         }
     }
 
@@ -729,12 +730,12 @@ mod tests {
         let zero = configured(0, &THIRTY_TWO_BIT, &ODD, PHYSICAL_ADDRESS);
         let ones = configured(u32::MAX, &THIRTY_TWO_BIT, &ODD, PHYSICAL_ADDRESS);
         for (register, from_zero, from_ones) in [
-            (registers::DMA_SYSBUS_MODE, 0x0503_0010, 0xf5f3_ffff),
+            (registers::SYS_BUS_MODE, 0x0503_0010, 0xf5f3_ffff),
             (registers::CHAN_CONTROL, 0x0001_0000, 0xffff_ffff),
             (registers::CHAN_TX_CONTROL, 0x0008_0010, 0xffc8_ffff),
             (registers::CHAN_RX_CONTROL, 0x0001_1000, 0xffc1_9001),
-            (registers::MTL_RXQ0_OP_MODE, 0x00f0_c1a0, 0xc0f0_c1ff),
-            (registers::MTL_TXQ0_OP_MODE, 0x000f_000a, 0xfe0f_fffb),
+            (registers::MTL_CHAN_RX_OP_MODE, 0x00f0_c1a0, 0xc0f0_c1ff),
+            (registers::MTL_CHAN_TX_OP_MODE, 0x000f_000a, 0xfe0f_fffb),
         ] {
             assert_eq!(
                 zero.register(register),
@@ -819,7 +820,7 @@ mod tests {
                     (registers::MAC_CONF, cleared),
                     (registers::CHAN_RX_CONTROL, cleared),
                     (registers::CHAN_TX_CONTROL, cleared),
-                    (registers::MTL_TXQ0_OP_MODE, fill | 1),
+                    (registers::MTL_CHAN_TX_OP_MODE, fill | 1),
                     (registers::MAC_CONF, cleared & !2),
                     (registers::CHAN_INTR_ENA, 0),
                 ]
@@ -833,7 +834,7 @@ mod tests {
     fn a_reset_writes_the_bit_set_whatever_it_read() {
         let mut hardware = Seeded::new(u32::MAX);
         assert_eq!(soft_reset(&mut hardware), Err(Error::ResetTimeout));
-        assert_eq!(hardware.writes, [(registers::DMA_MODE, u32::MAX)]);
+        assert_eq!(hardware.writes, [(registers::BUS_MODE, u32::MAX)]);
     }
 
     /// The address width's every encoding, and a FIFO field past the largest the databook names

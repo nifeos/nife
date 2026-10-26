@@ -2,77 +2,136 @@
 //!
 //! The sequence is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and `ytphy_yt8521_update`
 //! (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`, ISC license, notice
-//! in the crate root). [`EXT_SLEEP_CONTROL1`] and [`EXT_CLOCK_GATING`] come from Linux's
-//! `drivers/net/phy/motorcomm.c`, read as facts about the part; why this driver writes them is at
-//! each. The vendor tree states register values and mainline states physical quantities, and for
-//! `gmac0` they agree. [`Settings::FALLBACK_GMAC0`] is used only when a tree states neither, and
-//! [`Settings::source`] says which happened.
+//! in the crate root). [`EXTREG_SLEEP_CONTROL1_REG`], [`CLOCK_GATING_REG`], [`PHY_ID_YT8531`],
+//! [`SPECIFIC_STATUS_REG`] and its `SSR_` bits come from Linux's `drivers/net/phy/motorcomm.c`,
+//! read as facts about the part; why this driver writes them is at each. Each constant keeps its
+//! source's name without the part prefix (`YT8511_`, `YT8521_`, `YT8531_` or `YTPHY_`), and its
+//! documentation opens with its full name and its source's spelling. The vendor tree states
+//! register values and mainline states physical quantities, and for `gmac0` they agree.
+//! [`Settings::FALLBACK_GMAC0`] applies only when a tree states neither, and [`Settings::source`]
+//! says which happened.
 
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 
-/// **The YT8531's identifier**, `PHYSID1 << 16 | PHYSID2` (Linux's `PHY_ID_YT8531`, matched
-/// exactly there; OpenBSD matches the OUI and model).
-pub const YT8531_ID: u32 = 0x4f51_e91b;
+/// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSID1 << 16 | PHYSID2`,
+/// matched exactly there; OpenBSD matches the OUI and model.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `YT8531_ID`.
+#[doc(alias = "yt8531 identifier")]
+pub const PHY_ID_YT8531: u32 = 0x4f51_e91b;
 
-/// The extended-register address port: write an extended register's number here.
-pub(crate) const EXT_ADDR: u8 = 0x1e;
-/// The extended-register data port: then read or write its value here.
-pub(crate) const EXT_DATA: u8 = 0x1f;
+/// **Extended register address port** (`YT8511_REG_ADDR`, `ytphy.c`): write an extended register's
+/// number here.
+#[doc(alias = "extended register address port")]
+pub(crate) const REG_ADDR: u8 = 0x1e;
+/// **Extended register data port** (`YT8511_REG_DATA`, `ytphy.c`): then read or write its value
+/// here.
+#[doc(alias = "extended register data port")]
+pub(crate) const REG_DATA: u8 = 0x1f;
 
-/// Extended: clock gating.
-pub(crate) const EXT_CLOCK_GATING: u16 = 0x000c;
-/// **Clear to keep the receive clock running with no cable.** Linux's `YT8521_CGR_RX_CLK_EN`,
-/// cleared for `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
+/// **Clock gating register** (`YT8521_CLOCK_GATING_REG`, `motorcomm.c`).
+#[doc(alias = "clock gating register")]
+pub(crate) const CLOCK_GATING_REG: u16 = 0x000c;
+/// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
+/// it to keep the receive clock running with no cable; Linux clears it for
+/// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
 /// software reset does not complete without a receive clock from the PHY (Linux's stmmac carries
 /// `phylink_rx_clk_stop_block` for the same reason), and a board booted with its cable out must
 /// still reset cleanly rather than refuse.
-pub(crate) const EXT_CLOCK_GATING_RX_CLK_EN: u16 = 1 << 12;
-/// Extended: sleep control.
-pub(crate) const EXT_SLEEP_CONTROL1: u16 = 0x0027;
-/// **Clear to stop the PHY sleeping when the cable is out**, which also stops its clocks. Linux's
-/// `YT8521_ESC1R_SLEEP_SW`, cleared for `motorcomm,auto-sleep-disabled`; cleared here for
-/// [`EXT_CLOCK_GATING_RX_CLK_EN`]'s reason. The cost is the PHY's idle power with no cable.
-pub(crate) const EXT_SLEEP_CONTROL1_SLEEP_SW: u16 = 1 << 15;
-/// Extended: chip configuration.
+#[doc(alias = "receive clock enable")]
+pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
+/// **Extended register, sleep control 1** (`YT8521_EXTREG_SLEEP_CONTROL1_REG`, `motorcomm.c`).
+#[doc(alias = "extended register, sleep control 1")]
+pub(crate) const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
+/// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
+/// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
+/// `motorcomm,auto-sleep-disabled`; this driver clears it for
+/// [`CGR_RX_CLK_EN`]'s reason. The cost is the PHY's idle power with no cable.
+#[doc(alias = "sleep switch")]
+pub(crate) const ESC1R_SLEEP_SW: u16 = 1 << 15;
+/// **Extended register, chip configuration** (`YT8521_EXT_CHIP_CONFIG`, `ytphy.c`).
+#[doc(alias = "extended register, chip configuration")]
 pub(crate) const EXT_CHIP_CONFIG: u16 = 0xa001;
-/// The receive clock's extra fixed delay (about 1.9 ns) is enabled.
-pub(crate) const CHIP_CONFIG_RXC_DLY_EN: u16 = 1 << 8;
+/// **Receive clock delay enable** (`YT8521_RXC_DLY_EN`, `ytphy.c`). The receive clock's extra fixed
+/// delay (about 1.9 ns) is enabled.
+#[doc(alias = "receive clock delay enable")]
+pub(crate) const RXC_DLY_EN: u16 = 1 << 8;
+/// **Chip configuration, low-dropout regulator voltage field** (`YT8521_CFG_LDO_MASK`, `ytphy.c`).
 /// The RGMII I/O voltage the PHY's LDO is strapped to.
-pub(crate) const CHIP_CONFIG_LDO_MASK: u16 = 0x3 << 4;
-/// 3.3 V.
-pub(crate) const CHIP_CONFIG_LDO_3V3: u16 = 0;
-/// 2.5 V.
-pub(crate) const CHIP_CONFIG_LDO_2V5: u16 = 1 << 4;
-/// Extended: RGMII configuration 1.
+#[doc(alias = "chip configuration, low-dropout regulator voltage field")]
+pub(crate) const CFG_LDO_MASK: u16 = 0x3 << 4;
+/// **Low-dropout regulator at 3.3 V** (`YT8521_CFG_LDO_3V3`, `ytphy.c`).
+#[doc(alias = "low-dropout regulator at 3.3 v")]
+pub(crate) const CFG_LDO_3V3: u16 = 0;
+/// **Low-dropout regulator at 2.5 V** (`YT8521_CFG_LDO_2V5`, `ytphy.c`).
+#[doc(alias = "low-dropout regulator at 2.5 v")]
+pub(crate) const CFG_LDO_2V5: u16 = 1 << 4;
+/// **Extended register, RGMII configuration 1** (`YT8521_EXT_RGMII_CONFIG1`, `ytphy.c`).
+#[doc(alias = "extended register, rgmii configuration 1")]
 pub(crate) const EXT_RGMII_CONFIG1: u16 = 0xa003;
-/// The transmit clock is inverted.
-pub(crate) const RGMII_CONFIG1_TX_CLK_SEL: u16 = 1 << 14;
-/// Receive delay select, in 150 ps steps.
-pub(crate) const RGMII_CONFIG1_RX_DELAY_SHIFT: u16 = 10;
-/// Transmit delay select, in 150 ps steps.
-pub(crate) const RGMII_CONFIG1_TX_DELAY_SHIFT: u16 = 0;
-/// Extended: pad drive strength.
-pub(crate) const EXT_PAD_DRIVE: u16 = 0xa010;
-/// The receive clock pad's drive strength field.
-pub(crate) const PAD_DRIVE_RXC_SHIFT: u16 = 13;
-/// The receive data pads' drive strength: its low two bits are bits 5:4, its high bit is bit 12.
-pub(crate) const PAD_DRIVE_RXD_MASK: u16 = (1 << 12) | (0x3 << 4);
-/// Extended: the synchronous Ethernet clock output.
+/// **Transmit clock select** (`YT8521_TX_CLK_SEL`, `ytphy.c`): set, the transmit clock is inverted.
+#[doc(alias = "transmit clock select")]
+pub(crate) const TX_CLK_SEL: u16 = 1 << 14;
+/// **Receive delay select shift** (`YT8521_RX_DELAY_SEL_SHIFT`, `ytphy.c`), in 150 ps steps.
+#[doc(alias = "receive delay select shift")]
+pub(crate) const RX_DELAY_SEL_SHIFT: u16 = 10;
+/// **Transmit delay select shift** (`YT8521_TX_DELAY_SEL_SHIFT`, `ytphy.c`), in 150 ps steps.
+#[doc(alias = "transmit delay select shift")]
+pub(crate) const TX_DELAY_SEL_SHIFT: u16 = 0;
+/// **Extended register, pad drive strength** (`YT8521_EXT_PAD_DRIVE_STRENGTH`, `ytphy.c`).
+#[doc(alias = "extended register, pad drive strength")]
+pub(crate) const EXT_PAD_DRIVE_STRENGTH: u16 = 0xa010;
+/// **RGMII receive clock drive strength shift** (`YT8531_RGMII_RXC_DS_SHIFT`, `ytphy.c`).
+#[doc(alias = "rgmii receive clock drive strength shift")]
+pub(crate) const RGMII_RXC_DS_SHIFT: u16 = 13;
+/// **RGMII receive data drive strength mask** (`YT8531_RGMII_RXD_DS_MASK`, `ytphy.c`): its low two
+/// bits are bits 5:4, its high bit is bit 12.
+#[doc(alias = "rgmii receive data drive strength mask")]
+pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
+/// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
+#[doc(alias = "extended register, synchronous ethernet configuration")]
 pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
-/// The clock output is enabled. Neither JH7110 tree asks for it, so it is cleared, as OpenBSD
-/// and Linux both do when `motorcomm,clk-out-frequency-hz` is absent.
-pub(crate) const SYNCE_CFG_EN: u16 = 1 << 6;
+/// **Synchronous Ethernet clock output enable** (`YT8531_EN_SYNC_E`, `ytphy.c`). Neither JH7110
+/// tree asks for it, so it is cleared, as OpenBSD and Linux both do when
+/// `motorcomm,clk-out-frequency-hz` is absent.
+#[doc(alias = "synchronous ethernet clock output enable")]
+pub(crate) const EN_SYNC_E: u16 = 1 << 6;
 
-/// Clause 22 vendor register: the PHY's resolved link.
-pub const SPECIFIC_STATUS: u8 = 0x11;
-/// The speed and duplex have been resolved.
-pub const STATUS_RESOLVED: u16 = 1 << 11;
-/// Real-time link.
-pub const STATUS_LINK: u16 = 1 << 10;
-/// Full duplex.
-pub const STATUS_DUPLEX: u16 = 1 << 13;
-/// The speed field, bits 15:14: 0 is 10, 1 is 100, 2 is 1000 Mbit/s.
-pub const STATUS_SPEED_SHIFT: u16 = 14;
+/// **PHY-specific status register** (`YTPHY_SPECIFIC_STATUS_REG`, `motorcomm.c`). Clause 22 vendor
+/// register: the PHY's resolved link.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `SPECIFIC_STATUS`.
+#[doc(alias = "phy-specific status register")]
+pub const SPECIFIC_STATUS_REG: u8 = 0x11;
+/// **Specific status, speed and duplex resolved** (`YTPHY_SSR_SPEED_DUPLEX_RESOLVED`,
+/// `motorcomm.c`). The speed and duplex have been resolved.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `STATUS_RESOLVED`.
+#[doc(alias = "specific status, speed and duplex resolved")]
+pub const SSR_SPEED_DUPLEX_RESOLVED: u16 = 1 << 11;
+/// **Specific status, link** (`YTPHY_SSR_LINK`, `motorcomm.c`). Real-time link.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `STATUS_LINK`.
+#[doc(alias = "specific status, link")]
+pub const SSR_LINK: u16 = 1 << 10;
+/// **Specific status, duplex** (`YTPHY_SSR_DUPLEX`, `motorcomm.c`). Full duplex.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `STATUS_DUPLEX`.
+#[doc(alias = "specific status, duplex")]
+pub const SSR_DUPLEX: u16 = 1 << 13;
+/// **Specific status, speed field shift**: bits 15:14, where 0 is 10, 1 is 100 and 2 is 1000
+/// Mbit/s. This crate's name, in the `YTPHY_SSR_` family of `motorcomm.c`, which states the field
+/// through `YTPHY_SSR_SPEED_MASK` and has no shift of its own.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c; the source has no such constant, so
+/// this crate names it in the source's `YTPHY_SSR_` family, replacing `STATUS_SPEED_SHIFT`.
+#[doc(alias = "speed shift")]
+pub const SSR_SPEED_SHIFT: u16 = 14;
 
 /// A link speed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,10 +167,10 @@ pub struct Link {
 /// **Decode the vendor status register.** `None` until the PHY has a link and has resolved its
 /// speed and duplex, and for the speed encodings a gigabit part never reports.
 pub const fn link_from_status(status: u16) -> Option<Link> {
-    if status & STATUS_LINK == 0 || status & STATUS_RESOLVED == 0 {
+    if status & SSR_LINK == 0 || status & SSR_SPEED_DUPLEX_RESOLVED == 0 {
         return None;
     }
-    let speed = match (status >> STATUS_SPEED_SHIFT) & 0x3 {
+    let speed = match (status >> SSR_SPEED_SHIFT) & 0x3 {
         0 => Speed::Ten,
         1 => Speed::Hundred,
         2 => Speed::Thousand,
@@ -119,7 +178,7 @@ pub const fn link_from_status(status: u16) -> Option<Link> {
     };
     Some(Link {
         speed,
-        full_duplex: status & STATUS_DUPLEX != 0,
+        full_duplex: status & SSR_DUPLEX != 0,
     })
 }
 
@@ -250,9 +309,9 @@ pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
 
 /// The I/O voltage the chip configuration word's LDO field states, in millivolts.
 pub(crate) const fn voltage_mv(chip_config: u16) -> u32 {
-    match chip_config & CHIP_CONFIG_LDO_MASK {
-        CHIP_CONFIG_LDO_3V3 => 3300,
-        CHIP_CONFIG_LDO_2V5 => 2500,
+    match chip_config & CFG_LDO_MASK {
+        CFG_LDO_3V3 => 3300,
+        CFG_LDO_2V5 => 2500,
         _ => 1800,
     }
 }
@@ -266,8 +325,8 @@ pub fn read_extended(
     physical_layer_device: u8,
     extended: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    bus.write(physical_layer_device, EXT_ADDR, extended)?;
-    bus.read(physical_layer_device, EXT_DATA)
+    bus.write(physical_layer_device, REG_ADDR, extended)?;
+    bus.read(physical_layer_device, REG_DATA)
 }
 
 /// Write extended register `extended`.
@@ -280,8 +339,8 @@ pub fn write_extended(
     extended: u16,
     v: u16,
 ) -> Result<(), management_data_input_output::Error> {
-    bus.write(physical_layer_device, EXT_ADDR, extended)?;
-    bus.write(physical_layer_device, EXT_DATA, v)
+    bus.write(physical_layer_device, REG_ADDR, extended)?;
+    bus.write(physical_layer_device, REG_DATA, v)
 }
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
@@ -318,27 +377,23 @@ pub fn configure(
     physical_layer_device: u8,
     s: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
-    let saved = bus.read(physical_layer_device, EXT_ADDR)?;
-    let delay_en = if s.receive_fixed_delay {
-        CHIP_CONFIG_RXC_DLY_EN
-    } else {
-        0
-    };
+    let saved = bus.read(physical_layer_device, REG_ADDR)?;
+    let delay_en = if s.receive_fixed_delay { RXC_DLY_EN } else { 0 };
     let chip = modify_extended(
         bus,
         physical_layer_device,
         EXT_CHIP_CONFIG,
-        CHIP_CONFIG_RXC_DLY_EN,
+        RXC_DLY_EN,
         delay_en,
     )?;
     let volt = voltage_mv(chip);
-    let delays = u16::from(s.receive_delay & 0xf) << RGMII_CONFIG1_RX_DELAY_SHIFT
-        | u16::from(s.transmit_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
+    let delays = u16::from(s.receive_delay & 0xf) << RX_DELAY_SEL_SHIFT
+        | u16::from(s.transmit_delay & 0xf) << TX_DELAY_SEL_SHIFT;
     let rgmii_config1 = modify_extended(
         bus,
         physical_layer_device,
         EXT_RGMII_CONFIG1,
-        0xf << RGMII_CONFIG1_RX_DELAY_SHIFT | 0xf << RGMII_CONFIG1_TX_DELAY_SHIFT,
+        0xf << RX_DELAY_SEL_SHIFT | 0xf << TX_DELAY_SEL_SHIFT,
         delays,
     )?;
     let rxc = u16::from(drive_code(volt, s.receive_clock_drive));
@@ -346,26 +401,26 @@ pub fn configure(
     let pad_drive = modify_extended(
         bus,
         physical_layer_device,
-        EXT_PAD_DRIVE,
-        0x7 << PAD_DRIVE_RXC_SHIFT | PAD_DRIVE_RXD_MASK,
-        rxc << PAD_DRIVE_RXC_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
+        EXT_PAD_DRIVE_STRENGTH,
+        0x7 << RGMII_RXC_DS_SHIFT | RGMII_RXD_DS_MASK,
+        rxc << RGMII_RXC_DS_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
     )?;
-    modify_extended(bus, physical_layer_device, EXT_SYNCE_CFG, SYNCE_CFG_EN, 0)?;
+    modify_extended(bus, physical_layer_device, EXT_SYNCE_CFG, EN_SYNC_E, 0)?;
     modify_extended(
         bus,
         physical_layer_device,
-        EXT_CLOCK_GATING,
-        EXT_CLOCK_GATING_RX_CLK_EN,
+        CLOCK_GATING_REG,
+        CGR_RX_CLK_EN,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device,
-        EXT_SLEEP_CONTROL1,
-        EXT_SLEEP_CONTROL1_SLEEP_SW,
+        EXTREG_SLEEP_CONTROL1_REG,
+        ESC1R_SLEEP_SW,
         0,
     )?;
-    bus.write(physical_layer_device, EXT_ADDR, saved)?;
+    bus.write(physical_layer_device, REG_ADDR, saved)?;
     Ok(Applied {
         voltage_mv: volt,
         rgmii_config1,
@@ -386,20 +441,16 @@ pub fn apply_speed(
         Speed::Hundred => s.transmit_clock_inverted[1],
         Speed::Thousand => s.transmit_clock_inverted[2],
     };
-    let saved = bus.read(physical_layer_device, EXT_ADDR)?;
-    let set = if inverted {
-        RGMII_CONFIG1_TX_CLK_SEL
-    } else {
-        0
-    };
+    let saved = bus.read(physical_layer_device, REG_ADDR)?;
+    let set = if inverted { TX_CLK_SEL } else { 0 };
     let v = modify_extended(
         bus,
         physical_layer_device,
         EXT_RGMII_CONFIG1,
-        RGMII_CONFIG1_TX_CLK_SEL,
+        TX_CLK_SEL,
         set,
     )?;
-    bus.write(physical_layer_device, EXT_ADDR, saved)?;
+    bus.write(physical_layer_device, REG_ADDR, saved)?;
     Ok(v)
 }
 
@@ -409,7 +460,7 @@ pub fn link(
     physical_layer_device: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
     Ok(link_from_status(
-        bus.read(physical_layer_device, SPECIFIC_STATUS)?,
+        bus.read(physical_layer_device, SPECIFIC_STATUS_REG)?,
     ))
 }
 
@@ -457,7 +508,7 @@ mod tests {
 
     #[test]
     fn the_status_register_resolves_only_with_link_and_resolution() {
-        let up_1000_full = STATUS_LINK | STATUS_RESOLVED | STATUS_DUPLEX | 2 << 14;
+        let up_1000_full = SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | SSR_DUPLEX | 2 << 14;
         assert_eq!(
             link_from_status(up_1000_full),
             Some(Link {
@@ -465,14 +516,17 @@ mod tests {
                 full_duplex: true
             })
         );
-        assert_eq!(link_from_status(up_1000_full & !STATUS_RESOLVED), None);
-        assert_eq!(link_from_status(up_1000_full & !STATUS_LINK), None);
         assert_eq!(
-            link_from_status(STATUS_LINK | STATUS_RESOLVED | 3 << 14),
+            link_from_status(up_1000_full & !SSR_SPEED_DUPLEX_RESOLVED),
+            None
+        );
+        assert_eq!(link_from_status(up_1000_full & !SSR_LINK), None);
+        assert_eq!(
+            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | 3 << 14),
             None
         );
         assert_eq!(
-            link_from_status(STATUS_LINK | STATUS_RESOLVED | 1 << 14),
+            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | 1 << 14),
             Some(Link {
                 speed: Speed::Hundred,
                 full_duplex: false
@@ -483,35 +537,35 @@ mod tests {
     #[test]
     fn configure_writes_radons_registers_and_restores_the_address_port() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
-        physical_layer_device.write_raw(EXT_ADDR, 0x1234);
+        physical_layer_device.write_raw(REG_ADDR, 0x1234);
         let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
         assert_eq!(a.voltage_mv, 1800);
         assert_eq!(
             physical_layer_device.extended(EXT_RGMII_CONFIG1) & 0x3c0f,
             0xa << 10 | 0xa
         );
-        assert_eq!(physical_layer_device.extended(EXT_PAD_DRIVE) >> 13, 6);
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
+            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) >> 13,
+            6
+        );
+        assert_eq!(
+            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) & RGMII_RXD_DS_MASK,
             3 << 4
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_CHIP_CONFIG) & CHIP_CONFIG_RXC_DLY_EN,
+            physical_layer_device.extended(EXT_CHIP_CONFIG) & RXC_DLY_EN,
+            0
+        );
+        assert_eq!(physical_layer_device.extended(EXT_SYNCE_CFG) & EN_SYNC_E, 0);
+        assert_eq!(
+            physical_layer_device.extended(EXTREG_SLEEP_CONTROL1_REG) & ESC1R_SLEEP_SW,
             0
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_SYNCE_CFG) & SYNCE_CFG_EN,
+            physical_layer_device.extended(CLOCK_GATING_REG) & CGR_RX_CLK_EN,
             0
         );
-        assert_eq!(
-            physical_layer_device.extended(EXT_SLEEP_CONTROL1) & EXT_SLEEP_CONTROL1_SLEEP_SW,
-            0
-        );
-        assert_eq!(
-            physical_layer_device.extended(EXT_CLOCK_GATING) & EXT_CLOCK_GATING_RX_CLK_EN,
-            0
-        );
-        assert_eq!(physical_layer_device.raw(EXT_ADDR), 0x1234);
+        assert_eq!(physical_layer_device.raw(REG_ADDR), 0x1234);
     }
 
     #[test]
@@ -523,7 +577,7 @@ mod tests {
         };
         configure(&mut physical_layer_device, 0, &s).unwrap();
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
+            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) & RGMII_RXD_DS_MASK,
             1 << 12 | 3 << 4
         );
     }
@@ -551,12 +605,12 @@ mod tests {
         };
         apply_speed(&mut physical_layer_device, 0, &s, Speed::Thousand).unwrap();
         assert_ne!(
-            physical_layer_device.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            physical_layer_device.extended(EXT_RGMII_CONFIG1) & TX_CLK_SEL,
             0
         );
         apply_speed(&mut physical_layer_device, 0, &s, Speed::Hundred).unwrap();
         assert_eq!(
-            physical_layer_device.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            physical_layer_device.extended(EXT_RGMII_CONFIG1) & TX_CLK_SEL,
             0
         );
     }
@@ -566,12 +620,12 @@ mod tests {
     fn the_extended_register_bits_are_motorcomms() {
         assert_eq!(
             [
-                EXT_CLOCK_GATING_RX_CLK_EN,
-                EXT_SLEEP_CONTROL1_SLEEP_SW,
-                CHIP_CONFIG_RXC_DLY_EN,
-                CHIP_CONFIG_LDO_2V5,
-                PAD_DRIVE_RXD_MASK,
-                SYNCE_CFG_EN,
+                CGR_RX_CLK_EN,
+                ESC1R_SLEEP_SW,
+                RXC_DLY_EN,
+                CFG_LDO_2V5,
+                RGMII_RXD_DS_MASK,
+                EN_SYNC_E,
             ],
             [0x1000, 0x8000, 0x0100, 0x0010, 0x1030, 0x0040]
         );
@@ -584,7 +638,7 @@ mod tests {
             [10, 100, 1000]
         );
         assert_eq!(
-            link_from_status(STATUS_LINK | STATUS_RESOLVED | STATUS_DUPLEX),
+            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | SSR_DUPLEX),
             Some(Link {
                 speed: Speed::Ten,
                 full_duplex: true
@@ -615,7 +669,7 @@ mod tests {
     fn configure_replaces_the_delay_and_drive_fields_and_nothing_else() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         write_extended(&mut physical_layer_device, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
-        write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE, 0).unwrap();
+        write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE_STRENGTH, 0).unwrap();
         let s = Settings {
             receive_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
@@ -625,6 +679,9 @@ mod tests {
         assert_eq!(a.rgmii_config1, 0xebfa);
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
-        assert_eq!(physical_layer_device.extended(EXT_PAD_DRIVE), 0xd030);
+        assert_eq!(
+            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH),
+            0xd030
+        );
     }
 }

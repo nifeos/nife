@@ -1,5 +1,6 @@
 //! **The rings and their descriptors**: how big each ring and buffer is, the descriptor bits the
-//! driver writes and reads, and what a receive descriptor says.
+//! driver writes and reads, and what a receive descriptor says. The descriptor bits keep
+//! OpenBSD's `dwqereg.h` names, and each one's documentation opens with its full name.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -35,51 +36,83 @@ pub const CRC_BYTES: usize = 4;
 /// Receive and transmit, read and write-back formats: descriptor word 3 is the one that carries
 /// ownership, and the only one the data plane judges.
 ///
-/// **Owned by the device.** Set by the driver to hand a descriptor over, cleared by the device's
-/// write-back.
+/// **Receive descriptor word 3, owned by the device** (`RDES3_OWN`, `dwqereg.h`). Set by the
+/// driver to hand a descriptor over, cleared by the device's write-back.
+#[doc(alias = "owned by the device")]
 pub const RDES3_OWN: u32 = 1 << 31;
 
-/// Receive, read format: interrupt on completion. Interrupts are masked at the channel; set
-/// anyway so the channel status's receive bit reports completions, which the coherence probe reads.
-pub const RDES3_IOC: u32 = 1 << 30;
+/// **Receive descriptor word 3, interrupt on completion** (`RDES3_IC`, `dwqereg.h`). Receive, read
+/// format: interrupt on completion. Interrupts are masked at the channel; set anyway so the channel
+/// status's receive bit reports completions, which the coherence probe reads.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `RDES3_IOC`.
+#[doc(alias = "receive descriptor word 3, interrupt on completion")]
+pub const RDES3_IC: u32 = 1 << 30;
 
-/// Receive, read format: buffer 1's address is valid.
+/// **Receive descriptor word 3, buffer 1 address valid** (`RDES3_BUF1V`, `dwqereg.h`). Receive,
+/// read format: buffer 1's address is valid.
+#[doc(alias = "receive descriptor word 3, buffer 1 address valid")]
 pub const RDES3_BUF1V: u32 = 1 << 24;
 
-/// Receive, write-back: this is a context descriptor (a timestamp), not a frame.
+/// **Receive descriptor word 3, context descriptor** (`RDES3_CTXT`, `dwqereg.h`). Receive,
+/// write-back: this is a context descriptor (a timestamp), not a frame.
+#[doc(alias = "receive descriptor word 3, context descriptor")]
 pub const RDES3_CTXT: u32 = 1 << 30;
 
-/// Receive, write-back: first descriptor of a frame.
+/// **Receive descriptor word 3, first descriptor** (`RDES3_FD`, `dwqereg.h`). Receive, write-back:
+/// first descriptor of a frame.
+#[doc(alias = "receive descriptor word 3, first descriptor")]
 pub const RDES3_FD: u32 = 1 << 29;
 
-/// Receive, write-back: last descriptor of a frame.
+/// **Receive descriptor word 3, last descriptor** (`RDES3_LD`, `dwqereg.h`). Receive, write-back:
+/// last descriptor of a frame.
+#[doc(alias = "receive descriptor word 3, last descriptor")]
 pub const RDES3_LD: u32 = 1 << 28;
 
-/// Receive, write-back: error summary.
+/// **Receive descriptor word 3, error summary** (`RDES3_ES`, `dwqereg.h`). Receive, write-back:
+/// error summary.
+#[doc(alias = "receive descriptor word 3, error summary")]
 pub const RDES3_ES: u32 = 1 << 15;
 
-/// Receive, write-back: the frame length including the CRC, valid when [`RDES3_LD`] is set.
+/// **Receive descriptor word 3, packet length** (`RDES3_LENGTH`, `dwqereg.h`). Receive, write-back:
+/// the frame length including the CRC, valid when [`RDES3_LD`] is set.
+#[doc(alias = "receive descriptor word 3, packet length")]
 pub const RDES3_LENGTH: u32 = 0x7fff;
 
-/// Transmit, read format: interrupt on completion (in word 2).
+/// **Transmit descriptor word 2, interrupt on completion** (`TDES2_IC`, `dwqereg.h`). Transmit,
+/// read format: interrupt on completion (in word 2).
+#[doc(alias = "transmit descriptor word 2, interrupt on completion")]
 pub const TDES2_IC: u32 = 1 << 31;
 
-/// Transmit, read format: buffer 1's length (in word 2).
+/// **Transmit descriptor word 2, buffer 1 length** (`TDES2_BUF1_LEN`, `dwqereg.h`). Transmit, read
+/// format: buffer 1's length (in word 2).
+#[doc(alias = "transmit descriptor word 2, buffer 1 length")]
 pub const TDES2_BUF1_LEN: u32 = 0x3fff;
 
-/// Transmit: first descriptor of a frame.
+/// **Transmit descriptor word 3, first segment** (`TDES3_FS`, `dwqereg.h`). Transmit: first
+/// descriptor of a frame.
+#[doc(alias = "transmit descriptor word 3, first segment")]
 pub const TDES3_FS: u32 = 1 << 29;
 
-/// Transmit: last descriptor of a frame.
+/// **Transmit descriptor word 3, last segment** (`TDES3_LS`, `dwqereg.h`). Transmit: last
+/// descriptor of a frame.
+#[doc(alias = "transmit descriptor word 3, last segment")]
 pub const TDES3_LS: u32 = 1 << 28;
 
-/// Transmit: the device owns it ([`RDES3_OWN`]'s bit, in the transmit ring).
+/// **Transmit descriptor word 3, owned by the device** (`TDES3_OWN`, `dwqereg.h`). Transmit: the
+/// device owns it ([`RDES3_OWN`]'s bit, in the transmit ring).
+#[doc(alias = "transmit descriptor word 3, owned by the device")]
 pub const TDES3_OWN: u32 = 1 << 31;
 
-/// Transmit, read format: the whole frame's length.
+/// **Transmit descriptor word 3, frame length** (`TDES3_FRAME_LEN`, `dwqereg.h`). Transmit, read
+/// format: the whole frame's length.
+#[doc(alias = "transmit descriptor word 3, frame length")]
 pub const TDES3_FRAME_LEN: u32 = 0x7fff;
 
-/// Transmit, write-back: error summary.
+/// **Transmit descriptor word 3, error summary** (`TDES3_ES`, `dwqereg.h`). Transmit, write-back:
+/// error summary.
+#[doc(alias = "transmit descriptor word 3, error summary")]
 pub const TDES3_ES: u32 = 1 << 15;
 
 /// **A receive descriptor handed to the device**: the buffer's address in words 0 and 1 (low and
@@ -92,7 +125,7 @@ pub const TDES3_ES: u32 = 1 << 15;
 pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] {
     [
         buffer_physical_address,
-        ((RDES3_OWN | RDES3_IOC | RDES3_BUF1V) as u64) << 32,
+        ((RDES3_OWN | RDES3_IC | RDES3_BUF1V) as u64) << 32,
     ]
 }
 

@@ -78,7 +78,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `RDES3_CTXT` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_ES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_FD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RDES3_IOC` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `RDES3_IC` | item | `src/descriptor.rs` | provisional. Refused `RDES3_IOC` (ruled 2026-10-26 UTC). | yes | clear |
 | `RDES3_LD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_LENGTH` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_OWN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -120,7 +120,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `receive_descriptor` | item | `src/layout.rs` | provisional. Refused `rx_descriptor` (ruled 2026-10-26 UTC). | yes | clear |
 | `transmit_descriptor` | item | `src/layout.rs` | provisional. Refused `tx_descriptor` (ruled 2026-10-26 UTC). | yes | clear |
 | `BMCR_RESET` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
-| `BMSR_ANEG_COMPLETE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `BMSR_ANEGCOMPLETE` | item | `src/management_data_input_output.rs` | provisional. Refused `BMSR_ANEG_COMPLETE` (ruled 2026-10-26 UTC). | yes | clear |
 | `Bus` | item | `src/management_data_input_output.rs` | unrecorded. | yes | generic: two `Bus` types in two modules |
 | `COMMAND_LIMIT_US` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `CR_500_800` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
@@ -140,15 +140,15 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `Drive` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `FALLBACK_GMAC0` | item | `src/motorcomm.rs` | provisional. | yes | scope: one board's PHY values in a MAC crate |
 | `Link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `SPECIFIC_STATUS` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `STATUS_DUPLEX` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `STATUS_LINK` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `STATUS_RESOLVED` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `STATUS_SPEED_SHIFT` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
+| `SPECIFIC_STATUS_REG` | item | `src/motorcomm.rs` | provisional. Refused `SPECIFIC_STATUS` (ruled 2026-10-26 UTC). | yes | clear |
+| `SSR_DUPLEX` | item | `src/motorcomm.rs` | provisional. Refused `STATUS_DUPLEX` (ruled 2026-10-26 UTC). | yes | clear |
+| `SSR_LINK` | item | `src/motorcomm.rs` | provisional. Refused `STATUS_LINK` (ruled 2026-10-26 UTC). | yes | clear |
+| `SSR_SPEED_DUPLEX_RESOLVED` | item | `src/motorcomm.rs` | provisional. Refused `STATUS_RESOLVED` (ruled 2026-10-26 UTC). | yes | clear |
+| `SSR_SPEED_SHIFT` | item | `src/motorcomm.rs` | provisional. Refused `STATUS_SPEED_SHIFT` (ruled 2026-10-26 UTC). | yes | clear |
 | `Settings` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Source` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Speed` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `YT8531_ID` | item | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
+| `PHY_ID_YT8531` | item | `src/motorcomm.rs` | provisional. Refused `YT8531_ID` (ruled 2026-10-26 UTC). | yes | clear |
 | `apply_speed` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `configure` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
@@ -158,11 +158,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `write_extended` | item | `src/motorcomm.rs` | provisional. Refused `write_ext` (ruled 2026-10-26 UTC). | yes | clear |
 | `CHAN_CUR_RX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_CUR_TX_DESC` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CHAN_RX_TAIL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_RX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_RX_TAIL` (ruled 2026-10-26 UTC). | yes | clear |
 | `CHAN_STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_STATUS_RPS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `CHAN_STATUS_TPS` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CHAN_TX_TAIL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CHAN_TX_END_ADDR` | item | `src/registers.rs` | provisional. Refused `CHAN_TX_TAIL` (ruled 2026-10-26 UTC). | yes | clear |
 | `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` | item | `src/registers.rs` | provisional. Refused `DMA_PAGE` (ruled 2026-10-26 UTC). | yes | clear |
 | `MAC_ADDR0_HI` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_ADDR0_LO` | item | `src/registers.rs` | unrecorded. | yes | term |
@@ -171,11 +171,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `MAC_CONF_DM` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_CONF_FES` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_CONF_JD` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `MAC_CONF_LM` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CONFIG_LM` | item | `src/registers.rs` | provisional. Refused `MAC_CONF_LM` (ruled 2026-10-26 UTC). | yes | clear |
 | `MAC_CONF_PS` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_MDIO_ADDR` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `MAC_MDIO_DATA` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `MAC_VERSION` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `VERSION` | item | `src/registers.rs` | provisional. Refused `MAC_VERSION` (ruled 2026-10-26 UTC). | yes | clear |
 | `WINDOW` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `mac_hw_feature` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `with` | item | `src/sim.rs` | unrecorded. | no | clear |

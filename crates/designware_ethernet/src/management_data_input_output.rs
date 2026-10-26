@@ -5,14 +5,23 @@
 //! The command word and the busy-bit poll are OpenBSD's `dwqe_mii_readreg` and
 //! `dwqe_mii_writereg` (`sys/dev/ic/dwqe.c`, ISC license, notice in the crate root): the data
 //! first on a write, then the address with the busy bit set, then wait for the controller to clear
-//! it. The clause 22 register numbers and bits are the standard's.
+//! it. The clause 22 register numbers and bits are the standard's, named as Linux's
+//! `include/uapi/linux/mii.h` names them. Each constant keeps its source's name without the
+//! family prefix, `GMAC_MAC_MDIO_ADDR_` or `MII_`, and its documentation opens with its full name
+//! and its source's spelling.
+//!
+//! Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, IEEE 802.3's
+//! phrase, replacing `mdio`.
 
 use crate::{Hardware, registers};
 
-/// The MDC clock range field's shift in [`registers::MAC_MDIO_ADDR`].
+/// **MDIO clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
+/// field in [`registers::MAC_MDIO_ADDR`].
+#[doc(alias = "mdio clock range shift")]
 pub const CR_SHIFT: u32 = 8;
-/// **The clock range this driver always programs**: `0b0111`, "CSR clock 500 to 800 MHz",
-/// which divides the CSR clock by 324.
+/// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
+/// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
+/// 324.
 ///
 /// OpenBSD reads the `stmmaceth` clock's rate and picks the matching range. This kernel has no
 /// clock framework to ask, and the choice only has to keep MDC at or under the standard's 2.5 MHz:
@@ -20,16 +29,23 @@ pub const CR_SHIFT: u32 = 8;
 /// below, which MDIO tolerates. So the driver needs no rate at all, at the cost of slower PHY
 /// register access during bring-up (tens of microseconds per access rather than a few), which is
 /// off every path that repeats.
+#[doc(alias = "mdio clock range")]
 pub const CR_500_800: u32 = 7;
-/// The PHY address field's shift.
+/// **MDIO physical layer device address shift** (`GMAC_MAC_MDIO_ADDR_PA_SHIFT`, `dwqereg.h`).
+#[doc(alias = "mdio physical layer device address shift")]
 pub const PA_SHIFT: u32 = 21;
-/// The register address field's shift.
+/// **MDIO register address shift** (`GMAC_MAC_MDIO_ADDR_RDA_SHIFT`, `dwqereg.h`).
+#[doc(alias = "mdio register address shift")]
 pub const RDA_SHIFT: u32 = 16;
-/// Command: read.
+/// **MDIO operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
+#[doc(alias = "mdio operation command, read")]
 pub const GOC_READ: u32 = 3 << 2;
-/// Command: write.
+/// **MDIO operation command, write** (`GMAC_MAC_MDIO_ADDR_GOC_WRITE`, `dwqereg.h`).
+#[doc(alias = "mdio operation command, write")]
 pub const GOC_WRITE: u32 = 1 << 2;
-/// Busy: set by the driver to start a command, cleared by the controller when it is done.
+/// **MDIO busy** (`GMAC_MAC_MDIO_ADDR_GB`, `dwqereg.h`): set by the driver to start a command,
+/// cleared by the controller when it is done.
+#[doc(alias = "mdio busy")]
 pub const GB: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.
@@ -37,24 +53,39 @@ pub const COMMAND_LIMIT_US: u64 = 20_000;
 /// The poll interval.
 const POLL_US: u64 = 10;
 
-/// Clause 22: basic mode control.
+/// **Basic mode control register** (`MII_BMCR`, `mii.h`), clause 22.
+#[doc(alias = "basic mode control register")]
 pub(crate) const BMCR: u8 = 0x00;
-/// Restart autonegotiation; self-clearing.
+/// **Autonegotiation restart** (`BMCR_ANRESTART`, `mii.h`), self-clearing.
+#[doc(alias = "autonegotiation restart")]
 pub(crate) const BMCR_ANRESTART: u16 = 1 << 9;
-/// Autonegotiation enable.
+/// **Autonegotiation enable** (`BMCR_ANENABLE`, `mii.h`).
+#[doc(alias = "autonegotiation enable")]
 pub(crate) const BMCR_ANENABLE: u16 = 1 << 12;
-/// Software reset of the PHY; self-clearing.
+/// **Reset to the default state** (`BMCR_RESET`, `mii.h`): a software reset of the PHY,
+/// self-clearing.
+#[doc(alias = "reset to the default state")]
 pub const BMCR_RESET: u16 = 1 << 15;
-/// Clause 22: basic mode status.
+/// **Basic mode status register** (`MII_BMSR`, `mii.h`), clause 22.
+#[doc(alias = "basic mode status register")]
 pub(crate) const BMSR: u8 = 0x01;
-/// Link status. **Latched low**: a link that dropped since the last read reads zero once, so the
-/// current state is the second of two reads.
-pub(crate) const BMSR_LINK: u16 = 1 << 2;
-/// Autonegotiation complete.
-pub const BMSR_ANEG_COMPLETE: u16 = 1 << 5;
-/// Clause 22: PHY identifier, high half.
+/// **Link status** (`BMSR_LSTATUS`, `mii.h`), latched low: a link that dropped since the last read
+/// reads zero once, so the current state is the second of two reads.
+#[doc(alias = "link status")]
+pub(crate) const BMSR_LSTATUS: u16 = 1 << 2;
+/// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// replacing `BMSR_ANEG_COMPLETE`.
+#[doc(alias = "autonegotiation complete")]
+pub const BMSR_ANEGCOMPLETE: u16 = 1 << 5;
+/// **Physical layer device identifier 1** (`MII_PHYSID1`, `mii.h`), clause 22: the
+/// identifier's high half.
+#[doc(alias = "physical layer device identifier 1")]
 pub(crate) const PHYSID1: u8 = 0x02;
-/// Clause 22: PHY identifier, low half (the low four bits are the revision).
+/// **Physical layer device identifier 2** (`MII_PHYSID2`, `mii.h`), clause 22: the
+/// identifier's low half (the low four bits are the revision).
+#[doc(alias = "physical layer device identifier 2")]
 pub(crate) const PHYSID2: u8 = 0x03;
 
 /// Why an MDIO command did not complete.
@@ -160,7 +191,7 @@ pub fn link_is_up(
     physical_layer_device: u8,
 ) -> Result<bool, Error> {
     let _ = bus.read(physical_layer_device, BMSR)?;
-    Ok(bus.read(physical_layer_device, BMSR)? & BMSR_LINK != 0)
+    Ok(bus.read(physical_layer_device, BMSR)? & BMSR_LSTATUS != 0)
 }
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
@@ -331,7 +362,7 @@ mod tests {
             if register == BMSR {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
-                return Ok(if up { BMSR_LINK } else { 0 });
+                return Ok(if up { BMSR_LSTATUS } else { 0 });
             }
             Ok(self.registers[register as usize])
         }
@@ -414,8 +445,8 @@ mod tests {
                 BMCR_ANRESTART,
                 BMCR_ANENABLE,
                 BMCR_RESET,
-                BMSR_LINK,
-                BMSR_ANEG_COMPLETE
+                BMSR_LSTATUS,
+                BMSR_ANEGCOMPLETE
             ],
             [0x0200, 0x1000, 0x8000, 0x0004, 0x0020]
         );

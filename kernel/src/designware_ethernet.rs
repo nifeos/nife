@@ -268,7 +268,7 @@ fn run(
         phy,
     )
     .map_err(Error::Mdio)?;
-    if r.phy_id != motorcomm::YT8531_ID {
+    if r.phy_id != motorcomm::PHY_ID_YT8531 {
         return Err(Error::UnknownPhy { id: r.phy_id });
     }
     let applied = motorcomm::configure(
@@ -415,10 +415,10 @@ struct TailRegs(u64);
 
 impl Tails for TailRegs {
     fn set_receive_tail(&mut self, addr: u32) {
-        Window(self.0).write(registers::CHAN_RX_TAIL, addr);
+        Window(self.0).write(registers::CHAN_RX_END_ADDR, addr);
     }
     fn set_transmit_tail(&mut self, addr: u32) {
-        Window(self.0).write(registers::CHAN_TX_TAIL, addr);
+        Window(self.0).write(registers::CHAN_TX_END_ADDR, addr);
     }
     fn barrier(&mut self) {
         crate::arch::direct_memory_access_write_barrier();

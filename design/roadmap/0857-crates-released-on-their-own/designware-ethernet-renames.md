@@ -46,7 +46,7 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   their sources' names. `dma`, wherever this crate authors it, spells out as `direct_memory_access`:
   `dma_bits` becomes `direct_memory_access_address_bits` and `DMA_PAGE` becomes
   `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, with `doc(alias)`. Register names copied from a source
-  (`DMA_SYSBUS_MODE`, `DMA_MODE`) keep their spelling.
+  keep the source's spelling, which Decision 37c restores below.
 - Ruled 2026-10-26 (UTC), the JH7110's power domains: `AON` spells out as `ALWAYS_ON`
   (`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`, `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` and the window's
   base and size), with `doc(alias = "aon")`. Device-tree strings and the vendor's `AON_SYSCFG_12`
@@ -58,3 +58,13 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   spell out. They become `address`, `offset`, `length`, `register`, `source`, `memory`,
   `descriptor_word_3`, `data_plane`, `high`, `low` and `base_high`, and `Error::Timeout`'s `reg`
   field follows. No `max` or `min` remains in the crate.
+- Ruled 2026-10-26 (UTC), Decision 37c: a register or bit name copied from a cited source keeps
+  that source's spelling strictly, without its family prefix (`GMAC_`, `EQOS_`, `MII_`, `YT8521_`
+  and the like). A macro that takes a channel or queue number names the constant for instance 0.
+  Every constant now matches OpenBSD's `dwqereg.h`, `ytphy.c` or `if_dwqe_fdt.c`, Linux's
+  `dwmac4.h`, `mii.h` or `motorcomm.c`, or U-Boot's `dwc_eth_qos.h`. The public ones that changed
+  are `CONFIG_LM`, `VERSION`, `CHAN_TX_END_ADDR`, `CHAN_RX_END_ADDR`, `RDES3_IC`,
+  `BMSR_ANEGCOMPLETE`, `PHY_ID_YT8531`, `SPECIFIC_STATUS_REG` and its `SSR_` bits. `SSR_SPEED_SHIFT`
+  has no constant in its source and takes the name of the source's family. Under Decision 30, each
+  kept name's documentation opens with its full name and its source's spelling, with a
+  `doc(alias)` in plain English.

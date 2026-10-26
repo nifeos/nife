@@ -52,10 +52,10 @@ pub const BUS: Bus = Bus {
     transmit_channel_burst_length: 16,
     receive_channel_burst_length: 16,
     threshold_mode: true,
-    bus_burst_lengths: registers::DMA_SYSBUS_MODE_BLEN_256
-        | registers::DMA_SYSBUS_MODE_BLEN_128
-        | registers::DMA_SYSBUS_MODE_BLEN_64
-        | registers::DMA_SYSBUS_MODE_BLEN_32,
+    bus_burst_lengths: registers::SYS_BUS_MODE_BLEN_256
+        | registers::SYS_BUS_MODE_BLEN_128
+        | registers::SYS_BUS_MODE_BLEN_64
+        | registers::SYS_BUS_MODE_BLEN_32,
     read_outstanding: 0xf,
     write_outstanding: 0xf,
 };
@@ -88,8 +88,10 @@ pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask
 /// `0x1c0000`).
 pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
-/// The RGMII interface (OpenBSD's `JH7110_PHY_INTF_RGMII`; the vendor's `BIT(SHIFT)` for 1000M).
-pub(crate) const PHY_INTERFACE_RGMII: u32 = 1;
+/// **JH7110 PHY interface select, RGMII** (`JH7110_PHY_INTF_RGMII`, `if_dwqe_fdt.c`); the
+/// vendor's `BIT(SHIFT)` for 1000M.
+#[doc(alias = "rgmii interface select")]
+pub(crate) const PHY_INTF_RGMII: u32 = 1;
 
 /// **The syscon word with `gmac0`'s interface select set to RGMII**, the reduced gigabit
 /// media-independent interface (the MAC-to-PHY wiring both JH7110 boards use), every other field
@@ -100,7 +102,7 @@ pub(crate) const PHY_INTERFACE_RGMII: u32 = 1;
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
-        | PHY_INTERFACE_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
+        | PHY_INTF_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
 
 /// The interface select a syscon word holds for `gmac0`.
@@ -546,7 +548,7 @@ mod tests {
             interface(select_reduced_gigabit_media_independent_interface(
                 0x0010_0000
             )),
-            PHY_INTERFACE_RGMII
+            PHY_INTF_RGMII
         );
         // The vendor U-Boot's mask, 0x1c0000, is exactly this field.
         assert_eq!(

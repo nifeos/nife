@@ -160,10 +160,10 @@ pub(crate) struct TailRegs<'a> {
 
 impl Tails for TailRegs<'_> {
     fn set_receive_tail(&mut self, address: u32) {
-        self.registers.insert(registers::CHAN_RX_TAIL, address);
+        self.registers.insert(registers::CHAN_RX_END_ADDR, address);
     }
     fn set_transmit_tail(&mut self, address: u32) {
-        self.registers.insert(registers::CHAN_TX_TAIL, address);
+        self.registers.insert(registers::CHAN_TX_END_ADDR, address);
     }
     fn barrier(&mut self) {
         // A fence orders; it cleans and invalidates nothing. On a non-coherent machine it is not
@@ -185,23 +185,17 @@ impl PhysicalLayerDevice {
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
         registers[management_data_input_output::PHYSID1 as usize] =
-            (motorcomm::YT8531_ID >> 16) as u16;
-        registers[management_data_input_output::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
+            (motorcomm::PHY_ID_YT8531 >> 16) as u16;
+        registers[management_data_input_output::PHYSID2 as usize] = motorcomm::PHY_ID_YT8531 as u16;
         let mut extended = BTreeMap::new();
+        extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
+        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::EXT_CHIP_CONFIG,
-            0x2 << 4 | motorcomm::CHIP_CONFIG_RXC_DLY_EN,
+            motorcomm::EXTREG_SLEEP_CONTROL1_REG,
+            motorcomm::ESC1R_SLEEP_SW | 1 << 14,
         );
-        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::SYNCE_CFG_EN);
-        extended.insert(
-            motorcomm::EXT_SLEEP_CONTROL1,
-            motorcomm::EXT_SLEEP_CONTROL1_SLEEP_SW | 1 << 14,
-        );
-        extended.insert(
-            motorcomm::EXT_CLOCK_GATING,
-            motorcomm::EXT_CLOCK_GATING_RX_CLK_EN,
-        );
-        extended.insert(motorcomm::EXT_PAD_DRIVE, 0xffff);
+        extended.insert(motorcomm::CLOCK_GATING_REG, motorcomm::CGR_RX_CLK_EN);
+        extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
         PhysicalLayerDevice {
             registers,
             extended,
@@ -234,26 +228,26 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<u16, management_data_input_output::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm::EXT_DATA => self.extended(self.registers[motorcomm::EXT_ADDR as usize]),
+            motorcomm::REG_DATA => self.extended(self.registers[motorcomm::REG_ADDR as usize]),
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
-                    management_data_input_output::BMSR_LINK
-                        | management_data_input_output::BMSR_ANEG_COMPLETE
+                    management_data_input_output::BMSR_LSTATUS
+                        | management_data_input_output::BMSR_ANEGCOMPLETE
                 } else {
                     0
                 }
             }
-            motorcomm::SPECIFIC_STATUS => self.link.map_or(0, |l| {
+            motorcomm::SPECIFIC_STATUS_REG => self.link.map_or(0, |l| {
                 let speed = match l.speed {
                     Speed::Ten => 0,
                     Speed::Hundred => 1,
                     Speed::Thousand => 2,
                 };
-                motorcomm::STATUS_LINK
-                    | motorcomm::STATUS_RESOLVED
-                    | speed << motorcomm::STATUS_SPEED_SHIFT
+                motorcomm::SSR_LINK
+                    | motorcomm::SSR_SPEED_DUPLEX_RESOLVED
+                    | speed << motorcomm::SSR_SPEED_SHIFT
                     | if l.full_duplex {
-                        motorcomm::STATUS_DUPLEX
+                        motorcomm::SSR_DUPLEX
                     } else {
                         0
                     }
@@ -269,9 +263,9 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<(), management_data_input_output::Error> {
         let register = register & 0x1f;
         match register {
-            motorcomm::EXT_DATA => {
+            motorcomm::REG_DATA => {
                 self.extended
-                    .insert(self.registers[motorcomm::EXT_ADDR as usize], v);
+                    .insert(self.registers[motorcomm::REG_ADDR as usize], v);
             }
             management_data_input_output::BMCR => {
                 self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
@@ -328,7 +322,7 @@ impl NetworkInterfaceController {
 
     fn reset_registers(&mut self) {
         self.registers.clear();
-        self.registers.insert(registers::MAC_VERSION, VERSION);
+        self.registers.insert(registers::VERSION, VERSION);
         self.registers
             .insert(registers::mac_hw_feature(1), FEATURE1);
         self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
@@ -359,7 +353,7 @@ impl NetworkInterfaceController {
     }
     /// The receive tail register.
     pub(crate) fn receive_tail(&self) -> u32 {
-        self.register(registers::CHAN_RX_TAIL)
+        self.register(registers::CHAN_RX_END_ADDR)
     }
     /// How many barriers the data plane has taken.
     pub(crate) fn barriers(&self) -> usize {
@@ -433,8 +427,8 @@ impl NetworkInterfaceController {
     /// How many receive descriptors the device could fill right now.
     pub(crate) fn receive_available(&self) -> usize {
         let (base, n) = self.ring(
-            registers::CHAN_RX_BASE,
-            registers::CHAN_RX_BASE_HI,
+            registers::CHAN_RX_BASE_ADDR,
+            registers::CHAN_RX_BASE_ADDR_HI,
             registers::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
@@ -458,8 +452,8 @@ impl NetworkInterfaceController {
             return false;
         }
         let (base, n) = self.ring(
-            registers::CHAN_RX_BASE,
-            registers::CHAN_RX_BASE_HI,
+            registers::CHAN_RX_BASE_ADDR,
+            registers::CHAN_RX_BASE_ADDR_HI,
             registers::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
@@ -498,12 +492,12 @@ impl NetworkInterfaceController {
             return;
         }
         let (base, n) = self.ring(
-            registers::CHAN_TX_BASE,
-            registers::CHAN_TX_BASE_HI,
+            registers::CHAN_TX_BASE_ADDR,
+            registers::CHAN_TX_BASE_ADDR_HI,
             registers::CHAN_TX_RING_LEN,
         );
         loop {
-            let tail = self.index_of_tail(base, self.register(registers::CHAN_TX_TAIL), n);
+            let tail = self.index_of_tail(base, self.register(registers::CHAN_TX_END_ADDR), n);
             if self.transmit_cursor == tail {
                 return;
             }
@@ -522,7 +516,7 @@ impl NetworkInterfaceController {
             }
             self.transmit_cursor = (self.transmit_cursor + 1) % n;
             let conf = self.register(registers::MAC_CONF);
-            if conf & registers::MAC_CONF_LM != 0 {
+            if conf & registers::CONFIG_LM != 0 {
                 if !self.loopback_broken {
                     let mut w = frame.clone();
                     w.extend_from_slice(&[0xc0, 0xff, 0xee, 0x00]);
@@ -538,11 +532,11 @@ impl NetworkInterfaceController {
 impl Hardware for NetworkInterfaceController {
     fn read(&mut self, offset: u32) -> u32 {
         match offset {
-            registers::DMA_MODE => {
+            registers::BUS_MODE => {
                 if let Some(left) = self.reset_left {
                     if self.receive_clock && left <= 1 {
                         self.reset_left = None;
-                        let v = self.register(offset) & !registers::DMA_MODE_SWR;
+                        let v = self.register(offset) & !registers::BUS_MODE_SWR;
                         self.registers.insert(offset, v);
                     } else if self.receive_clock {
                         self.reset_left = Some(left - 1);
@@ -550,8 +544,8 @@ impl Hardware for NetworkInterfaceController {
                 }
                 self.register(offset)
             }
-            registers::MTL_TXQ0_OP_MODE if !self.flush_wedged => {
-                let v = self.register(offset) & !registers::MTL_TXQ_OP_MODE_FTQ;
+            registers::MTL_CHAN_TX_OP_MODE if !self.flush_wedged => {
+                let v = self.register(offset) & !registers::MTL_CHAN_TX_OP_MODE_FTQ;
                 self.registers.insert(offset, v);
                 v
             }
@@ -561,7 +555,7 @@ impl Hardware for NetworkInterfaceController {
 
     fn write(&mut self, offset: u32, v: u32) {
         match offset {
-            registers::DMA_MODE if v & registers::DMA_MODE_SWR != 0 => {
+            registers::BUS_MODE if v & registers::BUS_MODE_SWR != 0 => {
                 self.reset_registers();
                 self.registers.insert(offset, v);
                 self.reset_left = Some(self.reset_polls);
@@ -613,7 +607,7 @@ mod tests {
             0,
         )
         .unwrap();
-        assert_eq!(id, motorcomm::YT8531_ID);
+        assert_eq!(id, motorcomm::PHY_ID_YT8531);
     }
 
     #[test]

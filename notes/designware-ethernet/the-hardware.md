@@ -11,8 +11,8 @@ ring's tail pointer is kept. Each fact here is also the reason for a line of cod
 
 The register map in `registers.rs` is transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (commit
 `59ec3ab4d107`, 2026-07-31). That is the header OpenBSD's JH7110 driver is built on. Two bits come
-from elsewhere: Linux's `stmmac/dwmac4.h` names `MAC_CONF_LM`, which OpenBSD does not, and U-Boot's
-`dwc_eth_qos.h` gives the receive buffer size field, `CHAN_RX_CONTROL_RBSZ_SHIFT`, which OpenBSD never
+from elsewhere: Linux's `stmmac/dwmac4.h` names `CONFIG_LM`, which OpenBSD does not, and U-Boot's
+`dwc_eth_qos.h` gives the receive buffer size field, `DMA_CH0_RX_CONTROL_RBSZ_SHIFT`, which OpenBSD never
 writes. Only what the driver uses is transcribed.
 
 | page | holds |
@@ -64,7 +64,7 @@ The sequence in `motorcomm.rs` is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_i
 `ytphy_yt8521_update` (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`).
 It sets the RGMII delays, the receive pad drive strengths, the clock output, and the transmit clock
 inversion chosen per negotiated speed. Two registers OpenBSD does not touch,
-`EXT_SLEEP_CONTROL1` and `EXT_CLOCK_GATING`, come from Linux's `drivers/net/phy/motorcomm.c`. They
+`EXTREG_SLEEP_CONTROL1_REG` and `CLOCK_GATING_REG`, come from Linux's `drivers/net/phy/motorcomm.c`. They
 were read as facts about the part and not as code, and each constant's comment says why the driver
 writes it.
 

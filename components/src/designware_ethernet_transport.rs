@@ -61,13 +61,13 @@ struct Channel;
 impl Tails for Channel {
     fn set_receive_tail(&mut self, addr: u32) {
         DMA.w32(
-            u64::from(registers::CHAN_RX_TAIL - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            u64::from(registers::CHAN_RX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
             addr,
         );
     }
     fn set_transmit_tail(&mut self, addr: u32) {
         DMA.w32(
-            u64::from(registers::CHAN_TX_TAIL - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            u64::from(registers::CHAN_TX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
             addr,
         );
     }

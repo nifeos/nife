@@ -82,6 +82,8 @@ _ACTS = ("acts and reports whether it worked, which design/naming.md exempts fro
 KEPT = {
     "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
         ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
+    "crates/designware_ethernet/src/registers.rs::CONFIG_LM":
+        ({"spelled-out"}, "Linux's `GMAC_CONFIG_LM` (`dwmac4.h`), copied strictly under Decision 37c"),
     "kernel/src/arch/riscv64/harts.rs::sbi_send_ipi": ({"spelled-out"}, _SBI),
     "kernel/src/arch/riscv64/remote_fence.rs::sbi_remote_sfence_vma_asid": ({"spelled-out"}, _SBI),
     "kernel/src/arch/aarch64/interrupts.rs::disable": ({"question-shape"}, _ACTS),
