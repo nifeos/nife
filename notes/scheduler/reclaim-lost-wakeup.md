@@ -21,7 +21,7 @@ assert!(crate::sched::reclaim_region(tcb_region).is_err());
 let got = crate::sched::ipc_receive(report)[0];   // waits for the child's SEND
 ```
 
-That comment was true when it was written and stopped being true when DECISIONS §16 was amended. A
+That comment was true when it was written and stopped being true when DECISIONS §16 (object revocation) was amended. A
 refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every live
 thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down. The
 `^C` escalation of §24 (interrupting the foreground process) builds on exactly that. So the probe
