@@ -5,13 +5,13 @@
 //! [`KERNEL_VA_BASE`] (PML4[511]), so the direct map of physical memory is a separate PML4 entry
 //! at [`DIRECT_MAP_BASE`] (PML4[273]), as on Linux. `boot.s` installs the direct map's entry
 //! before the first Rust instruction, so [`phys_to_virt`] means one thing for the machine's whole
-//! life, and [`init`] drops the boot identity map. See notes/x86-port/kernel-page-tables.md,
+//! life, and [`initialize`] drops the boot identity map. See notes/x86-port/kernel-page-tables.md,
 //! which holds the design and the detail of each BUGS entry.
 
 //! # BUGS
 //!
 //! - RAM is mapped in the largest leaf that fits, without reading the MTRRs.
-//! - `mmu::init` allocates its tables below 4 GiB, so RAM that starts above 4 GiB faults.
+//! - `mmu::initialize` allocates its tables below 4 GiB, so RAM that starts above 4 GiB faults.
 //! - `CR4.PGE` is off, so every `mov cr3` drops the kernel's translations too.
 //! - `CR4.PCIDE` is off, so [`flush_asid`] flushes everything; turning it on needs `INVPCID` first.
 //! - The cacheable fill follows the firmware map only while it is contiguous.

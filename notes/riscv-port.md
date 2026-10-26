@@ -18,11 +18,11 @@ rest of the kernel calls through `crate::arch`:
 
 - Top-level: `set_percpu`/`percpu` (the per-CPU pointer), `psci_cpu_on` (start a secondary),
   `init`, `halt`, `wait_for_interrupt`, `direct_memory_access_write_barrier`.
-- `mmu`: `KERNEL_VA_BASE`, `phys_to_virt`/`virt_to_phys`, `init`/`init_secondary`, the user-mapping
-  surface (`map_current_user_page/frame`, `unmap_user_at`, `translate_at`, `map_page`/`unmap_page`,
-  `activate_user`/`deactivate_user`, `switch_user_root`, `reserved_root`, `flush_asid`, `flush_tlb`,
-  `user_can_read`/`write`, `current_user_root`, `translate`/`translate_user`, `is_enabled`), and the
-  `VIRTIO_MMIO_BASE`/`SIZE`/`IRQ_BASE` consts.
+- `mmu`: `KERNEL_VA_BASE`, `phys_to_virt`/`virt_to_phys`, `init`/`initialize_secondary`, the
+  user-mapping surface (`map_current_user_page/frame`, `unmap_user_at`, `translate_at`,
+  `map_page`/`unmap_page`, `activate_user`/`deactivate_user`, `switch_user_root`, `reserved_root`,
+  `flush_asid`, `flush_tlb`, `user_can_read`/`write`, `current_user_root`,
+  `translate`/`translate_user`, `is_enabled`), and the `VIRTIO_MMIO_BASE`/`SIZE`/`IRQ_BASE` consts.
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
 - `timer`: `TIMER_INTID`, `TICK_HZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_ms`,
   `spin_for`, `interval`, `missed_ticks`.

@@ -139,7 +139,7 @@ of that chain, makes the whole chain one gate.
 
 The screen is read through the QEMU monitor's screendumps. Everything the framebuffer path can get
 wrong shows only there: the loader's `LocateProtocol`, the byte order, the stride, the mapping
-surviving `mmu::init`, and the glyphs. The shell's half proves the console server writes both
+surviving `mmu::initialize`, and the glyphs. The shell's half proves the console server writes both
 surfaces while keystrokes still arrive over COM1. Holding the screen is a handshake, calef's choice
 among three options on 2026-09-20. If the hold line never comes, nothing falls back to sampling. A
 boot that was not asked to hold is a wiring failure (the `screen_hold` feature, the token, the

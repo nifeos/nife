@@ -132,7 +132,10 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 ///
 /// Replaces boot.s's coarse map with the fine one in TTBR1, verified first, and points TTBR0 at
 /// the empty reserved table. Called already running at high virtual addresses.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     let root = memory::alloc()
         .expect("no frame for the root page table")
         .addr();
@@ -165,23 +168,23 @@ pub fn init() {
     // SAFETY: the map covers this function's code, its stack, and the UART. We checked.
     unsafe { install(root) };
 
-    // For `init_secondary`: the coarse boot map does not reach the thread-stack area.
+    // For `initialize_secondary`: the coarse boot map does not reach the thread-stack area.
     KERNEL_ROOT.store(root, Ordering::Relaxed);
 
     // And give TTBR0 an empty table to walk, so a stray low address faults.
     install_reserved_ttbr0();
 }
 
-/// The kernel's fine-map root (TTBR1), saved by [`init`] so secondaries can adopt it.
+/// The kernel's fine-map root (TTBR1), saved by [`initialize`] so secondaries can adopt it.
 static KERNEL_ROOT: AtomicU64 = AtomicU64::new(0);
 
 /// Bring a secondary core onto the kernel's own tables: the shared fine TTBR1 map, and the shared
-/// empty TTBR0 so a stray low address faults. The boot core must have run [`init`] first.
+/// empty TTBR0 so a stray low address faults. The boot core must have run [`initialize`] first.
 ///
 /// A secondary starts on the coarse boot map, which does not reach the thread-stack area.
-pub(crate) fn init_secondary() {
+pub(crate) fn initialize_secondary() {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
-    debug_assert!(root != 0, "init_secondary before init");
+    debug_assert!(root != 0, "initialize_secondary before initialize");
 
     // Not `install`: this core's TCR and MAIR already match the fine map, so only TTBR1 moves.
     //
@@ -375,7 +378,7 @@ where
 {
     // The code we are executing right now. If this isn't mapped executable, the instruction
     // after `msr sctlr_el1` never gets fetched.
-    let here = init as *const () as u64;
+    let here = initialize as *const () as u64;
     let (pa, flags) = m
         .translate(here)
         .expect("the code switching tables is not mapped: we would die on the next fetch");
@@ -475,7 +478,7 @@ unsafe fn install(root: u64) {
 /// notes/mmu.md.
 static RESERVED_TTBR0: AtomicU64 = AtomicU64::new(0);
 
-/// Allocate and install the empty TTBR0 root. Called at the end of `init`.
+/// Allocate and install the empty TTBR0 root. Called at the end of `initialize`.
 fn install_reserved_ttbr0() {
     let root = memory::alloc()
         .expect("no frame for the reserved TTBR0 root")
@@ -579,7 +582,7 @@ pub unsafe fn activate_user(ttbr: u64) {
 /// Uninstall whatever user address space was active. The low half means nothing again.
 pub fn deactivate_user() {
     let reserved = RESERVED_TTBR0.load(Ordering::Relaxed);
-    debug_assert!(reserved != 0, "mmu::init has not run");
+    debug_assert!(reserved != 0, "mmu::initialize has not run");
 
     // SAFETY: the reserved table is zeroed, so this makes every low address fault. ASID 0: the
     // kernel's own tag, permanently reserved by the allocator, never a user's.

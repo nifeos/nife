@@ -28,7 +28,7 @@
 
 /// **The earliest line: `nife on <architecture> (...)`.**
 ///
-/// Printed by `kernel_main` as the first thing after `console::init`, on every architecture since
+/// Printed by `kernel_main` as the first thing after `console::initialize`, on every architecture since
 /// milestone 268. aarch64 had no such line before it, so this rung was unreachable there for as
 /// long as the recogniser has existed. It says the console works and it says nothing else, which
 /// is exactly the claim wanted at first light on a board where the console is the thing in doubt.

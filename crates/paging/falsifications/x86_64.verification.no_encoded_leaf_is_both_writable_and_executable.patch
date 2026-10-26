@@ -30,7 +30,7 @@ diff --git a/crates/paging/src/x86_64.rs b/crates/paging/src/x86_64.rs
 --- a/crates/paging/src/x86_64.rs
 +++ b/crates/paging/src/x86_64.rs
 @@ -108,7 +108,7 @@
-         // which `arch::x86_64::init` sets on every core that offers it; this crate cannot check.
+         // which `arch::x86_64::initialize` sets on every core that offers it; this crate cannot check.
          if flags.is_kernel_executable() {
              bits |= SW_KERNEL_EXEC;
 -        } else if !flags.is_user_executable() {

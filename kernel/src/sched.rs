@@ -125,5 +125,5 @@ use preemption::*;
 pub use preemption::{on_tick, preempt_if_needed};
 pub(crate) use switch::finish_switch;
 use switch::*;
-pub use switch::{init, is_running, mark_current_fp_live, schedule};
+pub use switch::{initialize, is_running, mark_current_fp_live, schedule};
 use waking::*;

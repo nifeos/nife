@@ -58,15 +58,15 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
 
     // Per-CPU pointer FIRST, before anything takes a lock. The lock path reads this core's
     // held-rank out of its per-CPU block, so `TPIDR_EL1` must point at that block before
-    // `console::init` (the first lock) runs. On one core this is pure setup with no visible
+    // `console::initialize` (the first lock) runs. On one core this is pure setup with no visible
     // effect; it is the foundation SMP is built on. See cpu.rs and DECISIONS §11.
-    cpu::init_this_cpu(arch::boot_cpu_id());
+    cpu::initialize_this_cpu(arch::boot_cpu_id());
 
     // Console first, exceptions second, and the order is not arbitrary: the fault
     // handler's entire job is to print, so it is useless until the UART works. The
     // window between these two lines is the last place in the kernel where a fault
     // still kills us silently.
-    console::init();
+    console::initialize();
 
     // The console's register-block *shape* comes from the device tree, and it must be adopted
     // before the first println: on the JH7110 the DW-8250's registers are four bytes apart, so a
@@ -77,8 +77,8 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
     console::configure_from_dtb();
 
     // The screen, before the banner: everything printed after this is on a monitor too. It needs
-    // only the console lock and the tree pointer, and must run before `arch::mmu::init`. Its own
-    // line is printed later, by a console that has the screen. See `screen::attach`.
+    // only the console lock and the tree pointer, and must run before `arch::mmu::initialize`. Its
+    // own line is printed later, by a console that has the screen. See `screen::attach`.
     #[cfg(not(target_arch = "x86_64"))]
     let screen = screen::attach();
 
@@ -89,7 +89,7 @@ pub extern "C" fn kernel_main(boot_info_pointer: usize) -> ! {
     {
         println!();
         println!(
-            "{}aarch64 (EL{}, MMU off: physical addresses until mmu::init)",
+            "{}aarch64 (EL{}, MMU off: physical addresses until mmu::initialize)",
             boot_ladder::BANNER,
             arch::current_el(),
         );
@@ -250,68 +250,71 @@ fn x86_64_banner(boot_info_pointer: usize) {
 /// interrupts, cores.
 ///
 /// Each step reads the machine from what it describes itself with: a device tree on aarch64 and
-/// riscv64, and on `x86_64` the PVH handoff and ACPI, which `memory::init` walks once and keeps
-/// (`arch::discovery`). What riscv64 and `x86_64` need that aarch64 does not is a few calls into
-/// their own `arch/`, each `cfg`-gated beside the aarch64-only line: the interrupt contexts and the
-/// timer's rate before the MMU, the ISA line and the cycle counter after it, and their IOMMUs. Each
-/// port's `arch::irq::init` is reached through [`interrupts_init`].
+/// riscv64, and on `x86_64` the PVH handoff and ACPI, which `memory::initialize` walks once and
+/// keeps (`arch::discovery`). What riscv64 and `x86_64` need that aarch64 does not is a few calls
+/// into their own `arch/`, each `cfg`-gated beside the aarch64-only line: the interrupt contexts
+/// and the timer's rate before the MMU, the ISA line and the cycle counter after it, and their
+/// IOMMUs. Each port's `arch::irq::initialize` is reached through [`initialize_interrupts`].
 fn bring_up_machine(boot_info_pointer: usize) {
-    arch::init();
-    stack::init();
+    arch::initialize();
+    stack::initialize();
     // Paint the boot stack's unused region for the high-water report (milestone 84), before
-    // memory::init and everything after it can push frames into it.
+    // memory::initialize and everything after it can push frames into it.
     #[cfg(any(test, feature = "system_tests"))]
     stack::paint_boot_stack();
 
-    // After `arch::init`, so a fault in here is reported rather than silent.
-    memory::init();
+    // After `arch::initialize`, so a fault in here is reported rather than silent.
+    memory::initialize();
 
-    // Before `mmu::init`, which takes `TCR_EL1.IPS` from this record and needs the 4 KiB granule
-    // this checks. A machine that cannot run us says so here, not by faulting with the MMU on.
-    arch::isa::init(boot_info_pointer);
+    // Before `mmu::initialize`, which takes `TCR_EL1.IPS` from this record and needs the 4 KiB
+    // granule this checks. A machine that cannot run us says so here, not by faulting with the MMU
+    // on.
+    arch::isa::initialize(boot_info_pointer);
 
-    // The core list, read while the tree is reachable: `mmu::init` replaces the coarse boot map
-    // the blob is only reachable through. `isa::init` above read `/psci`.
+    // The core list, read while the tree is reachable: `mmu::initialize` replaces the coarse boot
+    // map the blob is only reachable through. `isa::initialize` above read `/psci`.
     smp::read_cpu_list();
 
-    // `CNTFRQ_EL0` against the tree's counter rate, before `mmu::init` for the same reason: a
+    // `CNTFRQ_EL0` against the tree's counter rate, before `mmu::initialize` for the same reason: a
     // wrong-but-plausible firmware value is the one failure no later check can see.
     #[cfg(target_arch = "aarch64")]
     arch::timer::check_frequency_against_device_tree(boot_info_pointer);
 
     // The interrupt contexts and the counter's rate, on the two ports with no `CNTFRQ_EL0`, from
-    // the same window: both before `pmu::init` times itself and `interrupts_init` arms a deadline.
-    // On riscv64 the rate is a `/cpus` property `timer::init_frequency` reads. On `x86_64` the TSC
-    // and the local APIC's own counter are each measured against the PIT, so the APIC comes first.
+    // the same window: both before `pmu::initialize` times itself and `initialize_interrupts` arms
+    // a deadline. On riscv64 the rate is a `/cpus` property `timer::initialize_frequency` reads. On
+    // `x86_64` the TSC and the local APIC's own counter are each measured against the PIT, so the
+    // APIC comes first.
     #[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
     {
-        arch::irq::init_contexts(boot_info_pointer);
-        arch::timer::init_frequency(boot_info_pointer);
+        arch::irq::initialize_contexts(boot_info_pointer);
+        arch::timer::initialize_frequency(boot_info_pointer);
     }
 
     // And now the sketchiest moment in the kernel. The instant SCTLR_EL1.M is set, the very
     // next instruction is fetched through the MMU. See arch/aarch64/mmu.rs.
-    arch::mmu::init();
+    arch::mmu::initialize();
 
-    // Not one line earlier: the interrupt stacks' guard pages are holes in the map `mmu::init`
-    // just installed, and the coarse boot map has none. See kernel/src/interrupt_stack.rs.
-    interrupt_stack::init();
+    // Not one line earlier: the interrupt stacks' guard pages are holes in the map
+    // `mmu::initialize` just installed, and the coarse boot map has none. See
+    // kernel/src/interrupt_stack.rs.
+    interrupt_stack::initialize();
 
-    // The ISA line, after `mmu::init` because one of riscv64's numbers is measured there, then the
-    // cycle counter (riscv64 asks SBI; `x86_64` spins against the TSC rate measured above).
-    // aarch64 starts its counter per core inside `timer::init`.
+    // The ISA line, after `mmu::initialize` because one of riscv64's numbers is measured there,
+    // then the cycle counter (riscv64 asks SBI; `x86_64` spins against the TSC rate measured
+    // above). aarch64 starts its counter per core inside `timer::initialize`.
     #[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
     {
         arch::isa::print_summary();
-        arch::pmu::init();
+        arch::pmu::initialize();
     }
 
-    // The SMMUv3, if present, after `mmu::init` mapped its block: default-deny, so every PCIe
+    // The SMMUv3, if present, after `mmu::initialize` mapped its block: default-deny, so every PCIe
     // stream aborts until `virtio::register` confines its device. The CPU's own ECAM and BAR reads
     // are not DMA, so PCI enumeration below is unaffected. See notes/iommu.md.
     #[cfg(not(target_arch = "x86_64"))]
     if let Some((smmu_base, _)) = memory::smmu_region() {
-        arch::iommu::init(smmu_base);
+        arch::iommu::initialize(smmu_base);
     }
     // `x86_64`'s, at the same point: every VT-d or AMD-Vi unit the tables name, and a machine
     // with neither DMAR nor IVRS says so loudly.
@@ -320,11 +323,11 @@ fn bring_up_machine(boot_info_pointer: usize) {
     // The RISC-V IOMMU, a PCI function, here for the SMMUv3's reason: before any path confines a
     // virtio-pci device.
     #[cfg(target_arch = "riscv64")]
-    pci::init_iommu();
+    pci::initialize_iommu();
 
     // The scheduler before interrupts, so the first timer tick has somewhere to send a reschedule.
-    sched::init();
-    interrupts_init(boot_info_pointer);
+    sched::initialize();
+    initialize_interrupts(boot_info_pointer);
 
     // After interrupts, so the boot core keeps ticking while it waits for the others. See
     // notes/smp.md.
@@ -339,14 +342,14 @@ fn bring_up_machine(boot_info_pointer: usize) {
 /// This is the line the whole locking discipline was written for. From here, a timer interrupt
 /// can land between any two instructions in the kernel, and every `IrqSafeMutex` starts
 /// actually masking something. See DECISIONS §9 and notes/locking.md.
-fn interrupts_init(_dtb: usize) {
+fn initialize_interrupts(_dtb: usize) {
     use crate::arch::{interrupts, irq, timer};
 
     // The interrupt controller before the timer: on `x86_64` its bring-up drives one device
     // interrupt through the IO APIC while the tick is not yet armed.
-    irq::init();
+    irq::initialize();
 
-    timer::init();
+    timer::initialize();
 
     // From here, preemptible.
     interrupts::enable();

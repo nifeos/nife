@@ -93,18 +93,15 @@ mod uart {
     pub fn is_byte_waiting() -> bool {
         !regs().FR.is_set(FR::RXFE)
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `read_byte`, because it reads the byte
-    /// `is_byte_waiting` reports.
-    pub fn rx_get() -> u8 {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    pub fn read_byte() -> u8 {
         regs().DR.get() as u8
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `arm_receive_interrupt`, the word the
-    /// NS16550 and PL011 manuals spell out.
-    pub fn arm_rx_interrupt() {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
+    /// PL011 manuals spell out.
+    pub fn arm_receive_interrupt() {
         regs().IMSC.modify(IMSC::RXIM::SET);
     }
     pub(crate) fn clear_interrupt() {
@@ -172,22 +169,19 @@ mod uart {
     pub fn is_byte_waiting() -> bool {
         rd(LSR) & LSR_DR != 0
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `read_byte`, because it reads the byte
-    /// `is_byte_waiting` reports.
-    pub fn rx_get() -> u8 {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    pub fn read_byte() -> u8 {
         rd(RBR) // reading clears the receive interrupt; that is why clear_interrupt is a no-op
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `arm_receive_interrupt`, the word the
-    /// NS16550 and PL011 manuals spell out.
-    pub fn arm_rx_interrupt() {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
+    /// PL011 manuals spell out.
+    pub fn arm_receive_interrupt() {
         wr(IER, IER_ERBFI);
     }
     pub(crate) fn clear_interrupt() {
-        // The NS16550 clears the receive interrupt when the byte is read (rx_get, in drain).
+        // The NS16550 clears the receive interrupt when the byte is read (read_byte, in drain).
     }
 }
 
@@ -217,29 +211,26 @@ mod uart {
     pub fn is_byte_waiting() -> bool {
         inb(LSR) & LSR_DR != 0
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `read_byte`, because it reads the byte
-    /// `is_byte_waiting` reports.
-    pub fn rx_get() -> u8 {
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    pub fn read_byte() -> u8 {
         inb(RBR) // reading clears the receive condition, as on the NS16550
     }
-    /// Name: provisional, flagged 2026-09-25 by the lane that re-derived the x86 port
-    /// falsifications (design/naming/functions-that-answer-yes-or-no-worklist.md, "`rx` and `tx`"). calef asked
-    /// what `rx` stands for in his #1255 review; recommended `arm_receive_interrupt`, the word the
-    /// NS16550 and PL011 manuals spell out.
+    /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
+    /// PL011 manuals spell out.
     ///
     /// **`OUT2` as well as the receive enable**, which is the one PC-specific fact here: on a PC
     /// the 16550's interrupt output reaches the ISA line only through a gate the modem control
     /// register's `OUT2` bit drives, so a UART with receive interrupts enabled and `OUT2` clear
     /// raises nothing. QEMU's 16550 does not model the gate; a real COM1 (xenon's) does. Set by
     /// read-modify-write, so the console's `DTR`/`RTS` survive.
-    pub fn arm_rx_interrupt() {
+    pub fn arm_receive_interrupt() {
         outb(MCR, inb(MCR) | MCR_OUT2);
         outb(IER, IER_ERBFI);
     }
     pub(crate) fn clear_interrupt() {
-        // The 16550 clears the receive interrupt when the byte is read (rx_get, in drain).
+        // The 16550 clears the receive interrupt when the byte is read (read_byte, in drain).
     }
 }
 
@@ -258,7 +249,7 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     // the race with the first interrupt and does not close it; a line burst-piped into QEMU before
     // this drain runs can lose its first character (notes/uart.md).
     drain();
-    uart::arm_rx_interrupt();
+    uart::arm_receive_interrupt();
 
     loop {
         interrupt_wait(IRQ);
@@ -298,7 +289,7 @@ fn drain() {
         let mut word: u64 = 0;
         let mut n: u64 = 0;
         while n < 8 && uart::is_byte_waiting() {
-            word |= (uart::rx_get() as u64) << (8 * n);
+            word |= (uart::read_byte() as u64) << (8 * n);
             n += 1;
         }
         if n == 0 {

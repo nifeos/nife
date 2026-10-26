@@ -39,15 +39,15 @@ What this does and does not buy, measured honestly:
 The PLIC equivalent spreads device sources across harts, the same round-robin-with-a-stable-target
 shape as the GIC. The PLIC delivers a source to a context (a hart at a privilege level). The
 hart-to-context numbering is the board's, read out of the device tree's `interrupts-extended` at
-boot (`arch::irq::init_contexts`, backed by `isa::plic`). It is `2*hart+1` for S-mode on QEMU `virt`,
-and `2*hart` on the JH7110, whose disabled S7 monitor core contributes only an M context (see
-notes/visionfive2.md). The pieces are:
+boot (`arch::irq::initialize_contexts`, backed by `isa::plic`). It is `2*hart+1` for S-mode on QEMU
+`virt`, and `2*hart` on the JH7110, whose disabled S7 monitor core contributes only an M context
+(see notes/visionfive2.md). The pieces are:
 
-- Every hart sets `SEIE` early (`arch::irq::init_this_cpu` now unmasks supervisor external
+- Every hart sets `SEIE` early (`arch::irq::initialize_this_cpu` now unmasks supervisor external
   interrupts alongside the software-interrupt IPI source). This is safe before the PLIC base is even
   known: `SEIE` with no source enabled for the hart's context delivers nothing. It sidesteps the
-  ordering hazard that a secondary comes online (running `init_this_cpu`) *before* the boot path
-  calls `plic::init`; the CSR is unmasked now, the context is set up later.
+  ordering hazard that a secondary comes online (running `initialize_this_cpu`) *before* the boot
+  path calls `plic::initialize`; the CSR is unmasked now, the context is set up later.
 - The boot hart opens a target hart's context and routes the source to it (`target_context` in
   `arch/riscv64/irq.rs`). The threshold and enable registers are global PLIC MMIO, so the boot hart,
   which runs every `enable` (test wiring, driver spawn), can open any hart's context and enable a

@@ -616,7 +616,6 @@ crates/clock_contract/src/lib.rs::SYNCED
 crates/clock_contract/src/lib.rs::UNKNOWN
 crates/clock_contract/src/lib.rs::WORDS
 crates/clock_contract/src/lib.rs::decide
-crates/clock_contract/src/lib.rs::init
 crates/clock_contract/src/lib.rs::is_known
 crates/clock_contract/src/lib.rs::is_plausible
 crates/clock_contract/src/lib.rs::new
@@ -2971,7 +2970,6 @@ crates/memory_region_heap/src/lib.rs::DEFAULT_BASE
 crates/memory_region_heap/src/lib.rs::MemoryRegionHeap
 crates/memory_region_heap/src/lib.rs::commit_all
 crates/memory_region_heap/src/lib.rs::committed_bytes
-crates/memory_region_heap/src/lib.rs::init
 crates/memory_region_heap/src/lib.rs::new
 crates/memory_regions/src/destroy.rs::DestroyOutcome
 crates/memory_regions/src/destroy.rs::destroy_outcome
@@ -4419,7 +4417,6 @@ fixtures/src/unwritable_clock_witness.rs::RPT_PROBING
 kernel/src/arch/aarch64/context.rs
 kernel/src/arch/aarch64/context.rs::Context
 kernel/src/arch/aarch64/context.rs::switch_to
-kernel/src/arch/aarch64/cpu_init.rs::init
 kernel/src/arch/aarch64/exceptions.rs
 kernel/src/arch/aarch64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/aarch64/exceptions.rs::SVC_COUNT
@@ -4428,7 +4425,6 @@ kernel/src/arch/aarch64/exceptions.rs::USER_FAULTS
 kernel/src/arch/aarch64/exceptions.rs::arg
 kernel/src/arch/aarch64/exceptions.rs::enter_user
 kernel/src/arch/aarch64/exceptions.rs::for_user_entry
-kernel/src/arch/aarch64/exceptions.rs::init
 kernel/src/arch/aarch64/exceptions.rs::last_user_fault
 kernel/src/arch/aarch64/exceptions.rs::set_arg
 kernel/src/arch/aarch64/fastpath_pad.rs
@@ -4438,7 +4434,6 @@ kernel/src/arch/aarch64/fp.rs::FpState
 kernel/src/arch/aarch64/fp.rs::REGISTERS
 kernel/src/arch/aarch64/fp.rs::enable
 kernel/src/arch/aarch64/fp.rs::has_pattern
-kernel/src/arch/aarch64/fp.rs::init
 kernel/src/arch/aarch64/fp.rs::is_scrubbed
 kernel/src/arch/aarch64/fp.rs::lane_low
 kernel/src/arch/aarch64/fp.rs::new
@@ -4452,16 +4447,13 @@ kernel/src/arch/aarch64/interrupts.rs::restore
 kernel/src/arch/aarch64/iommu.rs
 kernel/src/arch/aarch64/iommu.rs::Fault
 kernel/src/arch/aarch64/iommu.rs::attach
-kernel/src/arch/aarch64/iommu.rs::init
 kernel/src/arch/aarch64/iommu.rs::is_active
 kernel/src/arch/aarch64/iommu.rs::take_fault
 kernel/src/arch/aarch64/irq.rs
 kernel/src/arch/aarch64/irq.rs::enable
-kernel/src/arch/aarch64/irq.rs::init
 kernel/src/arch/aarch64/irq.rs::send_sgi
 kernel/src/arch/aarch64/isa.rs
 kernel/src/arch/aarch64/isa.rs::get
-kernel/src/arch/aarch64/isa.rs::init
 kernel/src/arch/aarch64/isa.rs::psci
 kernel/src/arch/aarch64/mmu.rs
 kernel/src/arch/aarch64/mmu.rs::Format
@@ -4472,7 +4464,6 @@ kernel/src/arch/aarch64/mmu.rs::asid_of
 kernel/src/arch/aarch64/mmu.rs::current_user_root
 kernel/src/arch/aarch64/mmu.rs::deactivate_user
 kernel/src/arch/aarch64/mmu.rs::flush_asid
-kernel/src/arch/aarch64/mmu.rs::init
 kernel/src/arch/aarch64/mmu.rs::permit_kernel_access_to_user_pages
 kernel/src/arch/aarch64/mmu.rs::phys_to_ptr
 kernel/src/arch/aarch64/mmu.rs::phys_to_virt
@@ -4504,7 +4495,6 @@ kernel/src/arch/aarch64/timer.rs
 kernel/src/arch/aarch64/timer.rs::TICK_HZ
 kernel/src/arch/aarch64/timer.rs::deadline
 kernel/src/arch/aarch64/timer.rs::frequency
-kernel/src/arch/aarch64/timer.rs::init
 kernel/src/arch/aarch64/timer.rs::interval
 kernel/src/arch/aarch64/timer.rs::is_cycle_counter_grantable
 kernel/src/arch/aarch64/timer.rs::last
@@ -4520,7 +4510,6 @@ kernel/src/arch/name.rs::NAME
 kernel/src/arch/riscv64/context.rs
 kernel/src/arch/riscv64/context.rs::Context
 kernel/src/arch/riscv64/context.rs::switch_to
-kernel/src/arch/riscv64/cpu_init.rs::init
 kernel/src/arch/riscv64/exceptions.rs
 kernel/src/arch/riscv64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/riscv64/exceptions.rs::SVC_COUNT
@@ -4529,7 +4518,6 @@ kernel/src/arch/riscv64/exceptions.rs::USER_FAULTS
 kernel/src/arch/riscv64/exceptions.rs::arg
 kernel/src/arch/riscv64/exceptions.rs::enter_user
 kernel/src/arch/riscv64/exceptions.rs::for_user_entry
-kernel/src/arch/riscv64/exceptions.rs::init
 kernel/src/arch/riscv64/exceptions.rs::last_user_fault
 kernel/src/arch/riscv64/exceptions.rs::set_arg
 kernel/src/arch/riscv64/exceptions.rs::set_thread_pointer
@@ -4537,7 +4525,6 @@ kernel/src/arch/riscv64/fastpath_pad.rs
 kernel/src/arch/riscv64/fastpath_pad.rs::fastpath_pad_body
 kernel/src/arch/riscv64/fp.rs
 kernel/src/arch/riscv64/fp.rs::enable
-kernel/src/arch/riscv64/fp.rs::init
 kernel/src/arch/riscv64/fp.rs::new
 kernel/src/arch/riscv64/harts.rs::can_start_secondaries
 kernel/src/arch/riscv64/harts.rs::cpu_start
@@ -4551,15 +4538,12 @@ kernel/src/arch/riscv64/interrupts.rs::restore
 kernel/src/arch/riscv64/iommu.rs
 kernel/src/arch/riscv64/iommu.rs::Fault
 kernel/src/arch/riscv64/iommu.rs::attach
-kernel/src/arch/riscv64/iommu.rs::init
 kernel/src/arch/riscv64/iommu.rs::is_active
 kernel/src/arch/riscv64/iommu.rs::take_fault
 kernel/src/arch/riscv64/irq.rs
 kernel/src/arch/riscv64/irq.rs::enable
-kernel/src/arch/riscv64/irq.rs::init
 kernel/src/arch/riscv64/isa.rs
 kernel/src/arch/riscv64/isa.rs::get
-kernel/src/arch/riscv64/isa.rs::init
 kernel/src/arch/riscv64/mmu.rs
 kernel/src/arch/riscv64/mmu.rs::Format
 kernel/src/arch/riscv64/mmu.rs::KERNEL_VA_BASE
@@ -4569,7 +4553,6 @@ kernel/src/arch/riscv64/mmu.rs::asid_of
 kernel/src/arch/riscv64/mmu.rs::current_user_root
 kernel/src/arch/riscv64/mmu.rs::deactivate_user
 kernel/src/arch/riscv64/mmu.rs::flush_asid
-kernel/src/arch/riscv64/mmu.rs::init
 kernel/src/arch/riscv64/mmu.rs::permit_kernel_access_to_user_pages
 kernel/src/arch/riscv64/mmu.rs::phys_to_ptr
 kernel/src/arch/riscv64/mmu.rs::phys_to_virt
@@ -4585,7 +4568,6 @@ kernel/src/arch/riscv64/mod.rs
 kernel/src/arch/riscv64/percpu.rs::boot_hartid
 kernel/src/arch/riscv64/percpu.rs::percpu
 kernel/src/arch/riscv64/pmu.rs
-kernel/src/arch/riscv64/pmu.rs::init
 kernel/src/arch/riscv64/primitives.rs::current_sp
 kernel/src/arch/riscv64/primitives.rs::direct_memory_access_write_barrier
 kernel/src/arch/riscv64/primitives.rs::halt
@@ -4603,7 +4585,6 @@ kernel/src/arch/riscv64/thread_pointer.rs
 kernel/src/arch/riscv64/timer.rs
 kernel/src/arch/riscv64/timer.rs::TICK_HZ
 kernel/src/arch/riscv64/timer.rs::frequency
-kernel/src/arch/riscv64/timer.rs::init
 kernel/src/arch/riscv64/timer.rs::interval
 kernel/src/arch/riscv64/timer.rs::is_cycle_counter_grantable
 kernel/src/arch/riscv64/timer.rs::now
@@ -4613,7 +4594,6 @@ kernel/src/arch/user_fault.rs::UserFault
 kernel/src/arch/user_fault.rs::UserFaultAccess
 kernel/src/arch/x86_64/amd_vi.rs
 kernel/src/arch/x86_64/amd_vi.rs::attach
-kernel/src/arch/x86_64/amd_vi.rs::init
 kernel/src/arch/x86_64/amd_vi.rs::is_active
 kernel/src/arch/x86_64/amd_vi.rs::take_fault
 kernel/src/arch/x86_64/ap_boot.rs
@@ -4624,7 +4604,6 @@ kernel/src/arch/x86_64/bring_up.rs::secondary_boot_entry
 kernel/src/arch/x86_64/context.rs
 kernel/src/arch/x86_64/context.rs::Context
 kernel/src/arch/x86_64/context.rs::switch_to
-kernel/src/arch/x86_64/cpu_init.rs::init
 kernel/src/arch/x86_64/exceptions.rs
 kernel/src/arch/x86_64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/x86_64/exceptions.rs::SVC_COUNT
@@ -4633,13 +4612,11 @@ kernel/src/arch/x86_64/exceptions.rs::USER_FAULTS
 kernel/src/arch/x86_64/exceptions.rs::arg
 kernel/src/arch/x86_64/exceptions.rs::enter_user
 kernel/src/arch/x86_64/exceptions.rs::for_user_entry
-kernel/src/arch/x86_64/exceptions.rs::init
 kernel/src/arch/x86_64/exceptions.rs::last_user_fault
 kernel/src/arch/x86_64/exceptions.rs::set_arg
 kernel/src/arch/x86_64/fp.rs
 kernel/src/arch/x86_64/fp.rs::disable
 kernel/src/arch/x86_64/fp.rs::enable
-kernel/src/arch/x86_64/fp.rs::init
 kernel/src/arch/x86_64/fp.rs::new
 kernel/src/arch/x86_64/instructions.rs
 kernel/src/arch/x86_64/interrupts.rs
@@ -4649,15 +4626,12 @@ kernel/src/arch/x86_64/interrupts.rs::restore
 kernel/src/arch/x86_64/iommu.rs
 kernel/src/arch/x86_64/iommu.rs::Fault
 kernel/src/arch/x86_64/iommu.rs::attach
-kernel/src/arch/x86_64/iommu.rs::init
 kernel/src/arch/x86_64/iommu.rs::is_active
 kernel/src/arch/x86_64/iommu.rs::take_fault
 kernel/src/arch/x86_64/irq.rs
 kernel/src/arch/x86_64/irq.rs::enable
-kernel/src/arch/x86_64/irq.rs::init
 kernel/src/arch/x86_64/isa.rs
 kernel/src/arch/x86_64/isa.rs::get
-kernel/src/arch/x86_64/isa.rs::init
 kernel/src/arch/x86_64/ist.rs::install
 kernel/src/arch/x86_64/machine.rs
 kernel/src/arch/x86_64/mmu.rs
@@ -4669,7 +4643,6 @@ kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_MMIO_BASE
 kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOTS
 kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOT_STRIDE
 kernel/src/arch/x86_64/mmu/device_windows.rs::virtio_slots
-kernel/src/arch/x86_64/mmu/kernel_map.rs::init
 kernel/src/arch/x86_64/mmu/kernel_map.rs::translate
 kernel/src/arch/x86_64/mmu/layout.rs::KERNEL_VA_BASE
 kernel/src/arch/x86_64/mmu/layout.rs::phys_to_ptr
@@ -4688,7 +4661,6 @@ kernel/src/arch/x86_64/mmu/user_space.rs::translate_user
 kernel/src/arch/x86_64/mod.rs
 kernel/src/arch/x86_64/percpu.rs::percpu
 kernel/src/arch/x86_64/pmu.rs
-kernel/src/arch/x86_64/pmu.rs::init
 kernel/src/arch/x86_64/port.rs
 kernel/src/arch/x86_64/port.rs::PortIo
 kernel/src/arch/x86_64/primitives.rs::current_sp
@@ -4699,7 +4671,6 @@ kernel/src/arch/x86_64/primitives.rs::wait_for_interrupt
 kernel/src/arch/x86_64/reset.rs
 kernel/src/arch/x86_64/rtc.rs
 kernel/src/arch/x86_64/segments.rs
-kernel/src/arch/x86_64/segments.rs::init
 kernel/src/arch/x86_64/segments.rs::installed_port_grant
 kernel/src/arch/x86_64/segments.rs::set_port_range_grant
 kernel/src/arch/x86_64/semihosting.rs
@@ -4710,7 +4681,6 @@ kernel/src/arch/x86_64/thread_pointer.rs
 kernel/src/arch/x86_64/timer.rs
 kernel/src/arch/x86_64/timer.rs::TICK_HZ
 kernel/src/arch/x86_64/timer.rs::frequency
-kernel/src/arch/x86_64/timer.rs::init
 kernel/src/arch/x86_64/timer.rs::interval
 kernel/src/arch/x86_64/timer.rs::is_cycle_counter_grantable
 kernel/src/arch/x86_64/timer.rs::now
@@ -4749,7 +4719,6 @@ kernel/src/cap.rs::timer_cap
 kernel/src/console.rs
 kernel/src/console.rs::_print
 kernel/src/console.rs::enter_panic
-kernel/src/console.rs::init
 kernel/src/cpu.rs
 kernel/src/cpu.rs::MAX_CPUS
 kernel/src/cpu.rs::NO_TID
@@ -4772,24 +4741,19 @@ kernel/src/disk_throughput.rs
 kernel/src/disk_throughput.rs::run
 kernel/src/drivers/gic.rs
 kernel/src/drivers/gic.rs::enable
-kernel/src/drivers/gic.rs::init
 kernel/src/drivers/gicv3.rs::enable
-kernel/src/drivers/gicv3.rs::init
 kernel/src/drivers/jh7110_clock_and_reset.rs
 kernel/src/drivers/jh7110_clock_and_reset.rs::bring_up
 kernel/src/drivers/mod.rs
 kernel/src/drivers/ns16550.rs
 kernel/src/drivers/ns16550.rs::configure
-kernel/src/drivers/ns16550.rs::init
 kernel/src/drivers/ns16550.rs::new
 kernel/src/drivers/pl011.rs
-kernel/src/drivers/pl011.rs::init
 kernel/src/drivers/pl011.rs::new
 kernel/src/drivers/plic.rs
 kernel/src/drivers/plic.rs::claim
 kernel/src/drivers/plic.rs::complete
 kernel/src/drivers/plic.rs::enable
-kernel/src/drivers/plic.rs::init
 kernel/src/drivers/ramfb.rs
 kernel/src/drivers/ramfb.rs::Error
 kernel/src/drivers/ramfb.rs::new
@@ -4806,7 +4770,6 @@ kernel/src/icount.rs
 kernel/src/icount.rs::reset
 kernel/src/icount.rs::run
 kernel/src/interrupt_stack.rs
-kernel/src/interrupt_stack.rs::init
 kernel/src/interrupt_stack.rs::region
 kernel/src/iommu.rs
 kernel/src/iommu.rs::is_active
@@ -4838,7 +4801,6 @@ kernel/src/memory.rs::bitmap_region
 kernel/src/memory.rs::free
 kernel/src/memory.rs::free_page_frames
 kernel/src/memory.rs::image_bounds
-kernel/src/memory.rs::init
 kernel/src/memory.rs::is_in_kernel_image
 kernel/src/memory.rs::is_page_frame_used
 kernel/src/memory.rs::stats
@@ -4968,7 +4930,6 @@ kernel/src/sched/rendezvous.rs::ipc_send_cap
 kernel/src/sched/spawning.rs::spawn
 kernel/src/sched/spawning.rs::spawn_on
 kernel/src/sched/spawning.rs::spawn_with_quota
-kernel/src/sched/switch.rs::init
 kernel/src/sched/switch.rs::is_running
 kernel/src/sched/switch.rs::mark_current_fp_live
 kernel/src/sched/switch.rs::schedule
@@ -4997,7 +4958,6 @@ kernel/src/smp.rs::online_harts_mask
 kernel/src/soak.rs
 kernel/src/soak.rs::run
 kernel/src/stack.rs
-kernel/src/stack.rs::init
 kernel/src/storage_bench.rs
 kernel/src/storage_bench.rs::run
 kernel/src/sync.rs

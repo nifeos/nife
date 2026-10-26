@@ -68,9 +68,9 @@ pub(crate) fn start(
         return Err(NotStarted::BadHandoff);
     }
     let sys = crate::memory::jh7110_sys_window().ok_or(NotStarted::NoClockWindow)?;
-    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::init` step 6c mapped
-    // exactly this window device-typed. The plan and the domain are the same crate's, so every
-    // identifier is in range; every step is idempotent on a controller already up.
+    // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::initialize` step 6c
+    // mapped exactly this window device-typed. The plan and the domain are the same crate's, so
+    // every identifier is in range; every step is idempotent on a controller already up.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(sys.base) as usize,

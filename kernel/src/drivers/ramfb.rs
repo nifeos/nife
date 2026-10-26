@@ -3,8 +3,8 @@
 //!
 //! It reaches no kernel global (§4 (kernel shape: monolithic, deferred, with two cheap rules)): the
 //! register block, a scratch region and that region's physical address are all arguments, from
-//! `crate::screen`. It runs only before `arch::mmu::init`, through the coarse boot map; the fine
-//! map does not cover `fw_cfg`. See notes/serial-less-output/ramfb.md.
+//! `crate::screen`. It runs only before `arch::mmu::initialize`, through the coarse boot map; the
+//! fine map does not cover `fw_cfg`. See notes/serial-less-output/ramfb.md.
 //!
 
 //! # BUGS

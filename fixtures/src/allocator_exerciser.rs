@@ -49,7 +49,7 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
-    HEAP.init(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // 1. A Vec big enough to force several growth reallocations (and each grow frees the old
     //    buffer, so this also churns the free list).

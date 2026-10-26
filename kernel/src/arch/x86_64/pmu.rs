@@ -5,7 +5,7 @@
 //! # BUGS
 //! - Never read on silicon (design/roadmap/0309-x86-64-core-cycles.md).
 //! - The in-step check is exact: a hypervisor aliasing the two with an offset passes as `1.00`.
-//! - Boot CPU only: a secondary that never ran [`init`] reads zero.
+//! - Boot CPU only: a secondary that never ran [`initialize`] reads zero.
 //! - The counter runs for the whole boot, read only as a difference.
 //! - `IA32_PERF_GLOBAL_CTRL` is read-modify-written, preserving firmware's bits.
 
@@ -45,19 +45,19 @@ const PERFMON_VERSION_WITH_FIXED_COUNTERS: u32 = 2;
 /// Fixed counter **1** is the second one, so a part must report at least this many.
 const FIXED_COUNTERS_NEEDED: u32 = 2;
 
-/// Why there is or is not a usable cycle counter, decided once by [`init`]. The vocabulary of
+/// Why there is or is not a usable cycle counter, decided once by [`initialize`]. The vocabulary of
 /// `arch::riscv64::pmu::CycleCounter`: each cause wants a different fix, and the boot line is the
 /// only diagnostic on a machine nobody can attach a debugger to. The discriminant is the stored
-/// value, and `Unknown` is zero, what an unreached [`init`] leaves.
+/// value, and `Unknown` is zero, what an unreached [`initialize`] leaves.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub(crate) enum CycleCounter {
-    /// [`init`] has not run.
+    /// [`initialize`] has not run.
     Unknown = 0,
     /// `CPUID` does not reach leaf `0x0A`, or the leaf reports version 0. This part has no
     /// architectural performance monitoring, so there is nothing to ask and nothing safe to read.
-    /// **This is what QEMU answers unless its `pmu` property is on**, and it is the reason [`init`]
-    /// never faults there.
+    /// **This is what QEMU answers unless its `pmu` property is on**, and it is the reason
+    /// [`initialize`] never faults there.
     NoPerfmonLeaf,
     /// Architectural performance monitoring exists, but at a version below 2 or with fewer than two
     /// fixed-function counters, so `IA32_PERF_FIXED_CTR1` is not implemented.
@@ -75,9 +75,9 @@ pub(crate) enum CycleCounter {
     Running,
 }
 
-/// [`CycleCounter`] as a byte. An atomic rather than a lock: written once by [`init`] on the boot
-/// CPU before anything reads it, read-only afterwards. Nothing here nests with another lock, so it
-/// earns no rank in `sync::rank`.
+/// [`CycleCounter`] as a byte. An atomic rather than a lock: written once by [`initialize`] on the
+/// boot CPU before anything reads it, read-only afterwards. Nothing here nests with another lock,
+/// so it earns no rank in `sync::rank`.
 static OUTCOME: AtomicU8 = AtomicU8::new(CycleCounter::Unknown as u8);
 
 /// How wide the fixed counters are, in bits, as the leaf reported. Written as soon as `CPUID` names
@@ -97,11 +97,14 @@ static CHECK_TSC: AtomicU64 = AtomicU64::new(0);
 /// Find the architectural fixed cycle counter, enable it, check it counts something of its own,
 /// and record whether to believe it.
 ///
-/// Called once from `bring_up_machine` (`kernel/src/boot.rs`), after `timer::init_frequency`: the
-/// check spins against the TSC, the counter the answer must not be. On a part with no performance
-/// monitoring [`cycles`] answers `None` forever. Every outcome is in [`outcome`] and printed by
-/// [`print_summary`].
-pub fn init() {
+/// Called once from `bring_up_machine` (`kernel/src/boot.rs`), after `timer::initialize_frequency`:
+/// the check spins against the TSC, the counter the answer must not be. On a part with no
+/// performance monitoring [`cycles`] answers `None` forever. Every outcome is in [`outcome`] and
+/// printed by [`print_summary`].
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     COUNTER_BITS.store(0, Ordering::Relaxed);
     PERFMON_VERSION.store(0, Ordering::Relaxed);
@@ -181,13 +184,13 @@ pub fn init() {
     OUTCOME.store(CycleCounter::Running as u8, Ordering::Release);
 }
 
-/// How long [`init`]'s check spins, in TSC ticks: ten milliseconds where the TSC's rate is known,
-/// and a flat ten million where it is not.
+/// How long [`initialize`]'s check spins, in TSC ticks: ten milliseconds where the TSC's rate is
+/// known, and a flat ten million where it is not.
 ///
-/// The fallback exists because [`init`]'s position in the boot is a choice and not a law. It is
-/// called after `timer::init_frequency`, so the calibrated number is there; a boot that ever moved
-/// it earlier would otherwise take `frequency`'s panic, and a probe is not worth a dead machine.
-/// Ten million ticks is between three and ten milliseconds on anything this runs on.
+/// The fallback exists because [`initialize`]'s position in the boot is a choice and not a law. It
+/// is called after `timer::initialize_frequency`, so the calibrated number is there; a boot that
+/// ever moved it earlier would otherwise take `frequency`'s panic, and a probe is not worth a dead
+/// machine. Ten million ticks is between three and ten milliseconds on anything this runs on.
 fn check_window_ticks() -> u64 {
     const FALLBACK: u64 = 10_000_000;
     match super::timer::frequency_checked() {
@@ -196,11 +199,11 @@ fn check_window_ticks() -> u64 {
     }
 }
 
-/// One `rdmsr` of [`IA32_PERF_FIXED_CTR1`]. Only ever called once [`init`] has enabled the counter,
-/// which is what makes the read safe.
+/// One `rdmsr` of [`IA32_PERF_FIXED_CTR1`]. Only ever called once [`initialize`] has enabled the
+/// counter, which is what makes the read safe.
 fn read_counter() -> u64 {
-    // SAFETY: reached only after [`init`] confirmed through `CPUID` leaf 0x0A that this MSR is
-    // implemented. An MSR read has no architectural side effect.
+    // SAFETY: reached only after [`initialize`] confirmed through `CPUID` leaf 0x0A that this MSR
+    // is implemented. An MSR read has no architectural side effect.
     unsafe { read_msr(IA32_PERF_FIXED_CTR1) }
 }
 
@@ -301,7 +304,9 @@ pub(crate) fn print_summary() {
             CHECK_CYCLES.load(Ordering::Relaxed),
             CHECK_TSC.load(Ordering::Relaxed),
         ),
-        CycleCounter::Unknown => crate::println!("  cycles      : arch::pmu::init has not run"),
+        CycleCounter::Unknown => {
+            crate::println!("  cycles      : arch::pmu::initialize has not run");
+        }
     }
 }
 
@@ -323,14 +328,15 @@ mod tests {
     ///
     /// [`outcome`] is the single gate, so the failure this catches is the records disagreeing: a
     /// `Running` with no width, or a width surviving a refusal. `Unknown` in particular must be
-    /// impossible by the time any test runs, because `kernel_main` calls [`init`] before the suite.
+    /// impossible by the time any test runs, because `kernel_main` calls [`initialize`] before the
+    /// suite.
     #[test_case]
     fn the_outcome_and_the_counter_agree() {
         let outcome = outcome();
         assert_ne!(
             outcome,
             CycleCounter::Unknown,
-            "kernel_main calls arch::pmu::init before the suite"
+            "kernel_main calls arch::pmu::initialize before the suite"
         );
 
         let running = outcome == CycleCounter::Running;
@@ -345,10 +351,10 @@ mod tests {
         }
     }
 
-    /// **The `CPUID` gate and the outcome agree, which is the assertion that keeps `init` from
-    /// faulting.**
+    /// **The `CPUID` gate and the outcome agree, which is the assertion that keeps `initialize`
+    /// from faulting.**
     ///
-    /// Every outcome other than `NoPerfmonLeaf` means [`init`] executed an `rdmsr` on
+    /// Every outcome other than `NoPerfmonLeaf` means [`initialize`] executed an `rdmsr` on
     /// `IA32_FIXED_CTR_CTRL`. That is a `#GP` on a part without architectural performance
     /// monitoring, so "the leaf said version >= 1" must be true whenever the outcome says the MSRs
     /// were touched. This is the one invariant in the module that a wrong edit could turn into a
@@ -362,11 +368,11 @@ mod tests {
         if reached_the_msrs {
             assert!(
                 isa::get().max_leaf >= CPUID_PERFMON_LEAF,
-                "init read an MSR on a part whose CPUID does not reach leaf 0x0a"
+                "initialize read an MSR on a part whose CPUID does not reach leaf 0x0a"
             );
             assert!(
                 PERFMON_VERSION.load(Ordering::Relaxed) > 0,
-                "init read an MSR on a part reporting performance monitoring version 0"
+                "initialize read an MSR on a part reporting performance monitoring version 0"
             );
         }
     }
@@ -378,7 +384,7 @@ mod tests {
     /// emulator's configuration, and pinning one value pins one `-cpu` line. `-cpu max` with
     /// `pmu=on` would legitimately produce `Running`, `Stuck` or `InStepWithTheTsc`, and all four
     /// are things this kernel handles. What must never happen is `Unknown`, which would mean
-    /// [`init`] left the module undecided, and that is what the first test above asserts.
+    /// [`initialize`] left the module undecided, and that is what the first test above asserts.
     #[test_case]
     fn qemu_reaches_a_decided_answer() {
         let outcome = outcome();

@@ -12,7 +12,8 @@
 //! # BUGS
 //!
 //! - Only PCI segment 0 is brought up; a unit elsewhere is reported and refused.
-//! - A unit whose scope names only absent devices is still brought up, and may panic at `init`.
+//! - A unit whose scope names only absent devices is still brought up, and may panic at
+//!   `initialize`.
 //! - An RMRR naming a bridge is mapped only once the device below it is confined.
 //! - The graphics unit translates with only its RMRR mapped; scanout needs the RMRR to cover it.
 //! - No interrupt remapping: `ECAP.IR` is only reported, and no `IRTE` is ever written.
@@ -91,7 +92,7 @@ const ECAP_C: u64 = 1 << 0;
 /// The `clflush` granule. CPUID leaf 1 reports it (EBX bits 15:8, in 8-byte units) and every x86_64
 /// part this kernel has met reports 64; a smaller real line would leave lines unflushed, a larger
 /// one only flushes some lines twice, so 64 is safe only while nothing reports less. Checked at
-/// `init`, where a mismatch panics rather than walking stale tables.
+/// `initialize`, where a mismatch panics rather than walking stale tables.
 const FLUSH_LINE: u64 = 64;
 
 // CCMD_REG: context-cache invalidation, register-based (the legacy, non-queued interface every
@@ -266,8 +267,8 @@ static IOMMU: IrqSafeMutex<Units> = IrqSafeMutex::new(
 );
 
 /// Every unit, device scope and RMRR the DMAR described, so [`attach`] can route a device to its
-/// owner and [`scope_of`] can say which unit that is. Recorded by [`init`]; never held at the same
-/// time as [`IOMMU`], because resolving a scope path reads configuration space.
+/// owner and [`scope_of`] can say which unit that is. Recorded by [`initialize`]; never held at the
+/// same time as [`IOMMU`], because resolving a scope path reads configuration space.
 static DMAR: IrqSafeMutex<Option<DmarUnits>> = IrqSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
@@ -395,7 +396,10 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
 ///
 /// Then every device a running unit owns faults until `attach` writes its context entry (or, for
 /// an RMRR device, anywhere outside its reserved regions).
-pub fn init(dmar: &DmarUnits) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize(dmar: &DmarUnits) {
     *DMAR.lock() = Some(*dmar);
     {
         let mut g = IOMMU.lock();
