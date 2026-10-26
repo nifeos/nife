@@ -644,7 +644,7 @@ impl Sim {
                 t.moved += 4;
             }
             let watermark = if self.strict_watermark {
-                registers::fifoth_rx_watermark(*self.register(registers::FIFOTH)) as usize
+                registers::fifoth_receive_watermark(*self.register(registers::FIFOTH)) as usize
             } else {
                 0
             };

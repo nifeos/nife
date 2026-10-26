@@ -596,13 +596,13 @@ mod tests {
         h.registers().stall_after = Some(512);
         h.registers().clock_step = 7;
         assert_ne!(DATA_DEADLINE_US % 7, 0);
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut back = vec![0u8; 9 * 512];
             let r = sd::read_blocks(&mut h, &card, 60, &mut back);
-            let _ = tx.send((r, h.registers().peek(registers::BMOD)));
+            let _ = sender.send((r, h.registers().peek(registers::BMOD)));
         });
-        let (r, bmod) = rx
+        let (r, bmod) = receiver
             .recv_timeout(std::time::Duration::from_secs(10))
             .expect("the deadline never fired");
         assert!(matches!(
