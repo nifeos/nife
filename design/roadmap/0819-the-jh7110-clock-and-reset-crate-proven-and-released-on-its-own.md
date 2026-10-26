@@ -41,7 +41,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is codebase rule 2
   (a driver gets what it needs passed in), and the crate now depends on nothing. It holds each
   tree's spellings (`STG_WINDOW`, `AON_WINDOW`, `SYS_WINDOW`, `PMIC_COMPATIBLES`) and decoders over
-  raw property values (`Found::from_regions`, `PmicBus::from_bus`, `DevicePlan::from_specifiers`,
+  raw property values (`WindowLocation::from_regions`, `PmicBus::from_nodes`, `DevicePlan::from_specifiers`,
   which take a phandle lookup from the caller). The walks (`discover`, `discover_aon`,
   `discover_sys`, `pmic_bus`) are `machine_discovery::jh7110::clock_and_reset`'s, with their
   fixtures, and `jh7110_watchdog` builds its own `DevicePlan`.
@@ -53,6 +53,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   blocks, and their names become permanent with the crate. `discover_aon` and `discover_sys` left
   the crate with the walk, so their provisional names no longer bind it.
 - crates.io answers 404 for the name (checked 2026-10-07).
+- A ruling of 2026-10-26 (UTC) ratified the crate's names and renamed eight of them first. [The
+  names record](0857-crates-released-on-their-own/jh7110-clock-and-reset-names.md) holds them.
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". The only Rust JH7110 crates found,
@@ -175,11 +177,11 @@ names until the ratification pass, so this section keeps the links it carried.
 - The crate doc: the volatile shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`, and the
   story is `notes/jh7110-clock-and-reset.md`.
 - `Step::SelectParent`, `AON`, `GMAC0_SYS_BRING_UP`, `GMAC0_AON_BRING_UP`, `SYSCLK_SDIO0_AHB`,
-  `SDIO_BRING_UP` and `Report::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
+  `SDIO_BRING_UP` and `BringUpReport::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
   (the board's own peripherals: network and storage on real silicon).
 - `STG_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
   thing here, and what stops it".
-- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `IcClkWords`, `COMPATIBLE_SYSCRG` and the direct reset
+- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `I2cClockWords`, `COMPATIBLE_SYSCRG` and the direct reset
   write's banner: milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write, and the kernel
   sets that write up). Its option B is the direct write, and its 2026-10-10 bench put radon in its
   outcome table's fourth row.

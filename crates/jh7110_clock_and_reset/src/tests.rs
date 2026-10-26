@@ -45,10 +45,10 @@ fn a_report_of_zeros_is_not_a_report_of_success() {
     // This is radon's 2026-09-04 shape, one level up: a window with nothing behind it accepts
     // every store and reads back zero, so `has_clocks_running` must be false on the *after*
     // words rather than on the fact that the writes returned.
-    let dead = Report {
+    let dead = BringUpReport {
         clocks: 2,
         had_reset: true,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(!dead.has_clocks_running());
     assert!(!dead.was_already_up());
@@ -59,8 +59,8 @@ fn a_report_of_zeros_is_not_a_report_of_success() {
 fn a_report_with_no_clock_steps_claims_nothing() {
     // `clocks: 0` must not read as "all zero of my clocks are running", which is what a bare
     // `.iter().all()` would say. A plan that enabled nothing has proven nothing.
-    assert!(!Report::default().has_clocks_running());
-    assert!(!Report::default().was_already_up());
+    assert!(!BringUpReport::default().has_clocks_running());
+    assert!(!BringUpReport::default().was_already_up());
 }
 
 #[test]
@@ -70,14 +70,14 @@ fn clocks_running_does_not_imply_already_up_while_the_reset_is_still_asserted() 
     // true and the release check is true, and deleting the `!` leaves that OR true either
     // way. Force the reset bit still SET in `reset_assert_before` (not yet deasserted) so the
     // real answer is false and only the reset half of the OR can produce it.
-    let clocked_but_held = Report {
+    let clocked_but_held = BringUpReport {
         clock_before: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clock_after: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clocks: 2,
         had_reset: true,
         reset_assert_before: 1 << STGRST_SEC_AHB,
         reset_assert_after: 0,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(clocked_but_held.has_clocks_running());
     assert!(
@@ -91,14 +91,14 @@ fn an_unrelated_bit_in_the_before_word_does_not_defeat_the_release_check() {
     // Complements the test above: here the target reset bit IS already clear (so the real
     // answer is true), but `reset_assert_before` carries an unrelated bit the mask does not
     // cover. `&` ignores it; `|` does not, which is what this catches.
-    let released_with_noise = Report {
+    let released_with_noise = BringUpReport {
         clock_before: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clock_after: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clocks: 2,
         had_reset: true,
         reset_assert_before: 0x8000,
         reset_assert_after: 0x8000 ^ (1 << STGRST_SEC_AHB),
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert_eq!(released_with_noise.reset_mask(), 1 << STGRST_SEC_AHB);
     assert!(
@@ -109,10 +109,10 @@ fn an_unrelated_bit_in_the_before_word_does_not_defeat_the_release_check() {
 
 #[test]
 fn reset_mask_recovers_the_bit_that_changed_between_the_two_assert_words() {
-    let r = Report {
+    let r = BringUpReport {
         reset_assert_before: 0b1010,
         reset_assert_after: 0b0010,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert_eq!(
         r.reset_mask(),
@@ -145,7 +145,7 @@ fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
     // already on and the reset already released before anything here ran, so the TRNG's zeros have
     // some other cause. A bench transcript has to be able to say this, which is why the report
     // keeps `before` words at all.
-    let up = Report {
+    let up = BringUpReport {
         clock_before: [CLOCK_ENABLE | 4, CLOCK_ENABLE | 4, 0, 0],
         clock_after: [CLOCK_ENABLE | 4, CLOCK_ENABLE | 4, 0, 0],
         clocks: 2,
@@ -155,7 +155,7 @@ fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
         reset_status_after: 1 << STGRST_SEC_AHB,
         released: true,
         polls: 1,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(up.has_clocks_running());
     assert!(up.was_already_up());
@@ -163,7 +163,7 @@ fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
 
 #[test]
 fn a_device_this_run_actually_started_is_not_reported_as_already_up() {
-    let started = Report {
+    let started = BringUpReport {
         clock_before: [0, 0, 0, 0],
         clock_after: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clocks: 2,
@@ -173,7 +173,7 @@ fn a_device_this_run_actually_started_is_not_reported_as_already_up() {
         reset_status_after: 1 << STGRST_SEC_AHB,
         released: true,
         polls: 3,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(started.has_clocks_running());
     assert!(!started.was_already_up(), "this run is what turned it on");
@@ -346,17 +346,17 @@ fn selecting_a_parent_keeps_the_enable_bit_and_the_divider() {
 
 #[test]
 fn a_one_based_divider_field_reading_zero_divides_by_one() {
-    assert_eq!(one_based_div(0, 2), 1);
-    assert_eq!(one_based_div(0, 4), 1);
-    assert_eq!(one_based_div(3, 2), 3);
-    assert_eq!(one_based_div(0x1f, 4), 15);
-    assert_eq!(one_based_div(u32::MAX, 31), (1u64 << 31) - 1);
+    assert_eq!(one_based_divider(0, 2), 1);
+    assert_eq!(one_based_divider(0, 4), 1);
+    assert_eq!(one_based_divider(3, 2), 3);
+    assert_eq!(one_based_divider(0x1f, 4), 15);
+    assert_eq!(one_based_divider(u32::MAX, 31), (1u64 << 31) - 1);
 }
 
 #[test]
 fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     // bus_root on osc, every divider at 1: the chain is transparent.
-    let osc = IcClkWords {
+    let osc = I2cClockWords {
         bus_root: 0,
         axi_cfg0: 1,
         stg_axiahb: 1,
@@ -373,7 +373,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     // fbdiv<<17, 0x30 carries postdiv1<<28, 0x34 carries prediv. The dividers are field
     // values, not words: the 2-bit fields hold 2 and 2, the 4-bit field 12, so the chain is
     // 1_228_800_000 / 2 / 2 / 12.
-    let pll2 = IcClkWords {
+    let pll2 = I2cClockWords {
         bus_root: 1 << 24,
         axi_cfg0: 2,
         stg_axiahb: 2,
@@ -386,7 +386,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
 
     // A zero divider field is treated as divide-by-one rather than a panic, because the words
     // belong to firmware and a print of the computed rate is the transcript's fact.
-    let zeros = IcClkWords {
+    let zeros = I2cClockWords {
         bus_root: 0,
         axi_cfg0: 0,
         stg_axiahb: 0,
@@ -399,7 +399,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
 
     // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
     // fields: 1_188_000_000 divided by the chain.
-    let frac = IcClkWords {
+    let frac = I2cClockWords {
         bus_root: 1 << 24,
         axi_cfg0: 1,
         stg_axiahb: 1,
@@ -471,7 +471,7 @@ fn reg_cells_parse_in_both_spellings() {
 /// and integer mode needs both of dacpd and dsmpd and a nonzero fbdiv, not any one of them.
 #[test]
 fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
-    let integer = IcClkWords {
+    let integer = I2cClockWords {
         bus_root: 1 << 24,
         axi_cfg0: 1,
         stg_axiahb: 1,
@@ -482,13 +482,13 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     };
     assert_eq!(i2c5_ic_clk(&integer), 1_228_800_000 / 2);
     // dacpd alone is fractional mode, which is the vendor's default rate.
-    let dacpd_only = IcClkWords {
+    let dacpd_only = I2cClockWords {
         pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (768 << 17),
         ..integer
     };
     assert_eq!(i2c5_ic_clk(&dacpd_only), PLL2_DEFAULT_HZ);
     // Integer mode with fbdiv 0 would be a zero rate; it is the default instead.
-    let no_fbdiv = IcClkWords {
+    let no_fbdiv = I2cClockWords {
         pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16),
         ..integer
     };
@@ -499,17 +499,17 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
 /// asserted is not released, and a plan with no reset step is (vacuously) released.
 #[test]
 fn every_reset_released_counts_the_released_against_the_planned() {
-    assert!(Report::default().every_reset_released());
-    let one_of_two = Report {
+    assert!(BringUpReport::default().every_reset_released());
+    let one_of_two = BringUpReport {
         resets: 2,
         resets_released: 1,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(!one_of_two.every_reset_released());
-    let both = Report {
+    let both = BringUpReport {
         resets: 2,
         resets_released: 2,
-        ..Report::default()
+        ..BringUpReport::default()
     };
     assert!(both.every_reset_released());
 }
@@ -543,7 +543,7 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
 /// 2 gives 198 MHz. The storage bench's measured transfer rates matched 198, not 50.
 #[test]
 fn radon_card_clock_comes_to_the_trees_rate_from_below() {
-    let words = IcClkWords {
+    let words = I2cClockWords {
         bus_root: 1 << 24,
         axi_cfg0: 3,
         stg_axiahb: 2,
@@ -605,7 +605,7 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
     // writing "word 298" would be a store past every clock and reset word.
     let clocks = specs(&[(2, 298), (2, 143)]);
     let resets = specs(&[(3, 81)]);
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_VENDOR,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
@@ -625,7 +625,7 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
 
 #[test]
 fn a_mainline_shaped_bus_gives_the_same_plan_through_syscrg() {
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_MAINLINE,
         None,
         None,
@@ -647,7 +647,7 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
     // bounds, a provider naming no `compatible`, and a clock provider asked for a reset.
     let clocks = specs(&[(4, 3), (1, 190), (5, 143), (1, 143)]);
     let resets = specs(&[(1, 126), (6, 81), (2, 81)]);
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_MAINLINE,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
@@ -669,7 +669,7 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
 fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
     let mut clocks = specs(&[(1, 143)]);
     clocks.extend_from_slice(&[0, 0, 0, 1]);
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_MAINLINE,
         None,
         None,
@@ -686,7 +686,7 @@ fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
 #[test]
 fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() {
     let clocks = specs(&[(1, 140), (1, 141), (1, 142), (1, 143), (1, 144)]);
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_MAINLINE,
         None,
         None,
@@ -710,7 +710,7 @@ fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() 
 
 #[test]
 fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() {
-    let bus = PmicBus::from_bus(
+    let bus = PmicBus::from_nodes(
         COMPATIBLE_PMIC_VENDOR,
         Some(&[0, 0, 0, 0x36]),
         Some(&BUS_REG),
@@ -725,7 +725,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
     assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
     assert_eq!(bus.pmic_address, Some(0x36));
     // A `reg` too short to hold its value is not stated.
-    let short = PmicBus::from_bus(
+    let short = PmicBus::from_nodes(
         COMPATIBLE_PMIC_VENDOR,
         Some(&[0, 0, 0x36]),
         Some(&BUS_REG[..7]),
@@ -755,7 +755,7 @@ fn a_provider_error_stops_the_walk_and_reaches_the_caller() {
     let failing = |_: u32, _: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(7) };
     let clocks = specs(&[(1, 143)]);
     assert_eq!(
-        PmicBus::from_bus(
+        PmicBus::from_nodes(
             COMPATIBLE_PMIC_MAINLINE,
             None,
             None,
@@ -805,10 +805,11 @@ fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
 #[test]
 fn a_single_window_node_answers_with_its_one_reg() {
     let found =
-        Found::from_regions(&STG_WINDOW.spellings[0], &[(0x1023_0000, 0x1_0000)], None).unwrap();
+        WindowLocation::from_regions(&STG_WINDOW.spellings[0], &[(0x1023_0000, 0x1_0000)], None)
+            .unwrap();
     assert_eq!(
         found,
-        Found {
+        WindowLocation {
             base: 0x1023_0000,
             size: 0x1_0000,
             from_tree: true,
@@ -816,7 +817,7 @@ fn a_single_window_node_answers_with_its_one_reg() {
         }
     );
     assert_eq!(
-        Found::from_regions(&STG_WINDOW.spellings[0], &[], None),
+        WindowLocation::from_regions(&STG_WINDOW.spellings[0], &[], None),
         None
     );
 }
@@ -831,16 +832,19 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
         (AON_BASE, AON_SIZE),
     ];
     let names: &[u8] = b"sys\0stg\0aon\0";
-    let stg = Found::from_regions(&STG_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    let stg =
+        WindowLocation::from_regions(&STG_WINDOW.spellings[1], &regions, Some(names)).unwrap();
     assert_eq!(
         (stg.base, stg.compatible),
         (STG_BASE, Some(COMPATIBLE_VENDOR_CLKGEN))
     );
-    let aon = Found::from_regions(&AON_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    let aon =
+        WindowLocation::from_regions(&AON_WINDOW.spellings[1], &regions, Some(names)).unwrap();
     assert_eq!((aon.base, aon.size), (AON_BASE, AON_SIZE));
-    let sys = Found::from_regions(&SYS_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    let sys =
+        WindowLocation::from_regions(&SYS_WINDOW.spellings[1], &regions, Some(names)).unwrap();
     assert_eq!(sys.base, SYS_BASE);
-    let rst = Found::from_regions(
+    let rst = WindowLocation::from_regions(
         &STG_WINDOW.spellings[2],
         &regions,
         Some(b"syscrg\0stgcrg\0aoncrg\0"),
@@ -857,14 +861,14 @@ fn a_multi_window_node_refuses_rather_than_guesses() {
     let regions = [(SYS_BASE, SYS_SIZE), (STG_BASE, STG_SIZE)];
     let vendor = &STG_WINDOW.spellings[1];
     // No `reg-names`, and `reg-names` without the entry.
-    assert_eq!(Found::from_regions(vendor, &regions, None), None);
+    assert_eq!(WindowLocation::from_regions(vendor, &regions, None), None);
     assert_eq!(
-        Found::from_regions(vendor, &regions, Some(b"sys\0aon\0")),
+        WindowLocation::from_regions(vendor, &regions, Some(b"sys\0aon\0")),
         None
     );
     // "stg" names index 2 of a two-entry `reg`: one past the end, never read.
     assert_eq!(
-        Found::from_regions(vendor, &regions, Some(b"sys\0aon\0stg\0")),
+        WindowLocation::from_regions(vendor, &regions, Some(b"sys\0aon\0stg\0")),
         None
     );
 }
@@ -882,7 +886,7 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
         assert_eq!(window.spellings[2].compatible, COMPATIBLE_VENDOR_RSTGEN);
         assert_eq!(
             window.fallback(),
-            Found {
+            WindowLocation {
                 base,
                 size: 0x1_0000,
                 from_tree: false,

@@ -631,7 +631,7 @@ pub(crate) fn jh7110_storage() -> Option<[Option<designware_mobile_storage::jh71
 /// and an address the firmware named are different claims, and by the time anyone reads the log
 /// they cannot be told apart from the number alone.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
-pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::Found> {
+pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowLocation> {
     *JH7110_CRG.lock()
 }
 
@@ -644,7 +644,7 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::Found> 
 /// reset asserted. See `design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md`.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_pmic_bus() -> Option<(
-    jh7110_clock_and_reset::Found,
+    jh7110_clock_and_reset::WindowLocation,
     jh7110_clock_and_reset::PmicBus,
 )> {
     *JH7110_PMIC_BUS.lock()
@@ -663,7 +663,7 @@ pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
 /// (milestone 53) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
 /// they are the same window, and `mmu::init` maps it once through this rather than once per user.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
-pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::Found> {
+pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::WindowLocation> {
     let sys = jh7110_pmic_bus()
         .map(|(sys, _)| sys)
         .or_else(|| jh7110_ethernet().map(|e| e.sys));
@@ -676,8 +676,10 @@ pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::Found> {
 /// provisional), or `None` on every machine whose tree names no such watchdog, which is every
 /// machine CI boots. RISC-V's `mmu::init` maps both device-typed.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
-pub(crate) fn jh7110_watchdog()
--> Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)> {
+pub(crate) fn jh7110_watchdog() -> Option<(
+    jh7110_watchdog::Discovered,
+    jh7110_clock_and_reset::WindowLocation,
+)> {
     *JH7110_WATCHDOG.lock()
 }
 
@@ -688,9 +690,9 @@ pub(crate) struct Jh7110Ethernet {
     /// The controller, its PHY's settings, its station address if the tree has one.
     pub port: designware_ethernet::jh7110::Discovered,
     /// The AON clock-and-reset window: `gmac0`'s bus clocks, transmit clock and resets.
-    pub aon: jh7110_clock_and_reset::Found,
+    pub aon: jh7110_clock_and_reset::WindowLocation,
     /// The SYS clock-and-reset window: `gmac0`'s transmit and PTP clocks.
-    pub sys: jh7110_clock_and_reset::Found,
+    pub sys: jh7110_clock_and_reset::WindowLocation,
     /// The AON syscon: `gmac0`'s interface select.
     pub syscon: designware_ethernet::jh7110::Syscon,
 }
@@ -1014,14 +1016,14 @@ static JH7110_STORAGE: IrqSafeMutex<Option<[Option<designware_mobile_storage::jh
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
 /// published trees agree on (milestone 220). `None` until `init`, and on every machine that is
 /// not a JH7110.
-static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::Found>> =
+static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
     IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's SYS clock-and-reset window and the PMIC bus's plan (milestone 592). `None` until
 /// `init`, and on every machine that is not a JH7110.
 static JH7110_PMIC_BUS: IrqSafeMutex<
     Option<(
-        jh7110_clock_and_reset::Found,
+        jh7110_clock_and_reset::WindowLocation,
         jh7110_clock_and_reset::PmicBus,
     )>,
 > = IrqSafeMutex::new(rank::RAM, None);
@@ -1030,7 +1032,10 @@ static JH7110_PMIC_BUS: IrqSafeMutex<
 /// machine whose tree names no such watchdog.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
 static JH7110_WATCHDOG: IrqSafeMutex<
-    Option<(jh7110_watchdog::Discovered, jh7110_clock_and_reset::Found)>,
+    Option<(
+        jh7110_watchdog::Discovered,
+        jh7110_clock_and_reset::WindowLocation,
+    )>,
 > = IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until `init`,

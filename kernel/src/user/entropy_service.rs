@@ -46,7 +46,7 @@ pub struct Wiring {
     /// tree named no controller. Read only by the riscv64 boot tour; not `cfg`-gated, so `Wiring`
     /// has one shape everywhere.
     #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
-    pub clock: Option<jh7110_clock_and_reset::Report>,
+    pub clock: Option<jh7110_clock_and_reset::BringUpReport>,
 }
 
 /// One entropy service per device per boot: a second would reset the device and reprogram its
@@ -330,7 +330,7 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
 /// clock-and-reset window, so the mapping does not exist and nothing may be stored to. riscv64
 /// only.
 #[cfg(target_arch = "riscv64")]
-fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::Report> {
+fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     let crg = crate::memory::jh7110_clock_and_reset()?;
     // SAFETY: `memory::init` recorded this region only for a machine whose tree names a JH7110,
     // and `mmu::map_everything` mapped exactly it, device-typed, in the direct map. The domain
@@ -346,7 +346,7 @@ fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::Report> {
 
 /// See the riscv64 arm: no JH7110 anywhere but a JH7110.
 #[cfg(not(target_arch = "riscv64"))]
-fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::Report> {
+fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     None
 }
 
@@ -358,7 +358,7 @@ fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::Report> {
 /// received-spelling question as `jh7110_trng_device`, sharpened by calef's 2026-09-13 ruling
 /// that the crate spelling this block's clocks expands to `jh7110_clock_and_reset`. The function
 /// waits on the name ratification queue beside its sibling; it does not rule for itself.
-pub fn jh7110_crg_window() -> Option<jh7110_clock_and_reset::Found> {
+pub fn jh7110_crg_window() -> Option<jh7110_clock_and_reset::WindowLocation> {
     crate::memory::jh7110_clock_and_reset()
 }
 
