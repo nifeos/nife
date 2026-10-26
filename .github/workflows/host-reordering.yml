@@ -1,4 +1,8 @@
 name: host-reordering
+# Observed failing: 2026-10-25, by script: `tools/host_reordering_litmus/measure.sh 60 none 0`, this
+#   job's one measuring step, ran on an x86_64 Linux machine and printed every RESULT line, the
+#   three LOCK rows included. A real run needs the workflow on the pushed branch, which this record
+#   is what lets through.
 
 # **Temporary, and scoped to one lane's branch** (lock-crate, 2026-10-25 UTC). It reruns the LOCK
 # measurement of notes/benchmarks/host-reordering-under-tcg.md with the kernel's lock now
