@@ -6,9 +6,9 @@ the register map, the descriptor formats, the DMA region's layout, the receive a
 the controller and PHY bring-up sequences, MDIO, and a probe that measures whether device DMA is
 coherent with the CPU's caches. It is `no_std` and needs no allocator.
 
-It dereferences no pointer and touches no hardware. You supply register access through the `Hw`
-trait, the DMA region through `Region`, and the tail-pointer writes and barrier through `Tails`;
-the tests run all of it against a simulated controller. It does not support the older 3.x GMAC.
+It dereferences no pointer and touches no hardware. You supply register access through the
+`Hardware` trait, the DMA region through `Region`, and the tail-pointer writes and barrier through
+`Tails`; the tests run all of it against a simulated controller. It does not support the older 3.x GMAC.
 
 ## What is proven
 
@@ -16,7 +16,7 @@ Two Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
   into word 3 of a receive descriptor and every caller buffer size, a frame that `rx_verdict`
-  accepts fits the caller's buffer, is at most `MAX_FRAME` bytes, and with its CRC fits the
+  accepts fits the caller's buffer, is at most `MAXIMUM_FRAME` bytes, and with its CRC fits the
   receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.

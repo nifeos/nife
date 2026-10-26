@@ -13,10 +13,10 @@ use std::vec;
 use std::vec::Vec;
 
 use crate::controller::{self, Identity};
-use crate::mdio::{self, Mdio};
+use crate::management_data_input_output::{self, ManagementDataInputOutput};
 use crate::motorcomm::{self, Link, Speed};
 use crate::{
-    Hw, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, Region, TDES2_BUF1_LEN, TDES2_IC, TDES3_OWN,
+    Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, Region, TDES2_BUF1_LEN, TDES2_IC, TDES3_OWN,
     Tails, layout, regs,
 };
 
@@ -103,7 +103,7 @@ impl Memory {
     }
 
     /// The device reads `out.len()` bytes at `phys`, from memory, never from the CPU's cache.
-    fn dev_read(&self, phys: u64, out: &mut [u8]) {
+    fn device_read(&self, phys: u64, out: &mut [u8]) {
         let off = self
             .offset(phys, out.len())
             .expect("device read outside the region") as usize;
@@ -111,7 +111,7 @@ impl Memory {
     }
 
     /// The device writes `src` at `phys`, to memory.
-    fn dev_write(&self, phys: u64, src: &[u8]) {
+    fn device_write(&self, phys: u64, src: &[u8]) {
         let off = self
             .offset(phys, src.len())
             .expect("device write outside the region") as usize;
@@ -174,7 +174,7 @@ impl Tails for TailRegs<'_> {
 /// A YT8531 on the MDIO bus: clause 22 registers, the extended-register window, and a link.
 pub(crate) struct Phy {
     regs: [u16; 32],
-    ext: BTreeMap<u16, u16>,
+    extended: BTreeMap<u16, u16>,
     link: Option<Link>,
 }
 
@@ -183,26 +183,26 @@ impl Phy {
     /// each one cleared.
     pub(crate) fn yt8531_at_1v8() -> Phy {
         let mut regs = [0; 32];
-        regs[mdio::PHYSID1 as usize] = (motorcomm::YT8531_ID >> 16) as u16;
-        regs[mdio::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
-        let mut ext = BTreeMap::new();
-        ext.insert(
+        regs[management_data_input_output::PHYSID1 as usize] = (motorcomm::YT8531_ID >> 16) as u16;
+        regs[management_data_input_output::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
+        let mut extended = BTreeMap::new();
+        extended.insert(
             motorcomm::EXT_CHIP_CONFIG,
             0x2 << 4 | motorcomm::CHIP_CONFIG_RXC_DLY_EN,
         );
-        ext.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::SYNCE_CFG_EN);
-        ext.insert(
+        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::SYNCE_CFG_EN);
+        extended.insert(
             motorcomm::EXT_SLEEP_CONTROL1,
             motorcomm::EXT_SLEEP_CONTROL1_SLEEP_SW | 1 << 14,
         );
-        ext.insert(
+        extended.insert(
             motorcomm::EXT_CLOCK_GATING,
             motorcomm::EXT_CLOCK_GATING_RX_CLK_EN,
         );
-        ext.insert(motorcomm::EXT_PAD_DRIVE, 0xffff);
+        extended.insert(motorcomm::EXT_PAD_DRIVE, 0xffff);
         Phy {
             regs,
-            ext,
+            extended,
             link: None,
         }
     }
@@ -215,8 +215,8 @@ impl Phy {
         self.regs[reg as usize]
     }
     /// An extended register's value.
-    pub(crate) fn ext(&self, addr: u16) -> u16 {
-        self.ext.get(&addr).copied().unwrap_or(0)
+    pub(crate) fn extended(&self, addr: u16) -> u16 {
+        self.extended.get(&addr).copied().unwrap_or(0)
     }
     /// Plug a cable in, or pull it out.
     pub(crate) fn set_link(&mut self, link: Option<Link>) {
@@ -224,14 +224,15 @@ impl Phy {
     }
 }
 
-impl Mdio for Phy {
-    fn read(&mut self, _phy: u8, reg: u8) -> Result<u16, mdio::Error> {
+impl ManagementDataInputOutput for Phy {
+    fn read(&mut self, _phy: u8, reg: u8) -> Result<u16, management_data_input_output::Error> {
         let reg = reg & 0x1f;
         Ok(match reg {
-            motorcomm::EXT_DATA => self.ext(self.regs[motorcomm::EXT_ADDR as usize]),
-            mdio::BMSR => {
+            motorcomm::EXT_DATA => self.extended(self.regs[motorcomm::EXT_ADDR as usize]),
+            management_data_input_output::BMSR => {
                 if self.link.is_some() {
-                    mdio::BMSR_LINK | mdio::BMSR_ANEG_COMPLETE
+                    management_data_input_output::BMSR_LINK
+                        | management_data_input_output::BMSR_ANEG_COMPLETE
                 } else {
                     0
                 }
@@ -254,14 +255,21 @@ impl Mdio for Phy {
             r => self.regs[r as usize],
         })
     }
-    fn write(&mut self, _phy: u8, reg: u8, v: u16) -> Result<(), mdio::Error> {
+    fn write(
+        &mut self,
+        _phy: u8,
+        reg: u8,
+        v: u16,
+    ) -> Result<(), management_data_input_output::Error> {
         let reg = reg & 0x1f;
         match reg {
             motorcomm::EXT_DATA => {
-                self.ext.insert(self.regs[motorcomm::EXT_ADDR as usize], v);
+                self.extended
+                    .insert(self.regs[motorcomm::EXT_ADDR as usize], v);
             }
-            mdio::BMCR => {
-                self.regs[0] = v & !(mdio::BMCR_ANRESTART | mdio::BMCR_RESET);
+            management_data_input_output::BMCR => {
+                self.regs[0] = v & !(management_data_input_output::BMCR_ANRESTART
+                    | management_data_input_output::BMCR_RESET);
             }
             r => self.regs[r as usize] = v,
         }
@@ -270,7 +278,7 @@ impl Mdio for Phy {
 }
 
 /// The controller.
-pub(crate) struct Nic {
+pub(crate) struct NetworkInterfaceController {
     regs: BTreeMap<u32, u32>,
     mem: Memory,
     /// The PHY behind the MDIO pair.
@@ -280,8 +288,8 @@ pub(crate) struct Nic {
     rx_clock: bool,
     flush_wedged: bool,
     loopback_broken: bool,
-    rx_cur: u16,
-    tx_cur: u16,
+    receive_cursor: u16,
+    transmit_cursor: u16,
     wire: Vec<Vec<u8>>,
     barriers: usize,
 }
@@ -290,11 +298,11 @@ const VERSION: u32 = 0x1052;
 /// 40-bit addressing, 2 KiB FIFOs each way.
 const FEATURE1: u32 = 1 << 14 | 4 << 6 | 4;
 
-impl Nic {
+impl NetworkInterfaceController {
     /// A controller fresh out of reset over `mem`. `_region` is where the tests will put the rings;
     /// the controller learns it from the base registers like the real one.
-    pub(crate) fn new(_region: u64, mem: Memory) -> Nic {
-        let mut nic = Nic {
+    pub(crate) fn new(_region: u64, mem: Memory) -> NetworkInterfaceController {
+        let mut nic = NetworkInterfaceController {
             regs: BTreeMap::new(),
             mem,
             phy: Phy::yt8531_at_1v8(),
@@ -303,8 +311,8 @@ impl Nic {
             rx_clock: true,
             flush_wedged: false,
             loopback_broken: false,
-            rx_cur: 0,
-            tx_cur: 0,
+            receive_cursor: 0,
+            transmit_cursor: 0,
             wire: Vec::new(),
             barriers: 0,
         };
@@ -318,8 +326,8 @@ impl Nic {
         self.regs.insert(regs::mac_hw_feature(1), FEATURE1);
         self.regs.insert(regs::MAC_ADDR0_HI, 0xffff);
         self.regs.insert(regs::MAC_ADDR0_LO, 0xffff_ffff);
-        self.rx_cur = 0;
-        self.tx_cur = 0;
+        self.receive_cursor = 0;
+        self.transmit_cursor = 0;
     }
 
     /// How many reads of the bus mode register the software reset takes to clear.
@@ -396,19 +404,19 @@ impl Nic {
         ((u64::from(tail).wrapping_sub(base & 0xffff_ffff) / 16) % u64::from(n)) as u16
     }
 
-    fn desc(&self, phys: u64) -> [u32; 4] {
+    fn descriptor(&self, phys: u64) -> [u32; 4] {
         let mut b = [0u8; 16];
-        self.mem.dev_read(phys, &mut b);
+        self.mem.device_read(phys, &mut b);
         let w = |i: usize| u32::from_le_bytes(b[4 * i..4 * i + 4].try_into().unwrap());
         [w(0), w(1), w(2), w(3)]
     }
 
-    fn set_desc(&self, phys: u64, d: [u32; 4]) {
+    fn set_descriptor(&self, phys: u64, d: [u32; 4]) {
         let mut b = [0u8; 16];
         for (i, w) in d.iter().enumerate() {
             b[4 * i..4 * i + 4].copy_from_slice(&w.to_le_bytes());
         }
-        self.mem.dev_write(phys, &b);
+        self.mem.device_write(phys, &b);
     }
 
     fn status(&mut self, bit: u32) {
@@ -423,9 +431,9 @@ impl Nic {
             regs::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.rx_tail(), n);
-        let mut i = self.rx_cur;
+        let mut i = self.receive_cursor;
         let mut count = 0;
-        while i != tail && self.desc(base + u64::from(i) * 16)[3] & RDES3_OWN != 0 {
+        while i != tail && self.descriptor(base + u64::from(i) * 16)[3] & RDES3_OWN != 0 {
             count += 1;
             i = (i + 1) % n;
         }
@@ -448,18 +456,18 @@ impl Nic {
             regs::CHAN_RX_RING_LEN,
         );
         let tail = self.index_of_tail(base, self.rx_tail(), n);
-        let at = base + u64::from(self.rx_cur) * 16;
-        if self.rx_cur == tail || self.desc(at)[3] & RDES3_OWN == 0 {
+        let at = base + u64::from(self.receive_cursor) * 16;
+        if self.receive_cursor == tail || self.descriptor(at)[3] & RDES3_OWN == 0 {
             self.status(regs::CHAN_STATUS_RBU);
             return false;
         }
-        let d = self.desc(at);
+        let d = self.descriptor(at);
         let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
-        self.mem.dev_write(buffer, wire);
+        self.mem.device_write(buffer, wire);
         let es = if error { RDES3_ES } else { 0 };
-        self.set_desc(at, [0, 0, 0, RDES3_FD | RDES3_LD | es | wire.len() as u32]);
+        self.set_descriptor(at, [0, 0, 0, RDES3_FD | RDES3_LD | es | wire.len() as u32]);
         self.status(regs::CHAN_STATUS_RI);
-        self.rx_cur = (self.rx_cur + 1) % n;
+        self.receive_cursor = (self.receive_cursor + 1) % n;
         true
     }
 
@@ -489,23 +497,23 @@ impl Nic {
         );
         loop {
             let tail = self.index_of_tail(base, self.reg(regs::CHAN_TX_TAIL), n);
-            if self.tx_cur == tail {
+            if self.transmit_cursor == tail {
                 return;
             }
-            let at = base + u64::from(self.tx_cur) * 16;
-            let d = self.desc(at);
+            let at = base + u64::from(self.transmit_cursor) * 16;
+            let d = self.descriptor(at);
             if d[3] & TDES3_OWN == 0 {
                 self.status(regs::CHAN_STATUS_TBU);
                 return;
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
             let mut frame = vec![0u8; (d[2] & TDES2_BUF1_LEN) as usize];
-            self.mem.dev_read(buffer, &mut frame);
-            self.set_desc(at, [0, 0, 0, d[3] & !TDES3_OWN]);
+            self.mem.device_read(buffer, &mut frame);
+            self.set_descriptor(at, [0, 0, 0, d[3] & !TDES3_OWN]);
             if d[2] & TDES2_IC != 0 {
                 self.status(regs::CHAN_STATUS_TI);
             }
-            self.tx_cur = (self.tx_cur + 1) % n;
+            self.transmit_cursor = (self.transmit_cursor + 1) % n;
             let conf = self.reg(regs::MAC_CONF);
             if conf & regs::MAC_CONF_LM != 0 {
                 if !self.loopback_broken {
@@ -520,7 +528,7 @@ impl Nic {
     }
 }
 
-impl Hw for Nic {
+impl Hardware for NetworkInterfaceController {
     fn read(&mut self, off: u32) -> u32 {
         match off {
             regs::DMA_MODE => {
@@ -551,17 +559,17 @@ impl Hw for Nic {
                 self.regs.insert(off, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            regs::MAC_MDIO_ADDR if v & mdio::GB != 0 => {
-                let phy = ((v >> mdio::PA_SHIFT) & 0x1f) as u8;
-                let reg = ((v >> mdio::RDA_SHIFT) & 0x1f) as u8;
-                if v & (0x3 << 2) == mdio::GOC_READ {
+            regs::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
+                let phy = ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
+                let reg = ((v >> management_data_input_output::RDA_SHIFT) & 0x1f) as u8;
+                if v & (0x3 << 2) == management_data_input_output::GOC_READ {
                     let r = self.phy.read(phy, reg).unwrap();
                     self.regs.insert(regs::MAC_MDIO_DATA, u32::from(r));
                 } else {
                     let data = self.reg(regs::MAC_MDIO_DATA) as u16;
                     self.phy.write(phy, reg, data).unwrap();
                 }
-                self.regs.insert(off, v & !mdio::GB);
+                self.regs.insert(off, v & !management_data_input_output::GB);
             }
             regs::CHAN_STATUS => {
                 let s = self.reg(off) & !v;
@@ -583,9 +591,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mdio_through_the_controller_reaches_the_phy() {
-        let mut nic = Nic::new(0, Memory::coherent(0));
-        let id = mdio::phy_id(&mut mdio::Bus(&mut nic), 0).unwrap();
+    fn management_data_input_output_through_the_controller_reaches_the_phy() {
+        let mut nic = NetworkInterfaceController::new(0, Memory::coherent(0));
+        let id = management_data_input_output::phy_id(
+            &mut management_data_input_output::Bus(&mut nic),
+            0,
+        )
+        .unwrap();
         assert_eq!(id, motorcomm::YT8531_ID);
     }
 
@@ -594,7 +606,7 @@ mod tests {
         let m = Memory::write_back_unsnooped(0x1000);
         Cpu(&m).write_u64(0, 0x1122_3344_5566_7788);
         let mut b = [0; 8];
-        m.dev_read(0x1000, &mut b);
+        m.device_read(0x1000, &mut b);
         assert_eq!(b, [0; 8]);
         assert_eq!(Cpu(&m).read_u64(0), 0x1122_3344_5566_7788);
     }
@@ -603,7 +615,7 @@ mod tests {
     fn an_unsnooped_write_through_cache_hides_the_devices_stores_from_the_cpu() {
         let m = Memory::write_through_unsnooped(0x1000);
         Cpu(&m).write_u64(0, 1);
-        m.dev_write(0x1000, &[9; 8]);
+        m.device_write(0x1000, &[9; 8]);
         assert_eq!(Cpu(&m).read_u64(0), 1);
     }
 }

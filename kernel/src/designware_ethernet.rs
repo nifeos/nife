@@ -29,7 +29,10 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm::{self, Link, Speed};
-use ::designware_ethernet::{DataPlane, Hw, Region, Tails, coherence, jh7110, layout, mdio, regs};
+use ::designware_ethernet::{
+    DataPlane, Hardware, Region, Tails, coherence, jh7110, layout, management_data_input_output,
+    regs,
+};
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
 
@@ -57,7 +60,7 @@ pub enum Error {
     /// The station address is in neither the tree nor the controller's own registers.
     NoStationAddress,
     /// An MDIO command did not complete.
-    Mdio(mdio::Error),
+    Mdio(management_data_input_output::Error),
     /// The PHY is not the YT8531 this driver's board settings are for.
     UnknownPhy {
         /// What it answered.
@@ -222,7 +225,8 @@ fn run(
         return Err(Error::ResetsHeld);
     }
 
-    let syscon = mmu::phys_to_virt(e.syscon.base + jh7110::GMAC0_SYSCON_OFFSET) as *mut u32;
+    let syscon =
+        mmu::phys_to_virt(e.syscon.base + jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET) as *mut u32;
     // SAFETY: the AON syscon page is mapped device-typed (step 6d) and the offset is inside its
     // 4 KiB. A read-modify-write of `gmac0`'s three bits; nothing else in this kernel writes the
     // word, and this runs on the one thread wiring the port.
@@ -253,13 +257,19 @@ fn run(
     let mac = mac.0;
 
     let phy = e.port.phy_address;
-    r.phy_id = mdio::phy_id(&mut mdio::Bus(&mut w), phy).map_err(Error::Mdio)?;
+    r.phy_id =
+        management_data_input_output::phy_id(&mut management_data_input_output::Bus(&mut w), phy)
+            .map_err(Error::Mdio)?;
     if r.phy_id != motorcomm::YT8531_ID {
         return Err(Error::UnknownPhy { id: r.phy_id });
     }
-    let applied =
-        motorcomm::configure(&mut mdio::Bus(&mut w), phy, &e.port.phy).map_err(Error::Mdio)?;
-    r.phy = Some((applied.volt_mv, e.port.phy.source));
+    let applied = motorcomm::configure(
+        &mut management_data_input_output::Bus(&mut w),
+        phy,
+        &e.port.phy,
+    )
+    .map_err(Error::Mdio)?;
+    r.phy = Some((applied.voltage_mv, e.port.phy.source));
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
@@ -279,8 +289,8 @@ fn run(
     zero(region);
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
-    let mut bus = mdio::Bus(&mut w);
-    mdio::restart_autonegotiation(&mut bus, phy).map_err(Error::Mdio)?;
+    let mut bus = management_data_input_output::Bus(&mut w);
+    management_data_input_output::restart_autonegotiation(&mut bus, phy).map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
@@ -374,7 +384,7 @@ fn zero(region: u64) {
 /// The controller's register window, through the direct map.
 struct Window(u64);
 
-impl Hw for Window {
+impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
         assert!(off + 4 <= regs::WINDOW);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its

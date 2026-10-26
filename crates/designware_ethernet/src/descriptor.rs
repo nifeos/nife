@@ -20,7 +20,9 @@ pub const BUFFER_SIZE: u64 = 2048;
 
 /// The largest frame either direction carries: 1500 bytes of payload and the 14-byte header, CRC
 /// excluded (the device appends it on transmit, and the driver strips it on receive).
-pub const MAX_FRAME: usize = 1514;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `MAX_FRAME`.
+pub const MAXIMUM_FRAME: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
 pub const CRC_BYTES: usize = 4;
@@ -112,7 +114,7 @@ pub enum RxVerdict {
 ///
 /// Every field is the device's statement and none is trusted, since a device that lies about a
 /// length would lead a trusting driver past its buffer: a `Frame(n)` always has `n <= room`,
-/// `n <= MAX_FRAME` and `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for
+/// `n <= MAXIMUM_FRAME` and `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for
 /// every word.
 ///
 /// # Examples
@@ -137,7 +139,7 @@ pub fn rx_verdict(des3: u32, room: usize) -> RxVerdict {
     let Some(len) = wire.checked_sub(CRC_BYTES) else {
         return RxVerdict::Drop;
     };
-    let fits = (14..=MAX_FRAME).contains(&len) && len <= room && wire as u64 <= BUFFER_SIZE;
+    let fits = (14..=MAXIMUM_FRAME).contains(&len) && len <= room && wire as u64 <= BUFFER_SIZE;
     if !fits {
         return RxVerdict::Drop;
     }

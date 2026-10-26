@@ -21,7 +21,7 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::{DataPlane, MAX_FRAME, Region, Tails, layout, regs};
+use designware_ethernet::{DataPlane, MAXIMUM_FRAME, Region, Tails, layout, regs};
 use driver_process_contract::designware_ethernet::{
     DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
@@ -93,7 +93,7 @@ impl DesignWareNic {
 
     /// The next received frame, if the device has written one.
     pub(crate) fn rx_take(&mut self) -> Option<Vec<u8>> {
-        let mut buf = [0u8; MAX_FRAME];
+        let mut buf = [0u8; MAXIMUM_FRAME];
         let n = self.plane.receive(&mut Plane, &mut Channel, &mut buf)?;
         Some(buf[..n].to_vec())
     }
@@ -114,6 +114,7 @@ impl DesignWareNic {
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
         let des3 = (PLANE.r64(layout::rx_descriptor(self.plane.rx_cursor()) + 8) >> 32) as u32;
-        designware_ethernet::rx_verdict(des3, MAX_FRAME) != designware_ethernet::RxVerdict::NotYet
+        designware_ethernet::rx_verdict(des3, MAXIMUM_FRAME)
+            != designware_ethernet::RxVerdict::NotYet
     }
 }

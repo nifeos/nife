@@ -1,12 +1,13 @@
-//! **The MDIO bus, through the MAC's own two registers**, and the IEEE 802.3 clause 22 registers
-//! every PHY has.
+//! **The management data input/output (MDIO) bus, through the MAC's own two registers**, and the
+//! IEEE 802.3 clause 22 registers every PHY (physical layer device) has. IEEE 802.3 clause 22
+//! names the bus "management data input/output"; `MDIO` is its abbreviation there.
 //!
 //! The command word and the busy-bit poll are OpenBSD's `dwqe_mii_readreg` and
 //! `dwqe_mii_writereg` (`sys/dev/ic/dwqe.c`, ISC license, notice in the crate root): the data
 //! first on a write, then the address with the busy bit set, then wait for the controller to clear
 //! it. The clause 22 register numbers and bits are the standard's.
 
-use crate::{Hw, regs};
+use crate::{Hardware, regs};
 
 /// The MDC clock range field's shift in [`regs::MAC_MDIO_ADDR`].
 pub const CR_SHIFT: u32 = 8;
@@ -80,19 +81,22 @@ pub const fn command(phy: u8, reg: u8, write: bool) -> u32 {
         | GB
 }
 
-/// A clause 22 PHY register file, reached somehow. The MAC's MDIO pair is one implementation
-/// ([`Bus`]); a test's simulated PHY is another.
-pub trait Mdio {
+/// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
+/// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Mdio`.
+#[doc(alias = "mdio")]
+pub trait ManagementDataInputOutput {
     /// Read register `reg` of the PHY at `phy`.
     fn read(&mut self, phy: u8, reg: u8) -> Result<u16, Error>;
     /// Write `v` to register `reg` of the PHY at `phy`.
     fn write(&mut self, phy: u8, reg: u8, v: u16) -> Result<(), Error>;
 }
 
-/// The MAC's MDIO registers, through whatever [`Hw`] reaches the controller.
-pub struct Bus<'a, H: Hw>(pub &'a mut H);
+/// The MAC's MDIO registers, through whatever [`Hardware`] reaches the controller.
+pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
-impl<H: Hw> Bus<'_, H> {
+impl<H: Hardware> Bus<'_, H> {
     fn wait(&mut self, phy: u8, reg: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
@@ -108,7 +112,7 @@ impl<H: Hw> Bus<'_, H> {
     }
 }
 
-impl<H: Hw> Mdio for Bus<'_, H> {
+impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
     fn read(&mut self, phy: u8, reg: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
         self.wait(phy, reg)?;
@@ -126,7 +130,7 @@ impl<H: Hw> Mdio for Bus<'_, H> {
 }
 
 /// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included.
-pub fn phy_id(bus: &mut impl Mdio, phy: u8) -> Result<u32, Error> {
+pub fn phy_id(bus: &mut impl ManagementDataInputOutput, phy: u8) -> Result<u32, Error> {
     let hi = bus.read(phy, PHYSID1)?;
     let lo = bus.read(phy, PHYSID2)?;
     Ok(u32::from(hi) << 16 | u32::from(lo))
@@ -134,14 +138,17 @@ pub fn phy_id(bus: &mut impl Mdio, phy: u8) -> Result<u32, Error> {
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
 /// look does not read as down forever and a link that is up now reads as up.
-pub fn link_is_up(bus: &mut impl Mdio, phy: u8) -> Result<bool, Error> {
+pub fn link_is_up(bus: &mut impl ManagementDataInputOutput, phy: u8) -> Result<bool, Error> {
     let _ = bus.read(phy, BMSR)?;
     Ok(bus.read(phy, BMSR)? & BMSR_LINK != 0)
 }
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
 /// on a gigabit part).
-pub fn restart_autonegotiation(bus: &mut impl Mdio, phy: u8) -> Result<(), Error> {
+pub fn restart_autonegotiation(
+    bus: &mut impl ManagementDataInputOutput,
+    phy: u8,
+) -> Result<(), Error> {
     let bmcr = bus.read(phy, BMCR)?;
     bus.write(phy, BMCR, bmcr | BMCR_ANENABLE | BMCR_ANRESTART)
 }
@@ -187,7 +194,7 @@ mod tests {
         }
     }
 
-    impl Hw for Pair {
+    impl Hardware for Pair {
         fn read(&mut self, off: u32) -> u32 {
             match off {
                 regs::MAC_MDIO_ADDR => {
@@ -222,11 +229,14 @@ mod tests {
 
     #[test]
     fn a_read_issues_one_read_command_and_returns_the_data_register() {
-        let mut hw = Pair::new(0xbeef, 3);
-        assert_eq!(Bus(&mut hw).read(4, BMSR), Ok(0xbeef));
-        assert_eq!(hw.writes, [(regs::MAC_MDIO_ADDR, command(4, BMSR, false))]);
+        let mut hardware = Pair::new(0xbeef, 3);
+        assert_eq!(Bus(&mut hardware).read(4, BMSR), Ok(0xbeef));
         assert_eq!(
-            hw.waited_us,
+            hardware.writes,
+            [(regs::MAC_MDIO_ADDR, command(4, BMSR, false))]
+        );
+        assert_eq!(
+            hardware.waited_us,
             3 * POLL_US,
             "it waited out the busy bit, poll by poll"
         );
@@ -235,10 +245,10 @@ mod tests {
     #[test]
     fn a_write_puts_the_data_down_before_the_command_that_sends_it() {
         // The other order would send whatever the data register held before.
-        let mut hw = Pair::new(0, 2);
-        Bus(&mut hw).write(1, BMCR, 0x1200).unwrap();
+        let mut hardware = Pair::new(0, 2);
+        Bus(&mut hardware).write(1, BMCR, 0x1200).unwrap();
         assert_eq!(
-            hw.writes,
+            hardware.writes,
             [
                 (regs::MAC_MDIO_DATA, 0x1200),
                 (regs::MAC_MDIO_ADDR, command(1, BMCR, true))
@@ -248,32 +258,35 @@ mod tests {
 
     #[test]
     fn a_command_still_busy_from_someone_else_is_waited_out_not_overwritten() {
-        let mut hw = Pair::new(0x1234, 2);
-        hw.addr = command(7, 9, false); // firmware's read, in flight
-        assert_eq!(Bus(&mut hw).read(0, PHYSID1), Ok(0x1234));
+        let mut hardware = Pair::new(0x1234, 2);
+        hardware.addr = command(7, 9, false); // firmware's read, in flight
+        assert_eq!(Bus(&mut hardware).read(0, PHYSID1), Ok(0x1234));
         // Nothing was written until the firmware's command had cleared its busy bit.
-        assert_eq!(hw.writes.len(), 1);
-        assert!(hw.waited_us >= 2 * POLL_US);
+        assert_eq!(hardware.writes.len(), 1);
+        assert!(hardware.waited_us >= 2 * POLL_US);
     }
 
     #[test]
     fn a_busy_bit_that_never_clears_is_a_bounded_timeout_naming_the_access() {
-        let mut hw = Pair::new(0, 0);
-        hw.stuck = true;
-        hw.addr = GB;
+        let mut hardware = Pair::new(0, 0);
+        hardware.stuck = true;
+        hardware.addr = GB;
         assert_eq!(
-            Bus(&mut hw).read(3, BMSR),
+            Bus(&mut hardware).read(3, BMSR),
             Err(Error::Timeout { phy: 3, reg: BMSR })
         );
-        assert_eq!(hw.waited_us, COMMAND_LIMIT_US);
-        assert!(hw.writes.is_empty(), "a bus held busy was never written");
-        let mut hw = Pair::new(0, 0);
-        hw.stuck = true;
+        assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
+        assert!(
+            hardware.writes.is_empty(),
+            "a bus held busy was never written"
+        );
+        let mut hardware = Pair::new(0, 0);
+        hardware.stuck = true;
         assert_eq!(
-            Bus(&mut hw).write(2, BMCR, 1),
+            Bus(&mut hardware).write(2, BMCR, 1),
             Err(Error::Timeout { phy: 2, reg: BMCR })
         );
-        assert_eq!(hw.waited_us, COMMAND_LIMIT_US);
+        assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
     }
 
     /// A clause 22 register file with a latched-low link bit, for the helpers above the bus.
@@ -283,7 +296,7 @@ mod tests {
         dropped_since_read: bool,
     }
 
-    impl Mdio for Latched {
+    impl ManagementDataInputOutput for Latched {
         fn read(&mut self, _phy: u8, reg: u8) -> Result<u16, Error> {
             if reg == BMSR {
                 let up = self.link_now && !self.dropped_since_read;
@@ -359,7 +372,8 @@ mod tests {
     }
 
     /// Clause 22's bits as IEEE 802.3 numbers them (22.2.4.1 and 22.2.4.2), written out: the
-    /// simulated PHY reads the same names, so only a literal tells a misplaced bit from a right one.
+    /// simulated PHY reads the same names, so only a literal tells a misplaced bit from a right
+    /// one.
     #[test]
     fn the_clause_22_bits_are_the_standards() {
         assert_eq!(

@@ -34,7 +34,7 @@ pub trait Tails {
 /// Why a frame was not queued.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TxError {
-    /// Empty, or longer than [`MAX_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -161,7 +161,7 @@ impl DataPlane {
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TxError> {
-        if frame.is_empty() || frame.len() > MAX_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
             return Err(TxError::BadLength);
         }
         self.reclaim(region);

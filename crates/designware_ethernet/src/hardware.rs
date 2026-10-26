@@ -6,7 +6,9 @@
 /// pair of volatile accesses into the direct map; the tests' is `sim`. Offsets are bytes from the
 /// window's base, and every one this crate passes is a constant from [`regs`](crate::regs), below
 /// [`regs::WINDOW`](crate::regs::WINDOW).
-pub trait Hw {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Hw`.
+pub trait Hardware {
     /// Read the 32-bit register at `off`.
     fn read(&mut self, off: u32) -> u32;
     /// Write `v` to the 32-bit register at `off`.

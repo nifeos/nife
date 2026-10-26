@@ -8,7 +8,7 @@
 //! `gmac0` they agree. [`Settings::FALLBACK_GMAC0`] is used only when a tree states neither, and
 //! [`Settings::source`] says which happened.
 
-use crate::mdio::{self, Mdio};
+use crate::management_data_input_output::{self, ManagementDataInputOutput};
 
 /// **The YT8531's identifier**, `PHYSID1 << 16 | PHYSID2` (Linux's `PHY_ID_YT8531`, matched
 /// exactly there; OpenBSD matches the OUI and model).
@@ -218,7 +218,7 @@ impl Settings {
 
 /// **The pad drive code for a current at a voltage**, OpenBSD's `ytphy_yt8531_ds_map`. Unknown
 /// pairs, which includes everything at 2.5 V, get the part's default of 3, as there.
-pub(crate) fn drive_code(volt_mv: u32, d: Drive) -> u8 {
+pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
     const MAP: [(u32, u32, u8); 16] = [
         (1800, 1200, 0),
         (1800, 2100, 1),
@@ -241,13 +241,13 @@ pub(crate) fn drive_code(volt_mv: u32, d: Drive) -> u8 {
         Drive::Code(c) => c & 0x7,
         Drive::Microamps(ua) => MAP
             .iter()
-            .find(|&&(v, a, _)| v == volt_mv && a == ua)
+            .find(|&&(v, a, _)| v == voltage_mv && a == ua)
             .map_or(3, |&(_, _, c)| c),
     }
 }
 
 /// The I/O voltage the chip configuration word's LDO field states, in millivolts.
-pub(crate) const fn volt_mv(chip_config: u16) -> u32 {
+pub(crate) const fn voltage_mv(chip_config: u16) -> u32 {
     match chip_config & CHIP_CONFIG_LDO_MASK {
         CHIP_CONFIG_LDO_3V3 => 3300,
         CHIP_CONFIG_LDO_2V5 => 2500,
@@ -255,28 +255,41 @@ pub(crate) const fn volt_mv(chip_config: u16) -> u32 {
     }
 }
 
-/// Read extended register `ext`.
-pub fn read_ext(bus: &mut impl Mdio, phy: u8, ext: u16) -> Result<u16, mdio::Error> {
-    bus.write(phy, EXT_ADDR, ext)?;
+/// Read extended register `extended`.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `read_ext`.
+pub fn read_extended(
+    bus: &mut impl ManagementDataInputOutput,
+    phy: u8,
+    extended: u16,
+) -> Result<u16, management_data_input_output::Error> {
+    bus.write(phy, EXT_ADDR, extended)?;
     bus.read(phy, EXT_DATA)
 }
 
-/// Write extended register `ext`.
-pub fn write_ext(bus: &mut impl Mdio, phy: u8, ext: u16, v: u16) -> Result<(), mdio::Error> {
-    bus.write(phy, EXT_ADDR, ext)?;
+/// Write extended register `extended`.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `write_ext`.
+pub fn write_extended(
+    bus: &mut impl ManagementDataInputOutput,
+    phy: u8,
+    extended: u16,
+    v: u16,
+) -> Result<(), management_data_input_output::Error> {
+    bus.write(phy, EXT_ADDR, extended)?;
     bus.write(phy, EXT_DATA, v)
 }
 
-/// Read, change and write back extended register `ext`, clearing `clear` then setting `set`.
-fn modify_ext(
-    bus: &mut impl Mdio,
+/// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
+fn modify_extended(
+    bus: &mut impl ManagementDataInputOutput,
     phy: u8,
-    ext: u16,
+    extended: u16,
     clear: u16,
     set: u16,
-) -> Result<u16, mdio::Error> {
-    let v = (read_ext(bus, phy, ext)? & !clear) | set;
-    write_ext(bus, phy, ext, v)?;
+) -> Result<u16, management_data_input_output::Error> {
+    let v = (read_extended(bus, phy, extended)? & !clear) | set;
+    write_extended(bus, phy, extended, v)?;
     Ok(v)
 }
 
@@ -284,7 +297,7 @@ fn modify_ext(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Applied {
     /// The I/O voltage the PHY is strapped to.
-    pub volt_mv: u32,
+    pub voltage_mv: u32,
     /// RGMII configuration 1 after the write.
     pub rgmii_config1: u16,
     /// The pad drive word after the write.
@@ -296,18 +309,22 @@ pub struct Applied {
 /// driver's two additions, the clocks kept running with no cable. The extended-address port is
 /// restored at the end, as OpenBSD does, so a firmware access interleaved before or after finds
 /// it where it left it.
-pub fn configure(bus: &mut impl Mdio, phy: u8, s: &Settings) -> Result<Applied, mdio::Error> {
+pub fn configure(
+    bus: &mut impl ManagementDataInputOutput,
+    phy: u8,
+    s: &Settings,
+) -> Result<Applied, management_data_input_output::Error> {
     let saved = bus.read(phy, EXT_ADDR)?;
     let delay_en = if s.rx_fixed_delay {
         CHIP_CONFIG_RXC_DLY_EN
     } else {
         0
     };
-    let chip = modify_ext(bus, phy, EXT_CHIP_CONFIG, CHIP_CONFIG_RXC_DLY_EN, delay_en)?;
-    let volt = volt_mv(chip);
+    let chip = modify_extended(bus, phy, EXT_CHIP_CONFIG, CHIP_CONFIG_RXC_DLY_EN, delay_en)?;
+    let volt = voltage_mv(chip);
     let delays = u16::from(s.rx_delay & 0xf) << RGMII_CONFIG1_RX_DELAY_SHIFT
         | u16::from(s.tx_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
-    let rgmii_config1 = modify_ext(
+    let rgmii_config1 = modify_extended(
         bus,
         phy,
         EXT_RGMII_CONFIG1,
@@ -316,19 +333,19 @@ pub fn configure(bus: &mut impl Mdio, phy: u8, s: &Settings) -> Result<Applied, 
     )?;
     let rxc = u16::from(drive_code(volt, s.rx_clock_drive));
     let rxd = u16::from(drive_code(volt, s.rx_data_drive));
-    let pad_drive = modify_ext(
+    let pad_drive = modify_extended(
         bus,
         phy,
         EXT_PAD_DRIVE,
         0x7 << PAD_DRIVE_RXC_SHIFT | PAD_DRIVE_RXD_MASK,
         rxc << PAD_DRIVE_RXC_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
     )?;
-    modify_ext(bus, phy, EXT_SYNCE_CFG, SYNCE_CFG_EN, 0)?;
-    modify_ext(bus, phy, EXT_CLOCK_GATING, EXT_CLOCK_GATING_RX_CLK_EN, 0)?;
-    modify_ext(bus, phy, EXT_SLEEP_CONTROL1, EXT_SLEEP_CONTROL1_SLEEP_SW, 0)?;
+    modify_extended(bus, phy, EXT_SYNCE_CFG, SYNCE_CFG_EN, 0)?;
+    modify_extended(bus, phy, EXT_CLOCK_GATING, EXT_CLOCK_GATING_RX_CLK_EN, 0)?;
+    modify_extended(bus, phy, EXT_SLEEP_CONTROL1, EXT_SLEEP_CONTROL1_SLEEP_SW, 0)?;
     bus.write(phy, EXT_ADDR, saved)?;
     Ok(Applied {
-        volt_mv: volt,
+        voltage_mv: volt,
         rgmii_config1,
         pad_drive,
     })
@@ -337,11 +354,11 @@ pub fn configure(bus: &mut impl Mdio, phy: u8, s: &Settings) -> Result<Applied, 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.
 pub fn apply_speed(
-    bus: &mut impl Mdio,
+    bus: &mut impl ManagementDataInputOutput,
     phy: u8,
     s: &Settings,
     speed: Speed,
-) -> Result<u16, mdio::Error> {
+) -> Result<u16, management_data_input_output::Error> {
     let inverted = match speed {
         Speed::Ten => s.tx_clock_inverted[0],
         Speed::Hundred => s.tx_clock_inverted[1],
@@ -353,13 +370,16 @@ pub fn apply_speed(
     } else {
         0
     };
-    let v = modify_ext(bus, phy, EXT_RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL, set)?;
+    let v = modify_extended(bus, phy, EXT_RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL, set)?;
     bus.write(phy, EXT_ADDR, saved)?;
     Ok(v)
 }
 
 /// **The link, if there is one**, from the vendor status register.
-pub fn link(bus: &mut impl Mdio, phy: u8) -> Result<Option<Link>, mdio::Error> {
+pub fn link(
+    bus: &mut impl ManagementDataInputOutput,
+    phy: u8,
+) -> Result<Option<Link>, management_data_input_output::Error> {
     Ok(link_from_status(bus.read(phy, SPECIFIC_STATUS)?))
 }
 
@@ -435,14 +455,20 @@ mod tests {
         let mut phy = Phy::yt8531_at_1v8();
         phy.write_raw(EXT_ADDR, 0x1234);
         let a = configure(&mut phy, 0, &Settings::FALLBACK_GMAC0).unwrap();
-        assert_eq!(a.volt_mv, 1800);
-        assert_eq!(phy.ext(EXT_RGMII_CONFIG1) & 0x3c0f, 0xa << 10 | 0xa);
-        assert_eq!(phy.ext(EXT_PAD_DRIVE) >> 13, 6);
-        assert_eq!(phy.ext(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK, 3 << 4);
-        assert_eq!(phy.ext(EXT_CHIP_CONFIG) & CHIP_CONFIG_RXC_DLY_EN, 0);
-        assert_eq!(phy.ext(EXT_SYNCE_CFG) & SYNCE_CFG_EN, 0);
-        assert_eq!(phy.ext(EXT_SLEEP_CONTROL1) & EXT_SLEEP_CONTROL1_SLEEP_SW, 0);
-        assert_eq!(phy.ext(EXT_CLOCK_GATING) & EXT_CLOCK_GATING_RX_CLK_EN, 0);
+        assert_eq!(a.voltage_mv, 1800);
+        assert_eq!(phy.extended(EXT_RGMII_CONFIG1) & 0x3c0f, 0xa << 10 | 0xa);
+        assert_eq!(phy.extended(EXT_PAD_DRIVE) >> 13, 6);
+        assert_eq!(phy.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK, 3 << 4);
+        assert_eq!(phy.extended(EXT_CHIP_CONFIG) & CHIP_CONFIG_RXC_DLY_EN, 0);
+        assert_eq!(phy.extended(EXT_SYNCE_CFG) & SYNCE_CFG_EN, 0);
+        assert_eq!(
+            phy.extended(EXT_SLEEP_CONTROL1) & EXT_SLEEP_CONTROL1_SLEEP_SW,
+            0
+        );
+        assert_eq!(
+            phy.extended(EXT_CLOCK_GATING) & EXT_CLOCK_GATING_RX_CLK_EN,
+            0
+        );
         assert_eq!(phy.raw(EXT_ADDR), 0x1234);
     }
 
@@ -455,7 +481,7 @@ mod tests {
         };
         configure(&mut phy, 0, &s).unwrap();
         assert_eq!(
-            phy.ext(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
+            phy.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
             1 << 12 | 3 << 4
         );
     }
@@ -464,14 +490,14 @@ mod tests {
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut phy = Phy::yt8531_at_1v8();
         assert_eq!(link(&mut phy, 0).unwrap(), None);
-        assert!(!mdio::link_is_up(&mut phy, 0).unwrap());
+        assert!(!management_data_input_output::link_is_up(&mut phy, 0).unwrap());
         let gig = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
         phy.set_link(Some(gig));
         assert_eq!(link(&mut phy, 0).unwrap(), Some(gig));
-        assert!(mdio::link_is_up(&mut phy, 0).unwrap());
+        assert!(management_data_input_output::link_is_up(&mut phy, 0).unwrap());
     }
 
     #[test]
@@ -482,12 +508,18 @@ mod tests {
             ..Settings::FALLBACK_GMAC0
         };
         apply_speed(&mut phy, 0, &s, Speed::Thousand).unwrap();
-        assert_ne!(phy.ext(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL, 0);
+        assert_ne!(
+            phy.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            0
+        );
         apply_speed(&mut phy, 0, &s, Speed::Hundred).unwrap();
-        assert_eq!(phy.ext(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL, 0);
+        assert_eq!(
+            phy.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            0
+        );
     }
-    /// The extended registers' bits as Linux's `motorcomm.c` names them, written out: the
-    /// simulated PHY reads the same names, so only a literal tells a misplaced bit from a right one.
+    /// The extended registers' bits as Linux's `motorcomm.c` names them, written out: the simulated
+    /// PHY reads the same names, so only a literal tells a misplaced bit from a right one.
     #[test]
     fn the_extended_register_bits_are_motorcomms() {
         assert_eq!(
@@ -521,11 +553,11 @@ mod tests {
     /// Each LDO strap, whatever the bits around the field hold.
     #[test]
     fn the_ldo_field_alone_names_the_voltage() {
-        assert_eq!(volt_mv(0), 3300);
-        assert_eq!(volt_mv(0xffcf), 3300);
-        assert_eq!(volt_mv(0x0010), 2500);
-        assert_eq!(volt_mv(0x0020), 1800);
-        assert_eq!(volt_mv(0x0030), 1800);
+        assert_eq!(voltage_mv(0), 3300);
+        assert_eq!(voltage_mv(0xffcf), 3300);
+        assert_eq!(voltage_mv(0x0010), 2500);
+        assert_eq!(voltage_mv(0x0020), 1800);
+        assert_eq!(voltage_mv(0x0030), 1800);
     }
 
     /// A delay rounds to the nearest 150 ps step: 1450 ps is nearer 1500 than 1350.
@@ -540,8 +572,8 @@ mod tests {
     #[test]
     fn configure_replaces_the_delay_and_drive_fields_and_nothing_else() {
         let mut phy = Phy::yt8531_at_1v8();
-        write_ext(&mut phy, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
-        write_ext(&mut phy, 0, EXT_PAD_DRIVE, 0).unwrap();
+        write_extended(&mut phy, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
+        write_extended(&mut phy, 0, EXT_PAD_DRIVE, 0).unwrap();
         let s = Settings {
             rx_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
@@ -551,6 +583,6 @@ mod tests {
         assert_eq!(a.rgmii_config1, 0xebfa);
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
-        assert_eq!(phy.ext(EXT_PAD_DRIVE), 0xd030);
+        assert_eq!(phy.extended(EXT_PAD_DRIVE), 0xd030);
     }
 }

@@ -18,7 +18,7 @@ use crate::{
 pub(crate) const PROBE_ETHERTYPE: u16 = 0x88b5;
 /// The probe frame's length, CRC excluded: comfortably more than one cache line, so a stale line
 /// anywhere in it is seen.
-pub(crate) const PROBE_LEN: usize = 128;
+pub(crate) const PROBE_LENGTH: usize = 128;
 /// What receive buffer 0 holds before the device writes it. Never a byte of [`probe_frame`]'s
 /// payload, so a buffer still holding it cannot be mistaken for a delivery.
 pub(crate) const POISON: u8 = 0xa5;
@@ -29,8 +29,8 @@ pub const WAIT_US: u64 = 100_000;
 
 /// **The probe frame**: addressed from and to `mac` (so the packet filter passes it), the
 /// experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from zero.
-pub(crate) fn probe_frame(mac: [u8; 6]) -> [u8; PROBE_LEN] {
-    let mut f = [0u8; PROBE_LEN];
+pub(crate) fn probe_frame(mac: [u8; 6]) -> [u8; PROBE_LENGTH] {
+    let mut f = [0u8; PROBE_LENGTH];
     f[..6].copy_from_slice(&mac);
     f[6..12].copy_from_slice(&mac);
     f[12..14].copy_from_slice(&PROBE_ETHERTYPE.to_be_bytes());
@@ -51,7 +51,7 @@ pub fn prepare(
     mac: [u8; 6],
 ) -> Result<(), TxError> {
     dp.start(region, tails);
-    let poison = [POISON; PROBE_LEN + CRC_BYTES];
+    let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
     region.write_bytes(layout::rx_buffer(0), &poison);
     // A copy of the poison, so the read-back covers exactly the bytes poisoned: a second length
     // written out here could drift from the first, and `sim::Memory`'s write-allocate cache would
@@ -82,9 +82,9 @@ pub enum Payload {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Observation {
     /// Receive descriptor 0's word 3, read by the CPU.
-    pub rx_des3: u32,
+    pub receive_descriptor_word_3: u32,
     /// Transmit descriptor 0's word 3, read by the CPU.
-    pub tx_des3: u32,
+    pub transmit_descriptor_word_3: u32,
     /// [`regs::CHAN_STATUS`], read through MMIO.
     pub status: u32,
     /// Receive buffer 0, judged.
@@ -93,9 +93,9 @@ pub struct Observation {
 
 /// **Read the CPU's half of the observation** and pair it with the device's status word.
 pub fn observe(region: &impl Region, mac: [u8; 6], status: u32) -> Observation {
-    let rx_des3 = (region.read_u64(layout::rx_descriptor(0) + 8) >> 32) as u32;
-    let tx_des3 = (region.read_u64(layout::tx_descriptor(0) + 8) >> 32) as u32;
-    let mut got = [0u8; PROBE_LEN];
+    let receive_descriptor_word_3 = (region.read_u64(layout::rx_descriptor(0) + 8) >> 32) as u32;
+    let transmit_descriptor_word_3 = (region.read_u64(layout::tx_descriptor(0) + 8) >> 32) as u32;
+    let mut got = [0u8; PROBE_LENGTH];
     region.read_bytes(layout::rx_buffer(0), &mut got);
     let payload = if got == probe_frame(mac) {
         Payload::Matches
@@ -105,8 +105,8 @@ pub fn observe(region: &impl Region, mac: [u8; 6], status: u32) -> Observation {
         Payload::Other
     };
     Observation {
-        rx_des3,
-        tx_des3,
+        receive_descriptor_word_3,
+        transmit_descriptor_word_3,
         status,
         payload,
     }
@@ -146,9 +146,12 @@ pub fn classify(o: &Observation) -> Verdict {
     if s & regs::CHAN_STATUS_FBE != 0 {
         return Verdict::BusError;
     }
-    if o.rx_des3 & RDES3_OWN == 0 {
-        return match (o.payload, rx_verdict(o.rx_des3, PROBE_LEN)) {
-            (Payload::Matches, RxVerdict::Frame(PROBE_LEN)) => Verdict::Coherent,
+    if o.receive_descriptor_word_3 & RDES3_OWN == 0 {
+        return match (
+            o.payload,
+            rx_verdict(o.receive_descriptor_word_3, PROBE_LENGTH),
+        ) {
+            (Payload::Matches, RxVerdict::Frame(PROBE_LENGTH)) => Verdict::Coherent,
             (Payload::Poison, _) => Verdict::ReceivedPayloadStale,
             _ => Verdict::TransmittedPayloadStale,
         };
@@ -169,7 +172,7 @@ pub fn classify(o: &Observation) -> Verdict {
 /// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-question-shapes. Refused
 /// `transmit_completed` (a participle alone reads as a getter).
 pub const fn is_transmit_complete(o: &Observation) -> bool {
-    o.tx_des3 & TDES3_OWN == 0
+    o.transmit_descriptor_word_3 & TDES3_OWN == 0
 }
 
 /// How many receive descriptors the probe posts, for a report line: every one but the held-back
@@ -182,8 +185,8 @@ mod tests {
     use crate::controller::{self, Identity};
     use crate::jh7110::BUS;
     use crate::motorcomm::{Link, Speed};
-    use crate::sim::{Memory, Nic};
-    use crate::{Hw, RDES3_FD, RDES3_LD};
+    use crate::sim::{Memory, NetworkInterfaceController};
+    use crate::{Hardware, RDES3_FD, RDES3_LD};
 
     const PHYS: u64 = 0x4800_0000;
     const MAC: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
@@ -195,7 +198,7 @@ mod tests {
     /// The whole probe, as the kernel runs it, against a controller whose memory behaves as
     /// `memory` says and whose loopback works when `loops` is true.
     fn run(memory: Memory, loops: bool) -> Verdict {
-        let mut nic = Nic::new(PHYS, memory);
+        let mut nic = NetworkInterfaceController::new(PHYS, memory);
         if !loops {
             nic.break_loopback();
         }
@@ -251,8 +254,8 @@ mod tests {
     #[test]
     fn a_whole_frame_that_is_not_the_one_written_is_a_stale_transmit() {
         let o = Observation {
-            rx_des3: RDES3_FD | RDES3_LD | (PROBE_LEN + CRC_BYTES) as u32,
-            tx_des3: 0,
+            receive_descriptor_word_3: RDES3_FD | RDES3_LD | (PROBE_LENGTH + CRC_BYTES) as u32,
+            transmit_descriptor_word_3: 0,
             status: regs::CHAN_STATUS_RI | regs::CHAN_STATUS_TI,
             payload: Payload::Other,
         };
@@ -274,8 +277,8 @@ mod tests {
         // A transmit DMA that sent its one frame then found the next slot empty sets TI and TBU
         // together; that is success, and only the receive side's silence makes it inconclusive.
         let o = Observation {
-            rx_des3: RDES3_OWN,
-            tx_des3: 0,
+            receive_descriptor_word_3: RDES3_OWN,
+            transmit_descriptor_word_3: 0,
             status: regs::CHAN_STATUS_TI | regs::CHAN_STATUS_TBU,
             payload: Payload::Poison,
         };
@@ -299,17 +302,17 @@ mod tests {
     /// Step 3 has queued the frame and the device has not run yet: descriptor 0 is still its.
     #[test]
     fn prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0() {
-        let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
         controller::configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
         controller::start(&mut nic, GIG, true);
         let mut dp = DataPlane::new(PHYS);
         nic.with(|r, t| prepare(&mut dp, r, t, MAC)).unwrap();
         nic.with(|r, _| {
-            let mut b = [0u8; PROBE_LEN + CRC_BYTES + 1];
+            let mut b = [0u8; PROBE_LENGTH + CRC_BYTES + 1];
             r.read_bytes(layout::rx_buffer(0), &mut b);
-            assert!(b[..PROBE_LEN + CRC_BYTES].iter().all(|&x| x == POISON));
-            assert_eq!(b[PROBE_LEN + CRC_BYTES], 0);
+            assert!(b[..PROBE_LENGTH + CRC_BYTES].iter().all(|&x| x == POISON));
+            assert_eq!(b[PROBE_LENGTH + CRC_BYTES], 0);
             assert!(!delivered(r));
         });
         assert_eq!(nic.rx_available(), usize::from(POSTED));
@@ -320,7 +323,7 @@ mod tests {
     /// descriptor 0's write-back: first and last, its length, no ownership.
     #[test]
     fn a_completed_loopback_is_seen_on_both_rings() {
-        let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
         let id = Identity::read(&mut nic);
         controller::configure(&mut nic, &id, &BUS, PHYS, MAC).unwrap();
         controller::start(&mut nic, GIG, true);
@@ -332,13 +335,13 @@ mod tests {
             observe(r, MAC, 0)
         });
         assert_eq!(
-            o.tx_des3,
-            crate::TDES3_FS | crate::TDES3_LS | PROBE_LEN as u32
+            o.transmit_descriptor_word_3,
+            crate::TDES3_FS | crate::TDES3_LS | PROBE_LENGTH as u32
         );
         assert!(is_transmit_complete(&o));
         assert_eq!(o.payload, Payload::Matches);
         assert!(!is_transmit_complete(&Observation {
-            tx_des3: crate::TDES3_OWN,
+            transmit_descriptor_word_3: crate::TDES3_OWN,
             ..o
         }));
     }
@@ -347,10 +350,10 @@ mod tests {
     /// the frame.
     #[test]
     fn a_buffer_is_judged_poison_only_when_every_byte_is() {
-        let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
-        let judged = |nic: &mut Nic, fill: u8| {
+        let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
+        let judged = |nic: &mut NetworkInterfaceController, fill: u8| {
             nic.with(|r, _| {
-                r.write_bytes(layout::rx_buffer(0), &[fill; PROBE_LEN]);
+                r.write_bytes(layout::rx_buffer(0), &[fill; PROBE_LENGTH]);
                 observe(r, MAC, 0).payload
             })
         };
@@ -363,8 +366,8 @@ mod tests {
     #[test]
     fn a_status_of_nothing_is_inconclusive() {
         let o = Observation {
-            rx_des3: RDES3_OWN,
-            tx_des3: TDES3_OWN,
+            receive_descriptor_word_3: RDES3_OWN,
+            transmit_descriptor_word_3: TDES3_OWN,
             status: 0,
             payload: Payload::Poison,
         };

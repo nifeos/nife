@@ -76,7 +76,7 @@ impl smoltcp::phy::Device for Nic {
         caps.max_transmission_unit = match self {
             Nic::Virtio(_) => virtio_net_transport::MTU,
             Nic::Gigabit(_) => e1000e::MAX_FRAME,
-            Nic::DesignWare(_) => designware_ethernet::MAX_FRAME,
+            Nic::DesignWare(_) => designware_ethernet::MAXIMUM_FRAME,
         };
         caps
     }

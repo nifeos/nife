@@ -220,7 +220,7 @@ mod tests {
     /// The MAC's administrative registers are not on it: the process cannot reach the MDIO bus
     /// or the station address through the page it is given.
     #[test]
-    fn the_mdio_bus_and_the_station_address_are_not_on_the_dma_page() {
+    fn the_management_data_input_output_bus_and_the_station_address_are_not_on_the_dma_page() {
         for r in [
             MAC_MDIO_ADDR,
             MAC_MDIO_DATA,

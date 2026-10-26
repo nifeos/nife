@@ -10,7 +10,7 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     let room: usize = kani::any();
     if let RxVerdict::Frame(n) = rx_verdict(des3, room) {
         assert!(n <= room);
-        assert!(n <= MAX_FRAME);
+        assert!(n <= MAXIMUM_FRAME);
         assert!(n as u64 + CRC_BYTES as u64 <= BUFFER_SIZE);
     }
 }

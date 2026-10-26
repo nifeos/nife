@@ -9,10 +9,11 @@
 //! their shared facts agree.
 //!
 //! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
-//! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle`
-//! for [`mainline_phy`], or the node [`VENDOR_PHY_NODE`] for [`vendor_phy`]. The AON syscon is
-//! mainline's [`COMPATIBLE_AON_SYSCON`] node or the vendor's node named [`AON_SYSCON_NODE`], and
-//! [`Syscon::fallback`] answers for a tree that names neither.
+//! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
+//! [`mainline_phy`], or the node [`VENDOR_PHY_NODE`] for [`vendor_phy`]. The AON syscon is
+//! mainline's [`COMPATIBLE_AON_SYSTEM_CONTROLLER`] node or the vendor's node named
+//! [`AON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that names
+//! neither.
 
 use crate::controller::Bus;
 use crate::motorcomm::{Drive, Settings, Source};
@@ -60,38 +61,42 @@ pub const BUS: Bus = Bus {
 
 /// The AON syscon's window: mainline's `aon_syscon: syscon@17010000` and the vendor's
 /// `aon_syscon@17010000`, both `0x1000` long.
-pub(crate) const AON_SYSCON_BASE: u64 = 0x1701_0000;
+pub(crate) const AON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
 /// Its size.
-pub(crate) const AON_SYSCON_SIZE: u64 = 0x1000;
+pub(crate) const AON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
-pub const COMPATIBLE_AON_SYSCON: &[u8] = b"starfive,jh7110-aon-syscon";
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// `COMPATIBLE_AON_SYSCON`.
+pub const COMPATIBLE_AON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
 /// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
-pub const AON_SYSCON_NODE: &[u8] = b"aon_syscon@";
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// `AON_SYSCON_NODE`.
+pub const AON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 /// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
 /// the vendor's `AON_SYSCFG_12`.
-pub const GMAC0_SYSCON_OFFSET: u64 = 0xc;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// `GMAC0_SYSCON_OFFSET`.
+pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
-pub(crate) const GMAC0_SYSCON_SHIFT: u32 = 18;
+pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask
 /// `0x1c0000`).
-pub(crate) const SYSCON_FIELD: u32 = 0x7;
+pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
 /// The RGMII interface (OpenBSD's `JH7110_PHY_INTF_RGMII`; the vendor's `BIT(SHIFT)` for 1000M).
 pub(crate) const PHY_INTERFACE_RGMII: u32 = 1;
 
 /// **The syscon word with `gmac0`'s interface select set to RGMII**, every other field kept.
 pub const fn select_rgmii(word: u32) -> u32 {
-    (word & !(SYSCON_FIELD << GMAC0_SYSCON_SHIFT)) | PHY_INTERFACE_RGMII << GMAC0_SYSCON_SHIFT
+    (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
+        | PHY_INTERFACE_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
 
 /// The interface select a syscon word holds for `gmac0`.
 pub const fn interface(word: u32) -> u32 {
-    (word >> GMAC0_SYSCON_SHIFT) & SYSCON_FIELD
+    (word >> GMAC0_SYSTEM_CONTROLLER_SHIFT) & SYSTEM_CONTROLLER_FIELD
 }
 
 /// What the tree says about the first port.
@@ -264,18 +269,22 @@ pub fn vendor_phy<'t, E>(
     ))
 }
 
-/// Where the AON syscon is, and whether the tree said so.
+/// **Where the AON system controller is** (the device tree's `syscon` node), and whether the tree
+/// said so.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Syscon`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Syscon {
+#[doc(alias = "syscon")]
+pub struct SystemController {
     /// Physical base.
     pub base: u64,
     /// Size.
     pub size: u64,
-    /// True when a tree node named it; false when this is [`Syscon::fallback`].
+    /// True when a tree node named it; false when this is [`SystemController::fallback`].
     pub from_tree: bool,
 }
 
-impl Syscon {
+impl SystemController {
     /// **The constant both trees agree on**, `0x1701_0000`, `0x1000` long, with `from_tree`
     /// false. An answer here is not evidence the machine is a JH7110.
     ///
@@ -283,9 +292,9 @@ impl Syscon {
     /// tree walk and the process layout left the driver crates.
     #[must_use]
     pub const fn fallback() -> Self {
-        Syscon {
-            base: AON_SYSCON_BASE,
-            size: AON_SYSCON_SIZE,
+        SystemController {
+            base: AON_SYSTEM_CONTROLLER_BASE,
+            size: AON_SYSTEM_CONTROLLER_SIZE,
             from_tree: false,
         }
     }
@@ -464,10 +473,10 @@ mod tests {
     }
 
     #[test]
-    fn the_syscon_falls_back_to_the_window_both_trees_name() {
+    fn the_system_controller_falls_back_to_the_window_both_trees_name() {
         assert_eq!(
-            Syscon::fallback(),
-            Syscon {
+            SystemController::fallback(),
+            SystemController {
                 base: 0x1701_0000,
                 size: 0x1000,
                 from_tree: false
@@ -482,7 +491,10 @@ mod tests {
         assert_eq!(select_rgmii(0xffff_ffff), !0x0018_0000);
         assert_eq!(interface(select_rgmii(0x0010_0000)), PHY_INTERFACE_RGMII);
         // The vendor U-Boot's mask, 0x1c0000, is exactly this field.
-        assert_eq!(SYSCON_FIELD << GMAC0_SYSCON_SHIFT, 0x1c_0000);
+        assert_eq!(
+            SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT,
+            0x1c_0000
+        );
         assert_eq!(interface(0), 0);
         assert_eq!(interface(0x0018_0000), 6);
     }

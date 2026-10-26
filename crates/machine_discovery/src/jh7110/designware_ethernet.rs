@@ -8,8 +8,8 @@
 //! serves. calef has not named it.
 
 use designware_ethernet::jh7110::{
-    AON_SYSCON_NODE, COMPATIBLE_AON_SYSCON, COMPATIBLES, Discovered, Syscon, VENDOR_PHY_NODE,
-    first_cell, mainline_phy, vendor_phy,
+    AON_SYSTEM_CONTROLLER_NODE, COMPATIBLE_AON_SYSTEM_CONTROLLER, COMPATIBLES, Discovered,
+    SystemController, VENDOR_PHY_NODE, first_cell, mainline_phy, vendor_phy,
 };
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -50,16 +50,16 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
 ///
 /// Name: recorded (milestone 53), which wrote it as
 /// `designware_ethernet::jh7110::discover_aon_syscon`. calef has not ruled on it.
-pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<Syscon, Error> {
+pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController, Error> {
     let mut regions = [Region { start: 0, size: 0 }; 1];
-    if tree.node_reg_compatible(COMPATIBLE_AON_SYSCON, &mut regions)? == 1
-        || tree.node_reg(AON_SYSCON_NODE, &mut regions)? == 1
+    if tree.node_reg_compatible(COMPATIBLE_AON_SYSTEM_CONTROLLER, &mut regions)? == 1
+        || tree.node_reg(AON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
     {
-        return Ok(Syscon {
+        return Ok(SystemController {
             base: regions[0].start,
             size: regions[0].size,
             from_tree: true,
         });
     }
-    Ok(Syscon::fallback())
+    Ok(SystemController::fallback())
 }

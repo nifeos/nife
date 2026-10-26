@@ -45,7 +45,8 @@ extern crate std;
 pub mod coherence;
 pub mod controller;
 pub mod jh7110;
-pub mod mdio;
+#[doc(alias = "mdio")]
+pub mod management_data_input_output;
 pub mod motorcomm;
 pub mod regs;
 #[cfg(test)]
@@ -65,12 +66,12 @@ mod hardware;
 pub use data_plane::{DataPlane, Region, Tails, TxError};
 use descriptor::*;
 pub use descriptor::{
-    BUFFER_SIZE, CRC_BYTES, DESCRIPTOR_BYTES, MAX_FRAME, RDES3_BUF1V, RDES3_CTXT, RDES3_ES,
+    BUFFER_SIZE, CRC_BYTES, DESCRIPTOR_BYTES, MAXIMUM_FRAME, RDES3_BUF1V, RDES3_CTXT, RDES3_ES,
     RDES3_FD, RDES3_IOC, RDES3_LD, RDES3_LENGTH, RDES3_OWN, RX_ENTRIES, RxVerdict, TDES2_BUF1_LEN,
     TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS, TDES3_LS, TDES3_OWN, TX_ENTRIES,
     rx_descriptor_words, rx_verdict, tx_descriptor_words,
 };
-pub use hardware::Hw;
+pub use hardware::Hardware;
 
 #[cfg(kani)]
 mod proofs;

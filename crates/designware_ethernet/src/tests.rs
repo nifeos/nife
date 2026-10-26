@@ -5,7 +5,7 @@ use std::vec;
 use std::vec::Vec;
 
 use super::*;
-use crate::sim::{Memory, Nic};
+use crate::sim::{Memory, NetworkInterfaceController};
 
 const PHYS: u64 = 0x4800_0000;
 
@@ -15,7 +15,7 @@ fn frame(len: usize, seed: u8) -> Vec<u8> {
 
 #[test]
 fn start_hands_the_device_every_receive_buffer_but_one() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
@@ -29,11 +29,11 @@ fn start_hands_the_device_every_receive_buffer_but_one() {
 
 #[test]
 fn frames_arrive_in_order_through_more_than_one_lap_of_the_ring() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
-    let mut out = vec![0u8; MAX_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME];
     for k in 0..(3 * RX_ENTRIES as usize) {
         let f = frame(60 + k, k as u8);
         assert!(nic.wire_in(&f), "the device had a buffer for frame {k}");
@@ -46,7 +46,7 @@ fn frames_arrive_in_order_through_more_than_one_lap_of_the_ring() {
 
 #[test]
 fn a_ring_the_driver_does_not_drain_fills_to_one_short_and_then_refuses() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
@@ -55,7 +55,7 @@ fn a_ring_the_driver_does_not_drain_fills_to_one_short_and_then_refuses() {
         .count();
     assert_eq!(accepted, usize::from(RX_ENTRIES - 1));
     // Draining one makes room for exactly one more.
-    let mut out = vec![0u8; MAX_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME];
     assert!(nic.with(|r, t| dp.receive(r, t, &mut out)).is_some());
     assert!(nic.wire_in(&frame(64, 0xee)));
     assert!(!nic.wire_in(&frame(64, 0xef)));
@@ -63,14 +63,14 @@ fn a_ring_the_driver_does_not_drain_fills_to_one_short_and_then_refuses() {
 
 #[test]
 fn a_bad_frame_is_dropped_and_counted_without_stalling_the_ring() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
     nic.wire_in_with_error(&frame(64, 1));
     let good = frame(80, 9);
     nic.wire_in(&good);
-    let mut out = vec![0u8; MAX_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME];
     let n = nic.with(|r, t| dp.receive(r, t, &mut out)).unwrap();
     assert_eq!(&out[..n], &good[..]);
     assert_eq!(dp.dropped, 1);
@@ -78,7 +78,7 @@ fn a_bad_frame_is_dropped_and_counted_without_stalling_the_ring() {
 
 #[test]
 fn transmitted_frames_leave_in_order_and_the_ring_is_reclaimed() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
@@ -94,7 +94,7 @@ fn transmitted_frames_leave_in_order_and_the_ring_is_reclaimed() {
 
 #[test]
 fn a_full_transmit_ring_refuses_rather_than_overwriting_an_owned_descriptor() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
@@ -113,7 +113,7 @@ fn a_full_transmit_ring_refuses_rather_than_overwriting_an_owned_descriptor() {
 
 #[test]
 fn a_frame_of_no_length_or_too_much_is_refused() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
     assert_eq!(
@@ -121,7 +121,7 @@ fn a_frame_of_no_length_or_too_much_is_refused() {
         Err(TxError::BadLength)
     );
     assert_eq!(
-        nic.with(|r, t| dp.transmit(r, t, &[0; MAX_FRAME + 1])),
+        nic.with(|r, t| dp.transmit(r, t, &[0; MAXIMUM_FRAME + 1])),
         Err(TxError::BadLength)
     );
 }
@@ -129,14 +129,20 @@ fn a_frame_of_no_length_or_too_much_is_refused() {
 #[test]
 fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
     let ok = RDES3_FD | RDES3_LD;
-    assert_eq!(rx_verdict(ok | 64, MAX_FRAME), RxVerdict::Frame(60));
-    assert_eq!(rx_verdict(ok | 1518, MAX_FRAME), RxVerdict::Frame(1514));
-    assert_eq!(rx_verdict(ok | 1519, MAX_FRAME), RxVerdict::Drop);
-    assert_eq!(rx_verdict(ok | 3, MAX_FRAME), RxVerdict::Drop);
+    assert_eq!(rx_verdict(ok | 64, MAXIMUM_FRAME), RxVerdict::Frame(60));
+    assert_eq!(rx_verdict(ok | 1518, MAXIMUM_FRAME), RxVerdict::Frame(1514));
+    assert_eq!(rx_verdict(ok | 1519, MAXIMUM_FRAME), RxVerdict::Drop);
+    assert_eq!(rx_verdict(ok | 3, MAXIMUM_FRAME), RxVerdict::Drop);
     assert_eq!(rx_verdict(ok | 64, 59), RxVerdict::Drop);
-    assert_eq!(rx_verdict(RDES3_FD | 64, MAX_FRAME), RxVerdict::Drop);
-    assert_eq!(rx_verdict(ok | RDES3_ES | 64, MAX_FRAME), RxVerdict::Drop);
-    assert_eq!(rx_verdict(ok | RDES3_CTXT | 64, MAX_FRAME), RxVerdict::Drop);
+    assert_eq!(rx_verdict(RDES3_FD | 64, MAXIMUM_FRAME), RxVerdict::Drop);
+    assert_eq!(
+        rx_verdict(ok | RDES3_ES | 64, MAXIMUM_FRAME),
+        RxVerdict::Drop
+    );
+    assert_eq!(
+        rx_verdict(ok | RDES3_CTXT | 64, MAXIMUM_FRAME),
+        RxVerdict::Drop
+    );
 }
 
 #[test]
@@ -208,7 +214,7 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
 /// not wait on a frame nobody queued.
 #[test]
 fn start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.with(|r, _| {
         for i in 0..TX_ENTRIES {
             r.write_u64(layout::tx_descriptor(i), u64::MAX);
@@ -230,11 +236,11 @@ fn start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring() {
 /// The receive cursor counts frames taken and wraps with the ring, so it always names a slot.
 #[test]
 fn the_receive_cursor_names_the_next_slot_and_wraps() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
-    let mut out = vec![0u8; MAX_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME];
     for k in 1..=usize::from(RX_ENTRIES) + 2 {
         assert!(nic.wire_in(&frame(64, k as u8)));
         nic.with(|r, t| dp.receive(r, t, &mut out)).unwrap();
@@ -246,12 +252,12 @@ fn the_receive_cursor_names_the_next_slot_and_wraps() {
 /// from a full one before anything is refused.
 #[test]
 fn the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance() {
-    let mut nic = Nic::new(PHYS, Memory::coherent(PHYS));
+    let mut nic = NetworkInterfaceController::new(PHYS, Memory::coherent(PHYS));
     nic.program_rings_and_start(PHYS);
     let mut dp = DataPlane::new(PHYS);
     nic.with(|r, t| dp.start(r, t));
     assert!(nic.with(|r, _| dp.can_transmit(r)));
-    nic.with(|r, t| dp.transmit(r, t, &frame(MAX_FRAME, 1)))
+    nic.with(|r, t| dp.transmit(r, t, &frame(MAXIMUM_FRAME, 1)))
         .unwrap();
     for k in 1..usize::from(TX_ENTRIES - 1) {
         assert!(nic.with(|r, _| dp.can_transmit(r)), "{k}");
@@ -261,5 +267,5 @@ fn the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance() {
     assert!(!nic.with(|r, _| dp.can_transmit(r)));
     nic.step();
     assert!(nic.with(|r, _| dp.can_transmit(r)));
-    assert_eq!(nic.wire_out()[0].len(), MAX_FRAME);
+    assert_eq!(nic.wire_out()[0].len(), MAXIMUM_FRAME);
 }

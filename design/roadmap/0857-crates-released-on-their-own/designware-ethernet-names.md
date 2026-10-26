@@ -29,7 +29,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `hardware` | module | `src/hardware.rs` | provisional. | no | clear |
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a MAC crate |
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `mdio` | module | `src/mdio.rs` | unrecorded. | yes | term |
+| `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `mdio`. | yes | clear |
 | `motorcomm` | module | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
@@ -70,7 +70,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `BUFFER_SIZE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `CRC_BYTES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `DESCRIPTOR_BYTES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `MAX_FRAME` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `MAXIMUM_FRAME` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `MAX_FRAME`. | yes | clear |
 | `RDES3_BUF1V` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_CTXT` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_ES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -92,18 +92,18 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `rx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `rx_verdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `tx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `Hw` | item | `src/hardware.rs` | unrecorded. | yes | unclear: an abbreviation of hardware |
-| `AON_SYSCON_NODE` | item | `src/jh7110.rs` | provisional. | yes | term |
+| `Hardware` | item | `src/hardware.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Hw`. | yes | clear |
+| `AON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `AON_SYSCON_NODE`. | yes | clear |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLES` | item | `src/jh7110.rs` | provisional. | yes | clear |
-| `COMPATIBLE_AON_SYSCON` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `COMPATIBLE_AON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `COMPATIBLE_AON_SYSCON`. | yes | clear |
 | `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `Discovered` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `GMAC0_SYSCON_OFFSET` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
+| `GMAC0_SYSTEM_CONTROLLER_OFFSET` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `GMAC0_SYSCON_OFFSET`. | yes | clear |
 | `GMAC1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `Syscon` | item | `src/jh7110.rs` | unrecorded. | yes | term |
+| `SystemController` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Syscon`. | yes | clear |
 | `VENDOR_PHY_NODE` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `fallback` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `first_cell` | item | `src/jh7110.rs` | provisional. | yes | scope: a device-tree cell reader in a MAC crate |
@@ -116,23 +116,23 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `rx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `tx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `BMCR_RESET` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `BMSR_ANEG_COMPLETE` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `Bus` | item | `src/mdio.rs` | unrecorded. | yes | generic: two `Bus` types in two modules |
-| `COMMAND_LIMIT_US` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `CR_500_800` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `CR_SHIFT` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `Error` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `GB` | item | `src/mdio.rs` | unrecorded. | yes | term |
-| `GOC_READ` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `GOC_WRITE` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `Mdio` | item | `src/mdio.rs` | unrecorded. | yes | term |
-| `PA_SHIFT` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `RDA_SHIFT` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `command` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `link_is_up` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `phy_id` | item | `src/mdio.rs` | unrecorded. | yes | clear |
-| `restart_autonegotiation` | item | `src/mdio.rs` | unrecorded. | yes | clear |
+| `BMCR_RESET` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `BMSR_ANEG_COMPLETE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `Bus` | item | `src/management_data_input_output.rs` | unrecorded. | yes | generic: two `Bus` types in two modules |
+| `COMMAND_LIMIT_US` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `CR_500_800` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `CR_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `Error` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `GB` | item | `src/management_data_input_output.rs` | unrecorded. | yes | term |
+| `GOC_READ` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `GOC_WRITE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `ManagementDataInputOutput` | item | `src/management_data_input_output.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Mdio`. | yes | clear |
+| `PA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `RDA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `command` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `link_is_up` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `phy_id` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `restart_autonegotiation` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `Applied` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Drive` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `FALLBACK_GMAC0` | item | `src/motorcomm.rs` | provisional. | yes | scope: one board's PHY values in a MAC crate |
@@ -151,8 +151,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `link_from_status` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `mbps` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `read_ext` | item | `src/motorcomm.rs` | unrecorded. | yes | unclear: `ext` abbreviates extended |
-| `write_ext` | item | `src/motorcomm.rs` | unrecorded. | yes | unclear: `ext` abbreviates extended |
+| `read_extended` | item | `src/motorcomm.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `read_ext`. | yes | clear |
+| `write_extended` | item | `src/motorcomm.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `write_ext`. | yes | clear |
 | `CHAN_CUR_RX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_CUR_TX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_RX_TAIL` | item | `src/regs.rs` | unrecorded. | yes | term |
@@ -179,8 +179,24 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Discovered` (9), `Syscon` (3), `Link` (2), `Settings` (7) and `Applied` (3);
-- the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `RxVerdict` (3), `mdio::Error` (1), `TxError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
-- the methods of the traits `Region` (4), `Tails` (3), `Hw` (3) and `Mdio` (2).
+- the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Discovered` (9), `SystemController` (3), `Link` (2), `Settings` (7) and `Applied` (3);
+- the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `RxVerdict` (3), `management_data_input_output::Error` (1), `TxError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
+- the methods of the traits `Region` (4), `Tails` (3), `Hardware` (3) and `ManagementDataInputOutput` (2).
 
 The `pub use` lines re-export items that have rows where they are defined. The one `pub` field in `src/sim.rs` belongs to a crate-private type.
+
+## Rulings applied before ratification
+
+Each renamed row's status says which ruling renamed it and what it was.
+
+- Ruled 2026-10-26 (UTC), the crate's rename table: `Hw` becomes `Hardware`. `Mdio` and the module
+  `mdio` become `ManagementDataInputOutput` and `management_data_input_output`, IEEE 802.3's phrase,
+  with `doc(alias = "mdio")`. `Syscon`, `SYSCON_FIELD` and the `GMAC0_SYSCON_*` constants spell out
+  `SystemController` and `SYSTEM_CONTROLLER_*`, with `doc(alias = "syscon")`; device-tree strings
+  keep their spelling. `read_ext`, `write_ext`, `modify_ext` and `ext` become `read_extended`,
+  `write_extended`, `modify_extended` and `extended`. `desc` and `set_desc` become `descriptor` and
+  `set_descriptor`; `rx_cur` and `tx_cur`, `receive_cursor` and `transmit_cursor`; `rx_des3` and
+  `tx_des3`, `receive_descriptor_word_3` and `transmit_descriptor_word_3`; `dev_read` and
+  `dev_write`, `device_read` and `device_write`; `volt_mv`, `voltage_mv`. The simulator's `Nic`
+  becomes `NetworkInterfaceController`, a `*_LEN` this crate authors becomes `*_LENGTH`, and
+  `MAX_FRAME` becomes `MAXIMUM_FRAME`. The unit symbols `ps`, `mv`, `ua`, `us` and `ms` stay.

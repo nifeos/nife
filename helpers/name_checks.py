@@ -80,7 +80,7 @@ _SBI = "RISC-V SBI's own name, kept as the precedents keep `sbi_send_ipi`"
 _ACTS = ("acts and reports whether it worked, which design/naming.md exempts from the question "
          "shape")
 KEPT = {
-    "crates/designware_ethernet/src/mdio.rs::PA_SHIFT":
+    "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
         ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
     "kernel/src/arch/riscv64/harts.rs::sbi_send_ipi": ({"spelled-out"}, _SBI),
     "kernel/src/arch/riscv64/remote_fence.rs::sbi_remote_sfence_vma_asid": ({"spelled-out"}, _SBI),
