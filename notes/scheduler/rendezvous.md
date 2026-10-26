@@ -18,11 +18,11 @@ or give up. The page arrives zeroed, and an all-zero `Rendezvous` is valid. It i
 explicitly, because "happens to be valid" stops being true silently.
 
 `create_rendezvous` serves the kernel's own services. It carves chunks lazily and grows them on
-demand, so nothing depends on a guess at the suite's eventual size. A chunk that fills is forgotten,
-not freed: its pages stay pinned and its endpoints stay live. Because those chunks are never freed,
-the function is `pub(crate)`, and the `system_tests` crate cannot call it. A test endpoint made there
-cost the boot a page for good. The frame ledger then moved in steps of 32, charged to whichever
-later test crossed a chunk boundary. A test carves from a region it owns with
+demand, so nothing depends on a guess at the suite's eventual size. The function forgets a chunk
+that fills and never frees it: its pages stay pinned and its endpoints stay live. Because those
+chunks are never freed, the function is `pub(crate)`, and the `system_tests` crate cannot call it. A
+test endpoint made there cost the boot a page for good. The frame ledger then moved in steps of 32,
+charged to whichever later test crossed a chunk boundary. A test carves from a region it owns with
 `create_rendezvous_from` and reclaims it, or hands the region to a `user::holding::Holding`.
 
 ## The two halves of a rendezvous
@@ -44,11 +44,11 @@ a plain `SEND`. Without the word, the badge a spawner minted would be dropped on
 minted for. The same store that wrote a zero there writes the badge, so it costs no instruction.
 
 A bound notification (milestone 151 (notification objects), DECISIONS §101 (notification objects))
-ends a receive before it can block. A signal counted while the thread was elsewhere is taken first,
-ahead of a queued sender, because it arrived earlier. The `is_some` test on the thread in hand is
-the one load and one branch §101 priced onto the path. It is an arm of the same decision, not an
-early return. A `return` inside the lock hold gave the function a second copy of the unlock path. It
-cost `ipc_receive` 138 bytes on riscv64 and 174 on x86_64.
+ends a receive before it can block. The receive takes a signal counted while the thread was
+elsewhere first, ahead of a queued sender, because it arrived earlier. The `is_some` test on the
+thread in hand is the one load and one branch §101 priced onto the path. It is an arm of the same
+decision, not an early return. A `return` inside the lock hold gave the function a second copy of
+the unlock path. It cost `ipc_receive` 138 bytes on riscv64 and 174 on x86_64.
 
 ## A plain `RECEIVE` never takes a capability
 
@@ -61,19 +61,19 @@ cost `ipc_receive` 138 bytes on riscv64 and 174 on x86_64.
   Left in place, the delegation would ride the sender's next plain `SEND` on another rendezvous. It
   would reach whoever `RECEIVE_CAP`s there: a delegation made to one endpoint, delivered to another.
   `set_ipc_aborted` closes the same hazard on the teardown path.
-- A `CALL` that meets a plain `RECEIVE`, in either order, delivers its words with no Reply. It is
-  answered `Gone`, since no Reply exists for anyone to send (`call_meets_plain_receive`,
+- A `CALL` that meets a plain `RECEIVE`, in either order, delivers its words with no Reply. The
+  kernel answers it `Gone`, since no Reply exists for anyone to send (`call_meets_plain_receive`,
   `collected_without_serving`). These paths are `#[cold]`. Every `CALL` server in the tree receives
   with `RECEIVE_CAP`, so the fastpath pays one branch and none of their bytes.
 
-`RECEIVE_CAP`'s `x1` is `NO_CAP` unless a capability was installed for this delivery (milestone 634
+`RECEIVE_CAP`'s `x1` is `NO_CAP` unless this delivery installed a capability (milestone 634
 (a plain `SEND` received by `RECEIVE_CAP` never hands over a sender-chosen slot)). A plain `SEND`
 that reached a parked `RECEIVE_CAP` dropped its three words straight into the mailbox. So `m[1]` is
 a word the sender chose. Returned as `x1`, it would hand a sender a slot number where a `CALL`
 server reads a reply slot. `x4` is `REPLY_DELIVERED` only on the two paths a `CALL` reaches a
 receiver (milestone 706 (a `CALL` server can tell a Reply from a delegation), §245 (a kernel tag in
-`x4`)). A `SEND_CAP` delegation reaches the same `x1` and never carries it. `receiving_cap` is
-cleared when a `RECEIVE_CAP` resumes, not when a plain `RECEIVE` parks. That keeps the store off
+`x4`)). A `SEND_CAP` delegation reaches the same `x1` and never carries it. A `RECEIVE_CAP` that
+resumes clears `receiving_cap`, and a plain `RECEIVE` that parks does not. That keeps the store off
 `ipc_send_receive`'s closure, where it took x86_64 past `script/fastpath-footprint`'s 5% band.
 
 Filing a delivered capability (`deliver_capability`) takes the receiving table's own lock beneath
@@ -86,8 +86,8 @@ aarch64 and riscv64.
 A supervisor receiving a death message gets the dead thread's label in argument register 5 of its
 saved user frame: `x5`, `a5` or `r9` (milestone 105 (the two forks), §148 (a supervisor restarts by
 asking), ruling R3). It sits beside the mailbox, not in it. Word 3 already carries the fault
-address, and word 4 is reserved for §26.4's resume protocol. A six-word mailbox would make every
-delivery store one more word. Here, only a death pays.
+address, and §26.4's message format reserves word 4 for its resume protocol. A six-word mailbox
+would make every delivery store one more word. Here, only a death pays.
 
 Only a plain `RECEIVE` gets the label. `RECEIVE_CAP` lays out its result differently, and §26 names
 `RECEIVE` as the death message's receive. A kernel thread has no user frame, so it gets nothing; the
@@ -103,9 +103,9 @@ Reply to the server through `RECEIVE_CAP`. The caller then blocks, reachable onl
 capability. A caller that meets no server parks its words and rides the Reply in `outgoing_cap`. The
 eventual `RECEIVE_CAP` hands it over and, seeing a Reply, leaves the caller blocked. A full server
 table drops the Reply, and the caller then waits until it is torn down. `ipc_call` forwards to
-`ipc_call_badged` with badge 0 and is inlined, so the unbadged fastpath `script/icount` measures
-gains no frame. `fastpath_pad`'s perturbation sits on the `CALL` side too. The `CALL`/reply closure
-is the larger one, and the shape real services run.
+`ipc_call_badged` with badge 0 and the compiler inlines it, so the unbadged fastpath `script/icount`
+measures gains no frame. `fastpath_pad`'s perturbation sits on the `CALL` side too. The `CALL`/reply
+closure is the larger one, and the shape real services run.
 
 `ipc_reply` touches only a thread whose `wait_on` says it awaits a reply. A Reply names a tid, not a
 wait state. This is the one wake site addressed by tid rather than through a wait queue. Delivered
@@ -120,13 +120,14 @@ can undo what the capability was for.
 
 ## Freeing callers a server can no longer answer
 
-A `CALL` caller whose request was taken left every wait queue at the rendezvous. It is linked on
-nothing, and only `ipc_reply` wakes it. `abi::Error::Gone` reaches wait queues and nothing else. So
+A `CALL` caller whose request a server received left every wait queue at the rendezvous. No queue
+links it, and only `ipc_reply` wakes it. `abi::Error::Gone` reaches wait queues and nothing else. So
 without more, a caller stranded by a dead server stayed blocked for the life of the machine. It was
 also a region nobody could reclaim. QNX Neutrino has not allowed that since the 1990s: "if the
 server thread fails, exits, or disappears, the client thread becomes READY, with `MsgSend()`
-indicating an error". Proposal C of [notes/blocked-thread-teardown.md](../blocked-thread-teardown.md)
-is the design that milestone 254 (a caller stranded by a server that died) built.
+indicating an error". Proposal C of
+[notes/blocked-thread-teardown.md](../blocked-thread-teardown.md) is the design that milestone 254
+(a caller stranded by a server that died) built.
 
 `strand_reply_caller` sweeps capabilities before it wakes. `cap::reply_cap` mints
 `Object::Reply(tid)` with a generational thread name and no call identity. `ipc_reply`'s guard
@@ -136,7 +137,7 @@ caller is exactly such a path. A hung server holding the stale capability could 
 later, unrelated conversation. L4Re documents the same hazard as a consequence of its finite receive
 timeouts.
 
-So every `Object::Reply(caller)` in the machine is deleted first. That is seL4's
+So the sweep deletes every `Object::Reply(caller)` in the machine first. That is seL4's
 `cteDeleteOne(callerCap)`, reached from `cancelIPC`. seL4's other answer, never waking the victim
 (`ThreadState_Inactive`), is not available, because waking it is the point.
 `delete_reply_caps_naming` also clears `outgoing_cap`, the half a second copy would forget. A caller
@@ -156,7 +157,7 @@ thread on every slot cost 24 generational lookups per departing thread at 24 slo
 `#[inline(never)]` function's own frame, never in `reap_region_objects`'s. An empty table returns
 at once.
 
-`strand_callers_awaiting` is the rendezvous side, for a rendezvous being torn down. It is Zircon's
+`strand_callers_awaiting` is the rendezvous side, for a rendezvous in teardown. It is Zircon's
 answer, a closed channel failing the call in flight, reached without touching the server.
 `drain_waiters` cannot do it, since a reply park is on no queue. `wait_on` records `(ep, Reply)`, so
 a scan of the thread table finds it. It rescans rather than lists, because its bound is
