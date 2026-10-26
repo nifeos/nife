@@ -48,8 +48,8 @@ data.
   (the image root, in phase 2). `Server::open_file` resolves every name in an `OPEN` *under that
   bound directory*: no absolute path, no `..` escape, no global namespace. A client with no such
   endpoint can open nothing, and the refusal is "you hold no such capability", not a permission
-  check. Milestone 31 binds new endpoints to subdirectories or single files and hands them out as
-  grant expressions; the server code already carries the bound-directory seam.
+  check. Milestone 31 (a capability shell) binds new endpoints to subdirectories or single files and
+  hands them out as grant expressions; the server code already carries the bound-directory seam.
 - A handle is a server-minted token. A successful `OPEN` returns a small integer the server
   issued and validates against this session's table (`Server::node`). Forging one is meaningless:
   the server honors only the handles it minted, in exactly one place.
