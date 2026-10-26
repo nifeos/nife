@@ -274,9 +274,9 @@ impl<R: Registers> Watch<R> {
 impl<R: Registers> Registers for Watch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
-        if offset == crate::regs::STATUS {
-            self.max_fill = self.max_fill.max(crate::regs::fifo_count(v));
-            if v & crate::regs::STATUS_FIFO_FULL != 0 {
+        if offset == crate::registers::STATUS {
+            self.max_fill = self.max_fill.max(crate::registers::fifo_count(v));
+            if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
             }
         }
@@ -350,12 +350,12 @@ pub fn read_matrix<R: Registers>(
             let start = host.registers().now_us();
             let result = sd::read_blocks(host, &card, lba, dst);
             let us = host.registers().now_us().wrapping_sub(start);
-            let r = host.registers();
+            let watch = host.registers();
             let after = [
-                r.inner.read(crate::regs::STATUS),
-                r.inner.read(crate::regs::RINTSTS),
-                r.inner.read(crate::regs::TCBCNT),
-                r.inner.read(crate::regs::TBBCNT),
+                watch.inner.read(crate::registers::STATUS),
+                watch.inner.read(crate::registers::RINTSTS),
+                watch.inner.read(crate::registers::TCBCNT),
+                watch.inner.read(crate::registers::TBBCNT),
             ];
             row(MatrixRow {
                 asked_hz: hz,
@@ -363,8 +363,8 @@ pub fn read_matrix<R: Registers>(
                 blocks,
                 result,
                 us,
-                max_fill: r.max_fill,
-                full_reads: r.full_reads,
+                max_fill: watch.max_fill,
+                full_reads: watch.full_reads,
                 after,
             });
         }

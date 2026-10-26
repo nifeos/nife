@@ -122,7 +122,7 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_threshold_write() {
     let sim = Sim::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
     let (mut h, id) = Host::new(sim, 50_000_000, Some(32)).unwrap();
-    assert_eq!(crate::regs::fifo_offset(id.verid), 0x100);
+    assert_eq!(crate::registers::fifo_offset(id.verid), 0x100);
     let card = sd::identify(&mut h, 4).unwrap();
     let data: Vec<u8> = (0..2 * BLOCK).map(|i| (i % 253) as u8).collect();
     sd::write_blocks(&mut h, &card, 7, &data).unwrap();
@@ -155,7 +155,7 @@ fn a_data_crc_error_is_reported_with_its_command() {
     let mut buf = [0u8; BLOCK];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut buf),
-        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::regs::INT_DCRC != 0
+        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::registers::INT_DCRC != 0
     ));
 }
 
@@ -215,7 +215,7 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     }
     impl Registers for Fixed {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::regs::STATUS {
+            if o == crate::registers::STATUS {
                 self.status
             } else {
                 u32::MAX
@@ -228,15 +228,15 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     }
     // FIFO count in bits 29:17, the full flag in bit 3.
     let mut w = bench::Watch::new(Fixed { status: 5 << 17 });
-    w.read(crate::regs::RINTSTS);
+    w.read(crate::registers::RINTSTS);
     assert_eq!((w.max_fill, w.full_reads), (0, 0));
-    w.read(crate::regs::STATUS);
+    w.read(crate::registers::STATUS);
     assert_eq!((w.max_fill, w.full_reads), (5, 0));
     let mut w = bench::Watch::new(Fixed {
         status: (128 << 17) | (1 << 3),
     });
-    w.read(crate::regs::STATUS);
-    w.read(crate::regs::STATUS);
+    w.read(crate::registers::STATUS);
+    w.read(crate::registers::STATUS);
     assert_eq!((w.max_fill, w.full_reads), (128, 2));
     w.clear();
     assert_eq!((w.max_fill, w.full_reads), (0, 0));
@@ -277,7 +277,7 @@ fn a_sixteen_bit_fifo_is_refused_at_the_door() {
     struct Narrow(Sim);
     impl crate::host::Registers for Narrow {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::regs::HCON {
+            if o == crate::registers::HCON {
                 0
             } else {
                 self.0.read(o)

@@ -7,7 +7,7 @@
 //! CRC is the spec's statement, and the R3 exception (the OCR register has no CRC, its CRC field
 //! reads as all ones) is why [`Response::checks_crc`] exists.
 
-use crate::regs;
+use crate::registers;
 
 /// `GO_IDLE_STATE`: every card back to idle.
 pub const GO_IDLE_STATE: u8 = 0;
@@ -141,7 +141,7 @@ impl Command {
     ///
     /// ```
     /// use designware_mobile_storage::command::{Command, Response, GO_IDLE_STATE};
-    /// use designware_mobile_storage::regs::*;
+    /// use designware_mobile_storage::registers::*;
     ///
     /// let w = Command::new(GO_IDLE_STATE, 0, Response::None).word();
     /// assert_eq!(w & 0x3f, 0);
@@ -151,31 +151,31 @@ impl Command {
     /// ```
     #[must_use]
     pub const fn word(&self) -> u32 {
-        let mut w = regs::CMD_START | regs::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+        let mut w = registers::CMD_START | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
         if self.index == STOP_TRANSMISSION {
-            w |= regs::CMD_STOP_ABORT;
+            w |= registers::CMD_STOP_ABORT;
         } else if self.index != SEND_STATUS {
-            w |= regs::CMD_WAIT_PREVIOUS_DATA;
+            w |= registers::CMD_WAIT_PREVIOUS_DATA;
         }
         if self.index == GO_IDLE_STATE {
-            w |= regs::CMD_SEND_INIT;
+            w |= registers::CMD_SEND_INIT;
         }
         if !matches!(self.response, Response::None) {
-            w |= regs::CMD_RESPONSE_EXPECT;
+            w |= registers::CMD_RESPONSE_EXPECT;
         }
         if self.response.is_long() {
-            w |= regs::CMD_LONG_RESPONSE;
+            w |= registers::CMD_LONG_RESPONSE;
         }
         if self.response.checks_crc() {
-            w |= regs::CMD_CHECK_RESPONSE_CRC;
+            w |= registers::CMD_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
-            w |= regs::CMD_DATA_EXPECTED;
+            w |= registers::CMD_DATA_EXPECTED;
             if d.write {
-                w |= regs::CMD_WRITE;
+                w |= registers::CMD_WRITE;
             }
             if d.blocks > 1 {
-                w |= regs::CMD_SEND_AUTO_STOP;
+                w |= registers::CMD_SEND_AUTO_STOP;
             }
         }
         w
@@ -184,12 +184,12 @@ impl Command {
 
 /// The word that loads new clock settings into the card clock domain and sends nothing.
 pub(crate) const UPDATE_CLOCK: u32 =
-    regs::CMD_START | regs::CMD_WAIT_PREVIOUS_DATA | regs::CMD_UPDATE_CLOCK_ONLY;
+    registers::CMD_START | registers::CMD_WAIT_PREVIOUS_DATA | registers::CMD_UPDATE_CLOCK_ONLY;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::regs::*;
+    use crate::registers::*;
 
     #[test]
     fn a_long_response_with_crc_and_no_data() {

@@ -517,7 +517,7 @@ where
     // 10. The JH7110's SD/MMC controllers, the registers and data FIFO the driver touches.
     if let Some(slots) = memory::jh7110_storage() {
         for s in slots.iter().flatten() {
-            let used = u64::from(designware_mobile_storage::regs::WINDOW_USED).min(s.size);
+            let used = u64::from(designware_mobile_storage::registers::WINDOW_USED).min(s.size);
             direct_map(m, s.base, s.base + used, Flags::device())?;
         }
     }
