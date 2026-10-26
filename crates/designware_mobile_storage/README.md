@@ -42,9 +42,9 @@ fn first_sector<R: Registers>(registers: R) -> Option<[u8; 512]> {
 }
 ```
 
-`partition::MasterBootRecord::parse` reads that sector, and `MasterBootRecord::scratch` names the sectors before the first
-partition that a write test may use. `Host::with_internal_direct_memory_access` moves later
-transfers through a DMA region you supply
+`partition::MasterBootRecord::parse` reads that sector, and `MasterBootRecord::scratch` names the
+sectors before the first partition that a write test may use.
+`Host::with_internal_direct_memory_access` moves later transfers through a DMA region you supply
 (`internal_direct_memory_access::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's
 constants and `Slot::from_node`, which decodes one slot from the properties of a device-tree node
 you found. The crate reads no device tree itself.

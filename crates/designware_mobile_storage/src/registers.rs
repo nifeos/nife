@@ -136,14 +136,14 @@ pub(crate) const CMD_WAIT_PRVDATA_COMPLETE: u32 = 1 << 13;
 #[doc(alias = "send automatic stop")]
 pub(crate) const CMD_SEND_AUTO_STOP: u32 = 1 << 12;
 /// **Read or write** (OpenBSD's `SDMMC_CMD_WR`): the data phase is a write to the card.
-#[doc(alias = "write")]
+#[doc(alias = "write to card")]
 pub(crate) const CMD_WR: u32 = 1 << 10;
 /// **Data expected** (OpenBSD's `SDMMC_CMD_DATA_EXPECTED`): the command has a data phase.
 #[doc(alias = "data expected")]
 pub(crate) const CMD_DATA_EXPECTED: u32 = 1 << 9;
 /// **Check response CRC** (the databook's `check_response_crc`, which `dwmmc-host` keeps): check
 /// the response's CRC7.
-#[doc(alias = "check response cyclic redundancy check")]
+#[doc(alias = "check response CRC")]
 pub(crate) const CMD_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 /// **Response length** (OpenBSD's `SDMMC_CMD_RESPONSE_LENGTH`): the response is 136 bits (R2).
 #[doc(alias = "long response")]
@@ -189,10 +189,10 @@ pub(crate) const RINTSTS_TXDR: u32 = 1 << 4;
 #[doc(alias = "receive queue data request")]
 pub(crate) const RINTSTS_RXDR: u32 = 1 << 5;
 /// **Response CRC error** (OpenBSD's `SDMMC_RINTSTS_RCRC`): response CRC error.
-#[doc(alias = "response cyclic redundancy check error")]
+#[doc(alias = "response CRC error")]
 pub(crate) const RINTSTS_RCRC: u32 = 1 << 6;
 /// **Data CRC error** (OpenBSD's `SDMMC_RINTSTS_DCRC`): data CRC error.
-#[doc(alias = "data cyclic redundancy check error")]
+#[doc(alias = "data CRC error")]
 pub(crate) const RINTSTS_DCRC: u32 = 1 << 7;
 /// **Response timeout** (OpenBSD's `SDMMC_RINTSTS_RTO`): response timeout: no card answered.
 #[doc(alias = "response timeout")]
@@ -245,7 +245,8 @@ pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 #[doc(alias = "data busy")]
 pub(crate) const STATUS_DATA_BUSY: u32 = 1 << 9;
 
-/// How many FIFO words are filled, bits 29:17 of `STATUS`.
+/// **FIFO count** (OpenBSD's `SDMMC_STATUS_FIFO_COUNT`, the databook's `fifo_count`): how many FIFO
+/// words are filled, bits 29:17 of `STATUS`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub(crate) const fn queue_count(status: u32) -> u32 {
@@ -423,8 +424,8 @@ pub(crate) const CARDTHRCTL: u32 = 0x100;
 #[doc(alias = "card read threshold enable")]
 pub(crate) const CARDTHRCTL_RDTHREN: u32 = 1 << 0;
 
-/// **Release 2.40a** (Linux's `DW_MMC_240A`): the release `VERID` is compared at, Linux's
-/// `DW_MMC_240A`. Controllers before it put the data FIFO at `0x100`, from it on at `0x200`.
+/// **Release 2.40a** (Linux's `DW_MMC_240A`): the release `VERID` is compared at. Controllers
+/// before it put the data FIFO at `0x100`, from it on at `0x200`.
 #[doc(alias = "release 2.40a")]
 pub(crate) const DW_MMC_240A: u32 = 0x240a;
 
@@ -467,7 +468,7 @@ pub const fn queue_width(hcon: u32) -> Option<u32> {
 /// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it;
-/// was `dma_64bit`, which also did not read as the question it answers.
+/// was `dma_64bit`.
 #[must_use]
 pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
     hcon & (1 << 27) != 0

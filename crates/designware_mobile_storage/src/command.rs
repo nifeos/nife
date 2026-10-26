@@ -102,7 +102,7 @@ pub enum Response {
     R1b,
     /// **R2, card identification or card-specific data** (SD section 4.9.3, JESD84-B51 section
     /// 6.12): 136 bits carrying the CID or the CSD register.
-    #[doc(alias = "long response")]
+    #[doc(alias = "card register response")]
     R2,
     /// **R3, operation conditions** (SD section 4.9.4, JESD84-B51 section 6.12): 48 bits carrying
     /// the OCR register, with **no CRC**.

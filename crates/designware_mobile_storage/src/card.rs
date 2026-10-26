@@ -10,21 +10,27 @@
 
 /// The operation conditions register's (OCR) power-up-complete bit: clear while the card is still
 /// busy initializing.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_BUSY_DONE: u32 = 1 << 31;
 /// The OCR's card capacity status (SD) or access mode (eMMC, as bits 30:29 = `0b10`): set on a
 /// high-capacity card, which is addressed in 512-byte blocks rather than bytes.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_HIGH_CAPACITY: u32 = 1 << 30;
 /// The voltage window this host offers, 3.2 to 3.4 V: OpenBSD's `dwmmc_host_ocr`. The JH7110's
 /// card slot is wired for 3.3 V and nothing here switches it.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_VOLTAGE_WINDOW: u32 = (1 << 20) | (1 << 21);
 /// `ACMD41`'s argument: high capacity supported, and the window.
+#[doc(alias = "ocr")]
 pub(crate) const SD_OPERATION_CONDITIONS_ARGUMENT: u32 =
     OPERATION_CONDITIONS_HIGH_CAPACITY | OPERATION_CONDITIONS_VOLTAGE_WINDOW;
 /// eMMC `CMD1`'s argument: sector access mode (bits 30:29 = `0b10`) and 2.7 to 3.6 V plus the
 /// 1.70 to 1.95 V bit, the value Linux and U-Boot both send.
+#[doc(alias = "ocr")]
 pub(crate) const MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT: u32 = 0x40ff_8080;
 /// `CMD8` (`SEND_IF_COND`)'s interface condition argument: 2.7 to 3.6 V (`0x1`) and the check
 /// pattern `0xaa`. A card that understands it echoes both.
+#[doc(alias = "if_cond")]
 pub(crate) const INTERFACE_CONDITION_ARGUMENT: u32 = 0x1aa;
 
 /// **Card status errors** (SD section 4.10.1): the R1 bits that report a failure, Linux's error

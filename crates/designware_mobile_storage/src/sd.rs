@@ -39,8 +39,8 @@ pub enum Kind {
     SdV2,
     /// SDHC, SDXC or SDUC: block addressed.
     SdHighCapacity,
-    /// eMMC, an embedded multimedia card (MMC), or an MMC. Block addressed when the OCR says
-    /// sector mode.
+    /// An eMMC (embedded multimedia card) or an MMC (multimedia card). Block addressed when the OCR
+    /// says sector mode.
     #[doc(alias = "mmc")]
     MultimediaCard,
 }

@@ -275,8 +275,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 | registers::CTRL_INT_ENABLE);
         self.registers
             .write(registers::CTRL, ctrl | registers::CTRL_ALL_RESET);
-        if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
+        if !self.wait(COMMAND_DEADLINE_US, |window| {
+            window.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
         }
@@ -307,8 +307,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
-        if self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CMD) & registers::CMD_START_CMD == 0
+        if self.wait(COMMAND_DEADLINE_US, |window| {
+            window.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             Ok(())
         } else {
@@ -354,8 +354,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// [`Error::Busy`] past [`DATA_DEADLINE_US`].
     pub(crate) fn wait_not_busy(&mut self) -> Result<(), Error> {
-        if self.wait(DATA_DEADLINE_US, |registers| {
-            registers.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
+        if self.wait(DATA_DEADLINE_US, |window| {
+            window.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
         }) {
             Ok(())
         } else {
@@ -377,8 +377,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             let ctrl = self.registers.read(registers::CTRL);
             self.registers
                 .write(registers::CTRL, ctrl | registers::CTRL_FIFO_RESET);
-            if !self.wait(COMMAND_DEADLINE_US, |registers| {
-                registers.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
+            if !self.wait(COMMAND_DEADLINE_US, |window| {
+                window.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
             }
@@ -390,14 +390,14 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             .write(registers::RINTSTS, registers::RINTSTS_ALL);
         self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
-        if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CMD) & registers::CMD_START_CMD == 0
+        if !self.wait(COMMAND_DEADLINE_US, |window| {
+            window.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
-        if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            status = registers.read(registers::RINTSTS);
+        if !self.wait(COMMAND_DEADLINE_US, |window| {
+            status = window.read(registers::RINTSTS);
             status & registers::RINTSTS_CD != 0
         }) {
             return Err(Error::CommandTimeout(command.index, status));
@@ -536,12 +536,12 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let mut status = 0;
         let depth = self.depth;
         let write = want == registers::RINTSTS_TXDR;
-        let ok = self.wait(DATA_DEADLINE_US, |registers| {
-            rint = registers.read(registers::RINTSTS);
+        let ok = self.wait(DATA_DEADLINE_US, |window| {
+            rint = window.read(registers::RINTSTS);
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return true;
             }
-            status = registers.read(registers::STATUS);
+            status = window.read(registers::STATUS);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
             rint & want != 0 && queue_step(status, depth, write, owed) > 0
@@ -563,8 +563,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
             _ => registers::RINTSTS_DTO,
         };
-        let ok = self.wait(DATA_DEADLINE_US, |registers| {
-            rint = registers.read(registers::RINTSTS);
+        let ok = self.wait(DATA_DEADLINE_US, |window| {
+            rint = window.read(registers::RINTSTS);
             rint & want == want
                 || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
         });
