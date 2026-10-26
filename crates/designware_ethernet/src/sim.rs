@@ -196,6 +196,8 @@ impl PhysicalLayerDevice {
         );
         extended.insert(motorcomm::CLOCK_GATING_REG, motorcomm::CGR_RX_CLK_EN);
         extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
+        registers[management_data_input_output::BMCR as usize] =
+            management_data_input_output::BMCR_ANENABLE;
         PhysicalLayerDevice {
             registers,
             extended,
@@ -237,21 +239,34 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
                     0
                 }
             }
-            motorcomm::SPECIFIC_STATUS_REG => self.link.map_or(0, |l| {
-                let speed = match l.speed {
-                    Speed::Ten => 0,
-                    Speed::Hundred => 1,
-                    Speed::Thousand => 2,
-                };
-                motorcomm::SSR_LINK
-                    | motorcomm::SSR_SPEED_DUPLEX_RESOLVED
-                    | speed << motorcomm::SSR_SPEED_SHIFT
-                    | if l.full_duplex {
-                        motorcomm::SSR_DUPLEX
-                    } else {
-                        0
-                    }
+            management_data_input_output::ANAR => {
+                management_data_input_output::ANLPAR_TX_FD
+                    | management_data_input_output::ANLPAR_TX
+                    | management_data_input_output::ANLPAR_10_FD
+                    | management_data_input_output::ANLPAR_10
+            }
+            management_data_input_output::ANLPAR => self.link.map_or(0, |l| match l.speed {
+                Speed::Thousand => 0,
+                Speed::Hundred if l.full_duplex => management_data_input_output::ANLPAR_TX_FD,
+                Speed::Hundred => management_data_input_output::ANLPAR_TX,
+                Speed::Ten if l.full_duplex => management_data_input_output::ANLPAR_10_FD,
+                Speed::Ten => management_data_input_output::ANLPAR_10,
             }),
+            management_data_input_output::MII_100T2CR => {
+                management_data_input_output::GTCR_ADV_1000TFDX
+                    | management_data_input_output::GTCR_ADV_1000THDX
+            }
+            management_data_input_output::MII_100T2SR => match self.link {
+                Some(Link {
+                    speed: Speed::Thousand,
+                    full_duplex: true,
+                }) => management_data_input_output::GTSR_LP_1000TFDX,
+                Some(Link {
+                    speed: Speed::Thousand,
+                    full_duplex: false,
+                }) => management_data_input_output::GTSR_LP_1000THDX,
+                _ => 0,
+            },
             r => self.registers[r as usize],
         })
     }

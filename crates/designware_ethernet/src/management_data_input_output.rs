@@ -73,6 +73,65 @@ pub(crate) const BMSR: u8 = 0x01;
 /// reads zero once, so the current state is the second of two reads.
 #[doc(alias = "link status")]
 pub(crate) const BMSR_LSTATUS: u16 = 1 << 2;
+/// **Isolate** (`BMCR_ISO`, OpenBSD `sys/dev/mii/mii.h`): the PHY is electrically isolated from
+/// the MAC.
+#[doc(alias = "isolate")]
+pub(crate) const BMCR_ISO: u16 = 0x0400;
+/// **Set duplex mode** (`BMCR_FDX`, OpenBSD `sys/dev/mii/mii.h`): full duplex when forced.
+#[doc(alias = "full duplex")]
+pub(crate) const BMCR_FDX: u16 = 0x0100;
+/// **100 Mb/s** (`BMCR_S100`, OpenBSD `sys/dev/mii/mii.h`): the forced speed's low selection bit.
+#[doc(alias = "forced 100 mbit/s")]
+pub(crate) const BMCR_S100: u16 = 0x2000;
+/// **1000 Mb/s** (`BMCR_S1000`, OpenBSD `sys/dev/mii/mii.h`): the forced speed's high selection
+/// bit.
+#[doc(alias = "forced 1000 mbit/s")]
+pub(crate) const BMCR_S1000: u16 = 0x0040;
+/// **Autonegotiation advertisement register** (`MII_ANAR`, OpenBSD `sys/dev/mii/mii.h`), clause 28.
+/// The crate drops the `MII_` prefix, as it does for `BMCR`.
+#[doc(alias = "autonegotiation advertisement")]
+pub(crate) const ANAR: u8 = 0x04;
+/// **Autonegotiation link partner abilities register** (`MII_ANLPAR`, OpenBSD
+/// `sys/dev/mii/mii.h`), clause 28.
+#[doc(alias = "autonegotiation link partner abilities")]
+pub(crate) const ANLPAR: u8 = 0x05;
+/// **Link partner supports 100BASE-T4** (`ANLPAR_T4`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "100base-t4")]
+pub(crate) const ANLPAR_T4: u16 = 0x0200;
+/// **Link partner supports 100BASE-TX full duplex** (`ANLPAR_TX_FD`, OpenBSD
+/// `sys/dev/mii/mii.h`).
+#[doc(alias = "100base-tx full duplex")]
+pub(crate) const ANLPAR_TX_FD: u16 = 0x0100;
+/// **Link partner supports 100BASE-TX** (`ANLPAR_TX`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "100base-tx")]
+pub(crate) const ANLPAR_TX: u16 = 0x0080;
+/// **Link partner supports 10BASE-T full duplex** (`ANLPAR_10_FD`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "10base-t full duplex")]
+pub(crate) const ANLPAR_10_FD: u16 = 0x0040;
+/// **Link partner supports 10BASE-T** (`ANLPAR_10`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "10base-t")]
+pub(crate) const ANLPAR_10: u16 = 0x0020;
+/// **1000BASE-T control register** (`MII_100T2CR`, OpenBSD `sys/dev/mii/mii.h`), clause 40. The
+/// name keeps `MII_` because an identifier cannot begin with a digit.
+#[doc(alias = "1000base-t control")]
+pub(crate) const MII_100T2CR: u8 = 0x09;
+/// **Advertise 1000BASE-T full duplex** (`GTCR_ADV_1000TFDX`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "advertise 1000base-t full duplex")]
+pub(crate) const GTCR_ADV_1000TFDX: u16 = 0x0200;
+/// **Advertise 1000BASE-T half duplex** (`GTCR_ADV_1000THDX`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "advertise 1000base-t half duplex")]
+pub(crate) const GTCR_ADV_1000THDX: u16 = 0x0100;
+/// **1000BASE-T status register** (`MII_100T2SR`, OpenBSD `sys/dev/mii/mii.h`), clause 40.
+#[doc(alias = "1000base-t status")]
+pub(crate) const MII_100T2SR: u8 = 0x0a;
+/// **Link partner 1000BASE-T full duplex capable** (`GTSR_LP_1000TFDX`, OpenBSD
+/// `sys/dev/mii/mii.h`).
+#[doc(alias = "link partner 1000base-t full duplex")]
+pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
+/// **Link partner 1000BASE-T half duplex capable** (`GTSR_LP_1000THDX`, OpenBSD
+/// `sys/dev/mii/mii.h`).
+#[doc(alias = "link partner 1000base-t half duplex")]
+pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,

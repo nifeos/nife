@@ -897,7 +897,6 @@ crates/designware_ethernet/src/motorcomm.rs::Speed
 crates/designware_ethernet/src/motorcomm.rs::apply_speed
 crates/designware_ethernet/src/motorcomm.rs::configure
 crates/designware_ethernet/src/motorcomm.rs::link
-crates/designware_ethernet/src/motorcomm.rs::link_from_status
 crates/designware_ethernet/src/motorcomm.rs::mbps
 crates/designware_ethernet/src/proofs.rs
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC

@@ -2,12 +2,15 @@
 //!
 //! The sequence is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and `ytphy_yt8521_update`
 //! (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`, ISC license, notice
-//! in the crate root). [`EXTREG_SLEEP_CONTROL1_REG`], [`CLOCK_GATING_REG`], [`PHY_ID_YT8531`],
-//! [`SPECIFIC_STATUS_REG`] and its `SSR_` bits come from Linux's `drivers/net/phy/motorcomm.c`,
-//! read as facts about the part; why this driver writes them is at each. Each constant keeps its
-//! source's name without the part prefix (`YT8511_`, `YT8521_`, `YT8531_` or `YTPHY_`), and its
-//! documentation opens with its full name and its source's spelling. The vendor tree states
-//! register values and mainline states physical quantities, and for `gmac0` they agree.
+//! in the crate root). The link, speed and duplex come from the standard clause 22 registers, as
+//! OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`) reads them, with IEEE 802.3's registers
+//! and OpenBSD's `mii.h` names. The part's vendor status register is not read.
+//! [`EXTREG_SLEEP_CONTROL1_REG`], [`CLOCK_GATING_REG`] and [`PHY_ID_YT8531`] come from Linux's
+//! `drivers/net/phy/motorcomm.c`, which is the only source that names them (Decision 52), read as
+//! facts about the part; why this driver writes them is at each. Each constant keeps its source's
+//! name without the part prefix (`YT8511_`, `YT8521_` or `YT8531_`), and its documentation opens
+//! with its full name and its source's spelling. The vendor tree states register values and
+//! mainline states physical quantities, and for `gmac0` they agree.
 //! [`Settings::FALLBACK_GMAC0`] applies only when a tree states neither, and [`Settings::source`]
 //! says which happened.
 
@@ -98,41 +101,6 @@ pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
 #[doc(alias = "synchronous ethernet clock output enable")]
 pub(crate) const EN_SYNC_E: u16 = 1 << 6;
 
-/// **PHY-specific status register** (`YTPHY_SPECIFIC_STATUS_REG`, `motorcomm.c`). Clause 22 vendor
-/// register: the PHY's resolved link.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
-/// replacing `SPECIFIC_STATUS`.
-#[doc(alias = "phy-specific status register")]
-pub const SPECIFIC_STATUS_REG: u8 = 0x11;
-/// **Specific status, speed and duplex resolved** (`YTPHY_SSR_SPEED_DUPLEX_RESOLVED`,
-/// `motorcomm.c`). The speed and duplex have been resolved.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
-/// replacing `STATUS_RESOLVED`.
-#[doc(alias = "specific status, speed and duplex resolved")]
-pub const SSR_SPEED_DUPLEX_RESOLVED: u16 = 1 << 11;
-/// **Specific status, link** (`YTPHY_SSR_LINK`, `motorcomm.c`). Real-time link.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
-/// replacing `STATUS_LINK`.
-#[doc(alias = "specific status, link")]
-pub const SSR_LINK: u16 = 1 << 10;
-/// **Specific status, duplex** (`YTPHY_SSR_DUPLEX`, `motorcomm.c`). Full duplex.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
-/// replacing `STATUS_DUPLEX`.
-#[doc(alias = "specific status, duplex")]
-pub const SSR_DUPLEX: u16 = 1 << 13;
-/// **Specific status, speed field shift**: bits 15:14, where 0 is 10, 1 is 100 and 2 is 1000
-/// Mbit/s. This crate's name, in the `YTPHY_SSR_` family of `motorcomm.c`, which states the field
-/// through `YTPHY_SSR_SPEED_MASK` and has no shift of its own.
-///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c; the source has no such constant, so
-/// this crate names it in the source's `YTPHY_SSR_` family, replacing `STATUS_SPEED_SHIFT`.
-#[doc(alias = "speed shift")]
-pub const SSR_SPEED_SHIFT: u16 = 14;
-
 /// A link speed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Speed {
@@ -164,22 +132,58 @@ pub struct Link {
     pub full_duplex: bool,
 }
 
-/// **Decode the vendor status register.** `None` until the PHY has a link and has resolved its
-/// speed and duplex, and for the speed encodings a gigabit part never reports.
-pub const fn link_from_status(status: u16) -> Option<Link> {
-    if status & SSR_LINK == 0 || status & SSR_SPEED_DUPLEX_RESOLVED == 0 {
+/// **Decode the standard clause 22 registers into a link**, as OpenBSD's `ukphy_status`
+/// (`sys/dev/mii/ukphy_subr.c`) does. `None` when the link is down, the PHY is isolated, or
+/// autonegotiation has not completed. After autonegotiation the speed and duplex are the highest
+/// ability the advertisement and the link partner's abilities share, 1000BASE-T first; a
+/// 100BASE-T4 partner reads as 100 Mbit/s half duplex. With autonegotiation off they are the
+/// forced bits of the control register.
+pub(crate) const fn link_from_registers(
+    bmsr: u16,
+    bmcr: u16,
+    anar: u16,
+    anlpar: u16,
+    gtcr: u16,
+    gtsr: u16,
+) -> Option<Link> {
+    use management_data_input_output as mdio;
+    if bmsr & mdio::BMSR_LSTATUS == 0 || bmcr & mdio::BMCR_ISO != 0 {
         return None;
     }
-    let speed = match (status >> SSR_SPEED_SHIFT) & 0x3 {
-        0 => Speed::Ten,
-        1 => Speed::Hundred,
-        2 => Speed::Thousand,
-        _ => return None,
-    };
-    Some(Link {
-        speed,
-        full_duplex: status & SSR_DUPLEX != 0,
-    })
+    if bmcr & mdio::BMCR_ANENABLE == 0 {
+        let speed = if bmcr & mdio::BMCR_S1000 != 0 {
+            Speed::Thousand
+        } else if bmcr & mdio::BMCR_S100 != 0 {
+            Speed::Hundred
+        } else {
+            Speed::Ten
+        };
+        return Some(Link {
+            speed,
+            full_duplex: bmcr & mdio::BMCR_FDX != 0,
+        });
+    }
+    if bmsr & mdio::BMSR_ANEGCOMPLETE == 0 {
+        return None;
+    }
+    let common = anar & anlpar;
+    let (speed, full_duplex) =
+        if gtcr & mdio::GTCR_ADV_1000TFDX != 0 && gtsr & mdio::GTSR_LP_1000TFDX != 0 {
+            (Speed::Thousand, true)
+        } else if gtcr & mdio::GTCR_ADV_1000THDX != 0 && gtsr & mdio::GTSR_LP_1000THDX != 0 {
+            (Speed::Thousand, false)
+        } else if common & mdio::ANLPAR_TX_FD != 0 {
+            (Speed::Hundred, true)
+        } else if common & (mdio::ANLPAR_T4 | mdio::ANLPAR_TX) != 0 {
+            (Speed::Hundred, false)
+        } else if common & mdio::ANLPAR_10_FD != 0 {
+            (Speed::Ten, true)
+        } else if common & mdio::ANLPAR_10 != 0 {
+            (Speed::Ten, false)
+        } else {
+            return None;
+        };
+    Some(Link { speed, full_duplex })
 }
 
 /// A pad drive strength, as a tree states it.
@@ -460,15 +464,23 @@ pub fn apply_speed(
     Ok(v)
 }
 
-/// **The link, if there is one**, from the vendor status register.
+/// **The link, if there is one**, read from the standard clause 22 registers the way OpenBSD's
+/// `ukphy_status` does. The basic mode status register is read twice, because its link bit
+/// latches low.
 pub fn link(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
-    Ok(link_from_status(bus.read(
-        physical_layer_device_address,
-        SPECIFIC_STATUS_REG,
-    )?))
+    use management_data_input_output as mdio;
+    let address = physical_layer_device_address;
+    let _ = bus.read(address, mdio::BMSR)?;
+    let bmsr = bus.read(address, mdio::BMSR)?;
+    let bmcr = bus.read(address, mdio::BMCR)?;
+    let anar = bus.read(address, mdio::ANAR)?;
+    let anlpar = bus.read(address, mdio::ANLPAR)?;
+    let gtcr = bus.read(address, mdio::MII_100T2CR)?;
+    let gtsr = bus.read(address, mdio::MII_100T2SR)?;
+    Ok(link_from_registers(bmsr, bmcr, anar, anlpar, gtcr, gtsr))
 }
 
 #[cfg(test)]
@@ -514,31 +526,64 @@ mod tests {
     }
 
     #[test]
-    fn the_status_register_resolves_only_with_link_and_resolution() {
-        let up_1000_full = SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | SSR_DUPLEX | 2 << 14;
+    fn the_clause_22_registers_decode_every_speed_and_duplex() {
+        use management_data_input_output::*;
+        let up = BMSR_LSTATUS | BMSR_ANEGCOMPLETE;
+        let advertise = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
+        let both = GTCR_ADV_1000TFDX | GTCR_ADV_1000THDX;
+        let l = |speed, full_duplex| Some(Link { speed, full_duplex });
+        let decode = |bmsr, anlpar, gtsr| {
+            link_from_registers(bmsr, BMCR_ANENABLE, advertise, anlpar, both, gtsr)
+        };
+        assert_eq!(decode(up, 0, GTSR_LP_1000TFDX), l(Speed::Thousand, true));
+        assert_eq!(decode(up, 0, GTSR_LP_1000THDX), l(Speed::Thousand, false));
+        assert_eq!(decode(up, ANLPAR_TX_FD, 0), l(Speed::Hundred, true));
+        assert_eq!(decode(up, ANLPAR_TX, 0), l(Speed::Hundred, false));
+        assert_eq!(decode(up, ANLPAR_T4, 0), None, "T4 is not advertised");
+        assert_eq!(decode(up, ANLPAR_10_FD, 0), l(Speed::Ten, true));
+        assert_eq!(decode(up, ANLPAR_10, 0), l(Speed::Ten, false));
+        assert_eq!(decode(up, 0, 0), None, "nothing in common");
+        // Gigabit needs both ends: a partner that does not advertise it falls back.
         assert_eq!(
-            link_from_status(up_1000_full),
-            Some(Link {
-                speed: Speed::Thousand,
-                full_duplex: true
-            })
+            link_from_registers(
+                up,
+                BMCR_ANENABLE,
+                advertise,
+                ANLPAR_TX_FD,
+                0,
+                GTSR_LP_1000TFDX
+            ),
+            l(Speed::Hundred, true)
         );
+        // A 100BASE-T4 partner reads as 100 Mbit/s half duplex when we advertise it.
         assert_eq!(
-            link_from_status(up_1000_full & !SSR_SPEED_DUPLEX_RESOLVED),
+            link_from_registers(up, BMCR_ANENABLE, ANLPAR_T4, ANLPAR_T4, 0, 0),
+            l(Speed::Hundred, false)
+        );
+    }
+
+    #[test]
+    fn a_link_that_is_down_or_still_negotiating_decodes_to_none() {
+        use management_data_input_output::*;
+        let all = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
+        let go = |bmsr, bmcr| link_from_registers(bmsr, bmcr, all, all, 0, 0);
+        assert_eq!(go(BMSR_ANEGCOMPLETE, BMCR_ANENABLE), None, "link down");
+        assert_eq!(go(BMSR_LSTATUS, BMCR_ANENABLE), None, "negotiation running");
+        assert_eq!(
+            go(BMSR_LSTATUS | BMSR_ANEGCOMPLETE, BMCR_ANENABLE | BMCR_ISO),
             None
         );
-        assert_eq!(link_from_status(up_1000_full & !SSR_LINK), None);
-        assert_eq!(
-            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | 3 << 14),
-            None
-        );
-        assert_eq!(
-            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | 1 << 14),
-            Some(Link {
-                speed: Speed::Hundred,
-                full_duplex: false
-            })
-        );
+    }
+
+    #[test]
+    fn with_negotiation_off_the_forced_bits_decide() {
+        use management_data_input_output::*;
+        let up = BMSR_LSTATUS;
+        let l = |speed, full_duplex| Some(Link { speed, full_duplex });
+        let go = |bmcr| link_from_registers(up, bmcr, 0, 0, 0, 0);
+        assert_eq!(go(BMCR_S1000 | BMCR_FDX), l(Speed::Thousand, true));
+        assert_eq!(go(BMCR_S100), l(Speed::Hundred, false));
+        assert_eq!(go(0), l(Speed::Ten, false));
     }
 
     #[test]
@@ -643,13 +688,6 @@ mod tests {
         assert_eq!(
             [Speed::Ten, Speed::Hundred, Speed::Thousand].map(Speed::mbps),
             [10, 100, 1000]
-        );
-        assert_eq!(
-            link_from_status(SSR_LINK | SSR_SPEED_DUPLEX_RESOLVED | SSR_DUPLEX),
-            Some(Link {
-                speed: Speed::Ten,
-                full_duplex: true
-            })
         );
     }
 
