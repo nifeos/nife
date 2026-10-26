@@ -21,11 +21,12 @@ assert!(crate::sched::reclaim_region(tcb_region).is_err());
 let got = crate::sched::ipc_receive(report)[0];   // waits for the child's SEND
 ```
 
-That comment was true when it was written and stopped being true when DECISIONS §16 was amended.
-A refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every
-live thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down.
-§24's `^C` escalation is built on exactly that. So the probe marked the child `killed`, and
-`schedule()` converts a killed thread to a corpse at its next preemption:
+That comment was true when it was written and stopped being true when DECISIONS §16 (object revocation) was amended. A
+refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every live
+thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down. The
+`^C` escalation of §24 (interrupting the foreground process) builds on exactly that. So the probe
+marked the child `killed`, and `schedule()` converts a killed thread to a corpse at its next
+preemption:
 
 ```rust
 if t.killed && t.state == State::Running { t.state = State::Finished; }
@@ -33,8 +34,8 @@ if t.killed && t.state == State::Running { t.state = State::Finished; }
 
 From there it is a plain race between the child's nine instructions and its own core's next timer
 tick. Win it and the child SENDs, the test passes, and the armed kill is harmless because the child
-was about to exit anyway. Lose it and the child is reaped without ever sending, `ipc_receive`
-blocks forever, every core falls to idle, and the 60 s heartbeat fires.
+was about to exit anyway. Lose it and the kernel reaps the child without it ever sending,
+`ipc_receive` blocks forever, every core falls to idle, and the 60 s heartbeat fires.
 
 Why host load moved it from "never seen locally" to one run in four is not measured here. The
 likely mechanism is that a vCPU thread the host deschedules comes back with its guest timer deadline
@@ -69,10 +70,11 @@ thread `wake_pending=false on_cpu=false`, all four inboxes empty. Same fingerpri
 
 ## The fix, and what it costs
 
-The probe is deleted. Nothing else changed. The refusal's own behavior is proved by
-`user::force_kill_tests::destroy_force_kills_a_runaway_and_reclaims_its_region`, which points the
-destructive call at a runaway that is *meant* to die, and that is the only subject it can honestly
-be pointed at. `reclaim_region` now carries a `BUGS` section saying so where a caller meets it.
+The probe is gone. Nothing else changed.
+`user::force_kill_tests::destroy_force_kills_a_runaway_and_reclaims_its_region` proves the refusal's
+own behavior. It points the destructive call at a runaway that is *meant* to die, and the call can
+honestly take no other subject. `reclaim_region` now carries a `BUGS` section saying so where a
+caller meets it.
 
 Confirmed under the original recipe: four host burners, the riscv64 leg twenty times, 0 watchdog
 hangs. Three of the twenty failed on something else, and all three are the
@@ -98,8 +100,8 @@ the child is never marked `killed`, so the conversion that reaped it has no inpu
 on any machine at any speed. That distinction matters because the observed *rates* vary wildly and
 say nothing about whether the cure works. It was never seen locally at first, one in four under four
 burners, and three consecutive failures on one CI pull request (#29, docs-only) on the shared
-runners. All three numbers are what the mechanism predicts. The loser of the race is decided
-by how much wall clock the guest gets between the child being switched in and its `ecall`. A
+runners. All three numbers are what the mechanism predicts. How much wall clock the guest gets
+between the scheduler's switch-in of the child and its `ecall` decides the loser of the race. A
 two-core shared runner emulating four harts gives it little. A hot rate is evidence the window
 is wide there, not evidence of a second bug.
 
@@ -128,20 +130,20 @@ more riscv64 boots in the `cpu matrix` job, which runs `script/cpu-matrix` over 
 failure. Six riscv64 rolls of the dice to one aarch64 roll. Four riscv64 sightings before the
 first aarch64 one is what a 6:1 exposure ratio produces on its own.
 
-Two explanations offered along the way were wrong, and both are recorded because each is the kind
-that sounds right:
+Two explanations offered along the way were wrong, and this section records both because each is the
+kind that sounds right:
 
 - "riscv64 loses the race more often under TCG."  Written in an earlier draft of this section, by
-  this milestone. Possible, unmeasured, and unnecessary once the exposure ratio is counted.
-- "riscv64 runs first, so it failed first and the aarch64 leg never got there."  Offered while the
-  aarch64 hit was being reported, and it is backwards: `xtask test` runs the aarch64 leg first
-  and `return false`s on its failure, so a riscv64-only sighting is a run in which aarch64 was given
-  its chance and passed. The four riscv64 CI hits came from `cpu matrix`, which has no aarch64 leg to
+  this milestone. Possible, unmeasured, and unnecessary once you count the exposure ratio.
+- "riscv64 runs first, so it failed first and the aarch64 leg never got there." Offered while
+  someone reported the aarch64 hit, and it is backwards: `xtask test` runs the aarch64 leg first and
+  `return false`s on its failure, so a riscv64-only sighting is a run in which aarch64 got its
+  chance and passed. The four riscv64 CI hits came from `cpu matrix`, which has no aarch64 leg to
   order against.
 
 §19 says parity is a gate. The corollary this bug supplies is that a failure appearing on one ISA is
 a *claim* about that ISA. The cheapest way to test the claim is to widen the window on the other
-one, not to reason about what is arch-specific. Careful reasoning was done here, and it pointed at
+one, not to reason about what is arch-specific. Careful reasoning here pointed at
 RISC-V for four days.
 
 ## The accumulation is not this bug, and the aarch64 hit does not make it one
@@ -170,19 +172,19 @@ It is still worth its own milestone: 101 of `MAX_THREADS = 128` is 79% of a hard
 failure, and the leak police only polices *runnable* leaks, so a blocked leak is invisible to it by
 construction. Nothing today would warn before the suite hit the wall.
 
-Update, 2026-08-27: it hit the wall, and the warning now exists. The paragraph above was
-written as a prediction; the aarch64 suite reached 128 of 128 with 121-123 `Blocked` and had spawns
+Update, 2026-08-27: it hit the wall, and the warning now exists. The paragraph above was a
+prediction; the aarch64 suite reached 128 of 128 with 121-123 `Blocked` and had spawns
 refused with no diagnostic, exactly as described. `sched::MAX_THREADS` is 256 now, on a measured
 peak of 130 (aarch64), 129 (riscv64) and 57 (x86_64), and that constant's own doc comment carries
 the ledger and the four coupled constants that moved with it. Two things closed the gap this
 section names:
 
-- The occupancy is reported rather than invisible. `sched::PEAK_THREADS` is a whole-boot
-  high-water mark and `kernel::testing` prints it in the closing summary beside the frame ledger
-  (`threads: N live at the peak, of M the image allows`). A blocked leak is still invisible to
-  `thread_leak_police`, which is a different question and correctly scoped to runnable spinners,
-  but nobody has to instrument the kernel to see the table filling any more. It reports and does
-  not gate, and `report_thread_peak`'s doc says why: what fills this table is what earlier tests
+- The test harness reports the occupancy, so the fill is visible. `sched::PEAK_THREADS` is a
+  whole-boot high-water mark and `kernel::testing` prints it in the closing summary beside the frame
+  ledger (`threads: N live at the peak, of M the image allows`). A blocked leak is still invisible
+  to `thread_leak_police`, which is a different question and correctly scoped to runnable spinners,
+  but nobody has to instrument the kernel to see the table filling any more. It reports and does not
+  gate, and `report_thread_peak`'s doc says why: what fills this table is what earlier tests
   deliberately left running, so a gate would fire on every milestone that adds a service.
 - The refusal says so. `pipeline_service::start_with`'s second spawn had a bare `?`, which is
   why the wall presented as "the test did not get a shell" rather than as a full thread table.
@@ -191,17 +193,17 @@ The honest remainder: 130 of 256 is 51%, so the same growth curve reaches the sa
 and the answer then should be an account of what the boot keeps alive rather than another
 doubling. `notes/frames.md`'s "held" list is where that account would start.
 
-What the raise cost, and why the next one will not. The first attempt failed `script/bench
---check`: `spawn_el0` moved +16.8%, through two whole-table scans whose cost tracked the ceiling
-rather than the occupancy (the capability sweep, and `revoke`'s space registry). Both are bounded
-by live occupancy now, which left that benchmark 41% below where it had been at 128 slots and, more
-to the point, flat against the constant: doubling to 512 moves it 0.05%. So the next raise is
-cheap in the one place this one was not. `notes/benchmarks/spawn-el0.md`'s 2026-08-27 section has the
-attribution, and `MILESTONE 183` is the structural fix the mitigation does not replace.
+What the raise cost, and why the next one will not. The first attempt failed `script/bench --check`:
+`spawn_el0` moved +16.8%, through two whole-table scans whose cost tracked the ceiling rather than
+the occupancy (the capability sweep, and `revoke`'s space registry). Live occupancy now bounds both,
+which left that benchmark 41% below where it had been at 128 slots and, more to the point, flat
+against the constant: doubling to 512 moves it 0.05%. So the next raise is cheap in the one place
+this one was not. `notes/benchmarks/spawn-el0.md`'s 2026-08-27 section has the attribution, and
+`MILESTONE 183` is the structural fix the mitigation does not replace.
 
 ## The general lesson
 
-A call that returns `Err` may still have done something. `reclaim_region(r).is_err()` reads like
-a question and is an act; the test used it as a question and the comment beside it asserted the
-opposite of the truth. When a semantic is amended, the amendment lands in the function it changed,
-and every caller that encoded the old semantic in a *comment* keeps compiling.
+A call that returns `Err` may still have done something. `reclaim_region(r).is_err()` reads like a
+question and is an act; the test used it as a question and the comment beside it asserted the
+opposite of the truth. When someone amends a semantic, the amendment lands in the function it
+changed, and every caller that encoded the old semantic in a *comment* keeps compiling.
