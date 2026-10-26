@@ -106,8 +106,9 @@ jobs:
           # **A dispatch's `target` is checked before anything reads it** (security audit 2026-10-26,
           # finding 2). A newline in it would write further step outputs, and the target names a
           # toolchain that rustup installs and `propose` runs beside the App token. Later steps
-          # take it through `env:` and never as `${{ }}` in a script, so this check is not the only
-          # thing between a dispatch input and the shell. A nightly's name has one shape.
+          # take it through `env:` and never as an expression interpolated into a script, so this
+          # check is not the only thing between a dispatch input and the shell. A nightly's name
+          # has one shape.
           case "$target" in
             nightly-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
             *) echo "target is not of the form nightly-YYYY-MM-DD; refusing it" >&2; exit 1 ;;
@@ -131,7 +132,7 @@ jobs:
         id: install
         if: steps.plan.outputs.skip == 'false'
         continue-on-error: true  # outcome: exception, a missing nightly is upstream's; the pull request says no restamp ran
-        # Through `env:`, never `${{ }}` in the script, so the plan step's check is not the only
+        # Through `env:`, never an interpolated expression in the script, so the plan step's check is not the only
         # thing between a dispatch input and the shell. `STAMPED` is a space-separated list.
         env:
           STAMPED: ${{ steps.plan.outputs.stamped }}
@@ -355,7 +356,7 @@ jobs:
         id: install
         if: steps.plan.outputs.skip == 'false'
         continue-on-error: true  # outcome: exception, a missing nightly is upstream's, so nothing to propose today
-        # Through `env:`, never `${{ }}` in the script, for the reason `restamp`'s install step gives.
+        # Through `env:`, never an interpolated expression in the script, for the reason `restamp`'s install step gives.
         env:
           TARGET: ${{ steps.plan.outputs.target }}
         run: |

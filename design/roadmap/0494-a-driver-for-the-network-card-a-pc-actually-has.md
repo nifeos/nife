@@ -61,9 +61,9 @@ evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
 
 The I219's PHY half. QEMU's 82574L never takes the PCH path, so xenon is the test.
 
-- FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/pch/` (Reuse, below): MDIO
-  under the semaphore (`phy.rs`), the NVM read (`nvm.rs`), and FreeBSD's three passes
-  (`sequence.rs`), called by the kernel through a small `Hw` trait.
+- FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/pch/` (Reuse, below): MDIO under
+  the semaphore (`physical_layer_device.rs`), the NVM read (`non_volatile_memory.rs`), and FreeBSD's
+  three passes (`sequence.rs`), called by the kernel through a small `Hw` trait.
 - Fifteen host tests against a simulated I219 (`pch/sim.rs`). The semaphore is a non-`Clone` token,
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
@@ -207,7 +207,7 @@ block's own BUGS list:
 | leave ultra-low-power mode through the Management Engine | `e1000_disable_ulp_lpt_lp`, ME branch | ported, `crates/e1000e/src/pch/` (`ulp`, `sequence`) |
 | empty the descriptor rings before a reset (SPT unit hang) | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` | ported, one recorded divergence (`pch::flush::tail_after`) |
 | stop bus mastering before reset; STRAP writes around it; `KABGTXD.BGSQLBIAS` after | `e1000_disable_pcie_master_generic`, `e1000_reset_hw_ich8lan` | ported |
-| leave ULP without an ME, the `SMBus` switch and `LANPHYPC`; the semaphore and MDIO; the PHY reset and its NVM-driven configuration; the SPT NVM read; hardware bits, copper link, transmit errata | `e1000_init_phy_workarounds_pchlan` and what it calls, `e1000_acquire_swflag_ich8lan`, `__e1000_read_phy_reg_hv`, `e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_read_nvm_spt`, `e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt` | ported 2026-10-05, `pch/phy.rs`, `pch/nvm.rs`, `pch/sequence.rs`; each function's comment names its source, and the divergences are in `pch`'s `BUGS` |
+| leave ULP without an ME, the `SMBus` switch and `LANPHYPC`; the semaphore and MDIO; the PHY reset and its NVM-driven configuration; the SPT NVM read; hardware bits, copper link, transmit errata | `e1000_init_phy_workarounds_pchlan` and what it calls, `e1000_acquire_swflag_ich8lan`, `__e1000_read_phy_reg_hv`, `e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_read_nvm_spt`, `e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt` | ported 2026-10-05, `pch/physical_layer_device.rs`, `pch/non_volatile_memory.rs`, `pch/sequence.rs`; each function's comment names its source, and the divergences are in `pch`'s `BUGS` |
 | reconfiguration each time link comes up | `e1000_check_for_copper_link_ich8lan` | not ported: it runs from a link-change interrupt this driver does not take (Follow-on) |
 
 Intel's license heads every adapted file. FreeBSD read at `main`, last `e1000_ich8lan.c` change
