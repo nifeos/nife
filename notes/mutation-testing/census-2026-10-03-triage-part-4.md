@@ -14,7 +14,7 @@ census did not list (a mutated loop step in `pieces`, `write_found`, `pad`, `com
 `command_position` and `split`, which hang rather than survive).
 
 - `PATH_MAX` (4). The longest installed path, three 32-byte fields, fills the array to the last byte.
-  A bound too small refuses a legal install; one too large is noticed by the length check.
+  A bound too small refuses a legal install; the length check notices one too large.
 - `Lister` (8). A row of exactly 78 columns stays one row and one column more wraps. Three names so
   the column carried after the second is tested, and a directory's `/` takes a column.
   An empty listing prints no newline.
@@ -80,8 +80,8 @@ a wrong constant is consistent with itself and every round-trip test passed. The
 them pins the layout from the crate docs by hand: the magic, the three names at 8, 40 and 72, the
 count at 104, the first entry at 112 and its offset, length and digest words. The rest:
 
-- The ceiling is inclusive in both directions: 64 members write and parse, 65 are refused by the
-  writer, and a count word raised to 65 is refused by the reader.
+- The ceiling is inclusive in both directions: 64 members write and parse, the writer refuses 65,
+  and the reader refuses a count word raised to 65.
 - An empty package is exactly a header, and a table cut one byte short is `Truncated`.
 - `member_name(count)` is `None`, as `member(count)` already was.
 - The longest stem fills `STEM_LEN` exactly (98 bytes).
@@ -118,7 +118,7 @@ The 10 equivalents are all `|` as `^` where the two operands share no bit:
 
 - Every value of every enumerated field round-trips, one field at a time: the argument kinds, the
   file, directory and output kinds. An arm of `decode` for a value no round trip named was an arm
-  nobody would notice losing. The second stream's slot is checked by a `should_panic` test.
+  nobody would notice losing. A `should_panic` test checks the second stream's slot.
 - The boundaries: a descriptor of four bytes is the wrong length and not "no version", sixteen
   options and an empty memory range are accepted, and the last byte of the layout is checked.
 - A subtree option must be a declared letter, including when it is the only letter (the `!=`

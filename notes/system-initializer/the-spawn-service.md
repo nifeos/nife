@@ -7,24 +7,24 @@ The child's table layouts are in [`the-child-layouts.md`](the-child-layouts.md).
 
 A request on an installer endpoint comes from a package manager (milestone 809 (the package client
 becomes a program), §270 (a package manager holds an installer endpoint, not the spawn endpoint)).
-Install, remove and rollback are served as the owner's console's would be, under the holder's name.
-Anything else is refused with nothing read past the first message, so a holder can neither spawn nor
-vouch. The answer goes to the holder's own reply endpoint, because the shell is reading `result_ep`
-while that program runs.
+`serve_installer` serves install, remove and rollback as it would the owner's console's, under the
+holder's name. It refuses anything else with nothing read past the first message, so a holder can
+neither spawn nor vouch. The answer goes to the holder's own reply endpoint, because the shell is
+reading `result_ep` while that program runs.
 
 On the spawn endpoint, an edit to the installed-programs table is asked first, because under that
 bit no other bit of word 2 means anything. Only the owner's console sends it (`vouch`).
 
 Everything else is a spawn, in one of two shapes (`grant_plan::spawnproto`):
 
-- A normal job. The shell sends the request and, if `--mem` rode along, one delegated untyped. The
-  progenitor splits a region off the job pool and builds the child in it. It endows the result
-  endpoint and a supervision endpoint, and starts the child.
-- A supervised, interruptible job. The shell leads with a job untyped and a shared job frame. The
-  child is built entirely from that untyped, so the shell's region owns it and can `DESTROY` it
-  (§24 (interrupting the foreground process)). The job frame is mapped and nothing else is endowed.
-  `SPAWN_OK` is the shell's go-ahead, and the job's `ThreadControlBlock` is the one message after it
-  (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)).
+- A normal job. `Service::spawn_job` builds the child in a region it splits off the job pool, with
+  a supervision endpoint in its fault slot.
+- A supervised, interruptible job. The shell leads with a job untyped and a shared job frame.
+  `Service::spawn_interruptible` builds the child entirely from that untyped, so the shell's region
+  owns it and can `DESTROY` it (§24 (interrupting the foreground process)). It maps the job frame
+  and endows nothing else. `SPAWN_OK` is the shell's go-ahead, and the job's `ThreadControlBlock` is
+  the one message after it (§309 (a supervised job's `ThreadControlBlock` goes to the shell that
+  asked for it)).
 
 Only the normal shape is supervised by the progenitor. An interruptible job's region belongs to the
 shell, which tears it down on the second `^C` and after a clean finish. A supervision endpoint here
@@ -33,29 +33,32 @@ the shell's `DESTROY`.
 
 ## The request, in protocol order
 
-The shell sends a request's parts in a fixed order. The progenitor takes every part a request
-announced, whether or not this request turns out to need it. Otherwise the endpoint would be left
-holding words the next command reads as its own.
+The shell sends a request's parts in a fixed order, and `Service::read_request` takes them in that
+order. The progenitor takes every part a request announced, whether or not this request turns out
+to need it. Otherwise the endpoint would be left holding words the next command reads as its own.
 
 1. The directory grant's two data messages.
 2. The image's frames, then the argv frame, then the name set's frame.
-3. The delegated capabilities: the job untyped and frame, sink, source, diagnostics, the
-   screen-narrowed tail's completion endpoint, the `--mem` untyped and the machine statistics page.
+3. The delegated capabilities, in `receive_delegated`'s order: the job untyped and frame, sink,
+   source, diagnostics, the screen-narrowed tail's completion endpoint, the `--mem` untyped and the
+   machine statistics page.
 4. Last, one `SEND` on the run-unvouched endpoint. It proves only that the caller holds `WRITE`
    there, which is all it has to.
 
-Only a `std` program reads the argv. Any other program has its frame taken and hears nothing.
+[`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md) has the
+exchange from the shell's side. Only a `std` program reads the argv. Any other program has its
+frame taken and hears nothing.
 
 Under the image bit word 0 is a length, not a program (§219 (how the shell names an installed program to the spawner) option D). No row of the program table
 is consulted: the program is whatever the bytes are.
 
 ## Images
 
-An image request is carved twice from the image pool once the request has been read to its end
-(milestone 685 (a job is finished when its memory is back)). The child's region is split first and
-the staging region second. So the staging region is the pool's top carve when it is destroyed after
-the build, and its pages go back. A region returns its pages to its parent only when it is the most
-recent carve.
+Once the request has been read to its end, `Service::carve_image` carves it twice from the image
+pool (milestone 685 (a job is finished when its memory is back)). It splits the child's region first
+and the staging region second. So the staging region is the pool's top carve when
+`Service::spawn_job` destroys it after the build, and its pages go back. A region returns its pages
+to its parent only when it is the most recent carve.
 
 An image that hears words is a `std` program and gets a `std` region (milestone 205 (how a foreign
 program is told what to do)). The note that says which is inside frames not yet copied. So the argv
@@ -73,9 +76,11 @@ is built only for a caller that presented the run-unvouched capability. It then 
 request. An image is endowed only from what `endowed_image` decided, never from a program row, so no
 row's authority reaches it.
 
-A program with a verb table is narrowed by the line's verb (milestone 809, option V2): `jig list`
-is endowed with the catalog alone. The verb is read from the shell's page before the region is split,
-because an installer holder's region is sized and pooled from its manifest. It is read again from
+A named program with a verb table is narrowed by the line's verb (milestone 809, option V2): `jig
+list` is endowed with the catalog alone. `endowed_image` refuses installed bytes that carry a verb
+table, because endowing them from the manifest alone would hand every line every verb's grants.
+`Service::resolve` reads the verb from the shell's page before the region is split, because an
+installer holder's region is sized and pooled from its manifest. `copy_args` checks it again against
 the child's own copy. A page changed between the two reads refuses the spawn rather than endowing for
 one verb and running another.
 
@@ -93,9 +98,10 @@ Each session's drivers get narrowed copies, as `boot_terminal` is lent to the UA
 children are born from one region, and the session program is born supervised on `deaths`. So its
 one reap by `job_undertaker` ends the drivers with it.
 
-A session that does not come up is a refused spawn and not a trap. The shell says "could not
-spawn", the prompt continues, and the builder reclaims the region itself. A boot that cannot come up
-is a dead machine, but a launch that cannot is a command that failed.
+A session that does not come up is a refused spawn and not a trap, except for the line discipline
+the crate's BUGS names. The shell says "could not spawn", the prompt continues, and the builder
+reclaims the region itself. A boot that cannot come up is a dead machine, but a launch that cannot
+is a command that failed.
 
 ## What a manifest declares that no command line can
 
@@ -109,11 +115,11 @@ child an empty slot, which is what its second stream reports. `grant_plan::image
 
 ## A normal job's region and grants
 
-A normal job's region is split before anything is built. A directory grant's caretaker is built from
-the same region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
-That is the mechanism of §40 (a supervisor's death is its subtree's death): a child's resources come
-from its supervisor's region. One reclaim ends both, and the caretaker cannot outlive the grant it
-carries.
+`Service::spawn_job` splits a normal job's region before it builds anything. The progenitor builds a
+directory grant's caretaker from the same region as the program it serves (§92 (a caretaker is
+supervised by the client it serves)). That is the mechanism of §40 (a supervisor's death is its
+subtree's death): a child's resources come from its supervisor's region. One reclaim ends both, and
+the caretaker cannot outlive the grant it carries.
 
 A `std` program's region is larger, because it is also the heap; see
 `grant_plan::STD_REGION_PAGES` for why one region rather than two. It covers a caretaker too. An
@@ -123,10 +129,12 @@ heap, and the progenitor's copy of the package is carved beside it.
 A directory grant takes the job's own window (milestone 599 (a frame per filesystem client
 channel)). The window is a page and the file server's endpoint badged with it. The caretaker calls
 with the endpoint, and the caretaker and the job both map the page. When the server enforces grants
-itself, the badge is bound to the grant's directory before the job holds anything (milestone 606 (a directory walk costs what it does on Linux),
-rulings D and T1). Then no caretaker is built, and any failure on the way falls back to one. A grant
-in the second mounted tree takes a window from that tree's pool and always gets a caretaker, since
-that server enforces no subtree.
+itself, it binds the badge to the grant's directory before the job holds anything (milestone 606 (a
+directory walk costs what it does on Linux), rulings D and T1). Then a directory grant needs no
+caretaker, and any failure on the way falls back to one. A name set still gets
+`fs_nameset_caretaker` over the bound channel, because the set is what narrows the directory
+(`Service::wire_directory`). A grant in the second mounted tree takes a window from that tree's pool
+and always gets a caretaker, since that server enforces no subtree.
 
 The window is held until `job_undertaker` reports the job reaped (milestone 685). `label` is the
 name on the job's supervision capability, and the reaped message carries it back. A pool whose every
@@ -177,25 +185,33 @@ whoever supervises, because a reclaimed region returns to its builder (§26 (the
 
 ## After the build
 
-Once the child is built, the progenitor deletes every capability that was only the means of
-building. That is its copies of the delegated capabilities, the labeled supervision copy, the
-narrowed and sync endpoints and the resolver and stdin badges. It is also the window's page and
-endpoint, the catalog, sources and argv pages, and its capability to the job's region. They go
-whether or not the build worked, so a failed spawn does not cost the progenitor's table a slot for
-the rest of the boot.
+After a build, the progenitor deletes every capability that was only the means of building it.
+`Service::serve` deletes its copies of the delegated capabilities, and `Service::finish_job` the
+rest. They go whether or not the build worked, so a failed spawn does not cost the progenitor's
+table a slot for the rest of the boot.
 
 Nothing in the system holds a capability to a live job's memory. Since §32 (a supervisor may collect
 a corpse without being able to build one) the reap is a method on the supervision endpoint.
 
-A job that never started is never reaped. So its window is freed, its resolver grant forgotten and
-its region reclaimed at once. A started job under `job_undertaker` whose answer goes to the shell's
-result endpoint is one a later short pool may wait for. The shell reads that answer to its end before
-sending another request (`ReapsDue`).
+A job that never started is never reaped, so `Service::finish_job` frees its window, forgets its
+resolver grant and reclaims its region at once. A started job under `job_undertaker` whose answer
+goes to the shell's result endpoint is one a later short pool may wait for. The shell reads that
+answer to its end before sending another request (`ReapsDue`).
 
 A redirected or screen-narrowed child owes the shell no answer of its own. The shell would then have
 nothing to read and no way to learn of a failure, so the progenitor sends one `SPAWN_OK` or failure
 word for it. An unredirected child's own message is the shell's single read, and a failure is the
 sentinel. A child that was never built cannot end its own second stream. The shell drains that stream
 to `OPERATION_EOF` before it reads anything else, so the progenitor sends the end for it.
+
+## BUGS
+
+- [`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md)'s "The
+  exchange, in order" omits the image frames, the argv frame and the name set's frame, which
+  `Service::read_request` takes after the directory grant's messages.
+- A graphical request does not lose every delegated copy. `Service::serve` returns from the
+  graphical path before the loop that deletes them, and `launch_graphical_terminal` deletes only
+  `budget` and `machine_page`. A graphical request that also carries a sink, source, diagnostics,
+  screen or job pair leaks those slots, against "they go whether or not the build worked" above.
 
 *Name: provisional. calef names files.*

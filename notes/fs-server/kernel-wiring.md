@@ -38,10 +38,10 @@ buy a copy and no isolation, since the client is entitled to the bytes either wa
 That argument fails at startup, and the ordering in `wait_for_caretaker` is the fix. A caretaker
 stages its granted name in the shared page and then blocks in a `CALL` to the FS server. When the
 same call wired the service, the FS server is still parked in its readiness `SEND`. That `CALL`
-waits until the sentinel is drained. A client that already existed had that whole window to write
-its own first name over the page, and the caretaker, which will not serve a hole, would die and
-leave its client blocked forever. So the wiring drains the service, waits for the caretaker's own
-sentinel, and only then spawns the program.
+waits until the wiring drains the sentinel. A client that already existed had that whole window to
+write its own first name over the page, and the caretaker, which will not serve a hole, would die
+and leave its client blocked forever. So the wiring drains the service, waits for the caretaker's
+own sentinel, and only then spawns the program.
 
 A set does not fit in `START` registers, so the set grant encodes it into a frame of its own,
 mapped read-only into the caretaker before it is spawned. No client can reach that frame, so it

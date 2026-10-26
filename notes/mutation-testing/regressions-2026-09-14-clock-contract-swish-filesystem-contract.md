@@ -73,8 +73,8 @@ tail when nothing was truncated, and no test forbade it.
 routes `date && wc` down the single-command path and drops everything after the first connector.
 Every fixture asked it only of a one-segment line.
 
-One kill is a side effect. `write_duration`'s `(nanos % SEC) / MILLI` under `+` is killed by a new
-assertion that the printer is total on every `u64`. That assertion earns its place on its own
+One kill is a side effect. A new assertion that the printer is total on every `u64` kills
+`write_duration`'s `(nanos % SEC) / MILLI` under `+`. That assertion earns its place on its own
 merits. The shell hands the printer `end - start` off a counter it does not own, and a clock that
 went backwards produces a number nobody chose. It kills the mutant by overflow rather than by
 disagreement. The two mutants in the smaller units, where the addition cannot overflow, are
@@ -93,9 +93,9 @@ equivalent instead.
   `Prog::from_name(b"")` falls to its `_ => None`. Same output, by two routes.
 - `Sequence::is_empty` under a constant `false` (1). The function is documented "never true",
   and the invariant holds. `split` always produces at least one segment, so `self.n == 0` is
-  `false` for every value this type can take. `-> true` and `==` under `!=` are killed by the
-  assertions added beside `is_plain`. This third one cannot be, because it is what the function
-  already does.
+  `false` for every value this type can take. The assertions added beside `is_plain` kill `-> true`
+  and `==` under `!=`. No test can kill this third one, because it is what the function already
+  does.
 
 The 11 timeouts are hangs, the same loop-control family as `dtb` and `clock_contract`. They are
 `echo`'s word cursor under `-=` and `*=`, `write_found`'s digit loop under `>=`, `pad`'s
@@ -139,11 +139,12 @@ Grouped so a later reader can re-check them by group rather than one at a time.
 - Packed wire words whose fields are bit-disjoint (8). `blk::req`, `fs::req` (two),
   `fs::rename_dst`, `grant::spec`, `nameset::encode`, `xattr::spec` and `xattr::reply` all build one
   word as `(field << shift) | (other & mask)`. Each shift clears exactly the bits the mask keeps,
-  so `|` and `^` are the same function on those operands. The disjointness is proved, not assumed,
-  by `a_handle_never_collides_with_the_opcode_or_length`,
+  so `|` and `^` are the same function on those operands.
+  `a_handle_never_collides_with_the_opcode_or_length`,
   `a_granted_name_survives_the_two_argument_words` and
-  `a_rename_carries_two_directories_and_two_lengths_without_them_bleeding`. `nameset`'s type bit is
-  `1 << 7`, against a length the encoder refuses above `grant::MAX_NAME`.
+  `a_rename_carries_two_directories_and_two_lengths_without_them_bleeding` prove the disjointness
+  rather than assume it. `nameset`'s type bit is `1 << 7`, against a length the encoder refuses
+  above `grant::MAX_NAME`.
 - Unions of distinct single-bit rights (14). `dir::ALL`, `dir::REMOVE_TREE`, `Verb::mutates`'s
   mutating mask, and four `needs_any`/`needs_all` rows in `verb::TABLE`. Every operand is a
   distinct `1 << n`, so `^` is `|`. That the bits are distinct is itself pinned, by

@@ -28,7 +28,7 @@ have killed one.
 
 The writer was not the cost, though, and nobody had noticed. `builder` also gates six of the crate's
 twelve index tests, because a test that reads an index needs `build` to make one. So the run compiled
-away half the index suite and scored the reader against what was left. `lookup`, `postings`,
+away half the index suite and scored the reader against what remained. `lookup`, `postings`,
 `page_record`, `score`, `Ranked::offer`, `search` and `location` had no test at all in the
 configuration being measured.
 
@@ -154,10 +154,10 @@ Thirty, recorded as gaps rather than equivalents:
   an implementation constant rather than a property. `read_align`'s cell walk wants the same.
 - The output cursor where it feeds a wrap (4). `unit`, `unit_bytes`, `unit_wrapped` and
   `before_unit` are the four places `col` is read again before `line_start` resets it. The three
-  passes above killed the ones that reach zero or move a visible wrap. What is left needs the cursor
+  passes above killed the ones that reach zero or move a visible wrap. What remains needs the cursor
   wrong by an amount that lands on a wrap boundary.
-- `past_quote`'s loop bound (2). Its three length tests are separated by the blank-quoted-line test
-  above. The two on the loop condition itself want a fence opened at a depth greater than the
+- `past_quote`'s loop bound (2). The blank-quoted-line test above separates `past_quote`'s three
+  length tests. The two on the loop condition itself want a fence opened at a depth greater than the
   markers any line inside it carries, at the exact byte where the line ends.
 
 A mutation of any of these changes behavior only for an input this repository's markdown does not

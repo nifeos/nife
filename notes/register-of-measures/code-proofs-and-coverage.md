@@ -20,9 +20,9 @@ more.
 
 ## Rust in the tree
 
-The series counts every tracked `.rs` file outside `vendor/`, with `kernel/src` split from the
-rest. The kernel is commented far more heavily than production code would be, deliberately. A
-single tree-wide ratio would hide that.
+The series counts every tracked `.rs` file outside `vendor/`, with `kernel/src` split from the rest.
+The kernel carries far more comments than production code would, deliberately. A single tree-wide
+ratio would hide that.
 
 A line counts as code if anything survives blanking its comments and string literals, and as a
 comment otherwise. A line with code and a trailing comment is code.
@@ -165,7 +165,7 @@ Hold these caveats against the numbers:
 - Today's exemptions acted on exactly the files each week's own `script/coverage` exempted. The list
   only grew, and in every one of these lcovs the only exempt file present is `crates/virtio`, exempt
   since 2026-07-31. There is one `build.rs`, in W38's, and W38's script already exempted build
-  scripts. The protocol crates that were renamed on 2026-09-14 were never exempt, so the old
+  scripts. The protocol crates that took new names on 2026-09-14 were never exempt, so the old
   `_proto` names do not matter. The earlier objection, that a minimum taken today covers a
   population that week's gate did not have, therefore does not apply to these eight weeks.
 - 2026W30 stays empty. Its commit predates the floor, which arrived on 2026-07-27. The pass reads
@@ -231,7 +231,8 @@ proving nothing. Watch the direction on this chart; a drop deserves more attenti
   backfill would repeat it by hand.
 - Nothing ties `floor.txt` to a commit, any more than it ties the lcov to one. `--coverage-min-from`
   believes the caller about which week it measured.
-- The cell is carried across a `--backfill` like the aggregate. After a row is repointed at a later
-  commit of the same week, the minimum describes the earlier commit until someone re-measures.
+- `script/metrics` carries the cell across a `--backfill`, like the aggregate. After a row is
+  repointed at a later commit of the same week, the minimum describes the earlier commit until
+  someone re-measures.
 - The minimum is one file. Two files at 81% and one at 81% draw the same bar. `floor.txt`'s band
   counts show the difference; the chart does not.

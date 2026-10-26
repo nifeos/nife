@@ -114,10 +114,11 @@ B1 passes, and for the first time a stranger opened a `design/decisions/` file. 
 own debrief: `README.md`, `rust-toolchain.toml`, `.cargo/config.toml`, `notes/adding-a-program.md`,
 `notes/capabilities.md`, `CONTRIBUTING.md`, `design/roadmap/README.md` (part), `AGENTS.md` lines 1
 to 140, `notes/program-manifest.md`, `design/decisions/README.md` and
-`0158-a-program-is-declared-once.md` (part), `AGENTS.md` again (lines 692 to 851), `design/naming.md`
-(part), `notes/grant-expression.md`, `design/fatal-risks/README.md`, then source. It went to item 7 of the
-reading order fourth, because that is the page for its task, and used the order as an index, as run
-4 did. `AGENTS.md` was opened, unlike in run 5, and read in two slices.
+`0158-a-program-is-declared-once.md` (part), `AGENTS.md` again (lines 692 to 851),
+`design/naming.md` (part), `notes/grant-expression.md`, `design/fatal-risks/README.md`, then source.
+It went to item 7 of the reading order fourth, because that is the page for its task, and used the
+order as an index, as run 4 did. The stranger opened `AGENTS.md`, unlike in run 5, and read it in
+two slices.
 
 B2 is not measured, as registered. The toolchain was pinned and present, and its first entry says
 *"this sandbox was clearly prepared in advance for this repo"*. What it measured instead is what a

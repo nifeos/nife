@@ -12,8 +12,8 @@ moved since. Every crate below was re-run with `script/mutation -p <crate>` on t
 Batch 6 left 201 survivors in 39 crates. 114 of them already had a row in
 `notes/project-metrics/mutation-triage.csv`, written by the inflow lanes (`lane/326-survivors`, `-2`
 and `-3`, 2026-10-05) after batch 6 counted. They are taken as those lanes left them, and checked:
-all 100 rows marked killed are caught by the re-run, and the 14 marked equivalent are still
-reported. One of the 14 is reported under a new key, because `screen_console`'s `copy_wide` is now
+the re-run catches the mutants of all 100 rows marked killed, and still reports the 14 marked
+equivalent. One of the 14 is reported under a new key, because `screen_console`'s `copy_wide` is now
 `copy_wide_screen`.
 
 That leaves 87 with no row. They now have 64 rows (some mutants share a key): 10 killed by new
@@ -65,7 +65,7 @@ Argued in earlier appendices, and still reported by this re-run (39):
 - [regressions-2026-09-14-capability-to-device-tree-blob](regressions-2026-09-14-capability-to-device-tree-blob.md): `capability::note_peak` and
   `device_tree_blob::cells`.
 - [regressions-2026-09-14-clock-contract-swish-filesystem-contract](regressions-2026-09-14-clock-contract-swish-filesystem-contract.md):
-  `clock_protocol`'s three. `publish` is killed by `script/interleaving-check`.
+  `clock_protocol`'s three. `script/interleaving-check` kills `publish`.
 - [baseline-survivors-abi-to-ipc](baseline-survivors-abi-to-ipc.md):
   `inter_process_communication::one_queue_invariant` and `page_frames::alloc_contiguous`.
 - [job-mix-and-jh7110-entropy](job-mix-and-jh7110-entropy.md): `jh7110_entropy`'s six and
