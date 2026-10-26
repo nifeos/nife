@@ -1,4 +1,4 @@
-Falsifies `e1000e::pch::phy::proofs::a_paged_access_selects_the_offsets_own_page_and_register`.
+Falsifies `e1000e::pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register`.
 
 The defect: the page bound goes back to the 16-bit page field FreeBSD masks with, so a page above
 0x7ff is accepted and its select value (`page << 5`) is truncated to 16 bits. The access then lands
@@ -7,9 +7,9 @@ the same input.
 
 Expected to fail: the select assertion, on any offset whose page is 0x800 or more.
 
-diff --git a/crates/e1000e/src/pch/phy.rs b/crates/e1000e/src/pch/phy.rs
---- a/crates/e1000e/src/pch/phy.rs
-+++ b/crates/e1000e/src/pch/phy.rs
+diff --git a/crates/e1000e/src/pch/physical_layer_device.rs b/crates/e1000e/src/pch/physical_layer_device.rs
+--- a/crates/e1000e/src/pch/physical_layer_device.rs
++++ b/crates/e1000e/src/pch/physical_layer_device.rs
 @@ -285,7 +285,7 @@
  pub const fn plan(offset: u32) -> Result<Plan, Error> {
      let page = offset >> PAGE_SHIFT;
@@ -18,4 +18,4 @@ diff --git a/crates/e1000e/src/pch/phy.rs b/crates/e1000e/src/pch/phy.rs
 +    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > 0xffff {
          return Err(Error::PageNotPorted);
      }
-     let phy = address_for(page);
+     let physical_layer_device_address = address_for(page);

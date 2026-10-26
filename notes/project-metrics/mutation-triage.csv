@@ -1098,9 +1098,9 @@ e1000e,Swflag::release,replace & with |,killed,killed by the_semaphore_touches_o
 e1000e,accessible,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,accessible,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,accessible,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: init_phy_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: init_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
 e1000e,accessible,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: init_phy_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: init_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
 e1000e,config_done,delete !,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace != with ==,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace & with ^,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
@@ -1129,12 +1129,12 @@ e1000e,global_reset,replace / with %,killed,"killed by a_configuration_that_neve
 e1000e,global_reset,replace / with *,killed,killed by stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead
 e1000e,global_reset,replace == with !=,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead"
 e1000e,global_reset,replace | with ^,killed,killed by stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead
-e1000e,id_at,replace & with ^,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace & with |,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace << with >>,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(0)",killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(1)",killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace | with &,killed,killed by the_phy_id_is_both_words_without_the_revision
+e1000e,id_at,replace & with ^,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace & with |,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace << with >>,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(0)",killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(1)",killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace | with &,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
 e1000e,id_at,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,init_hardware,delete !,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
 e1000e,init_hardware,replace != with ==,killed,killed by init_hardware_writes_freebsds_values_from_any_starting_state
@@ -1152,10 +1152,10 @@ e1000e,leave_ulp,replace / with *,killed,killed by the_me_gets_two_and_a_half_se
 e1000e,leave_ulp,replace < with <=,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
 e1000e,leave_ulp,replace < with ==,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
 e1000e,leave_ulp,replace < with >,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp_by_phy,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace | with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace | with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,oem_bits,delete !,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace != with ==,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace & with ^,killed,killed by the_oem_bits_follow_the_mac
@@ -1165,13 +1165,13 @@ e1000e,oem_bits,"replace oem_bits -> Result<(), Error> with Ok(())",killed,kille
 e1000e,oem_bits,replace | with &,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace | with ^,equivalent,"GBE_DIS (0x40) and LPLU (0x04) share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,oem_bits,replace |= with &=,killed,killed by the_oem_bits_follow_the_mac
-e1000e,phy_reset_generic,replace | with ^,equivalent,"CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it, and a global reset returns CTRL to its defaults, so ctrl | PHY_RST and ctrl ^ PHY_RST agree; the 2026-10-12 per-crate re-run still reports it"
-e1000e,phy_reset_ich8lan,"replace phy_reset_ich8lan -> Result<(), Error> with Ok(())",killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,physical_layer_device_reset_generic,replace | with ^,equivalent,"CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it, and a global reset returns CTRL to its defaults, so ctrl | PHY_RST and ctrl ^ PHY_RST agree; the 2026-10-12 per-crate re-run still reports it"
+e1000e,physical_layer_device_reset_ich8lan,"replace physical_layer_device_reset_ich8lan -> Result<(), Error> with Ok(())",killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
 e1000e,plan,replace > with ==,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
 e1000e,plan,replace > with >=,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
-e1000e,post_phy_reset,delete !,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,post_phy_reset,replace & with ^,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,post_phy_reset,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,post_physical_layer_device_reset,delete !,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,post_physical_layer_device_reset,replace & with ^,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,post_physical_layer_device_reset,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
 e1000e,read_u32_at_byte,delete !,equivalent,"line 197's mutant keeps only the old byte-count field before setting it to three, dropping the other HSFCTL bits: GO (self-clearing), the cycle type (cleared on the next line) and reserved bits (FreeBSD's ich8_hws_flash_ctrl), so the cycle starts the same. Line 198's is killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone; the 2026-10-12 per-crate re-run still reports it"
 e1000e,read_u32_at_byte,replace != with ==,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
 e1000e,read_u32_at_byte,replace & with ^,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
@@ -1337,10 +1337,10 @@ designware_mobile_storage,sd_power_up,delete !,killed,killed by an_sd_card_is_ad
 designware_mobile_storage,sd_power_up,replace & with ^,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace & with |,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace > with >=,equivalent,"as for mmc_power_up: the same PowerUp error with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond; the 2026-10-12 per-crate re-run still reports it"
-e1000e,ulp::done,replace & with |,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::done,replace ulp::done -> bool with false,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::has_management_engine,replace & with |,killed,"killed by without_an_me_ulp_is_left_by_phy_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::has_management_engine,replace ulp::has_management_engine -> bool with true,killed,"killed by without_an_me_ulp_is_left_by_phy_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::done,replace & with |,killed,"killed by with_an_me_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::done,replace ulp::done -> bool with false,killed,"killed by with_an_me_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::has_management_engine,replace & with |,killed,"killed by without_an_me_ulp_is_left_by_physical_layer_device_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::has_management_engine,replace ulp::has_management_engine -> bool with true,killed,"killed by without_an_me_ulp_is_left_by_physical_layer_device_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 machine_discovery,IvrsUnits::read_ivmd,replace << with >>,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 machine_discovery,IvrsUnits::read_ivmd,replace || with &&,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 abi,cycle_counter::CycleMeaning::is_core_cycles,delete !,killed,"the pre-split name of CycleMeaning::is_core_cycles (inflow-2026-10-12-triage.md, Renames); killed by only_the_reference_clock_is_not_core_cycles, re-run with cargo mutants at base deff22e9f"

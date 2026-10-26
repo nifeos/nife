@@ -1,9 +1,10 @@
 //! **The I219 bring-up, in FreeBSD's order.**
 //!
-//! A driver calls three passes in this order: [`init_phy_workarounds`] at attach, [`global_reset`]
-//! after its descriptor-ring flush, and [`init_hardware`] before the rings are programmed, with
-//! [`transmit_errata`] once transmit is on. Only FreeBSD's `e1000_pch_spt` branches are carried
-//! ([`super::is_pch`]), and each function names the FreeBSD function it follows.
+//! A driver calls three passes in this order: [`init_physical_layer_device_workarounds`] at attach,
+//! [`global_reset`] after its descriptor-ring flush, and [`init_hardware`] before the rings are
+//! programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's `e1000_pch_spt`
+//! branches are carried ([`super::is_pch`]), and each function names the FreeBSD function it
+//! follows.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -38,7 +39,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-use super::phy::{self, Swflag, r};
+use super::physical_layer_device::{self, Swflag, r};
 use super::{Hardware, delay_ms, flush_writes, non_volatile_memory, regs, reset, ulp};
 use crate::regs as mac;
 
@@ -46,25 +47,37 @@ use crate::regs as mac;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// A PHY access failed.
-    Phy(phy::Error),
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `Phy` (an
+    /// abbreviation).
+    PhysicalLayerDevice(physical_layer_device::Error),
     /// An NVM read failed, or no bank is valid ("EEPROM not present" in FreeBSD).
     ///
     /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
     /// `Nvm` (an abbreviation, as the module's `nvm` was).
     NonVolatileMemory(non_volatile_memory::Error),
     /// The PHY did not answer after the `SMBus` force, the `LANPHYPC` power cycle and the unforce.
-    PhyInaccessible,
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyInaccessible`
+    /// (an abbreviation).
+    PhysicalLayerDeviceInaccessible,
     /// The PHY did not answer and firmware blocks the `LANPHYPC` toggle that would have reset it.
     LanphypcBlocked,
     /// Firmware began blocking PHY access after the PHY reset.
-    BlockedAfterPhyReset,
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused
+    /// `BlockedAfterPhyReset` (an abbreviation).
+    BlockedAfterPhysicalLayerDeviceReset,
     /// `CTRL.RST` did not self-clear.
     ResetTimeout,
 }
 
-impl From<phy::Error> for Error {
-    fn from(e: phy::Error) -> Self {
-        Error::Phy(e)
+impl From<physical_layer_device::Error> for Error {
+    fn from(e: physical_layer_device::Error) -> Self {
+        Error::PhysicalLayerDevice(e)
     }
 }
 
@@ -74,7 +87,7 @@ impl From<non_volatile_memory::Error> for Error {
     }
 }
 
-/// Where the PHY was first seen to answer, in [`init_phy_workarounds`].
+/// Where the PHY was first seen to answer, in [`init_physical_layer_device_workarounds`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reached {
     /// At once: the interconnect was already PCIe.
@@ -102,20 +115,31 @@ pub enum Note {
     /// There is no ME; ULP was left by PHY registers, with this outcome.
     UlpBySoftware(Result<(), Error>),
     /// The PHY answered, with this identifier (revision masked off).
-    PhyReached {
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyReached` (an
+    /// abbreviation).
+    PhysicalLayerDeviceReached {
         /// Where.
         at: Reached,
         /// `PHY_ID1:PHY_ID2`, revision nibble cleared.
         id: u32,
     },
     /// Firmware blocks PHY resets, so FreeBSD's PHY reset was skipped.
-    PhyResetBlocked,
+    ///
+    /// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as
+    /// `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an abbreviation).
+    PhysicalLayerDeviceResetBlocked,
     /// `STATUS.LAN_INIT_DONE` did not rise in 150 ms after a reset.
     LanInitTimeout,
     /// `STATUS.PHYRA` was not set after a PHY reset (FreeBSD: "needs delay").
-    PhyResetNotAsserted,
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused
+    /// `PhyResetNotAsserted` (an abbreviation).
+    PhysicalLayerDeviceResetNotAsserted,
     /// The semaphore could not be taken before the global reset; FreeBSD resets anyway.
-    SwflagBeforeReset(phy::Error),
+    SwflagBeforeReset(physical_layer_device::Error),
     /// Master requests were still pending when the reset went ahead.
     MasterRequestsPending,
     /// The NVM's extended configuration region was replayed into the LAN connected device (LCD,
@@ -143,7 +167,7 @@ pub enum Note {
     #[doc(alias = "smbus")]
     SystemManagementBusFrequencyUnsupported,
     /// The host wakeup bit could not be read after the reset, so it was left as it was.
-    HostWakeupUnread(phy::Error),
+    HostWakeupUnread(physical_layer_device::Error),
 }
 
 // `CTRL` bits.
@@ -244,7 +268,11 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 // ---------------------------------------------------------------------------------------------
 
 /// **`e1000_init_phy_workarounds_pchlan`**, the SPT path. Returns the PHY's identifier.
-pub fn init_phy_workarounds(hardware: &mut impl Hardware) -> Result<u32, Error> {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+/// `physical_layer_device`; no ruling covers the rest of the name. Refused `init_phy_workarounds`
+/// (an abbreviation).
+pub fn init_physical_layer_device_workarounds(hardware: &mut impl Hardware) -> Result<u32, Error> {
     // Gate automatic PHY configuration by hardware; this driver configures it in `global_reset`.
     set(hardware, regs::EXTCNF_CTRL, EXTCNF_CTRL_GATE_PHY_CFG);
 
@@ -266,7 +294,7 @@ pub fn init_phy_workarounds(hardware: &mut impl Hardware) -> Result<u32, Error> 
         if accessible(hardware, &f, &mut id) {
             return Ok(Reached::InSystemManagementBus);
         }
-        if phy::reset_blocked(hardware) {
+        if physical_layer_device::reset_blocked(hardware) {
             return Err(Error::LanphypcBlocked);
         }
         toggle_lanphypc(hardware);
@@ -278,22 +306,22 @@ pub fn init_phy_workarounds(hardware: &mut impl Hardware) -> Result<u32, Error> 
         if accessible(hardware, &f, &mut id) {
             return Ok(Reached::AfterUnforce);
         }
-        Err(Error::PhyInaccessible)
+        Err(Error::PhysicalLayerDeviceInaccessible)
     })();
     f.release(hardware);
     let at = reached?;
-    hardware.note(Note::PhyReached { at, id });
+    hardware.note(Note::PhysicalLayerDeviceReached { at, id });
 
-    if phy::reset_blocked(hardware) {
+    if physical_layer_device::reset_blocked(hardware) {
         // FreeBSD: ERROR_REPORT("Reset blocked by ME") and success.
-        hardware.note(Note::PhyResetBlocked);
+        hardware.note(Note::PhysicalLayerDeviceResetBlocked);
         return Ok(id);
     }
     // "Reset the PHY before any access to it. Doing so, ensures that the PHY is in a known good
     // state before we read/write PHY registers."
-    phy_reset_generic(hardware)?;
-    if phy::reset_blocked(hardware) {
-        return Err(Error::BlockedAfterPhyReset);
+    physical_layer_device_reset_generic(hardware)?;
+    if physical_layer_device::reset_blocked(hardware) {
+        return Err(Error::BlockedAfterPhysicalLayerDeviceReset);
     }
     Ok(id)
 }
@@ -321,42 +349,42 @@ fn leave_ulp(hardware: &mut impl Hardware) {
         hardware.note(Note::UlpByMe { cleared });
         return;
     }
-    let outcome = leave_ulp_by_phy(hardware);
+    let outcome = leave_ulp_by_physical_layer_device(hardware);
     hardware.note(Note::UlpBySoftware(outcome));
 }
 
 /// The software branch of `e1000_disable_ulp_lpt_lp`.
-fn leave_ulp_by_phy(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<(), Error> {
     let f = Swflag::acquire(hardware)?;
     toggle_lanphypc(hardware);
-    let done = (|| -> Result<(), phy::Error> {
+    let done = (|| -> Result<(), physical_layer_device::Error> {
         // Unforce SMBus mode in the PHY. If the MAC is in PCIe mode the read fails, so force the
         // MAC to SMBus long enough to reach the PHY.
-        let v = match phy::read(hardware, &f, r::SMB_CTRL) {
+        let v = match physical_layer_device::read(hardware, &f, r::SMB_CTRL) {
             Ok(v) => v,
             Err(_) => {
                 set(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
                 delay_ms(hardware, 50);
-                phy::read(hardware, &f, r::SMB_CTRL)?
+                physical_layer_device::read(hardware, &f, r::SMB_CTRL)?
             }
         };
         // FreeBSD ignores the result of these writes; so does this.
-        let _ = phy::write(hardware, &f, r::SMB_CTRL, v & !SMB_CTRL_FORCE_SMBUS);
+        let _ = physical_layer_device::write(hardware, &f, r::SMB_CTRL, v & !SMB_CTRL_FORCE_SMBUS);
         clear(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
         // "When ULP mode was previously entered, K1 was disabled by the hardware. Re-Enable K1
         // in the PHY when exiting ULP."
-        let pm = phy::read(hardware, &f, r::PM_CTRL)?;
-        let _ = phy::write(hardware, &f, r::PM_CTRL, pm | PM_CTRL_K1_ENABLE);
+        let pm = physical_layer_device::read(hardware, &f, r::PM_CTRL)?;
+        let _ = physical_layer_device::write(hardware, &f, r::PM_CTRL, pm | PM_CTRL_K1_ENABLE);
         // Clear the ULP configuration, then commit it by starting auto ULP configuration.
-        let u = phy::read(hardware, &f, r::ULP_CONFIG1)? & !ULP_CONFIG1_CLEARED;
-        let _ = phy::write(hardware, &f, r::ULP_CONFIG1, u);
-        let _ = phy::write(hardware, &f, r::ULP_CONFIG1, u | ULP_CONFIG1_START);
+        let u = physical_layer_device::read(hardware, &f, r::ULP_CONFIG1)? & !ULP_CONFIG1_CLEARED;
+        let _ = physical_layer_device::write(hardware, &f, r::ULP_CONFIG1, u);
+        let _ = physical_layer_device::write(hardware, &f, r::ULP_CONFIG1, u | ULP_CONFIG1_START);
         clear(hardware, regs::FEXTNVM7, FEXTNVM7_DISABLE_SMB_PERST);
         Ok(())
     })();
     f.release(hardware);
     // With `force`, FreeBSD resets the PHY whatever happened above, and waits 50 ms.
-    let reset = phy_reset_ich8lan(hardware);
+    let reset = physical_layer_device_reset_ich8lan(hardware);
     delay_ms(hardware, 50);
     done?;
     reset
@@ -371,17 +399,17 @@ fn accessible(hardware: &mut impl Hardware, f: &Swflag, id: &mut u32) -> bool {
     let mut seen = 0u32;
     let mut last = Ok(0);
     for _ in 0..2 {
-        last = phy::read(hardware, f, r::ID1);
+        last = physical_layer_device::read(hardware, f, r::ID1);
         let Ok(hi) = last else { continue };
         if hi == 0xffff {
             continue;
         }
-        last = phy::read(hardware, f, r::ID2);
+        last = physical_layer_device::read(hardware, f, r::ID2);
         let Ok(lo) = last else { continue };
         if lo == 0xffff {
             continue;
         }
-        seen = (u32::from(hi) << 16 | u32::from(lo)) & phy::ID_MASK;
+        seen = (u32::from(hi) << 16 | u32::from(lo)) & physical_layer_device::ID_MASK;
         break;
     }
     let known = *id != 0;
@@ -394,8 +422,9 @@ fn accessible(hardware: &mut impl Hardware, f: &Swflag, id: &mut u32) -> bool {
         last.is_ok()
     };
     if ok && !has_management_engine(hardware) {
-        if let Ok(v) = phy::read(hardware, f, r::SMB_CTRL) {
-            let _ = phy::write(hardware, f, r::SMB_CTRL, v & !SMB_CTRL_FORCE_SMBUS);
+        if let Ok(v) = physical_layer_device::read(hardware, f, r::SMB_CTRL) {
+            let _ =
+                physical_layer_device::write(hardware, f, r::SMB_CTRL, v & !SMB_CTRL_FORCE_SMBUS);
         }
         clear(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
     }
@@ -428,8 +457,8 @@ fn toggle_lanphypc(hardware: &mut impl Hardware) {
 
 /// **`e1000_phy_hw_reset_generic`**: pulse `CTRL.PHY_RST` under the semaphore, then wait for the
 /// configuration to finish.
-fn phy_reset_generic(hardware: &mut impl Hardware) -> Result<(), Error> {
-    if phy::reset_blocked(hardware) {
+fn physical_layer_device_reset_generic(hardware: &mut impl Hardware) -> Result<(), Error> {
+    if physical_layer_device::reset_blocked(hardware) {
         return Ok(());
     }
     let f = Swflag::acquire(hardware)?;
@@ -447,9 +476,9 @@ fn phy_reset_generic(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// **`e1000_phy_hw_reset_ich8lan`**: the generic reset and then the post-reset configuration (the
 /// 82579 gating it begins with is not this class's).
-fn phy_reset_ich8lan(hardware: &mut impl Hardware) -> Result<(), Error> {
-    phy_reset_generic(hardware)?;
-    post_phy_reset(hardware)
+fn physical_layer_device_reset_ich8lan(hardware: &mut impl Hardware) -> Result<(), Error> {
+    physical_layer_device_reset_generic(hardware)?;
+    post_physical_layer_device_reset(hardware)
 }
 
 /// **`e1000_get_cfg_done_ich8lan`**: 10 ms, then `LAN_INIT_DONE`, then clear `PHYRA`, then check
@@ -474,7 +503,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     if s & STATUS_PHYRA != 0 {
         hardware.write(mac::STATUS, s & !STATUS_PHYRA);
     } else {
-        hardware.note(Note::PhyResetNotAsserted);
+        hardware.note(Note::PhysicalLayerDeviceResetNotAsserted);
     }
     let g = non_volatile_memory::Geometry::read(hardware);
     non_volatile_memory::valid_bank(hardware, g)?;
@@ -517,8 +546,8 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     // "Full-chip reset requires MAC and PHY reset at the same time to make sure the interface
     // between MAC and the external PHY is reset."
     let mut ctrl = hardware.read(mac::CTRL);
-    let with_phy = !phy::reset_blocked(hardware);
-    if with_phy {
+    let with_physical_layer_device = !physical_layer_device::reset_blocked(hardware);
+    if with_physical_layer_device {
         ctrl |= CTRL_PHY_RST;
     }
     match Swflag::acquire(hardware) {
@@ -547,9 +576,9 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
         return Err(Error::ResetTimeout);
     }
 
-    if with_phy {
+    if with_physical_layer_device {
         config_done(hardware)?;
-        post_phy_reset(hardware)?;
+        post_physical_layer_device_reset(hardware)?;
     }
     hardware.write(mac::IMC, u32::MAX);
     let _ = hardware.read(mac::ICR);
@@ -559,17 +588,22 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
 
 /// **`e1000_post_phy_reset_ich8lan`**, SPT: clear the host wakeup bit, replay the NVM's PHY
 /// configuration, and apply the OEM bits.
-fn post_phy_reset(hardware: &mut impl Hardware) -> Result<(), Error> {
-    if phy::reset_blocked(hardware) {
+fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), Error> {
+    if physical_layer_device::reset_blocked(hardware) {
         return Ok(());
     }
     // "Allow time for h/w to get to quiescent state after reset"
     delay_ms(hardware, 10);
     {
         let f = Swflag::acquire(hardware)?;
-        match phy::read(hardware, &f, r::PORT_GEN_CFG) {
+        match physical_layer_device::read(hardware, &f, r::PORT_GEN_CFG) {
             Ok(v) => {
-                let _ = phy::write(hardware, &f, r::PORT_GEN_CFG, v & !PORT_GEN_CFG_HOST_WU);
+                let _ = physical_layer_device::write(
+                    hardware,
+                    &f,
+                    r::PORT_GEN_CFG,
+                    v & !PORT_GEN_CFG_HOST_WU,
+                );
             }
             Err(e) => hardware.note(Note::HostWakeupUnread(e)),
         }
@@ -600,7 +634,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
         // Past the 82578 generation the hardware leaves these to software.
         write_system_management_bus_address(hardware, &f)?;
         let led = hardware.read(regs::LEDCTL) as u16;
-        phy::write(hardware, &f, r::LED_CONFIG, led)?;
+        physical_layer_device::write(hardware, &f, r::LED_CONFIG, led)?;
         let g = non_volatile_memory::Geometry::read(hardware);
         let word = base << 1;
         let mut page: u32 = 0;
@@ -611,12 +645,17 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
                 g,
                 word + i * 2 + 1,
             )?);
-            if at == phy::PAGE_SELECT {
+            if at == physical_layer_device::PAGE_SELECT {
                 // Save the page for the writes that follow; it is already `page << 5`.
                 page = u32::from(value);
                 continue;
             }
-            phy::write(hardware, &f, (at & phy::MAX_REG) | page, value)?;
+            physical_layer_device::write(
+                hardware,
+                &f,
+                (at & physical_layer_device::MAX_REG) | page,
+                value,
+            )?;
         }
         Ok(Some(size))
     })();
@@ -640,7 +679,7 @@ fn write_system_management_bus_address(
     let freq = ((strap & STRAP_SMT_FREQ_MASK) >> STRAP_SMT_FREQ_SHIFT) as u16;
     let address = ((strap & STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK)
         >> STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT) as u16;
-    let mut v = phy::read(hardware, f, r::SMB_ADDR)?;
+    let mut v = physical_layer_device::read(hardware, f, r::SMB_ADDR)?;
     v = (v & !SMB_ADDR_MASK) | address | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
     if freq != 0 {
         let fq = freq - 1;
@@ -650,7 +689,7 @@ fn write_system_management_bus_address(
     } else {
         hardware.note(Note::SystemManagementBusFrequencyUnsupported);
     }
-    phy::write(hardware, f, r::SMB_ADDR, v)?;
+    physical_layer_device::write(hardware, f, r::SMB_ADDR, v)?;
     Ok(())
 }
 
@@ -663,17 +702,18 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
             return Ok(());
         }
         let pc = hardware.read(regs::PHY_CTRL);
-        let mut v = phy::read(hardware, &f, r::OEM_BITS)? & !(OEM_BITS_GBE_DIS | OEM_BITS_LPLU);
+        let mut v = physical_layer_device::read(hardware, &f, r::OEM_BITS)?
+            & !(OEM_BITS_GBE_DIS | OEM_BITS_LPLU);
         if pc & PHY_CTRL_GBE_DISABLE != 0 {
             v |= OEM_BITS_GBE_DIS;
         }
         if pc & PHY_CTRL_D0A_LPLU != 0 {
             v |= OEM_BITS_LPLU;
         }
-        if !phy::reset_blocked(hardware) {
+        if !physical_layer_device::reset_blocked(hardware) {
             v |= OEM_BITS_RESTART_AN;
         }
-        phy::write(hardware, &f, r::OEM_BITS, v)
+        physical_layer_device::write(hardware, &f, r::OEM_BITS, v)
     })();
     f.release(hardware);
     Ok(out?)
@@ -711,7 +751,7 @@ pub fn init_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     set(hardware, mac::CTRL, CTRL_MEHE);
 
     // `e1000_setup_link_ich8lan`: the copper link, unless firmware blocks the PHY.
-    if !phy::reset_blocked(hardware) {
+    if !physical_layer_device::reset_blocked(hardware) {
         setup_copper_link(hardware)?;
     }
 
@@ -739,23 +779,23 @@ pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Erro
     hardware.write(mac::CTRL, c);
     let f = Swflag::acquire(hardware)?;
     let out = (|| {
-        phy::update(hardware, &f, r::I82577_CFG, |v| {
+        physical_layer_device::update(hardware, &f, r::I82577_CFG, |v| {
             v | I82577_CFG_ASSERT_CRS_ON_TX | I82577_CFG_ENABLE_DOWNSHIFT
         })?;
-        phy::update(hardware, &f, r::I82577_CTRL_2, |v| {
+        physical_layer_device::update(hardware, &f, r::I82577_CTRL_2, |v| {
             (v & !I82577_PHY_CTRL2_MDIX_CFG_MASK) | I82577_PHY_CTRL2_AUTO_MDI_MDIX
         })?;
-        phy::update(hardware, &f, r::AUTONEG_ADV, |v| {
+        physical_layer_device::update(hardware, &f, r::AUTONEG_ADV, |v| {
             (v & !(NWAY_AR_ASM_DIR | NWAY_AR_PAUSE))
                 | NWAY_AR_10T_HD_CAPS
                 | NWAY_AR_10T_FD_CAPS
                 | NWAY_AR_100TX_HD_CAPS
                 | NWAY_AR_100TX_FD_CAPS
         })?;
-        phy::update(hardware, &f, r::CTRL_1000T, |v| {
+        physical_layer_device::update(hardware, &f, r::CTRL_1000T, |v| {
             (v & !CR_1000T_HD_CAPS) | CR_1000T_FD_CAPS
         })?;
-        phy::update(hardware, &f, r::CONTROL, |v| {
+        physical_layer_device::update(hardware, &f, r::CONTROL, |v| {
             v | MII_CR_AUTO_NEG_EN | MII_CR_RESTART_AUTO_NEG
         })
     })();
@@ -898,7 +938,10 @@ mod tests {
         );
         assert_eq!(
             hardware.notes,
-            [Note::LanInitTimeout, Note::PhyResetNotAsserted]
+            [
+                Note::LanInitTimeout,
+                Note::PhysicalLayerDeviceResetNotAsserted
+            ]
         );
         // 10 ms, 1500 polls of 100 us, and the bank probe's one microsecond before its flash
         // cycle (which fails at once: there is no flash descriptor).
@@ -908,7 +951,7 @@ mod tests {
         let mut s = Sim::new(Start::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
         assert!(!s.notes.contains(&Note::LanInitTimeout));
-        assert!(!s.notes.contains(&Note::PhyResetNotAsserted));
+        assert!(!s.notes.contains(&Note::PhysicalLayerDeviceResetNotAsserted));
         assert!(!s.notes.contains(&Note::MasterRequestsPending));
     }
 
@@ -918,7 +961,9 @@ mod tests {
     #[test]
     fn stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead() {
         let mut hardware = Inert::default();
-        hardware.regs.insert(regs::FWSM, phy::FWSM_RSPCIPHY);
+        hardware
+            .regs
+            .insert(regs::FWSM, physical_layer_device::FWSM_RSPCIPHY);
         hardware
             .regs
             .insert(mac::STATUS, reset::STATUS_GIO_MASTER_ENABLE);
@@ -940,11 +985,12 @@ mod tests {
     #[test]
     fn the_post_reset_clears_host_wakeup_and_replays_only_when_asked() {
         let mut s = Sim::new(Start::Healthy, true);
-        s.phy.insert(r::PORT_GEN_CFG, 0x0011);
+        s.physical_layer_device_registers
+            .insert(r::PORT_GEN_CFG, 0x0011);
         s.mac.insert(regs::EXTCNF_CTRL, 0x40 << 16);
         s.mac.insert(regs::EXTCNF_SIZE, 3 << 16);
         global_reset(&mut s, 1000).unwrap();
-        assert_eq!(s.phy[&r::PORT_GEN_CFG], 0x0001);
+        assert_eq!(s.physical_layer_device_registers[&r::PORT_GEN_CFG], 0x0001);
         assert!(s.notes.contains(&Note::LanConnectedDeviceNotConfigured));
         assert!(
             !s.notes
@@ -967,11 +1013,16 @@ mod tests {
         ] {
             let mut s = Sim::new(Start::Healthy, true);
             s.mac.insert(regs::STRAP, strap(2, freq));
-            s.phy.insert(r::SMB_ADDR, preset);
+            s.physical_layer_device_registers
+                .insert(r::SMB_ADDR, preset);
             let f = Swflag::acquire(&mut s).unwrap();
             write_system_management_bus_address(&mut s, &f).unwrap();
             f.release(&mut s);
-            assert_eq!(s.phy[&r::SMB_ADDR], want, "frequency field {freq}");
+            assert_eq!(
+                s.physical_layer_device_registers[&r::SMB_ADDR],
+                want,
+                "frequency field {freq}"
+            );
             assert_eq!(
                 s.notes
                     .contains(&Note::SystemManagementBusFrequencyUnsupported),
@@ -1000,10 +1051,11 @@ mod tests {
             if blocked {
                 s.mac.insert(regs::FWSM, 0);
             }
-            s.phy.insert(r::OEM_BITS, before);
+            s.physical_layer_device_registers
+                .insert(r::OEM_BITS, before);
             oem_bits(&mut s).unwrap();
             assert_eq!(
-                s.phy[&r::OEM_BITS],
+                s.physical_layer_device_registers[&r::OEM_BITS],
                 after,
                 "{fextnvm:#x} {pc:#x} {before:#x}"
             );
@@ -1016,7 +1068,8 @@ mod tests {
     #[test]
     fn init_hardware_writes_freebsds_values_from_any_starting_state() {
         let mut s = Sim::new(Start::Healthy, true);
-        s.phy.insert(r::AUTONEG_ADV, 0x0c01);
+        s.physical_layer_device_registers
+            .insert(r::AUTONEG_ADV, 0x0c01);
         init_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, mac::CTRL_EXT),
@@ -1030,11 +1083,11 @@ mod tests {
         assert_eq!(mac(&s, mac::RFCTL), 0x00c0);
         assert_eq!(mac(&s, regs::PBECCSTS), 0x0001_0000);
         assert_eq!(mac(&s, mac::CTRL), 0x0008_0040, "MEHE and SLU");
-        assert_eq!(s.phy[&r::I82577_CFG], 0x8c00);
-        assert_eq!(s.phy[&r::I82577_CTRL_2], 0x0400);
-        assert_eq!(s.phy[&r::AUTONEG_ADV], 0x01e1);
-        assert_eq!(s.phy[&r::CTRL_1000T], 0x0200);
-        assert_eq!(s.phy[&r::CONTROL], 0x1200);
+        assert_eq!(s.physical_layer_device_registers[&r::I82577_CFG], 0x8c00);
+        assert_eq!(s.physical_layer_device_registers[&r::I82577_CTRL_2], 0x0400);
+        assert_eq!(s.physical_layer_device_registers[&r::AUTONEG_ADV], 0x01e1);
+        assert_eq!(s.physical_layer_device_registers[&r::CTRL_1000T], 0x0200);
+        assert_eq!(s.physical_layer_device_registers[&r::CONTROL], 0x1200);
 
         let mut s = Sim::new(Start::Healthy, true);
         s.mac.insert(mac::TCTL, TCTL_MULR);
@@ -1043,11 +1096,15 @@ mod tests {
         s.mac.insert(mac::RFCTL, 0x00c0);
         s.mac
             .insert(mac::CTRL, crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX);
-        s.phy.insert(r::I82577_CFG, 0x8c01);
-        s.phy.insert(r::I82577_CTRL_2, 0x0601);
-        s.phy.insert(r::AUTONEG_ADV, 0x0de1);
-        s.phy.insert(r::CTRL_1000T, 0x0300);
-        s.phy.insert(r::CONTROL, 0x1200);
+        s.physical_layer_device_registers
+            .insert(r::I82577_CFG, 0x8c01);
+        s.physical_layer_device_registers
+            .insert(r::I82577_CTRL_2, 0x0601);
+        s.physical_layer_device_registers
+            .insert(r::AUTONEG_ADV, 0x0de1);
+        s.physical_layer_device_registers
+            .insert(r::CTRL_1000T, 0x0300);
+        s.physical_layer_device_registers.insert(r::CONTROL, 0x1200);
         init_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, regs::TARC1),
@@ -1057,11 +1114,11 @@ mod tests {
         assert_eq!(mac(&s, regs::TXDCTL0), 0x0141_ff1f);
         assert_eq!(mac(&s, mac::RFCTL), 0x00c0);
         assert_eq!(mac(&s, mac::CTRL), 0x0008_0040, "speed and duplex unforced");
-        assert_eq!(s.phy[&r::I82577_CFG], 0x8c01);
-        assert_eq!(s.phy[&r::I82577_CTRL_2], 0x0401);
-        assert_eq!(s.phy[&r::AUTONEG_ADV], 0x01e1);
-        assert_eq!(s.phy[&r::CTRL_1000T], 0x0200);
-        assert_eq!(s.phy[&r::CONTROL], 0x1200);
+        assert_eq!(s.physical_layer_device_registers[&r::I82577_CFG], 0x8c01);
+        assert_eq!(s.physical_layer_device_registers[&r::I82577_CTRL_2], 0x0401);
+        assert_eq!(s.physical_layer_device_registers[&r::AUTONEG_ADV], 0x01e1);
+        assert_eq!(s.physical_layer_device_registers[&r::CTRL_1000T], 0x0200);
+        assert_eq!(s.physical_layer_device_registers[&r::CONTROL], 0x1200);
     }
 
     /// **The SPT transmit errata**: `MULR` on, `IOSFPC`'s receive threshold, and `TARC0`'s
@@ -1082,12 +1139,14 @@ mod tests {
     #[test]
     fn leaving_ulp_without_an_me_changes_only_the_bits_it_names() {
         let mut s = Sim::new(Start::InSystemManagementBus, false);
-        s.phy.insert(r::SMB_CTRL, 0x0101);
-        s.phy.insert(r::PM_CTRL, 0x4001);
-        s.phy.insert(r::ULP_CONFIG1, 0x1ff5);
-        assert!(init_phy_workarounds(&mut s).is_ok());
+        s.physical_layer_device_registers
+            .insert(r::SMB_CTRL, 0x0101);
+        s.physical_layer_device_registers.insert(r::PM_CTRL, 0x4001);
+        s.physical_layer_device_registers
+            .insert(r::ULP_CONFIG1, 0x1ff5);
+        assert!(init_physical_layer_device_workarounds(&mut s).is_ok());
         let to = |reg: u32| -> Vec<u16> {
-            s.phy_writes
+            s.physical_layer_device_writes
                 .iter()
                 .filter(|w| w.0 == reg)
                 .map(|w| w.1)
@@ -1100,6 +1159,6 @@ mod tests {
         );
         assert_eq!(to(r::PM_CTRL), [0x4001]);
         assert_eq!(to(r::ULP_CONFIG1), [0x0281, 0x0281]);
-        assert_eq!(s.phy_resets, 2);
+        assert_eq!(s.physical_layer_device_resets, 2);
     }
 }

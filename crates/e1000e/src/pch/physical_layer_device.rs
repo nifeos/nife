@@ -9,6 +9,10 @@
 //! on and every part this crate claims is Sunrise Point. Page 800 (host wakeup, with its own
 //! protocol) and pages 1 to 767 (82577 and 82578 debug registers) are refused rather than ported;
 //! only an NVM-supplied LCD configuration word could address them.
+//!
+//! Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as
+//! `physical_layer_device`, IEEE 802.3's phrase. Refused `phy` (an abbreviation), `physical_layer`
+//! (blurs the chip with the layer).
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -161,14 +165,18 @@ pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
 pub(crate) const FWSM_RSPCIPHY: u32 = 0x0000_0040;
 
-/// One MDIO read of `reg` at PHY address `phy`, `e1000_read_phy_reg_mdic`.
-pub fn read_mdic(hardware: &mut impl Hardware, phy: u32, r: u32) -> Result<u16, Error> {
+/// One MDIO read of `reg` at PHY address `physical_layer_device`, `e1000_read_phy_reg_mdic`.
+pub fn read_mdic(
+    hardware: &mut impl Hardware,
+    physical_layer_device_address: u32,
+    r: u32,
+) -> Result<u16, Error> {
     if r > MAX_REG {
         return Err(Error::OutOfRange);
     }
     hardware.write(
         regs::MDIC,
-        r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_READ,
+        r << mdic::REG_SHIFT | physical_layer_device_address << mdic::PHY_SHIFT | mdic::OP_READ,
     );
     complete(hardware, r).map(|v| v as u16)
 }
@@ -176,7 +184,7 @@ pub fn read_mdic(hardware: &mut impl Hardware, phy: u32, r: u32) -> Result<u16, 
 /// One MDIO write, `e1000_write_phy_reg_mdic`.
 pub(crate) fn write_mdic(
     hardware: &mut impl Hardware,
-    phy: u32,
+    physical_layer_device_address: u32,
     r: u32,
     data: u16,
 ) -> Result<(), Error> {
@@ -185,7 +193,10 @@ pub(crate) fn write_mdic(
     }
     hardware.write(
         regs::MDIC,
-        u32::from(data) | r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_WRITE,
+        u32::from(data)
+            | r << mdic::REG_SHIFT
+            | physical_layer_device_address << mdic::PHY_SHIFT
+            | mdic::OP_WRITE,
     );
     complete(hardware, r).map(|_| ())
 }
@@ -272,7 +283,11 @@ pub struct Plan {
     /// `Some(value)` when the page-select register is written first (at PHY address 1).
     pub select: Option<u16>,
     /// The PHY address of the access itself.
-    pub phy: u32,
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
+    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `phy` (an
+    /// abbreviation, and the field holds the PHY's address, not the PHY).
+    pub physical_layer_device_address: u32,
     /// The five-bit register.
     ///
     /// Name: ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused
@@ -288,7 +303,7 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
     if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAX_PAGE {
         return Err(Error::PageNotPorted);
     }
-    let phy = address_for(page);
+    let physical_layer_device_address = address_for(page);
     // Page 768 is selected as page 0 (FreeBSD: "if (page == HV_INTC_FC_PAGE_START) page = 0").
     let shown = if page == HV_PAGE_START { 0 } else { page };
     let select = if r > MAX_UNPAGED_REG {
@@ -298,7 +313,7 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
     };
     Ok(Plan {
         select,
-        phy,
+        physical_layer_device_address,
         register: r,
     })
 }
@@ -309,7 +324,7 @@ pub fn read(hardware: &mut impl Hardware, _held: &Swflag, offset: u32) -> Result
     if let Some(sel) = p.select {
         write_mdic(hardware, 1, PAGE_SELECT, sel)?;
     }
-    read_mdic(hardware, p.phy, p.register)
+    read_mdic(hardware, p.physical_layer_device_address, p.register)
 }
 
 /// Write a PCH PHY register by its paged offset. FreeBSD's 82578 power-down workaround in the
@@ -324,7 +339,7 @@ pub fn write(
     if let Some(sel) = p.select {
         write_mdic(hardware, 1, PAGE_SELECT, sel)?;
     }
-    write_mdic(hardware, p.phy, p.register, data)
+    write_mdic(hardware, p.physical_layer_device_address, p.register, data)
 }
 
 /// Read-modify-write under a held flag.
@@ -354,9 +369,12 @@ pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
 
 /// Read the PHY identifier at the 82574L's address, the generic MDIO path with no pages and no
 /// semaphore (the 82574L has neither). What QEMU's gates prove of this module.
-pub fn id_at(hardware: &mut impl Hardware, phy: u32) -> Result<u32, Error> {
-    let hi = read_mdic(hardware, phy, r::ID1)?;
-    let lo = read_mdic(hardware, phy, r::ID2)?;
+pub fn id_at(
+    hardware: &mut impl Hardware,
+    physical_layer_device_address: u32,
+) -> Result<u32, Error> {
+    let hi = read_mdic(hardware, physical_layer_device_address, r::ID1)?;
+    let lo = read_mdic(hardware, physical_layer_device_address, r::ID2)?;
     Ok((u32::from(hi) << 16 | u32::from(lo)) & ID_MASK)
 }
 
@@ -368,13 +386,13 @@ mod proofs {
     /// five-bit register that is the offset's own, and a page select that is the offset's page**
     /// (768 shown as 0), written only when the register is above the unpaged range.
     ///
-    /// Falsification: replayable `crates/e1000e/falsifications/pch.phy.proofs.a_paged_access_selects_the_offsets_own_page_and_register.patch`
+    /// Falsification: replayable `crates/e1000e/falsifications/pch.physical_layer_device.proofs.a_paged_access_selects_the_offsets_own_page_and_register.patch`
     #[kani::proof]
     fn a_paged_access_selects_the_offsets_own_page_and_register() {
         let off: u32 = kani::any();
         if let Ok(p) = plan(off) {
             let page = off >> PAGE_SHIFT;
-            assert!(p.phy == 1 || p.phy == 2);
+            assert!(p.physical_layer_device_address == 1 || p.physical_layer_device_address == 2);
             assert!(p.register == off & MAX_REG);
             assert!(page != WAKEUP_PAGE);
             match p.select {

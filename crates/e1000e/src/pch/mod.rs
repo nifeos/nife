@@ -2,11 +2,11 @@
 //!
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) is the only
-//! source read for it: [`ulp`], [`flush`], [`reset`], [`phy`], [`non_volatile_memory`] and
-//! [`sequence`] each name the FreeBSD functions they follow. Every sequence is generic over
-//! [`Hardware`], so it runs on the host against a simulated I219 (`sim`) as well as in the kernel.
-//! The constants are facts about the hardware; the sequences are FreeBSD's, adapted, and carry
-//! Intel's license below as its first condition requires.
+//! source read for it: [`ulp`], [`flush`], [`reset`], [`physical_layer_device`],
+//! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
+//! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`sim`)
+//! as well as in the kernel. The constants are facts about the hardware; the sequences are
+//! FreeBSD's, adapted, and carry Intel's license below as its first condition requires.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -53,7 +53,7 @@
 //! - **The license's second condition is not met by any binary this tree ships yet**.
 
 pub mod non_volatile_memory;
-pub mod phy;
+pub mod physical_layer_device;
 pub mod sequence;
 #[cfg(test)]
 mod sim;

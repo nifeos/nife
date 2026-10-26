@@ -20,10 +20,14 @@ below copy:
 - Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out wherever this tree authors the
   name (`ReceiveVerdict`, `TransmitError`, `receive_descriptor`, `TRANSMIT_ENTRIES`), and register
   and bit names copied from a datasheet (`RDT`, `DD`, `EOP`) keep their spelling.
+- Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`, IEEE
+  802.3's phrase, wherever this tree authors the name (`pch::physical_layer_device`,
+  `PhysicalLayerDeviceResetBlocked`), and not `physical_layer`, which would blur the chip with the
+  layer. Register names copied from FreeBSD (`PHY_ID1`, `STATUS.PHYRA`) keep their spelling.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-148 names: 106 no block, 28 provisional, 14 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+155 names: 104 no block, 35 provisional, 16 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 13 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -46,7 +50,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `hardware` | module | `src/pch/hardware.rs` | provisional. | no | clear |
 | `pch` | module | `src/pch/mod.rs` | unrecorded. | yes | term |
 | `non_volatile_memory` | module | `src/pch/non_volatile_memory.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `nvm` (an abbreviation). | yes | clear |
-| `phy` | module | `src/pch/phy.rs` | unrecorded. | yes | clear |
+| `physical_layer_device` | module | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as `physical_layer_device`, IEEE 802.3's phrase. Refused `phy` (an abbreviation), `physical_layer` (blurs the chip with the layer). | yes | clear |
 | `regs` | module | `src/pch/regs.rs` | unrecorded. | yes | clear |
 | `reset` | module | `src/pch/reset.rs` | unrecorded. | yes | clear |
 | `sequence` | module | `src/pch/sequence.rs` | unrecorded. | yes | clear |
@@ -123,37 +127,44 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GO` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
 | `WORDS` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
 | `read` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
-| `CONTROL` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `ERROR` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `Error` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `KMRN_MODE_CTRL` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `ManagementDataInterface` | item | `src/pch/phy.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`). | yes | clear |
-| `POLL_US` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `Plan` | item | `src/pch/phy.rs` | unrecorded. | yes | generic |
-| `READY` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `Swflag` | item | `src/pch/phy.rs` | unrecorded. | yes | term |
-| `id_at` | item | `src/pch/phy.rs` | unrecorded. | yes | unclear: what id, at what |
-| `plan` | item | `src/pch/phy.rs` | unrecorded. | yes | generic |
-| `read` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `read_mdic` | item | `src/pch/phy.rs` | unrecorded. | yes | term |
-| `reg` | item | `src/pch/phy.rs` | unrecorded. | yes | unclear: an abbreviation |
-| `register` | item | `src/pch/phy.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `reg` (an abbreviation). | yes | clear |
-| `release` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
-| `update` | item | `src/pch/phy.rs` | unrecorded. | yes | generic |
-| `write` | item | `src/pch/phy.rs` | unrecorded. | yes | clear |
+| `CONTROL` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `ERROR` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `Error` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `KMRN_MODE_CTRL` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `ManagementDataInterface` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Mdi` (an abbreviation of management data interface, the MDI in `MDIC`). | yes | clear |
+| `POLL_US` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `Plan` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
+| `READY` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `Swflag` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | term |
+| `id_at` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | unclear: what id, at what |
+| `physical_layer_device_address` | item | `src/pch/physical_layer_device.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `phy` (an abbreviation, and the field holds the PHY's address, not the PHY). | yes | clear |
+| `plan` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
+| `read` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `read_mdic` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | term |
+| `reg` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | unclear: an abbreviation |
+| `register` | item | `src/pch/physical_layer_device.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `reg` (an abbreviation). | yes | clear |
+| `release` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
+| `update` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | generic |
+| `write` | item | `src/pch/physical_layer_device.rs` | unrecorded. | yes | clear |
 | `FEXTNVM11` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
 | `RXDCTL` | item | `src/pch/regs.rs` | unrecorded. | yes | term |
+| `BlockedAfterPhysicalLayerDeviceReset` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `BlockedAfterPhyReset` (an abbreviation). | yes | clear |
 | `Error` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `InSystemManagementBus` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `InSmbus` (an abbreviation of System Management Bus). | yes | clear |
 | `LanConnectedDeviceConfigured` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `LcdConfigured` (`Lcd` reads as a display). | yes | clear |
 | `LanConnectedDeviceNotConfigured` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `LcdNotConfigured` (as `LcdConfigured`). | yes | clear |
 | `NonVolatileMemory` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Nvm` (an abbreviation, as the module's `nvm` was). | yes | clear |
 | `Note` | item | `src/pch/sequence.rs` | unrecorded. | yes | generic |
+| `PhysicalLayerDevice` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `Phy` (an abbreviation). | yes | clear |
+| `PhysicalLayerDeviceInaccessible` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyInaccessible` (an abbreviation). | yes | clear |
+| `PhysicalLayerDeviceReached` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyReached` (an abbreviation). | yes | clear |
+| `PhysicalLayerDeviceResetBlocked` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `phy` (the chip) as `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an abbreviation). | yes | clear |
+| `PhysicalLayerDeviceResetNotAsserted` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyResetNotAsserted` (an abbreviation). | yes | clear |
 | `Reached` | item | `src/pch/sequence.rs` | unrecorded. | yes | generic |
 | `SystemManagementBusFrequencyUnsupported` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `SmbusFrequencyUnsupported` (an abbreviation of System Management Bus). | yes | clear |
 | `global_reset` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `init_hardware` | item | `src/pch/sequence.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `init_hw` (`hw` abbreviates hardware). | yes | clear |
-| `init_phy_workarounds` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
+| `init_physical_layer_device_workarounds` | item | `src/pch/sequence.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out `physical_layer_device`; no ruling covers the rest of the name. Refused `init_phy_workarounds` (an abbreviation). | yes | clear |
 | `transmit_errata` | item | `src/pch/sequence.rs` | unrecorded. | yes | clear |
 | `Sim` | item | `src/pch/sim.rs` | unrecorded. | no | clear |
 | `Start` | item | `src/pch/sim.rs` | unrecorded. | no | clear |
@@ -187,9 +198,9 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
-- the fields of `DataPlane` (1), `phy::Plan` (3) and the private `Sim` (22);
-- the variants of `TransmitError` (2), `ReceiveVerdict` (3), `non_volatile_memory::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
+- the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` and `r` in `src/pch/physical_layer_device.rs`, whose constants have rows;
+- the fields of `DataPlane` (1), `physical_layer_device::Plan` (3) and the private `Sim` (22);
+- the variants of `TransmitError` (2), `ReceiveVerdict` (3), `non_volatile_memory::Error` (5), `physical_layer_device::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
 - the methods of the traits `Region` (4), `Tails` (3) and `Hardware` (6).
 
 The `pub use` lines re-export items that have rows where they are defined. The one field of the crate-private `non_volatile_memory::Geometry` is reachable from nowhere outside.

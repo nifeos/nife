@@ -31,7 +31,7 @@ pub enum Error {
     /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
     Pch(::e1000e::pch::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhyId(::e1000e::pch::phy::Error),
+    PhyId(::e1000e::pch::physical_layer_device::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::pch::phy::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::pch::physical_layer_device::read_mdic`] under QEMU.
     pub phy_id: u32,
 }
 
@@ -86,7 +86,8 @@ pub fn bring_up() -> Result<Found, Absent> {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
         use ::e1000e::pch::sequence;
-        let id = sequence::init_phy_workarounds(&mut hw).map_err(|e| refused(Error::Pch(e)))?;
+        let id = sequence::init_physical_layer_device_workarounds(&mut hw)
+            .map_err(|e| refused(Error::Pch(e)))?;
         phy_id = Some(id);
         flush_descriptor_rings(&c, &dev, region);
         sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
@@ -148,7 +149,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let phy_id = match phy_id {
         Some(id) => id,
-        None => ::e1000e::pch::phy::id_at(&mut hw, 1).map_err(|e| refused(Error::PhyId(e)))?,
+        None => ::e1000e::pch::physical_layer_device::id_at(&mut hw, 1)
+            .map_err(|e| refused(Error::PhyId(e)))?,
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
@@ -328,8 +330,10 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
         use ::e1000e::pch::sequence::Note;
         match n {
             // The identifier in hex, as the bench card compares it.
-            Note::PhyReached { at, id } => {
-                crate::println!("  e1000e: PhyReached {{ at: {at:?}, id: {id:#010x} }}");
+            Note::PhysicalLayerDeviceReached { at, id } => {
+                crate::println!(
+                    "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
+                );
             }
             n => crate::println!("  e1000e: {n:?}"),
         }

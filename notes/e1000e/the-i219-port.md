@@ -39,13 +39,13 @@ Everything was read from `sys/dev/e1000/` on FreeBSD's `main`: `ulp`, `flush` an
 | `ulp` | leaving ultra-low-power mode through the Management Engine | `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`), its ME branch |
 | `flush` | the descriptor-ring flush SPT parts need before a reset | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` (`if_em.c`) |
 | `reset` | the MAC-register constants around the global reset | `e1000_reset_hw_ich8lan` (`e1000_ich8lan.c`), `e1000_disable_pcie_master_generic` (`e1000_mac.c`) |
-| `phy` | MDIO through `MDIC`, the software/firmware semaphore, the paged PHY registers | below |
+| `physical_layer_device` | MDIO through `MDIC`, the software/firmware semaphore, the paged PHY registers | below |
 | `non_volatile_memory` | reading the `GbE` flash region through BAR0, as Sunrise Point does | below |
 | `sequence` | the bring-up itself, in FreeBSD's order | below |
 
 Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
 (`pch/sim.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `phy::id_at`, which shares `phy::read_mdic` with everything here, so the
+`sequence`. It does reach `physical_layer_device::id_at`, which shares `physical_layer_device::read_mdic` with everything here, so the
 MDIO primitive is the one piece the QEMU gates prove.
 
 ## The three passes
@@ -55,7 +55,7 @@ FreeBSD brings an SPT-class I219 up in three passes, and `kernel/src/e1000e.rs` 
 class are carried, because every I219 the crate claims is in it (`pch::is_pch`). Each function's
 doc comment names the FreeBSD function it follows.
 
-1. `init_phy_workarounds`, at attach. It gates the hardware's automatic PHY configuration and
+1. `init_physical_layer_device_workarounds`, at attach. It gates the hardware's automatic PHY configuration and
    forces the PHY out of ultra-low-power. That goes through the Management Engine if there is one,
    and through PHY registers if not. It makes sure the MAC-PHY interconnect is PCIe rather than
    `SMBus`. If the PHY does not answer, it forces `SMBus` and power-cycles the PHY with `LANPHYPC`.
