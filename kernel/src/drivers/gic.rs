@@ -16,78 +16,49 @@
 //!   not model the reordering; argon, a GIC-400, would. The fix is one `dsb ishst` in
 //!   `arch::irq::send_sgi` ahead of the GICv2 call.
 
-use tock_registers::interfaces::{Readable, Writeable};
-use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
-use tock_registers::{register_bitfields, register_structs};
-
 use crate::sync::{IrqSafeMutex, rank};
 
-register_bitfields! {
-    u32,
+// Register offsets and bits from the GIC architecture specification, version 2 (Arm IHI 0048B),
+// chapter 4, under each register's own heading, and checked against Linux's
+// `include/linux/irqchip/arm-gic.h` (v6.16).
 
-    /// Distributor control.
-    GICD_CTLR [
-        ENABLE OFFSET(0) NUMBITS(1) [],
-    ],
+// The distributor, one per machine.
 
-    /// CPU interface control.
-    GICC_CTLR [
-        ENABLE OFFSET(0) NUMBITS(1) [],
-    ],
+/// `GICD_CTLR`: distributor control. Bit 0 enables forwarding to the CPU interfaces.
+const GICD_CTLR: usize = 0x000;
+const GICD_CTLR_ENABLE: u32 = 1 << 0;
+/// `GICD_ISENABLERn`: set-enable, **one bit per interrupt**, 32 per register, write-one-to-set.
+const GICD_ISENABLER: usize = 0x100;
+/// `GICD_ICENABLERn`: clear-enable, the same layout, write-one-to-clear.
+const GICD_ICENABLER: usize = 0x180;
+/// `GICD_IPRIORITYRn`: priority, **one byte per interrupt**, byte-accessible.
+const GICD_IPRIORITYR: usize = 0x400;
+/// `GICD_ITARGETSRn`: the target cores of each SPI, one byte per interrupt, bit N for core N.
+const GICD_ITARGETSR: usize = 0x800;
+/// `GICD_SGIR`: raises a software-generated interrupt. Bits 3:0 the SGI, bits 23:16 the target
+/// list, bit N for core N.
+const GICD_SGIR: usize = 0xf00;
+const GICD_SGIR_TARGET_SHIFT: u32 = 16;
 
-    /// Interrupt acknowledge: reading this *takes* the interrupt.
-    GICC_IAR [
-        /// The interrupt we are now servicing. **1023 means spurious**: the GIC changed its
-        /// mind between raising the line and us getting here (another core took it, or it was
-        /// masked). Read it, do nothing, do NOT signal end-of-interrupt.
-        INTID OFFSET(0) NUMBITS(10) [],
-    ],
-}
+// The CPU interface, banked: every core sees its own at the same address.
 
-register_structs! {
-    /// The distributor. One per machine.
-    #[allow(non_snake_case)]
-    pub Distributor {
-        (0x000 => CTLR: ReadWrite<u32, GICD_CTLR::Register>),
-        (0x004 => TYPER: ReadOnly<u32>),
-        (0x008 => _reserved0),
-        /// Set-enable. **One BIT per interrupt**, 32 per register.
-        (0x100 => ISENABLER: [ReadWrite<u32>; 32]),
-        (0x180 => ICENABLER: [ReadWrite<u32>; 32]),
-        (0x200 => _reserved1),
-        /// Priority. One byte per interrupt, a different stride from ISENABLER's bitmap.
-        (0x400 => IPRIORITYR: [ReadWrite<u8>; 1024]),
-        (0x800 => ITARGETSR: [ReadWrite<u8>; 1024]),
-        (0xc00 => _reserved2),
-        /// Software Generated Interrupt Register: raises one of the 16 SGIs on a chosen set of
-        /// cores.
-        (0xf00 => SGIR: WriteOnly<u32>),
-        (0xf04 => _reserved3),
-        (0x1000 => @END),
-    }
-}
-
-register_structs! {
-    /// The per-core CPU interface. Banked: every core sees its own at the same address.
-    #[allow(non_snake_case)]
-    pub CpuInterface {
-        (0x000 => CTLR: ReadWrite<u32, GICC_CTLR::Register>),
-        /// Priority mask. An interrupt is delivered only if its priority is **strictly less
-        /// than** this. Backwards from what you'd guess: `0xff` lets everything through.
-        (0x004 => PMR: ReadWrite<u32>),
-        (0x008 => _reserved0),
-        /// Reading this ACKNOWLEDGES an interrupt and tells you which one.
-        (0x00c => IAR: ReadOnly<u32, GICC_IAR::Register>),
-        /// Writing the same INTID back says "I'm done". Until you do, the GIC will not deliver
-        /// another interrupt of equal or lower priority.
-        (0x010 => EOIR: WriteOnly<u32>),
-        (0x014 => _reserved1),
-        /// Identification. `ArchitectureVersion` (bits 19:16) is 2 on a GIC-400 and on QEMU's
-        /// model; a GICv3 redistributor frame answers zero here. Read once at boot.
-        (0x0fc => IIDR: ReadOnly<u32>),
-        (0x100 => @END),
-    }
-}
+/// `GICC_CTLR`: CPU interface control. Bit 0 enables signaling to the core.
+const GICC_CTLR: usize = 0x000;
+const GICC_CTLR_ENABLE: u32 = 1 << 0;
+/// `GICC_PMR`: priority mask. An interrupt is delivered only if its priority is **strictly less
+/// than** this. Backwards from what you'd guess: `0xff` lets everything through.
+const GICC_PMR: usize = 0x004;
+/// `GICC_IAR`: reading it ACKNOWLEDGES an interrupt and says which one, in bits 9:0. **1023 means
+/// spurious**: the GIC changed its mind between raising the line and us getting here (another
+/// core took it, or it was masked). Read it, do nothing, do NOT signal end-of-interrupt.
+const GICC_IAR: usize = 0x00c;
+const GICC_IAR_INTID: u32 = 0x3ff;
+/// `GICC_EOIR`: writing the same INTID back says "I'm done". Until you do, the GIC will not
+/// deliver another interrupt of equal or lower priority.
+const GICC_EOIR: usize = 0x010;
+/// `GICC_IIDR`: identification. `ArchitectureVersion` (bits 19:16) is 2 on a GIC-400 and on QEMU's
+/// model; a GICv3 redistributor frame answers zero here. Read once at boot.
+const GICC_IIDR: usize = 0x0fc;
 
 /// The lowest priority (highest value) that still gets through. `0xff` = everything.
 const PRIORITY_MASK: u32 = 0xff;
@@ -98,25 +69,40 @@ const TIMER_PRIORITY: u8 = 0x80;
 /// The GIC reported a spurious interrupt: do nothing, and do NOT signal EOI.
 pub(crate) const SPURIOUS: u32 = 1023;
 
+/// The two register blocks' virtual addresses, as `init`'s caller named them.
 pub(crate) struct Gic {
-    gicd: *mut Distributor,
-    gicc: *mut CpuInterface,
+    gicd: u64,
+    gicc: u64,
 }
-
-// SAFETY: MMIO pointers, not Rust-managed memory. The lock provides exclusion.
-unsafe impl Send for Gic {}
 
 static GIC: IrqSafeMutex<Option<Gic>> = IrqSafeMutex::new(rank::IRQ_CONTROLLER, None);
 
 impl Gic {
-    fn gicd(&self) -> &Distributor {
-        // SAFETY: the address came from the device tree and was mapped as device memory.
-        unsafe { &*self.gicd }
+    /// Write the distributor's 32-bit register at `offset`.
+    fn distributor_write32(&self, offset: usize, value: u32) {
+        // SAFETY: `init`'s caller promised a mapped GICv2 distributor (4 KiB) at `gicd`, and every
+        // offset passed here is a register above, 4-byte aligned and inside the block.
+        unsafe { core::ptr::write_volatile((self.gicd as usize + offset) as *mut u32, value) }
     }
 
-    fn gicc(&self) -> &CpuInterface {
-        // SAFETY: as above.
-        unsafe { &*self.gicc }
+    /// Write the distributor's byte register at `offset`.
+    fn distributor_write8(&self, offset: usize, value: u8) {
+        // SAFETY: as `distributor_write32`; `GICD_IPRIORITYRn` and `GICD_ITARGETSRn` are
+        // byte-accessible, and their offsets stay below 0xc00.
+        unsafe { core::ptr::write_volatile((self.gicd as usize + offset) as *mut u8, value) }
+    }
+
+    /// Read this core's CPU interface's 32-bit register at `offset`.
+    fn cpu_read32(&self, offset: usize) -> u32 {
+        // SAFETY: `init`'s caller promised a mapped GICv2 CPU interface at `gicc`, and every
+        // offset passed here is a register above, 4-byte aligned and inside the block.
+        unsafe { core::ptr::read_volatile((self.gicc as usize + offset) as *const u32) }
+    }
+
+    /// Write this core's CPU interface's 32-bit register at `offset`.
+    fn cpu_write32(&self, offset: usize, value: u32) {
+        // SAFETY: as `cpu_read32`.
+        unsafe { core::ptr::write_volatile((self.gicc as usize + offset) as *mut u32, value) }
     }
 }
 
@@ -128,7 +114,7 @@ impl Gic {
 /// `gicc` must be a mapped device-memory address with at least 256 bytes behind it.
 pub(crate) unsafe fn identification(gicc: u64) -> u32 {
     // SAFETY: per this function's contract.
-    unsafe { (*(gicc as *const CpuInterface)).IIDR.get() }
+    unsafe { core::ptr::read_volatile((gicc as usize + GICC_IIDR) as *const u32) }
 }
 
 /// Bring the GIC up.
@@ -138,13 +124,10 @@ pub(crate) unsafe fn identification(gicc: u64) -> u32 {
 /// # Safety
 /// The two addresses must name a real GICv2, mapped and exclusively ours.
 pub unsafe fn init(gicd: u64, gicc: u64) {
-    let gic = Gic {
-        gicd: gicd as *mut Distributor,
-        gicc: gicc as *mut CpuInterface,
-    };
+    let gic = Gic { gicd, gicc };
 
     // Distributor: on. This is machine-wide, so **only the boot core does it** (this function).
-    gic.gicd().CTLR.write(GICD_CTLR::ENABLE::SET);
+    gic.distributor_write32(GICD_CTLR, GICD_CTLR_ENABLE);
 
     *GIC.lock() = Some(gic);
 
@@ -162,8 +145,8 @@ pub(crate) fn init_this_cpu() {
 
     // ORDER: the mask before the enable, or the interface goes live with the firmware's PMR,
     // often 0 ("deliver nothing") on a cold boot.
-    gic.gicc().PMR.set(PRIORITY_MASK);
-    gic.gicc().CTLR.write(GICC_CTLR::ENABLE::SET);
+    gic.cpu_write32(GICC_PMR, PRIORITY_MASK);
+    gic.cpu_write32(GICC_CTLR, GICC_CTLR_ENABLE);
 }
 
 /// Enable one interrupt source, give it a priority, and target it at `target_cpu`.
@@ -180,13 +163,13 @@ pub fn enable(intid: u32, target_cpu: usize) {
 
     let reg = (intid / 32) as usize;
     let bit = intid % 32;
-    gic.gicd().ISENABLER[reg].set(1 << bit);
+    gic.distributor_write32(GICD_ISENABLER + 4 * reg, 1 << bit);
 
-    gic.gicd().IPRIORITYR[intid as usize].set(TIMER_PRIORITY);
+    gic.distributor_write8(GICD_IPRIORITYR + intid as usize, TIMER_PRIORITY);
 
     // ITARGETSR (bit N = core N) means something only for SPIs; PPIs and SGIs are per-core.
     if intid >= 32 {
-        gic.gicd().ITARGETSR[intid as usize].set(1 << target_cpu);
+        gic.distributor_write8(GICD_ITARGETSR + intid as usize, 1 << target_cpu);
     }
 }
 
@@ -202,7 +185,7 @@ pub(crate) fn disable(intid: u32) {
     // Write-1-to-clear; zero bits leave their neighbours alone.
     let reg = (intid / 32) as usize;
     let bit = intid % 32;
-    gic.gicd().ICENABLER[reg].set(1 << bit);
+    gic.distributor_write32(GICD_ICENABLER + 4 * reg, 1 << bit);
 }
 
 /// Raise a Software Generated Interrupt (INTID 0-15) on core 0.
@@ -215,8 +198,7 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::send_sgi before gic::init");
 
-    // SGIR: bits[3:0] the SGI id, bits[23:16] the target CPU list (bit N = core N).
-    gic.gicd().SGIR.set((1 << (16 + target_cpu)) | intid);
+    gic.distributor_write32(GICD_SGIR, (1 << (GICD_SGIR_TARGET_SHIFT + target_cpu as u32)) | intid);
 }
 
 /// Take the interrupt. **Reading `IAR` is what acknowledges it**, so this has a side effect
@@ -228,7 +210,7 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
 pub(crate) fn acknowledge() -> u32 {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::acknowledge before gic::init");
-    gic.gicc().IAR.read(GICC_IAR::INTID)
+    gic.cpu_read32(GICC_IAR) & GICC_IAR_INTID
 }
 
 /// "I'm finished with this one."
@@ -241,5 +223,5 @@ pub(crate) fn end_of_interrupt(intid: u32) {
     let gic = guard
         .as_ref()
         .expect("gic::end_of_interrupt before gic::init");
-    gic.gicc().EOIR.set(intid);
+    gic.cpu_write32(GICC_EOIR, intid);
 }

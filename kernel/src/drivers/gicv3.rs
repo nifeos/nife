@@ -20,88 +20,116 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use tock_registers::interfaces::{Readable, Writeable};
-use tock_registers::register_structs;
-use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
+// Register offsets and bits from the GIC architecture specification, versions 3 and 4 (Arm IHI
+// 0069), chapter 12, under each register's own heading, and checked against Linux's
+// `include/linux/irqchip/arm-gic-v3.h` (v6.16).
 
-register_structs! {
-    /// The distributor. One per machine. Offsets from Arm IHI 0069, table 12-24.
-    #[allow(non_snake_case)]
-    pub Distributor {
-        (0x0000 => CTLR: ReadWrite<u32>),
-        (0x0004 => TYPER: ReadOnly<u32>),
-        (0x0008 => _reserved0),
-        /// Group, one BIT per interrupt. Ones mean Group 1, the only group this kernel takes.
-        (0x0080 => IGROUPR: [ReadWrite<u32>; 32]),
-        (0x0100 => ISENABLER: [WriteOnly<u32>; 32]),
-        (0x0180 => ICENABLER: [WriteOnly<u32>; 32]),
-        (0x0200 => _reserved1),
-        (0x0380 => ICACTIVER: [WriteOnly<u32>; 32]),
-        /// Priority, one BYTE per interrupt, as on GICv2.
-        (0x0400 => IPRIORITYR: [ReadWrite<u8>; 1024]),
-        (0x0800 => _reserved2),
-        /// **Routing, one 64-bit AFFINITY per SPI** (INTIDs 32-1019; entries 0-31 are reserved).
-        /// Replaces GICv2's `ITARGETSR` once `CTLR.ARE` is set. Layout is `MPIDR_EL1`'s: Aff0 in
-        /// bits 7:0, Aff1 15:8, Aff2 23:16, Aff3 39:32, and bit 31 (`IRM`) clear for "this core".
-        (0x6000 => IROUTER: [ReadWrite<u64>; 1024]),
-        (0x8000 => _reserved3),
-        /// Peripheral ID 2. `ArchRev` in bits 7:4 is 3 on a GICv3 and 4 on a GICv4.
-        (0xffe8 => PIDR2: ReadOnly<u32>),
-        (0xffec => _reserved4),
-        (0x10000 => @END),
-    }
-}
+// The distributor, one 64 KiB frame per machine.
 
-register_structs! {
-    /// A redistributor's first frame, `RD_base`: control, identity and power.
-    #[allow(non_snake_case)]
-    pub RedistributorControl {
-        (0x0000 => CTLR: ReadWrite<u32>),
-        (0x0004 => IIDR: ReadOnly<u32>),
-        /// Bits 63:32: this frame's core, as Aff3.Aff2.Aff1.Aff0, one byte each. Bit 4: last frame
-        /// in the region. Bit 1: virtual LPIs, which doubles the frame stride.
-        (0x0008 => TYPER: ReadOnly<u64>),
-        (0x0010 => _reserved0),
-        /// Bit 1 `ProcessorSleep`, bit 2 `ChildrenAsleep`. Out of reset a redistributor is asleep
-        /// and delivers nothing to its core, so waking it is the first thing a core does.
-        (0x0014 => WAKER: ReadWrite<u32>),
-        (0x0018 => _reserved1),
-        (0xffe8 => PIDR2: ReadOnly<u32>),
-        (0xffec => _reserved2),
-        (0x10000 => @END),
-    }
-}
-
-register_structs! {
-    /// A redistributor's second frame, `SGI_base`: the GICv2 distributor's banked registers for
-    /// INTIDs 0-31, moved out to live beside the core they belong to.
-    #[allow(non_snake_case)]
-    pub RedistributorPrivate {
-        (0x0000 => _reserved0),
-        (0x0080 => IGROUPR0: ReadWrite<u32>),
-        (0x0084 => _reserved1),
-        (0x0100 => ISENABLER0: WriteOnly<u32>),
-        (0x0104 => _reserved2),
-        (0x0180 => ICENABLER0: WriteOnly<u32>),
-        (0x0184 => _reserved3),
-        (0x0380 => ICACTIVER0: WriteOnly<u32>),
-        (0x0384 => _reserved4),
-        (0x0400 => IPRIORITYR: [ReadWrite<u8>; 32]),
-        (0x0420 => _reserved5),
-        (0x10000 => @END),
-    }
-}
-
+/// `GICD_CTLR`.
+const GICD_CTLR: usize = 0x0000;
 const GICD_CTLR_ENABLE_G1: u32 = 1 << 0; // EnableGrp1 (non-secure view) or EnableGrp0 (DS=1)
 const GICD_CTLR_ENABLE_G1A: u32 = 1 << 1; // EnableGrp1A (non-secure view) or EnableGrp1 (DS=1)
 const GICD_CTLR_ARE_NS: u32 = 1 << 4; // affinity routing, non-secure
-const GICD_CTLR_RWP: u32 = 1 << 31;
+const GICD_CTLR_RWP: u32 = 1 << 31; // register write pending
+/// `GICD_TYPER`. `ITLinesNumber`, bits 4:0: the distributor implements 32 * (N + 1) INTIDs.
+const GICD_TYPER: usize = 0x0004;
+const GICD_TYPER_IT_LINES: u32 = 0x1f;
+/// `GICD_IGROUPRn`: group, one BIT per interrupt. Ones mean Group 1, the only group this kernel
+/// takes.
+const GICD_IGROUPR: usize = 0x0080;
+/// `GICD_ISENABLERn` and `GICD_ICENABLERn`: set- and clear-enable, one bit per interrupt,
+/// write-one-to-act.
+const GICD_ISENABLER: usize = 0x0100;
+const GICD_ICENABLER: usize = 0x0180;
+/// `GICD_ICACTIVERn`: clear-active, one bit per interrupt.
+const GICD_ICACTIVER: usize = 0x0380;
+/// `GICD_IPRIORITYRn`: priority, one BYTE per interrupt, as on GICv2.
+const GICD_IPRIORITYR: usize = 0x0400;
+/// `GICD_IROUTERn`: **routing, one 64-bit AFFINITY per SPI** (INTIDs 32-1019; entries 0-31 are
+/// reserved), at `0x6000 + 8n`. Replaces GICv2's `ITARGETSR` once `CTLR.ARE` is set. Layout is
+/// `MPIDR_EL1`'s: Aff0 in bits 7:0, Aff1 15:8, Aff2 23:16, Aff3 39:32, and bit 31 (`IRM`) clear
+/// for "this core".
+const GICD_IROUTER: usize = 0x6000;
+/// `GICD_PIDR2` and `GICR_PIDR2`: peripheral ID 2. `ArchRev` in bits 7:4 is 3 on a GICv3 and 4 on
+/// a GICv4.
+const PIDR2: usize = 0xffe8;
+
+// A redistributor's first frame, `RD_base`: control, identity and power.
+
+/// `GICR_CTLR`. Bit 3 is `RWP`.
+const GICR_CTLR: usize = 0x0000;
 const GICR_CTLR_RWP: u32 = 1 << 3;
-const GICR_WAKER_PROCESSOR_SLEEP: u32 = 1 << 1;
-const GICR_WAKER_CHILDREN_ASLEEP: u32 = 1 << 2;
+/// `GICR_TYPER`, 64 bits. Bits 63:32: this frame's core, as Aff3.Aff2.Aff1.Aff0, one byte each.
+/// Bit 4 `Last`: last frame in the region. Bit 1 `VLPIS`: virtual LPIs, which doubles the frame
+/// stride.
+const GICR_TYPER: usize = 0x0008;
 const GICR_TYPER_VLPIS: u64 = 1 << 1;
 const GICR_TYPER_LAST: u64 = 1 << 4;
+/// `GICR_WAKER`. Bit 1 `ProcessorSleep`, bit 2 `ChildrenAsleep`. Out of reset a redistributor is
+/// asleep and delivers nothing to its core, so waking it is the first thing a core does.
+const GICR_WAKER: usize = 0x0014;
+const GICR_WAKER_PROCESSOR_SLEEP: u32 = 1 << 1;
+const GICR_WAKER_CHILDREN_ASLEEP: u32 = 1 << 2;
+
+// A redistributor's second frame, `SGI_base`: the GICv2 distributor's banked registers for INTIDs
+// 0-31, at the distributor's offsets, moved out to live beside the core they belong to.
+
+/// `GICR_IGROUPR0`, `GICR_ISENABLER0`, `GICR_ICENABLER0`, `GICR_ICACTIVER0`: one bit per private
+/// INTID.
+const GICR_IGROUPR0: usize = 0x0080;
+const GICR_ISENABLER0: usize = 0x0100;
+const GICR_ICENABLER0: usize = 0x0180;
+const GICR_ICACTIVER0: usize = 0x0380;
+/// `GICR_IPRIORITYRn`: one byte per private INTID, 32 of them.
+const GICR_IPRIORITYR: usize = 0x0400;
+
+/// Every frame, the distributor's and each of a redistributor's, is 64 KiB.
 const FRAME: u64 = 0x1_0000;
+
+/// A register's width: what [`Frame::read`] and [`Frame::write`] may move in one access.
+trait Width: Copy {}
+impl Width for u8 {}
+impl Width for u32 {}
+impl Width for u64 {}
+
+/// **One mapped 64 KiB register frame**: the distributor, or a redistributor's `RD_base` or
+/// `SGI_base`. Only [`Frame::new`]'s contract makes one, so a safe access through it is sound for
+/// any in-frame, naturally aligned offset, which every access asserts.
+#[derive(Clone, Copy)]
+struct Frame(u64);
+
+impl Frame {
+    /// # Safety
+    /// `base` must be the virtual address of a GICv3 register frame mapped as device memory, 64 KiB
+    /// of it, and never unmapped.
+    unsafe fn new(base: u64) -> Self {
+        Self(base)
+    }
+
+    /// The register of type `T` at `offset`: in the frame, and aligned to its own width.
+    fn register<T: Width>(self, offset: usize) -> usize {
+        let size = core::mem::size_of::<T>();
+        assert!(
+            offset % size == 0 && offset + size <= FRAME as usize,
+            "gicv3: no {size}-byte register at {offset:#x}"
+        );
+        self.0 as usize + offset
+    }
+
+    /// Read the register of type `T` at `offset`.
+    fn read<T: Width>(self, offset: usize) -> T {
+        // SAFETY: `new`'s contract maps the frame, and `register` asserts the access is inside it
+        // and aligned.
+        unsafe { core::ptr::read_volatile(self.register::<T>(offset) as *const T) }
+    }
+
+    /// Write the register of type `T` at `offset`.
+    fn write<T: Width>(self, offset: usize, value: T) {
+        // SAFETY: as `read`.
+        unsafe { core::ptr::write_volatile(self.register::<T>(offset) as *mut T, value) }
+    }
+}
 
 /// Priority for every line nobody has enabled yet, Linux's `GICD_INT_DEF_PRI`. Irrelevant while a
 /// line is disabled; [`enable`] replaces it with [`ENABLED_PRIORITY`].
@@ -127,15 +155,16 @@ static REDISTRIBUTOR_REGION: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
 /// Each slot's own `RD_base`, zero until that core has run [`init_this_cpu`].
 static REDISTRIBUTOR: [AtomicU64; SLOTS] = [const { AtomicU64::new(0) }; SLOTS];
 
-fn gicd() -> &'static Distributor {
+fn gicd() -> Frame {
     let base = DISTRIBUTOR.load(Ordering::Relaxed);
     assert!(base != 0, "gicv3 used before gicv3::init");
     // SAFETY: `init`'s caller promised a mapped GICv3 distributor at this address, and it is never
     // unmapped.
-    unsafe { &*(base as *const Distributor) }
+    unsafe { Frame::new(base) }
 }
 
-fn rd(slot: usize) -> (&'static RedistributorControl, &'static RedistributorPrivate) {
+/// `slot`'s redistributor: its `RD_base` frame, then its `SGI_base` frame.
+fn rd(slot: usize) -> (Frame, Frame) {
     let base = REDISTRIBUTOR[slot].load(Ordering::Relaxed);
     assert!(
         base != 0,
@@ -143,12 +172,7 @@ fn rd(slot: usize) -> (&'static RedistributorControl, &'static RedistributorPriv
     );
     // SAFETY: `init_this_cpu` stored a frame it found inside the region `init`'s caller promised is
     // mapped, and whose own GICR_TYPER named this core.
-    unsafe {
-        (
-            &*(base as *const RedistributorControl),
-            &*((base + FRAME) as *const RedistributorPrivate),
-        )
-    }
+    unsafe { (Frame::new(base), Frame::new(base + FRAME)) }
 }
 
 /// Spin until a register-write-pending bit reads clear. Bounded, and loud past the bound: an `RWP`
@@ -171,7 +195,7 @@ fn wait_for_rwp(read: impl Fn() -> u32, bit: u32, what: &str) {
 /// `gicd` must be a mapped device-memory address with at least 64 KiB behind it.
 pub(crate) unsafe fn identification(gicd: u64) -> u32 {
     // SAFETY: per this function's contract.
-    unsafe { (*(gicd as *const Distributor)).PIDR2.get() }
+    unsafe { Frame::new(gicd) }.read(PIDR2)
 }
 
 /// Bring the distributor up: every SPI Group 1, disabled, inactive, at the default priority, then
@@ -189,23 +213,25 @@ pub unsafe fn init(distributor: u64, redistributors: u64, redistributors_size: u
     let d = gicd();
 
     // Off, and wait for it to be off, before touching the configuration beneath it.
-    d.CTLR.set(0);
-    wait_for_rwp(|| d.CTLR.get(), GICD_CTLR_RWP, "distributor disable");
+    d.write(GICD_CTLR, 0u32);
+    wait_for_rwp(|| d.read(GICD_CTLR), GICD_CTLR_RWP, "distributor disable");
 
-    // ITLinesNumber: the distributor implements 32 * (N + 1) INTIDs, capped at 1020.
-    let lines = (32 * ((d.TYPER.get() & 0x1f) + 1)).min(1020) as usize;
+    // Capped at 1020: INTIDs 1020-1023 are special.
+    let lines = (32 * ((d.read::<u32>(GICD_TYPER) & GICD_TYPER_IT_LINES) + 1)).min(1020) as usize;
     for reg in 1..lines / 32 {
-        d.IGROUPR[reg].set(!0);
-        d.ICACTIVER[reg].set(!0);
-        d.ICENABLER[reg].set(!0);
+        d.write(GICD_IGROUPR + 4 * reg, !0u32);
+        d.write(GICD_ICACTIVER + 4 * reg, !0u32);
+        d.write(GICD_ICENABLER + 4 * reg, !0u32);
     }
-    for priority in &d.IPRIORITYR[32..lines] {
-        priority.set(DEFAULT_PRIORITY);
+    for intid in 32..lines {
+        d.write(GICD_IPRIORITYR + intid, DEFAULT_PRIORITY);
     }
 
-    d.CTLR
-        .set(GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1);
-    wait_for_rwp(|| d.CTLR.get(), GICD_CTLR_RWP, "distributor enable");
+    d.write(
+        GICD_CTLR,
+        GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1,
+    );
+    wait_for_rwp(|| d.read(GICD_CTLR), GICD_CTLR_RWP, "distributor enable");
 }
 
 /// Find, wake and configure this core's redistributor, and remember it under `slot`.
@@ -227,12 +253,12 @@ pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
             break None;
         }
         // SAFETY: `at` is inside the region `init`'s caller promised is mapped (checked above).
-        let frame = unsafe { &*(at as *const RedistributorControl) };
-        let arch_rev = (frame.PIDR2.get() >> 4) & 0xf;
+        let frame = unsafe { Frame::new(at) };
+        let arch_rev = (frame.read::<u32>(PIDR2) >> 4) & 0xf;
         if !(3..=4).contains(&arch_rev) {
             break None; // not a redistributor: Linux's "we're in trouble" check
         }
-        let typer = frame.TYPER.get();
+        let typer: u64 = frame.read(GICR_TYPER);
         if (typer >> 32) as u32 == affinity {
             break Some(at);
         }
@@ -256,9 +282,9 @@ pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
 
     // Wake it: clear ProcessorSleep, then wait for ChildrenAsleep to clear (Linux
     // `gic_enable_redist`). Until then the redistributor forwards nothing to this core.
-    ctl.WAKER.set(ctl.WAKER.get() & !GICR_WAKER_PROCESSOR_SLEEP);
+    ctl.write(GICR_WAKER, ctl.read::<u32>(GICR_WAKER) & !GICR_WAKER_PROCESSOR_SLEEP);
     wait_for_rwp(
-        || ctl.WAKER.get(),
+        || ctl.read(GICR_WAKER),
         GICR_WAKER_CHILDREN_ASLEEP,
         "redistributor wake",
     );
@@ -266,18 +292,19 @@ pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
     // The private INTIDs: all Group 1, all inactive, PPIs disabled, SGIs enabled and never
     // disabled, as GICv2 forces them (`hw/intc/arm_gic.c`, the GIC-400); the Irq capability's SGI
     // tests mask and unmask on different cores.
-    private.IGROUPR0.set(!0);
-    private.ICACTIVER0.set(!0);
-    private.ICENABLER0.set(0xffff_0000);
-    for (intid, priority) in private.IPRIORITYR.iter().enumerate() {
-        priority.set(if intid < 16 {
+    private.write(GICR_IGROUPR0, !0u32);
+    private.write(GICR_ICACTIVER0, !0u32);
+    private.write(GICR_ICENABLER0, 0xffff_0000u32);
+    for intid in 0..32 {
+        let priority = if intid < 16 {
             ENABLED_PRIORITY
         } else {
             DEFAULT_PRIORITY
-        });
+        };
+        private.write(GICR_IPRIORITYR + intid, priority);
     }
-    private.ISENABLER0.set(0x0000_ffff);
-    wait_for_rwp(|| ctl.CTLR.get(), GICR_CTLR_RWP, "redistributor setup");
+    private.write(GICR_ISENABLER0, 0x0000_ffffu32);
+    wait_for_rwp(|| ctl.read(GICR_CTLR), GICR_CTLR_RWP, "redistributor setup");
 }
 
 /// Enable `intid`. An SPI (32-1019) is routed to `route`, an `IROUTER` value (the target core's
@@ -286,20 +313,20 @@ pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
 /// is already enabled and stays so.
 pub fn enable(slot: usize, intid: u32, route: u64) {
     assert!(intid < SPECIAL_FIRST, "gicv3: INTID {intid} is not a line");
-    let bit = 1 << (intid % 32);
+    let bit: u32 = 1 << (intid % 32);
     if intid < 16 {
         return;
     }
     if intid < 32 {
         let (_, private) = rd(slot);
-        private.IPRIORITYR[intid as usize].set(ENABLED_PRIORITY);
-        private.ISENABLER0.set(bit);
+        private.write(GICR_IPRIORITYR + intid as usize, ENABLED_PRIORITY);
+        private.write(GICR_ISENABLER0, bit);
         return;
     }
     let d = gicd();
-    d.IPRIORITYR[intid as usize].set(ENABLED_PRIORITY);
-    d.IROUTER[intid as usize].set(route);
-    d.ISENABLER[(intid / 32) as usize].set(bit);
+    d.write(GICD_IPRIORITYR + intid as usize, ENABLED_PRIORITY);
+    d.write(GICD_IROUTER + 8 * intid as usize, route);
+    d.write(GICD_ISENABLER + 4 * (intid / 32) as usize, bit);
 }
 
 /// Disable `intid`, and wait until the disable has taken effect (`RWP`), so a level-triggered line
@@ -310,20 +337,20 @@ pub fn enable(slot: usize, intid: u32, route: u64) {
 /// [`init_this_cpu`]). An SGI is an edge a core raises on purpose; it cannot storm, so the reason
 /// the handler masks a line does not apply to it.
 pub(crate) fn disable(slot: usize, intid: u32) {
-    let bit = 1 << (intid % 32);
+    let bit: u32 = 1 << (intid % 32);
     if intid < 16 {
         return;
     }
     if intid < 32 {
         let (ctl, private) = rd(slot);
-        private.ICENABLER0.set(bit);
-        wait_for_rwp(|| ctl.CTLR.get(), GICR_CTLR_RWP, "redistributor disable");
+        private.write(GICR_ICENABLER0, bit);
+        wait_for_rwp(|| ctl.read(GICR_CTLR), GICR_CTLR_RWP, "redistributor disable");
         return;
     }
     let d = gicd();
-    d.ICENABLER[(intid / 32) as usize].set(bit);
+    d.write(GICD_ICENABLER + 4 * (intid / 32) as usize, bit);
     wait_for_rwp(
-        || d.CTLR.get(),
+        || d.read(GICD_CTLR),
         GICD_CTLR_RWP,
         "distributor disable of a line",
     );
