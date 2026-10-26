@@ -304,6 +304,8 @@ it is mechanical**, which is why nothing automates past the first step:
 4. Extend this file's divergence list, which claims to be exhaustive and has been wrong once.
 5. Run `script/test` and milestone 37's crash injector. **The store's safety claim is the thing a
    bump risks**, so a green build is not the bar.
+6. For RedoxFS, make the `ignore` list in `.github/dependabot.yml` match the new manifest's direct
+   dependencies, since it exists only to keep Dependabot from rewriting this vendored manifest.
 
 ### BUGS
 
