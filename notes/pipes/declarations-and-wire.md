@@ -1,9 +1,9 @@
 # The manifest declarations, the input slot and the wire
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds
-`OutputDeclaration` and `InputDeclaration`, how this lane decided the input slot's shape, the spawn
-request's bits and delegation order, and why a builtin can lead a pipeline. The lane that split the
-file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
+`OutputDeclaration` and `InputDeclaration`, how milestone 50's lane decided the input slot's shape,
+the spawn request's bits and delegation order, and why a builtin can lead a pipeline. The lane that
+split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -44,8 +44,8 @@ a shell that appears to hang, because there fd 0 always exists and "nobody is ev
 it" is not a property of the command line. Here it is: `wc` declares `InputDeclaration::Required`,
 so the prompt refuses a line that gives it neither a `<` nor a pipe before it spawns anything.
 
-The mirror holds too. `date < report.txt` is `Refusal::InputForbidden`, on the same grounds the prompt
-refuses an unplaceable token: authority that moved for no reason.
+The mirror holds too. `date < report.txt` is `Refusal::InputForbidden`, on the same grounds the
+prompt refuses an unplaceable token: authority that moved for no reason.
 
 ## The input slot's shape, which this lane had to decide
 
@@ -64,8 +64,8 @@ No new protocol, no new opcodes, no reply. Three consequences fall out and all t
    and writes the sink contract at it, which is what `fixtures/src/file_source.rs` already was
    (`fixtures/src/sink.rs`'s verify role, until milestone 292 gave it its own name). The shell
    itself is a producer when a builtin leads a pipeline.
-3. `OPERATION_EOF` becomes load-bearing rather than tidy. A producer has to tell its reader that it has
-   finished; inferring it from a death notification would be a fact about process supervision
+3. `OPERATION_EOF` becomes load-bearing rather than tidy. A producer has to tell its reader that it
+   has finished; inferring it from a death notification would be a fact about process supervision
    standing in for a fact about a stream. This is why `date` gained an end-of-stream message.
 
 The asymmetry with `OutputDeclaration` is real and worth naming: output has three shapes because the system
@@ -103,7 +103,7 @@ write end travels as `WRITE|GRANT` and its read end as `READ|GRANT`, and the pro
 as `WRITE` and `READ`. So the program on the right of a `|` cannot write back up its own input.
 Nothing in either program enforces that; the capability it holds simply cannot express it.
 
-The wire also grew one ack. A child whose output the shell substituted owes the shell no answer,
+The wire also grew one ack. A child whose output was substituted owes the shell no answer,
 because its answer is going somewhere else, so a failed spawn would be invisible and the pipeline
 would wait on a producer that does not exist. `SPAWN_OK` on the result endpoint closes that. An
 unredirected spawn is unchanged.
@@ -116,8 +116,8 @@ unredirected spawn is unchanged.
 That costs no new mechanism, and it is the register-only sink contract paying out: being a writer
 needs one capability and nothing else, so anybody can be one. The builtins already rendered their
 output through a callback rather than through `print`, because the witness roles have no terminal.
-That choice served testability, and it means `echo`, `ls` and `pwd` feed a pipe with no branch in any
-of them.
+That choice served testability, and it means `echo`, `ls` and `pwd` feed a pipe with no branch in
+any of them.
 
 `ls | wc` therefore works, in a shell that holds a directory, and since milestone 50's second half
 the interactive boot grants one.

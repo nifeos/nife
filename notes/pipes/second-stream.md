@@ -74,8 +74,8 @@ That is the whole claim in four lines. The answer went to the terminal, the seco
 one stream, so `err.txt` could not have existed and the timestamp would have been the only thing
 either destination could have held.
 
-And the case it was built for, which needs a `date` that holds no clock (the interactive
-prompt has one, so this is `kernel::user::date_tests`, which asserts by value rather than reading off a
+And the case it was built for, which needs a `date` that holds no clock (the interactive prompt has
+one, so this is `kernel::user::date_tests`, which asserts by value rather than reading off a
 transcript):
 
 ```text
@@ -171,7 +171,7 @@ architectures, `components/src/progenitor.rs`, so "two inits" and the archive en
 below are both history now. The section stays as written, because what it records is
 the correction and not the arrangement.)*
 
-*Written 2026-08-03; milestone 96 removed the duplication it describes the next day. This
+*Written 2026-08-03; the next day, milestone 96 removed the duplication it describes. This
 note keeps the finding because it is the reason the crate exists.*
 
 [The section on

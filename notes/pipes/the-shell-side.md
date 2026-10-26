@@ -46,9 +46,9 @@ or a producing builtin. It is always the consumer, because the tail's sink is it
 a file it backs. With one wait point and no select, that works only if some stage reads to the end
 before it writes ([one-wait-point](one-wait-point.md)). `grant_plan::check_chain` decides this.
 
-It runs before the shell opens the files, because `>` truncates, and a line that will not run must not
-have emptied a file. The files then open before any process exists. `date > f` empties `f` even if
-`date` then says nothing.
+It runs before the shell opens the files, because `>` truncates, and a line that will not run must
+not have emptied a file. The files then open before any process exists. `date > f` empties `f` even
+if `date` then says nothing.
 
 ## The screen narrowing, decided before anything spawns
 
@@ -97,7 +97,7 @@ which is why `>` and `|` are one mechanism. The rules for the rest of `spawnprot
   endpoint does. The progenitor narrows its copy no further than `READ` when it inserts the child's
   (`supervision_protocol::build_child_space`). Less than `READ` would leave it nothing to hand on.
 
-A stage whose output the shell substituted owes the shell no answer, so the progenitor acks instead.
+A stage whose output was substituted owes the shell no answer, so the progenitor acks instead.
 Without the ack a failed spawn is invisible, and the pipeline waits on a producer that does not
 exist. A screen-narrowed stage has the same shape, since its completion signal is the fault endpoint.
 A fault word can arrive in the ack's place (milestone 235 (a command that faults hangs the prompt)).

@@ -21,11 +21,12 @@ assert!(crate::sched::reclaim_region(tcb_region).is_err());
 let got = crate::sched::ipc_receive(report)[0];   // waits for the child's SEND
 ```
 
-That comment was true when it was written and stopped being true when DECISIONS §16 was amended.
-A refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every
-live thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down.
-§24 (interrupting the foreground process)'s `^C` escalation builds on exactly that. So the probe marked the child `killed`, and
-`schedule()` converts a killed thread to a corpse at its next preemption:
+That comment was true when it was written and stopped being true when DECISIONS §16 was amended. A
+refused reclaim is not passive any more: `reap_region_objects` sets `killed = true` on every live
+thread in the region and *then* returns `Err`, so the owner's retry can tear a runaway down. The
+`^C` escalation of §24 (interrupting the foreground process) builds on exactly that. So the probe
+marked the child `killed`, and `schedule()` converts a killed thread to a corpse at its next
+preemption:
 
 ```rust
 if t.killed && t.state == State::Running { t.state = State::Finished; }
@@ -33,8 +34,8 @@ if t.killed && t.state == State::Running { t.state = State::Finished; }
 
 From there it is a plain race between the child's nine instructions and its own core's next timer
 tick. Win it and the child SENDs, the test passes, and the armed kill is harmless because the child
-was about to exit anyway. Lose it and the kernel reaps the child without it ever sending, `ipc_receive`
-blocks forever, every core falls to idle, and the 60 s heartbeat fires.
+was about to exit anyway. Lose it and the kernel reaps the child without it ever sending,
+`ipc_receive` blocks forever, every core falls to idle, and the 60 s heartbeat fires.
 
 Why host load moved it from "never seen locally" to one run in four is not measured here. The
 likely mechanism is that a vCPU thread the host deschedules comes back with its guest timer deadline
@@ -134,10 +135,10 @@ kind that sounds right:
 
 - "riscv64 loses the race more often under TCG."  Written in an earlier draft of this section, by
   this milestone. Possible, unmeasured, and unnecessary once you count the exposure ratio.
-- "riscv64 runs first, so it failed first and the aarch64 leg never got there."  Offered while someone
-  reported the aarch64 hit, and it is backwards: `xtask test` runs the aarch64 leg first
-  and `return false`s on its failure, so a riscv64-only sighting is a run in which aarch64 got
-  its chance and passed. The four riscv64 CI hits came from `cpu matrix`, which has no aarch64 leg to
+- "riscv64 runs first, so it failed first and the aarch64 leg never got there." Offered while
+  someone reported the aarch64 hit, and it is backwards: `xtask test` runs the aarch64 leg first and
+  `return false`s on its failure, so a riscv64-only sighting is a run in which aarch64 got its
+  chance and passed. The four riscv64 CI hits came from `cpu matrix`, which has no aarch64 leg to
   order against.
 
 §19 says parity is a gate. The corollary this bug supplies is that a failure appearing on one ISA is
@@ -178,12 +179,12 @@ peak of 130 (aarch64), 129 (riscv64) and 57 (x86_64), and that constant's own do
 the ledger and the four coupled constants that moved with it. Two things closed the gap this
 section names:
 
-- The test harness reports the occupancy rather than hiding it. `sched::PEAK_THREADS` is a whole-boot
-  high-water mark and `kernel::testing` prints it in the closing summary beside the frame ledger
-  (`threads: N live at the peak, of M the image allows`). A blocked leak is still invisible to
-  `thread_leak_police`, which is a different question and correctly scoped to runnable spinners,
-  but nobody has to instrument the kernel to see the table filling any more. It reports and does
-  not gate, and `report_thread_peak`'s doc says why: what fills this table is what earlier tests
+- The test harness reports the occupancy, which used to be invisible. `sched::PEAK_THREADS` is a
+  whole-boot high-water mark and `kernel::testing` prints it in the closing summary beside the frame
+  ledger (`threads: N live at the peak, of M the image allows`). A blocked leak is still invisible
+  to `thread_leak_police`, which is a different question and correctly scoped to runnable spinners,
+  but nobody has to instrument the kernel to see the table filling any more. It reports and does not
+  gate, and `report_thread_peak`'s doc says why: what fills this table is what earlier tests
   deliberately left running, so a gate would fire on every milestone that adds a service.
 - The refusal says so. `pipeline_service::start_with`'s second spawn had a bare `?`, which is
   why the wall presented as "the test did not get a shell" rather than as a full thread table.
@@ -202,7 +203,7 @@ this one was not. `notes/benchmarks/spawn-el0.md`'s 2026-08-27 section has the a
 
 ## The general lesson
 
-A call that returns `Err` may still have done something. `reclaim_region(r).is_err()` reads like
-a question and is an act; the test used it as a question and the comment beside it asserted the
-opposite of the truth. When someone amends a semantic, the amendment lands in the function it changed,
-and every caller that encoded the old semantic in a *comment* keeps compiling.
+A call that returns `Err` may still have done something. `reclaim_region(r).is_err()` reads like a
+question and is an act; the test used it as a question and the comment beside it asserted the
+opposite of the truth. When someone amends a semantic, the amendment lands in the function it
+changed, and every caller that encoded the old semantic in a *comment* keeps compiling.

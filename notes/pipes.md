@@ -20,10 +20,10 @@ number everybody has to agree on. See ["`2>`: built as a
 declaration"](pipes/second-stream.md).
 
 **The draining lane came after all of them, on 2026-08-04**, and it is the only one that somebody
-trying to *use* this raised. Milestone 40 (documentation as a system service) built a documentation viewer, could not show a page
-at the prompt, and spent three boot-gate failures finding out that all three reasons were here. Two
-were bugs, now fixed; the third is not a bug at all, and naming it correctly is the reusable
-part. See ["One wait point, and what it decides about a
+trying to *use* this raised. Milestone 40 (documentation as a system service) built a documentation
+viewer, could not show a page at the prompt, and spent three boot-gate failures finding out that all
+three reasons were here. Two were bugs, now fixed; the third is not a bug at all, and naming it
+correctly is the reusable part. See ["One wait point, and what it decides about a
 line"](pipes/one-wait-point.md).
 
 ## What this lane had to add, which was less than it looks
@@ -67,7 +67,7 @@ Three refusals that bash does not make, each because a line should mean what it 
 - **A redirection goes last in its stage.** `wc < report.txt`, never `< report.txt wc`. Bash accepts
   the second; refusing it is what lets a stage's command text be a *slice* of the line rather than
   something reassembled, which matters in a shell with no allocator.
-- **Only the first stage takes input and only the last redirects output.** `date > f | wc` says where
+- **Only the first stage takes input and only the last is redirected.** `date > f | wc` says where
   `date`'s bytes go and then pipes them somewhere else. That is two answers to one question, so the
   grammar refuses it rather than resolving it by a precedence rule nobody should have to remember.
 - **A redirection names one file.** The grammar refuses `date > *.txt` where it reads the token, not
@@ -125,10 +125,10 @@ appendix](pipes/one-wait-point.md).
 
 ## Buffering: measured, and the answer is to build nothing
 
-Measured on 2026-08-03 under HVF, `a | b` costs 1146 ns per sixteen bytes (13.3 MiB/s). A macOS
-pipe at the same write size costs 348 ns. The gap that matters is the sixteen-byte message, not the
-lockstep, and a buffering process would add a second rendezvous per message. So this lane built nothing.
-The table and its caveats are in [the buffering appendix](pipes/buffering.md).
+Measured on 2026-08-03 under HVF, `a | b` costs 1146 ns per sixteen bytes (13.3 MiB/s). A macOS pipe
+at the same write size costs 348 ns. The gap that matters is the sixteen-byte message, not the
+lockstep, and a buffering process would add a second rendezvous per message. So no buffering stage
+exists. The table and its caveats are in [the buffering appendix](pipes/buffering.md).
 
 ## SIGPIPE, and why the pipeline gets its own region
 
@@ -290,10 +290,10 @@ $ wc gate.txt | wc
 ```
 
 The failure it replaces is the one worth recognizing, because it does not look like a failure. The
-shell spawned the head stage with an empty input slot, a `receive` there answers `NoSuchSlot` instead of
-blocking, and that reads as end of document, so this line used to print `0 0 0` and mean it. **A
-pipeline that reports zero of everything is a pipeline in which nothing was ever fed**, and it is
-the only symptom an empty input slot has.
+shell spawned the head stage with an empty input slot, a `receive` there answers `NoSuchSlot`
+instead of blocking, and that reads as end of document, so this line used to print `0 0 0` and mean
+it. **A pipeline that reports zero of everything is a pipeline in which nothing was ever fed**, and
+it is the only symptom an empty input slot has.
 
 Three stages, to show the operand is the *head*'s and travels no further (`1 12 70` plus a newline
 is eight bytes, and `1 3 8` plus a newline is six):
@@ -324,7 +324,7 @@ One line each.
 - `rm` and per-file capabilities are not reachable from the prompt. The progenitor would have to
   build a caretaker per invocation.
 - Slot 1 is the clock, the input source or the `--mem` untyped, and slot 0 moves behind a directory
-  grant. That is safe only while no manifest declares two; it still needs a numbered slot convention.
+  grant. That is safe only while no manifest declares two; a numbered slot convention is owed.
 - A pipeline is full lockstep: every sixteen bytes is a rendezvous, with no buffer.
 - A line whose bytes all come from this shell needs a barrier stage unless its tail goes to the
   screen. A redirected filter (`doc page.md > out.txt`) is still refused.

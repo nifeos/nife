@@ -43,8 +43,8 @@ The thing a person usually reaches for `2>` to save is the shell's own refusals,
 enter a redirection here. `wc < nosuch.txt` is `Say::Failed` printed by the prompt;
 `least_authority_demo 9 > out.txt` is `Refusal::NotAByteStream` printed by the prompt; a spawn that
 fails is `spawnproto::SPAWN_FAILED` printed by the prompt. All of it goes to the terminal, always,
-because the shell is a different process from the thing the line redirects and its output was never in
-the substituted slot.
+because the shell is a different process from the thing the line redirects and its output was never
+in the substituted slot.
 
 That is not a small residue. It is most of what fd 2 carries in a Unix shell session, and here the
 process boundary separates it, not convention. That is the stronger separation: there is no `2>&1`

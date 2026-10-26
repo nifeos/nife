@@ -1992,8 +1992,10 @@ notes/pcie-transport-scope.md	5
 notes/pcie.md	24
 notes/per-cpu.md	6
 notes/physical-memory.md	8
+notes/pipes/declarations-and-wire.md	3
 notes/pipes/the-boot.md	3
 notes/pipes/the-file-end.md	3
+notes/pipes/the-shell-side.md	4
 notes/pmu.md	22
 notes/portability.md	12
 notes/prior-art.md	6
@@ -2111,6 +2113,8 @@ notes/scheduled-execution/the-program.md	26
 notes/scheduler-instruments.md	6
 notes/scheduler/README.md	2
 notes/scheduler/reclaim-lost-wakeup.md	6
+notes/scheduler/rendezvous.md	5
+notes/scheduler/the-current-cpu-page.md	2
 notes/scheduler/undelivered-wake-gate.md	3
 notes/scripts/helpers-and-bootstrap.md	10
 notes/scripts/one-kernel-test.md	4

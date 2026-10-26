@@ -17,8 +17,8 @@ The records this file cites by number:
 
 The roadmap block said it plainly: measure `a | b` throughput against a Unix pipe before deciding
 anything. If buffering earns its place, it arrives as a component speaking the sink contract on both
-sides. The measurement came on 2026-08-03. It has not earned its place, and the number says something
-more useful than "no".
+sides. The measurement came on 2026-08-03. It has not earned its place, and the number says
+something more useful than "no".
 
 ### The measurement
 
@@ -47,8 +47,8 @@ The lockstep is not the bottleneck. The sixteen-byte message is.
 
 Read the two host rows together. At the same granularity Unix is 3.3x faster than us, which is a
 real gap and is the cost of a capability rendezvous against a tuned kernel pipe. The 870x is
-somewhere else entirely. Unix's win is that a program writes 64 KiB per syscall, while the register-only
-sink contract caps ours at sixteen bytes per message.
+somewhere else entirely. Unix's win is that a program writes 64 KiB per syscall, while the
+register-only sink contract caps ours at sixteen bytes per message.
 
 That cap is not an oversight and it is not a thing buffering fixes. `notes/sink-protocol.md` records
 why the contract had to be register-only: the moment a sink also needs a page mapped at an agreed
@@ -67,7 +67,7 @@ and a consumer has work to do between reads, so the two can overlap instead of a
 not win when both are only moving bytes, which is what this benchmark and every pipeline in this
 system today are.
 
-So the lane builds nothing, and that is the successful outcome the block described. What would move the
+So nothing is built, and that is the successful outcome the block described. What would move the
 number is a larger message, and that is a different decision with §51's indifference on the other
 side of it. It is not taken here and it is not needed. `date | wc` and `ls | wc` are hundreds of
 bytes, and at 1.15 µs per sixteen that is tens of microseconds for a whole line.

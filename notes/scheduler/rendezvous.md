@@ -40,8 +40,8 @@ badge on the endpoint capability the sender invoked, 0 when unbadged, and word 4
 fault or exit message (DECISIONS §26 (the fault endpoint)) fills the top two otherwise. One width
 lets the fault path reuse the rendezvous machinery. A plain `SEND` carries its badge because §242 (a
 system log) stamps every record from the writer's badge. A log writer speaks the byte sink, which is
-a plain `SEND`. Without the word, the rendezvous would drop the badge a spawner minted for this very
-path. The same store that wrote a zero there writes the badge, so it costs no instruction.
+a plain `SEND`. Without the word, the badge a spawner minted would be dropped on the path it was
+minted for. The same store that wrote a zero there writes the badge, so it costs no instruction.
 
 A bound notification (milestone 151 (notification objects), DECISIONS §101 (notification objects))
 ends a receive before it can block. The receive takes a signal counted while the thread was

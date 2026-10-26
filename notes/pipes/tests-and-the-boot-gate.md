@@ -136,8 +136,8 @@ harness gets wrong quietly:
   appears *before* the `$ ` that should introduce it, and then fails to find its own echo. The gate
   waits for the transcript to end in a bare prompt, which is the unambiguous "ready".
 - The script types `wc < gate.txt` twice on purpose, so the gate anchors every search at a cursor
-  rather than running it over the whole transcript. An unanchored search found the first answer for both
-  lines, and would have passed a `>>` that truncated.
+  rather than running it over the whole transcript. An unanchored search found the first answer for
+  both lines, and would have passed a `>>` that truncated.
 
 It drives `helpers/qemu-runner-aarch64.sh` directly rather than `cargo run`, so the process it owns
 is QEMU (the runner `exec`s it) and the kill lands on the emulator instead of on cargo. It is not

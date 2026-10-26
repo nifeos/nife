@@ -64,24 +64,24 @@ receive tails carry a `debug_assert` tripwire ("resumed with nothing delivered")
 gate makes unreachable. Every `ipc_served` setter records a `serve:tid/site` ring event so a
 bench dump names who completed a rendezvous instead of leaving it to inference.
 
-The failure it was built against was misread, and that correction is the important part. Its
-source was the VisionFive 2's boot 8, read at the time as a wake with no sender. The fifth bench stop
+The failure it was built against was misread, and that correction is the important part. Its source
+was the VisionFive 2's boot 8, read at the time as a wake with no sender. The fifth bench stop
 (2026-08-15) overturned that reading: the wake was a real send. So the gate has never fired on a
 field failure, and `refuse:` has never appeared on a board ring. It stays because the transition it
 forbids is reachable, which a loom harness proves. It is hardening against a reachable state, not a
-repair of a field failure. Two companions from the same boot guard `ipc_reply` and a switch into
-the current thread. The protocol is a crate, `crates/thread_wake_handshake`, shipped and
-model-checked as the same code. The misreading, the companions and the loom harnesses are in
+repair of a field failure. Two companions from the same boot guard `ipc_reply` and a switch into the
+current thread. The protocol is a crate, `crates/thread_wake_handshake`, shipped and model-checked
+as the same code. The misreading, the companions and the loom harnesses are in
 [scheduler/undelivered-wake-gate.md](scheduler/undelivered-wake-gate.md); the model's limits are in
 notes/interleaving.md.
 
 BUGS. The gate protects threads whose `wait_on` is set, which is every IPC block site today; a
-future block path that forgets to set `wait_on` opts itself out silently. A kernel-thread caller
-of `ipc_receive` still cannot tell an abort from a message unless it checks `take_ipc_aborted`
-itself; the gate guarantees a site delivered *something*, not which thing. And the blocking `ipc_send`
+future block path that forgets to set `wait_on` opts itself out silently. A kernel-thread caller of
+`ipc_receive` still cannot tell an abort from a message unless it checks `take_ipc_aborted` itself;
+the gate guarantees a site delivered *something*, not which thing. And the blocking `ipc_send`
 resume path carries no tripwire assert, deliberately. It takes no lock after `schedule()` today, and
-adding one on the IPC hot path to double-check an invariant the gate
-already holds was judged not worth the cycles the bench tripwire watches.
+adding one on the IPC hot path to double-check an invariant the gate already holds was judged not
+worth the cycles the bench tripwire watches.
 
 ## The costs migration made real
 
@@ -127,12 +127,12 @@ are two ways a test never finishes, and no single instrument sees both.
 | Blind to | Any loop that keeps doing IPC | Nothing that fails to terminate, but slow to react |
 | Scope | Anywhere, including before tests start | Only while a test is running |
 
-Why the ceiling had to join the heartbeat. The heartbeat credits a completed rendezvous as progress. The
-RedoxFS repeat-write livelock spins in an allocator commit *while still serving blk IPC*, so every
-rendezvous reset the heartbeat. A failure that had been a loud 60 s trip became an infinite silent
-hang at about 400% CPU with no watchdog fire. A livelock that makes progress is indistinguishable from
-healthy work to a progress-only instrument. Turning a loud failure into a silent one is worse than the
-flake the heartbeat fixed, so both mechanisms are live now.
+Why the ceiling had to join the heartbeat. The heartbeat credits a completed rendezvous as progress.
+The RedoxFS repeat-write livelock spins in an allocator commit *while still serving blk IPC*, so
+every rendezvous reset the heartbeat. A failure that had been a loud 60 s trip became an infinite
+silent hang at about 400% CPU with no watchdog fire. A livelock that makes progress is
+indistinguishable from healthy work to a progress-only instrument. Turning a loud failure into a
+silent one is worse than the flake the heartbeat fixed, so both mechanisms are live now.
 
 Why budgets are per test. std_net once honestly ran 300 to 344 s, so one global ceiling would have
 sat near 700 s and let a two-second unit test spin for eleven minutes before failing. By 2026-10-11
@@ -191,9 +191,9 @@ proof, the occurrences table and the thread-table follow-up are in
 
 ## CLOSED: a second lost wakeup, and the fingerprint is what told the two apart
 
-`spawn_on` asked "is this target my own core?" twice, on either side of a window in which a
-steal can move the asking thread onto a different core. When the two answers disagreed the placement
-went into a remote core's inbox and the spawn skipped the reschedule SGI. The thread sat `Ready` forever
+`spawn_on` asked "is this target my own core?" twice, on either side of a window in which a steal
+can move the asking thread onto a different core. When the two answers disagreed the placement went
+into a remote core's inbox and the spawn skipped the reschedule SGI. The thread sat `Ready` forever
 beside four idle cores. Found 2026-08-28 on the `rv64` CPU-matrix leg of PR #574.
 
 It shares the watchdog's message with milestone 72 (a lost wakeup)'s bug and is a different one: the dump showed
