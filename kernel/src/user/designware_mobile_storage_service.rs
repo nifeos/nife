@@ -59,7 +59,7 @@ pub(crate) fn start(
 ) -> Result<Wiring, NotStarted> {
     let handoff = Handoff {
         window,
-        ciu_hz: slot.ciu_hz,
+        card_interface_unit_hz: slot.card_interface_unit_hz,
         bus_width: slot.bus_width,
         queue_depth: u8::try_from(slot.queue_depth.unwrap_or(32)).unwrap_or(0),
     };

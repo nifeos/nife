@@ -24,7 +24,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `card` | module | `src/card.rs` | unrecorded. | yes | clear |
 | `command` | module | `src/command.rs` | unrecorded. | yes | clear |
 | `host` | module | `src/host.rs` | unrecorded. | yes | clear |
-| `idmac` | module | `src/idmac.rs` | provisional. | yes | term |
+| `internal_direct_memory_access` | module | `src/internal_direct_memory_access.rs` | provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac`. | yes | clear |
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a host controller crate |
 | `partition` | module | `src/partition.rs` | unrecorded. | yes | scope: partitions |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
@@ -32,7 +32,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `sd` | module | `src/sd.rs` | unrecorded. | yes | term |
 | `sim` | module | `src/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
-| `IdmacReport` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
+| `InternalDirectMemoryAccessReport` | item | `src/bench.rs` | provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `IdmacReport`. | yes | scope: a bench |
 | `MATRIX_BLOCKS` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
 | `MATRIX_HZ` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
 | `MatrixRow` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
@@ -42,7 +42,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `Watch` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
 | `WriteVerdict` | item | `src/bench.rs` | unrecorded. | yes | scope: a bench |
 | `clear` | item | `src/bench.rs` | provisional. | yes | clear |
-| `idmac_read` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
+| `internal_direct_memory_access_read` | item | `src/bench.rs` | provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac_read`. | yes | scope: a bench |
 | `new` | item | `src/bench.rs` | provisional. | yes | clear |
 | `pattern` | item | `src/bench.rs` | unrecorded. | yes | scope: a bench |
 | `read_matrix` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
@@ -79,13 +79,13 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `read` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `registers` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `reset` | item | `src/host.rs` | unrecorded. | yes | clear |
-| `with_idmac` | item | `src/host.rs` | provisional. | yes | term |
+| `with_internal_direct_memory_access` | item | `src/host.rs` | provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `with_idmac`. | yes | clear |
 | `write` | item | `src/host.rs` | unrecorded. | yes | clear |
-| `DirectMemoryAccessRegion` | item | `src/idmac.rs` | provisional. | yes | clear, though `idmac` and `dma_64bit` beside it keep the acronym |
-| `Idmac` | item | `src/idmac.rs` | provisional. | yes | term |
-| `NoDirectMemoryAccess` | item | `src/idmac.rs` | provisional. | yes | clear, though `idmac` and `dma_64bit` beside it keep the acronym |
-| `Refusal` | item | `src/idmac.rs` | provisional. | yes | generic |
-| `new` | item | `src/idmac.rs` | provisional. | yes | clear |
+| `DirectMemoryAccessRegion` | item | `src/internal_direct_memory_access.rs` | provisional. | yes | clear |
+| `InternalDirectMemoryAccess` | item | `src/internal_direct_memory_access.rs` | provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `Idmac`. | yes | clear |
+| `NoDirectMemoryAccess` | item | `src/internal_direct_memory_access.rs` | provisional. | yes | clear |
+| `Refusal` | item | `src/internal_direct_memory_access.rs` | provisional. | yes | generic |
+| `new` | item | `src/internal_direct_memory_access.rs` | provisional. | yes | clear |
 | `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `QUEUE_DEPTH` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors, and the device tree's `fifo-depth` keeps its spelling; was `FIFO_DEPTH`. | yes | clear |
@@ -140,7 +140,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the fields of `ReadReport` (7), `IdmacReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
+- the fields of `ReadReport` (7), `InternalDirectMemoryAccessReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
 - the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitializationError` (9), `IoError` (4) and the private `Fault` (4);
 - the methods of the traits `Registers` (3) and `DirectMemoryAccessRegion` (7).
 
@@ -176,3 +176,13 @@ Each renamed row's status says which ruling renamed it and what it was.
 - Ruled 2026-10-26 (UTC): `lba` spells out `logical_block_address`, as the earlier ratifications'
   `lba_shift` did. The block functions' and the bench's `lba` arguments take it, and so do the
   simulator's `first_lba` and the window proof in driver_process_contract.
+- Ruled 2026-10-26 (UTC), this crate's own names: `idmac` and the names built on it spell out
+  `internal_direct_memory_access`, with `doc(alias = "idmac")`: the module, `Idmac`,
+  `IdmacReport`, `Refusal::NoIdmac`, `with_idmac` and every `idmac_*` function become
+  `InternalDirectMemoryAccess`, `InternalDirectMemoryAccessReport`,
+  `Refusal::NoInternalDirectMemoryAccess`, `with_internal_direct_memory_access` and
+  `internal_direct_memory_access_*`. `ciu_hz` becomes `card_interface_unit_hz`, `be32`
+  `big_endian_u32`, the simulator's `ctrl_resets_cleared` and `bmod_resets_cleared`
+  `control_resets_cleared` and `bus_mode_resets_cleared`, and `ReadReport::fs_type`
+  `file_system_type`. `arg` becomes `argument` (the `Command` field and its constructors'
+  argument) and `buf` becomes `buffer`. `Hz` stays.

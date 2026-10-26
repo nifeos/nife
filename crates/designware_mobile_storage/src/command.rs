@@ -107,7 +107,7 @@ pub struct Command {
     /// The command index, 0 to 63.
     pub index: u8,
     /// The 32-bit argument.
-    pub arg: u32,
+    pub argument: u32,
     /// What the card answers with.
     pub response: Response,
     /// The data phase, if there is one.
@@ -117,10 +117,10 @@ pub struct Command {
 impl Command {
     /// A command with no data phase.
     #[must_use]
-    pub const fn new(index: u8, arg: u32, response: Response) -> Self {
+    pub const fn new(index: u8, argument: u32, response: Response) -> Self {
         Command {
             index,
-            arg,
+            argument,
             response,
             data: None,
         }
@@ -128,10 +128,15 @@ impl Command {
 
     /// A command with a data phase.
     #[must_use]
-    pub(crate) const fn with_data(index: u8, arg: u32, response: Response, data: Data) -> Self {
+    pub(crate) const fn with_data(
+        index: u8,
+        argument: u32,
+        response: Response,
+        data: Data,
+    ) -> Self {
         Command {
             index,
-            arg,
+            argument,
             response,
             data: Some(data),
         }

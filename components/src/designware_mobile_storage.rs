@@ -102,7 +102,11 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         send(READY, STEP_BAD_HANDOFF, arg0, 0);
         exit();
     };
-    let Ok((mut host, _)) = Host::new(Page, h.ciu_hz, Some(u32::from(h.queue_depth))) else {
+    let Ok((mut host, _)) = Host::new(
+        Page,
+        h.card_interface_unit_hz,
+        Some(u32::from(h.queue_depth)),
+    ) else {
         send(READY, STEP_CONTROLLER, 0, 0);
         exit();
     };

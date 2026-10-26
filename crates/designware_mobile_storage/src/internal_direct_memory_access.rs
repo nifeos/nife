@@ -8,8 +8,9 @@
 //! in `CTRL`, enable it in `BMOD`, send the command. Polled completion: `RINTSTS` for the card, the
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
-//! Name: provisional (milestone 53 (the board's own peripherals)'s IDMAC lane, 2026-10-22 UTC).
-//! The databook's own name for the engine, as `registers` names its registers.
+//! Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
+//! `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac`, the databook's own
+//! name for the engine.
 
 use crate::command::Command;
 use crate::host::{COMMAND_DEADLINE_US, DATA_DEADLINE_US, Error, Host, Identity, Registers};
@@ -97,7 +98,8 @@ pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
-    NoIdmac(u32),
+    #[doc(alias = "idmac")]
+    NoInternalDirectMemoryAccess(u32),
     /// `HCON` says the IDMAC uses 64-bit addresses, whose descriptors this driver does not build.
     Addressing64,
     /// The region does not start on a page.
@@ -108,17 +110,20 @@ pub enum Refusal {
     Above4GiB(u64),
 }
 
-/// **A region the IDMAC can use**, checked against the controller once. Only [`Idmac::new`] makes
-/// one, so a [`Host`] holding one has an IDMAC, 32-bit descriptors and a region they can address.
+/// **A region the IDMAC can use**, checked against the controller once. Only
+/// [`InternalDirectMemoryAccess::new`] makes one, so a [`Host`] holding one has an IDMAC, 32-bit
+/// descriptors and a region they can address.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-pub struct Idmac<D: DirectMemoryAccessRegion> {
+/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `Idmac`.
+#[doc(alias = "idmac")]
+pub struct InternalDirectMemoryAccess<D: DirectMemoryAccessRegion> {
     region: D,
     bus: u32,
     capacity: u32,
 }
 
-impl<D: DirectMemoryAccessRegion> Idmac<D> {
+impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     /// **Check `region` against the controller `id` describes.**
     ///
     /// # Errors
@@ -127,10 +132,10 @@ impl<D: DirectMemoryAccessRegion> Idmac<D> {
     /// or not wholly below 4 GiB.
     ///
     /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-    pub fn new(region: D, id: &Identity) -> Result<Idmac<D>, Refusal> {
+    pub fn new(region: D, id: &Identity) -> Result<InternalDirectMemoryAccess<D>, Refusal> {
         let interface = registers::direct_memory_access_interface(id.hcon);
         if interface != 0 {
-            return Err(Refusal::NoIdmac(interface));
+            return Err(Refusal::NoInternalDirectMemoryAccess(interface));
         }
         if registers::uses_64_bit_direct_memory_access(id.hcon) {
             return Err(Refusal::Addressing64);
@@ -150,7 +155,7 @@ impl<D: DirectMemoryAccessRegion> Idmac<D> {
         if bus.checked_add(bytes - 1).is_none() {
             return Err(Refusal::Above4GiB(base));
         }
-        Ok(Idmac {
+        Ok(InternalDirectMemoryAccess {
             region,
             bus,
             capacity: bytes - PAGE,
@@ -222,9 +227,9 @@ pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32
 }
 
 impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
-    /// **Run `command`'s data phase through the IDMAC**, the data already in the region for a write.
-    /// Stops and resets the IDMAC before returning, whatever happened.
-    pub(crate) fn idmac_transfer(
+    /// **Run `command`'s data phase through the IDMAC**, the data already in the region for a
+    /// write. Stops and resets the IDMAC before returning, whatever happened.
+    pub(crate) fn internal_direct_memory_access_transfer(
         &mut self,
         command: &Command,
         bytes: u32,
@@ -234,10 +239,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             direct_memory_access.write_chain(bytes);
             direct_memory_access.region.barrier();
         }
-        let result = self
-            .issue(command, true)
-            .and_then(|resp| self.idmac_wait(command, count).map(|()| resp));
-        let stopped = self.idmac_stop();
+        let result = self.issue(command, true).and_then(|resp| {
+            self.internal_direct_memory_access_wait(command, count)
+                .map(|()| resp)
+        });
+        let stopped = self.internal_direct_memory_access_stop();
         let resp = result?;
         stopped?;
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
@@ -249,7 +255,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// **Arm the IDMAC** on the chain at the region's start: called by `issue` once the FIFO
     /// reset has cleared and before the command is written, so the engine is ready for the first
     /// word. `IDINTEN` stays zero and `CTRL`'s interrupt enable clear; `IDSTS` is raw.
-    pub(crate) fn idmac_start(&mut self) -> Result<(), Error> {
+    pub(crate) fn internal_direct_memory_access_start(&mut self) -> Result<(), Error> {
         let Some(bus) = self.direct_memory_access.as_ref().map(|d| d.bus) else {
             return Ok(());
         };
@@ -283,7 +289,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// Wait for the card's side (`DTO`, and `ACD` after more than one block) and the memory side
     /// (the last descriptor closed). The deadline restarts whenever a descriptor closes, so a long
     /// transfer is judged on progress, not on its length.
-    fn idmac_wait(&mut self, command: &Command, count: u32) -> Result<(), Error> {
+    fn internal_direct_memory_access_wait(
+        &mut self,
+        command: &Command,
+        count: u32,
+    ) -> Result<(), Error> {
         let want = match command.data {
             Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
             _ => registers::INT_DTO,
@@ -321,10 +331,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     /// **Stop the IDMAC** and hand the FIFO back to the CPU: disable it, deselect it, reset it and
     /// the FIFO, clear its status, and put back the polled thresholds. After this nothing the
-    /// controller does can reach the region. `BMOD` is written whole, as [`Host::idmac_start`]
-    /// writes it: none of its other bits is the firmware's to keep. A reset that does not clear is
-    /// reported with the `CTRL` word if that is the one held, else the `BMOD` word.
-    fn idmac_stop(&mut self) -> Result<(), Error> {
+    /// controller does can reach the region. `BMOD` is written whole, as
+    /// [`Host::internal_direct_memory_access_start`] writes it: none of its other bits is the
+    /// firmware's to keep. A reset that does not clear is reported with the `CTRL` word if that is
+    /// the one held, else the `BMOD` word.
+    fn internal_direct_memory_access_stop(&mut self) -> Result<(), Error> {
         self.registers
             .write(registers::BMOD, registers::BMOD_SOFTWARE_RESET);
         let ctrl = self.registers.read(registers::CTRL)
@@ -375,7 +386,7 @@ mod tests {
         (h, card, memory)
     }
 
-    fn with_idmac(h: Host<Sim>, memory: &Memory) -> Host<Sim, Memory> {
+    fn with_internal_direct_memory_access(h: Host<Sim>, memory: &Memory) -> Host<Sim, Memory> {
         let mut h = h;
         let hcon = h.registers().peek(registers::HCON);
         let id = Identity {
@@ -386,7 +397,9 @@ mod tests {
             cdetect: 0,
             firmware: [0; 5],
         };
-        h.with_idmac(Idmac::new(memory.clone(), &id).unwrap())
+        h.with_internal_direct_memory_access(
+            InternalDirectMemoryAccess::new(memory.clone(), &id).unwrap(),
+        )
     }
 
     fn polled_again(h: Host<Sim, Memory>) -> Host<Sim> {
@@ -432,7 +445,9 @@ mod tests {
             firmware: [0; 5],
         };
         let radon = id(0x00c4_3cc1);
-        let new = |base, pages| Idmac::new(Memory::new(base, pages), &radon).map(|i| i.capacity());
+        let new = |base, pages| {
+            InternalDirectMemoryAccess::new(Memory::new(base, pages), &radon).map(|i| i.capacity())
+        };
         assert_eq!(new(0xffff_e000, 2), Ok(PAGE));
         assert_eq!(new(0xffff_f000, 2), Err(Refusal::Above4GiB(0xffff_f000)));
         assert_eq!(
@@ -445,11 +460,11 @@ mod tests {
         assert_eq!(new(BASE, 257), Ok(256 * PAGE));
         let m = Memory::new(BASE, 2);
         assert!(matches!(
-            Idmac::new(m.clone(), &id(2 << 16)),
-            Err(Refusal::NoIdmac(2))
+            InternalDirectMemoryAccess::new(m.clone(), &id(2 << 16)),
+            Err(Refusal::NoInternalDirectMemoryAccess(2))
         ));
         assert!(matches!(
-            Idmac::new(m, &id(1 << 27)),
+            InternalDirectMemoryAccess::new(m, &id(1 << 27)),
             Err(Refusal::Addressing64)
         ));
     }
@@ -463,7 +478,7 @@ mod tests {
         let (mut h, card, memory) = polled(4);
         let first = pattern(0x5a, 9 * 512);
         sd::write_blocks(&mut h, &card, 100, &first).unwrap();
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         let mut back = vec![0u8; 9 * 512];
         sd::read_blocks(&mut h, &card, 100, &mut back).unwrap();
         assert_eq!(back, first);
@@ -490,7 +505,7 @@ mod tests {
         let (mut h, card, memory) = polled(3);
         let data = pattern(0x33, 16 * 512);
         sd::write_blocks(&mut h, &card, 40, &data).unwrap();
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers().direct_memory_access_words_per_step = Some(1);
         let mut back = vec![0u8; 16 * 512];
         sd::read_blocks(&mut h, &card, 40, &mut back).unwrap();
@@ -502,7 +517,7 @@ mod tests {
     #[test]
     fn a_transfer_larger_than_the_region_is_refused_unsent() {
         let (h, card, memory) = polled(3);
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         let full = pattern(0x42, 16 * 512);
         sd::write_blocks(&mut h, &card, 0, &full).unwrap();
         let mut back = vec![0u8; 16 * 512];
@@ -521,9 +536,9 @@ mod tests {
         assert!(h.registers().commands.is_empty());
     }
 
-    /// **Every way a transfer fails stops the engine before the driver returns**: a bus error
-    /// and a descriptor the IDMAC does not own (`IDSTS`), and a data CRC error (`RINTSTS`); the
-    /// stall is the next test's. Afterwards the IDMAC is deselected and disabled, the FIFO is the CPU's
+    /// **Every way a transfer fails stops the engine before the driver returns**: a bus error and a
+    /// descriptor the IDMAC does not own (`IDSTS`), and a data CRC error (`RINTSTS`); the stall is
+    /// the next test's. Afterwards the IDMAC is deselected and disabled, the FIFO is the CPU's
     /// again, a card that resumes moves nothing into memory, and the next transfer works.
     #[test]
     fn every_failed_transfer_stops_the_idmac_and_the_next_one_works() {
@@ -547,7 +562,7 @@ mod tests {
             let (mut h, card, memory) = polled(3);
             let data = pattern(0x77, 9 * 512);
             sd::write_blocks(&mut h, &card, 60, &data).unwrap();
-            let mut h = with_idmac(h, &memory);
+            let mut h = with_internal_direct_memory_access(h, &memory);
             inject(h.registers());
             let mut back = vec![0u8; 9 * 512];
             match sd::read_blocks(&mut h, &card, 60, &mut back) {
@@ -581,7 +596,7 @@ mod tests {
     #[test]
     fn a_stalled_transfer_gives_up_once_the_deadline_has_passed() {
         let (h, card, memory) = polled(3);
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers().stall_after = Some(512);
         h.registers().clock_step = 7;
         assert_ne!(DATA_DEADLINE_US % 7, 0);
@@ -611,7 +626,7 @@ mod tests {
         let (mut h, card, memory) = polled(2);
         let firmware = 1 << 8 | registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
         h.registers().write(registers::CTRL, firmware);
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
@@ -662,7 +677,7 @@ mod tests {
     #[test]
     fn a_multi_block_transfer_waits_for_the_automatic_stop() {
         let (h, card, memory) = polled(2);
-        let mut h = with_idmac(h, &memory);
+        let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers().late_acd = 5;
         let mut blocks = [0u8; 2 * 512];
         sd::read_blocks(&mut h, &card, 7, &mut blocks).unwrap();
@@ -682,21 +697,21 @@ mod tests {
         let sent = [false, true, true];
         let cases: [(Hold, Word); 3] = [
             (
-                |s| s.bmod_resets_cleared = Some(0),
+                |s| s.bus_mode_resets_cleared = Some(0),
                 |w| w == registers::BMOD_SOFTWARE_RESET,
             ),
             (
-                |s| s.bmod_resets_cleared = Some(1),
+                |s| s.bus_mode_resets_cleared = Some(1),
                 |w| w == registers::BMOD_SOFTWARE_RESET,
             ),
             (
-                |s| s.ctrl_resets_cleared = Some(1),
+                |s| s.control_resets_cleared = Some(1),
                 |w| w & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET) != 0,
             ),
         ];
         for ((hold, word), sent) in cases.into_iter().zip(sent) {
             let (h, card, memory) = polled(2);
-            let mut h = with_idmac(h, &memory);
+            let mut h = with_internal_direct_memory_access(h, &memory);
             hold(h.registers());
             h.registers().commands.clear();
             let mut block = [0u8; 512];
@@ -722,18 +737,32 @@ mod tests {
             card,
             mbr: None,
             partition_boot_signature: false,
-            fs_type: [0; 8],
+            file_system_type: [0; 8],
             timed_from: 2048,
             timed_blocks: 0,
             timed_us: 0,
         };
-        let mut h = with_idmac(h, &memory);
-        let mut buf = vec![0u8; 128 * 512];
-        let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 1024).unwrap();
+        let mut h = with_internal_direct_memory_access(h, &memory);
+        let mut buffer = vec![0u8; 128 * 512];
+        let r = crate::bench::internal_direct_memory_access_read(
+            &mut h,
+            &report,
+            &reference,
+            &mut buffer,
+            1024,
+        )
+        .unwrap();
         assert!(r.matches);
         assert_eq!(r.timed_blocks, 1024);
         h.registers().direct_memory_access_corrupts = true;
-        let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 256).unwrap();
+        let r = crate::bench::internal_direct_memory_access_read(
+            &mut h,
+            &report,
+            &reference,
+            &mut buffer,
+            256,
+        )
+        .unwrap();
         assert!(!r.matches);
         assert_eq!(r.timed_blocks, 256);
     }

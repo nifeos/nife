@@ -4,12 +4,15 @@
 //! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
 //! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
 //! 64-bit FIFO is refused (radon's is measured by the bench step before anything depends on it).
-//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from [`Host::with_idmac`],
-//! hands each data phase to the controller's DMA engine ([`crate::idmac`]). Commands and
-//! identification are the same on both.
+//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from
+//! [`Host::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
+//! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
+//! both.
 
 use crate::command::{Command, UPDATE_CLOCK};
-use crate::idmac::{DirectMemoryAccessRegion, Idmac, NoDirectMemoryAccess, PAGE};
+use crate::internal_direct_memory_access::{
+    DirectMemoryAccessRegion, InternalDirectMemoryAccess, NoDirectMemoryAccess, PAGE,
+};
 use crate::registers;
 
 /// **The register window, and a clock**: everything the driver needs from the machine.
@@ -82,8 +85,8 @@ pub(crate) const COMMAND_DEADLINE_US: u64 = 100_000;
 pub(crate) const DATA_DEADLINE_US: u64 = 500_000;
 
 /// **The card clock divider** for a `target` from a `base`: the smallest `divider` with
-/// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when even
-/// 255 is too fast.
+/// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when
+/// even 255 is too fast.
 ///
 /// OpenBSD's loop, with its edge closed: OpenBSD exits at `div = 256` and writes that to an
 /// eight-bit field, which reads back as 0, the fastest setting there is.
@@ -143,22 +146,23 @@ pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) ->
 }
 
 /// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
-/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver; [`Host::with_idmac`]
-/// makes a `Host<R, D>` whose every data phase goes through the IDMAC.
+/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver;
+/// [`Host::with_internal_direct_memory_access`] makes a `Host<R, D>` whose every data phase goes
+/// through the IDMAC.
 pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess> {
     pub(crate) registers: R,
     queue_offset: u32,
     pub(crate) depth: u32,
     base_hz: u32,
-    pub(crate) direct_memory_access: Option<Idmac<D>>,
+    pub(crate) direct_memory_access: Option<InternalDirectMemoryAccess<D>>,
 }
 
 impl<R: Registers> Host<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
-    /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is read
-    /// from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
+    /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
+    /// read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
     ///
     /// # Errors
     ///
@@ -201,18 +205,24 @@ impl<R: Registers> Host<R> {
         ))
     }
 
-    /// **Move every later data phase through the IDMAC**, over a region [`Idmac::new`] checked.
-    /// The controller's state carries over: a card identified by the polled host stays selected.
+    /// **Move every later data phase through the IDMAC**, over a region
+    /// [`InternalDirectMemoryAccess::new`] checked. The controller's state carries over: a card
+    /// identified by the polled host stays selected.
     ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+    /// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
+    /// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `with_idmac`.
+    #[doc(alias = "idmac")]
     #[must_use]
-    pub fn with_idmac<D: DirectMemoryAccessRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
+    pub fn with_internal_direct_memory_access<D: DirectMemoryAccessRegion>(
+        self,
+        internal_direct_memory_access: InternalDirectMemoryAccess<D>,
+    ) -> Host<R, D> {
         Host {
             registers: self.registers,
             queue_offset: self.queue_offset,
             depth: self.depth,
             base_hz: self.base_hz,
-            direct_memory_access: Some(idmac),
+            direct_memory_access: Some(internal_direct_memory_access),
         }
     }
 }
@@ -353,8 +363,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         }
     }
 
-    /// Send `command`, its data phase prepared first; `direct_memory_access` arms the IDMAC between the FIFO reset and
-    /// the command.
+    /// Send `command`, its data phase prepared first; `direct_memory_access` arms the IDMAC between
+    /// the FIFO reset and the command.
     pub(crate) fn issue(
         &mut self,
         command: &Command,
@@ -373,11 +383,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
             }
             if direct_memory_access {
-                self.idmac_start()?;
+                self.internal_direct_memory_access_start()?;
             }
         }
         self.registers.write(registers::RINTSTS, registers::INT_ALL);
-        self.registers.write(registers::CMDARG, command.arg);
+        self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
             registers.read(registers::CMD) & registers::CMD_START == 0
@@ -421,40 +431,47 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.issue(command, false)
     }
 
-    /// **Send a command whose data phase reads into `buf`.** `buf` must be exactly the command's
-    /// byte count, and a whole number of words; through the IDMAC, no more than its capacity.
+    /// **Send a command whose data phase reads into `buffer`.** `buffer` must be exactly the
+    /// command's byte count, and a whole number of words; through the IDMAC, no more than its
+    /// capacity.
     ///
     /// # Errors
     ///
     /// [`Error::BufferSize`] on a size mismatch or a write command; any command-phase error;
-    /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data phase.
-    pub fn read(&mut self, command: &Command, buf: &mut [u8]) -> Result<[u32; 4], Error> {
+    /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data
+    /// phase.
+    pub fn read(&mut self, command: &Command, buffer: &mut [u8]) -> Result<[u32; 4], Error> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
+        if d.write || buffer.len() as u64 != u64::from(d.bytes()) || !buffer.len().is_multiple_of(4)
+        {
             return Err(Error::BufferSize);
         }
-        if let Some(capacity) = self.direct_memory_access.as_ref().map(Idmac::capacity) {
+        if let Some(capacity) = self
+            .direct_memory_access
+            .as_ref()
+            .map(InternalDirectMemoryAccess::capacity)
+        {
             if d.bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.idmac_transfer(command, d.bytes())?;
+            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
-                direct_memory_access.region().read_bytes(PAGE, buf);
+                direct_memory_access.region().read_bytes(PAGE, buffer);
             }
             return Ok(resp);
         }
         let resp = self.issue(command, false)?;
         let mut done = 0usize;
-        while done < buf.len() {
+        while done < buffer.len() {
             let (status, rint) = self.wait_queue(
                 command.index,
                 registers::INT_RXDR,
-                (buf.len() - done) as u32,
+                (buffer.len() - done) as u32,
             )?;
-            let n = queue_step(status, self.depth, false, (buf.len() - done) as u32) as usize;
-            for chunk in buf[done..done + n].as_chunks_mut::<4>().0 {
+            let n = queue_step(status, self.depth, false, (buffer.len() - done) as u32) as usize;
+            for chunk in buffer[done..done + n].as_chunks_mut::<4>().0 {
                 *chunk = self.registers.read(self.queue_offset).to_le_bytes();
             }
             done += n;
@@ -465,37 +482,40 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         Ok(resp)
     }
 
-    /// **Send a command whose data phase writes `buf`.** The same size rules as [`Host::read`].
+    /// **Send a command whose data phase writes `buffer`.** The same size rules as [`Host::read`].
     ///
     /// # Errors
     ///
     /// As [`Host::read`].
-    pub fn write(&mut self, command: &Command, buf: &[u8]) -> Result<[u32; 4], Error> {
+    pub fn write(&mut self, command: &Command, buffer: &[u8]) -> Result<[u32; 4], Error> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if !d.write || buf.len() as u64 != u64::from(d.bytes()) || !buf.len().is_multiple_of(4) {
+        if !d.write
+            || buffer.len() as u64 != u64::from(d.bytes())
+            || !buffer.len().is_multiple_of(4)
+        {
             return Err(Error::BufferSize);
         }
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
             if d.bytes() > direct_memory_access.capacity() {
                 return Err(Error::BufferSize);
             }
-            direct_memory_access.region().write_bytes(PAGE, buf);
-            let resp = self.idmac_transfer(command, d.bytes())?;
+            direct_memory_access.region().write_bytes(PAGE, buffer);
+            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
             self.wait_not_busy()?;
             return Ok(resp);
         }
         let resp = self.issue(command, false)?;
         let mut done = 0usize;
-        while done < buf.len() {
+        while done < buffer.len() {
             let (status, rint) = self.wait_queue(
                 command.index,
                 registers::INT_TXDR,
-                (buf.len() - done) as u32,
+                (buffer.len() - done) as u32,
             )?;
-            let n = queue_step(status, self.depth, true, (buf.len() - done) as u32) as usize;
-            for chunk in buf[done..done + n].as_chunks::<4>().0 {
+            let n = queue_step(status, self.depth, true, (buffer.len() - done) as u32) as usize;
+            for chunk in buffer[done..done + n].as_chunks::<4>().0 {
                 let w = u32::from_le_bytes(*chunk);
                 self.registers.write(self.queue_offset, w);
             }
@@ -790,11 +810,11 @@ mod tests {
         };
         let read = Command::with_data(17, 0, Response::R1, one(false));
         let write = Command::with_data(WRITE_BLOCK, 0, Response::R1, one(true));
-        let mut buf = [0u8; 1024];
-        assert_eq!(h.read(&write, &mut buf[..512]), Err(Error::BufferSize));
-        assert_eq!(h.read(&read, &mut buf), Err(Error::BufferSize));
-        assert_eq!(h.write(&read, &buf[..512]), Err(Error::BufferSize));
-        assert_eq!(h.write(&write, &buf), Err(Error::BufferSize));
+        let mut buffer = [0u8; 1024];
+        assert_eq!(h.read(&write, &mut buffer[..512]), Err(Error::BufferSize));
+        assert_eq!(h.read(&read, &mut buffer), Err(Error::BufferSize));
+        assert_eq!(h.write(&read, &buffer[..512]), Err(Error::BufferSize));
+        assert_eq!(h.write(&write, &buffer), Err(Error::BufferSize));
         assert!(h.into_registers().commands.is_empty());
     }
 

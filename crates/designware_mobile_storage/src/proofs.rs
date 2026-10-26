@@ -1,5 +1,7 @@
 use crate::host::queue_step;
-use crate::idmac::{DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for};
+use crate::internal_direct_memory_access::{
+    DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
+};
 use crate::partition::{Entry, Mbr};
 use crate::sd::in_range;
 
@@ -94,9 +96,9 @@ fn a_chain_describes_its_bytes_inside_the_region() {
     assert!(buffer >= bus + PAGE && buffer - bus + size <= (pages + 1) * PAGE);
     if i + 1 == count {
         assert!(i * PAGE + size == bytes);
-        assert!(des0 & crate::idmac::DES0_LD != 0);
+        assert!(des0 & crate::internal_direct_memory_access::DES0_LD != 0);
     } else {
         assert!(size == PAGE && next == bus + (i + 1) * DESCRIPTOR_BYTES);
-        assert!(des0 & crate::idmac::DES0_LD == 0);
+        assert!(des0 & crate::internal_direct_memory_access::DES0_LD == 0);
     }
 }
