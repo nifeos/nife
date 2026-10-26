@@ -27,7 +27,7 @@ impl Nic {
     pub(crate) fn mac(&self) -> [u8; 6] {
         match self {
             Nic::Virtio(_) => MAC,
-            Nic::Gigabit(n) => n.mac(),
+            Nic::Gigabit(n) => n.station_address(),
             Nic::DesignWare(n) => n.mac(),
         }
     }
@@ -75,7 +75,7 @@ impl smoltcp::phy::Device for Nic {
         caps.medium = smoltcp::phy::Medium::Ethernet;
         caps.max_transmission_unit = match self {
             Nic::Virtio(_) => virtio_net_transport::MTU,
-            Nic::Gigabit(_) => e1000e::MAX_FRAME,
+            Nic::Gigabit(_) => e1000e::MAXIMUM_FRAME,
             Nic::DesignWare(_) => designware_ethernet::MAXIMUM_FRAME,
         };
         caps

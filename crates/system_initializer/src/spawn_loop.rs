@@ -225,6 +225,14 @@ struct Request {
     presented: bool,
 }
 
+impl Request {
+    /// Whether this request routes to [`Service::launch_graphical_terminal`]: either half alone
+    /// routes there as well, to be refused rather than half-endowed.
+    fn graphical(&self) -> bool {
+        self.wiring.graphics || self.prog == Some(Program::GraphicalTerminal)
+    }
+}
+
 /// The capabilities the shell delegated with a request, each `None` when it was not promised or
 /// did not arrive.
 struct Delegated {
@@ -236,6 +244,32 @@ struct Delegated {
     screen: Option<u64>,
     budget: Option<u64>,
     machine_page: Option<u64>,
+}
+
+impl Delegated {
+    /// Every capability that arrived, in protocol order.
+    fn arrived(&self) -> impl Iterator<Item = u64> {
+        [
+            self.job_ut,
+            self.job_fr,
+            self.sink,
+            self.source,
+            self.diagnostics,
+            self.screen,
+            self.budget,
+            self.machine_page,
+        ]
+        .into_iter()
+        .flatten()
+    }
+
+    /// Delete the progenitor's copy of each, built or not: the child and the shell hold their
+    /// own, and the progenitor's table must not fill across a long session.
+    fn release(&self) {
+        for s in self.arrived() {
+            cap_delete(s);
+        }
+    }
 }
 
 /// What a request resolved to before anything is built: the one manifest, the word a refusal
@@ -367,6 +401,11 @@ struct JobLeftovers {
 
 impl Service<'_> {
     /// Serve one request on the spawn endpoint, whatever its shape, to its answer.
+    ///
+    /// # BUGS
+    ///
+    /// - No test sends a malformed request: only the boot shell holds this endpoint unbadged, and
+    ///   it sends none. Badged copies are answered before `read_request`.
     fn serve(&mut self) {
         let Channels {
             result_ep,
@@ -411,15 +450,24 @@ impl Service<'_> {
             return;
         }
         let req = self.read_request((w0, w1, w2), badge);
-        let (image_region, staging) = self.carve_image(&req);
+        // Every request read to its end is answered by `answer`, whichever way it returns, and only
+        // then are the delegated copies released, so no early return in it can keep one.
+        self.answer(&req);
+        req.delegated.release();
+    }
 
-        // Either half alone routes here as well, to be refused rather than half-endowed.
-        if req.wiring.graphics || req.prog == Some(Program::GraphicalTerminal) {
-            self.launch_graphical_terminal(&req);
+    /// Answer a spawn request read to its end: a `graphical_terminal` launch, an interruptible
+    /// job or a normal one. The delegated capabilities are [`serve`](Service::serve)'s to release
+    /// afterwards, so a path here may return at any point.
+    fn answer(&mut self, req: &Request) {
+        let (image_region, staging) = self.carve_image(req);
+
+        if req.graphical() {
+            self.launch_graphical_terminal(req);
             return;
         }
 
-        let job = self.resolve(&req, staging);
+        let job = self.resolve(req, staging);
         let progs = self.progs;
         let elf = if req.wiring.image {
             job.image_elf.as_ref()
@@ -428,27 +476,9 @@ impl Service<'_> {
         };
 
         if req.interruptible {
-            self.spawn_interruptible(&req, elf, job.failure);
+            self.spawn_interruptible(req, elf, job.failure);
         } else {
-            self.spawn_job(&req, &job, elf, image_region, staging);
-        }
-
-        // Drop our copies of every delegated capability, built or not: the child and the shell hold
-        // their own, and the progenitor's table must not fill across a long session.
-        for s in [
-            req.delegated.job_ut,
-            req.delegated.job_fr,
-            req.delegated.sink,
-            req.delegated.source,
-            req.delegated.diagnostics,
-            req.delegated.screen,
-            req.delegated.budget,
-            req.delegated.machine_page,
-        ]
-        .into_iter()
-        .flatten()
-        {
-            cap_delete(s);
+            self.spawn_job(req, &job, elf, image_region, staging);
         }
     }
 
@@ -527,7 +557,8 @@ impl Service<'_> {
     /// Carve an image request's child region and staging region from the image pool, and copy its
     /// frames into the staging region. The child's region is a `std` one when the argv bit is set,
     /// sized as the image (`grant_plan::image_region_pages`); see
-    /// notes/system-initializer/the-spawn-service.md, "Images".
+    /// notes/system-initializer/the-spawn-service.md, "Images". A `graphical_terminal` request is
+    /// never an image, so nothing is carved for one and its frames' views are only given up.
     fn carve_image(&mut self, req: &Request) -> (Option<u64>, Option<u64>) {
         let Channels {
             own_ut, images_ut, ..
@@ -544,6 +575,7 @@ impl Service<'_> {
         // when it is the most recent carve (`memory_regions`' `return_to_parent`).
         let image_region = if wiring.image
             && !interruptible
+            && !req.graphical()
             && (!wiring.directory_grant || wiring.program_arguments)
         {
             spawn.split(
@@ -578,6 +610,11 @@ impl Service<'_> {
     /// otherwise build the session from its own region of the job pool, with narrowed copies of the
     /// devices this process holds. A session that does not come up is a refused spawn, and its
     /// builder reclaims the region. See notes/system-initializer/the-spawn-service.md.
+    ///
+    /// A session is built from this process's own copies alone and takes no delegated capability,
+    /// so a request that delegated one is malformed and refused. The honest shell sends none: the
+    /// manifest forbids `--mem`, a redirection and every pipeline operator, and declares neither
+    /// `machine` nor `interruptible`. A manifest that declared one would refuse every launch.
     fn launch_graphical_terminal(&mut self, req: &Request) {
         let Channels {
             result_ep,
@@ -589,48 +626,43 @@ impl Service<'_> {
         } = self.c;
         let graphical_terminal_caps = &self.c.screen;
         let Request { prog, wiring, .. } = *req;
-        // Neither of these is the session's: a `graphical_terminal` manifest forbids both, but a
-        // caller could still have set them.
-        if let Some(b) = req.delegated.budget {
-            cap_delete(b);
-        }
-        if let Some(p) = req.delegated.machine_page {
-            cap_delete(p);
-        }
-        let answer =
-            if prog != Some(Program::GraphicalTerminal) || !wiring.graphics || wiring.keyboard {
-                spawnproto::SPAWN_FAILED
-            } else if !graphical_terminal_caps.held {
-                spawnproto::SPAWN_NO_DISPLAY
-            } else {
-                let built = match (
-                    self.progs[Program::GraphicalTerminal.id() as usize].as_ref(),
-                    self.spawn.split(jobs_ut, GRAPHICAL_TERMINAL_SESSION_PAGES),
-                ) {
-                    (Some(elf), Some(region)) => build_graphical_terminal_session(
-                        &GraphicalTerminalLaunch {
-                            own_ut,
-                            region,
-                            deaths,
-                            boot_terminal,
-                            result_ep,
-                            gpu: &graphical_terminal_caps.gpu,
-                            kbd: graphical_terminal_caps
-                                .keyboard
-                                .then_some(&graphical_terminal_caps.kbd),
-                            program: elf,
-                        },
-                        graphical_terminal_caps,
-                        &self.discipline,
-                    ),
-                    _ => Err(()),
-                };
-                // A session that came up answers for itself; only a failure is ours to say.
-                match built {
-                    Ok(()) => return,
-                    Err(()) => spawnproto::SPAWN_FAILED,
-                }
+        let malformed = prog != Some(Program::GraphicalTerminal)
+            || !wiring.graphics
+            || wiring.keyboard
+            || req.delegated.arrived().next().is_some();
+        let answer = if malformed {
+            spawnproto::SPAWN_FAILED
+        } else if !graphical_terminal_caps.held {
+            spawnproto::SPAWN_NO_DISPLAY
+        } else {
+            let built = match (
+                self.progs[Program::GraphicalTerminal.id() as usize].as_ref(),
+                self.spawn.split(jobs_ut, GRAPHICAL_TERMINAL_SESSION_PAGES),
+            ) {
+                (Some(elf), Some(region)) => build_graphical_terminal_session(
+                    &GraphicalTerminalLaunch {
+                        own_ut,
+                        region,
+                        deaths,
+                        boot_terminal,
+                        result_ep,
+                        gpu: &graphical_terminal_caps.gpu,
+                        kbd: graphical_terminal_caps
+                            .keyboard
+                            .then_some(&graphical_terminal_caps.kbd),
+                        program: elf,
+                    },
+                    graphical_terminal_caps,
+                    &self.discipline,
+                ),
+                _ => Err(()),
             };
+            // A session that came up answers for itself; only a failure is ours to say.
+            match built {
+                Ok(()) => return,
+                Err(()) => spawnproto::SPAWN_FAILED,
+            }
+        };
         send(result_ep, answer, 0, 0);
     }
 

@@ -72,7 +72,7 @@ fn measure() -> &'static str {
                     cable and the port's LEDs)";
         }
     };
-    let m = w.mac;
+    let m = w.station_address;
     println!(
         "network-bench: nic       : 8086:{:04x} {}, link up, mac {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
         w.device,
