@@ -457,7 +457,7 @@ mod tests {
         assert_ne!(
             outcome(),
             CycleCounter::Unknown,
-            "init left the module undecided, which it cannot do: every path stores an outcome"
+            "initialize left the module undecided, which it cannot do: every path stores an outcome"
         );
     }
 }

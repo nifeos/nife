@@ -343,7 +343,7 @@ const fn stream_table_entry(ctxptr: u64) -> [u32; 16] {
 /// domain. After this returns, the device can reach exactly what the domain maps.
 pub fn attach(rid: u32, ttb: u64, asid: u16) {
     let mut g = SMMU.lock();
-    let s = g.as_mut().expect("SMMU attach before init");
+    let s = g.as_mut().expect("SMMU attach before initialize");
     let off = table_offset(rid);
 
     let cd = phys_to_virt(s.cds + off) as *mut u32;

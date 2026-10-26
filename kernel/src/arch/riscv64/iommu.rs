@@ -326,7 +326,7 @@ fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
 /// Context: takes the `IOMMU` lock.
 pub fn attach(rid: u32, root: u64, pscid: u16) {
     let mut g = IOMMU.lock();
-    let s = g.as_mut().expect("IOMMU attach before init");
+    let s = g.as_mut().expect("IOMMU attach before initialize");
     let offset = context_offset(rid, s.dc_bytes);
     let words = device_context(root, pscid);
 

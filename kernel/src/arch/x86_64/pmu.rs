@@ -368,11 +368,11 @@ mod tests {
         if reached_the_msrs {
             assert!(
                 isa::get().max_leaf >= CPUID_PERFMON_LEAF,
-                "init read an MSR on a part whose CPUID does not reach leaf 0x0a"
+                "initialize read an MSR on a part whose CPUID does not reach leaf 0x0a"
             );
             assert!(
                 PERFMON_VERSION.load(Ordering::Relaxed) > 0,
-                "init read an MSR on a part reporting performance monitoring version 0"
+                "initialize read an MSR on a part reporting performance monitoring version 0"
             );
         }
     }

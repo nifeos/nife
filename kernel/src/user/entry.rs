@@ -202,7 +202,7 @@ pub fn spawn_elf_child_builder(
             uart_receive_intid,
             crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
         ))
-        .expect("grant uart rx irq");
+        .expect("grant uart receive irq");
 
         // A builder has no filesystem, so `x2` (the file-service rights the boot path passes) is 0.
         enter_frame(elf.entry(), USER_STACK_TOP, 0, initial_ramdisk_len, 0)
