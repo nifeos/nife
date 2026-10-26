@@ -94,8 +94,8 @@ reading order (three greps: a global count as a baseline, a loop with no clock, 
 standing in for a mechanism) is the accumulated answer, and nobody has run it across the remaining
 files.
 
-Instrumentation covers only the timer. `tick_trace` is three relaxed counters and one call site, not
-a framework. Any other path wanting an instruction-denominated claim needs its own. That is
+Only the timer is instrumented. `tick_trace` is three relaxed counters and one call site, not a
+framework. Any other path wanting an instruction-denominated claim needs its own. That is
 deliberate: the block asked for two claims, not for infrastructure.
 
 Correction (2026-08-18): claims 1 to 3 above turned out to be blind to the drift defect, and a

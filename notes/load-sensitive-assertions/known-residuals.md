@@ -16,11 +16,11 @@ how each residual was found and closed. The main page's BUGS section carries wha
   still bites. But a one-shot coincidence pass is possible in a way `assert_eq` did not permit. The
   trade is deliberate. Equality bought that exactness by also asserting that the rest of the machine
   held still, which is false on any loaded run and was producing red CI on documentation PRs.
-- `the_page_is_returned_when_the_space_is_dropped` can still fail because of a neighbor, and that
-  takes an allocation rather than a free. Asking `is_page_frame_used` about one named frame is
-  immune to the freeing neighbor that produced every observed failure of the old global form. But a
-  neighbor that allocated this exact frame between the drop and the check would read as a leak. It
-  is a microsecond window against one frame out of the machine's free set. The old form was a
+- `the_page_is_returned_when_the_space_is_dropped` can still be failed by a neighbor, and it takes
+  an allocation rather than a free. Asking `is_page_frame_used` about one named frame is immune to
+  the freeing neighbor that produced every observed failure of the old global form. But a neighbor
+  that allocated this exact frame between the drop and the check would read as a leak. It is a
+  microsecond window against one frame out of the machine's free set. The old form was a
   seconds-wide window against every frame in the machine. The two failure modes do not overlap: this
   one needs an allocation that the tests, running sequentially on the boot thread, do not make. It
   is recorded rather than closed. Closing it needs the allocator to tell a test which frame it

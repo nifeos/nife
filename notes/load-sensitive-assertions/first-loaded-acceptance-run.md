@@ -97,9 +97,9 @@ The symmetry says this is a property of the assertions rather than of either arc
 | `ticks_arrive_at_the_configured_rate`, the eight-attempt retry budget | `timer.rs:414`, runs 2 and 13 | `timer.rs:455`, runs 8 and 14 | "no miss-free measurement window in eight tries" |
 | `the_handler_keeps_up_when_no_lock_is_held`, the taxonomy's cut | `timer.rs:470`, runs 11 and 29 | `timer.rs:509`, runs 3 and 5 | "the timer handler is taking longer than a whole tick period, with no lock held" |
 
-The old note predicted both, and neither had ever been observed. Its BUGS section said the drift
-test "can still go red on a pathological host, by design", and called that "rarer by orders". It
-also said the taxonomy's cut leaves a one-period-wide window in which a host deschedule "still
+Both were predicted in the old note, and neither had ever been observed. Its BUGS section said the
+drift test "can still go red on a pathological host, by design", and called that "rarer by orders".
+It also said the taxonomy's cut leaves a one-period-wide window in which a host deschedule "still
 fails, wearing the message that blames this kernel". Only a lock-holding probe had measured that, at
 0.83 of an interval. This run is the first time either was seen in the wild. It corrects the first
 claim: at these loads the retry budget is not rare. It fired four times in forty-five runs, and one
@@ -143,8 +143,8 @@ double free of frame 0x82a3e000
 That is `Frames::free`'s deliberate loud failure, and its doc comment is right that both cases it
 covers are kernel bugs. Nothing in `notes/` or `design/` recorded this; a grep for "double free"
 found only the assertion itself. It occurred once in forty-five loaded runs, and zero times in the
-quiet run that preceded the loop. The BUGS section of notes/object-revocation.md records it, beside
-the `DESTROY` path it fired in.
+quiet run that preceded the loop. It is recorded in the BUGS section of notes/object-revocation.md,
+beside the `DESTROY` path it fired in.
 
 Fixed 2026-08-18 in PR #316. The diagnosis corrects this section rather than confirming it. The
 last section of this appendix read the sighting as a rate question ("the next lane on it should assume the window
