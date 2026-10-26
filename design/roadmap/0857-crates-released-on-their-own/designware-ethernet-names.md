@@ -96,10 +96,10 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `receive_verdict` | item | `src/descriptor.rs` | provisional. Refused `rx_verdict` (ruled 2026-10-26 UTC). | yes | clear |
 | `transmit_descriptor_words` | item | `src/descriptor.rs` | provisional. Refused `tx_descriptor_words` (ruled 2026-10-26 UTC). | yes | clear |
 | `Hardware` | item | `src/hardware.rs` | provisional. Refused `Hw` (ruled 2026-10-26 UTC). | yes | clear |
-| `AON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Refused `AON_SYSCON_NODE` (ruled 2026-10-26 UTC). | yes | clear |
+| `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Refused `AON_SYSCON_NODE` (ruled 2026-10-26 UTC). | yes | clear |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLES` | item | `src/jh7110.rs` | provisional. | yes | clear |
-| `COMPATIBLE_AON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Refused `COMPATIBLE_AON_SYSCON` (ruled 2026-10-26 UTC). | yes | clear |
+| `COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Refused `COMPATIBLE_AON_SYSCON` (ruled 2026-10-26 UTC). | yes | clear |
 | `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `Discovered` | item | `src/jh7110.rs` | unrecorded. | yes | clear |

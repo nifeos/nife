@@ -47,3 +47,7 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   `dma_bits` becomes `direct_memory_access_address_bits` and `DMA_PAGE` becomes
   `DIRECT_MEMORY_ACCESS_REGISTER_PAGE`, with `doc(alias)`. Register names copied from a source
   (`DMA_SYSBUS_MODE`, `DMA_MODE`) keep their spelling.
+- Ruled 2026-10-26 (UTC), the JH7110's power domains: `AON` spells out as `ALWAYS_ON`
+  (`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`, `ALWAYS_ON_SYSTEM_CONTROLLER_NODE` and the window's
+  base and size), with `doc(alias = "aon")`. Device-tree strings and the vendor's `AON_SYSCFG_12`
+  keep their spelling.

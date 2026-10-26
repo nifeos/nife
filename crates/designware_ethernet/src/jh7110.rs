@@ -12,9 +12,9 @@
 //! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
 //! [`mainline_physical_layer_device`], or the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`] for
 //! [`vendor_physical_layer_device`]. The AON syscon is mainline's
-//! [`COMPATIBLE_AON_SYSTEM_CONTROLLER`] node or the vendor's node named
-//! [`AON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that names
-//! neither.
+//! [`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`] node or the vendor's node named
+//! [`ALWAYS_ON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that
+//! names neither.
 
 use crate::controller::Bus;
 use crate::motorcomm::{Drive, Settings, Source};
@@ -60,21 +60,23 @@ pub const BUS: Bus = Bus {
     write_outstanding: 0xf,
 };
 
-/// The AON syscon's window: mainline's `aon_syscon: syscon@17010000` and the vendor's
-/// `aon_syscon@17010000`, both `0x1000` long.
-pub(crate) const AON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
+/// The always-on (AON) system controller's window: mainline's `aon_syscon: syscon@17010000` and the
+/// vendor's `aon_syscon@17010000`, both `0x1000` long.
+pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
 /// Its size.
-pub(crate) const AON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
+pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `COMPATIBLE_AON_SYSCON`.
-pub const COMPATIBLE_AON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
+/// Name: provisional. Ruled 2026-10-26 (UTC): the crate's rename table, with `AON` spelled out as
+/// `ALWAYS_ON`, replacing `COMPATIBLE_AON_SYSCON`.
+#[doc(alias = "aon")]
+pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
 /// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `AON_SYSCON_NODE`.
-pub const AON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
+/// Name: provisional. Ruled 2026-10-26 (UTC): the crate's rename table, with `AON` spelled out as
+/// `ALWAYS_ON`, replacing `AON_SYSCON_NODE`.
+#[doc(alias = "aon")]
+pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 /// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
 /// the vendor's `AON_SYSCFG_12`.
 ///
@@ -311,8 +313,8 @@ impl SystemController {
     #[must_use]
     pub const fn fallback() -> Self {
         SystemController {
-            base: AON_SYSTEM_CONTROLLER_BASE,
-            size: AON_SYSTEM_CONTROLLER_SIZE,
+            base: ALWAYS_ON_SYSTEM_CONTROLLER_BASE,
+            size: ALWAYS_ON_SYSTEM_CONTROLLER_SIZE,
             from_tree: false,
         }
     }

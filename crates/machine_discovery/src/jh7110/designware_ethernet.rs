@@ -8,8 +8,8 @@
 //! serves. calef has not named it.
 
 use designware_ethernet::jh7110::{
-    AON_SYSTEM_CONTROLLER_NODE, COMPATIBLE_AON_SYSTEM_CONTROLLER, COMPATIBLES, Discovered,
-    SystemController, VENDOR_PHYSICAL_LAYER_DEVICE_NODE, first_cell,
+    ALWAYS_ON_SYSTEM_CONTROLLER_NODE, COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, COMPATIBLES,
+    Discovered, SystemController, VENDOR_PHYSICAL_LAYER_DEVICE_NODE, first_cell,
     mainline_physical_layer_device, vendor_physical_layer_device,
 };
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
@@ -55,8 +55,8 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
 /// `designware_ethernet::jh7110::discover_aon_syscon`. calef has not ruled on it.
 pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController, Error> {
     let mut regions = [Region { start: 0, size: 0 }; 1];
-    if tree.node_reg_compatible(COMPATIBLE_AON_SYSTEM_CONTROLLER, &mut regions)? == 1
-        || tree.node_reg(AON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
+    if tree.node_reg_compatible(COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, &mut regions)? == 1
+        || tree.node_reg(ALWAYS_ON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
     {
         return Ok(SystemController {
             base: regions[0].start,
