@@ -24,7 +24,7 @@ invalidation is one line with nothing to get wrong, and a change is rare next to
 
 `BlockIo` is a whole-block transport, and `BlockDisk` bridges RedoxFS's byte-addressed `Disk` calls
 to it. The chunking is written once and host-tested because the repeat-write bug hid in chunking
-that lived only in the EL0 binary. `BlockDisk` reads, overlays and writes back a short final chunk
+that lived only in the EL0 binary. The bridge reads, overlays and writes back a short final chunk
 whole. That preserves the bytes past the chunk, as a byte-addressed disk does, and RedoxFS relies on
 it for compressed records.
 
