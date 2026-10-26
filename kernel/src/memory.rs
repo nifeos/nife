@@ -828,7 +828,7 @@ pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
 
 /// The console UART's interrupt line, as the machine states it: PLIC source 10 on QEMU's
 /// riscv64 `virt`, 32 on the JH7110, GIC INTID 33 on QEMU's aarch64 `virt`, and on `x86_64` the
-/// global system interrupt COM1's legacy ISA interrupt 4 resolves to (milestone 176 (the x86_64 discovery seam's wide half: COM1's interrupt and a CMOS RTC)), filled by
+/// global system interrupt COM1's legacy ISA interrupt 4 resolves to (milestone 176 (the x86_64 discovery seam's wide half: COM1's IRQ and a CMOS RTC)), filled by
 /// [`record_uart_interrupt_number`] rather than by [`initialize`] since there is no tree to read. `None` before
 /// either has run, and on a device-tree machine whose tree does not say (no `interrupts`, no
 /// resolvable parent, or an entry shape the decoder refuses; see
