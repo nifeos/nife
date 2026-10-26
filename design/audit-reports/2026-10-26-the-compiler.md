@@ -21,7 +21,7 @@ printed `DUE: documentation, security` with counts that match the index rows on 
 none was a broken run. This report closes the security kind. The documentation kind is still due
 and wants a sweep of its own.
 
-Two audits running (2026-10-19 and 2026-10-20) and the index's lens list named the compiler as the
+Two audits in a row (2026-10-19 and 2026-10-20) and the index's lens list named the compiler as the
 lens no audit had taken: the nightly pin, `patches/std-nife` under `-Zbuild-std`, and
 `toolchain-bump.yml`, which moves the pin unattended. The trigger that fired is a count, and it
 points nowhere in particular, so the record's pointer decides.

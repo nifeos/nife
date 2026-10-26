@@ -231,7 +231,8 @@ disagreeing.)
   entry in `crates/abi` still said a fixed escape was open. Its follow-up added two more worth
   knowing: the boot shell keeps the seven display capabilities with `GRANT` for its whole life,
   and a real capability delegated to a `CALL` server passes the `NO_CAP` guard, so any client can
-  park `net_stack` or the compositor in `SEND` forever.
+  park `net_stack` or the compositor in `SEND` forever (recorded and proposed; an architect's
+  call).
 - **design/audit-reports/2026-10-19-supply-chain-read-from-the-package-inward.md**: the nine
   external packages the window added, the gate that should see every graph they enter, and the path
   by which bytes this tree did not build become authority on the target. **The finding to carry off
