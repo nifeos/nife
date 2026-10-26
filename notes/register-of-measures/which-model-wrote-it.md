@@ -55,10 +55,10 @@ conflict. The merge bucket still wins, because what the commit records is a land
 writing.
 
 A claim is the empty commit a lane makes when it opens its draft, under §90 (the claim is a draft
-pull request). It carries no work, so it is kept out of every model's count whatever its trailer
-says. `script/claim` signs it `Claude Code` unless told otherwise, and some lanes sign it with
-their model, so the test is the empty tree and not the name. The few CI re-triggers, which are also
-empty, count here too.
+pull request). It carries no work, so `script/metrics` keeps it out of every model's count whatever
+its trailer says. `script/claim` signs it `Claude Code` unless told otherwise, and some lanes sign
+it with their model, so the test is the empty tree and not the name. The few CI re-triggers, which
+are also empty, count here too.
 
 Merges carry a commit count and no line count. A merge's diff against its first parent is the whole
 of what landed on the branch. Every line of it is already counted on that branch's own commits, so
@@ -67,9 +67,9 @@ adding it would roughly double the tree.
 ### Normalization collapses a variant, never a version
 
 `Claude Opus 5 (1M context)` and `Claude Opus 5` are one model reached through two context windows.
-So the trailing parenthetical is stripped and they share a column. `Claude Fable 5.1` keeps its own
-column, because a version is a different model. Folding it into `Claude Fable 5` would be the
-silent merge the table exists to prevent.
+So `script/metrics` strips the trailing parenthetical and they share a column. `Claude Fable 5.1`
+keeps its own column, because a version is a different model. Folding it into `Claude Fable 5` would
+be the silent merge the table exists to prevent.
 
 A trailer value the table has never seen is counted in `other_models` and printed by name on every
 run. It is not dropped, and it does not quietly become an existing model. `script/metrics`' own
@@ -79,10 +79,11 @@ the table as decisions, filed under `other_models`, so they do not warn forever.
 tree says which GLM model the `OpenCode (GLM)` commits ran, and guessing one would be the silent
 merge this table refuses.
 
-A new model's name goes into `other_models` and is named on stderr until it has a row, which is
-the rule above working: nothing is lost, and the week's sum still balances. `Claude Opus 5.5` is a
-version, not a context window, so it has its own column, `opus_5_5`, rather than joining `opus_5`.
-`GLM-5.3-Flash` is a second spelling of `GLM 5.3 Flash` and shares its column.
+A new model's name goes into `other_models`, and `script/metrics` names it on stderr until it has a
+row, which is the rule above working: nothing is lost, and the week's sum still balances.
+`Claude Opus 5.5` is a version, not a context window, so it has its own column, `opus_5_5`, rather
+than joining `opus_5`. `GLM-5.3-Flash` is a second spelling of `GLM 5.3 Flash` and shares its
+column.
 
 ### Eight hues, more than eight bands
 
@@ -92,10 +93,10 @@ changed color, and Opus 4.8 now draws inside **other models** together with `fab
 `other_models`. Both charts fold the same set, so one hue names one model on either. The CSV keeps
 every column apart; the fold is drawing only, and the arithmetic is checked against the file.
 
-A commit carrying two trailers is counted once, under the first, and named on stderr. Counting it
-twice would break the sum check. Splitting it in half would put a fraction in a column of counts.
-No commit in this repository carries two, measured the same day, so the rule has never fired. The
-warning is what would tell us it started to.
+`script/metrics` counts a commit carrying two trailers once, under the first, and names it on
+stderr. Counting it twice would break the sum check. Splitting it in half would put a fraction in a
+column of counts. No commit in this repository carries two, measured the same day, so the rule has
+never fired. The warning is what would tell us it started to.
 
 ### Unattributed hides two different facts, and only one of them is a gap
 
