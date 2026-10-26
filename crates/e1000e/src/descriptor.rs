@@ -42,7 +42,10 @@ pub const BUFFER_SIZE: u64 = 2048;
 /// The largest frame either direction carries: 1500 bytes of payload and the 14-byte Ethernet
 /// header, no CRC (the device strips it on receive and appends it on transmit). smoltcp's
 /// `max_transmission_unit` means exactly this for an Ethernet device.
-pub const MAX_FRAME: usize = 1514;
+///
+/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `max` as `maximum`,
+/// which names `MAXIMUM_FRAME` in `designware_ethernet`. Refused `MAX_FRAME` (an abbreviation).
+pub const MAXIMUM_FRAME: usize = 1514;
 
 /// Receive status: descriptor done.
 ///
@@ -117,7 +120,7 @@ pub fn receive_verdict(word: u64, room: usize) -> ReceiveVerdict {
     }
     let errors = (word >> 40) as u8;
     let len = (word & 0xffff) as usize;
-    let fits = (14..=MAX_FRAME).contains(&len) && len <= room && len as u64 <= BUFFER_SIZE;
+    let fits = (14..=MAXIMUM_FRAME).contains(&len) && len <= room && len as u64 <= BUFFER_SIZE;
     if status & RECEIVE_STATUS_EOP == 0 || errors & RECEIVE_ERRORS_FRAME != 0 || !fits {
         return ReceiveVerdict::Drop;
     }

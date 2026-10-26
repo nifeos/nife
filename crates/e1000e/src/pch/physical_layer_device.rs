@@ -110,7 +110,7 @@ pub(crate) const WAKEUP_PAGE: u32 = 800;
 /// The highest page whose select value (`page << 5`) fits the 16-bit `MDIC` data field. FreeBSD
 /// passes `page << IGP_PAGE_SHIFT` to `e1000_set_page_igp` as a `u16` and so silently truncates a
 /// higher one; this port refuses it instead. Found while writing this module's Kani harness.
-pub(crate) const MAX_PAGE: u32 = 0x7ff;
+pub(crate) const MAXIMUM_PAGE: u32 = 0x7ff;
 
 /// A page and a register packed into the one offset [`read()`] and [`write()`] take: FreeBSD's
 /// `PHY_REG(page, reg)`.
@@ -313,7 +313,7 @@ pub struct Plan {
 pub const fn plan(offset: u32) -> Result<Plan, Error> {
     let page = offset >> PAGE_SHIFT;
     let register = offset & MAX_REG;
-    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAX_PAGE {
+    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAXIMUM_PAGE {
         return Err(Error::PageNotPorted);
     }
     let physical_layer_device_address = address_for(page);

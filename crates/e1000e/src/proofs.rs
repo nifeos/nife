@@ -11,7 +11,7 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     if let ReceiveVerdict::Frame(n) = receive_verdict(word, room) {
         assert!(n <= room);
         assert!(n as u64 <= BUFFER_SIZE);
-        assert!(n <= MAX_FRAME);
+        assert!(n <= MAXIMUM_FRAME);
     }
 }
 

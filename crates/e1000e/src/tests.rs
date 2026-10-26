@@ -144,7 +144,7 @@ fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
 #[test]
 fn frames_arrive_in_order_across_many_laps_of_the_ring() {
     let (mut sim, mut dp) = started();
-    let mut out = [0u8; MAX_FRAME];
+    let mut out = [0u8; MAXIMUM_FRAME];
     for n in 0..5 * RECEIVE_ENTRIES as usize {
         let f = frame(n as u8, 60 + n % 1400);
         assert!(
@@ -167,7 +167,7 @@ fn a_full_ring_holds_all_but_one_and_drains_completely() {
         delivered += 1;
     }
     assert_eq!(delivered, RECEIVE_ENTRIES - 1);
-    let mut out = [0u8; MAX_FRAME];
+    let mut out = [0u8; MAXIMUM_FRAME];
     for _ in 0..delivered {
         assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
     }
@@ -182,7 +182,7 @@ fn a_full_ring_holds_all_but_one_and_drains_completely() {
 #[test]
 fn a_lying_or_bad_descriptor_is_dropped_and_the_ring_moves_on() {
     let (mut sim, mut dp) = started();
-    let mut out = [0u8; MAX_FRAME];
+    let mut out = [0u8; MAXIMUM_FRAME];
     assert!(sim.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
     assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DD, 0)); // no end of packet
     assert!(sim.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
@@ -208,7 +208,7 @@ fn a_device_that_overwrote_the_buffer_address_gets_it_back_on_repost() {
     let (mut sim, mut dp) = started();
     assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
     sim.write_u64(layout::receive_descriptor(0), 0xdead_0000);
-    let mut out = [0u8; MAX_FRAME];
+    let mut out = [0u8; MAXIMUM_FRAME];
     assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
     assert_eq!(
         sim.read_u64(layout::receive_descriptor(0)),
@@ -235,7 +235,7 @@ fn transmit_sends_exact_bytes_and_reports_full_until_the_device_catches_up() {
     assert!(dp.can_transmit(&mut sim));
     // And the ring keeps going round.
     for n in 0..3 * TRANSMIT_ENTRIES as usize {
-        let f = frame(n as u8, MAX_FRAME);
+        let f = frame(n as u8, MAXIMUM_FRAME);
         sim.with(|s, r| dp.transmit(s, r, &f)).unwrap();
         sim.drain_transmit();
         assert_eq!(sim.sent.last(), Some(&f));
@@ -249,7 +249,7 @@ fn transmit_refuses_empty_and_oversized_frames() {
         sim.with(|s, r| dp.transmit(s, r, &[])),
         Err(TransmitError::BadLength)
     );
-    let big = vec![0u8; MAX_FRAME + 1];
+    let big = vec![0u8; MAXIMUM_FRAME + 1];
     assert_eq!(
         sim.with(|s, r| dp.transmit(s, r, &big)),
         Err(TransmitError::BadLength)
@@ -271,7 +271,7 @@ fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
         0,
         "TDLEN must be a multiple of 128"
     );
-    assert!(MAX_FRAME as u64 <= BUFFER_SIZE);
+    assert!(MAXIMUM_FRAME as u64 <= BUFFER_SIZE);
     assert_eq!(layout::RECEIVE_BUFFERS % PAGE, 0);
     assert_eq!(layout::TRANSMIT_BUFFERS % PAGE, 0);
 }
@@ -470,7 +470,7 @@ fn start_clears_the_transmit_ring_and_the_cursor_follows_receive() {
         );
     }
     assert_eq!(dp.receive_cursor(), 0);
-    let mut out = [0u8; MAX_FRAME];
+    let mut out = [0u8; MAXIMUM_FRAME];
     for n in 1..=3u16 {
         assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
         assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));

@@ -14,7 +14,7 @@ diff --git a/crates/e1000e/src/pch/physical_layer_device.rs b/crates/e1000e/src/
  pub const fn plan(offset: u32) -> Result<Plan, Error> {
      let page = offset >> PAGE_SHIFT;
      let register = offset & MAX_REG;
--    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAX_PAGE {
+-    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > MAXIMUM_PAGE {
 +    if page == WAKEUP_PAGE || (page > 0 && page < HV_PAGE_START) || page > 0xffff {
          return Err(Error::PageNotPorted);
      }

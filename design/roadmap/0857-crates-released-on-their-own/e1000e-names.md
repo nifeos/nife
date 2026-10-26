@@ -1,6 +1,6 @@
 # The names in `e1000e`, for ratification
 
-<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,979 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 4,024 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
@@ -32,10 +32,12 @@ below copy:
   `LanInitTimeout` that names it, and FreeBSD's function names in docs keep their spelling.
 - Ruled 2026-10-26 (UTC), tree-wide: every `regs` module becomes `registers`, e1000e's two and
   its one-letter inline `r` among them, and the constants inside keep their sources' names.
+- Ruled 2026-10-26 (UTC), tree-wide: `min` and `max` are spelled out `minimum` and `maximum`
+  (`MAXIMUM_FRAME`), and names copied from a source (`TXDCTL_MAX_TX_DESC_PREFETCH`) keep theirs.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-156 names: 101 no block, 35 provisional, 20 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+156 names: 100 no block, 35 provisional, 21 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 12 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -92,7 +94,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `start` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `BUFFER_SIZE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `MAX_FRAME` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `MAXIMUM_FRAME` | item | `src/descriptor.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out `max` as `maximum`, which names `MAXIMUM_FRAME` in `designware_ethernet`. Refused `MAX_FRAME` (an abbreviation). | yes | clear |
 | `RECEIVE_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_ENTRIES` (rx abbreviates receive). | yes | clear |
 | `RECEIVE_ERRORS_FRAME` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_ERRORS_FRAME` (rx abbreviates receive). | yes | clear |
 | `RECEIVE_QUEUE_PAGE` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_QUEUE_PAGE` (rx abbreviates receive). | yes | clear |

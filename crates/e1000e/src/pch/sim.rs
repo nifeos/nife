@@ -420,7 +420,7 @@ mod tests {
     }
 
     /// The edges of MDIO's register field and of the pages this port reaches: register 31 is the
-    /// last one there is, page `MAX_PAGE` is the last whose select fits, and register 15 is the last
+    /// last one there is, page `MAXIMUM_PAGE` is the last whose select fits, and register 15 is the last
     /// one reached without a page select.
     #[test]
     fn the_last_register_and_the_last_page_are_reachable_and_one_past_is_not() {
@@ -428,9 +428,9 @@ mod tests {
         assert!(
             physical_layer_device::read_mdic(&mut s, 2, physical_layer_device::MAX_REG).is_ok()
         );
-        assert!(plan(paged_offset(physical_layer_device::MAX_PAGE, 1)).is_ok());
+        assert!(plan(paged_offset(physical_layer_device::MAXIMUM_PAGE, 1)).is_ok());
         assert_eq!(
-            plan(paged_offset(physical_layer_device::MAX_PAGE + 1, 1)),
+            plan(paged_offset(physical_layer_device::MAXIMUM_PAGE + 1, 1)),
             Err(PhysicalLayerDeviceError::PageNotPorted)
         );
         assert_eq!(

@@ -1275,7 +1275,6 @@ crates/e1000e/src/data_plane.rs::receive
 crates/e1000e/src/data_plane.rs::start
 crates/e1000e/src/data_plane.rs::transmit
 crates/e1000e/src/descriptor.rs::BUFFER_SIZE
-crates/e1000e/src/descriptor.rs::MAX_FRAME
 crates/e1000e/src/descriptor.rs::TAIL_IN_PAGE
 crates/e1000e/src/device.rs::DEVICE_IDS
 crates/e1000e/src/device.rs::VENDOR_INTEL

@@ -44,7 +44,7 @@ pub trait Tails {
 /// it. Refused `TxError` (tx abbreviates transmit).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
-    /// Empty, or longer than [`MAX_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -152,7 +152,7 @@ impl DataPlane {
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
-        if frame.is_empty() || frame.len() > MAX_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
             return Err(TransmitError::BadLength);
         }
         self.reclaim(region);
