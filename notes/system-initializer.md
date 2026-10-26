@@ -10,21 +10,25 @@ the archive, builds the interactive system and then serves the shell's `run` req
 of the boot. Nothing host-side can run the crate, because it reaches `user_mode_runtime`'s EL0
 `asm!`. `script/swish-check`, which boots and types at the prompt, is what proves it.
 
-This note is shared by the crate's modules. Each section covers one part, and the crate's doc
-comments link to the section that carries their design.
+The crate's modules share this note. Each section covers one part, and the crate's doc comments
+link to the section that carries their design.
 
 ## What the boot builds
 
-`boot` builds the console, the input driver, the line discipline, the shell, the terminal's sink
-adapter when the archive has one, and `job_undertaker`. It builds them in its own budget, wired with
-endpoints and pages it creates. The console is the UART, plus the firmware screen's terminal when one
-is granted.
-GPU and virtio keyboard grants ride out to the shell untouched, because graphics is launched from
-the prompt and never at boot. Then the progenitor stays alive as the spawn service.
+`boot`, in `crates/system_initializer/src/boot_sequence.rs`, calls the steps in the order they run,
+and each step is a function in `boot_steps.rs`. Everything the boot builds comes out of the
+construction root the kernel granted, wired with endpoints and pages the progenitor retypes from it.
+Why the steps run in that order is in
+[`system-initializer/the-boot-order.md`](system-initializer/the-boot-order.md). The console is the
+UART, plus the firmware screen's terminal when the kernel grants one. The spawn service keeps the
+GPU and virtio keyboard grants untouched, because graphics is launched from the prompt and never at
+boot.
 
-It carves `PROGENITOR_RESERVED_PAGES` and a renewable `JOBS_BUDGET_PAGES` off the construction root
-and deletes the root. It gives up the UART capabilities once the drivers hold them, and keeps the
-file service. The negative control after the delete must see `NoSuchSlot`, not `NotPermitted`.
+Before the shell starts, the progenitor carves three bounded budgets off the construction root and
+deletes the root. The negative control after the delete must see `NoSuchSlot`, not `NotPermitted`.
+The progenitor gives up the UART capabilities once the drivers hold them, so no later child can get
+the UART. It keeps the file service for the life of the boot: a caretaker must hold it to
+attenuate a directory grant, and the shell's copy carries no `GRANT`.
 
 ## The measured load
 
@@ -46,7 +50,7 @@ measured.
 `spawn_loop::spawn_service` is the loop `boot` ends in. The progenitor is the ELF loader the shell
 directs, and it inserts only what the shell endows, so a spawned program reaches nothing its command
 line did not name. What it holds for the rest of the boot is `Channels`: two channels, one
-supervision endpoint it only delegates from, two bounded budgets and the boot's shared pages and
+supervision endpoint it only delegates from, three bounded budgets and the boot's shared pages and
 services. The root construction budget is not among them; it is gone.
 
 The spawn service's details are in two appendices.
@@ -63,7 +67,8 @@ and `std` layouts of a child's table.
 - A `graphical_terminal` session takes `GRAPHICAL_TERMINAL_SESSION_PAGES` of the job pool, so while
   one runs a `std` job or a second session gets "could not spawn". `^C` cannot end a session, and one
   whose build fails after its first driver started may keep those drivers' pages until the boot
-  ends.
+  ends. A keyboard session whose line discipline cannot be built traps the progenitor
+  (`build_terminal`, `children.rs:810`), where every other failed session is a refused spawn.
 - Scratch windows are unmapped through slot 28 once a child holds them; a kernel that grants no
   slot 28 leaves them all mapped.
 - A boot with a NIC waits for DHCP before the prompt, with no console to say why.

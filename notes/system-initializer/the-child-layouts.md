@@ -18,13 +18,14 @@ and at the prompt. The grant goes first because it is the authority the line nam
 Then come the clock, the configuration page, the input source with `READ` only, and the `--mem`
 budget. The clock and configuration page come before the source and budget, so `date`'s clock and
 `printenv`'s configuration are slot 1. Slot 1 is unambiguous only because no manifest declares a
-clock or configuration with an input, which is the ordered-slot debt in `notes/pipes.md`'s BUGS. The
-array holds six, what the fields allow rather than what a shipped manifest uses. A directory grant
-takes two, and the clock, configuration, source and budget one each.
+clock or configuration with an input, which is the ordered-slot debt in `notes/pipes.md`'s BUGS.
+`Service::native_endowment` holds the layout, in an array sized for what the fields allow rather
+than what a shipped manifest uses.
 
-The budget is narrowed to `SPEND_ONLY`. The child may spend it, but may lend neither it nor anything
-retyped from it (milestone 824 (a retype mints no right its budget lacks)). A child holding the
-network gets every right, because it lends the stack a page per socket out of this budget.
+The progenitor narrows the budget to `SPEND_ONLY`. The child may spend it, but may lend neither it
+nor anything retyped from it (milestone 824 (a retype mints no right its budget lacks)). A child
+holding the network gets every right, because it lends the stack a page per socket out of this
+budget.
 
 The named slots sit high and explicit. How many low slots a child gets depends on what else the line
 granted, and a program that probes for a slot by number cannot have it move:
@@ -53,17 +54,16 @@ itself. The progenitor, the shell, the terminal and the file server are outside 
 `notes/process-view.md` carries the argument. The share view is the region this child was split from,
 so "yours" includes the program asking, the way `ps` lists itself.
 
-A native child maps, each only when asked for: the directory grant's page, the clock, the
-configuration page and the machine statistics page. Each is a page the progenitor holds and only
-maps, so the child's reclaim leaves them alone. The file contract's page is one page for the program,
-the caretaker and the file server. That is sound because every request on both hops is a blocking
+Each page a native child maps (`Service::native_maps`) is one the progenitor holds and only maps, so
+the child's reclaim leaves it alone. The file contract's page is one page for the program, the
+caretaker and the file server. That is sound because every request on both hops is a blocking
 `CALL`, so the program is parked inside its own call while the caretaker uses the page.
 
-A program behind a directory grant is started with the grant's own three words, which the
+`start_job` starts a program behind a directory grant with the grant's own three words, which the
 progenitor forwards unread. That is `rm`'s shape: a spec of options and two words of name
-(`filesystem_contract::grant`). Any other native program gets the line's integer. A `std` program is started with zeros:
-nife's `_start` ignores all three, and its words arrive on the argument page (§170 (how a foreign
-program is told what to do)).
+(`filesystem_contract::grant`). Any other native program gets the line's integer. A `std` program
+gets zeros: nife's `_start` ignores all three, and its words arrive on the argument page (§170 (how
+a foreign program is told what to do)).
 
 ## The `std` layout
 
