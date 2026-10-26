@@ -46,7 +46,7 @@ const EXITING: u32 = 3;
 pub struct Thread {
     packet: *mut Packet,
     stack: *mut u8,
-    stack_size: usize,
+    stack_layout: crate::alloc::Layout,
     tcb: u64,
 }
 
@@ -60,9 +60,11 @@ pub const DEFAULT_MIN_STACK_SIZE: usize = 64 * 1024;
 
 const STACK_ALIGN: usize = 16;
 
-fn stack_layout(size: usize) -> crate::alloc::Layout {
-    // SAFETY-free: the size is rounded and nonzero, and 16 is a power of two.
-    crate::alloc::Layout::from_size_align(size, STACK_ALIGN).expect("a thread stack's layout")
+/// The layout of a thread stack of at least `requested` bytes, or `None` when no allocation could
+/// have it: the size rounded up to `STACK_ALIGN` overflows `usize` or exceeds `isize::MAX`.
+fn stack_layout(requested: usize) -> Option<crate::alloc::Layout> {
+    let size = requested.max(DEFAULT_MIN_STACK_SIZE).checked_next_multiple_of(STACK_ALIGN)?;
+    crate::alloc::Layout::from_size_align(size, STACK_ALIGN).ok()
 }
 
 impl Thread {
@@ -74,16 +76,25 @@ impl Thread {
         if !tls::main_is_ready() {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        let stack_size = stack.max(DEFAULT_MIN_STACK_SIZE).next_multiple_of(STACK_ALIGN);
-        // SAFETY: a nonzero, aligned layout.
-        let stack_base = unsafe { System.alloc(stack_layout(stack_size)) };
+        // Fallible, because `Builder::stack_size` arrives unchanged: rounding `usize::MAX` up would
+        // wrap to zero without overflow checks, a zero-sized stack is a write below a heap block, and
+        // a size past `isize::MAX` has no layout. Every such size is refused here, once; the alloc
+        // and every dealloc use this one layout.
+        let Some(layout) = stack_layout(stack) else {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "the requested thread stack size has no layout once rounded",
+            ));
+        };
+        // SAFETY: a nonzero (at least `DEFAULT_MIN_STACK_SIZE`), aligned layout.
+        let stack_base = unsafe { System.alloc(layout) };
         if stack_base.is_null() {
             return Err(io::Error::new(io::ErrorKind::OutOfMemory, "no memory for a thread stack"));
         }
         let block = tls::new_block();
         if block.is_null() {
             // SAFETY: allocated just above with this layout.
-            unsafe { System.dealloc(stack_base, stack_layout(stack_size)) };
+            unsafe { System.dealloc(stack_base, layout) };
             return Err(io::Error::new(io::ErrorKind::OutOfMemory, "no memory for a thread block"));
         }
         let packet = Box::into_raw(Box::new(Packet { state: AtomicU32::new(RUNNING) }));
@@ -94,7 +105,7 @@ impl Thread {
                 drop(Box::from_raw(packet));
                 drop(Box::from_raw(data));
                 tls::free_block(block);
-                System.dealloc(stack_base, stack_layout(stack_size));
+                System.dealloc(stack_base, layout);
             }
         };
 
@@ -113,7 +124,7 @@ impl Thread {
             return Err(error(tcb, "no thread control block"));
         }
         let tcb = tcb as u64;
-        let stack_top = stack_base as u64 + stack_size as u64;
+        let stack_top = stack_base as u64 + layout.size() as u64;
         // CONFIGURE joins our own process and gives the thread its block as its thread pointer
         // (the sixth register); its answer is the thread's own current-CPU page.
         let page = rt::configure_joining(
@@ -146,7 +157,7 @@ impl Thread {
             undo(packet, data);
             return Err(error(started, "the thread could not start"));
         }
-        Ok(Thread { packet, stack: stack_base, stack_size, tcb })
+        Ok(Thread { packet, stack: stack_base, stack_layout: layout, tcb })
     }
 
     pub fn join(self) {
@@ -173,7 +184,7 @@ impl Thread {
         // SAFETY: the caller's contract: the thread is gone from user mode.
         unsafe {
             drop(Box::from_raw(self.packet));
-            System.dealloc(self.stack, stack_layout(self.stack_size));
+            System.dealloc(self.stack, self.stack_layout);
         }
     }
 }

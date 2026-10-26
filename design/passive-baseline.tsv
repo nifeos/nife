@@ -2153,7 +2153,7 @@ notes/smb/testing.md	7
 notes/smb/throughput.md	6
 notes/smb/wire-decisions.md	33
 notes/smp.md	28
-notes/soak.md	15
+notes/soak.md	12
 notes/soak/README.md	1
 notes/soak/boot-lottery.md	13
 notes/soak/how-long-to-run-it.md	15
@@ -2167,8 +2167,8 @@ notes/soak/radon-2026-10-21.md	3
 notes/soak/rebooting-soak-procedure.md	10
 notes/soak/rebooting-soak.md	18
 notes/soak/saturated-workload-does-not-migrate.md	5
-notes/soak/supervisor.md	19
-notes/soak/tick-route.md	14
+notes/soak/supervisor.md	12
+notes/soak/tick-route.md	10
 notes/solarized-and-bold-is-bright.md	6
 notes/stack-high-water.md	14
 notes/stack-high-water/limitations.md	10
