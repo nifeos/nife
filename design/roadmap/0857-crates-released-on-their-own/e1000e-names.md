@@ -1,5 +1,7 @@
 # The names in `e1000e`, for ratification
 
+<!-- prose-budget: exception. Marked 2026-10-26 (UTC) by lane e1000e-names, at 3,800 words. Reason: most of the file is the table, and each status cell copies a Name: block from the crate as this record's format asks; the rulings of 2026-10-26 put a block on every renamed item, which took the table past the cap of §212 (a prose budget of 3,000 words). The prose around the table stays under it. -->
+
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 815 (proven Intel e1000e ring logic, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
 This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-26 (UTC). `python3 helpers/name_release.py --draft e1000e` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
