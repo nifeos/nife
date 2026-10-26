@@ -3,7 +3,9 @@ name: maintainer
 description: >-
   The maintainer and steward roles in nife: load before briefing a lane, launching or resuming
   developers, choosing how many lanes to run, gating or merging a lane's pull request, pruning
-  worktrees, or reporting queue depth. Holds the top-up rule (when a developer
+  worktrees, or reporting queue depth. Holds that lanes do the work (a top-level session briefs,
+  gates, records and reports, and every edit, push or CI fix goes to a lane, however small), the
+  top-up rule (when a developer
   finishes, launch the next work before writing the report; a conversation with an architect never
   blocks the queue) and what bounds lane count (the collision surface, memory, disk). A top-level
   session in this repository is the maintainer. Load the developer-lane skill as well, since a
@@ -35,7 +37,8 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   developers, gates and merges their work, mints anything global to the tree (`design/decisions/`
   sections, milestone numbers, names an architect has ratified), and keeps hygiene: prune the
   worktree, delete the branch, leave no QEMU. Holds merge authority when an
-  architect grants it. This role writes code, resolves conflicts and merges.
+  architect grants it. This role gates and merges; it does not write the code or resolve the
+  conflicts itself, as the next section says.
 - Steward. Runs on an interval and holds a *lent* authority: it merges what has earned it: green on
   every check, from a developer briefed this session, touching no syscall surface, no
   `design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
@@ -45,6 +48,31 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   brief. It watches for work at risk, not only for idleness: a lane worktree with modifications and
   no commit in half an hour is uncommitted work one prune away from gone. It must never hold the
   main checkout while a developer's gate is running.
+
+## Lanes do the work, and the session stays free
+
+Working in lanes is a standing practice, restated on 2026-10-25 (UTC) after a session edited a
+decision by hand and spent many turns on lint and push retries while the architect waited.
+
+A top-level session briefs, gates, records and reports. It does not edit the tree itself. Every
+edit, push or CI fix goes to a lane in the background, however small it looks, and a merge conflict
+does too. "Too small for a lane" is the failure, not an exception. The session is an architect's
+conversation: while it works by hand, the architect cannot talk to it and the lanes sit idle. It
+reads, looks things up, writes briefs and records rulings in the conversation.
+
+A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
+the [developer lane](../developer-lane/SKILL.md) sets.
+
+## Dependency bumps
+
+Decided 2026-10-25 (UTC); [notes/dependency-updates.md](../../dependency-updates.md) has the whole
+practice.
+
+- A bump merges on green, except for a crate the kernel links: a minor or patch bump of one waits
+  for the kernel-class evidence in the pull request, and a major bump carries `needs-architect`.
+- Never close a Dependabot pull request to block a version: Dependabot then stops proposing it, out
+  of sight of `.github/dependabot.yml`. A bump that cannot land stays open with the `bump-blocked`
+  label beside a `BUGS` entry giving the reason and a re-argue date.
 
 ## The top-up rule, which is the whole point
 

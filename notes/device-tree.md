@@ -202,9 +202,24 @@ failure, so every limitation here is a limitation on the boot path specifically.
   their depth at zero and the three `i32` ones let it go negative. Neither can index anything (every
   array access is guarded and the negative depths simply match nothing), so it is a wart rather than
   a hole, but an unbalanced tree is not told apart from a well-formed one.
+- **Cell widths come from the nearest ancestor that declares them, not from the spec's default.**
+  The Devicetree Specification says a node without `#address-cells` gives its children 2 and 1.
+  The walkers carry the parent's widths down instead, as Linux's `of_n_addr_cells` does, so a bus
+  that declares nothing decodes `reg` with whatever its parent said. Where the tree is silent, a
+  spec-following reader such as `dtoolkit` returns a different region and neither reports an error.
+  The walkers ignore a declaration that is not exactly one cell.
+- **A `reg` shorter than one address and size pair yields no region rather than an error.** The
+  caller sees `None`, the same as a node with no `reg` at all.
+- **Property placement is not checked.** A property after a child node, or before the root node,
+  breaks the spec's order, and the walkers read it anyway.
+- **`from_bytes` refuses a blob whose strings block is empty and ends it**, as `Error::Truncated`,
+  because the header check requires `off_dt_strings < totalsize`. `dtc` never writes such a blob, but the spec
+  allows it.
 
-`crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two, hand-built rather than
-fuzzer-minimized, so a reader meets the attack next to the code.
+`crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two and for the
+one-cell rule, hand-built rather than fuzzer-minimized, so a reader meets the attack next to the
+code. [`dtoolkit` against `device_tree_blob`](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md)
+measured the cell-width, short-`reg`, placement and strings-block entries.
 
 ## A tree written from ACPI: what it loses
 

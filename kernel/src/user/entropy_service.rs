@@ -253,7 +253,7 @@ fn start_instruction(image: &'static [u8]) -> Option<Wiring> {
 const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
 
 /// Does this machine have a JH7110 TRNG? The device tree's answer, decoded by
-/// `jh7110_entropy::discover`, which owns the `compatible` string and the `reg` decode.
+/// `machine_discovery::jh7110::entropy::discover`, which reads the node `jh7110_entropy` names.
 ///
 /// riscv64 only, since the JH7110 is a RISC-V `SoC`. QEMU's `virt` board has no such node, so CI
 /// takes the `None` path (`discover_finds_nothing_on_qemus_virt_board` pins it).
@@ -265,7 +265,7 @@ const TRNG_VA: u64 = address_space_map::pair_page(0x0000_0000_0094_0000);
 /// not ruled on this one.
 #[cfg(target_arch = "riscv64")]
 pub fn jh7110_trng_device() -> Option<jh7110_entropy::Discovered> {
-    jh7110_entropy::discover(&crate::device_tree().ok()?)
+    machine_discovery::jh7110::entropy::discover(&crate::device_tree().ok()?)
         .ok()
         .flatten()
 }

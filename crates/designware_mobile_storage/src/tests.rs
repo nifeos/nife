@@ -1,6 +1,5 @@
-//! The crate's host tests, moved out of `lib.rs` on 2026-10-12 (UTC) by lane
-//! maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is
-//! split, the parent becomes an index) as its tests grow.
+//! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules as
+//! the tests grow.
 
 use crate::bench::{self, WriteVerdict};
 use crate::card;

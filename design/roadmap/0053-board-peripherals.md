@@ -149,9 +149,16 @@ and both trees are GPL and were read for hardware facts only.
   citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
 - **Outstanding.** The network half's rate on radon: 14.3 Mbit/s on a gigabit link, twice on
   2026-10-22, against 2.3 before the `net_stack` fix (notes/designware-ethernet/the-receive-rate.md).
-  The fix holds, and the limit is now radon draining its receive buffer: it advertises 4 to 5 KiB
-  of the 16 KiB window at a 2 ms round trip. Whether the receiving program or the copy into it is
-  slow is the next measurement.
+  The limit was radon's debug `net_stack` emptying its buffer one 4,088-byte `RECEIVE` call at a
+  time through byte loops, with smoltcp unoptimized. The copies are bulk and smoltcp builds
+  optimized (branch `milestone/53-radon-receive-drain`). With radon's debug programs under QEMU
+  that takes the drain from 7.4 to 70.3 Mbit/s and cuts the turnaround per call about 9.5
+  times. The bench boot prints a `receive` line with the time inside each call.
+  radon's step: the note's bench step from a commit with that change,
+  `NIFE_NETWORK_BENCH_PEER="$P:9494" script/board-image --tftp --extra-features network_bench`,
+  then read `transfer` and `receive`. Expected: 40 to 140 Mbit/s with 230 to 800 us inside a
+  call. A call still near 2,300 us is a cost only silicon has, and the note's table says what
+  each other outcome means.
 - **Milestone 940.** radon's second port, `gmac1`, which this driver does not bring up, is
   milestone 940 (radon's second Ethernet port): `design/roadmap/0940-second-jh7110-ethernet-port.md`.
 - **Milestone 163.** The board-side PLDA XpressRICH root complex that would carry the NVMe driver

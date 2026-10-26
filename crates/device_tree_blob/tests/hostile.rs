@@ -979,3 +979,149 @@ fn a_tree_of_one_and_a_half_mebibytes_is_not_too_large() {
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
     assert_ne!(looked.err(), Some(Error::TooLarge(claimed)));
 }
+
+/// A `#address-cells` that is not one cell long is ignored, and the width inherited from above
+/// stands. `machine_discovery`'s `many-harts` fixture writes its `/cpus` declaration as two bytes,
+/// and `be32` over those two bytes takes the padding after them as well: a count of 0x20000 cells,
+/// which turns every `reg` below into zero regions. Linux's `of_n_addr_cells` passes over a short
+/// value the same way and takes the parent's. Milestone 784 (reuse what the tree wrote) found it,
+/// measuring dtoolkit against this crate.
+#[test]
+fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &cell32(1));
+    b.prop(b"#size-cells", &cell32(1));
+    b.begin_node(b"bus");
+    b.prop(b"#address-cells", &[0, 2]);
+    b.begin_node(b"dev@1000");
+    b.prop(b"compatible", b"nife,dev\0");
+    let mut reg = cell32(0x1000);
+    reg.extend(cell32(0x10));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    b.begin_node(b"reserved-memory");
+    b.prop(b"#size-cells", &[0, 0, 2]);
+    b.begin_node(b"fw@2000");
+    let mut reg = cell32(0x2000);
+    reg.extend(cell32(0x20));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    let dev = (0x1000, 0x10);
+    assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
+    assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
+}
+
+/// An empty needle names no device. A `compatible` value ends in a NUL, so splitting it on NUL
+/// leaves an empty last piece, and that piece is not an entry: counting it would answer
+/// `node_reg_compatible(b"")` with the first node that has any `compatible` at all. No caller
+/// passes an empty needle; the fuzz target does, and dtoolkit's `is_compatible("")` matches
+/// nothing, which is how milestone 784 (reuse what the tree wrote) found the difference.
+#[test]
+fn an_empty_compatible_needle_matches_nothing() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.prop(b"#address-cells", &cell32(1));
+    b.prop(b"#size-cells", &cell32(1));
+    b.begin_node(b"dev@1000");
+    b.prop(b"compatible", b"nife,dev\0");
+    let mut reg = cell32(0x1000);
+    reg.extend(cell32(0x10));
+    b.prop(b"reg", &reg);
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+
+    let mut out = [Region { start: 0, size: 0 }; 2];
+    assert_eq!(dt.node_reg_compatible(b"", &mut out), Ok(0));
+    assert_eq!(dt.node_prop_compatible(b"", b"reg"), Ok(None));
+    assert_eq!(dt.parent_prop_compatible(b"", b"#size-cells"), Ok(None));
+    assert_eq!(dt.node_reg_compatible(b"nife,dev", &mut out), Ok(1));
+}
+
+/// Every walker that reads cell widths ignores a malformed declaration of either kind, at the root
+/// and on the node whose children it decodes. Each node declares 1 and 1 properly, then repeats one
+/// declaration as two bytes; were the repeat read, `be32` would take the padding too and make the
+/// width 0x20000, so no `reg` below would decode. One malformed declaration per tree, so a walker
+/// that guards one kind and not the other fails here. Milestone 784 (reuse what the tree wrote)
+/// found the unguarded reads, and its mutation gate asked for every arm.
+#[test]
+fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
+    fn tree(bad: &[u8], at_root: bool) -> Vec<u8> {
+        let declare = |b: &mut Blob, malformed: bool| {
+            b.prop(b"#address-cells", &cell32(1));
+            b.prop(b"#size-cells", &cell32(1));
+            if malformed {
+                b.prop(bad, &[0, 2]);
+            }
+        };
+        let pair = |start: u32, size: u32| {
+            let mut reg = cell32(start);
+            reg.extend(cell32(size));
+            reg
+        };
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        declare(&mut b, at_root);
+        b.begin_node(b"memory@40000000");
+        b.prop(b"device_type", b"memory\0");
+        b.prop(b"reg", &pair(0x4000_0000, 0x1000));
+        b.end_node();
+        b.begin_node(b"bus");
+        declare(&mut b, !at_root);
+        b.begin_node(b"dev@1000");
+        b.prop(b"compatible", b"nife,dev\0");
+        b.prop(b"reg", &pair(0x1000, 0x10));
+        b.end_node();
+        b.end_node();
+        b.begin_node(b"reserved-memory");
+        // Silent when the root carries the malformed repeat, so the root's widths are the ones
+        // `reserved_memory_regions` decodes with.
+        if !at_root {
+            declare(&mut b, true);
+        }
+        b.begin_node(b"fw@2000");
+        b.prop(b"reg", &pair(0x2000, 0x20));
+        b.end_node();
+        b.end_node();
+        b.end_node();
+        b.finish()
+    }
+
+    for bad in [&b"#address-cells"[..], b"#size-cells"] {
+        for at_root in [true, false] {
+            let blob = tree(bad, at_root);
+            let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+            let mut out = [Region { start: 0, size: 0 }; 2];
+            let case = (core::str::from_utf8(bad).unwrap(), at_root);
+            assert_eq!(dt.memory_regions(&mut out), Ok(1), "{case:?}");
+            assert_eq!(
+                (out[0].start, out[0].size),
+                (0x4000_0000, 0x1000),
+                "{case:?}"
+            );
+            assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1), "{case:?}");
+            assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
+            assert_eq!(
+                dt.node_reg_compatible(b"nife,dev", &mut out),
+                Ok(1),
+                "{case:?}"
+            );
+            assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
+            assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1), "{case:?}");
+            assert_eq!((out[0].start, out[0].size), (0x2000, 0x20), "{case:?}");
+        }
+    }
+}

@@ -115,6 +115,37 @@ struct Progress {
     since: Instant,
 }
 
+impl Progress {
+    /// Advance past one line (or the unfinished tail of one) of `text`, read at `now`.
+    ///
+    /// The first line of any kind ends [`Stage::Build`]. Every announced test restarts the clock,
+    /// the same path included: a repeated run (`--repeat`, `NIFE_TEST_REPEAT`) announces one test
+    /// many times, and each is a new test with its own budget, not one test running for the sum of
+    /// them. `now` is a parameter so the host test can drive this without a real clock.
+    fn advance(&mut self, text: &str, now: Instant) {
+        let next = match stage_after(text) {
+            Some(next) => next,
+            None if self.stage == Stage::Build => Stage::Boot,
+            None => return,
+        };
+        if self.stage != next || matches!(next, Stage::Test(_)) {
+            self.stage = next;
+            self.since = now;
+        }
+    }
+
+    /// The running stage, if it has run past `bound` by `now`.
+    fn overrun(&self, bound: fn(&Stage) -> Option<Duration>, now: Instant) -> Option<Overrun> {
+        let bound = bound(&self.stage)?;
+        let ran = now.saturating_duration_since(self.since);
+        (ran > bound).then(|| Overrun {
+            stage: self.stage.clone(),
+            ran,
+            bound,
+        })
+    }
+}
+
 /// A stage that ran past its bound, for the failure line.
 #[derive(Debug)]
 pub(crate) struct Overrun {
@@ -184,19 +215,10 @@ impl Watch {
             let mut buf = [0u8; 8192];
             let stdout = std::io::stdout();
             let advance = |text: &str| {
-                let mut p = shared.lock().unwrap_or_else(|e| e.into_inner());
-                let next = match stage_after(text) {
-                    Some(next) => next,
-                    None if p.stage == Stage::Build => Stage::Boot,
-                    None => return,
-                };
-                // Every announced test restarts the clock, the same path included: a repeated run
-                // (`--repeat`, `NIFE_TEST_REPEAT`) announces one test many times, and each is a new
-                // test with its own budget, not one test running for the sum of them.
-                if p.stage != next || matches!(next, Stage::Test(_)) {
-                    p.stage = next;
-                    p.since = Instant::now();
-                }
+                shared
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .advance(text, Instant::now());
             };
             loop {
                 let n = match out.read(&mut buf) {
@@ -243,14 +265,10 @@ impl Watch {
 
     /// The stage that has run past its bound, if one has.
     fn overrun(&self) -> Option<Overrun> {
-        let p = self.progress.lock().unwrap_or_else(|e| e.into_inner());
-        let bound = (self.bound)(&p.stage)?;
-        let ran = p.since.elapsed();
-        (ran > bound).then(|| Overrun {
-            stage: p.stage.clone(),
-            ran,
-            bound,
-        })
+        self.progress
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .overrun(self.bound, Instant::now())
     }
 
     /// **One look by the host watchdog**, for a caller that already polls its child (the scanout
@@ -1080,8 +1098,11 @@ mod tests {
             .expect("the hang overran its one-second bound");
         assert_eq!(overrun.stage, Stage::Test("kernel::x::hangs".into()));
         let line = overrun.message("x86_64 system_tests");
+        // How many seconds it "ran" depends on how promptly this thread polled, so only the
+        // parts that do not are checked.
         assert!(
-            line.contains("x86_64 system_tests: test kernel::x::hangs ran 1 s"),
+            line.contains("x86_64 system_tests: test kernel::x::hangs ran ")
+                && line.contains("past its 1 s bound"),
             "{line}"
         );
         assert_eq!(watch.wait(&mut child, "x86_64 system_tests"), None);
@@ -1105,28 +1126,39 @@ mod tests {
         assert!(started.elapsed() < Duration::from_secs(30));
     }
 
-    /// **A test announced again gets a fresh bound** (`--repeat`). Four runs of one test, each well
-    /// inside a one-second bound and together past it, must not be killed as one hang.
+    /// **A test announced again gets a fresh bound** (`--repeat`). Four runs of one test, each
+    /// 0.6 s against a one-second bound and 2.4 s together, must not read as one hang. The clock is
+    /// injected, so a stalled runner cannot fail it. The lines arrive as the reader sees them: the
+    /// announcement before the test runs, then the whole line with its result.
     #[test]
     fn a_repeated_test_is_bounded_per_run_not_in_sum() {
         fn one_second(stage: &Stage) -> Option<Duration> {
             matches!(stage, Stage::Test(_)).then_some(Duration::from_secs(1))
         }
-        let (mut child, watch) = Watch::spawn_bounded(
-            Command::new("sh").args([
-                "-c",
-                "echo 'running 1 tests'; for i in 1 2 3 4; do \
-                 printf 'test kernel::x::repeats ... '; sleep 0.6; echo ok; done",
-            ]),
-            one_second,
-        )
-        .expect("sh runs");
-        let status = watch.wait(&mut child, "x86_64 kernel");
-        assert!(
-            status.is_some_and(|s| s.success()),
-            "a repeated test was bounded in sum and killed"
-        );
-        let _ = watch.finish();
+        let start = Instant::now();
+        let at = |ms: u64| start + Duration::from_millis(ms);
+        let mut p = Progress {
+            stage: Stage::Build,
+            since: start,
+        };
+        p.advance("running 1 tests", at(0));
+        for run in 0..4 {
+            let began = run * 600;
+            p.advance("test kernel::x::repeats ... ", at(began));
+            assert!(
+                p.overrun(one_second, at(began + 590)).is_none(),
+                "run {run} was bounded with the runs before it"
+            );
+            p.advance("test kernel::x::repeats ... ok", at(began + 600));
+        }
+        // A bound kept across runs would have fired by the second run above, at 1.19 s. One run
+        // held past its own bound still fires.
+        p.advance("test kernel::x::repeats ... ", at(2_400));
+        let overrun = p
+            .overrun(one_second, at(3_500))
+            .expect("one run past its bound overran");
+        assert_eq!(overrun.stage, Stage::Test("kernel::x::repeats".into()));
+        assert_eq!(overrun.ran, Duration::from_millis(1_100));
     }
 
     /// Exit criterion 3's host test: the cross-check fails when the two clocks disagree, in both

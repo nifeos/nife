@@ -289,8 +289,10 @@ impl<'a> DeviceTreeBlob<'a> {
                     // the time we reach a /memory node these are correct.
                     if depth == 1 {
                         match name {
-                            b"#address-cells" => address_cells = be32(self.bytes, value_at)?,
-                            b"#size-cells" => size_cells = be32(self.bytes, value_at)?,
+                            b"#address-cells" if len == 4 => {
+                                address_cells = be32(self.bytes, value_at)?;
+                            }
+                            b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
                             _ => {}
                         }
                     }
@@ -379,11 +381,18 @@ impl<'a> DeviceTreeBlob<'a> {
                     let name = self.cstr(self.off_strings + name_off)?;
 
                     // Record the cell counts this node declares for its children (depth+1 will read
-                    // them off the stack). A node's own `reg`, decoded below, uses its PARENT's.
+                    // them off the stack). A node's own `reg`, decoded below, uses its PARENT's. A
+                    // declaration that is not exactly one cell is ignored, here and in every walker,
+                    // so the inherited width stands: `be32` of a shorter value would read the padding
+                    // and the next token as the count.
                     if depth < MAX_DEPTH {
                         match name {
-                            b"#address-cells" => acells[depth] = be32(self.bytes, value_at)?,
-                            b"#size-cells" => scells[depth] = be32(self.bytes, value_at)?,
+                            b"#address-cells" if len == 4 => {
+                                acells[depth] = be32(self.bytes, value_at)?;
+                            }
+                            b"#size-cells" if len == 4 => {
+                                scells[depth] = be32(self.bytes, value_at)?;
+                            }
                             _ => {}
                         }
                     }
@@ -411,7 +420,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// any depth.
     ///
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
-    /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. `compatible` may follow
+    /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. The empty piece after the
+    /// final NUL is not an entry, so an empty `compat` matches nothing. `compatible` may follow
     /// `reg` in the same node, so each open node's `reg` is remembered on a per-depth stack and
     /// decoded when the matched node closes; a matched parent is still answered after its
     /// children close. Returns zero regions for a match with no `reg`. See notes/device-tree.md
@@ -471,8 +481,12 @@ impl<'a> DeviceTreeBlob<'a> {
 
                     if depth < MAX_DEPTH {
                         match name {
-                            b"#address-cells" => acells[depth] = be32(self.bytes, value_at)?,
-                            b"#size-cells" => scells[depth] = be32(self.bytes, value_at)?,
+                            b"#address-cells" if len == 4 => {
+                                acells[depth] = be32(self.bytes, value_at)?;
+                            }
+                            b"#size-cells" if len == 4 => {
+                                scells[depth] = be32(self.bytes, value_at)?;
+                            }
                             b"reg" if depth >= 2 => {
                                 reg[depth] =
                                     Some((value_at, len, acells[depth - 1], scells[depth - 1]));
@@ -482,7 +496,9 @@ impl<'a> DeviceTreeBlob<'a> {
                                     .bytes
                                     .get(value_at..value_at + len)
                                     .ok_or(Error::Truncated)?;
-                                matched[depth] = bytes.split(|&b| b == 0).any(|s| s == compat);
+                                matched[depth] = bytes
+                                    .split(|&b| b == 0)
+                                    .any(|s| !s.is_empty() && s == compat);
                             }
                             _ => {}
                         }
@@ -595,7 +611,9 @@ impl<'a> DeviceTreeBlob<'a> {
                                 .bytes
                                 .get(value_at..value_at + len)
                                 .ok_or(Error::Truncated)?;
-                            matched[depth] = bytes.split(|&b| b == 0).any(|s| s == compat);
+                            matched[depth] = bytes
+                                .split(|&b| b == 0)
+                                .any(|s| !s.is_empty() && s == compat);
                         }
                     }
                 }
@@ -952,8 +970,10 @@ impl<'a> DeviceTreeBlob<'a> {
                     // The root's cell counts are the defaults for the reserved-memory children.
                     if depth == 1 {
                         match name {
-                            b"#address-cells" => address_cells = be32(self.bytes, value_at)?,
-                            b"#size-cells" => size_cells = be32(self.bytes, value_at)?,
+                            b"#address-cells" if len == 4 => {
+                                address_cells = be32(self.bytes, value_at)?;
+                            }
+                            b"#size-cells" if len == 4 => size_cells = be32(self.bytes, value_at)?,
                             _ => {}
                         }
                     }
@@ -962,8 +982,12 @@ impl<'a> DeviceTreeBlob<'a> {
                         if depth == rd {
                             // The reserved-memory node may declare its own cell counts for children.
                             match name {
-                                b"#address-cells" => address_cells = be32(self.bytes, value_at)?,
-                                b"#size-cells" => size_cells = be32(self.bytes, value_at)?,
+                                b"#address-cells" if len == 4 => {
+                                    address_cells = be32(self.bytes, value_at)?;
+                                }
+                                b"#size-cells" if len == 4 => {
+                                    size_cells = be32(self.bytes, value_at)?;
+                                }
                                 _ => {}
                             }
                         } else if depth == rd + 1 && name == b"reg" {

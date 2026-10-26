@@ -56,28 +56,10 @@ impl Region for Plane {
         PLANE.w64(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
-        let (words, rest) = out.as_chunks_mut::<8>();
-        let mut at = off;
-        for w in words {
-            *w = PLANE.r64(at).to_le_bytes();
-            at += 8;
-        }
-        for b in rest {
-            *b = PLANE.r8(at);
-            at += 1;
-        }
+        PLANE.copy_to_slice(off, out);
     }
     fn write_bytes(&mut self, off: u64, src: &[u8]) {
-        let (words, rest) = src.as_chunks::<8>();
-        let mut at = off;
-        for w in words {
-            PLANE.w64(at, u64::from_le_bytes(*w));
-            at += 8;
-        }
-        for &b in rest {
-            PLANE.w8(at, b);
-            at += 1;
-        }
+        PLANE.copy_from_slice(off, src);
     }
 }
 

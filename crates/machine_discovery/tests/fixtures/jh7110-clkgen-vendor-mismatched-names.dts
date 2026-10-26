@@ -1,0 +1,38 @@
+/dts-v1/;
+
+/*
+ * The vendor clock controller with `reg-names` naming more windows than `reg` has, and "stg" is
+ * the one placed past the end. NOT a tree any board serves: it is the shape `discover_as` must
+ * refuse rather than index into.
+ *
+ * `reg` has two entries (sys, aon); `reg-names` lists three ("sys", "aon", "stg"), so `stg`'s
+ * position is 2 and the array only has indices 0 and 1. A `reg-names` this malformed is exactly
+ * the case `discover_as`'s `i < n` guard exists for: read the corroborated constant instead of a
+ * region this tree never described.
+ *
+ * Regenerate with:
+ *
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor-mismatched-names.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor-mismatched-names.dts
+ */
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "starfive,jh7110";
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		clock-controller {
+			compatible = "starfive,jh7110-clkgen";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>;
+			reg-names = "sys", "aon", "stg";
+			#clock-cells = <1>;
+		};
+	};
+};

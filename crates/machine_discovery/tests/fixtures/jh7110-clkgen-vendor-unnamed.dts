@@ -1,0 +1,37 @@
+/dts-v1/;
+
+/*
+ * The vendor clock controller with its `reg-names` removed, and nothing else changed. NOT a tree
+ * any board serves: it is the shape `discover` must refuse.
+ *
+ * A three-window node with no names is a node this crate cannot index, and guessing window 1
+ * because the tree we happened to read had it there is exactly the "a fact nobody wrote down"
+ * failure AGENTS.md's ladder is about. The honest answer is the corroborated constant with
+ * `from_tree: false`, which a bench transcript can see and a reader can distrust.
+ *
+ * Regenerate with:
+ *
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor-unnamed.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-clkgen-vendor-unnamed.dts
+ */
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "starfive,jh7110";
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		clock-controller {
+			compatible = "starfive,jh7110-clkgen";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x10230000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>;
+			#clock-cells = <1>;
+		};
+	};
+};

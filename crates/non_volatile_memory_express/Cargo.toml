@@ -2,27 +2,41 @@
 name = "non_volatile_memory_express"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "NVMe queue mechanics as pure logic: command building, ring arithmetic, doorbells, PRP lists and identify parsing, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# no_std for the kernel, std for host tests, like every §7 pure-logic crate. The crate owns the
-# NVMe queue mechanics only (register field decode, command building, submission/completion ring
-# arithmetic with the phase tag, doorbell addressing, PRP construction, identify parsing); the
-# kernel supplies the volatile MMIO accessors and the DMA memory, so all of this tests on the host
-# in milliseconds and is reachable by the model checker.
+# no_std for a kernel, std for host tests. The crate owns the NVMe queue mechanics only (register
+# field decode, command building, submission and completion ring arithmetic with the phase tag,
+# doorbell addressing, PRP construction, identify parsing); the caller supplies the volatile MMIO
+# accessors and the DMA memory, so all of this tests on the host in milliseconds and is reachable
+# by the model checker.
 
 [features]
-# Exposes `ESCAPE_MAGIC`, the sentinel that selects the NVMe server's test-only DMA-escape role.
-# Turned on by `components/confinement_attackers` (the server that reads it) and by the kernel's
-# `system_tests` (the wiring that writes it), and by nothing a shipped image is built from.
-# The feature name was ratified by calef, 2026-10-05 (#1647).
+# Exposes `ESCAPE_MAGIC`, a sentinel a confinement test uses to select a server's test-only
+# DMA-escape role. Nothing a shipped image is built from turns it on.
 confinement_attackers = []
 
 # The crate's own tests compile with `confinement_attackers` on, so cargo-mutants (which runs
-# `cargo test -p` with default features) rebuilds what it mutates behind it; `documentation` does
-# the same. Consumers do not get the feature from this.
+# `cargo test -p` with default features) rebuilds what it mutates behind it. Consumers do not get
+# the feature from this.
 [dev-dependencies]
 non_volatile_memory_express = { version = "0.1.0", path = ".", features = ["confinement_attackers"] }
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

@@ -1,14 +1,44 @@
 #![cfg_attr(not(test), no_std)]
-//! The `StarFive` JH7110 TRNG, as pure logic: the register layout, the device-tree query that
-//! finds the device, and the decision of whether a generation succeeded, failed or is running.
+//! The `StarFive` JH7110 TRNG, as pure logic: the register layout, what each of the chip's two
+//! device trees calls the block, and the decision of whether a generation succeeded, failed or is
+//! running.
 //!
-//! It never dereferences a pointer, so it is host-testable and Kani-reachable; the backend is
-//! `components/src/jh7110_entropy.rs`. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is set
-//! (NetBSD's rule), and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is [`Outcome::Lockup`].
-//! None of it has run on silicon. The `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels below
-//! name the sources in notes/entropy/jh7110-trng.md, which has the bring-up order and health
-//! testing.
+//! It never dereferences a pointer, so it is host-testable and Kani-reachable; the caller maps the
+//! register window and does the volatile reads. `ISTAT.RAND_RDY` counts only when `STAT.SEEDED` is
+//! set (NetBSD's rule), and `ISTAT.LFSR_LOCKUP`, the one hardware fault signal, is
+//! [`Outcome::Lockup`]. None of it has run on silicon.
 //!
+//! Name: ratified 2026-09-13 (calef); kept as the crates.io name (calef, 2026-10-07 UTC, #1806).
+//! The argument its minting lane gave (the lane of milestone 159 (a real hardware entropy source:
+//! the JH7110's TRNG), 2026-08-24): chip-qualified and unambiguous rather than generic, since
+//! `trng` alone would be a generic word that could name almost anything, the same reasoning that
+//! keeps `non_volatile_memory_express` and `pci` named for the specification rather than for
+//! "storage" or "bus".
+
+//! # Sources
+//!
+//! The bracketed labels in the documentation below name these:
+//!
+//! - \[binding\]: Linux's `starfive,jh7110-trng.yaml`, mainline as of 2026-08-24: the compatible
+//!   string, the `reg` window, two clocks, one reset and one interrupt.
+//! - \[driver\]: Linux's `drivers/char/hw_random/jh7110-trng.c`, mainline as of 2026-08-24. The
+//!   register offsets and bit positions are transcribed from its `#define`s.
+//! - \[trm\]: the *JH7110 Technical Reference Manual*, Preliminary V2 (2023-04-24), "TRNG > Control
+//!   Registers". It settles that `ISTAT` is write-1-to-clear and that zero disables `AUTO_RQSTS`
+//!   and `AUTO_AGE`, and names two `ISTAT` bits no Linux driver defines.
+//! - \[netbsd\]: NetBSD's `sys/arch/riscv/starfive/jh7110_trng.c`, revision 1.2: the only driver
+//!   that polls, and the source of the interrupt bit positions mainline omits.
+
+//! # The two device trees
+//!
+//! Mainline Linux describes the block as `compatible = "starfive,jh7110-trng"` ([`COMPATIBLE`]).
+//! The vendor U-Boot's control tree, which a VisionFive 2 boots with, spells the same block
+//! `"starfive,trng"` ([`COMPATIBLE_VENDOR`]) at the same window (`0x1600_C000`, `0x4000` bytes)
+//! with the same interrupt (30), and marks it `status = "disabled"` because U-Boot has no driver
+//! for it. [`COMPATIBLES`] lists both in the order to try them. A caller walks its own tree for a
+//! node carrying one of them, decodes `interrupts` with [`interrupt`] and `status` with
+//! [`status_okay`], and fills in a [`Discovered`].
+
 //! # Examples
 //!
 //! ```
@@ -29,8 +59,6 @@
 //! let both = ISTAT_RAND_RDY | ISTAT_LFSR_LOCKUP;
 //! assert_eq!(interpret(STAT_SEEDED, both, [0; 8]), Outcome::Lockup);
 //! ```
-//!
-//! Name: ratified 2026-09-13 (calef); kept as the crates.io name (calef, 2026-10-07 UTC, #1806).
 
 /// Register byte offsets from the device's base, transcribed from `jh7110-trng.c`'s `#define`s
 /// (\[driver\]). `RAND0..RAND7` are the eight 32-bit words a completed generation leaves behind;
@@ -165,10 +193,9 @@ pub const IE_LFSR_LOCKUP_EN: u32 = 1 << 4;
 /// **The `IE_*` bits gate the IRQ pin, not [`regs::ISTAT`]**, so a polling driver may leave this
 /// register at zero. \[trm\]'s wording ("interrupt **and/or status** contributions") is not
 /// decisive; the bench settled it on 2026-09-04, when a reseed and a generation were both seen by
-/// polling `ISTAT` with `IE` never written
-/// (`target/board/radon-2026-09-04-clock-and-first-entropy.log`). The completion interrupt needs
-/// this bit plus the contribution bits, at PLIC line 30 (\[binding\]'s `interrupts = <30>`);
-/// `components/src/jh7110_entropy.rs` says why it is not used.
+/// polling `ISTAT` with `IE` never written on a VisionFive 2. The completion interrupt needs this
+/// bit plus the contribution bits, at PLIC line 30 (\[binding\]'s `interrupts = <30>`); a polling
+/// driver needs none of them.
 pub const IE_GLBL_EN: u32 = 1 << 31;
 
 /// `ISTAT` bit 0: a generation completed and `RAND0..RAND7` hold a fresh answer.
@@ -206,22 +233,38 @@ pub const ISTAT_ALL: u32 =
 
 /// The device tree `compatible` string \[binding\] defines. `starfive,jh8100-trng` also lists this
 /// as a fallback compatible (the JH8100 reuses the same TRNG IP), which is out of scope: this
-/// crate matches the JH7110's own string only, never the fallback, so it says nothing about a `SoC`
-/// this project has no board for.
-pub(crate) const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
+/// crate names the JH7110's own string only, never the fallback, so it says nothing about a `SoC`
+/// it has no board for.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, made public when the
+/// device-tree walk left the crate. The binding's own word for the property it holds.
+pub const COMPATIBLE: &[u8] = b"starfive,jh7110-trng";
 
-/// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control DTB
-/// uses (milestone 239 (radon's device tree does not describe the TRNG, so a working driver never
-/// runs)).
+/// **The vendor U-Boot's spelling for the same device**, which the VisionFive 2's control tree
+/// uses.
 ///
 /// Same window (`0x1600_C000`), interrupt and clocks, a different string: a stale fork, not
 /// different silicon. Accepting it claims the [`regs`] layout, and `StarFive`'s own Linux driver
-/// for the block defines byte-for-byte the same offsets and bits as mainline's.
-/// notes/entropy/jh7110-trng.md ("The vendor spelling") has the node and the evidence.
+/// for the block (`drivers/char/hw_random/starfive-trng.c` in `starfive-tech/linux` at
+/// `202b558ae34c`) defines byte-for-byte the same offsets and bits as mainline's. The node, in
+/// `arch/riscv/dts/jh7110.dtsi` of `starfive-tech/u-boot` at `bfbdce9b86a2`, reads
+/// `trng: trng@1600C000 { compatible = "starfive,trng"; reg = <0x0 0x1600C000 0x0 0x4000>;
+/// interrupts = <30>; status = "disabled"; }`.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,trng";
 
-/// What [`discover`] found: the register window's physical base and size (from `reg`), and the
-/// PLIC interrupt number if the tree gives one (`interrupts`, \[binding\]'s single cell).
+/// Both spellings, in the order a caller should try them: mainline's first. A tree that carries
+/// the standardized binding is describing itself in that language, and that is the one to
+/// believe.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone: both spellings, in the
+/// order to try them.
+pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE, COMPATIBLE_VENDOR];
+
+/// Where a tree says the TRNG is: the register window's physical base and size (from `reg`), and
+/// the PLIC interrupt number if the tree gives one (`interrupts`, \[binding\]'s single cell).
+///
+/// A caller fills one in from its own device-tree walk, reading every property from the one node
+/// whose `compatible` matched, so an unrelated node under the other spelling never contributes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Discovered {
     /// Physical base address of the register window (`reg`'s address cell).
@@ -233,79 +276,44 @@ pub struct Discovered {
     /// but no `interrupts` still names a real device, one a poll-only driver could still use.
     pub interrupt: Option<u32>,
     /// Which `compatible` string matched: [`COMPATIBLE`] or [`COMPATIBLE_VENDOR`]. Carried rather
-    /// than discarded because the two spellings mean different things about the tree a bench
-    /// session is looking at, and a boot tour that says which one it found tells the next reader
-    /// whether they are on the vendor U-Boot's control DTB or on something fuller.
+    /// than discarded because the two spellings say which firmware's tree is in hand: the vendor
+    /// U-Boot's control tree, or something fuller.
     pub compatible: &'static [u8],
-    /// What the node's `status` property says, decoded to the one question a driver has: may this
-    /// device be used? `true` when the property is absent (the device-tree specification's default
-    /// is `"okay"`) or spells `"okay"`/`"ok"`; `false` for `"disabled"` and every other value.
+    /// What the node's `status` property says, decoded by [`status_okay`] to the one question a
+    /// driver has: may this device be used?
     ///
-    /// **[`discover`] reports this and does not act on it.** The vendor control tree marks the
-    /// TRNG disabled because U-Boot has no driver for it, and the same tree misdescribes the S7
-    /// core in the other direction, so the caller decides (notes/entropy/jh7110-trng.md). A node
-    /// the firmware calls disabled is the first suspect when the window reads all zeros.
+    /// **A caller reports this and need not act on it.** The vendor control tree marks the TRNG
+    /// disabled because U-Boot has no driver for it, and the same tree misdescribes another core
+    /// in the other direction, so the caller decides. A node the firmware calls disabled is the
+    /// first suspect when the window reads all zeros.
     pub status_okay: bool,
 }
 
-/// Find the JH7110 TRNG in `tree`, if it is there at all.
+/// Decode a node's `interrupts` property to the PLIC line, \[binding\]'s single big-endian cell.
+/// `None` when the property is shorter than one cell.
 ///
-/// `Ok(None)` is not a parse failure: it is the answer on QEMU's riscv64 `virt`, which every CI
-/// boot uses, and a test pins it. Two spellings are tried, mainline's first ([`COMPATIBLE`], then
-/// [`COMPATIBLE_VENDOR`]): a tree that carries the standardized binding is describing itself in
-/// that language, and that is the one to believe.
-pub fn discover(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-) -> Result<Option<Discovered>, device_tree_blob::Error> {
-    for compatible in [COMPATIBLE, COMPATIBLE_VENDOR] {
-        if let Some(found) = discover_as(tree, compatible)? {
-            return Ok(Some(found));
-        }
-    }
-    Ok(None)
-}
-
-/// One spelling's worth of [`discover`]. Split out so the two attempts cannot drift apart: every
-/// property is read against the *same* string that matched the node, so a tree carrying an
-/// unrelated node under the other spelling can never contribute a `reg` or an `interrupts` to this
-/// answer.
-fn discover_as(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-    compatible: &'static [u8],
-) -> Result<Option<Discovered>, device_tree_blob::Error> {
-    let mut regions = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-    let n = tree.node_reg_compatible(compatible, &mut regions)?;
-    if n == 0 {
-        return Ok(None);
-    }
-    let interrupt = tree
-        .node_prop_compatible(compatible, b"interrupts")?
-        .and_then(|bytes| bytes.get(0..4))
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the property it
+/// decodes.
+pub fn interrupt(value: &[u8]) -> Option<u32> {
+    value
+        .get(0..4)
         .and_then(|b| b.try_into().ok())
-        .map(u32::from_be_bytes);
-    let status_okay = tree
-        .node_prop_compatible(compatible, b"status")?
-        .is_none_or(status_says_okay);
-    Ok(Some(Discovered {
-        reg_base: regions[0].start,
-        reg_size: regions[0].size,
-        interrupt,
-        compatible,
-        status_okay,
-    }))
+        .map(u32::from_be_bytes)
 }
 
-/// Decode a `status` property value. The device-tree specification defines `"okay"` as the only
-/// value meaning "operational", with `"disabled"`, `"fail"` and `"fail-sss"` all meaning it is
-/// not; `"ok"` is a widespread legacy spelling of `"okay"` that trees in the wild still carry, so
-/// it is accepted here rather than read as a fourth kind of "no".
+/// Decode a node's `status` property: `true` when it is absent (`None`, since the device-tree
+/// specification's default is `"okay"`) or spells `"okay"` or `"ok"`; `false` for `"disabled"`,
+/// `"fail"`, `"fail-sss"` and every other value. `"ok"` is a legacy spelling of `"okay"` that trees
+/// in the wild still carry, so it is accepted rather than read as a fourth kind of "no".
 ///
 /// The value is a NUL-terminated string in the tree, so both the terminated and the unterminated
-/// forms are matched here rather than trimming: a four-way `matches!` says exactly which byte
-/// strings count, where a trim would have to decide what an empty or multi-string value means and
-/// would answer for cases no tree produces.
-fn status_says_okay(value: &[u8]) -> bool {
-    matches!(value, b"okay\0" | b"ok\0" | b"okay" | b"ok")
+/// forms are matched rather than trimmed: a four-way `matches!` says exactly which byte strings
+/// count, where a trim would have to decide what an empty or multi-string value means.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the `Discovered`
+/// field it fills.
+pub fn status_okay(value: Option<&[u8]>) -> bool {
+    value.is_none_or(|v| matches!(v, b"okay\0" | b"ok\0" | b"okay" | b"ok"))
 }
 
 /// The result of looking at one `ISTAT` snapshot (and the `RAND` words, if it looked ready).
@@ -319,8 +327,7 @@ pub enum Outcome {
     /// first: see [`assemble`].
     Ready([u8; 32]),
     /// `ISTAT.LFSR_LOCKUP` was set: an SEU, per \[driver\]'s own comment. The caller should issue
-    /// `CTRL_EXEC_RANDRESEED` and retry, bounded, the same "ask again, bounded, then tell the
-    /// truth" shape `entropy.rs`'s `REFILL_TRIES` already uses for a dry virtio-rng device.
+    /// `CTRL_EXEC_RANDRESEED` and retry, bounded: ask again a few times, then tell the truth.
     Lockup,
     /// Neither bit was set: still generating, or not yet asked. Not a failure on its own; a caller
     /// polls again, bounded by its own timeout (this crate does not impose one, because how long
@@ -342,8 +349,7 @@ pub enum Outcome {
 /// precedence is fault, then seeded, then ready. A lockup beats everything, because a register
 /// file the hardware is re-seeding must not be read as a clean answer. `SEEDED` beats `RAND_RDY`,
 /// because `RAND_RDY` is a latched write-1-to-clear bit that can be standing from before this
-/// driver ran, while `STAT.SEEDED` is live state; that is why `stat` is a parameter (milestone
-/// 159).
+/// driver ran, while `STAT.SEEDED` is live state; that is why `stat` is a parameter.
 pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
     if istat & ISTAT_LFSR_LOCKUP != 0 {
         Outcome::Lockup
@@ -357,9 +363,10 @@ pub fn interpret(stat: u32, istat: u32, rand: [u32; 8]) -> Outcome {
 }
 
 /// Lay the eight `RAND` words out as 32 bytes, little-endian, word 0 first: `RAND0`'s low byte is
-/// byte 0. There is no cryptographic transform here for `entropy.rs`'s own reason (DECISIONS
-/// §44): with no one-way function in this tree, any reshuffling would change the bytes without
-/// adding unpredictability an attacker could not undo. This is data movement, not conditioning.
+/// byte 0. There is no cryptographic transform here: without a one-way function, any reshuffling
+/// would change the bytes without adding unpredictability an attacker could not undo. Conditioning,
+/// if a caller wants it, belongs to the caller's entropy pool. This is data movement, not
+/// conditioning.
 pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     for (i, word) in rand.iter().enumerate() {
@@ -368,17 +375,15 @@ pub fn assemble(rand: [u32; 8]) -> [u8; 32] {
     out
 }
 
-/// How many bytes fit in the one word [`Pool::take`] answers with. The same 8 as
-/// `entropy_contract::MAX_BYTES`, stated here rather than depended on: this crate is the device's
-/// logic and knows nothing about the wire format, and the two agreeing is a fact the driver
-/// program (which depends on both) is where a reader can check.
+/// How many bytes fit in the one word [`Pool::take`] answers with. Eight, one
+/// `u64`: this crate is the device's logic and knows nothing about any wire format, so a caller
+/// whose protocol carries a different count clamps to its own.
 pub const WORD_BYTES: u64 = 8;
 
-/// **The 32 bytes in hand, and how many are still ours to give** (milestone 159 (a real hardware
-/// entropy source: the JH7110's TRNG)), testable here without a register. [`take`](Pool::take) is
-/// handed a generator: a device poll in `components/src/jh7110_entropy.rs`, a counter in the tests.
-/// `cursor` only moves forward, so no byte is served twice, and each byte is zeroed as it leaves,
-/// as `components/src/entropy.rs`'s virtio-rng `Pool` does.
+/// **The 32 bytes in hand, and how many are still ours to give**, testable here without a
+/// register. [`take`](Pool::take) is handed a generator: a device poll in a driver, a counter in
+/// the tests. `cursor` only moves forward, so no byte is served twice, and each byte is zeroed as
+/// it leaves.
 ///
 /// # Examples
 ///
@@ -454,8 +459,8 @@ impl Pool {
     /// a **short count** rather than zeros when the device stops answering mid-gather.
     ///
     /// **`n` is clamped to [`WORD_BYTES`]**, because the answer is one 64-bit word and there is
-    /// nowhere to put a ninth byte. `entropy_contract::want` already clamps to the same 8 before the
-    /// driver ever calls this, so in the program the clamp is unreachable; it is here because a
+    /// nowhere to put a ninth byte. A caller whose protocol already clamps to 8 never reaches this
+    /// clamp; it is here because a
     /// public function that shifts by `8 * n` must not be callable into an overflow, and the first
     /// host test written against this API found exactly that edge.
     pub fn take(&mut self, n: u64, generate: &mut impl FnMut() -> Option<[u8; 32]>) -> (u64, u64) {
@@ -577,61 +582,42 @@ mod tests {
         );
     }
 
-    const JH7110_TRNG_PRESENT: &[u8] = include_bytes!("../tests/fixtures/jh7110-trng-present.dtb");
-    const QEMU_RISCV64_VIRT: &[u8] =
-        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
-
-    #[test]
-    fn discover_finds_the_device_on_a_tree_shaped_like_the_real_board() {
-        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(JH7110_TRNG_PRESENT)
-            .expect("fixture parses");
-        let found = discover(&tree)
-            .expect("no parse error")
-            .expect("the node is there");
-        assert_eq!(found.reg_base, 0x1600_C000);
-        assert_eq!(found.reg_size, 0x4000);
-        assert_eq!(found.interrupt, Some(30));
-        assert_eq!(found.compatible, COMPATIBLE);
-        // Mainline's binding example states no `status`, and the device-tree specification's
-        // default for an absent `status` is "okay".
-        assert!(found.status_okay);
-    }
-
-    const JH7110_TRNG_VENDOR_UBOOT: &[u8] =
-        include_bytes!("../tests/fixtures/jh7110-trng-vendor-uboot.dtb");
-
-    /// **Milestone 239's finding, in one assertion**: the vendor U-Boot's control DTB describes the
-    /// TRNG as `trng@1600C000`, `compatible = "starfive,trng"`, `status = "disabled"`, and
-    /// `discover` must find it. The fixture is transcribed from the firmware's source, not dumped
-    /// from a board, so whether the running firmware's tree carries the node is still a bench
-    /// fact; `design/roadmap/0239-radons-tree-describes-less-than-the-chip-has.md` has the two
-    /// commands that settle it.
-    #[test]
-    fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {
-        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(JH7110_TRNG_VENDOR_UBOOT)
-            .expect("fixture parses");
-        let found = discover(&tree)
-            .expect("no parse error")
-            .expect("the vendor tree describes the device under its own compatible");
-        assert_eq!(found.reg_base, 0x1600_C000);
-        assert_eq!(found.reg_size, 0x4000);
-        assert_eq!(found.interrupt, Some(30));
-        assert_eq!(found.compatible, COMPATIBLE_VENDOR);
-        // The one property a caller must not lose: the firmware calls its own TRNG disabled.
-        assert!(!found.status_okay);
-    }
-
-    /// `status` decoding, at the four values a tree can carry and one it cannot. This is a
-    /// three-line function guarding a fact a bench session will read off the boot tour, and the
-    /// failure it would cause is the expensive kind: a `status` misread as okay turns "the
-    /// firmware never ungated this device's clocks" into an unexplained window of zeros.
+    /// `status` decoding, at the four values a tree can carry, one it cannot, and the absent
+    /// property. This is a three-line function guarding a fact a bench session will read off the
+    /// boot tour, and the failure it would cause is the expensive kind: a `status` misread as okay
+    /// turns "the firmware never ungated this device's clocks" into an unexplained window of zeros.
     #[test]
     fn status_is_decoded_the_way_the_specification_defines_it() {
-        assert!(status_says_okay(b"okay\0"));
-        assert!(status_says_okay(b"ok\0"));
-        assert!(!status_says_okay(b"disabled\0"));
-        assert!(!status_says_okay(b"fail\0"));
-        assert!(!status_says_okay(b""));
+        assert!(status_okay(None));
+        assert!(status_okay(Some(b"okay\0")));
+        assert!(status_okay(Some(b"ok\0")));
+        assert!(status_okay(Some(b"okay")));
+        assert!(status_okay(Some(b"ok")));
+        assert!(!status_okay(Some(b"disabled\0")));
+        assert!(!status_okay(Some(b"fail\0")));
+        assert!(!status_okay(Some(b"")));
+    }
+
+    /// `interrupts` is one big-endian cell; a short property names no line, and a longer one
+    /// is read from its first cell only.
+    #[test]
+    fn the_interrupt_is_the_first_big_endian_cell() {
+        assert_eq!(interrupt(&[0, 0, 0, 30]), Some(30));
+        assert_eq!(
+            interrupt(&[0, 0, 1, 2, 0xff, 0xff, 0xff, 0xff]),
+            Some(0x102)
+        );
+        assert_eq!(interrupt(&[0, 0, 30]), None);
+        assert_eq!(interrupt(&[]), None);
+    }
+
+    /// Mainline's spelling is tried first, and the two spellings are the two trees' own.
+    #[test]
+    fn both_trees_spellings_in_mainline_first_order() {
+        assert_eq!(
+            COMPATIBLES,
+            [&b"starfive,jh7110-trng"[..], &b"starfive,trng"[..]]
+        );
     }
 
     /// **No byte is ever served twice**, across as many refills as it takes to drain several
@@ -683,7 +669,7 @@ mod tests {
     }
 
     /// **A device that stops answering produces a short count, not zeros.** The distinction is the
-    /// whole of `entropy_contract`'s honesty: a client that asked for eight bytes and got four must
+    /// whole of an entropy service's honesty: a client that asked for eight bytes and got four must
     /// be told four, or it will treat four zeros as entropy.
     #[test]
     fn a_dry_device_shortens_the_count_rather_than_padding() {
@@ -730,9 +716,8 @@ mod tests {
     ///
     /// A transcription check: the constants came off \[trm\]'s tables by hand, and a bit copied to
     /// the wrong line, or a `<<` turned `>>` that takes a bit to zero, passes every test that does
-    /// not name the bit it exercises. Milestone 326 (nobody has been assigned to turn a mutation
-    /// score upward) found fifteen survivors of that shape. A duplicated bit inside one register is
-    /// the copy-and-paste mistake the table invites.
+    /// not name the bit it exercises. A mutation sweep found fifteen survivors of that shape. A
+    /// duplicated bit inside one register is the copy-and-paste mistake the table invites.
     #[test]
     fn every_named_bit_is_the_bit_the_datasheet_names() {
         // One row per named bit: (register, name, bit index, constant). The indices are \[trm\]'s
@@ -794,8 +779,8 @@ mod tests {
     /// **[`ISTAT_ALL`] is five distinct bits**, which is what makes the write-1-to-clear an
     /// acknowledgement of exactly the bits this crate can name rather than a `!0` that swallows
     /// whatever else the block latched. Disjointness is the reason it may be written with either
-    /// `|` or `^`, which milestone 326 had to argue for four surviving mutants and would rather a
-    /// reader could simply check.
+    /// `|` or `^`, which a mutation sweep had to argue for four surviving mutants and would rather
+    /// a reader could simply check.
     #[test]
     fn the_clear_mask_is_every_named_istat_bit_and_nothing_else() {
         assert_eq!(ISTAT_ALL.count_ones(), 5, "{ISTAT_ALL:#010x}");
@@ -814,8 +799,8 @@ mod tests {
     /// returns.
     ///
     /// Every pass of the gather loop must make progress (refill, copy, advance cursor and count);
-    /// break one and the call never answers. Milestone 326 found four such mutants, each of which
-    /// hung the suite, so this test runs `take` under a deadline.
+    /// break one and the call never answers. A mutation sweep found four such mutants, each of
+    /// which hung the suite, so this test runs `take` under a deadline.
     #[test]
     fn take_returns_rather_than_spinning() {
         assert_eq!(
@@ -854,21 +839,9 @@ mod tests {
         rx.recv_timeout(std::time::Duration::from_secs(5))
             .expect("take never returned: its gather loop made no progress")
     }
-
-    /// **The negative case provable without hardware.** QEMU's riscv64 `virt` machine has no
-    /// `starfive,jh7110-trng` node, so `discover` must say so rather than match some unrelated
-    /// node's `reg`. The fixture is the same `qemu-riscv64-virt.dtb` that
-    /// `crates/device_tree_blob/tests/qemu_riscv64_virt.rs` verifies, so this is a claim about the
-    /// tree this project runs.
-    #[test]
-    fn discover_finds_nothing_on_qemus_virt_board() {
-        let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT)
-            .expect("fixture parses");
-        assert_eq!(discover(&tree).expect("no parse error"), None);
-    }
 }
 
-/// Machine-checked proofs (§14 (the project's direction: a verified-Rust capability microkernel)).
+/// Machine-checked proofs, run with `cargo kani`.
 /// The unit tests sample `interpret` at chosen bit patterns; `ISTAT` is a register a fault could
 /// set to anything, and `interpret` is a few comparisons over two `u32`s, so these exhaust the
 /// whole input space instead.
@@ -906,7 +879,7 @@ mod verification {
         let Outcome::Ready(bytes) = interpret(stat, istat, rand) else {
             panic!("RAND_RDY set and LFSR_LOCKUP clear did not read as Ready");
         };
-        // **The layout written out, not `assemble` compared with itself** (milestone 211).
+        // **The layout written out, not `assemble` compared with itself.**
         // `interpret` calls `assemble`, so `assert_eq!(interpret(..), Ready(assemble(rand)))`
         // is satisfied by any consistently wrong `assemble`: a byte-swap, a word reversal or a
         // silent truncation would leave both sides equal and this harness green, while the doc
@@ -937,7 +910,7 @@ mod verification {
         assert_eq!(interpret(stat, istat, rand), Outcome::NotReady);
     }
 
-    /// **An unseeded core never yields bytes, whatever `ISTAT` claims** (milestone 159). For every
+    /// **An unseeded core never yields bytes, whatever `ISTAT` claims**. For every
     /// `istat` with `LFSR_LOCKUP` clear, if `STAT.SEEDED` is clear then `interpret` returns
     /// `Unseeded` rather than `Ready`, so no path exists from a latched `RAND_RDY` on an unseeded
     /// device to 32 bytes handed to a caller. This is the property `Outcome::Unseeded`'s doc

@@ -1,8 +1,8 @@
 Falsifies `jh7110_entropy::verification::an_unseeded_core_never_yields_bytes`.
 
 The defect: `interpret` lets a standing `RAND_RDY` latch excuse a clear `STAT.SEEDED`. The latch is
-write-1-to-clear and can survive from before the last reset, which is the case milestone 159 (a real hardware entropy source: the JH7110's TRNG) added
-the `stat` parameter to rule out; trusting it brings back "serve the contents of a register file
+write-1-to-clear and can survive from before the last reset, which is the case the `stat`
+parameter exists to rule out; trusting it brings back "serve the contents of a register file
 nobody seeded".
 
 Expected to fail: the harness's `assert_eq!(interpret(stat, istat, rand), Outcome::Unseeded)`: an unseeded core with

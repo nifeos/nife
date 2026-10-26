@@ -14,6 +14,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Falsification coverage](../falsification-coverage.md): which kinds of test carry a replayed falsification, and what gates on it.
 - [Fuzzing the parse surface](../fuzzing.md): coverage-guided fuzzing of the parsers that read outside bytes.
 - [Fuzzing the services' request handlers](../fuzzing-the-services.md): session targets over the file server, the system log and the compositor, each checking a confinement rule.
+- [Taking a dependency update](../dependency-updates.md): what notices a new release, who merges which bump, and what a bump that cannot land leaves behind. Name provisional.
 - [Overflow checks](../overflow-checks.md): which builds panic on integer overflow and which wrap, what checking the shipped build found and costs, and the options (provisional name).
 - [Dynamic undefined-behavior checking (Miri)](../undefined-behavior.md): Miri over the host crates, and what "clean" means.
 - [Interleavings, model-checked (loom)](../interleaving.md): loom over the hand-rolled concurrency protocols, and its finds.
@@ -22,6 +23,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The mutation census record](../mutation-census.md): per-crate mutation scores for every census, comparable. Names provisional.
 - [Where an unsafe obligation is written, and where it is only implied](../unsafe-obligations.md).
 - [nife's dependencies, held to nife's own standards](../dependency-standards-census.md): the 99 shipped crate versions against each internal code standard, and which should bind a dependency. Name provisional.
+- [The unsafe code in the crates the kernel links](../kernel-dependency-unsafe.md): the listing §46 (thin primitives or whole subsystems; we write everything in between) asks for in its kernel bar. It names each `unsafe` site in `spin`, `tock-registers`, `aarch64-cpu` and `uuid`, which the kernel reaches, what checks them, and the claims that rest on them. Name provisional.
 - [What nife claims a confined component cannot do](../confinement-claims.md).
 - [A second outsider pass over the confinement claims](../confinement-outsider-pass-2.md): each claim attacked, and where each attack landed.
 - [A third outsider pass over the confinement claims](../confinement-outsider-pass-3.md): every claim attacked again, counted only when booted on three ISAs, and the one escape it found.

@@ -80,12 +80,12 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `boot` | base | crates: `bitmap_font*`, `screen_console*`, `sealed_pair*`, `serial_console`, `uefi_loader`; programs: `uefi_loader` | interfaces only; 1 dated exception(s) | `boot` (provisional) |
 | `core-tools` | base | programs: `date`, `printenv`, `rm`, `uuid`, `wc` | interfaces only | `core-tools` (provisional) |
 | `disk-tools` | base | programs: `disk_partitioner`, `disk_surveyor` | interfaces only | `disk-tools` (provisional) |
-| `drivers` | base | crates: `designware_ethernet*`, `designware_mobile_storage*`, `e1000e*`, `jh7110_entropy`, `non_volatile_memory_express`, `virtio`; programs: `block_driver`, `designware_mobile_storage`, `jh7110_entropy`, `non_volatile_memory_express` | interfaces only | `drivers` (provisional) |
+| `drivers` | base | crates: `designware_ethernet*`, `designware_mobile_storage*`, `e1000e*`, `jh7110_entropy*`, `non_volatile_memory_express`, `virtio`; programs: `block_driver`, `designware_mobile_storage`, `jh7110_entropy`, `non_volatile_memory_express` | interfaces only | `drivers` (provisional) |
 | `entropy` | base | programs: `entropy` | interfaces only | `entropy` (provisional) |
 | `filesystem` | base | crates: `disk_tree`, `subtree_scope*`; programs: `disk_tree`, `fs_file_caretaker`, `fs_nameset_caretaker`, `fs_subtree_caretaker` | interfaces only | `filesystem` (provisional) |
 | `init` | base | crates: `components`, `system_initializer`, `system_log`; programs: `broker`, `job_undertaker`, `progenitor`, `reboot`, `root_supervisor`, `spawner`, `sub_server_supervisor`, `swapper`, `system_log` | `timetable` | `init` (provisional) |
 | `jig` | base | crates: `jig`; programs: `jig` | `contracts`, `runtime`, `network` | `jig` (provisional) |
-| `kernel` | base | crates: `address_space_identifier`, `capability`, `cpu_set`, `direct_memory_access_validator`, `firmware_configuration`, `generational_table`, `inter_process_communication`, `intrusive_fifo`, `jh7110_clock_and_reset`, `jh7110_watchdog`, `kernel`, `memory_corruption_canary_gate`, `memory_regions`, `page_frames`, `paging`, `pci`, `thread_wake_handshake`, `work_steal_slot`; programs: `kernel` | interfaces only; 6 dated exception(s) | `kernel` (provisional) |
+| `kernel` | base | crates: `address_space_identifier`, `capability`, `cpu_set`, `direct_memory_access_validator`, `firmware_configuration`, `generational_table`, `inter_process_communication`, `intrusive_fifo`, `jh7110_clock_and_reset*`, `jh7110_watchdog`, `kernel`, `memory_corruption_canary_gate`, `memory_regions`, `page_frames`, `paging`, `pci`, `thread_wake_handshake`, `work_steal_slot`; programs: `kernel` | interfaces only; 5 dated exception(s) | `kernel` (provisional) |
 | `login` | base | crates: `credentialer`; programs: `credentialer`, `identity_provisioner`, `login`, `login_audit_receiver`, `user_timetable_keeper` | `timetable` | `login` (provisional) |
 | `mdr` | base | crates: `mdr`; programs: `mdr` | interfaces only | `mdr` (provisional) |
 | `network` | base | crates: `domain_name_resolution_contract*`, `domain_name_system`, `http_response`; programs: `domain_name_resolver`, `net_stack`; paths: `components/src/virtio_net_transport.rs`, `components/src/socket_test_client.rs` | interfaces only | `network` (provisional) |
@@ -104,7 +104,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `cryptography` | sdk | crates: `cryptography_provider*`, `pinned_tls_client*` | `network` | `cryptography` (provisional) |
 | `host-tools` | sdk | crates: `host_reordering_litmus`, `stick_maker`, `walk_pricing`, `xtask`; programs: `host_reordering_litmus`, `stick_maker`, `xtask` | `boot`, `display` | `host-tools` (provisional) |
 | `runtime` | sdk | crates: `allocation_cache*`, `calendar*`, `entropy_backend*`, `memory_region_heap*`, `talc*`, `user_mode_runtime*`; paths: `patches/`, `targets/`, `vendor/talc.divergence.patch`, `vendor/talc.pin` | interfaces only | `runtime` (provisional) |
-| `fixtures` | test | crates: `c_seam`, `coremark`, `cryptography_exerciser`, `filesystem_fixture*`, `fixtures`, `fuzz`, `job_mix`, `loaded_image_check`, `pinned_tls_exerciser`, `soak_page`, `std_exerciser`; programs: 77, too many to list here; paths: `packages/greeting.recipe.toml`, `packages/greeting-riscv64.recipe.toml`, `packages/greeting-x86_64.recipe.toml`, `packages/greeting-0.2.0.recipe.toml`, `packages/greeting-0.2.0-riscv64.recipe.toml`, `packages/greeting-0.2.0-x86_64.recipe.toml`, `packages/noteless.recipe.toml`, `packages/noteless-riscv64.recipe.toml`, `packages/noteless-x86_64.recipe.toml`, `packages/duet.recipe.toml`, `packages/duet-riscv64.recipe.toml`, `packages/duet-x86_64.recipe.toml`, `packages/solo.recipe.toml`, `packages/solo-riscv64.recipe.toml`, `packages/solo-x86_64.recipe.toml`, `packages/dialer.recipe.toml`, `packages/dialer-riscv64.recipe.toml`, `packages/dialer-x86_64.recipe.toml`, `packages/reach.recipe.toml`, `packages/reach-riscv64.recipe.toml`, `packages/reach-x86_64.recipe.toml` | `init`, `time`, `timetable`, `network`, `host-tools`, `redoxfs` | `fixtures` (provisional) |
+| `fixtures` | test | crates: `c_seam`, `coremark`, `cryptography_exerciser`, `filesystem_fixture*`, `fixtures`, `fuzz`, `job_mix`, `loaded_image_check`, `pinned_tls_exerciser`, `soak_page`, `std_exerciser`; programs: 78, too many to list here; paths: `packages/greeting.recipe.toml`, `packages/greeting-riscv64.recipe.toml`, `packages/greeting-x86_64.recipe.toml`, `packages/greeting-0.2.0.recipe.toml`, `packages/greeting-0.2.0-riscv64.recipe.toml`, `packages/greeting-0.2.0-x86_64.recipe.toml`, `packages/noteless.recipe.toml`, `packages/noteless-riscv64.recipe.toml`, `packages/noteless-x86_64.recipe.toml`, `packages/duet.recipe.toml`, `packages/duet-riscv64.recipe.toml`, `packages/duet-x86_64.recipe.toml`, `packages/solo.recipe.toml`, `packages/solo-riscv64.recipe.toml`, `packages/solo-x86_64.recipe.toml`, `packages/dialer.recipe.toml`, `packages/dialer-riscv64.recipe.toml`, `packages/dialer-x86_64.recipe.toml`, `packages/reach.recipe.toml`, `packages/reach-riscv64.recipe.toml`, `packages/reach-x86_64.recipe.toml` | `init`, `time`, `timetable`, `network`, `host-tools`, `redoxfs` | `fixtures` (provisional) |
 | `system-tests` | test | crates: `system_tests`; programs: `system_tests` | `kernel` | `system_tests` (provisional) |
 <!-- end of package table -->
 
@@ -171,11 +171,11 @@ which a test package is for. `host-tools` builds images from `boot` and `display
 
 Thirteen were recorded as exceptions dated 2026-09-27, in the package file of the linker. Pull
 request #1392 (the system tests leave the kernel) then made four of the kernel's links
-dev-dependencies, and the gate failed their exceptions as stale, so nine remain:
+dev-dependencies, and the gate failed their exceptions as stale. Eight remain:
 
 | linker | links | why it is refused, and what fixes it |
 |---|---|---|
-| `kernel` | `non_volatile_memory_express`, `jh7110_entropy` | a handoff record and a device discovery living in driver crates |
+| `kernel` | `non_volatile_memory_express` | a handoff record living in a driver crate |
 | `kernel` | `video_terminal` | display service wiring in `kernel/src/user/` |
 | `kernel` | `coremark`, `job_mix`, `soak_page` | benchmarks and probes built into the kernel; a release kernel should not link a fixture |
 | `boot` | `job_mix` | `serial_console` runs the job mix to prove a board boots |

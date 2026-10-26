@@ -1,0 +1,86 @@
+/dts-v1/;
+
+/*
+ * The PMIC's I2C bus **as radon's own U-Boot describes it** (milestone 592
+ * (radon's cold reboot dies in OpenSBI's PMIC write), provisional). NOT a
+ * dump from the board: transcribed 2026-09-25 from the U-Boot commit the VisionFive 2 SDK tag
+ * VF2_v2.10.4 pins (starfive-tech/u-boot 1539c1fb5a49), which is the "U-Boot SPL 2021.10 (Feb 12
+ * 2023)" radon prints. arch/riscv/dts/jh7110.dtsi gives the bus, starfive_visionfive2.dts the PMIC.
+ * radon's boot.scr hands the kernel this same control tree (`fdt move ${fdtcontroladdr}`), and
+ * SPL hands it to OpenSBI.
+ *
+ * What this fixture exists to hold:
+ * - the bus node is `i2c@12050000`, not `i2c5@...`, so radon's OpenSBI (which takes the index from
+ *   `name[3] - '0'`) computes index 16 and ungates the wrong clock word;
+ * - `clocks` names the virtual `JH7110_I2C5_CLK_CORE` (298) before the real gate (143), and the
+ *   plan must skip the first rather than write word 0x4a8;
+ * - `resets` names `RSTN_U5_DW_I2C_APB` (81) from the separate `rstgen` node.
+ *
+ * Numbers are written out because the vendor headers are not vendored here:
+ * JH7110_I2C5_CLK_CORE 298, JH7110_I2C5_CLK_APB 143, RSTN_U5_DW_I2C_APB 81.
+ *
+ * Regenerate with:
+ *
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-pmic-bus-radon.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-pmic-bus-radon.dts
+ */
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "starfive,visionfive-v2", "starfive,jh7110";
+	model = "StarFive VisionFive V2";
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		i2c5: i2c@12050000 {
+			compatible = "snps,designware-i2c";
+			reg = <0x0 0x12050000 0x0 0x10000>;
+			clocks = <&clkgen 298>, <&clkgen 143>;
+			clock-names = "ref", "pclk";
+			resets = <&rstgen 81>;
+			interrupts = <50>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clock-frequency = <100000>;
+			status = "okay";
+
+			eeprom@50 {
+				compatible = "atmel,24c04";
+				reg = <0x50>;
+				pagesize = <16>;
+			};
+
+			pmic: axp15060_reg@36 {
+				compatible = "stf,axp15060-regulator";
+				reg = <0x36>;
+			};
+		};
+
+		clkgen: clock-controller {
+			compatible = "starfive,jh7110-clkgen";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x10230000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>;
+			reg-names = "sys", "stg", "aon";
+			#clock-cells = <1>;
+			status = "okay";
+		};
+
+		rstgen: reset-controller {
+			compatible = "starfive,jh7110-reset";
+			reg = <0x0 0x13020000 0x0 0x10000>,
+			      <0x0 0x10230000 0x0 0x10000>,
+			      <0x0 0x17000000 0x0 0x10000>,
+			      <0x0 0x19810000 0x0 0x10000>,
+			      <0x0 0x295C0000 0x0 0x10000>;
+			reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg", "voutcrg";
+			#reset-cells = <1>;
+			status = "okay";
+		};
+	};
+};

@@ -130,7 +130,7 @@ jobs:
             rustup target add --toolchain "$tc" $targets
           done
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.install.outcome == 'success'
       # The same pinned QEMU, under the same cache key, as ci.yml's `bench` job; see the comment
       # there for why the runner's packaged QEMU will not do.
@@ -345,7 +345,7 @@ jobs:
           rustup target add --toolchain "${{ steps.plan.outputs.target }}" \
             $(awk -F'"' '/^targets *=/ {for (i = 2; i < NF; i += 2) printf "%s ", $i}' rust-toolchain.toml)
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.install.outcome == 'success'
 
       - name: Install clang (the C component's compiler, milestone 36)

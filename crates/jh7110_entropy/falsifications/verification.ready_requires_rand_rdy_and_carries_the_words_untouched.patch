@@ -8,7 +8,7 @@ random, so nothing downstream can notice.
 Expected to fail: the byte-by-byte comparison against `(rand[i / 4] >> (8 * (i % 4)))`,
 on the first word whose bytes are not palindromic.
 
-**Measured blind before milestone 211.** The harness used to assert
+**Measured blind before the harness was rewritten.** It used to assert
 `interpret(istat, rand) == Outcome::Ready(assemble(rand))`, and `interpret` fills that
 variant by calling `assemble`, so both sides moved together and this diff left the
 harness verifying. Confirmed by applying the diff against the old phrasing and watching
