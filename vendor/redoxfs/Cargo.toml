@@ -93,7 +93,7 @@ name = "tests"
 path = "tests/tests.rs"
 
 [dependencies.aes]
-version = "0.8"
+version = "0.9"
 default-features = false
 
 [dependencies.argon2]
