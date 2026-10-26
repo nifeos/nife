@@ -9,10 +9,10 @@ Ratified: 2026-10-25 (#2720).
 
 The ruling of that date ratified every name below but the two marked provisional. Each row with a
 refusal names the spelling the ruling turned down and why. nife's process plan sits outside the
-crate: the client windows, `client_window`, `MAX_DSTRD` (the doorbell stride one mapped page of BAR0
-can serve), `ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the `confinement_attackers`
-feature are in the `non_volatile_memory_express` module of the nife-internal crate
-`driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). `can_write` sits in nife's
+crate, in the `non_volatile_memory_express` module of the nife-internal crate
+`driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). That plan is the client
+windows, `client_window`, `MAX_DSTRD` (the doorbell stride one mapped page of BAR0 can serve),
+`ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the `confinement_attackers` feature. `can_write` sits in nife's
 NVMe server. Those names follow nife's ordinary naming and
 have no row here. A new name in this crate takes a row here, `provisional` until a ruling, and
 `script/lint` fails a module or `pub` item without one.

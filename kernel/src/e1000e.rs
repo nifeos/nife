@@ -12,7 +12,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use ::e1000e::{layout, regs};
+use e1000e::{layout, regs};
 
 use crate::arch::mmu;
 
