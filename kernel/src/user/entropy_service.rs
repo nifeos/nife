@@ -338,7 +338,7 @@ fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     Some(unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(crg.base) as usize,
-            &jh7110_clock_and_reset::STG,
+            &jh7110_clock_and_reset::SYSTEM_TOP_GROUP,
             jh7110_clock_and_reset::ENTROPY_BRING_UP,
         )
     })

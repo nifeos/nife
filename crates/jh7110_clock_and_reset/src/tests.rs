@@ -7,9 +7,9 @@ use super::*;
 fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
     // [mainline-clk] `base + 4 * idx`, and radon's OpenSBI's own `0x13020228 + 5 * 4` for the
     // same gate: two derivations of 0x23c.
-    assert_eq!(SYS.clock_offset(SYSCLK_I2C5_APB), Some(0x23c));
+    assert_eq!(SYSTEM.clock_offset(SYSCLK_I2C5_APB), Some(0x23c));
     assert_eq!(0x228 + 5 * 4, 0x23c);
-    let r = SYS.reset_bit(SYSRST_I2C5_APB).unwrap();
+    let r = SYSTEM.reset_bit(SYSRST_I2C5_APB).unwrap();
     assert_eq!(
         (r.assert_offset, r.status_offset, r.mask),
         (0x300, 0x310, 1 << 17)
@@ -22,13 +22,13 @@ fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
 
 #[test]
 fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
-    let last = SYS.clock_offset(SYS.clocks - 1).unwrap();
+    let last = SYSTEM.clock_offset(SYSTEM.clocks - 1).unwrap();
     assert_eq!(last, 0x2f4);
-    assert!(last + 4 <= SYS.reset_assert);
-    assert_eq!(SYS.clock_offset(SYS.clocks), None);
-    assert_eq!(SYS.clock_offset(298), None, "radon's virtual core clock");
-    assert_eq!(SYS.reset_bit(125).unwrap().assert_offset, 0x2f8 + 12);
-    assert_eq!(SYS.reset_bit(126), None);
+    assert!(last + 4 <= SYSTEM.reset_assert);
+    assert_eq!(SYSTEM.clock_offset(SYSTEM.clocks), None);
+    assert_eq!(SYSTEM.clock_offset(298), None, "radon's virtual core clock");
+    assert_eq!(SYSTEM.reset_bit(125).unwrap().assert_offset, 0x2f8 + 12);
+    assert_eq!(SYSTEM.reset_bit(126), None);
 }
 
 #[test]
@@ -204,30 +204,39 @@ fn the_two_trees_agree_on_the_identifiers() {
     // The rebase arithmetic from [vendor-ids], written out so a reader can check it rather
     // than take the module header's word for it. If StarFive ever renumbers a group, this is
     // the test that fails.
-    const VENDOR_STG_CLK_BASE: u32 = 190; // JH7110_HIFI4_CLK_CORE
+    const VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE: u32 = 190; // JH7110_HIFI4_CLK_CORE
     const VENDOR_SEC_HCLK: u32 = 205;
     const VENDOR_SEC_MISCAHB_CLK: u32 = 206;
-    const VENDOR_STG_RST_BASE: u32 = 128; // RSTN_U0_STG_SYSCON_PRESETN
+    const VENDOR_SYSTEM_TOP_GROUP_RESET_BASE: u32 = 128; // RSTN_U0_STG_SYSCON_PRESETN
     const VENDOR_SEC_TOP_HRESETN: u32 = 131;
 
-    assert_eq!(VENDOR_SEC_HCLK - VENDOR_STG_CLK_BASE, STGCLK_SEC_AHB);
     assert_eq!(
-        VENDOR_SEC_MISCAHB_CLK - VENDOR_STG_CLK_BASE,
+        VENDOR_SEC_HCLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
+        STGCLK_SEC_AHB
+    );
+    assert_eq!(
+        VENDOR_SEC_MISCAHB_CLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
         STGCLK_SEC_MISC_AHB
     );
-    assert_eq!(VENDOR_SEC_TOP_HRESETN - VENDOR_STG_RST_BASE, STGRST_SEC_AHB);
+    assert_eq!(
+        VENDOR_SEC_TOP_HRESETN - VENDOR_SYSTEM_TOP_GROUP_RESET_BASE,
+        STGRST_SEC_AHB
+    );
 }
 
 #[test]
 fn clock_words_are_one_per_index_and_bounded() {
-    assert_eq!(STG.clock_offset(0), Some(0x00));
-    assert_eq!(STG.clock_offset(STGCLK_SEC_AHB), Some(0x3c));
-    assert_eq!(STG.clock_offset(STGCLK_SEC_MISC_AHB), Some(0x40));
+    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(0), Some(0x00));
+    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(STGCLK_SEC_AHB), Some(0x3c));
+    assert_eq!(
+        SYSTEM_TOP_GROUP.clock_offset(STGCLK_SEC_MISC_AHB),
+        Some(0x40)
+    );
     // 29 clocks, so 28 is the last. An identifier from another domain gets nothing rather
     // than an offset that lands somewhere plausible.
-    assert_eq!(STG.clock_offset(28), Some(0x70));
-    assert_eq!(STG.clock_offset(29), None);
-    assert_eq!(STG.clock_offset(205), None); // the vendor number, un-rebased
+    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(28), Some(0x70));
+    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(29), None);
+    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(205), None); // the vendor number, un-rebased
 }
 
 #[test]
@@ -235,24 +244,26 @@ fn the_last_clock_word_does_not_reach_the_reset_words() {
     // 0x70 is the last clock word and 0x74 is the assert register. They abut, which means an
     // off-by-one in `clocks` would write an enable bit into a reset word: a stuck-on clock
     // would be the *good* outcome, and resetting the STG matrix mid-boot the bad one.
-    let last = STG.clock_offset(STG.clocks - 1).unwrap();
-    assert!(last + 4 <= STG.reset_assert);
+    let last = SYSTEM_TOP_GROUP
+        .clock_offset(SYSTEM_TOP_GROUP.clocks - 1)
+        .unwrap();
+    assert!(last + 4 <= SYSTEM_TOP_GROUP.reset_assert);
 }
 
 #[test]
 fn resets_are_thirty_two_to_a_word_and_bounded() {
-    let r = STG.reset_bit(STGRST_SEC_AHB).unwrap();
+    let r = SYSTEM_TOP_GROUP.reset_bit(STGRST_SEC_AHB).unwrap();
     assert_eq!(r.assert_offset, 0x74);
     assert_eq!(r.status_offset, 0x78);
     assert_eq!(r.mask, 1 << 3);
-    assert_eq!(STG.reset_bit(22).unwrap().mask, 1 << 22);
-    assert_eq!(STG.reset_bit(23), None);
-    assert_eq!(STG.reset_bit(131), None); // the vendor number, un-rebased
+    assert_eq!(SYSTEM_TOP_GROUP.reset_bit(22).unwrap().mask, 1 << 22);
+    assert_eq!(SYSTEM_TOP_GROUP.reset_bit(23), None);
+    assert_eq!(SYSTEM_TOP_GROUP.reset_bit(131), None); // the vendor number, un-rebased
 }
 
 #[test]
 fn a_set_status_bit_means_out_of_reset() {
-    let mask = STG.reset_bit(STGRST_SEC_AHB).unwrap().mask;
+    let mask = SYSTEM_TOP_GROUP.reset_bit(STGRST_SEC_AHB).unwrap().mask;
     assert!(is_deasserted(u32::MAX, mask));
     assert!(!is_deasserted(0, mask));
     assert!(
@@ -287,41 +298,41 @@ fn reg_names_index_by_name_not_by_position() {
 
 #[test]
 fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while_gated() {
-    let first_reset = GMAC0_AON_BRING_UP
+    let first_reset = GMAC0_ALWAYS_ON_BRING_UP
         .iter()
         .position(|s| matches!(s, Step::DeassertReset(_)))
         .unwrap();
     assert!(
-        GMAC0_AON_BRING_UP[first_reset..]
+        GMAC0_ALWAYS_ON_BRING_UP[first_reset..]
             .iter()
             .all(|s| matches!(s, Step::DeassertReset(_)))
     );
     assert!(
-        GMAC0_SYS_BRING_UP
+        GMAC0_SYSTEM_BRING_UP
             .iter()
             .all(|s| matches!(s, Step::EnableClock(_)))
     );
-    let mux = GMAC0_AON_BRING_UP
+    let mux = GMAC0_ALWAYS_ON_BRING_UP
         .iter()
         .position(|s| matches!(s, Step::SelectParent { .. }))
         .unwrap();
-    let enable = GMAC0_AON_BRING_UP
+    let enable = GMAC0_ALWAYS_ON_BRING_UP
         .iter()
         .position(|s| *s == Step::EnableClock(AONCLK_GMAC0_TX))
         .unwrap();
     assert!(mux < enable);
     // Every identifier is inside its domain, so neither plan can be rejected.
-    for s in GMAC0_AON_BRING_UP {
+    for s in GMAC0_ALWAYS_ON_BRING_UP {
         match *s {
             Step::EnableClock(i) | Step::SelectParent { clock: i, .. } => {
-                assert!(AON.clock_offset(i).is_some());
+                assert!(ALWAYS_ON.clock_offset(i).is_some());
             }
-            Step::DeassertReset(i) => assert!(AON.reset_bit(i).is_some()),
+            Step::DeassertReset(i) => assert!(ALWAYS_ON.reset_bit(i).is_some()),
         }
     }
-    for s in GMAC0_SYS_BRING_UP {
+    for s in GMAC0_SYSTEM_BRING_UP {
         if let Step::EnableClock(i) = *s {
-            assert!(SYS.clock_offset(i).is_some());
+            assert!(SYSTEM.clock_offset(i).is_some());
         }
     }
 }
@@ -330,10 +341,10 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while
 fn the_word_offsets_match_the_vendor_u_boots_own_constants() {
     // radon's U-Boot writes `AON_CRG_BASE + 0x14` for gmac0's transmit clock and `0x1c` for
     // its receive clock (`jh7110-regs.h`): indices 5 and 7, one word each.
-    assert_eq!(AON.clock_offset(AONCLK_GMAC0_TX), Some(0x14));
-    assert_eq!(AON.clock_offset(7), Some(0x1c));
-    assert_eq!(AON.reset_bit(AONRST_GMAC0_AHB).unwrap().mask, 1 << 1);
-    assert_eq!(SYS.clock_offset(SYSCLK_GMAC0_GTXC), Some(0x1bc));
+    assert_eq!(ALWAYS_ON.clock_offset(AONCLK_GMAC0_TX), Some(0x14));
+    assert_eq!(ALWAYS_ON.clock_offset(7), Some(0x1c));
+    assert_eq!(ALWAYS_ON.reset_bit(AONRST_GMAC0_AHB).unwrap().mask, 1 << 1);
+    assert_eq!(SYSTEM.clock_offset(SYSCLK_GMAC0_GTXC), Some(0x1bc));
 }
 
 #[test]
@@ -526,14 +537,14 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
         assert_eq!(plan.len(), 3);
         for s in plan {
             if let Step::EnableClock(i) = *s {
-                assert!(SYS.clock_offset(i).is_some());
+                assert!(SYSTEM.clock_offset(i).is_some());
             } else if let Step::DeassertReset(i) = *s {
-                assert!(SYS.reset_bit(i).is_some());
+                assert!(SYSTEM.reset_bit(i).is_some());
             }
         }
     }
-    assert_eq!(SYS.clock_offset(SYSCLK_SDIO1_SDCARD), Some(0x178));
-    let r = SYS.reset_bit(SYSRST_SDIO1_AHB).unwrap();
+    assert_eq!(SYSTEM.clock_offset(SYSCLK_SDIO1_SDCARD), Some(0x178));
+    let r = SYSTEM.reset_bit(SYSRST_SDIO1_AHB).unwrap();
     assert_eq!(
         (r.assert_offset, r.status_offset, r.mask),
         (0x300, 0x310, 1 << 1)
@@ -828,20 +839,23 @@ fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
 
 #[test]
 fn a_single_window_node_answers_with_its_one_reg() {
-    let found =
-        WindowLocation::from_regions(&STG_WINDOW.spellings[0], &[(0x1023_0000, 0x1_0000)], None)
-            .unwrap();
+    let found = WindowLocation::from_regions(
+        &SYSTEM_TOP_GROUP_WINDOW.spellings[0],
+        &[(0x1023_0000, 0x1_0000)],
+        None,
+    )
+    .unwrap();
     assert_eq!(
         found,
         WindowLocation {
             base: 0x1023_0000,
             size: 0x1_0000,
             from_tree: true,
-            compatible: Some(COMPATIBLE_STGCRG),
+            compatible: Some(COMPATIBLE_SYSTEM_TOP_GROUP_CRG),
         }
     );
     assert_eq!(
-        WindowLocation::from_regions(&STG_WINDOW.spellings[0], &[], None),
+        WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[0], &[], None),
         None
     );
 }
@@ -851,39 +865,43 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
     // `reg[0]` is the SYS window: a driver that took it would enable clock 15 of the wrong
     // controller.
     let regions = [
-        (SYS_BASE, SYS_SIZE),
-        (STG_BASE, STG_SIZE),
-        (AON_BASE, AON_SIZE),
+        (SYSTEM_BASE, SYSTEM_SIZE),
+        (SYSTEM_TOP_GROUP_BASE, SYSTEM_TOP_GROUP_SIZE),
+        (ALWAYS_ON_BASE, ALWAYS_ON_SIZE),
     ];
     let names: &[u8] = b"sys\0stg\0aon\0";
     let stg =
-        WindowLocation::from_regions(&STG_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+        WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, Some(names))
+            .unwrap();
     assert_eq!(
         (stg.base, stg.compatible),
-        (STG_BASE, Some(COMPATIBLE_VENDOR_CLKGEN))
+        (SYSTEM_TOP_GROUP_BASE, Some(COMPATIBLE_VENDOR_CLKGEN))
     );
-    let aon =
-        WindowLocation::from_regions(&AON_WINDOW.spellings[1], &regions, Some(names)).unwrap();
-    assert_eq!((aon.base, aon.size), (AON_BASE, AON_SIZE));
+    let aon = WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
+        .unwrap();
+    assert_eq!((aon.base, aon.size), (ALWAYS_ON_BASE, ALWAYS_ON_SIZE));
     let sys =
-        WindowLocation::from_regions(&SYS_WINDOW.spellings[1], &regions, Some(names)).unwrap();
-    assert_eq!(sys.base, SYS_BASE);
+        WindowLocation::from_regions(&SYSTEM_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    assert_eq!(sys.base, SYSTEM_BASE);
     let rst = WindowLocation::from_regions(
-        &STG_WINDOW.spellings[2],
+        &SYSTEM_TOP_GROUP_WINDOW.spellings[2],
         &regions,
         Some(b"syscrg\0stgcrg\0aoncrg\0"),
     )
     .unwrap();
     assert_eq!(
         (rst.base, rst.compatible),
-        (STG_BASE, Some(COMPATIBLE_VENDOR_RSTGEN))
+        (SYSTEM_TOP_GROUP_BASE, Some(COMPATIBLE_VENDOR_RSTGEN))
     );
 }
 
 #[test]
 fn a_multi_window_node_refuses_rather_than_guesses() {
-    let regions = [(SYS_BASE, SYS_SIZE), (STG_BASE, STG_SIZE)];
-    let vendor = &STG_WINDOW.spellings[1];
+    let regions = [
+        (SYSTEM_BASE, SYSTEM_SIZE),
+        (SYSTEM_TOP_GROUP_BASE, SYSTEM_TOP_GROUP_SIZE),
+    ];
+    let vendor = &SYSTEM_TOP_GROUP_WINDOW.spellings[1];
     // No `reg-names`, and `reg-names` without the entry.
     assert_eq!(WindowLocation::from_regions(vendor, &regions, None), None);
     assert_eq!(
@@ -900,9 +918,13 @@ fn a_multi_window_node_refuses_rather_than_guesses() {
 #[test]
 fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
     for (window, mainline, base) in [
-        (STG_WINDOW, COMPATIBLE_STGCRG, STG_BASE),
-        (AON_WINDOW, COMPATIBLE_AONCRG, AON_BASE),
-        (SYS_WINDOW, COMPATIBLE_SYSCRG, SYS_BASE),
+        (
+            SYSTEM_TOP_GROUP_WINDOW,
+            COMPATIBLE_SYSTEM_TOP_GROUP_CRG,
+            SYSTEM_TOP_GROUP_BASE,
+        ),
+        (ALWAYS_ON_WINDOW, COMPATIBLE_ALWAYS_ON_CRG, ALWAYS_ON_BASE),
+        (SYSTEM_WINDOW, COMPATIBLE_SYSTEM_CRG, SYSTEM_BASE),
     ] {
         assert_eq!(window.spellings[0].compatible, mainline);
         assert_eq!(window.spellings[0].window, None);

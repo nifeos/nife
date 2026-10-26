@@ -11,8 +11,8 @@
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
-    AON_WINDOW, MAX_REG_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES, PowerManagementChipBus,
-    RegisterWindow, STG_WINDOW, SYS_WINDOW, WindowLocation,
+    ALWAYS_ON_WINDOW, MAX_REG_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES, PowerManagementChipBus,
+    RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -29,7 +29,7 @@ use jh7110_clock_and_reset::{
 /// module path carries the chip and the controller, so the verb alone is left. calef has not
 /// ruled on it.
 pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
-    discover_window(tree, &STG_WINDOW)
+    discover_window(tree, &SYSTEM_TOP_GROUP_WINDOW)
 }
 
 /// **Find the AON clock and reset window in `tree`**, the domain holding `gmac0`'s bus clocks,
@@ -42,7 +42,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
 /// Name: provisional (milestone 53's lane, 2026-10-06 UTC), after [`discover_sys`]; moved here
 /// from `jh7110_clock_and_reset` by lane crates-stand-alone, 2026-10-25 (UTC).
 pub fn discover_aon(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
-    discover_window(tree, &AON_WINDOW)
+    discover_window(tree, &ALWAYS_ON_WINDOW)
 }
 
 /// **Find the SYS clock and reset window in `tree`**, the domain holding I2C5's clock and reset.
@@ -55,7 +55,7 @@ pub fn discover_aon(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> 
 /// Name: provisional (milestone 592), 2026-09-25; moved here from `jh7110_clock_and_reset` by
 /// lane crates-stand-alone, 2026-10-25 (UTC). calef names public functions.
 pub fn discover_sys(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
-    discover_window(tree, &SYS_WINDOW)
+    discover_window(tree, &SYSTEM_WINDOW)
 }
 
 /// The walk the three `discover` functions share: each spelling in order, then the constant.

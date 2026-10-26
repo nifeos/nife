@@ -206,13 +206,13 @@ fn run(
     unsafe {
         r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.sys.base) as usize,
-            &crg::SYS,
-            crg::GMAC0_SYS_BRING_UP,
+            &crg::SYSTEM,
+            crg::GMAC0_SYSTEM_BRING_UP,
         );
         r.aon = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.aon.base) as usize,
-            &crg::AON,
-            crg::GMAC0_AON_BRING_UP,
+            &crg::ALWAYS_ON,
+            crg::GMAC0_ALWAYS_ON_BRING_UP,
         );
     }
     if !r.sys.has_clocks_running() || !r.aon.has_clocks_running() {

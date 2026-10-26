@@ -276,7 +276,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(sys.base) as usize,
-            &jh7110_clock_and_reset::SYS,
+            &jh7110_clock_and_reset::SYSTEM,
             plan,
         )
     };

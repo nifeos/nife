@@ -76,12 +76,14 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 
 /// **What the JH7110's TRNG needs before its registers answer**, transcribed from
 /// \[mainline-trng\]'s probe and cross-checked against \[vendor-dts\]: clocks 15 and 16, then
-/// reset 3, all of the STG domain, so the plan is meaningless without [`STG`].
+/// reset 3, all of the STG domain, so the plan is meaningless without [`SYSTEM_TOP_GROUP`].
 ///
 /// # Examples
 ///
 /// ```
-/// use jh7110_clock_and_reset::{STG, Step, ENTROPY_BRING_UP, CLOCK_ENABLE, is_deasserted};
+/// use jh7110_clock_and_reset::{
+///     is_deasserted, Step, CLOCK_ENABLE, ENTROPY_BRING_UP, SYSTEM_TOP_GROUP,
+/// };
 ///
 /// // The TRNG's plan is two clocks then one reset, in that order, which is the order
 /// // Linux's own probe takes: a reset deassert against a gated clock can hang forever.
@@ -91,12 +93,12 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// );
 ///
 /// // Clock 15 lives one word per clock from the domain's base.
-/// assert_eq!(STG.clock_offset(15), Some(0x3c));
+/// assert_eq!(SYSTEM_TOP_GROUP.clock_offset(15), Some(0x3c));
 /// assert_eq!(CLOCK_ENABLE, 1 << 31);
 ///
 /// // Reset 3 is bit 3 of the word at 0x74, watched at 0x78. A SET status bit means
 /// // "out of reset", which is the opposite of what the register name suggests.
-/// let r = STG.reset_bit(3).unwrap();
+/// let r = SYSTEM_TOP_GROUP.reset_bit(3).unwrap();
 /// assert_eq!((r.assert_offset, r.status_offset, r.mask), (0x74, 0x78, 1 << 3));
 /// assert!(is_deasserted(0b1000, r.mask));
 /// assert!(!is_deasserted(0b0111, r.mask));
@@ -130,8 +132,10 @@ pub const STGRST_SEC_AHB: u32 = 3;
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_aon_info` (`.assert_offset = 0x38, .status_offset =
 /// 0x3C`, read 2026-10-06); the counts from \[mainline-ids\]'s `JH7110_AONRST_END` (8) and
-/// `JH7110_AONCLK_END` (14).
-pub const AON: Domain = Domain {
+/// `JH7110_AONCLK_END` (14). The chip's own abbreviation is AON, kept in the copied `AONCLK_*`
+/// and `AONRST_*` names.
+#[doc(alias = "aon")]
+pub const ALWAYS_ON: Domain = Domain {
     reset_assert: 0x38,
     reset_status: 0x3c,
     resets: 8,
@@ -140,22 +144,22 @@ pub const AON: Domain = Domain {
 
 /// **The AON domain's register window**, `0x1700_0000`, size `0x1_0000`: mainline's `aoncrg`
 /// node and `reg-names` entry `"aon"`/`"aoncrg"` of both vendor nodes. The fallback when a tree
-/// names none of them, for [`STG_BASE`]'s reason.
-pub(crate) const AON_BASE: u64 = 0x1700_0000;
+/// names none of them, for [`SYSTEM_TOP_GROUP_BASE`]'s reason.
+pub(crate) const ALWAYS_ON_BASE: u64 = 0x1700_0000;
 
 /// The AON window's size, `0x10000` in every tree that names it.
-pub(crate) const AON_SIZE: u64 = 0x1_0000;
+pub(crate) const ALWAYS_ON_SIZE: u64 = 0x1_0000;
 
 /// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
 /// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_AONCRG: &[u8] = b"starfive,jh7110-aoncrg";
+pub const COMPATIBLE_ALWAYS_ON_CRG: &[u8] = b"starfive,jh7110-aoncrg";
 
 /// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
 /// `clkgen`, the clock generator node, and `"aoncrg"` in `rstgen`, the reset generator node;
 /// \[vendor-dts\]).
-const VENDOR_CLKGEN_AON_NAME: &[u8] = b"aon";
-const VENDOR_RSTGEN_AON_NAME: &[u8] = b"aoncrg";
+const VENDOR_CLKGEN_ALWAYS_ON_NAME: &[u8] = b"aon";
+const VENDOR_RSTGEN_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 
 /// `JH7110_AONCLK_GMAC0_AHB` \[mainline-ids\]: a gate, `gmac0`'s `pclk`. Word `0x08`.
 pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
@@ -186,8 +190,8 @@ pub(crate) const SYSCLK_GMAC0_GTXC: u32 = 111;
 /// **`gmac0`'s SYS-domain clocks**, the half of its clocks that are not in the AON domain.
 /// Every clock mainline's `&gmac0` node names that lives in SYS, with the parent
 /// of `gtxc` first because enabling a gate under a gated parent turns nothing on. Run before
-/// [`GMAC0_AON_BRING_UP`], whose resets must be released with every clock already running.
-pub const GMAC0_SYS_BRING_UP: &[Step] = &[
+/// [`GMAC0_ALWAYS_ON_BRING_UP`], whose resets must be released with every clock already running.
+pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_GTXCLK),
     Step::EnableClock(SYSCLK_GMAC0_GTXC),
     Step::EnableClock(SYSCLK_GMAC0_PTP),
@@ -198,7 +202,7 @@ pub const GMAC0_SYS_BRING_UP: &[Step] = &[
 /// both enable every clock before deasserting either reset. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
 /// \[mainline-clk\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
-pub const GMAC0_AON_BRING_UP: &[Step] = &[
+pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
     Step::EnableClock(AONCLK_GMAC0_AXI),
     Step::EnableClock(AONCLK_GMAC0_AHB),
     Step::SelectParent {
@@ -224,9 +228,9 @@ pub struct ResetBit {
 /// One clock-and-reset domain of the JH7110: a register window, and where the resets sit in it.
 ///
 /// The JH7110 has five ([vendor-dts]'s `reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg",
-/// "voutcrg"`); [`STG`], [`AON`] and [`SYS`] are described here, each only as far as a device in
-/// this tree needs it. The arithmetic is general, so another domain is a table entry rather than a
-/// rewrite.
+/// "voutcrg"`); [`SYSTEM_TOP_GROUP`], [`ALWAYS_ON`] and [`SYSTEM`] are described here, each only
+/// as far as a device in this tree needs it. The arithmetic is general, so another domain is a
+/// table entry rather than a rewrite.
 ///
 /// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -242,11 +246,14 @@ pub struct Domain {
     pub clocks: u32,
 }
 
-/// **The STG (system-transport-group) domain**, which is where the TRNG's clocks and reset live.
+/// **The STG (System-Top-Group) domain**, which is where the TRNG's clocks and reset live. The
+/// expansion is the one the Linux STGCRG patch series gives; the copied `STGCLK_*` and `STGRST_*`
+/// names keep the chip's abbreviation.
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_stg_info`; the counts from \[mainline-ids\]'s
 /// `JH7110_STGRST_END` (23) and `JH7110_STGCLK_END` (29).
-pub const STG: Domain = Domain {
+#[doc(alias = "stg")]
+pub const SYSTEM_TOP_GROUP: Domain = Domain {
     reset_assert: 0x74,
     reset_status: 0x78,
     resets: 23,
@@ -255,15 +262,15 @@ pub const STG: Domain = Domain {
 
 /// **The STG domain's register window, as both published trees give it.**
 ///
-/// The fallback [`STG_WINDOW`] answers with when the tree names no controller, and
+/// The fallback [`SYSTEM_TOP_GROUP_WINDOW`] answers with when the tree names no controller, and
 /// [`WindowLocation::from_tree`] says which happened. A firmware tree may omit or misdescribe the
 /// controller, and two independently published trees agree on this number. A caller must not
 /// store through a fallback on a machine that is not a JH7110: QEMU's riscv64 `virt` has nothing
 /// mapped there.
-pub(crate) const STG_BASE: u64 = 0x1023_0000;
+pub(crate) const SYSTEM_TOP_GROUP_BASE: u64 = 0x1023_0000;
 
 /// The STG window's size, `0x10000` in both trees.
-pub(crate) const STG_SIZE: u64 = 0x1_0000;
+pub(crate) const SYSTEM_TOP_GROUP_SIZE: u64 = 0x1_0000;
 
 /// **The SYS domain**, which is where I2C5's clock and reset live, and so where the only road to
 /// a VisionFive 2's PMIC starts.
@@ -272,8 +279,10 @@ pub(crate) const STG_SIZE: u64 = 0x1_0000;
 /// 0x308`, fetched 2026-09-25); the counts from \[mainline-ids\]'s `JH7110_SYSRST_END` (126) and
 /// `JH7110_SYSCLK_END` (190). The vendor header radon's U-Boot was built from agrees on the clock
 /// count, as `JH7110_CLK_SYS_REG_END 190`, which is the boundary between clocks that have a
-/// register and the vendor's virtual ones numbered above it.
-pub const SYS: Domain = Domain {
+/// register and the vendor's virtual ones numbered above it. The chip's own abbreviation is SYS,
+/// kept in the copied `SYSCLK_*` and `SYSRST_*` names.
+#[doc(alias = "sys")]
+pub const SYSTEM: Domain = Domain {
     reset_assert: 0x2f8,
     reset_status: 0x308,
     resets: 126,
@@ -282,11 +291,11 @@ pub const SYS: Domain = Domain {
 
 /// **The SYS domain's register window**, `0x1302_0000`, size `0x1_0000`, in mainline's `syscrg`
 /// node and as `reg-names` entry `"sys"`/`"syscrg"` of both vendor nodes. The fallback when a tree
-/// names none of them, for [`STG_BASE`]'s reason.
-pub(crate) const SYS_BASE: u64 = 0x1302_0000;
+/// names none of them, for [`SYSTEM_TOP_GROUP_BASE`]'s reason.
+pub(crate) const SYSTEM_BASE: u64 = 0x1302_0000;
 
 /// The SYS window's size, `0x10000` in every tree that names it.
-pub(crate) const SYS_SIZE: u64 = 0x1_0000;
+pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
 
 /// `JH7110_SYSCLK_I2C5_APB` \[mainline-ids\], and `JH7110_I2C5_CLK_APB` in the vendor header,
 /// both **143**: the vendor numbers the SYS group first, so no rebase is needed. Word `0x23c`.
@@ -401,7 +410,8 @@ pub struct PowerManagementChipBus {
     pub power_management_chip: Option<&'static [u8]>,
     /// Clock or reset specifiers the bus named that are **not** a SYS-domain gate or line, and
     /// were skipped rather than written: radon's virtual clock 298 is the expected one. A provider
-    /// this crate does not recognise, or an id past [`SYS`]'s bounds, lands here, never in a store.
+    /// this crate does not recognise, or an id past [`SYSTEM`]'s bounds, lands here, never in a
+    /// store.
     pub skipped: usize,
     /// True when the bus named more usable steps than [`MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
     pub truncated: bool,
@@ -475,8 +485,8 @@ impl PowerManagementChipBus {
     /// matched. `power_management_chip_reg` is the PMIC node's own `reg` (its I2C address, one
     /// cell), and `bus_reg`, `clocks` and `resets` are its parent bus node's properties; each is
     /// `None` when the tree does not state it. A `<phandle id>` pair becomes a step only for a
-    /// known one-cell SYS provider and an id inside [`SYS`]'s bounds (the vendor numbers SYS first,
-    /// so one bound serves both trees); the rest are counted in
+    /// known one-cell SYS provider and an id inside [`SYSTEM`]'s bounds (the vendor numbers SYS
+    /// first, so one bound serves both trees); the rest are counted in
     /// [`PowerManagementChipBus::skipped`]. `provider(phandle, name)` returns the property `name`
     /// of the node carrying `phandle`, as the caller's device-tree reader finds it. With no usable
     /// step the answer is the constant plan with `from_tree` false. An answer is not evidence of a
@@ -509,7 +519,7 @@ impl PowerManagementChipBus {
             // A bus that names nothing keeps the constant plan, and the addresses it does state.
             return Ok(bus);
         }
-        let collected = collect_sys_steps(clocks, resets, &mut bus.steps, &mut provider)?;
+        let collected = collect_system_steps(clocks, resets, &mut bus.steps, &mut provider)?;
         bus.len = collected.len;
         bus.skipped = collected.skipped;
         bus.truncated = collected.truncated;
@@ -524,7 +534,7 @@ impl PowerManagementChipBus {
     }
 }
 
-/// What [`collect_sys_steps`] filled in and what it left out.
+/// What [`collect_system_steps`] filled in and what it left out.
 struct Collected {
     len: usize,
     skipped: usize,
@@ -535,7 +545,7 @@ struct Collected {
 /// one walk [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] share, so a
 /// specifier is classified the same way whichever device named it: see [`Spec`] for what is kept,
 /// counted or abandoned.
-fn collect_sys_steps<'t, E>(
+fn collect_system_steps<'t, E>(
     clocks: Option<&[u8]>,
     resets: Option<&[u8]>,
     steps: &mut [Step],
@@ -551,7 +561,7 @@ fn collect_sys_steps<'t, E>(
         let specs = list.chunks(8);
         let total = specs.len();
         for (i, spec) in specs.enumerate() {
-            match sys_step(spec, is_clock, provider)? {
+            match system_step(spec, is_clock, provider)? {
                 Spec::Step(step) if out.len < steps.len() => {
                     steps[out.len] = step;
                     out.len += 1;
@@ -611,7 +621,7 @@ impl DevicePlan {
             skipped: 0,
             truncated: false,
         };
-        let collected = collect_sys_steps(clocks, resets, &mut plan.steps, &mut provider)?;
+        let collected = collect_system_steps(clocks, resets, &mut plan.steps, &mut provider)?;
         plan.len = collected.len;
         plan.skipped = collected.skipped;
         plan.truncated = collected.truncated;
@@ -629,13 +639,16 @@ impl DevicePlan {
 // sources are the vendor trees cited in the crate's header.
 
 /// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
-/// [`SYS_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
+/// [`SYSTEM_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
 /// (`SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`, fetched 2026-10-10), which resolves
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
-/// different windows, same offsets.
+/// different windows, same offsets. The name is that header's macro, kept as copied; SYS is the
+/// chip's abbreviation for [`SYSTEM`], and syscon is its system-controller block.
+#[doc(alias = "system syscon")]
 pub const SYS_SYSCON_BASE: u64 = 0x1303_0000;
 
-/// The SYS syscon window's size, matching the CRG window's.
+/// The SYS syscon window's size, matching the CRG window's. The name follows
+/// [`SYS_SYSCON_BASE`]'s.
 pub const SYS_SYSCON_SIZE: u64 = 0x1_0000;
 
 /// `JH7110_BUS_ROOT` in the vendor header radon's U-Boot builds from, **5**. Word `0x14`: a mux
@@ -662,7 +675,7 @@ pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the kernel can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
-/// words come from [`SYS`]'s window at the offsets the ids above give; the PLL2 words from
+/// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
 /// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
 /// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -865,7 +878,7 @@ pub const POWER_MANAGEMENT_CHIP_RESET_BIT: u8 = 6;
 enum Spec {
     /// A SYS-domain gate or line, in bounds.
     Step(Step),
-    /// A well-formed specifier for something else: another provider, or an id past [`SYS`]'s
+    /// A well-formed specifier for something else: another provider, or an id past [`SYSTEM`]'s
     /// bounds (radon's virtual clock 298).
     Foreign,
     /// A provider without exactly one cell per specifier, or a short tail. The walk takes
@@ -876,7 +889,7 @@ enum Spec {
 }
 
 /// Classify one specifier; see [`Spec`].
-fn sys_step<'t, E>(
+fn system_step<'t, E>(
     spec: &[u8],
     is_clock: bool,
     provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -898,7 +911,7 @@ fn sys_step<'t, E>(
         return Ok(Spec::Foreign);
     };
     let known = [
-        COMPATIBLE_SYSCRG,
+        COMPATIBLE_SYSTEM_CRG,
         if is_clock {
             COMPATIBLE_VENDOR_CLKGEN
         } else {
@@ -909,9 +922,9 @@ fn sys_step<'t, E>(
         return Ok(Spec::Foreign);
     }
     let step = if is_clock {
-        SYS.clock_offset(id).map(|_| Step::EnableClock(id))
+        SYSTEM.clock_offset(id).map(|_| Step::EnableClock(id))
     } else {
-        SYS.reset_bit(id).map(|_| Step::DeassertReset(id))
+        SYSTEM.reset_bit(id).map(|_| Step::DeassertReset(id))
     };
     Ok(step.map_or(Spec::Foreign, Spec::Step))
 }
@@ -1083,7 +1096,7 @@ pub struct WindowLocation {
 /// **STG clock and reset generator** (CRG, the device tree's `stgcrg` node, \[mainline-dts\]):
 /// mainline's dedicated STG clock-and-reset controller node.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_STGCRG: &[u8] = b"starfive,jh7110-stgcrg";
+pub const COMPATIBLE_SYSTEM_TOP_GROUP_CRG: &[u8] = b"starfive,jh7110-stgcrg";
 
 /// **Vendor clock generator** (the `clkgen` node, \[vendor-dts\]): the vendor U-Boot's single
 /// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
@@ -1099,19 +1112,19 @@ pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
 
 /// The `reg-names` entry naming the STG window, in each vendor node's own spelling
 /// (`"stg"` in `clkgen`, `"stgcrg"` in `rstgen`; \[vendor-dts\]).
-const VENDOR_CLKGEN_STG_NAME: &[u8] = b"stg";
-const VENDOR_RSTGEN_STG_NAME: &[u8] = b"stgcrg";
+const VENDOR_CLKGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stg";
+const VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
 
 /// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
 /// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_SYSCRG: &[u8] = b"starfive,jh7110-syscrg";
+pub const COMPATIBLE_SYSTEM_CRG: &[u8] = b"starfive,jh7110-syscrg";
 
 /// The `reg-names` entry naming the SYS window, in each vendor node's own spelling (`"sys"` in
 /// `clkgen`, `"syscrg"` in `rstgen`; \[vendor-dts\]). Window 0 in both today, found by name anyway
 /// for the reason [`RegisterWindow`] gives.
-const VENDOR_CLKGEN_SYS_NAME: &[u8] = b"sys";
-const VENDOR_RSTGEN_SYS_NAME: &[u8] = b"syscrg";
+const VENDOR_CLKGEN_SYSTEM_NAME: &[u8] = b"sys";
+const VENDOR_RSTGEN_SYSTEM_NAME: &[u8] = b"syscrg";
 
 /// One way a device tree names a domain's window: a node's `compatible`, and the `reg-names`
 /// entry that selects the window when the node carries several.
@@ -1158,63 +1171,66 @@ impl RegisterWindow {
 }
 
 /// **The STG window**, where the TRNG's clocks and reset live.
-pub const STG_WINDOW: RegisterWindow = RegisterWindow {
+#[doc(alias = "stg", alias = "STG_WINDOW")]
+pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_STGCRG,
+            compatible: COMPATIBLE_SYSTEM_TOP_GROUP_CRG,
             window: None,
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLKGEN,
-            window: Some(VENDOR_CLKGEN_STG_NAME),
+            window: Some(VENDOR_CLKGEN_SYSTEM_TOP_GROUP_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RSTGEN,
-            window: Some(VENDOR_RSTGEN_STG_NAME),
+            window: Some(VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME),
         },
     ],
-    base: STG_BASE,
-    size: STG_SIZE,
+    base: SYSTEM_TOP_GROUP_BASE,
+    size: SYSTEM_TOP_GROUP_SIZE,
 };
 
 /// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
-pub const AON_WINDOW: RegisterWindow = RegisterWindow {
+#[doc(alias = "aon", alias = "AON_WINDOW")]
+pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_AONCRG,
+            compatible: COMPATIBLE_ALWAYS_ON_CRG,
             window: None,
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLKGEN,
-            window: Some(VENDOR_CLKGEN_AON_NAME),
+            window: Some(VENDOR_CLKGEN_ALWAYS_ON_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RSTGEN,
-            window: Some(VENDOR_RSTGEN_AON_NAME),
+            window: Some(VENDOR_RSTGEN_ALWAYS_ON_NAME),
         },
     ],
-    base: AON_BASE,
-    size: AON_SIZE,
+    base: ALWAYS_ON_BASE,
+    size: ALWAYS_ON_SIZE,
 };
 
 /// **The SYS window**, where I2C5's clock and reset live.
-pub const SYS_WINDOW: RegisterWindow = RegisterWindow {
+#[doc(alias = "sys", alias = "SYS_WINDOW")]
+pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_SYSCRG,
+            compatible: COMPATIBLE_SYSTEM_CRG,
             window: None,
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLKGEN,
-            window: Some(VENDOR_CLKGEN_SYS_NAME),
+            window: Some(VENDOR_CLKGEN_SYSTEM_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RSTGEN,
-            window: Some(VENDOR_RSTGEN_SYS_NAME),
+            window: Some(VENDOR_RSTGEN_SYSTEM_NAME),
         },
     ],
-    base: SYS_BASE,
-    size: SYS_SIZE,
+    base: SYSTEM_BASE,
+    size: SYSTEM_SIZE,
 };
 
 impl WindowLocation {

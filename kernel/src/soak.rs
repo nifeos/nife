@@ -627,11 +627,11 @@ fn start_watchdog_clocks(
     }
     // SAFETY: `memory::init` recorded this window only for a tree that names the watchdog, and
     // `mmu::map_everything` mapped it device-typed in the direct map. The plan's identifiers were
-    // bounded by `SYS` when it was built, and `bring_up` bounds them again.
+    // bounded by `SYSTEM` when it was built, and `bring_up` bounds them again.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             arch::mmu::phys_to_virt(sys.base) as usize,
-            &jh7110_clock_and_reset::SYS,
+            &jh7110_clock_and_reset::SYSTEM,
             plan.plan(),
         )
     };

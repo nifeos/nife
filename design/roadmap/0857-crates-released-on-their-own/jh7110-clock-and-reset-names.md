@@ -11,9 +11,12 @@ Ruled 2026-10-26 (UTC): the 59 names not listed below are ratified as they stand
 before the first publish: Window becomes RegisterWindow, Spelling becomes WindowSpelling, Found
 becomes WindowLocation, MAX_WINDOWS becomes MAX_REG_ENTRIES, PmicBus::from_bus becomes
 PmicBus::from_nodes, Report becomes BringUpReport, IcClkWords becomes I2cClockWords, and
-one_based_div becomes one_based_divider. AON_WINDOW, STG_WINDOW and SYS_WINDOW keep their names.
+one_based_div becomes one_based_divider.
 Ruled 2026-10-26 (UTC), on #2760: `i2c5_ic_clk` is `i2c5_clock_frequency`, and the `ic_clk`
-parameters are `clock_frequency`.
+parameters are `clock_frequency`. Ruled 2026-10-26 (UTC), on #2760: the domains are spelled out.
+AON becomes ALWAYS_ON, STG becomes SYSTEM_TOP_GROUP and SYS becomes SYSTEM, in every name this tree
+wrote, the three windows included. Names copied from the chip's headers (`SYSCLK_*`, `STGRST_*` and
+the like), `SYS_SYSCON_BASE` from U-Boot, and the device-tree strings keep their spelling.
 
 Each renamed row names the spelling the ruling turned down and why. A new name in the crate takes a
 row here, `provisional` until a ruling, and `script/lint` fails a module or `pub` item without one.
@@ -28,21 +31,21 @@ covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 |---|---|---|---|---|
 | `jh7110_clock_and_reset` | crate | `src/lib.rs` | ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806). | yes |
 | `tests` | module | `src/tests.rs` | ratified 2026-10-26 (UTC). | no |
-| `AON` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `AON_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Kept as it stands. | yes |
+| `ALWAYS_ON` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `AON` (the chip's abbreviation, kept as an alias). | yes |
+| `ALWAYS_ON_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `AON_WINDOW` (the domain spelled out). | yes |
 | `BringUpReport` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it reports one bring-up). | yes |
 | `CLOCK_ENABLE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `COMPATIBLE_AONCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `COMPATIBLE_ALWAYS_ON_CRG` | item | `src/lib.rs` | provisional: the domain spelled out by the ruling on #2760, and CRG kept from the device-tree node. | yes |
 | `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE` | item | `src/lib.rs` | provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant. | yes |
 | `COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR` | item | `src/lib.rs` | provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`. | yes |
-| `COMPATIBLE_STGCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `COMPATIBLE_SYSCRG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `COMPATIBLE_SYSTEM_TOP_GROUP_CRG` | item | `src/lib.rs` | provisional: the domain spelled out by the ruling on #2760, and CRG kept from the device-tree node. | yes |
+| `COMPATIBLE_SYSTEM_CRG` | item | `src/lib.rs` | provisional: the domain spelled out by the ruling on #2760, and CRG kept from the device-tree node. | yes |
 | `COMPATIBLE_VENDOR_CLKGEN` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `COMPATIBLE_VENDOR_RSTGEN` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `DevicePlan` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `Domain` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `GMAC0_AON_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `GMAC0_SYS_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `GMAC0_ALWAYS_ON_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled out). | yes |
+| `GMAC0_SYSTEM_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_SYS_BRING_UP` (the domain spelled out). | yes |
 | `I2cClockWords` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `IcClkWords` (three abbreviations; these are the I2C controller's clock words). | yes |
 | `MAX_DEVICE_STEPS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `MAX_RECORDED_CLOCKS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
@@ -55,10 +58,10 @@ covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 | `ResetBit` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SDCARD_DIVIDER_MAX` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SDIO_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `STG` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `SYSTEM_TOP_GROUP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STG` (the chip's abbreviation for System-Top-Group, kept as an alias). | yes |
 | `STGRST_SEC_AHB` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `STG_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Kept as it stands. | yes |
-| `SYS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `SYSTEM_TOP_GROUP_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STG_WINDOW` (the domain spelled out). | yes |
+| `SYSTEM` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `SYS` (the chip's abbreviation, kept as an alias). | yes |
 | `SYSCLK_APB_BUS_FUNC` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SYSCLK_AXI_CFG0` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SYSCLK_BUS_ROOT` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
@@ -66,7 +69,7 @@ covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 | `SYSCLK_STG_AXIAHB` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SYS_SYSCON_BASE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SYS_SYSCON_SIZE` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `SYS_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Kept as it stands. | yes |
+| `SYSTEM_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `SYS_WINDOW` (the domain spelled out). | yes |
 | `StandardMode` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `Step` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `ENTROPY_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its abbreviation; the sequence brings up the entropy source). | yes |
