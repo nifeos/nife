@@ -30,7 +30,7 @@ stranger meets have no row because `script/names` does not count them: the field
 | `sector` | module | `src/sector.rs` | ratified 2026-10-25 (#2720). | no |
 | `volume` | module | `src/volume.rs` | ratified 2026-10-25 (#2720). | no |
 | `BootSector` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
-| `FatType` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
+| `FileAllocationTableType` | item | `src/boot_sector.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `FatType` (FAT spelled out, as the crate's own name is). | yes |
 | `Fat12` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `Fat16` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `Fat32` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
@@ -67,7 +67,7 @@ stranger meets have no row because `script/names` does not count them: the field
 | `sector_size` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `sectors_per_cluster` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `bytes_per_cluster` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
-| `fat_type` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
+| `file_allocation_table_type` | item | `src/boot_sector.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `fat_type` (the same reason as `FatType`). | yes |
 | `clusters` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `total_sectors` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |
 | `reserved_sectors` | item | `src/boot_sector.rs` | ratified 2026-10-25 (#2720). | yes |

@@ -15,7 +15,7 @@ use super::*;
 ///
 /// let mut ring = ProducerRing::new(0x1000, 4);
 /// let a = ring.enqueue(TransferRequestBlock::enable_slot());
-/// assert_eq!((a.index, a.trb.cycle(), a.link), (0, true, None));
+/// assert_eq!((a.index, a.transfer_request_block.cycle(), a.link), (0, true, None));
 /// ring.enqueue(TransferRequestBlock::enable_slot());
 /// let c = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!(c.index, 2);
@@ -23,7 +23,7 @@ use super::*;
 /// assert_eq!(at, 3);
 /// assert!(link.cycle()); // stamped with the lap it ends, so the controller follows it
 /// let d = ring.enqueue(TransferRequestBlock::enable_slot());
-/// assert_eq!((d.index, d.trb.cycle()), (0, false)); // second lap, cycle flipped
+/// assert_eq!((d.index, d.transfer_request_block.cycle()), (0, false)); // second lap, cycle flipped
 /// assert_eq!(ring.address_of(d.index), 0x1000);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +37,7 @@ pub struct ProducerRing {
 /// **What [`ProducerRing::enqueue`] says to write**: the TRB at `index`, stamped with this lap's
 /// cycle, and when the ring has just filled its lap, the link TRB at the last index too.
 ///
-/// The driver writes `trb` and then `link`, each with the cycle dword last: until a TRB's cycle bit
+/// The driver writes `transfer_request_block` and then `link`, each with the cycle dword last: until a TRB's cycle bit
 /// matches, the controller treats it as not yet produced, so the dword that carries it goes in
 /// after the rest.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,7 +45,7 @@ pub struct TransferRequestBlockPlacement {
     /// Where the TRB goes.
     pub index: u16,
     /// The TRB, cycle stamped.
-    pub trb: TransferRequestBlock,
+    pub transfer_request_block: TransferRequestBlock,
     /// The link TRB and where it goes, when this enqueue filled the lap.
     pub link: Option<(u16, TransferRequestBlock)>,
 }
@@ -97,7 +97,7 @@ impl ProducerRing {
         }
         TransferRequestBlockPlacement {
             index,
-            trb: placed,
+            transfer_request_block: placed,
             link,
         }
     }

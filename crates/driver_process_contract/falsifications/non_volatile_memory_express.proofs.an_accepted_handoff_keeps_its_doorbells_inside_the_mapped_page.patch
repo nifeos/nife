@@ -1,6 +1,6 @@
 Falsifies `driver_process_contract::non_volatile_memory_express::proofs::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page`.
 
-The defect: `Handoff::unpack` stops refusing a stride above `MAX_DSTRD`. A stride the spec permits
+The defect: `Handoff::unpack` stops refusing a stride above `MAX_DOORBELL_STRIDE`. A stride the spec permits
 and QEMU never reports then computes a doorbell offset outside the one page of BAR0 the EL0 data
 plane is mapped, the case the constant exists to prevent.
 
@@ -11,6 +11,6 @@ diff --git a/crates/driver_process_contract/src/non_volatile_memory_express.rs b
 +++ b/crates/driver_process_contract/src/non_volatile_memory_express.rs
 @@ -154,3 +154,3 @@ impl Handoff {
          let entries = words[0] as u16;
--        if dstrd > MAX_DSTRD || !(1..=8).contains(&blocks_per) || entries < 2 {
+-        if dstrd > MAX_DOORBELL_STRIDE || !(1..=8).contains(&blocks_per) || entries < 2 {
 +        if !(1..=8).contains(&blocks_per) || entries < 2 {
              return None;

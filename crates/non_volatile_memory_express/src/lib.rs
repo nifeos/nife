@@ -8,7 +8,7 @@
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
 pub mod regs {
-    /// Controller Capabilities, 64-bit read-only. See [`super::Cap`].
+    /// Controller Capabilities, 64-bit read-only. See [`super::Capabilities`].
     pub const CAP: u64 = 0x00;
     /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
     pub const CC: u64 = 0x14;
@@ -33,9 +33,9 @@ pub const CSTS_CFS: u32 = 1 << 1;
 /// The decoded fields of CAP this driver acts on. A newtype over the raw register value so the
 /// bit positions live in exactly one place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cap(pub u64);
+pub struct Capabilities(pub u64);
 
-impl Cap {
+impl Capabilities {
     /// Maximum Queue Entries Supported, converted from the register's 0-based field to a count.
     /// Every queue this driver creates must be no deeper than this.
     pub fn max_queue_entries(self) -> u32 {
@@ -76,7 +76,7 @@ pub enum Doorbell {
     CompletionHead,
 }
 
-/// The BAR0 offset of queue `qid`'s doorbell. `dstrd` is [`Cap::doorbell_stride`].
+/// The BAR0 offset of queue `qid`'s doorbell. `dstrd` is [`Capabilities::doorbell_stride`].
 ///
 /// The stride scales the whole doorbell file: `CAP.DSTRD` is four bits, so a controller may space
 /// its doorbells as far as `4 << 15` bytes apart, and queue 1's doorbells then sit hundreds of
@@ -86,10 +86,10 @@ pub enum Doorbell {
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::{Cap, Doorbell, doorbell};
+/// use non_volatile_memory_express::{Capabilities, Doorbell, doorbell};
 ///
 /// // A controller reporting DSTRD 0, so doorbells are 4 bytes apart.
-/// let cap = Cap(0);
+/// let cap = Capabilities(0);
 /// assert_eq!(cap.doorbell_stride(), 0);
 ///
 /// // Admin queue (qid 0), then the one I/O queue pair this driver creates.
@@ -343,9 +343,9 @@ pub struct Completion {
     pub result: u32,
     /// The submission queue head as the controller last consumed it: how the driver learns its
     /// submission ring entries are reusable.
-    pub sq_head: u16,
+    pub submission_queue_head: u16,
     /// Which submission queue the completed command came from.
-    pub sq_id: u16,
+    pub submission_queue_id: u16,
     /// The command identifier the driver assigned, echoed back.
     pub cid: u16,
     /// The phase tag: dword 3, bit 16. See [`CompletionQueue::is_owned`].
@@ -359,8 +359,8 @@ impl Completion {
     pub fn from_dwords(dw: [u32; 4]) -> Self {
         Completion {
             result: dw[0],
-            sq_head: dw[2] as u16,
-            sq_id: (dw[2] >> 16) as u16,
+            submission_queue_head: dw[2] as u16,
+            submission_queue_id: (dw[2] >> 16) as u16,
             cid: dw[3] as u16,
             phase: dw[3] & (1 << 16) != 0,
             status: (dw[3] >> 17) as u16,
@@ -371,7 +371,7 @@ impl Completion {
 // --- ring arithmetic ------------------------------------------------------------------------
 
 /// A submission ring's driver-side state: where the next command lands and what tail value to
-/// ring. The controller's consumption (via [`Completion::sq_head`]) is deliberately not modeled:
+/// ring. The controller's consumption (via [`Completion::submission_queue_head`]) is deliberately not modeled:
 /// this driver completes every command before submitting the next, so the ring can never fill,
 /// and [`SubmissionQueue::push`] asserts the invariant that guards that assumption instead of carrying a
 /// free-slot count nothing would exercise.
@@ -379,7 +379,7 @@ impl Completion {
 pub struct SubmissionQueue {
     entries: u16,
     tail: u16,
-    /// The controller's head, updated from each completion's [`Completion::sq_head`].
+    /// The controller's head, updated from each completion's [`Completion::submission_queue_head`].
     head: u16,
 }
 
@@ -411,7 +411,7 @@ impl SubmissionQueue {
         self.tail
     }
 
-    /// Record the controller's consumption, from a completion's `sq_head`.
+    /// Record the controller's consumption, from a completion's `submission_queue_head`.
     pub fn record_head(&mut self, head: u16) {
         assert!(
             head < self.entries,
@@ -517,7 +517,7 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
     }
     Some(IdentifyNamespace {
         blocks: nsze,
-        lba_shift: lbads as u32,
+        logical_block_address_shift: lbads as u32,
     })
 }
 
@@ -528,7 +528,7 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
 /// It exists so a refusal can say what it refused. A drive on the bench must be formatted so that
 /// `blocks_per` falls in `1..=8`, and a namespace this driver declines has to print its LBA size
 /// rather than arrive at the bench as a server that never started and a test that reads "skipped".
-pub fn lba_format_shift(data: &[u8]) -> Option<u8> {
+pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
     }
@@ -541,23 +541,23 @@ pub fn lba_format_shift(data: &[u8]) -> Option<u8> {
 pub struct IdentifyNamespace {
     /// The namespace's size in logical blocks.
     pub blocks: u64,
-    /// `1 << lba_shift` bytes per logical block; between 9 and 12 by construction.
-    pub lba_shift: u32,
+    /// `1 << logical_block_address_shift` bytes per logical block; between 9 and 12 by construction.
+    pub logical_block_address_shift: u32,
 }
 
 impl IdentifyNamespace {
     /// The namespace's capacity in bytes.
     pub fn capacity_bytes(&self) -> u64 {
-        self.blocks << self.lba_shift
+        self.blocks << self.logical_block_address_shift
     }
     /// How many logical blocks one `unit`-byte transfer covers, or `None` if `unit` is not a
     /// whole number of logical blocks (a namespace this driver cannot serve 4096-byte filesystem
     /// blocks on; `parse_identify_namespace`'s shift bounds make it impossible for unit 4096).
     pub fn blocks_per_transfer(&self, unit: u64) -> Option<u16> {
-        if unit == 0 || unit & ((1 << self.lba_shift) - 1) != 0 {
+        if unit == 0 || unit & ((1 << self.logical_block_address_shift) - 1) != 0 {
             return None;
         }
-        Some((unit >> self.lba_shift) as u16)
+        Some((unit >> self.logical_block_address_shift) as u16)
     }
 }
 
@@ -569,7 +569,7 @@ mod tests {
     fn cap_fields_decode_from_their_spec_positions() {
         // QEMU's real CAP value for a default nvme device is in this family: MQES=0x7ff,
         // TO=0xf, DSTRD=0, MPSMIN=0. Build one by hand and read every field back.
-        let cap = Cap(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
+        let cap = Capabilities(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
         assert_eq!(cap.max_queue_entries(), 0x800);
         assert_eq!(cap.timeout_500ms(), 0xf);
         assert_eq!(cap.doorbell_stride(), 2);
@@ -678,7 +678,14 @@ mod tests {
         let cq = CompletionQueue::new(4);
         // The controller writes phase=1 on its first lap: owned.
         let fresh = Completion::from_dwords([0, 0, 5 | 1 << 16, 42 | 1 << 16]);
-        assert_eq!((fresh.sq_head, fresh.sq_id, fresh.cid), (5, 1, 42));
+        assert_eq!(
+            (
+                fresh.submission_queue_head,
+                fresh.submission_queue_id,
+                fresh.cid
+            ),
+            (5, 1, 42)
+        );
         assert_eq!(fresh.status, 0);
         assert!(cq.is_owned(&fresh));
         // A zeroed (never-written) entry is not.
@@ -790,7 +797,7 @@ mod tests {
         data[130] = 9; // format 0's LBADS: 512-byte blocks
         let id = parse_identify_namespace(&data).unwrap();
         assert_eq!(id.blocks, 0x4000);
-        assert_eq!(id.lba_shift, 9);
+        assert_eq!(id.logical_block_address_shift, 9);
         assert_eq!(id.capacity_bytes(), 0x4000 * 512);
         assert_eq!(id.blocks_per_transfer(4096), Some(8));
 
@@ -809,8 +816,8 @@ mod tests {
         data[130] = 9; // format 0: 512 bytes, not the one in use
         data[134] = 13; // format 1: 8192 bytes
         assert!(parse_identify_namespace(&data).is_none());
-        assert_eq!(lba_format_shift(&data), Some(13));
-        assert_eq!(lba_format_shift(&[0u8; 383]), None);
+        assert_eq!(logical_block_address_format_shift(&data), Some(13));
+        assert_eq!(logical_block_address_format_shift(&[0u8; 383]), None);
     }
 
     /// The shift is read at `128 + 4 * FLBAS + 2` for every format the nibble can name, from a
@@ -824,10 +831,14 @@ mod tests {
                 data[128 + 4 * format + 2] = 20 + format as u8;
             }
             data[26] = flbas | 0x70; // the bits above the format number are not part of it
-            assert_eq!(lba_format_shift(&data), Some(20 + flbas), "flbas {flbas}");
+            assert_eq!(
+                logical_block_address_format_shift(&data),
+                Some(20 + flbas),
+                "flbas {flbas}"
+            );
         }
         assert_eq!(
-            lba_format_shift(&[0u8; 384]),
+            logical_block_address_format_shift(&[0u8; 384]),
             Some(0),
             "384 bytes is enough"
         );
@@ -863,7 +874,10 @@ mod tests {
         data[128 + 2] = 10; // format 0's LBADS: a decoy
         data[128 + 4 + 2] = 11; // format 1's LBADS: the one that must be read
         let id = parse_identify_namespace(&data).unwrap();
-        assert_eq!(id.lba_shift, 11, "format 1's slot, not format 0's");
+        assert_eq!(
+            id.logical_block_address_shift, 11,
+            "format 1's slot, not format 0's"
+        );
     }
 
     #[test]
@@ -874,7 +888,7 @@ mod tests {
         // calls `blocks_per(0)` either.
         let id = IdentifyNamespace {
             blocks: 1,
-            lba_shift: 9, // 512-byte blocks; mask is 511
+            logical_block_address_shift: 9, // 512-byte blocks; mask is 511
         };
         assert_eq!(
             id.blocks_per_transfer(0),
@@ -1030,7 +1044,7 @@ mod verification {
     fn identify_parse_is_total_and_bounds_the_shift() {
         let data: [u8; 384] = kani::any();
         if let Some(id) = parse_identify_namespace(&data) {
-            assert!((9..=12).contains(&id.lba_shift));
+            assert!((9..=12).contains(&id.logical_block_address_shift));
             let per = id.blocks_per_transfer(4096).unwrap();
             assert!((1..=8).contains(&per));
         }

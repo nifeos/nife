@@ -35,24 +35,24 @@ pub const CONFIG: u64 = 0x38;
 pub(crate) const PORTSC_BASE: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
-pub const CMD_RUN: u32 = 1 << 0;
+pub const COMMAND_RUN: u32 = 1 << 0;
 /// `USBCMD` Host Controller Reset.
-pub const CMD_RESET: u32 = 1 << 1;
+pub const COMMAND_RESET: u32 = 1 << 1;
 /// `USBCMD` Interrupter Enable.
-pub const CMD_INTERRUPTS: u32 = 1 << 2;
+pub const COMMAND_INTERRUPTS: u32 = 1 << 2;
 
 /// `USBSTS` `HCHalted`.
-pub const STS_HALTED: u32 = 1 << 0;
+pub const STATUS_HALTED: u32 = 1 << 0;
 /// `USBSTS` Host System Error.
-pub const STS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
+pub const STATUS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
 /// `USBSTS` Event Interrupt, write one to clear.
-pub const STS_EVENT_INTERRUPT: u32 = 1 << 3;
+pub const STATUS_EVENT_INTERRUPT: u32 = 1 << 3;
 /// `USBSTS` Port Change Detect, write one to clear.
-pub const STS_PORT_CHANGE: u32 = 1 << 4;
+pub const STATUS_PORT_CHANGE: u32 = 1 << 4;
 /// `USBSTS` Controller Not Ready.
-pub const STS_NOT_READY: u32 = 1 << 11;
+pub const STATUS_NOT_READY: u32 = 1 << 11;
 /// `USBSTS` Host Controller Error.
-pub const STS_CONTROLLER_ERROR: u32 = 1 << 12;
+pub const STATUS_CONTROLLER_ERROR: u32 = 1 << 12;
 
 /// Interrupter 0's register set, from `RTSOFF`.
 pub(crate) const INTERRUPTER_0: u64 = 0x20;
@@ -82,9 +82,9 @@ pub const LEGACY_BIOS_OWNED: u32 = 1 << 16;
 pub const LEGACY_OS_OWNED: u32 = 1 << 24;
 /// `USBLEGCTLSTS`, the dword after `USBLEGSUP`: the SMI enables (bits 0, 4, 13, 14, 15) to clear,
 /// and the write-one-to-clear SMI events (29, 30, 31), so firmware stops being told about USB.
-pub const LEGACY_SMI_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
+pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
 /// The write-one-to-clear event bits of `USBLEGCTLSTS`.
-pub const LEGACY_SMI_EVENTS: u32 = 0b111 << 29;
+pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS: u32 = 0b111 << 29;
 
 /// **The facts the capability registers state**, decoded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -220,22 +220,22 @@ mod tests {
     /// sections 5.4.1, 5.4.2, 5.5.2 and 7.1, so a shift written the wrong way round fails here.
     #[test]
     fn the_register_bits_are_where_the_specification_puts_them() {
-        assert_eq!([CMD_RUN, CMD_RESET, CMD_INTERRUPTS], [1, 2, 4]);
+        assert_eq!([COMMAND_RUN, COMMAND_RESET, COMMAND_INTERRUPTS], [1, 2, 4]);
         assert_eq!(
             [
-                STS_HALTED,
-                STS_HOST_SYSTEM_ERROR,
-                STS_EVENT_INTERRUPT,
-                STS_PORT_CHANGE
+                STATUS_HALTED,
+                STATUS_HOST_SYSTEM_ERROR,
+                STATUS_EVENT_INTERRUPT,
+                STATUS_PORT_CHANGE
             ],
             [1, 4, 8, 0x10]
         );
-        assert_eq!([STS_NOT_READY, STS_CONTROLLER_ERROR], [0x800, 0x1000]);
+        assert_eq!([STATUS_NOT_READY, STATUS_CONTROLLER_ERROR], [0x800, 0x1000]);
         assert_eq!([IMAN_PENDING, IMAN_ENABLE], [1, 2]);
         assert_eq!(ERDP_BUSY, 8);
         assert_eq!([LEGACY_BIOS_OWNED, LEGACY_OS_OWNED], [0x1_0000, 0x100_0000]);
-        assert_eq!(LEGACY_SMI_ENABLES, 0xe011);
-        assert_eq!(LEGACY_SMI_EVENTS, 0xe000_0000);
+        assert_eq!(LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES, 0xe011);
+        assert_eq!(LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS, 0xe000_0000);
     }
 
     /// The next pointer counts dwords, and an entry whose last byte is the limit's is still read.

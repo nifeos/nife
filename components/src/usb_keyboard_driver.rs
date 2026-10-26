@@ -209,7 +209,7 @@ impl Host {
     }
 
     fn put(page: u64, p: TransferRequestBlockPlacement) {
-        Host::write_trb(page, p.index, p.trb);
+        Host::write_trb(page, p.index, p.transfer_request_block);
         if let Some((at, link)) = p.link {
             Host::write_trb(page, at, link);
         }
@@ -257,7 +257,7 @@ impl Host {
         self.ring_doorbell(0, 0);
         match self.wait_for(
             1000,
-            &|e| matches!(e, Event::Command { trb, .. } if *trb == at),
+            &|e| matches!(e, Event::Command { transfer_request_block, .. } if *transfer_request_block == at),
         ) {
             Some(Event::Command { code, slot, .. }) if code == completion::SUCCESS => Ok(slot),
             Some(Event::Command { code, .. }) => Err((BringUpStep::CommandFailed, u32::from(code))),
@@ -298,7 +298,7 @@ impl Host {
                 &|e| matches!(e, Event::Transfer { slot: s, endpoint: 1, .. } if *s == slot),
             );
             let Some(Event::Transfer {
-                trb,
+                transfer_request_block: trb,
                 residual,
                 code,
                 ..
@@ -579,17 +579,18 @@ impl Host {
         let usbsts = self.op(regs::USBSTS);
 
         // Halt (the firmware may have left it running), then reset.
-        self.set_reg(usbcmd, self.reg(usbcmd) & !regs::CMD_RUN);
+        self.set_reg(usbcmd, self.reg(usbcmd) & !regs::COMMAND_RUN);
         let end = deadline(100);
-        while self.reg(usbsts) & regs::STS_HALTED == 0 {
+        while self.reg(usbsts) & regs::STATUS_HALTED == 0 {
             if past(end) {
                 return Err((BringUpStep::HaltTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
-        self.set_reg(usbcmd, regs::CMD_RESET);
+        self.set_reg(usbcmd, regs::COMMAND_RESET);
         let end = deadline(1000);
-        while self.reg(usbcmd) & regs::CMD_RESET != 0 || self.reg(usbsts) & regs::STS_NOT_READY != 0
+        while self.reg(usbcmd) & regs::COMMAND_RESET != 0
+            || self.reg(usbsts) & regs::STATUS_NOT_READY != 0
         {
             if past(end) {
                 return Err((BringUpStep::ResetTimeout, self.reg(usbsts)));
@@ -668,9 +669,9 @@ impl Host {
     fn run(&self) -> Result<(), Fail> {
         let usbcmd = self.op(regs::USBCMD);
         let usbsts = self.op(regs::USBSTS);
-        self.set_reg(usbcmd, regs::CMD_RUN | regs::CMD_INTERRUPTS);
+        self.set_reg(usbcmd, regs::COMMAND_RUN | regs::COMMAND_INTERRUPTS);
         let end = deadline(100);
-        while self.reg(usbsts) & regs::STS_HALTED != 0 {
+        while self.reg(usbsts) & regs::STATUS_HALTED != 0 {
             if past(end) {
                 return Err((BringUpStep::RunTimeout, self.reg(usbsts)));
             }
@@ -943,12 +944,12 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         );
         host.set_reg(
             host.op(regs::USBSTS),
-            regs::STS_EVENT_INTERRUPT | regs::STS_PORT_CHANGE,
+            regs::STATUS_EVENT_INTERRUPT | regs::STATUS_PORT_CHANGE,
         );
         while let Some(e) = host.poll_event() {
             match e {
                 Event::Transfer {
-                    trb,
+                    transfer_request_block: trb,
                     residual,
                     code,
                     slot,

@@ -35,7 +35,7 @@ tree's virtual clock 298), is counted in `skipped` and never becomes a store.
 ## Usage
 
 ```rust
-use jh7110_clock_and_reset::{STG, STG_WINDOW, WindowLocation, Step, TRNG_BRING_UP, is_deasserted};
+use jh7110_clock_and_reset::{STG, STG_WINDOW, WindowLocation, Step, ENTROPY_BRING_UP, is_deasserted};
 
 // The vendor clkgen node: three windows, found by name.
 let regions = [(0x1302_0000, 0x1_0000), (0x1023_0000, 0x1_0000), (0x1700_0000, 0x1_0000)];
@@ -44,7 +44,7 @@ let stg = WindowLocation::from_regions(&STG_WINDOW.spellings[1], &regions, Some(
 assert_eq!(stg.base, 0x1023_0000);
 
 // The TRNG's plan: two clocks, then one reset.
-assert_eq!(TRNG_BRING_UP[2], Step::DeassertReset(3));
+assert_eq!(ENTROPY_BRING_UP[2], Step::DeassertReset(3));
 assert_eq!(STG.clock_offset(15), Some(0x3c));
 let reset = STG.reset_bit(3).unwrap();
 assert!(is_deasserted(0b1000, reset.mask));

@@ -77,18 +77,19 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// again. Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a
 /// quarter of a megabyte past the mapped window, and QEMU reports 0.
 ///
-/// Name: ratified 2026-10-25 (#2720). The ruling of 2026-10-26 (UTC) set it in this module rather
-/// than in `non_volatile_memory_express`, because the bound is nife's mapping and not the
-/// specification's.
-pub const MAX_DSTRD: u32 = 8;
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_DSTRD` (it copied the field's
+/// abbreviation into a name this tree authors). The ruling of 2026-10-26 (UTC) on #2749 set it in
+/// this module rather than in `non_volatile_memory_express`, because the bound is nife's mapping
+/// and not the specification's.
+pub const MAX_DOORBELL_STRIDE: u32 = 8;
 
 /// The one page of BAR0 the data plane is mapped, from the doorbell base.
 const DOORBELL_PAGE_END: u64 = DOORBELL_BASE + 0x1000;
 
 // The bound is the page's edge, at compile time: doorbell index 3 ends inside the page at
-// `MAX_DSTRD` and past it one stride wider.
-const _: () = assert!(DOORBELL_BASE + 3 * (4 << MAX_DSTRD) + 4 <= DOORBELL_PAGE_END);
-const _: () = assert!(DOORBELL_BASE + 3 * (4 << (MAX_DSTRD + 1)) + 4 > DOORBELL_PAGE_END);
+// `MAX_DOORBELL_STRIDE` and past it one stride wider.
+const _: () = assert!(DOORBELL_BASE + 3 * (4 << MAX_DOORBELL_STRIDE) + 4 <= DOORBELL_PAGE_END);
+const _: () = assert!(DOORBELL_BASE + 3 * (4 << (MAX_DOORBELL_STRIDE + 1)) + 4 > DOORBELL_PAGE_END);
 
 /// **The sentinel that selects the test-only DMA-escape role**, written by the confinement
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
@@ -145,14 +146,14 @@ impl Handoff {
     /// driver could serve rather than carrying the nonsense forward into a doorbell offset.
     /// `None` for a zero ring depth, a zero or out-of-range `blocks_per` (the shift bounds
     /// `parse_identify_namespace` enforces make `1..=8` the whole reachable range for a 4096-byte
-    /// unit), or a `dstrd` above [`MAX_DSTRD`].
+    /// unit), or a `dstrd` above [`MAX_DOORBELL_STRIDE`].
     ///
     /// Name: provisional. No ruling covers it.
     pub fn unpack(words: [u64; 3]) -> Option<Handoff> {
         let dstrd = (words[0] >> 32) as u32;
         let blocks_per = (words[0] >> 16) as u16;
         let entries = words[0] as u16;
-        if dstrd > MAX_DSTRD || !(1..=8).contains(&blocks_per) || entries < 2 {
+        if dstrd > MAX_DOORBELL_STRIDE || !(1..=8).contains(&blocks_per) || entries < 2 {
             return None;
         }
         Some(Handoff {
@@ -188,13 +189,16 @@ mod tests {
         assert_eq!(Handoff::unpack(h.pack()), Some(h));
 
         // A stride whose doorbell file would not fit the one page of BAR0 this wiring maps (see
-        // `MAX_DSTRD`, which Kani found), a ring of one, and a geometry no namespace
+        // `MAX_DOORBELL_STRIDE`, which Kani found), a ring of one, and a geometry no namespace
         // `parse_identify_namespace` admits can produce for a 4096-byte unit.
-        assert!(Handoff::unpack([(MAX_DSTRD as u64 + 1) << 32 | 8 << 16 | 16, 0, 0]).is_none());
+        assert!(
+            Handoff::unpack([(MAX_DOORBELL_STRIDE as u64 + 1) << 32 | 8 << 16 | 16, 0, 0])
+                .is_none()
+        );
         // And the largest stride that does fit is admitted, with its last doorbell inside the
         // page: this bound is a real edge, not a round number chosen for comfort.
-        let widest = Handoff::unpack([(MAX_DSTRD as u64) << 32 | 8 << 16 | 16, 0, 0])
-            .expect("MAX_DSTRD itself must be servable");
+        let widest = Handoff::unpack([(MAX_DOORBELL_STRIDE as u64) << 32 | 8 << 16 | 16, 0, 0])
+            .expect("MAX_DOORBELL_STRIDE itself must be servable");
         assert!(doorbell(1, Doorbell::CompletionHead, widest.dstrd) + 4 <= DOORBELL_PAGE_END);
         assert!(Handoff::unpack([8 << 16 | 1, 0, 0]).is_none());
         assert!(Handoff::unpack([9 << 16 | 16, 0, 0]).is_none());
@@ -213,7 +217,7 @@ mod tests {
         // The round-trip test above uses `dstrd: 0`, where `<< 32` and `>> 32` both give 0.
         // Nothing else calls `pack` at all, so a nonzero `dstrd` never reached it.
         let h = Handoff {
-            dstrd: MAX_DSTRD,
+            dstrd: MAX_DOORBELL_STRIDE,
             blocks_per: 8,
             entries: 16,
             data_plane_phys: 0x4001_3000,
@@ -222,7 +226,7 @@ mod tests {
         let words = h.pack();
         assert_eq!(
             words[0] >> 32,
-            MAX_DSTRD as u64,
+            MAX_DOORBELL_STRIDE as u64,
             "dstrd lands in the high word, shifted left, not right"
         );
         assert_eq!(Handoff::unpack(words), Some(h));
@@ -251,7 +255,7 @@ mod tests {
     #[test]
     fn max_dstrd_is_the_widest_stride_whose_doorbells_fit_one_page() {
         let page_end = DOORBELL_PAGE_END;
-        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DSTRD) + 4 <= page_end);
-        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DSTRD + 1) >= page_end);
+        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DOORBELL_STRIDE) + 4 <= page_end);
+        assert!(doorbell(1, Doorbell::CompletionHead, MAX_DOORBELL_STRIDE + 1) >= page_end);
     }
 }

@@ -8,7 +8,7 @@
 //! cluster count whatever it is, and the crate's fuzz target runs the same walk over whole images.
 
 use super::*;
-use crate::boot_sector::FatType;
+use crate::boot_sector::FileAllocationTableType;
 
 /// A table of `clusters` data clusters whose every entry the solver chooses, or a device error.
 pub(crate) struct HostileTable {
@@ -30,7 +30,10 @@ impl Links for HostileTable {
         if kani::any() {
             return Err(ChainError::Device(()));
         }
-        Ok(TableEntry::decode(FatType::Fat32, kani::any()))
+        Ok(TableEntry::decode(
+            FileAllocationTableType::Fat32,
+            kani::any(),
+        ))
     }
 }
 

@@ -12,9 +12,9 @@ diff --git a/crates/file_allocation_table/src/table.rs b/crates/file_allocation_
 @@ -66,7 +66,7 @@
      let first = boot.table_first_sector(table)?;
      let cluster = u64::from(cluster);
-     let offset = match boot.fat_type() {
--        FatType::Fat12 => cluster + cluster / 2,
-+        FatType::Fat12 => cluster * 2,
-         FatType::Fat16 => cluster * 2,
-         FatType::Fat32 => cluster * 4,
+     let offset = match boot.file_allocation_table_type() {
+-        FileAllocationTableType::Fat12 => cluster + cluster / 2,
++        FileAllocationTableType::Fat12 => cluster * 2,
+         FileAllocationTableType::Fat16 => cluster * 2,
+         FileAllocationTableType::Fat32 => cluster * 4,
      };

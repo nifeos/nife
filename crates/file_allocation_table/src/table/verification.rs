@@ -33,8 +33,8 @@ fn every_entry_lies_inside_the_table() {
     let size = boot.sector_size().bytes();
     assert!(u64::from(at) >= first && u64::from(at) < end);
     assert!(within < size);
-    if within + entry_bytes(boot.fat_type()) > size {
-        assert!(boot.fat_type() == FatType::Fat12);
+    if within + entry_bytes(boot.file_allocation_table_type()) > size {
+        assert!(boot.file_allocation_table_type() == FileAllocationTableType::Fat12);
         assert!(u64::from(at) + 1 < end);
     }
 }
@@ -46,10 +46,14 @@ fn every_entry_lies_inside_the_table() {
 #[kani::proof]
 fn an_entry_decodes_by_its_markers() {
     let raw: u32 = kani::any();
-    let (fat_type, value, bad) = match kani::any::<u8>() % 3 {
-        0 => (FatType::Fat12, raw & 0x0FFF, 0x0FF7),
-        1 => (FatType::Fat16, raw & 0xFFFF, 0xFFF7),
-        _ => (FatType::Fat32, raw & 0x0FFF_FFFF, 0x0FFF_FFF7),
+    let (file_allocation_table_type, value, bad) = match kani::any::<u8>() % 3 {
+        0 => (FileAllocationTableType::Fat12, raw & 0x0FFF, 0x0FF7),
+        1 => (FileAllocationTableType::Fat16, raw & 0xFFFF, 0xFFF7),
+        _ => (
+            FileAllocationTableType::Fat32,
+            raw & 0x0FFF_FFFF,
+            0x0FFF_FFF7,
+        ),
     };
     let expected = if value == 0 {
         TableEntry::Free
@@ -62,5 +66,8 @@ fn an_entry_decodes_by_its_markers() {
     } else {
         TableEntry::EndOfChain
     };
-    assert_eq!(TableEntry::decode(fat_type, raw), expected);
+    assert_eq!(
+        TableEntry::decode(file_allocation_table_type, raw),
+        expected
+    );
 }

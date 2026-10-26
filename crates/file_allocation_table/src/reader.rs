@@ -122,10 +122,10 @@ impl<D: SectorDevice> Volume<D> {
     pub fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
         let (sector, within) = table::entry_position(&self.boot, cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
-        let fat_type = self.boot.fat_type();
+        let file_allocation_table_type = self.boot.file_allocation_table_type();
         let size = self.boot.sector_size().bytes();
         let mut bytes = [0u8; 4];
-        let wanted = table::entry_bytes(fat_type);
+        let wanted = table::entry_bytes(file_allocation_table_type);
         self.load(sector)?;
         // FAT16 and FAT32 entries are aligned to their width, so only FAT12's split.
         let here = wanted.min(size - within);
@@ -134,8 +134,8 @@ impl<D: SectorDevice> Volume<D> {
             self.load(sector + 1)?;
             bytes[here..wanted].copy_from_slice(&self.buffer[..wanted - here]);
         }
-        let raw = table::assemble(fat_type, cluster, bytes);
-        Ok(TableEntry::decode(fat_type, raw))
+        let raw = table::assemble(file_allocation_table_type, cluster, bytes);
+        Ok(TableEntry::decode(file_allocation_table_type, raw))
     }
 
     /// **The chain that starts at `first`**, cluster by cluster.

@@ -17,7 +17,9 @@ fails a module or `pub` item without one.
 
 The column `outside` says whether a caller outside the crate reaches the name. Some names have no
 row because `script/names` does not count them: enum variants, struct fields and trait members. The
-same ruling covers them.
+same ruling covers them. Ruled 2026-10-26 (UTC), on #2760: the TRB field of `Event::Transfer`,
+`Event::Command` and `TransferRequestBlockPlacement` is `transfer_request_block`, the module's own
+spelling, and the `USBCMD`, `USBSTS` and `USBLEGCTLSTS` bits spell out what this tree abbreviated.
 
 | name | kind | path | status | outside |
 |---|---|---|---|---|
@@ -88,9 +90,9 @@ same ruling covers them.
 | `speed_of` | item | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
 | `write_value` | item | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
 | `CAPLENGTH` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_INTERRUPTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_RESET` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `CMD_RUN` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
+| `COMMAND_INTERRUPTS` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_INTERRUPTS` (spelled out; the register keeps `USBCMD`). | yes |
+| `COMMAND_RESET` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RESET` (spelled out; the register keeps `USBCMD`). | yes |
+| `COMMAND_RUN` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RUN` (spelled out; the register keeps `USBCMD`). | yes |
 | `CONFIG` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `CRCR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `Capabilities` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
@@ -110,16 +112,16 @@ same ruling covers them.
 | `IMOD` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
 | `LEGACY_BIOS_OWNED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `LEGACY_OS_OWNED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `LEGACY_SMI_ENABLES` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `LEGACY_SMI_EVENTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
+| `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_ENABLES` (`smi` spelled out, as the acronym test asks). | yes |
+| `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_EVENTS` (`smi` spelled out, as the acronym test asks). | yes |
 | `PAGESIZE` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `RTSOFF` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_CONTROLLER_ERROR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `STS_EVENT_INTERRUPT` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_HALTED` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_HOST_SYSTEM_ERROR` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | no |
-| `STS_NOT_READY` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
-| `STS_PORT_CHANGE` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
+| `STATUS_CONTROLLER_ERROR` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_CONTROLLER_ERROR` (spelled out; the register keeps `USBSTS`). | no |
+| `STATUS_EVENT_INTERRUPT` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_EVENT_INTERRUPT` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_HALTED` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_HALTED` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_HOST_SYSTEM_ERROR` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_HOST_SYSTEM_ERROR` (spelled out; the register keeps `USBSTS`). | no |
+| `STATUS_NOT_READY` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_NOT_READY` (spelled out; the register keeps `USBSTS`). | yes |
+| `STATUS_PORT_CHANGE` | item | `src/regs.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STS_PORT_CHANGE` (spelled out; the register keeps `USBSTS`). | yes |
 | `USBCMD` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `USBSTS` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |
 | `decode` | item | `src/regs.rs` | ratified 2026-10-25 (#2720). | yes |

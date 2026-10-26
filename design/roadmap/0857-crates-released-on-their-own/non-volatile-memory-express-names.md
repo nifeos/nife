@@ -11,11 +11,14 @@ The ruling of that date ratified every name below but three, and those are provi
 2026-10-26 (UTC), on #2749: the namespace bounds check and the transfer builder become methods on a
 small namespace value carrying the capacity and the logical blocks per transfer, so `transfer_command`
 loses its two positional integers, and the names that value introduces stay provisional until a
-ruling. Each row with a refusal names the spelling the ruling turned down and why.
+ruling. Each row with a refusal names the spelling the ruling turned down and why. Ruled
+2026-10-26 (UTC), on #2760: five oversights in that ratification take spelled-out names before
+publish, `Capabilities`, `logical_block_address_format_shift` and the fields
+`submission_queue_head`, `submission_queue_id` and `logical_block_address_shift`.
 
 nife's process plan sits outside the crate. It lives in the `non_volatile_memory_express` module of
 `driver_process_contract`, a nife-internal crate that does not publish (ruled 2026-10-26 UTC). The
-plan is the client windows, `client_window` and `MAX_DSTRD`, the stride one mapped page of BAR0 can
+plan is the client windows, `client_window` and `MAX_DOORBELL_STRIDE`, the stride one mapped page of BAR0 can
 serve. It is also `ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the
 `confinement_attackers` feature. `can_write` sits in nife's NVMe server. Those names follow nife's
 ordinary naming and have no row here. A new name in this crate takes a row here. It stays
@@ -39,7 +42,7 @@ The fields of `Namespace` (`size_bytes`, `blocks_per_transfer`) are provisional 
 | `DOORBELL_BASE` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
 | `CSTS_RDY` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `CSTS_CFS` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
-| `Cap` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
+| `Capabilities` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `Cap` (an abbreviation of the register's name). | yes |
 | `max_queue_entries` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `doorbell_stride` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `timeout_500ms` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
@@ -79,7 +82,7 @@ The fields of `Namespace` (`size_bytes`, `blocks_per_transfer`) are provisional 
 | `is_owned` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `pop` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `parse_identify_namespace` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
-| `lba_format_shift` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
+| `logical_block_address_format_shift` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `lba_format_shift` (`lba` spelled out, as the acronym test asks). | yes |
 | `IdentifyNamespace` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `capacity_bytes` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). Refused `bytes` (it is the namespace's capacity in bytes, not its bytes). | yes |
 | `blocks_per_transfer` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). Refused `blocks_per` (it did not say per what). | yes |

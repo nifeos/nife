@@ -91,7 +91,7 @@ fn check(bytes: &[u8], size: SectorSize) {
         }
     }
     let _ = (
-        boot.fat_type(),
+        boot.file_allocation_table_type(),
         boot.media(),
         boot.hidden_sectors(),
         boot.active_table(),

@@ -26,7 +26,7 @@ const PARSED: usize = 512;
 /// The type string at `BS_FilSysType` is informational and never read. A volume whose BPB layout
 /// disagrees with its cluster count is refused (see [`ParseError::LayoutContradictsClusterCount`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum FatType {
+pub enum FileAllocationTableType {
     /// Fewer than 4085 clusters; 12-bit table entries.
     Fat12,
     /// From 4085 up to 65524 clusters; 16-bit table entries.
@@ -35,24 +35,24 @@ pub enum FatType {
     Fat32,
 }
 
-impl FatType {
+impl FileAllocationTableType {
     /// The type the specification assigns to a volume of `clusters` data clusters.
-    pub const fn from_clusters(clusters: u32) -> FatType {
+    pub const fn from_clusters(clusters: u32) -> FileAllocationTableType {
         if clusters < FAT16_MIN_CLUSTERS {
-            FatType::Fat12
+            FileAllocationTableType::Fat12
         } else if clusters < FAT32_MIN_CLUSTERS {
-            FatType::Fat16
+            FileAllocationTableType::Fat16
         } else {
-            FatType::Fat32
+            FileAllocationTableType::Fat32
         }
     }
 
     /// The width of one table entry in bits: 12, 16 or 32.
     pub const fn entry_bits(self) -> u32 {
         match self {
-            FatType::Fat12 => 12,
-            FatType::Fat16 => 16,
-            FatType::Fat32 => 32,
+            FileAllocationTableType::Fat12 => 12,
+            FileAllocationTableType::Fat16 => 16,
+            FileAllocationTableType::Fat32 => 32,
         }
     }
 }
@@ -143,14 +143,14 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{BootSector, FatType, SECTOR_BYTES, VolumeLayout};
+/// use file_allocation_table::{BootSector, FileAllocationTableType, SECTOR_BYTES, VolumeLayout};
 ///
 /// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
 /// let mut sector = [0u8; SECTOR_BYTES];
 /// volume.fill_sector(0, &mut sector);
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
-/// assert_eq!(boot.fat_type(), FatType::Fat32);
+/// assert_eq!(boot.file_allocation_table_type(), FileAllocationTableType::Fat32);
 /// assert_eq!(boot.clusters(), volume.clusters());
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -163,7 +163,7 @@ pub struct BootSector {
     total_sectors: u32,
     media: u8,
     hidden_sectors: u32,
-    fat_type: FatType,
+    file_allocation_table_type: FileAllocationTableType,
     clusters: u32,
     first_data_sector: u32,
     root: RootDirectory,
@@ -255,14 +255,14 @@ impl BootSector {
             return Err(ParseError::NoClusters);
         }
 
-        let fat_type = FatType::from_clusters(clusters);
+        let file_allocation_table_type = FileAllocationTableType::from_clusters(clusters);
         let layout_is_32 = table_sectors_16 == 0 && root_entries == 0;
         let layout_is_16 = table_sectors_16 != 0 && root_entries != 0;
-        match fat_type {
-            FatType::Fat32 if !layout_is_32 => {
+        match file_allocation_table_type {
+            FileAllocationTableType::Fat32 if !layout_is_32 => {
                 return Err(ParseError::LayoutContradictsClusterCount);
             }
-            FatType::Fat12 | FatType::Fat16 if !layout_is_16 => {
+            FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 if !layout_is_16 => {
                 return Err(ParseError::LayoutContradictsClusterCount);
             }
             _ => {}
@@ -271,7 +271,8 @@ impl BootSector {
             return Err(ParseError::TooManyClusters);
         }
         // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.
-        let needed_bits = (u64::from(clusters) + 2) * u64::from(fat_type.entry_bits());
+        let needed_bits =
+            (u64::from(clusters) + 2) * u64::from(file_allocation_table_type.entry_bits());
         let held_bits = u64::from(table_sectors) << (sector_size.shift() + 3);
         if needed_bits > held_bits {
             return Err(ParseError::TableTooSmall);
@@ -286,7 +287,7 @@ impl BootSector {
             total_sectors,
             media,
             hidden_sectors: get32(sector, 28),
-            fat_type,
+            file_allocation_table_type,
             clusters,
             first_data_sector,
             root: RootDirectory::Region {
@@ -299,7 +300,7 @@ impl BootSector {
             backup_boot_sector: None,
             volume_id: (sector[38] == 0x29).then(|| get32(sector, 39)),
         };
-        if fat_type == FatType::Fat32 {
+        if file_allocation_table_type == FileAllocationTableType::Fat32 {
             boot.parse_fat32(sector)?;
         }
         Ok(boot)
@@ -366,8 +367,8 @@ impl BootSector {
     }
 
     /// The FAT type, from the cluster count.
-    pub const fn fat_type(&self) -> FatType {
-        self.fat_type
+    pub const fn file_allocation_table_type(&self) -> FileAllocationTableType {
+        self.file_allocation_table_type
     }
 
     /// How many data clusters the volume has. They are numbered 2 to `clusters() + 1`.

@@ -23,12 +23,14 @@ fn the_spawn_handoff_round_trips() {
         data_plane_phys: kani::any(),
         size_bytes: kani::any(),
     };
-    kani::assume(h.dstrd <= MAX_DSTRD && (1..=8).contains(&h.blocks_per) && h.entries >= 2);
+    kani::assume(
+        h.dstrd <= MAX_DOORBELL_STRIDE && (1..=8).contains(&h.blocks_per) && h.entries >= 2,
+    );
     assert_eq!(Handoff::unpack(h.pack()), Some(h));
 }
 
 /// **An unpacked handoff can always drive the doorbell arithmetic**, for every word the
-/// kernel could have packed. [`MAX_DSTRD`] is what buys this, and this harness is why that
+/// kernel could have packed. [`MAX_DOORBELL_STRIDE`] is what buys this, and this harness is why that
 /// constant exists: a stride the spec permits and QEMU never reports computes a doorbell
 /// offset outside the one page of BAR0 the EL0 data plane is mapped, which is the one
 /// arithmetic error in this driver that reaches hardware.

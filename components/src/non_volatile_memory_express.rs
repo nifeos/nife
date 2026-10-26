@@ -200,7 +200,7 @@ impl Plane {
             ) - PAGE,
             new_head as u32,
         );
-        self.sq.record_head(c.sq_head);
+        self.sq.record_head(c.submission_queue_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation. Answering EIO
         // rather than panicking, because this is a server and a client is waiting on it: a

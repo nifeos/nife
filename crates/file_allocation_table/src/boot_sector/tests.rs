@@ -92,7 +92,10 @@ fn with(sector: &[u8; 512], at: usize, bytes: &[u8]) -> [u8; 512] {
 #[test]
 fn a_floppy_mkfs_fat_formatted_is_fat12_with_its_root_region() {
     let boot = parse(FAT12_FLOPPY).unwrap();
-    assert_eq!(boot.fat_type(), FatType::Fat12);
+    assert_eq!(
+        boot.file_allocation_table_type(),
+        FileAllocationTableType::Fat12
+    );
     assert_eq!(boot.sector_size(), SectorSize::Bytes512);
     assert_eq!(boot.clusters(), 2847);
     assert_eq!(boot.total_sectors(), 2880);
@@ -118,7 +121,10 @@ fn a_floppy_mkfs_fat_formatted_is_fat12_with_its_root_region() {
 #[test]
 fn a_32_mib_volume_mkfs_fat_formatted_is_fat16() {
     let boot = parse(FAT16_32M).unwrap();
-    assert_eq!(boot.fat_type(), FatType::Fat16);
+    assert_eq!(
+        boot.file_allocation_table_type(),
+        FileAllocationTableType::Fat16
+    );
     assert_eq!(boot.clusters(), 16343);
     assert_eq!(boot.sectors_per_cluster(), 4);
     assert_eq!(boot.bytes_per_cluster(), 2048);
@@ -139,7 +145,10 @@ fn a_32_mib_volume_mkfs_fat_formatted_is_fat16() {
 #[test]
 fn a_64_mib_volume_mkfs_fat_formatted_is_fat32_with_its_reserved_pointers() {
     let boot = parse(FAT32_64M).unwrap();
-    assert_eq!(boot.fat_type(), FatType::Fat32);
+    assert_eq!(
+        boot.file_allocation_table_type(),
+        FileAllocationTableType::Fat32
+    );
     assert_eq!(boot.clusters(), 129_022);
     assert_eq!(boot.reserved_sectors(), 32);
     assert_eq!(boot.root_directory(), RootDirectory::Cluster(2));
@@ -154,7 +163,10 @@ fn a_64_mib_volume_mkfs_fat_formatted_is_fat32_with_its_reserved_pointers() {
 fn four_kib_sectors_parse_at_their_own_size() {
     let fat16 = parse(FAT16_4K).unwrap();
     assert_eq!(fat16.sector_size(), SectorSize::Bytes4096);
-    assert_eq!(fat16.fat_type(), FatType::Fat16);
+    assert_eq!(
+        fat16.file_allocation_table_type(),
+        FileAllocationTableType::Fat16
+    );
     assert_eq!(fat16.clusters(), 4092);
     // 512 entries of 32 bytes is four 4096-byte sectors.
     assert_eq!(
@@ -169,7 +181,10 @@ fn four_kib_sectors_parse_at_their_own_size() {
 
     let fat32 = parse(FAT32_4K).unwrap();
     assert_eq!(fat32.sector_size(), SectorSize::Bytes4096);
-    assert_eq!(fat32.fat_type(), FatType::Fat32);
+    assert_eq!(
+        fat32.file_allocation_table_type(),
+        FileAllocationTableType::Fat32
+    );
     assert_eq!(fat32.clusters(), 130_784);
 }
 
@@ -189,7 +204,10 @@ fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
     for index in [0, 6] {
         assert!(volume.fill_sector(index, &mut sector));
         let boot = parse(&sector).unwrap();
-        assert_eq!(boot.fat_type(), FatType::Fat32);
+        assert_eq!(
+            boot.file_allocation_table_type(),
+            FileAllocationTableType::Fat32
+        );
         assert_eq!(boot.clusters(), volume.clusters());
         assert_eq!(boot.table_sectors(), volume.table_sectors());
         assert_eq!(
@@ -213,17 +231,20 @@ fn the_type_follows_the_cluster_count_at_both_thresholds() {
     assert_eq!(
         parse(&Shape::fat16(65 + 4084, 16).bytes())
             .unwrap()
-            .fat_type(),
-        FatType::Fat12
+            .file_allocation_table_type(),
+        FileAllocationTableType::Fat12
     );
     let at = parse(&Shape::fat16(65 + 4085, 16).bytes()).unwrap();
-    assert_eq!((at.fat_type(), at.clusters()), (FatType::Fat16, 4085));
+    assert_eq!(
+        (at.file_allocation_table_type(), at.clusters()),
+        (FileAllocationTableType::Fat16, 4085)
+    );
 
     // Two 256-sector tables: cluster 2 at sector 545.
     let below = parse(&Shape::fat16(545 + 65_524, 256).bytes()).unwrap();
     assert_eq!(
-        (below.fat_type(), below.clusters()),
-        (FatType::Fat16, 65_524)
+        (below.file_allocation_table_type(), below.clusters()),
+        (FileAllocationTableType::Fat16, 65_524)
     );
     assert_eq!(
         parse(&Shape::fat16(545 + 65_525, 256).bytes()),
@@ -232,13 +253,22 @@ fn the_type_follows_the_cluster_count_at_both_thresholds() {
 
     // Two 512-sector tables after 32 reserved sectors: cluster 2 at sector 1056.
     let at = parse(&Shape::fat32(1056 + 65_525, 512).bytes()).unwrap();
-    assert_eq!((at.fat_type(), at.clusters()), (FatType::Fat32, 65_525));
+    assert_eq!(
+        (at.file_allocation_table_type(), at.clusters()),
+        (FileAllocationTableType::Fat32, 65_525)
+    );
     assert_eq!(
         parse(&Shape::fat32(1056 + 65_524, 512).bytes()),
         Err(ParseError::LayoutContradictsClusterCount)
     );
-    assert_eq!(FatType::from_clusters(0), FatType::Fat12);
-    assert_eq!(FatType::from_clusters(u32::MAX), FatType::Fat32);
+    assert_eq!(
+        FileAllocationTableType::from_clusters(0),
+        FileAllocationTableType::Fat12
+    );
+    assert_eq!(
+        FileAllocationTableType::from_clusters(u32::MAX),
+        FileAllocationTableType::Fat32
+    );
 }
 
 #[test]
@@ -522,8 +552,10 @@ fn reading_through_a_device_checks_its_sector_size() {
     };
     let mut by_reference = &mut device;
     assert_eq!(
-        BootSector::read(&mut by_reference).unwrap().fat_type(),
-        FatType::Fat32
+        BootSector::read(&mut by_reference)
+            .unwrap()
+            .file_allocation_table_type(),
+        FileAllocationTableType::Fat32
     );
 
     let mut device = Image {

@@ -50,7 +50,7 @@ reset_control_deassert(trng->rst);
 ```
 
 The order is load-bearing, and Linux's own reset driver says why in a comment: *"if the
-associated clock is gated, deasserting might otherwise hang forever"*. `TRNG_BRING_UP` reproduces
+associated clock is gated, deasserting might otherwise hang forever"*. `ENTROPY_BRING_UP` reproduces
 it and a host test pins it, because a plan that deasserted first would wedge a boot on hardware and
 pass every test an emulator can run.
 
@@ -71,7 +71,7 @@ The rebase arithmetic is a host test (`the_two_trees_agree_on_the_identifiers`) 
 paragraph, so a renumbering upstream fails the build instead of surprising somebody at the bench.
 Every URL and fetch date is in `crates/jh7110_clock_and_reset/src/lib.rs`'s header.
 
-All three identifiers are STG-domain, so `TRNG_BRING_UP` means nothing without `STG`, and that
+All three identifiers are STG-domain, so `ENTROPY_BRING_UP` means nothing without `STG`, and that
 coupling is why `Step` has no domain field. A second device in a second domain carries its own plan
 and its own domain beside it; that is the time to decide whether the pair wants a type.
 

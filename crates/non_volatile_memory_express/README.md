@@ -51,7 +51,7 @@ assert_eq!((slot, sq.tail()), (0, 1));
 // Poll completion slot cq.head() until the controller's entry carries the expected phase.
 let done = Completion::from_dwords([0, 1 | (1 << 16), 0, 1 | (1 << 16)]);
 assert!(cq.is_owned(&done) && done.cid == 1 && done.status == 0);
-sq.record_head(done.sq_head);
+sq.record_head(done.submission_queue_head);
 let head = cq.pop(); // write `head` to doorbell(1, Doorbell::CompletionHead, dstrd)
 assert_eq!(head, 1);
 ```
@@ -62,8 +62,8 @@ assert_eq!(head, 1);
   no free-slot count.
 - `prp_pair` covers at most two pages. A transfer that needs a PRP list returns `None`.
 - `parse_identify_namespace` refuses LBA formats outside 512 bytes to 4 KiB per block.
-  `lba_format_shift` reports the shift it refused.
-- Not proven: the `Cap` decode beyond the doorbell stride, the status fields of
+  `logical_block_address_format_shift` reports the shift it refused.
+- Not proven: the `Capabilities` decode beyond the doorbell stride, the status fields of
   `Completion::from_dwords`, and anything in time, which belongs to the caller.
 
 The minimum supported Rust version is 1.88.

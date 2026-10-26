@@ -45,7 +45,7 @@ mod sector;
 mod table;
 mod volume;
 
-pub use boot_sector::{BootSector, FatType, ParseError, ReadError, RootDirectory};
+pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize};

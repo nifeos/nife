@@ -7,7 +7,7 @@
 //!
 //! This module computes and decodes; [`crate::Volume`] does the reading.
 
-use crate::boot_sector::{BootSector, FatType};
+use crate::boot_sector::{BootSector, FileAllocationTableType};
 
 /// **What one table entry says about the cluster after this one.**
 ///
@@ -30,15 +30,18 @@ pub enum TableEntry {
 }
 
 impl TableEntry {
-    /// **Decode `raw`, an entry as read from a table of `fat_type`.**
+    /// **Decode `raw`, an entry as read from a table of `file_allocation_table_type`.**
     ///
     /// A FAT12 entry keeps its low 12 bits and a FAT16 entry its low 16. A FAT32 entry keeps its
     /// low 28: the top four bits are reserved, and the specification says a reader ignores them.
-    pub const fn decode(fat_type: FatType, raw: u32) -> TableEntry {
-        let (value, bad) = match fat_type {
-            FatType::Fat12 => (raw & 0xFFF, 0xFF7),
-            FatType::Fat16 => (raw & 0xFFFF, 0xFFF7),
-            FatType::Fat32 => (raw & 0x0FFF_FFFF, 0x0FFF_FFF7),
+    pub const fn decode(
+        file_allocation_table_type: FileAllocationTableType,
+        raw: u32,
+    ) -> TableEntry {
+        let (value, bad) = match file_allocation_table_type {
+            FileAllocationTableType::Fat12 => (raw & 0xFFF, 0xFF7),
+            FileAllocationTableType::Fat16 => (raw & 0xFFFF, 0xFFF7),
+            FileAllocationTableType::Fat32 => (raw & 0x0FFF_FFFF, 0x0FFF_FFF7),
         };
         if value == 0 {
             TableEntry::Free
@@ -65,10 +68,10 @@ pub(crate) fn entry_position(boot: &BootSector, cluster: u32) -> Option<(u32, us
     let table = boot.active_table().unwrap_or_default();
     let first = boot.table_first_sector(table)?;
     let cluster = u64::from(cluster);
-    let offset = match boot.fat_type() {
-        FatType::Fat12 => cluster + cluster / 2,
-        FatType::Fat16 => cluster * 2,
-        FatType::Fat32 => cluster * 4,
+    let offset = match boot.file_allocation_table_type() {
+        FileAllocationTableType::Fat12 => cluster + cluster / 2,
+        FileAllocationTableType::Fat16 => cluster * 2,
+        FileAllocationTableType::Fat32 => cluster * 4,
     };
     let shift = boot.sector_size().shift();
     // Inside the table, by the parse's check, so the sector number fits a u32.
@@ -80,9 +83,13 @@ pub(crate) fn entry_position(boot: &BootSector, cluster: u32) -> Option<(u32, us
 /// The entry for `cluster` from the bytes that hold it: `low` the first byte, `high` the rest, as
 /// many as the width needs (one for FAT12 and FAT16, three for FAT32). FAT12 packs two entries
 /// into three bytes, so an odd cluster's entry is the high 12 bits of its two bytes.
-pub(crate) fn assemble(fat_type: FatType, cluster: u32, bytes: [u8; 4]) -> u32 {
-    match fat_type {
-        FatType::Fat12 => {
+pub(crate) fn assemble(
+    file_allocation_table_type: FileAllocationTableType,
+    cluster: u32,
+    bytes: [u8; 4],
+) -> u32 {
+    match file_allocation_table_type {
+        FileAllocationTableType::Fat12 => {
             let pair = u32::from(u16::from_le_bytes([bytes[0], bytes[1]]));
             if cluster & 1 == 1 {
                 pair >> 4
@@ -90,17 +97,17 @@ pub(crate) fn assemble(fat_type: FatType, cluster: u32, bytes: [u8; 4]) -> u32 {
                 pair & 0xFFF
             }
         }
-        FatType::Fat16 => u32::from(u16::from_le_bytes([bytes[0], bytes[1]])),
-        FatType::Fat32 => u32::from_le_bytes(bytes),
+        FileAllocationTableType::Fat16 => u32::from(u16::from_le_bytes([bytes[0], bytes[1]])),
+        FileAllocationTableType::Fat32 => u32::from_le_bytes(bytes),
     }
 }
 
 /// How many bytes an entry spans in the table: 2 for FAT12 (one and a half, read as two) and
 /// FAT16, 4 for FAT32.
-pub(crate) const fn entry_bytes(fat_type: FatType) -> usize {
-    match fat_type {
-        FatType::Fat12 | FatType::Fat16 => 2,
-        FatType::Fat32 => 4,
+pub(crate) const fn entry_bytes(file_allocation_table_type: FileAllocationTableType) -> usize {
+    match file_allocation_table_type {
+        FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 => 2,
+        FileAllocationTableType::Fat32 => 4,
     }
 }
 

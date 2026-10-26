@@ -165,7 +165,8 @@ fn take_from_firmware(regs_va: u64, caps: &Capabilities, bar_bytes: u64) {
     unsafe {
         core::ptr::write_volatile(
             (regs_va + at + 4) as *mut u32,
-            (ctl & !regs::LEGACY_SMI_ENABLES) | regs::LEGACY_SMI_EVENTS,
+            (ctl & !regs::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES)
+                | regs::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS,
         );
     }
 }

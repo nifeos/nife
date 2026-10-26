@@ -15,7 +15,8 @@
 
 use driver_process_contract::non_volatile_memory_express::Handoff;
 use non_volatile_memory_express::{
-    Cap, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace, SubmissionQueue, regs,
+    Capabilities, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace,
+    SubmissionQueue, regs,
 };
 
 use crate::arch::mmu;
@@ -99,7 +100,7 @@ pub enum Error {
     /// CAP describes a controller this driver cannot drive: queues too shallow, a minimum page
     /// size above the kernel's 4 KiB frames, or a doorbell stride whose file would not fit the
     /// one page of BAR0 an EL0 data plane is mapped
-    /// (`driver_process_contract::non_volatile_memory_express::MAX_DSTRD`).
+    /// (`driver_process_contract::non_volatile_memory_express::MAX_DOORBELL_STRIDE`).
     UnsupportedController,
 }
 
@@ -145,17 +146,17 @@ impl NonVolatileMemoryExpress {
             admin_cq: CompletionQueue::new(ENTRIES),
             ns: IdentifyNamespace {
                 blocks: 0,
-                lba_shift: 9,
+                logical_block_address_shift: 9,
             },
             cid: 0,
         };
-        let cap = Cap(c.reg64(regs::CAP));
+        let cap = Capabilities(c.reg64(regs::CAP));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
-        // naming the controller, not in a process that cannot reach its doorbells (`MAX_DSTRD`).
+        // naming the controller, not in a process that cannot reach its doorbells (`MAX_DOORBELL_STRIDE`).
         if cap.max_queue_entries() < ENTRIES as u32
             || cap.min_page_size() > page_frames::FRAME_SIZE
             || cap.doorbell_stride()
-                > driver_process_contract::non_volatile_memory_express::MAX_DSTRD
+                > driver_process_contract::non_volatile_memory_express::MAX_DOORBELL_STRIDE
         {
             return Err(Error::UnsupportedController);
         }
@@ -211,7 +212,8 @@ impl NonVolatileMemoryExpress {
             )
         };
         let refused = Error::UnsupportedNamespace {
-            lba_shift: non_volatile_memory_express::lba_format_shift(data).unwrap_or(0),
+            lba_shift: non_volatile_memory_express::logical_block_address_format_shift(data)
+                .unwrap_or(0),
             blocks: data
                 .get(0..8)
                 .and_then(|b| b.try_into().ok())
@@ -359,7 +361,7 @@ impl NonVolatileMemoryExpress {
             non_volatile_memory_express::doorbell(0, Doorbell::CompletionHead, self.dstrd),
             new_head as u32,
         );
-        self.admin_sq.record_head(c.sq_head);
+        self.admin_sq.record_head(c.submission_queue_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation worth dying on
         // legibly rather than misattributing a completion.

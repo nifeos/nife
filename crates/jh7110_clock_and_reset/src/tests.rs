@@ -184,11 +184,11 @@ fn the_trng_plan_enables_both_clocks_before_it_touches_the_reset() {
     // [mainline-rst]'s own comment is the reason this order is a test rather than a comment:
     // "if the associated clock is gated, deasserting might otherwise hang forever". A plan
     // that deasserted first would wedge the boot on hardware and pass every host test.
-    let reset_at = TRNG_BRING_UP
+    let reset_at = ENTROPY_BRING_UP
         .iter()
         .position(|s| matches!(s, Step::DeassertReset(_)))
         .expect("the plan must deassert something");
-    let clocks = TRNG_BRING_UP
+    let clocks = ENTROPY_BRING_UP
         .iter()
         .filter(|s| matches!(s, Step::EnableClock(_)))
         .count();

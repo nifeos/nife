@@ -80,12 +80,12 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// # Examples
 ///
 /// ```
-/// use jh7110_clock_and_reset::{STG, Step, TRNG_BRING_UP, CLOCK_ENABLE, is_deasserted};
+/// use jh7110_clock_and_reset::{STG, Step, ENTROPY_BRING_UP, CLOCK_ENABLE, is_deasserted};
 ///
 /// // The TRNG's plan is two clocks then one reset, in that order, which is the order
 /// // Linux's own probe takes: a reset deassert against a gated clock can hang forever.
 /// assert_eq!(
-///     TRNG_BRING_UP,
+///     ENTROPY_BRING_UP,
 ///     &[Step::EnableClock(15), Step::EnableClock(16), Step::DeassertReset(3)]
 /// );
 ///
@@ -100,7 +100,7 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// assert!(is_deasserted(0b1000, r.mask));
 /// assert!(!is_deasserted(0b0111, r.mask));
 /// ```
-pub const TRNG_BRING_UP: &[Step] = &[
+pub const ENTROPY_BRING_UP: &[Step] = &[
     Step::EnableClock(STGCLK_SEC_AHB),
     Step::EnableClock(STGCLK_SEC_MISC_AHB),
     Step::DeassertReset(STGRST_SEC_AHB),
@@ -306,7 +306,7 @@ pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 
 /// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
-/// then reset, for [`TRNG_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
+/// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
 /// gated clock "might otherwise hang forever".
 pub(crate) const PMIC_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
@@ -333,7 +333,7 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 
 /// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
 /// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
-/// [`TRNG_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
+/// [`ENTROPY_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
 /// radon's U-Boot has already brought the microSD controller up to load the boot script, and the
 /// bench step reads whether it left it that way before it walks the plan.

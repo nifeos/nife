@@ -68,7 +68,7 @@ covers both `PmicBus::plan` and `DevicePlan::plan`.
 | `SYS_WINDOW` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Kept as it stands. | yes |
 | `StandardMode` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `Step` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `TRNG_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `ENTROPY_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its abbreviation; the sequence brings up the entropy source). | yes |
 | `WindowLocation` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Found` (a word that could name almost anything; it is where a window was located). | yes |
 | `WindowSpelling` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Spelling` (a word that could name almost anything; it is one tree's spelling of a window). | yes |
 | `axi_cfg0_hz` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
