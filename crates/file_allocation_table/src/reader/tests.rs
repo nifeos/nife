@@ -11,9 +11,14 @@ pub(crate) const CLUSTERS: u32 = 350;
 /// The first data sector, where cluster 2 begins.
 pub(crate) const FIRST_DATA: usize = 6;
 
+/// The sectors the image stores: the metadata and the first 42 clusters, which every test that
+/// reads data uses. The device reads the rest as zeros, which keeps the image small enough to move
+/// by value on a test thread's stack.
+const STORED: usize = 48;
+
 /// A FAT12 volume in memory, and the one sector index its device refuses, if any.
 pub(crate) struct Image {
-    pub(crate) bytes: [u8; SECTORS * 512],
+    pub(crate) bytes: [u8; STORED * 512],
     pub(crate) refuse: Option<u64>,
 }
 
@@ -29,7 +34,10 @@ impl SectorDevice for Image {
             return Err(index);
         }
         let start = index as usize * 512;
-        buffer.copy_from_slice(&self.bytes[start..start + 512]);
+        match self.bytes.get(start..start + 512) {
+            Some(bytes) => buffer.copy_from_slice(bytes),
+            None => buffer.fill(0),
+        }
         Ok(())
     }
 }
@@ -37,7 +45,7 @@ impl SectorDevice for Image {
 impl Image {
     /// An empty FAT12 volume: 512-byte sectors, one per cluster, a 16-entry root region.
     pub(crate) fn fat12() -> Image {
-        let mut bytes = [0u8; SECTORS * 512];
+        let mut bytes = [0u8; STORED * 512];
         let boot = &mut bytes[..512];
         boot[0..3].copy_from_slice(&[0xEB, 0x3C, 0x90]);
         boot[11..13].copy_from_slice(&512u16.to_le_bytes());

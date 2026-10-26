@@ -5,7 +5,7 @@
 //! The slot parse is straight-line code, so its harness covers every slot. The sector harness
 //! runs on a FAT12 volume of up to three clusters of up to four sectors, over the chain walk's
 //! hostile table, the bound Kani needs to unroll it. The slots inside a sector are read at fixed
-//! offsets below the sector's size; whole images are `script/fuzz`'s.
+//! offsets below the sector's size; whole images are the fuzz target's.
 
 use super::*;
 use crate::reader::verification::HostileTable;
