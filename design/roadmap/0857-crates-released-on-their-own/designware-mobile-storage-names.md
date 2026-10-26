@@ -6,7 +6,7 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-118 names: 93 no block, 24 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 88 no block, 29 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 29 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -72,8 +72,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `card_clock` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `clock_divider` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `command` | item | `src/host.rs` | unrecorded. | yes | clear |
-| `fifo_depth` | item | `src/host.rs` | unrecorded. | yes | clear |
-| `fifo_step` | item | `src/host.rs` | unrecorded. | yes | clear |
+| `queue_depth` | item | `src/host.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors; was `fifo_depth`. | yes | clear |
+| `queue_step` | item | `src/host.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors; was `fifo_step`. | yes | clear |
 | `into_registers` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `new` | item | `src/host.rs` | unrecorded. | yes | clear |
 | `read` | item | `src/host.rs` | unrecorded. | yes | clear |
@@ -88,7 +88,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `new` | item | `src/idmac.rs` | provisional. | yes | clear |
 | `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `FIFO_DEPTH` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
+| `QUEUE_DEPTH` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors, and the device tree's `fifo-depth` keeps its spelling; was `FIFO_DEPTH`. | yes | clear |
 | `INTERRUPTS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `NODE_NAMES` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `SDIO0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
@@ -120,8 +120,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `WINDOW_USED` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `WRTPRT` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `uses_64_bit_direct_memory_access` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it; was `dma_64bit`. | yes | clear |
-| `fifo_offset` | item | `src/registers.rs` | unrecorded. | yes | clear |
-| `fifo_width` | item | `src/registers.rs` | unrecorded. | yes | clear |
+| `queue_offset` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors, and copied register names keep `FIFO`; was `fifo_offset`. | yes | clear |
+| `queue_width` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree authors; was `fifo_width`. | yes | clear |
 | `BLOCK` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `Card` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `InitializationError` | item | `src/sd.rs` | provisional. Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it; was `InitError`. | yes | clear |
@@ -165,3 +165,11 @@ Each renamed row's status says which ruling renamed it and what it was.
   limit becomes `MAXIMUM_DESCRIPTORS`. The parameters `cmd`, `div`, `off`, `v` and `src` become
   `command`, `divider`, `offset`, `value` and `source`. Rust's own `u32::MAX`, `min` and `max`
   stay, and so do `len` and the unit symbols `hz`, `us` and `ms`.
+- Ruled 2026-10-26 (UTC), tree-wide: `fifo` becomes `queue` in every name this tree authors, with
+  `doc(alias = "fifo")`, and copied register names (`FIFOTH`, `CTRL_FIFO_RESET`,
+  `STATUS_FIFO_FULL`) keep their spelling. `fifo_count`, `fifo_offset`, `fifo_width`,
+  `fifo_step`, `fifo_depth`, `wait_fifo`, `Error::FifoWidth` and `FIFO_DEPTH` become `queue_count`,
+  `queue_offset`, `queue_width`, `queue_step`, `queue_depth`, `wait_queue`, `Error::QueueWidth`
+  and `QUEUE_DEPTH`. The host's offset of the data queue is `queue_offset` and the simulator's
+  queue is `queue`. `Slot` and the handoff's `fifo_depth` fields become `queue_depth`; the device
+  tree's `fifo-depth` property keeps its spelling. The functions named for `FIFOTH` keep it.

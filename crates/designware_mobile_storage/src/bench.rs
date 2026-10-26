@@ -275,7 +275,7 @@ impl<R: Registers> Registers for Watch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
         if offset == crate::registers::STATUS {
-            self.maximum_fill = self.maximum_fill.max(crate::registers::fifo_count(v));
+            self.maximum_fill = self.maximum_fill.max(crate::registers::queue_count(v));
             if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
             }

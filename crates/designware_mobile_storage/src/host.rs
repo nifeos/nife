@@ -30,7 +30,8 @@ pub trait Registers {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
-    FifoWidth(u32),
+    #[doc(alias = "fifo")]
+    QueueWidth(u32),
     /// A reset bit in `CTRL` or `BMOD` did not clear: the word last read.
     ResetStuck(u32),
     /// The controller did not take a clock update (the start bit stayed set).
@@ -128,9 +129,13 @@ pub const fn card_clock(base: u32, divider: u8) -> u32 {
 /// **How many bytes the next FIFO step moves**: the FIFO's filled words (reading) or empty words
 /// (writing), in bytes, never more than `remaining`. A count the controller reports above `depth`
 /// is clamped to `depth`, so a confused `STATUS` cannot make a write overrun the FIFO.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
+/// authors; was `fifo_step`.
+#[doc(alias = "fifo")]
 #[must_use]
-pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
-    let filled = registers::fifo_count(status);
+pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
+    let filled = registers::queue_count(status);
     let filled = if filled > depth { depth } else { filled };
     let words = if write { depth - filled } else { filled };
     let bytes = words.saturating_mul(4);
@@ -142,7 +147,7 @@ pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> 
 /// makes a `Host<R, D>` whose every data phase goes through the IDMAC.
 pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess> {
     pub(crate) registers: R,
-    fifo: u32,
+    queue_offset: u32,
     pub(crate) depth: u32,
     base_hz: u32,
     pub(crate) direct_memory_access: Option<Idmac<D>>,
@@ -152,16 +157,16 @@ impl<R: Registers> Host<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
-    /// radon), and `fifo_depth` the tree's `fifo-depth` if it has one; without it the depth is read
+    /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is read
     /// from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
     ///
     /// # Errors
     ///
-    /// [`Error::FifoWidth`] for a 16- or 64-bit FIFO.
+    /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
     pub fn new(
         mut registers: R,
         base_hz: u32,
-        fifo_depth: Option<u32>,
+        queue_depth: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
             verid: registers.read(registers::VERID),
@@ -177,17 +182,17 @@ impl<R: Registers> Host<R> {
                 registers.read(registers::CTYPE),
             ],
         };
-        if registers::fifo_width(id.hcon) != Some(4) {
-            return Err(Error::FifoWidth((id.hcon >> 7) & 7));
+        if registers::queue_width(id.hcon) != Some(4) {
+            return Err(Error::QueueWidth((id.hcon >> 7) & 7));
         }
-        let depth = match fifo_depth {
+        let depth = match queue_depth {
             Some(d) if d > 0 => d,
             _ => registers::fifoth_rx_watermark(id.fifoth) + 1,
         };
         Ok((
             Host {
                 registers,
-                fifo: registers::fifo_offset(id.verid),
+                queue_offset: registers::queue_offset(id.verid),
                 depth,
                 base_hz,
                 direct_memory_access: None,
@@ -204,7 +209,7 @@ impl<R: Registers> Host<R> {
     pub fn with_idmac<D: DirectMemoryAccessRegion>(self, idmac: Idmac<D>) -> Host<R, D> {
         Host {
             registers: self.registers,
-            fifo: self.fifo,
+            queue_offset: self.queue_offset,
             depth: self.depth,
             base_hz: self.base_hz,
             direct_memory_access: Some(idmac),
@@ -214,8 +219,12 @@ impl<R: Registers> Host<R> {
 
 impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// The FIFO depth in words, as decided by [`Host::new`].
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
+    /// authors; was `fifo_depth`.
+    #[doc(alias = "fifo")]
     #[must_use]
-    pub fn fifo_depth(&self) -> u32 {
+    pub fn queue_depth(&self) -> u32 {
         self.depth
     }
 
@@ -274,7 +283,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         // OpenBSD's one block, 512 bytes, against radon's 128-byte FIFO overran the first read.
         // Written rather than assumed, since firmware may have set it. Before release 2.40a the
         // offset is the data FIFO, and a write there would be a word of data.
-        if self.fifo != registers::CARDTHRCTL {
+        if self.queue_offset != registers::CARDTHRCTL {
             self.registers.write(registers::CARDTHRCTL, 0);
         }
         Ok(())
@@ -439,14 +448,14 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let resp = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buf.len() {
-            let (status, rint) = self.wait_fifo(
+            let (status, rint) = self.wait_queue(
                 command.index,
                 registers::INT_RXDR,
                 (buf.len() - done) as u32,
             )?;
-            let n = fifo_step(status, self.depth, false, (buf.len() - done) as u32) as usize;
+            let n = queue_step(status, self.depth, false, (buf.len() - done) as u32) as usize;
             for chunk in buf[done..done + n].as_chunks_mut::<4>().0 {
-                *chunk = self.registers.read(self.fifo).to_le_bytes();
+                *chunk = self.registers.read(self.queue_offset).to_le_bytes();
             }
             done += n;
             self.registers
@@ -480,15 +489,15 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let resp = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buf.len() {
-            let (status, rint) = self.wait_fifo(
+            let (status, rint) = self.wait_queue(
                 command.index,
                 registers::INT_TXDR,
                 (buf.len() - done) as u32,
             )?;
-            let n = fifo_step(status, self.depth, true, (buf.len() - done) as u32) as usize;
+            let n = queue_step(status, self.depth, true, (buf.len() - done) as u32) as usize;
             for chunk in buf[done..done + n].as_chunks::<4>().0 {
                 let w = u32::from_le_bytes(*chunk);
-                self.registers.write(self.fifo, w);
+                self.registers.write(self.queue_offset, w);
             }
             done += n;
             self.registers
@@ -501,7 +510,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     /// Wait for the FIFO to want service (`want`) or the transfer to end; a data error ends it.
     /// Returns `STATUS` and `RINTSTS` once there is something to move.
-    fn wait_fifo(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
+    fn wait_queue(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
         let mut rint = 0;
         let mut status = 0;
         let depth = self.depth;
@@ -514,8 +523,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             status = registers.read(registers::STATUS);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
-            rint & want != 0 && fifo_step(status, depth, write, owed) > 0
-                || rint & registers::INT_DTO != 0 && fifo_step(status, depth, write, owed) > 0
+            rint & want != 0 && queue_step(status, depth, write, owed) > 0
+                || rint & registers::INT_DTO != 0 && queue_step(status, depth, write, owed) > 0
         });
         if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
             return Err(Error::Data(index, rint));
@@ -585,12 +594,12 @@ mod tests {
     #[test]
     fn a_fifo_step_moves_what_is_there_and_never_more_than_is_owed() {
         let filled = |n: u32| n << 17;
-        assert_eq!(fifo_step(filled(8), 32, false, 4096), 32);
-        assert_eq!(fifo_step(filled(8), 32, true, 4096), 96);
-        assert_eq!(fifo_step(filled(8), 32, false, 12), 12);
+        assert_eq!(queue_step(filled(8), 32, false, 4096), 32);
+        assert_eq!(queue_step(filled(8), 32, true, 4096), 96);
+        assert_eq!(queue_step(filled(8), 32, false, 12), 12);
         // A count above the depth (a confused STATUS) cannot overrun a write.
-        assert_eq!(fifo_step(filled(0x1fff), 32, true, 4096), 0);
-        assert_eq!(fifo_step(filled(0x1fff), 32, false, 4096), 128);
+        assert_eq!(queue_step(filled(0x1fff), 32, true, 4096), 0);
+        assert_eq!(queue_step(filled(0x1fff), 32, false, 4096), 128);
     }
 
     // The sequences below run against `sim`, which models the contract and, through its knobs, the
@@ -830,7 +839,7 @@ mod tests {
 
     /// A 48-word FIFO does not divide a 512-byte block, so the last step of a transfer is shorter
     /// than the FIFO: each step must move what is owed, not what fits. The read half is with a
-    /// `STATUS` that says the FIFO is full whatever it holds, which `fifo_step` exists to survive.
+    /// `STATUS` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
     #[test]
     fn the_last_fifo_step_moves_only_what_is_owed() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 48));

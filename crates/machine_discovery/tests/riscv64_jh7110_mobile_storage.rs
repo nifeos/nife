@@ -6,7 +6,7 @@
 //! against the board-shaped fixtures and the tree every CI boot uses.
 
 use designware_mobile_storage::jh7110::{
-    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, FIFO_DEPTH, INTERRUPTS, SDIO0_BASE, SDIO1_BASE,
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, INTERRUPTS, QUEUE_DEPTH, SDIO0_BASE, SDIO1_BASE,
     WINDOW_SIZE,
 };
 use device_tree_blob::DeviceTreeBlob;
@@ -22,7 +22,7 @@ fn radons_vendor_tree_names_both_slots_with_the_generic_binding_and_no_interrupt
     assert_eq!((sd.base, sd.size), (SDIO1_BASE, WINDOW_SIZE));
     assert_eq!(sd.compatible, COMPATIBLE_VENDOR);
     assert_eq!(sd.bus_width, 4);
-    assert_eq!(sd.fifo_depth, Some(FIFO_DEPTH));
+    assert_eq!(sd.queue_depth, Some(QUEUE_DEPTH));
     assert_eq!(sd.ciu_hz, 50_000_000);
     assert_eq!(sd.interrupt, None);
     assert!(sd.status_okay);

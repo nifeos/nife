@@ -479,7 +479,7 @@ mod tests {
         let mut h = polled_again(h);
         sd::read_blocks(&mut h, &card, 300, &mut back).unwrap();
         assert_eq!(back, second);
-        assert!(!h.registers().stray_fifo_write);
+        assert!(!h.registers().stray_queue_write);
     }
 
     /// On a slow bus a read's `DTO` lands while the IDMAC still has words to write. A driver that

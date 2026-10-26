@@ -105,11 +105,11 @@ pub struct Handoff {
     /// The slot's bus width: 1, 4 or 8.
     pub bus_width: u8,
     /// The FIFO's depth in words, 1 to 255.
-    pub fifo_depth: u8,
+    pub queue_depth: u8,
 }
 
 impl Handoff {
-    /// The three spawn words: `[ROLE << 48 | fifo_depth << 40 | writable << 39 | bus_width << 32
+    /// The three spawn words: `[ROLE << 48 | queue_depth << 40 | writable << 39 | bus_width << 32
     /// | ciu_hz, first, sectors]`.
     ///
     /// Name: provisional, carried 2026-10-25 (UTC) by lane crates-stand-alone-cuts from the driver
@@ -118,7 +118,7 @@ impl Handoff {
     pub const fn pack(&self) -> [u64; 3] {
         [
             ROLE << 48
-                | (self.fifo_depth as u64) << 40
+                | (self.queue_depth as u64) << 40
                 | (self.window.writable as u64) << 39
                 | ((self.bus_width & 0xf) as u64) << 32
                 | self.ciu_hz as u64,
@@ -145,12 +145,12 @@ impl Handoff {
             },
             ciu_hz: w0 as u32,
             bus_width,
-            fifo_depth: (w0 >> 40) as u8,
+            queue_depth: (w0 >> 40) as u8,
         };
         let ok = w0 >> 48 == ROLE
             && matches!(bus_width, 1 | 4 | 8)
             && h.ciu_hz != 0
-            && h.fifo_depth != 0
+            && h.queue_depth != 0
             && sectors != 0
             && sectors % SECTORS_PER_BLOCK == 0
             && first.checked_add(sectors).is_some();
@@ -175,7 +175,7 @@ mod tests {
             },
             ciu_hz: 50_000_000,
             bus_width: 4,
-            fifo_depth: 32,
+            queue_depth: 32,
         };
         assert_eq!(Handoff::unpack(h.pack()), Some(h));
         let ro = Handoff {

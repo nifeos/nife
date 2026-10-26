@@ -1,4 +1,4 @@
-use crate::host::fifo_step;
+use crate::host::queue_step;
 use crate::idmac::{DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for};
 use crate::partition::{Entry, Mbr};
 use crate::sd::in_range;
@@ -41,10 +41,10 @@ fn a_fifo_step_never_overruns_the_fifo_or_the_buffer() {
     kani::assume((1..=4096).contains(&depth));
     let write: bool = kani::any();
     let remaining: u32 = kani::any();
-    let n = fifo_step(status, depth, write, remaining);
+    let n = queue_step(status, depth, write, remaining);
     assert!(n <= remaining);
     assert!(n <= depth * 4);
-    let filled = crate::registers::fifo_count(status);
+    let filled = crate::registers::queue_count(status);
     if write && filled <= depth {
         assert!(n <= (depth - filled) * 4);
     }

@@ -159,7 +159,7 @@ pub struct Sim {
     registers: [u32; 0x220 / 4],
     reset_pending: bool,
     now: u64,
-    fifo: VecDeque<u32>,
+    queue: VecDeque<u32>,
     depth: usize,
     transfer: Option<Transfer>,
     state: State,
@@ -184,7 +184,7 @@ pub struct Sim {
     /// The release `VERID` reports, which decides where the FIFO is.
     verid: u32,
     /// Set when the driver wrote the FIFO with no write transfer in progress.
-    pub stray_fifo_write: bool,
+    pub stray_queue_write: bool,
     /// Faults to inject: the command index, which of its occurrences (from 0), and what happens.
     pub faults: Vec<(u8, usize, Fault)>,
     /// How many times each command index has been sent.
@@ -266,7 +266,7 @@ impl Sim {
             registers: [0; 0x220 / 4],
             reset_pending: false,
             now: 0,
-            fifo: VecDeque::new(),
+            queue: VecDeque::new(),
             depth,
             transfer: None,
             state: State::Idle,
@@ -282,7 +282,7 @@ impl Sim {
             busy_polls: 3,
             clockless_command: false,
             verid: VERID,
-            stray_fifo_write: false,
+            stray_queue_write: false,
             faults: Vec::new(),
             seen: [0; 64],
             zero_capacity: false,
@@ -584,7 +584,7 @@ impl Sim {
         if t.write {
             let limit = self.stall_after.unwrap_or(usize::MAX);
             while t.buffer.len() < limit
-                && let Some(w) = self.fifo.pop_front()
+                && let Some(w) = self.queue.pop_front()
             {
                 t.buffer.extend_from_slice(&w.to_le_bytes());
             }
@@ -611,7 +611,7 @@ impl Sim {
             }
             *self.register(registers::RINTSTS) |= registers::INT_TXDR;
         } else {
-            if self.threshold_beyond_fifo() {
+            if self.threshold_beyond_queue() {
                 // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
                 *self.register(registers::RINTSTS) |= registers::INT_FRUN | registers::INT_DTO;
                 return;
@@ -622,9 +622,9 @@ impl Sim {
                 return;
             }
             let limit = self.stall_after.unwrap_or(usize::MAX);
-            while self.fifo.len() < self.depth && t.moved < t.bytes && t.moved < limit {
+            while self.queue.len() < self.depth && t.moved < t.bytes && t.moved < limit {
                 let b = &t.buffer[t.moved..t.moved + 4];
-                self.fifo
+                self.queue
                     .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
                 t.moved += 4;
             }
@@ -633,7 +633,7 @@ impl Sim {
             } else {
                 0
             };
-            if self.fifo.len() > watermark {
+            if self.queue.len() > watermark {
                 *self.register(registers::RINTSTS) |= registers::INT_RXDR;
             }
             if t.moved >= t.bytes || (self.end_early && t.moved >= limit) {
@@ -670,9 +670,9 @@ impl Sim {
             }
             budget -= 1;
             let more = if self.direct_memory_access_write {
-                self.fifo.len() < self.depth
+                self.queue.len() < self.depth
             } else {
-                !self.fifo.is_empty()
+                !self.queue.is_empty()
             };
             if !more {
                 return;
@@ -706,9 +706,9 @@ impl Sim {
             };
             if self.direct_memory_access_write {
                 let b = &bus.bytes[buf..buf + 4];
-                self.fifo
+                self.queue
                     .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
-            } else if let Some(w) = self.fifo.pop_front() {
+            } else if let Some(w) = self.queue.pop_front() {
                 let w = w ^ u32::from(self.direct_memory_access_corrupts);
                 bus.bytes[buf..buf + 4].copy_from_slice(&w.to_le_bytes());
                 bus.device_unfenced = true;
@@ -765,8 +765,8 @@ impl Sim {
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
-    fn threshold_beyond_fifo(&self) -> bool {
-        if registers::fifo_offset(self.verid) == registers::CARDTHRCTL {
+    fn threshold_beyond_queue(&self) -> bool {
+        if registers::queue_offset(self.verid) == registers::CARDTHRCTL {
             return false;
         }
         let t = self.peek(registers::CARDTHRCTL);
@@ -793,9 +793,9 @@ impl Sim {
 
 impl Registers for Sim {
     fn read(&mut self, offset: u32) -> u32 {
-        let fifo = registers::fifo_offset(self.verid);
-        if offset == fifo {
-            let w = self.fifo.pop_front().unwrap_or(0xdead_dead);
+        let queue_offset = registers::queue_offset(self.verid);
+        if offset == queue_offset {
+            let w = self.queue.pop_front().unwrap_or(0xdead_dead);
             self.pump();
             return w;
         }
@@ -819,7 +819,7 @@ impl Registers for Sim {
                 let filled = if self.overreport_fill {
                     self.depth
                 } else {
-                    self.fifo.len()
+                    self.queue.len()
                 };
                 let mut s = (filled as u32) << 17;
                 if self.busy_forever {
@@ -853,16 +853,16 @@ impl Registers for Sim {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        let fifo = registers::fifo_offset(self.verid);
-        if offset == fifo {
+        let queue_offset = registers::queue_offset(self.verid);
+        if offset == queue_offset {
             if !self.transfer.as_ref().is_some_and(|t| t.write) {
-                self.stray_fifo_write = true;
+                self.stray_queue_write = true;
             }
             assert!(
-                self.fifo.len() < self.depth,
+                self.queue.len() < self.depth,
                 "FIFO overrun: the driver wrote into a full FIFO"
             );
-            self.fifo.push_back(value);
+            self.queue.push_back(value);
             return;
         }
         self.writes.push((offset, value));
@@ -896,7 +896,7 @@ impl Registers for Sim {
                     self.reset_pending =
                         !self.reset_stuck && !Self::holds(&mut self.ctrl_resets_cleared);
                     if value & registers::CTRL_FIFO_RESET != 0 {
-                        self.fifo.clear();
+                        self.queue.clear();
                     }
                     if value & registers::CTRL_CONTROLLER_RESET != 0 {
                         self.transfer = None;

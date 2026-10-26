@@ -257,7 +257,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         core::str::from_utf8(slot.compatible).unwrap_or("?"),
         if slot.status_okay { "okay" } else { "disabled" },
         slot.bus_width,
-        slot.fifo_depth,
+        slot.queue_depth,
         slot.ciu_hz,
         slot.interrupt,
     );
@@ -304,14 +304,14 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     // SAFETY: step 10 of `mmu::init` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match Host::new(window, ciu_hz, slot.fifo_depth) {
+    let (mut host, id) = match Host::new(window, ciu_hz, slot.queue_depth) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
             return Outcome::Controller(e);
         }
     };
-    print_identity(slot, &id, host.fifo_depth());
+    print_identity(slot, &id, host.queue_depth());
 
     let Some(buf) = pages(READ_PAGES) else {
         return Outcome::NoMemory;
@@ -550,8 +550,8 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
         id.verid,
         id.hcon,
         id.usrid,
-        registers::fifo_offset(id.verid),
-        registers::fifo_width(id.hcon),
+        registers::queue_offset(id.verid),
+        registers::queue_width(id.hcon),
         depth,
         registers::uses_64_bit_direct_memory_access(id.hcon),
         id.cdetect,
@@ -740,14 +740,14 @@ fn read_matrix(slot: &Slot) {
     };
     let ciu_hz = card_clock(slot, sys.base);
     let first = 2048;
-    for depth in [slot.fifo_depth, Some(128)] {
+    for depth in [slot.queue_depth, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.base) };
         let Ok((mut host, _)) = Host::new(Watch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };
-        let used = host.fifo_depth();
+        let used = host.queue_depth();
         let done = bench::read_matrix(&mut host, slot.bus_width, first, buf, |r| {
             println!(
                 "storage-matrix: depth {used} card {} Hz (asked {}) blocks {}: {:?} in {} us, \
