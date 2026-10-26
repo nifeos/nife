@@ -10,7 +10,7 @@
 use crate::host::{Host, Registers};
 use crate::idmac::DirectMemoryAccessRegion;
 use crate::partition::Mbr;
-use crate::sd::{self, BLOCK, Card, InitError, IoError};
+use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
 
 /// How many sectors the write test uses at most: 4 KiB, one multi-block command each way.
 pub const SCRATCH_SECTORS: u32 = 8;
@@ -39,7 +39,7 @@ pub struct ReadReport {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadFailure {
     /// Identification failed.
-    Init(InitError),
+    Initialization(InitializationError),
     /// A read failed: the block and the error.
     Read(u64, IoError),
 }
@@ -56,7 +56,7 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     buf: &mut [u8],
     timed_blocks: u64,
 ) -> Result<ReadReport, ReadFailure> {
-    let card = sd::identify(host, bus_width).map_err(ReadFailure::Init)?;
+    let card = sd::identify(host, bus_width).map_err(ReadFailure::Initialization)?;
     let mut sector = [0u8; BLOCK];
     sd::read_blocks(host, &card, 0, &mut sector).map_err(|e| ReadFailure::Read(0, e))?;
     let mbr = Mbr::parse(&sector);
@@ -337,11 +337,13 @@ pub fn read_matrix<R: Registers>(
     lba: u64,
     buf: &mut [u8],
     mut row: impl FnMut(MatrixRow),
-) -> Result<(), InitError> {
+) -> Result<(), InitializationError> {
     for &hz in &MATRIX_HZ {
         for &blocks in &MATRIX_BLOCKS {
             let card = sd::identify(host, bus_width)?;
-            let card_hz = host.set_clock(hz).map_err(InitError::Controller)?;
+            let card_hz = host
+                .set_clock(hz)
+                .map_err(InitializationError::Controller)?;
             let len = blocks as usize * BLOCK;
             let Some(dst) = buf.get_mut(..len) else {
                 continue;

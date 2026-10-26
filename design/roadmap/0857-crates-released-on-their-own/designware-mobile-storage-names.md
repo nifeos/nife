@@ -6,7 +6,7 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-118 names: 94 no block, 23 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 93 no block, 24 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 29 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -124,7 +124,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `fifo_width` | item | `src/registers.rs` | unrecorded. | yes | clear |
 | `BLOCK` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `Card` | item | `src/sd.rs` | unrecorded. | yes | clear |
-| `InitError` | item | `src/sd.rs` | unrecorded. | yes | clear |
+| `InitializationError` | item | `src/sd.rs` | provisional. Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it; was `InitError`. | yes | clear |
 | `IoError` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `Kind` | item | `src/sd.rs` | unrecorded. | yes | generic |
 | `address` | item | `src/sd.rs` | unrecorded. | yes | clear |
@@ -141,7 +141,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
 - the fields of `ReadReport` (7), `IdmacReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
-- the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitError` (9), `IoError` (4) and the private `Fault` (4);
+- the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitializationError` (9), `IoError` (4) and the private `Fault` (4);
 - the methods of the traits `Registers` (3) and `DirectMemoryAccessRegion` (7).
 
 ## Rulings applied before ratification
@@ -156,3 +156,6 @@ Each renamed row's status says which ruling renamed it and what it was.
   `dma_64bit` becomes `uses_64_bit_direct_memory_access`, which also reads as the question it
   answers. Names copied from the databook (`CTRL_DMA_RESET`, `CTRL_USE_INTERNAL_DMAC`) keep
   their spelling.
+- Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it.
+  `InitError` becomes `InitializationError`, the noun of the ruled verb, and the bench's
+  `ReadFailure::Init` becomes `ReadFailure::Initialization`.

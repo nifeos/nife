@@ -4,7 +4,7 @@
 use crate::bench::{self, WriteVerdict};
 use crate::card;
 use crate::host::{Error, Host};
-use crate::sd::{self, BLOCK, InitError, IoError, Kind};
+use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
 use crate::sim::{CardKind, Sim};
 
 fn host(kind: CardKind, blocks: usize) -> Host<Sim> {
@@ -74,7 +74,7 @@ fn an_empty_slot_is_no_card_not_a_hang() {
     let mut h = host(CardKind::Empty, 1024);
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::NoCard(Error::NoResponse(1)))
+        Err(InitializationError::NoCard(Error::NoResponse(1)))
     ));
 }
 
@@ -335,7 +335,7 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
     let mut h = faulty(CardKind::SdHighCapacity, 8192, &[(8, 0, Fault::EchoWrong)]);
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::InterfaceCondition(r)) if r & 0xfff != 0x1aa
+        Err(InitializationError::InterfaceCondition(r)) if r & 0xfff != 0x1aa
     ));
 }
 
@@ -347,7 +347,7 @@ fn a_card_that_never_finishes_power_up_is_reported_with_its_last_ocr() {
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
         assert!(matches!(
             sd::identify(&mut h, 4),
-            Err(InitError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
         ));
     }
 }
@@ -361,7 +361,7 @@ fn an_sd_2_0_card_silent_to_its_first_app_command_is_no_card_not_an_emmc() {
     );
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::NoCard(Error::NoResponse(55)))
+        Err(InitializationError::NoCard(Error::NoResponse(55)))
     ));
 }
 
@@ -375,14 +375,17 @@ fn each_identification_step_names_itself_when_the_card_goes_silent() {
         );
         assert_eq!(
             sd::identify(&mut h, 4),
-            Err(InitError::Identify(index, Error::NoResponse(index))),
+            Err(InitializationError::Identify(
+                index,
+                Error::NoResponse(index)
+            )),
             "CMD{index}"
         );
     }
     let mut h = faulty(CardKind::Mmc, 16_384, &[(3, 0, Fault::NoResponse)]);
     assert_eq!(
         sd::identify(&mut h, 8),
-        Err(InitError::Identify(3, Error::NoResponse(3)))
+        Err(InitializationError::Identify(3, Error::NoResponse(3)))
     );
 }
 
@@ -397,7 +400,10 @@ fn each_configuration_step_names_itself_when_the_card_goes_silent() {
         );
         assert_eq!(
             sd::identify(&mut h, 4),
-            Err(InitError::Configure(index, Error::NoResponse(index))),
+            Err(InitializationError::Configure(
+                index,
+                Error::NoResponse(index)
+            )),
             "CMD{index}"
         );
     }
@@ -405,7 +411,7 @@ fn each_configuration_step_names_itself_when_the_card_goes_silent() {
     let mut h = faulty(CardKind::Mmc, 16_384, &[(8, 1, Fault::NoResponse)]);
     assert_eq!(
         sd::identify(&mut h, 8),
-        Err(InitError::Configure(8, Error::NoResponse(8)))
+        Err(InitializationError::Configure(8, Error::NoResponse(8)))
     );
 }
 
@@ -416,11 +422,13 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
         8192,
         &[(7, 0, Fault::ErrorStatus)],
     );
-    assert!(matches!(sd::identify(&mut h, 4), Err(InitError::Status(7, r)) if r & (1 << 19) != 0));
+    assert!(
+        matches!(sd::identify(&mut h, 4), Err(InitializationError::Status(7, r)) if r & (1 << 19) != 0)
+    );
     let mut h = faulty(CardKind::Mmc, 16_384, &[(3, 0, Fault::ErrorStatus)]);
     assert!(matches!(
         sd::identify(&mut h, 8),
-        Err(InitError::Status(3, _))
+        Err(InitializationError::Status(3, _))
     ));
     let mut h = faulty(
         CardKind::SdHighCapacity,
@@ -429,7 +437,7 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
     );
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitError::Status(16, _))
+        Err(InitializationError::Status(16, _))
     ));
 }
 
@@ -438,7 +446,10 @@ fn a_csd_this_driver_cannot_size_is_refused_with_its_structure() {
     let mut sim = Sim::new(CardKind::SdHighCapacity, 8192, 32);
     sim.zero_capacity = true;
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    assert_eq!(sd::identify(&mut h, 4), Err(InitError::Capacity(3)));
+    assert_eq!(
+        sd::identify(&mut h, 4),
+        Err(InitializationError::Capacity(3))
+    );
 }
 
 #[test]
@@ -706,7 +717,7 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
         let _ = tx.send(matches!(
             sd::identify(&mut h, 8),
-            Err(InitError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
+            Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
         ));
     });
     assert_eq!(

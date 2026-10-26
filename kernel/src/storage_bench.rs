@@ -17,7 +17,7 @@ use designware_mobile_storage::host::{Error, Host, Identity, Registers};
 use designware_mobile_storage::idmac::{DirectMemoryAccessRegion, Idmac, Refusal};
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::registers;
-use designware_mobile_storage::sd::{self, BLOCK, InitError, IoError, Kind};
+use designware_mobile_storage::sd::{self, BLOCK, InitializationError, IoError, Kind};
 
 use crate::designware_mobile_storage::{Region, Window};
 use crate::{arch, println};
@@ -101,7 +101,7 @@ enum Outcome {
     /// The kernel had no pages for a buffer.
     NoMemory,
     /// Identification stopped: no card, or a card that did not finish.
-    NoCard(InitError),
+    NoCard(InitializationError),
     /// A read failed: the block and the error.
     ReadFailed(u64, IoError),
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
@@ -317,7 +317,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::NoMemory;
     };
     let r = match bench::read_only(&mut host, slot.bus_width, buf, TIMED_BLOCKS) {
-        Err(ReadFailure::Init(e)) => {
+        Err(ReadFailure::Initialization(e)) => {
             say!(slot, "identification stopped: {e:?}");
             return Outcome::NoCard(e);
         }

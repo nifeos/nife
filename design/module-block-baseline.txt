@@ -1036,7 +1036,6 @@ crates/designware_mobile_storage/src/registers.rs::fifo_width
 crates/designware_mobile_storage/src/sd.rs
 crates/designware_mobile_storage/src/sd.rs::BLOCK
 crates/designware_mobile_storage/src/sd.rs::Card
-crates/designware_mobile_storage/src/sd.rs::InitError
 crates/designware_mobile_storage/src/sd.rs::IoError
 crates/designware_mobile_storage/src/sd.rs::Kind
 crates/designware_mobile_storage/src/sd.rs::address
