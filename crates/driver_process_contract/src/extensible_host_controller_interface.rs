@@ -1,18 +1,14 @@
-//! **What the kernel and the USB keyboard driver agree on about one xHCI controller**: which pages
-//! of the register file the driver is mapped ([`register_window`]), the three words the kernel
-//! hands
-//! it at spawn ([`Handoff`]), and how many pages of the DMA region are the driver's
-//! ([`WORK_PAGES`],
-//! [`region_pages`]). The register and ring arithmetic is `extensible_host_controller_interface`'s;
-//! this is nife's process plan on top of it, which the 2026-10-25 names ruling moved out of that
-//! crate so it carries only the xHCI specification.
+//! What the kernel and the USB keyboard driver (`components/src/usb_keyboard_driver.rs`) agree on
+//! about one xHCI controller: which pages of its register file the driver is mapped
+//! ([`register_window`]), the three spawn words ([`Handoff`]), and how many pages of the DMA region
+//! are the driver's ([`WORK_PAGES`], [`region_pages`]). The register and ring arithmetic is
+//! `extensible_host_controller_interface`'s; this is nife's process plan on top of it, which the
+//! 2026-10-25 names ruling moved out of that crate so it carries only the xHCI specification.
 //!
-//! Name: provisional, minted 2026-10-26 (UTC) by lane xhci-names-ratified. `_contract` because two
-//! binaries agree on it, as `filesystem_contract` and `login_contract` are named.
+//! Name: provisional, minted 2026-10-26 (UTC) by lane xhci-names-ratified, after the crate it
+//! serves, as this crate's other modules are named.
 
-#![no_std]
-
-use extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
+use ::extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
 
 /// **How many pages of the register file a driver can be mapped**: the bits of [`Handoff`]'s
 /// register mask. 64 KiB, which is the BAR of every Intel xHCI this project has read about; a
@@ -140,7 +136,7 @@ pub enum WindowRefusal {
 ///
 /// ```
 /// use extensible_host_controller_interface::Capabilities;
-/// use extensible_host_controller_interface_contract::register_window;
+/// use driver_process_contract::extensible_host_controller_interface::register_window;
 ///
 /// // qemu-xhci's capability registers: 0x40 bytes of them, 64 slots, 4 ports, runtime at 0x1000,
 /// // doorbells at 0x2000.
@@ -179,10 +175,13 @@ pub fn register_window(
     Ok(mask)
 }
 
+#[cfg(kani)]
+mod proofs;
+
 #[cfg(test)]
 mod tests {
     extern crate std;
-    use extensible_host_controller_interface::dma::*;
+    use ::extensible_host_controller_interface::dma::*;
 
     use super::*;
 
@@ -305,51 +304,5 @@ mod tests {
             region_pages(MAX_SCRATCHPADS) - 1,
             WORK_PAGES + u64::from(MAX_SCRATCHPADS) - 1
         );
-    }
-}
-
-#[cfg(kani)]
-mod verification {
-    use super::*;
-
-    /// **No page that overlaps a withheld range is ever in the mask**, for any capability values,
-    /// any BAR size and any one withheld range: the MSI-X table is never mapped into the driver.
-    /// Falsification: replayable `crates/extensible_host_controller_interface_contract/falsifications/verification.the_window_never_maps_a_withheld_page.patch`
-    #[kani::proof]
-    #[kani::unwind(18)]
-    fn the_window_never_maps_a_withheld_page() {
-        let capabilities = Capabilities::decode(
-            kani::any(),
-            kani::any(),
-            kani::any(),
-            kani::any(),
-            kani::any(),
-            kani::any(),
-        );
-        let bar: u64 = kani::any();
-        let a: u64 = kani::any();
-        let len: u64 = kani::any();
-        kani::assume(len > 0 && len <= 0x1_0000 && a <= u64::MAX - len);
-        if let Ok(mask) = register_window(&capabilities, bar, &[(a, a + len)]) {
-            for page in 0..MAX_REGISTER_PAGES {
-                if mask & (1 << page) != 0 {
-                    let (s, e) = (page * PAGE_BYTES, (page + 1) * PAGE_BYTES);
-                    assert!(!(a < e && s < a + len));
-                }
-            }
-            assert!(mask >> MAX_REGISTER_PAGES == 0);
-        }
-    }
-
-    /// **The handoff round-trips, and anything `unpack` accepts is a layout the driver can use.**
-    /// Falsification: replayable `crates/extensible_host_controller_interface_contract/falsifications/verification.the_handoff_round_trips.patch`
-    #[kani::proof]
-    fn the_handoff_round_trips() {
-        let w: [u64; 3] = kani::any();
-        if let Some(h) = Handoff::unpack(w) {
-            assert_eq!(h.pack(), w);
-            assert!(u64::from(h.dma_pages) >= WORK_PAGES);
-            assert!(h.registers & 1 != 0);
-        }
     }
 }

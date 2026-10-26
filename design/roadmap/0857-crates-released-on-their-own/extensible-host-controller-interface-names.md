@@ -10,8 +10,9 @@ Ratified: 2026-10-25 (#2720).
 The ruling of that date ratified every name below; register names keep the specification's
 spelling. Each row with a refusal names the spelling the ruling turned down and why. The same ruling
 moved nife's process plan out of the crate. `Handoff`, `register_window`, `WindowRefusal`,
-`MAX_REGISTER_PAGES`, `WORK_PAGES` and `region_pages` sit in the nife-internal crate
-`extensible_host_controller_interface_contract`. The bring-up report sits in the nife crate
+`MAX_REGISTER_PAGES`, `WORK_PAGES` and `region_pages` sit in the module
+`extensible_host_controller_interface` of the nife-internal crate `driver_process_contract`. The
+bring-up report sits in the nife crate
 `usb_keyboard_report`. Neither publishes, and their names follow nife's ordinary naming, with no row
 here. A new name in this crate takes a row here, `provisional` until a ruling, and `script/lint`
 fails a module or `pub` item without one.

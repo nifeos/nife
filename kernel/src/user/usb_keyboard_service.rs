@@ -11,7 +11,9 @@
 //! Name: provisional. A `<program>_service`, as `non_volatile_memory_express_service` is, so its
 //! name is the program's plus the suffix and carries no decision of its own.
 
-use extensible_host_controller_interface_contract::{MAX_REGISTER_PAGES, WORK_PAGES};
+use driver_process_contract::extensible_host_controller_interface::{
+    MAX_REGISTER_PAGES, WORK_PAGES,
+};
 use usb_keyboard_report as report;
 
 use super::*;

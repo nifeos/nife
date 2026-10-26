@@ -225,7 +225,6 @@ dependencies = [
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
- "extensible_host_controller_interface_contract",
  "file_allocation_table",
  "filesystem_contract",
  "filesystem_fixture",
@@ -445,6 +444,7 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "extensible_host_controller_interface",
  "filesystem_contract",
 ]
 
@@ -473,13 +473,6 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0"
-
-[[package]]
-name = "extensible_host_controller_interface_contract"
-version = "0.1.0"
-dependencies = [
- "extensible_host_controller_interface",
-]
 
 [[package]]
 name = "file_allocation_table"
@@ -756,7 +749,6 @@ dependencies = [
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
- "extensible_host_controller_interface_contract",
  "filesystem_contract",
  "filesystem_fixture",
  "firmware_configuration",

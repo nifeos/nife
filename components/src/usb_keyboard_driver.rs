@@ -43,11 +43,11 @@
 #![allow(missing_docs)]
 #![no_main]
 
+use driver_process_contract::extensible_host_controller_interface::Handoff;
 use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
     TransferRequestBlockPlacement, completion, context, dma, port, regs,
 };
-use extensible_host_controller_interface_contract::Handoff;
 use line_editor::proto;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
@@ -75,14 +75,15 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const REGS: MappedWindow = unsafe {
     MappedWindow::new(
         REGS_VA,
-        extensible_host_controller_interface_contract::MAX_REGISTER_PAGES * PAGE_BYTES,
+        driver_process_contract::extensible_host_controller_interface::MAX_REGISTER_PAGES
+            * PAGE_BYTES,
     )
 };
 // SAFETY: the kernel maps the WORK_PAGES pages read/write at DMA_VA before `_start` runs.
 const DMA: MappedWindow = unsafe {
     MappedWindow::new(
         DMA_VA,
-        extensible_host_controller_interface_contract::WORK_PAGES * PAGE_BYTES,
+        driver_process_contract::extensible_host_controller_interface::WORK_PAGES * PAGE_BYTES,
     )
 };
 // SAFETY: the control buffer page, inside the DMA window above.
@@ -601,7 +602,7 @@ impl Host {
             ));
         }
         if u64::from(dma_pages)
-            < extensible_host_controller_interface_contract::region_pages(
+            < driver_process_contract::extensible_host_controller_interface::region_pages(
                 self.capabilities.scratchpads,
             )
         {
@@ -626,7 +627,10 @@ impl Host {
             for i in 0..u64::from(self.capabilities.scratchpads) {
                 DMA.w64(
                     dma::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
-                    phys(extensible_host_controller_interface_contract::WORK_PAGES + i),
+                    phys(
+                        driver_process_contract::extensible_host_controller_interface::WORK_PAGES
+                            + i,
+                    ),
                 );
             }
             DMA.w64(

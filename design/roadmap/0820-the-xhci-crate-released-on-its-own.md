@@ -45,8 +45,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   crate or move to the driver is the lane's call, recorded in its pull request.
 - Ruled 2026-10-25 (UTC), on #2720: nife's process plan and the bring-up report leave the crate.
   Pull request #2737 moved `Handoff`, `register_window`, `WindowRefusal`, `MAX_REGISTER_PAGES`,
-  `WORK_PAGES`, `region_pages` and two harnesses into the nife-internal crate
-  `extensible_host_controller_interface_contract` (a provisional name). The `report` module became
+  `WORK_PAGES`, `region_pages` and two harnesses into a module of the nife-internal crate
+  `driver_process_contract`, which holds each driver's process layout. The `report` module became
   the nife crate `usb_keyboard_report` (provisional too). [The names
   record](0857-crates-released-on-their-own/extensible-host-controller-interface-names.md) holds
   the crate's remaining names, all ratified.
@@ -66,8 +66,7 @@ harness that proves it, or says `none yet`; every named harness carries a falsif
 makes it fail at its own assertion. Each patch is at
 `crates/extensible_host_controller_interface/falsifications/`. Measured 2026-10-11 (UTC): 3 of 5
 proven. Since #2737 the crate carries one harness. The window and handoff rows left with their code
-for `extensible_host_controller_interface_contract`, which does not publish, so the crate proves 1
-of 3.
+for `driver_process_contract`, which does not publish, so the crate proves 1 of 3.
 
 | property | harness |
 |---|---|

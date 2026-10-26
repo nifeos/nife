@@ -8,15 +8,15 @@ name = "display"
 kind = "optional"
 home = { repo = "display", status = "provisional" }
 # `extensible_host_controller_interface` is linked by the kernel, which finds and confines the xHCI
-# controller, and by `usb_keyboard_driver`, which drives it; the window, the spawn handoff and the
-# bring-up report the two agree on are `extensible_host_controller_interface_contract` and
-# `usb_keyboard_report`. All three are interfaces for the reason `e1000e` is one in `drivers`.
+# controller, and by `usb_keyboard_driver`, which drives it, and by `driver_process_contract`
+# (contracts), which draws the driver's register window from it. `usb_keyboard_report` is the
+# bring-up report the kernel and the driver agree on. Both are interfaces for the reason `e1000e`
+# is one in `drivers`.
 interfaces = [
     "compositor",
     "video_terminal",
     "glyph_atlas",
     "extensible_host_controller_interface",
-    "extensible_host_controller_interface_contract",
     "usb_keyboard_report",
 ]
 crates = ["usb", "glyph_atlas_generator"]
