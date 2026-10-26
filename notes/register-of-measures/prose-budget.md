@@ -14,9 +14,9 @@ UTC).
 The scope is every `.md` directly under `design/`, `design/decisions/`, `design/roadmap/`,
 `design/roadmap/proposals/`, `notes/`, `notes/coes/` and `briefs/`, plus `AGENTS.md`, plus their
 appendices and `design/tenets/`. That is the ruling's own evidence scope with the appendices §212
-puts under the same cap. It is one definition, `documents()` in
-`helpers/prose_ratchet.py`. Words are whitespace-separated over the whole file, less a generated
-table (`budget_words`), so each appendix is counted as its own document.
+puts under the same cap. It is one definition, `documents()` in `helpers/prose_ratchet.py`. Words
+are the whitespace-separated tokens over the whole file, less a generated table (`budget_words`), so
+each appendix counts as its own document.
 
 ## BUGS
 

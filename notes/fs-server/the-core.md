@@ -20,10 +20,10 @@ to forget.
 
 Rights ride on the handle rather than on the session. A child directory handle is a different
 authority from its parent, held at the same time by the same client. A session-wide field could not
-express that. A file handle is attenuated to `READ | WRITE` the moment it is minted, so it inherits
-the direction its directory was granted with and can never widen it. That is also why the three
-mtime verbs take a name under a directory handle: `SETTIME` could never be checked against a file
-handle's rights.
+express that. The server attenuates a file handle to `READ | WRITE` at the moment of minting, so the
+handle inherits the direction its directory was granted with and can never widen it. That is also
+why the three mtime verbs take a name under a directory handle: `SETTIME` could never be checked
+against a file handle's rights.
 
 The table is per server, not per client. Two clients sharing an endpoint share these handles, and a
 rights-carrying handle attenuates only its holder. The handle is the authority and the endpoint is
@@ -83,9 +83,9 @@ read-only holder has nothing outstanding to make durable.
 
 ## Names
 
-A name is copied out of the client's window before anything judges it (milestone 825 (a hostile
-client races the file server's name window)). The window is the client's shared page, and a confined
-client can run a second thread that rewrites it. Every verb that takes a path name takes a
+The server copies a name out of the client's window before anything judges it (milestone 825 (a
+hostile client races the file server's name window)). The window is the client's shared page, and a
+confined client can run a second thread that rewrites it. Every verb that takes a path name takes a
 `NameCopy`, whose only constructor copies into the server's own buffer and validates UTF-8 there.
 The check (`check_component`) runs where each verb has always run it, after `dir_at` for the path
 verbs, which keeps every verb's error order. That is why it is not in the constructor.
@@ -193,9 +193,9 @@ mutation runs in one transaction, so an attribute and its file reach the platter
   file that has some. The crash harness met the same false negative.
 - A blob longer than `xattr::store::MAXIMUM_BYTES` is `EIO`, never a partial read of a file the layer did
   not write.
-- A write is followed by a truncate to the new length. A write does not truncate, and a shorter blob
-  would otherwise leave the old tail for the reader to walk (the failure DECISIONS §27 (the
-  filesystem service: a capability-shaped contract) records).
+- The store follows a write with a truncate to the new length. A write does not truncate, and a
+  shorter blob would otherwise leave the old tail for the reader to walk (the failure DECISIONS §27
+  (the filesystem service: a capability-shaped contract) records).
 - An empty blob removes the file, so "no file" and "no attributes" stay one statement.
 - The store directory goes with its last blob. `remove_node` with `MODE_DIR` already refuses a
   non-empty directory, so the engine's check is the emptiness test and costs one lookup.

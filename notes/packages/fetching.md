@@ -86,7 +86,7 @@ at most `socket_contract::DATA_MAXIMUM` bytes each, and the body is a package th
 That is the borrowing shape `package_archive` uses, for the same reason: the first consumer has no
 allocator.
 
-The head is parsed by `httparse`, the parser under `hyper`. It is `no_std`, has no dependencies and
+`httparse`, the parser under `hyper`, parses the head. It is `no_std`, has no dependencies and
 no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status tells the reader the head has
 not ended yet. The policy around it stays this crate's, because a general HTTP parser is
 deliberately more lenient than a package client should be:
@@ -95,8 +95,8 @@ deliberately more lenient than a package client should be:
   client that accepts that cannot tell a complete package from a truncated one. The net server also
   reports a peer's close as a failed receive after a bounded wait, not as an end. A digest would
   still catch the truncation; refusing it says why.
-- `Transfer-Encoding` is refused, chunked included. A `GET` sent as HTTP/1.0 is never owed a
-  chunked reply, so a server sending one is not speaking to us.
+- `http_response` refuses `Transfer-Encoding`, chunked included. A `GET` sent as HTTP/1.0 is never
+  owed a chunked reply, so a server sending one is not speaking to us.
 - Lines end in CRLF. `httparse` also accepts a bare LF, and a client that does can be made to
   disagree with a proxy about where a line stops. A duplicated `Content-Length` must agree with
   itself.

@@ -36,12 +36,13 @@ carries one `i64`, and two 64-bit counts do not fit in one however they are pack
 ## It demands no right
 
 It takes any handle this server minted, file or directory. The handle is the *qualification* rather
-than the subject. Holding one is what entitles a caller to ask, and the answer is about the one image
-behind all of them, so `EBADF` for a handle nobody minted is the whole check. It is validated and then
-not used, which looks odd in the code and is the point. Demanding `dir::READ` would have left a
-write-only grant unable to answer the one question it has: whether its next write fits. So the verb
-table's row is `needs_all: 0`, beside `FSTAT` and `CLOSE`. `verb::file_grant::POLICY` forwards it.
-`STATFS` is the one directory-shaped question that means something through a file capability.
+than the subject. Holding one is what entitles a caller to ask, and the answer is about the one
+image behind all of them, so `EBADF` for a handle nobody minted is the whole check. The server
+validates the handle and then does not use it, which looks odd in the code and is the point.
+Demanding `dir::READ` would have left a write-only grant unable to answer the one question it has:
+whether its next write fits. So the verb table's row is `needs_all: 0`, beside `FSTAT` and `CLOSE`.
+`verb::file_grant::POLICY` forwards it. `STATFS` is the one directory-shaped question that means
+something through a file capability.
 
 ## Honest limits, both recorded at the verb
 

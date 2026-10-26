@@ -71,9 +71,9 @@ version.
 
 §250 puts the index's address in the image, and calef's Q2 on #1884 gave it a backup address tried
 when the first stops answering. Both live in the image's `package_index_sources` archive entry, as
-text the archive build writes. The entry is packed before the measurement table, so the kernel's
-table vouches for it as it vouches for `package_archive::CATALOG`. The image, not the program,
-names its index, so basalt can compose an image that names another without rebuilding `jig`
+text the archive build writes. The archive build packs the entry before the measurement table, so
+the kernel's table vouches for it as it vouches for `package_archive::CATALOG`. The image, not the
+program, names its index, so basalt can compose an image that names another without rebuilding `jig`
 (milestone 909 (basalt composes the bootable image from its packages)).
 
 ```text
