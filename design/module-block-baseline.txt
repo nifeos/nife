@@ -834,7 +834,6 @@ crates/designware_ethernet/src/controller.rs::Error
 crates/designware_ethernet/src/controller.rs::Identity
 crates/designware_ethernet/src/controller.rs::configure
 crates/designware_ethernet/src/controller.rs::core_version
-crates/designware_ethernet/src/controller.rs::mac_conf
 crates/designware_ethernet/src/controller.rs::read
 crates/designware_ethernet/src/controller.rs::soft_reset
 crates/designware_ethernet/src/controller.rs::start

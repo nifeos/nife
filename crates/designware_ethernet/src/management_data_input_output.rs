@@ -94,8 +94,12 @@ pub enum Error {
     /// The busy bit stayed set for [`COMMAND_LIMIT_US`]: the MAC's CSR clock is off, or the
     /// command never started.
     Timeout {
-        /// The PHY addressed.
-        physical_layer_device: u8,
+        /// The PHY (physical layer device) addressed, by its bus address.
+        ///
+        /// Name: ratified 2026-10-26 (#2762), Decision 50: a `u8` PHY bus address is
+        /// `physical_layer_device_address`, replacing `phy`.
+        #[doc(alias = "phy")]
+        physical_layer_device_address: u8,
         /// The register addressed.
         register: u8,
     },
@@ -104,9 +108,9 @@ pub enum Error {
 /// **An MDIO command word**: the clock range, the PHY and register addresses, the operation, and
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
 /// rather than spilling into the neighbors.
-pub const fn command(physical_layer_device: u8, register: u8, write: bool) -> u32 {
+pub const fn command(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
     (CR_500_800 << CR_SHIFT)
-        | (((physical_layer_device & 0x1f) as u32) << PA_SHIFT)
+        | (((physical_layer_device_address & 0x1f) as u32) << PA_SHIFT)
         | (((register & 0x1f) as u32) << RDA_SHIFT)
         | if write { GOC_WRITE } else { GOC_READ }
         | GB
@@ -119,17 +123,22 @@ pub const fn command(physical_layer_device: u8, register: u8, write: bool) -> u3
 /// `Mdio`.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
-    /// Read register `register` of the PHY at `physical_layer_device`.
-    fn read(&mut self, physical_layer_device: u8, register: u8) -> Result<u16, Error>;
-    /// Write `v` to register `register` of the PHY at `physical_layer_device`.
-    fn write(&mut self, physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error>;
+    /// Read register `register` of the PHY at `physical_layer_device_address`.
+    fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error>;
+    /// Write `v` to register `register` of the PHY at `physical_layer_device_address`.
+    fn write(
+        &mut self,
+        physical_layer_device_address: u8,
+        register: u8,
+        v: u16,
+    ) -> Result<(), Error>;
 }
 
 /// The MAC's MDIO registers, through whatever [`Hardware`] reaches the controller.
 pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
 impl<H: Hardware> Bus<'_, H> {
-    fn wait(&mut self, physical_layer_device: u8, register: u8) -> Result<(), Error> {
+    fn wait(&mut self, physical_layer_device_address: u8, register: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
             if self.0.read(registers::MAC_MDIO_ADDR) & GB == 0 {
@@ -137,7 +146,7 @@ impl<H: Hardware> Bus<'_, H> {
             }
             if waited >= COMMAND_LIMIT_US {
                 return Err(Error::Timeout {
-                    physical_layer_device,
+                    physical_layer_device_address,
                     register,
                 });
             }
@@ -148,39 +157,44 @@ impl<H: Hardware> Bus<'_, H> {
 }
 
 impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
-    fn read(&mut self, physical_layer_device: u8, register: u8) -> Result<u16, Error> {
+    fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
-        self.wait(physical_layer_device, register)?;
+        self.wait(physical_layer_device_address, register)?;
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device, register, false),
+            command(physical_layer_device_address, register, false),
         );
-        self.wait(physical_layer_device, register)?;
+        self.wait(physical_layer_device_address, register)?;
         Ok(self.0.read(registers::MAC_MDIO_DATA) as u16)
     }
 
-    fn write(&mut self, physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error> {
-        self.wait(physical_layer_device, register)?;
+    fn write(
+        &mut self,
+        physical_layer_device_address: u8,
+        register: u8,
+        v: u16,
+    ) -> Result<(), Error> {
+        self.wait(physical_layer_device_address, register)?;
         self.0.write(registers::MAC_MDIO_DATA, u32::from(v));
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device, register, true),
+            command(physical_layer_device_address, register, true),
         );
-        self.wait(physical_layer_device, register)
+        self.wait(physical_layer_device_address, register)
     }
 }
 
 /// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device`, replacing `phy_id`.
+/// `physical_layer_device_address`, replacing `phy_id`.
 #[doc(alias = "phy")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
 ) -> Result<u32, Error> {
-    let high = bus.read(physical_layer_device, PHYSID1)?;
-    let low = bus.read(physical_layer_device, PHYSID2)?;
+    let high = bus.read(physical_layer_device_address, PHYSID1)?;
+    let low = bus.read(physical_layer_device_address, PHYSID2)?;
     Ok(u32::from(high) << 16 | u32::from(low))
 }
 
@@ -188,21 +202,21 @@ pub fn physical_layer_device_id(
 /// look does not read as down forever and a link that is up now reads as up.
 pub fn link_is_up(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
 ) -> Result<bool, Error> {
-    let _ = bus.read(physical_layer_device, BMSR)?;
-    Ok(bus.read(physical_layer_device, BMSR)? & BMSR_LSTATUS != 0)
+    let _ = bus.read(physical_layer_device_address, BMSR)?;
+    Ok(bus.read(physical_layer_device_address, BMSR)? & BMSR_LSTATUS != 0)
 }
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
 /// on a gigabit part).
 pub fn restart_autonegotiation(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
 ) -> Result<(), Error> {
-    let bmcr = bus.read(physical_layer_device, BMCR)?;
+    let bmcr = bus.read(physical_layer_device_address, BMCR)?;
     bus.write(
-        physical_layer_device,
+        physical_layer_device_address,
         BMCR,
         bmcr | BMCR_ANENABLE | BMCR_ANRESTART,
     )
@@ -329,7 +343,7 @@ mod tests {
         assert_eq!(
             Bus(&mut hardware).read(3, BMSR),
             Err(Error::Timeout {
-                physical_layer_device: 3,
+                physical_layer_device_address: 3,
                 register: BMSR
             })
         );
@@ -343,7 +357,7 @@ mod tests {
         assert_eq!(
             Bus(&mut hardware).write(2, BMCR, 1),
             Err(Error::Timeout {
-                physical_layer_device: 2,
+                physical_layer_device_address: 2,
                 register: BMCR
             })
         );
@@ -358,7 +372,7 @@ mod tests {
     }
 
     impl ManagementDataInputOutput for Latched {
-        fn read(&mut self, _physical_layer_device: u8, register: u8) -> Result<u16, Error> {
+        fn read(&mut self, _physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
             if register == BMSR {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
@@ -366,7 +380,12 @@ mod tests {
             }
             Ok(self.registers[register as usize])
         }
-        fn write(&mut self, _physical_layer_device: u8, register: u8, v: u16) -> Result<(), Error> {
+        fn write(
+            &mut self,
+            _physical_layer_device_address: u8,
+            register: u8,
+            v: u16,
+        ) -> Result<(), Error> {
             self.registers[register as usize] = v;
             Ok(())
         }

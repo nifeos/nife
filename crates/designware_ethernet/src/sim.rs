@@ -223,7 +223,7 @@ impl PhysicalLayerDevice {
 impl ManagementDataInputOutput for PhysicalLayerDevice {
     fn read(
         &mut self,
-        _physical_layer_device: u8,
+        _physical_layer_device_address: u8,
         register: u8,
     ) -> Result<u16, management_data_input_output::Error> {
         let register = register & 0x1f;
@@ -257,7 +257,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     }
     fn write(
         &mut self,
-        _physical_layer_device: u8,
+        _physical_layer_device_address: u8,
         register: u8,
         v: u16,
     ) -> Result<(), management_data_input_output::Error> {

@@ -322,11 +322,11 @@ pub(crate) const fn voltage_mv(chip_configuration: u16) -> u32 {
 /// `read_ext`.
 pub fn read_extended(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
     extended: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    bus.write(physical_layer_device, REG_ADDR, extended)?;
-    bus.read(physical_layer_device, REG_DATA)
+    bus.write(physical_layer_device_address, REG_ADDR, extended)?;
+    bus.read(physical_layer_device_address, REG_DATA)
 }
 
 /// Write extended register `extended`.
@@ -335,24 +335,24 @@ pub fn read_extended(
 /// `write_ext`.
 pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
     extended: u16,
     v: u16,
 ) -> Result<(), management_data_input_output::Error> {
-    bus.write(physical_layer_device, REG_ADDR, extended)?;
-    bus.write(physical_layer_device, REG_DATA, v)
+    bus.write(physical_layer_device_address, REG_ADDR, extended)?;
+    bus.write(physical_layer_device_address, REG_DATA, v)
 }
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
 fn modify_extended(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
     extended: u16,
     clear: u16,
     set: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    let v = (read_extended(bus, physical_layer_device, extended)? & !clear) | set;
-    write_extended(bus, physical_layer_device, extended, v)?;
+    let v = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;
+    write_extended(bus, physical_layer_device_address, extended, v)?;
     Ok(v)
 }
 
@@ -374,14 +374,14 @@ pub struct Applied {
 /// it where it left it.
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
     s: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
-    let saved = bus.read(physical_layer_device, REG_ADDR)?;
+    let saved = bus.read(physical_layer_device_address, REG_ADDR)?;
     let delay_en = if s.receive_fixed_delay { RXC_DLY_EN } else { 0 };
     let chip = modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
         EXT_CHIP_CONFIG,
         RXC_DLY_EN,
         delay_en,
@@ -391,7 +391,7 @@ pub fn configure(
         | u16::from(s.transmit_delay & 0xf) << TX_DELAY_SEL_SHIFT;
     let rgmii_config1 = modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
         EXT_RGMII_CONFIG1,
         0xf << RX_DELAY_SEL_SHIFT | 0xf << TX_DELAY_SEL_SHIFT,
         delays,
@@ -400,27 +400,33 @@ pub fn configure(
     let rxd = u16::from(drive_code(volt, s.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
         EXT_PAD_DRIVE_STRENGTH,
         0x7 << RGMII_RXC_DS_SHIFT | RGMII_RXD_DS_MASK,
         rxc << RGMII_RXC_DS_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
     )?;
-    modify_extended(bus, physical_layer_device, EXT_SYNCE_CFG, EN_SYNC_E, 0)?;
     modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
+        EXT_SYNCE_CFG,
+        EN_SYNC_E,
+        0,
+    )?;
+    modify_extended(
+        bus,
+        physical_layer_device_address,
         CLOCK_GATING_REG,
         CGR_RX_CLK_EN,
         0,
     )?;
     modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
         EXTREG_SLEEP_CONTROL1_REG,
         ESC1R_SLEEP_SW,
         0,
     )?;
-    bus.write(physical_layer_device, REG_ADDR, saved)?;
+    bus.write(physical_layer_device_address, REG_ADDR, saved)?;
     Ok(Applied {
         voltage_mv: volt,
         rgmii_config1,
@@ -432,7 +438,7 @@ pub fn configure(
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
     s: &Settings,
     speed: Speed,
 ) -> Result<u16, management_data_input_output::Error> {
@@ -441,27 +447,28 @@ pub fn apply_speed(
         Speed::Hundred => s.transmit_clock_inverted[1],
         Speed::Thousand => s.transmit_clock_inverted[2],
     };
-    let saved = bus.read(physical_layer_device, REG_ADDR)?;
+    let saved = bus.read(physical_layer_device_address, REG_ADDR)?;
     let set = if inverted { TX_CLK_SEL } else { 0 };
     let v = modify_extended(
         bus,
-        physical_layer_device,
+        physical_layer_device_address,
         EXT_RGMII_CONFIG1,
         TX_CLK_SEL,
         set,
     )?;
-    bus.write(physical_layer_device, REG_ADDR, saved)?;
+    bus.write(physical_layer_device_address, REG_ADDR, saved)?;
     Ok(v)
 }
 
 /// **The link, if there is one**, from the vendor status register.
 pub fn link(
     bus: &mut impl ManagementDataInputOutput,
-    physical_layer_device: u8,
+    physical_layer_device_address: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
-    Ok(link_from_status(
-        bus.read(physical_layer_device, SPECIFIC_STATUS_REG)?,
-    ))
+    Ok(link_from_status(bus.read(
+        physical_layer_device_address,
+        SPECIFIC_STATUS_REG,
+    )?))
 }
 
 #[cfg(test)]
