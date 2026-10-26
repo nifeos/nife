@@ -5,7 +5,9 @@
 *A child of [`notes/designware-ethernet.md`](../designware-ethernet.md) (milestone 53 (the board's
 own peripherals: network and storage on real silicon)), whose Results row is the 2.3 Mbit/s this
 page explains. Its names are provisional: `socket_contract::polled_wait`, `TCP_RECEIVE_BUF`,
-`CurrentCpuPage::tick_hz`, `user_mode_runtime::tick_hz`, and this page's stem.*
+`CurrentCpuPage::tick_hz`, `user_mode_runtime::tick_hz`, `MappedWindow::copy_to_slice` and
+`copy_from_slice`, the rehearsal's `--debug-userspace`, the bench boot's `receive` line, and this
+page's stem.*
 
 ## Why the row is 2.3 Mbit/s
 
@@ -102,6 +104,63 @@ sleep to a tick, since a round trip is 2 ms. But radon advertises about 4.6 KiB 
 buffer at every acknowledgment, so about 11.5 KiB sits unread each time. A window of 4.6 KiB per
 2 ms round trip allows 18 Mbit/s, near the measured 14.3 given a round trip read only in whole
 milliseconds. No row of the table above has that shape. The nearest
-is its fourth: a third limit, on radon's side and after the wire. The receiving program or the
-copy into it drains the buffer slower than a gigabit link fills it, and which of the two is not
-yet measured.
+is its fourth: a third limit, on radon's side and after the wire. The copy drains the buffer
+slower than a gigabit link fills it, as the next section measures.
+
+## What drains it slowly: radon's programs are debug builds
+
+`script/board-image` packs the userspace archive in the debug profile under a release kernel
+(milestone 797 (release userspace in board images)), so radon's `net_stack` runs at opt-level 0.
+The QEMU table above came from `cargo xtask network-bench`, which packs release programs, so it
+never paid that price. Each `RECEIVE` call carries at most one frame of 4,088 bytes. An
+unoptimized build moved every byte through a loop twice: from the DMA buffer into smoltcp, then
+from smoltcp into the socket's frame. Each byte cost a call, a bounds check and a volatile access.
+smoltcp's own checksum and buffers ran unoptimized beside them.
+
+The rehearsal's `--debug-userspace` flag packs the archive the way radon's image does. Its
+`receive` line, from the drain client's second report, splits the transfer by call:
+
+| programs | copies | smoltcp | rate | inside one call |
+|---|---|---|---|---|
+| debug | byte loops | opt-level 0 | 7.4 and 7.5 Mbit/s | |
+| debug | byte loops | opt-level 2 | 11.5 Mbit/s | |
+| debug | bulk | opt-level 0 | 22.9 Mbit/s | 1,427 us |
+| debug | bulk | opt-level 2 | 70.3, 70.8 and 71.9 Mbit/s | 454 to 464 us |
+| release | byte loops | release | 56 and 67 Mbit/s | |
+| release | bulk | release | 181, 195 and 225 Mbit/s | 144 to 180 us |
+
+Every call in the runs that report it came back full, 2,051 of 2,053. The client spent no
+measurable time between calls. So the server's turnaround per call sets the rate, and radon's
+4.6 KiB windows are its shape on silicon. About 11.5 KiB waits in the buffer at each
+acknowledgment, because the server empties it 4,088 bytes per call. At 14.3 Mbit/s a call on
+radon takes about 2.3 ms. These are QEMU's rates on one host and mean nothing about a NIC; the
+ratios between rows are the finding.
+
+The tree has both changes. `MappedWindow::copy_to_slice` and `copy_from_slice` check a range once
+and copy it in bulk, and both transports, the socket operations and the client's frame use them.
+The workspace profile builds smoltcp at opt-level 2 even in a debug build.
+
+## The bench step for the drain
+
+The parent's bench step, unchanged, from a commit with these changes. The console log then holds
+one more line after `transfer`:
+
+```text
+network-bench: receive   : N calls, B bytes each on average, F full; I us inside a call and O us between calls, on average
+```
+
+Read four numbers from it and the `transfer` line:
+
+| what the log shows | meaning | next |
+|---|---|---|
+| rate over 50 Mbit/s, `I` under 650 | the copies and smoltcp set the old rate | a Results row in the parent; its first `BUGS` entry comes out |
+| `I` near 2,300, `F` near `N` | the turnaround did not move on silicon: a cost QEMU does not have, such as the IPC round trip or the timer read | a lane, with the log |
+| `O` large against `I` | the client's own loop is slow | a lane |
+| `F` well under `N` | calls come back short, so the server waits for frames, and the window or the wait is the limit again | the capture above |
+| no `receive` line | the image predates these changes | `git log -1` against the image; rebuild |
+
+The expected range is 40 to 140 Mbit/s with `I` between 230 and 800 us. With debug programs
+QEMU's turnaround fell by about 9.5 times, from about 4,400 us to 460: every call comes back
+full, so the turnaround scales as the inverse of the rate. A factor of 9.5 on radon's 2.3 ms
+gives about 240 us. radon's cores pay a different mix of copying and emulation costs, so the
+factor there is the measurement, not a prediction.

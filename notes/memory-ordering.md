@@ -243,9 +243,12 @@ If there is no matching fence, say what the edge is and name it:
   says the same thing three times and it is worth repeating a fourth: a failure either tool reports
   is real, a clean result is not a proof about the silicon.
 - **The rendezvous argument rests on `spin::Mutex`, which is a dependency.** If `IrqSafeMutex` were
-  ever reimplemented, or if `spin` weakened its orderings, roughly half the adjudications in this
-  note would need rereading and nothing would fail first. This is the largest unpinned assumption
-  here.
+  ever reimplemented, roughly half the adjudications in this note would need rereading and nothing
+  would fail first. A `spin` bump that weakens the lock's Acquire compare-exchange or Release store
+  fails `script/lint` (`helpers/kernel_dependency_unsafe.py`'s pins), but that is a text match, and
+  nothing proves the lock gives exclusion. This is the largest unproved assumption here; the
+  proposal [the kernel's lock proves what it takes from spin](../design/roadmap/proposals/the-kernels-lock-proves-what-it-takes-from-spin.md)
+  tracks it.
 - The 63-site figure is a count of *syntax*, not of protocols. Nine protocols cover all of it,
   and a tenth could be added tomorrow in `Relaxed` and never appear in this table.
 - Two of the three findings this note describes are fixed elsewhere. The clock seqlock's writer

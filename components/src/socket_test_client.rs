@@ -893,7 +893,10 @@ fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64
 
 /// [`TEST_TCP_DRAIN`]: connect to `peer` (`ipv4 << 16 | port`), read until the stream ends, and
 /// report `(OK or a stage code, bytes, counter ticks from the handshake completing to the last
-/// byte)`.
+/// byte)`. After an `OK` it sends a second report, `(RECEIVE calls that carried bytes, counter
+/// ticks spent inside those calls, how many of them filled the frame)`, which the bench boot
+/// prints as its `receive` line: whether the server's turnaround per call or this loop sets the
+/// rate (notes/designware-ethernet/the-receive-rate.md).
 ///
 /// "Ends" is the peer closing or `net_stack`'s 15-second receive bound, whichever comes first,
 /// and neither is counted: the clock stops at the last byte that arrived, so the tail of waiting
@@ -911,18 +914,24 @@ fn tcp_drain(peer: u64) -> ! {
         done(0xE0A1); // nobody listening at the peer, or no route to it
     }
     let mut bytes: u64 = 0;
+    let (mut calls, mut inside, mut full) = (0u64, 0u64, 0u64);
     let first = now();
     let mut last = first;
     loop {
+        let asked = now();
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
         if got == 0 || got > DATA_MAX as u64 {
             break;
         }
         last = now();
         bytes += got;
+        calls += 1;
+        inside += last.saturating_sub(asked);
+        full += u64::from(got == DATA_MAX as u64);
     }
     let _ = close(SOCKET);
     send(REPORT, OK, bytes, last.saturating_sub(first));
+    send(REPORT, calls, inside, full);
     exit();
 }
 

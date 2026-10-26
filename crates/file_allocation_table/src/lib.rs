@@ -8,10 +8,10 @@
 //! of bounds, and what it accepts has its regions in order inside the volume.
 //!
 //! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`] and notes/file-allocation-table.md).
+//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]).
 //! A name that is not 8.3 gets VFAT long-name entries ahead of a `~1` alias (see `long_name.rs`).
-//! A volume below [`FAT32_MIN_CLUSTERS`] is refused, because the specification types a volume by its
-//! data clusters.
+//! A volume below [`FAT32_MIN_CLUSTERS`] is refused, because the specification types a volume by
+//! its data clusters, and the data area is rounded up to start on a cluster boundary.
 
 //! # BUGS
 //!

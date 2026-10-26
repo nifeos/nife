@@ -23,6 +23,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   as of today) [...] Names are ratified now and permanent on first publication."* His words: *"Yes,
   one per crate"*.
 - The release rules are forks 1 to 4 and 6 of the same pull request, applied in *Release* below.
+- Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
+  the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -34,10 +36,10 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   requires `RAND_RDY` and carries the words untouched, neither bit set is always not ready, and an
   unseeded core never yields bytes.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
-  rule 2 (a driver gets what it needs passed in): `discover` takes a `DeviceTreeBlob`; the caller
-  passes the register region instead, and the query moves to the kernel side, which already depends
-  on `device_tree_blob`. The tests also `include_bytes!` a fixture from
-  `../../device_tree_blob/tests/fixtures/`, outside the package.
+  rule 2 (a driver gets what it needs passed in), and the crate now depends on nothing. It holds
+  both spellings (`COMPATIBLES`) and the property decoders `interrupt` and `status_okay`, and
+  `machine_discovery::jh7110::entropy::discover` walks the tree and fills in `Discovered`. The
+  fixtures and the tests that read QEMU's tree moved there with the walk.
 - Its consumers: `kernel/src/user/entropy_service.rs`, `kernel/src/memory.rs`, `kernel/src/lib.rs`
   and `components/src/jh7110_entropy.rs`.
 - crates.io answers 404 for the name (checked 2026-10-07).
@@ -125,13 +127,18 @@ reads a fixture from `../../device_tree_blob/tests/fixtures/`, outside the crate
 and files, 26 lines cite this tree: 14 `milestone N`, 5 tree paths, 3 `§N`, 2 naming calef and 2
 provenance blocks.
 
-Name: `jh7110_entropy` is ratified today (`script/names`, checked 2026-10-11).
+`script/names` reports the name `jh7110_entropy` ratified (checked 2026-10-25).
+
+Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, the build passes
+on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
+ratification pass. With Kani, the four harnesses prove and each falsification patch fails its
+harness.
 
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `discover` takes a `DeviceTreeBlob`; the cut makes the caller pass the register region.
+  nothing; the decoders take raw property bytes.
 
 ## Exit
 
@@ -157,6 +164,33 @@ and every row of *What is proven* names a harness that stock Kani proves in the 
 falsification patch makes it fail. No crate publishes without Kani harnesses covering its
 hostile-input and state-machine surface, each carrying a falsification patch that makes it fail at
 its own assertion, replayable in the crate's own repository with stock Kani.
+
+## What the crate no longer cites
+
+The crate's source cites nothing of this tree beyond its `Name:` blocks, which stay at their
+names until the ratification pass, so this section keeps the links it carried.
+
+- The crate doc: the sources behind its `[trm]`, `[driver]`, `[netbsd]` and `[binding]` labels,
+  with the bring-up order and health testing, are `notes/entropy/jh7110-trng.md`; the driver
+  program is `components/src/jh7110_entropy.rs`.
+- `IE_GLBL_EN`: the bench run that showed polling works with `IE` never written is
+  `target/board/radon-2026-09-04-clock-and-first-entropy.log`, and the driver program says why it
+  polls.
+- `COMPATIBLE_VENDOR`, `Discovered`: the vendor node and its evidence are the note's "The vendor
+  spelling" section, found by milestone 239 (radon's device tree does not describe the TRNG, so a
+  working driver never runs).
+- `interpret`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone 159
+  (a real hardware entropy source: the JH7110's TRNG) added the `stat` parameter and the pool.
+- `assemble`: no conditioning here for the reason §44 (entropy is a capability, `std::random` improves
+  transparently, and the refusal is loud) gives `components/src/entropy.rs`.
+- `WORD_BYTES` and `take`'s clamp: the same 8 as `entropy_contract::MAX_BYTES`, and
+  `entropy_contract::want` clamps first in the driver.
+- The tests: milestone 326 (nobody has been assigned to turn a mutation score upward) found the
+  survivors the transcription, clear-mask and deadline tests kill.
+- The harness `ready_requires_rand_rdy_and_carries_the_words_untouched` and its patch: milestone 211
+  (a harness that states its property through the function under test cannot see that function
+  break) rewrote the harness after it verified blind. The module's proofs serve §14 (the project's
+  direction: a verified-Rust capability microkernel).
 
 ## BUGS
 

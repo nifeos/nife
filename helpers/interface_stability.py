@@ -10,9 +10,11 @@ notes/interface-stability.md; this header is the manual for the program.
     python3 helpers/interface_stability.py --table      # this week's cells, printed, nothing written
     python3 helpers/interface_stability.py --selftest   # fixtures only, no git, no cargo; script/lint
 
-It writes `notes/project-metrics/interface-stability.csv` and nothing else. `script/metrics` draws
-the chart, the generated line on notes/project-metrics.md and the per-crate appendix from that file
-and never recomputes a cell of it (its INTERFACE_FIELDS are carried the way coverage is).
+It writes `notes/project-metrics/interface-stability.csv`, the per-crate and per-package CSVs
+beside it, and the appendix `notes/project-metrics/interface-stability.md`, and nothing else.
+`script/metrics` draws the chart and the generated line on notes/project-metrics.md from the first
+and never recomputes a cell of it (its INTERFACE_FIELDS are carried the way coverage is). The
+per-package co-change cells need only git, so every run restates them for every week.
 
 **Why this builds when `script/metrics` may not.** The public API is read from rustdoc's JSON
 output (`--output-format json`, on the pinned nightly), which needs `cargo doc` over a copy of each
@@ -42,12 +44,22 @@ import subprocess
 import sys
 from datetime import date, datetime, timezone
 
+import crate_release
+import packages
+
 CSV = pathlib.Path('notes/project-metrics/interface-stability.csv')
 # The second view calef's maintainer asked for: the same counts per crate, one row per crate per
 # week it moved, and the appendix page that reads it.
 CRATES_CSV = pathlib.Path('notes/project-metrics/interface-stability-crates.csv')
 APPENDIX = pathlib.Path('notes/project-metrics/interface-stability.md')
 CRATE_FIELDS = ['breaking', 'additions', 'commits', 'commits_crossing']
+# Per-package co-change: §235 (the OS is built and updated from packages, and the tree divides by what releases together), in its Fork 3
+# amendment, sizes a home by what changes together. One row per unit per week a commit touched it;
+# `kind` is `package` (a packages/*.package.toml file, §235's package) or `crate` (one Cargo
+# package). Recomputed whole on every run: it reads git alone.
+PACKAGES_CSV = pathlib.Path('notes/project-metrics/interface-stability-packages.csv')
+PACKAGE_FIELDS = ['commits', 'commits_crossing', 'commits_touching_another',
+                  'commits_excluding_mass', 'commits_crossing_excluding_mass']
 SCRATCH = pathlib.Path('target/interface-stability')
 
 # The contracts division: notes/packages-and-divisions.md (#1389, not yet on main), `abi`, the
@@ -106,6 +118,8 @@ FIELDS = [
     'interface_contract_commits', 'interface_contract_commits_crossing',
     'interface_cochange_pct', 'interface_cochange_pct_excluding_mass',
     'interface_crates_unmeasured',
+    'interface_package_commits', 'interface_package_commits_crossing',
+    'interface_package_cochange_pct',
 ]
 
 
@@ -642,12 +656,26 @@ def classify_commit(subject, files, dirs):
     if not contract:
         return False, False, False
     crosses = any(not p.startswith(dirs) for p in files if not is_doc(p))
+    return True, crosses, is_mass(subject, files)
+
+
+def is_mass(subject, files):
     buckets = {b for b in (_bucket(p) for p in files) if b}
-    mass = len(files) > MASS_FILES or len(buckets) > MASS_BUCKETS or bool(MASS_SUBJECT.search(subject))
-    return True, crosses, mass
+    return len(files) > MASS_FILES or len(buckets) > MASS_BUCKETS or bool(MASS_SUBJECT.search(subject))
 
 
-def cochange_by_week(dirs):
+def commit_log():
+    """[(week, subject, files)] for every non-merge commit reachable from HEAD."""
+    out = []
+    log = git('log', '--no-merges', '--format=@@%H|%cI|%s', '--name-only', 'HEAD')
+    for block in log.split('@@')[1:]:
+        lines = [l for l in block.split('\n') if l.strip()]
+        _sha, when, subject = (lines[0].split('|', 2) + [''])[:3]
+        out.append((week_of(when), subject, lines[1:]))
+    return out
+
+
+def cochange_by_week(dirs, commits):
     """{week: [commits, crossing, commits excluding mass, crossing excluding mass]}, and per crate.
 
     The per-crate view is {week: {crate: [commits, crossing]}}, keyed by the crate's HEAD name;
@@ -655,26 +683,200 @@ def cochange_by_week(dirs):
     """
     out, per_crate = {}, {}
     names = {d: identity(d.split('/')[1], LINEAGE_CACHE) for d in dirs}
-    log = git('log', '--no-merges', '--format=@@%H|%cI|%s', '--name-only', 'HEAD')
-    for block in log.split('@@')[1:]:
-        lines = [l for l in block.split('\n') if l.strip()]
-        _sha, when, subject = (lines[0].split('|', 2) + [''])[:3]
-        is_c, crosses, mass = classify_commit(subject, lines[1:], dirs)
+    for week, subject, files in commits:
+        is_c, crosses, mass = classify_commit(subject, files, dirs)
         if not is_c:
             continue
-        week = week_of(when)
         cell = out.setdefault(week, [0, 0, 0, 0])
         cell[0] += 1
         cell[1] += crosses
         if not mass:
             cell[2] += 1
             cell[3] += crosses
-        touched = {names[d] for d in dirs for p in lines[1:] if p.startswith(d)}
+        touched = {names[d] for d in dirs for p in files if p.startswith(d)}
         for crate in touched:
             c = per_crate.setdefault(week, {}).setdefault(crate, [0, 0])
             c[0] += 1
             c[1] += crosses
     return out, per_crate
+
+
+# ---------------------------------------------------------------------------------------------
+# Per-package co-change: the same method, with every package (and every crate) in the contracts'
+# place. A commit touches a unit when one of its non-documentation paths belongs to it; it crosses
+# when another of its non-documentation paths does not; it touches another unit when one of them
+# belongs to a different unit of the same kind (a path in packages/homes.toml, such as `script/`,
+# is outside every package but is no other package). Membership is HEAD's: a past path is renamed
+# through LINEAGE first, then placed by the longest prefix HEAD's declarations claim.
+
+def unit_tables(tracked=None, texts=None):
+    """({prefix: package or None}, {prefix: crate}, {crate: package}) from HEAD's declarations."""
+    if tracked is None:
+        tracked, texts = packages.working_tree()
+    result = packages.evaluate(tracked, texts)
+    crate_claims = {info['dir'] + '/': name for name, info in result['crates'].items()
+                    if info['dir']}
+    return result['claims'], crate_claims, result['crate_pkg']
+
+
+_UNCLAIMED = object()
+
+
+def owner(path, claims):
+    """The value of the longest prefix of `path` in `claims`, or None when nothing claims it."""
+    best = _UNCLAIMED
+    for prefix in packages._prefixes(path):
+        if prefix in claims:
+            best = claims[prefix]
+    return None if best is _UNCLAIMED else best
+
+
+def head_path(path, lineage_map):
+    parts = path.split('/')
+    if len(parts) > 2 and parts[0] == 'crates':
+        parts[1] = identity(parts[1], lineage_map)
+    return '/'.join(parts)
+
+
+def unit_cochange(units):
+    """{unit: (crosses, touches another)} for one commit, from each code path's unit or None."""
+    out = {}
+    for u in {u for u in units if u}:
+        out[u] = (any(v != u for v in units), any(v and v != u for v in units))
+    return out
+
+
+def package_cochange_by_week(commits, tables, lineage_map):
+    """({week: {(kind, unit): PACKAGE_FIELDS}}, {week: [commits, crossing]}, {week: {pair: n}}).
+
+    The second is the week's headline: commits touching any package, and those crossing one,
+    each commit once. The third counts, for each unordered pair of packages, the commits outside
+    a mass change that touched both, the evidence for which packages would share a home.
+    """
+    package_claims, crate_claims, _crate_pkg = tables
+    per, summary, pairs = {}, {}, {}
+    for week, subject, files in commits:
+        code = [head_path(p, lineage_map) for p in files if not is_doc(p)]
+        if not code:
+            continue
+        mass = is_mass(subject, files)
+        for kind, claims in (('package', package_claims), ('crate', crate_claims)):
+            hits = unit_cochange([owner(p, claims) for p in code])
+            for unit, (crosses, another) in hits.items():
+                cell = per.setdefault(week, {}).setdefault((kind, unit), [0] * len(PACKAGE_FIELDS))
+                cell[0] += 1
+                cell[1] += crosses
+                cell[2] += another
+                if not mass:
+                    cell[3] += 1
+                    cell[4] += crosses
+            if kind == 'package' and hits:
+                s = summary.setdefault(week, [0, 0])
+                s[0] += 1
+                s[1] += any(c for c, _a in hits.values())
+                if not mass:
+                    names = sorted(hits)
+                    for i, a in enumerate(names):
+                        for b in names[i + 1:]:
+                            w = pairs.setdefault(week, {})
+                            w[(a, b)] = w.get((a, b), 0) + 1
+    return per, summary, pairs
+
+
+def read_package_rows(path=PACKAGES_CSV):
+    return _packages_from_text(path.read_text()) if path.exists() else {}
+
+
+def _packages_from_text(text):
+    out = {}
+    for line in text.strip().split('\n')[1:]:
+        if line.strip():
+            week, kind, unit, *cells = line.split(',')
+            out.setdefault(week, {})[(kind, unit)] = [int(c or 0) for c in cells]
+    return out
+
+
+def render_package_rows(per, weeks):
+    out = [','.join(['week', 'kind', 'unit'] + PACKAGE_FIELDS)]
+    for week in sorted(w for w in per if w in weeks):
+        for kind, unit in sorted(per[week]):
+            cells = per[week][(kind, unit)]
+            if any(cells):
+                out.append(','.join([week, kind, unit] + [str(c) for c in cells]))
+    return '\n'.join(out) + '\n'
+
+
+def _share(part, whole):
+    return '' if not whole else '%d%%' % round(100.0 * part / whole)
+
+
+def render_package_section(per, weeks, pairs, release_crates):
+    """The appendix's co-change tables: every package, then each release-track crate."""
+    total = {}
+    for w in weeks:
+        for key, cells in per.get(w, {}).items():
+            t = total.setdefault(key, [0] * len(PACKAGE_FIELDS))
+            for i, c in enumerate(cells):
+                t[i] += c
+    together = {}
+    for w in weeks:
+        for pair, n in pairs.get(w, {}).items():
+            together[pair] = together.get(pair, 0) + n
+    partner = {}
+    for (a, b), n in together.items():
+        for x, y in ((a, b), (b, a)):
+            if n > partner.get(x, (0, ''))[0] or (n == partner[x][0] and y < partner[x][1]):
+                partner[x] = (n, y)
+
+    def row(name, t, *extra):
+        cells = ['`%s`' % name, str(t[0]), '%d (%s)' % (t[1], _share(t[1], t[0]) or '0%'),
+                 '%d (%s)' % (t[2], _share(t[2], t[0]) or '0%'), _share(t[4], t[3]) or 'none']
+        return '| %s |' % ' | '.join(cells + list(extra))
+    span = '%s to %s' % (weeks[0], weeks[-1]) if weeks else 'no weeks'
+    out = ['', '## Co-change per package', '',
+           'Every package in `packages/`, %s, by the method of the contracts\' co-change: a commit '
+           'touching the package crosses when it also touches code outside it, and touches another '
+           'when that code is another package\'s. The partner is the package most often in the '
+           'same commit outside a mass change. A package that crosses rarely could take a home of '
+           'its own; packages that keep naming each other share one, since a home is sized by what '
+           'changes together.' % span, '',
+           '| package | commits | crossing | touching another | crossing, mass excluded '
+           '| most often with |',
+           '|---|---:|---:|---:|---:|---|']
+    names = sorted((u for k, u in total if k == 'package'),
+                   key=lambda u: (-total[('package', u)][0], u))
+    for u in names:
+        p = partner.get(u)
+        out.append(row(u, total[('package', u)], '`%s` (%d)' % (p[1], p[0]) if p else 'none'))
+    out += ['', '## Co-change per release-track crate', '',
+            'Each crate a per-crate release milestone names (`helpers/crate_release.py`), on its '
+            'own: crossing is code outside the crate\'s directory, and touching another is another '
+            'Cargo package. Least crossing first, mass changes excluded; every crate is a row in '
+            'the CSV.', '',
+            '| crate | commits | crossing | touching another | crossing, mass excluded |',
+            '|---|---:|---:|---:|---:|']
+    def least_crossing(c):
+        t = total.get(('crate', c), [0] * len(PACKAGE_FIELDS))
+        return (t[4] / t[3] if t[3] else 1.0, c)
+    for c in sorted(release_crates, key=least_crossing):
+        out.append(row(c, total.get(('crate', c), [0] * len(PACKAGE_FIELDS))))
+    return out
+
+
+def package_cells(summary):
+    return {'interface_package_commits': summary[0],
+            'interface_package_commits_crossing': summary[1],
+            'interface_package_cochange_pct': pct(summary[1], summary[0])}
+
+
+def release_track_crates():
+    names = []
+    for number in crate_release.MILESTONES:
+        found = sorted(pathlib.Path('design/roadmap').glob('%04d-*.md' % number))
+        name = crate_release.crate_of(found[0].read_text()) if found else None
+        if name:
+            names.append(name)
+    return names
 
 
 def pct(part, whole):
@@ -816,7 +1018,7 @@ def render_crate_rows(crates):
     return '\n'.join(out) + '\n'
 
 
-def render_appendix(rows, crates, week, events, rev):
+def render_appendix(rows, crates, week, events, rev, package_lines=()):
     """The per-crate appendix beside the metrics page: generated, never edited by hand."""
     weeks = sorted(rows)
     recent = weeks[-4:]
@@ -858,6 +1060,7 @@ def render_appendix(rows, crates, week, events, rev):
     # source's words.
     for crate, what, path in events:
         out.append('> - `%s`: %s `%s`' % (crate, what, path))
+    out += list(package_lines)
     return '\n'.join(out) + '\n'
 
 
@@ -908,7 +1111,9 @@ def run(mode):
         targets = order
     else:
         targets = [w for w in order if (w not in rows and mode == '--update') or w == current]
-    cochange, cochange_crates = cochange_by_week(contract_dirs(lineage_map))
+    commits = commit_log()
+    cochange, cochange_crates = cochange_by_week(contract_dirs(lineage_map), commits)
+    per_unit, package_summary, pairs = package_cochange_by_week(commits, unit_tables(), lineage_map)
     measured = {}
 
     def at(week):
@@ -928,7 +1133,7 @@ def run(mode):
         for crate, what, detail in events[:20]:
             print('    %s: %s %s' % (crate, what, detail), file=sys.stderr)
     if mode == '--table':
-        row = result[current][0]
+        row = dict(result[current][0], **package_cells(package_summary.get(current, [0, 0])))
         for f in FIELDS:
             print('%-42s %s' % (f, row[f]))
         return 0
@@ -941,11 +1146,18 @@ def run(mode):
                         for c, v in per_crate.items()}
         for c, v in cochange_crates.get(week, {}).items():
             crates[week].setdefault(c, [0, 0] + v)
+    # Git alone answers the package cells, so every week the series holds is restated, not
+    # carried: a week's cell changes only when HEAD's package declarations or lineage do.
+    for week, row in rows.items():
+        row.update(package_cells(package_summary.get(week, [0, 0])))
     CSV.parent.mkdir(parents=True, exist_ok=True)
     CSV.write_text(render_rows(rows))
     CRATES_CSV.write_text(render_crate_rows(crates))
+    PACKAGES_CSV.write_text(render_package_rows(per_unit, set(rows)))
     last = max(result)
-    APPENDIX.write_text(render_appendix(rows, crates, last, result[last][2], weeks[last]))
+    APPENDIX.write_text(render_appendix(
+        rows, crates, last, result[last][2], weeks[last],
+        render_package_section(per_unit, sorted(rows), pairs, release_track_crates())))
     print('interface stability: %d weeks in %s' % (len(rows), CSV), file=sys.stderr)
     return 0
 
@@ -1190,6 +1402,51 @@ def selftest():
          std_abi_crates('root.join("crates/abi/src/lib.rs"),\nroot.join("crates/abi/src/lib.rs"),'
                         ' root.join("crates/clock_contract/src/lib.rs")'),
          ['abi', 'clock_contract']),
+    ]
+
+    # Per-package co-change, over helpers/packages.py's own fixture tree: `toolbox` holds the crates
+    # `lib`, `tool` and `host` and the program `b`; `extra` holds the program `a`, a file inside
+    # `host`'s directory; `contracts` holds `proto`; `notes/` and the root manifest are homes only.
+    tables = unit_tables(*packages._fixture())
+    fixture_log = [
+        ('2026W39', 'x', ['crates/lib/src/lib.rs', 'crates/tool/src/main.rs']),   # one package
+        ('2026W39', 'x', ['crates/proto/src/lib.rs', 'crates/lib/src/lib.rs']),   # two packages
+        ('2026W39', 'x', ['crates/lib/src/lib.rs', 'Cargo.toml']),                # a home, no package
+        ('2026W39', 'x', ['crates/lib/src/lib.rs', 'notes/a.md']),                # documentation
+        ('2026W39', 'x', ['notes/a.md']),                                         # nothing
+        ('2026W40', 'rename everything', ['crates/old_lib/src/lib.rs', 'host/src/a.rs']),
+    ]
+    per, summary, pairs = package_cochange_by_week(fixture_log, tables, {'old_lib': 'lib'})
+    cases += [
+        ('a program file inside another crate belongs to its own package',
+         owner('host/src/a.rs', tables[0]), 'extra'),
+        ('the rest of that crate belongs to the crate\'s package',
+         owner('host/src/c.rs', tables[0]), 'toolbox'),
+        ('a home claim is no package', owner('notes/a.md', tables[0]), None),
+        ('a path nothing claims is no package', owner('elsewhere/x', tables[0]), None),
+        ('a crate is placed by its directory', owner('host/src/a.rs', tables[1]), 'host'),
+        ('an old crate directory is read under its HEAD name',
+         head_path('crates/old_lib/src/lib.rs', {'old_lib': 'lib'}), 'crates/lib/src/lib.rs'),
+        ('one unit alone neither crosses nor touches another', unit_cochange(['a', 'a']),
+         {'a': (False, False)}),
+        ('a home path crosses without touching another package', unit_cochange(['a', None]),
+         {'a': (True, False)}),
+        ('two units each cross and touch the other', unit_cochange(['a', 'b']),
+         {'a': (True, True), 'b': (True, True)}),
+        ('a package\'s week: commits, crossing, another, and the same outside mass changes',
+         per['2026W39'][('package', 'toolbox')], [4, 2, 1, 4, 2]),
+        ('two crates of one package touch each other at the crate level',
+         per['2026W39'][('crate', 'tool')], [1, 1, 1, 1, 1]),
+        ('the headline counts each commit once', summary['2026W39'], [4, 2]),
+        ('a mass commit counts, but not in the mass-excluded columns or the pairs',
+         (per['2026W40'][('package', 'extra')], pairs.get('2026W40')), ([1, 1, 1, 0, 0], None)),
+        ('a pair is counted once per commit', pairs['2026W39'], {('contracts', 'toolbox'): 1}),
+        ('the per-package CSV round-trips and keeps only the series\' weeks',
+         _packages_from_text(render_package_rows(per, {'2026W39'})) == {'2026W39': per['2026W39']},
+         True),
+        ('a package\'s partner is the one it shares most commits with',
+         '| `toolbox` | 4 | 2 (50%) | 1 (25%) | 50% | `contracts` (1) |'
+         in render_package_section(per, ['2026W39'], pairs, ['lib']), True),
     ]
 
     def empty_set_refused():

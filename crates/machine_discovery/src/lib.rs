@@ -38,6 +38,9 @@ pub mod framebuffer;
 // read plus a pure cross-check of raw ID-register words, so it is host logic like `plic` beside it.
 pub mod gic;
 pub mod interrupt_id;
+// The JH7110's peripherals, found for the device crates that take plain values (milestone 857
+// (crates released on their own)).
+pub mod jh7110;
 pub mod plic;
 pub mod riscv64;
 // The third architecture's boot handoff (milestone 161). Not an ISA record like the two beside it:

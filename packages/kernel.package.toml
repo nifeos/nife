@@ -24,9 +24,12 @@ crates = [
     "work_steal_slot",
     "direct_memory_access_validator",
     "firmware_configuration",
-    "jh7110_clock_and_reset",
     "jh7110_watchdog",
 ]
+# `jh7110_clock_and_reset` names the JH7110 clock controllers' spellings and decodes their
+# properties; the device-tree walk in `machine_discovery` (contracts) reads the tree with them and
+# fills in its types. Two packages link it, so it is an interface.
+interfaces = ["jh7110_clock_and_reset"]
 
 [[exception]]
 date = 2026-09-27
@@ -39,12 +42,6 @@ date = 2026-10-04
 member = "kernel"
 crate = "extensible_host_controller_interface"
 reason = "the kernel draws the xHCI driver's register window and hands it extensible_host_controller_interface::Handoff, a contract living in the USB keyboard's crate (milestone 242 (USB host and HID))"
-
-[[exception]]
-date = 2026-09-27
-member = "kernel"
-crate = "jh7110_entropy"
-reason = "the kernel discovers the TRNG with the driver's own discover(); a board description living in a driver crate"
 
 [[exception]]
 date = 2026-09-27

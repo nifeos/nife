@@ -2,20 +2,21 @@
 name = "designware_ethernet"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "Synopsys DesignWare Ethernet QoS (dwmac 4.x/5.x) controller logic, with the JH7110 glue: rings, bring-up and descriptors, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# no_std for the kernel and for `net_stack`, std for host tests, the §7 (the testing harness) pure-logic split every
-# driver crate here uses. It owns what the halves of the JH7110's Ethernet driver agree on and
-# everything either computes (milestone 53 (the board's own peripherals: network and storage on real silicon)): the Synopsys DesignWare
-# Ethernet QoS controller's register map, its descriptor formats, the DMA region's layout, the
-# spawn handoff, the receive and transmit ring logic, the controller and PHY bring-up sequences
-# behind small traits, the DMA-coherence probe's verdict, and the JH7110 glue (the syscon interface
-# select and the device-tree query). Host-tested against a simulated controller; nothing here
-# dereferences a pointer.
-#
-# Name: PROVISIONAL (milestone 53's lane, 2026-10-06 UTC). See src/lib.rs's last paragraph for the
-# argument and the alternative an architect may prefer.
+# no_std for a kernel and a network stack, std for host tests. It owns what the halves of a
+# DesignWare Ethernet QoS driver agree on and everything either computes: the controller's
+# register map, its descriptor formats, the DMA region's layout, the spawn handoff, the receive and
+# transmit ring logic, the controller and PHY bring-up sequences behind small traits, the
+# DMA-coherence probe's verdict, and the JH7110 glue (the syscon interface select and what each
+# device tree says). Host-tested against a simulated controller; nothing here dereferences a
+# pointer.
 
 [dependencies]
 # For the virtual addresses the kernel maps and `net_stack` reads, which rule 7 puts here rather
@@ -24,5 +25,16 @@ address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # The device-tree query in `jh7110`, read against the same parser every other JH7110 crate uses.
 device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

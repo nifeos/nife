@@ -13,8 +13,8 @@
  *
  * Regenerate with:
  *
- *     dtc -I dts -O dtb -o crates/jh7110_clock_and_reset/tests/fixtures/jh7110-pmic-bus-foreign.dtb \
- *                          crates/jh7110_clock_and_reset/tests/fixtures/jh7110-pmic-bus-foreign.dts
+ *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/jh7110-pmic-bus-foreign.dtb \
+ *                          crates/machine_discovery/tests/fixtures/jh7110-pmic-bus-foreign.dts
  */
 
 / {

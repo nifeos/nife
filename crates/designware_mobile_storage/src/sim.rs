@@ -6,7 +6,7 @@
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS` fill and busy, `CARDTHRCTL` above the FIFO ending in
 //! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_us` call, so a test that would hang on silicon fails
-//! here. Each modeled behavior is listed in notes/designware-mobile-storage/driver.md.
+//! here.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};

@@ -5,8 +5,8 @@
 //! A long name is up to 255 UCS-2 units, thirteen to an entry, written in reverse: the entry with
 //! the name's end comes first on disk, its ordinal carrying [`LAST_LONG_ENTRY`]. A wrong checksum
 //! fails silently, as a volume that lists `BOOTRI~1.EFI` and boots nothing; `verification.rs`
-//! proves the checksum and the run's layout for every name. notes/file-allocation-table.md, "Long
-//! names", has the run's padding and how the host's driver checks it.
+//! proves the checksum and the run's layout for every name. After the name's last unit comes one
+//! `0x0000`, then `0xFFFF` to the end of the entry, unless the name fills its last entry exactly.
 
 /// The most UCS-2 units a long name holds.
 pub(crate) const MAX_UNITS: usize = 255;

@@ -1,7 +1,6 @@
 //! **Machine-checked proofs (Kani) of the long-name writer**: the checksum is the specification's,
 //! every run is laid out as the specification lays it, and every alias is a legal short name.
-//! Behind `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them. See
-//! notes/verification.md.
+//! Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //!
 //! The tests in `long_name.rs` and `lib.rs` pin worked examples and the host's driver reads one
 //! back; these quantify over the name, which is what catches an off-by-one in the padding or the

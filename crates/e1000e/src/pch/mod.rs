@@ -1,5 +1,4 @@
-//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code** (milestone 494 (a driver
-//! for the network card a PC actually has)).
+//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code.**
 //!
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) is the only
@@ -7,7 +6,7 @@
 //! the FreeBSD functions they follow. Every sequence is generic over [`Hw`], so it runs on the host
 //! against a simulated I219 (`sim`) as well as in the kernel. The constants are facts about the
 //! hardware; the sequences are FreeBSD's, adapted, and carry Intel's license below as its first
-//! condition requires. See notes/e1000e/the-i219-port.md.
+//! condition requires.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -44,7 +43,8 @@
 
 //! # BUGS
 //!
-//! - **It has run on silicon once, with no cable** (notes/e1000e/the-i219-port.md, "BUGS").
+//! - **It has run on silicon once, with no cable.** Otherwise it is proven only against `sim`,
+//!   which is this crate's reading of FreeBSD and not the device.
 //! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
 //!   up and then loses frames points here first.
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
