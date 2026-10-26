@@ -179,7 +179,7 @@ peak of 130 (aarch64), 129 (riscv64) and 57 (x86_64), and that constant's own do
 the ledger and the four coupled constants that moved with it. Two things closed the gap this
 section names:
 
-- The test harness reports the occupancy, which used to be invisible. `sched::PEAK_THREADS` is a
+- The test harness reports the occupancy, so the fill is visible. `sched::PEAK_THREADS` is a
   whole-boot high-water mark and `kernel::testing` prints it in the closing summary beside the frame
   ledger (`threads: N live at the peak, of M the image allows`). A blocked leak is still invisible
   to `thread_leak_police`, which is a different question and correctly scoped to runnable spinners,
