@@ -1,0 +1,15 @@
+Falsifies `driver_process_contract::e1000e::proofs::the_handoff_round_trips_and_accepts_only_what_pack_can_make`.
+
+The defect: unpack stops checking that the data plane is page aligned, so a role word with a
+base the kernel could never have produced is accepted and the process aims its rings at it.
+
+Expected to fail: the harness's alignment assertion, on any odd base.
+
+diff --git a/crates/driver_process_contract/src/e1000e.rs b/crates/driver_process_contract/src/e1000e.rs
+--- a/crates/driver_process_contract/src/e1000e.rs
++++ b/crates/driver_process_contract/src/e1000e.rs
+@@ -80,3 +80,3 @@ impl Handoff {
+     pub fn unpack(arg0: u64, arg1: u64) -> Option<Handoff> {
+-        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE) {
++        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 {
+             return None;

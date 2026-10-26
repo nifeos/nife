@@ -4161,6 +4161,11 @@ files = subprocess.run(
     capture_output=True, text=True,
 ).stdout.split()
 
+table = set(re.findall(r"^(\w+(?:::\w+)?)\t\d+\t", open("script/verify").read(), re.M))
+# A crate whose rows are `<crate>::<module>` is proved one top-level module at a time, so each of
+# its modules carrying a harness needs its own row (script/verify's loop says why).
+by_module = {row.split("::")[0] for row in table if "::" in row}
+
 carriers, orphans = set(), []
 for f in files:
     if f in EXEMPT:
@@ -4171,10 +4176,14 @@ for f in files:
             owner = name
     if owner is None:
         orphans.append(f)
+    elif owner in by_module:
+        module = f[len(prefixes[owner]):].split("/")
+        if module[0] != "src" or len(module) < 2 or module[1] in ("lib.rs", "main.rs"):
+            carriers.add(owner)
+        else:
+            carriers.add(owner + "::" + module[1].removesuffix(".rs"))
     else:
         carriers.add(owner)
-
-table = set(re.findall(r"^(\w+)\t\d+\t", open("script/verify").read(), re.M))
 
 missing = sorted(carriers - table)
 stale = sorted(table - carriers)
@@ -4191,7 +4200,7 @@ if missing or orphans or stale:
           "blind can turn main red on a 42-minute check), or delete a stale one.", file=sys.stderr)
     sys.exit(1)
 
-print(f"verify table: {len(table)} crates, exactly the ones carrying harnesses")
+print(f"verify table: {len(table)} rows, exactly the crates and modules carrying harnesses")
 PY
 
 # **A count above two in front of the word "halves"**, which is a claim that cannot be true and is

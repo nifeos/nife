@@ -6,9 +6,11 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-161 names: 143 no block, 17 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `designware_ethernet` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 34 rows say something other than `clear` or `term`. This file renames nothing.
+155 names: 138 no block, 16 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 7 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 28 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -24,7 +26,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `controller` | module | `src/controller.rs` | unrecorded. | yes | clear |
 | `data_plane` | module | `src/data_plane.rs` | provisional. | no | clear |
 | `descriptor` | module | `src/descriptor.rs` | provisional. | no | clear |
-| `handoff` | module | `src/handoff.rs` | provisional. | no | nife: nife's own process plan |
 | `hardware` | module | `src/hardware.rs` | provisional. | no | clear |
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a MAC crate |
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
@@ -91,11 +92,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `rx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `rx_verdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `tx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `Handoff` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `ROLE_TAG` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `is_role` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `pack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `unpack` | item | `src/handoff.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `Hw` | item | `src/hardware.rs` | unrecorded. | yes | unclear: an abbreviation of hardware |
 | `AON_SYSCON_NODE` | item | `src/jh7110.rs` | provisional. | yes | term |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
@@ -183,7 +179,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
-- the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Handoff` (2), `Discovered` (9), `Syscon` (3), `Link` (2), `Settings` (7) and `Applied` (3);
+- the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Discovered` (9), `Syscon` (3), `Link` (2), `Settings` (7) and `Applied` (3);
 - the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `RxVerdict` (3), `mdio::Error` (1), `TxError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
 - the methods of the traits `Region` (4), `Tails` (3), `Hw` (3) and `Mdio` (2).
 

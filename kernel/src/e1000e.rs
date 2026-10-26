@@ -12,7 +12,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use ::e1000e::{layout, regs};
+use e1000e::{layout, regs};
 
 use crate::arch::mmu;
 
@@ -58,7 +58,7 @@ pub struct Found {
     /// The PCI device id.
     pub device: u16,
     /// What the process is told: the MAC address and the region's physical base.
-    pub handoff: ::e1000e::Handoff,
+    pub handoff: ::driver_process_contract::e1000e::Handoff,
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
@@ -158,7 +158,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         bar0: dev.bar0,
         rid: dev.rid,
         device: dev.device,
-        handoff: ::e1000e::Handoff {
+        handoff: ::driver_process_contract::e1000e::Handoff {
             mac,
             data_plane_phys: region,
         },

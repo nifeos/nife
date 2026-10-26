@@ -150,36 +150,6 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
     assert_eq!((b >> 32) as u32, TDES3_OWN | TDES3_FS | TDES3_LS | 60);
 }
 
-#[test]
-fn the_handoff_refuses_a_multicast_or_absent_address() {
-    let h = Handoff {
-        mac: [0x01, 0, 0, 0, 0, 1],
-        data_plane_phys: 0x4000_0000,
-    };
-    let [r, p] = h.pack();
-    assert_eq!(Handoff::unpack(r, p), None);
-    let [r, p] = Handoff { mac: [0; 6], ..h }.pack();
-    assert_eq!(Handoff::unpack(r, p), None);
-    assert!(!Handoff::is_role(0xe1e0));
-}
-
-/// A handoff survives its own packing, and each refusal holds on its own: a role word that is
-/// not this server's is refused with a good base beside it, as is a good role word with no
-/// base or a base off a page boundary.
-#[test]
-fn the_handoff_round_trips_and_each_refusal_stands_alone() {
-    let h = Handoff {
-        mac: [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c],
-        data_plane_phys: 0x4800_0000,
-    };
-    let [r, p] = h.pack();
-    assert!(Handoff::is_role(r));
-    assert_eq!(Handoff::unpack(r, p), Some(h));
-    assert_eq!(Handoff::unpack(r ^ 1, p), None, "not this server's role");
-    assert_eq!(Handoff::unpack(r, 0), None, "no base");
-    assert_eq!(Handoff::unpack(r, p + 8), None, "not page aligned");
-}
-
 /// **The region's layout, in bytes**: two pages of rings, sixteen receive buffers, sixteen
 /// transmit buffers. The kernel allocates `layout::PAGES` from this, so a slip here maps a
 /// region too small for the buffers the rings point at.

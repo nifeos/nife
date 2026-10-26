@@ -61,10 +61,12 @@ fn start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
             direct_memory_access_phys,
         ));
         server(dev, a2)
-    } else if e1000e::Handoff::is_role(role) {
+    } else if driver_process_contract::e1000e::Handoff::is_role(role) {
         // The `e1000e` server (milestone 494 (a driver for the network card a PC actually has)):
         // the role word carries the tag and the MAC address, the second word the DMA region.
-        let Some(handoff) = e1000e::Handoff::unpack(role, direct_memory_access_phys) else {
+        let Some(handoff) =
+            driver_process_contract::e1000e::Handoff::unpack(role, direct_memory_access_phys)
+        else {
             send(REPORT, BAD_HANDOFF, 0, 0);
             user_mode_runtime::exit();
         };
@@ -72,11 +74,13 @@ fn start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
             Nic::Gigabit(e1000e_transport::GigabitNic::bring_up(handoff)),
             a2,
         )
-    } else if designware_ethernet::Handoff::is_role(role) {
+    } else if driver_process_contract::designware_ethernet::Handoff::is_role(role) {
         // radon's Ethernet port (milestone 53 (the board's own peripherals: network and storage on
         // real silicon)), the same two words in the `e1000e` server's shape.
-        let Some(handoff) = designware_ethernet::Handoff::unpack(role, direct_memory_access_phys)
-        else {
+        let Some(handoff) = driver_process_contract::designware_ethernet::Handoff::unpack(
+            role,
+            direct_memory_access_phys,
+        ) else {
             send(REPORT, BAD_HANDOFF, 0, 0);
             user_mode_runtime::exit();
         };

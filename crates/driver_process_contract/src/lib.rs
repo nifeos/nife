@@ -6,8 +6,8 @@
 //! that is the driver. Ruled 2026-10-25 (UTC), recorded in milestone 857 (crates released on
 //! their own).
 //!
-//! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the
-//! `*_contract` crates that hold what two programs agree on. calef has not named it.
+//! Name: ratified 2026-10-26 (UTC), on #2749, for now: it is expected to break up as components
+//! move into programs and crates of their own.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -15,3 +15,4 @@ pub mod designware_ethernet;
 pub mod designware_mobile_storage;
 pub mod e1000e;
 pub mod extensible_host_controller_interface;
+pub mod non_volatile_memory_express;

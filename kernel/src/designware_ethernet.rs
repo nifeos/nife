@@ -9,9 +9,10 @@
 //! # Scope note (rule 5, architectural parity)
 //!
 //! riscv64-only on purpose: no aarch64 or x86_64 machine nife runs on has this controller. The
-//! network stack above it is shared, through `e1000e`'s `Handoff` shape. A second board with
-//! Synopsys's Ethernet `QoS` controller (the RK3568 and RK3588 are aarch64) would reuse the crate
-//! whole and add its own glue beside `designware_ethernet::jh7110`.
+//! network stack above it is shared, through a `Handoff` of the same shape as `e1000e`'s (both in
+//! `driver_process_contract`). A second board with Synopsys's Ethernet `QoS` controller (the RK3568
+//! and RK3588 are aarch64) would reuse the crate whole and add its own glue beside
+//! `designware_ethernet::jh7110`.
 //!
 
 //! # BUGS
@@ -28,9 +29,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm::{self, Link, Speed};
-use ::designware_ethernet::{
-    DataPlane, Handoff, Hw, Region, Tails, coherence, jh7110, layout, mdio, regs,
-};
+use ::designware_ethernet::{DataPlane, Hw, Region, Tails, coherence, jh7110, layout, mdio, regs};
+use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
 
 use crate::arch::mmu;
