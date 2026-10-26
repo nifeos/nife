@@ -54,8 +54,9 @@ pub(crate) fn print_summary() {
 // things that would kill us in software, then hand the root to the hardware.
 // ---------------------------------------------------------------------------------------------
 
-/// The kernel's fine-map root, saved by [`init`] so a secondary CPU can adopt it and so the kernel
-/// mapper does not have to read `CR3` back (which will name a *process* root once ring 3 exists).
+/// The kernel's fine-map root, saved by [`initialize`] so a secondary CPU can adopt it and so the
+/// kernel mapper does not have to read `CR3` back (which will name a *process* root once ring 3
+/// exists).
 pub(super) static KERNEL_ROOT: AtomicU64 = AtomicU64::new(0);
 
 /// How many frames the fine map cost, root and intermediate tables together. Reported on every
@@ -91,7 +92,7 @@ static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
 /// The fine table maps the same kernel VAs to the same frames as the boot table, so the `mov cr3`
 /// is seamless; [`verify`] checks that before the switch. COM1 is an I/O port, not a mapping, so
 /// nothing here can silence the console.
-pub fn init() {
+pub fn initialize() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()
         .expect("no frame for the root page table")
@@ -152,11 +153,11 @@ pub(super) unsafe fn install(root: u64) {
 /// trampoline (`boot.s`'s `secondary_boot`) already installed `boot_pml4`, and this just switches
 /// to the same fine root the boot core is already running on. Called from `secondary_main`'s step
 /// 3, same as the other two architectures.
-pub(crate) fn init_secondary() {
+pub(crate) fn initialize_secondary() {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
     assert_ne!(
         root, 0,
-        "a secondary CPU reached init_secondary before init"
+        "a secondary CPU reached initialize_secondary before initialize"
     );
     // SAFETY: the primary built this root, verified it, and is running on it.
     unsafe { install(root) };
@@ -166,8 +167,8 @@ pub(crate) fn init_secondary() {
 #[allow(clippy::type_complexity)]
 fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTable, Ia32e> {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
-    // SAFETY: `root` is the fine kernel table `init` built; the direct map makes `phys_to_ptr` valid
-    // for every table frame.
+    // SAFETY: `root` is the fine kernel table `initialize` built; the direct map makes
+    // `phys_to_ptr` valid for every table frame.
     unsafe {
         Mapper::new(
             root,
@@ -224,7 +225,8 @@ pub fn translate(va: u64) -> Option<(u64, Flags)> {
 pub(crate) fn is_mapped(va: u64) -> bool {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
     if root == 0 {
-        // Before `init`, the boot map covers the low 4 GiB three ways over and nothing is a hole.
+        // Before `initialize`, the boot map covers the low 4 GiB three ways over and nothing is a
+        // hole.
         return true;
     }
     // SAFETY: `root` is the live kernel root; the direct map makes `phys_to_ptr` valid; a translate

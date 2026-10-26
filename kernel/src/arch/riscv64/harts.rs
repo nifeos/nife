@@ -28,7 +28,7 @@ pub fn cpu_start(target_hart: u64, entry: u64, context: u64) -> i64 {
 
 /// Whether this machine can start a secondary hart, asked once by `smp::bring_up_secondaries`.
 ///
-/// Always true: SBI HSM is the one mechanism, and `isa::init` refuses firmware without it
+/// Always true: SBI HSM is the one mechanism, and `isa::initialize` refuses firmware without it
 /// (`SBI_REQUIRED`) before this is reached.
 pub fn can_start_secondaries() -> bool {
     true

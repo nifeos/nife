@@ -85,7 +85,7 @@ impl Pl011 {
     }
 
     /// Configure the UART: 8 data bits, no parity, one stop bit, FIFOs on.
-    pub fn init(&self) {
+    pub fn initialize(&self) {
         // Turn the UART off while we reconfigure it.
         self.write(CR, 0);
 

@@ -3,8 +3,8 @@
 //! whenever a unit here is up. Formats are from AMD document 48882 revision 2.62; QEMU 11.1.1 is
 //! the only AMD-Vi this has run on.
 //!
-//! Default deny: `init` fills every device table entry with [`blocked_dte`] before enabling the
-//! unit, and the same entry is the quarantine of §163 (where a confined device's IOMMU fault is
+//! Default deny: `initialize` fills every device table entry with [`blocked_dte`] before enabling
+//! the unit, and the same entry is the quarantine of §163 (where a confined device's IOMMU fault is
 //! delivered). See notes/amd-vi.md, which holds the design, QEMU's differences and the detail
 //! of each BUGS entry.
 
@@ -140,7 +140,7 @@ struct Unit {
     invalidate_all: bool,
     next_domain: u32,
     /// Set once `IommuEn` is: before that the unit reads no commands, so `attach` writes the
-    /// entry alone and `init`'s flush covers it.
+    /// entry alone and `initialize`'s flush covers it.
     enabled: bool,
     /// How many devices an IVMD had attached before the unit was enabled.
     reserved_devices: u32,
@@ -171,8 +171,8 @@ enum Slot {
 static UNITS: IrqSafeMutex<[Slot; MAX_IVHDS]> =
     IrqSafeMutex::new(rank::IOMMU, [const { Slot::Absent }; MAX_IVHDS]);
 
-/// The IVRS as [`init`] read it, kept so `attach` can route a device to its unit. Never held at
-/// the same time as [`UNITS`].
+/// The IVRS as [`initialize`] read it, kept so `attach` can route a device to its unit. Never held
+/// at the same time as [`UNITS`].
 static IVRS: IrqSafeMutex<Option<IvrsUnits>> = IrqSafeMutex::new(rank::IOMMU, None);
 
 fn r64(base: u64, off: u64) -> u64 {
@@ -520,7 +520,7 @@ fn enable(u: &mut Unit) {
 }
 
 /// **Bring every AMD-Vi unit the IVRS names up, each translating the devices it serves.** Three
-/// steps, in the order VT-d's `init` takes and for the same reason:
+/// steps, in the order VT-d's `initialize` takes and for the same reason:
 ///
 /// 1. Every unit gets an all-blocked device table and its rings, still disabled.
 /// 2. Every device an IVMD names (types 21h and 22h) is confined, through
@@ -528,7 +528,7 @@ fn enable(u: &mut Unit) {
 /// 3. Each unit is enabled and its caches emptied.
 ///
 /// One `amd-vi` line per unit.
-pub fn init(ivrs: &IvrsUnits) {
+pub fn initialize(ivrs: &IvrsUnits) {
     *IVRS.lock() = Some(*ivrs);
     {
         let mut g = UNITS.lock();

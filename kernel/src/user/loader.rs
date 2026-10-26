@@ -218,8 +218,8 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
 ///
 /// **The same road Linux's initramfs travels.** Nothing about this binary is known to the kernel
 /// at build time: QEMU put a file somewhere in RAM and wrote the address into
-/// `/chosen/linux,initrd-start`, and `memory::init` read it there and told the frame allocator
-/// to keep its hands off. That reservation was written at milestone 3, for this.
+/// `/chosen/linux,initrd-start`, and `memory::initialize` read it there and told the frame
+/// allocator to keep its hands off. That reservation was written at milestone 3, for this.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the boundary

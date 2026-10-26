@@ -7,8 +7,8 @@
 use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 
 /// Each hart's S-mode PLIC context, read from the device tree's `interrupts-extended` by
-/// [`init_contexts`], indexed by hart id. [`CTX_UNKNOWN`] where the tree did not say, in which
-/// case [`s_context_of`] falls back to the `2*hart + 1` formula.
+/// [`initialize_contexts`], indexed by hart id. [`CTX_UNKNOWN`] where the tree did not say, in
+/// which case [`s_context_of`] falls back to the `2*hart + 1` formula.
 ///
 /// A table, because the formula is QEMU's layout: on the JH7110 hart h's S context is `2h`. See
 /// notes/riscv-port/traps.md.
@@ -21,9 +21,9 @@ const CTX_UNKNOWN: usize = usize::MAX;
 ///
 /// A tree that does not state it leaves the formula in force. Prints only when the layout differs
 /// from the formula.
-pub(crate) fn init_contexts(dtb_ptr: usize) {
-    // SAFETY: the pointer firmware handed us, already parsed by memory::init on this boot, named
-    // through the direct map.
+pub(crate) fn initialize_contexts(dtb_ptr: usize) {
+    // SAFETY: the pointer firmware handed us, already parsed by memory::initialize on this boot,
+    // named through the direct map.
     let Ok(dt) = (unsafe {
         device_tree_blob::DeviceTreeBlob::from_ptr(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
@@ -148,29 +148,29 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
     None
 }
 
-/// The boot hart's half of the shared `interrupts_init`: bring the PLIC up on the boot hart's S
-/// context, then unmask this hart.
+/// The boot hart's half of the shared `initialize_interrupts`: bring the PLIC up on the boot hart's
+/// S context, then unmask this hart.
 ///
 /// The PLIC base is stored before `sie.SEIE` is set, so no claim goes through a zero base. Every
 /// source stays disabled until [`enable`] routes it.
-pub fn init() {
+pub fn initialize() {
     if let Some((plic_phys, _)) = crate::memory::plic_region() {
-        // SAFETY: `mmu::init` mapped the PLIC device-typed in the direct map, and this is its
+        // SAFETY: `mmu::initialize` mapped the PLIC device-typed in the direct map, and this is its
         // virtual address there. The context is the boot hart's S context, derived rather than
         // hardcoded because OpenSBI elects the boot hart by lottery (see `boot_s_context`).
         unsafe {
-            crate::drivers::plic::init(
+            crate::drivers::plic::initialize(
                 super::mmu::phys_to_virt(plic_phys) as usize,
                 boot_s_context(),
             );
         }
     }
-    init_this_cpu();
+    initialize_this_cpu();
 }
 
 /// Unmask this hart's software interrupts (the reschedule IPI) and external interrupts, as it
 /// joins the scheduler. The boot hart opens its context and routes sources later.
-pub(crate) fn init_this_cpu() {
+pub(crate) fn initialize_this_cpu() {
     super::exceptions::enable_software_interrupts();
     // Safe before any source is routed: SEIE with nothing enabled delivers nothing.
     super::exceptions::enable_external();

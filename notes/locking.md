@@ -233,7 +233,7 @@ from the host triple. One commit then built two aarch64 kernels 25 KiB of text a
 `script/fastpath-footprint` reported a shrink that was only the hash. With the hint each call site
 gets the same cost decision on every host, checked by building under two metadata seeds that
 split the old way. `#[inline(always)]` was refused there: it pushed
-`memory::init`'s frame past the 4 KiB guard page.
+`memory::initialize`'s frame past the 4 KiB guard page.
 
 `lock_masked`, the half after masking, is `#[inline(always)]` so `lock` is one call in the gate's
 -O0 build. Split out as a second frame, it cost a riscv64 yield round trip 56 instructions.

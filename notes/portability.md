@@ -122,7 +122,7 @@ Traps and interrupts:
 - `exceptions::{last_user_fault, USER_FAULTS, ROUTED_IRQS, SPURIOUS_IRQS}`: diagnostics.
 - `interrupts::{disable, restore, enable, is_enabled}`: `disable` returns the prior state
   and callers `restore` it; `enable` is for first enabling only.
-- `irq::{init, init_this_cpu, print_summary}`: the interrupt controller, then each core.
+- `irq::{init, initialize_this_cpu, print_summary}`: the interrupt controller, then each core.
 - `irq::enable(id)`: unmask a source the handler masked, at an `Irq` capability's ACK.
 - `irq::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
 - `irq::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board uses INTx.
@@ -138,7 +138,7 @@ Time:
 
 Memory:
 - `mmu::Format`: this architecture's page-table format from the `paging` crate.
-- `mmu::{init, init_secondary, print_summary}`: the kernel's tables, then each core onto them.
+- `mmu::{init, initialize_secondary, print_summary}`: the kernel's tables, then each core onto them.
 - `mmu::{phys_to_virt, virt_to_phys}`: the direct map, both ways.
 - `mmu::{map_page, unmap_page}`: one kernel page. Map refuses to overwrite and unmap
   invalidates the TLB, which is what holds break-before-make.
@@ -159,7 +159,7 @@ Tests:
 
 `HaltReason`, `NAME` and `UserFault` are defined once in `kernel/src/arch/` for all three.
 Anything else an architecture exports is its own, and a caller reaches it under a `cfg`.
-`machine`, `pmu::init`, `exceptions::enable_external`, `fastpath_pad_body` and the timer
+`machine`, `pmu::initialize`, `exceptions::enable_external`, `fastpath_pad_body` and the timer
 deadline items each exist on two architectures, so they are not in this contract.
 
 Nothing checks this list against the tree; the BUGS section of `kernel/src/arch/mod.rs` says

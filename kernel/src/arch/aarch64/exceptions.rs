@@ -247,7 +247,7 @@ const VECTOR_NAMES: [&str; 16] = [
 ///
 /// After this returns, a fault produces a legible report instead of a silent death.
 /// Until it returns, it doesn't.
-pub fn init() {
+pub fn initialize() {
     unsafe extern "C" {
         static exception_vectors: core::ffi::c_void;
     }

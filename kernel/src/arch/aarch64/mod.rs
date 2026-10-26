@@ -34,12 +34,12 @@ pub use context::{Context, switch_to};
 pub use fastpath_pad::fastpath_pad_body;
 
 mod assembly;
-mod cpu_init;
+mod cpu_initialization;
 mod percpu;
 mod primitives;
 mod psci;
 
-pub use cpu_init::*;
+pub use cpu_initialization::*;
 pub use percpu::*;
 pub use primitives::*;
 pub use psci::*;

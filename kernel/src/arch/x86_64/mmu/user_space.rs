@@ -54,8 +54,8 @@ pub fn walk_user(root: u64, va: u64) -> paging::Walk {
 ///
 /// **The kernel's own root**, exactly as on RISC-V and for the same reason: one register names the
 /// whole space, so there is no separate empty user table to point at. Its low half is zero
-/// (`init`'s `verify` asserts it), so every user address faults, which is what a kernel thread
-/// should get.
+/// (`initialize`'s `verify` asserts it), so every user address faults, which is what a kernel
+/// thread should get.
 #[allow(dead_code)]
 pub(crate) fn reserved_root() -> u64 {
     ttbr0_value(KERNEL_ROOT.load(Ordering::Relaxed), 0)
@@ -93,7 +93,7 @@ pub(crate) fn share_kernel_half(root: u64) {
     let kernel_root = KERNEL_ROOT.load(Ordering::Relaxed);
     assert_ne!(
         kernel_root, 0,
-        "share_kernel_half before mmu::init: there is no kernel map to share yet"
+        "share_kernel_half before mmu::initialize: there is no kernel map to share yet"
     );
     // SAFETY: both are page-aligned root tables reachable through the direct map, which `boot.s`
     // installed before any Rust ran. Only the high-half entries are written; the low half stays
@@ -170,8 +170,8 @@ pub unsafe fn activate_user(cr3: u64) {
 /// Remove the user address space from this CPU: fall back to the kernel-only reserved root.
 #[allow(dead_code)]
 pub fn deactivate_user() {
-    // SAFETY: `reserved_root()` composes `KERNEL_ROOT`, the fine map `init` built, verified and is
-    // running on. It carries the kernel half by construction and its low half is empty.
+    // SAFETY: `reserved_root()` composes `KERNEL_ROOT`, the fine map `initialize` built, verified
+    // and is running on. It carries the kernel half by construction and its low half is empty.
     unsafe { switch_user_root(reserved_root()) };
 }
 

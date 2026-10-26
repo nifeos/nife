@@ -147,19 +147,19 @@ pub(crate) const SPECIAL_FIRST: u32 = 1020;
 /// table cannot drift apart without a build failure.
 pub(crate) const SLOTS: usize = 8;
 
-/// The distributor's virtual address, zero until [`init`]. Written once, on the boot core, before
-/// any other core exists; everything after reads it.
+/// The distributor's virtual address, zero until [`initialize`]. Written once, on the boot core,
+/// before any other core exists; everything after reads it.
 static DISTRIBUTOR: AtomicU64 = AtomicU64::new(0);
 /// The redistributor region, as the device tree named it (virtual base, length).
 static REDISTRIBUTOR_REGION: [AtomicU64; 2] = [const { AtomicU64::new(0) }; 2];
-/// Each slot's own `RD_base`, zero until that core has run [`init_this_cpu`].
+/// Each slot's own `RD_base`, zero until that core has run [`initialize_this_cpu`].
 static REDISTRIBUTOR: [AtomicU64; SLOTS] = [const { AtomicU64::new(0) }; SLOTS];
 
 fn gicd() -> Frame {
     let base = DISTRIBUTOR.load(Ordering::Relaxed);
-    assert!(base != 0, "gicv3 used before gicv3::init");
-    // SAFETY: `init`'s caller promised a mapped GICv3 distributor at this address, and it is never
-    // unmapped.
+    assert!(base != 0, "gicv3 used before gicv3::initialize");
+    // SAFETY: `initialize`'s caller promised a mapped GICv3 distributor at this address, and it is
+    // never unmapped.
     unsafe { Frame::new(base) }
 }
 
@@ -168,10 +168,10 @@ fn rd(slot: usize) -> (Frame, Frame) {
     let base = REDISTRIBUTOR[slot].load(Ordering::Relaxed);
     assert!(
         base != 0,
-        "gicv3: slot {slot} has no redistributor; init_this_cpu has not run on that core"
+        "gicv3: slot {slot} has no redistributor; initialize_this_cpu has not run on that core"
     );
-    // SAFETY: `init_this_cpu` stored a frame it found inside the region `init`'s caller promised is
-    // mapped, and whose own GICR_TYPER named this core.
+    // SAFETY: `initialize_this_cpu` stored a frame it found inside the region `initialize`'s caller
+    // promised is mapped, and whose own GICR_TYPER named this core.
     unsafe { (Frame::new(base), Frame::new(base + FRAME)) }
 }
 
@@ -200,13 +200,13 @@ pub(crate) unsafe fn identification(gicd: u64) -> u32 {
 
 /// Bring the distributor up: every SPI Group 1, disabled, inactive, at the default priority, then
 /// affinity routing and both non-secure groups on. The boot core does this once; the private half
-/// is per core ([`init_this_cpu`]). Linux's `gic_dist_init` (v6.16) minus the extended SPI range.
-/// SPIs are routed when they are enabled, not here.
+/// is per core ([`initialize_this_cpu`]). Linux's `gic_dist_init` (v6.16) minus the extended SPI
+/// range. SPIs are routed when they are enabled, not here.
 ///
 /// # Safety
 /// `distributor` must name a mapped GICv3 distributor (64 KiB) and `redistributors` and
 /// `redistributors_size` its mapped redistributor region, both device memory, both exclusively ours.
-pub unsafe fn init(distributor: u64, redistributors: u64, redistributors_size: u64) {
+pub unsafe fn initialize(distributor: u64, redistributors: u64, redistributors_size: u64) {
     DISTRIBUTOR.store(distributor, Ordering::Relaxed);
     REDISTRIBUTOR_REGION[0].store(redistributors, Ordering::Relaxed);
     REDISTRIBUTOR_REGION[1].store(redistributors_size, Ordering::Relaxed);
@@ -242,17 +242,21 @@ pub unsafe fn init(distributor: u64, redistributors: u64, redistributors_size: u
 ///
 /// Panics, naming the affinity, if no frame in the region claims this core, which would otherwise
 /// take no timer and no SGI.
-pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
+pub(crate) fn initialize_this_cpu(slot: usize, affinity: u32) {
     let base = REDISTRIBUTOR_REGION[0].load(Ordering::Relaxed);
     let size = REDISTRIBUTOR_REGION[1].load(Ordering::Relaxed);
-    assert!(base != 0, "gicv3::init_this_cpu before gicv3::init");
+    assert!(
+        base != 0,
+        "gicv3::initialize_this_cpu before gicv3::initialize"
+    );
 
     let mut at = base;
     let found = loop {
         if at + 2 * FRAME > base + size {
             break None;
         }
-        // SAFETY: `at` is inside the region `init`'s caller promised is mapped (checked above).
+        // SAFETY: `at` is inside the region `initialize`'s caller promised is mapped (checked
+        // above).
         let frame = unsafe { Frame::new(at) };
         let arch_rev = (frame.read::<u32>(PIDR2) >> 4) & 0xf;
         if !(3..=4).contains(&arch_rev) {
@@ -337,8 +341,8 @@ pub fn enable(slot: usize, intid: u32, route: u64) {
 /// `slot`'s redistributor, which must be the calling core's.
 ///
 /// An SGI is never disabled, which is the GICv2 behaviour the tree depends on (see
-/// [`init_this_cpu`]). An SGI is an edge a core raises on purpose; it cannot storm, so the reason
-/// the handler masks a line does not apply to it.
+/// [`initialize_this_cpu`]). An SGI is an edge a core raises on purpose; it cannot storm, so the
+/// reason the handler masks a line does not apply to it.
 pub(crate) fn disable(slot: usize, intid: u32) {
     let bit: u32 = 1 << (intid % 32);
     if intid < 16 {

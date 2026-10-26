@@ -68,7 +68,7 @@ edit that file, so it is flagged rather than fixed.
 
 The second is measured, and it holds. aarch64 is not one flag away. `gic-version=3` gives QEMU's
 `virt` an ITS. It also moves `reg[1]` from the CPU interface to the redistributor, which
-`memory::init`'s `intc@` name-prefix match hands to a GICv2 driver without ever reading
+`memory::initialize`'s `intc@` name-prefix match hands to a GICv2 driver without ever reading
 `compatible`. The measured result is a boot that says `GICv2` while printing a redistributor base,
 with zero timer ticks. That is the bill of milestone 227 (a GICv3 driver, because GICv2 boots and
 silently loses every interrupt); see design/roadmap/0317-interrupt-remapping-flags.md.
@@ -118,8 +118,8 @@ ring 0, whatever `crates/paging`'s decoder reported.
 
 It is not a userspace escape on its own, since a kernel control-flow bug has to come first. That is
 why it belongs here rather than in the table: it is the thing that turns any such bug into a full
-one. `arch::x86_64::init` now sets the bit on every core whose CPUID offers it, and prints a line
-either way. There is still no test, because a falsification would need ring 0 to survive its own
-page fault. `SMAP` (its sibling, per-access and not free) stays off, with the reason
+one. `arch::x86_64::initialize` now sets the bit on every core whose CPUID offers it, and prints a
+line either way. There is still no test, because a falsification would need ring 0 to survive its
+own page fault. `SMAP` (its sibling, per-access and not free) stays off, with the reason
 `mmu::permit_kernel_access_to_user_pages` records. Both are milestone 424 (a ring 0 that provably
 cannot execute ring-3 pages, and SMAP with a number).

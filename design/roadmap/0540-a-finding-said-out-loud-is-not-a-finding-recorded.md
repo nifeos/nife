@@ -40,8 +40,8 @@ The day this was raised produced at least these, none of which reached the tree 
 - `script/metrics --check` reports stale immediately after any commit, because the current week's
   row records HEAD's sha.
 - Milestone 447 (a thread's vector registers are its own) found that RISC-V's boot hart never calls
-  `arch::init`, and named the class: anything else assuming that hook runs per core has the bug.
-  Three call sites, no audit.
+  `arch::initialize`, and named the class: anything else assuming that hook runs per core has the
+  bug. Three call sites, no audit.
 - A lane's own correction went stale before its pull request merged, because it measured the tree it
   branched from and `main` moved within the hour.
 

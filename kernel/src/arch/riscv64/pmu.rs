@@ -10,7 +10,7 @@
 //! # BUGS
 //!
 //! - Nothing here has run on silicon; under QEMU-TCG a green test proves the plumbing only.
-//! - The boot hart only: SBI PMU counters are per hart, and [`init`] runs on the boot hart.
+//! - The boot hart only: SBI PMU counters are per hart, and [`initialize`] runs on the boot hart.
 //! - A firmware counter is refused, since reading one costs an `ecall` per read.
 //! - `counter_stop` is never called on the happy path; only [`stop`]'s test calls it.
 //!
@@ -32,14 +32,15 @@ const FID_COUNTER_CONFIG_MATCHING: usize = 2;
 /// `sbi_pmu_counter_stop`.
 const FID_COUNTER_STOP: usize = 4;
 
-/// Why there is or is not a cycle counter, decided once by [`init`] and printed on the boot line,
-/// because each cause of "no counter" needs a different fix.
+/// Why there is or is not a cycle counter, decided once by [`initialize`] and printed on the boot
+/// line, because each cause of "no counter" needs a different fix.
 ///
-/// The discriminant is the stored byte, and `Unknown` is zero, what an unreached [`init`] leaves.
+/// The discriminant is the stored byte, and `Unknown` is zero, what an unreached [`initialize`]
+/// leaves.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub(crate) enum CycleCounter {
-    /// [`init`] has not run.
+    /// [`initialize`] has not run.
     Unknown = 0,
     /// Firmware does not implement the SBI PMU extension. Nothing to ask.
     NoPmuExtension,
@@ -58,7 +59,7 @@ pub(crate) enum CycleCounter {
     Running,
 }
 
-/// [`CycleCounter`] as a byte, written by [`init`] on the boot hart before anything reads it.
+/// [`CycleCounter`] as a byte, written by [`initialize`] on the boot hart before anything reads it.
 /// Its Release store of `Running` publishes the other statics.
 static OUTCOME: AtomicU8 = AtomicU8::new(CycleCounter::Unknown as u8);
 
@@ -79,10 +80,10 @@ static CYCLE_BITS: AtomicU32 = AtomicU32::new(0);
 /// Find a hardware counter that counts CPU cycles, start it, check it moves, and record how to
 /// read it, or why not, in [`outcome`].
 ///
-/// Called once from `kernel_main`, after [`super::isa::init`] probed the SBI extensions. Without
-/// SBI PMU, [`cycles`] answers `None`. A refused counter is stopped. See
+/// Called once from `kernel_main`, after [`super::isa::initialize`] probed the SBI extensions.
+/// Without SBI PMU, [`cycles`] answers `None`. A refused counter is stopped. See
 /// notes/riscv-cycle-counters.md.
-pub fn init() {
+pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     CYCLE_CSR.store(NO_CSR, Ordering::Relaxed);
 
@@ -177,7 +178,7 @@ pub(crate) fn outcome() -> CycleCounter {
     }
 }
 
-/// Stop counter `idx` and discard the answer, on [`init`]'s give-up paths.
+/// Stop counter `idx` and discard the answer, on [`initialize`]'s give-up paths.
 fn stop_counter(idx: usize) {
     let _ = sbi_call(FID_COUNTER_STOP, [idx, 1, 0, 0, 0]);
 }
@@ -199,7 +200,7 @@ pub(crate) fn cycles() -> Option<u64> {
     read_csr(CYCLE_CSR.load(Ordering::Relaxed) as u16)
 }
 
-/// Whether the counter [`init`] started is the `cycle` CSR (0xc00) itself, the one a granted
+/// Whether the counter [`initialize`] started is the `cycle` CSR (0xc00) itself, the one a granted
 /// U-mode `rdcycle` reads. A `Running` outcome on that CSR means this hart read it from S-mode, so
 /// firmware left `mcounteren.CY` set and a granted U-mode read will not trap.
 ///
@@ -220,7 +221,7 @@ pub(crate) fn cycle_counter_width() -> Option<u32> {
     Some(CYCLE_BITS.load(Ordering::Relaxed))
 }
 
-/// Stop the counter [`init`] started. Only its test calls it.
+/// Stop the counter [`initialize`] started. Only its test calls it.
 ///
 /// Returns the SBI error: 0 stopped, -8 (`SBI_ERR_ALREADY_STOPPED`) already stopped, -3 no counter.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
@@ -337,7 +338,9 @@ pub(crate) fn print_summary() {
             CYCLE_COUNTER_IDX.load(Ordering::Relaxed),
             CYCLE_CSR.load(Ordering::Relaxed),
         ),
-        CycleCounter::Unknown => crate::println!("  cycles      : arch::pmu::init has not run"),
+        CycleCounter::Unknown => {
+            crate::println!("  cycles      : arch::pmu::initialize has not run")
+        }
     }
 }
 
@@ -357,7 +360,7 @@ mod tests {
         assert_ne!(
             outcome,
             CycleCounter::Unknown,
-            "kernel_main calls arch::pmu::init before the suite"
+            "kernel_main calls arch::pmu::initialize before the suite"
         );
 
         let running = outcome == CycleCounter::Running;
@@ -409,7 +412,8 @@ mod tests {
         }
     }
 
-    /// The counter still moves forward, which catches one firmware stops after [`init`] checked.
+    /// The counter still moves forward, which catches one firmware stops after [`initialize`]
+    /// checked.
     ///
     /// The window is a `time` spin, as in the bench probe. Under TCG the delta counts instructions.
     #[test_case]
@@ -430,7 +434,8 @@ mod tests {
         );
     }
 
-    /// Firmware accepts the stop with 0 or -8, and re-running [`init`] leaves a decided outcome.
+    /// Firmware accepts the stop with 0 or -8, and re-running [`initialize`] leaves a decided
+    /// outcome.
     ///
     /// It does not assert the counter comes back: on `rva23s64` it goes `Running` to `Stuck`
     /// (notes/riscv-cycle-counters.md, BUGS).
@@ -445,7 +450,7 @@ mod tests {
             "sbi_pmu_counter_stop returned {err}, which is neither success nor already-stopped"
         );
 
-        init();
+        initialize();
         assert_ne!(
             outcome(),
             CycleCounter::Unknown,

@@ -91,8 +91,8 @@ fn region() -> (u64, u64) {
 /// **Point this core's three IST entries at its own stacks**, and write this core's per-CPU pointer
 /// into the word above each one's frame.
 ///
-/// Called from `segments::init`, once per core, after `cpu::init_this_cpu` and the GDT reload and
-/// before `exceptions::init` loads the IDT whose gates select these entries.
+/// Called from `segments::initialize`, once per core, after `cpu::initialize_this_cpu` and the GDT
+/// reload and before `exceptions::initialize` loads the IDT whose gates select these entries.
 ///
 /// # Safety
 /// Once per core, on that core, before any IST vector can be delivered to it, with `percpu` this

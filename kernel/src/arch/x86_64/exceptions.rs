@@ -4,7 +4,7 @@
 //! x86 has 256 entry points and tells the handler nothing, so trap.s manufactures the vector with
 //! one stub per vector, and ten of the 32 exceptions push an error code the other 246 vectors do
 //! not. The kernel sees a [`TrapFrame`], counters it can assert on, the last user fault, and an
-//! `init` that makes faults reportable. See notes/x86-port/traps.md.
+//! `initialize` that makes faults reportable. See notes/x86-port/traps.md.
 
 use core::cell::SyncUnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
@@ -191,7 +191,7 @@ impl IdtEntry {
 
 const _: () = assert!(size_of::<IdtEntry>() == 16);
 
-/// The IDT. 256 entries, 4 KiB, filled by [`init`] from the stub table trap.s exports.
+/// The IDT. 256 entries, 4 KiB, filled by [`initialize`] from the stub table trap.s exports.
 ///
 /// A `SyncUnsafeCell`, by calef's ruling of 2026-10-09 on milestone 891 (a mutable static becomes
 /// an atomic, a lock or a recorded cell): `lidt` takes its address and the CPU reads gates from it
@@ -204,7 +204,7 @@ static IDT: SyncUnsafeCell<[IdtEntry; 256]> = SyncUnsafeCell::new([IdtEntry::emp
 /// tests in `super::ist`.
 #[cfg(test)]
 pub(super) fn gate_ist(vector: usize) -> u8 {
-    // SAFETY: a read of one gate, which `init` wrote once before any core loaded the table.
+    // SAFETY: a read of one gate, which `initialize` wrote once before any core loaded the table.
     (unsafe { (*IDT.get())[vector].ist }) & 0b111
 }
 
@@ -356,7 +356,7 @@ fn entered_user_with_no_entry_point(user_sp: u64) -> ! {
 
 /// Unmask external interrupts at the controller, which on x86 is nothing: its one gate is
 /// `RFLAGS.IF` (`arch::interrupts::enable`), where RISC-V also has `sie.SEIE`. The per-source masks
-/// are the IO APIC's (`irq::enable`) and the TPR, which `irq::init_local_apic` zeroes.
+/// are the IO APIC's (`irq::enable`) and the TPR, which `irq::initialize_local_apic` zeroes.
 ///
 /// # Panics
 /// If the local APIC is not up, so no caller believes interrupts unmasked when nothing can deliver.
@@ -379,7 +379,7 @@ static IDT_BUILT: AtomicBool = AtomicBool::new(false);
 /// The table is built once, by the first core here (the boot core), and every core `lidt`s its
 /// own IDTR. A secondary rebuilding it would race the boot core's live interrupt delivery, which
 /// stays enabled across `bring_up_secondaries`. See notes/x86-port/traps.md.
-pub fn init() {
+pub fn initialize() {
     if !IDT_BUILT.swap(true, Ordering::AcqRel) {
         // SAFETY: guarded by the swap above, so at most one core ever runs this loop, and it runs
         // to completion before any OTHER core's `lidt` (below) can possibly point at this table:
@@ -472,7 +472,7 @@ const _: () = {
 /// `DF` (10) must be clear on entry to a System V function. `IOPL` (13:12) inherited from ring 3 is
 /// not the kernel's choice. `NT` (14) changes what `iret` means. `RF` (16) suppresses instruction
 /// breakpoints. `AC` (18) suspends SMAP for ring-0 accesses, a known privilege-escalation lever
-/// (this kernel leaves SMAP off; `cpu_init.rs`).
+/// (this kernel leaves SMAP off; `cpu_initialization.rs`).
 const SYSCALL_FLAG_MASK: u64 = (1 << 8)      // TF
     | (1 << 9)                               // IF
     | (1 << 10)                              // DF
@@ -499,7 +499,7 @@ const _: () = assert!(
 /// # Safety
 /// Must be called with the GDT installed (the selectors this writes index it) and before anything
 /// enters ring 3.
-pub(crate) unsafe fn init_syscall() {
+pub(crate) unsafe fn initialize_syscall() {
     let star = ((SYSRET_SELECTOR_BASE as u64) << 48) | ((KERNEL_CODE as u64) << 32);
     // SAFETY: these are the architectural `syscall` MSRs, present on every long-mode CPU (they are
     // part of the mode itself, not an optional feature). The values are checked against the GDT by

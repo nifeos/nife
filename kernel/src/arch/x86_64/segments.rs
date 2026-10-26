@@ -122,19 +122,20 @@ static TSS: SyncUnsafeCell<[Tss; crate::cpu::MAX_CPUS]> =
 /// register, aliasing every core's ring-0 stack onto whichever one initialized last.
 ///
 /// A `SyncUnsafeCell` for the reason [`TSS`] is one (milestone 891): `lgdt` takes its address. Each
-/// core writes only its own row, in [`init`], before its own `lgdt`, and no core reads another's.
+/// core writes only its own row, in [`initialize`], before its own `lgdt`, and no core reads
+/// another's.
 static GDT: SyncUnsafeCell<[[u64; 7]; crate::cpu::MAX_CPUS]> =
     SyncUnsafeCell::new([BASE_GDT; crate::cpu::MAX_CPUS]);
 
 /// Every core's GDT starts identical: only the TSS descriptor (slots 5 and 6) differs per core, and
-/// [`init`] fills those in from this core's own [`TSS`] entry.
+/// [`initialize`] fills those in from this core's own [`TSS`] entry.
 const BASE_GDT: [u64; 7] = [
     0,                     // 0x00: the mandatory null descriptor
     0x00AF_9A00_0000_FFFF, // 0x08: kernel code, DPL 0, L=1
     0x00CF_9200_0000_FFFF, // 0x10: kernel data, DPL 0
     0x00CF_F200_0000_FFFF, // 0x18: user data, DPL 3
     0x00AF_FA00_0000_FFFF, // 0x20: user code, DPL 3, L=1
-    0,                     // 0x28: TSS descriptor, low half, filled in by `init`
+    0,                     // 0x28: TSS descriptor, low half, filled in by `initialize`
     0,                     // 0x30: TSS descriptor, high half
 ];
 
@@ -153,11 +154,11 @@ pub(crate) struct DescriptorTablePointer {
 /// reloaded by a far return (`retfq`); a 64-bit far jump would need a memory operand.
 ///
 /// # Safety
-/// Must be called once per CPU, with a valid stack and `cpu::init_this_cpu` already run on it
+/// Must be called once per CPU, with a valid stack and `cpu::initialize_this_cpu` already run on it
 /// (this fills `TSS`/`GDT` at `cpu::id()`'s own slot, and restores this core's per-CPU pointer
 /// afterward; see below), before anything depends on the GDT: it replaces the boot GDT that
 /// `boot.s` installed, and the old one goes away.
-pub unsafe fn init() {
+pub unsafe fn initialize() {
     let id = crate::cpu::id();
 
     // The TSS descriptor holds the TSS's address, known only once loaded, across three fields.
@@ -183,7 +184,7 @@ pub unsafe fn init() {
     let high = base >> 32;
 
     // SAFETY: this core writes only its OWN slot (`id`), before anything else on this core reads
-    // its GDT; a different core's `init` writes a different slot.
+    // its GDT; a different core's `initialize` writes a different slot.
     unsafe {
         (*GDT.get())[id][5] = low;
         (*GDT.get())[id][6] = high;
@@ -197,8 +198,8 @@ pub unsafe fn init() {
     };
 
     // Loading a segment register in long mode zeroes that segment's base MSR, and `gs`'s base is
-    // the per-CPU pointer `cpu::init_this_cpu` already set (the console lock reads it). So it is
-    // saved and put back around the reload, here rather than by the caller. `fs` would need the
+    // the per-CPU pointer `cpu::initialize_this_cpu` already set (the console lock reads it). So it
+    // is saved and put back around the reload, here rather than by the caller. `fs` would need the
     // same if anything used its base. See notes/x86-port/traps.md.
     let gs_base = super::percpu();
 
@@ -235,8 +236,8 @@ pub unsafe fn init() {
     // Put the per-CPU pointer back; see the comment above the `asm!`.
     super::set_percpu(gs_base);
 
-    // This core's NMI, double-fault and machine-check stacks, before `exceptions::init` loads the
-    // IDT whose gates select them.
+    // This core's NMI, double-fault and machine-check stacks, before `exceptions::initialize` loads
+    // the IDT whose gates select them.
     // SAFETY: once per core, on this core, before its IDT exists, with this core's own block.
     unsafe { super::ist::install(id, gs_base as u64) };
 }

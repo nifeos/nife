@@ -161,10 +161,10 @@ This is open question 2.
 `_start(role, arg, clock)` keeps `arg` (the directory rights the shell is told) and `clock` (the
 clock slot), because both are told for reasons the code records. `role` is no longer read. The
 system initializer passes 0 there and can keep doing so; changing its three-word spawn convention
-is outside this milestone. Every wiring now grants a budget, so the branch that skips `heap_init`
-for roles 1 and 2 goes. Until 660 deletes role 6, `_start` reads `role` for that one branch and
-nothing else. There is no script mode to choose: a scripted shell is the interactive shell with the
-harness as its terminal, so no role dispatch comes back under another name.
+is outside this milestone. Every wiring now grants a budget, so the branch that skips
+`initialize_heap` for roles 1 and 2 goes. Until 660 deletes role 6, `_start` reads `role` for that
+one branch and nothing else. There is no script mode to choose: a scripted shell is the interactive
+shell with the harness as its terminal, so no role dispatch comes back under another name.
 
 ## What has to be decided first
 

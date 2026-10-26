@@ -187,8 +187,8 @@ practice a version-0 handoff means the kernel cannot find its RAM, and the calle
 say.
 
 A module is x86's answer to `/chosen/linux,initrd-start`. On the other two architectures the loader
-writes the archive's bounds into the device tree and `memory::init` reads them out. Here it writes
-them into a module list.
+writes the archive's bounds into the device tree and `memory::initialize` reads them out. Here it
+writes them into a module list.
 
 The `CPUID` half looked as though it held nothing for a host test, since asking takes one
 instruction and there is no format to parse. Reading the answer is trivial and deciding what it

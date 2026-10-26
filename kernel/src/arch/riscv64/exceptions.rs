@@ -283,7 +283,7 @@ pub(crate) fn enable_external() {
 
 /// Install the trap vector: `stvec` = `trap_entry`, in direct mode. The low two bits of `stvec`
 /// select the mode, and trap.s's `.balign 4` keeps them 0.
-pub fn init() {
+pub fn initialize() {
     unsafe extern "C" {
         fn trap_entry();
     }

@@ -77,8 +77,8 @@ const SSTATUS_FS_INITIAL: u64 = 0b01 << 13;
 /// `FS = Dirty`: what the hardware sets the instant an FP register is written, and therefore what
 /// the first-use handler writes into the trap frame once it has loaded a register file.
 pub(super) const SSTATUS_FS_DIRTY: u64 = 0b11 << 13;
-/// `sstatus.VS`, bits 10:9, the vector unit's enable. Nothing saves vector state, so [`init`] turns
-/// it Off; a hart without V hardwires it to zero.
+/// `sstatus.VS`, bits 10:9, the vector unit's enable. Nothing saves vector state, so [`initialize`]
+/// turns it Off; a hart without V hardwires it to zero.
 const SSTATUS_VS: u64 = 0b11 << 9;
 /// `XTheadVector`'s `VS`, bits 24:23 (Linux's `SR_VS_THEAD`), where the C906 and C910 keep vector
 /// 0.7.1's enable. Cleared only on a T-Head hart; elsewhere these bits are reserved.
@@ -86,9 +86,10 @@ const SSTATUS_XTHEADVECTOR_VS: u64 = 0b11 << 23;
 
 /// Put this hart into the state this module assumes: FP and both vector enables off.
 ///
-/// Called per hart from `sched::init` and `sched::adopt_secondary_idle`, not `arch::init`, which
-/// the RISC-V boot does not pass through; firmware may leave `FS` open. The call site says why.
-pub fn init() {
+/// Called per hart from `sched::initialize` and `sched::adopt_secondary_idle`, not
+/// `arch::initialize`, which the RISC-V boot does not pass through; firmware may leave `FS` open.
+/// The call site says why.
+pub fn initialize() {
     disable();
     instructions::clear_sstatus(SSTATUS_VS);
     if super::isa::is_thead() {

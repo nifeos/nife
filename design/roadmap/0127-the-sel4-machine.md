@@ -101,7 +101,7 @@ everything.
 | `CNTVOFF_EL2` = 0 | Subtracted from the physical counter to make the **virtual** one, which is the counter `arch/aarch64/timer.rs` deliberately uses. Leaving it is leaving the system clock offset by an arbitrary 64-bit number. |
 | `VPIDR_EL2`, `VMPIDR_EL2` | **These are what `MIDR_EL1` and `MPIDR_EL1` return at EL1 once EL2 is implemented.** Not copying the real values across leaves the core-parking branch, `arch::isa`'s refusal check and the SMP bring-up all reading garbage, each failing far from the cause. |
 | `VTTBR_EL2` = 0 | Stage-2 is off, but this register's VMID still tags the EL1 TLB entries about to be created, so a stale value tags them with a number nothing invalidates by name. |
-| `SPSR_EL2` = `0x3c5` | D, A, I, F masked, `M[3:0]` = EL1h. Masked interrupts are what EL1 entry looks like on the QEMU path too, and nothing can take one until `exceptions::init` writes `VBAR_EL1`. |
+| `SPSR_EL2` = `0x3c5` | D, A, I, F masked, `M[3:0]` = EL1h. Masked interrupts are what EL1 entry looks like on the QEMU path too, and nothing can take one until `exceptions::initialize` writes `VBAR_EL1`. |
 | `ELR_EL2` | The continuation, as a physical address (`adr`, not `ldr =`: the MMU is off). |
 
 **Deliberately not on the list, each for a stated reason.** `SCTLR_EL2` is left alone, because
@@ -185,8 +185,9 @@ Run with a 3.3 V USB-TTL cable on the J21 header at 115200, per the survey's cos
    error is `/psci` absent from the DTB U-Boot passed. Four cores online is the secondaries' drop
    confirmed on real firmware, which is the claim the QEMU rehearsal can only make about QEMU.
 6. Then milestone 74's half, which is now a line the boot prints rather than a step to perform.
-   Since 2026-09-19 every core starts and checks its own `PMCCNTR_EL0` in `timer::init`, and the
-   boot prints `cycles : PMCCNTR_EL0 running on 4 of 4 cores (...)` right after step 5's `smp` line.
+   Since 2026-09-19 every core starts and checks its own `PMCCNTR_EL0` in `timer::initialize`, and
+   the boot prints `cycles : PMCCNTR_EL0 running on 4 of 4 cores (...)` right after step 5's `smp`
+   line.
    - `running on 4 of 4 cores`: the counter runs with the shipped secure-world settings. Then run
      `script/bench` on the board and read the `cycles_per_tick` probe. It should be near the core
      clock over `CNTFRQ` (about 99 at 1.9 GHz over 19.2 MHz) and **not** a clean integer, which is
@@ -198,8 +199,8 @@ Run with a 3.3 V USB-TTL cable on the J21 header at 115200, per the survey's cos
    - `no PMUv3`: the A57 has PMUv3, so this would mean `ID_AA64DFR0_EL1` is not what the part is.
    - Silence or a fault before this line, and after step 5. This ordering changed and it is
      worth knowing: the kernel's **first** PMU access is milestone 228's `PMUSERENR_EL0` write in
-     `timer::init`, which runs on core 0 *before* the banner and on each secondary during step 5.
-     If TF-A left `MDCR_EL3.TPM` set, that write traps to EL3 and the boot stops there, so the
+     `timer::initialize`, which runs on core 0 *before* the banner and on each secondary during step
+     5. If TF-A left `MDCR_EL3.TPM` set, that write traps to EL3 and the boot stops there, so the
      earlier step list's promise that nothing touches the PMU until step 6 no longer holds. The
      last line printed says how far it got. The kernel makes the first PMU access at init, so the
      order is not the procedure's to choose, and the procedure says where to look instead.

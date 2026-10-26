@@ -59,8 +59,8 @@ pub(crate) struct Shape {
     /// guess is 1.5 Mbaud garbage (divisor 1 at 24 MHz).
     pub divisor: u16,
     /// The `DesignWare` busy quirk (`snps,dw-apb-uart`): the part ignores an LCR write while the
-    /// transmitter is busy and latches a "busy" interrupt. When set, `init` drains the transmitter
-    /// (LSR.TEMT, bounded) before touching LCR.
+    /// transmitter is busy and latches a "busy" interrupt. When set, `initialize` drains the
+    /// transmitter (LSR.TEMT, bounded) before touching LCR.
     pub dw_busy_quirk: bool,
 }
 
@@ -172,13 +172,13 @@ impl<S: RegisterSpace> Ns16550<S> {
         }
     }
 
-    /// Adopt the shape the device tree stated and re-run [`init`](Self::init) with it. Called by
-    /// `console::configure_from_dtb` under the console lock, before the first `println!`, so no
-    /// output is ever produced with a stale stride.
+    /// Adopt the shape the device tree stated and re-run [`initialize`](Self::initialize) with it.
+    /// Called by `console::configure_from_dtb` under the console lock, before the first `println!`,
+    /// so no output is ever produced with a stale stride.
     #[cfg_attr(target_arch = "x86_64", allow(dead_code))] // the device-tree bring-up that calls it is riscv's
     pub fn configure(&mut self, shape: Shape) {
         self.shape = shape;
-        self.init();
+        self.initialize();
     }
 
     /// The shape in force: [`Shape::QEMU_VIRT`] until [`configure`](Self::configure) replaces it.
@@ -228,7 +228,7 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// A shape with `divisor == 0` touches neither LCR nor the divisor latch (see
     /// [`Shape::divisor`]). On the DW part the transmitter is drained, bounded, before LCR is
     /// written, since the part ignores LCR writes while busy.
-    pub fn init(&self) {
+    pub fn initialize(&self) {
         self.write(IER, 0x00); // interrupts off: the console polls LSR
 
         if self.shape.divisor != 0 {
@@ -260,8 +260,9 @@ impl<S: RegisterSpace> Ns16550<S> {
     }
 
     /// Wait until every byte written has left the wire: polls `LSR_TEMT` (FIFO and shift register
-    /// idle), where [`write_byte`](Self::write_byte) only waits for room. Bounded like `init`'s
-    /// drain; the caller is about to reset the machine, where proceeding beats hanging.
+    /// idle), where [`write_byte`](Self::write_byte) only waits for room. Bounded like
+    /// `initialize`'s drain; the caller is about to reset the machine, where proceeding beats
+    /// hanging.
     ///
     /// Name: provisional for milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write),
     /// 2026-10-10: calef names public items.
@@ -335,8 +336,8 @@ impl<S: RegisterSpace> Ns16550<S> {
 
     /// Mask every interrupt source in this UART, quieting a line raised by
     /// [`enable_transmit_interrupt`]. The console is a polling console, so all-off is its resting
-    /// state (`init` writes the same value). Test builds only, for the same reason as its partner
-    /// above.
+    /// state (`initialize` writes the same value). Test builds only, for the same reason as its
+    /// partner above.
     #[cfg(any(test, feature = "system_tests"))]
     pub(crate) fn disable_interrupts(&self) {
         self.write(IER, 0x00);

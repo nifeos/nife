@@ -12,7 +12,7 @@ global_asm!(include_str!("image_header.s"));
 // The real entry point.
 global_asm!(include_str!("boot.s"));
 
-// The exception vector table. VBAR_EL1 will point here once `init` runs.
+// The exception vector table. VBAR_EL1 will point here once `initialize` runs.
 global_asm!(include_str!("vectors.s"));
 
 // The context switch, and where a new thread begins.

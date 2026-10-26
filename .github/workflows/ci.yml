@@ -1663,7 +1663,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Every bare-metal target is installed, because `script/stack-depth-check` gates all of them.
       # `script/stack-frame-check` defaults to two: it holds x86_64 out of its DEFAULT set, reachable
-      # through `--arch`, because widening it found `kernel::arch::x86_64::iommu::init` at 12,504
+      # through `--arch`, because widening it found `kernel::arch::x86_64::iommu::initialize` at 12,504
       # bytes against a 4,096-byte guard page. That finding and its disposition are in that
       # script's own BUGS. §19 parity still applies to the two gated here: a frame that fits on one
       # ISA and not the other is exactly the asymmetry that rule exists to catch. llvm-tools

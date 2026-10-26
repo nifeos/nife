@@ -84,12 +84,12 @@ is where the GDB stub earns its keep.
 ## What `kernel/src/arch/aarch64/mmu.rs` holds to
 
 `boot.s` turns the MMU on with a coarse map: two 1 GiB blocks, all of RAM executable, nothing
-read-only, enough to survive until Rust runs. `mmu::init` builds the fine map in `TTBR1_EL1`. It
-holds the direct map of all RAM (read/write, never executable), the kernel image section by section
-at its linked addresses (W^X), every stack with its guard page left unmapped, and the device windows
-the device tree names. It walks the tables in software before installing them. The code doing the
-switch, its stack and the UART must be mapped and every guard page must not be, because after the
-switch a wrong map is a machine that stops without a word. A secondary core starts
+read-only, enough to survive until Rust runs. `mmu::initialize` builds the fine map in `TTBR1_EL1`.
+It holds the direct map of all RAM (read/write, never executable), the kernel image section by
+section at its linked addresses (W^X), every stack with its guard page left unmapped, and the device
+windows the device tree names. It walks the tables in software before installing them. The code
+doing the switch, its stack and the UART must be mapped and every guard page must not be, because
+after the switch a wrong map is a machine that stops without a word. A secondary core starts
 on the coarse map and only repoints `TTBR1_EL1` at the same fine map, since its `TCR_EL1` and
 `MAIR_EL1` already match.
 
@@ -121,8 +121,9 @@ would express it, and the scheduler cannot hold one: `sched::switch` reads the r
 `IPC_TABLES` and releases the lock before the switch, on purpose.
 
 `TCR_EL1` has one trap worth naming: 4 KiB is `0b00` for `TG0` and `0b10` for `TG1`, which
-`mmu.rs` names `TCR_TG0_4K` and `TCR_TG1_4K`. `IPS` comes from the ISA record, and `arch::isa::init`
-refuses a part with no 4 KiB granule, so `TG0` and `TG1` are a checked assumption.
+`mmu.rs` names `TCR_TG0_4K` and `TCR_TG1_4K`. `IPS` comes from the ISA record, and
+`arch::isa::initialize` refuses a part with no 4 KiB granule, so `TG0` and `TG1` are a checked
+assumption.
 
 Asking the silicon whether EL0 could read an address: `AT S1E0R` translates an address as EL0
 would and reports a permission fault into `PAR_EL1`, so `user_can_read` never re-implements the

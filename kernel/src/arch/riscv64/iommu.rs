@@ -2,7 +2,7 @@
 //!
 //! A device directory keyed by requester id holds each device's context, whose `iosatp` names an
 //! Sv39 domain the portable seam built. A command queue carries invalidations and a fault queue
-//! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20
+//! records blocked transactions. `initialize` installs an all-invalid directory (DECISIONS §20
 //! (IOMMU-backed DMA isolation)).
 //!
 //! See notes/iommu.md and notes/riscv-port/iommu.md.
@@ -193,7 +193,7 @@ fn queue_enable(base: u64, csr: u64, what: &str) {
 
 /// Bring the IOMMU up: queues live, an all-invalid device directory installed. From here every
 /// device faults until `attach` writes its context.
-pub fn init(base: u64) {
+pub fn initialize(base: u64) {
     let mut g = IOMMU.lock();
     assert!(g.is_none(), "IOMMU initialized twice");
 

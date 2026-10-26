@@ -5,8 +5,8 @@
 //! # BUGS
 //!
 //! - **`live` never clears**: a thread that touches FP once pays the save on every switch after.
-//! - **SVE and SME are not saved.** [`init`] closes them, and `crate::fp` treats their trap as a
-//!   fault; the emulator's default CPU cannot show it.
+//! - **SVE and SME are not saved.** [`initialize`] closes them, and `crate::fp` treats their trap
+//! as a   fault; the emulator's default CPU cannot show it.
 
 use super::instructions;
 
@@ -88,17 +88,17 @@ impl Default for FpState {
 const FPEN: u64 = 0b11 << 20;
 
 /// `CPACR_EL1.ZEN` (bits 17:16) and `CPACR_EL1.SMEN` (bits 25:24): the SVE and SME enables, which
-/// [`init`] closes with `FPEN` because this module saves neither. RES0 on a part without the
+/// [`initialize`] closes with `FPEN` because this module saves neither. RES0 on a part without the
 /// extension, so clearing them is a no-op there.
 const ZEN_AND_SMEN: u64 = (0b11 << 16) | (0b11 << 24);
 
 /// **Put this core into the state the rest of this module assumes**: FP and SIMD trapped, for EL1
 /// as well as EL0.
 ///
-/// Called per core from `sched::init` and `sched::adopt_secondary_idle`: `CPACR_EL1` is banked and
-/// resets to an UNKNOWN value. QEMU resets it to the value this writes, so no test sees a part that
-/// reset it open; see notes/aarch64-port.md, "Floating point and SIMD".
-pub fn init() {
+/// Called per core from `sched::initialize` and `sched::adopt_secondary_idle`: `CPACR_EL1` is
+/// banked and resets to an UNKNOWN value. QEMU resets it to the value this writes, so no test sees
+/// a part that reset it open; see notes/aarch64-port.md, "Floating point and SIMD".
+pub fn initialize() {
     instructions::write_cpacr_synchronized(instructions::read_cpacr() & !(FPEN | ZEN_AND_SMEN));
 }
 
@@ -240,13 +240,13 @@ mod proofs {
     /// **Every `CPACR_EL1` edit changes exactly the field it names, and [`is_enabled`] reads back
     /// what the last one did.**
     ///
-    /// [`init`] closes FP, SVE and SME; [`enable`] and [`disable`] touch `FPEN` alone.
+    /// [`initialize`] closes FP, SVE and SME; [`enable`] and [`disable`] touch `FPEN` alone.
     ///
     /// Falsification: attested 2026-09-25. On patagonia (aarch64 host), three times and one edit at
-    /// a time: `init`'s mask without `ZEN_AND_SMEN`, `enable` writing `FPEN >> 1` (half the field),
-    /// and `disable` clearing `FPEN | ZEN_AND_SMEN`. Each turns this red. `attested` rather than
-    /// `replayable` for the reason `script/falsifications` gives for every architecture-specific
-    /// harness.
+    /// a time: `initialize`'s mask without `ZEN_AND_SMEN`, `enable` writing `FPEN >> 1` (half the
+    /// field), and `disable` clearing `FPEN | ZEN_AND_SMEN`. Each turns this red. `attested` rather
+    /// than `replayable` for the reason `script/falsifications` gives for every
+    /// architecture-specific harness.
     #[kani::proof]
     #[kani::stub(super::super::instructions::read_cpacr, read_cpacr_model)]
     #[kani::stub(
@@ -261,7 +261,7 @@ mod proofs {
         kani::assume(which < 3);
         let (touched, want) = match which {
             0 => {
-                init();
+                initialize();
                 (FPEN | ZEN_AND_SMEN, 0)
             }
             1 => {

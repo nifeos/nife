@@ -201,8 +201,8 @@ fn run(
     // Clocks, then resets: the SYS plan is all clocks, and the AON plan ends in both resets, so
     // running SYS first means every clock is up before either reset is released.
     // SAFETY: `memory::jh7110_ethernet` recorded these windows only on a tree that names a JH7110
-    // Ethernet port, and RISC-V's `mmu::init` mapped each device-typed (steps 6c and 6d), which is
-    // `bring_up`'s contract.
+    // Ethernet port, and RISC-V's `mmu::initialize` mapped each device-typed (steps 6c and 6d),
+    // which is `bring_up`'s contract.
     unsafe {
         r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
             mmu::phys_to_virt(e.sys.base) as usize,

@@ -83,7 +83,7 @@ const VIRTIO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
 const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // Flush: no data buffer at all, just the header and the status byte. Legal only once
 // `VIRTIO_BLK_F_FLUSH` is negotiated, which is why the block server probes for it rather than
-// assuming it (virtio 1.2 §5.2.6; see `init_with_features` and `blk_flush`).
+// assuming it (virtio 1.2 §5.2.6; see `initialize_with_features` and `blk_flush`).
 const VIRTIO_BLK_T_FLUSH: u32 = 4;
 
 // Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
@@ -125,8 +125,8 @@ fn direct_memory_access_read<T: Copy>(off: u64) -> T {
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue
 /// is set up through the kernel, which places the rings at fixed offsets in our DMA region and
 /// programs the device with those addresses: we never choose them.
-fn init() {
-    init_with_features(0, false);
+fn initialize() {
+    initialize_with_features(0, false);
 }
 
 /// The handshake, with `driver_features_lo` OR'd into the low feature word. The honest driver
@@ -135,7 +135,7 @@ fn init() {
 ///
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
 /// bit was negotiated. See notes/virtio.md ("Feature negotiation").
-fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
+fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
     mw(STATUS, 0);
@@ -194,7 +194,7 @@ fn init_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 /// }
 /// ```
 pub fn run(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // Read block 0: the nifefs superblock.
     read_block(direct_memory_access_phys, 0);
@@ -242,7 +242,7 @@ fn pattern_byte(i: usize) -> u8 {
 /// look motd up again, so the report also certifies the write did not eat the filesystem around
 /// it. Reports the first 8 bytes of the read-back pattern.
 pub fn run_write(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // The directory tells us where scratch lives; nothing about the sector is hardcoded.
     read_block(direct_memory_access_phys, 0);
@@ -293,7 +293,7 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
 /// interrupt or touching the used ring. The test then runs the full writer against the same device,
 /// which must succeed. See notes/dma.md.
 pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     read_block(direct_memory_access_phys, 0);
     let mut magic = [0u8; 8];
@@ -317,7 +317,7 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
 /// device is never told to go and never touches the address. Reports 1 if the kernel refused
 /// (correct), 0 if the notify went through (a hole). Used by the security test.
 pub fn run_attack(direct_memory_access_phys: u64) -> ! {
-    init();
+    initialize();
 
     // The forbidden target: the kernel's own image, which the device would happily DMA over if it
     // were ever handed this address.
@@ -350,7 +350,7 @@ pub fn run_attack(direct_memory_access_phys: u64) -> ! {
 pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     // Ask for indirect descriptors. The kernel strips the bit, but we build the attack anyway to
     // prove the validator refuses the flag even if the feature ever slipped through.
-    init_with_features(F_INDIRECT_DESC_LO, false);
+    initialize_with_features(F_INDIRECT_DESC_LO, false);
 
     const KERNEL_ADDR: u64 = 0xffff_0000_4008_0000;
 
@@ -614,9 +614,9 @@ fn ip_checksum(off: u64, len: u64) -> u16 {
     !(sum as u16)
 }
 
-/// The virtio-net handshake and both-queue setup. Unlike the disk's `init`, this sets up receive AND
-/// transmit, through the kernel, which places each queue's rings at its own block.
-fn init_net() {
+/// The virtio-net handshake and both-queue setup. Unlike the disk's `initialize`, this sets up
+/// receive AND transmit, through the kernel, which places each queue's rings at its own block.
+fn initialize_net() {
     assert!(mr(MAGIC) == 0x7472_6976); // "virt"
 
     mw(STATUS, 0);
@@ -868,7 +868,7 @@ fn parse_dhcp_offer() -> Option<u32> {
 /// networking's 10.0.2.0/24. TX and RX, both queues, both directions of the confinement, proven end
 /// to end with no TCP/IP stack in the loop.
 pub fn run_net(direct_memory_access_phys: u64) -> ! {
-    init_net();
+    initialize_net();
 
     let mut receive_avail: u16 = 0;
     post_receive(direct_memory_access_phys, receive_avail);
@@ -930,7 +930,7 @@ const CONFIG: u64 = 0x100;
 pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `blk::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
-    let can_flush = init_with_features(0, true);
+    let can_flush = initialize_with_features(0, true);
     // The device is up: signal readiness, so a hang here (bring-up) is distinct from a hang in the
     // first read completion. SEND rendezvous, so this also paces the test past bring-up.
     send(BLK_READY, filesystem_contract::READY, 0, 0);

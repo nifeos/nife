@@ -9,18 +9,19 @@ paths that call into the switch are in [rendezvous.md](rendezvous.md).
 
 ## Thread 0, and what `init` does first
 
-`sched::init` adopts the context it is already running in as thread 0. The boot thread has no stack
-of its own and no saved context. The first switch away from it writes one. A thread's context is
-written by the act of leaving it.
+`sched::initialize` adopts the context it is already running in as thread 0. The boot thread has no
+stack of its own and no saved context. The first switch away from it writes one. A thread's context
+is written by the act of leaving it.
 
 Before any thread exists, `init` shuts the floating-point unit on its core (milestone 447 (a
 thread's vector registers are its own)). `crate::fp` marks a thread `live` when it takes the
 first-use trap. A core that starts with the unit open never takes that trap. Every thread on it
 would then stay `live == false`, and two of them would share one register file. The shut lives in
-`sched::init` rather than `arch::init`, because RISC-V's boot hart never calls `arch::init`. `main`'s
-RISC-V path installs `stvec` itself and goes straight to `sched::init`. OpenSBI hands over a hart
-with `sstatus.FS` already set. The machine statistics page is published at the same point, for the
-same reason: threads begin here, so the counters that watch them begin here too.
+`sched::initialize` rather than `arch::initialize`, because RISC-V's boot hart never calls
+`arch::initialize`. `main`'s RISC-V path installs `stvec` itself and goes straight to
+`sched::initialize`. OpenSBI hands over a hart with `sstatus.FS` already set. The machine statistics
+page is published at the same point, for the same reason: threads begin here, so the counters that
+watch them begin here too.
 
 The tables are installed empty first, and the boot thread is then inserted into them. Built as a
 local and moved into the `Option`, the thread table sits twice on the boot stack in an unoptimised

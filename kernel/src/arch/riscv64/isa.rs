@@ -2,8 +2,8 @@
 //!
 //! The decoding is host-tested in [`machine_discovery::riscv64`]. Here are the reads only a boot
 //! can make: the device tree, SBI's account of itself, the T-Head vendor probe, and (from
-//! `mmu::init`) the measured `satp.ASID` width. [`init`] runs after `memory::init` and before
-//! `mmu::init`.
+//! `mmu::initialize`) the measured `satp.ASID` width. [`initialize`] runs after
+//! `memory::initialize` and before `mmu::initialize`.
 //!
 //! See notes/riscv-port/firmware.md.
 
@@ -12,8 +12,8 @@ use machine_discovery::riscv64::{EID_BASE, Isa, SBI_TABLE, Sbi, SbiExtensions};
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
 
-/// The record, written once by [`init`]. `None` until then, so an early read panics rather than
-/// returning a plausible all-zero machine.
+/// The record, written once by [`initialize`]. `None` until then, so an early read panics rather
+/// than returning a plausible all-zero machine.
 static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
 
 /// Discover the machine from the device tree at physical `dtb_ptr` and from SBI, and record it.
@@ -22,9 +22,9 @@ static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
 ///
 /// When the machine lacks something the kernel needs, after printing what. A tree that does not
 /// describe its ISA, or firmware too old to answer, is reported as unknown and the boot continues.
-pub fn init(dtb_ptr: usize) {
-    // SAFETY: the same pointer `memory::init` has already validated the magic of, named through the
-    // boot table's direct map because we are running virtual.
+pub fn initialize(dtb_ptr: usize) {
+    // SAFETY: the same pointer `memory::initialize` has already validated the magic of, named
+    // through the boot table's direct map because we are running virtual.
     let dt = unsafe {
         device_tree_blob::DeviceTreeBlob::from_ptr(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
@@ -75,14 +75,14 @@ const THEAD_VENDOR_ID: usize = 0x5b7;
 const TH_SXSTATUS_MAEE: u64 = 1 << 21;
 
 /// What [`probe_thead`] found: `0` before it ran, then [`NOT_THEAD`], [`THEAD`] or
-/// [`THEAD_MAE`]. A byte, not a lock, because `fp::init` reads it on every hart.
+/// [`THEAD_MAE`]. A byte, not a lock, because `fp::initialize` reads it on every hart.
 static VENDOR: core::sync::atomic::AtomicU8 = core::sync::atomic::AtomicU8::new(0);
 const NOT_THEAD: u8 = 1;
 const THEAD: u8 = 2;
 const THEAD_MAE: u8 = 3;
 
-/// Whether this is a T-Head hart (C906, C910), for `fp::init`. False before [`init`], the safe
-/// default: a non-T-Head hart must not touch T-Head's bits.
+/// Whether this is a T-Head hart (C906, C910), for `fp::initialize`. False before [`initialize`],
+/// the safe default: a non-T-Head hart must not touch T-Head's bits.
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC).
 pub fn is_thead() -> bool {
@@ -127,13 +127,13 @@ fn probe_thead() {
     }
 }
 
-/// The record. Panics if read before [`init`].
+/// The record. Panics if read before [`initialize`].
 pub fn get() -> Isa {
     ISA.lock()
-        .expect("arch::isa::get() before arch::isa::init()")
+        .expect("arch::isa::get() before arch::isa::initialize()")
 }
 
-/// Record the measured `satp.ASID` width `bits`, from `mmu::init` right after its probe.
+/// Record the measured `satp.ASID` width `bits`, from `mmu::initialize` right after its probe.
 pub(crate) fn record_asid_bits(bits: usize) {
     if let Some(cpu) = ISA.lock().as_mut() {
         cpu.asid_bits = bits.min(u8::MAX as usize) as u8;

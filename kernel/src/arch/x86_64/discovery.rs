@@ -1,11 +1,12 @@
 //! **What this machine is, read once from the loader's handoff and ACPI and kept for the steps
-//! after it**: the `x86_64` front end of `memory::init` (milestone 890 (riscv64 and `x86_64` join
-//! the shared boot path)).
+//! after it**: the `x86_64` front end of `memory::initialize` (milestone 890 (riscv64 and `x86_64`
+//! join the shared boot path)).
 //!
-//! [`init`] reads the PVH `hvm_start_info`, walks the ACPI tables, records the device windows
-//! `mmu::init` maps, finds the PCIe topology while the boot map still reaches every bus, and brings
-//! the frame allocator up. The walk is kept, because the tables are reachable only through the boot
-//! map `mmu::init` replaces. The parsing is `machine.rs`'s; see notes/x86-port/acpi-and-pci.md.
+//! [`initialize`] reads the PVH `hvm_start_info`, walks the ACPI tables, records the device windows
+//! `mmu::initialize` maps, finds the PCIe topology while the boot map still reaches every bus, and
+//! brings the frame allocator up. The walk is kept, because the tables are reachable only through
+//! the boot map `mmu::initialize` replaces. The parsing is `machine.rs`'s; see
+//! notes/x86-port/acpi-and-pci.md.
 //!
 //! Name: provisional (milestone 890's lane, 2026-10-19 UTC).
 
@@ -13,7 +14,8 @@ use super::machine::{self, Acpi};
 use crate::println;
 use crate::sync::{IrqSafeMutex, rank};
 
-/// The ACPI walk [`init`] made, for the bring-up steps after `mmu::init` that cannot repeat it.
+/// The ACPI walk [`initialize`] made, for the bring-up steps after `mmu::initialize` that cannot
+/// repeat it.
 static ACPI: IrqSafeMutex<Option<Acpi>> = IrqSafeMutex::new(rank::ACPI, None);
 
 /// **Read `f`'s answer out of the ACPI walk.** The lock is held only for `f`, so `f` copies out
@@ -21,16 +23,16 @@ static ACPI: IrqSafeMutex<Option<Acpi>> = IrqSafeMutex::new(rank::ACPI, None);
 /// out before their drivers lock anything, for that reason.
 ///
 /// # Panics
-/// Before [`init`], which `memory::init` runs ahead of every caller.
+/// Before [`initialize`], which `memory::initialize` runs ahead of every caller.
 pub(crate) fn with_acpi<R>(f: impl FnOnce(&Acpi) -> R) -> R {
     f(ACPI
         .lock()
         .as_ref()
-        .expect("arch::discovery::with_acpi before memory::init walked the tables"))
+        .expect("arch::discovery::with_acpi before memory::initialize walked the tables"))
 }
 
-/// The local APIC's physical address, as the MADT stated it, or `None` before [`init`] or on a
-/// machine whose MADT did not say. Read by the fine map and the BAR window, which both run before
+/// The local APIC's physical address, as the MADT stated it, or `None` before [`initialize`] or on
+/// a machine whose MADT did not say. Read by the fine map and the BAR window, which both run before
 /// `arch::irq` has brought anything up.
 pub(crate) fn local_apic_phys() -> Option<u64> {
     ACPI.lock().as_ref().and_then(|a| a.local_apic)
@@ -43,14 +45,14 @@ pub(crate) fn io_apic_phys() -> Option<u64> {
         .and_then(|a| a.io_apic.map(|(_, at, _)| at as u64))
 }
 
-/// **`memory::init` on this machine**: the handoff, the tables, the device windows, PCI, and the
-/// frame allocator, in that order.
+/// **`memory::initialize` on this machine**: the handoff, the tables, the device windows, PCI, and
+/// the frame allocator, in that order.
 ///
 /// The order is load-bearing twice. The walk is stored before PCI so the BAR window can stay clear
 /// of the APICs the MADT names (`mmu::memory_mapped_io_window`). And PCI comes before the frame
-/// allocator and `mmu::init` because the bridges are read through the boot map, which reaches every
-/// bus, and `mmu::init` then maps exactly the buses this found.
-pub(crate) fn init() {
+/// allocator and `mmu::initialize` because the bridges are read through the boot map, which reaches
+/// every bus, and `mmu::initialize` then maps exactly the buses this found.
+pub(crate) fn initialize() {
     let pointer = crate::DTB.load(core::sync::atomic::Ordering::Relaxed);
     let Some(info) = machine::boot_info(pointer) else {
         println!("  memory      : no PVH boot info at {pointer:#x}; nothing else can be found");
@@ -136,8 +138,8 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
                 }
             );
             // The topology, read from the bridges while the boot map still covers the low 4 GiB, so
-            // every bus the MCFG describes is readable; `mmu::init` then maps exactly the buses
-            // this found. See `pci::survey`.
+            // every bus the MCFG describes is readable; `mmu::initialize` then maps exactly the
+            // buses this found. See `pci::survey`.
             crate::pci::survey();
             // Only this architecture's BARs may already be placed by something else when the
             // kernel arrives; both `virt` boards boot with every BAR zero. See `pci::bar_census`
@@ -167,10 +169,10 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
 pub(crate) fn bring_up_iommus() {
     let (dmar, ivrs) = with_acpi(|a| (a.dmar, a.ivrs));
     if !dmar.units().is_empty() {
-        super::iommu::init(&dmar);
+        super::iommu::initialize(&dmar);
     } else if !ivrs.units().is_empty() {
         println!("  vt-d        : skipped, no DMAR (this machine's IOMMU is AMD-Vi)");
-        super::amd_vi::init(&ivrs);
+        super::amd_vi::initialize(&ivrs);
     } else {
         // Loud, because the alternative is a boot that reads like every other one while nothing
         // stands between a device and all of memory.

@@ -25,7 +25,7 @@ SMP="${NIFE_SMP:-4}"
 
 # The userspace program rides in as an initial ramdisk, exactly as on aarch64: QEMU loads the file
 # into RAM and writes its address into /chosen/linux,initrd-start in the device tree, where
-# memory::init reads it. Set NIFE_INITIAL_RAMDISK to a riscv64 user ELF (or a nifefs archive) to
+# memory::initialize reads it. Set NIFE_INITIAL_RAMDISK to a riscv64 user ELF (or a nifefs archive) to
 # hand it to the kernel; the milestone-20 boot loads and runs it at U-mode. Unset, the kernel prints
 # "no -initrd" and moves on.
 INITIAL_RAMDISK=""

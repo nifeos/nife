@@ -2,12 +2,13 @@
 //! 10 ms windows (smallest wins), and the APIC timer for the tick. See notes/tsc-under-tcg.md.
 //!
 //! # BUGS
-//! - The TSC is assumed invariant: `isa::init` refuses a part saying otherwise, or warns in a VM.
+//! - The TSC is assumed invariant: `isa::initialize` refuses a part saying otherwise, or warns in a
+//! VM.
 //! - Min-of-N filters a fought host rather than bounding it; the boot line prints the worst window.
 //! - Under `-icount shift=0,sleep=off` (`script/bench --x86`'s default) the TSC is not wall time.
 //! - `now()` is this core's TSC; nothing measures or corrects skew between cores (QEMU has none).
 //! - Calibration costs about 35 ms of boot on a quiet host, up to 160 ms at the cap.
-//! - `init` panics if the local APIC is not up: the order (APIC, then timer) is real.
+//! - `initialize` panics if the local APIC is not up: the order (APIC, then timer) is real.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -78,13 +79,13 @@ const PIT_CHANNEL0_RATE: u8 = 0b0011_0100;
 /// cascade. See `arch/x86_64/irq.rs`.
 pub(crate) const PIT_IRQ: u32 = 0;
 
-/// The TSC's frequency in hertz, established by [`init_frequency`]. Zero until then.
+/// The TSC's frequency in hertz, established by [`initialize_frequency`]. Zero until then.
 static TSC_HZ: AtomicU64 = AtomicU64::new(0);
 
 /// Whether [`TSC_HZ`] came from `CPUID` leaf `0x15` (`true`) or from PIT calibration (`false`).
-/// Set by [`init_frequency`] alongside `TSC_HZ` itself; meaningless before that (reads `false`,
-/// the calibration path's own value, which is also what every QEMU boot actually takes: see
-/// `arch::x86_64::isa::tsc_crystal_hz`'s own docs for why leaf 0x15 is empirically unavailable
+/// Set by [`initialize_frequency`] alongside `TSC_HZ` itself; meaningless before that (reads
+/// `false`, the calibration path's own value, which is also what every QEMU boot actually takes:
+/// see `arch::x86_64::isa::tsc_crystal_hz`'s own docs for why leaf 0x15 is empirically unavailable
 /// under `-cpu max`).
 static TSC_HZ_FROM_CPUID: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
@@ -99,7 +100,8 @@ static CALIBRATION_SAMPLES: [AtomicU64; CALIBRATION_WINDOW_CAP] =
     [const { AtomicU64::new(0) }; CALIBRATION_WINDOW_CAP];
 
 /// How many of [`CALIBRATION_SAMPLES`] were actually timed before the stopping rule fired. Zero
-/// until [`init_frequency`] runs, which is also how [`calibration`] reports "not measured yet".
+/// until [`initialize_frequency`] runs, which is also how [`calibration`] reports "not measured
+/// yet".
 static CALIBRATION_TAKEN: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// Scheduler ticks taken since the timer was armed.
@@ -182,7 +184,7 @@ fn measure_against_the_pit() -> (u64, u32) {
 /// **Have enough windows been timed to stop?** True once two of `samples` agree to within one
 /// part in [`CALIBRATION_AGREEMENT_PARTS_PER`] of the smallest.
 ///
-/// Split out from [`init_frequency`] because it is the only part of the calibration that is a
+/// Split out from [`initialize_frequency`] because it is the only part of the calibration that is a
 /// decision rather than a device access, and so the only part a host test can reach: everything
 /// around it is `in8` and `out8` against the PIT. See `super::timer_calibration_tests`.
 ///
@@ -207,7 +209,7 @@ pub(super) fn calibration_has_converged(samples: &[u64]) -> bool {
 /// # Panics
 /// If the local APIC is not up. The order is APIC then timer, and a timer calibrated against a
 /// counter that is not running would produce a plausible TSC frequency and a nonsense tick period.
-pub(crate) fn init_frequency(boot_info_pointer: usize) {
+pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
     assert!(
         irq::is_local_apic_ready(),
@@ -314,12 +316,12 @@ pub fn now() -> u64 {
     rdtsc()
 }
 
-/// How many counter ticks make a second, or `None` if [`init_frequency`] has not run yet.
+/// How many counter ticks make a second, or `None` if [`initialize_frequency`] has not run yet.
 ///
 /// Unlike [`frequency`], does not panic: this is for a caller (the timebase page,
 /// `kernel::user::x86_timebase_page_phys`) that must handle "not measured yet" as a normal,
 /// representable state rather than a bug to crash on. In practice this is never `None` by the
-/// time any process is loaded: `init_frequency` runs early in the boot, well before the
+/// time any process is loaded: `initialize_frequency` runs early in the boot, well before the
 /// first call to `kernel::user::load`.
 pub(crate) fn frequency_checked() -> Option<u64> {
     let hz = TSC_HZ.load(Ordering::Relaxed);
@@ -329,15 +331,15 @@ pub(crate) fn frequency_checked() -> Option<u64> {
 /// How many counter ticks make a second.
 ///
 /// # Panics
-/// If [`init_frequency`] has not run. Returning zero would make every duration computed from it
-/// either zero or a division by zero, arbitrarily far from the missing call.
+/// If [`initialize_frequency`] has not run. Returning zero would make every duration computed from
+/// it either zero or a division by zero, arbitrarily far from the missing call.
 pub fn frequency() -> u64 {
     frequency_checked().expect("the TSC frequency has not been measured yet")
 }
 
 /// Whether [`frequency`]'s number came from `CPUID` leaf `0x15` or from PIT calibration, for the
-/// boot print and this milestone's own evidence. `"uncalibrated"` before [`init_frequency`] has
-/// run, which [`frequency`] itself would panic on; this never panics.
+/// boot print and this milestone's own evidence. `"uncalibrated"` before [`initialize_frequency`]
+/// has run, which [`frequency`] itself would panic on; this never panics.
 pub(crate) fn frequency_source() -> &'static str {
     if TSC_HZ.load(Ordering::Relaxed) == 0 {
         "uncalibrated"
@@ -352,7 +354,7 @@ pub(crate) fn frequency_source() -> &'static str {
 ///
 /// This is a copy rather than a borrow of the statics behind it, so that a caller printing several
 /// of these fields cannot see two different boots' worth (nothing writes them after
-/// [`init_frequency`], so that is defensive rather than load-bearing, and it costs one stack
+/// [`initialize_frequency`], so that is defensive rather than load-bearing, and it costs one stack
 /// array).
 ///
 /// Name: provisional (the `calib` lane, 2026-09-21).
@@ -363,7 +365,7 @@ pub struct Calibration {
 
 impl Calibration {
     /// **What each window timed implied the TSC's rate was**, in hertz, in the order they were
-    /// timed. Empty before [`init_frequency`] has run.
+    /// timed. Empty before [`initialize_frequency`] has run.
     ///
     /// Every one of these is an *upper bound* on the truth, which is the whole argument: see
     /// [`CALIBRATION_WINDOW_CAP`]. So the spread across them is not an error bar. It says how hard
@@ -373,7 +375,7 @@ impl Calibration {
     }
 
     /// **The worst window's implied rate**, in hertz, for the boot print to show beside the chosen
-    /// one. Zero before [`init_frequency`] has run.
+    /// one. Zero before [`initialize_frequency`] has run.
     pub(crate) fn worst(&self) -> u64 {
         self.windows().iter().copied().max().unwrap_or(0)
     }
@@ -404,12 +406,12 @@ pub(crate) fn apic_timer_frequency() -> u64 {
 /// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector `irq` chose.
 ///
 /// # Panics
-/// If [`init_frequency`] has not run, for the same reason [`frequency`] does.
-pub fn init() {
+/// If [`initialize_frequency`] has not run, for the same reason [`frequency`] does.
+pub fn initialize() {
     let apic_hz = APIC_TIMER_HZ.load(Ordering::Relaxed);
     assert!(
         apic_hz != 0,
-        "the local APIC timer's rate has not been measured yet (call init_frequency first)",
+        "the local APIC timer's rate has not been measured yet (call initialize_frequency first)",
     );
     let count = u32::try_from(apic_hz / TICK_HZ)
         .expect("one tick period does not fit the APIC timer's 32-bit initial count");
@@ -428,7 +430,7 @@ pub fn init() {
 ///
 /// **Built only under `test` or `--features cycle_counter_grant`** (milestone 237): the grant is
 /// a measurement build the way `soak_test` is. `kernel/Cargo.toml`'s feature block carries the
-/// reasoning and the measured cost. Milestone 228's closed default at `init` is NOT gated.
+/// reasoning and the measured cost. Milestone 228's closed default at `initialize` is NOT gated.
 // Asked only by tests today (`sched`'s grant round trip and `user`'s EL0 one), which are the
 // callers that have to skip rather than fault on a part with no counter to grant. Marked rather
 // than deleted: milestone 74's cycle-counter work is the caller that will want it in anger.

@@ -9,8 +9,8 @@ use core::fmt::Write;
 // The early console UART, selected by architecture at compile time. Two concrete drivers, not a
 // trait: there are exactly two, they are chosen here and nowhere else, and a trait would be an
 // abstraction ahead of a third requirement (AGENTS.md, rules 2/3). aarch64's `virt` has a PL011;
-// RISC-V's has an NS16550. Both expose `new`/`init`/`impl Write`, so the console code below names
-// neither. See notes/riscv-port.md.
+// RISC-V's has an NS16550. Both expose `new`/`initialize`/`impl Write`, so the console code below
+// names neither. See notes/riscv-port.md.
 #[cfg(target_arch = "riscv64")]
 use crate::drivers::ns16550::Ns16550 as ConsoleUart;
 #[cfg(target_arch = "aarch64")]
@@ -43,15 +43,15 @@ const UART_PORT: usize = crate::arch::mmu::COM1_PORT;
 /// both QEMU `virt` and the JH7110 spell UART0 exactly this way, and the fixture test
 /// (`crates/machine_discovery/tests/riscv64_jh7110.rs`) is the witness; on aarch64 it is QEMU
 /// `virt`'s PL011 node, witnessed by `crates/device_tree_blob/tests/qemu_aarch64_virt.rs`. Two
-/// readers: this file's `configure_from_dtb` (riscv, the register shape) and `memory::init` (both,
-/// the interrupt line), which is why it is `pub(crate)` rather than local to either.
+/// readers: this file's `configure_from_dtb` (riscv, the register shape) and `memory::initialize`
+/// (both, the interrupt line), which is why it is `pub(crate)` rather than local to either.
 #[cfg(target_arch = "aarch64")]
 pub(crate) const UART_NODE: &[u8] = b"pl011@9000000";
 #[cfg(target_arch = "riscv64")]
 pub(crate) const UART_NODE: &[u8] = crate::arch::machine::CONSOLE_UART_NODE;
 /// x86 has no device tree, so there is no node to name. The empty slice keeps the constant's shape
-/// across the three architectures for the portable readers (`memory::init`); nothing on x86 looks
-/// the console up by name, because ACPI does not describe a legacy COM port that way.
+/// across the three architectures for the portable readers (`memory::initialize`); nothing on x86
+/// looks the console up by name, because ACPI does not describe a legacy COM port that way.
 #[cfg(target_arch = "x86_64")]
 pub(crate) const UART_NODE: &[u8] = b"";
 
@@ -158,8 +158,8 @@ static CONSOLE: IrqSafeMutex<KernelConsole> = IrqSafeMutex::new(
     },
 );
 
-pub fn init() {
-    CONSOLE.lock().uart.init();
+pub fn initialize() {
+    CONSOLE.lock().uart.initialize();
 }
 
 /// Print this machine's console for the machine description: the compile-time UART address and
@@ -372,9 +372,9 @@ pub(crate) fn reclaim_screen_for_panic() {
 /// node or unreadable tree changes nothing. An unstated clock yields divisor 0, leaving U-Boot's
 /// divisor and line controls.
 ///
-/// Must run immediately after [`init`], before the first `println!`: on the JH7110 a byte read of
-/// LSR at the unshifted offset lands in the IER word and the transmit poll spins forever. See
-/// notes/kernel-console.md and notes/visionfive2.md.
+/// Must run immediately after [`initialize`], before the first `println!`: on the JH7110 a byte
+/// read of LSR at the unshifted offset lands in the IER word and the transmit poll spins forever.
+/// See notes/kernel-console.md and notes/visionfive2.md.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn configure_from_dtb() {
     use crate::drivers::ns16550::Shape;

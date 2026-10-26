@@ -137,16 +137,16 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
 /// measurements before anything is built from it.
 fn measured_progenitor(archive: &'static [u8]) -> Result<Elf<'static>, LoadError> {
     let fs = nifefs::Fs::parse(archive).expect("initial ramdisk is not a nifefs archive");
-    let init_bytes = fs
+    let progenitor_bytes = fs
         .read(PROGENITOR_ENTRY)
         .unwrap_or_else(|| panic!("archive has no '{PROGENITOR_ENTRY}' program"));
     // The progenitor is this board's boot program, so it is in the trust root under its own name
     // and checked before its address space is built (milestone 22 (trusted init) phase B.1).
-    crate::trust::require(PROGENITOR_ENTRY, init_bytes);
+    crate::trust::require(PROGENITOR_ENTRY, progenitor_bytes);
     // And the table it measures every program it loads against (milestone 104 (the measurement
     // continues past init)).
     crate::trust::require_program_measurements(&fs);
-    Elf::parse(init_bytes).map_err(LoadError::NotLoadable)
+    Elf::parse(progenitor_bytes).map_err(LoadError::NotLoadable)
 }
 
 /// Build the progenitor's address space (segments, stack, timebase page, initial ramdisk) and

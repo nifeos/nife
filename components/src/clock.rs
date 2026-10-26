@@ -57,7 +57,7 @@ fn start(rtc_kind: u64, rtc_seed: u64, _a2: u64) -> ! {
     // nothing unmaps it. We are the first to touch it, so stamping it here cannot race a reader
     // that has already seen the magic.
     let page = unsafe { ClockPage::new(CLOCK_VA) };
-    page.init();
+    page.initialize();
 
     // The RTC, read exactly once. A second reading would not be more correct: from here on the
     // monotonic counter is the thing that advances, and re-reading the RTC would only import its

@@ -276,8 +276,8 @@ pub(crate) fn uefi_boot() -> bool {
 /// **`--release` boots the profile every image for a machine is built in**: `install-boot`,
 /// `network-bench` and `uefi-image --release` are all release, and the suite's debug boot cannot
 /// stand in for them. An `asm!` operand that shares a register with a live input is invisible at
-/// debug and fatal at release: `segments::init`'s `ltr` loaded the low bits of a code address as
-/// its selector and every release image stopped after the boot's `pat` line, while every debug
+/// debug and fatal at release: `segments::initialize`'s `ltr` loaded the low bits of a code address
+/// as its selector and every release image stopped after the boot's `pat` line, while every debug
 /// boot passed. CI's `boot-check` job runs this (`script/ci-build`'s `release-uefi-boot` row).
 pub(crate) fn uefi_boot_command() -> bool {
     let args: Vec<String> = std::env::args().skip(2).collect();
@@ -502,7 +502,7 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
             eprintln!(
                 "uefi-boot: the kernel HELD the screen for this gate and the tour still was not on \
                  it, so the framebuffer path is what broke: the loader's LocateProtocol, the pixel \
-                 order, the stride, or the mapping surviving mmu::init. This is not a missed \
+                 order, the stride, or the mapping surviving mmu::initialize. This is not a missed \
                  window; the boot was stopped while the dump was taken. Last dump: {}",
                 shot.display()
             );
@@ -577,8 +577,8 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
 /// The tour is taller than OVMF's 1280x800 screen and scrolls, so the banner is gone by the
 /// handover; held by `console::hold_screen_for_host`, the tour's last page is deterministic. The
 /// screen proves the pixels (`LocateProtocol`, byte order, stride, the mapping surviving
-/// `mmu::init`, the glyphs), and any decoded row proves all five; the self-test itself is asserted
-/// on the serial transcript. See notes/x86-uefi-boot/running-under-firmware.md.
+/// `mmu::initialize`, the glyphs), and any decoded row proves all five; the self-test itself is
+/// asserted on the serial transcript. See notes/x86-uefi-boot/running-under-firmware.md.
 const UEFI_SCREEN_MARKER: &str = boot_ladder::SELF_TEST;
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**

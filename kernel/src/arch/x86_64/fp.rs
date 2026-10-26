@@ -104,10 +104,10 @@ const CR4_OSXMMEXCPT: u64 = 1 << 10;
 /// **Put this CPU into the state the rest of this module assumes**: SSE available to the kernel's
 /// own save path, and the unit shut for whichever thread runs next.
 ///
-/// Called from `sched::init` and `sched::adopt_secondary_idle` rather than from `arch::init`, for
-/// the reason written at the call site: the invariant is about threads, and one architecture's boot
-/// path does not pass through `arch::init` at all.
-pub fn init() {
+/// Called from `sched::initialize` and `sched::adopt_secondary_idle` rather than from
+/// `arch::initialize`, for the reason written at the call site: the invariant is about threads, and
+/// one architecture's boot path does not pass through `arch::initialize` at all.
+pub fn initialize() {
     let mut cr4 = read_cr4();
     cr4 |= CR4_OSFXSR | CR4_OSXMMEXCPT;
     // SAFETY: a read-modify-write of the two SSE enables; `PAE` and every other bit go back as read,
@@ -312,7 +312,7 @@ mod proofs {
         // (CR0 bits touched, their value after, CR4 bits touched, their value after)
         let (cr0_touched, cr0_want, cr4_touched, cr4_want) = match which {
             0 => {
-                init();
+                initialize();
                 let sse = CR4_OSFXSR | CR4_OSXMMEXCPT;
                 (
                     CR0_EM | CR0_MP | CR0_NE | CR0_TS,

@@ -20,7 +20,7 @@ impl Window {
     ///
     /// # Safety
     ///
-    /// `phys` must be a `DesignWare` Mobile Storage controller's base that `mmu::init` mapped
+    /// `phys` must be a `DesignWare` Mobile Storage controller's base that `mmu::initialize` mapped
     /// device-typed for at least `regs::WINDOW_USED` bytes (step 10, from the same
     /// `memory::jh7110_storage` answer), and nothing else may drive that controller while this
     /// window is in use.

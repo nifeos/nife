@@ -11,9 +11,9 @@ has no CPU-model matrix.
 
 A GIC assumption that stops being true now fails loudly, at three points:
 
-- An `intc@` node whose binding is not a GIC this kernel knows panics in `memory::init`, naming
-  the `compatible` it found, rather than being driven as a GICv2 on the strength of its name.
-- A tree the hardware contradicts panics in `arch::irq::init` before any configuration write,
+- An `intc@` node whose binding is not a GIC this kernel knows panics in `memory::initialize`,
+  naming the `compatible` it found, rather than being driven as a GICv2 on the strength of its name.
+- A tree the hardware contradicts panics in `arch::irq::initialize` before any configuration write,
   naming the version claimed and the revision read. This is the check that would have stopped
   milestone 222's boot: a GICv2 claim over a redistributor frame reads `GICC_IIDR` as zero.
 - A core with no redistributor, or whose `ICC_SRE_EL1.SRE` will not set, panics as it comes
@@ -46,7 +46,7 @@ on, and then never receives one. Nothing faults and nothing says anything is wro
 
 The reason is that a GICv3 device tree node carries two register blocks like a GICv2 one does, so
 `memory::gic_regions()` finds a pair and hands them over without complaint. The second block is the
-redistributor rather than a CPU interface, and `gic::init_this_cpu` writes `GICC_CTLR` and
+redistributor rather than a CPU interface, and `gic::initialize_this_cpu` writes `GICC_CTLR` and
 `GICC_PMR` into it. Those are device-memory writes to registers that are not there: they land, they
 do nothing, and the real CPU interface (`ICC_*`, system registers) is never enabled. Every interrupt
 the distributor routes is then delivered to a core that has not agreed to receive any.
