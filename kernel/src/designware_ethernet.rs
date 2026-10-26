@@ -252,20 +252,16 @@ fn run(
     r.mac = Some(mac);
     let mac = mac.0;
 
-    let physical_layer_device_address = e.port.phy_address;
+    let mdio_address = e.port.phy_address;
     r.physical_layer_device_id =
-        mdio::phy_id(&mut mdio::Bus(&mut w), physical_layer_device_address).map_err(Error::Mdio)?;
+        mdio::phy_id(&mut mdio::Bus(&mut w), mdio_address).map_err(Error::Mdio)?;
     if r.physical_layer_device_id != motorcomm::YT8531_ID {
         return Err(Error::UnknownPhysicalLayerDevice {
             id: r.physical_layer_device_id,
         });
     }
-    let applied = motorcomm::configure(
-        &mut mdio::Bus(&mut w),
-        physical_layer_device_address,
-        &e.port.phy,
-    )
-    .map_err(Error::Mdio)?;
+    let applied = motorcomm::configure(&mut mdio::Bus(&mut w), mdio_address, &e.port.phy)
+        .map_err(Error::Mdio)?;
     r.physical_layer_device = Some((applied.volt_mv, e.port.phy.source));
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
@@ -287,13 +283,11 @@ fn run(
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
     let mut bus = mdio::Bus(&mut w);
-    mdio::restart_autonegotiation(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?;
+    mdio::restart_autonegotiation(&mut bus, mdio_address).map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
-        if let Some(l) =
-            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
-        {
+        if let Some(l) = motorcomm::link(&mut bus, mdio_address).map_err(Error::Mdio)? {
             break Some(l);
         }
         if crate::arch::timer::now() >= deadline {
@@ -305,13 +299,8 @@ fn run(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(
-            &mut bus,
-            physical_layer_device_address,
-            &e.port.phy,
-            l.speed,
-        )
-        .map_err(Error::Mdio)?;
+        motorcomm::apply_speed(&mut bus, mdio_address, &e.port.phy, l.speed)
+            .map_err(Error::Mdio)?;
         controller::start(&mut w, l, false);
     }
     Ok((
