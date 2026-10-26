@@ -49,6 +49,7 @@ pub mod bench;
 pub mod card;
 pub mod command;
 pub mod host;
+#[doc(alias = "idmac")]
 pub mod internal_direct_memory_access;
 pub mod jh7110;
 pub mod partition;

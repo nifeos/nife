@@ -450,10 +450,10 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
         8192,
         &[(7, 0, Fault::ErrorStatus)],
     );
-    let controller_error = 1 << 19;
+    let unknown_error = 1 << 19;
     assert!(matches!(
         sd::identify(&mut h, 4),
-        Err(InitializationError::Status(7, r)) if r & controller_error != 0
+        Err(InitializationError::Status(7, r)) if r & unknown_error != 0
     ));
     let mut h = faulty(
         CardKind::MultimediaCard,

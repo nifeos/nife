@@ -21,6 +21,7 @@ pub struct ReadReport {
     /// The card, identified.
     pub card: Card,
     /// Sector 0, parsed, if it holds an MBR.
+    #[doc(alias = "mbr")]
     pub master_boot_record: Option<MasterBootRecord>,
     /// The first partition's first sector ends in `55 aa` (a FAT boot sector does).
     pub partition_boot_signature: bool,

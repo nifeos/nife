@@ -320,8 +320,9 @@ pub(crate) const VERID: u32 = 0x06c;
 /// many slots.
 #[doc(alias = "hardware configuration register")]
 pub(crate) const HCON: u32 = 0x070;
-/// **Ultra High Speed mode register** (databook `UHS_REG`, offset 0x74; Linux's `SDMMC_UHS_REG`):
-/// 1.8 V select and DDR mode per card. Per slot, DDR mode is bit 16 and 1.8 V signaling is bit 0.
+/// **Ultra High Speed mode register** (OpenBSD's `SDMMC_UHS_REG`, databook `UHS_REG`, offset 0x74;
+/// Linux's `SDMMC_UHS_REG`): 1.8 V select and DDR mode per card. Per slot, DDR mode is bit 16 and
+/// 1.8 V signaling is bit 0.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): a register name copied from a cited source keeps the
 /// source's spelling; the register is the databook's `UHS_REG`; was `UHS`.
