@@ -37,12 +37,14 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   unseeded core never yields bytes.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
   rule 2 (a driver gets what it needs passed in), and the crate now depends on nothing. It holds
-  both spellings (`COMPATIBLES`) and the property decoders `interrupt` and `status_okay`, and
+  both spellings (`COMPATIBLES`) and the property decoders `interrupt_line` and `is_status_okay`, and
   `machine_discovery::jh7110::entropy::discover` walks the tree and fills in `Discovered`. The
   fixtures and the tests that read QEMU's tree moved there with the walk.
 - Its consumers: `kernel/src/user/entropy_service.rs`, `kernel/src/memory.rs`, `kernel/src/lib.rs`
   and `components/src/jh7110_entropy.rs`.
 - crates.io answers 404 for the name (checked 2026-10-07).
+- A ruling of 2026-10-26 (UTC) ratified the crate's names and renamed six of them first. [The
+  names record](0857-crates-released-on-their-own/jh7110-entropy-names.md) holds them.
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". The only Rust JH7110 crates found,
@@ -67,7 +69,7 @@ Measured 2026-10-11 (UTC): 4 of 4 proven.
 | An unseeded core never yields bytes | `verification::an_unseeded_core_never_yields_bytes` |
 
 Not proven: the quality of the randomness, which is a property of the silicon that no proof
-reaches; `Pool` and `assemble`, which copy words; and the device-tree query, which the cut moves
+reaches; `Pool` and `output_bytes`, which copy words; and the device-tree query, which the cut moves
 out.
 
 ## Release, by #1806's rulings
@@ -179,9 +181,9 @@ names until the ratification pass, so this section keeps the links it carried.
 - `COMPATIBLE_VENDOR`, `Discovered`: the vendor node and its evidence are the note's "The vendor
   spelling" section, found by milestone 239 (radon's device tree does not describe the TRNG, so a
   working driver never runs).
-- `interpret`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone 159
+- `generation_outcome`, `Pool` and the `an_unseeded_core_never_yields_bytes` harness and patch: milestone 159
   (a real hardware entropy source: the JH7110's TRNG) added the `stat` parameter and the pool.
-- `assemble`: no conditioning here for the reason §44 (entropy is a capability, `std::random` improves
+- `output_bytes`: no conditioning here for the reason §44 (entropy is a capability, `std::random` improves
   transparently, and the refusal is loud) gives `components/src/entropy.rs`.
 - `WORD_BYTES` and `take`'s clamp: the same 8 as `entropy_contract::MAX_BYTES`, and
   `entropy_contract::want` clamps first in the driver.

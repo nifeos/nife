@@ -1021,7 +1021,7 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
 
 /// The clock-and-reset controller's before-and-after, as the `clock` check.
 #[cfg(target_arch = "riscv64")]
-fn jh7110_clock(tally: &mut Tally, clock: Option<jh7110_clock_and_reset::Report>) {
+fn jh7110_clock(tally: &mut Tally, clock: Option<jh7110_clock_and_reset::BringUpReport>) {
     let Some(report) = clock else {
         tally.record(
             "clock",

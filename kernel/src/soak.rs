@@ -609,7 +609,7 @@ fn arm_watchdog() -> Option<Watchdog> {
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn start_watchdog_clocks(
     found: &jh7110_watchdog::Discovered,
-    sys: &jh7110_clock_and_reset::Found,
+    sys: &jh7110_clock_and_reset::WindowLocation,
 ) -> bool {
     use jh7110_clock_and_reset::Step;
     let plan = found.clocks_and_resets;

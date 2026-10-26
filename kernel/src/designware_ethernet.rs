@@ -93,9 +93,9 @@ pub(crate) struct Report {
     /// Whether the clock-and-reset windows came from the tree or from the constants.
     pub windows_from_tree: bool,
     /// The SYS-domain clocks' before-and-after words.
-    pub sys: crg::Report,
+    pub sys: crg::BringUpReport,
     /// The AON-domain clocks', mux's and resets' words.
-    pub aon: crg::Report,
+    pub aon: crg::BringUpReport,
     /// The syscon word before and after the interface select.
     pub syscon: (u32, u32),
     /// The controller's version register.
@@ -124,8 +124,8 @@ impl Report {
             base: e.port.base,
             compatible: e.port.compatible,
             windows_from_tree: e.aon.from_tree && e.sys.from_tree && e.syscon.from_tree,
-            sys: crg::Report::default(),
-            aon: crg::Report::default(),
+            sys: crg::BringUpReport::default(),
+            aon: crg::BringUpReport::default(),
             syscon: (0, 0),
             version: 0,
             dma_bits: 0,

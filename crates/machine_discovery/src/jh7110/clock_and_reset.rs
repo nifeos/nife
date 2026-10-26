@@ -11,7 +11,8 @@
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
-    AON_WINDOW, Found, MAX_WINDOWS, PMIC_COMPATIBLES, PmicBus, STG_WINDOW, SYS_WINDOW, Window,
+    AON_WINDOW, MAX_REG_ENTRIES, PMIC_COMPATIBLES, PmicBus, RegisterWindow, STG_WINDOW, SYS_WINDOW,
+    WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -27,7 +28,7 @@ use jh7110_clock_and_reset::{
 /// Name: recorded (milestone 220), which wrote it as `jh7110_clock_and_reset::discover`. The
 /// module path carries the chip and the controller, so the verb alone is left. calef has not
 /// ruled on it.
-pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Found, Error> {
+pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
     discover_window(tree, &STG_WINDOW)
 }
 
@@ -40,7 +41,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Found, Error> {
 ///
 /// Name: provisional (milestone 53's lane, 2026-10-06 UTC), after [`discover_sys`]; moved here
 /// from `jh7110_clock_and_reset` by lane crates-stand-alone, 2026-10-25 (UTC).
-pub fn discover_aon(tree: &DeviceTreeBlob<'_>) -> Result<Found, Error> {
+pub fn discover_aon(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
     discover_window(tree, &AON_WINDOW)
 }
 
@@ -53,14 +54,17 @@ pub fn discover_aon(tree: &DeviceTreeBlob<'_>) -> Result<Found, Error> {
 ///
 /// Name: provisional (milestone 592), 2026-09-25; moved here from `jh7110_clock_and_reset` by
 /// lane crates-stand-alone, 2026-10-25 (UTC). calef names public functions.
-pub fn discover_sys(tree: &DeviceTreeBlob<'_>) -> Result<Found, Error> {
+pub fn discover_sys(tree: &DeviceTreeBlob<'_>) -> Result<WindowLocation, Error> {
     discover_window(tree, &SYS_WINDOW)
 }
 
 /// The walk the three `discover` functions share: each spelling in order, then the constant.
-fn discover_window(tree: &DeviceTreeBlob<'_>, window: &Window) -> Result<Found, Error> {
+fn discover_window(
+    tree: &DeviceTreeBlob<'_>,
+    window: &RegisterWindow,
+) -> Result<WindowLocation, Error> {
     for spelling in &window.spellings {
-        let mut regions = [Region { start: 0, size: 0 }; MAX_WINDOWS];
+        let mut regions = [Region { start: 0, size: 0 }; MAX_REG_ENTRIES];
         let n = tree.node_reg_compatible(spelling.compatible, &mut regions)?;
         if n == 0 {
             continue;
@@ -69,11 +73,11 @@ fn discover_window(tree: &DeviceTreeBlob<'_>, window: &Window) -> Result<Found, 
             None => None,
             Some(_) => tree.node_prop_compatible(spelling.compatible, b"reg-names")?,
         };
-        let mut pairs = [(0, 0); MAX_WINDOWS];
+        let mut pairs = [(0, 0); MAX_REG_ENTRIES];
         for (pair, region) in pairs.iter_mut().zip(&regions[..n]) {
             *pair = (region.start, region.size);
         }
-        if let Some(found) = Found::from_regions(spelling, &pairs[..n], names) {
+        if let Some(found) = WindowLocation::from_regions(spelling, &pairs[..n], names) {
             return Ok(found);
         }
     }
@@ -82,7 +86,7 @@ fn discover_window(tree: &DeviceTreeBlob<'_>, window: &Window) -> Result<Found, 
 
 /// **Read the PMIC's I2C bus's clocks and resets out of `tree`**: the `clocks`, `resets` and
 /// `reg` of the AXP15060's parent bus and the PMIC's own `reg`, mainline's `compatible` tried
-/// first, handed to [`PmicBus::from_bus`]. A tree naming no known PMIC gets
+/// first, handed to [`PmicBus::from_nodes`]. A tree naming no known PMIC gets
 /// [`PmicBus::without_pmic`]. Like [`discover`], an answer is not evidence of a JH7110.
 ///
 /// # Errors
@@ -102,7 +106,7 @@ pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PmicBus, Error> {
         // fails leaves each unstated rather than failing the plan.
         let pmic_reg = tree.node_prop_compatible(pmic, b"reg").ok().flatten();
         let bus_reg = tree.parent_prop_compatible(pmic, b"reg").ok().flatten();
-        return PmicBus::from_bus(pmic, pmic_reg, bus_reg, clocks, resets, |phandle, name| {
+        return PmicBus::from_nodes(pmic, pmic_reg, bus_reg, clocks, resets, |phandle, name| {
             tree.phandle_prop(phandle, name)
         });
     }

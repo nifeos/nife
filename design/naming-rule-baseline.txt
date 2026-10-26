@@ -60,8 +60,6 @@ crates/hot_swap_contract/src/lib.rs::STATE_VA spelled-out
 crates/hot_swap_contract/src/lib.rs::broker_wants_down question-shape
 crates/hot_swap_contract/src/lib.rs::log_put question-shape
 crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant question-shape
-crates/jh7110_clock_and_reset/src/lib.rs::every_reset_released question-shape
-crates/jh7110_entropy/src/lib.rs::BUILD_CONFIG spelled-out
 crates/line_editor/src/component.rs::ELF_VA spelled-out
 crates/line_editor/src/component.rs::HANDOFF_VA spelled-out
 crates/login_contract/src/lib.rs::CARETAKER_ELF_VA spelled-out

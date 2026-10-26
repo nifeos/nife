@@ -18,8 +18,8 @@ fn pmic_bus(
     u8,
 )> {
     use jh7110_clock_and_reset::{
-        IcClkWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
-        SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_div, standard_mode_100k,
+        I2cClockWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
+        SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_divider, standard_mode_100k,
     };
 
     let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
@@ -35,7 +35,7 @@ fn pmic_bus(
     };
     let crg = crate::arch::mmu::phys_to_virt(sys.base) as usize;
     let syscon = crate::arch::mmu::phys_to_virt(SYS_SYSCON_BASE) as usize;
-    let words = IcClkWords {
+    let words = I2cClockWords {
         bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
         axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
         stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
@@ -52,9 +52,9 @@ fn pmic_bus(
          clock {ic} Hz (bus_root {}, divs {}/{}/{}, pll2 fbdiv {fbdiv} prediv {} postdiv1 {}), \
          standard mode hcnt {} lcnt {} sda_hold {}",
         (words.bus_root >> 24) & 1,
-        one_based_div(words.axi_cfg0, 2),
-        one_based_div(words.stg_axiahb, 2),
-        one_based_div(words.apb_bus_func, 4),
+        one_based_divider(words.axi_cfg0, 2),
+        one_based_divider(words.stg_axiahb, 2),
+        one_based_divider(words.apb_bus_func, 4),
         words.pll2_prediv & 0x3f,
         1u32 << ((words.pll2_postdiv1 >> 28) & 3),
         mode.hcnt,

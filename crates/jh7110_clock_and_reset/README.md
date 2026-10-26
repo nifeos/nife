@@ -22,12 +22,12 @@ Mainline Linux names one controller node per domain (`starfive,jh7110-stgcrg`, `
 (`starfive,jh7110-clkgen`) and one reset node (`starfive,jh7110-reset`), each carrying several
 windows told apart by `reg-names`. `STG_WINDOW`, `AON_WINDOW` and `SYS_WINDOW` list those
 spellings in the order to try them. Find the first node carrying one, and hand its `reg` entries
-and `reg-names` to `Found::from_regions`, which picks the window by name, never by position. A tree
-that names none gets `Window::fallback`, the address both trees agree on, with `from_tree: false`.
+and `reg-names` to `WindowLocation::from_regions`, which picks the window by name, never by position. A tree
+that names none gets `RegisterWindow::fallback`, the address both trees agree on, with `from_tree: false`.
 Do not store through a fallback on a machine your tree does not name as a JH7110.
 
 The PMIC is `x-powers,axp15060` in mainline and `stf,axp15060-regulator` in the vendor tree
-(`PMIC_COMPATIBLES`). `PmicBus::from_bus` and `DevicePlan::from_specifiers` turn a node's `clocks`
+(`PMIC_COMPATIBLES`). `PmicBus::from_nodes` and `DevicePlan::from_specifiers` turn a node's `clocks`
 and `resets` into steps, calling back for each phandle's `#clock-cells`, `#reset-cells` and
 `compatible`. A specifier for another provider, or an id past the domain's bounds (the vendor
 tree's virtual clock 298), is counted in `skipped` and never becomes a store.
@@ -35,11 +35,11 @@ tree's virtual clock 298), is counted in `skipped` and never becomes a store.
 ## Usage
 
 ```rust
-use jh7110_clock_and_reset::{STG, STG_WINDOW, Found, Step, TRNG_BRING_UP, is_deasserted};
+use jh7110_clock_and_reset::{STG, STG_WINDOW, WindowLocation, Step, TRNG_BRING_UP, is_deasserted};
 
 // The vendor clkgen node: three windows, found by name.
 let regions = [(0x1302_0000, 0x1_0000), (0x1023_0000, 0x1_0000), (0x1700_0000, 0x1_0000)];
-let stg = Found::from_regions(&STG_WINDOW.spellings[1], &regions, Some(b"sys\0stg\0aon\0"))
+let stg = WindowLocation::from_regions(&STG_WINDOW.spellings[1], &regions, Some(b"sys\0stg\0aon\0"))
     .unwrap_or(STG_WINDOW.fallback());
 assert_eq!(stg.base, 0x1023_0000);
 
@@ -53,7 +53,7 @@ assert!(is_deasserted(0b1000, reset.mask));
 Walk a plan in order: for `EnableClock(i)` set `CLOCK_ENABLE` in the word at
 `domain.clock_offset(i)`, for `SelectParent` write `with_parent`, and for `DeassertReset(id)` clear
 the bit at `reset_bit(id).assert_offset`, then poll `status_offset` until `is_deasserted`. Keep the
-words before and after in a `Report`, which tells "already up" apart from "this run started it".
+words before and after in a `BringUpReport`, which tells "already up" apart from "this run started it".
 
 ## Limitations
 

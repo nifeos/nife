@@ -16,7 +16,7 @@
 //! or a JH7110 TRNG, so QEMU's `virt` never reaches this driver.
 
 use jh7110_clock_and_reset::{
-    CLOCK_ENABLE, Domain, MAX_RECORDED_CLOCKS, Report, Step, is_deasserted, with_parent,
+    BringUpReport, CLOCK_ENABLE, Domain, MAX_RECORDED_CLOCKS, Step, is_deasserted, with_parent,
 };
 
 /// How many times [`bring_up`] reads the status word before giving up on a deassert.
@@ -34,8 +34,8 @@ const POLL_LIMIT: u32 = 1_000_000;
 ///
 /// `base` must be a mapped, device-typed window of at least `domain`'s extent, belonging to a
 /// JH7110 clock-and-reset generator (see the module's `SAFETY`).
-pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> Report {
-    let mut report = Report::default();
+pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpReport {
+    let mut report = BringUpReport::default();
 
     for step in plan {
         match *step {
@@ -161,7 +161,7 @@ pub(crate) unsafe fn set_card_clock(
     let (parent_hz, before, after) = unsafe {
         let word =
             |base: usize, offset: usize| core::ptr::read_volatile((base + offset) as *const u32);
-        let parent_hz = axi_cfg0_hz(&jh7110_clock_and_reset::IcClkWords {
+        let parent_hz = axi_cfg0_hz(&jh7110_clock_and_reset::I2cClockWords {
             bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
             axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
             stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
