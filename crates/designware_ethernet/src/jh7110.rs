@@ -66,18 +66,18 @@ pub(crate) const AON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
 pub(crate) const AON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
 /// `COMPATIBLE_AON_SYSCON`.
 pub const COMPATIBLE_AON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
 /// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
 /// `AON_SYSCON_NODE`.
 pub const AON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 /// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
 /// the vendor's `AON_SYSCFG_12`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
 /// `GMAC0_SYSCON_OFFSET`.
 pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
@@ -93,7 +93,7 @@ pub(crate) const PHY_INTERFACE_RGMII: u32 = 1;
 /// kept.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): the reduced gigabit media-independent interface
-/// spelled out; was `select_rgmii`.
+/// spelled out, replacing `select_rgmii`.
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
@@ -282,7 +282,8 @@ pub fn vendor_phy<'t, E>(
 /// **Where the AON system controller is** (the device tree's `syscon` node), and whether the tree
 /// said so.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Syscon`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
+/// `Syscon`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "syscon")]
 pub struct SystemController {

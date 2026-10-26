@@ -22,13 +22,13 @@ pub(crate) const fn transmit_buffer(i: u16) -> u64 {
 }
 /// Receive descriptor `i`'s offset.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_descriptor`.
 pub const fn receive_descriptor(i: u16) -> u64 {
     RECEIVE_RING + (i % RECEIVE_ENTRIES) as u64 * DESCRIPTOR_BYTES
 }
 /// Transmit descriptor `i`'s offset.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `tx_descriptor`.
 pub const fn transmit_descriptor(i: u16) -> u64 {
     TRANSMIT_RING + (i % TRANSMIT_ENTRIES) as u64 * DESCRIPTOR_BYTES
 }

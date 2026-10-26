@@ -33,7 +33,7 @@ pub trait Tails {
 
 /// Why a frame was not queued.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TxError`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `TxError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
     /// Empty, or longer than [`MAXIMUM_FRAME`].
@@ -73,7 +73,7 @@ impl DataPlane {
 
     /// The receive descriptor the next [`DataPlane::receive`] looks at.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_cursor`.
+    /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_cursor`.
     pub fn receive_cursor(&self) -> u16 {
         self.receive_next
     }

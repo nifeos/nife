@@ -8,7 +8,9 @@ record format `helpers/name_release.py` reads, inert until a ruling dates its `R
 gives its count of names and how many it flags as something other than `clear` or `term`:
 
 - [`e1000e-names.md`](e1000e-names.md): 145 names, 21 flagged.
-- [`designware-ethernet-names.md`](designware-ethernet-names.md): 161 names, 34 flagged.
+- [`designware-ethernet-names.md`](designware-ethernet-names.md): 161 names, 34 flagged; the
+  rulings that renamed some of them first are in
+  [`designware-ethernet-renames.md`](designware-ethernet-renames.md).
 - [`designware-mobile-storage-names.md`](designware-mobile-storage-names.md): 118 names, 30 flagged.
 
 - [`what-nife-does-at-each-extraction.md`](what-nife-does-at-each-extraction.md): the checklist

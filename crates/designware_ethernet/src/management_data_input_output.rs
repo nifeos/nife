@@ -84,7 +84,8 @@ pub const fn command(phy: u8, reg: u8, write: bool) -> u32 {
 /// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
 /// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Mdio`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
+/// `Mdio`.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
     /// Read register `reg` of the PHY at `phy`.

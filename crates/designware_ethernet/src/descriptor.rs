@@ -7,12 +7,12 @@ pub(crate) const PAGE: u64 = 4096;
 
 /// Receive descriptors. Sixteen 16-byte descriptors are 256 bytes, one page with room to grow.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RX_ENTRIES`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `RX_ENTRIES`.
 pub const RECEIVE_ENTRIES: u16 = 16;
 
 /// Transmit descriptors.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TX_ENTRIES`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `TX_ENTRIES`.
 pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per descriptor: four little-endian words.
@@ -25,7 +25,8 @@ pub const BUFFER_SIZE: u64 = 2048;
 /// The largest frame either direction carries: 1500 bytes of payload and the 14-byte header, CRC
 /// excluded (the device appends it on transmit, and the driver strips it on receive).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `MAX_FRAME`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
+/// `MAX_FRAME`.
 pub const MAXIMUM_FRAME: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
@@ -86,7 +87,8 @@ pub const TDES3_ES: u32 = 1 << 15;
 /// owned, interrupt-on-completion, buffer 1 valid. As two little-endian `u64`s: words 0 and 1,
 /// then words 2 and 3.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor_words`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
+/// `rx_descriptor_words`.
 pub const fn receive_descriptor_words(buffer_phys: u64) -> [u64; 2] {
     [
         buffer_phys,
@@ -98,7 +100,8 @@ pub const fn receive_descriptor_words(buffer_phys: u64) -> [u64; 2] {
 /// interrupt-on-completion, and word 3 owned, first and last, with the frame length. The device
 /// inserts the CRC and pads a short frame (checksum and padding control zero).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor_words`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
+/// `tx_descriptor_words`.
 pub const fn transmit_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
     let len = len as u32 & TDES3_FRAME_LEN;
     let des2 = (len & TDES2_BUF1_LEN) | TDES2_IC;
@@ -108,7 +111,7 @@ pub const fn transmit_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
 
 /// What a receive descriptor's word 3 says, judged.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RxVerdict`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `RxVerdict`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReceiveVerdict {
     /// The device still owns it.
@@ -138,7 +141,7 @@ pub enum ReceiveVerdict {
 /// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 0x7fff, 1514), ReceiveVerdict::Drop);
 /// ```
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_verdict`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_verdict`.
 pub fn receive_verdict(des3: u32, room: usize) -> ReceiveVerdict {
     if des3 & RDES3_OWN != 0 {
         return ReceiveVerdict::NotYet;

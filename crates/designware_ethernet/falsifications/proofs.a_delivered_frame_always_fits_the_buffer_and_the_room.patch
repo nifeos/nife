@@ -6,10 +6,10 @@ a full frame is then accepted, so a caller offering a 576-byte buffer is told to
 Expected to fail: the harness's `assert!(n <= room)`, on any word with a valid length above room.
 
 diff --git a/crates/designware_ethernet/src/descriptor.rs b/crates/designware_ethernet/src/descriptor.rs
-index 37a9b6f14..b9d5ae687 100644
+index 513fcc02e..c0f17a584 100644
 --- a/crates/designware_ethernet/src/descriptor.rs
 +++ b/crates/designware_ethernet/src/descriptor.rs
-@@ -151,7 +151,7 @@ pub fn receive_verdict(des3: u32, room: usize) -> ReceiveVerdict {
+@@ -154,7 +154,7 @@ pub fn receive_verdict(des3: u32, room: usize) -> ReceiveVerdict {
      let Some(len) = wire.checked_sub(CRC_BYTES) else {
          return ReceiveVerdict::Drop;
      };

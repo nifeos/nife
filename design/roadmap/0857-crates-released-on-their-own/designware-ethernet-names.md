@@ -6,6 +6,9 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
+A row whose status refuses a spelling took its name from a ruling of 2026-10-26 (UTC), and
+[designware-ethernet-renames.md](designware-ethernet-renames.md) states each ruling.
+
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `designware_ethernet` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
 155 names: 138 no block, 16 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 7 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
@@ -29,7 +32,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `hardware` | module | `src/hardware.rs` | provisional. | no | clear |
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a MAC crate |
 | `layout` | module | `src/layout.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `mdio`. | yes | clear |
+| `management_data_input_output` | module | `src/management_data_input_output.rs` | provisional. Refused `mdio` (ruled 2026-10-26 UTC). | yes | clear |
 | `motorcomm` | module | `src/motorcomm.rs` | unrecorded. | yes | scope: one vendor's PHY in a MAC crate |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
@@ -60,17 +63,17 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `DataPlane` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Region` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Tails` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `TransmitError` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TxError`. | yes | clear |
+| `TransmitError` | item | `src/data_plane.rs` | provisional. Refused `TxError` (ruled 2026-10-26 UTC). | yes | clear |
 | `can_transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `new` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `receive` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `receive_cursor` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_cursor`. | yes | clear |
+| `receive_cursor` | item | `src/data_plane.rs` | provisional. Refused `rx_cursor` (ruled 2026-10-26 UTC). | yes | clear |
 | `start` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `BUFFER_SIZE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `CRC_BYTES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `DESCRIPTOR_BYTES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `MAXIMUM_FRAME` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `MAX_FRAME`. | yes | clear |
+| `MAXIMUM_FRAME` | item | `src/descriptor.rs` | provisional. Refused `MAX_FRAME` (ruled 2026-10-26 UTC). | yes | clear |
 | `RDES3_BUF1V` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_CTXT` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_ES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -79,8 +82,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `RDES3_LD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_LENGTH` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_OWN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RECEIVE_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RX_ENTRIES`. | yes | clear |
-| `ReceiveVerdict` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RxVerdict`. | yes | clear |
+| `RECEIVE_ENTRIES` | item | `src/descriptor.rs` | provisional. Refused `RX_ENTRIES` (ruled 2026-10-26 UTC). | yes | clear |
+| `ReceiveVerdict` | item | `src/descriptor.rs` | provisional. Refused `RxVerdict` (ruled 2026-10-26 UTC). | yes | clear |
 | `TDES2_BUF1_LEN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES2_IC` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_ES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -88,34 +91,34 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `TDES3_FS` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_LS` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_OWN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TRANSMIT_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TX_ENTRIES`. | yes | clear |
-| `receive_descriptor_words` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor_words`. | yes | clear |
-| `receive_verdict` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_verdict`. | yes | clear |
-| `transmit_descriptor_words` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor_words`. | yes | clear |
-| `Hardware` | item | `src/hardware.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Hw`. | yes | clear |
-| `AON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `AON_SYSCON_NODE`. | yes | clear |
+| `TRANSMIT_ENTRIES` | item | `src/descriptor.rs` | provisional. Refused `TX_ENTRIES` (ruled 2026-10-26 UTC). | yes | clear |
+| `receive_descriptor_words` | item | `src/descriptor.rs` | provisional. Refused `rx_descriptor_words` (ruled 2026-10-26 UTC). | yes | clear |
+| `receive_verdict` | item | `src/descriptor.rs` | provisional. Refused `rx_verdict` (ruled 2026-10-26 UTC). | yes | clear |
+| `transmit_descriptor_words` | item | `src/descriptor.rs` | provisional. Refused `tx_descriptor_words` (ruled 2026-10-26 UTC). | yes | clear |
+| `Hardware` | item | `src/hardware.rs` | provisional. Refused `Hw` (ruled 2026-10-26 UTC). | yes | clear |
+| `AON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Refused `AON_SYSCON_NODE` (ruled 2026-10-26 UTC). | yes | clear |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `COMPATIBLES` | item | `src/jh7110.rs` | provisional. | yes | clear |
-| `COMPATIBLE_AON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `COMPATIBLE_AON_SYSCON`. | yes | clear |
+| `COMPATIBLE_AON_SYSTEM_CONTROLLER` | item | `src/jh7110.rs` | provisional. Refused `COMPATIBLE_AON_SYSCON` (ruled 2026-10-26 UTC). | yes | clear |
 | `COMPATIBLE_MAINLINE` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `Discovered` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `GMAC0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `GMAC0_SYSTEM_CONTROLLER_OFFSET` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `GMAC0_SYSCON_OFFSET`. | yes | clear |
+| `GMAC0_SYSTEM_CONTROLLER_OFFSET` | item | `src/jh7110.rs` | provisional. Refused `GMAC0_SYSCON_OFFSET` (ruled 2026-10-26 UTC). | yes | clear |
 | `GMAC1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `SystemController` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Syscon`. | yes | clear |
+| `SystemController` | item | `src/jh7110.rs` | provisional. Refused `Syscon` (ruled 2026-10-26 UTC). | yes | clear |
 | `VENDOR_PHY_NODE` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `fallback` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `first_cell` | item | `src/jh7110.rs` | provisional. | yes | scope: a device-tree cell reader in a MAC crate |
 | `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `interface` | item | `src/jh7110.rs` | unrecorded. | yes | generic |
 | `mainline_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
-| `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): the reduced gigabit media-independent interface spelled out; was `select_rgmii`. | yes | clear |
+| `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Refused `select_rgmii` (ruled 2026-10-26 UTC). | yes | clear |
 | `vendor_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `receive_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor`. | yes | clear |
-| `transmit_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor`. | yes | clear |
+| `receive_descriptor` | item | `src/layout.rs` | provisional. Refused `rx_descriptor` (ruled 2026-10-26 UTC). | yes | clear |
+| `transmit_descriptor` | item | `src/layout.rs` | provisional. Refused `tx_descriptor` (ruled 2026-10-26 UTC). | yes | clear |
 | `BMCR_RESET` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `BMSR_ANEG_COMPLETE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `Bus` | item | `src/management_data_input_output.rs` | unrecorded. | yes | generic: two `Bus` types in two modules |
@@ -126,7 +129,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GB` | item | `src/management_data_input_output.rs` | unrecorded. | yes | term |
 | `GOC_READ` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `GOC_WRITE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
-| `ManagementDataInputOutput` | item | `src/management_data_input_output.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Mdio`. | yes | clear |
+| `ManagementDataInputOutput` | item | `src/management_data_input_output.rs` | provisional. Refused `Mdio` (ruled 2026-10-26 UTC). | yes | clear |
 | `PA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `RDA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `command` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
@@ -151,8 +154,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `link` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `link_from_status` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
 | `mbps` | item | `src/motorcomm.rs` | unrecorded. | yes | clear |
-| `read_extended` | item | `src/motorcomm.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `read_ext`. | yes | clear |
-| `write_extended` | item | `src/motorcomm.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `write_ext`. | yes | clear |
+| `read_extended` | item | `src/motorcomm.rs` | provisional. Refused `read_ext` (ruled 2026-10-26 UTC). | yes | clear |
+| `write_extended` | item | `src/motorcomm.rs` | provisional. Refused `write_ext` (ruled 2026-10-26 UTC). | yes | clear |
 | `CHAN_CUR_RX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_CUR_TX_DESC` | item | `src/regs.rs` | unrecorded. | yes | term |
 | `CHAN_RX_TAIL` | item | `src/regs.rs` | unrecorded. | yes | term |
@@ -184,36 +187,3 @@ Every `pub` module and item in the crate's source has a row. `script/names` does
 - the methods of the traits `Region` (4), `Tails` (3), `Hardware` (3) and `ManagementDataInputOutput` (2).
 
 The `pub use` lines re-export items that have rows where they are defined. The one `pub` field in `src/sim.rs` belongs to a crate-private type.
-
-## Rulings applied before ratification
-
-Each renamed row's status says which ruling renamed it and what it was.
-
-- Ruled 2026-10-26 (UTC), the crate's rename table: `Hw` becomes `Hardware`. `Mdio` and the module
-  `mdio` become `ManagementDataInputOutput` and `management_data_input_output`, IEEE 802.3's phrase,
-  with `doc(alias = "mdio")`. `Syscon`, `SYSCON_FIELD` and the `GMAC0_SYSCON_*` constants spell out
-  `SystemController` and `SYSTEM_CONTROLLER_*`, with `doc(alias = "syscon")`; device-tree strings
-  keep their spelling. `read_ext`, `write_ext`, `modify_ext` and `ext` become `read_extended`,
-  `write_extended`, `modify_extended` and `extended`. `desc` and `set_desc` become `descriptor` and
-  `set_descriptor`; `rx_cur` and `tx_cur`, `receive_cursor` and `transmit_cursor`; `rx_des3` and
-  `tx_des3`, `receive_descriptor_word_3` and `transmit_descriptor_word_3`; `dev_read` and
-  `dev_write`, `device_read` and `device_write`; `volt_mv`, `voltage_mv`. The simulator's `Nic`
-  becomes `NetworkInterfaceController`, a `*_LEN` this crate authors becomes `*_LENGTH`, and
-  `MAX_FRAME` becomes `MAXIMUM_FRAME`. The unit symbols `ps`, `mv`, `ua`, `us` and `ms` stay.
-- Ruled 2026-10-26 (UTC), earned words: a `mac` that holds the six-byte address is a
-  `station_address`, IEEE 802.3's term and the databook's, with `doc(alias = "mac_address")`
-  (`Discovered`'s field, the handoff's field, and every parameter). `crc` is earned and stays, as
-  `cpu` is by precedent. A FIFO is a queue, matching the RQS and TQS fields that size it:
-  `rx_fifo_bytes`, `tx_fifo_bytes` and `fifo_bytes` become `receive_queue_bytes`,
-  `transmit_queue_bytes` and `queue_bytes`, with `doc(alias = "fifo")`.
-- Ruled 2026-10-26 (UTC), terms of art: `rgmii` is spelled out,
-  `reduced_gigabit_media_independent_interface` (`select_rgmii` and `Discovered`'s field `rgmii`, and the tests that name them), with
-  `doc(alias = "rgmii")` and a doc that says what it is; register names copied from a source keep
-  `RGMII`. The programmable burst length spells out by what it sets: `rx_pbl`, `tx_pbl` and
-  `pbl_x8` become `receive_channel_burst_length`, `transmit_channel_burst_length` and
-  `channel_burst_length_times_8`, with `doc(alias = "pbl")`. `burst_lengths`, the `BLEN` bits, a
-  different setting, becomes `bus_burst_lengths`.
-- Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out wherever this crate authors the
-  name (`ReceiveVerdict`, `TransmitError`, `receive_verdict`, `RECEIVE_ENTRIES`, the `layout`
-  offsets, the `Tails` methods, `DataPlane::receive_cursor`, `Settings`' fields). Register and bit
-  names copied from a source (`CHAN_RX_CONTROL`, `TXFIFOSIZE`, `RX_CLK_EN`) keep their spelling.

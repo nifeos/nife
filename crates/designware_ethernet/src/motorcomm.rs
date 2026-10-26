@@ -259,7 +259,8 @@ pub(crate) const fn voltage_mv(chip_config: u16) -> u32 {
 
 /// Read extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `read_ext`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
+/// `read_ext`.
 pub fn read_extended(
     bus: &mut impl ManagementDataInputOutput,
     phy: u8,
@@ -271,7 +272,8 @@ pub fn read_extended(
 
 /// Write extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `write_ext`.
+/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
+/// `write_ext`.
 pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
     phy: u8,
