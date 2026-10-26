@@ -10,20 +10,21 @@ paths that call into the switch are in [rendezvous.md](rendezvous.md).
 ## Thread 0, and what `init` does first
 
 `sched::init` adopts the context it is already running in as thread 0. The boot thread has no stack
-of its own and no saved context. The first switch away from it writes one. A thread's context is
-written by the act of leaving it.
+of its own and no saved context. The first switch away from it writes one. The act of leaving a
+thread writes its context.
 
 Before any thread exists, `init` shuts the floating-point unit on its core (milestone 447 (a
 thread's vector registers are its own)). `crate::fp` marks a thread `live` when it takes the
 first-use trap. A core that starts with the unit open never takes that trap. Every thread on it
 would then stay `live == false`, and two of them would share one register file. The shut lives in
-`sched::init` rather than `arch::init`, because RISC-V's boot hart never calls `arch::init`. `main`'s
-RISC-V path installs `stvec` itself and goes straight to `sched::init`. OpenSBI hands over a hart
-with `sstatus.FS` already set. The machine statistics page is published at the same point, for the
-same reason: threads begin here, so the counters that watch them begin here too.
+`sched::init` rather than `arch::init`, because RISC-V's boot hart never calls `arch::init`.
+`main`'s RISC-V path installs `stvec` itself and goes straight to `sched::init`. OpenSBI hands over
+a hart with `sstatus.FS` already set. Initialization also publishes the machine statistics page at
+the same point, for the same reason: threads begin here, so the counters that watch them begin here
+too.
 
-The tables are installed empty first, and the boot thread is then inserted into them. Built as a
-local and moved into the `Option`, the thread table sits twice on the boot stack in an unoptimised
+Initialization installs the tables empty first and then inserts the boot thread into them. Built as
+a local and moved into the `Option`, the thread table sits twice on the boot stack in an unoptimised
 build. Each slot added to `MAX_THREADS` then cost about 80 bytes of boot stack, not 40. Measured
 2026-08-27 (UTC): at 128 slots, `init`'s frame was 43,952 bytes, the deepest in the kernel. The
 suite's boot-stack high-water stood at 54,336 of 65,504 bytes (82%). A probe raise to 256 slots took
@@ -32,13 +33,13 @@ it to 64,640 (98%) and failed `stack::report_high_water`'s gate. Assigning `EMPT
 mints is slot 0, generation 0, so the boot thread is tid 0 by construction.
 
 The run queue and inbox are intrusive. A push from the timer interrupt is two pointer writes and
-cannot allocate, so nothing is reserved at boot.
+cannot allocate, so boot reserves nothing.
 
-The idle thread is built in place on its own TCB page, as `spawn_on` builds every kernel thread. A
-by-value `Thread::spawn` held three `Thread`s in one unoptimised frame. That was 4,368 bytes once the
-capability table reached 32 slots, over the 4,096-byte guard page (2026-09-27 UTC). The idle thread
-stays off every ready queue (`cpu::PerCpu::idle`). The pick falls back to it only when nothing else
-can run, so it never takes a turn from real work.
+Initialization builds the idle thread in place on its own TCB page, as `spawn_on` builds every
+kernel thread. A by-value `Thread::spawn` held three `Thread`s in one unoptimised frame. That was
+4,368 bytes once the capability table reached 32 slots, over the 4,096-byte guard page (2026-09-27
+UTC). The idle thread stays off every ready queue (`cpu::PerCpu::idle`). The pick falls back to it
+only when nothing else can run, so it never takes a turn from real work.
 
 ## Queue tokens and the queue discipline
 
@@ -50,17 +51,18 @@ build, because the alternative is a corrupted intrusive list. It is one cold fun
 site. An `expect` would set up a message and a location inline, and seven of them were most of what
 the token added to `script/fastpath-footprint`'s closures.
 
-A raw queue pointer stays valid while its thread is queued, by the queue discipline. A thread on a
-run queue or inbox is `Ready`. A thread on a rendezvous wait queue is `Blocked`. The reaper frees
-only `Finished` threads, and no thread is two of these at once. The thread table pins the TCB page.
-`thread_control_block_ptr` returns `NonNull`, because the pointer comes from a `&mut Thread`. That
-takes null out of the queue's safety contract, one of the two things CodeQL's
+A raw queue pointer stays valid while its thread sits on a queue, by the queue discipline. A thread
+on a run queue or inbox is `Ready`. A thread on a rendezvous wait queue is `Blocked`. The reaper
+frees only `Finished` threads, and no thread is two of these at once. The thread table pins the TCB
+page. `thread_control_block_ptr` returns `NonNull`, because the pointer comes from a `&mut Thread`.
+That takes null out of the queue's safety contract, one of the two things CodeQL's
 `rust/access-invalid-pointer` alerts pointed at (milestone 45 (triage the CodeQL alerts)). No
-available type can say that the pointee outlives its time on the queue. That stays the caller's rule.
+available type can say that the pointee outlives its time on the queue. That stays the caller's
+rule.
 
 ## `schedule`
 
-`schedule` is reached from a voluntary `yield_now` and from the timer interrupt's tail. The two
+A voluntary `yield_now` and the timer interrupt's tail both reach `schedule`. The two
 paths are identical from its first line. Its rules, in the order the code meets them:
 
 1. **Not on an interrupt stack.** A switch parks the running `sp` in the outgoing thread's
@@ -73,24 +75,24 @@ paths are identical from its first line. Its rules, in the order the code meets 
    between choosing a thread and running it. `was_enabled` is a local on the thread's own stack, so
    it is still there when a later switch returns to this frame.
 3. **One exit from the locked block.** Every path leaves the labeled block through the same point.
-   The guard drops first, and interrupts are restored once, after it. Restoring them inside the
-   block opened a one-instruction window. A timer could then re-enter `schedule` and take a lock its
-   core already held.
+   The guard drops first, and the function restores interrupts once, after it. Restoring them inside
+   the block opened a one-instruction window. A timer could then re-enter `schedule` and take a lock
+   its core already held.
 4. **Orders before the pick.** A thread `DESTROY` marked killed never runs again. It becomes a
    `Finished` corpse at the top of the decision, where every path below reaps it, "keep current"
    included. A killed runaway can be the only thread on its core, and a requeue-time check would
    never reach it. A suspension order (§300 (the paused state, a TCB verb, silent)) parks a running
    thread before the pick. The test is two loads and a compare. The bodies, `carry_out_orders` and
    `finish_killed_current`, are cold and out of line.
-5. **Migration is recorded at the switch.** Every path to a CPU passes through here, whatever moved
-   the thread. So `Thread::last_cpu` is written here, and only under `soak_test`. Shipped everywhere,
+5. **The switch records migration.** Every path to a CPU passes through here, whatever moved the
+   thread. So this step writes `Thread::last_cpu`, and only under `soak_test`. Shipped everywhere,
    it put `ipc_fastpath` over milestone 132 (the fast path's footprint)'s bound.
-6. **The lock is released before `switch_to`.** Held across it, the lock would belong to a thread
-   that is not running. The next thread to want it would spin forever.
+6. **The scheduler releases the lock before `switch_to`.** Held across it, the lock would belong to
+   a thread that is not running. The next thread to want it would spin forever.
 7. **The incoming address space first.** `TTBR0_EL1` is one register shared by everybody. A thread
    resuming at EL0 in the previous thread's low half runs a stranger's code. The install is a no-op
    when the root is already right, as it is between kernel threads. Its liveness argument cannot be
-   a borrow, because the lock is released on purpose.
+   a borrow, because the scheduler releases the lock on purpose.
 8. **The register file beside the switch, not inside it.** `switch_to` saves what a function call
    may destroy. `crate::fp::hand_over` moves what a thread owns, and has the four cases.
 9. **The far side.** The outgoing thread stands on its stack until `switch_to` returns in the
@@ -107,10 +109,10 @@ than a walk to the page.
 mid-way through blocking itself. That one comparison keeps it from undoing the block. `preempt`
 marks the outgoing thread `Ready` and leaves `on_cpu` set. It is then on a queue and still on this
 core until `finish_switch` runs. That is the one legal overlap, and it is why only this core may pop
-its own queue (the steal-versus-switch-out rule in `crates/thread_wake_handshake`). A popped thread
-with a suspension order is parked rather than run, because the pop is where a queued thread reaches
-a CPU. An empty queue with a blocked current is not a deadlock. The pick falls back to the idle
-thread, which waits for the interrupt that will wake someone.
+its own queue (the steal-versus-switch-out rule in `crates/thread_wake_handshake`). The pick parks a
+popped thread with a suspension order rather than running it, because the pop is where a queued
+thread reaches a CPU. An empty queue with a blocked current is not a deadlock. The pick falls back
+to the idle thread, which waits for the interrupt that will wake someone.
 
 The pop precedes the requeue, so a legal schedule never hands back `current`. If one did, the switch
 would restore a context this thread has already consumed. Execution would return to its previous
@@ -118,21 +120,22 @@ switch-out point on a reused stack. `heal_self_pop` panics in a debug build. A b
 thread running, the only coherent state. [undelivered-wake-gate.md](undelivered-wake-gate.md) has
 where this guard came from.
 
-`switch_operands` reads everything the switch needs while the lock is held. A kernel thread gets the
-empty reserved root, so every low address faults. The incoming thread's current-CPU page is
-published here, for `last_cpu`'s reason. It is published on the core that will run the thread, so
-writer and reader are one hardware thread (`crates/current_cpu_contract`). It reads through the TCB
-page pointer rather than `get_mut`. Each thread's FP register file lives past the end of the struct
-in the same page, and a `&mut Thread`'s provenance stops at the struct.
+`switch_operands` reads everything the switch needs while its caller holds the lock. A kernel thread
+gets the empty reserved root, so every low address faults. `switch_operands` publishes the incoming
+thread's current-CPU page here, for `last_cpu`'s reason. It publishes it on the core that will run
+the thread, so writer and reader are one hardware thread (`crates/current_cpu_contract`). It reads
+through the TCB page pointer rather than `get_mut`. Each thread's FP register file lives past the
+end of the struct in the same page, and a `&mut Thread`'s provenance stops at the struct.
 
 Both functions read the current thread's state themselves and are `#[inline(always)]`. Passing the
 state in made LLVM duplicate the run-queue pop, 76 bytes of `schedule` on aarch64. With both left to
 the compiler, the icount gate's debug build saw `yield_switch` and `ctx_switch` rise 1.0 to 1.2% on
-all three ISAs. Both were measured 2026-10-12 (UTC). The release build inlined them either way.
+all three ISAs. Both measurements came on 2026-10-12 (UTC). The release build inlined them either
+way.
 
 ## Per-thread grants, `#[cfg]`-gated rather than carried
 
-Two per-core registers say what the running thread was granted. One is the cycle counter's user
+Two per-core registers say which grants the running thread holds. One is the cycle counter's user
 access: `PMUSERENR_EL0`, or riscv64's `scounteren.CY` (milestone 229 (build the cycle-counter
 grant), §139 (who may read the cycle counter) option 4). The other, on x86_64, is the TSS I/O bitmap
 (§152 (the port-range capability)). Both reads and both installs are `#[cfg]`-gated at the switch
@@ -146,10 +149,10 @@ closing what is claimed closed is right either way. `kernel/Cargo.toml`'s `cycle
 block has the rest of the measurement. The install needs no `unsafe`, since the register names no
 memory. A wrong value opens or closes a counter, and hands no thread a stranger's pages.
 
-The port grant is installed under `IPC_TABLES`, not after it drops. It is the one per-core fact a
-revocation must take back from a core it is not running on. `delete_port_range_caps_impl` does that
-by NMI while holding the lock. Installing outside the lock left two windows the broadcast could not
-close. A core could install a grant the sweep had already cleared, and the NMI could land
+The switch installs the port grant under `IPC_TABLES`, not after it drops. It is the one per-core
+fact a revocation must take back from a core it is not running on. `delete_port_range_caps_impl`
+does that by NMI while holding the lock. Installing outside the lock left two windows the broadcast
+could not close. A core could install a grant the sweep had already cleared, and the NMI could land
 mid-install. Both close when every writer of a bitmap holds the lock. The cost is one compare inside
 the critical section. No ring-3 `in` or `out` can run before the switch, because interrupts stay
 masked.
@@ -161,7 +164,7 @@ before the switch. `finish_switch` runs on the incoming thread after it, when th
 off its stack. Dropping a `Thread` unmaps its stack and frees its address space. That must not
 happen while a core still stands on it.
 
-`finish_switch` is called from two places, because a thread resumes two ways. One is `schedule`,
+Two places call `finish_switch`, because a thread resumes two ways. One is `schedule`,
 after `switch_to` returns. The other is `thread_entry`, which a new thread enters without passing
 `schedule`'s post-switch point. Both run on the core that recorded `switched_from`. What the
 switch-out makes legal is `thread_wake_handshake`'s verdict, which loom searches
@@ -180,7 +183,7 @@ sections with the expensive part between them:
    with its TLB obligation. On riscv64 that is an SBI remote fence that interrupts every other hart
    and waits. On x86_64 it is an NMI shootdown round. Under `IPC_TABLES`, every other core would
    wait behind it ([notes/job-mix/null-syscall-under-load.md](../job-mix/null-syscall-under-load.md)).
-   The address space can never be dropped under the lock. Its teardown is `memory_region::destroy`,
+   No code path can drop the address space under the lock. Its teardown is `memory_region::destroy`,
    whose §13 (capability revocation) sweep takes `IPC_TABLES` itself. The space leaves the
    address-space registry here, by the name in the thread's copy. The region sweep may have taken it
    already, and `Table::remove` hands it to one of the two (§249 (a running address space stays
@@ -190,31 +193,31 @@ sections with the expensive part between them:
 Everything the thread owned is gone before step 3. Region teardown (`reclaim_region`) relies on that
 order. Its `being_reaped` refusal holds the region until step 3, and an owner whose `DESTROY`
 succeeds may reuse the memory at once. Nothing else removes a `Finished` thread between steps 1 and
-3. The only other remover is region teardown, and `region_reap_verdict` refuses a thread being
-reaped. Afterwards, `process::reap_corpses` reaps the members a process's end finished where they
-were blocked.
+3. The only other remover is region teardown, and `region_reap_verdict` refuses a thread the reaper
+   is still reaping. Afterwards, `process::reap_corpses` reaps the members a process's end finished
+   where they were blocked.
 
 ## The floating-point trap takes the lock
 
 `mark_current_fp_live` takes `IPC_TABLES` inside a trap handler, which is ordinary here. Every
 syscall does it from the same place, for the same reason. The trap came from a running thread, so its
 core cannot already hold the lock. Kernel code executing an FP instruction under the lock would break
-that. The kernel is built `softfloat` and executes none.
+that. The kernel's target is `softfloat` and it executes none.
 
 ## What the tests in `sched/tests.rs` are built against
 
 - The preemption test (`a_thread_that_never_yields_is_preempted_anyway`) executes DECISIONS §5
   (preemptive threads with real stacks). Under any cooperative runtime, a tight loop with no yield,
   no syscall and no call keeps its CPU. Only a timer interrupt between two of its instructions can
-  take it back. Both threads are pinned to the test's core, since a spinner on another idle core
-  would never need preempting. The spinner reaching a CPU is a precondition, so it is waited on
+  take it back. The test pins both threads to its core, since a spinner on another idle core would
+  never need preempting. The spinner reaching a CPU is a precondition, so the test waits for it
   before the polite thread exists. Sampled afterwards, `STOP` could beat its first turn. That failed
   CI on `sifive-u54` on 2026-08-04 (UTC) with no kernel change. The budget is delivered ticks, not
   wall-clock. A descheduled emulator delivers fewer preemption opportunities, never more.
 - The reaper test waits on each thread's own `ThreadId`. It asserts stack reuse directly, because a
   frame count is near-blind to the leak in its name
   ([stack reuse and proxy detectors](../load-sensitive-assertions/stack-reuse-and-proxy-detectors.md)).
-  Every wait in the file is bounded by a clock or a tick budget, never a yield count
+  A clock or a tick budget bounds every wait in the file, never a yield count
   ([notes/load-sensitive-assertions.md](../load-sensitive-assertions.md)).
 - The guard-page tests pin the arithmetic a fatal-fault report rests on. The faults behind them are
   in [notes/stack/kernel-stack-freed-under-its-owner.md](../stack/kernel-stack-freed-under-its-owner.md),
@@ -229,4 +232,4 @@ that. The kernel is built `softfloat` and executes none.
   drop finishes. The sweep finds no entry and R comes back. The drop's `revoke::forget_root` can
   then land on a root whose page has been handed out since. The sweep taking the space first is the
   common order, and it is safe. Milestone 765 (a destroyed region cannot free the root a running
-  thread walks) is the natural place to count a space that is still being dropped.
+  thread walks) is the natural place to count a space whose drop has not finished.

@@ -1,7 +1,7 @@
 # The block/wake handshake: its races, its states and the loom model
 
-*Name: provisional. After the crate it explains. Each stem here is named for its content, and calef
-names files.*
+*Name: provisional. After the crate it explains. Each stem here takes its name from its content, and
+calef names files.*
 
 An appendix to [notes/scheduler.md](../scheduler.md). It carries the design behind
 `crates/thread_wake_handshake`, whose doc comments link here. The undelivered-wake gate's own
@@ -19,14 +19,14 @@ the tests use small scalars. The handshake only asks whether a payload is presen
 
 ## The window, and the three rules
 
-Every field is written under `IPC_TABLES`, and the concurrency is in the gaps between critical
+Every writer of a field holds `IPC_TABLES`, and the concurrency is in the gaps between critical
 sections. A thread that marks itself `Blocked` keeps running until its core's `switch_to` saves
 its context. A waker on another core can take `IPC_TABLES` inside that window. Each race out of the
 window is a rule:
 
 - Wake before switch-out ([notes/intrusive-queues.md](../intrusive-queues.md)). Queueing a thread
   that is still on its CPU lets two cores run one thread. `try_wake` finding `on_cpu` set parks the
-  wake in `wake_pending`, and `finish_switch` completes it once the context is saved.
+  wake in `wake_pending`, and `finish_switch` completes it once the switch has saved the context.
 - The undelivered wake, which would complete a parked `RECEIVE` off a stale mailbox. `try_wake`
   makes a waiting thread `Ready` only if the waker delivered (`ipc_served`) or aborted the wait
   (`ipc_aborted`). The gate is hardening. It has never fired on a field failure, and the loom
@@ -35,15 +35,15 @@ window is a rule:
   thief never gets a thread mid-save. `switch_in` asserts that `on_cpu` is clear as the tripwire.
 
 Every path onto a CPU passes `switch_in`. A thread arriving there with `on_cpu` still set means some
-queue handed out a thread whose context is still being saved. That is two cores in one thread,
+queue handed out a thread whose core is still saving its context. That is two cores in one thread,
 whichever queue it came from. Debug builds fail loudly. The board build proceeds, because by the
 time this is observable the coherent recovery is the switch already underway.
 
 ## The states and their overlaps
 
-Only `Ready`, `Running` and `Blocked` take part in the handshake. `Embryo`, `Finished` and `Dead`
-are entered by kernel-side transitions (retype, exit, fault), and the handshake only reads them. A
-wake ignores them, and `finish_switch` hands a `Finished` predecessor back to the kernel to reap.
+Only `Ready`, `Running` and `Blocked` take part in the handshake. Kernel-side transitions (retype,
+exit, fault) enter `Embryo`, `Finished` and `Dead`, and the handshake only reads them. A wake
+ignores them, and `finish_switch` hands a `Finished` predecessor back to the kernel to reap.
 
 The idle thread lives outside the ready queue. It is never marked `Ready` when a core switches away
 from it, so it reaches `switch_in` still saying `Running` from its last turn.
@@ -61,7 +61,7 @@ thread `Ready` clears it. The coupling is diagnostic as well as protocol. A `Blo
 `None` is a state byte no block path wrote (notes/visionfive2.md, fourth bench stop).
 
 `serve` runs in the same critical section that staged a delivery. A wake whose critical section did
-not call it is the wake the gate refuses. No such wake has been observed on hardware, and the loom
+not call it is the wake the gate refuses. Nobody has observed such a wake on hardware, and the loom
 module holds the reconstruction that produces one.
 
 ## What stays kernel-side
@@ -79,7 +79,7 @@ running its critical sections in the kernel's program order. The cell turns "the
 saved context" from an argument into a checked ordering fact.
 
 The model cannot check that the kernel keeps the discipline it encodes: every site under
-`IPC_TABLES`, and single-owner queues. That is established by reading `sched.rs`
+`IPC_TABLES`, and single-owner queues. Reading `sched.rs` establishes that
 ([notes/interleaving.md](../interleaving.md)).
 
 Every harness runs to exhaustion, with no `LOOM_MAX_PREEMPTIONS` and no `max_branches` trimming.
@@ -88,8 +88,8 @@ each. This is the protocol's real shape: one waker, one victim core and one thie
 of every recorded race. Each harness that must reach a branch marks it with a real atomic that
 survives across executions, so a search that never reaches the branch fails.
 
-The reconstructions of the old semantics are `#[should_panic]`, so each is required to fail rather
-than assumed to:
+The reconstructions of the old semantics are `#[should_panic]`, so the test runner requires each to
+fail rather than assuming it does:
 
 - a wake that respects the gate but skips the switch-out deferral, which switches into a thread
   whose core has not saved its context;

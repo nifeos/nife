@@ -1,8 +1,8 @@
 # Buffering: measured, and the answer is to build nothing
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds the
-2026-08-03 throughput measurement against a Unix pipe, what it says, and its caveats. It was moved
-here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
+2026-08-03 throughput measurement against a Unix pipe, what it says, and its caveats. The lane that
+split the file moved it here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -17,8 +17,8 @@ The records this file cites by number:
 
 The roadmap block said it plainly: measure `a | b` throughput against a Unix pipe before deciding
 anything. If buffering earns its place, it arrives as a component speaking the sink contract on both
-sides. It was measured on 2026-08-03. It has not earned its place, and the number says something
-more useful than "no".
+sides. The measurement came on 2026-08-03. It has not earned its place, and the number says
+something more useful than "no".
 
 ### The measurement
 
@@ -47,13 +47,13 @@ The lockstep is not the bottleneck. The sixteen-byte message is.
 
 Read the two host rows together. At the same granularity Unix is 3.3x faster than us, which is a
 real gap and is the cost of a capability rendezvous against a tuned kernel pipe. The 870x is
-somewhere else entirely. Unix's win is that a program writes 64 KiB per syscall, and ours is capped
-at sixteen bytes per message because the sink contract is register-only.
+somewhere else entirely. Unix's win is that a program writes 64 KiB per syscall, while the
+register-only sink contract caps ours at sixteen bytes per message.
 
 That cap is not an oversight and it is not a thing buffering fixes. `notes/sink-protocol.md` records
-why register-only was forced: the moment a sink also needs a page mapped at an agreed address,
-redirection stops being "put a different capability in one slot" and becomes a three-way spawn-time
-negotiation, and milestone 50's whole finding evaporates.
+why the contract had to be register-only: the moment a sink also needs a page mapped at an agreed
+address, redirection stops being "put a different capability in one slot" and becomes a three-way
+spawn-time negotiation, and milestone 50's whole finding evaporates.
 
 ### So a buffering component would make it worse, and that is the decision
 
