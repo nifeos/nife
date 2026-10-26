@@ -49,8 +49,15 @@ every 512-byte sector, since the parse has no loop. What they cannot reach is th
 4096-byte sector, a device whose sector size disagrees with the volume, and the accessors a reader
 calls once the parse has said yes. So the target reads each input at all four sector sizes through
 a `SectorDevice` over the bytes, and checks the same geometry the harnesses prove on everything
-accepted. The dosfstools-made fixtures seed it unmodified. The target grows with the reader: the
-FAT entry decode and chain walk join it in their own stage.
+accepted. The dosfstools-made fixtures seed it unmodified.
+
+Then it opens the volume and walks its tree: every directory's slots, and every short entry's
+chain, four directories deep. Each chain must yield only data clusters, no more than the volume
+holds, and a walk that fails with `TooLong` must have yielded exactly that many. Kani proves the
+walk's bound on volumes of up to eight clusters; this holds it on whole images. A budget of 16,384
+steps per input keeps a hostile volume that claims millions of clusters from turning one input into
+a timeout. `fuzz/seeds/file_allocation_table_boot_sector/small-tree.img`, a 6 KiB FAT12 volume
+`fuzz/seeds/make-fat12-tree.py` writes, seeds the walk, since the boot sectors hold no tree.
 
 ## `domain_name_system_reply`
 
