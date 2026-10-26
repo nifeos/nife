@@ -42,8 +42,8 @@ also looks like an off-by-one.
 
 Both reads now happen inside the critical section. There interrupts are masked and the thread can
 neither switch nor migrate, so `cpu::id()` is fixed across the block and the window is exactly the
-property. Nothing weakened the assertion. A real masking failure lands a tick inside that window and
-still fails, now without a competing explanation.
+property. Nothing about the assertion was weakened. A real masking failure lands a tick inside that
+window and still fails, now without a competing explanation.
 
 The post-release half ("and the moment we let go, the pending interrupt is delivered") kept its
 claim and lost its fixed two-period spin. It waits, bounded in tick periods, and reads the counter of

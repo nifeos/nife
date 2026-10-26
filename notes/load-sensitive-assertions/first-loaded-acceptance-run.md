@@ -7,10 +7,10 @@ commit has the text verbatim.)*
 ## The acceptance run, 2026-08-17: 45 loaded runs, 36 green, and what the nine reds were
 
 Milestone 62 (tests that assert on time) has said since 2026-08-01 that running the suite once
-cannot verify its own fix. A flake that fires one run in six is indistinguishable from a fixed one
-until you have run it many times. So the evidence it asks for is a repeat count under load. Four
-rounds of the old note produced such a count three times, by hand, and each time the number lived in
-a report. This is that count taken by an instrument that records its own conditions,
+cannot verify the milestone's own fix. A flake that fires one run in six is indistinguishable from a
+fixed one until you have run it many times. So the evidence it asks for is a repeat count under
+load. Four rounds of the old note produced such a count three times, by hand, and each time the
+number lived in a report. This is that count taken by an instrument that records its own conditions,
 `script/repeat-under-load`.
 
 The result is not the green the milestone hoped for. Nine of forty-five runs went red. Eight were

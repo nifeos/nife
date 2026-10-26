@@ -34,7 +34,7 @@ register rather than in the test's own file. Whoever picks this up should start 
 dispositions.
 
 The three network checks fail in the same runs and recover in the same runs (`inbound`, `multicast`,
-`smb`: connection refused or reset for the whole window). So readers should treat the cluster as one
+`smb`: connection refused or reset for the whole window). So the cluster should be read as one
 host-load event, not four independent regressions.
 
 ## The disposition, 2026-08-28: the teardown wait is a yield count, and now it is a clock
@@ -241,5 +241,5 @@ note. `user/live_swap_tests.rs:263`, "reclaiming the operator's budget returned 
 a negative-direction failure against a global count. The first diagnostic points straight at a wait
 written against something wider than the property. `arch/aarch64/timer.rs:680`, "the timer is not
 ticking at all", killed a run before it reached the suite's userspace half. It is a sibling of the
-assertions milestone 62 dispositioned, and it was not one of them.
-Both are recorded in full in [the unowned reds](unowned-reds.md).
+assertions milestone 62 dispositioned, and it was not one of them. Both are recorded in full in
+[the unowned reds](unowned-reds.md).
