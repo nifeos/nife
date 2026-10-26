@@ -7,12 +7,11 @@ not the volume's sectors at all.
 Expected to fail: the harness's `assert!(is_data)`.
 
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
-index 9dc607eda..e8b40bd2a 100644
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -508,7 +508,7 @@ impl BootSector {
-     ///
-     /// Name: provisional.
+@@ -450,7 +450,7 @@
+     /// this volume's data clusters (2 to `clusters() + 1`). The cluster's
+     /// [`BootSector::sectors_per_cluster`] sectors all lie inside the volume.
      pub const fn cluster_first_sector(&self, cluster: u32) -> Option<u32> {
 -        if cluster < 2 || cluster - 2 >= self.clusters {
 +        if cluster < 2 || cluster - 2 > self.clusters {

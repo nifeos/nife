@@ -49,14 +49,14 @@ use crate::host::workspace_root;
 
 /// The logical block this disk is written in. Every cloud boot volume this lane has read about
 /// reports 512, and `file_allocation_table` writes nothing else.
-const LBA: u64 = fat::SECTOR as u64;
+const LBA: u64 = fat::SECTOR_BYTES as u64;
 
 /// Where the partition starts and how much the end keeps free: 1 MiB, the installer's alignment,
 /// which also leaves the backup table's 33 blocks room at the far end.
 const ALIGN: u64 = 2048;
 
 /// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB
-/// at 4096-byte clusters (`file_allocation_table::MIN_CLUSTERS`), and below that the firmware reads
+/// at 4096-byte clusters (`file_allocation_table::FAT32_MIN_CLUSTERS`), and below that the firmware reads
 /// the volume as FAT16 whatever its boot sector says. The image is sparse, so the size costs no
 /// disk; a cloud grows the boot volume to its own minimum on import regardless.
 const ESP_SECTORS: u64 = 300 * 1024 * 1024 / LBA;
@@ -82,7 +82,7 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
         Builder::from_random_bytes(random[16..32].try_into().expect("16 bytes")).into_uuid();
     let volume_id = u32::from_le_bytes(random[32..].try_into().expect("4 bytes"));
 
-    let volume = fat::Volume::new(ESP_SECTORS, ALIGN, file.len() as u64, volume_id, name)
+    let volume = fat::VolumeLayout::new(ESP_SECTORS, ALIGN, file.len() as u64, volume_id, name)
         .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
     let blocks = ALIGN + ESP_SECTORS + ALIGN;
     let esp = Entry::new(types::EFI_SYSTEM, part_guid, ALIGN, ALIGN + ESP_SECTORS - 1)
@@ -128,7 +128,7 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
     put(&mut out, table.backup_header_lba(), &block)?;
 
     for sector in 0..volume.metadata_sectors() {
-        if !volume.sector(sector, &mut block) {
+        if !volume.fill_sector(sector, &mut block) {
             return Err(format!("the FAT32 volume has no sector {sector}"));
         }
         put(&mut out, ALIGN + sector, &block)?;

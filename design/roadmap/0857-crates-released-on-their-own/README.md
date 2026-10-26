@@ -11,4 +11,10 @@ read. These files hold what its prose budget has no room for.
   a commit touching each release-track crate also touches code outside it, and the order that
   suggests.
 
-*Name: provisional. The directory follows §212 (a prose budget)'s siting default.*
+The names in each release-track crate, one file per crate, in the record format
+`helpers/name_release.py` reads:
+
+- [`file-allocation-table-names.md`](file-allocation-table-names.md)
+
+*Name: provisional. The directory follows §212 (a prose budget)'s siting default, and each names
+file takes its crate's name.*

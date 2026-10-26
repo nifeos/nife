@@ -5,8 +5,6 @@
 //! accepts describes a volume whose regions lie in order inside its own sector count and whose
 //! table has an entry for every cluster. The offsets and the type rule are those of Microsoft's
 //! "FAT: General Overview of On-Disk Format", version 1.03.
-//!
-//! Name: provisional.
 
 use crate::sector::{SectorDevice, SectorSize};
 
@@ -27,8 +25,6 @@ const PARSED: usize = 512;
 ///
 /// The type string at `BS_FilSysType` is informational and never read. A volume whose BPB layout
 /// disagrees with its cluster count is refused (see [`ParseError::LayoutContradictsClusterCount`]).
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FatType {
     /// Fewer than 4085 clusters; 12-bit table entries.
@@ -41,8 +37,6 @@ pub enum FatType {
 
 impl FatType {
     /// The type the specification assigns to a volume of `clusters` data clusters.
-    ///
-    /// Name: provisional.
     pub const fn from_clusters(clusters: u32) -> FatType {
         if clusters < FAT16_MIN_CLUSTERS {
             FatType::Fat12
@@ -54,8 +48,6 @@ impl FatType {
     }
 
     /// The width of one table entry in bits: 12, 16 or 32.
-    ///
-    /// Name: provisional.
     pub const fn entry_bits(self) -> u32 {
         match self {
             FatType::Fat12 => 12,
@@ -66,8 +58,6 @@ impl FatType {
 }
 
 /// **Where the root directory lives**, which is the one structural difference FAT32 makes.
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RootDirectory {
     /// FAT12 and FAT16: a fixed region between the last table and the first cluster.
@@ -84,8 +74,6 @@ pub enum RootDirectory {
 }
 
 /// **Why a sector is not a boot sector this crate will read.** Each names the field it failed on.
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ParseError {
     /// The buffer holds fewer than 512 bytes.
@@ -130,8 +118,6 @@ pub enum ParseError {
 }
 
 /// **Why [`BootSector::read`] failed**: the device's error, or the sector it returned.
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ReadError<E> {
     /// The device refused the read; its own error, unchanged.
@@ -157,18 +143,16 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{BootSector, FatType, SECTOR, Volume};
+/// use file_allocation_table::{BootSector, FatType, SECTOR_BYTES, VolumeLayout};
 ///
-/// let volume = Volume::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
-/// let mut sector = [0u8; SECTOR];
-/// volume.sector(0, &mut sector);
+/// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
+/// let mut sector = [0u8; SECTOR_BYTES];
+/// volume.fill_sector(0, &mut sector);
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
 /// assert_eq!(boot.fat_type(), FatType::Fat32);
 /// assert_eq!(boot.clusters(), volume.clusters());
 /// ```
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BootSector {
     sector_size: SectorSize,
@@ -211,8 +195,6 @@ impl BootSector {
     ///
     /// Returns the volume's geometry, or the first field that makes it unreadable. Never panics
     /// and never reads past byte 511, whatever `sector` holds.
-    ///
-    /// Name: provisional.
     pub fn parse(sector: &[u8]) -> Result<BootSector, ParseError> {
         let sector = sector.get(..PARSED).ok_or(ParseError::TooShort)?;
         if sector[510] != 0x55 || sector[511] != 0xAA {
@@ -353,8 +335,6 @@ impl BootSector {
     ///
     /// Refuses a volume whose `BPB_BytsPerSec` is not the device's sector size, since every later
     /// read would land at the wrong offset.
-    ///
-    /// Name: provisional.
     pub fn read<D: SectorDevice>(device: &mut D) -> Result<BootSector, ReadError<D::Error>> {
         let size = device.sector_size();
         let mut buffer = [0u8; SectorSize::MAX];
@@ -371,72 +351,52 @@ impl BootSector {
     }
 
     /// The volume's sector size, from `BPB_BytsPerSec`.
-    ///
-    /// Name: provisional.
     pub const fn sector_size(&self) -> SectorSize {
         self.sector_size
     }
 
     /// Sectors per cluster: a power of two from 1 to 128.
-    ///
-    /// Name: provisional.
     pub const fn sectors_per_cluster(&self) -> u32 {
         1 << self.cluster_shift
     }
 
     /// Bytes per cluster: from 512 to 512 KiB.
-    ///
-    /// Name: provisional.
     pub const fn bytes_per_cluster(&self) -> u32 {
         (self.sector_size.bytes() as u32) << self.cluster_shift
     }
 
     /// The FAT type, from the cluster count.
-    ///
-    /// Name: provisional.
     pub const fn fat_type(&self) -> FatType {
         self.fat_type
     }
 
     /// How many data clusters the volume has. They are numbered 2 to `clusters() + 1`.
-    ///
-    /// Name: provisional.
     pub const fn clusters(&self) -> u32 {
         self.clusters
     }
 
     /// The volume's sector count, from `BPB_TotSec16` or `BPB_TotSec32`.
-    ///
-    /// Name: provisional.
     pub const fn total_sectors(&self) -> u32 {
         self.total_sectors
     }
 
     /// Sectors ahead of the first table, the boot sector among them.
-    ///
-    /// Name: provisional.
     pub const fn reserved_sectors(&self) -> u16 {
         self.reserved_sectors
     }
 
     /// How many copies of the table the volume holds.
-    ///
-    /// Name: provisional.
-    pub const fn tables(&self) -> u8 {
+    pub const fn table_count(&self) -> u8 {
         self.tables
     }
 
     /// Sectors in one copy of the table.
-    ///
-    /// Name: provisional.
     pub const fn table_sectors(&self) -> u32 {
         self.table_sectors
     }
 
     /// The volume-relative sector table `index` begins at, or `None` when the volume has no such
     /// table.
-    ///
-    /// Name: provisional.
     pub const fn table_first_sector(&self, index: u8) -> Option<u32> {
         if index >= self.tables {
             return None;
@@ -446,58 +406,42 @@ impl BootSector {
 
     /// The one table a FAT32 volume keeps live, when `BPB_ExtFlags` turns mirroring off; `None`
     /// when every table is a mirror, which FAT12 and FAT16 always are.
-    ///
-    /// Name: provisional.
     pub const fn active_table(&self) -> Option<u8> {
         self.active_table
     }
 
     /// The volume-relative sector cluster 2 begins at.
-    ///
-    /// Name: provisional.
     pub const fn first_data_sector(&self) -> u32 {
         self.first_data_sector
     }
 
     /// Where the root directory lives.
-    ///
-    /// Name: provisional.
     pub const fn root_directory(&self) -> RootDirectory {
         self.root
     }
 
     /// The media descriptor byte, `BPB_Media`.
-    ///
-    /// Name: provisional.
     pub const fn media(&self) -> u8 {
         self.media
     }
 
     /// `BPB_HiddSec`: the sectors ahead of the volume on its disk, as the formatter recorded them.
     /// Informational; nothing in this crate reads through it.
-    ///
-    /// Name: provisional.
     pub const fn hidden_sectors(&self) -> u32 {
         self.hidden_sectors
     }
 
     /// FAT32's `FSInfo` sector, or `None` when the BPB names none inside the reserved region.
-    ///
-    /// Name: provisional.
     pub const fn fs_info_sector(&self) -> Option<u16> {
         self.fs_info_sector
     }
 
     /// FAT32's backup boot sector, or `None` when the BPB names none inside the reserved region.
-    ///
-    /// Name: provisional.
     pub const fn backup_boot_sector(&self) -> Option<u16> {
         self.backup_boot_sector
     }
 
     /// The volume serial number, when the extended boot signature `0x29` says it is present.
-    ///
-    /// Name: provisional.
     pub const fn volume_id(&self) -> Option<u32> {
         self.volume_id
     }
@@ -505,8 +449,6 @@ impl BootSector {
     /// **The volume-relative sector `cluster` begins at**, or `None` when `cluster` is not one of
     /// this volume's data clusters (2 to `clusters() + 1`). The cluster's
     /// [`BootSector::sectors_per_cluster`] sectors all lie inside the volume.
-    ///
-    /// Name: provisional.
     pub const fn cluster_first_sector(&self, cluster: u32) -> Option<u32> {
         if cluster < 2 || cluster - 2 >= self.clusters {
             return None;

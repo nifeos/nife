@@ -3,15 +3,11 @@
 //! The crate never names a device. A caller wraps whatever holds the bytes (a block driver, a
 //! file holding a disk image, a slice in memory) in [`SectorDevice`], and every read the crate
 //! makes goes through it, one whole sector at a time.
-//!
-//! Name: provisional.
 
 /// **The size of one sector**, in the four sizes the FAT specification permits.
 ///
 /// A device states its own; the boot sector states the volume's in `BPB_BytsPerSec`. A volume
 /// whose size differs from its device's is refused rather than read at the wrong offsets.
-///
-/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SectorSize {
     /// 512 bytes, which nearly every disk and image reports.
@@ -26,13 +22,9 @@ pub enum SectorSize {
 
 impl SectorSize {
     /// The largest size, and so the largest buffer this crate ever passes to a device.
-    ///
-    /// Name: provisional.
     pub const MAX: usize = 4096;
 
     /// The size for `bytes`, or `None` when the specification does not permit it.
-    ///
-    /// Name: provisional.
     pub const fn from_bytes(bytes: u16) -> Option<SectorSize> {
         match bytes {
             512 => Some(SectorSize::Bytes512),
@@ -44,8 +36,6 @@ impl SectorSize {
     }
 
     /// The size in bytes.
-    ///
-    /// Name: provisional.
     pub const fn bytes(self) -> usize {
         match self {
             SectorSize::Bytes512 => 512,
@@ -56,8 +46,6 @@ impl SectorSize {
     }
 
     /// The base-two logarithm of the size, so that dividing by it is a shift.
-    ///
-    /// Name: provisional.
     pub const fn shift(self) -> u32 {
         match self {
             SectorSize::Bytes512 => 9,
@@ -99,8 +87,6 @@ impl SectorSize {
 ///     }
 /// }
 /// ```
-///
-/// Name: provisional.
 pub trait SectorDevice {
     /// Why a read failed. The crate hands it back to the caller unchanged.
     type Error;
