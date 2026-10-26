@@ -7,16 +7,17 @@ crate's shipped files carry none.
 
 Ratified: 2026-10-25 (#2720).
 
-The ruling of that date ratified every name below but `namespace_holds_block` and
-`transfer_command`, which the ruling of 2026-10-26 (UTC) ratified on #2749. Each row with a
-refusal names the spelling the ruling turned down and why. nife's process plan sits outside the
-crate, in the `non_volatile_memory_express` module of the nife-internal crate
-`driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). That plan is the client
-windows, `client_window`, `MAX_DSTRD` (the doorbell stride one mapped page of BAR0 can serve),
-`ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the `confinement_attackers` feature. `can_write` sits in nife's
-NVMe server. Those names follow nife's ordinary naming and
-have no row here. A new name in this crate takes a row here, `provisional` until a ruling, and
-`script/lint` fails a module or `pub` item without one.
+The ruling of that date ratified every name below but two. The ruling of 2026-10-26 (UTC) on
+#2749 ratified `namespace_holds_block` and `transfer_command`. Each row with a refusal names the
+spelling the ruling turned down and why.
+
+nife's process plan sits outside the crate. It lives in the `non_volatile_memory_express` module of
+`driver_process_contract`, a nife-internal crate that does not publish (ruled 2026-10-26 UTC). The
+plan is the client windows, `client_window` and `MAX_DSTRD`, the stride one mapped page of BAR0 can
+serve. It is also `ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the
+`confinement_attackers` feature. `can_write` sits in nife's NVMe server. Those names follow nife's
+ordinary naming and have no row here. A new name in this crate takes a row here. It stays
+`provisional` until a ruling, and `script/lint` fails a module or `pub` item without one.
 
 The column `outside` says whether a caller outside the crate reaches the name. Some names have no row
 because `script/names` does not count them: the variants of `Doorbell` (`SubmissionTail`,
