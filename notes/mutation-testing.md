@@ -26,11 +26,12 @@ A full local run takes hours. The weekly workflow (`.github/workflows/mutation.y
 runs the same command eight-way sharded, so each shard is a uniform
 sample of every crate.
 
-The tool version is pinned in `.cargo-mutants-version`, today 27.1.0. The pin matters: cargo-mutants changes which mutants it generates between versions, so an unpinned
-tool moves the numbers with nothing in the tree changed. The host-excluded crates are derived at
-the call site from `helpers/host-excluded-crates.sh`; `.cargo/mutants.toml` holds the judgment
-exclusions, each with its reason. That file is config, not a code dependency, per §46 (thin
-primitives or whole subsystems).
+`.cargo-mutants-version` pins the tool version, today 27.1.0. The pin matters: cargo-mutants changes
+which mutants it generates between versions, so an unpinned tool moves the numbers with nothing in
+the tree changed. The host-excluded crates are derived at the call site from
+`helpers/host-excluded-crates.sh`; `.cargo/mutants.toml` holds the judgment exclusions, each with
+its reason. That file is config, not a code dependency, per §46 (thin primitives or whole
+subsystems).
 
 To ask where a crate's mutants sit before restructuring it for testability, run
 `cargo mutants --list -p <crate>`. It attributes every mutant to its enclosing function.
@@ -175,8 +176,8 @@ These recur across the appendices.
   `cargo test`. Those mutants are recorded as equivalent under the harness, not excluded, so they
   stay visible.
 - Memory-ordering mutants change nothing a single-threaded test can see. Concurrency claims are
-  argued in comments or proved. Loom models are excluded from the count (`interleavings::` in
-  `.cargo/mutants.toml`), because a mutant there tests the model, not the crate.
+  argued in comments or proved. `.cargo/mutants.toml` excludes Loom models from the count
+  (`interleavings::`), because a mutant there tests the model, not the crate.
 - A mutant that breaks a loop that waits produces a hang, not a wrong answer. Where the crate
   allows it, run the test body on a worker with a deadline, and the hang becomes a named assertion
   failure. Better still, delete the loop: a `for` over a slice has no increment to lose

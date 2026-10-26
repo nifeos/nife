@@ -49,9 +49,9 @@ could not kill and could argue away.
   loops and its `c < cols[r]`. Also `vis > *width`, which assigns the same value under `>=`.
 - `read_align` (2): starting at the pipe and walking `<=` past the end both land on a skipped,
   empty spec.
-- `take_table_row` (6), new. The loop test `i <= end && col < TABLE_COLS` is subsumed by the break
-  that follows the last slot. The `j - 1 == i` clause of the pipe test is redundant, because the byte
-  before the slot is the previous pipe and never a backslash. `j > i` against `>=` stops on the
+- `take_table_row` (6), new. The break that follows the last slot subsumes the loop test
+  `i <= end && col < TABLE_COLS`. The `j - 1 == i` clause of the pipe test is redundant, because the
+  byte before the slot is the previous pipe and never a backslash. `j > i` against `>=` stops on the
   separator pipe either way. `start + n < TABLE_TEXT` never binds: a row is at most `LINE_MAX`
   (2,048) bytes and the arena is flushed before it can overfill.
 - `inline` (8), new. Every one reads or compares the byte at the end of a range, and each
@@ -161,7 +161,7 @@ The 27 equivalents are the shapes the earlier ledger already names.
 - `clamp_cols` and `clamp_rows` at the maximum (2): the clamp returns the maximum either way.
 - `push_scrollback_row`'s `row * cols` (1): `row` is always 0 at its one call site.
 - The `0x20..=0x2f | 0x3c..=0x3f` arm (1), `erase_display`'s `to > from` (1), `extended_colour`'s
-  `i < n` (1), and `pixel`'s `col < cols` (1): each is subsumed by the check beside it.
+  `i < n` (1), and `pixel`'s `col < cols` (1): the check beside it subsumes each.
 - `scroll_damage`'s `r > 0` guard and its `r - 1` cell (3): `take_damage` damages the same cell
   from the drawn position, and the box is a bounding box.
 
