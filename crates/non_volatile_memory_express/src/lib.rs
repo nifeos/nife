@@ -7,7 +7,7 @@
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
-pub mod regs {
+pub mod registers {
     /// Controller Capabilities, 64-bit read-only. See [`super::Capabilities`].
     pub const CAP: u64 = 0x00;
     /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
@@ -104,7 +104,7 @@ pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
             Doorbell::SubmissionTail => 0,
             Doorbell::CompletionHead => 1,
         };
-    regs::DOORBELL_BASE + index * (4u64 << (dstrd & 0xf))
+    registers::DOORBELL_BASE + index * (4u64 << (dstrd & 0xf))
 }
 
 // --- commands -------------------------------------------------------------------------------

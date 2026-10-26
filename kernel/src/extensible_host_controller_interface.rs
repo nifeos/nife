@@ -17,7 +17,7 @@
 //! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
 
 use driver_process_contract::extensible_host_controller_interface::{Handoff, WindowRefusal};
-use extensible_host_controller_interface::{Capabilities, dma, regs};
+use extensible_host_controller_interface::{Capabilities, direct_memory_access, registers};
 
 use crate::arch::mmu;
 
@@ -65,12 +65,12 @@ pub fn bring_up() -> Result<Found, Absent> {
         unsafe { core::ptr::read_volatile((regs_va + off) as *const u32) }
     };
     let caps = Capabilities::decode(
-        read(regs::CAPLENGTH),
-        read(regs::HCSPARAMS1),
-        read(regs::HCSPARAMS2),
-        read(regs::HCCPARAMS1),
-        read(regs::DBOFF),
-        read(regs::RTSOFF),
+        read(registers::CAPLENGTH),
+        read(registers::HCSPARAMS1),
+        read(registers::HCSPARAMS2),
+        read(registers::HCCPARAMS1),
+        read(registers::DBOFF),
+        read(registers::RTSOFF),
     );
     #[cfg(feature = "xhci_port_probe")]
     crate::xhci_port_probe::before_handoff(regs_va, dev.bar_bytes);
@@ -82,7 +82,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         &dev.withheld,
     )
     .map_err(Absent::Window)?;
-    if caps.scratchpads > dma::MAX_SCRATCHPADS {
+    if caps.scratchpads > direct_memory_access::MAX_SCRATCHPADS {
         return Err(Absent::TooManyScratchpads(caps.scratchpads));
     }
     let pages = driver_process_contract::extensible_host_controller_interface::region_pages(
@@ -111,8 +111,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {
-            dma_phys: dma,
-            dma_pages: pages as u32,
+            direct_memory_access_phys: dma,
+            direct_memory_access_pages: pages as u32,
             // `register_window` never sets a bit at or above `MAX_REGISTER_PAGES` (16).
             registers: registers as u16,
         },
@@ -133,22 +133,22 @@ fn take_from_firmware(regs_va: u64, caps: &Capabilities, bar_bytes: u64) {
         // SAFETY: `find_extended` bounds `off + 4` by `bar_bytes`, inside the mapped BAR.
         unsafe { core::ptr::read_volatile((regs_va + off) as *const u32) }
     };
-    let Some(at) = regs::find_extended(
+    let Some(at) = registers::find_extended(
         caps.extended,
         bar_bytes,
-        regs::EXTENDED_LEGACY_SUPPORT,
+        registers::EXTENDED_LEGACY_SUPPORT,
         &mut read,
     ) else {
         return;
     };
-    if read(at) & regs::LEGACY_BIOS_OWNED != 0 {
+    if read(at) & registers::LEGACY_BIOS_OWNED != 0 {
         // The OS-owned semaphore is the capability's fourth byte, written alone so the BIOS's own
         // byte is never written back by this side.
         // SAFETY: `at + 3` is inside the capability `find_extended` found inside the BAR.
         unsafe { core::ptr::write_volatile((regs_va + at + 3) as *mut u8, 1) };
         let mut released = false;
         for _ in 0..FIRMWARE_SPIN_BOUND {
-            if read(at) & regs::LEGACY_BIOS_OWNED == 0 {
+            if read(at) & registers::LEGACY_BIOS_OWNED == 0 {
                 released = true;
                 break;
             }
@@ -165,8 +165,8 @@ fn take_from_firmware(regs_va: u64, caps: &Capabilities, bar_bytes: u64) {
     unsafe {
         core::ptr::write_volatile(
             (regs_va + at + 4) as *mut u32,
-            (ctl & !regs::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES)
-                | regs::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS,
+            (ctl & !registers::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES)
+                | registers::LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS,
         );
     }
 }

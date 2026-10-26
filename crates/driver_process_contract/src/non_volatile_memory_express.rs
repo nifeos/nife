@@ -7,7 +7,7 @@
 //! Name: provisional, minted 2026-10-26 (UTC) by lane driver-contracts-folded, after the crate it
 //! serves, as this crate's other modules are named.
 
-use ::non_volatile_memory_express::regs::DOORBELL_BASE;
+use ::non_volatile_memory_express::registers::DOORBELL_BASE;
 
 // ---------------------------------------------------------------------------------------------
 // The split between an admin plane and a data plane.

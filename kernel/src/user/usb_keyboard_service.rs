@@ -62,7 +62,11 @@ pub(crate) fn start(
     let attach = crate::sched::create_rendezvous();
     let report = crate::sched::create_rendezvous();
 
-    let (bar0, dma_phys, registers) = (found.bar0, found.handoff.dma_phys, found.handoff.registers);
+    let (bar0, dma_phys, registers) = (
+        found.bar0,
+        found.handoff.direct_memory_access_phys,
+        found.handoff.registers,
+    );
     let intid = found.intid;
     let mut stack = [0u64; EXTRA_STACK_PAGES];
     for frame in &mut stack {

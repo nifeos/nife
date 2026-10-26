@@ -8,7 +8,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use extensible_host_controller_interface::{Capabilities, regs};
+use extensible_host_controller_interface::{Capabilities, registers};
 
 /// Where the controller's registers are mapped, from [`before_handoff`] to [`after_report`]; 0
 /// for no controller.
@@ -29,12 +29,12 @@ fn read(regs_va: u64, off: u64) -> u32 {
 fn capabilities_of(regs_va: u64) -> Capabilities {
     let r = |off| read(regs_va, off);
     Capabilities::decode(
-        r(regs::CAPLENGTH),
-        r(regs::HCSPARAMS1),
-        r(regs::HCSPARAMS2),
-        r(regs::HCCPARAMS1),
-        r(regs::DBOFF),
-        r(regs::RTSOFF),
+        r(registers::CAPLENGTH),
+        r(registers::HCSPARAMS1),
+        r(registers::HCSPARAMS2),
+        r(registers::HCCPARAMS1),
+        r(registers::DBOFF),
+        r(registers::RTSOFF),
     )
 }
 
@@ -49,11 +49,11 @@ pub(crate) fn before_handoff(regs_va: u64, bar_bytes: u64) {
     let op = capabilities.operational;
     crate::println!(
         "xhci-probe: firmware's  USBCMD={:#010x} USBSTS={:#010x} HCSPARAMS1={:#010x} HCCPARAMS1={:#010x} (PPC={})",
-        read(regs_va, op + regs::USBCMD),
-        read(regs_va, op + regs::USBSTS),
-        read(regs_va, regs::HCSPARAMS1),
-        read(regs_va, regs::HCCPARAMS1),
-        (read(regs_va, regs::HCCPARAMS1) >> 3) & 1,
+        read(regs_va, op + registers::USBCMD),
+        read(regs_va, op + registers::USBSTS),
+        read(regs_va, registers::HCSPARAMS1),
+        read(regs_va, registers::HCCPARAMS1),
+        (read(regs_va, registers::HCCPARAMS1) >> 3) & 1,
     );
     let mut at = capabilities.extended;
     for _ in 0..64 {
@@ -62,7 +62,7 @@ pub(crate) fn before_handoff(regs_va: u64, bar_bytes: u64) {
         }
         let head = read(regs_va, at);
         match head as u8 {
-            regs::EXTENDED_LEGACY_SUPPORT => crate::println!(
+            registers::EXTENDED_LEGACY_SUPPORT => crate::println!(
                 "xhci-probe: firmware's  USBLEGSUP={head:#010x} USBLEGCTLSTS={:#010x}",
                 read(regs_va, at + 4)
             ),
@@ -118,9 +118,9 @@ pub(crate) fn after_report() {
 fn dump(when: &str, regs_va: u64, capabilities: &Capabilities, mut last: Option<&mut [u32; 256]>) {
     crate::println!(
         "xhci-probe: {when} USBSTS={:#010x} IMAN={:#010x} ERDP={:#010x}",
-        read(regs_va, capabilities.operational + regs::USBSTS),
-        read(regs_va, capabilities.interrupter(regs::IMAN)),
-        read(regs_va, capabilities.interrupter(regs::ERDP)),
+        read(regs_va, capabilities.operational + registers::USBSTS),
+        read(regs_va, capabilities.interrupter(registers::IMAN)),
+        read(regs_va, capabilities.interrupter(registers::ERDP)),
     );
     let mut connected = 0;
     for n in 1..=capabilities.max_ports {

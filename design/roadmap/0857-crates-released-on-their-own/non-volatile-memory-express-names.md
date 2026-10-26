@@ -27,7 +27,7 @@ ordinary naming and have no row here. A new name in this crate takes a row here.
 The column `outside` says whether a caller outside the crate reaches the name. Some names have no row
 because `script/names` does not count them: the variants of `Doorbell` (`SubmissionTail`,
 `CompletionHead`), the fields of `Completion` and `IdentifyNamespace`, and the inline modules
-`regs`, `tests` and `verification`. The same ruling covers them; the opcodes and register names keep the specification's spelling.
+`registers` (ruled 2026-10-26 UTC on #2760, refused `regs`), `tests` and `verification`. The same ruling covers them; the opcodes and register names keep the specification's spelling.
 The fields of `Namespace` (`size_bytes`, `blocks_per_transfer`) are provisional with it.
 
 | name | kind | path | status | outside |

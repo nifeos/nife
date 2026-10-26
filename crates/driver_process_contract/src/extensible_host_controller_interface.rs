@@ -26,7 +26,7 @@ use ::extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
 pub const MAX_REGISTER_PAGES: u64 = 16;
 
 /// How many pages of the DMA region the driver is mapped: every page of
-/// `extensible_host_controller_interface::dma`'s layout, through its scratchpad array. Scratchpad
+/// `extensible_host_controller_interface::direct_memory_access`'s layout, through its scratchpad array. Scratchpad
 /// page `n` is at page `WORK_PAGES + n`, and is not mapped.
 ///
 /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
@@ -68,9 +68,9 @@ const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// The DMA region's physical base. Page aligned.
-    pub dma_phys: u64,
+    pub direct_memory_access_phys: u64,
     /// The region's length in pages: [`WORK_PAGES`] plus the controller's scratchpads.
-    pub dma_pages: u32,
+    pub direct_memory_access_pages: u32,
     /// The register pages mapped, [`register_window`]'s mask.
     pub registers: u16,
 }
@@ -81,8 +81,8 @@ impl Handoff {
     /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
     pub const fn pack(&self) -> [u64; 3] {
         [
-            self.dma_phys,
-            self.dma_pages as u64 | (self.registers as u64) << 32,
+            self.direct_memory_access_phys,
+            self.direct_memory_access_pages as u64 | (self.registers as u64) << 32,
             0,
         ]
     }
@@ -93,16 +93,16 @@ impl Handoff {
     ///
     /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
     pub fn unpack(w: [u64; 3]) -> Option<Handoff> {
-        let dma_pages = u32::try_from(w[1] & 0xffff_ffff).ok()?;
+        let direct_memory_access_pages = u32::try_from(w[1] & 0xffff_ffff).ok()?;
         let registers = u16::try_from(w[1] >> 32).ok()?;
         let ok = w[0] != 0
             && w[0].is_multiple_of(PAGE_BYTES)
-            && u64::from(dma_pages) >= WORK_PAGES
+            && u64::from(direct_memory_access_pages) >= WORK_PAGES
             && registers & 1 != 0
             && w[2] == 0;
         ok.then_some(Handoff {
-            dma_phys: w[0],
-            dma_pages,
+            direct_memory_access_phys: w[0],
+            direct_memory_access_pages,
             registers,
         })
     }
@@ -363,7 +363,7 @@ mod proofs;
 #[cfg(test)]
 mod tests {
     extern crate std;
-    use ::extensible_host_controller_interface::dma::*;
+    use ::extensible_host_controller_interface::direct_memory_access::*;
 
     use super::*;
 
@@ -419,8 +419,8 @@ mod tests {
     #[test]
     fn the_handoff_round_trips_and_refuses_what_no_kernel_sends() {
         let h = Handoff {
-            dma_phys: 0x4000_0000,
-            dma_pages: 12,
+            direct_memory_access_phys: 0x4000_0000,
+            direct_memory_access_pages: 12,
             registers: 0b0111,
         };
         assert_eq!(Handoff::unpack(h.pack()), Some(h));

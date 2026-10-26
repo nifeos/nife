@@ -41,7 +41,7 @@ fn the_handoff_round_trips() {
     let w: [u64; 3] = kani::any();
     if let Some(h) = Handoff::unpack(w) {
         assert_eq!(h.pack(), w);
-        assert!(u64::from(h.dma_pages) >= WORK_PAGES);
+        assert!(u64::from(h.direct_memory_access_pages) >= WORK_PAGES);
         assert!(h.registers & 1 != 0);
     }
 }
