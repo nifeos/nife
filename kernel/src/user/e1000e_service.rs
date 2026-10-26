@@ -10,7 +10,7 @@
 //! - One wiring at a time ([`Absent::Busy`]): a test that keeps its holding blocks every later one.
 
 use ::driver_process_contract::e1000e::{
-    DATA_PLANE_VIRTUAL_ADDRESS, RX_QUEUE_VIRTUAL_ADDRESS, TX_QUEUE_VIRTUAL_ADDRESS,
+    DATA_PLANE_VIRTUAL_ADDRESS, RECEIVE_QUEUE_VIRTUAL_ADDRESS, TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
 };
 
 use super::*;
@@ -165,13 +165,13 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     );
     // Device-typed, because a cached or reordered tail write is a frame the device never hears of.
     maps[PLANE] = Mapping {
-        va: RX_QUEUE_VIRTUAL_ADDRESS,
-        phys: found.bar0 + ::e1000e::RX_QUEUE_PAGE,
+        va: RECEIVE_QUEUE_VIRTUAL_ADDRESS,
+        phys: found.bar0 + ::e1000e::RECEIVE_QUEUE_PAGE,
         flags: Flags::user_device(),
     };
     maps[PLANE + 1] = Mapping {
-        va: TX_QUEUE_VIRTUAL_ADDRESS,
-        phys: found.bar0 + ::e1000e::TX_QUEUE_PAGE,
+        va: TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
+        phys: found.bar0 + ::e1000e::TRANSMIT_QUEUE_PAGE,
         flags: Flags::user_device(),
     };
     for k in 0..NET_SERVER_STACK_PAGES as usize {

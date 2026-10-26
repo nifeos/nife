@@ -51,7 +51,8 @@ pub enum Absent {
 /// A controller reset, programmed, and ready for a data plane.
 #[derive(Debug, Clone, Copy)]
 pub struct Found {
-    /// BAR0's physical base. The process is mapped `bar0 + RX_QUEUE_PAGE` and `+ TX_QUEUE_PAGE`.
+    /// BAR0's physical base. The process is mapped `bar0 + RECEIVE_QUEUE_PAGE` and
+    /// `+ TRANSMIT_QUEUE_PAGE`.
     pub bar0: u64,
     /// The requester id the IOMMU confines.
     pub rid: u32,
@@ -124,16 +125,16 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(regs::RFCTL, c.r(regs::RFCTL) & !::e1000e::RFCTL_EXTEN);
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RX_RING;
-    let tx = region + layout::TX_RING;
+    let rx = region + layout::RECEIVE_RING;
+    let tx = region + layout::TRANSMIT_RING;
     c.w(regs::RDBAL, rx as u32);
     c.w(regs::RDBAH, (rx >> 32) as u32);
-    c.w(regs::RDLEN, u32::from(::e1000e::RX_ENTRIES) * 16);
+    c.w(regs::RDLEN, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
     c.w(regs::RDH, 0);
     c.w(regs::RDT, 0);
     c.w(regs::TDBAL, tx as u32);
     c.w(regs::TDBAH, (tx >> 32) as u32);
-    c.w(regs::TDLEN, u32::from(::e1000e::TX_ENTRIES) * 16);
+    c.w(regs::TDLEN, u32::from(::e1000e::TRANSMIT_ENTRIES) * 16);
     c.w(regs::TDH, 0);
     c.w(regs::TDT, 0);
 
@@ -235,7 +236,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     if !flush::required(status(), c.r(regs::TDLEN)) {
         return;
     }
-    let ring = region + layout::TX_RING;
+    let ring = region + layout::TRANSMIT_RING;
     let tdba = u64::from(c.r(regs::TDBAL)) | u64::from(c.r(regs::TDBAH)) << 32;
     if tdba != ring {
         crate::println!(
@@ -245,17 +246,20 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         return;
     }
     c.w(regs::TCTL, c.r(regs::TCTL) | 0x2);
-    let tdt = c.r(regs::TDT) % u32::from(::e1000e::TX_ENTRIES);
-    let d = mmu::phys_to_virt(region + layout::tx_descriptor(tdt as u16)) as *mut u64;
+    let tdt = c.r(regs::TDT) % u32::from(::e1000e::TRANSMIT_ENTRIES);
+    let d = mmu::phys_to_virt(region + layout::transmit_descriptor(tdt as u16)) as *mut u64;
     // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
-    // (`layout::tx_descriptor` reduces its index), in the direct map. The device reads it only
-    // after the tail write below, which the barrier orders after these stores.
+    // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
+    // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::tx_word());
+        core::ptr::write_volatile(d.add(1), flush::transmit_word());
     }
     crate::arch::direct_memory_access_write_barrier();
-    c.w(regs::TDT, flush::tail_after(tdt, ::e1000e::TX_ENTRIES));
+    c.w(
+        regs::TDT,
+        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+    );
     spin_us(250);
     if status() & flush::REQUIRED == 0 {
         return;

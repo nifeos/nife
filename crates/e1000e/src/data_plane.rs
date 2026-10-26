@@ -23,9 +23,15 @@ pub trait Region {
 /// the data plane makes.
 pub trait Tails {
     /// Write the receive tail (`RDT`).
-    fn set_rx_tail(&mut self, v: u32);
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
+    /// ruling covers the rest of the name. Refused `set_rx_tail` (rx abbreviates receive).
+    fn set_receive_tail(&mut self, v: u32);
     /// Write the transmit tail (`TDT`).
-    fn set_tx_tail(&mut self, v: u32);
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
+    /// ruling covers the rest of the name. Refused `set_tx_tail` (tx abbreviates transmit).
+    fn set_transmit_tail(&mut self, v: u32);
     /// Order every region access before this against every access after it, as seen by the device.
     /// Called between filling a descriptor and the tail write that announces it, and between
     /// reading a status and reading the bytes it covers.
@@ -33,8 +39,11 @@ pub trait Tails {
 }
 
 /// Why a frame was not queued.
+///
+/// Name: ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out rx and tx, which names
+/// it. Refused `TxError` (tx abbreviates transmit).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TxError {
+pub enum TransmitError {
     /// Empty, or longer than [`MAX_FRAME`].
     BadLength,
     /// Every descriptor is still the device's.
@@ -47,9 +56,9 @@ pub enum TxError {
 #[derive(Debug)]
 pub struct DataPlane {
     phys: u64,
-    rx_next: u16,
-    tx_next: u16,
-    tx_clean: u16,
+    receive_next: u16,
+    transmit_next: u16,
+    transmit_clean: u16,
     /// Frames the device wrote that were not delivered, for a report line.
     pub dropped: u32,
 }
@@ -60,17 +69,20 @@ impl DataPlane {
     pub fn new(data_plane_phys: u64) -> DataPlane {
         DataPlane {
             phys: data_plane_phys,
-            rx_next: 0,
-            tx_next: 0,
-            tx_clean: 0,
+            receive_next: 0,
+            transmit_next: 0,
+            transmit_clean: 0,
             dropped: 0,
         }
     }
 
     /// The receive descriptor the next [`DataPlane::receive`] looks at, for a caller that wants to
     /// peek at its status without consuming it.
-    pub fn rx_cursor(&self) -> u16 {
-        self.rx_next
+    ///
+    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
+    /// ruling covers the rest of the name. Refused `rx_cursor` (rx abbreviates receive).
+    pub fn receive_cursor(&self) -> u16 {
+        self.receive_next
     }
 
     /// Post every receive buffer and clear the transmit ring. The kernel left both heads and both
@@ -78,23 +90,23 @@ impl DataPlane {
     /// descriptor but one (a ring with head equal to tail is empty, so one slot always separates
     /// them).
     pub fn start(&mut self, region: &mut impl Region, tails: &mut impl Tails) {
-        for i in 0..RX_ENTRIES {
-            let d = layout::rx_descriptor(i);
-            region.write_u64(d, self.phys + layout::rx_buffer(i));
+        for i in 0..RECEIVE_ENTRIES {
+            let d = layout::receive_descriptor(i);
+            region.write_u64(d, self.phys + layout::receive_buffer(i));
             region.write_u64(d + 8, 0);
         }
-        for i in 0..TX_ENTRIES {
-            let d = layout::tx_descriptor(i);
+        for i in 0..TRANSMIT_ENTRIES {
+            let d = layout::transmit_descriptor(i);
             region.write_u64(d, 0);
             region.write_u64(d + 8, 0);
         }
         tails.barrier();
-        tails.set_rx_tail(u32::from(RX_ENTRIES - 1));
+        tails.set_receive_tail(u32::from(RECEIVE_ENTRIES - 1));
     }
 
-    /// Take the next received frame into `out`, returning its length, or `None` when the device
-    /// has written nothing new. A descriptor judged [`RxVerdict::Drop`] is consumed and counted and
-    /// the next one is tried, so one bad frame cannot stall the ring.
+    /// Take the next received frame into `out`, returning its length, or `None` when the device has
+    /// written nothing new. A descriptor judged [`ReceiveVerdict::Drop`] is consumed and counted
+    /// and the next one is tried, so one bad frame cannot stall the ring.
     pub fn receive(
         &mut self,
         region: &mut impl Region,
@@ -102,17 +114,17 @@ impl DataPlane {
         out: &mut [u8],
     ) -> Option<usize> {
         loop {
-            let d = layout::rx_descriptor(self.rx_next);
-            let verdict = rx_verdict(region.read_u64(d + 8), out.len());
-            if verdict == RxVerdict::NotYet {
+            let d = layout::receive_descriptor(self.receive_next);
+            let verdict = receive_verdict(region.read_u64(d + 8), out.len());
+            if verdict == ReceiveVerdict::NotYet {
                 return None;
             }
             // The status was read before the bytes it covers, and nothing else stops a weakly
             // ordered CPU reading the buffer first.
             tails.barrier();
             let got = match verdict {
-                RxVerdict::Frame(n) => {
-                    region.read_bytes(layout::rx_buffer(self.rx_next), &mut out[..n]);
+                ReceiveVerdict::Frame(n) => {
+                    region.read_bytes(layout::receive_buffer(self.receive_next), &mut out[..n]);
                     Some(n)
                 }
                 _ => {
@@ -122,11 +134,11 @@ impl DataPlane {
             };
             // Repost: the address again (a device may write back over it), the status cleared,
             // then hand the slot back by making it the tail.
-            region.write_u64(d, self.phys + layout::rx_buffer(self.rx_next));
+            region.write_u64(d, self.phys + layout::receive_buffer(self.receive_next));
             region.write_u64(d + 8, 0);
             tails.barrier();
-            tails.set_rx_tail(u32::from(self.rx_next));
-            self.rx_next = (self.rx_next + 1) % RX_ENTRIES;
+            tails.set_receive_tail(u32::from(self.receive_next));
+            self.receive_next = (self.receive_next + 1) % RECEIVE_ENTRIES;
             if got.is_some() {
                 return got;
             }
@@ -139,40 +151,40 @@ impl DataPlane {
         region: &mut impl Region,
         tails: &mut impl Tails,
         frame: &[u8],
-    ) -> Result<(), TxError> {
+    ) -> Result<(), TransmitError> {
         if frame.is_empty() || frame.len() > MAX_FRAME {
-            return Err(TxError::BadLength);
+            return Err(TransmitError::BadLength);
         }
         self.reclaim(region);
-        let next = (self.tx_next + 1) % TX_ENTRIES;
-        if next == self.tx_clean {
-            return Err(TxError::Full);
+        let next = (self.transmit_next + 1) % TRANSMIT_ENTRIES;
+        if next == self.transmit_clean {
+            return Err(TransmitError::Full);
         }
-        region.write_bytes(layout::tx_buffer(self.tx_next), frame);
-        let d = layout::tx_descriptor(self.tx_next);
-        region.write_u64(d, self.phys + layout::tx_buffer(self.tx_next));
-        region.write_u64(d + 8, tx_word(frame.len() as u16));
+        region.write_bytes(layout::transmit_buffer(self.transmit_next), frame);
+        let d = layout::transmit_descriptor(self.transmit_next);
+        region.write_u64(d, self.phys + layout::transmit_buffer(self.transmit_next));
+        region.write_u64(d + 8, transmit_word(frame.len() as u16));
         tails.barrier();
-        self.tx_next = next;
-        tails.set_tx_tail(u32::from(next));
+        self.transmit_next = next;
+        tails.set_transmit_tail(u32::from(next));
         Ok(())
     }
 
     /// Is there a free transmit descriptor right now? Reclaims first.
     pub fn can_transmit(&mut self, region: &mut impl Region) -> bool {
         self.reclaim(region);
-        (self.tx_next + 1) % TX_ENTRIES != self.tx_clean
+        (self.transmit_next + 1) % TRANSMIT_ENTRIES != self.transmit_clean
     }
 
     /// Move the clean cursor past every descriptor the device has reported done. `RS` is set on
     /// every frame, so the device writes `DD` on each in order.
     fn reclaim(&mut self, region: &impl Region) {
-        while self.tx_clean != self.tx_next {
-            let word = region.read_u64(layout::tx_descriptor(self.tx_clean) + 8);
-            if (word >> 32) as u8 & TX_STATUS_DD == 0 {
+        while self.transmit_clean != self.transmit_next {
+            let word = region.read_u64(layout::transmit_descriptor(self.transmit_clean) + 8);
+            if (word >> 32) as u8 & TRANSMIT_STATUS_DD == 0 {
                 break;
             }
-            self.tx_clean = (self.tx_clean + 1) % TX_ENTRIES;
+            self.transmit_clean = (self.transmit_clean + 1) % TRANSMIT_ENTRIES;
         }
     }
 }

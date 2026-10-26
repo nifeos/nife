@@ -29,7 +29,8 @@
 use alloc::vec::Vec;
 
 use driver_process_contract::e1000e::{
-    DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RX_QUEUE_VIRTUAL_ADDRESS, TX_QUEUE_VIRTUAL_ADDRESS,
+    DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RECEIVE_QUEUE_VIRTUAL_ADDRESS,
+    TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
 };
 use e1000e::{DataPlane, MAX_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
@@ -45,9 +46,9 @@ pub(crate) const POLL_MS: u64 = 1;
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
-const RX_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const RX_QUEUE: MappedWindow = unsafe { MappedWindow::new(RECEIVE_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 // SAFETY: as above.
-const TX_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const TX_QUEUE: MappedWindow = unsafe { MappedWindow::new(TRANSMIT_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
@@ -71,10 +72,10 @@ impl Region for Plane {
 struct Queues;
 
 impl Tails for Queues {
-    fn set_rx_tail(&mut self, v: u32) {
+    fn set_receive_tail(&mut self, v: u32) {
         RX_QUEUE.w32(TAIL_IN_PAGE, v);
     }
-    fn set_tx_tail(&mut self, v: u32) {
+    fn set_transmit_tail(&mut self, v: u32) {
         TX_QUEUE.w32(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
@@ -126,7 +127,7 @@ impl GigabitNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let word = PLANE.r64(layout::rx_descriptor(self.plane.rx_cursor()) + 8);
-        e1000e::rx_verdict(word, MAX_FRAME) != e1000e::RxVerdict::NotYet
+        let word = PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
+        e1000e::receive_verdict(word, MAX_FRAME) != e1000e::ReceiveVerdict::NotYet
     }
 }

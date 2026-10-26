@@ -6,15 +6,14 @@ a full frame is then accepted, so a caller offering a 576-byte buffer is told to
 Expected to fail: the harness's `assert!(n <= room)`, on any word with a valid length above room.
 
 diff --git a/crates/e1000e/src/descriptor.rs b/crates/e1000e/src/descriptor.rs
-index c0cf30064..517c920bc 100644
 --- a/crates/e1000e/src/descriptor.rs
 +++ b/crates/e1000e/src/descriptor.rs
-@@ -74,7 +74,7 @@ pub fn rx_verdict(word: u64, room: usize) -> RxVerdict {
+@@ -82,7 +82,7 @@
      }
      let errors = (word >> 40) as u8;
      let len = (word & 0xffff) as usize;
 -    let fits = (14..=MAX_FRAME).contains(&len) && len <= room && len as u64 <= BUFFER_SIZE;
 +    let fits = (14..=MAX_FRAME).contains(&len) && len as u64 <= BUFFER_SIZE;
-     if status & RX_STATUS_EOP == 0 || errors & RX_ERRORS_FRAME != 0 || !fits {
-         return RxVerdict::Drop;
+     if status & RECEIVE_STATUS_EOP == 0 || errors & RECEIVE_ERRORS_FRAME != 0 || !fits {
+         return ReceiveVerdict::Drop;
      }

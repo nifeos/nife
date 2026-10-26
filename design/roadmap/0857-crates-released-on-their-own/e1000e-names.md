@@ -17,10 +17,13 @@ below copy:
   documents and 32 in Arm's and RISC-V's. `rctl`, `tctl`, `tipg` and `rxdctl` keep their spelling,
   as do the register and field names copied from Intel's and FreeBSD's sources and the NVM's
   `WORDS` (Intel's 16-bit flash word).
+- Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out wherever this tree authors the
+  name (`ReceiveVerdict`, `TransmitError`, `receive_descriptor`, `TRANSMIT_ENTRIES`), and register
+  and bit names copied from a datasheet (`RDT`, `DD`, `EOP`) keep their spelling.
 
 The spawn handoff (`Handoff` with `pack`, `unpack` and `is_role`, and `ROLE_TAG`) sits in the `e1000e` module of the nife-internal crate `driver_process_contract`, which does not publish (ruled 2026-10-26 UTC). Those names follow nife's ordinary naming and have no row here.
 
-146 names: 129 no block, 5 provisional, 12 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+148 names: 106 no block, 28 provisional, 14 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 12 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 13 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -67,49 +70,51 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `DataPlane` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Region` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Tails` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `TxError` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
+| `TransmitError` | item | `src/data_plane.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out rx and tx, which names it. Refused `TxError` (tx abbreviates transmit). | yes | clear |
 | `can_transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `new` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `receive` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `rx_cursor` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
+| `receive_cursor` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `rx_cursor` (rx abbreviates receive). | yes | clear |
+| `set_receive_tail` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `set_rx_tail` (rx abbreviates receive). | yes | clear |
+| `set_transmit_tail` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `set_tx_tail` (tx abbreviates transmit). | yes | clear |
 | `start` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `BUFFER_SIZE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `MAX_FRAME` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_ENTRIES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_ERRORS_FRAME` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_QUEUE_PAGE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_STATUS_DD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_STATUS_EOP` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RxVerdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `RECEIVE_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_ENTRIES` (rx abbreviates receive). | yes | clear |
+| `RECEIVE_ERRORS_FRAME` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_ERRORS_FRAME` (rx abbreviates receive). | yes | clear |
+| `RECEIVE_QUEUE_PAGE` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_QUEUE_PAGE` (rx abbreviates receive). | yes | clear |
+| `RECEIVE_STATUS_DD` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_STATUS_DD` (rx abbreviates receive). | yes | clear |
+| `RECEIVE_STATUS_EOP` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_STATUS_EOP` (rx abbreviates receive). | yes | clear |
+| `ReceiveVerdict` | item | `src/descriptor.rs` | ratified 2026-10-26 (UTC), in the tree-wide ruling that spells out rx and tx, which names it. Refused `RxVerdict` (rx abbreviates receive). | yes | clear |
 | `TAIL_IN_PAGE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TX_COMMAND` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TX_ENTRIES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TX_QUEUE_PAGE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TX_STATUS_DD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `rx_verdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `tx_word` | item | `src/descriptor.rs` | unrecorded. | yes | unclear: which word of a transmit descriptor |
+| `TRANSMIT_COMMAND` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_COMMAND` (tx abbreviates transmit). | yes | clear |
+| `TRANSMIT_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_ENTRIES` (tx abbreviates transmit). | yes | clear |
+| `TRANSMIT_QUEUE_PAGE` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_QUEUE_PAGE` (tx abbreviates transmit). | yes | clear |
+| `TRANSMIT_STATUS_DD` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_STATUS_DD` (tx abbreviates transmit). | yes | clear |
+| `receive_verdict` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `rx_verdict` (rx abbreviates receive). | yes | clear |
+| `transmit_word` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_word` (tx abbreviates transmit). | yes | unclear: which word of a transmit descriptor |
 | `DEVICE_IDS` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `VENDOR_INTEL` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `is_supported` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `model` | item | `src/device.rs` | unrecorded. | yes | clear |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `RX_BUFFERS` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `RX_RING` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `TX_BUFFERS` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `TX_RING` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `rx_buffer` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `rx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `tx_buffer` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `tx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
+| `RECEIVE_BUFFERS` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_BUFFERS` (rx abbreviates receive). | yes | clear |
+| `RECEIVE_RING` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `RX_RING` (rx abbreviates receive). | yes | clear |
+| `TRANSMIT_BUFFERS` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_BUFFERS` (tx abbreviates transmit). | yes | clear |
+| `TRANSMIT_RING` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `TX_RING` (tx abbreviates transmit). | yes | clear |
+| `receive_buffer` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `rx_buffer` (rx abbreviates receive). | yes | clear |
+| `receive_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `rx_descriptor` (rx abbreviates receive). | yes | clear |
+| `transmit_buffer` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_buffer` (tx abbreviates transmit). | yes | clear |
+| `transmit_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_descriptor` (tx abbreviates transmit). | yes | clear |
 | `DESC_RING_STATUS` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `FEXTNVM11_DISABLE_MULR_FIX` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
 | `REQUIRED` | item | `src/pch/flush.rs` | unrecorded. | yes | generic |
 | `required` | item | `src/pch/flush.rs` | unrecorded. | yes | generic |
 | `rxdctl` | item | `src/pch/flush.rs` | unrecorded. | yes | term |
 | `tail_after` | item | `src/pch/flush.rs` | unrecorded. | yes | clear |
-| `tx_word` | item | `src/pch/flush.rs` | unrecorded. | yes | unclear: which word of a transmit descriptor |
+| `transmit_word` | item | `src/pch/flush.rs` | provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling covers the rest of the name. Refused `tx_word` (tx abbreviates transmit). | yes | unclear: which word of a transmit descriptor |
 | `Hardware` | item | `src/pch/hardware.rs` | ratified 2026-10-26 (UTC), in the ruling on e1000e's names. Refused `Hw` (an abbreviation of hardware). | yes | clear |
 | `is_pch` | item | `src/pch/hardware.rs` | unrecorded. | yes | term |
 | `DONE` | item | `src/pch/non_volatile_memory.rs` | unrecorded. | yes | clear |
@@ -184,7 +189,7 @@ Every `pub` module and item in the crate's source has a row. `script/names` does
 
 - the inline modules `status` and `control` in `src/pch/non_volatile_memory.rs`, and `mdic` and `r` in `src/pch/phy.rs`, whose constants have rows;
 - the fields of `DataPlane` (1), `phy::Plan` (3) and the private `Sim` (22);
-- the variants of `TxError` (2), `RxVerdict` (3), `non_volatile_memory::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
+- the variants of `TransmitError` (2), `ReceiveVerdict` (3), `non_volatile_memory::Error` (5), `phy::Error` (7), `sequence::Error` (6), `Reached` (4), `Note` (12) and the private `Start` (3);
 - the methods of the traits `Region` (4), `Tails` (3) and `Hardware` (6).
 
 The `pub use` lines re-export items that have rows where they are defined. The one field of the crate-private `non_volatile_memory::Geometry` is reachable from nowhere outside.

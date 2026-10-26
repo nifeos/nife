@@ -41,10 +41,10 @@ impl Region for Sim {
 
 struct Regs<'a>(&'a mut u32, &'a mut u32, &'a mut usize);
 impl Tails for Regs<'_> {
-    fn set_rx_tail(&mut self, v: u32) {
+    fn set_receive_tail(&mut self, v: u32) {
         *self.0 = v;
     }
-    fn set_tx_tail(&mut self, v: u32) {
+    fn set_transmit_tail(&mut self, v: u32) {
         *self.1 = v;
     }
     fn barrier(&mut self) {
@@ -76,12 +76,12 @@ impl Sim {
         if u32::from(self.rdh) == self.rdt {
             return false;
         }
-        let d = layout::rx_descriptor(self.rdh);
+        let d = layout::receive_descriptor(self.rdh);
         let address = self.read_u64(d);
         let off = address - PHYS;
         assert_eq!(
             off,
-            layout::rx_buffer(self.rdh),
+            layout::receive_buffer(self.rdh),
             "a descriptor names a foreign buffer"
         );
         self.write_bytes(off, frame);
@@ -89,22 +89,22 @@ impl Sim {
             d + 8,
             len as u64 | (status as u64) << 32 | (errors as u64) << 40,
         );
-        self.rdh = (self.rdh + 1) % RX_ENTRIES;
+        self.rdh = (self.rdh + 1) % RECEIVE_ENTRIES;
         true
     }
     /// The device sends every descriptor up to the tail and writes `DD` back.
-    fn drain_tx(&mut self) {
+    fn drain_transmit(&mut self) {
         while u32::from(self.tdh) != self.tdt {
-            let d = layout::tx_descriptor(self.tdh);
+            let d = layout::transmit_descriptor(self.tdh);
             let address = self.read_u64(d);
             let word = self.read_u64(d + 8);
-            assert_eq!((word >> 24) as u8, TX_COMMAND);
+            assert_eq!((word >> 24) as u8, TRANSMIT_COMMAND);
             let len = (word & 0xffff) as usize;
             let mut f = vec![0; len];
             self.read_bytes(address - PHYS, &mut f);
             self.sent.push(f);
-            self.write_u64(d + 8, word | (TX_STATUS_DD as u64) << 32);
-            self.tdh = (self.tdh + 1) % TX_ENTRIES;
+            self.write_u64(d + 8, word | (TRANSMIT_STATUS_DD as u64) << 32);
+            self.tdh = (self.tdh + 1) % TRANSMIT_ENTRIES;
         }
     }
 }
@@ -120,15 +120,15 @@ fn frame(tag: u8, len: usize) -> Vec<u8> {
     (0..len).map(|k| tag ^ k as u8).collect()
 }
 
-const GOOD: u8 = RX_STATUS_DD | RX_STATUS_EOP;
+const GOOD: u8 = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;
 
 #[test]
 fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
     let (sim, _) = started();
-    assert_eq!(sim.rdt, u32::from(RX_ENTRIES - 1));
-    for i in 0..RX_ENTRIES {
-        let d = layout::rx_descriptor(i);
-        assert_eq!(sim.read_u64(d), PHYS + layout::rx_buffer(i));
+    assert_eq!(sim.rdt, u32::from(RECEIVE_ENTRIES - 1));
+    for i in 0..RECEIVE_ENTRIES {
+        let d = layout::receive_descriptor(i);
+        assert_eq!(sim.read_u64(d), PHYS + layout::receive_buffer(i));
         assert_eq!(
             sim.read_u64(d + 8),
             0,
@@ -145,7 +145,7 @@ fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
 fn frames_arrive_in_order_across_many_laps_of_the_ring() {
     let (mut sim, mut dp) = started();
     let mut out = [0u8; MAX_FRAME];
-    for n in 0..5 * RX_ENTRIES as usize {
+    for n in 0..5 * RECEIVE_ENTRIES as usize {
         let f = frame(n as u8, 60 + n % 1400);
         assert!(
             sim.deliver(&f, f.len() as u16, GOOD, 0),
@@ -166,7 +166,7 @@ fn a_full_ring_holds_all_but_one_and_drains_completely() {
     while sim.deliver(&frame(1, 64), 64, GOOD, 0) {
         delivered += 1;
     }
-    assert_eq!(delivered, RX_ENTRIES - 1);
+    assert_eq!(delivered, RECEIVE_ENTRIES - 1);
     let mut out = [0u8; MAX_FRAME];
     for _ in 0..delivered {
         assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
@@ -176,7 +176,7 @@ fn a_full_ring_holds_all_but_one_and_drains_completely() {
     while sim.deliver(&frame(2, 64), 64, GOOD, 0) {
         again += 1;
     }
-    assert_eq!(again, RX_ENTRIES - 1);
+    assert_eq!(again, RECEIVE_ENTRIES - 1);
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn a_lying_or_bad_descriptor_is_dropped_and_the_ring_moves_on() {
     let (mut sim, mut dp) = started();
     let mut out = [0u8; MAX_FRAME];
     assert!(sim.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
-    assert!(sim.deliver(&frame(2, 64), 64, RX_STATUS_DD, 0)); // no end of packet
+    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DD, 0)); // no end of packet
     assert!(sim.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
     assert!(sim.deliver(&frame(4, 8), 8, GOOD, 0)); // shorter than a header
     let f = frame(5, 99);
@@ -207,12 +207,12 @@ fn a_frame_larger_than_the_callers_room_is_dropped_not_truncated() {
 fn a_device_that_overwrote_the_buffer_address_gets_it_back_on_repost() {
     let (mut sim, mut dp) = started();
     assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
-    sim.write_u64(layout::rx_descriptor(0), 0xdead_0000);
+    sim.write_u64(layout::receive_descriptor(0), 0xdead_0000);
     let mut out = [0u8; MAX_FRAME];
     assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
     assert_eq!(
-        sim.read_u64(layout::rx_descriptor(0)),
-        PHYS + layout::rx_buffer(0)
+        sim.read_u64(layout::receive_descriptor(0)),
+        PHYS + layout::receive_buffer(0)
     );
 }
 
@@ -224,20 +224,20 @@ fn transmit_sends_exact_bytes_and_reports_full_until_the_device_catches_up() {
         let f = frame(queued.len() as u8, 60 + queued.len() * 90);
         match sim.with(|s, r| dp.transmit(s, r, &f)) {
             Ok(()) => queued.push(f),
-            Err(TxError::Full) => break,
+            Err(TransmitError::Full) => break,
             Err(e) => panic!("{e:?}"),
         }
     }
-    assert_eq!(queued.len(), TX_ENTRIES as usize - 1);
+    assert_eq!(queued.len(), TRANSMIT_ENTRIES as usize - 1);
     assert!(!dp.can_transmit(&mut sim));
-    sim.drain_tx();
+    sim.drain_transmit();
     assert_eq!(sim.sent, queued);
     assert!(dp.can_transmit(&mut sim));
     // And the ring keeps going round.
-    for n in 0..3 * TX_ENTRIES as usize {
+    for n in 0..3 * TRANSMIT_ENTRIES as usize {
         let f = frame(n as u8, MAX_FRAME);
         sim.with(|s, r| dp.transmit(s, r, &f)).unwrap();
-        sim.drain_tx();
+        sim.drain_transmit();
         assert_eq!(sim.sent.last(), Some(&f));
     }
 }
@@ -247,12 +247,12 @@ fn transmit_refuses_empty_and_oversized_frames() {
     let (mut sim, mut dp) = started();
     assert_eq!(
         sim.with(|s, r| dp.transmit(s, r, &[])),
-        Err(TxError::BadLength)
+        Err(TransmitError::BadLength)
     );
     let big = vec![0u8; MAX_FRAME + 1];
     assert_eq!(
         sim.with(|s, r| dp.transmit(s, r, &big)),
-        Err(TxError::BadLength)
+        Err(TransmitError::BadLength)
     );
     assert_eq!(sim.tdt, 0, "a refused frame moved the tail");
 }
@@ -260,29 +260,29 @@ fn transmit_refuses_empty_and_oversized_frames() {
 #[test]
 fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
     assert_eq!(layout::PAGES, 18);
-    assert!(RX_ENTRIES as u64 * 16 <= PAGE && TX_ENTRIES as u64 * 16 <= PAGE);
+    assert!(RECEIVE_ENTRIES as u64 * 16 <= PAGE && TRANSMIT_ENTRIES as u64 * 16 <= PAGE);
     assert_eq!(
-        RX_ENTRIES as u64 * 16 % 128,
+        RECEIVE_ENTRIES as u64 * 16 % 128,
         0,
         "RDLEN must be a multiple of 128"
     );
     assert_eq!(
-        TX_ENTRIES as u64 * 16 % 128,
+        TRANSMIT_ENTRIES as u64 * 16 % 128,
         0,
         "TDLEN must be a multiple of 128"
     );
     assert!(MAX_FRAME as u64 <= BUFFER_SIZE);
-    assert_eq!(layout::RX_BUFFERS % PAGE, 0);
-    assert_eq!(layout::TX_BUFFERS % PAGE, 0);
+    assert_eq!(layout::RECEIVE_BUFFERS % PAGE, 0);
+    assert_eq!(layout::TRANSMIT_BUFFERS % PAGE, 0);
 }
 
 #[test]
 fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
-    assert_eq!(regs::RDT & !0xfff, RX_QUEUE_PAGE);
-    assert_eq!(regs::TDT & !0xfff, TX_QUEUE_PAGE);
-    assert_eq!(regs::TDT - TX_QUEUE_PAGE, TAIL_IN_PAGE);
+    assert_eq!(regs::RDT & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(regs::TDT & !0xfff, TRANSMIT_QUEUE_PAGE);
+    assert_eq!(regs::TDT - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
     // The finding: base and tail share a page, so the split cannot keep ring placement.
-    assert_eq!(regs::RDBAL & !0xfff, RX_QUEUE_PAGE);
+    assert_eq!(regs::RDBAL & !0xfff, RECEIVE_QUEUE_PAGE);
     for r in [
         regs::CTRL,
         regs::STATUS,
@@ -295,7 +295,7 @@ fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
     ] {
         let page = r & !0xfff;
         assert!(
-            page != RX_QUEUE_PAGE && page != TX_QUEUE_PAGE,
+            page != RECEIVE_QUEUE_PAGE && page != TRANSMIT_QUEUE_PAGE,
             "{r:#x} is mapped"
         );
     }
@@ -364,26 +364,29 @@ fn the_control_words_are_linuxs_values_exactly() {
 #[test]
 fn every_frame_error_bit_drops_the_frame() {
     let good = |errors: u8| 60 | (GOOD as u64) << 32 | (errors as u64) << 40;
-    assert_eq!(rx_verdict(good(0), 1514), RxVerdict::Frame(60));
+    assert_eq!(receive_verdict(good(0), 1514), ReceiveVerdict::Frame(60));
     for bit in [0x01, 0x02, 0x04, 0x10, 0x80] {
         assert_eq!(
-            rx_verdict(good(bit), 1514),
-            RxVerdict::Drop,
+            receive_verdict(good(bit), 1514),
+            ReceiveVerdict::Drop,
             "error bit {bit:#04x}"
         );
     }
     // Bits 3 and 6 are not frame errors (TCP/UDP and IP checksum), and checksum offload is off.
-    assert_eq!(rx_verdict(good(0x08 | 0x40), 1514), RxVerdict::Frame(60));
+    assert_eq!(
+        receive_verdict(good(0x08 | 0x40), 1514),
+        ReceiveVerdict::Frame(60)
+    );
 }
 
 /// A transmit descriptor's command byte asks for all three things the ring depends on: end of
 /// packet, the FCS appended, and a status write-back that `reclaim` waits for.
 #[test]
 fn the_transmit_command_is_eop_ifcs_and_rs() {
-    assert_eq!(TX_COMMAND & 0x01, 0x01, "EOP");
-    assert_eq!(TX_COMMAND & 0x02, 0x02, "IFCS");
-    assert_eq!(TX_COMMAND & 0x08, 0x08, "RS");
-    assert_eq!(TX_COMMAND, 0x0b);
+    assert_eq!(TRANSMIT_COMMAND & 0x01, 0x01, "EOP");
+    assert_eq!(TRANSMIT_COMMAND & 0x02, 0x02, "IFCS");
+    assert_eq!(TRANSMIT_COMMAND & 0x08, 0x08, "RS");
+    assert_eq!(TRANSMIT_COMMAND, 0x0b);
 }
 
 /// Every buffer and descriptor index is reduced modulo its ring, and successive slots sit one
@@ -391,50 +394,65 @@ fn the_transmit_command_is_eop_ifcs_and_rs() {
 /// share memory and no index reaches past its ring.
 #[test]
 fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
-    for i in 0..2 * RX_ENTRIES {
-        let next = (i + 1) % RX_ENTRIES;
-        assert_eq!(layout::rx_buffer(i), layout::rx_buffer(i % RX_ENTRIES));
+    for i in 0..2 * RECEIVE_ENTRIES {
+        let next = (i + 1) % RECEIVE_ENTRIES;
         assert_eq!(
-            layout::rx_descriptor(i),
-            layout::rx_descriptor(i % RX_ENTRIES)
+            layout::receive_buffer(i),
+            layout::receive_buffer(i % RECEIVE_ENTRIES)
         );
-        assert!((layout::RX_BUFFERS..layout::TX_BUFFERS).contains(&layout::rx_buffer(i)));
-        assert!((layout::RX_RING..layout::TX_RING).contains(&layout::rx_descriptor(i)));
+        assert_eq!(
+            layout::receive_descriptor(i),
+            layout::receive_descriptor(i % RECEIVE_ENTRIES)
+        );
+        assert!(
+            (layout::RECEIVE_BUFFERS..layout::TRANSMIT_BUFFERS)
+                .contains(&layout::receive_buffer(i))
+        );
+        assert!(
+            (layout::RECEIVE_RING..layout::TRANSMIT_RING).contains(&layout::receive_descriptor(i))
+        );
         if next != 0 {
             assert_eq!(
-                layout::rx_buffer(next) - layout::rx_buffer(i % RX_ENTRIES),
+                layout::receive_buffer(next) - layout::receive_buffer(i % RECEIVE_ENTRIES),
                 BUFFER_SIZE
             );
             assert_eq!(
-                layout::rx_descriptor(next) - layout::rx_descriptor(i % RX_ENTRIES),
+                layout::receive_descriptor(next) - layout::receive_descriptor(i % RECEIVE_ENTRIES),
                 16
             );
         }
     }
-    for i in 0..2 * TX_ENTRIES {
-        let next = (i + 1) % TX_ENTRIES;
-        assert_eq!(layout::tx_buffer(i), layout::tx_buffer(i % TX_ENTRIES));
+    for i in 0..2 * TRANSMIT_ENTRIES {
+        let next = (i + 1) % TRANSMIT_ENTRIES;
         assert_eq!(
-            layout::tx_descriptor(i),
-            layout::tx_descriptor(i % TX_ENTRIES)
+            layout::transmit_buffer(i),
+            layout::transmit_buffer(i % TRANSMIT_ENTRIES)
         );
-        assert!((layout::TX_BUFFERS..layout::BYTES).contains(&layout::tx_buffer(i)));
-        assert!((layout::TX_RING..layout::RX_BUFFERS).contains(&layout::tx_descriptor(i)));
+        assert_eq!(
+            layout::transmit_descriptor(i),
+            layout::transmit_descriptor(i % TRANSMIT_ENTRIES)
+        );
+        assert!((layout::TRANSMIT_BUFFERS..layout::BYTES).contains(&layout::transmit_buffer(i)));
+        assert!(
+            (layout::TRANSMIT_RING..layout::RECEIVE_BUFFERS)
+                .contains(&layout::transmit_descriptor(i))
+        );
         if next != 0 {
             assert_eq!(
-                layout::tx_buffer(next) - layout::tx_buffer(i % TX_ENTRIES),
+                layout::transmit_buffer(next) - layout::transmit_buffer(i % TRANSMIT_ENTRIES),
                 BUFFER_SIZE
             );
             assert_eq!(
-                layout::tx_descriptor(next) - layout::tx_descriptor(i % TX_ENTRIES),
+                layout::transmit_descriptor(next)
+                    - layout::transmit_descriptor(i % TRANSMIT_ENTRIES),
                 16
             );
         }
     }
-    assert_eq!(layout::rx_buffer(0), layout::RX_BUFFERS);
-    assert_eq!(layout::tx_buffer(0), layout::TX_BUFFERS);
-    assert_eq!(layout::rx_descriptor(0), layout::RX_RING);
-    assert_eq!(layout::tx_descriptor(0), layout::TX_RING);
+    assert_eq!(layout::receive_buffer(0), layout::RECEIVE_BUFFERS);
+    assert_eq!(layout::transmit_buffer(0), layout::TRANSMIT_BUFFERS);
+    assert_eq!(layout::receive_descriptor(0), layout::RECEIVE_RING);
+    assert_eq!(layout::transmit_descriptor(0), layout::TRANSMIT_RING);
 }
 
 /// `start` clears the whole transmit ring, so no descriptor holds the region's stale bytes
@@ -443,19 +461,19 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
 #[test]
 fn start_clears_the_transmit_ring_and_the_cursor_follows_receive() {
     let (mut sim, mut dp) = started();
-    for i in 0..TX_ENTRIES {
-        let d = layout::tx_descriptor(i);
+    for i in 0..TRANSMIT_ENTRIES {
+        let d = layout::transmit_descriptor(i);
         assert_eq!(
             (sim.read_u64(d), sim.read_u64(d + 8)),
             (0, 0),
             "descriptor {i}"
         );
     }
-    assert_eq!(dp.rx_cursor(), 0);
+    assert_eq!(dp.receive_cursor(), 0);
     let mut out = [0u8; MAX_FRAME];
     for n in 1..=3u16 {
         assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
         assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
-        assert_eq!(dp.rx_cursor(), n);
+        assert_eq!(dp.receive_cursor(), n);
     }
 }

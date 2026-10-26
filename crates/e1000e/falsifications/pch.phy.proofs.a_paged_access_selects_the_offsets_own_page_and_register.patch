@@ -10,7 +10,7 @@ Expected to fail: the select assertion, on any offset whose page is 0x800 or mor
 diff --git a/crates/e1000e/src/pch/phy.rs b/crates/e1000e/src/pch/phy.rs
 --- a/crates/e1000e/src/pch/phy.rs
 +++ b/crates/e1000e/src/pch/phy.rs
-@@ -293,7 +293,7 @@
+@@ -285,7 +285,7 @@
  pub const fn plan(offset: u32) -> Result<Plan, Error> {
      let page = offset >> PAGE_SHIFT;
      let r = offset & MAX_REG;

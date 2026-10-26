@@ -13,8 +13,8 @@ simulated device. It was written for the nife kernel.
 Three Kani harnesses cover the input a device or a caller controls:
 
 - `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room`: for every status word a device
-  can write and every caller buffer size, a frame that `rx_verdict` delivers fits both the receive
-  buffer and the caller's space.
+  can write and every caller buffer size, a frame that `receive_verdict` delivers fits both the
+  receive buffer and the caller's space.
 - `proofs::every_ring_offset_is_inside_the_region`: for any index, every descriptor and buffer
   offset lies inside its part of the DMA region.
 - `pch::phy::proofs::a_paged_access_selects_the_offsets_own_page_and_register`: every paged PHY
@@ -32,15 +32,19 @@ tested against the simulated device but not model checked.
 Claim a device, then judge each receive descriptor's status word before trusting its length:
 
 ```rust
-use e1000e::{RX_STATUS_DD, RX_STATUS_EOP, RxVerdict, VENDOR_INTEL, is_supported, model, rx_verdict};
+use e1000e::{
+    RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, VENDOR_INTEL, is_supported, model,
+    receive_verdict,
+};
 
 assert!(is_supported(VENDOR_INTEL, 0x10d3));
 assert_eq!(model(0x10d3), Some("82574L (QEMU's e1000e)"));
 
 let word = |len: u64, status: u8| len | (status as u64) << 32;
-assert_eq!(rx_verdict(word(60, RX_STATUS_DD | RX_STATUS_EOP), 1514), RxVerdict::Frame(60));
-assert_eq!(rx_verdict(word(60, 0), 1514), RxVerdict::NotYet);
-assert_eq!(rx_verdict(word(0xffff, RX_STATUS_DD | RX_STATUS_EOP), 1514), RxVerdict::Drop);
+let done = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;
+assert_eq!(receive_verdict(word(60, done), 1514), ReceiveVerdict::Frame(60));
+assert_eq!(receive_verdict(word(60, 0), 1514), ReceiveVerdict::NotYet);
+assert_eq!(receive_verdict(word(0xffff, done), 1514), ReceiveVerdict::Drop);
 ```
 
 For the rings, implement `Region` over the DMA memory and `Tails` over the queue registers, then

@@ -169,7 +169,7 @@ names until the ratification pass, so this section keeps the links it carried.
   the register facts come from.
 - `Cargo.toml`, the old manifest comment: the crate is a pure-logic crate under §7 (the testing
   harness), no_std for the kernel and `net_stack` and std for host tests.
-- `src/descriptor.rs`, `rx_verdict`: trusting no field of the status word answers finding 6 of
+- `src/descriptor.rs`, `receive_verdict`: trusting no field of the status word answers finding 6 of
   `notes/shared-page-audit.md`.
 - `src/pch/mod.rs`, `non_volatile_memory.rs`, `phy.rs` and `sequence.rs`, the module docs: each
   cited milestone 494 and `notes/e1000e/the-i219-port.md`, the whole note for `pch` and its

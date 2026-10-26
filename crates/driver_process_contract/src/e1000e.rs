@@ -14,14 +14,16 @@ use address_space_map::{PAGE, pair_page};
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// BAR0's receive-queue page, device memory.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `RX_QUEUE_VA`, renamed to spell out the address as design/naming.md asks.
-pub const RX_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_0000);
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. Ruled 2026-10-26
+/// (UTC), tree-wide: `rx` and `tx` are spelled out. Refused `RX_QUEUE_VA` (an abbreviated
+/// address), `RX_QUEUE_VIRTUAL_ADDRESS` (rx abbreviates receive).
+pub const RECEIVE_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_0000);
 /// BAR0's transmit-queue page, device memory.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
-/// driver crate's `TX_QUEUE_VA`, renamed to spell out the address as design/naming.md asks.
-pub const TX_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_1000);
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. Ruled 2026-10-26
+/// (UTC), tree-wide: `rx` and `tx` are spelled out. Refused `TX_QUEUE_VA` (an abbreviated
+/// address), `TX_QUEUE_VIRTUAL_ADDRESS` (tx abbreviates transmit).
+pub const TRANSMIT_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_1000);
 
 /// The role word's low half when `arg0` is an `e1000e` server handoff. Disjoint from `net_stack`'s
 /// existing roles (0 is the virtio server, small integers are socket clients).

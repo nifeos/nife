@@ -1,12 +1,12 @@
 #![no_std]
 //! **The Intel `e1000e` family, as pure logic**: the 82574L and the Sunrise Point I219.
 //!
-//! Everything both halves of the driver compute, and nothing either touches. A kernel half
-//! resets the controller, reads its MAC address and programs the ring bases; a network-stack half
-//! fills descriptors and moves the tails.
-//! A ring's base and tail share a page ([`regs`]), so the IOMMU is the whole DMA confinement; the
-//! process holds only [`RX_QUEUE_PAGE`] and [`TX_QUEUE_PAGE`]. The register facts come from Linux's
-//! `regs.h` and `hw.h` for the 82574L and from FreeBSD's Intel shared code for the I219 ([`pch`]).
+//! Everything both halves of the driver compute, and nothing either touches. A kernel half resets
+//! the controller, reads its MAC address and programs the ring bases; a network-stack half fills
+//! descriptors and moves the tails. A ring's base and tail share a page ([`regs`]), so the IOMMU is
+//! the whole DMA confinement; the process holds only [`RECEIVE_QUEUE_PAGE`] and
+//! [`TRANSMIT_QUEUE_PAGE`]. The register facts come from Linux's `regs.h` and `hw.h` for the 82574L
+//! and from FreeBSD's Intel shared code for the I219 ([`pch`]).
 //!
 //! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name QEMU's
 //! `-device e1000e` and Linux's driver directory use, kept across their interface
@@ -49,12 +49,12 @@ pub use control::{
     CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU,
     mac_from_receive_address, rctl, tctl, tipg,
 };
-pub use data_plane::{DataPlane, Region, Tails, TxError};
+pub use data_plane::{DataPlane, Region, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
-    BUFFER_SIZE, MAX_FRAME, RX_ENTRIES, RX_ERRORS_FRAME, RX_QUEUE_PAGE, RX_STATUS_DD,
-    RX_STATUS_EOP, RxVerdict, TAIL_IN_PAGE, TX_COMMAND, TX_ENTRIES, TX_QUEUE_PAGE, TX_STATUS_DD,
-    rx_verdict, tx_word,
+    BUFFER_SIZE, MAX_FRAME, RECEIVE_ENTRIES, RECEIVE_ERRORS_FRAME, RECEIVE_QUEUE_PAGE,
+    RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, TAIL_IN_PAGE, TRANSMIT_COMMAND,
+    TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DD, receive_verdict, transmit_word,
 };
 pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported, model};
 
