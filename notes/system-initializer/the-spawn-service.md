@@ -88,9 +88,10 @@ one verb and running another.
 
 Graphics is launched from the prompt, and a `graphical_terminal` spawn is the launch (milestone 632
 (graphics on demand)). The request must carry the program and the graphics bit together. It must
-never carry the keyboard bit, which no capability follows. Anything else is refused rather than
-half-endowed. A well-formed request on a boot with no display is answered `SPAWN_NO_DISPLAY`, so the
-shell can say so.
+never carry the keyboard bit, which no capability follows. `Service::launch_graphical_terminal` also
+refuses a request that delegated any capability, because the progenitor builds a session from its
+own copies and hands it none. Anything else is refused rather than half-endowed. A well-formed request
+on a boot with no display is answered `SPAWN_NO_DISPLAY`, so the shell can say so.
 
 The display devices are the progenitor's own (milestone 715 (the spawn service holds the display
 grants)). The GPU's four capabilities and the keyboard's three stay in the boot endowment's slots.
@@ -209,9 +210,5 @@ to `OPERATION_EOF` before it reads anything else, so the progenitor sends the en
 - [`notes/grant-expression/spawn-protocol.md`](../grant-expression/spawn-protocol.md)'s "The
   exchange, in order" omits the image frames, the argv frame and the name set's frame, which
   `Service::read_request` takes after the directory grant's messages.
-- A graphical request does not lose every delegated copy. `Service::serve` returns from the
-  graphical path before the loop that deletes them, and `launch_graphical_terminal` deletes only
-  `budget` and `machine_page`. A graphical request that also carries a sink, source, diagnostics,
-  screen or job pair leaks those slots, against "they go whether or not the build worked" above.
 
 *Name: provisional. calef names files.*

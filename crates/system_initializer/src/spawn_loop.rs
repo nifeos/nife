@@ -404,8 +404,8 @@ impl Service<'_> {
     ///
     /// # BUGS
     ///
-    /// - No test sends a malformed request: only the boot shell holds this endpoint, and it sends
-    ///   none.
+    /// - No test sends a malformed request: only the boot shell holds this endpoint unbadged, and
+    ///   it sends none. Badged copies are answered before `read_request`.
     fn serve(&mut self) {
         let Channels {
             result_ep,
@@ -613,7 +613,8 @@ impl Service<'_> {
     ///
     /// A session is built from this process's own copies alone and takes no delegated capability,
     /// so a request that delegated one is malformed and refused. The honest shell sends none: the
-    /// manifest forbids `--mem`, a redirection and every pipeline operator.
+    /// manifest forbids `--mem`, a redirection and every pipeline operator, and declares neither
+    /// `machine` nor `interruptible`. A manifest that declared one would refuse every launch.
     fn launch_graphical_terminal(&mut self, req: &Request) {
         let Channels {
             result_ep,
