@@ -23,17 +23,20 @@ use crate::acpi::Ownership;
 /// The most IVHDs (of the chosen type) recorded. A client AMD part has one IOMMU; a two-socket
 /// server can have eight. Name: provisional.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVHDS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IVHDS`.
 pub const MAXIMUM_IVHDS: usize = 8;
 /// The most device-id ranges recorded across every unit, a select entry counting as a range of
 /// one. QEMU's `q35` with every device this tree's runner attaches writes about a dozen. Name:
 /// provisional.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVHD_RANGES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IVHD_RANGES`.
 pub const MAXIMUM_IVHD_RANGES: usize = 64;
 /// The most IVMDs recorded. Name: provisional.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IVMDS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IVMDS`.
 pub const MAXIMUM_IVMDS: usize = 8;
 
 /// Four bytes of `IVinfo`, eight reserved.

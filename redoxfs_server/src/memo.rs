@@ -37,7 +37,8 @@ use subtree_scope::Kind;
 /// The largest file whose bytes are kept. The walk fixture's largest is 256 KiB, and a source
 /// tree's files are almost all smaller.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `FILE_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `FILE_MAX`.
 pub const FILE_MAXIMUM: usize = 256 * 1024;
 
 /// The most file bytes kept at once. A quarter of the server's 8 MiB heap; the walk fixture is
@@ -73,8 +74,8 @@ pub struct Memo {
     /// File node id to its whole contents.
     files: BTreeMap<u32, Vec<u8>>,
     file_bytes: usize,
-    /// Files known to be larger than [`FILE_MAXIMUM`], so a read of one does not first walk the tree
-    /// to learn its size again.
+    /// Files known to be larger than [`FILE_MAXIMUM`], so a read of one does not first walk the
+    /// tree to learn its size again.
     large: BTreeSet<u32>,
 }
 

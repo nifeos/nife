@@ -61,16 +61,19 @@ pub const POST_REC: usize = 4;
 
 /// The longest page path an index can name.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `PATH_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
 pub const PATH_MAXIMUM: usize = 72;
 /// The longest page title an index can carry.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TITLE_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TITLE_MAX`.
 pub const TITLE_MAXIMUM: usize = 48;
 /// The longest term an index stores; longer ones are truncated to it, so two identifiers that
 /// agree in their first 24 bytes share a posting list.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TERM_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
 pub const TERM_MAXIMUM: usize = 24;
 
 /// What went wrong reading an index.
@@ -409,12 +412,14 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
 
 /// The longest store location a result can name: `<STORE_DIR>/<bundle>/<page>`.
 ///
-/// Ninety-six rather than [`PATH_MAXIMUM`] plus slack, because a location is not a path in the index:
-/// it is three short components, and the widest real one today (`doc/swish/line-discipline.md`) is
-/// twenty-eight bytes. A location longer than this is truncated and [`Found::is_truncated`] says
-/// so, for the reason the renderer gives about losing text silently.
+/// Ninety-six rather than [`PATH_MAXIMUM`] plus slack, because a location is not a path in the
+/// index: it is three short components, and the widest real one today
+/// (`doc/swish/line-discipline.md`) is twenty-eight bytes. A location longer than this is truncated
+/// and [`Found::is_truncated`] says so, for the reason the renderer gives about losing text
+/// silently.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `LOCATION_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LOCATION_MAX`.
 pub const LOCATION_MAXIMUM: usize = 96;
 
 /// **How many results one search keeps.**
@@ -425,7 +430,8 @@ pub const LOCATION_MAXIMUM: usize = 96;
 /// and not kept, and [`Ranked::offered`] is what lets the caller say so instead of implying the
 /// answer was complete.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `RESULTS_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `RESULTS_MAX`.
 pub const RESULTS_MAXIMUM: usize = 16;
 
 /// **The fixed-point scale `score` multiplies by**, so `count / tokens` survives as an integer

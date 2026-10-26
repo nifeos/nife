@@ -392,7 +392,8 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 /// argument and a file); the headroom exists so a third token is *refused* rather than dropped
 /// before anything looks at it.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_POSITIONALS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_POSITIONALS`.
 pub const MAXIMUM_POSITIONALS: usize = 4;
 
 /// The parsed form of a program invocation, before the manifest check. [`plan`](crate::plan) turns it into an
@@ -431,9 +432,10 @@ pub struct ParsedInvocation<'a> {
     /// quoting does: `rm "*.txt"` designates one name and `rm *.txt` designates a set.
     quoted_positionals: [bool; MAXIMUM_POSITIONALS],
     /// A token nothing can place: a flag-shaped token that is not `--mem`, or one past
-    /// [`MAXIMUM_POSITIONALS`]. Kept so the shell refuses it rather than silently ignoring authority the
-    /// user thought they were granting. A **flag** that fell through to the file position would be
-    /// the one way a typo could turn into a capability transfer, so it never reaches that position.
+    /// [`MAXIMUM_POSITIONALS`]. Kept so the shell refuses it rather than silently ignoring
+    /// authority the user thought they were granting. A **flag** that fell through to the file
+    /// position would be the one way a typo could turn into a capability transfer, so it never
+    /// reaches that position.
     pub unexpected: Option<&'a [u8]>,
     /// **The line's quotes do not make sense** ([`Refusal::UnclosedQuote`] or
     /// [`Refusal::PartlyQuoted`]), carried rather than returned because [`parse_run`] has no error

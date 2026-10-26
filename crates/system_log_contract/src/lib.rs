@@ -76,12 +76,14 @@ pub mod record {
     /// The most text one record carries. §242 measured it against a whole xenon boot (longest
     /// kernel line 123 bytes) and an eight-hour radon soak (99% of lines fit).
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TEXT_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `TEXT_MAX`.
     pub const TEXT_MAXIMUM: usize = 224;
 
     /// Header and text together, at most.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `RECORD_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `RECORD_MAX`.
     pub const RECORD_MAXIMUM: usize = HEADER_LEN + TEXT_MAXIMUM;
 
     /// The `flags` byte's bits.
@@ -92,8 +94,8 @@ pub mod record {
         /// Records were lost immediately before this one (a kernel ring that overflowed before it
         /// was drained).
         pub const DROPPED_BEFORE: u8 = 1 << 1;
-        /// The line was longer than [`super::TEXT_MAXIMUM`] and this record is its first part; or the
-        /// writer ended (or was crowded out) mid-line.
+        /// The line was longer than [`super::TEXT_MAXIMUM`] and this record is its first part; or
+        /// the writer ended (or was crowded out) mid-line.
         pub const CUT: u8 = 1 << 2;
         /// The kernel already wrote this line to the UART itself (before a drainer attached, in a
         /// fallback, or in a panic's flush), so the log service stores it and does not forward it.
@@ -133,9 +135,10 @@ pub mod record {
             b
         }
 
-        /// Decode a header, or `None` when it cannot be one: a length past [`TEXT_MAXIMUM`] (obeying it
-        /// would be a read past the record), a level past 7, or a reserved byte that is not zero.
-        /// Refused rather than repaired, for `byte_sink_contract::Msg::Malformed`'s reason.
+        /// Decode a header, or `None` when it cannot be one: a length past [`TEXT_MAXIMUM`]
+        /// (obeying it would be a read past the record), a level past 7, or a reserved byte that is
+        /// not zero. Refused rather than repaired, for `byte_sink_contract::Msg::Malformed`'s
+        /// reason.
         pub fn decode(b: &[u8; HEADER_LEN]) -> Option<Header> {
             let word = |i: usize| {
                 let mut w = [0u8; 8];
@@ -195,7 +198,8 @@ pub mod control {
 
     /// The longest name a registration carries: two chunks of sixteen.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `NAME_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `NAME_MAX`.
     pub const NAME_MAXIMUM: usize = 32;
 
     /// A control word.
@@ -218,8 +222,9 @@ pub mod control {
         badge != 0 && badge <= u32::MAX as u64
     }
 
-    /// The [`OPERATION_NAME`] messages naming `badge`'s `field` as `name` (cut at [`NAME_MAXIMUM`]): one when
-    /// it fits in sixteen bytes, two otherwise. Unused entries are `None`.
+    /// The [`OPERATION_NAME`] messages naming `badge`'s `field` as `name` (cut at
+    /// [`NAME_MAXIMUM`]): one when it fits in sixteen bytes, two otherwise. Unused entries are
+    /// `None`.
     pub fn name_messages(badge: u32, field: u64, name: &[u8]) -> [Option<(u64, u64, u64)>; 2] {
         let name = &name[..name.len().min(NAME_MAXIMUM)];
         let chunk = |i: usize| {
@@ -276,7 +281,8 @@ pub mod read {
     pub const DATA: usize = 16;
     /// The most JSONL one read returns.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `DATA_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `DATA_MAX`.
     pub const DATA_MAXIMUM: usize = WINDOW_BYTES - DATA;
 
     /// A read's outcome, at window bytes 12..16.
@@ -559,17 +565,20 @@ pub mod console {
 
     /// The longest kernel line the console assembles before writing it as cut.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `LINE_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `LINE_MAX`.
     pub const LINE_MAXIMUM: usize = 256;
     /// What ends every line the console writes for the kernel: see [`Inserter::kernel_chunk`].
     pub const LINE_END: &[u8] = b"\r\n";
     /// How much of the terminal's current partial line is kept for a redraw.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `PARTIAL_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `PARTIAL_MAX`.
     pub const PARTIAL_MAXIMUM: usize = 512;
     /// How many bytes of kernel lines wait for a line end.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `QUEUE_MAX`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `QUEUE_MAX`.
     pub const QUEUE_MAXIMUM: usize = 2048;
 
     /// The console's kernel-line state. See the module doc.
@@ -957,9 +966,9 @@ mod tests {
         assert_eq!(w & 0xff, 16);
     }
 
-    /// **The queue holds exactly [`QUEUE_MAXIMUM`](console::QUEUE_MAXIMUM) bytes before it flushes**, and
-    /// a client's write that does not end the line never releases it. Eight 256-byte lines fill it
-    /// to the byte and go nowhere; the ninth flushes them first.
+    /// **The queue holds exactly [`QUEUE_MAXIMUM`](console::QUEUE_MAXIMUM) bytes before it
+    /// flushes**, and a client's write that does not end the line never releases it. Eight 256-byte
+    /// lines fill it to the byte and go nowhere; the ninth flushes them first.
     #[test]
     fn the_queue_flushes_only_past_its_size_and_only_at_a_line_end() {
         extern crate std;

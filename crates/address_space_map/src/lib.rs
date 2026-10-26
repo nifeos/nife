@@ -141,7 +141,8 @@ pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
 /// holds: the lowest page is a guard, so a stack at its limit faults before it can touch the last
 /// page of a maximal image.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_STACK_PAGES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_STACK_PAGES`.
 pub const MAXIMUM_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
 
 /// **Where the kernel maps the current-CPU page** (`current_cpu_contract::PAGE_VA`): the last page

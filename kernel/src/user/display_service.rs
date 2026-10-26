@@ -463,8 +463,8 @@ fn screen_terminal_aperture(
         video_terminal::MAXIMUM_COLS as u32 * video_terminal::CELL_W,
         u32::MAX,
     )?;
-    // The rows one `Vt` can hold at that width (`video_terminal::MAXIMUM_CELLS` is a cell budget, not
-    // a rectangle): the whole screen on xenon and OVMF, the top rows on a taller one.
+    // The rows one `Vt` can hold at that width (`video_terminal::MAXIMUM_CELLS` is a cell budget,
+    // not a rectangle): the whole screen on xenon and OVMF, the top rows on a taller one.
     let cols = (aperture.size().0 / video_terminal::CELL_W).max(1) as usize;
     let rows = (video_terminal::MAXIMUM_CELLS / cols).min(video_terminal::MAXIMUM_ROWS) as u32;
     aperture = screen_console::Aperture::new(

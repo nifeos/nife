@@ -25,7 +25,8 @@ index fff36c7c0..a8bb8f312 100644
 @@ -87,7 +87,7 @@ impl Framebuffer {
      /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
      ///
-     /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+     /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+     /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
 -    pub const MAXIMUM_LEN: usize = 72;
 +    pub const MAXIMUM_LEN: usize = 62;
  

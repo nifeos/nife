@@ -6,12 +6,15 @@
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client |
-//! | [`OFF_ADDRESSES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
+//! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client
+//! |
+//! | [`OFF_ADDRESSES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the
+//! resolver |
 
 //! # BUGS
 //!
-//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`GRANTS_MAXIMUM`] at once.
+//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`GRANTS_MAXIMUM`] at
+//!   once.
 //! - One zone per badge: two unrelated domains need two badges, or their common parent.
 //! - Grant messages carry eight bytes each (`RECEIVE_CAP` returns two words, one the control word),
 //!   so a 253-byte zone is 32 messages, once per client.

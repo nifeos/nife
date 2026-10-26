@@ -9,12 +9,14 @@
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `NAME_TEXT_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `NAME_TEXT_MAX`.
 pub const NAME_TEXT_MAXIMUM: usize = 253;
 
 /// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ADDRESSES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
 pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
@@ -25,7 +27,8 @@ pub const OFF_ADDRESSES: usize = 0x100;
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `GRANTS_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `GRANTS_MAX`.
 pub const GRANTS_MAXIMUM: usize = 8;
 
 /// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
@@ -85,8 +88,8 @@ pub const OPERATION_GRANT: u64 = 0x10;
 /// the second word is unused. From then on the badge is denied every name, the resolver gives up
 /// the page that badge attached, and the window is free for the next grant. A spawner that outlives
 /// its clients sends one when each client ends, which is what lets a resolver serve more than
-/// [`GRANTS_MAXIMUM`] clients in its life (milestone 892 (a std program at the prompt holds the network
-/// and a resolver); provisional).
+/// [`GRANTS_MAXIMUM`] clients in its life (milestone 892 (a std program at the prompt holds the
+/// network and a resolver); provisional).
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
 /// `system_log_contract` has its own `OPERATION_FORGET`; the pull request records no other name

@@ -17,10 +17,10 @@ watcher sees the marker and tears the run down, and a forgotten QEMU costs nothi
 
 ## The pool, and the release
 
-The pool of `job_mix::MAXIMUM_TASKS` processes is built once and the first N are released per subrun.
-Spawning per subrun would measure the region allocator's fragmentation. So parked tasks' kernel
-stacks exist throughout, which is right for §96's question and unlike AIM7's own subruns. Each
-task's untyped budget and child-done endpoint are built with the pool for the same reason: a
+The pool of `job_mix::MAXIMUM_TASKS` processes is built once and the first N are released per
+subrun. Spawning per subrun would measure the region allocator's fragmentation. So parked tasks'
+kernel stacks exist throughout, which is right for §96's question and unlike AIM7's own subruns.
+Each task's untyped budget and child-done endpoint are built with the pool for the same reason: a
 subrun times the jobs, not the supervisor's set-up. `job_mix::TASK_BUDGET_PAGES` says why a task
 never shares its region.
 

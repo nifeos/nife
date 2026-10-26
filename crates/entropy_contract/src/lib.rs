@@ -2,8 +2,8 @@
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
 //! clients, the std PAL and the kernel-side tests. One process holds the virtio-rng device; a
 //! client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
-//! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual bulk
-//! rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
+//! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
+//! bulk rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
 //! transformed, so the claim stays "these are the device's bytes". notes/entropy.md, "The shape"
 //! and "The bytes are the device's bytes", has the argument; the `entropy_rtt` benchmark prices it.
 
@@ -25,15 +25,16 @@
 /// Asking for more than this is not an error, it is answered with this many, and the caller loops;
 /// see [`want`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_BYTES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
 pub const MAXIMUM_BYTES: u64 = 8;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
 /// `filesystem_contract` and `line_editor::proto` use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// **Give me `n` random bytes.** The only operation. `n` is clamped to [`MAXIMUM_BYTES`] by [`want`],
-/// so a client that asks for more is answered rather than refused.
+/// **Give me `n` random bytes.** The only operation. `n` is clamped to [`MAXIMUM_BYTES`] by
+/// [`want`], so a client that asks for more is answered rather than refused.
 pub const GET: u64 = 1;
 
 /// Build a request word: the opcode and the byte count the client wants.
@@ -209,9 +210,9 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 ///
 /// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
 /// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
-/// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate makes no
-/// syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts partial
-/// counts instead, deliberately (notes/entropy/contract.md).
+/// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
+/// makes no syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts
+/// partial counts instead, deliberately (notes/entropy/contract.md).
 ///
 /// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". std's `_with` suffix, for a function
 /// that takes a closure.

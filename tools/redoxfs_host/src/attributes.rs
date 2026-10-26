@@ -41,8 +41,9 @@ pub(crate) fn find_store<D: Disk>(
 
 /// One node's raw attribute blob, empty if it has none.
 ///
-/// A blob longer than [`xattr::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer cannot
-/// have written it, so reading its first 53 KB would be reading a file this format does not describe.
+/// A blob longer than [`xattr::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer
+/// cannot have written it, so reading its first 53 KB would be reading a file this format does not
+/// describe.
 pub(crate) fn attr_blob<D: Disk>(
     transaction: &mut Transaction<D>,
     store: Option<TreePtr<Node>>,

@@ -8,9 +8,10 @@ behind `crates/screen_console`'s types, whose doc comments link here. Why the co
 
 ## The scale
 
-Each font pixel is drawn as a square block at the largest integer scale that leaves `MINIMUM_COLUMNS`
-columns, which is 120. So 1920x1080 gets a scale of two, and anything under 1680 wide gets one. The
-font is the one `bitmap_font` holds for the graphical terminal too, so early-boot letters match it.
+Each font pixel is drawn as a square block at the largest integer scale that leaves
+`MINIMUM_COLUMNS` columns, which is 120. So 1920x1080 gets a scale of two, and anything under 1680
+wide gets one. The font is the one `bitmap_font` holds for the graphical terminal too, so early-boot
+letters match it.
 
 ## The screen can only be written
 

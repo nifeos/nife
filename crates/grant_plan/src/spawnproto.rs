@@ -423,7 +423,8 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// width of a package header's name field (`package_archive::NAME_LEN`). A longer name, which only
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `HOLDER_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `HOLDER_MAX`.
 pub const HOLDER_MAXIMUM: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
@@ -457,11 +458,12 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
 /// shell refuses a larger file before it sends anything and the progenitor never stages more than
 /// its image pool holds. `ripgrep` 14.1.1's image spans about 670 (`notes/ripgrep-on-nife.md`).
 ///
-/// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5 MiB,
-/// are set aside at boot for the shell's staging frames, the progenitor's copy, the child's pages
-/// and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
+/// Reserved, not spent: `IMAGE_MAXIMUM_PAGES * 3 + grant_plan::STD_REGION_PAGES` pages, about 13.5
+/// MiB, are set aside at boot for the shell's staging frames, the progenitor's copy, the child's
+/// pages and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `IMAGE_MAX_PAGES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `IMAGE_MAX_PAGES`.
 pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 
 /// **The budget the progenitor hands the boot shell**, in pages, which both read: the progenitor
@@ -469,8 +471,8 @@ pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 /// left.
 ///
 /// 128 pages for `--mem` grants, pipes and the shell's own windows, plus one image's staging frames
-/// ([`IMAGE_MAXIMUM_PAGES`]), since the shell reads a file run by its path into frames split from this
-/// budget before it sends them.
+/// ([`IMAGE_MAXIMUM_PAGES`]), since the shell reads a file run by its path into frames split from
+/// this budget before it sends them.
 ///
 /// Name: provisional.
 pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;

@@ -115,8 +115,8 @@ const PLIC_SHAPES: &[u8] = include_bytes!("fixtures/plic-shapes.dtb");
 /// * The PLIC is named `interrupt-controller@c000000` and declared before `/cpus`, so a walk that
 ///   did not filter it out by `compatible` takes slot zero.
 /// * `cpu@0`'s controller has no `phandle`, yet still consumes its hart's slot.
-/// * `cpu@10`'s id is 16, `MAXIMUM_CONTEXT_HARTS` exactly: "the tree did not say", not a write past the
-///   array.
+/// * `cpu@10`'s id is 16, `MAXIMUM_CONTEXT_HARTS` exactly: "the tree did not say", not a write past
+///   the array.
 #[test]
 fn the_context_walk_stays_aligned_with_the_hart_walk() {
     let ctx = PlicContexts::from_device_tree(&tree(PLIC_SHAPES)).expect("the PLIC wiring parses");

@@ -298,8 +298,8 @@ impl Rig {
 #[test_case]
 fn the_display_terminal_is_replaced_live_and_its_screen_and_history_survive() {
     // The kernel's display stand-in rather than the GPU: every `start_driver` takes a virtio slot
-    // for the rest of the boot (`kernel::virtio`'s `MAXIMUM_DEVICES`), and the pixels this test grades
-    // are the surface's, which the stand-in's frames hold as a driver's would.
+    // for the rest of the boot (`kernel::virtio`'s `MAXIMUM_DEVICES`), and the pixels this test
+    // grades are the surface's, which the stand-in's frames hold as a driver's would.
     let (display_ep, surface, display_region) = super::compositor_tests::kernel_display();
     let rig = Rig::start(display_ep, surface);
     let (swap, sink, sink_page) = (rig.swap, rig.sink, rig.sink_page);

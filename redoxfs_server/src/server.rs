@@ -547,8 +547,8 @@ impl<D: Disk> Server<D> {
     /// `EBADF`.
     ///
     /// No cursor, unlike [`Server::read_dir`]: a complete listing fits one page by construction
-    /// ([`xattr::MAXIMUM_COUNT`]), so it cannot be observed half-changed the way a cursored directory
-    /// walk can.
+    /// ([`xattr::MAXIMUM_COUNT`]), so it cannot be observed half-changed the way a cursored
+    /// directory walk can.
     pub fn list_xattr(&mut self, handle: u32, out: &mut [u8]) -> Result<usize> {
         let ptr = self.node_at(handle, dir::READ, EBADF)?;
         self.fs

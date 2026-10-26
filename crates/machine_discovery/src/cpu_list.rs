@@ -18,11 +18,12 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 
 /// The most `cpu@` nodes [`CpuList::from_device_tree`] will record.
 ///
-/// Sixteen, matching [`crate::riscv64::MAXIMUM_HARTS`], which is twice the kernel's `MAXIMUM_CPUS` and
-/// costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`] keeps
-/// counting) rather than silently half-read.
+/// Sixteen, matching [`crate::riscv64::MAXIMUM_HARTS`], which is twice the kernel's `MAXIMUM_CPUS`
+/// and costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`]
+/// keeps counting) rather than silently half-read.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CPU_NODES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPU_NODES`.
 pub const MAXIMUM_CPU_NODES: usize = 16;
 
 /// How firmware says a core is started, from `enable-method`.

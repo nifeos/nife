@@ -44,7 +44,8 @@
 /// The longest name [`Matches`] tracks a common prefix over. Longer names still count as
 /// candidates; their common prefix is cut at this length, which only shortens what is inserted.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `NAME_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `NAME_MAX`.
 pub const NAME_MAXIMUM: usize = 255;
 
 /// What the word under the cursor is.

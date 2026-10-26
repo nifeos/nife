@@ -12,7 +12,8 @@
 //! # BUGS
 //!
 //! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
-//! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAXIMUM`] and a larger answer costs a TCP retry.
+//! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAXIMUM`] and a larger answer costs a TCP
+//!   retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
 //! - At most [`MAXIMUM_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
 //! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
@@ -33,16 +34,19 @@ pub const PORT: u16 = 53;
 /// The largest message RFC 1035 lets travel over UDP without EDNS (section 4.2.1). A reply that would be
 /// larger arrives truncated, with [`FLAG_TC`] set.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `UDP_MESSAGE_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `UDP_MESSAGE_MAX`.
 pub const UDP_MESSAGE_MAXIMUM: usize = 512;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NAME_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME_LEN`.
 pub const MAXIMUM_NAME_LEN: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LABEL_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LABEL_LEN`.
 pub const MAXIMUM_LABEL_LEN: usize = 63;
 
 /// The header every DNS message starts with.
@@ -78,12 +82,14 @@ pub const CLASS_IN: u16 = 1;
 /// links (a CDN alias, sometimes a second); eight leaves room for that and stops a reply that chains
 /// a name through itself from costing more than eight scans of its own answer section.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CHAIN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CHAIN`.
 pub const MAXIMUM_CHAIN: usize = 8;
 
 /// How many addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ADDRESSES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
 pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// What is wrong with some bytes, as a parser sees them.
@@ -557,7 +563,8 @@ pub enum Reject {
     NoSuchName,
     /// Any other nonzero response code, carried so a caller can report it.
     ServerError(u8),
-    /// The CNAME chain, followed only from our name, is longer than [`MAXIMUM_CHAIN`] links, or loops.
+    /// The CNAME chain, followed only from our name, is longer than [`MAXIMUM_CHAIN`] links, or
+    /// loops.
     ChainTooLong,
     /// The name exists and has no A record, or the answer holds addresses only for other names.
     NoAddress,

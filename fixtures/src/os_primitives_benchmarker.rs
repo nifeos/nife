@@ -51,10 +51,11 @@ const ROLE_SINK_CONSUMER: u64 = 8;
 const SINK_PIPE_OUT: u64 = 0; // the producer SENDs sink messages here
 const SINK_PIPE_IN: u64 = 1; // the consumer receives them here (slot 0 is REPORT)
 
-/// Messages in the sink-throughput loop, each carrying [`byte_sink_contract::INLINE_MAXIMUM`] bytes. 5 000 is
-/// the same order as [`IPC_ITERS`] so the two are comparable under TCG, and it is 80 000 bytes, which
-/// is past the 64 KiB a Unix pipe buffers: a producer that could run ahead would have had to stop at
-/// least once, which is what makes the comparison about back pressure rather than about buffer size.
+/// Messages in the sink-throughput loop, each carrying [`byte_sink_contract::INLINE_MAXIMUM`]
+/// bytes. 5 000 is the same order as [`IPC_ITERS`] so the two are comparable under TCG, and it is
+/// 80 000 bytes, which is past the 64 KiB a Unix pipe buffers: a producer that could run ahead
+/// would have had to stop at least once, which is what makes the comparison about back pressure
+/// rather than about buffer size.
 const SINK_MSGS: u64 = 5_000;
 
 // Spawn-benchmark slots. slot 0 REPORT (the final result home to the bench boot), slot 1 MEMORY_REGION

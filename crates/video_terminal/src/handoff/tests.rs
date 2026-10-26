@@ -111,8 +111,8 @@ fn every_refusal_leaves_the_terminal_untouched() {
 /// the shape that fills both budgets exactly, which is the worst case [`HANDOFF_BYTES`] claims.
 #[test]
 fn the_largest_blob_fits_the_handoff_pages() {
-    // 96 columns divides both MAXIMUM_CELLS (192 rows, clamped to MAXIMUM_ROWS) and SCROLLBACK_CELLS
-    // (275 rows); 88 is the widest ring that is a full SCROLLBACK_ROWS deep.
+    // 96 columns divides both MAXIMUM_CELLS (192 rows, clamped to MAXIMUM_ROWS) and
+    // SCROLLBACK_CELLS (275 rows); 88 is the widest ring that is a full SCROLLBACK_ROWS deep.
     for cols in [88, 96, 132] {
         let mut t = Vt::new(cols, u32::MAX);
         for _ in 0..SCROLLBACK_ROWS + MAXIMUM_ROWS {

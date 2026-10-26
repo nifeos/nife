@@ -35,7 +35,8 @@ use crate::jig_versions;
 /// `package_archive::NAME_LEN` (32) bytes each, with their slashes. A path is walked a component at
 /// a time, and a component longer than the shell can name fails there, loudly.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `PATH_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
 pub const PATH_MAXIMUM: usize = 10 + 3 * 32 + 2;
 
 /// An installed program's path, from the shell's root.
@@ -365,9 +366,9 @@ mod tests {
         assert_eq!(path.as_bytes(), b"/packages/uptime/0.2.0/uptime");
     }
 
-    /// **The longest installed path is exactly `PATH_MAXIMUM`**: three 32-byte fields fill it to the
-    /// last byte, so a bound computed too small refuses a legal install and one computed too large
-    /// is noticed here.
+    /// **The longest installed path is exactly `PATH_MAXIMUM`**: three 32-byte fields fill it to
+    /// the last byte, so a bound computed too small refuses a legal install and one computed too
+    /// large is noticed here.
     #[test]
     fn the_longest_installed_path_fills_path_maximum_exactly() {
         let f = "a".repeat(32);

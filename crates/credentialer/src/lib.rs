@@ -40,15 +40,19 @@ pub const SALT_LEN: usize = 16;
 /// Tag length, in bytes. 32 is RFC 9106's recommendation and Argon2's default.
 pub const TAG_LEN: usize = 32;
 
-/// The longest identity a record can hold. Matches `credential_contract::MAXIMUM_IDENTITY`; the two constants
-/// are checked against each other by a test in `credential_contract`'s consumer, the service.
+/// The longest identity a record can hold. Matches `credential_contract::MAXIMUM_IDENTITY`; the two
+/// constants are checked against each other by a test in `credential_contract`'s consumer, the
+/// service.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IDENTITY`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY`.
 pub const MAXIMUM_IDENTITY: usize = 64;
 
-/// The longest secret [`Record::derive`] will accept. Matches `credential_contract::MAXIMUM_SECRET`.
+/// The longest secret [`Record::derive`] will accept. Matches
+/// `credential_contract::MAXIMUM_SECRET`.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SECRET`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SECRET`.
 pub const MAXIMUM_SECRET: usize = 256;
 
 /// Argon2's own lower bound on `m_cost`, restated so [`Cost::new`] can check it before handing a
@@ -123,7 +127,8 @@ impl Cost {
     ///
     /// [`blocks`]: Cost::blocks
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_M_KIB`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_M_KIB`.
     pub const MAXIMUM_M_KIB: u32 = 1024 * 1024;
 
     /// A cost, or `None` if it is one Argon2 (or this crate) will not accept. Checked here rather
@@ -144,7 +149,8 @@ impl Cost {
     ///
     /// assert!(Cost::new(4096, 3, 1).is_some());
     /// assert!(Cost::new(0, 3, 1).is_none()); // no memory is not a memory-hard KDF
-    /// assert!(Cost::new(Cost::MAXIMUM_M_KIB + 1, 3, 1).is_none()); // past a gibibyte is a typo, not a policy
+    /// // Past a gibibyte is a typo, not a policy.
+    /// assert!(Cost::new(Cost::MAXIMUM_M_KIB + 1, 3, 1).is_none());
     /// ```
     pub fn new(m_kib: u32, t: u32, p: u32) -> Option<Self> {
         if p == 0 || p > MAXIMUM_P_COST || t == 0 {
@@ -1103,10 +1109,10 @@ mod tests {
         );
     }
 
-    /// The cost accessors and the memory ceiling. `MAXIMUM_M_KIB` is `1024 * 1024`, and a mutant that
-    /// turned the multiply into a divide (ceiling: one KiB) refused every real cost with nothing
-    /// failing; the accessors are how the service echoes a store's policy and returned what they
-    /// liked.
+    /// The cost accessors and the memory ceiling. `MAXIMUM_M_KIB` is `1024 * 1024`, and a mutant
+    /// that turned the multiply into a divide (ceiling: one KiB) refused every real cost with
+    /// nothing failing; the accessors are how the service echoes a store's policy and returned what
+    /// they liked.
     #[test]
     fn the_cost_is_what_it_says_up_to_the_real_ceiling() {
         let c = Cost::new(256, 3, 2).unwrap();

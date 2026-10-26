@@ -37,8 +37,8 @@ inferring it from a count.
 - Row 7's `kani::assume` narrows *to* the adversarial case rather than away from it.
 - Row 9 is stated through both functions it compares. That is the claim (that they agree) rather than
   a defect.
-- Row 16's two assumes plus `MAXIMUM_QUEUES = 2` admit exactly one pair, `(0, 1)`. So "any two distinct
-  queues" is one concrete case, and its patch says so.
+- Row 16's two assumes plus `MAXIMUM_QUEUES = 2` admit exactly one pair, `(0, 1)`. So "any two
+  distinct queues" is one concrete case, and its patch says so.
 - Rows 19, 21, 22 and 23 are the kernel tests. 23's evidence is about the test rather than the
   kernel, for the reason 305 recorded.
 

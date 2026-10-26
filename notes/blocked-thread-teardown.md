@@ -300,7 +300,8 @@ unblocks a REPLY-blocked client (rather than the client discovering the death la
 documentation's word and not verified.
 
 **No number in this note was measured.** The line counts ("about thirty lines") are estimates from
-reading, the sweep cost is arithmetic from `MAXIMUM_THREADS` and `CAPABILITY_TABLE_SLOTS`, and no benchmark was run.
+reading, the sweep cost is arithmetic from `MAXIMUM_THREADS` and `CAPABILITY_TABLE_SLOTS`, and no
+benchmark was run.
 
 **No number in the survey table was re-checked at build time.** The prior art was fetched and read on
 2026-08-17 and none of those systems was consulted again while milestone 133 was written.

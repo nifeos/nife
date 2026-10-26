@@ -166,8 +166,8 @@ pub unsafe fn initialize() {
 
     // The TSS descriptor holds the TSS's address, known only once loaded, across three fields.
     // SAFETY: indexing this core's own slot with `id` in bounds (`cpu::id()` cannot exceed
-    // `MAXIMUM_CPUS`, which is exactly how big `TSS` is); reading only the address, not the (possibly
-    // concurrently-written-by-another-core-at-a-different-index) contents.
+    // `MAXIMUM_CPUS`, which is exactly how big `TSS` is); reading only the address, not the
+    // (possibly concurrently-written-by-another-core-at-a-different-index) contents.
     let base = unsafe { (&raw const (*TSS.get())[id]) as u64 };
     let limit = (size_of::<Tss>() - 1) as u64;
 

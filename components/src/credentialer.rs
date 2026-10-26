@@ -231,8 +231,9 @@ fn wipe(window: MappedWindow) {
     proto::wipe(page);
 }
 
-/// Fill `out` with bytes from the entropy service, `entropy_contract::MAXIMUM_BYTES` at a time. `false`
-/// when the service could not supply them, which every caller treats as fatal to the request.
+/// Fill `out` with bytes from the entropy service, `entropy_contract::MAXIMUM_BYTES` at a time.
+/// `false` when the service could not supply them, which every caller treats as fatal to the
+/// request.
 ///
 /// A short reply is a refusal here, not something to pad out. The entropy contract is explicit
 /// that a count below what was asked means the device went dry, and half a salt is not a salt.

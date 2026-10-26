@@ -53,7 +53,8 @@ const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// clock service has no use for a pre-1970 wall clock and a signed second only invites a sign bug),
 /// so the reachable floor is the Unix epoch itself.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `UNIX_MIN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `UNIX_MIN`.
 pub const UNIX_MINIMUM: u64 = 0;
 
 /// **The first Unix second [`Timestamp`] cannot represent**: 4233462144, which is 26 February 2104
@@ -61,8 +62,8 @@ pub const UNIX_MINIMUM: u64 = 0;
 ///
 /// Past this the era pivot on [`Timestamp::to_unix`] would alias the value onto a date 136 years
 /// earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
-/// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity, and
-/// that is the property Kani proves.
+/// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity,
+/// and that is the property Kani proves.
 pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SEC - UNIX_DELTA) + (1 << 31);
 
 /// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
@@ -161,8 +162,8 @@ impl Timestamp {
     }
 
     /// **Unix seconds and nanoseconds to an NTP timestamp.** `None` if `nanos` is not a valid
-    /// sub-second (`>= 1_000_000_000`) or if `secs` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`], where the
-    /// era pivot could not read the result back.
+    /// sub-second (`>= 1_000_000_000`) or if `secs` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`],
+    /// where the era pivot could not read the result back.
     ///
     /// Refusing out of range rather than wrapping is the deliberate half of the 2036 handling: the
     /// conversion is only ever the identity's inverse inside the window, so outside it we return
@@ -187,8 +188,8 @@ impl Timestamp {
     /// fixed pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>)
     /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
     /// era 1, counted from the rollover (to 26 February 2104). The window is
-    /// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned are
-    /// unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
+    /// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned
+    /// are unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
     /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
@@ -424,8 +425,8 @@ impl Packet {
 
     /// **The synchronisation distance to the root**, RFC 5905's λ: half the root delay plus the root
     /// dispersion. The server's own claim about how far from a real clock it is. Compared against
-    /// [`MAXIMUM_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum of
-    /// both fields gets a large answer rather than a wrapped small one.
+    /// [`MAXIMUM_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum
+    /// of both fields gets a large answer rather than a wrapped small one.
     pub(crate) const fn root_distance(&self) -> Short {
         Short((self.root_delay.0 / 2).saturating_add(self.root_dispersion.0))
     }
@@ -507,8 +508,8 @@ pub enum Reject {
     /// back). A client that treats this as a mere failure and retries is the abusive client the
     /// packet exists to stop, so it is its own variant.
     KissOfDeath([u8; 4]),
-    /// The stratum is above [`MAXIMUM_STRATUM`]: 16 is the server saying it is unsynchronised, above
-    /// that is reserved. Either way it is not a time source.
+    /// The stratum is above [`MAXIMUM_STRATUM`]: 16 is the server saying it is unsynchronised,
+    /// above that is reserved. Either way it is not a time source.
     Stratum(u8),
     /// The leap indicator is [`leap::UNSYNCHRONISED`]. The server is telling us not to trust it.
     Unsynchronised,
@@ -673,10 +674,11 @@ impl Query {
     ///
     /// Refuses, in this order: a length other than 48; a version other than 4 or a mode other than
     /// server; an origin that is not our nonce, checked before anything else is believed; a
-    /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a zero
-    /// transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no shorter
-    /// than the turnaround); a root distance past [`MAXIMUM_ROOT_DISTANCE`]. Each is its [`Reject`]
-    /// variant. None authenticates: an on-path attacker sees the nonce. See notes/ntp.md.
+    /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a
+    /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
+    /// shorter than the turnaround); a root distance past [`MAXIMUM_ROOT_DISTANCE`]. Each is its
+    /// [`Reject`] variant. None authenticates: an on-path attacker sees the nonce. See
+    /// notes/ntp.md.
     pub fn accept(&self, wire: &[u8], dest: Timestamp) -> Result<Sample, Reject> {
         let p = Packet::parse(wire)?;
 

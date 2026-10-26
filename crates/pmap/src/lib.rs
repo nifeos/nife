@@ -22,14 +22,15 @@
 /// The widest address space a listing can produce in one call: the kernel's whole thread table's
 /// worth of page-table overhead plus content pages, rounded generously.
 ///
-/// Unlike `ps::MAXIMUM_ROWS`, which is exactly the kernel's thread table (`sched::MAXIMUM_THREADS`) and so
-/// makes truncation *unreachable*, there is no equally tight bound on one process's own mapping
-/// count: a space's own budget (its backing region) is the only limit, and that is a runtime
-/// quantity, not a compile-time one. `MAXIMUM_ROWS` is sized generously (256) rather than exactly, and
-/// truncation is a real, reachable, and reported case here in a way it is not for `ps`. See `BUGS`
-/// and [`Listing::is_complete`].
+/// Unlike `ps::MAXIMUM_ROWS`, which is exactly the kernel's thread table (`sched::MAXIMUM_THREADS`)
+/// and so makes truncation *unreachable*, there is no equally tight bound on one process's own
+/// mapping count: a space's own budget (its backing region) is the only limit, and that is a
+/// runtime quantity, not a compile-time one. `MAXIMUM_ROWS` is sized generously (256) rather than
+/// exactly, and truncation is a real, reachable, and reported case here in a way it is not for
+/// `ps`. See `BUGS` and [`Listing::is_complete`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ROWS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
 pub const MAXIMUM_ROWS: usize = 256;
 
 /// One line of the listing: a mapped page and how it may be used.

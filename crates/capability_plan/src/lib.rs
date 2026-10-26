@@ -30,13 +30,15 @@
 /// Eight, which is roughly double the four that the widest manifest in this tree asks for, and which
 /// leaves room below `abi::fault::FAULT_EP_SLOT` for the placed slots a component might also want.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CAPS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CAPS`.
 pub const MAXIMUM_CAPS: usize = 8;
 
-/// **How many pages one component may declare.** [`MAXIMUM_CAPS`]'s twin, for the mapping half. Four,
-/// against the two that the widest manifest here asks for.
+/// **How many pages one component may declare.** [`MAXIMUM_CAPS`]'s twin, for the mapping half.
+/// Four, against the two that the widest manifest here asks for.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_MAPS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_MAPS`.
 pub const MAXIMUM_MAPS: usize = 4;
 
 /// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
@@ -405,8 +407,8 @@ impl Refusal {
 
 /// **Exactly what to endow one child with**, in the form `supervision_protocol::ChildEndowment` takes.
 ///
-/// A value with no allocation, bounded by [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor holds it on
-/// its stack and hands out slices of it.
+/// A value with no allocation, bounded by [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor
+/// holds it on its stack and hands out slices of it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Plan {
     caps: [(u64, u64); MAXIMUM_CAPS],
@@ -636,12 +638,13 @@ const fn str_eq(a: &str, b: &str) -> bool {
 // ===================================================================================================
 
 /// **How many running components one orchestration query may consider.** The same shape as
-/// [`MAXIMUM_CAPS`]: a [`Dependents`] is a value on the stack in a `no_std` program with no allocator, so
-/// this is a real bound rather than a hint. Eight, matched to [`MAXIMUM_CAPS`] because a supervisor
-/// managing more live components than it could ever endow one of with capabilities is not a shape
-/// this tree has.
+/// [`MAXIMUM_CAPS`]: a [`Dependents`] is a value on the stack in a `no_std` program with no
+/// allocator, so this is a real bound rather than a hint. Eight, matched to [`MAXIMUM_CAPS`]
+/// because a supervisor managing more live components than it could ever endow one of with
+/// capabilities is not a shape this tree has.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LIVE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LIVE`.
 pub const MAXIMUM_LIVE: usize = 8;
 
 /// **One component a supervisor is currently running**, as far as dependency-aware orchestration
@@ -1299,8 +1302,8 @@ mod tests {
         );
     }
 
-    /// More live instances than `MAXIMUM_LIVE` is refused rather than silently truncated: a supervisor
-    /// that got a short answer back would quiesce fewer components than it needed to.
+    /// More live instances than `MAXIMUM_LIVE` is refused rather than silently truncated: a
+    /// supervisor that got a short answer back would quiesce fewer components than it needed to.
     #[test]
     fn too_many_live_instances_is_refused() {
         let entries: [LiveInstance; MAXIMUM_LIVE + 1] = [LiveInstance {
@@ -1343,8 +1346,8 @@ mod tests {
     }
 
     /// A dependent is found whichever position in its `depends_on` names the target, and a
-    /// registry that fills `MAXIMUM_LIVE` exactly is answered, not refused. Two bounds in one fixture:
-    /// the scan's step past a non-matching entry, and the live-count comparison's edge.
+    /// registry that fills `MAXIMUM_LIVE` exactly is answered, not refused. Two bounds in one
+    /// fixture: the scan's step past a non-matching entry, and the live-count comparison's edge.
     #[test]
     fn a_target_named_second_is_found_and_a_full_registry_is_answered() {
         const LATE: Requirements = Requirements {
@@ -1360,8 +1363,8 @@ mod tests {
         assert_eq!(d.quiesce_order(), &[7; MAXIMUM_LIVE]);
     }
 
-    /// Exactly `MAXIMUM_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one more of
-    /// either is refused. The refusal tests above sit one past each bound; these sit on it.
+    /// Exactly `MAXIMUM_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
+    /// more of either is refused. The refusal tests above sit one past each bound; these sit on it.
     #[test]
     fn a_plan_exactly_at_each_bound_is_built_and_one_over_is_refused() {
         const fn cap(role: &'static str) -> CapNeed {

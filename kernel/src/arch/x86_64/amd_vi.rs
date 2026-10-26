@@ -664,7 +664,8 @@ pub fn attach(rid: u32, root: u64) {
                  BLOCKED (fail closed)"
             ),
             None => crate::println!(
-                "  amd-vi      : NO SLOT TO RECORD {rid:#06x}'s ALIAS ({MAXIMUM_ALIASES} in use), so \
+                "  amd-vi      : NO SLOT TO RECORD {rid:#06x}'s ALIAS ({MAXIMUM_ALIASES} in use), \
+                so \
                  every entry of {rid:#06x} is BLOCKED (fail closed)"
             ),
         }

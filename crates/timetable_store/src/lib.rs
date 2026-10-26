@@ -31,23 +31,25 @@ pub const MANIFEST_FILE_NAME: &str = "durable-sessions";
 
 /// The most identities one manifest may list.
 ///
-/// A ceiling rather than a limit anybody meets, matching `timetable::MAXIMUM_ENTRIES`'s own reasoning:
-/// this crate allocates nothing, so a parsed manifest borrows the document's own bytes and the
-/// table backing it is a fixed array. Eight matches `timetable::MAXIMUM_ENTRIES` because there is no
-/// reason for the two ceilings to differ in this demonstration; a real deployment sizes both against
-/// how many principals it actually has.
+/// A ceiling rather than a limit anybody meets, matching `timetable::MAXIMUM_ENTRIES`'s own
+/// reasoning: this crate allocates nothing, so a parsed manifest borrows the document's own bytes
+/// and the table backing it is a fixed array. Eight matches `timetable::MAXIMUM_ENTRIES` because
+/// there is no reason for the two ceilings to differ in this demonstration; a real deployment sizes
+/// both against how many principals it actually has.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IDENTITIES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITIES`.
 pub const MAXIMUM_IDENTITIES: usize = 8;
 
 /// The longest one identity name this crate will carry.
 ///
-/// Matches `login_contract::MAXIMUM_IDENTITY` (64 bytes) by convention rather than by a shared type: the
-/// manifest names the same identities a login authenticates, so a name too long to ever log in with
-/// is not a name this store needs to carry either. Not enforced by a shared dependency (this crate
-/// takes none), only by this constant and the comment naming why it was chosen.
+/// Matches `login_contract::MAXIMUM_IDENTITY` (64 bytes) by convention rather than by a shared
+/// type: the manifest names the same identities a login authenticates, so a name too long to ever
+/// log in with is not a name this store needs to carry either. Not enforced by a shared dependency
+/// (this crate takes none), only by this constant and the comment naming why it was chosen.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IDENTITY_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY_LEN`.
 pub const MAXIMUM_IDENTITY_LEN: usize = 64;
 
 /// A parsed manifest: the identity names it lists, in document order, each borrowing the document's
@@ -72,8 +74,8 @@ impl<'a> Manifest<'a> {
 pub enum Error {
     /// A name longer than [`MAXIMUM_IDENTITY_LEN`].
     NameTooLong(usize),
-    /// More identities than [`MAXIMUM_IDENTITIES`], reported at the line that overflowed rather than
-    /// dropped, matching `timetable::Error::TooManyEntries`'s own posture.
+    /// More identities than [`MAXIMUM_IDENTITIES`], reported at the line that overflowed rather
+    /// than dropped, matching `timetable::Error::TooManyEntries`'s own posture.
     TooManyIdentities(usize),
 }
 

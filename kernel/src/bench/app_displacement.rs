@@ -23,8 +23,8 @@ const APPDISP_TARGET_TOUCHES: u64 = 8_000_000;
 /// sweep.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_IPC_PAIRS: usize = 8;
-/// Background IPC pairs for the higher-load condition: [`SCALE_MAXIMUM_PAIRS`], 96 threads, past E1's
-/// knee. See notes/benchmarks/kernel-bench-harness.md.
+/// Background IPC pairs for the higher-load condition: [`SCALE_MAXIMUM_PAIRS`], 96 threads, past
+/// E1's knee. See notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_IPC_PAIRS_HIGH: usize = SCALE_MAXIMUM_PAIRS;
 

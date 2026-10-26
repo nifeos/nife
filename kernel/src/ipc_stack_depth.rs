@@ -674,7 +674,8 @@ fn report(plane: &str, shape: &str, role: &str, operation: &str, s: &Series) -> 
     }
     // Below the measuring frame: the operation's own cost. Zero caller offset for EL0.
     println!(
-        "ipc-stack-depth: {plane} {shape} {role} {operation} median {median} min {minimum} max {maximum} \
+        "ipc-stack-depth: {plane} {shape} {role} {operation} median {median} min {minimum} max \
+        {maximum} \
          below-caller {} floor {floor} samples {n}",
         median - caller,
     );

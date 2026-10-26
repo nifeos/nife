@@ -42,9 +42,9 @@ use user_mode_runtime::send;
 const REPORT: u64 = 0; // WRITE: say what happened
 const HEAP_UT: u64 = 1; // WRITE: the region we were built in, which also pays for malloc
 
-/// The heap's ceiling. Eight pages is one growth step (`memory_region_heap::MINIMUM_GROW_PAGES`) and far more
-/// than the component's single scratch allocation needs; small on purpose, so a runaway C `malloc`
-/// loop hits a bounded wall inside its own budget.
+/// The heap's ceiling. Eight pages is one growth step (`memory_region_heap::MINIMUM_GROW_PAGES`)
+/// and far more than the component's single scratch allocation needs; small on purpose, so a
+/// runaway C `malloc` loop hits a bounded wall inside its own budget.
 const HEAP_MAXIMUM: u64 = 8 * c_seam::PAGE;
 
 /// The heap behind `malloc` and `free`, which the two C entry points below call. Nothing in this

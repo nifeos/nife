@@ -283,9 +283,9 @@ fn shadow_one_head(
 
 // ---------------------------------------------------------------------------------------------
 // The queue ring layout, owned here and used by the kernel (kernel/src/virtio.rs defines its
-// `QSIZE`, `RING_BLOCK`, `MAXIMUM_QUEUES` and the three ring offsets as aliases of these), because a
-// proof about a copy of the layout proves nothing about the layout that runs. The kernel keeps its
-// own compile-time asserts as well, so drift is a compile error in two places.
+// `QSIZE`, `RING_BLOCK`, `MAXIMUM_QUEUES` and the three ring offsets as aliases of these), because
+// a proof about a copy of the layout proves nothing about the layout that runs. The kernel keeps
+// its own compile-time asserts as well, so drift is a compile error in two places.
 // ---------------------------------------------------------------------------------------------
 
 /// The negotiated queue size the kernel drives (`QSIZE` in kernel/src/virtio.rs).
@@ -302,7 +302,8 @@ pub const RING_END: u64 = USED_OFF + 6 + 8 * LAYOUT_QSIZE as u64;
 pub const RING_BLOCK: u64 = 0x200;
 /// The most virtqueues the confinement drives per device (RX = queue 0, TX = queue 1 on a NIC).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_QUEUES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_QUEUES`.
 pub const MAXIMUM_QUEUES: u64 = 2;
 
 /// Queue `q`'s ring block base, relative to a region (driver DMA or shadow) base. Queue `q`'s

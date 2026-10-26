@@ -284,8 +284,8 @@ and 1,648 on riscv64.
 Each `login_test_client` run gets a five-page scratch region of its own. It pays the page tables for
 mapping the frame `CONNECT` delegates, before the run holds any other budget, and its report endpoint
 is retyped from it. The kernel's own endpoint chunks are never given back, and the machine shares
-`sched::MAXIMUM_RENDEZVOUS` endpoints and `memory_region::MAXIMUM_REGIONS` regions. So `wait_client` reclaims
-the scratch once the run's thread is dead, and the endpoint goes with it.
+`sched::MAXIMUM_RENDEZVOUS` endpoints and `memory_region::MAXIMUM_REGIONS` regions. So `wait_client`
+reclaims the scratch once the run's thread is dead, and the endpoint goes with it.
 
 ## BUGS
 

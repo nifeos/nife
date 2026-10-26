@@ -21,9 +21,9 @@ pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_000
 /// below [`IMAGE_STAGING_VA`].
 pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_map::pair_page(0x0f50_0000);
 
-/// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`] pages
-/// at most. A fixed window, because every page mapped here comes from a staging region this process
-/// destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
+/// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`]
+/// pages at most. A fixed window, because every page mapped here comes from a staging region this
+/// process destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
 /// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
 /// tables behind it come from `own_ut` and are reused.
 const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);

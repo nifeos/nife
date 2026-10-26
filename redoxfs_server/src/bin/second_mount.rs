@@ -93,7 +93,8 @@ impl Inner {
         COMMITTED.store(self.committed, Ordering::Relaxed);
         let run = std::ptr::with_exposed_provenance_mut::<u8>(start);
         // SAFETY: this slice of the pool is donated once, never freed, and continues the heap
-        // `heap_end` ends, or is the first run, at least `MINIMUM_GROW_PAGES`, ample for talc's bins.
+        // `heap_end` ends, or is the first run, at least `MINIMUM_GROW_PAGES`, ample for talc's
+        // bins.
         self.heap_end = unsafe {
             match self.heap_end {
                 Some(end) => Some(self.heap.extend(end, run.wrapping_add(want_pages * PAGE))),

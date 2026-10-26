@@ -34,7 +34,8 @@ pub const SCREEN_PIXELS: usize = graphics_contract::PIXELS;
 /// The most windows a scene may hold. Fixed because the compositor has no allocator and builds its
 /// window table as an array; four is what [`SCENE`] needs and what the kernel wires.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_WINDOWS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
 pub const MAXIMUM_WINDOWS: usize = 4;
 
 // ================================================================================================
@@ -245,8 +246,9 @@ impl Window {
 /// Fixed at compile time, so the composed screen is a value every party can predict and check pixel
 /// for pixel. The geometry makes a wrong composite fail: three sizes, overlap, and a window hanging
 /// off the left edge. Each surface is at most four page frames, because the kernel maps a surface
-/// one `Spawn::maps` entry a page (`kernel/src/user/compositor_service.rs`'s `MAXIMUM_SURFACE_PAGES`,
-/// asserted at build time). See notes/compositor/arithmetic.md for why each choice.
+/// one `Spawn::maps` entry a page (`kernel/src/user/compositor_service.rs`'s
+/// `MAXIMUM_SURFACE_PAGES`, asserted at build time). See notes/compositor/arithmetic.md for why
+/// each choice.
 pub const SCENE: &[Window] = &[
     Window::new(16, 26, 72, 52),
     Window::new(40, 50, 71, 56),
@@ -262,7 +264,8 @@ pub const SCENE: &[Window] = &[
 /// grant it was mapped would make it fault on its own surface, and a client should refuse a control
 /// page it cannot believe rather than discover that as a crash.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SURFACE_BYTES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SURFACE_BYTES`.
 pub const MAXIMUM_SURFACE_BYTES: u32 = {
     let mut m = 0;
     let mut i = 0;

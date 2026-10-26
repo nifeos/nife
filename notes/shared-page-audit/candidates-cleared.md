@@ -25,10 +25,10 @@ this audit's lens applied correctly, in the tree, before the audit existed.
 ## `credential_contract::read`
 
 Both lengths from the register word, checked against `MAXIMUM_IDENTITY` and
-`MAXIMUM_SECRET`, fixed offsets, one bound against the page. The returned slices alias the page and their
-*contents* can change under the store, but their lengths cannot, and the party that would change them
-is the one that wrote the secret in the first place. The credentialer also wipes the request area on
-every exit path, which is the right discipline for a page a secret passes through.
+`MAXIMUM_SECRET`, fixed offsets, one bound against the page. The returned slices alias the page and
+their *contents* can change under the store, but their lengths cannot, and the party that would
+change them is the one that wrote the secret in the first place. The credentialer also wipes the
+request area on every exit path, which is the right discipline for a page a secret passes through.
 
 ## The display driver's `FLUSH`
 

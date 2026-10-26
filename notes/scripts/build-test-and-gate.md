@@ -33,9 +33,9 @@ is calef's.*
 | `script/preflight-queue [--dry-run \| --act] [--no-hvf]` | **Replay the merge queue on this machine before a group build does.** Walks `mergeQueue(branch: "main")` in order, then the armed-but-unqueued pull requests, merging each onto the green entries ahead of it in a reusable detached worktree (`preflight` in the worktree root), and runs `script/ci-build fmt` and `lint`, `cargo test -p documentation`, host tests for the crates it touches, one `script/test --arch aarch64` if it touches code (CI's own documentation-only predicate, read out of `ci.yml`), and `script/falsifications --affected-since` when no solver is running. A conflict or a red is a finding. The HVF leg on `main`'s tip runs first and is reported, never blocking; a red `main` baseline means it acts on nothing and exits 3. `--dry-run` is the default; `--act` comments and dequeues. Prompted by three pull requests on 2026-09-24 that were green alone and red on top of the queue; when to run it is in notes/merge-queue.md. **Name provisional.** |
 
 The table's numbers are glossed here rather than inline. The reason is that the `script/lint` row is
-one of the longest markdown lines in the repository and `documentation::render::LINE_MAXIMUM` is sized
-against the longest. The decisions cited are DECISIONS §38 (a suppression carries a reason), §46
-(thin primitives or whole subsystems) and §61 (a lint adopted on evidence). The milestones are
+one of the longest markdown lines in the repository and `documentation::render::LINE_MAXIMUM` is
+sized against the longest. The decisions cited are DECISIONS §38 (a suppression carries a reason),
+§46 (thin primitives or whole subsystems) and §61 (a lint adopted on evidence). The milestones are
 milestone 68 (code-quality gates), milestone 94 (the untracked-work sweep) and milestone 113 (the
 proofs' unsafe code is ungated).
 

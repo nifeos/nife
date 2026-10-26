@@ -13,8 +13,8 @@ panic there is a crafted binary halting the kernel. It did not work, and the rea
 Two things put it past bounded model checking:
 
 1. A loop Kani bounds too loosely. `parse` has an `O(n^2)` overlap check over up to
-   `MAXIMUM_PHNUM = 64` program headers. The real bound is far tighter. The header table must fit in the
-   file, which at any small input size allows one or two headers. But that bound is *nonlinear*
+   `MAXIMUM_PHNUM = 64` program headers. The real bound is far tighter. The header table must fit in
+   the file, which at any small input size allows one or two headers. But that bound is *nonlinear*
    (`phoff + phnum * phentsize <= len`). Kani uses the *linear* `phnum <= 64` cap it can see for the
    unwinding assertion, so it insists on unrolling 64 deep. `unwind(65)` did not return in 7+
    minutes.

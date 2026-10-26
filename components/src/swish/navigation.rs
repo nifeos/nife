@@ -274,9 +274,10 @@ impl Nav {
 
     /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
     /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
-    /// in that directory and so may be as long as a file's ([`nav::MAXIMUM_NAME`], milestone 946 (a granted file name can be longer than sixteen bytes)) where
-    /// a directory the shell stands in may not ([`nav::MAXIMUM_DIRECTORY_NAME`]). A path ending in `..`
-    /// names a directory, and is validated whole.
+    /// in that directory and so may be as long as a file's ([`nav::MAXIMUM_NAME`], milestone 946 (a
+    /// granted file name can be longer than sixteen bytes)) where a directory the shell stands in
+    /// may not ([`nav::MAXIMUM_DIRECTORY_NAME`]). A path ending in `..` names a directory, and is
+    /// validated whole.
     ///
     /// Name: provisional (milestone 946).
     pub(super) fn plan_name_path<'a>(&self, token: &'a [u8]) -> Result<nav::Path<'a>, Say> {

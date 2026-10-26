@@ -332,11 +332,12 @@ pub mod status {
     /// Outside the sanity window entirely: [`super::policy::is_plausible`] says no machine running
     /// this code is at that instant. A proposal of 1970, or of 2038, lands here.
     pub const REFUSED_IMPLAUSIBLE: u64 = 1;
-    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NANOS`] ahead of
-    /// what the clock already believes.
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NANOS`] ahead
+    /// of what the clock already believes.
     pub const REFUSED_TOO_FAR_FORWARD: u64 = 2;
-    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_BACKWARD_NANOS`] behind
-    /// what the clock already believes. The asymmetry with forward is deliberate; see [`policy`](super::policy).
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_BACKWARD_NANOS`]
+    /// behind what the clock already believes. The asymmetry with forward is deliberate; see
+    /// [`policy`](super::policy).
     pub const REFUSED_TOO_FAR_BACKWARD: u64 = 3;
     /// The request was not one this contract defines.
     pub const BAD_REQUEST: u64 = 4;
@@ -375,7 +376,8 @@ pub mod policy {
     /// Enough to absorb a machine that has been asleep, or an RTC an hour out because somebody set
     /// it to local time; not enough to walk the clock past an expiry in one step.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_STEP_FORWARD_NANOS`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_STEP_FORWARD_NANOS`.
     pub const MAXIMUM_STEP_FORWARD_NANOS: u64 = 3600 * super::NANOS_PER_SEC;
 
     /// How far **backward** one accepted proposal may move a clock that already knows the time: one
@@ -388,7 +390,8 @@ pub mod policy {
     /// this, and here the same conservatism is one constant instead of a mechanism, because
     /// `Instant` is never affected by any of it.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_STEP_BACKWARD_NANOS`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_STEP_BACKWARD_NANOS`.
     pub const MAXIMUM_STEP_BACKWARD_NANOS: u64 = super::NANOS_PER_SEC;
 
     // The asymmetry is a decision, not an accident, so it is a build-time fact rather than

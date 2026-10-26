@@ -313,9 +313,10 @@ impl Editor {
 /// notes/user-proofs.md has the defect leaving it out caused (milestone 197).
 const FILE_SCRATCH_LEN: usize = MAXIMUM_ROWS * (MAXIMUM_COLS + 1);
 
-// **Rung one, and deliberately not a proof** (AGENTS.md's ladder; milestone 197): raise `MAXIMUM_ROWS`
-// or `MAXIMUM_COLS` without raising the buffer and this build stops at the wrong line. A Kani harness
-// over a symbolic document is a bounded sum CBMC did not finish (notes/user-proofs.md).
+// **Rung one, and deliberately not a proof** (AGENTS.md's ladder; milestone 197): raise
+// `MAXIMUM_ROWS` or `MAXIMUM_COLS` without raising the buffer and this build stops at the wrong
+// line. A Kani harness over a symbolic document is a bounded sum CBMC did not finish
+// (notes/user-proofs.md).
 const _: () = assert!(FILE_SCRATCH_LEN >= MAXIMUM_ROWS * MAXIMUM_COLS + (MAXIMUM_ROWS - 1));
 
 static mut FILE_SCRATCH: [u8; FILE_SCRATCH_LEN] = [0; FILE_SCRATCH_LEN];

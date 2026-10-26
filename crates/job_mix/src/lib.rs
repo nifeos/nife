@@ -236,12 +236,13 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 
 /// The largest task pool the supervisor builds, and therefore the length of its go-endpoint array.
 ///
-/// 32, against `sched::MAXIMUM_THREADS`'s 256 and against the 64 user threads the soak already builds
-/// on this machine. The sweep tops out here rather than at milestone 134's E1 ceiling of 96 because
-/// every task in this pool is a **process**, with an address space and a loaded image behind it,
-/// where E1's were kernel threads; the memory, not the thread table, is what binds.
+/// 32, against `sched::MAXIMUM_THREADS`'s 256 and against the 64 user threads the soak already
+/// builds on this machine. The sweep tops out here rather than at milestone 134's E1 ceiling of 96
+/// because every task in this pool is a **process**, with an address space and a loaded image
+/// behind it, where E1's were kernel threads; the memory, not the thread table, is what binds.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_TASKS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_TASKS`.
 pub const MAXIMUM_TASKS: usize = 32;
 
 /// The subruns, in AIM7's sense: how many tasks are released for each measurement.

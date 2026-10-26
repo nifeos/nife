@@ -1213,8 +1213,8 @@ pub(super) fn await_screen(ep: u64) {
     print(b"  that page's process would not collect; the progenitor's job budget may be short one job\n");
 }
 
-/// `job_undertaker::MAXIMUM_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps at
-/// most one screen-narrowed corpse at a time and only ever the one it just watched for, where
+/// `job_undertaker::MAXIMUM_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps
+/// at most one screen-narrowed corpse at a time and only ever the one it just watched for, where
 /// `job_undertaker` reaps every ordinary job on the machine, so the two have no data to share and a
 /// shared constant would imply a coupling that is not there.
 const SCREEN_REAP_ATTEMPTS: usize = 1024;
@@ -1326,9 +1326,9 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
             Source::File(g) => {
                 // Cannot fail: this command came out of `cmd`.
                 let Ok(l) = line::split(cmd) else { return };
-                // One element, not `MAXIMUM_STAGES`: an `Endowment` carries a whole `NameSet` by value,
-                // and a full-width array overflows the shell's stack (a data abort one word below
-                // the lowest mapped stack page).
+                // One element, not `MAXIMUM_STAGES`: an `Endowment` carries a whole `NameSet` by
+                // value, and a full-width array overflows the shell's stack (a data abort one word
+                // below the lowest mapped stack page).
                 run_pipeline(nav, l, &[Some(endow)], false, None, Some(g), None);
             }
             // **A program that hears words gets the line as its argv** (milestone 205,

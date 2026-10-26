@@ -7,9 +7,9 @@ lets a reader act without opening this file. This one holds the 2026-08-27 occup
 
 ## 2026-08-27: raising a ceiling made `spawn_el0` 16.5% slower, and the fix made it 41% faster than it had ever been
 
-The `--check` tripwire caught `sched::MAXIMUM_THREADS` going 128 to 256. `spawn_el0` measured 2,418,606
-ticks against a 2,070,473 baseline, +348,133 (+16.8%), well outside the ±10% band. Every other row
-was flat.
+The `--check` tripwire caught `sched::MAXIMUM_THREADS` going 128 to 256. `spawn_el0` measured
+2,418,606 ticks against a 2,070,473 baseline, +348,133 (+16.8%), well outside the ±10% band. Every
+other row was flat.
 
 ### Attribution, by measurement rather than arithmetic
 
@@ -28,8 +28,8 @@ There are two causes of nearly equal size, not one. The first was predicted.
 `MemoryRegion::DESTROY`. `generational_table::iter_mut` yields only live entries but visits every
 slot to filter them, so its cost tracked `MAXIMUM_THREADS` rather than the number of live threads.
 
-The second was not predicted. `revoke::MAXIMUM_SPACES` derives from `MAXIMUM_THREADS`, and the registry is
-a plain array walked linearly. `forget_root` scans all of it unconditionally on every
+The second was not predicted. `revoke::MAXIMUM_SPACES` derives from `MAXIMUM_THREADS`, and the
+registry is a plain array walked linearly. `forget_root` scans all of it unconditionally on every
 `AddressSpace::drop`. The two do not quite sum to the total (280k of 348k). The remainder was not
 chased separately, because the fix below removed all of it.
 
@@ -63,9 +63,9 @@ this benchmark will not notice.
 
 - This is a mitigation, and milestone 183 (a physical-range index for capability holders) is the fix. That milestone ("a physical-range index for
   capability holders, so revocation stops scanning every thread") removes the sweep rather than
-  making it cheaper. The sweep is now O(live threads) instead of O(`MAXIMUM_THREADS`). That is a much
-  better constant on a boot holding 130 threads, and no help to one holding 130 threads that all
-  need checking. The index is still the answer for a machine with real tenancy.
+  making it cheaper. The sweep is now O(live threads) instead of O(`MAXIMUM_THREADS`). That is a
+  much better constant on a boot holding 130 threads, and no help to one holding 130 threads that
+  all need checking. The index is still the answer for a machine with real tenancy.
 - The 41% is `spawn_el0` on a bench boot, not a claim about spawn in general. A boot whose tables
   are genuinely full would see the old cost, because then the bound and the ceiling agree. Cost now
   tracks what the machine holds, and on this benchmark that is very little.

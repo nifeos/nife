@@ -26,8 +26,8 @@ pub const MAGIC: u32 = 0x4d52_5456;
 pub const LAYOUT: u32 = 2;
 
 /// Words before the first cell: magic, layout, the twelve fields of the cursor and the
-/// scrollback ring, the rendition's five, the parser's sub-parameter mask and its [`MAXIMUM_PARAMS`]
-/// parameters.
+/// scrollback ring, the rendition's five, the parser's sub-parameter mask and its
+/// [`MAXIMUM_PARAMS`] parameters.
 pub(crate) const HEADER_WORDS: usize = 2 + 12 + 5 + 1 + MAXIMUM_PARAMS;
 pub(crate) const CELL_WORDS: usize = 4;
 /// Layout 1's header: the rendition had three words (no underline color or style) and the parser

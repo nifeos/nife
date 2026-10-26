@@ -366,8 +366,8 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 /// peer's copy with one byte flipped, which must be refused**: that half is what gives the first
 /// its meaning, because the tampered response is a complete, correct HTTP exchange and only the
 /// digest can tell. Both fetches share one `net_stack`, because every stack a test starts holds a
-/// virtio slot for the rest of the boot (`MAXIMUM_DEVICES`). Nothing else in the tree fetches a file
-/// over TCP or checks a package's digest on a target.
+/// virtio slot for the rest of the boot (`MAXIMUM_DEVICES`). Nothing else in the tree fetches a
+/// file over TCP or checks a package's digest on a target.
 // RISC-V twin:
 // `riscv_virtio_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
 #[cfg(target_arch = "aarch64")]

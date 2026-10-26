@@ -34,8 +34,8 @@ const REPORT: u64 = 2;
 /// here; the controller writes it by DMA.
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 /// The client windows, directly above the block channel, as `redoxfs_server` lays them out:
-/// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes in one run, window `badge` per request
-/// (milestone 599 (a frame per filesystem client channel)'s pattern).
+/// `fs::CLIENT_WINDOWS` windows of `fs::TRANSFER_MAXIMUM` bytes in one run, window `badge` per
+/// request (milestone 599 (a frame per filesystem client channel)'s pattern).
 const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
 
 const EIO: i32 = 5;

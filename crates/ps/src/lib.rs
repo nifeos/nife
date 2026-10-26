@@ -29,7 +29,8 @@
 /// is a stack allocation in `ps` and `pgrep`; notes/process-view/the-ps-crate.md has its measured
 /// cost against the child stack.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ROWS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
 pub const MAXIMUM_ROWS: usize = 256;
 
 /// One line of the listing: a thread and what it is doing.
@@ -69,7 +70,8 @@ pub struct Survey<'a> {
     /// a total function and could not be fuzzed or property-tested.
     stalled: bool,
     /// The buffer filled and the domain had more in it. Unreachable for a caller that sized its
-    /// buffer at [`MAXIMUM_ROWS`], which `ps` does; reported rather than silent for one that did not.
+    /// buffer at [`MAXIMUM_ROWS`], which `ps` does; reported rather than silent for one that did
+    /// not.
     truncated: bool,
 }
 
@@ -493,8 +495,9 @@ mod tests {
 
     /// **A short buffer is not a short listing, it is a stated one.** The whole design refuses to
     /// let a monitor report less than it saw without saying so, and running out of room is one more
-    /// way that could happen. `ps` cannot reach this, because it sizes its buffer at [`MAXIMUM_ROWS`];
-    /// a future caller with a smaller one gets told rather than getting a plausible table.
+    /// way that could happen. `ps` cannot reach this, because it sizes its buffer at
+    /// [`MAXIMUM_ROWS`]; a future caller with a smaller one gets told rather than getting a
+    /// plausible table.
     #[test]
     fn a_buffer_too_small_for_the_domain_says_so_and_prints_nothing() {
         let mut rows = [Row::default(); 2];

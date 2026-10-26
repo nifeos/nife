@@ -2,7 +2,8 @@ use crate::{Error, MbrProblem, is_block_size_ok};
 
 /// The OS type byte that makes a record protective. Not a filesystem, a keep-out sign.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `PROTECTIVE_OS_TYPE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PROTECTIVE_OS_TYPE`.
 pub const PROTECTIVE_OPERATING_SYSTEM_TYPE: u8 = 0xEE;
 
 /// Where the four 16-byte partition records start.

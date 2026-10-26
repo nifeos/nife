@@ -463,9 +463,9 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
-/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME`]'s reason: `grant_plan`
-/// must be able to check a command line without linking the filesystem contract, so the pair is
-/// pinned here rather than shared.
+/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME`]'s reason:
+/// `grant_plan` must be able to check a command line without linking the filesystem contract, so
+/// the pair is pinned here rather than shared.
 #[test]
 fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(MAXIMUM_NAMES, filesystem_contract::nameset::MAXIMUM_NAMES);
@@ -521,7 +521,8 @@ fn a_program_that_hears_words_places_no_positional_grant() {
 
 /// **The planner lets a program that hears words have its whole line** (§170): a flag-shaped
 /// token is not `Unexpected`, a letter is not `NoSuchOption`, and five words are not past
-/// `MAXIMUM_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short options.
+/// `MAXIMUM_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short
+/// options.
 #[test]
 fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     let e = plan(

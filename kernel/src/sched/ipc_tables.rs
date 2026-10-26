@@ -1,6 +1,7 @@
 //! The tables behind `IPC_TABLES`: [`IpcTables`] itself, the one lock it sits behind, the limits
-//! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's endpoint
-//! chunks), and the rendezvous-pressure instrument. See notes/ipc-tables-lock-inventory.md.
+//! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's
+//! endpoint chunks), and the rendezvous-pressure instrument. See
+//! notes/ipc-tables-lock-inventory.md.
 //!
 //! The fields are `pub(super)`, which in a child of `sched` reaches `sched` and its children, the
 //! set §271 (the scheduler file splits into submodules of `sched`) keeps the table to. The
@@ -32,7 +33,8 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 ///   capability holders) is the structural fix.
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_THREADS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_THREADS`.
 pub const MAXIMUM_THREADS: usize = 256;
 
 pub(super) struct IpcTables {
@@ -71,8 +73,8 @@ pub(super) const FUTEX_BUCKETS: usize = 64;
 pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
-/// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does not
-/// gate. The measured peaks are in notes/ipc-tables-lock-inventory.md.
+/// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does
+/// not gate. The measured peaks are in notes/ipc-tables-lock-inventory.md.
 ///
 /// Context: updated at the one insert, under `IPC_TABLES`.
 pub(super) static PEAK_RENDEZVOUS: core::sync::atomic::AtomicUsize =

@@ -55,7 +55,8 @@ pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// what a fixed array costs nothing to hold; the reason there is an array at all is that this crate
 /// allocates nothing, so a document borrows its own bytes and the table is inline.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_ENTRIES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ENTRIES`.
 pub const MAXIMUM_ENTRIES: usize = 8;
 
 // Machine-checked proofs (Kani). Behind `#[cfg(kani)]`, so an ordinary build or test never sees

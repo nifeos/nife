@@ -19,7 +19,8 @@
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_WINDOWS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
 pub const MAXIMUM_WINDOWS: usize = 16;
 
 /// **A job's label**: the badge the progenitor puts on the job's supervision capability, which the
@@ -48,8 +49,9 @@ impl Windows {
     ///
     /// # Panics
     ///
-    /// If the range is empty or reaches past [`MAXIMUM_WINDOWS`]: a pool that could hand out nothing,
-    /// or a window this table cannot record, is a wiring mistake, caught where the pool is made.
+    /// If the range is empty or reaches past [`MAXIMUM_WINDOWS`]: a pool that could hand out
+    /// nothing, or a window this table cannot record, is a wiring mistake, caught where the pool is
+    /// made.
     #[must_use]
     pub const fn new(first: u64, end: u64) -> Self {
         assert!(first < end && end <= MAXIMUM_WINDOWS as u64);
@@ -114,7 +116,8 @@ impl Windows {
 /// How many finished jobs [`ReapsDue`] tracks. A full table only stops the progenitor waiting for
 /// the reaps it could not record, so this bounds a liveness improvement, not a safety rule.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_DUE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_DUE`.
 pub const MAXIMUM_DUE: usize = 8;
 
 /// **The finished jobs whose reap is on its way** (milestone 685): jobs whose whole answer went to

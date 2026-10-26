@@ -18,7 +18,7 @@ use machine_discovery::x86_64::*;
 /// `extended_leaf7_edx` is zero**, which is the whole reason the invariant-TSC row is
 /// [`Gate::RefuseUnlessHypervisor`]: TCG refuses to set that bit even when asked with
 /// `invtsc=on`, and sets the hypervisor bit, so this machine boots with a warning.
-fn qemu_maximum() -> CpuidWords {
+fn qemu_max() -> CpuidWords {
     CpuidWords {
         // EAX = maximum standard leaf; EBX/EDX/ECX = "Auth" "enti" "cAMD", which is the register
         // order nobody guesses (EDX before ECX).
@@ -74,7 +74,7 @@ fn brand_words(s: &str) -> [u32; 12] {
 
 #[test]
 fn the_machine_this_project_boots_on_can_run_this_kernel() {
-    let cpu = Isa::decode(&qemu_maximum());
+    let cpu = Isa::decode(&qemu_max());
 
     assert_eq!(&cpu.vendor, b"AuthenticAMD");
     assert_eq!(cpu.brand_str(), Some("QEMU TCG CPU version 2.5+"));
@@ -99,7 +99,7 @@ fn the_machine_this_project_boots_on_can_run_this_kernel() {
 /// `NX` is bit 20 or bit 11.
 #[test]
 fn a_part_without_nx_is_refused_and_nothing_else_is_blamed() {
-    let mut w = qemu_maximum();
+    let mut w = qemu_max();
     w.extended_leaf1_edx &= !(1 << 20);
     let missing = Isa::decode(&w).missing_requirements();
 
@@ -109,7 +109,7 @@ fn a_part_without_nx_is_refused_and_nothing_else_is_blamed() {
 
 #[test]
 fn a_part_without_syscall_is_refused_and_nothing_else_is_blamed() {
-    let mut w = qemu_maximum();
+    let mut w = qemu_max();
     w.extended_leaf1_edx &= !(1 << 11);
     let missing = Isa::decode(&w).missing_requirements();
 
@@ -142,7 +142,7 @@ fn bare_metal_without_an_invariant_tsc_is_refused_and_nothing_else_is_blamed() {
 
 #[test]
 fn a_guest_without_an_invariant_tsc_boots_and_says_so() {
-    let cpu = Isa::decode(&qemu_maximum());
+    let cpu = Isa::decode(&qemu_max());
 
     assert!(!cpu.missing_requirements().any(), "warned, not refused");
     assert_eq!(cpu.unpromised(), INVARIANT_TSC);
@@ -164,7 +164,7 @@ fn bare_metal_with_an_invariant_tsc_boots_clean() {
 
 #[test]
 fn a_guest_with_an_invariant_tsc_boots_clean() {
-    let mut w = qemu_maximum();
+    let mut w = qemu_max();
     w.extended_leaf7_edx |= 1 << 8;
     let cpu = Isa::decode(&w);
 
@@ -194,7 +194,7 @@ fn a_part_below_leaf_one_is_not_taken_for_a_guest() {
 /// fixture reads as a part with NX and `syscall` that has neither.
 #[test]
 fn a_part_with_no_extended_leaves_reports_no_features_rather_than_another_leaf_bits() {
-    let mut w = qemu_maximum();
+    let mut w = qemu_max();
     w.extended_maximum_leaf = 0;
     let cpu = Isa::decode(&w);
 
@@ -212,7 +212,7 @@ fn a_part_with_no_extended_leaves_reports_no_features_rather_than_another_leaf_b
 /// initial APIC id in its top byte, and CLFLUSH size and brand index below it) as feature bits.
 #[test]
 fn a_part_below_leaf_seven_does_not_report_rdseed() {
-    let mut w = qemu_maximum();
+    let mut w = qemu_max();
     w.leaf0[0] = 1;
     let cpu = Isa::decode(&w);
 

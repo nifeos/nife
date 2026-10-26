@@ -82,9 +82,10 @@ identity of its own, so "it already had a value" is nothing a caller can act on.
 `XATTR_CREATE` and `XATTR_REPLACE` flags are not offered, for §42's reason: above the store they are
 emulable only racily.
 
-`LISTXATTR` has no cursor, and that is a property. `MAXIMUM_COUNT` names of `MAXIMUM_NAME` bytes fit one page
-exactly, so a listing is always complete in one reply and cannot be observed half-changed. Removing
-an attribute that is not there is an error, because the caller asked about one specific thing.
+`LISTXATTR` has no cursor, and that is a property. `MAXIMUM_COUNT` names of `MAXIMUM_NAME` bytes fit
+one page exactly, so a listing is always complete in one reply and cannot be observed half-changed.
+Removing an attribute that is not there is an error, because the caller asked about one specific
+thing.
 
 `MAXIMUM_VALUE` is three kibibytes. Apple's `AFP_AfpInfo` is 60 bytes: `AFP_INFO_SIZE` is `0x3c` in
 Samba's `source3/include/MacExtensions.h`, and Apple's own SMB client carries `uint8_t

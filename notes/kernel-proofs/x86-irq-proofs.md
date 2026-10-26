@@ -11,8 +11,8 @@ into the IDT, so getting one wrong does not misroute an interrupt, it runs the p
 
 - `no_vector_belongs_to_two_bands`. `MSI_VECTOR_BASE`'s doc claims the three vector bands are
   "disjoint by construction rather than by anybody remembering", the construction being
-  `MAXIMUM_REDIRECTION_ENTRIES` clamping the entry count. This is that claim, over every entry count an
-  eight-bit version register can report and every state the MSI bump counter can be in, asked
+  `MAXIMUM_REDIRECTION_ENTRIES` clamping the entry count. This is that claim, over every entry count
+  an eight-bit version register can report and every state the MSI bump counter can be in, asked
   through the two predicates the trap handler actually calls rather than restated from the
   constants.
 - `an_owned_gsi_routes_inside_the_io_apic_band`. For every GSI `redirection_index` admits, the

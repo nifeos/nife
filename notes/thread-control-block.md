@@ -168,11 +168,11 @@ so a corpse keeps the time it earned until its supervisor reaps it.
 
 ### The peak
 
-`PEAK_THREADS` is the most threads alive at once on this boot, which makes `MAXIMUM_THREADS` a measured
-number. By the time a spawn is refused, the table is full and every earlier number is gone. It is one
-high-water mark rather than a per-test ledger. What fills the table is the services earlier tests
-left running on purpose (notes/frames.md's "held" list), not one test's spend. Both inserts update
-it under `IPC_TABLES` with `fetch_max`.
+`PEAK_THREADS` is the most threads alive at once on this boot, which makes `MAXIMUM_THREADS` a
+measured number. By the time a spawn is refused, the table is full and every earlier number is gone.
+It is one high-water mark rather than a per-test ledger. What fills the table is the services
+earlier tests left running on purpose (notes/frames.md's "held" list), not one test's spend. Both
+inserts update it under `IPC_TABLES` with `fetch_max`.
 
 ### The running thread, per core
 

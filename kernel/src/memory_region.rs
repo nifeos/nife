@@ -23,8 +23,8 @@ use crate::sync::{IrqSafeMutex, rank};
 pub(crate) const MAXIMUM_REGIONS: usize = 256;
 
 /// **The most regions that were ever live at once on this boot**, the instrument that makes
-/// [`MAXIMUM_REGIONS`] a measured number: a full table is refused in whichever test asks next, and by
-/// then every earlier reading is gone. `sched::PEAK_THREADS`'s twin.
+/// [`MAXIMUM_REGIONS`] a measured number: a full table is refused in whichever test asks next, and
+/// by then every earlier reading is gone. `sched::PEAK_THREADS`'s twin.
 ///
 /// Updated under the `REGIONS` lock on the two paths that can grow the table, [`create`] and
 /// [`split`], so it never races. `fetch_max` rather than a compare-store, for `PEAK_THREADS`'s

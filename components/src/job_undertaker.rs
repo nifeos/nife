@@ -110,9 +110,9 @@ fn report() {
 /// The tid arrived on a death message from this very endpoint, so two of §32's refusals are
 /// unreachable: it cannot be `StillAlive` and it cannot be another supervisor's child. The third,
 /// `NotPermitted`, means the *region* is not yet reclaimable, which is a fact about the region's
-/// other residents rather than about this corpse; see [`MAXIMUM_ATTEMPTS`]. Yielding between attempts
-/// is what lets the armed kill be spent: the thread standing in the way has to reach a preemption,
-/// and spinning without giving up the core would be racing it on a single-core machine.
+/// other residents rather than about this corpse; see [`MAXIMUM_ATTEMPTS`]. Yielding between
+/// attempts is what lets the armed kill be spent: the thread standing in the way has to reach a
+/// preemption, and spinning without giving up the core would be racing it on a single-core machine.
 fn collect(tid: u64) {
     for _ in 0..MAXIMUM_ATTEMPTS {
         if reap(DEATHS, tid) == 0 {

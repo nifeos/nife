@@ -74,12 +74,12 @@ below). Nothing else on this path is short. Only the slots are.
 
 The constants a reader would quote should be the current ones (updated 2026-09-02, milestones 230
 and 231). The table is twenty-four slots rather than sixteen, `Option<Cap<Object>>` is 32 bytes
-rather than 24, and `MAXIMUM_THREADS` is 256 rather than 128. The paragraphs above are left as written,
-because they are the record of an investigation on the day it was done. None of the arithmetic's
-*conclusions* survive being updated any differently. 469 page frames does not fit in twenty-four
-slots either, and option 2 now prices 512 slots at 16 KiB a thread across twice as many threads.
-`kernel::cap::CAPABILITY_TABLE_SLOTS`' own doc carries why it moved, which is worth reading before
-quoting any figure here.
+rather than 24, and `MAXIMUM_THREADS` is 256 rather than 128. The paragraphs above are left as
+written, because they are the record of an investigation on the day it was done. None of the
+arithmetic's *conclusions* survive being updated any differently. 469 page frames does not fit in
+twenty-four slots either, and option 2 now prices 512 slots at 16 KiB a thread across twice as many
+threads. `kernel::cap::CAPABILITY_TABLE_SLOTS`' own doc carries why it moved, which is worth reading
+before quoting any figure here.
 
 A boot now says what it used, which is the thing this argument was conducted without.
 `kernel::cap::report_peak` prints `capability slots: N of M at peak` from the scheduler's idle loop,

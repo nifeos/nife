@@ -273,8 +273,8 @@ pub(crate) struct Acpi {
     /// order, past `cpu_count`. Fed to `smp::seat_cpus_from_acpi` (milestone 161's SMP item), the
     /// ACPI analog of `read_cpu_list`'s device-tree walk.
     pub cpus: [(u8, bool); MAXIMUM_ACPI_CPUS],
-    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAXIMUM_ACPI_CPUS` conceptually (the
-    /// table can list more than that), in which case this saturates at `MAXIMUM_ACPI_CPUS` and
+    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAXIMUM_ACPI_CPUS` conceptually
+    /// (the table can list more than that), in which case this saturates at `MAXIMUM_ACPI_CPUS` and
     /// `enabled_cpus`/`disabled_cpus` above are still the true totals.
     pub cpu_count: usize,
     /// True when the machine also has 8259 PICs, which must be masked before the APICs are used.
@@ -778,8 +778,8 @@ const LOW_MEGABYTE: u64 = 0x0010_0000;
 /// into the two slices `memory::bring_up_page_frames` takes, and nothing else.
 ///
 /// Returns how many RAM regions were used, which the boot print reports; a machine describing more
-/// than [`MAXIMUM_RAM_REGIONS`] gets the first that many, and saying how many were taken is what makes
-/// that visible rather than silent.
+/// than [`MAXIMUM_RAM_REGIONS`] gets the first that many, and saying how many were taken is what
+/// makes that visible rather than silent.
 pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
     let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAXIMUM_RAM_REGIONS];
     let mut count = 0;

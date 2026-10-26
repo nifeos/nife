@@ -8,9 +8,10 @@
 //! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
 //! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue).
 //!
-//! Name: ratified 2026-10-26 (UTC, the tree-wide `fifo` ruling), renamed before publish from
-//! `intrusive_fifo`, which superseded the 2026-08-23 ratification of that spelling. Before that it
-//! was `intrusive`, an adjective without its noun. The primary type is `Queue<T: Node>`.
+//! Name: provisional. Spelled out under the `fifo` to `queue` ruling of 2026-10-26 (UTC), renamed
+//! before publish from `intrusive_fifo`, which superseded the 2026-08-23 ratification of that
+//! spelling. Before that it was `intrusive`, an adjective without its noun. The primary type is
+//! `Queue<T: Node>`.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -114,7 +115,8 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 
 /// First in, first out: the queue is two pointers into nodes it does not own, plus a count.
 ///
-/// Name: ratified 2026-10-26 (UTC), renamed before publish from `Fifo` with the crate.
+/// Name: provisional. Spelled out under the `fifo` to `queue` ruling of 2026-10-26 (UTC), renamed
+/// from `Fifo` with the crate.
 ///
 /// # Examples
 ///
@@ -279,7 +281,8 @@ mod verification {
     /// model records the order tags went in; the queue must hand them back in exactly that
     /// order, agree about emptiness and length at every step, and never dereference a stale
     /// link (which Kani would report as an invalid pointer access).
-    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_queue_ordered_and_lossless.patch`
+    /// Falsification: replayable
+    /// `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_queue_ordered_and_lossless.patch`
     #[kani::proof]
     fn any_push_pop_interleaving_is_queue_ordered_and_lossless() {
         let mut nodes = [
@@ -377,7 +380,7 @@ mod tests {
     }
 
     #[test]
-    fn fifo_order() {
+    fn queue_order() {
         let (mut a, mut b, mut c) = (node(1), node(2), node(3));
         let mut q: Queue<N> = Queue::new();
         assert!(q.is_empty());

@@ -151,7 +151,8 @@ fn refuse_a_repeat_that_runs_dry(iteration: u32, baseline: RepeatReading, now: R
     );
     println!(
         "  frames: {} free at run 2, {} now ({frames_lost} lost over {since} runs); the {left} runs \
-         left need about {frames_needed}, plus the {SUITE_MINIMUM_FREE_RUN} the ledger keeps. Longest \
+         left need about {frames_needed}, plus the {SUITE_MINIMUM_FREE_RUN} the ledger keeps. \
+         Longest \
          free run {}.",
         baseline.frames, now.frames, now.run
     );
@@ -316,7 +317,8 @@ fn worst_spender_name() -> Option<&'static str> {
 }
 
 /// Print the ledger, and fail the run if the boot ends with no usable contiguous run
-/// ([`SUITE_MINIMUM_FREE_RUN`]) or with more kept than is accounted for ([`SUITE_PAGE_FRAME_BUDGET`]).
+/// ([`SUITE_MINIMUM_FREE_RUN`]) or with more kept than is accounted for
+/// ([`SUITE_PAGE_FRAME_BUDGET`]).
 fn report_page_frame_ledger() {
     if !FRAMES_STAMPED.load(Ordering::Relaxed) {
         return; // no test ran; nothing was spent
@@ -341,7 +343,8 @@ fn report_page_frame_ledger() {
         println!();
         println!(
             "FRAME LEDGER: the boot ends with no free run longer than {run} frames, under the \
-             {SUITE_MINIMUM_FREE_RUN} this gate requires. This is the failure rather than a warning \
+             {SUITE_MINIMUM_FREE_RUN} this gate requires. This is the failure rather than a \
+             warning \
              about one: loading a program takes a contiguous run, so the next test to load anything \
              substantial would fail as Unmappable(OutOfPageFrames), and it would do so in whichever \
              test happened to be next rather than in the one that spent the memory. Read the \
@@ -385,14 +388,15 @@ static REGION_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 
 /// **How close the boot came to the region table's ceiling**, and the test during which the peak
 /// was set: where to start reading, not who is to blame, since a leak many tests earlier can set
-/// it. Reports and does not gate, for [`report_thread_peak`]'s reason; `memory_region::MAXIMUM_REGIONS`
-/// says who holds what.
+/// it. Reports and does not gate, for [`report_thread_peak`]'s reason;
+/// `memory_region::MAXIMUM_REGIONS` says who holds what.
 fn report_region_peak() {
     let peak = crate::memory_region::peak_region_count();
     let maximum = crate::memory_region::MAXIMUM_REGIONS;
     let during = stored_name(&REGION_PEAK_NAME_PTR, &REGION_PEAK_NAME_LEN);
     println!(
-        "regions: {peak} live at the peak, of {maximum} the image allows ({} spare), set during {}. \
+        "regions: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
+        {}. \
          See memory_region::MAXIMUM_REGIONS.",
         maximum.saturating_sub(peak),
         during.unwrap_or("the boot, before the first test"),
@@ -412,8 +416,10 @@ fn report_rendezvous_peak() {
     let (peak, kernel) = crate::sched::rendezvous_pressure();
     let maximum = crate::sched::MAXIMUM_RENDEZVOUS;
     println!(
-        "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set during {}; \
-         {kernel} were created on kernel chunks, which are never freed. See sched::MAXIMUM_RENDEZVOUS.",
+        "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set \
+        during {}; \
+         {kernel} were created on kernel chunks, which are never freed. See \
+         sched::MAXIMUM_RENDEZVOUS.",
         maximum.saturating_sub(peak),
         stored_name(&RENDEZVOUS_PEAK_NAME_PTR, &RENDEZVOUS_PEAK_NAME_LEN)
             .unwrap_or("the boot, before the first test"),

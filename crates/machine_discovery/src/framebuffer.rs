@@ -86,7 +86,8 @@ impl Framebuffer {
     /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
     /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
     pub const MAXIMUM_LEN: usize = 72;
 
     /// How many bytes the console may touch: `stride * height`.
@@ -291,8 +292,8 @@ mod verification {
     use super::*;
 
     /// **An encoded token never exceeds the maximum it advertises.** Nothing in the type system
-    /// ties [`Framebuffer::MAXIMUM_LEN`] to what [`Framebuffer::encode`] writes, and an overrun is a
-    /// panic in a `no_std` UEFI application. One more field, a longer order token or non-shortest
+    /// ties [`Framebuffer::MAXIMUM_LEN`] to what [`Framebuffer::encode`] writes, and an overrun is
+    /// a panic in a `no_std` UEFI application. One more field, a longer order token or non-shortest
     /// hex breaks it, and no test can enumerate the widest `u64`.
     /// Falsification: replayable `crates/machine_discovery/falsifications/framebuffer.verification.an_encoded_token_never_exceeds_the_maximum_it_advertises.patch`
     #[kani::proof]
@@ -447,8 +448,8 @@ mod tests {
         }
     }
 
-    /// `MAXIMUM_LEN` is a constant a caller sizes a stack buffer with, so it has to hold for the widest
-    /// value the encoder can meet rather than for the values anyone expects.
+    /// `MAXIMUM_LEN` is a constant a caller sizes a stack buffer with, so it has to hold for the
+    /// widest value the encoder can meet rather than for the values anyone expects.
     #[test]
     fn the_widest_token_fits_the_advertised_maximum() {
         let widest = Framebuffer {

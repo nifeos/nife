@@ -5,7 +5,8 @@
 /// what one length byte holds, which is what makes [`list`]'s records a byte cheaper than
 /// [`super::dirent`]'s.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NAME`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
 pub const MAXIMUM_NAME: usize = 255;
 
 /// The longest attribute **value**, in bytes.
@@ -18,7 +19,8 @@ pub const MAXIMUM_NAME: usize = 255;
 /// **BUGS.** A larger value is refused with [`E2BIG`], loudly, per DECISIONS §42 (a filesystem
 /// declares what it offers and must be truthful); lifting the limit means chunking the transfer.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_VALUE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_VALUE`.
 pub const MAXIMUM_VALUE: usize = 3072;
 
 /// The most attributes one file or directory may carry.
@@ -31,13 +33,15 @@ pub const MAXIMUM_VALUE: usize = 3072;
 ///
 /// **BUGS.** The seventeenth attribute is [`ENOSPC`], not an eviction.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_COUNT`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_COUNT`.
 pub const MAXIMUM_COUNT: usize = 16;
 
 /// The largest **kind** code, [`i32::MAX`] as a `u32`. See this module's header: the kind rides
 /// in a reply word whose sign bit means "error", so bit 31 is not available to it.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_KIND`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_KIND`.
 pub const MAXIMUM_KIND: u32 = i32::MAX as u32;
 
 /// The kind a POSIX-style client writes: an uninterpreted byte string. Zero, so a client that
@@ -48,8 +52,8 @@ pub const RAW: u32 = 0;
 /// which is the discipline `ENOENT` earns in [`dir::explain`]: an instrument that reads any
 /// failure as "not there" reports filesystems that never existed (notes/fs-server.md).
 pub const ENODATA: i32 = 61;
-/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL. A fact about the name,
-/// not about the capability.
+/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL. A fact about the
+/// name, not about the capability.
 pub const ERANGE: i32 = 34;
 /// `E2BIG`: the value is longer than [`MAXIMUM_VALUE`].
 pub const E2BIG: i32 = 7;
@@ -109,8 +113,8 @@ pub const fn reply_value_len(r0: i64) -> usize {
     (r0 as u64 & 0xffff_ffff) as usize
 }
 
-/// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME`] bytes, and free
-/// of NUL.
+/// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME`] bytes, and
+/// free of NUL.
 ///
 /// **Bytes, not UTF-8, and no namespace prefix is required.** Linux insists on
 /// `user.`/`security.`/`trusted.` because those namespaces mean different privilege; there is no
@@ -149,7 +153,8 @@ pub mod list {
     /// longest name each. Equal to [`super::super::PAGE`], which is what lets
     /// [`super::super::fs::LISTXATTR`] answer without a cursor.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_BYTES`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
     pub const MAXIMUM_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME);
 
     /// Write one record at the start of `out`, returning its length, or `None` if it does not
@@ -213,11 +218,12 @@ pub mod store {
         RECORD_HEADER + name_len + value_len
     }
 
-    /// The largest a node's whole blob can be: [`MAXIMUM_COUNT`] records at the widest each. This is
-    /// the ceiling on what one node costs the store, and the reason the count limit exists at
+    /// The largest a node's whole blob can be: [`MAXIMUM_COUNT`] records at the widest each. This
+    /// is the ceiling on what one node costs the store, and the reason the count limit exists at
     /// all rather than being left to the disk.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_BYTES`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
     pub const MAXIMUM_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME, MAXIMUM_VALUE);
 
     /// The name of the file that holds a node's blob: its `TreePtr` id in lowercase hex, always

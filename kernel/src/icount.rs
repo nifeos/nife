@@ -72,8 +72,8 @@ pub mod tick_trace {
         EARLY.load(Ordering::Relaxed)
     }
 
-    /// `(count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_maximum)`, in counter
-    /// ticks. Means are integer divisions; the caller converts to instructions.
+    /// `(count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_maximum)`, in
+    /// counter ticks. Means are integer divisions; the caller converts to instructions.
     pub(crate) fn snapshot() -> (u64, u64, u64, u64, u64, u64) {
         let n = COUNT.load(Ordering::Relaxed).max(1);
         (

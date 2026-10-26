@@ -24,7 +24,8 @@ pub const NO_TID: ThreadId = u64::MAX;
 /// name for `current_cpu_contract::CPU_ID_BOUND`, which userspace shares. Each seat costs a block
 /// and a 68 KiB secondary stack slot whether or not a core fills it. See notes/per-cpu.md.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CPUS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
 pub const MAXIMUM_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
 
 /// One core's private data.

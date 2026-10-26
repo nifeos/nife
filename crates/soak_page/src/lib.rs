@@ -56,7 +56,8 @@ pub const PAGE: u64 = 4096;
 /// spare, and the cap exists so that the kernel's own fixed-size arrays have a bound rather than
 /// because anything is near it.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_WORKERS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_WORKERS`.
 pub const MAXIMUM_WORKERS: usize = 64;
 
 /// Byte offset of worker `i`'s completed-round-trip counter.

@@ -886,9 +886,9 @@ fn a_wide_grid_keeps_the_history_its_cell_budget_holds() {
     );
 }
 
-/// **The size clamp is exact at the boundary.** `MAXIMUM_COLS`/`MAXIMUM_ROWS` themselves are legal, one
-/// past either is clamped down, and zero clamps up to one rather than producing an empty grid no
-/// cursor could ever occupy. Milestone 326 (turn a mutation score upward)'s mutation triage.
+/// **The size clamp is exact at the boundary.** `MAXIMUM_COLS`/`MAXIMUM_ROWS` themselves are legal,
+/// one past either is clamped down, and zero clamps up to one rather than producing an empty grid
+/// no cursor could ever occupy. Milestone 326 (turn a mutation score upward)'s mutation triage.
 #[test]
 fn geometry_clamps_exactly_at_the_boundary_not_one_off_it() {
     // The widest grid gets the rows MAXIMUM_CELLS leaves it; the tallest needs a narrow one.

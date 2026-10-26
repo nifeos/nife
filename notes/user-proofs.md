@@ -37,22 +37,22 @@ What is left is still worth proving, and one attempt at proving it found a live 
 
 ## The defect this found, which is the point
 
-`components/src/rmle.rs` (the editor) holds a document as `MAXIMUM_ROWS` rows of at most `MAXIMUM_COLS` bytes, and
-saves it by joining the rows with `\n` into one scratch buffer before writing that buffer to the
-filesystem. The buffer was `MAXIMUM_ROWS * MAXIMUM_COLS`.
+`components/src/rmle.rs` (the editor) holds a document as `MAXIMUM_ROWS` rows of at most
+`MAXIMUM_COLS` bytes, and saves it by joining the rows with `\n` into one scratch buffer before
+writing that buffer to the filesystem. The buffer was `MAXIMUM_ROWS * MAXIMUM_COLS`.
 
 That is the size of the document's text, not the size of what `save` writes. The separators cost
-`MAXIMUM_ROWS - 1` bytes more. A document at both bounds is 32 rows of 100 columns. The editor's own limits
-permit it, and typing 31 characters onto the last line of a freshly loaded full file reaches it. It
-staged 3231 bytes into a 3200-byte buffer and panicked the editor on `^S`.
+`MAXIMUM_ROWS - 1` bytes more. A document at both bounds is 32 rows of 100 columns. The editor's own
+limits permit it, and typing 31 characters onto the last line of a freshly loaded full file reaches
+it. It staged 3231 bytes into a 3200-byte buffer and panicked the editor on `^S`.
 
 No test found this. It was found by trying to state the property, before any harness ran. That is
 the mechanism milestone 191 (did the proofs catch the bugs?) said the tree was missing. A property
 has to be written down before it can be checked, and writing it down is where the two constants got
 compared for the first time.
 
-The fix is the buffer sized as `MAXIMUM_ROWS * (MAXIMUM_COLS + 1)`, one separator budgeted per row rather
-than per gap, and a `const` assertion beside it rather than a proof:
+The fix is the buffer sized as `MAXIMUM_ROWS * (MAXIMUM_COLS + 1)`, one separator budgeted per row
+rather than per gap, and a `const` assertion beside it rather than a proof:
 
 ```rust
 const _: () = assert!(FILE_SCRATCH_LEN >= MAXIMUM_ROWS * MAXIMUM_COLS + (MAXIMUM_ROWS - 1));

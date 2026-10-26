@@ -136,8 +136,8 @@ Pinning it to "payload A" would be pinning a detail of when RedoxFS happens to w
 the claim is not about that. Both legs currently report A, 66 bytes, whole. The gate re-reads the
 image afterwards with the host tool and the pinned engine, which is the half a cache cannot fake.
 
-Two ceilings moved for it, and both are receipts rather than tuning. `MAXIMUM_DEVICES` went to 27 for the
-second block server, the fourth such bump and another argument for the missing unregister. And the
-crash servers' untyped budget is 2 MiB rather than 8. An untyped is *reserved*, not merely capped,
-and three 8 MiB reservations do not fit in this machine's 128 MiB. The first symptom of that was
-`init` failing to get its own budget several tests later, which is a long way from the cause.
+Two ceilings moved for it, and both are receipts rather than tuning. `MAXIMUM_DEVICES` went to 27
+for the second block server, the fourth such bump and another argument for the missing unregister.
+And the crash servers' untyped budget is 2 MiB rather than 8. An untyped is *reserved*, not merely
+capped, and three 8 MiB reservations do not fit in this machine's 128 MiB. The first symptom of that
+was `init` failing to get its own budget several tests later, which is a long way from the cause.

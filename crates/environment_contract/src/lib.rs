@@ -105,19 +105,22 @@ pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 /// 33 bytes), so a curated list can grow toward the real database's longer names without a
 /// layout change.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TZ_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TZ_MAX`.
 pub const TZ_MAXIMUM: usize = 40;
 
 /// The most bytes a `LANG` value may occupy. Covers every entry in [`domain::KNOWN_LANG`] with
 /// headroom for a codeset suffix this crate does not carry yet (`en_US.ISO8859-1` is 16 bytes).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `LANG_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LANG_MAX`.
 pub const LANG_MAXIMUM: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERM`]
 /// (`screen-256color` is the longest at 15) with headroom to grow.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TERM_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
 pub const TERM_MAXIMUM: usize = 24;
 
 const OFF_MAGIC: usize = 0;

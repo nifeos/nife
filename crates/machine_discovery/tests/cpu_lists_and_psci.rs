@@ -180,9 +180,9 @@ fn a_disabled_cpu_and_a_spin_table_cpu_are_reported_as_such() {
 
 /// **A machine with more cores than fit is reported as truncated, not as smaller.**
 ///
-/// `described` keeps counting past `MAXIMUM_CPU_NODES`, so a caller can print "this machine has more
-/// cores than this kernel was built for" instead of quietly reading a prefix and calling it the
-/// machine. Seven cores is not enough to overflow sixteen slots, so the equality below is the
+/// `described` keeps counting past `MAXIMUM_CPU_NODES`, so a caller can print "this machine has
+/// more cores than this kernel was built for" instead of quietly reading a prefix and calling it
+/// the machine. Seven cores is not enough to overflow sixteen slots, so the equality below is the
 /// honest state of the fixture and the inequality is what a bigger machine would hit.
 #[test]
 fn the_described_count_is_the_machines_and_the_length_is_ours() {

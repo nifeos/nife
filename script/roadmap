@@ -1474,8 +1474,8 @@ for mid, fname in sorted(ids.items()):
             # **A path is checked when one is named, and never demanded.** The first draft of this
             # required every `Recorded.` bullet to name an existing file, and three lanes hit it
             # within the hour on bullets that were correct: a backticked identifier is ordinary
-            # prose here (`MAXIMUM_CPUS`, `scounteren.CY`, `display_terminal`), and the common case is
-            # a limitation recorded in the block the reader is already holding, where repeating
+            # prose here (`MAXIMUM_CPUS`, `scounteren.CY`, `display_terminal`), and the common case
+            # is a limitation recorded in the block the reader is already holding, where repeating
             # the block's own path in five consecutive bullets is noise.
             #
             # It is also the BUGS convention's own boundary, which this gate must not cross. "This

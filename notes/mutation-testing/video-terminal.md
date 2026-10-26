@@ -116,9 +116,10 @@ axis in range and the other not, on both axes, and checks that the private `cell
   the non-strict one.
 - The `>=` half of the size clamp, 2 mutants (`cols > MAXIMUM_COLS as u32` in `clamp_cols`, and the
   same in `clamp_rows`). It is the `union` argument applied to
-  `if cols > MAXIMUM_COLS { MAXIMUM_COLS } else { cols }`. At `cols == MAXIMUM_COLS` the else branch returns
-  `cols`, which is `MAXIMUM_COLS`, so both branches agree at the one point `>` and `>=` differ. The `==`
-  half above is a real gap: it clamps only the boundary value and lets everything past it through.
+  `if cols > MAXIMUM_COLS { MAXIMUM_COLS } else { cols }`. At `cols == MAXIMUM_COLS` the else branch
+  returns `cols`, which is `MAXIMUM_COLS`, so both branches agree at the one point `>` and `>=`
+  differ. The `==` half above is a real gap: it clamps only the boundary value and lets everything
+  past it through.
 - `Vt::pixel`'s `col < self.cols` in the cursor-overlay check, 1 mutant. The term is reached only
   after `col == self.col` matched earlier in the same `&&` chain. `self.col` is never
   `>= self.cols`: every cursor-moving path clamps with `.min(self.cols - 1)` or

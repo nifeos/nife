@@ -17,9 +17,10 @@ indexed `acells[16]` on a 16-element array. That is a panic in the parser the ke
 blob it did not write, before there is any way to report a failure.
 
 Fixed by refusing to match past the stack, `(2..MAXIMUM_DEPTH).contains(&depth)`, which is what the
-sibling `node_reg_compatible` already did. Clamping the index would have been worse: past `MAXIMUM_DEPTH`
-the walk has stopped tracking cell counts, so the region it decoded would be arithmetic on the wrong
-widths. Not finding the node is honest; finding it and reporting the wrong address is not.
+sibling `node_reg_compatible` already did. Clamping the index would have been worse: past
+`MAXIMUM_DEPTH` the walk has stopped tracking cell counts, so the region it decoded would be
+arithmetic on the wrong widths. Not finding the node is honest; finding it and reporting the wrong
+address is not.
 
 **Found by reading the code while writing the fuzz target. Ten minutes of fuzzing did not find it**,
 and that is recorded here rather than smoothed over. See the main page's BUGS.

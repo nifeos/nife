@@ -116,8 +116,8 @@ pub const SETXATTR: u64 = 15;
 /// were filled with [`super::xattr::list`] records; 0 means the node has no attributes.
 ///
 /// There is **no cursor**, unlike [`READDIR`], and that is a property rather than an omission:
-/// [`super::xattr::MAXIMUM_COUNT`] names of [`super::xattr::MAXIMUM_NAME`] bytes fit one page exactly,
-/// so a listing is always complete in one reply and cannot be observed half-changed.
+/// [`super::xattr::MAXIMUM_COUNT`] names of [`super::xattr::MAXIMUM_NAME`] bytes fit one page
+/// exactly, so a listing is always complete in one reply and cannot be observed half-changed.
 ///
 /// Needs [`super::dir::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.
 pub const LISTXATTR: u64 = 16;
@@ -231,7 +231,8 @@ pub const UNBIND: u64 = 65;
 pub const BIND_SYNC: u64 = 66;
 
 /// **How many contiguous pages the file channel spans**, so one [`READ`] or [`WRITE`] carries up
-/// to [`TRANSFER_MAXIMUM`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it changes.
+/// to [`TRANSFER_MAXIMUM`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it
+/// changes.
 ///
 /// The FS server maps all of them. A client maps as many as it intends to use and asks for no
 /// more, so one that moves 4096 bytes maps one page and needs no change. Nothing checks that a
@@ -265,7 +266,8 @@ pub const TRANSFER_PAGES: usize = 16;
 /// assert_eq!(fs::req_len(w0), PAGE);
 /// ```
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TRANSFER_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TRANSFER_MAX`.
 pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
 
 /// **How many client channels one file service keeps side by side** (milestone 599 (a frame per
@@ -280,7 +282,8 @@ pub const CLIENT_WINDOWS: usize = 8;
 /// [`TRANSFER_MAXIMUM`], so the bit-packing has never been what bounds a transfer; the bound only
 /// guards the packing itself, and [`TRANSFER_MAXIMUM`] is what bounds a payload.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
 pub const MAXIMUM_LEN: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
@@ -297,7 +300,8 @@ const _: () = {
 };
 /// The largest handle the packing can carry (16 bits). The server's table is far smaller.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_HANDLE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_HANDLE`.
 pub const MAXIMUM_HANDLE: u64 = 0xffff;
 
 /// Pack a file request's first word: opcode (bits 63:56), handle (bits 55:40), length (bits

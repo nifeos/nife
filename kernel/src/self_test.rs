@@ -1085,8 +1085,8 @@ impl Draw {
 
 /// **Wait for an entropy service to be ready, then draw two 32-byte buffers from it as a client**,
 /// on a helper thread so the wait keeps a deadline. Each draw is four `entropy_contract` round
-/// trips (`MAXIMUM_BYTES` is 8), and the second empties a different device generation than the first.
-/// `None` if the service did not answer within `seconds`.
+/// trips (`MAXIMUM_BYTES` is 8), and the second empties a different device generation than the
+/// first. `None` if the service did not answer within `seconds`.
 fn draw_twice(w: crate::user::entropy_service::Wiring, seconds: u64) -> Option<Draw> {
     use core::sync::atomic::AtomicBool;
 

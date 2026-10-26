@@ -98,11 +98,12 @@ const HEADER_LEN: usize = 40;
 /// `from_ptr` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
 /// 4 GiB slice read past the end of RAM, a data abort in `memory::initialize` before any handler can say
-/// why (2026-09-24 security audit). 2 MiB is Linux's `MAXIMUM_FDT_SIZE` (`SZ_2M` in
+/// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
 /// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
 /// 64 KiB. See notes/device-tree.md ("The parser's bounds").
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_TOTALSIZE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_TOTALSIZE`.
 pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
@@ -352,11 +353,12 @@ impl<'a> DeviceTreeBlob<'a> {
                         scells[depth] = scells[depth - 1];
                     }
 
-                    // `(2..MAXIMUM_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth - 1]`,
-                    // which is out of bounds once `depth` reaches 17, a boot-time panic on a hostile
-                    // blob (tests/hostile.rs). Past `MAXIMUM_DEPTH` the cell counts are no longer
-                    // tracked, so refusing to match is honest where a clamped index would decode the
-                    // wrong widths. `node_reg_compatible` refuses the same way at its END_NODE.
+                    // `(2..MAXIMUM_DEPTH)`, not `>= 2`: the `reg` arm below reads `acells[depth -
+                    // 1]`, which is out of bounds once `depth` reaches 17, a boot-time panic on a
+                    // hostile blob (tests/hostile.rs). Past `MAXIMUM_DEPTH` the cell counts are no
+                    // longer tracked, so refusing to match is honest where a clamped index would
+                    // decode the wrong widths. `node_reg_compatible` refuses the same way at its
+                    // END_NODE.
                     if (2..MAXIMUM_DEPTH).contains(&depth)
                         && name.starts_with(prefix)
                         && target_at.is_none()
@@ -580,8 +582,8 @@ impl<'a> DeviceTreeBlob<'a> {
 
                 FDT_END_NODE => {
                     // Depth 1 is the root, which carries no `compatible` worth matching here; a
-                    // node past MAXIMUM_DEPTH was never tracked, so it cannot answer (the same refusal
-                    // node_reg records: not finding is honest, misreporting is not).
+                    // node past MAXIMUM_DEPTH was never tracked, so it cannot answer (the same
+                    // refusal node_reg records: not finding is honest, misreporting is not).
                     if (2..MAXIMUM_DEPTH).contains(&depth) && matched[depth] {
                         // `depth >= 2` and `up <= 1` keep this at the root or below it.
                         return match found[depth - up] {

@@ -12,24 +12,27 @@ use crate::nav::{self, Step};
 
 /// The longest name a grant can carry, which is [`crate::MAXIMUM_FILE_NAME`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NAME`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
 pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 
-/// **The most names one expansion may grant**: Unix's `ARG_MAXIMUM` as a capability limit. The set
+/// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
 /// stack, and sixteen ran the shell off its stack. It matches
 /// `filesystem_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
 /// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
 /// ("Why the bound is eight").
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NAMES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAMES`.
 pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one expansion may grant, all its names together**, for
-/// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it holds
-/// its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of [`MAXIMUM_NAME`] each. It
-/// matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and exceeding it is
-/// the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a set carries").
+/// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
+/// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
+/// [`MAXIMUM_NAME`] each. It matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host
+/// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
+/// ("The bytes a set carries").
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const NAME_BYTES: usize = 512;
@@ -86,8 +89,8 @@ impl Name {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
-    /// than [`MAXIMUM_NAMES`] slots of [`MAXIMUM_NAME`], because this is copied by value through the
-    /// shell's deepest frames ([`NAME_BYTES`]).
+    /// than [`MAXIMUM_NAMES`] slots of [`MAXIMUM_NAME`], because this is copied by value through
+    /// the shell's deepest frames ([`NAME_BYTES`]).
     bytes: [u8; NAME_BYTES],
     /// Where each name ends in `bytes`, in step with `is_directory`.
     ends: [u16; MAXIMUM_NAMES],
@@ -197,8 +200,8 @@ impl NameSet {
     ///
     /// Returns whether nothing was left out: `false` when `name` itself, or names it displaced, did
     /// not fit. The name goes in when it sorts below a name held, displacing the largest ones until
-    /// the set fits [`MAXIMUM_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts after
-    /// what is kept. The caller then refuses every later name after the set's last
+    /// the set fits [`MAXIMUM_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts
+    /// after what is kept. The caller then refuses every later name after the set's last
     /// ([`Expander::offer`]), or a short name could slip in behind a long one that was left out and
     /// the next batch would skip it. It takes a name the caller has established can travel in a
     /// grant.
@@ -316,8 +319,9 @@ impl<'a> Expander<'a> {
     ///
     /// The same membership decision as [`Expander::new`] and a different collection policy: instead
     /// of refusing the ninth match, this takes the smallest matches strictly after `resume` that fit
-    /// [`MAXIMUM_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided once, in [`Expander::offer`],
-    /// so a batched line and an unbatched one cannot disagree about what a pattern designates.
+    /// [`MAXIMUM_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided
+    /// once, in [`Expander::offer`], so a batched line and an unbatched one cannot disagree about
+    /// what a pattern designates.
     ///
     /// The policies differ on purpose: an unbatched line refuses a ninth match, and a batched line
     /// exists for it.

@@ -49,7 +49,8 @@ pub const TRANSFER_BLOCKS: usize = 16;
 /// The largest payload one [`READ`] or [`WRITE`] may carry, in bytes: the whole shared region
 /// ([`TRANSFER_BLOCKS`] blocks). The block server clamps every request's count to this.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `TRANSFER_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TRANSFER_MAX`.
 pub const TRANSFER_MAXIMUM: usize = TRANSFER_BLOCKS * BLOCK_SIZE;
 
 /// Pack a blk request's first word: opcode (bits 63:56, [`super::OPERATION_SHIFT`]) and a block count

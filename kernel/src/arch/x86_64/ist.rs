@@ -14,7 +14,8 @@
 //! # BUGS
 //!
 //! - `script/stack-depth-check` does not measure these stacks.
-//! - They cost 3 x 20 KiB x `MAXIMUM_CPUS` (480 KiB) of address space whether or not the cores exist.
+//! - They cost 3 x 20 KiB x `MAXIMUM_CPUS` (480 KiB) of address space whether or not the cores
+//!   exist.
 
 use core::cell::SyncUnsafeCell;
 

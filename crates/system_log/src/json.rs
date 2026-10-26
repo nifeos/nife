@@ -11,7 +11,8 @@ use system_log_contract::{control, severity};
 /// The longest line [`render`] can produce, newline included, with room to spare: every text byte
 /// and every name byte escaped to six characters, and every number at twenty digits, is 1,901.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `LINE_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LINE_MAX`.
 pub const LINE_MAXIMUM: usize = 2048;
 
 const _: () = assert!(

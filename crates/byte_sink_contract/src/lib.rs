@@ -1,10 +1,11 @@
 //! **The byte-sink contract**: one framing for *write these bytes there*, so a writer cannot tell
 //! what is underneath its output. A sink is a `Rendezvous` capability with `WRITE` and nothing
-//! else: up to [`INLINE_MAXIMUM`] bytes ride in registers with the opcode and length in the first word
-//! (the three-word fastpath, notes/abi.md), sent with `SEND`, whose rendezvous is the flow control.
-//! [`Sent::NoSink`] means the slot is empty and writing into the void is correct; [`Sent::Gone`]
-//! means the sink was destroyed (§16 (object revocation)) and **the writer must end**, `SIGPIPE`
-//! as a return code. No per-write error, no types, no seeking. See notes/sink-protocol.md.
+//! else: up to [`INLINE_MAXIMUM`] bytes ride in registers with the opcode and length in the first
+//! word (the three-word fastpath, notes/abi.md), sent with `SEND`, whose rendezvous is the flow
+//! control. [`Sent::NoSink`] means the slot is empty and writing into the void is correct;
+//! [`Sent::Gone`] means the sink was destroyed (§16 (object revocation)) and **the writer must
+//! end**, `SIGPIPE` as a return code. No per-write error, no types, no seeking. See
+//! notes/sink-protocol.md.
 //!
 //! Name: ratified 2026-08-23 (calef) as `byte_sink_proto`, renamed from `sink_proto` to match "the
 //! byte-sink contract"; `_contract` per calef's 2026-10-18 ruling.
@@ -15,8 +16,8 @@
 /// `line_editor::proto` put theirs. One spelling for "the wire contract" across the tree.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in the
-/// second and third words, little-endian, low word first.
+/// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in
+/// the second and third words, little-endian, low word first.
 ///
 /// It is **zero on purpose.** With the opcode at zero the first word is exactly the byte count,
 /// which is bit-for-bit the framing std's stdout already sent before this crate existed. So
@@ -38,7 +39,8 @@ pub const OPERATION_EOF: u64 = 1;
 /// the registers a `SEND` already has, and enlarging it means giving a sink a shared page, which is
 /// the thing the module note explains this contract exists to avoid.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `INLINE_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `INLINE_MAX`.
 pub const INLINE_MAXIMUM: usize = 16;
 
 /// The kernel's `abi::Error::Gone`, restated so this crate stays dependency-free.
@@ -69,9 +71,10 @@ pub const fn eof() -> u64 {
     req(OPERATION_EOF, 0)
 }
 
-/// Pack up to [`INLINE_MAXIMUM`] bytes into the three words of a `SEND`. Bytes past the sixteenth are
-/// **not** silently dropped: the caller chunks, and the returned count says how many were taken, so
-/// a caller that ignores it writes a short message rather than losing a tail without knowing.
+/// Pack up to [`INLINE_MAXIMUM`] bytes into the three words of a `SEND`. Bytes past the sixteenth
+/// are **not** silently dropped: the caller chunks, and the returned count says how many were
+/// taken, so a caller that ignores it writes a short message rather than losing a tail without
+/// knowing.
 ///
 /// # Examples
 ///
@@ -175,7 +178,8 @@ pub const fn kind(w0: u64) -> u8 {
 /// What one received message was.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Msg {
-    /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to [`INLINE_MAXIMUM`].
+    /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to
+    /// [`INLINE_MAXIMUM`].
     Bytes(usize),
     /// [`OPERATION_EOF`]: the writer is finished.
     Eof,
@@ -195,7 +199,9 @@ pub enum Msg {
 /// hold is refused rather than obeyed:
 ///
 /// ```
-/// use byte_sink_contract::{INLINE_MAXIMUM, Msg, OPERATION_BYTES, len, operation, pack, req, unpack};
+/// use byte_sink_contract::{
+///     INLINE_MAXIMUM, Msg, OPERATION_BYTES, len, operation, pack, req, unpack,
+/// };
 ///
 /// let (w0, ..) = pack(b"hi");
 /// assert_eq!(w0, 2); // the whole word, not just its low bits

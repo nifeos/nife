@@ -98,7 +98,8 @@ pub struct Vt {
 }
 
 impl Vt {
-    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAXIMUM_COLS`] and [`MAXIMUM_ROWS`].
+    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAXIMUM_COLS`] and
+    /// [`MAXIMUM_ROWS`].
     ///
     /// Clamped rather than refused, because the alternative in a `no_std` component is a panic it
     /// cannot report. **`const`, so a terminal can live in `.bss`**; the clamps are spelled out
@@ -149,7 +150,8 @@ impl Vt {
         }
     }
 
-    /// `rows` clamped to one and to [`MAXIMUM_ROWS`], and to what fits in [`MAXIMUM_CELLS`] at `cols`.
+    /// `rows` clamped to one and to [`MAXIMUM_ROWS`], and to what fits in [`MAXIMUM_CELLS`] at
+    /// `cols`.
     const fn clamp_rows(rows: u32, cols: u32) -> u32 {
         let fit = (MAXIMUM_CELLS / cols as usize) as u32;
         let most = if fit < MAXIMUM_ROWS as u32 {

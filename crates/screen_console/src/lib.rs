@@ -3,8 +3,8 @@
 //! ([`bitmap_font`]), put bytes on the screen. It holds a cursor, a geometry and a scale, plus a
 //! caller-kept [`Cells`] a scroll redraws from, and has no colour changes, escapes, scrollback or
 //! reflow, so it cannot be put in a surprising state. Each font pixel is a square block at the
-//! largest integer scale that leaves [`MINIMUM_COLUMNS`] columns. Scrolling writes only the cells that
-//! changed, through a [`PixelSink`] that cannot read. See notes/serial-less-output.md and
+//! largest integer scale that leaves [`MINIMUM_COLUMNS`] columns. Scrolling writes only the cells
+//! that changed, through a [`PixelSink`] that cannot read. See notes/serial-less-output.md and
 //! notes/serial-less-output/the-screen-console.md.
 
 //! # BUGS
@@ -36,7 +36,8 @@ use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
 /// NVMe driver leaves the kernel), when the 1:1 font on a 1920-wide monitor could not be read or
 /// photographed.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MIN_COLUMNS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_COLUMNS`.
 pub const MINIMUM_COLUMNS: u32 = 120;
 
 /// **Where a surface lands on a firmware screen**: the arithmetic a driver needs to copy a
@@ -429,11 +430,11 @@ impl Cells {
     /// **How many cells there is room for**: 240 columns by 150 rows.
     ///
     /// 240 is the widest any screen gets. [`ScreenConsole::scale_for`] picks the largest scale
-    /// that leaves [`MINIMUM_COLUMNS`] columns, so a screen gets fewer than `2 * MINIMUM_COLUMNS` columns
-    /// at every scale: at one, because it is narrower than two scales' worth; at a larger scale,
-    /// because the next scale up did not fit. 150 rows is a 1200-pixel-tall screen at scale one,
-    /// the tallest under 1680 wide this tree has a reason to expect. A screen with more rows than
-    /// this leaves room for is drawn on the top rows that fit; see this crate's BUGS.
+    /// that leaves [`MINIMUM_COLUMNS`] columns, so a screen gets fewer than `2 * MINIMUM_COLUMNS`
+    /// columns at every scale: at one, because it is narrower than two scales' worth; at a larger
+    /// scale, because the next scale up did not fit. 150 rows is a 1200-pixel-tall screen at scale
+    /// one, the tallest under 1680 wide this tree has a reason to expect. A screen with more rows
+    /// than this leaves room for is drawn on the top rows that fit; see this crate's BUGS.
     pub const CAPACITY: usize = 2 * MINIMUM_COLUMNS as usize * 150;
 
     /// A blank grid: every cell a space.
@@ -544,9 +545,9 @@ impl ScreenConsole {
     }
 
     /// **[`Self::scale_for`]'s rule for a cell `cell_w` pixels wide**: the largest integer scale
-    /// that still leaves [`MINIMUM_COLUMNS`] columns of such cells, never less than one. The one rule
-    /// both consoles draw by, so the shell's terminal (14-pixel cells from `glyph_atlas`) and this
-    /// console's 7-pixel bitmap give a screen of the same width the same columns at most: a
+    /// that still leaves [`MINIMUM_COLUMNS`] columns of such cells, never less than one. The one
+    /// rule both consoles draw by, so the shell's terminal (14-pixel cells from `glyph_atlas`) and
+    /// this console's 7-pixel bitmap give a screen of the same width the same columns at most: a
     /// 1920-wide screen is 137 columns of either, at scale one for the terminal and two here.
     ///
     /// Name: provisional.

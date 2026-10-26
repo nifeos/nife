@@ -103,8 +103,8 @@ const Q_AVAIL: u64 = 0x080;
 const Q_USED: u64 = 0x100;
 const POOL_OFF: u64 = 0x400;
 
-/// How many bytes one device request fetches. 256 is 32 clients' worth of [`proto::MAXIMUM_BYTES`] per
-/// round trip, and it leaves the rest of the page unused rather than crowding the rings.
+/// How many bytes one device request fetches. 256 is 32 clients' worth of [`proto::MAXIMUM_BYTES`]
+/// per round trip, and it leaves the rest of the page unused rather than crowding the rings.
 const POOL_LEN: u64 = 256;
 
 /// How many times to re-ask a device that returned nothing before telling the caller so. A device

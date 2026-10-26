@@ -83,8 +83,8 @@ Walks loop over a chain's pages and then over each page's slice. A `flat_map` ac
 per-page slice is 16% under the walk it replaced.
 
 The registry carries one past its highest live slot, so a walk costs the occupied prefix rather than
-`MAXIMUM_SPACES`. Without that bound, doubling `sched::MAXIMUM_THREADS` from 128 to 256 cost `spawn_el0`
-138,584 ticks through this file, with `forget_root` the worst site. See
+`MAXIMUM_SPACES`. Without that bound, doubling `sched::MAXIMUM_THREADS` from 128 to 256 cost
+`spawn_el0` 138,584 ticks through this file, with `forget_root` the worst site. See
 [the benchmarks note](benchmarks.md).
 
 ## One critical section: read, map, record

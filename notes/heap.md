@@ -236,13 +236,14 @@ the process's own untyped budget. The pair that landed:
   `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
 - `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
-  static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, maximum_bytes)`, first
-  thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via `untyped::MAP`
-  (one page per invoke, zeroed by the kernel, paid from the budget). It grows geometrically (double,
-  at least 8 pages, never past `maximum_bytes`). The first run is talc's `claim`, holding its bins;
-  each later run is `extend`, so the heap stays one contiguous range. Which slot pays, and where the heap lives, are part of the
-  program's capability contract like every other slot number (notes/abi.md §4);
-  `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of every convention in the tree.
+  static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, maximum_bytes)`,
+  first thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via
+  `untyped::MAP` (one page per invoke, zeroed by the kernel, paid from the budget). It grows
+  geometrically (double, at least 8 pages, never past `maximum_bytes`). The first run is talc's
+  `claim`, holding its bins; each later run is `extend`, so the heap stays one contiguous range.
+  Which slot pays, and where the heap lives, are part of the program's capability contract like
+  every other slot number (notes/abi.md §4); `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of
+  every convention in the tree.
 
 What this is *not*: a kernel service. The kernel's only involvement is the `untyped::MAP` it
 already had; a process that leaks just exhausts its own budget (`OutOfMemory` is the process's

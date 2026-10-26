@@ -338,7 +338,8 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
         .collect();
     for p in &shown {
         eprintln!(
-            "apropos: {p} is longer than the {maximum} bytes a page record holds, so the result above \
+            "apropos: {p} is longer than the {maximum} bytes a page record holds, so the result \
+            above \
              that names it is truncated"
         );
     }

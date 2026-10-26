@@ -227,7 +227,8 @@ impl<S: Read + Write> Session<S> {
     /// **[`Session::get`], and the `Location` of a redirect.** The body reaches `body` only when
     /// the status is 200, so a redirect's own body (GitHub's is empty) is read and dropped rather
     /// than mistaken for the package. The head may be up to
-    /// `http_response::REDIRECT_HEAD_MAXIMUM` bytes, because `github.com`'s `302` is 10,806 (2026-10-24 UTC).
+    /// `http_response::REDIRECT_HEAD_MAXIMUM` bytes, because `github.com`'s `302` is 10,806
+    /// (2026-10-24 UTC).
     ///
     /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`,
     /// with [`Reply`].
@@ -384,7 +385,8 @@ pub mod listed {
                 }
                 Hop::Redirect(_) if followed == MAXIMUM_REDIRECTS => {
                     return Err(format!(
-                        "redirected to {}, which redirected again: {MAXIMUM_REDIRECTS} redirect is followed, \
+                        "redirected to {}, which redirected again: {MAXIMUM_REDIRECTS} redirect \
+                        is followed, \
                          no more",
                         next.host
                     ));

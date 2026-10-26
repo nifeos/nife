@@ -13,8 +13,8 @@
 //! - **slot 2**: the file-service endpoint, `READ`. Clients `CALL` here; this is the directory
 //!   capability, bound in the server to the image's root (phase 2). A client without it opens
 //!   nothing.
-//! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server, `blk::TRANSFER_MAXIMUM`
-//!   bytes of contiguous pages (the block buffer).
+//! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server,
+//!   `blk::TRANSFER_MAXIMUM` bytes of contiguous pages (the block buffer).
 //! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `fs::TRANSFER_MAXIMUM`
 //!   bytes of contiguous pages (a name on open, file bytes on read/write).
 
@@ -54,10 +54,10 @@ const READY: u64 = 3;
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
 /// address-space map (`crates/address_space_map`), above the heap band and below the image band.
 ///
-/// [`BLK_PAGE`] is `blk::TRANSFER_MAXIMUM` bytes wide rather than one page (milestone 138 step 4) and
-/// [`FILE_PAGE`] is `fs::TRANSFER_MAXIMUM` bytes wide rather than one page (step 3); [`FILE_PAGE`] sits
-/// above [`BLK_PAGE`] by exactly `blk::TRANSFER_MAXIMUM` so growing either region stays inside the 8 MiB
-/// nothing else this process maps comes within.
+/// [`BLK_PAGE`] is `blk::TRANSFER_MAXIMUM` bytes wide rather than one page (milestone 138 step 4)
+/// and [`FILE_PAGE`] is `fs::TRANSFER_MAXIMUM` bytes wide rather than one page (step 3);
+/// [`FILE_PAGE`] sits above [`BLK_PAGE`] by exactly `blk::TRANSFER_MAXIMUM` so growing either
+/// region stays inside the 8 MiB nothing else this process maps comes within.
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
 
@@ -159,8 +159,8 @@ impl IpcDisk {
 
     /// Copy `n` bytes out of the shared block region (a completed read landed there, at its start).
     fn from_page(dst: &mut [u8]) {
-        // SAFETY: BLK_PAGE is a mapped, writable region of exactly blk::TRANSFER_MAXIMUM bytes; `dst`
-        // is no larger (every caller passes at most blk::TRANSFER_BLOCKS * BLOCK).
+        // SAFETY: BLK_PAGE is a mapped, writable region of exactly blk::TRANSFER_MAXIMUM bytes;
+        // `dst` is no larger (every caller passes at most blk::TRANSFER_BLOCKS * BLOCK).
         unsafe {
             core::ptr::copy_nonoverlapping(BLK_PAGE as *const u8, dst.as_mut_ptr(), dst.len())
         }
@@ -383,8 +383,8 @@ fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
         // `CALL` server tells a Reply from a delegation)), so a `SEND_CAP`'d capability is deleted.
         let req = receive_request(FILE);
         let reply_slot = req.delivered.into_reply();
-        // SAFETY: `fs::TRANSFER_MAXIMUM` is exactly the window's mapped length, and this slice is the
-        // only one taken from it until the request is answered.
+        // SAFETY: `fs::TRANSFER_MAXIMUM` is exactly the window's mapped length, and this slice is
+        // the only one taken from it until the request is answered.
         let window = unsafe { file_page(window_base(req.badge), fs::TRANSFER_MAXIMUM) };
         let (r0, r1) = server.handle(req.badge, req.w0, req.w1, window, &mut IpcEdges);
         reply(reply_slot, r0, r1);

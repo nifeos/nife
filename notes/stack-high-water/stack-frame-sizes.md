@@ -43,11 +43,11 @@ All three are gone, and the last two were removed by the same pressure that foun
 local is a stack allocation wearing the clothes of a bound. It grows when the bound does, and nobody
 is watching that line.
 
-Raising `sched::MAXIMUM_THREADS` to 256 took the frame to 4,624 bytes, over `script/stack-frame-check`'s
-4,096-byte guard-page ceiling, and the gate caught it before any run did. `doomed` became the same
-rescan loop. `waiters` was removed outright, by waking each thread inside
-`Rendezvous::drain_waiters`'s callback rather than listing them first. The entry is already off its
-queue when the callback runs, which is what makes the wake legal there. The frame carries no
+Raising `sched::MAXIMUM_THREADS` to 256 took the frame to 4,624 bytes, over
+`script/stack-frame-check`'s 4,096-byte guard-page ceiling, and the gate caught it before any run
+did. `doomed` became the same rescan loop. `waiters` was removed outright, by waking each thread
+inside `Rendezvous::drain_waiters`'s callback rather than listing them first. The entry is already
+off its queue when the callback runs, which is what makes the wake legal there. The frame carries no
 table-sized local at all now.
 
 Now put that next to the parent's own thread-stack row. The measured high-water was 11672 of 16384

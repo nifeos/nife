@@ -801,9 +801,9 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
 }
 
 /// **Each walker's own per-depth arrays have their own edge.** The four walkers beside `node_reg`
-/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and milestone 326 (nobody has
-/// been assigned to turn a mutation score upward) found `<=` alive in every one; at depth exactly
-/// 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
+/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and milestone 326 (nobody
+/// has been assigned to turn a mutation score upward) found `<=` alive in every one; at depth
+/// exactly 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
 ///
 /// The tree is nested to exactly the edge and carries the property, the `compatible` and the
 /// `phandle` there, so each arm of each walker is asked to record something where recording it
@@ -839,8 +839,8 @@ fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
 /// **A node's slot is cleared when the node opens, and a sibling must not inherit what the last
 /// one left there.** Three walkers remember a candidate value per open depth and decide at the
 /// closing token, so the reset in `FDT_BEGIN_NODE` is the only thing standing between a sibling's
-/// answer and this one's. Milestone 326's run found `depth < MAXIMUM_DEPTH` alive under `==` and under
-/// `>` in all three, both of which skip the reset for every depth a real tree reaches.
+/// answer and this one's. Milestone 326's run found `depth < MAXIMUM_DEPTH` alive under `==` and
+/// under `>` in all three, both of which skip the reset for every depth a real tree reaches.
 ///
 /// The fixture is the same shape for each: the **first** sibling carries the property but does not
 /// identify, the **second** identifies but carries no property. The honest answer is "that node has

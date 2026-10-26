@@ -58,7 +58,8 @@
 //! | offset | size | field | values |
 //! |---|---|---|---|
 //! | 56 | 1 | zone count | 1 to [`MAXIMUM_ZONES`] |
-//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most [`ZONE_MAXIMUM`]; 0 is the root zone |
+//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most
+//! [`ZONE_MAXIMUM`]; 0 is the root zone |
 //!
 //! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
 //! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
@@ -108,8 +109,8 @@ pub const DESCRIPTOR_LEN: usize = 56;
 pub const ZONED_VERSION: u32 = 2;
 
 /// The most zones a manifest may ask for: 8, the resolver's
-/// `domain_name_resolution_contract::GRANTS_MAXIMUM`, since each granted zone is its own badge and a
-/// program asking for more could never be granted them all at once.
+/// `domain_name_resolution_contract::GRANTS_MAXIMUM`, since each granted zone is its own badge and
+/// a program asking for more could never be granted them all at once.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
@@ -902,7 +903,8 @@ pub const VERBS_VERSION: u32 = 1;
 /// (175 subcommands in git 2.56.0, calef's measure on #1903), and a bound on what a malformed count
 /// can make a reader walk.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_VERBS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_VERBS`.
 pub const MAXIMUM_VERBS: usize = 256;
 
 /// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'
@@ -926,8 +928,8 @@ pub const fn verbs_len(count: usize) -> usize {
 /// ```
 ///
 /// It panics, a compile error in a constant, on a `LEN` that is not that length, more than
-/// [`MAXIMUM_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that is
-/// not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
+/// [`MAXIMUM_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that
+/// is not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
 /// one encoding.
 pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> [u8; LEN] {
     assert!(
@@ -1043,9 +1045,9 @@ impl<'a> Verbs<'a> {
 }
 
 /// **A [`VERBS`] descriptor, decoded**, or why not. One table has one encoding, as [`decode`]
-/// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is not
-/// [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it, a
-/// grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
+/// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is
+/// not [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it,
+/// a grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
 /// refuse.
 pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     let version = d.get(..4).ok_or(Error::NoVersion)?;

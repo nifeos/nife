@@ -3,8 +3,8 @@
 //! Milestone 15 (design/roadmap/0015-asids.md). The hardware tags every TLB entry from a
 //! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
 //! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan, because
-//! `MAXIMUM_SPACES` (160) is below the smallest ASID space (256); past 255 the fix is 16-bit ASIDs. A
-//! number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
+//! `MAXIMUM_SPACES` (160) is below the smallest ASID space (256); past 255 the fix is 16-bit ASIDs.
+//! A number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
 //! `AddressSpace::drop` before [`free`](Allocator::free), one `tlbi aside1is` on aarch64 and an
 //! SBI RFENCE shootdown on RISC-V, whose `satp.ASID` may be narrower than these numbers. See
 //! notes/address-space-identifiers.md and notes/riscv-tlb-shootdown.md.

@@ -171,7 +171,7 @@ above.
 the two would disagree about what the line designates, which is the one thing this pairing exists to
 rule out.
 
-### `ARG_MAXIMUM` as a capability limit
+### `ARG_MAX` as a capability limit
 
 You cannot hand a child a hundred thousand names. `nameset::MAXIMUM_NAMES` is 8, and exceeding it is
 `Refusal::TooManyNames`: a loud refusal at the prompt, never a truncation. A glob that quietly

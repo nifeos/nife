@@ -147,7 +147,7 @@ The four words, and why only one was open. Measured on 2026-09-14, tree-wide:
 
 | word | code | prose | already names |
 |---|---|---|---|
-| `identity` | 546 | 362 | `identity_provisioner`, `MAXIMUM_IDENTITY`, `identity_hint` |
+| `identity` | 546 | 362 | `identity_provisioner`, `MAX_IDENTITY`, `identity_hint` |
 | `session` | 256 | 472 | `session_reviver` |
 | `credential` | 163 | 129 | `credential_proto`, `credentialer`, `credentialer_test_client` |
 | `principal` | 36 | 46 | **nothing** |
@@ -227,7 +227,7 @@ rename lane"):
 > them). `core` is reserved for the physical core, for when topology needs it, and is not used to mean
 > a cpu. A GPU or other device processor is named for what it is (`gpu`, ...), never `cpu`.
 
-The tree already used `cpu` about ten to one (`MAXIMUM_CPUS`, `online_cpus`, `PerCpu`, `on_cpu`), and
+The tree already used `cpu` about ten to one (`MAX_CPUS`, `online_cpus`, `PerCpu`, `on_cpu`), and
 `cpu_set` (ratified 2026-08-14) and `arch::cpu_start` are ratified with it. The rule follows the
 tree, and the lane `cpu-not-core` renamed the identifiers that had drifted to `core`.
 

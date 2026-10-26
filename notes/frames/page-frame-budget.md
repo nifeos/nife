@@ -12,7 +12,7 @@ The aarch64 test boot failed as `Unmappable(OutOfPageFrames)` about one run in t
 2026-08-16). It failed in whatever test happened to spawn last, which was never the test that spent
 the memory. It failed disguised: milestone 107 (socket) met it as `time_tests` reporting *"no swish
 program in the initrd archive, or no memory to wire one"*, which reads like a packaging bug and is
-not one. `notes/net/memory-and-reclamation.md` had recorded it eight separate times as "`virtio::MAXIMUM_DEVICES` has asked for
+not one. `notes/net/memory-and-reclamation.md` had recorded it eight separate times as "`virtio::MAX_DEVICES` has asked for
 reclamation again".
 
 Two numbers, not one, and the second is the one that fails a boot. Free page frames and the longest
@@ -44,11 +44,11 @@ services and not the arithmetic.
 
 Two ceilings fail the run, and the second is the one that names the bug. `SUITE_PAGE_FRAME_BUDGET`
 catches the total residue growing past what is accounted for below, which is how a
-new service-shaped test that forgets to hand its memory back is caught in the act. `SUITE_MINIMUM_FREE_RUN`
-requires the boot to end with a free run of at least 1024 page frames, and that is the real gate: loading a
-program calls `alloc_contiguous`, so what a boot runs out of is contiguity rather than memory. A suite
-can pass a residue ceiling and still be fragmented into uselessness, which is exactly the state this
-one was in.
+new service-shaped test that forgets to hand its memory back is caught in the act.
+`SUITE_MINIMUM_FREE_RUN` requires the boot to end with a free run of at least 1024 page frames, and
+that is the real gate: loading a program calls `alloc_contiguous`, so what a boot runs out of is
+contiguity rather than memory. A suite can pass a residue ceiling and still be fragmented into
+uselessness, which is exactly the state this one was in.
 
 ## What the boot spent, measured
 

@@ -24,7 +24,8 @@ pub(crate) const KEY_RIGHTCTRL: u16 = 97;
 
 /// The highest evdev code this table knows. Above it, [`byte`] answers `None`.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CODE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CODE`.
 pub const MAXIMUM_CODE: u16 = 57;
 
 /// What each key sends with no modifier, indexed by evdev code. `0` means "this key produces no
@@ -491,10 +492,10 @@ mod tests {
         assert_eq!(ld.line(), b"a");
     }
 
-    /// Arrow codes sit well above [`MAXIMUM_CODE`] (checked at compile time, below this module): this
-    /// proves the runtime half of the same claim, that [`byte`] (the main block's own lookup) does
-    /// not accidentally answer for them. If it ever did, [`Keyboard::event`]'s arrow case would be
-    /// dead code nobody noticed.
+    /// Arrow codes sit well above [`MAXIMUM_CODE`] (checked at compile time, below this module):
+    /// this proves the runtime half of the same claim, that [`byte`] (the main block's own lookup)
+    /// does not accidentally answer for them. If it ever did, [`Keyboard::event`]'s arrow case
+    /// would be dead code nobody noticed.
     #[test]
     fn arrow_codes_are_outside_the_main_blocks_table() {
         for code in [

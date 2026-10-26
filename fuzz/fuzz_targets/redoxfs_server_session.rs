@@ -43,8 +43,8 @@ const MAXIMUM_REQUESTS: usize = 48;
 /// limitation, not a rule: shrinking a file costs time linear in its logical size (the `BUGS`
 /// section of `Server::truncate`), so a session that grew a file to terabytes would time out on
 /// every run and hide everything after it. A `WRITE` end or `TRUNCATE` size between this and
-/// `MAXIMUM_FILE_END` is folded below it; past `MAXIMUM_FILE_END` it is sent as drawn, so the `EFBIG`
-/// refusals stay exercised. Drop this when the proposal that `BUGS` entry names is built.
+/// `MAXIMUM_FILE_END` is folded below it; past `MAXIMUM_FILE_END` it is sent as drawn, so the
+/// `EFBIG` refusals stay exercised. Drop this when the proposal that `BUGS` entry names is built.
 const SPARSE_LIMIT: u64 = 64 << 20;
 
 fn sparse(code: u64, len: usize, w1: u64) -> u64 {

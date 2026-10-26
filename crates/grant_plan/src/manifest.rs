@@ -97,8 +97,10 @@ pub enum InputDeclaration {
 pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 
 /// **The most short options one program may declare.** Sixteen, which is far above the three `rm`
-/// declares and well inside the 64 bits of [`Endowment::short_options`](crate::Endowment::short_options). Not [`MAXIMUM_SHORT_OPTIONS`](crate::MAXIMUM_SHORT_OPTIONS), which bounds
-/// what one line may type rather than what a program may accept.
+/// declares and well inside the 64 bits of
+/// [`Endowment::short_options`](crate::Endowment::short_options). Not
+/// [`MAXIMUM_SHORT_OPTIONS`](crate::MAXIMUM_SHORT_OPTIONS), which bounds what one line may type
+/// rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
 /// provisional: a program carries its manifest in an ELF note), and a decoded manifest has to hold
@@ -112,9 +114,9 @@ pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 /// A value rather than a `&'static [u8]` since milestone 597 (provisional): a manifest read out
 /// of a program's own bytes has no `'static` string to point at, so the letters are held inline.
 /// Every constructor checks the same three things, so a manifest compiled in and a manifest decoded
-/// from a note cannot disagree about what a well-formed option set is: at most [`MAXIMUM_DECLARED_SHORT_OPTIONS`]
-/// letters, each an ASCII letter or digit, and no letter twice (a repeated letter would give one
-/// option two bits, and [`plan`](crate::plan) reads the first).
+/// from a note cannot disagree about what a well-formed option set is: at most
+/// [`MAXIMUM_DECLARED_SHORT_OPTIONS`] letters, each an ASCII letter or digit, and no letter twice
+/// (a repeated letter would give one option two bits, and [`plan`](crate::plan) reads the first).
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

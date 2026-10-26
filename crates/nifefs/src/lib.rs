@@ -3,10 +3,10 @@
 //! tool writes an image with [`write_image`] and the userspace filesystem server reads it with
 //! [`Fs::parse`], so one definition of the format serves both. Pure logic, host-tested, no `std`.
 //!
-//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAXIMUM_FILES`] entries. `start_block` is
-//! absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A name
-//! is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN` bytes and
-//! stop at the first NUL. See notes/nifefs.md.
+//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAXIMUM_FILES`] entries. `start_block`
+//! is absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A
+//! name is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN`
+//! bytes and stop at the first NUL. See notes/nifefs.md.
 
 //! ```text
 //!   blocks 0..DIR_BLOCKS   the superblock and directory
@@ -81,7 +81,8 @@ pub const ENTRIES_IN_FIRST_BLOCK: usize = (BLOCK - HEADER_LEN) / ENTRY_LEN;
 /// **178 at `DIR_BLOCKS = 14` and `ENTRY_LEN = 40`.** It costs image bytes and no kernel stack,
 /// because [`Fs`] holds no entry array.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_FILES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_FILES`.
 pub const MAXIMUM_FILES: usize = (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN;
 
 /// Why [`Fs::parse`] refused an image.
@@ -134,9 +135,9 @@ impl Entry {
 
 /// A parsed superblock. Borrows the whole image so file lookups can return slices into it.
 ///
-/// Holds no entry array: entries decode from the borrowed image on demand, so [`MAXIMUM_FILES`] costs
-/// no kernel stack, where `Fs` is a local on the boot and spawn paths. `fs_does_not_grow_with_maximum_files`
-/// keeps it that way. See notes/nifefs.md.
+/// Holds no entry array: entries decode from the borrowed image on demand, so [`MAXIMUM_FILES`]
+/// costs no kernel stack, where `Fs` is a local on the boot and spawn paths.
+/// `fs_does_not_grow_with_maximum_files` keeps it that way. See notes/nifefs.md.
 pub struct Fs<'a> {
     image: &'a [u8],
     count: usize,
@@ -194,7 +195,8 @@ impl<'a> Fs<'a> {
         }
     }
 
-    /// The directory, decoded lazily. One `Entry` exists at a time rather than [`MAXIMUM_FILES`] of them.
+    /// The directory, decoded lazily. One `Entry` exists at a time rather than [`MAXIMUM_FILES`] of
+    /// them.
     pub fn entries(&self) -> impl Iterator<Item = Entry> + '_ {
         (0..self.count).map(|i| Self::entry_at(self.image, i))
     }
@@ -347,9 +349,9 @@ mod tests {
     /// them: every other test compares an image against the same constant it was built from, so an
     /// operator slip in the formula moves both sides together and no round trip notices. The values
     /// are load-bearing outside this crate (the EL0 blk driver stops at `ENTRIES_IN_FIRST_BLOCK`;
-    /// the initial ramdisk build fails at `MAXIMUM_FILES`), so a wrong one is a wrong bound in another
-    /// program. A deliberate resize of `DIR_BLOCKS` or `ENTRY_LEN` updates this test in the same
-    /// commit. The values: `(512 - 12) / 40 = 12` and `(7168 - 12) / 40 = 178`.
+    /// the initial ramdisk build fails at `MAXIMUM_FILES`), so a wrong one is a wrong bound in
+    /// another program. A deliberate resize of `DIR_BLOCKS` or `ENTRY_LEN` updates this test in the
+    /// same commit. The values: `(512 - 12) / 40 = 12` and `(7168 - 12) / 40 = 178`.
     #[test]
     fn the_capacity_constants_are_the_documented_values() {
         assert_eq!(ENTRIES_IN_FIRST_BLOCK, 12);
@@ -503,10 +505,10 @@ mod tests {
         assert_eq!(Fs::parse(&img).unwrap().read(""), Some(data));
     }
 
-    /// **`MAXIMUM_FILES` costs no kernel stack, and this is what keeps it that way.** `Fs` is a stack
-    /// local on the kernel's boot and spawn paths; when it held a `[Entry; MAXIMUM_FILES]`, raising the
-    /// limit overflowed a 4-page kernel stack the same day. Reintroducing the array would make this
-    /// fail rather than making a boot fault on a guard page.
+    /// **`MAXIMUM_FILES` costs no kernel stack, and this is what keeps it that way.** `Fs` is a
+    /// stack local on the kernel's boot and spawn paths; when it held a `[Entry; MAXIMUM_FILES]`,
+    /// raising the limit overflowed a 4-page kernel stack the same day. Reintroducing the array
+    /// would make this fail rather than making a boot fault on a guard page.
     #[test]
     fn fs_does_not_grow_with_maximum_files() {
         assert_eq!(

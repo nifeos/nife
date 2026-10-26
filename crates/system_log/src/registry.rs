@@ -25,9 +25,9 @@ impl Name {
         len: 0,
     };
 
-    /// A name from bytes, cut at [`control::NAME_MAXIMUM`]. For the service's own records (`kernel`,
-    /// from milestone 342 (the kernel and the `console` server drive one UART from two address
-    /// spaces)) and for tests.
+    /// A name from bytes, cut at [`control::NAME_MAXIMUM`]. For the service's own records
+    /// (`kernel`, from milestone 342 (the kernel and the `console` server drive one UART from two
+    /// address spaces)) and for tests.
     pub fn new(name: &[u8]) -> Name {
         let mut n = Name::EMPTY;
         let len = name.len().min(control::NAME_MAXIMUM);

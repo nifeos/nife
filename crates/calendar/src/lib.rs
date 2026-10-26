@@ -3,10 +3,10 @@
 //! needs. No IO, syscalls or allocation, so it is host-tested and Kani-checked.
 //!
 //! The calendar is proleptic Gregorian (year 0 exists and is a leap year), negative timestamps are
-//! supported, and the range is years 0000 through 9999 ([`MINIMUM_TIMESTAMP`] to [`MAXIMUM_TIMESTAMP`]),
-//! RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap seconds are
-//! [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of scope
-//! permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
+//! supported, and the range is years 0000 through 9999 ([`MINIMUM_TIMESTAMP`] to
+//! [`MAXIMUM_TIMESTAMP`]), RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap
+//! seconds are [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of
+//! scope permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
 //!
 //! Name: ratified 2026-08-23 (calef): the plain noun for what the crate does.
 
@@ -14,22 +14,26 @@
 
 /// The lowest supported year, 0000. See the module docs for why the range is what it is.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MIN_YEAR`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_YEAR`.
 pub const MINIMUM_YEAR: i32 = 0;
 
 /// The highest supported year, 9999, which is RFC 3339's four-digit `date-fullyear`.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_YEAR`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_YEAR`.
 pub const MAXIMUM_YEAR: i32 = 9999;
 
 /// 0000-01-01T00:00:00Z, the earliest instant this crate will name.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MIN_TIMESTAMP`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_TIMESTAMP`.
 pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PER_DAY;
 
 /// 9999-12-31T23:59:59Z, the latest instant this crate will name.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_TIMESTAMP`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_TIMESTAMP`.
 pub const MAXIMUM_TIMESTAMP: i64 =
     days_from_civil(MAXIMUM_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
 
@@ -467,9 +471,9 @@ impl DateTime {
 
     /// The instant this names, as a Unix timestamp.
     ///
-    /// Note this is *not* bounded by [`MINIMUM_TIMESTAMP`]/[`MAXIMUM_TIMESTAMP`]: a valid local reading at
-    /// the extreme end of the range with a large offset lands up to a day outside it. The value is
-    /// still exact; it just may not survive a trip back through [`Civil::from_unix`].
+    /// Note this is *not* bounded by [`MINIMUM_TIMESTAMP`]/[`MAXIMUM_TIMESTAMP`]: a valid local
+    /// reading at the extreme end of the range with a large offset lands up to a day outside it.
+    /// The value is still exact; it just may not survive a trip back through [`Civil::from_unix`].
     pub const fn to_unix(&self) -> i64 {
         self.civil.to_unix() - self.offset.seconds()
     }

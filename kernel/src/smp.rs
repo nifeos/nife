@@ -30,8 +30,8 @@ const SECONDARY_STACK_GUARD: usize = 4096;
 const SECONDARY_STACK_SLOT: usize = SECONDARY_STACK_GUARD + SECONDARY_STACK_SIZE;
 
 /// One boot stack per core, each over its own guard page. Slot 0 is unused (core 0 has its own
-/// stack from link-aarch64.ld); slots `1..MAXIMUM_CPUS` belong to the secondaries. On RISC-V the boot
-/// hart is whichever one OpenSBI picked, so the unused slot is not always 0.
+/// stack from link-aarch64.ld); slots `1..MAXIMUM_CPUS` belong to the secondaries. On RISC-V the
+/// boot hart is whichever one OpenSBI picked, so the unused slot is not always 0.
 ///
 /// The `UnsafeCell` keeps the static out of `.rodata`, which the fine kernel map makes read-only.
 /// The `link_section` gives the stacks their own `(NOLOAD)` region, so the mapper can map each
@@ -196,7 +196,8 @@ pub(crate) fn read_cpu_list() {
     }
     if unseated > 0 {
         print!(
-            " ({unseated} of them with hart ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, which sizes the \
+            " ({unseated} of them with hart ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, which \
+            sizes the \
              per-CPU statics, so they stay parked)"
         );
     }
@@ -271,7 +272,8 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
     }
     if unseated > 0 {
         print!(
-            " ({unseated} of them with local apic ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, which sizes \
+            " ({unseated} of them with local apic ids past cpu::MAXIMUM_CPUS = {MAXIMUM_CPUS}, \
+            which sizes \
              the per-CPU statics, so they stay parked)"
         );
     }

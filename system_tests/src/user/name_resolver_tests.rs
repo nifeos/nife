@@ -313,10 +313,10 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
 /// (milestone 892 (a std program at the prompt holds the network and a resolver)).
 ///
 /// The progenitor at the prompt outlives its clients: each `jig` gets a fresh badge, and the
-/// resolver has [`GRANTS_MAXIMUM`] windows for life. Every window but the first holds an unused grant,
-/// so the second client lands where the first one's page was mapped, and resolves only if the
-/// forget freed the grant (else `Full`, every name `DENIED`) and the page (else `NOT_ATTACHED`).
-/// The first badge, given to a new client, is denied every name.
+/// resolver has [`GRANTS_MAXIMUM`] windows for life. Every window but the first holds an unused
+/// grant, so the second client lands where the first one's page was mapped, and resolves only if
+/// the forget freed the grant (else `Full`, every name `DENIED`) and the page (else
+/// `NOT_ATTACHED`). The first badge, given to a new client, is denied every name.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_forgotten_badge_is_denied_and_its_window_serves_the_next_client.patch`
 #[test_case]

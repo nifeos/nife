@@ -243,9 +243,9 @@ pub(crate) const MAXIMUM_SPACES: usize = crate::sched::MAXIMUM_THREADS + 32;
 static SPACES: IrqSafeMutex<Registry> = IrqSafeMutex::new(rank::MAPPINGS, Registry::new());
 
 /// The registry array plus one past its highest live slot, so a walk costs the occupied prefix
-/// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (notes/mapping-log.md has the
-/// measurement). `claim` is first-fit, so `top` stays near the live count, and every slot at or
-/// above `top` is `None`, which makes a bounded walk identical to a full one.
+/// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (notes/mapping-log.md
+/// has the measurement). `claim` is first-fit, so `top` stays near the live count, and every slot
+/// at or above `top` is `None`, which makes a bounded walk identical to a full one.
 struct Registry {
     spaces: [Option<SpaceLog>; MAXIMUM_SPACES],
     top: usize,

@@ -218,8 +218,9 @@ Owes:
 Does not owe:
 
 - Terminal size tracking. The redraw math assumes a line fits one row. A line longer than the
-  terminal is wide will redraw incorrectly past the margin. `line_editor::LINE_MAXIMUM` keeps this rare;
-  a full fix needs size negotiation the serial contract does not carry. Honest limit, recorded.
+  terminal is wide will redraw incorrectly past the margin. `line_editor::LINE_MAXIMUM` keeps this
+  rare; a full fix needs size negotiation the serial contract does not carry. Honest limit,
+  recorded.
 - Tab completion. Completion needs the command namespace, which is the application's
   knowledge, not the terminal's. Tab is ignored here. The shell completes by editing its own line
   over raw mode (DECISIONS §227 (how Tab reaches the shell), [shell-line-editing.md](shell-line-editing.md)).

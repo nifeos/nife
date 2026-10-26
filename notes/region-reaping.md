@@ -56,8 +56,8 @@ thread pointer translated back to a physical address is the whole test.
 
 Each phase that removes finds one victim, removes it and rescans, rather than collecting the victims
 into an array first. `remove` mutates the table, so a collect-then-remove shape needs a scratch
-array of `MAXIMUM_RENDEZVOUS` or `MAXIMUM_THREADS` names, and this is one of the deepest frames in the
-kernel. A `[u64; 512]` is 4 KiB of a 24 KiB kernel thread stack
+array of `MAXIMUM_RENDEZVOUS` or `MAXIMUM_THREADS` names, and this is one of the deepest frames in
+the kernel. A `[u64; 512]` is 4 KiB of a 24 KiB kernel thread stack
 ([notes/stack-high-water.md](stack-high-water.md) has the frame's measured size). Rescanning costs
 O(live objects) per removal, on a teardown path that removes a handful. Each pass changes the victim
 so it no longer matches, so each loop terminates.

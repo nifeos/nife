@@ -34,7 +34,8 @@ pub const COMPATIBLES: [&[u8]; 3] = [b"sifive,plic-1.0.0", b"riscv,plic0", b"the
 
 /// The most harts a context map records; matches [`crate::riscv64::MAXIMUM_HARTS`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CONTEXT_HARTS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CONTEXT_HARTS`.
 pub const MAXIMUM_CONTEXT_HARTS: usize = crate::riscv64::MAXIMUM_HARTS;
 
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external

@@ -214,12 +214,13 @@ the subtree counts are drawn from.
 
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
   caller's own budget is exhausted, when the caller's capability table is full, or when
-  `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJ` collapses a different pair the same way (each method's
-  doc comment in `crates/abi`). The first two are facts about the caller; the third is a fact about
-  every other live region on the machine, which the caller did not cause and cannot fix. DECISIONS
-  §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer) declines it and
-  records non-binding guidance for whoever has a customer: cause-specific `Error` variants, the
-  shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's `EMFILE`/`ENFILE`.
+  `MAXIMUM_REGIONS` is exhausted; `RETYPE_OBJ` collapses a different pair the same way (each
+  method's doc comment in `crates/abi`). The first two are facts about the caller; the third is a
+  fact about every other live region on the machine, which the caller did not cause and cannot fix.
+  DECISIONS §119 (splitting `OutOfMemory`'s three causes is declined for want of a customer)
+  declines it and records non-binding guidance for whoever has a customer: cause-specific `Error`
+  variants, the shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's
+  `EMFILE`/`ENFILE`.
 - **A split refused for a full table still bumps the parent**, which can then never be reclaimed.
   The phantom child also stops `return_to_parent` coalescing, so the parent keeps only the LIFO
   rule. `RegionTable::split`'s `# BUGS` has the reproduction, and

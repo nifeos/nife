@@ -97,9 +97,9 @@ const ESP_SECTORS: u64 = 512 * 1024 * 1024 / 512;
 /// **How big one boot slot is**, in logical blocks: 64 MiB.
 ///
 /// The image is about 10 MiB for the tour build and about 19 for the test build, and
-/// `uefi_loader`'s own `BOOT_FILE_MAXIMUM` refuses anything over 64 as not being this file at all. So
-/// 64 MiB is that ceiling exactly: a slot that cannot hold an image the loader would agree to read
-/// is a slot that would fail at the worst possible moment.
+/// `uefi_loader`'s own `BOOT_FILE_MAXIMUM` refuses anything over 64 as not being this file at all.
+/// So 64 MiB is that ceiling exactly: a slot that cannot hold an image the loader would agree to
+/// read is a slot that would fail at the worst possible moment.
 const SLOT_SECTORS: u64 = 64 * 1024 * 1024 / 512;
 
 /// **How many boot slots an install lays out.** Two, which is the smallest number that can hold a

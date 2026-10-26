@@ -26,20 +26,22 @@ pub const OPERATION_SHIFT: u32 = 56;
 /// is a different milestone and this crate deliberately does not start it. 64 bytes is longer than
 /// any SMB account name and short enough that the whole store is a small fixed array.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_IDENTITY`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY`.
 pub const MAXIMUM_IDENTITY: usize = 64;
 
 /// The longest secret a request may present, in bytes. Long enough for a passphrase nobody would
 /// type twice; the bound exists so the service's parse is total and its page layout is fixed.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SECRET`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SECRET`.
 pub const MAXIMUM_SECRET: usize = 256;
 
 /// Where the identity starts in the shared page.
 pub const ID_OFF: usize = 0;
 
-/// Where the secret starts in the shared page. [`MAXIMUM_IDENTITY`] bytes after the identity, so the
-/// two never overlap and a short identity does not shift the secret.
+/// Where the secret starts in the shared page. [`MAXIMUM_IDENTITY`] bytes after the identity, so
+/// the two never overlap and a short identity does not shift the secret.
 pub const SECRET_OFF: usize = MAXIMUM_IDENTITY;
 
 /// The whole area this contract owns in the shared page, and therefore what [`wipe`] clears: the
@@ -97,7 +99,8 @@ pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CODE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CODE`.
 pub const MAXIMUM_CODE: u64 = NO_ENTROPY;
 
 /// Build a request's first word: the opcode, the identity's length, and the secret's length.

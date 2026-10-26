@@ -72,8 +72,8 @@ by its ISA string. The same conclusion arrives through the two trees' different 
 
 ## Third bench stop: the online set is {1,2,3}, and the kernel indexed it as {0,1,2}
 
-With the S7 refused, the machine's online cpus are harts 1..3. Hart 4 was past `MAXIMUM_CPUS`, then 4;
-that was fixed later that day (see [bench-boots-2026-08.md](bench-boots-2026-08.md)). It was the
+With the S7 refused, the machine's online cpus are harts 1..3. Hart 4 was past `MAXIMUM_CPUS`, then
+4; that was fixed later that day (see [bench-boots-2026-08.md](bench-boots-2026-08.md)). It was the
 first time this kernel ever ran with a set not contiguous from zero. On QEMU `virt` the set is
 always {0..n-1}. So every `0..online_count()` loop and every `rng % online_count()` pick had been
 right by coincidence.

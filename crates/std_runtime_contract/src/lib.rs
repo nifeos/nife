@@ -176,7 +176,8 @@ pub const HEAP_BASE: u64 = 0x4000_0000;
 /// The heap's growth cap: the heap band's whole width. Only a bound on the address range: the
 /// budget in [`MEMORY_REGION_SLOT`] is the real, per-program limit.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `HEAP_MAX`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `HEAP_MAX`.
 pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 
 /// **Stack pages a loader maps for a std program**, where a native child of the progenitor gets
@@ -189,9 +190,9 @@ pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 /// Name: provisional.
 pub const STACK_PAGES: u64 = 32;
 
-// The stack band holds 4,080 pages less a guard (`address_space_map::MAXIMUM_STACK_PAGES`); the test
-// below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot see
-// the map.
+// The stack band holds 4,080 pages less a guard (`address_space_map::MAXIMUM_STACK_PAGES`); the
+// test below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot
+// see the map.
 const _: () = assert!(STACK_PAGES > 0 && STACK_PAGES <= 4079);
 
 #[cfg(test)]

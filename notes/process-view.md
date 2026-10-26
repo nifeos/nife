@@ -139,14 +139,14 @@ thread stack. So one call could move `sp` past the guard in a single step and la
 thread's stack without ever faulting. `script/stack-frame-check` failed the build and named the
 shape, which is the second time that gate has caught a `[T; MAX]` local wearing the clothes of a
 bound. A caller-provided slice is the fix it recommends and is better anyway: a program that sizes
-its own listing knows where the memory came from, and `ps` sizes it at `MAXIMUM_ROWS` while the kernel's
-tests size it at eight.
+its own listing knows where the memory came from, and `ps` sizes it at `MAXIMUM_ROWS` while the
+kernel's tests size it at eight.
 
 A compile-time assertion in the kernel's survey tests keeps `ps::MAXIMUM_ROWS` at least as large as
-`sched::MAXIMUM_THREADS`, so the shipped program has no truncation case. A caller with a shorter buffer
-does, and it is not silent: `Survey::is_complete` is false, nothing is printed, and diagnostics
-say the domain has more in it. Same rule as the refusal: a monitor never reports less than it saw
-without saying so.
+`sched::MAXIMUM_THREADS`, so the shipped program has no truncation case. A caller with a shorter
+buffer does, and it is not silent: `Survey::is_complete` is false, nothing is printed, and
+diagnostics say the domain has more in it. Same rule as the refusal: a monitor never reports less
+than it saw without saying so.
 
 ## Where it comes from at the prompt
 

@@ -23,7 +23,8 @@
 //!   ITS is printed, but the kernel drives no ITS (milestone 317 (the interrupt-remapping flags)).
 //! - **The memory map is the UEFI one, merged**, with runtime-services and ACPI regions excluded.
 //! - **Register block sizes are architectural, not stated** (the GIC's 64 KiB frames, the PL011's).
-//! - **One `/memory` node per merged run, capped at [`MAXIMUM_RAM`]**; more runs are described short.
+//! - **One `/memory` node per merged run, capped at [`MAXIMUM_RAM`]**; more runs are described
+//!   short.
 
 //! # Names
 //!
@@ -39,12 +40,15 @@ use crate::device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAG
 /// The most cores this writes a `cpu@` node for. Sixteen, matching
 /// `machine_discovery::cpu_list::MAXIMUM_CPU_NODES`, which is what would read them back.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_CPUS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
 pub const MAXIMUM_CPUS: usize = 16;
 
-/// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own `MAXIMUM_REGIONS`.
+/// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own
+/// `MAXIMUM_REGIONS`.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_RAM`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RAM`.
 pub const MAXIMUM_RAM: usize = 16;
 
 /// The GIC distributor's register frame, which the architecture fixes at 64 KiB and the MADT never

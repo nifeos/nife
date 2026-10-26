@@ -287,7 +287,8 @@ mod tests {
 
     /// Every hart that came online through SBI HSM is one the device tree described.
     ///
-    /// Not an equality: the kernel starts at most `cpu::MAXIMUM_CPUS`, so the tree may describe more.
+    /// Not an equality: the kernel starts at most `cpu::MAXIMUM_CPUS`, so the tree may describe
+    /// more.
     #[test_case]
     fn every_online_hart_is_one_the_tree_described() {
         assert!(

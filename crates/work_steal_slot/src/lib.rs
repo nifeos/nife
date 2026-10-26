@@ -16,7 +16,8 @@
 //! - A poked victim that never reaches a scheduler entry locks every other thief out, outside
 //!   loom's model.
 //! - The identity is not authenticated; the only caller passes its own `cpu::id()`.
-//! - [`MAXIMUM_REQUESTER`] guards the bias's addition, unreachable and covered by a host test alone.
+//! - [`MAXIMUM_REQUESTER`] guards the bias's addition, unreachable and covered by a host test
+//!   alone.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `steal_request`: the type is `Slot` with
 //! `claim`/`take`, and "work-steal" is the field's compound (Cilk, Go, Rayon).
@@ -44,7 +45,8 @@ const EMPTY: u32 = 0;
 /// reach this (`MAXIMUM_CPUS` is single digits), which is exactly why the refusal is written down
 /// rather than left to the arithmetic.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_REQUESTER`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_REQUESTER`.
 pub const MAXIMUM_REQUESTER: u32 = u32::MAX - 1;
 
 /// One core's work-steal request slot: at most one pending request, first come first served.

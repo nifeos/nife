@@ -20,10 +20,10 @@ use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, re
 /// as `fs_seq_write`, `fs_seq_read`, `fs_rand_read`, `fs_record_read`, `fs_rand_write` and
 /// `fs_payload_fill`.
 ///
-/// One request moves at most `fs::TRANSFER_MAXIMUM` bytes (`UNIT`), and each phase moves `tp::TOTAL`
-/// whatever `UNIT` is. The write phase runs first because it creates the file. Random offsets come
-/// from a fixed seed, page-aligned and inside the file. A read loop issues only the `CALL`; a write
-/// loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
+/// One request moves at most `fs::TRANSFER_MAXIMUM` bytes (`UNIT`), and each phase moves
+/// `tp::TOTAL` whatever `UNIT` is. The write phase runs first because it creates the file. Random
+/// offsets come from a fixed seed, page-aligned and inside the file. A read loop issues only the
+/// `CALL`; a write loop repaints the page first. See notes/benchmarks/filesystem-throughput.md.
 pub(crate) fn throughput() -> ! {
     use fixture::throughput as tp;
 

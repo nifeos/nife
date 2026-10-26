@@ -57,12 +57,12 @@ for the number looking unchanged rather than for the failure it exists to preven
 
 The kernel-stack cost is zero, and that is new. `Fs` used to copy every directory entry into a
 fixed `[Entry; MAXIMUM_FILES]`, and `Fs` is a stack local on the kernel's boot and spawn paths. So
-`MAXIMUM_FILES` was kernel stack: raising it to 63 on 2026-07-30 overflowed a four-page kernel stack the
-same day, faulting on the guard page while parsing the initrd. That array was removed in the fix, and
-entries are decoded from the borrowed image one at a time. So the roadmap's statement of the trade
-("it costs kernel stack, because `Fs` holds `entries` as a fixed array") was **already stale when it
-was written**, and the raise was much cheaper than the plan expected. The only per-entry stack left is
-one decoded `Entry`, which went from 32 bytes to 40.
+`MAXIMUM_FILES` was kernel stack: raising it to 63 on 2026-07-30 overflowed a four-page kernel stack
+the same day, faulting on the guard page while parsing the initrd. That array was removed in the
+fix, and entries are decoded from the borrowed image one at a time. So the roadmap's statement of
+the trade ("it costs kernel stack, because `Fs` holds `entries` as a fixed array") was **already
+stale when it was written**, and the raise was much cheaper than the plan expected. The only
+per-entry stack left is one decoded `Entry`, which went from 32 bytes to 40.
 
 `crates/nifefs`'s test `fs_does_not_grow_with_maximum_files` pins that: it asserts `size_of::<Fs>()`
 is a borrowed slice plus a count, so reintroducing the array fails a host test in milliseconds
@@ -131,13 +131,13 @@ here. Nothing panicked. The property that broke had never been written down.
 
 ## The capacity constants, as they stand
 
-`DIR_BLOCKS` is 14, which puts `MAXIMUM_FILES` at 178. The kernel suite's archive packs every program
-the tree builds and, where `cargo xtask basalt-fetch` ran, the program of each basalt package its
-tests use. With ripgrep, ioping, hackbench and SQLite's `speedtest1`, the x86_64 archive held 128
-entries against the previous ceiling of 127. `write_image` refused, which is the mechanism working.
-Fifty entries of headroom cost 2 KB in an image of many megabytes. Running out costs some lane a
-build failure on a change that has nothing to do with archives, because the ceiling is crossed by
-lanes that cannot see each other.
+`DIR_BLOCKS` is 14, which puts `MAXIMUM_FILES` at 178. The kernel suite's archive packs every
+program the tree builds and, where `cargo xtask basalt-fetch` ran, the program of each basalt
+package its tests use. With ripgrep, ioping, hackbench and SQLite's `speedtest1`, the x86_64 archive
+held 128 entries against the previous ceiling of 127. `write_image` refused, which is the mechanism
+working. Fifty entries of headroom cost 2 KB in an image of many megabytes. Running out costs some
+lane a build failure on a change that has nothing to do with archives, because the ceiling is
+crossed by lanes that cannot see each other.
 
 The move from 6 to 14 kept the magic, by the rule the magic section above gives. `start_block` is
 absolute, every reader finds the same data at the same offsets, and `ENTRIES_IN_FIRST_BLOCK` is a

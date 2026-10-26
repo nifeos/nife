@@ -358,10 +358,10 @@ fn a_write_past_the_last_offset_is_refused() {
 /// `NodeLevel::new` admits twelve level-4 entries where `NodeLevelData::level4` has eight, so a
 /// write ending in that band, or a read in it after a truncate grew the file there, indexed past
 /// the array and killed the server. Both are refused `EFBIG` at [`MAXIMUM_FILE_END`].
-/// Falsification: attested 2026-10-04. Define `MAXIMUM_FILE_END` but drop its two checks; the engine
-/// panicked in `Transaction::sync_node_record_ptr` (`vendor/redoxfs/src/transaction.rs`). Not swept
-/// (separate workspace, see script/falsifications BUGS); replay by hand with the edit and `cargo test --manifest-path
-/// redoxfs_server/Cargo.toml --lib <this test>`.
+/// Falsification: attested 2026-10-04. Define `MAXIMUM_FILE_END` but drop its two checks; the
+/// engine panicked in `Transaction::sync_node_record_ptr` (`vendor/redoxfs/src/transaction.rs`).
+/// Not swept (separate workspace, see script/falsifications BUGS); replay by hand with the edit and
+/// `cargo test --manifest-path redoxfs_server/Cargo.toml --lib <this test>`.
 #[test]
 fn a_file_never_reaches_past_the_tree() {
     let mut srv = server_with_tree();

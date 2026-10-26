@@ -163,8 +163,8 @@ addition to the scheduler's tables. It is left here rather than acted on, becaus
 choose `MAXIMUM_TIMERS`, and because the right response may be to shrink the registry rather than to
 chase the backend.
 
-And it makes `MAXIMUM_TIMERS` a real decision rather than a constant copied from `MAXIMUM_RENDEZVOUS`. At
-512 it is 10 KiB of kernel data, doubled on riscv64. At 64 (the 2026-09-05 scaffold's number) it is
-1.3 KiB. This lane picked 512 to mirror the rendezvous registry and has no evidence that is right.
-(Since then, verified 2026-10-11 UTC: milestone 106 built the timer with `MAXIMUM_TIMERS = 256` in
-`kernel/src/sched.rs`.)
+And it makes `MAXIMUM_TIMERS` a real decision rather than a constant copied from
+`MAXIMUM_RENDEZVOUS`. At 512 it is 10 KiB of kernel data, doubled on riscv64. At 64 (the 2026-09-05
+scaffold's number) it is 1.3 KiB. This lane picked 512 to mirror the rendezvous registry and has no
+evidence that is right. (Since then, verified 2026-10-11 UTC: milestone 106 built the timer with
+`MAXIMUM_TIMERS = 256` in `kernel/src/sched.rs`.)

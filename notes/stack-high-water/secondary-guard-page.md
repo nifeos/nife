@@ -33,9 +33,9 @@ bootloader will not drop a device tree on a stack). And the direct map still ski
 no second, mapped alias of a guard page. On aarch64 it lands at `__stack_top`,
 0x4010c000..0x40194000; on riscv64 at 0x80272000..0x802fa000. Those are eight slots since the
 2026-08-14 `MAXIMUM_CPUS` bump; the ranges were 0x400fc000..0x40140000 and 0x80266000..0x802aa000 at
-four. `MAXIMUM_CPUS` stays in Rust and is not written again in either linker script, which is the drift
-`cseam` teaches to avoid. A test holds the emitted region against the reserved one from the other
-side.
+four. `MAXIMUM_CPUS` stays in Rust and is not written again in either linker script, which is the
+drift `cseam` teaches to avoid. A test holds the emitted region against the reserved one from the
+other side.
 
 `(NOLOAD)` is load-bearing, and one line of the linker script explains half a megabyte. A
 zero-initialized Rust static in an explicitly named section becomes PROGBITS, and the flat binary

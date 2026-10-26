@@ -365,8 +365,8 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
 ///
 /// [`xattr::store::set`] and [`xattr::store::remove`] re-emit every untouched record with lengths
 /// read off the blob, not from a bounds-checked caller. A value length is a `u16`, so a torn or
-/// forged blob reaches 65535 where [`xattr::MAXIMUM_VALUE`] is 3072, and `write_record`'s own limit is
-/// all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
+/// forged blob reaches 65535 where [`xattr::MAXIMUM_VALUE`] is 3072, and `write_record`'s own limit
+/// is all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
 #[test]
 fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
     use xattr::store::{self, RECORD_HEADER};

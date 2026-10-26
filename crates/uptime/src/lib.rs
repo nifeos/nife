@@ -30,7 +30,8 @@ const SECS_PER_DAY: u64 = 24 * SECS_PER_HOUR;
 /// The longest line [`format`] can produce: `u64::MAX` nanoseconds is about 584 years, and
 /// `"up 213503982 days, 23:59:59\n"` is 29 bytes. Rounded up with room to spare.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
 pub const MAXIMUM_LEN: usize = 40;
 
 /// A formatted line, owned inline: no allocator on this target.

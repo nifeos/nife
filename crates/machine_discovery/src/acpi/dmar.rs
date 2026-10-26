@@ -186,28 +186,33 @@ pub fn first_drhd(body: &[u8]) -> Option<Drhd> {
 /// graphics, one catch-all); a two-socket server has one per root complex, a handful. A table with
 /// more than this sets [`DmarUnits::truncated`] rather than dropping the rest silently.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_DRHDS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_DRHDS`.
 pub const MAXIMUM_DRHDS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every DRHD. Only the two PCI
 /// types are kept (endpoint and sub-hierarchy); IOAPIC, HPET and ACPI-namespace entries name no
 /// requester id this kernel confines and are skipped.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SCOPES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SCOPES`.
 pub const MAXIMUM_SCOPES: usize = 32;
 /// The longest path a recorded scope can carry: the device itself plus three bridges above it.
 /// Deeper than any machine this tree has met, and a deeper one sets [`DmarUnits::truncated`].
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_SCOPE_PATH`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SCOPE_PATH`.
 pub const MAXIMUM_SCOPE_PATH: usize = 4;
 /// How many RMRRs [`DmarUnits`] records. The `OptiPlex` 7040 publishes two (USB, graphics). A
 /// ninth sets [`DmarUnits::truncated`]. Name: provisional (milestone 594).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_RMRRS`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RMRRS`.
 pub const MAXIMUM_RMRRS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every RMRR. Name: provisional
 /// (milestone 594).
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_RMRR_SCOPES`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RMRR_SCOPES`.
 pub const MAXIMUM_RMRR_SCOPES: usize = 16;
 
 /// Device-scope type 1: a PCI endpoint, named by its path from the start bus.

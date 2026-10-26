@@ -129,11 +129,11 @@ pub(super) const MAXIMUM_BATCHES: u64 = 256;
 /// **Run a command once per batch of what its pattern matched** (milestone 109).
 ///
 /// A prefix word and not a program: a batching program would have to hold the union of every
-/// batch, more than [`grant_plan::expand::MAXIMUM_NAMES`], which nothing can carry, so the batching goes
-/// where the directory authority already is. The iteration is the builtin; `rm` stays a program
-/// with an attenuated grant. The sweep stops at the first batch that does not run, so what ran is a
-/// prefix of the match, and each batch's set is printed before it runs, so the shell can name the
-/// boundary. See notes/glob-grant/xargs.md.
+/// batch, more than [`grant_plan::expand::MAXIMUM_NAMES`], which nothing can carry, so the batching
+/// goes where the directory authority already is. The iteration is the builtin; `rm` stays a
+/// program with an attenuated grant. The sweep stops at the first batch that does not run, so what
+/// ran is a prefix of the match, and each batch's set is printed before it runs, so the shell can
+/// name the boundary. See notes/glob-grant/xargs.md.
 pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing, [`time_command`]'s reason: `xargs xargs rm
     // *.txt` is a line a person can type, batching a batch is still one sweep, and every level of

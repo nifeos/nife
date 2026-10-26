@@ -36,7 +36,8 @@ pub const SUCCESSFUL_BIT: u32 = 56;
 
 /// The largest value either four-bit field holds, and the ceiling both setters saturate at.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_NIBBLE`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NIBBLE`.
 pub const MAXIMUM_NIBBLE: u8 = 15;
 
 /// **The priority `system_installer` gives the slot it writes at install time.**
@@ -92,8 +93,8 @@ impl State {
     /// A slot holding a freshly written image that has never booted: outranking whatever is there,
     /// and with `tries` attempts to prove itself before the machine gives up on it.
     ///
-    /// Both arguments saturate at [`MAXIMUM_NIBBLE`] rather than wrapping, because a wrapped priority
-    /// of 16 is a priority of 0, which is the one value that means "never boot this".
+    /// Both arguments saturate at [`MAXIMUM_NIBBLE`] rather than wrapping, because a wrapped
+    /// priority of 16 is a priority of 0, which is the one value that means "never boot this".
     pub const fn on_trial(priority: u8, tries: u8) -> State {
         State {
             priority: if priority > MAXIMUM_NIBBLE {
@@ -376,7 +377,8 @@ pub mod cmdline {
     /// One digit, because [`super::select_excluding`] cannot exclude past slot 63 and
     /// `system_installer` lays out two; [`encode`] refuses a wider number rather than truncating.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
     pub const MAXIMUM_LEN: usize = KEY.len() + 1;
 
     /// Write `boot-slot=N` into `out`, returning its length, or **0 when it does not fit or `slot`
@@ -460,7 +462,8 @@ pub mod medium {
 
     /// The longest this token can be.
     ///
-    /// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
     pub const MAXIMUM_LEN: usize = NVME.len();
 
     /// Write [`NVME`] into `out`, returning its length, or 0 when it does not fit.

@@ -169,8 +169,8 @@ on ELF64 and 4-byte padding, except `.note.gnu.property`, which is 8-byte padded
   endow another. Refusing the ambiguity makes "which one?" unaskable.
 - An owner name with no terminating NUL where it must have one. The note does not match, since the
   comparison includes the NUL.
-- Up to 64 `PT_NOTE` headers (`MAXIMUM_PHNUM`), each walked once. Each note advances the cursor by at
-  least 12 bytes, which is proved, so the walk ends.
+- Up to 64 `PT_NOTE` headers (`MAXIMUM_PHNUM`), each walked once. Each note advances the cursor by
+  at least 12 bytes, which is proved, so the walk ends.
 - A header table outside the bytes the reader was given, refused (`NoteError::NotReadable`).
   `verification::note_segments_from_a_head_never_panic` proves the check panic-free.
 

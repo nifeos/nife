@@ -1287,9 +1287,9 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     let care = care?;
 
     // The grant name travels in two `START` argument words, so it is capped at
-    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated name
-    // is one two identities could share, so `pack_name` refuses a longer one, and that refusal is
-    // taken before anything is built.
+    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
+    // name is one two identities could share, so `pack_name` refuses a longer one, and that refusal
+    // is taken before anything is built.
     let (lo, hi) = filesystem_contract::grant::pack_name(identity)?;
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;

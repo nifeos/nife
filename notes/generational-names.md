@@ -84,10 +84,10 @@ rather than what it could hold.
 
 The bound exists because sweep cost was tracking `N`. The iterators yield only live entries but
 visited every slot to filter them. `sched::delete_page_frame_caps_where` walks every thread's
-capability table on every `MemoryRegion::DESTROY`, so it got dearer whenever `sched::MAXIMUM_THREADS`
-rose, with no more live threads. On the `spawn_el0` icount benchmark, raising that ceiling from 128
-to 256 cost 141,359 ticks through this path alone (notes/benchmarks.md). Every later raise would
-have paid again.
+capability table on every `MemoryRegion::DESTROY`, so it got dearer whenever
+`sched::MAXIMUM_THREADS` rose, with no more live threads. On the `spawn_el0` icount benchmark,
+raising that ceiling from 128 to 256 cost 141,359 ticks through this path alone
+(notes/benchmarks.md). Every later raise would have paid again.
 
 `top` shrinks as well as grows, so it tracks live occupancy rather than peak occupancy. Removing the
 top entry walks down over empty slots and stops at the first live one. That is amortized O(1),

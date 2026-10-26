@@ -261,8 +261,8 @@ pub struct SweepPoint {
     /// The median repeat's ticks, which is the statistic [`jpm_median`](Self::jpm_median) is
     /// computed from.
     pub ticks_median: u64,
-    /// The slowest repeat's ticks. With [`ticks_minimum`](Self::ticks_minimum) it is the spread, and the
-    /// spread is what says whether the median means anything on this machine.
+    /// The slowest repeat's ticks. With [`ticks_minimum`](Self::ticks_minimum) it is the spread,
+    /// and the spread is what says whether the median means anything on this machine.
     pub ticks_maximum: u64,
     /// Jobs per minute at the median, as the kernel computed it.
     pub jpm_median: u64,

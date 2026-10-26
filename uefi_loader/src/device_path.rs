@@ -23,7 +23,8 @@ const END: (u8, u8) = (0x7F, 0xFF);
 /// The longest path walked before giving up. Real ones are under a hundred bytes; the bound is what
 /// keeps a corrupt length from walking the firmware's memory.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_LEN`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
 pub const MAXIMUM_LEN: usize = 1024;
 
 /// **How many bytes of nodes come before the end node**, reading each 4-byte header through

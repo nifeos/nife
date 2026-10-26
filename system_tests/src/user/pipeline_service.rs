@@ -198,8 +198,8 @@ fn start_with(
         )
     });
 
-    // Say why it was refused rather than return a bare `None`: only `sched::MAXIMUM_THREADS` can refuse
-    // this spawn.
+    // Say why it was refused rather than return a bare `None`: only `sched::MAXIMUM_THREADS` can
+    // refuse this spawn.
     // `dump_threads` goes with the line because the table is the whole diagnosis: a leak and a boot
     // that legitimately wants more threads are indistinguishable from the refusal alone. See
     // `sched::MAXIMUM_THREADS`, whose doc carries the measurement and the coupled constants.

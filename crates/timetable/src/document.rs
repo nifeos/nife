@@ -65,7 +65,8 @@ pub enum Error {
     ZeroInterval(usize),
     /// A schedule word with nothing after it. There is nothing to run.
     MissingCommand(usize),
-    /// More entries than [`MAXIMUM_ENTRIES`], reported at the line that overflowed rather than dropped.
+    /// More entries than [`MAXIMUM_ENTRIES`], reported at the line that overflowed rather than
+    /// dropped.
     TooManyEntries(usize),
     /// A calendar line the G5 grammar refuses, and why (`recurrence::Refusal`).
     Calendar(usize, recurrence::Refusal),

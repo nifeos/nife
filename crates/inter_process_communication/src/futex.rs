@@ -84,9 +84,9 @@ impl<T: Node, const B: usize> Futexes<T, B> {
         self.buckets[Self::bucket(key)].push_back(waiter);
     }
 
-    /// **Take up to `maximum` waiters parked under `key`**, first parked first, and hand them back as a
-    /// queue of their own so the caller can wake each one without holding a borrow of this table.
-    /// Waiters under other keys in the same bucket stay, in their order.
+    /// **Take up to `maximum` waiters parked under `key`**, first parked first, and hand them back
+    /// as a queue of their own so the caller can wake each one without holding a borrow of this
+    /// table. Waiters under other keys in the same bucket stay, in their order.
     pub fn take(
         &mut self,
         key: Key,

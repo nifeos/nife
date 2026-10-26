@@ -15,8 +15,8 @@
 //! - The archive holds every image the plan builds: code, not authority (see the note).
 //! - `--mem` entries run alone, and others due meanwhile run late, once (see the note).
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
-//! - A replacement's plan is cut at `registration::BODY_MAXIMUM`; the verdict word survives. Only the
-//!   compiled-in document is audited.
+//! - A replacement's plan is cut at `registration::BODY_MAXIMUM`; the verdict word survives. Only
+//!   the compiled-in document is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 //! - In store mode an oversized program's refusal is unnamed, and a fire failure is only `E_BUDGET`.
 //!

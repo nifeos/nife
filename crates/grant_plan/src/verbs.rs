@@ -87,8 +87,8 @@ impl ManifestAuthorities {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VerbGrant {
     /// The word, as typed after the program's name, or that word, one space and the word after
-    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAXIMUM_VERB`] bytes.
-    /// [`narrow_by_verb`] tries the two words first and then the first alone.
+    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAXIMUM_VERB`]
+    /// bytes. [`narrow_by_verb`] tries the two words first and then the first alone.
     pub verb: &'static str,
     /// What a line with this verb is endowed with, of what the manifest declares.
     pub authorities: ManifestAuthorities,
@@ -96,7 +96,8 @@ pub struct VerbGrant {
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
 ///
-/// Name: ratified 2026-10-26 (UTC), the minimum, maximum and operating-system rulings, renamed from `MAX_VERB`.
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_VERB`.
 pub const MAXIMUM_VERB: usize = 16;
 
 /// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted
@@ -196,10 +197,10 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 
 /// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
 /// (`each_word`'s reading, which [`argv`](crate::argv) assembles the page from), followed by a
-/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with an
-/// option has (`list -u`). `None` when there is no second word, when it is longer than
-/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied into
-/// `out`, because a quoted word's text is a temporary.
+/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with
+/// an option has (`list -u`). `None` when there is no second word, when it is longer than
+/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
+/// into `out`, because a quoted word's text is a temporary.
 pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
     let mut seen = 0usize;
     let mut held = [[0u8; MAXIMUM_VERB]; 2];

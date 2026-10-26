@@ -40,9 +40,9 @@ pub enum Say {
     /// unrelated halves.
     CannotBind(nav::BindRefused),
     /// **The shell's heap could not hold what the line needed**, so nothing ran. The heap is capped
-    /// at [`HEAP_MAXIMUM_BYTES`] and every allocation in the shell is fallible (calef's ruling, milestone
-    /// 47 (navigation and naming)): the boot shell is the owner's console, and running out of
-    /// memory there is a refusal with a sentence, never a panic.
+    /// at [`HEAP_MAXIMUM_BYTES`] and every allocation in the shell is fallible (calef's ruling,
+    /// milestone 47 (navigation and naming)): the boot shell is the owner's console, and running
+    /// out of memory there is a refusal with a sentence, never a panic.
     HeapFull,
 }
 

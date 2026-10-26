@@ -15,8 +15,8 @@ Every equivalence claim is a mutant the final run still reports.
 One sentence explains all 77, and it is not a truncation bug. Every fixture in this crate is a
 table or a device tree that is well formed, so a guard was only ever asked about inputs with room
 to spare on both sides of it. The crate has an `AcpiError::Truncated` variant, prose about tables
-"shorter than it is", and a `MAXIMUM_CPU_NODES` the record can overflow. Nothing ever handed a parser
-an input at any of those edges.
+"shorter than it is", and a `MAXIMUM_CPU_NODES` the record can overflow. Nothing ever handed a
+parser an input at any of those edges.
 
 #### The one-property hypothesis, measured and refused
 
@@ -139,10 +139,10 @@ alone could not tell a sixteen-bit shift from either direction.
   its four variants to four distinct widths (0, 32, 64, 128), so `Equal` means the same variant in
   both. An ordering that put two variants at one rank would break this argument rather than the
   code.
-- A bound the other ceiling makes unreachable (1). `plic`'s `n < MAXIMUM_CONTEXT_HARTS` under `<=`. The
-  conjunct after it is `cpus.cpus().get(n)`, and that slice is at most `MAXIMUM_CPU_NODES` long. Both
-  constants are sixteen, so `get(16)` is `None` for every tree. The mutant's extra iteration never
-  reaches the array it would index. **Re-check this one if either constant ever moves**: the
+- A bound the other ceiling makes unreachable (1). `plic`'s `n < MAXIMUM_CONTEXT_HARTS` under `<=`.
+  The conjunct after it is `cpus.cpus().get(n)`, and that slice is at most `MAXIMUM_CPU_NODES` long.
+  Both constants are sixteen, so `get(16)` is `None` for every tree. The mutant's extra iteration
+  never reaches the array it would index. **Re-check this one if either constant ever moves**: the
   equivalence is a relationship between two numbers, not a property of the line.
 - A guard that is vacuous on the host (1). `Framebuffer::span`'s `bytes <= usize::MAX as u64` under
   `true`. On a 64-bit host `usize::MAX as u64` is `u64::MAX`, so the guard is always true and no

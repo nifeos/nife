@@ -11,7 +11,8 @@ use super::*;
 pub(super) enum RendezvousFailure {
     /// The region has no page left to retype. Nothing was spent.
     RegionFull,
-    /// The registry is at [`MAXIMUM_RENDEZVOUS`]. Checked *before* spending a page, so nothing was spent.
+    /// The registry is at [`MAXIMUM_RENDEZVOUS`]. Checked *before* spending a page, so nothing was
+    /// spent.
     RegistryFull,
 }
 
@@ -65,8 +66,8 @@ pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
 /// Create an IPC rendezvous on the kernel's own budget, from chunks carved lazily and grown on
 /// demand, and return the name that goes inside an `Object::Rendezvous`.
 ///
-/// Panics on the unrecoverable: the registry at [`MAXIMUM_RENDEZVOUS`], the chunk bound reached, or no
-/// memory left to carve. `pub(crate)`, so the system tests cannot call it: the chunks are never
+/// Panics on the unrecoverable: the registry at [`MAXIMUM_RENDEZVOUS`], the chunk bound reached, or
+/// no memory left to carve. `pub(crate)`, so the system tests cannot call it: the chunks are never
 /// freed, so a test endpoint made here would cost the boot a page for good. A test carves from a
 /// region it owns with [`create_rendezvous_from`]. See notes/scheduler/rendezvous.md.
 ///
@@ -111,7 +112,8 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
             }
             Err(RendezvousFailure::RegistryFull) => {
                 panic!(
-                    "out of rendezvous points: {MAXIMUM_RENDEZVOUS} live at once, raise MAXIMUM_RENDEZVOUS"
+                    "out of rendezvous points: {MAXIMUM_RENDEZVOUS} live at once, raise \
+                    MAXIMUM_RENDEZVOUS"
                 )
             }
         }
@@ -948,9 +950,10 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
 /// torn down. `drain_waiters` cannot, because a reply park is linked on no queue; `wait_on` records
 /// it.
 ///
-/// Rescans the thread table rather than listing victims, because a list bounded by `MAXIMUM_THREADS`
-/// would grow the deepest frame in the kernel. The scan ends on the abort flag, not on `wait_on`,
-/// which a wake deferred behind `on_cpu` leaves in place. See notes/scheduler/rendezvous.md.
+/// Rescans the thread table rather than listing victims, because a list bounded by
+/// `MAXIMUM_THREADS` would grow the deepest frame in the kernel. The scan ends on the abort flag,
+/// not on `wait_on`, which a wake deferred behind `on_cpu` leaves in place. See
+/// notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]

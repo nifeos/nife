@@ -38,8 +38,8 @@ Three facts worth carrying forward, because milestones 54, 55 and 66 will all wa
   question a total-free number alone leaves open. Worth repeating if this bites again: the
   instrument is four lines and it turned "somebody's test is flaky" into a number in one run.
 
-The fix is the same one `virtio::MAXIMUM_DEVICES` has now asked for eight times: reclaim what a dead or
-finished service held. It is one piece of work that would relieve both ceilings, and it is
+The fix is the same one `virtio::MAXIMUM_DEVICES` has now asked for eight times: reclaim what a dead
+or finished service held. It is one piece of work that would relieve both ceilings, and it is
 increasingly what stands between this suite and the next network milestone.
 
 And the margin is now thin enough to fail about one run in three, measured. When milestones 54
@@ -92,10 +92,10 @@ decides whether a boot lives, is 14080 either way.)
 
 Two things this does not fix, both recorded rather than papered over:
 
-- `virtio::MAXIMUM_DEVICES` is untouched. `virtio::register` bumps a counter and never reuses a slot,
-  so the receipts in that constant's comment still stand: the boot's ceiling is still "how many
-  devices has this boot ever wired". Reusing a slot safely needs a generational name on the device
-  table, because a stale `Object::Virtio` capability must not alias a fresh device. That is a
+- `virtio::MAXIMUM_DEVICES` is untouched. `virtio::register` bumps a counter and never reuses a
+  slot, so the receipts in that constant's comment still stand: the boot's ceiling is still "how
+  many devices has this boot ever wired". Reusing a slot safely needs a generational name on the
+  device table, because a stale `Object::Virtio` capability must not alias a fresh device. That is a
 capability-semantics change rather than a counter change. Its own lane. Milestone 64 paid the
   ninth receipt (33, for the listener gate's second `net_stack`) and confirmed the other half of
   the prediction from the other side. The memory ceiling really is gone, so what is left is only the

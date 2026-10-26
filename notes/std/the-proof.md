@@ -68,9 +68,9 @@ arch's own initrd (the parity gate, DECISIONS §19). The fs transcript splices t
 into the expected buffer from the shared fixture. So that one comparison covers the whole path:
 disk, DMA-confined block server, FS server running an engine we did not write, the file contract,
 the PAL, and the stdout endpoint. One binary also keeps the initrd inside its nifefs directory limit
-(`nifefs::MAXIMUM_FILES`, 31 entries when this was written and 76 since 2026-08-01). `cargo xtask test`
-builds the demo for both targets first, so both initrds carry it; both test legs attach a virtio-net
-NIC (`NIFE_NET`) with the guestfwd echo peer and the RedoxFS image as the second disk.
+(`nifefs::MAXIMUM_FILES`, 31 entries when this was written and 76 since 2026-08-01). `cargo xtask
+test` builds the demo for both targets first, so both initrds carry it; both test legs attach a
+virtio-net NIC (`NIFE_NET`) with the guestfwd echo peer and the RedoxFS image as the second disk.
 
 One boot has one FS service, because the block server owns the RedoxFS device: a second wiring would
 put a second driver on the same virtio slot and re-bind its interrupt. So `fs_service` remembers
