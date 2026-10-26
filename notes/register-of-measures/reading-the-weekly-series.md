@@ -103,9 +103,9 @@ rather than trailing ten blank cells.
 ### One column the scheduled run cannot produce, and what stands in for it
 
 The workflow runs daily on a GitHub runner with a fresh checkout. It cannot see the session records
-behind the cost columns, and no workflow ever will: those records live under `~/.claude/projects/`
-on the machine the lanes ran on. So a person captures machine effort by running
-`script/effort --update` on that machine and committing the result. That is rung four of
+the cost columns are measured from, and no workflow ever will: those records live under
+`~/.claude/projects/` on the machine the lanes ran on. So a person captures machine effort by
+running `script/effort --update` on that machine and committing the result. That is rung four of
 `AGENTS.md`'s ladder, and rung four is where this tree's failures live.
 
 Two mechanisms stand behind it, because it can die in two different ways:

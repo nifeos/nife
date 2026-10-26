@@ -31,9 +31,9 @@ build-mode features, the UEFI loader and the exercisers.
 - The function finder is a lexer, not a parser. It skips a `fn` written in a `macro_rules!`
   body, where clippy reports it: 8 functions on 2026-10-13 (UTC), all under 10 code lines. The lint
   ratchet's comparison fails if one ever grows past 100.
-- None of the eight clippy passes compiles about 1,160 functions in 127 files: `patches/`,
+- About 1,160 functions in 127 files are compiled by none of the eight clippy passes: `patches/`,
   `c_library/`, `uefi_loader/`, the std exercisers, `jig/`, `cryptography_provider/`, kernel build
   modes, `notes/` and `bench/`. They build only for nife's std targets or in a separate step, so the
   text measure alone holds them, with no clippy cross-check.
-- A function clippy compiles and the text measure counts over 100 while clippy counts it under would
-  not be caught. At threshold 0 no such function existed.
+- The comparison runs one way. A function clippy compiles and the text measure counts over 100
+  while clippy counts it under would not be caught. At threshold 0 no such function existed.

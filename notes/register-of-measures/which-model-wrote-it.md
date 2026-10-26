@@ -79,8 +79,8 @@ the table as decisions, filed under `other_models`, so they do not warn forever.
 tree says which GLM model the `OpenCode (GLM)` commits ran, and guessing one would be the silent
 merge this table refuses.
 
-A new model's name goes into `other_models`, and the script names it on stderr until it has a row,
-which is the rule above working: nothing is lost, and the week's sum still balances.
+A new model's name goes into `other_models`, and `script/metrics` names it on stderr until it has a
+row, which is the rule above working: nothing is lost, and the week's sum still balances.
 `Claude Opus 5.5` is a version, not a context window, so it has its own column, `opus_5_5`, rather
 than joining `opus_5`. `GLM-5.3-Flash` is a second spelling of `GLM 5.3 Flash` and shares its
 column.

@@ -117,11 +117,11 @@ the mean of the week and the nine before it, reaching back past the chart's left
 `script/metrics` draws it rather than storing it: a stored copy of arithmetic over a stored column
 is a second place to be wrong.
 
-The series starts at 2026W29, so the first full window is 2026W38. The chart draws the weeks before
-it **dashed, with their own legend entry**, rather than leaving them off. Starting the line at the
-first full window would have given two points on a ten-bar chart, and the dashed part is honest
-about what it is: a mean over fewer weeks, which swings harder. It leaves the chart on its own as
-the window slides, and from 2026W47 every point shown is a full ten weeks.
+The series starts at 2026W29, so the first full window is 2026W38. `script/metrics` draws the weeks
+before that window **dashed, with their own legend entry**, rather than leaving them off. Starting
+the line at the first full window would have given two points on a ten-bar chart, and the dashed
+part is honest about what it is: a mean over fewer weeks, which swings harder. It leaves the chart
+on its own as the window slides, and from 2026W47 every point shown is a full ten weeks.
 
 ## Pull requests merged each week
 

@@ -27,15 +27,15 @@ and its own BUGS says so.
 
 ## The backfill, and its limits
 
-The backfill reads history once from git history, at each week's recorded tip, with the same
-status-line walk the status chart uses. It keys on the first capitalized color word after each
-entry's status marker. Capitalization is the discriminator, because risk 2's line says AMBER and
-then, lowercased, names the red half of its finding. Prose is not data, which is the argument for
-the frontmatter. Weeks before 2026W36 have no file and count nothing. A verdict shows the week its
-word landed on `main`: risk 9's green is 2026W39, though its status line names 2026-09-17.
+History is backfilled once from git history, at each week's recorded tip, by the same status-line
+walk the status chart uses. It keys on the first capitalized color word after each entry's status
+marker. Capitalization is the discriminator, because risk 2's line says AMBER and then, lowercased,
+names the red half of its finding. Prose is not data, which is the argument for the frontmatter.
+Weeks before 2026W36 have no file and count nothing. A verdict shows the week its word landed on
+`main`: risk 9's green is 2026W39, though its status line names 2026-09-17.
 
-`MEASURED` and `AUDITED` are prose qualifiers about how well an experiment went, and never a color,
-per the proposal's own rule.
+`MEASURED` and `AUDITED` are prose qualifiers about how well an experiment was done, and never a
+color, per the proposal's own rule.
 
 ## BUGS
 

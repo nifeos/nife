@@ -186,8 +186,8 @@ These moved here from `notes/project-metrics.md`'s `BUGS` on 2026-09-24, when th
 arrives.
 
 - **The cost columns can stop updating and the charts will not say so.** They will simply stop
-  gaining weeks, and the charts draw an absent week as absent, which is correct and is also exactly
-  what a dead capture looks like. `script/cadence-check` is the thing that speaks, and it speaks on
+  gaining weeks, and an absent week is drawn as absent, which is correct and is also exactly what a
+  dead capture looks like. `script/cadence-check` is the thing that speaks, and it speaks on
   patagonia through `helpers/trunk-health.sh`, which inherits that watcher's own recorded gap: a
   machine asleep is a watcher not watching.
 - **`lane_tokens` counts this project's whole session, not its lanes.** Every response in a record

@@ -41,7 +41,7 @@ because that is an architect's file.
 Between 2026W35 and 2026W36 total Rust fell from 192.0k lines to 189.0k, while the week was still
 adding code. That is the deletion of milestone 54 (a network file service a Mac can actually mount).
 It is also the `REMOVED` bar in the Milestones by status chart in `notes/project-metrics.md`. A line
-count that only ever rises is measuring typing; one that falls when code goes away is measuring the
+count that only ever rises is measuring typing; one that falls when code is deleted is measuring the
 tree.
 
 ## BUGS sections
@@ -231,7 +231,8 @@ proving nothing. Watch the direction on this chart; a drop deserves more attenti
   backfill would repeat it by hand.
 - Nothing ties `floor.txt` to a commit, any more than it ties the lcov to one. `--coverage-min-from`
   believes the caller about which week it measured.
-- A `--backfill` carries the cell across, like the aggregate. After a row is repointed at a later
-  commit of the same week, the minimum describes the earlier commit until someone re-measures.
+- `script/metrics` carries the cell across a `--backfill`, like the aggregate. After a row is
+  repointed at a later commit of the same week, the minimum describes the earlier commit until
+  someone re-measures.
 - The minimum is one file. Two files at 81% and one at 81% draw the same bar. `floor.txt`'s band
   counts show the difference; the chart does not.

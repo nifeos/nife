@@ -14,8 +14,8 @@ The ceilings are rows 2 through 5 and 7 and 8. Their thresholds are six differen
 - The high-water limits are margins over an observed maximum.
 - The `unsafe impl Send`/`Sync` ceiling was set at 17, which was the tree exactly when it was
   written. The live gate in notes/unsafe-obligations.md is now 23 (corrected 2026-09-24).
-- The unsafe density ceiling is a claim about the tree that was false until shortly before the
-  ceiling's writing.
+- The unsafe density ceiling is a claim about the tree that was false until shortly before it was
+  written.
 
 The density ceiling is the only one that expresses a direction rather than a limit. That
 distinction is what `count-at-most` exists for. Milestone 139 (drive the unsafe count down, and

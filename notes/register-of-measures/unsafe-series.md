@@ -129,7 +129,7 @@ candidate:
   unsafe".
 - 120, against the userspace density, the confined population. A ceiling matters less there, because
   a bug there is a bug in one program, not in the base.
-- 77, the status quo, which answers neither question precisely because it draws on both.
+- 77, the status quo, which answers neither question precisely because it is built from both.
 
 Recommendation: the kernel density is the one worth a ceiling of its own, because the mixed number's
 blind spot lives there. But a ceiling set on it starts cold, with no history of it moving
