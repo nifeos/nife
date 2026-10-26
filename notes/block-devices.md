@@ -273,7 +273,7 @@ exactly one device read, and its tests hold that.
 
 It is read-only twice over. No mutating verb is answered (each gets `EROFS`), and the server's block
 endpoint is badged with a window the NVMe server never writes from
-(`non_volatile_memory_express::can_write`).
+(`can_write` in `components/src/non_volatile_memory_express.rs`).
 
 The shell mounts it as its second tree (calef, 2026-10-18 21:36 UTC, "Yes, read-only at prompt"),
 so a measurement names the file inside the mounted directory:

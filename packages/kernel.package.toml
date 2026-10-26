@@ -32,12 +32,6 @@ crates = [
 interfaces = ["jh7110_clock_and_reset"]
 
 [[exception]]
-date = 2026-09-27
-member = "kernel"
-crate = "non_volatile_memory_express"
-reason = "the kernel hands the driver non_volatile_memory_express::Handoff, a contract living in a driver crate"
-
-[[exception]]
 date = 2026-10-04
 member = "kernel"
 crate = "extensible_host_controller_interface"

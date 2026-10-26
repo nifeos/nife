@@ -16,17 +16,6 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 # accessors and the DMA memory, so all of this tests on the host in milliseconds and is reachable
 # by the model checker.
 
-[features]
-# Exposes `ESCAPE_MAGIC`, a sentinel a confinement test uses to select a server's test-only
-# DMA-escape role. Nothing a shipped image is built from turns it on.
-confinement_attackers = []
-
-# The crate's own tests compile with `confinement_attackers` on, so cargo-mutants (which runs
-# `cargo test -p` with default features) rebuilds what it mutates behind it. Consumers do not get
-# the feature from this.
-[dev-dependencies]
-non_volatile_memory_express = { version = "0.1.0", path = ".", features = ["confinement_attackers"] }
-
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

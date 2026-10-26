@@ -2,7 +2,7 @@
 //! read-only file, the installed system's second mounted tree.
 //!
 //! It holds the NVMe request endpoint badged with
-//! [`::non_volatile_memory_express::DISK_TREE_WINDOW`], its own request and report endpoints, that
+//! [`::non_volatile_memory_express_contract::DISK_TREE_WINDOW`], its own request and report endpoints, that
 //! window read-only, and the client windows. Window 0 is the file service's own window 0 frame. See
 //! notes/two-trees.md, "The disk tree's server".
 //!
@@ -42,7 +42,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
     // otherwise took it already.
     disk.wait_for_ready();
 
-    let window = ::non_volatile_memory_express::DISK_TREE_WINDOW;
+    let window = ::non_volatile_memory_express_contract::DISK_TREE_WINDOW;
     let blk = disk.client_capability(window);
     let staged = disk.window_phys(window);
     let pool = crate::memory::alloc_contiguous_zeroed(POOL_PAGES)?.addr();

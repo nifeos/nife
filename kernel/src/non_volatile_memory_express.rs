@@ -14,8 +14,9 @@
 //! `crates/non_volatile_memory_express`.
 
 use non_volatile_memory_express::{
-    Cap, Command, Completion, CqState, Doorbell, Handoff, IdentifyNamespace, SqState, regs,
+    Cap, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace, SubmissionQueue, regs,
 };
+use non_volatile_memory_express_contract::Handoff;
 
 use crate::arch::mmu;
 
@@ -26,7 +27,7 @@ pub const BLOCK_SIZE: usize = filesystem_contract::blk::BLOCK_SIZE;
 /// The EL0 server's client windows (milestone 834 (ioping on nife and Linux)), named here for the
 /// NVMe system tests.
 #[cfg(feature = "system_tests")]
-pub use ::non_volatile_memory_express::{
+pub use ::non_volatile_memory_express_contract::{
     CLIENT_WINDOWS, DISK_TREE_WINDOW, FILESYSTEM_WINDOW, INSTALLER_WINDOW,
 };
 
@@ -47,7 +48,8 @@ const IO_CQ_PAGE: u64 = 4;
 /// same offset from what it was handed; the constant is duplicated there against this one because
 /// the two live in different address spaces and nothing but the spawn contract joins them.
 pub(crate) const TRANSFER_PAGES: u64 = filesystem_contract::blk::TRANSFER_BLOCKS as u64;
-const DMA_PAGES: u64 = 5 + TRANSFER_PAGES * ::non_volatile_memory_express::CLIENT_WINDOWS as u64;
+const DMA_PAGES: u64 =
+    5 + TRANSFER_PAGES * ::non_volatile_memory_express_contract::CLIENT_WINDOWS as u64;
 
 /// A frame outside the DMA region that [`bring_up`] adds to the controller's IOMMU domain; zero in
 /// every shipped boot and passing test.
@@ -112,8 +114,8 @@ pub struct NonVolatileMemoryExpress {
     /// controller is told `direct_memory_access_phys`.
     direct_memory_access_phys: u64,
     direct_memory_access_va: u64,
-    admin_sq: SqState,
-    admin_cq: CqState,
+    admin_sq: SubmissionQueue,
+    admin_cq: CompletionQueue,
     /// The namespace's geometry, from IDENTIFY: size and blocks-per-filesystem-block.
     ns: IdentifyNamespace,
     /// The next command identifier. Echoed back in completions and checked there; monotonic and
@@ -138,8 +140,8 @@ impl NonVolatileMemoryExpress {
             dstrd: 0,
             direct_memory_access_phys,
             direct_memory_access_va,
-            admin_sq: SqState::new(ENTRIES),
-            admin_cq: CqState::new(ENTRIES),
+            admin_sq: SubmissionQueue::new(ENTRIES),
+            admin_cq: CompletionQueue::new(ENTRIES),
             ns: IdentifyNamespace {
                 blocks: 0,
                 lba_shift: 9,
@@ -178,7 +180,10 @@ impl NonVolatileMemoryExpress {
         );
         #[cfg(feature = "disk_throughput")]
         c.print_registers("pre ");
-        c.wr32(regs::CC, non_volatile_memory_express::cc_enabled());
+        c.wr32(
+            regs::CC,
+            non_volatile_memory_express::enabled_controller_configuration(),
+        );
         let ready = c.wait_rdy(true);
         #[cfg(feature = "disk_throughput")]
         c.print_registers("post");
@@ -211,7 +216,7 @@ impl NonVolatileMemoryExpress {
                 .map_or(0, u64::from_le_bytes),
         };
         c.ns = non_volatile_memory_express::parse_identify_namespace(data).ok_or(refused)?;
-        if c.ns.blocks == 0 || c.ns.blocks_per(BLOCK_SIZE as u64).is_none() {
+        if c.ns.blocks == 0 || c.ns.blocks_per_transfer(BLOCK_SIZE as u64).is_none() {
             return Err(refused);
         }
 
@@ -219,10 +224,11 @@ impl NonVolatileMemoryExpress {
         // Queue Identifier. Both rings sit in the data plane's half, where only the kernel put
         // them.
         let cq_prp = direct_memory_access_phys + IO_CQ_PAGE * page_frames::FRAME_SIZE;
-        let cmd = Command::create_io_cq(c.next_cid(), IO_QID, ENTRIES, cq_prp);
+        let cmd = Command::create_io_completion_queue(c.next_cid(), IO_QID, ENTRIES, cq_prp);
         c.transact(cmd)?;
         let sq_prp = direct_memory_access_phys + IO_SQ_PAGE * page_frames::FRAME_SIZE;
-        let cmd = Command::create_io_sq(c.next_cid(), IO_QID, ENTRIES, IO_QID, sq_prp);
+        let cmd =
+            Command::create_io_submission_queue(c.next_cid(), IO_QID, ENTRIES, IO_QID, sq_prp);
         c.transact(cmd)?;
         Ok(c)
     }
@@ -230,7 +236,7 @@ impl NonVolatileMemoryExpress {
     /// The disk's capacity in bytes: the blk-IPC `SIZE` answer, which the EL0 server is told
     /// rather than left to ask, because asking means IDENTIFY and IDENTIFY is an admin command.
     pub(crate) fn size_bytes(&self) -> u64 {
-        self.ns.bytes()
+        self.ns.capacity_bytes()
     }
 
     /// Take the controller down (`CC.EN` cleared, `CSTS.RDY` followed), then free its DMA region.
@@ -253,14 +259,14 @@ impl NonVolatileMemoryExpress {
     }
 
     /// **Everything the EL0 data plane is told**, and the whole of what it could not compute for
-    /// itself. See [`non_volatile_memory_express::Handoff`] for why it is three words.
+    /// itself. See [`non_volatile_memory_express_contract::Handoff`] for why it is three words.
     pub(crate) fn handoff(&self) -> Handoff {
         Handoff {
             dstrd: self.dstrd,
             // `new` refused a namespace this returns `None` for, so the unwrap cannot fire.
             blocks_per: self
                 .ns
-                .blocks_per(BLOCK_SIZE as u64)
+                .blocks_per_transfer(BLOCK_SIZE as u64)
                 .expect("new() refuses a namespace whose format 4096 is not a multiple of"),
             entries: ENTRIES,
             data_plane_phys: self.direct_memory_access_phys
@@ -351,7 +357,7 @@ impl NonVolatileMemoryExpress {
             non_volatile_memory_express::doorbell(0, Doorbell::CompletionHead, self.dstrd),
             new_head as u32,
         );
-        self.admin_sq.note_head(c.sq_head);
+        self.admin_sq.record_head(c.sq_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation worth dying on
         // legibly rather than misattributing a completion.

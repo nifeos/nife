@@ -1,0 +1,23 @@
+[package]
+name = "non_volatile_memory_express_contract"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# What nife's kernel and its NVMe server agree on: the per-client transfer windows and the spawn
+# handoff the admin plane packs and the data plane unpacks. Both binaries link it (rule 7), and
+# the NVMe protocol stays in `non_volatile_memory_express`, which leaves this tree on its own.
+# See notes/non-volatile-memory-express.md.
+
+[features]
+# Exposes `ESCAPE_MAGIC`, the sentinel the DMA-escape confinement test uses to select the server's
+# test-only attacker role. Only `components/confinement_attackers` and the kernel's test build turn
+# it on, so a shipped image cannot name it.
+confinement_attackers = []
+
+[lints]
+workspace = true
+
+[dependencies]
+non_volatile_memory_express = { version = "0.1.0", path = "../non_volatile_memory_express" }

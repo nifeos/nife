@@ -42,6 +42,13 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - The `Handoff` types encode nife's spawn ABI rather than NVMe. Whether they stay in the published
   crate or move to the driver is the lane's call, recorded in its pull request, since a stranger's
   kernel has no use for them.
+- Ruled 2026-10-25 (UTC), on #2720: nife's process plan leaves the crate. Pull request #2736 moved
+  the client windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` with `pack`, `unpack`,
+  `holds_block` and `transfer_command`, the `confinement_attackers` feature and the three handoff
+  harnesses into the nife-internal crate `non_volatile_memory_express_contract` (a provisional
+  name), and `can_write` into the EL0 server, its only caller. The crate's remaining names are
+  ratified in
+  [the names record](0857-crates-released-on-their-own/non-volatile-memory-express-names.md).
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
@@ -58,6 +65,8 @@ Each row is a property this crate must prove before it publishes. The harness ce
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
 `crates/non_volatile_memory_express/falsifications/`. Measured 2026-10-11 (UTC): 8 of 8 proven.
+Since #2736 the crate carries five; the three handoff rows below moved with `Handoff` to
+`non_volatile_memory_express_contract`, which does not publish.
 
 | property | harness |
 |---|---|
@@ -72,8 +81,8 @@ makes it fail at its own assertion. Each patch is at
 
 Not proven: the `Cap` register decode beyond the doorbell stride the handoff harness bounds, the
 status fields of `Completion::from_dwords`, and anything in time (reset, enable, timeouts), which
-lives in the driver's volatile shell. Two rows prove nife's spawn handoff. If `Handoff` moves to the
-driver, they move with it and the table loses two rows.
+lives in the driver's volatile shell. The last three rows proved nife's spawn handoff, not NVMe;
+they left with `Handoff` on 2026-10-26 (#2736).
 
 ## Release, by #1806's rulings
 
@@ -138,8 +147,8 @@ ratification pass. With Kani, every harness proves and every falsification patch
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
-  or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `Handoff` encodes nife's spawn ABI. Whether it leaves the public API is the lane's call above.
+  or nife error enum in a public signature. A reviewer judges this; no script can. `Handoff`, which
+  encoded nife's spawn ABI, left the public API on 2026-10-26 (#2736).
 
 ## Exit
 
@@ -174,6 +183,10 @@ names until the ratification pass, so this section keeps the links it carried.
   notes/non-volatile-memory-express.md, "The driver left the kernel, 2026-09-17".
 - `src/lib.rs`, `MAX_DSTRD`: the one page of BAR0 is §86's option 2a, and the bound's bug is in
   the BUGS of notes/non-volatile-memory-express.md.
+The entries below for `CLIENT_WINDOWS`, `can_write`, `client_window`, `ESCAPE_MAGIC`, the two
+handoff harnesses and the `confinement_attackers` feature describe code that left the crate on
+2026-10-26 (#2736); they stay as the record of where those links went.
+
 - `src/lib.rs`, `CLIENT_WINDOWS`: the windows came from milestone 834 (ioping on nife and Linux).
   calef ruled "Per-client window" on nifeos/nife#2371, 2026-10-18 23:06 UTC. A frame per client
   channel is milestone 599 (a frame per filesystem client channel)'s pattern.

@@ -137,7 +137,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     }
 
     // A block outside the namespace is refused by the driver's own arithmetic
-    // (`non_volatile_memory_express::Handoff`'s Kani-proved range check), not left to a controller
+    // (`non_volatile_memory_express_contract::Handoff`'s Kani-proved range check), not left to a controller
     // status nobody can attribute. `size / BLOCK_SIZE` is the first block past the end for any
     // size: it starts at the end or its transfer runs off it, and `holds_block` refuses both.
     let past_end = disk.size_bytes / crate::non_volatile_memory_express::BLOCK_SIZE as u64;

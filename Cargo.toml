@@ -93,6 +93,7 @@ members = [
     "crates/capability_manifest_note",
     "crates/network_time_protocol",
     "crates/non_volatile_memory_express",
+    "crates/non_volatile_memory_express_contract",
     "crates/disk_tree",
     "crates/e1000e",
     "crates/designware_ethernet",

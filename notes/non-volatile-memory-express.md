@@ -52,7 +52,7 @@ in the driver's space except what commands point it at.
 3. Every completion carries a phase tag that the controller flips each time it laps the ring.
    The ring starts zeroed, so the first lap writes tag 1, the second tag 0, and so on; the driver
    knows which tag means "fresh" and needs no shared index and no interrupt to spot a completion.
-   `crates/non_volatile_memory_express`'s `CqState` owns that discipline and a Kani harness
+   `crates/non_volatile_memory_express`'s `CompletionQueue` owns that discipline and a Kani harness
    proves the flip happens
    exactly at the wrap.
 4. Queue pair 0 (the admin queue) is created by plain register writes (`AQA`/`ASQ`/`ACQ`)

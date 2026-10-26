@@ -3,7 +3,7 @@
 //! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
 //! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
 //! host-tested and Kani-reachable, including the block-range check
-//! [`non_volatile_memory_express::Handoff::transfer_command`] applies; what is left here is
+//! [`non_volatile_memory_express_contract::Handoff::transfer_command`] applies; what is left here is
 //! volatile access, two barriers and a bounded poll.
 
 //! # Capability contract
@@ -39,8 +39,10 @@
 
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    CLIENT_WINDOWS, Command, Completion, CqState, Doorbell, Handoff, SqState, can_write,
-    client_window,
+    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue,
+};
+use non_volatile_memory_express_contract::{
+    CLIENT_WINDOWS, DISK_TREE_WINDOW, Handoff, client_window,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -48,6 +50,16 @@ use user_mode_runtime::{exit, receive_request, reply, send};
 /// Capability slots, by convention with `kernel/src/user/non_volatile_memory_express_service.rs`.
 const REQ: u64 = 0;
 const READY: u64 = 1;
+
+/// **Whether a window's client may write the disk.** The disk tree's may not: it serves a read-only
+/// view at the prompt, and refusing its `WRITE` and `FLUSH` here makes that a property of the
+/// capability it holds rather than of the code it runs. Only this server asks, so it lives here
+/// rather than in the contract crate.
+///
+/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
+const fn can_write(window: u64) -> bool {
+    window != DISK_TREE_WINDOW
+}
 
 /// Where the spawner maps this server's data plane. **Must match
 /// `kernel/src/user/non_volatile_memory_express_service.rs`'s `DATA_PLANE_VA`.**
@@ -123,8 +135,8 @@ fn barrier() {
 /// The server's whole mutable state: the two ring cursors and a command id.
 struct Plane {
     handoff: Handoff,
-    sq: SqState,
-    cq: CqState,
+    sq: SubmissionQueue,
+    cq: CompletionQueue,
     cid: u16,
     /// How many device flushes have completed, answered back on every successful `blk::FLUSH`.
     /// A strictly increasing count is what makes that verb's success falsifiable; see the
@@ -188,7 +200,7 @@ impl Plane {
             ) - PAGE,
             new_head as u32,
         );
-        self.sq.note_head(c.sq_head);
+        self.sq.record_head(c.sq_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation. Answering EIO
         // rather than panicking, because this is a server and a client is waiting on it: a
@@ -236,8 +248,8 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     };
     let mut plane = Plane {
         handoff,
-        sq: SqState::new(handoff.entries),
-        cq: CqState::new(handoff.entries),
+        sq: SubmissionQueue::new(handoff.entries),
+        cq: CompletionQueue::new(handoff.entries),
         cid: 0,
         flushes: 0,
     };
@@ -249,7 +261,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-dma-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if DATA.r64(TRANSFER_OFF) == non_volatile_memory_express::ESCAPE_MAGIC {
+    if DATA.r64(TRANSFER_OFF) == non_volatile_memory_express_contract::ESCAPE_MAGIC {
         let victim = DATA.r64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }

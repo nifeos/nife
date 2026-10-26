@@ -153,6 +153,8 @@ pci = { version = "0.1.0", path = "../crates/pci" }
 # The NVMe queue mechanics (milestone 53's storage half): pure logic, host-tested and proved; the
 # kernel's non_volatile_memory_express module is its volatile half, the same split as `pci` above.
 non_volatile_memory_express = { version = "0.1.0", path = "../crates/non_volatile_memory_express" }
+# What the kernel and the NVMe server agree on: the client windows and the spawn handoff.
+non_volatile_memory_express_contract = { version = "0.1.0", path = "../crates/non_volatile_memory_express_contract" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it, and hands `net_stack` its `Handoff`. Same split as the NVMe crate above.
@@ -242,7 +244,7 @@ soak_page = { version = "0.1.0", path = "../crates/soak_page" }
 system_tests = [
     "dep:installed_programs",
     # The DMA-escape wiring writes `ESCAPE_MAGIC` (milestone 261); see that crate's feature.
-    "non_volatile_memory_express/confinement_attackers",
+    "non_volatile_memory_express_contract/confinement_attackers",
 ]
 # The board build (milestone 16a): the kernel targets the VisionFive 2 (JH7110) rather than
 # QEMU's `virt` machine. A property of the target, not the build mode: the board has no

@@ -381,6 +381,7 @@ package_archive	6	a package file is refused or read entirely inside itself, on b
 measured_boot	2	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	27	config-space decode on hostile-device input
 non_volatile_memory_express	6	the queue rings never index out, and the doorbell/PRP arithmetic is total
+non_volatile_memory_express_contract	3	the spawn handoff round-trips, keeps its doorbells in the mapped page, and builds commands only for blocks the namespace has
 e1000e	2	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 usb	170	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded

@@ -4,16 +4,13 @@
 //! volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol
 //! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
 //! admin queue and PRPs) is what this crate implements, and no more of it.
-//!
-//! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)); kept
-//! as the crates.io name (#1806).
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
 pub mod regs {
     /// Controller Capabilities, 64-bit read-only. See [`super::Cap`].
     pub const CAP: u64 = 0x00;
-    /// Controller Configuration, 32-bit. See [`super::cc_enabled`].
+    /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
     pub const CC: u64 = 0x14;
     /// Controller Status, 32-bit read-only. See [`super::CSTS_RDY`].
     pub const CSTS: u64 = 0x1c;
@@ -65,7 +62,7 @@ impl Cap {
 /// IOSQES=6 (64-byte submission entries), IOCQES=4 (16-byte completion entries). The entry sizes
 /// are the spec's only defined ones and the controller checks them before honoring a queue
 /// creation, which is why they are set here rather than defaulted.
-pub fn cc_enabled() -> u32 {
+pub fn enabled_controller_configuration() -> u32 {
     1 | (6 << 16) | (4 << 20)
 }
 
@@ -160,7 +157,7 @@ impl Command {
     /// CREATE I/O COMPLETION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous
     /// (PC=1) at `prp1`. Interrupts stay off (IEN=0): the kernel driver completes by polling the
     /// phase tag, so no vector is named and none is needed.
-    pub fn create_io_cq(cid: u16, qid: u16, entries: u16, prp1: u64) -> Self {
+    pub fn create_io_completion_queue(cid: u16, qid: u16, entries: u16, prp1: u64) -> Self {
         let mut c = Self::new(ADMIN_CREATE_IO_CQ, cid, 0, prp1, 0);
         c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
         c.0[11] = 1; // PC only; IEN=0
@@ -170,7 +167,13 @@ impl Command {
     /// CREATE I/O SUBMISSION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous at
     /// `prp1`, completing into completion queue `cqid` (which must already exist; the kernel
     /// creates the pair CQ-first for exactly that reason).
-    pub fn create_io_sq(cid: u16, qid: u16, entries: u16, cqid: u16, prp1: u64) -> Self {
+    pub fn create_io_submission_queue(
+        cid: u16,
+        qid: u16,
+        entries: u16,
+        cqid: u16,
+        prp1: u64,
+    ) -> Self {
         let mut c = Self::new(ADMIN_CREATE_IO_SQ, cid, 0, prp1, 0);
         c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
         c.0[11] = 1 | (cqid as u32) << 16; // PC, and the paired CQ
@@ -265,7 +268,7 @@ pub struct Completion {
     pub sq_id: u16,
     /// The command identifier the driver assigned, echoed back.
     pub cid: u16,
-    /// The phase tag: dword 3, bit 16. See [`CqState::is_owned`].
+    /// The phase tag: dword 3, bit 16. See [`CompletionQueue::is_owned`].
     pub phase: bool,
     /// The 15-bit status field; 0 is success. Status code type in bits 8..11, code in 0..8.
     pub status: u16,
@@ -290,22 +293,22 @@ impl Completion {
 /// A submission ring's driver-side state: where the next command lands and what tail value to
 /// ring. The controller's consumption (via [`Completion::sq_head`]) is deliberately not modeled:
 /// this driver completes every command before submitting the next, so the ring can never fill,
-/// and [`SqState::push`] asserts the invariant that guards that assumption instead of carrying a
+/// and [`SubmissionQueue::push`] asserts the invariant that guards that assumption instead of carrying a
 /// free-slot count nothing would exercise.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SqState {
+pub struct SubmissionQueue {
     entries: u16,
     tail: u16,
     /// The controller's head, updated from each completion's [`Completion::sq_head`].
     head: u16,
 }
 
-impl SqState {
+impl SubmissionQueue {
     /// A fresh ring of `entries` slots (at least 2: a one-slot ring cannot distinguish full from
     /// empty in tail/head form, and the spec's minimum queue size is 2).
     pub fn new(entries: u16) -> Self {
         assert!(entries >= 2);
-        SqState {
+        SubmissionQueue {
             entries,
             tail: 0,
             head: 0,
@@ -313,7 +316,7 @@ impl SqState {
     }
 
     /// Claim the slot for one command: returns the slot index to write, advancing the tail. The
-    /// caller then rings [`doorbell`] with [`SqState::tail`]. Panics if the ring is full, which
+    /// caller then rings [`doorbell`] with [`SubmissionQueue::tail`]. Panics if the ring is full, which
     /// for this driver is a logic bug (one command in flight per queue), not a load condition.
     pub fn push(&mut self) -> u16 {
         let next = (self.tail + 1) % self.entries;
@@ -323,13 +326,13 @@ impl SqState {
         slot
     }
 
-    /// The tail value to write to the doorbell after [`SqState::push`].
+    /// The tail value to write to the doorbell after [`SubmissionQueue::push`].
     pub fn tail(&self) -> u16 {
         self.tail
     }
 
     /// Record the controller's consumption, from a completion's `sq_head`.
-    pub fn note_head(&mut self, head: u16) {
+    pub fn record_head(&mut self, head: u16) {
         assert!(
             head < self.entries,
             "controller reported an impossible head"
@@ -347,9 +350,9 @@ impl SqState {
 /// A zeroed ring reads as phase 0, the first lap writes 1s, and every lap flips:
 ///
 /// ```
-/// use non_volatile_memory_express::{Completion, CqState};
+/// use non_volatile_memory_express::{Completion, CompletionQueue};
 ///
-/// let mut cq = CqState::new(2); // a two-slot ring, so it laps quickly
+/// let mut cq = CompletionQueue::new(2); // a two-slot ring, so it laps quickly
 ///
 /// // The initial zeros. Phase 0 against an expected phase of 1: not ours, do not read the result.
 /// let stale = Completion::from_dwords([0, 0, 0, 0]);
@@ -372,17 +375,17 @@ impl SqState {
 /// assert!(cq.is_owned(&stale));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CqState {
+pub struct CompletionQueue {
     entries: u16,
     head: u16,
     phase: bool,
 }
 
-impl CqState {
+impl CompletionQueue {
     /// A fresh ring of `entries` slots, phase starting true (see the struct docs).
     pub fn new(entries: u16) -> Self {
         assert!(entries >= 2);
-        CqState {
+        CompletionQueue {
             entries,
             head: 0,
             phase: true,
@@ -464,28 +467,19 @@ pub struct IdentifyNamespace {
 
 impl IdentifyNamespace {
     /// The namespace's capacity in bytes.
-    pub fn bytes(&self) -> u64 {
+    pub fn capacity_bytes(&self) -> u64 {
         self.blocks << self.lba_shift
     }
     /// How many logical blocks one `unit`-byte transfer covers, or `None` if `unit` is not a
     /// whole number of logical blocks (a namespace this driver cannot serve 4096-byte filesystem
     /// blocks on; `parse_identify_namespace`'s shift bounds make it impossible for unit 4096).
-    pub fn blocks_per(&self, unit: u64) -> Option<u16> {
+    pub fn blocks_per_transfer(&self, unit: u64) -> Option<u16> {
         if unit == 0 || unit & ((1 << self.lba_shift) - 1) != 0 {
             return None;
         }
         Some((unit >> self.lba_shift) as u16)
     }
 }
-
-// ---------------------------------------------------------------------------------------------
-// The split between an admin plane and a data plane.
-//
-// The admin plane (reset, the admin rings, IDENTIFY, Create I/O Queue) stays in the kernel, the
-// authority over where a ring lives; the data plane (build a command, ring a doorbell, watch a
-// phase tag) runs as an unprivileged process. Below, the few facts the kernel tells it are
-// packed, unpacked and bounds-checked where the prover reaches them.
-// ---------------------------------------------------------------------------------------------
 
 /// **The largest `CAP.DSTRD` a one-page doorbell mapping can serve**, a refusal rather than an
 /// assumption.
@@ -497,177 +491,6 @@ impl IdentifyNamespace {
 /// Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a quarter of a
 /// megabyte past the mapped window, and QEMU reports 0.
 pub const MAX_DSTRD: u32 = 8;
-
-/// **How many transfer windows the EL0 server keeps, one per client.** Each window is
-/// `filesystem_contract::blk::TRANSFER_BLOCKS` pages of the DMA region, and the server stages a
-/// request in window `badge`, the badge on the endpoint capability the client called (one frame
-/// per client channel), so two clients staging at once cannot overwrite each other.
-///
-/// The clients are a fixed set the kernel wires, one window each, so there is no pool and nothing
-/// to hand back: [`FILESYSTEM_WINDOW`], [`INSTALLER_WINDOW`] and [`DISK_TREE_WINDOW`]. A new client
-/// gets a new constant and this count grows by one; each window costs 64 KiB of the DMA region.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const CLIENT_WINDOWS: usize = 3;
-
-/// The unbadged window: the filesystem server, and every kernel-side caller of the request endpoint.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const FILESYSTEM_WINDOW: u64 = 0;
-/// `system_installer`'s window, whether it is installing or confirming a boot slot beside a live
-/// filesystem server.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const INSTALLER_WINDOW: u64 = 1;
-/// The read-only disk tree's window, a program that reads the namespace
-/// beside a live filesystem server.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const DISK_TREE_WINDOW: u64 = 2;
-
-/// **Whether a window's client may write the disk.** The disk tree's may not: it serves a read-only
-/// view at the prompt, and refusing its `WRITE` and `FLUSH` here makes that a property of the
-/// capability it holds rather than of the code it runs.
-///
-/// ```
-/// use non_volatile_memory_express::{DISK_TREE_WINDOW, FILESYSTEM_WINDOW, can_write};
-/// assert!(can_write(FILESYSTEM_WINDOW));
-/// assert!(!can_write(DISK_TREE_WINDOW));
-/// ```
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const fn can_write(window: u64) -> bool {
-    window != DISK_TREE_WINDOW
-}
-
-/// **Which window a request's badge names**, or `None` for a badge no client was given. Refused
-/// rather than clamped: a badge folded onto window 0 would stage in the filesystem server's window,
-/// which is the corruption the windows exist to prevent.
-///
-/// ```
-/// use non_volatile_memory_express::{CLIENT_WINDOWS, DISK_TREE_WINDOW, client_window};
-/// assert_eq!(client_window(DISK_TREE_WINDOW), Some(2));
-/// assert_eq!(client_window(CLIENT_WINDOWS as u64), None);
-/// ```
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-pub const fn client_window(badge: u64) -> Option<usize> {
-    if badge < CLIENT_WINDOWS as u64 {
-        Some(badge as usize)
-    } else {
-        None
-    }
-}
-
-/// **The sentinel that selects the test-only DMA-escape role**, written by the confinement
-/// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
-/// runs, with the victim frame's physical address in the next `u64`. The EL0 server reads it first
-/// thing; a real boot's transfer buffer is zeroed (`alloc_contiguous_zeroed`), so the magic never
-/// matches. The kernel writes it and the EL0 server reads it, so it lives in this one crate. Its
-/// one caller is a test that breaks the data plane's DMA confinement and watches it fail, the NVMe
-/// twin of `block_driver`'s two virtio attacker roles. Named provisionally. Behind the
-/// `confinement_attackers` feature, so a shipped server cannot even name it.
-#[cfg(feature = "confinement_attackers")]
-pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
-
-/// **What the admin plane tells the data plane at spawn**, and the whole of it: the physical base,
-/// because PRP fields carry physical addresses and a process knows virtual ones; the geometry,
-/// because reading it means IDENTIFY, the admin authority this split withholds; and the doorbell
-/// stride, because it lives in `CAP`, on the register page the process is not mapped.
-///
-/// **Three `u64`s because a spawn carries three scalars** in the kernel this crate was written for.
-/// It is that kernel's own convention with the one program it spawns, not part of NVMe, but it
-/// lives here so the packing is written once and a Kani round trip checks its inverse.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Handoff {
-    /// `CAP.DSTRD`, for [`doorbell`]'s arithmetic.
-    pub dstrd: u32,
-    /// Logical blocks per filesystem block, from IDENTIFY. `1..=8` for every namespace
-    /// [`parse_identify_namespace`] admits.
-    pub blocks_per: u16,
-    /// Entries per I/O ring, as the admin plane created them.
-    pub entries: u16,
-    /// The **physical** base of the run of pages the data plane was mapped: the I/O submission
-    /// ring, the I/O completion ring, then the transfer buffer.
-    pub data_plane_phys: u64,
-    /// The namespace's capacity in bytes, the `SIZE` answer.
-    pub size_bytes: u64,
-}
-
-impl Handoff {
-    /// The three words, in `arg0`, `arg1`, `arg2` order.
-    pub fn pack(&self) -> [u64; 3] {
-        [
-            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,
-            self.data_plane_phys,
-            self.size_bytes,
-        ]
-    }
-
-    /// [`pack`](Self::pack)'s inverse, refusing a word that cannot describe a controller this
-    /// driver could serve rather than carrying the nonsense forward into a doorbell offset.
-    /// `None` for a zero ring depth, a zero or out-of-range `blocks_per` (the shift bounds
-    /// `parse_identify_namespace` enforces make `1..=8` the whole reachable range for a 4096-byte
-    /// unit), or a `dstrd` above [`MAX_DSTRD`].
-    pub fn unpack(words: [u64; 3]) -> Option<Handoff> {
-        let dstrd = (words[0] >> 32) as u32;
-        let blocks_per = (words[0] >> 16) as u16;
-        let entries = words[0] as u16;
-        if dstrd > MAX_DSTRD || !(1..=8).contains(&blocks_per) || entries < 2 {
-            return None;
-        }
-        Some(Handoff {
-            dstrd,
-            blocks_per,
-            entries,
-            data_plane_phys: words[1],
-            size_bytes: words[2],
-        })
-    }
-
-    /// **Is `block` a filesystem block this namespace has?** The data plane's own bounds check,
-    /// run before a command is built rather than left to the controller's status field, because a
-    /// driver that asks for an LBA past the end learns about it far from where it computed it.
-    ///
-    /// `unit` is the filesystem block size in bytes. `false` for any `block` whose transfer would
-    /// run past [`size_bytes`](Self::size_bytes), and for a `unit` of zero.
-    pub fn holds_block(&self, block: u64, unit: u64) -> bool {
-        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
-            Some(end) => end <= self.size_bytes,
-            None => false,
-        }
-    }
-
-    /// **Build the NVM command for one whole-filesystem-block transfer**, or `None` when the
-    /// arithmetic will not close: a block outside the namespace, an LBA that overflows, or a
-    /// buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte buffer
-    /// with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
-    ///
-    /// This is the whole of what the data plane computes. What is left in the program around it is
-    /// a 64-byte copy, a doorbell write, and a loop watching a phase tag.
-    #[allow(clippy::too_many_arguments)]
-    pub fn transfer_command(
-        &self,
-        cid: u16,
-        nsid: u32,
-        block: u64,
-        unit: u64,
-        data_phys: u64,
-        page_size: u64,
-        write: bool,
-    ) -> Option<Command> {
-        if !self.holds_block(block, unit) {
-            return None;
-        }
-        let slba = block.checked_mul(self.blocks_per as u64)?;
-        let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
-        Some(if write {
-            Command::write(cid, nsid, slba, self.blocks_per, prp1, prp2)
-        } else {
-            Command::read(cid, nsid, slba, self.blocks_per, prp1, prp2)
-        })
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -695,8 +518,8 @@ mod tests {
     }
 
     #[test]
-    fn cc_enabled_sets_en_and_the_admin_queue_entry_sizes() {
-        let cc = cc_enabled();
+    fn enabled_controller_configuration_sets_en_and_the_admin_queue_entry_sizes() {
+        let cc = enabled_controller_configuration();
         assert_eq!(cc & 1, 1, "EN");
         assert_eq!(
             (cc >> 16) & 0xf,
@@ -711,10 +534,10 @@ mod tests {
     }
 
     #[test]
-    fn cc_enableds_three_fields_share_no_bit_so_or_and_xor_agree() {
-        // Both `|` operators in `cc_enabled` survive being mutated to `^`, and this is why:
+    fn enabled_controller_configurations_three_fields_share_no_bit_so_or_and_xor_agree() {
+        // Both `|` operators in `enabled_controller_configuration` survive being mutated to `^`, and this is why:
         // EN (bit 0), IOSQES (`6 << 16`, bits 17-18) and IOCQES (`4 << 20`, bit 22) never share a
-        // bit, so `|` and `^` compute the exact same `u32` for these three literals. `cc_enabled`
+        // bit, so `|` and `^` compute the exact same `u32` for these three literals. `enabled_controller_configuration`
         // takes no argument, so there is no wider case to check; these ARE the only operands it
         // ever combines.
         assert_eq!(1u32 & (6u32 << 16), 0);
@@ -759,17 +582,17 @@ mod tests {
 
     #[test]
     fn queue_creation_packs_size_and_pairing() {
-        let cq = Command::create_io_cq(1, 3, 16, 0x2000);
+        let cq = Command::create_io_completion_queue(1, 3, 16, 0x2000);
         assert_eq!(cq.0[10], 3 | 15 << 16, "qid, and the 0-based size");
         assert_eq!(cq.0[11], 1, "physically contiguous, interrupts off");
-        let sq = Command::create_io_sq(2, 3, 16, 3, 0x3000);
+        let sq = Command::create_io_submission_queue(2, 3, 16, 3, 0x3000);
         assert_eq!(sq.0[10], 3 | 15 << 16);
         assert_eq!(sq.0[11], 1 | 3 << 16, "PC, and the paired cqid");
     }
 
     #[test]
     fn queue_creation_words_pack_disjoint_halves_so_or_and_xor_agree() {
-        // Three `| -> ^` mutants survive in `create_io_cq` and `create_io_sq`, all the same
+        // Three `| -> ^` mutants survive in `create_io_completion_queue` and `create_io_submission_queue`, all the same
         // shape: a `u16`-width field on the right of `|`, shifted left by 16, next to a value
         // that only ever occupies the low 16 bits. A left shift by 16 zeroes the low 16 bits of
         // *anything*, so the two halves can never share a bit, checked here at the widest a
@@ -783,7 +606,7 @@ mod tests {
 
     #[test]
     fn completions_decode_and_the_phase_gates_ownership() {
-        let cq = CqState::new(4);
+        let cq = CompletionQueue::new(4);
         // The controller writes phase=1 on its first lap: owned.
         let fresh = Completion::from_dwords([0, 0, 5 | 1 << 16, 42 | 1 << 16]);
         assert_eq!((fresh.sq_head, fresh.sq_id, fresh.cid), (5, 1, 42));
@@ -799,7 +622,7 @@ mod tests {
 
     #[test]
     fn the_phase_flips_every_lap_and_only_at_the_wrap() {
-        let mut cq = CqState::new(3);
+        let mut cq = CompletionQueue::new(3);
         let mut flips = 0;
         let mut last = true;
         for _ in 0..9 {
@@ -818,7 +641,7 @@ mod tests {
     fn head_reports_the_actual_next_slot_not_a_constant() {
         // Every existing caller only ever asserts `head() < entries`, which a constant 0 or a
         // constant 1 both satisfy. Assert the actual progression instead.
-        let mut cq = CqState::new(4);
+        let mut cq = CompletionQueue::new(4);
         assert_eq!(cq.head(), 0);
         cq.pop();
         assert_eq!(cq.head(), 1);
@@ -828,20 +651,20 @@ mod tests {
 
     #[test]
     fn the_submission_ring_walks_its_slots_in_order() {
-        let mut sq = SqState::new(4);
+        let mut sq = SubmissionQueue::new(4);
         // With completions consuming as we go (head following), the ring cycles forever.
         for i in 0..12u16 {
             let slot = sq.push();
             assert_eq!(slot, i % 4);
             assert_eq!(sq.tail(), (i + 1) % 4);
-            sq.note_head(sq.tail()); // the controller caught up
+            sq.record_head(sq.tail()); // the controller caught up
         }
     }
 
     #[test]
     #[should_panic(expected = "submission ring full")]
     fn a_full_submission_ring_is_a_driver_bug_not_a_wrap() {
-        let mut sq = SqState::new(2);
+        let mut sq = SubmissionQueue::new(2);
         sq.push(); // tail 1, head 0: one free slot left is the full condition
         sq.push();
     }
@@ -868,8 +691,8 @@ mod tests {
         let id = parse_identify_namespace(&data).unwrap();
         assert_eq!(id.blocks, 0x4000);
         assert_eq!(id.lba_shift, 9);
-        assert_eq!(id.bytes(), 0x4000 * 512);
-        assert_eq!(id.blocks_per(4096), Some(8));
+        assert_eq!(id.capacity_bytes(), 0x4000 * 512);
+        assert_eq!(id.blocks_per_transfer(4096), Some(8));
 
         data[130] = 13; // an LBA format this driver cannot serve
         assert!(parse_identify_namespace(&data).is_none());
@@ -944,7 +767,7 @@ mod tests {
     }
 
     #[test]
-    fn blocks_per_masks_by_the_actual_block_size() {
+    fn blocks_per_transfer_masks_by_the_actual_block_size() {
         // `identify_namespace_yields_size_and_shift`'s only `blocks_per` call is 4096, which is a
         // multiple of every mask this function could plausibly compute (511, 512, or 513: none
         // of their low bits reach as high as bit 12), so it cannot tell them apart, and it never
@@ -954,118 +777,14 @@ mod tests {
             lba_shift: 9, // 512-byte blocks; mask is 511
         };
         assert_eq!(
-            id.blocks_per(0),
+            id.blocks_per_transfer(0),
             None,
             "a zero unit is refused even though 0 & anything is 0"
         );
         // 1536 = 3 * 512, so the correct mask (511) says it divides evenly. The `+1` mutant's
         // mask (513) and the `/1` mutant's mask (512) both share bit 9 with 1536 and would
         // wrongly refuse it.
-        assert_eq!(id.blocks_per(1536), Some(3));
-    }
-
-    /// The handoff the kernel's admin plane builds is the handoff the EL0 data plane reads, and a
-    /// word that cannot describe a servable controller is refused rather than decoded.
-    #[test]
-    fn the_handoff_survives_three_words_and_refuses_nonsense() {
-        let h = Handoff {
-            dstrd: 0,
-            blocks_per: 8,
-            entries: 16,
-            data_plane_phys: 0x4001_3000,
-            size_bytes: 8 * 1024 * 1024,
-        };
-        assert_eq!(Handoff::unpack(h.pack()), Some(h));
-
-        // A stride whose doorbell file would not fit the one page of BAR0 this wiring maps (see
-        // `MAX_DSTRD`, which Kani found), a ring of one, and a geometry no namespace
-        // `parse_identify_namespace` admits can produce for a 4096-byte unit.
-        assert!(Handoff::unpack([(MAX_DSTRD as u64 + 1) << 32 | 8 << 16 | 16, 0, 0]).is_none());
-        // And the largest stride that does fit is admitted, with its last doorbell inside the
-        // page: this bound is a real edge, not a round number chosen for comfort.
-        let widest = Handoff::unpack([(MAX_DSTRD as u64) << 32 | 8 << 16 | 16, 0, 0])
-            .expect("MAX_DSTRD itself must be servable");
-        assert!(doorbell(1, Doorbell::CompletionHead, widest.dstrd) + 4 <= 0x2000);
-        assert!(Handoff::unpack([8 << 16 | 1, 0, 0]).is_none());
-        assert!(Handoff::unpack([9 << 16 | 16, 0, 0]).is_none());
-        assert!(Handoff::unpack([16, 0, 0]).is_none(), "blocks_per zero");
-        // The spec's minimum queue depth is 2 (`SqState::new`'s own doc says why: a one-slot
-        // ring cannot distinguish full from empty), and nothing above sits exactly on that
-        // boundary: `entries: 1` is refused either by `< 2` or by the `<= 2` this guards against.
-        assert!(
-            Handoff::unpack([8 << 16 | 2, 0, 0]).is_some(),
-            "the minimum queue depth must be accepted, not refused"
-        );
-    }
-
-    #[test]
-    fn pack_shifts_dstrd_left_not_right() {
-        // The round-trip test above uses `dstrd: 0`, where `<< 32` and `>> 32` both give 0.
-        // Nothing else calls `pack` at all, so a nonzero `dstrd` never reached it.
-        let h = Handoff {
-            dstrd: MAX_DSTRD,
-            blocks_per: 8,
-            entries: 16,
-            data_plane_phys: 0x4001_3000,
-            size_bytes: 8 * 1024 * 1024,
-        };
-        let words = h.pack();
-        assert_eq!(
-            words[0] >> 32,
-            MAX_DSTRD as u64,
-            "dstrd lands in the high word, shifted left, not right"
-        );
-        assert_eq!(Handoff::unpack(words), Some(h));
-    }
-
-    #[test]
-    fn pack_words_three_fields_share_no_bit_so_or_and_xor_agree() {
-        // The remaining two `| -> ^` survivors in `pack` are both this shape: `entries` (a plain
-        // `u16`, bits 0-15), `blocks_per as u64 << 16` (bits 16-31, a `u16` shifted left 16), and
-        // `dstrd as u64 << 32` (bits 32-63, a `u32` shifted left 32). Each shift zeroes exactly
-        // the bits the field below it occupies, checked at the widest each field can be.
-        assert_eq!(
-            0xffffu64 & (0xffffu64 << 16),
-            0,
-            "entries against blocks_per"
-        );
-        assert_eq!(
-            0xffff_ffffu64 & (0xffff_ffffu64 << 32),
-            0,
-            "the low 32 bits against dstrd"
-        );
-    }
-
-    /// The last block of the namespace is servable and the one after it is not, which is the
-    /// check that keeps an out-of-range request from becoming a command the controller answers
-    /// with a status the caller has to decode backwards.
-    #[test]
-    fn the_data_plane_refuses_a_block_the_namespace_does_not_have() {
-        let h = Handoff {
-            dstrd: 0,
-            blocks_per: 8,
-            entries: 16,
-            data_plane_phys: 0x4001_3000,
-            size_bytes: 8 * 1024 * 1024,
-        };
-        const LAST: u64 = 8 * 1024 * 1024 / 4096 - 1;
-        assert!(h.holds_block(LAST, 4096));
-        assert!(!h.holds_block(LAST + 1, 4096));
-        assert!(
-            !h.holds_block(u64::MAX, 4096),
-            "no overflow, no wrap-around"
-        );
-
-        // And the command the last block produces addresses the LBA the geometry says it should.
-        let cmd = h
-            .transfer_command(7, 1, LAST, 4096, 0x4001_5000, 4096, false)
-            .expect("the last block is servable");
-        assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
-        assert_eq!(cmd.0[10] as u64 | (cmd.0[11] as u64) << 32, LAST * 8);
-        assert!(
-            h.transfer_command(7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false)
-                .is_none()
-        );
+        assert_eq!(id.blocks_per_transfer(1536), Some(3));
     }
 }
 
@@ -1089,7 +808,7 @@ mod verification {
         let head: u16 = kani::any();
         let phase: bool = kani::any();
         kani::assume(entries >= 2 && head < entries);
-        let mut cq = CqState {
+        let mut cq = CompletionQueue {
             entries,
             head,
             phase,
@@ -1118,7 +837,7 @@ mod verification {
         let head: u16 = kani::any();
         kani::assume(entries >= 2 && tail < entries && head < entries);
         kani::assume((tail + 1) % entries != head); // not full, the asserted precondition
-        let mut sq = SqState {
+        let mut sq = SubmissionQueue {
             entries,
             tail,
             head,
@@ -1185,78 +904,8 @@ mod verification {
         let data: [u8; 384] = kani::any();
         if let Some(id) = parse_identify_namespace(&data) {
             assert!((9..=12).contains(&id.lba_shift));
-            let per = id.blocks_per(4096).unwrap();
+            let per = id.blocks_per_transfer(4096).unwrap();
             assert!((1..=8).contains(&per));
-        }
-    }
-
-    /// **The spawn handoff is lossless in the direction it is used**: whatever the kernel's admin
-    /// plane packs into three words, the EL0 data plane unpacks unchanged. The split between a
-    /// kernel admin plane and an unprivileged data plane makes this the only channel by which it
-    /// learns its own geometry, so a shift expression that was not its own inverse would be a
-    /// driver addressing the wrong LBA with nothing in between to notice.
-    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.the_spawn_handoff_round_trips.patch`
-    #[kani::proof]
-    fn the_spawn_handoff_round_trips() {
-        let h = Handoff {
-            dstrd: kani::any(),
-            blocks_per: kani::any(),
-            entries: kani::any(),
-            data_plane_phys: kani::any(),
-            size_bytes: kani::any(),
-        };
-        kani::assume(h.dstrd <= MAX_DSTRD && (1..=8).contains(&h.blocks_per) && h.entries >= 2);
-        assert_eq!(Handoff::unpack(h.pack()), Some(h));
-    }
-
-    /// **An unpacked handoff can always drive the doorbell arithmetic**, for every word the
-    /// kernel could have packed. [`MAX_DSTRD`] is what buys this, and this harness is why that
-    /// constant exists: a stride the spec permits and QEMU never reports computes a doorbell
-    /// offset outside the one page of BAR0 the EL0 data plane is mapped, which is the one
-    /// arithmetic error in this driver that reaches hardware.
-    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page.patch`
-    #[kani::proof]
-    fn an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page() {
-        let words: [u64; 3] = [kani::any(), kani::any(), kani::any()];
-        if let Some(h) = Handoff::unpack(words) {
-            // Queue 0 (admin) and queue 1 (the one I/O pair the admin plane creates) are the only
-            // doorbells this driver can name; with the largest stride `CAP` can report they are
-            // the four lowest offsets in the doorbell page.
-            for qid in 0..=1u16 {
-                for which in [Doorbell::SubmissionTail, Doorbell::CompletionHead] {
-                    let off = doorbell(qid, which, h.dstrd);
-                    assert!((0x1000..0x2000).contains(&off));
-                }
-            }
-        }
-    }
-
-    /// **The data plane never builds a command for a block outside its namespace, and never
-    /// overflows computing one.** This is the bounds check the unprivileged data plane leans on:
-    /// the IOMMU bounds
-    /// where the controller may *write*, and nothing but this bounds *which LBA* is asked for, so
-    /// a caller-supplied `u64` must not be able to wrap into a valid-looking address.
-    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.a_transfer_command_is_only_built_for_a_block_the_namespace_has.patch`
-    #[kani::proof]
-    fn a_transfer_command_is_only_built_for_a_block_the_namespace_has() {
-        let h = Handoff {
-            dstrd: 0,
-            blocks_per: kani::any(),
-            entries: 16,
-            data_plane_phys: kani::any(),
-            size_bytes: kani::any(),
-        };
-        kani::assume((1..=8).contains(&h.blocks_per));
-        let block: u64 = kani::any();
-        let data_phys: u64 = kani::any();
-        kani::assume(data_phys.is_multiple_of(4096) && data_phys < u64::MAX - 8192);
-        if h.transfer_command(1, 1, block, 4096, data_phys, 4096, kani::any())
-            .is_some()
-        {
-            assert!(h.holds_block(block, 4096));
-            // The transfer's last byte is inside the namespace, which is the property
-            // `holds_block` exists to state and the one a wrap would quietly break.
-            assert!((block + 1) * 4096 <= h.size_bytes);
         }
     }
 }

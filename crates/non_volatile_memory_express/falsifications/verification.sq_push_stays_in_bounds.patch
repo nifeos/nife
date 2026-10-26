@@ -1,6 +1,6 @@
 Falsifies `non_volatile_memory_express::verification::sq_push_stays_in_bounds`.
 
-The defect: `SqState::push` advances the tail with a bare `+ 1`, losing the `% entries`. The tail
+The defect: `SubmissionQueue::push` advances the tail with a bare `+ 1`, losing the `% entries`. The tail
 doorbell is then written with a value equal to the ring depth, one past the last legal tail.
 
 Expected to fail: the harness's `assert!(sq.tail() < entries)`.
@@ -9,7 +9,7 @@ diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile
 index 7827ea4e1..093393f7e 100644
 --- a/crates/non_volatile_memory_express/src/lib.rs
 +++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -460,3 +460,3 @@ impl SqState {
+@@ -460,3 +460,3 @@ impl SubmissionQueue {
      pub fn push(&mut self) -> u16 {
 -        let next = (self.tail + 1) % self.entries;
 +        let next = self.tail + 1;

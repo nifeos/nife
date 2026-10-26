@@ -1,4 +1,4 @@
-Falsifies `non_volatile_memory_express::verification::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page`.
+Falsifies `non_volatile_memory_express_contract::verification::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page`.
 
 The defect: `Handoff::unpack` stops refusing a stride above `MAX_DSTRD`. A stride the spec permits
 and QEMU never reports then computes a doorbell offset outside the one page of BAR0 the EL0 data
@@ -6,11 +6,10 @@ plane is mapped, the case the constant exists to prevent.
 
 Expected to fail: the harness's `assert!((0x1000..0x2000).contains(&off))`.
 
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
-index 7827ea4e1..72b7a967b 100644
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -689,3 +689,3 @@ impl Handoff {
+diff --git a/crates/non_volatile_memory_express_contract/src/lib.rs b/crates/non_volatile_memory_express_contract/src/lib.rs
+--- a/crates/non_volatile_memory_express_contract/src/lib.rs
++++ b/crates/non_volatile_memory_express_contract/src/lib.rs
+@@ -130,3 +130,3 @@
          let entries = words[0] as u16;
 -        if dstrd > MAX_DSTRD || !(1..=8).contains(&blocks_per) || entries < 2 {
 +        if !(1..=8).contains(&blocks_per) || entries < 2 {

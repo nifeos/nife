@@ -94,7 +94,7 @@ assert!(
 );
 ```
 
-`note_head` (in `crates/non_volatile_memory_express`) is:
+`note_head` (in `crates/non_volatile_memory_express`; renamed `SubmissionQueue::record_head` on 2026-10-26) is:
 
 ```rust
 pub fn note_head(&mut self, head: u16) {
@@ -141,7 +141,7 @@ error contract of `submit_and_poll` and every path above it. It needs a negative
 device that lies) to prove the new path fails closed rather than mis-serving. That control is
 precisely the hostile-device harness shared-page-audit.md already proposed as its lane candidate B,
 and this finding extends that candidate's justification rather than adding a new one. Note this is
-consistent with `crates/non_volatile_memory_express`'s own design comment on `SqState`. It
+consistent with `crates/non_volatile_memory_express`'s own design comment on `SqState` (renamed `SubmissionQueue` on 2026-10-26). It
 deliberately does not model the
 controller's head as a free-slot count "instead of carrying a free-slot count nothing would
 exercise," which is the right call for the honest path and is exactly why the dishonest path lands on

@@ -25,7 +25,7 @@ license.workspace = true
 # boot against an initial ramdisk built without it fails by name rather than as a missing IOMMU
 # fault. `block_driver`'s two virtio attacker roles predate this and still ship ungated.
 # The feature name was ratified by calef, 2026-10-05 (#1647).
-confinement_attackers = ["non_volatile_memory_express/confinement_attackers"]
+confinement_attackers = ["non_volatile_memory_express_contract/confinement_attackers"]
 # **The input driver holds 200 ms after every drain**, for `script/swish-check --input-race`: the
 # window in which a receive interrupt cleared after the drain would strand typed bytes in the
 # PL011's FIFO (components/src/input.rs). Off in every shipped image. Name provisional (2026-10-13 UTC).
@@ -704,6 +704,7 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
 non_volatile_memory_express = { version = "0.1.0", path = "../crates/non_volatile_memory_express" }
+non_volatile_memory_express_contract = { version = "0.1.0", path = "../crates/non_volatile_memory_express_contract" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
 e1000e = { version = "0.1.0", path = "../crates/e1000e" }

@@ -125,6 +125,7 @@ name_resolution_protocol	userspace	retired
 network_time_protocol	userspace	components,fixtures
 nifefs	shared	components,fixtures,kernel
 non_volatile_memory_express	shared	components,kernel
+non_volatile_memory_express_contract	shared	components,kernel
 ntlm	userspace	retired
 ntp_proto	shared	retired
 number_writer	userspace	components
