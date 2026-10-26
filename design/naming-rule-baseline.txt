@@ -24,8 +24,6 @@ crates/current_cpu_contract/src/lib.rs::thread_page_va spelled-out
 crates/designware_ethernet/src/coherence.rs::delivered question-shape
 crates/designware_ethernet/src/controller.rs::dma_bits spelled-out
 crates/designware_ethernet/src/regs.rs::DMA_PAGE spelled-out
-crates/designware_mobile_storage/src/regs.rs::dma_64bit question-shape
-crates/designware_mobile_storage/src/regs.rs::dma_64bit spelled-out
 crates/designware_mobile_storage/src/sd.rs::in_range question-shape
 crates/documentation/src/index.rs::STORE_DIR spelled-out
 crates/e1000e/src/pch/flush.rs::required question-shape

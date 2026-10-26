@@ -7,7 +7,7 @@
 //! notes/designware-mobile-storage.md.
 
 use designware_mobile_storage::host::Registers;
-use designware_mobile_storage::idmac::DirectMemoryAccessRegion;
+use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
 pub(crate) struct Window {
@@ -21,7 +21,7 @@ impl Window {
     /// # Safety
     ///
     /// `phys` must be a `DesignWare` Mobile Storage controller's base that `mmu::initialize` mapped
-    /// device-typed for at least `regs::WINDOW_USED` bytes (step 10, from the same
+    /// device-typed for at least `registers::WINDOW_USED` bytes (step 10, from the same
     /// `memory::jh7110_storage` answer), and nothing else may drive that controller while this
     /// window is in use.
     pub unsafe fn new(phys: u64) -> Window {
@@ -35,7 +35,7 @@ impl Window {
 impl Registers for Window {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(
-            offset < designware_mobile_storage::regs::WINDOW_USED && offset.is_multiple_of(4)
+            offset < designware_mobile_storage::registers::WINDOW_USED && offset.is_multiple_of(4)
         );
         // SAFETY: `new`'s contract: the base is a mapped, device-typed controller window at least
         // `WINDOW_USED` bytes long, and every offset the crate passes is a register below that
@@ -45,7 +45,7 @@ impl Registers for Window {
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(
-            offset < designware_mobile_storage::regs::WINDOW_USED && offset.is_multiple_of(4)
+            offset < designware_mobile_storage::registers::WINDOW_USED && offset.is_multiple_of(4)
         );
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.base + offset as usize) as *mut u32, value) }
