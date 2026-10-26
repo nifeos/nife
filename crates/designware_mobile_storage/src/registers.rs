@@ -162,8 +162,8 @@ pub(crate) const FIFOTH: u32 = 0x04c;
 #[must_use]
 pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
     let half = depth / 2;
-    let rx = if half == 0 { 0 } else { half - 1 };
-    (2 << 28) | ((rx & 0xfff) << 16) | (half & 0xfff)
+    let receive_watermark = if half == 0 { 0 } else { half - 1 };
+    (2 << 28) | ((receive_watermark & 0xfff) << 16) | (half & 0xfff)
 }
 
 /// **The `FIFOTH` word for IDMAC transfers** with a FIFO of `depth` words. The transmit watermark
@@ -174,20 +174,20 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 #[must_use]
 pub(crate) fn fifoth_for_direct_memory_access(depth: u32) -> u32 {
     const BURSTS: [u32; 8] = [1, 4, 8, 16, 32, 64, 128, 256];
-    let tx = depth / 2;
-    let free = depth - tx;
+    let transmit_watermark = depth / 2;
+    let free = depth - transmit_watermark;
     let code = (0..BURSTS.len())
         .rev()
         .find(|&c| 128 % BURSTS[c] == 0 && free.is_multiple_of(BURSTS[c]))
         .unwrap_or(0);
-    let rx = BURSTS[code] - 1;
-    ((code as u32) << 28) | ((rx & 0xfff) << 16) | (tx & 0xfff)
+    let receive_watermark = BURSTS[code] - 1;
+    ((code as u32) << 28) | ((receive_watermark & 0xfff) << 16) | (transmit_watermark & 0xfff)
 }
 
 /// The receive watermark field of `FIFOTH`, which OpenBSD reads back as `depth - 1` when the tree
 /// gives no `fifo-depth` (the reset value is `depth - 1`).
 #[must_use]
-pub(crate) const fn fifoth_rx_watermark(fifoth: u32) -> u32 {
+pub(crate) const fn fifoth_receive_watermark(fifoth: u32) -> u32 {
     (fifoth >> 16) & 0xfff
 }
 
@@ -386,9 +386,9 @@ mod tests {
         assert_eq!(queue_offset(0x5342_290a), 0x200);
         // depth 32: receive watermark 15, transmit 16, OpenBSD's burst code 2.
         assert_eq!(fifoth_for_pio(32), (2 << 28) | (15 << 16) | 16);
-        assert_eq!(fifoth_rx_watermark(fifoth_for_pio(32)), 15);
+        assert_eq!(fifoth_receive_watermark(fifoth_for_pio(32)), 15);
         // A one-word FIFO cannot go below zero.
-        assert_eq!(fifoth_rx_watermark(fifoth_for_pio(1)), 0);
+        assert_eq!(fifoth_receive_watermark(fifoth_for_pio(1)), 0);
         assert_eq!(queue_count(0x1fff << 17), 0x1fff);
         assert_eq!(queue_count(!(0x1fff << 17)), 0);
     }

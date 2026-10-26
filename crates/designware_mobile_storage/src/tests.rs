@@ -764,19 +764,19 @@ fn an_emmc_is_sized_by_ext_csd_only_when_it_is_sector_addressed() {
 #[test]
 fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_US % 7, 0);
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let mut sim = Sim::new(CardKind::MultimediaCard, 4096, 32);
         sim.busy_polls = u32::MAX;
         sim.clock_step = 7;
         let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-        let _ = tx.send(matches!(
+        let _ = sender.send(matches!(
             sd::identify(&mut h, 8),
             Err(InitializationError::PowerUp(operation_conditions)) if operation_conditions & card::OPERATION_CONDITIONS_BUSY_DONE == 0
         ));
     });
     assert_eq!(
-        rx.recv_timeout(std::time::Duration::from_secs(10)),
+        receiver.recv_timeout(std::time::Duration::from_secs(10)),
         Ok(true),
         "power-up neither finished nor gave up"
     );

@@ -206,3 +206,7 @@ Each renamed row's status says which ruling renamed it and what it was.
   `VERID_240A` becomes Linux's `DW_MMC_240A`. Of the commands, `MMC_SEND_OP_COND` and
   `SD_SET_BUS_WIDTH` become the specifications' `SEND_OP_COND` and `SET_BUS_WIDTH`. The `OCR_*`
   constants copy no source's name, so they follow the normal rules as `OPERATION_CONDITIONS_*`.
+- Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out wherever this tree authors the
+  name. `fifoth_rx_watermark` becomes `fifoth_receive_watermark`, and the watermark locals in the
+  `FIFOTH` functions follow. The tests' channel ends become `sender` and `receiver`, the names of
+  the standard library's own types.

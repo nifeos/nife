@@ -191,7 +191,7 @@ impl<R: Registers> Host<R> {
         }
         let depth = match queue_depth {
             Some(d) if d > 0 => d,
-            _ => registers::fifoth_rx_watermark(id.fifoth) + 1,
+            _ => registers::fifoth_receive_watermark(id.fifoth) + 1,
         };
         Ok((
             Host {
@@ -643,11 +643,12 @@ mod tests {
     /// Runs `f` on a worker and fails if it has not returned in ten seconds. A wait whose deadline
     /// never fires spins forever, and this turns that into a named failure rather than a hung test.
     fn within_ten_seconds<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
-        let (tx, rx) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
         std::thread::spawn(move || {
-            let _ = tx.send(f());
+            let _ = sender.send(f());
         });
-        rx.recv_timeout(Duration::from_secs(10))
+        receiver
+            .recv_timeout(Duration::from_secs(10))
             .expect("the driver neither returned nor gave up: a deadline never fired")
     }
 
