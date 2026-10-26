@@ -555,6 +555,29 @@ mod tests {
             ),
             l(Speed::Hundred, true)
         );
+        // Half duplex gigabit needs our half-duplex advertisement too, not only the partner's.
+        assert_eq!(
+            link_from_registers(
+                up,
+                BMCR_ANENABLE,
+                advertise,
+                ANLPAR_TX_FD,
+                GTCR_ADV_1000TFDX,
+                GTSR_LP_1000THDX
+            ),
+            l(Speed::Hundred, true)
+        );
+        assert_eq!(
+            link_from_registers(
+                up,
+                BMCR_ANENABLE,
+                advertise,
+                ANLPAR_TX_FD,
+                GTCR_ADV_1000THDX,
+                GTSR_LP_1000TFDX
+            ),
+            l(Speed::Hundred, true)
+        );
         // A 100BASE-T4 partner reads as 100 Mbit/s half duplex when we advertise it.
         assert_eq!(
             link_from_registers(up, BMCR_ANENABLE, ANLPAR_T4, ANLPAR_T4, 0, 0),
