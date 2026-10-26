@@ -161,8 +161,12 @@ fn hashes() {
 // HMAC and HKDF, which are what TLS 1.3's key schedule is built out of. RFC 4231 test case 1
 // and RFC 5869 test case 1.
 // ---------------------------------------------------------------------------------------
+/// RFC 4231 section 4.2, test case 1: the published HMAC key, twenty `0x0b` bytes. A test vector,
+/// not a secret, and written in hex like every other vector in this file.
+const RFC_4231_TEST_CASE_1_KEY: &str = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+
 fn hmac_and_hkdf() {
-    let mut mac = <hmac::Hmac<sha2::Sha256>>::new_from_slice(&[0x0b; 20])
+    let mut mac = <hmac::Hmac<sha2::Sha256>>::new_from_slice(&hex(RFC_4231_TEST_CASE_1_KEY))
         .expect("HMAC takes a key of any length");
     mac.update(b"Hi There");
     check(
