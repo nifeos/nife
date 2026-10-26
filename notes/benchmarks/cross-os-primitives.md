@@ -1,6 +1,9 @@
 # Cross-OS primitives: nife, Linux and macOS
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the EL0 primitive suite, the first cross-OS table, and the map tie and spawn caveats, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the EL0 primitive suite, the first
+cross-OS table, and the map tie and spawn caveats, with the dates, tables and corrections behind
+them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## Compute vs. OS primitives: two benchmarks that measure different things (milestone 19e)
 
@@ -50,7 +53,7 @@ kernel-internal path length. That is right for regression gating: a code-path ch
 next to its commit. It is not what lmbench measures. lmbench runs a userspace program making real
 syscalls, so its numbers include the EL0→EL1 trap and return that a kernel-side benchmark skips.
 
-So the cross-OS primitive numbers are measured from EL0, by a userspace program that self-times a
+So the cross-OS primitive numbers come from EL0, from a userspace program that self-times a
 loop of real `svc` syscalls. That is why milestone 19e (run a real workload) opened EL0 access to the virtual counter
 (`CNTKCTL_EL1.EL0VCTEN`; `user_mode_runtime::now`/`cntfrq`; [notes/abi.md](../abi.md)). CoreMark is
 the first program to use it, reporting `[crc, ticks, freq]`. The EL0 primitive benchmarks (null
@@ -88,8 +91,8 @@ Map (lmbench's `lat_mmap`) behaves differently from the other three. It taught t
 
 First, it consumes resources per call. Every `MAP_INTO` writes a page-table entry and a revocation
 record, paid from the target space's untyped region, so unlike a null syscall it cannot loop
-forever. The loop is bounded at 500 maps, one L3 table's worth; the kernel-side twin `map_new` maps
-64. There is no unmap in the surface yet, so each VA is used once.
+forever. The loop runs 500 maps at most, one L3 table's worth; the kernel-side twin `map_new` maps
+64. There is no unmap in the surface yet, so each map needs a fresh VA.
 
 Second, the debug and release numbers diverged by ~10x, far more than any other primitive.
 `map_el0` aliases one existing frame at every VA, so it does no page allocation and no zeroing. It is
@@ -100,8 +103,8 @@ mechanism shows through: ~91 ns. The kernel-side `map_new` is ~524 ns in release
 from debug. Its cost is zeroing the 4 KiB a fresh frame needs (`retype_page` hands back a zeroed
 page), which is memory-bandwidth bound.
 
-That walk length is a constant in `kernel/src/revoke.rs`, `LOG_ENTRIES`. It was ~128 when the
-~909 ns was measured. A log page held 255 records until §132 (what `PageFrame::REVOKE` owes an
+That walk length is a constant in `kernel/src/revoke.rs`, `LOG_ENTRIES`. It was ~128 at the ~909 ns
+reading. A log page held 255 records until §132 (what `PageFrame::REVOKE` owes an
 overlapping run) gave each one a third word naming the capability it was made under. That took the
 page to 170. So `LOG_ENTRIES` is a benchmark input, and
 the icount tripwire noticed. §132's branch came in at `map_el0` -16.9% aarch64 and -16.4% riscv64,
@@ -114,8 +117,8 @@ first-touch page fault, which allocates and zeroes a fresh page; `map_el0` skips
 ~91 ns is the pure mapping mechanism, genuinely lean, and not comparable to Linux's ~534 ns, most of
 which is zeroing. The like-for-like comparison is our `map_new` (allocate + zero + map), ~524 ns,
 plus one trap (~28 ns) for the EL0 crossing the host's fault includes. That gives ~552 ns, against
-Linux ~534 ns and macOS ~556 ns: a three-way tie. Page provisioning is dominated by zeroing 4 KiB,
-the same silicon and bandwidth for all three. Nobody can win it without zeroing memory faster. A fair
+Linux ~534 ns and macOS ~556 ns: a three-way tie. Zeroing 4 KiB dominates page provisioning, the
+same silicon and bandwidth for all three. Nobody can win it without zeroing memory faster. A fair
 EL0 map that provisions a fresh page waits on retype-from-untyped reaching userspace (a later
 milestone). Until then the kernel-side `map_new` is the stand-in.
 
@@ -189,9 +192,9 @@ number stands with its meaning: building a process is cheap when a process is a 
 2026-09-21 reading" and derived ~8.2 µs and ~2.4x from it after the current-CPU page made the path
 6.3% longer ([the spawn appendix](spawn-el0.md)). Both parts are wrong. The ~7.7 µs dates from
 2026-07-26. [The 2026-07-29 refresh](per-core-and-multi-hart.md) measured the settled per-core median
-at ~4.4 µs and called 7.7 a single sample on a busier machine. So the ~8.2 µs was computed from a
-stale figure. The latest measured HVF value is ~4.4 µs (2026-07-29). The icount path has moved
-since (-41% on 2026-08-27, +6.3% on 2026-09-21), and no HVF reading has been taken after it.
+at ~4.4 µs and called 7.7 a single sample on a busier machine. So the ~8.2 µs came from a stale
+figure. The latest measured HVF value is ~4.4 µs (2026-07-29). The icount path has moved
+since (-41% on 2026-08-27, +6.3% on 2026-09-21), and no HVF reading postdates it.
 
 ### The context switch, the softest of the three
 
@@ -209,8 +212,8 @@ minimal kernel.
 Debug nife: null syscall ~42 ns, ctx switch ~692 ns, IPC ~2272 ns. So `-O0` was a ~1.5x tax on the
 bare syscall, which still won, but a ~6.7x tax on IPC, which lost to Linux at 1723 ns. The heavier a
 path, the more the optimizer matters. The IPC path, two context switches plus four traps plus the
-rendezvous, is heavy. The null-syscall win survived the debug handicap; the IPC win was hidden by it.
-Measuring both builds is why we can say which.
+rendezvous, is heavy. The null-syscall win survived the debug handicap; the debug handicap hid the
+IPC win. Measuring both builds is why we can say which.
 
 ### Caveats that remain
 

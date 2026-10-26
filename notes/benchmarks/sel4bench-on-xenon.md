@@ -54,9 +54,9 @@ one CI run on one machine:
 **Their figure is one of two modes.** Over the 138 `PC99_64_noksw_skylake` runs from 2026-02-20
 to 2026-10-21, the call mean falls in 714 to 725 in 123 runs and in 741 to 745 in 15; reply
 likewise, 574 to 586 and 597 to 601. Every run sits wholly in one mode, all five iterations
-together, so the mode is set per boot. Every high-mode run is from 2026-09-22 or later, and the
+together, so each boot has one mode. Every high-mode run is from 2026-09-22 or later, and the
 published run is one of them. Within a mode their spread is under 2%. A single xenon boot may land
-in either mode, so it is read against both.
+in either mode, so read it against both.
 
 The effective configuration, read from the CMake cache of our build of the same command. These
 are the values a reader would otherwise have to guess, and the Default and MCS rows differ only in
@@ -96,12 +96,12 @@ and seL4 writes none of the power-management MSRs. If their core sat at 3.4 GHz,
 cycles. If it turbo'd to the i7-6700's 4.0 GHz, 743 ticks is up to 874 cycles. That is the largest
 unknown on their side, and nothing we can run removes it.
 
-On xenon it is measured, not assumed. GRUB reads the MSRs that set the core clock just before it
-hands over to seL4 (`bench/xenon-sel4bench/grub.cfg`, `clock_probe`): the nominal and turbo ratios,
-the requested and current ratios, the turbo-disable bit and whether hardware P-states are on.
-If xenon's requested ratio is the nominal 27 and hardware P-states are off, its ticks are its
-cycles and the comparison reads directly. If xenon runs above 27, its ticks undercount its cycles
-by 27 over the ratio, and the runbook's turbo-off boot is the comparison that counts.
+On xenon it is a measurement, not an assumption. GRUB reads the MSRs that set the core clock just
+before it hands over to seL4 (`bench/xenon-sel4bench/grub.cfg`, `clock_probe`): the nominal and
+turbo ratios, the requested and current ratios, the turbo-disable bit and whether hardware P-states
+are on. If xenon's requested ratio is the nominal 27 and hardware P-states are off, its ticks are
+its cycles and the comparison reads directly. If xenon runs above 27, its ticks undercount its
+cycles by 27 over the ratio, and the runbook's turbo-off boot is the comparison that counts.
 
 ## Apples-to-apples, item by item
 
@@ -127,10 +127,10 @@ So `bench/xenon-sel4bench/build.sh` also makes `noksw-patched` and `mcs-noksw-pa
 published kernels with the refusal's one conditional branch (`test $0x1,%al; je`, right after
 `rdmsr` of `0x10a`) replaced by a NOP of the same six bytes (`noksw-boots-anyway.py`). Every other
 byte of each image is the published one, so every instruction sel4bench times keeps its address
-and its bytes. The patch is made in the binary on purpose. Removing the `return false` in the
+and its bytes. The patch goes into the binary on purpose. Removing the `return false` in the
 source left the Default kernel's `.text` byte-identical, but in the MCS build it regrew `boot_sys`
-and moved all of `.text` by 60 bytes, which changes the cache-line alignment of the code being
-timed. The script refuses unless the sequence occurs exactly once. It also builds `ksw`, the skim
+and moved all of `.text` by 60 bytes, which changes the cache-line alignment of the timed code. The
+script refuses unless the sequence occurs exactly once. It also builds `ksw`, the skim
 window on, which the
 Foundation runs on the same machine as `PC99_64_skylake` and publishes only in sel4bench-results
 (at `11d0fc2c`: call 964, reply 823). `ksw` boots unpatched on any microcode, so it is the
@@ -197,8 +197,8 @@ sel4bench's output and its reading.
 
 ## The bench: what calef does
 
-Build on the maintainer's Mac first, about four minutes once the Foundation's image is pulled
-(`podman`):
+Build on the maintainer's Mac first, about four minutes once `podman` has pulled the Foundation's
+image:
 ```console
 $ sh bench/xenon-sel4bench/build.sh /path/to/sel4bench-xenon
 ```

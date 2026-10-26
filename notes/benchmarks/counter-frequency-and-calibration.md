@@ -1,12 +1,15 @@
 # Counter frequency and x86 calibration
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the riscv64 hardcoded counter rate and the x86 TSC calibration that was wrong by up to 12x, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the riscv64 hardcoded counter rate and
+the x86 TSC calibration that was wrong by up to 12x, with the dates, tables and corrections behind
+them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The page and its bounds
 
 `crates/counter_frequency_contract` defines the page that tells a process how many counter ticks
-make a second where no register says so. `x86_64`'s TSC rate comes from `CPUID` leaf `0x15` or is
-measured, and `riscv64`'s is `/cpus/timebase-frequency` in a device tree no process can read.
+make a second where no register says so. `x86_64`'s TSC rate comes from `CPUID` leaf `0x15` or from
+a measurement, and `riscv64`'s is `/cpus/timebase-frequency` in a device tree no process can read.
 Either way the kernel learns it once, at boot. A hardcoded rate is not an answer: radon's `time`
 CSR runs at 4 MHz, not QEMU's 10 MHz.
 
@@ -115,10 +118,10 @@ named the mechanism.
 
 - The 2026-08-24 x86 `ns/iter` table (`yield_switch`, `tss_iomap_switch`, debug and release), in
   [the TSS I/O-bitmap appendix](x86-tss-iomap.md), is the one body of published x86 wall-clock
-  figures derived from the stored rate. It is marked in place with what is still safe to quote. An
-  inflated rate makes `ns/iter` too small, so those figures may read faster than the runs were.
-  Every conclusion there that rests on a ratio between two rows of one boot survives, because the
-  calibration cancels exactly in a ratio.
+  figures derived from the stored rate. It carries a mark in place saying what is still safe to
+  quote. An inflated rate makes `ns/iter` too small, so those figures may read faster than the runs
+  were. Every conclusion there that rests on a ratio between two rows of one boot survives, because
+  the calibration cancels exactly in a ratio.
 - The 2026-09-15 lazy-TSS measurement (same appendix) and the icount baselines are not affected.
   They quote deterministic ticks under `-icount`, and `bench/baseline-*.txt` holds ticks.
 - `coremark`'s self-reported rate on x86 read the stored number, so any x86 CoreMark score computed

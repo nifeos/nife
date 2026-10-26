@@ -1,6 +1,10 @@
 # The x86 TSS I/O-bitmap switch cost
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the naive and lazy bitmap writes that §121 (what a device capability is when the device has no page) asked to have priced, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the naive and lazy bitmap writes that
+§121 (what a device capability is when the device has no page) asked to have priced, with the dates,
+tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming
+record](README.md) holds it.*
 
 ## 2026-08-24: the TSS I/O-bitmap switch cost (DECISIONS §121's amendment)
 
@@ -34,10 +38,11 @@ change to run on this ISA. What was missing is everything around it:
 
 Every EL0-plane bench (`null_syscall_el0`, `ctx_switch_el0`, `ipc_rtt_el0`, `sink_throughput`,
 `map_el0`, `spawn_el0`) self-skips on this leg through its existing mechanism. `crate::user::program`
-finds nothing, because `crates/user_mode_runtime` has no `x86_64` arms yet, so no new gating was
-needed. `fs_read`, `fs_throughput` and `smp_throughput` self-skip as they do on a single-hart `--real`
-run elsewhere. What runs cleanly is the kernel-thread plane: `yield_switch`, `ipc_rtt`, `relay_rtt`,
-`call_reply`, `broker_rtt`, `spawn_reap`, `map_new`, `coremark`, plus one new x86-only bench.
+finds nothing, because `crates/user_mode_runtime` has no `x86_64` arms yet, so it took no new
+gating. `fs_read`, `fs_throughput` and `smp_throughput` self-skip as they do on a single-hart
+`--real` run elsewhere. What runs cleanly is the kernel-thread plane: `yield_switch`, `ipc_rtt`,
+`relay_rtt`, `call_reply`, `broker_rtt`, `spawn_reap`, `map_new`, `coremark`, plus one new x86-only
+bench.
 
 ### `tss_iomap_switch`: `yield_switch` plus one write
 
@@ -117,7 +122,7 @@ question; this section changes only what he decides with.
 
 It does not build option 1 either. There is no port-range capability, no `MemoryRegion::SPLIT`-derived
 granting and no syscall surface change. `bench_write_io_bitmap` is deliberately not wired to the live
-TSS's `iomap_base`, so nothing here can be mistaken for the real mechanism.
+TSS's `iomap_base`, so nothing here could pass for the real mechanism.
 
 *(Correction, 2026-09-15: §121 was since reversed to build option 1 as milestone 299 (the x86 port-range capability), with the lazy
 write below.)*

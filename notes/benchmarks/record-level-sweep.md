@@ -1,6 +1,9 @@
 # The record-level sweep
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds milestone 138's sweep of the RedoxFS record size and the two-term model it found, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds milestone 138's sweep of the RedoxFS
+record size and the two-term model it found, with the dates, tables and corrections behind them.
+Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The record level, swept: what a 128 KiB record actually costs (milestone 138 (close the read gap), 2026-08-18)
 
@@ -12,7 +15,7 @@ throughput against the record level, and nobody had. This is that sweep.
 Taking the record from 128 KiB down to one block makes a 4 KiB read 5.6 times faster and a 4 KiB
 write 3.0 to 3.8 times faster. It does not deliver the 32x, because the 32x was never all of the
 cost. A request also pays a fixed ~208 us that no record level touches. Once the record is one block,
-that fixed cost is 80% of what is left.
+that fixed cost is 80% of what remains.
 
 ### How it was measured, on a machine that was not quiet
 
@@ -29,7 +32,7 @@ filesystem built at that level. This sweep ran against a committed value of 5, a
 does not decide. *(Step 1 of milestone 138 (close the read gap) sets `RECORD_LEVEL` to 1; see
 [steps 1 and 3](read-path-record-and-request-size.md).)*
 
-The machine was loaded, so the control does more here than select rounds. Twenty passes ran over the
+The machine was busy, so the control does more here than select rounds. Twenty passes ran over the
 six levels, interleaved (one pass sweeps 0 through 5, then the next). The host sat at load averages of
 5.5 to 21 with three other lanes gating. That is outside the load 4 to 9 where milestone 38 took its
 figures. Keeping only rounds that pass a 2% control would have left one or two per level.
@@ -44,7 +47,7 @@ to the guest that second.
 Two runs at an ordinary load show the normalization invents nothing. Before the sweep, at load 6.9
 and 7.3, single runs at level 5 and level 0 gave a sequential read of 1,466,327 ns and 257,893 ns.
 The ratio method over twenty passes at loads from 5.5 to 21 gives 1,453,963 and 258,582: 0.8% and
-0.3% apart. The raw minimums are printed beside the normalized figures. Where the two disagree, the
+0.3% apart. The raw minimums sit beside the normalized figures. Where the two disagree, the
 disagreement is the noise.
 
 ### The sweep
@@ -121,12 +124,13 @@ pointers and there is no indirection.
 | the block path's own ceiling | ~100 | | | 37x |
 | ext4 `O_DIRECT` at a 64 KiB unit, same tier | ~940 | ~940 | ~900 | |
 
-Only the first two rows are measured. Rows three and four are the measured cost of one request that
-fetches one record of that size. That is what a 64 KiB request would cost if the contract could carry
-one. The derivation rests on something milestone 38 measured: `read_record` reads the block the
-pointer stores and only then checks the level asked for. So the bytes a request asks for do not change
-what the store fetches. Moving 64 KiB rather than 4 KiB into the client's pages is bounded by
-`fs_payload_fill`, which paints a page in 820 ns: sixteen pages is 13 us against 837, under 2%.
+Only the first two rows are measurements. Rows three and four are the measured cost of one request
+that fetches one record of that size. That is what a 64 KiB request would cost if the contract could
+carry one. The derivation rests on something milestone 38 measured: `read_record` reads the block
+the pointer stores and only then checks the level asked for. So the bytes a request asks for do not
+change what the store fetches. `fs_payload_fill`, which paints a page in 820 ns, bounds the cost of
+moving 64 KiB rather than 4 KiB into the client's pages: sixteen pages is 13 us against 837, under
+2%.
 
 - Option 2, a record level matched to the transfer unit: 5.6x on reads and 3.0x on writes, measured.
   It is the only one of the three that needs no agreement between two programs. Its costs are in
@@ -140,8 +144,8 @@ what the store fetches. Moving 64 KiB rather than 4 KiB into the client's pages 
   either way. With a multi-page transfer the record level stops mattering for aligned bulk IO. Option
   2 then collapses into "do not fetch more than the request asked for", which every level from 0 to 4
   satisfies.
-- Option 3, replace the store: this sweep gives it nothing. The 32x it was blamed for is a parameter
-  the format already carries. What survives once that parameter is turned down is 208 us of RedoxFS
+- Option 3, replace the store: this sweep gives it nothing. The 32x behind that blame is a parameter
+  the format already carries. What survives once that parameter drops is 208 us of RedoxFS
   re-reading its own metadata from the device on every request, about 5.3 block reads. That is the
   absence of a cache, which milestone 138 puts out of scope on purpose. Swapping the store to acquire
   one is a strictly larger change than adding one. **Nothing measured here is evidence that RedoxFS
@@ -169,12 +173,12 @@ lives there, one layer below the one milestone 138 is about.
   multiples of 128 KiB, a multiple of every record size at or below level 5, so it means the same
   thing at every point in this sweep. It would stop meaning it if anyone swept above level 5, and
   nothing checks that; `filesystem_contract::fixture::throughput::RECORD` says so in its own comment.
-- The machine was not quiet, and the headline figures are normalized rather than raw. The method and
-  the raw minimums are above. Both agree with the two runs taken at an ordinary load, which is weaker
-  evidence than a quiet machine would have been.
-- Option 1 is priced by derivation, not measurement, because no request in this system could carry
-  more than a page. The assumption it rests on is named where the price is, and milestone 38 measured
-  it.
+- The machine was not quiet, and the headline figures are the normalized ones, not raw. The method
+  and the raw minimums are above. Both agree with the two runs taken at an ordinary load, which is
+  weaker evidence than a quiet machine would have been.
+- Option 1 has a derived price, not a measured one, because no request in this system could carry
+  more than a page. The assumption it rests on appears where the price does, and milestone 38
+  measured it.
 - The space figures in [the five-blocks-per-request appendix](five-blocks-per-request.md) count non-zero blocks in a fresh
   image, which is not the allocator's own answer. A block a record has vacated keeps its old bytes, so
   the count would drift upward on a rewritten image. These images were made, imported into once and

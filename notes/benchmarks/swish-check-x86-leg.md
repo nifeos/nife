@@ -31,8 +31,8 @@ reaches userspace yet; `components/src/input.rs`), so the rotation reached the b
 constantly. The fix is that thread calling `sched::exit()` instead; the idle thread, which halts
 only when nothing else can run, takes the core.
 
-Why aarch64 and riscv64 never showed it is settled by milestone 720 (the boot thread
-cannot halt while it is runnable). Their boot paths also ended in `arch::halt()`, but their input
+Milestone 720 (the boot thread cannot halt while it is runnable) settles why aarch64 and riscv64
+never showed it. Their boot paths also ended in `arch::halt()`, but their input
 is interrupt-driven, so no thread keeps the rotation turning while the shell waits. Milestone 720
 ended both in `sched::exit()`, made `arch::halt` take a token an ordinary boot
 cannot make, and measured both legs before and after; its roadmap block has the numbers.
@@ -60,7 +60,7 @@ What each lead came to:
 - The CPU model. `-cpu max` against a named model with `RDSEED`: no difference. Kept.
 - The IOMMU. Dropping `intel-iommu` and `iommu_platform=on` moved 10 percent, inside the noise
   above, and would take away the confinement the kernel suite runs on this machine. Kept.
-- The paint path. After the fix, the median line is 0.42 s and what is left is proportional to
+- The paint path. After the fix, the median line is 0.42 s and what remains is proportional to
   output: the `caps` lines and the two supervised jobs are the tail. The console still blocks on one
   paint per write because 624's batcher is off (`SCREEN_BATCHING_ENABLED`). That is 624's to finish,
   not this milestone's.
@@ -107,7 +107,7 @@ spend their time on the same thing. Not measured further, because the fix remove
 
 Milestone 722 (swish-check fails a leg that costs five times the others per line), provisional,
 adds one. Nothing gated the cost of a leg for the two weeks the defect lasted, because the per-line bound is
-sized to catch a hang and the job's wall time moves whenever a line is added. Each boot of 20 lines
+sized to catch a hang and the job's wall time moves whenever a line joins it. Each boot of 20 lines
 or more now prints its median seconds a line beside its baseline, and fails above five times that
 baseline (`LEG_COST_BASELINE` in `xtask/src/swish_check/verdict.rs`, with the CI runs each row came from). The
 defect here was about 30 times its KVM row, so it fails; it was 2.7 times its TCG row, so under TCG

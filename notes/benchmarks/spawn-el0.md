@@ -1,6 +1,9 @@
 # `spawn_el0`: a ceiling, and a page
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 2026-08-27 occupancy bound and the 2026-09-21 current-CPU page, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 2026-08-27 occupancy bound and the
+2026-09-21 current-CPU page, with the dates, tables and corrections behind them. Name: ratified
+2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## 2026-08-27: raising a ceiling made `spawn_el0` 16.5% slower, and the fix made it 41% faster than it had ever been
 
@@ -25,7 +28,7 @@ There are two causes of nearly equal size, not one. The first was predicted.
 `MemoryRegion::DESTROY`. `generational_table::iter_mut` yields only live entries but visits every
 slot to filter them, so its cost tracked `MAX_THREADS` rather than the number of live threads.
 
-The second was not predicted. `revoke::MAX_SPACES` is derived from `MAX_THREADS`, and the registry is
+The second was not predicted. `revoke::MAX_SPACES` derives from `MAX_THREADS`, and the registry is
 a plain array walked linearly. `forget_root` scans all of it unconditionally on every
 `AddressSpace::drop`. The two do not quite sum to the total (280k of 348k). The remainder was not
 chased separately, because the fix below removed all of it.
@@ -47,13 +50,13 @@ pay again.
 `spawn_el0` is now 1,212,888 ticks: 41% faster than the 128-slot baseline it was supposed to be
 restored to. The bound removed cost that had been there all along. The bench boot holds far fewer
 threads and address spaces than either ceiling allows, so both walks were mostly visiting slots that
-had never been occupied. Every other row is within noise (`map_el0` +0.5%, `spawn_reap` +0.1%). The
+had never held an entry. Every other row is within noise (`map_el0` +0.5%, `spawn_reap` +0.1%). The
 baseline is re-recorded in the commit that moved it, per this instrument's own rule.
 
 ### The ratchet is gone
 
 Doubling the ceiling again, to 512, and re-running gives 1,213,475 ticks: +587 on the 256 number,
-0.05%. Before the fix the same doubling cost +348,133. Whatever the thread ceiling is raised to next,
+0.05%. Before the fix the same doubling cost +348,133. Whatever the thread ceiling rises to next,
 this benchmark will not notice.
 
 ### BUGS
@@ -106,10 +109,10 @@ The cross-OS spawn row ([the cross-OS appendix](cross-os-primitives.md)) reads ~
 `fork`+`exit`'s ~19.7 µs. That is an HVF wall-clock reading, not this instrument. A 6.3% longer path
 implies roughly ~8.2 µs, ~2.4x rather than ~2.6x. The "lighter object than a Unix process" caveat is
 untouched, because one more mapped page does not change that structural difference. That number is
-implied, not re-measured. The HVF reading wants a quiet machine, and this one was 1.7x
+an implication, not a re-measurement. The HVF reading wants a quiet machine, and this one was 1.7x
 oversubscribed.
 
-*Correction, 2026-09-24: the ~8.2 µs was computed from a stale figure. The 2026-07-29 refresh
+*Correction, 2026-09-24: the ~8.2 µs came from a stale figure. The 2026-07-29 refresh
 ([per-core magnitudes](per-core-and-multi-hart.md)) had already called ~7.7 µs a single sample from a
 busier machine, and put the settled per-core `spawn_el0` median at ~4.4 µs. HVF has not been
 re-measured since, and the icount path has moved both ways in between (-41% on 2026-08-27 above,

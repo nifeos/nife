@@ -63,7 +63,7 @@ order was checked in the disassembly: the compiler keeps program order for every
 reordering counted is the host's.
 
 - MP, streamed, two pairs at once. The writer stores `data = i` then `flag = i`; the reader loads
-  `flag` then `data` and counts `data < flag`, impossible unless a pair was reordered. The flag
+  `flag` then `data` and counts `data < flag`, impossible unless a pair reordered. The flag
   store is Release or Relaxed, the load Acquire or Relaxed. Rates are per million messages sent.
 - SB, in batches of 256 fresh slots. Both loads reading 0 is the reordering; TSO allows it, so it
   is the positive control that the guest cores really ran in parallel.
@@ -151,15 +151,15 @@ updates on the aarch64 host, so the run could have seen a broken lock.
 ## What it means for the arm64 jobs
 
 The SMP QEMU jobs on `ubuntu-24.04-arm` are the only CI jobs that put guest code where a missing
-Release can be seen. The suite they run does not look: no kernel lock with no ordering at all
+Release can show. The suite they run does not look: no kernel lock with no ordering at all
 failed a test on either host. On today's suite the placement buys nothing measurable for lock
 ordering, and it spends runner time in the queue that waits longest.
 
 The exposure is real and cheap to use. The LOCK test, a minute of guest time, turns a Relaxed
 unlock into 20% lost updates on an aarch64 host and nothing on x86_64. A kernel test of that shape
 (cores contending one `IrqSafeMutex` and checking the data it guards, with `weaken-spin.sh` as its
-falsification) would make one arm64 job earn its place. Without it, rule 4 of the codebase rules is
-held by loom, by review and by the HVF runs on Apple silicon, and not by CI's host.
+falsification) would make one arm64 job earn its place. Without it, loom, review and the HVF runs on
+Apple silicon hold rule 4 of the codebase rules, and CI's host does not.
 
 The x86_64 guest legs on arm64 (`test-x86_64`, `rg-threads-x86_64`) are a different case, a guest
 stronger than its host; nothing here measures them.
