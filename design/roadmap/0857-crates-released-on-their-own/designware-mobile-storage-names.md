@@ -159,3 +159,9 @@ Each renamed row's status says which ruling renamed it and what it was.
 - Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it.
   `InitError` becomes `InitializationError`, the noun of the ruled verb, and the bench's
   `ReadFailure::Init` becomes `ReadFailure::Initialization`.
+- Ruled 2026-10-26 (UTC): `max` spells out `maximum` and `min` `minimum` tree-wide, and the naming
+  rules apply to function parameters as well as public items. `Watch` and `MatrixRow`'s `max_fill`
+  become `maximum_fill`, `identify`'s `max_bus_width` becomes `maximum_bus_width`, and the chain
+  limit becomes `MAXIMUM_DESCRIPTORS`. The parameters `cmd`, `div`, `off`, `v` and `src` become
+  `command`, `divider`, `offset`, `value` and `source`. Rust's own `u32::MAX`, `min` and `max`
+  stay, and so do `len` and the unit symbols `hz`, `us` and `ms`.

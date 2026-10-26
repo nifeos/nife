@@ -758,7 +758,7 @@ fn read_matrix(slot: &Slot) {
                 r.blocks,
                 r.result,
                 r.us,
-                r.max_fill,
+                r.maximum_fill,
                 r.full_reads,
                 r.after[0],
                 r.after[1],

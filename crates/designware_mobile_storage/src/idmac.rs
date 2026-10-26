@@ -25,14 +25,14 @@ pub trait DirectMemoryAccessRegion {
     fn bus_address(&self) -> u64;
     /// The region's length in bytes.
     fn bytes(&self) -> u32;
-    /// Read the little-endian `u32` at `off`.
-    fn read_u32(&self, off: u32) -> u32;
-    /// Write `v` at `off`, little-endian.
-    fn write_u32(&mut self, off: u32, v: u32);
-    /// Copy `out.len()` bytes starting at `off` into `out`.
-    fn read_bytes(&self, off: u32, out: &mut [u8]);
-    /// Copy `src` to `off`.
-    fn write_bytes(&mut self, off: u32, src: &[u8]);
+    /// Read the little-endian `u32` at `offset`.
+    fn read_u32(&self, offset: u32) -> u32;
+    /// Write `value` at `offset`, little-endian.
+    fn write_u32(&mut self, offset: u32, value: u32);
+    /// Copy `out.len()` bytes starting at `offset` into `out`.
+    fn read_bytes(&self, offset: u32, out: &mut [u8]);
+    /// Copy `source` to `offset`.
+    fn write_bytes(&mut self, offset: u32, source: &[u8]);
     /// Order every region access before this against every access after it, register accesses
     /// included, as the controller sees them. Called after a chain is written and before the
     /// register writes that start it, and after its end is seen and before the data is read.
@@ -76,7 +76,7 @@ pub(crate) const PAGE: u32 = 4096;
 /// One 32-bit-address descriptor: four words.
 pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
-pub(crate) const MAX_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
+pub(crate) const MAXIMUM_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
 
 /// Descriptor word 0: the IDMAC owns this descriptor. Cleared by the IDMAC when it closes it.
 pub(crate) const DES0_OWN: u32 = 1 << 31;
@@ -102,7 +102,7 @@ pub enum Refusal {
     Addressing64,
     /// The region does not start on a page.
     Alignment(u64),
-    /// The region is not a descriptor page and 1 to [`MAX_DESCRIPTORS`] data pages: its length.
+    /// The region is not a descriptor page and 1 to [`MAXIMUM_DESCRIPTORS`] data pages: its length.
     Size(u32),
     /// Part of the region lies above 4 GiB, where a 32-bit descriptor cannot point: its address.
     Above4GiB(u64),
@@ -141,7 +141,7 @@ impl<D: DirectMemoryAccessRegion> Idmac<D> {
         }
         let bytes = region.bytes();
         let pages = bytes / PAGE;
-        if !bytes.is_multiple_of(PAGE) || pages < 2 || pages - 1 > MAX_DESCRIPTORS {
+        if !bytes.is_multiple_of(PAGE) || pages < 2 || pages - 1 > MAXIMUM_DESCRIPTORS {
             return Err(Refusal::Size(bytes));
         }
         let Ok(bus) = u32::try_from(base) else {
@@ -222,17 +222,21 @@ pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32
 }
 
 impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
-    /// **Run `cmd`'s data phase through the IDMAC**, the data already in the region for a write.
+    /// **Run `command`'s data phase through the IDMAC**, the data already in the region for a write.
     /// Stops and resets the IDMAC before returning, whatever happened.
-    pub(crate) fn idmac_transfer(&mut self, cmd: &Command, bytes: u32) -> Result<[u32; 4], Error> {
+    pub(crate) fn idmac_transfer(
+        &mut self,
+        command: &Command,
+        bytes: u32,
+    ) -> Result<[u32; 4], Error> {
         let count = descriptors_for(bytes);
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
             direct_memory_access.write_chain(bytes);
             direct_memory_access.region.barrier();
         }
         let result = self
-            .issue(cmd, true)
-            .and_then(|resp| self.idmac_wait(cmd, count).map(|()| resp));
+            .issue(command, true)
+            .and_then(|resp| self.idmac_wait(command, count).map(|()| resp));
         let stopped = self.idmac_stop();
         let resp = result?;
         stopped?;
@@ -279,8 +283,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// Wait for the card's side (`DTO`, and `ACD` after more than one block) and the memory side
     /// (the last descriptor closed). The deadline restarts whenever a descriptor closes, so a long
     /// transfer is judged on progress, not on its length.
-    fn idmac_wait(&mut self, cmd: &Command, count: u32) -> Result<(), Error> {
-        let want = match cmd.data {
+    fn idmac_wait(&mut self, command: &Command, count: u32) -> Result<(), Error> {
+        let want = match command.data {
             Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
             _ => registers::INT_DTO,
         };
@@ -292,11 +296,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         loop {
             let rint = self.registers.read(registers::RINTSTS);
             if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
-                return Err(Error::Data(cmd.index, rint));
+                return Err(Error::Data(command.index, rint));
             }
             let idsts = self.registers.read(registers::IDSTS);
             if idsts & registers::IDSTS_ERRORS != 0 {
-                return Err(Error::DirectMemoryAccess(cmd.index, idsts));
+                return Err(Error::DirectMemoryAccess(command.index, idsts));
             }
             let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
@@ -310,7 +314,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 owed = now_owed;
                 start = now;
             } else if now.wrapping_sub(start) > DATA_DEADLINE_US {
-                return Err(Error::DataTimeout(cmd.index, rint, owed));
+                return Err(Error::DataTimeout(command.index, rint, owed));
             }
         }
     }

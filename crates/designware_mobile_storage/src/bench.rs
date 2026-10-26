@@ -245,7 +245,7 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
 pub struct Watch<R: Registers> {
     inner: R,
     /// The highest `STATUS` FIFO count seen since the last [`Watch::clear`].
-    pub max_fill: u32,
+    pub maximum_fill: u32,
     /// `STATUS` reads that found the FIFO-full flag set since the last [`Watch::clear`].
     pub full_reads: u32,
 }
@@ -257,7 +257,7 @@ impl<R: Registers> Watch<R> {
     pub const fn new(inner: R) -> Self {
         Self {
             inner,
-            max_fill: 0,
+            maximum_fill: 0,
             full_reads: 0,
         }
     }
@@ -266,7 +266,7 @@ impl<R: Registers> Watch<R> {
     ///
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
     pub fn clear(&mut self) {
-        self.max_fill = 0;
+        self.maximum_fill = 0;
         self.full_reads = 0;
     }
 }
@@ -275,7 +275,7 @@ impl<R: Registers> Registers for Watch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
         if offset == crate::registers::STATUS {
-            self.max_fill = self.max_fill.max(crate::registers::fifo_count(v));
+            self.maximum_fill = self.maximum_fill.max(crate::registers::fifo_count(v));
             if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
             }
@@ -306,7 +306,7 @@ pub struct MatrixRow {
     /// Microseconds the read took.
     pub us: u64,
     /// The highest FIFO fill seen during it, in words.
-    pub max_fill: u32,
+    pub maximum_fill: u32,
     /// `STATUS` reads that found the FIFO full.
     pub full_reads: u32,
     /// `STATUS`, `RINTSTS`, `TCBCNT` and `TBBCNT` read straight after it.
@@ -365,7 +365,7 @@ pub fn read_matrix<R: Registers>(
                 blocks,
                 result,
                 us,
-                max_fill: watch.max_fill,
+                maximum_fill: watch.maximum_fill,
                 full_reads: watch.full_reads,
                 after,
             });
