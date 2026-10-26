@@ -26,14 +26,16 @@ order of its steps is the argument.
    `bin/` name that is empty or nested, or a program named twice, refuses the whole package. Where a
    program's manifest travels is DECISIONS §197 (a package is one archive file)'s open question,
    and the installer does not answer it.
-4. Each program's bytes are checked against the table of contents' digest before any is returned.
+4. `installable` checks each program's bytes against the table of contents' digest before it
+   returns any.
    What is recorded is then a digest this installer computed rather than one it was told.
 
 ## A bare name means one version
 
-`cataloged_stem` finds the catalog line for a package asked for by name. `name@version` asks for
-one version, the same spelling `jig remove` takes, because a word with `@` in it is never a package
-name. A bare name the catalog vouches for at two versions is refused as `SeveralVersions`.
+`cataloged_stem` finds the catalog line for a package asked for by name. `name@version` asks for one
+version, the same spelling `jig remove` takes, because a word with `@` in it is never a package
+name. `cataloged_stem` refuses a bare name the catalog vouches for at two versions, as
+`SeveralVersions`.
 
 Refusing is the reversible answer. Ruling 3 of milestone 614 (two installed versions of one program,
 each runnable) says a bare *run* means the newest install, but nothing in the catalog orders

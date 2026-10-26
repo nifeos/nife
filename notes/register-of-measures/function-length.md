@@ -28,8 +28,8 @@ build-mode features, the UEFI loader and the exercisers.
 
 ## BUGS
 
-- The function finder is a lexer, not a parser. A `fn` written in a `macro_rules!` body is skipped
-  where clippy reports it: 8 functions on 2026-10-13 (UTC), all under 10 code lines. The lint
+- The function finder is a lexer, not a parser. It skips a `fn` written in a `macro_rules!`
+  body, where clippy reports it: 8 functions on 2026-10-13 (UTC), all under 10 code lines. The lint
   ratchet's comparison fails if one ever grows past 100.
 - About 1,160 functions in 127 files are compiled by none of the eight clippy passes: `patches/`,
   `c_library/`, `uefi_loader/`, the std exercisers, `jig/`, `cryptography_provider/`, kernel build

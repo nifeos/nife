@@ -4,7 +4,8 @@
 naming is an architect's.)*
 
 This tree measures a great deal and remembers almost none of it. A number gets taken once, written
-beside the reasoning that needed it, and stays true only on the day it was written. `notes/counted-claims.md` found three such numbers on 2026-08-14 and all three were wrong.
+beside the reasoning that needed it, and stays true only on the day of writing.
+`notes/counted-claims.md` found three such numbers on 2026-08-14 and all three were wrong.
 
 That convention fixed the class of number a `grep` can re-derive. This register is the other half:
 the numbers that need an instrument, a boot, or a walk over the source. It says which ones this
@@ -80,9 +81,9 @@ Row 1 is a two-sided drift band and row 9 is a floor.
 | split parents | `script/lint` (parent-index check) | any split parent holding more than an index, unless marked |
 
 Only the density ceiling expresses a direction rather than a limit, and it mixes kernel and
-userspace unsafe into one population; the split is plotted weekly with no ceiling of its own. The
-thresholds read together,
-and the density's lowering history, are in [the rows appendix](register-of-measures/gated-dated-and-owed-rows.md#gated).
+userspace unsafe into one population; `script/metrics` plots the split weekly with no ceiling of its
+own. The thresholds read together, and the density's lowering history, are in
+[the rows appendix](register-of-measures/gated-dated-and-owed-rows.md#gated).
 
 ## Dated
 
@@ -200,7 +201,7 @@ Four steps, worked through for the unsafe census, with its numbers and its first
 
 There is no wrapper and there should not be one. Each dated row's command is in its table cell
 because the commands are different animals. A `script/measures` that ran all of them would take an
-hour and be run by nobody. Copy the cell.
+hour, and nobody would run it. Copy the cell.
 
 ```sh
 # the filesystem row, which needs a disk attached
