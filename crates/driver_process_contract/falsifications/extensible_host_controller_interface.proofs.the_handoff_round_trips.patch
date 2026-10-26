@@ -12,8 +12,8 @@ diff --git a/crates/driver_process_contract/src/extensible_host_controller_inter
 @@ -91,7 +91,6 @@
          let ok = w[0] != 0
              && w[0].is_multiple_of(PAGE_BYTES)
-             && u64::from(dma_pages) >= WORK_PAGES
+             && u64::from(direct_memory_access_pages) >= WORK_PAGES
 -            && registers & 1 != 0
              && w[2] == 0;
          ok.then_some(Handoff {
-             dma_phys: w[0],
+             direct_memory_access_physical_address: w[0],

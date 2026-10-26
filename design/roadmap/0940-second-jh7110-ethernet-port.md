@@ -41,8 +41,8 @@ sources this tree read.
   `crates/designware_ethernet/src/jh7110.rs` and nothing reads it. `DeviceTreeBlob`'s lookups
   answer the first match; the node name, `ethernet@16040000`, is the same in both trees, so
   `node_reg` and `node_prop` by name reach the second.
-- The clocks and resets. `crates/jh7110_clock_and_reset` has `GMAC0_SYS_BRING_UP` and
-  `GMAC0_AON_BRING_UP`, split across two domains. `gmac1` lives wholly in SYS. Mainline's
+- The clocks and resets. `crates/jh7110_clock_and_reset` has `GMAC0_SYSTEM_BRING_UP` and
+  `GMAC0_ALWAYS_ON_BRING_UP`, split across two domains. `gmac1` lives wholly in SYS. Mainline's
   `jh7110.dtsi` (torvalds/linux `f47d223627f8`, read 2026-10-20) names its clocks `GMAC1_AXI` (98),
   `GMAC1_AHB` (97), `GMAC1_PTP` (102), `GMAC1_TX_INV` (106) and `GMAC1_GTXC` (107), and its resets
   `SYSRST_GMAC1_AXI` (66) and `SYSRST_GMAC1_AHB` (67). The v1.3B board file sets `GMAC1_TX` (105)'s

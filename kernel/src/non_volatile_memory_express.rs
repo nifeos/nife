@@ -15,7 +15,8 @@
 
 use driver_process_contract::non_volatile_memory_express::Handoff;
 use non_volatile_memory_express::{
-    Cap, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace, SubmissionQueue, regs,
+    Capabilities, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace,
+    SubmissionQueue, registers,
 };
 
 use crate::arch::mmu;
@@ -40,7 +41,8 @@ pub use ::driver_process_contract::non_volatile_memory_express::{
 const ADMIN_SQ_PAGE: u64 = 0;
 const ADMIN_CQ_PAGE: u64 = 1;
 const IDENTIFY_PAGE: u64 = 2;
-/// The first page of the data plane's run, and the base [`Handoff::data_plane_phys`] carries.
+/// The first page of the data plane's run, and the base [`Handoff::data_plane_physical_address`]
+/// carries.
 pub(crate) const DATA_PLANE_PAGE: u64 = 3;
 const IO_SQ_PAGE: u64 = 3;
 const IO_CQ_PAGE: u64 = 4;
@@ -99,7 +101,7 @@ pub enum Error {
     /// CAP describes a controller this driver cannot drive: queues too shallow, a minimum page
     /// size above the kernel's 4 KiB frames, or a doorbell stride whose file would not fit the
     /// one page of BAR0 an EL0 data plane is mapped
-    /// (`driver_process_contract::non_volatile_memory_express::MAX_DSTRD`).
+    /// (`driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE`).
     UnsupportedController,
 }
 
@@ -145,17 +147,18 @@ impl NonVolatileMemoryExpress {
             admin_cq: CompletionQueue::new(ENTRIES),
             ns: IdentifyNamespace {
                 blocks: 0,
-                lba_shift: 9,
+                logical_block_address_shift: 9,
             },
             cid: 0,
         };
-        let cap = Cap(c.reg64(regs::CAP));
+        let cap = Capabilities(c.reg64(registers::CAP));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
-        // naming the controller, not in a process that cannot reach its doorbells (`MAX_DSTRD`).
-        if cap.max_queue_entries() < ENTRIES as u32
-            || cap.min_page_size() > page_frames::FRAME_SIZE
+        // naming the controller, not in a process that cannot reach its doorbells
+        // (`MAXIMUM_DOORBELL_STRIDE`).
+        if cap.maximum_queue_entries() < ENTRIES as u32
+            || cap.minimum_page_size() > page_frames::FRAME_SIZE
             || cap.doorbell_stride()
-                > driver_process_contract::non_volatile_memory_express::MAX_DSTRD
+                > driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE
         {
             return Err(Error::UnsupportedController);
         }
@@ -163,27 +166,30 @@ impl NonVolatileMemoryExpress {
 
         // A controller that was already enabled (a warm reboot, or a previous test) must be taken
         // down before the admin queue registers may change; RDY follows EN in both directions.
-        if c.reg32(regs::CSTS) & non_volatile_memory_express::CSTS_RDY != 0 {
-            c.wr32(regs::CC, 0);
+        if c.reg32(registers::CSTS) & non_volatile_memory_express::CSTS_RDY != 0 {
+            c.wr32(registers::CC, 0);
             c.wait_rdy(false)?;
         }
 
         // The admin queue pair, by register: attributes (both depths, 0-based), then the two
         // page-aligned ring bases. The rings are zeroed pages, which is what makes the phase
         // discipline sound: the controller's first lap writes phase 1 into memory that reads 0.
-        c.wr32(regs::AQA, (ENTRIES as u32 - 1) << 16 | (ENTRIES as u32 - 1));
+        c.wr32(
+            registers::AQA,
+            (ENTRIES as u32 - 1) << 16 | (ENTRIES as u32 - 1),
+        );
         c.wr64(
-            regs::ASQ,
+            registers::ASQ,
             direct_memory_access_phys + ADMIN_SQ_PAGE * page_frames::FRAME_SIZE,
         );
         c.wr64(
-            regs::ACQ,
+            registers::ACQ,
             direct_memory_access_phys + ADMIN_CQ_PAGE * page_frames::FRAME_SIZE,
         );
         #[cfg(feature = "disk_throughput")]
         c.print_registers("pre ");
         c.wr32(
-            regs::CC,
+            registers::CC,
             non_volatile_memory_express::enabled_controller_configuration(),
         );
         let ready = c.wait_rdy(true);
@@ -211,7 +217,8 @@ impl NonVolatileMemoryExpress {
             )
         };
         let refused = Error::UnsupportedNamespace {
-            lba_shift: non_volatile_memory_express::lba_format_shift(data).unwrap_or(0),
+            lba_shift: non_volatile_memory_express::logical_block_address_format_shift(data)
+                .unwrap_or(0),
             blocks: data
                 .get(0..8)
                 .and_then(|b| b.try_into().ok())
@@ -250,7 +257,7 @@ impl NonVolatileMemoryExpress {
     /// Name: ratified 2026-10-05 (calef, #1647).
     #[cfg(feature = "system_tests")]
     pub fn retire(self) -> Result<(), Error> {
-        self.wr32(regs::CC, 0);
+        self.wr32(registers::CC, 0);
         self.wait_rdy(false)?;
         for page in 0..DMA_PAGES {
             crate::memory::free(page_frames::PageFrame::from_addr(
@@ -266,12 +273,12 @@ impl NonVolatileMemoryExpress {
         Handoff {
             dstrd: self.dstrd,
             // `new` refused a namespace this returns `None` for, so the unwrap cannot fire.
-            blocks_per: self
+            blocks_per_transfer: self
                 .ns
                 .blocks_per_transfer(BLOCK_SIZE as u64)
                 .expect("new() refuses a namespace whose format 4096 is not a multiple of"),
             entries: ENTRIES,
-            data_plane_phys: self.direct_memory_access_phys
+            data_plane_physical_address: self.direct_memory_access_phys
                 + DATA_PLANE_PAGE * page_frames::FRAME_SIZE,
             size_bytes: self.size_bytes(),
         }
@@ -316,7 +323,7 @@ impl NonVolatileMemoryExpress {
                 done = Some(c);
                 break;
             }
-            if self.reg32(regs::CSTS) & non_volatile_memory_express::CSTS_CFS != 0 {
+            if self.reg32(registers::CSTS) & non_volatile_memory_express::CSTS_CFS != 0 {
                 return Err(Error::ControllerFatal);
             }
             core::hint::spin_loop();
@@ -335,7 +342,7 @@ impl NonVolatileMemoryExpress {
             crate::println!(
                 "diag nvme cid {expect_cid} opcode {:#04x} never completed; csts {:#x}; sq tail {} cq head {head}",
                 cmd.0[0] & 0xff,
-                self.reg32(regs::CSTS),
+                self.reg32(registers::CSTS),
                 self.admin_sq.tail(),
             );
             crate::println!(
@@ -359,7 +366,7 @@ impl NonVolatileMemoryExpress {
             non_volatile_memory_express::doorbell(0, Doorbell::CompletionHead, self.dstrd),
             new_head as u32,
         );
-        self.admin_sq.record_head(c.sq_head);
+        self.admin_sq.record_head(c.submission_queue_head);
 
         // The one-at-a-time discipline makes any other cid a protocol violation worth dying on
         // legibly rather than misattributing a completion.
@@ -383,18 +390,18 @@ impl NonVolatileMemoryExpress {
         if when == "pre " {
             crate::println!(
                 "diag nvme cap {:#x} vs {:#x} dstrd {}",
-                self.reg64(regs::CAP),
+                self.reg64(registers::CAP),
                 self.reg32(0x08),
                 self.dstrd
             );
         }
         crate::println!(
             "diag nvme {when} cc {:#x} csts {:#x} aqa {:#x} asq {:#x} acq {:#x}",
-            self.reg32(regs::CC),
-            self.reg32(regs::CSTS),
-            self.reg32(regs::AQA),
-            self.reg64(regs::ASQ),
-            self.reg64(regs::ACQ),
+            self.reg32(registers::CC),
+            self.reg32(registers::CSTS),
+            self.reg32(registers::AQA),
+            self.reg64(registers::ASQ),
+            self.reg64(registers::ACQ),
         );
     }
 
@@ -407,7 +414,7 @@ impl NonVolatileMemoryExpress {
     /// declared a fatal error will never become ready and the caller should hear which happened.
     fn wait_rdy(&self, want: bool) -> Result<(), Error> {
         for _ in 0..SPIN_BOUND {
-            let csts = self.reg32(regs::CSTS);
+            let csts = self.reg32(registers::CSTS);
             if csts & non_volatile_memory_express::CSTS_CFS != 0 {
                 return Err(Error::ControllerFatal);
             }
@@ -421,7 +428,7 @@ impl NonVolatileMemoryExpress {
 
     fn reg32(&self, off: u64) -> u32 {
         // SAFETY: BAR0 is device-mapped (inside the PCI BAR window `mmu::map_everything` maps),
-        // `off` comes from `regs`/`doorbell`, both bounded well inside the BAR's 16 KiB.
+        // `off` comes from `registers`/`doorbell`, both bounded well inside the BAR's 16 KiB.
         unsafe { core::ptr::read_volatile((self.regs + off) as *const u32) }
     }
 

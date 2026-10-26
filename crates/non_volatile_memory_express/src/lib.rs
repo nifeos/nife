@@ -7,8 +7,8 @@
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
-pub mod regs {
-    /// Controller Capabilities, 64-bit read-only. See [`super::Cap`].
+pub mod registers {
+    /// Controller Capabilities, 64-bit read-only. See [`super::Capabilities`].
     pub const CAP: u64 = 0x00;
     /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
     pub const CC: u64 = 0x14;
@@ -33,12 +33,12 @@ pub const CSTS_CFS: u32 = 1 << 1;
 /// The decoded fields of CAP this driver acts on. A newtype over the raw register value so the
 /// bit positions live in exactly one place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cap(pub u64);
+pub struct Capabilities(pub u64);
 
-impl Cap {
+impl Capabilities {
     /// Maximum Queue Entries Supported, converted from the register's 0-based field to a count.
     /// Every queue this driver creates must be no deeper than this.
-    pub fn max_queue_entries(self) -> u32 {
+    pub fn maximum_queue_entries(self) -> u32 {
         (self.0 as u32 & 0xffff) + 1
     }
     /// Doorbell Stride: doorbell N is at `0x1000 + N * (4 << DSTRD)` (a 4-bit field, so the shift
@@ -52,7 +52,7 @@ impl Cap {
     }
     /// Memory Page Size Minimum, as a byte count (the field is `2^(12+MPSMIN)`). This driver runs
     /// with CC.MPS = 0, i.e. 4 KiB pages, so bring-up checks this is at most 4096.
-    pub fn min_page_size(self) -> u64 {
+    pub fn minimum_page_size(self) -> u64 {
         1u64 << (12 + ((self.0 >> 48) & 0xf))
     }
 }
@@ -76,7 +76,7 @@ pub enum Doorbell {
     CompletionHead,
 }
 
-/// The BAR0 offset of queue `qid`'s doorbell. `dstrd` is [`Cap::doorbell_stride`].
+/// The BAR0 offset of queue `qid`'s doorbell. `dstrd` is [`Capabilities::doorbell_stride`].
 ///
 /// The stride scales the whole doorbell file: `CAP.DSTRD` is four bits, so a controller may space
 /// its doorbells as far as `4 << 15` bytes apart, and queue 1's doorbells then sit hundreds of
@@ -86,10 +86,10 @@ pub enum Doorbell {
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::{Cap, Doorbell, doorbell};
+/// use non_volatile_memory_express::{Capabilities, Doorbell, doorbell};
 ///
 /// // A controller reporting DSTRD 0, so doorbells are 4 bytes apart.
-/// let cap = Cap(0);
+/// let cap = Capabilities(0);
 /// assert_eq!(cap.doorbell_stride(), 0);
 ///
 /// // Admin queue (qid 0), then the one I/O queue pair this driver creates.
@@ -104,7 +104,7 @@ pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
             Doorbell::SubmissionTail => 0,
             Doorbell::CompletionHead => 1,
         };
-    regs::DOORBELL_BASE + index * (4u64 << (dstrd & 0xf))
+    registers::DOORBELL_BASE + index * (4u64 << (dstrd & 0xf))
 }
 
 // --- commands -------------------------------------------------------------------------------
@@ -116,15 +116,18 @@ pub const ADMIN_CREATE_IO_CQ: u8 = 0x05;
 /// Fetch a controller or namespace data structure ([`CNS_CONTROLLER`], [`CNS_NAMESPACE`]).
 pub const ADMIN_IDENTIFY: u8 = 0x06;
 
-/// NVM (I/O) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
+/// Non-volatile memory (NVM, the I/O command set's) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
 /// requires every controller to implement it, which is why the block server can offer
 /// `filesystem_contract::blk::FLUSH` unconditionally where the virtio one has to negotiate a
 /// feature bit and refuse when it is absent.
-pub const NVM_FLUSH: u8 = 0x00;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_FLUSH: u8 = 0x00;
 /// Write logical blocks.
-pub const NVM_WRITE: u8 = 0x01;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_WRITE: u8 = 0x01;
 /// Read logical blocks.
-pub const NVM_READ: u8 = 0x02;
+#[doc(alias = "nvm")]
+pub const NON_VOLATILE_MEMORY_READ: u8 = 0x02;
 
 /// Identify CNS values: the namespace data structure, and the controller's.
 pub const CNS_NAMESPACE: u32 = 0x00;
@@ -190,7 +193,7 @@ impl Command {
     /// get the off-by-one wrong. `blocks` must be nonzero (asserted: zero would wrap to 65536).
     pub fn read(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
-        let mut c = Self::new(NVM_READ, cid, nsid, prp1, prp2);
+        let mut c = Self::new(NON_VOLATILE_MEMORY_READ, cid, nsid, prp1, prp2);
         c.0[10] = slba as u32;
         c.0[11] = (slba >> 32) as u32;
         c.0[12] = (blocks - 1) as u32;
@@ -206,13 +209,13 @@ impl Command {
     /// volatile write cache completes it as a no-op, and that is a truthful yes rather than the
     /// silent one a flush verb exists to forbid: the data really is durable.
     pub fn flush(cid: u16, nsid: u32) -> Self {
-        Self::new(NVM_FLUSH, cid, nsid, 0, 0)
+        Self::new(NON_VOLATILE_MEMORY_FLUSH, cid, nsid, 0, 0)
     }
 
     /// WRITE (I/O): the same addressing as [`Command::read`], the other direction.
     pub fn write(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
-        let mut c = Self::new(NVM_WRITE, cid, nsid, prp1, prp2);
+        let mut c = Self::new(NON_VOLATILE_MEMORY_WRITE, cid, nsid, prp1, prp2);
         c.0[10] = slba as u32;
         c.0[11] = (slba >> 32) as u32;
         c.0[12] = (blocks - 1) as u32;
@@ -220,8 +223,9 @@ impl Command {
     }
 }
 
-/// The two PRP words for one data transfer of `len` bytes at physical `base`, against `page_size`
-/// pages. PRP1 may carry an offset; every later page pointer must not. One page of data needs only
+/// **Physical Region Page pair** (PRP1 and PRP2, NVMe 1.4 section 4.3, Physical Region Page Entry
+/// and List): the two PRP words for one data transfer of `len` bytes at physical `base`, against
+/// `page_size` pages. PRP1 may carry an offset; every later page pointer must not. One page of data needs only
 /// PRP1; a transfer spilling into a second page puts that page in PRP2; anything longer needs a
 /// PRP *list*, which this driver does not build (its unit is one 4096-byte filesystem block), so
 /// `None` says "not expressible", and the caller treats it as a bug rather than a device error.
@@ -241,6 +245,7 @@ impl Command {
 /// // Three pages would need a list. Not expressible, and said so.
 /// assert_eq!(prp_pair(0x4000_0000, 3 * 4096, 4096), None);
 /// ```
+#[doc(alias = "physical region page")]
 pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     assert!(page_size.is_power_of_two() && page_size >= 512);
     if len == 0 {
@@ -259,71 +264,79 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     }
 }
 
-/// **Is `block` a whole `unit`-byte block inside a namespace of `size_bytes` bytes?** A driver's
-/// own bounds check, run before a command is built rather than left to the controller's status
-/// field, because a driver that asks for an LBA past the end learns about it far from where it
-/// computed it.
-///
-/// `false` for any `block` whose transfer would run past `size_bytes`, for one whose end
-/// overflows a `u64`, and for a `unit` of zero.
+/// **What a transfer needs to know about the namespace it addresses**: its capacity and how many
+/// logical blocks one transfer unit covers. A driver fills it once from IDENTIFY
+/// ([`IdentifyNamespace::capacity_bytes`], [`IdentifyNamespace::blocks_per_transfer`]) and asks it
+/// whether a block exists and for the command that moves one.
 ///
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::namespace_holds_block;
+/// use non_volatile_memory_express::{NON_VOLATILE_MEMORY_READ, Namespace};
 ///
-/// // An 8 MiB namespace holds 2048 blocks of 4096 bytes, numbered 0 to 2047.
-/// assert!(namespace_holds_block(8 << 20, 2047, 4096));
-/// assert!(!namespace_holds_block(8 << 20, 2048, 4096));
+/// // An 8 MiB namespace of 512-byte logical blocks holds 2048 blocks of 4096 bytes, numbered 0 to
+/// // 2047, and each one is 8 logical blocks.
+/// let namespace = Namespace { size_bytes: 8 << 20, blocks_per_transfer: 8 };
+/// assert!(namespace.holds_block(2047, 4096));
+/// assert!(!namespace.holds_block(2048, 4096));
+///
+/// let cmd = namespace.transfer_command(7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
+/// assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
+/// assert!(namespace.transfer_command(7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
 /// ```
-pub fn namespace_holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
-    match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
-        Some(end) => end <= size_bytes,
-        None => false,
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Namespace {
+    /// The namespace's capacity in bytes.
+    pub size_bytes: u64,
+    /// The logical blocks in one transfer unit, the `unit` every call on this value passes.
+    pub blocks_per_transfer: u16,
 }
 
-/// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
-/// close: a block outside the namespace ([`namespace_holds_block`]), an LBA that overflows, or a buffer that
-/// is not expressible as a PRP pair (which for a page-aligned `unit`-byte buffer with
-/// `unit <= 2 * page_size` it always is; see [`prp_pair`]).
-///
-/// `size_bytes` is the namespace's capacity, `blocks_per` the logical blocks in one `unit`-byte
-/// block ([`IdentifyNamespace::blocks_per_transfer`]), `data_phys` the buffer's bus address, and
-/// `write` picks [`Command::write`] over [`Command::read`].
-///
-/// # Examples
-///
-/// ```
-/// use non_volatile_memory_express::{NVM_READ, transfer_command};
-///
-/// // The last 4096-byte block of an 8 MiB namespace of 512-byte logical blocks.
-/// let cmd = transfer_command(8 << 20, 8, 7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
-/// assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
-/// assert!(transfer_command(8 << 20, 8, 7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
-/// ```
-#[allow(clippy::too_many_arguments)]
-pub fn transfer_command(
-    size_bytes: u64,
-    blocks_per: u16,
-    cid: u16,
-    nsid: u32,
-    block: u64,
-    unit: u64,
-    data_phys: u64,
-    page_size: u64,
-    write: bool,
-) -> Option<Command> {
-    if !namespace_holds_block(size_bytes, block, unit) {
-        return None;
+impl Namespace {
+    /// **Is `block` a whole `unit`-byte block inside this namespace?** A driver's own bounds
+    /// check, run before a command is built rather than left to the controller's status field,
+    /// because a driver that asks for an LBA past the end learns about it far from where it
+    /// computed it.
+    ///
+    /// `false` for any `block` whose transfer would run past [`Namespace::size_bytes`], for one
+    /// whose end overflows a `u64`, and for a `unit` of zero.
+    pub fn holds_block(&self, block: u64, unit: u64) -> bool {
+        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
+            Some(end) => end <= self.size_bytes,
+            None => false,
+        }
     }
-    let slba = block.checked_mul(blocks_per as u64)?;
-    let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
-    Some(if write {
-        Command::write(cid, nsid, slba, blocks_per, prp1, prp2)
-    } else {
-        Command::read(cid, nsid, slba, blocks_per, prp1, prp2)
-    })
+
+    /// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
+    /// close: a block outside the namespace ([`Namespace::holds_block`]), an LBA that overflows,
+    /// or a buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte
+    /// buffer with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
+    ///
+    /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
+    /// address, and `write` picks [`Command::write`] over [`Command::read`].
+    #[allow(clippy::too_many_arguments)]
+    pub fn transfer_command(
+        &self,
+        cid: u16,
+        nsid: u32,
+        block: u64,
+        unit: u64,
+        data_physical_address: u64,
+        page_size: u64,
+        write: bool,
+    ) -> Option<Command> {
+        if !self.holds_block(block, unit) {
+            return None;
+        }
+        let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
+        let (prp1, prp2) = prp_pair(data_physical_address, unit, page_size)?;
+        let blocks = self.blocks_per_transfer;
+        Some(if write {
+            Command::write(cid, nsid, slba, blocks, prp1, prp2)
+        } else {
+            Command::read(cid, nsid, slba, blocks, prp1, prp2)
+        })
+    }
 }
 
 // --- completions ----------------------------------------------------------------------------
@@ -335,9 +348,9 @@ pub struct Completion {
     pub result: u32,
     /// The submission queue head as the controller last consumed it: how the driver learns its
     /// submission ring entries are reusable.
-    pub sq_head: u16,
+    pub submission_queue_head: u16,
     /// Which submission queue the completed command came from.
-    pub sq_id: u16,
+    pub submission_queue_id: u16,
     /// The command identifier the driver assigned, echoed back.
     pub cid: u16,
     /// The phase tag: dword 3, bit 16. See [`CompletionQueue::is_owned`].
@@ -351,8 +364,8 @@ impl Completion {
     pub fn from_dwords(dw: [u32; 4]) -> Self {
         Completion {
             result: dw[0],
-            sq_head: dw[2] as u16,
-            sq_id: (dw[2] >> 16) as u16,
+            submission_queue_head: dw[2] as u16,
+            submission_queue_id: (dw[2] >> 16) as u16,
             cid: dw[3] as u16,
             phase: dw[3] & (1 << 16) != 0,
             status: (dw[3] >> 17) as u16,
@@ -363,7 +376,7 @@ impl Completion {
 // --- ring arithmetic ------------------------------------------------------------------------
 
 /// A submission ring's driver-side state: where the next command lands and what tail value to
-/// ring. The controller's consumption (via [`Completion::sq_head`]) is deliberately not modeled:
+/// ring. The controller's consumption (via [`Completion::submission_queue_head`]) is deliberately not modeled:
 /// this driver completes every command before submitting the next, so the ring can never fill,
 /// and [`SubmissionQueue::push`] asserts the invariant that guards that assumption instead of carrying a
 /// free-slot count nothing would exercise.
@@ -371,7 +384,7 @@ impl Completion {
 pub struct SubmissionQueue {
     entries: u16,
     tail: u16,
-    /// The controller's head, updated from each completion's [`Completion::sq_head`].
+    /// The controller's head, updated from each completion's [`Completion::submission_queue_head`].
     head: u16,
 }
 
@@ -403,7 +416,7 @@ impl SubmissionQueue {
         self.tail
     }
 
-    /// Record the controller's consumption, from a completion's `sq_head`.
+    /// Record the controller's consumption, from a completion's `submission_queue_head`.
     pub fn record_head(&mut self, head: u16) {
         assert!(
             head < self.entries,
@@ -509,7 +522,7 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
     }
     Some(IdentifyNamespace {
         blocks: nsze,
-        lba_shift: lbads as u32,
+        logical_block_address_shift: lbads as u32,
     })
 }
 
@@ -518,9 +531,9 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
 /// the structure is too short to carry the format table.
 ///
 /// It exists so a refusal can say what it refused. A drive on the bench must be formatted so that
-/// `blocks_per` falls in `1..=8`, and a namespace this driver declines has to print its LBA size
-/// rather than arrive at the bench as a server that never started and a test that reads "skipped".
-pub fn lba_format_shift(data: &[u8]) -> Option<u8> {
+/// `blocks_per_transfer` falls in `1..=8`, and a namespace this driver declines has to print its
+/// LBA size rather than arrive at the bench as a server that never started and a test that reads "skipped".
+pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
     }
@@ -533,23 +546,23 @@ pub fn lba_format_shift(data: &[u8]) -> Option<u8> {
 pub struct IdentifyNamespace {
     /// The namespace's size in logical blocks.
     pub blocks: u64,
-    /// `1 << lba_shift` bytes per logical block; between 9 and 12 by construction.
-    pub lba_shift: u32,
+    /// `1 << logical_block_address_shift` bytes per logical block; between 9 and 12 by construction.
+    pub logical_block_address_shift: u32,
 }
 
 impl IdentifyNamespace {
     /// The namespace's capacity in bytes.
     pub fn capacity_bytes(&self) -> u64 {
-        self.blocks << self.lba_shift
+        self.blocks << self.logical_block_address_shift
     }
     /// How many logical blocks one `unit`-byte transfer covers, or `None` if `unit` is not a
     /// whole number of logical blocks (a namespace this driver cannot serve 4096-byte filesystem
     /// blocks on; `parse_identify_namespace`'s shift bounds make it impossible for unit 4096).
     pub fn blocks_per_transfer(&self, unit: u64) -> Option<u16> {
-        if unit == 0 || unit & ((1 << self.lba_shift) - 1) != 0 {
+        if unit == 0 || unit & ((1 << self.logical_block_address_shift) - 1) != 0 {
             return None;
         }
-        Some((unit >> self.lba_shift) as u16)
+        Some((unit >> self.logical_block_address_shift) as u16)
     }
 }
 
@@ -561,11 +574,11 @@ mod tests {
     fn cap_fields_decode_from_their_spec_positions() {
         // QEMU's real CAP value for a default nvme device is in this family: MQES=0x7ff,
         // TO=0xf, DSTRD=0, MPSMIN=0. Build one by hand and read every field back.
-        let cap = Cap(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
-        assert_eq!(cap.max_queue_entries(), 0x800);
+        let cap = Capabilities(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
+        assert_eq!(cap.maximum_queue_entries(), 0x800);
         assert_eq!(cap.timeout_500ms(), 0xf);
         assert_eq!(cap.doorbell_stride(), 2);
-        assert_eq!(cap.min_page_size(), 8192);
+        assert_eq!(cap.minimum_page_size(), 8192);
     }
 
     #[test]
@@ -631,7 +644,7 @@ mod tests {
     #[test]
     fn a_write_command_encodes_the_spec_dwords() {
         // The mirror of `a_read_command_encodes_the_spec_dwords`, and `Command::write` had no
-        // test of its own: `transfer_command`'s own test always passes `write: false`, so this
+        // test of its own: `Namespace::transfer_command`'s own test always passes `write: false`, so this
         // whole function's body had never run under a host test.
         let c = Command::write(7, 1, 0x1_0000_0008, 8, 0xdead_b000, 0);
         assert_eq!(c.0[0], 0x01 | 7 << 16, "opcode and cid share dword 0");
@@ -670,7 +683,14 @@ mod tests {
         let cq = CompletionQueue::new(4);
         // The controller writes phase=1 on its first lap: owned.
         let fresh = Completion::from_dwords([0, 0, 5 | 1 << 16, 42 | 1 << 16]);
-        assert_eq!((fresh.sq_head, fresh.sq_id, fresh.cid), (5, 1, 42));
+        assert_eq!(
+            (
+                fresh.submission_queue_head,
+                fresh.submission_queue_id,
+                fresh.cid
+            ),
+            (5, 1, 42)
+        );
         assert_eq!(fresh.status, 0);
         assert!(cq.is_owned(&fresh));
         // A zeroed (never-written) entry is not.
@@ -750,20 +770,27 @@ mod tests {
     fn a_transfer_command_refuses_a_block_the_namespace_does_not_have() {
         const SIZE: u64 = 8 * 1024 * 1024;
         const LAST: u64 = SIZE / 4096 - 1;
-        assert!(namespace_holds_block(SIZE, LAST, 4096));
-        assert!(!namespace_holds_block(SIZE, LAST + 1, 4096));
+        let namespace = Namespace {
+            size_bytes: SIZE,
+            blocks_per_transfer: 8,
+        };
+        assert!(namespace.holds_block(LAST, 4096));
+        assert!(!namespace.holds_block(LAST + 1, 4096));
         assert!(
-            !namespace_holds_block(SIZE, u64::MAX, 4096),
+            !namespace.holds_block(u64::MAX, 4096),
             "no overflow, no wrap-around"
         );
 
         // And the command the last block produces addresses the LBA the geometry says it should.
-        let cmd = transfer_command(SIZE, 8, 7, 1, LAST, 4096, 0x4001_5000, 4096, false)
+        let cmd = namespace
+            .transfer_command(7, 1, LAST, 4096, 0x4001_5000, 4096, false)
             .expect("the last block is servable");
-        assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+        assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
         assert_eq!(cmd.0[10] as u64 | (cmd.0[11] as u64) << 32, LAST * 8);
         assert!(
-            transfer_command(SIZE, 8, 7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false).is_none()
+            namespace
+                .transfer_command(7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false)
+                .is_none()
         );
     }
 
@@ -775,7 +802,7 @@ mod tests {
         data[130] = 9; // format 0's LBADS: 512-byte blocks
         let id = parse_identify_namespace(&data).unwrap();
         assert_eq!(id.blocks, 0x4000);
-        assert_eq!(id.lba_shift, 9);
+        assert_eq!(id.logical_block_address_shift, 9);
         assert_eq!(id.capacity_bytes(), 0x4000 * 512);
         assert_eq!(id.blocks_per_transfer(4096), Some(8));
 
@@ -794,8 +821,8 @@ mod tests {
         data[130] = 9; // format 0: 512 bytes, not the one in use
         data[134] = 13; // format 1: 8192 bytes
         assert!(parse_identify_namespace(&data).is_none());
-        assert_eq!(lba_format_shift(&data), Some(13));
-        assert_eq!(lba_format_shift(&[0u8; 383]), None);
+        assert_eq!(logical_block_address_format_shift(&data), Some(13));
+        assert_eq!(logical_block_address_format_shift(&[0u8; 383]), None);
     }
 
     /// The shift is read at `128 + 4 * FLBAS + 2` for every format the nibble can name, from a
@@ -809,10 +836,14 @@ mod tests {
                 data[128 + 4 * format + 2] = 20 + format as u8;
             }
             data[26] = flbas | 0x70; // the bits above the format number are not part of it
-            assert_eq!(lba_format_shift(&data), Some(20 + flbas), "flbas {flbas}");
+            assert_eq!(
+                logical_block_address_format_shift(&data),
+                Some(20 + flbas),
+                "flbas {flbas}"
+            );
         }
         assert_eq!(
-            lba_format_shift(&[0u8; 384]),
+            logical_block_address_format_shift(&[0u8; 384]),
             Some(0),
             "384 bytes is enough"
         );
@@ -848,18 +879,21 @@ mod tests {
         data[128 + 2] = 10; // format 0's LBADS: a decoy
         data[128 + 4 + 2] = 11; // format 1's LBADS: the one that must be read
         let id = parse_identify_namespace(&data).unwrap();
-        assert_eq!(id.lba_shift, 11, "format 1's slot, not format 0's");
+        assert_eq!(
+            id.logical_block_address_shift, 11,
+            "format 1's slot, not format 0's"
+        );
     }
 
     #[test]
     fn blocks_per_transfer_masks_by_the_actual_block_size() {
-        // `identify_namespace_yields_size_and_shift`'s only `blocks_per` call is 4096, which is a
-        // multiple of every mask this function could plausibly compute (511, 512, or 513: none
+        // `identify_namespace_yields_size_and_shift`'s only `blocks_per_transfer` call is 4096, which
+        // is a multiple of every mask this function could plausibly compute (511, 512, or 513: none
         // of their low bits reach as high as bit 12), so it cannot tell them apart, and it never
-        // calls `blocks_per(0)` either.
+        // calls `blocks_per_transfer(0)` either.
         let id = IdentifyNamespace {
             blocks: 1,
-            lba_shift: 9, // 512-byte blocks; mask is 511
+            logical_block_address_shift: 9, // 512-byte blocks; mask is 511
         };
         assert_eq!(
             id.blocks_per_transfer(0),
@@ -988,41 +1022,36 @@ mod verification {
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.a_transfer_command_is_only_built_for_a_block_the_namespace_has.patch`
     #[kani::proof]
     fn a_transfer_command_is_only_built_for_a_block_the_namespace_has() {
-        let size_bytes: u64 = kani::any();
-        let blocks_per: u16 = kani::any();
-        kani::assume((1..=8).contains(&blocks_per));
+        let namespace = Namespace {
+            size_bytes: kani::any(),
+            blocks_per_transfer: kani::any(),
+        };
+        kani::assume((1..=8).contains(&namespace.blocks_per_transfer));
         let block: u64 = kani::any();
-        let data_phys: u64 = kani::any();
-        kani::assume(data_phys.is_multiple_of(4096) && data_phys < u64::MAX - 8192);
-        if transfer_command(
-            size_bytes,
-            blocks_per,
-            1,
-            1,
-            block,
-            4096,
-            data_phys,
-            4096,
-            kani::any(),
-        )
-        .is_some()
+        let data_physical_address: u64 = kani::any();
+        kani::assume(
+            data_physical_address.is_multiple_of(4096) && data_physical_address < u64::MAX - 8192,
+        );
+        if namespace
+            .transfer_command(1, 1, block, 4096, data_physical_address, 4096, kani::any())
+            .is_some()
         {
-            assert!(namespace_holds_block(size_bytes, block, 4096));
+            assert!(namespace.holds_block(block, 4096));
             // The transfer's last byte is inside the namespace, which is the property
-            // `namespace_holds_block` exists to state and the one a wrap would quietly break.
-            assert!((block + 1) * 4096 <= size_bytes);
+            // `holds_block` exists to state and the one a wrap would quietly break.
+            assert!((block + 1) * 4096 <= namespace.size_bytes);
         }
     }
 
     /// **Identify parsing is total for any device response.** The 4096 bytes come from the
     /// controller's DMA; no contents may panic the parse, and an accepted answer always carries a
-    /// shift the block driver's arithmetic (`blocks_per(4096)`) can serve.
+    /// shift the block driver's arithmetic (`blocks_per_transfer(4096)`) can serve.
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.identify_parse_is_total_and_bounds_the_shift.patch`
     #[kani::proof]
     fn identify_parse_is_total_and_bounds_the_shift() {
         let data: [u8; 384] = kani::any();
         if let Some(id) = parse_identify_namespace(&data) {
-            assert!((9..=12).contains(&id.lba_shift));
+            assert!((9..=12).contains(&id.logical_block_address_shift));
             let per = id.blocks_per_transfer(4096).unwrap();
             assert!((1..=8).contains(&per));
         }

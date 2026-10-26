@@ -35,24 +35,24 @@ pub const CONFIG: u64 = 0x38;
 pub(crate) const PORTSC_BASE: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
-pub const CMD_RUN: u32 = 1 << 0;
+pub const COMMAND_RUN: u32 = 1 << 0;
 /// `USBCMD` Host Controller Reset.
-pub const CMD_RESET: u32 = 1 << 1;
+pub const COMMAND_RESET: u32 = 1 << 1;
 /// `USBCMD` Interrupter Enable.
-pub const CMD_INTERRUPTS: u32 = 1 << 2;
+pub const COMMAND_INTERRUPTS: u32 = 1 << 2;
 
 /// `USBSTS` `HCHalted`.
-pub const STS_HALTED: u32 = 1 << 0;
+pub const STATUS_HALTED: u32 = 1 << 0;
 /// `USBSTS` Host System Error.
-pub const STS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
+pub const STATUS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
 /// `USBSTS` Event Interrupt, write one to clear.
-pub const STS_EVENT_INTERRUPT: u32 = 1 << 3;
+pub const STATUS_EVENT_INTERRUPT: u32 = 1 << 3;
 /// `USBSTS` Port Change Detect, write one to clear.
-pub const STS_PORT_CHANGE: u32 = 1 << 4;
+pub const STATUS_PORT_CHANGE: u32 = 1 << 4;
 /// `USBSTS` Controller Not Ready.
-pub const STS_NOT_READY: u32 = 1 << 11;
+pub const STATUS_NOT_READY: u32 = 1 << 11;
 /// `USBSTS` Host Controller Error.
-pub const STS_CONTROLLER_ERROR: u32 = 1 << 12;
+pub const STATUS_CONTROLLER_ERROR: u32 = 1 << 12;
 
 /// Interrupter 0's register set, from `RTSOFF`.
 pub(crate) const INTERRUPTER_0: u64 = 0x20;
@@ -79,12 +79,12 @@ pub const EXTENDED_LEGACY_SUPPORT: u8 = 1;
 /// `USBLEGSUP` HC BIOS Owned Semaphore.
 pub const LEGACY_BIOS_OWNED: u32 = 1 << 16;
 /// `USBLEGSUP` HC OS Owned Semaphore.
-pub const LEGACY_OS_OWNED: u32 = 1 << 24;
+pub const LEGACY_OPERATING_SYSTEM_OWNED: u32 = 1 << 24;
 /// `USBLEGCTLSTS`, the dword after `USBLEGSUP`: the SMI enables (bits 0, 4, 13, 14, 15) to clear,
 /// and the write-one-to-clear SMI events (29, 30, 31), so firmware stops being told about USB.
-pub const LEGACY_SMI_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
+pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
 /// The write-one-to-clear event bits of `USBLEGCTLSTS`.
-pub const LEGACY_SMI_EVENTS: u32 = 0b111 << 29;
+pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS: u32 = 0b111 << 29;
 
 /// **The facts the capability registers state**, decoded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,11 +94,11 @@ pub struct Capabilities {
     /// `HCIVERSION`, in binary-coded decimal (0x0100 for 1.0).
     pub version: u16,
     /// How many device slots the controller has.
-    pub max_slots: u8,
+    pub maximum_slots: u8,
     /// How many interrupters.
-    pub max_interrupters: u16,
+    pub maximum_interrupters: u16,
     /// How many root hub ports.
-    pub max_ports: u8,
+    pub maximum_ports: u8,
     /// How many scratchpad pages the controller wants for itself.
     pub scratchpads: u16,
     /// How many bytes one context is: 32, or 64 when `HCCPARAMS1.CSZ` is set.
@@ -126,9 +126,9 @@ impl Capabilities {
         Capabilities {
             operational: (caplength & 0xff) as u64,
             version: (caplength >> 16) as u16,
-            max_slots: hcsparams1 as u8,
-            max_interrupters: ((hcsparams1 >> 8) & 0x7ff) as u16,
-            max_ports: (hcsparams1 >> 24) as u8,
+            maximum_slots: hcsparams1 as u8,
+            maximum_interrupters: ((hcsparams1 >> 8) & 0x7ff) as u16,
+            maximum_ports: (hcsparams1 >> 24) as u8,
             scratchpads: (((hcsparams2 >> 21) & 0x1f) << 5 | (hcsparams2 >> 27)) as u16,
             context_bytes: if hccparams1 & (1 << 2) != 0 { 64 } else { 32 },
             extended: ((hccparams1 >> 16) as u64) * 4,
@@ -193,9 +193,9 @@ mod tests {
         let caps = Capabilities::decode(0x0100_0040, 0x0800_0840, 0, 0x0008_7000, 0x2000, 0x1000);
         assert_eq!(caps.operational, 0x40);
         assert_eq!(caps.version, 0x0100);
-        assert_eq!(caps.max_slots, 64);
-        assert_eq!(caps.max_interrupters, 8);
-        assert_eq!(caps.max_ports, 8);
+        assert_eq!(caps.maximum_slots, 64);
+        assert_eq!(caps.maximum_interrupters, 8);
+        assert_eq!(caps.maximum_ports, 8);
         assert_eq!(caps.scratchpads, 0);
         assert_eq!(caps.context_bytes, 32);
         assert_eq!(caps.extended, 0x20); // the dword count in HCCPARAMS1's high half, times four
@@ -220,22 +220,25 @@ mod tests {
     /// sections 5.4.1, 5.4.2, 5.5.2 and 7.1, so a shift written the wrong way round fails here.
     #[test]
     fn the_register_bits_are_where_the_specification_puts_them() {
-        assert_eq!([CMD_RUN, CMD_RESET, CMD_INTERRUPTS], [1, 2, 4]);
+        assert_eq!([COMMAND_RUN, COMMAND_RESET, COMMAND_INTERRUPTS], [1, 2, 4]);
         assert_eq!(
             [
-                STS_HALTED,
-                STS_HOST_SYSTEM_ERROR,
-                STS_EVENT_INTERRUPT,
-                STS_PORT_CHANGE
+                STATUS_HALTED,
+                STATUS_HOST_SYSTEM_ERROR,
+                STATUS_EVENT_INTERRUPT,
+                STATUS_PORT_CHANGE
             ],
             [1, 4, 8, 0x10]
         );
-        assert_eq!([STS_NOT_READY, STS_CONTROLLER_ERROR], [0x800, 0x1000]);
+        assert_eq!([STATUS_NOT_READY, STATUS_CONTROLLER_ERROR], [0x800, 0x1000]);
         assert_eq!([IMAN_PENDING, IMAN_ENABLE], [1, 2]);
         assert_eq!(ERDP_BUSY, 8);
-        assert_eq!([LEGACY_BIOS_OWNED, LEGACY_OS_OWNED], [0x1_0000, 0x100_0000]);
-        assert_eq!(LEGACY_SMI_ENABLES, 0xe011);
-        assert_eq!(LEGACY_SMI_EVENTS, 0xe000_0000);
+        assert_eq!(
+            [LEGACY_BIOS_OWNED, LEGACY_OPERATING_SYSTEM_OWNED],
+            [0x1_0000, 0x100_0000]
+        );
+        assert_eq!(LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES, 0xe011);
+        assert_eq!(LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS, 0xe000_0000);
     }
 
     /// The next pointer counts dwords, and an entry whose last byte is the limit's is still read.
