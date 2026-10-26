@@ -8,7 +8,9 @@
 //! USB drive (§260 (radon's block server serves a USB drive)), not this card.
 
 use designware_mobile_storage::jh7110::Slot;
-use designware_mobile_storage::serve::{Handoff, REGISTER_VA, TRANSFER_VA, Window};
+use driver_process_contract::designware_mobile_storage::{
+    Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS, Window,
+};
 use filesystem_contract::blk;
 
 use super::*;
@@ -94,20 +96,20 @@ pub(crate) fn start(
         }; blk::TRANSFER_BLOCKS + 1];
         super::fs_service::map_channel(
             &mut maps[..blk::TRANSFER_BLOCKS],
-            TRANSFER_VA,
+            TRANSFER_VIRTUAL_ADDRESS,
             transfer_phys,
             blk::TRANSFER_BLOCKS,
         );
         // One page of the controller: every register the driver touches and the data FIFO.
         maps[blk::TRANSFER_BLOCKS] = Mapping {
-            va: REGISTER_VA,
+            va: REGISTER_VIRTUAL_ADDRESS,
             phys: base,
             flags: Flags::user_device(),
         };
         run(
             image,
             Spawn {
-                arg0: words[0], // see `designware_mobile_storage::serve::Handoff`
+                arg0: words[0], // see `driver_process_contract::designware_mobile_storage::Handoff`
                 arg1: words[1], // the window's first sector
                 arg2: words[2], // the window's length in sectors
                 grants: &[

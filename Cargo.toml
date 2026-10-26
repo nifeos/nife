@@ -94,6 +94,7 @@ members = [
     "crates/network_time_protocol",
     "crates/non_volatile_memory_express",
     "crates/disk_tree",
+    "crates/driver_process_contract",
     "crates/e1000e",
     "crates/designware_ethernet",
     "crates/generational_table",

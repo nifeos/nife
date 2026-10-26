@@ -37,10 +37,6 @@ pub mod regs;
 /// Offsets inside the DMA region, which the kernel allocates contiguous and confines whole.
 pub mod layout;
 
-/// Where the process finds what it was mapped, which the kernel's spawn and `net_stack` must
-/// agree on (rule 7: a crate, not a pair of "must match" comments).
-pub mod process;
-
 #[cfg(test)]
 mod tests;
 
