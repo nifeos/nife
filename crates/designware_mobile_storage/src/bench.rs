@@ -147,12 +147,15 @@ pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
     })
 }
 
-/// The byte the write test puts at offset `i` of the sector at `lba`: never constant across a
-/// sector, different for each sector, so a write that lands one sector off or repeats a block is
-/// seen on readback.
+/// The byte the write test puts at offset `i` of the sector at `logical_block_address`: never
+/// constant across a sector, different for each sector, so a write that lands one sector off or
+/// repeats a block is seen on readback.
 #[must_use]
-pub const fn pattern(lba: u64, i: usize) -> u8 {
-    (i as u8).wrapping_mul(31) ^ (lba as u8).wrapping_mul(7) ^ 0x5a ^ (i >> 8) as u8
+pub const fn pattern(logical_block_address: u64, i: usize) -> u8 {
+    (i as u8).wrapping_mul(31)
+        ^ (logical_block_address as u8).wrapping_mul(7)
+        ^ 0x5a
+        ^ (i >> 8) as u8
 }
 
 /// How the scratch write test ended.
@@ -190,39 +193,39 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
     if original.len() < bytes || scratch.len() < bytes {
         return WriteVerdict::Failed(0, IoError::Length);
     }
-    let lba = u64::from(first);
+    let logical_block_address = u64::from(first);
     let (original, scratch) = (&mut original[..bytes], &mut scratch[..bytes]);
-    if let Err(e) = sd::read_blocks(host, card, lba, original) {
+    if let Err(e) = sd::read_blocks(host, card, logical_block_address, original) {
         return WriteVerdict::Failed(0, e);
     }
     let blank = original.iter().all(|&b| b == 0);
     for (s, block) in scratch.as_chunks_mut::<BLOCK>().0.iter_mut().enumerate() {
         for (i, b) in block.iter_mut().enumerate() {
-            *b = pattern(lba + s as u64, i);
+            *b = pattern(logical_block_address + s as u64, i);
         }
     }
     let mut verdict = None;
-    if let Err(e) = sd::write_blocks(host, card, lba, scratch) {
+    if let Err(e) = sd::write_blocks(host, card, logical_block_address, scratch) {
         verdict = Some(WriteVerdict::Failed(1, e));
     } else {
         let mut back = [0u8; BLOCK];
         for s in 0..u64::from(count) {
-            if let Err(e) = sd::read_blocks(host, card, lba + s, &mut back) {
+            if let Err(e) = sd::read_blocks(host, card, logical_block_address + s, &mut back) {
                 verdict = Some(WriteVerdict::Failed(2, e));
                 break;
             }
             let at = s as usize * BLOCK;
             if back[..] != scratch[at..at + BLOCK] {
-                verdict = Some(WriteVerdict::PatternMismatch(lba + s));
+                verdict = Some(WriteVerdict::PatternMismatch(logical_block_address + s));
                 break;
             }
         }
     }
     // Whatever happened, put back what was there.
-    if let Err(e) = sd::write_blocks(host, card, lba, original) {
+    if let Err(e) = sd::write_blocks(host, card, logical_block_address, original) {
         return WriteVerdict::Failed(3, e);
     }
-    if let Err(e) = sd::read_blocks(host, card, lba, scratch) {
+    if let Err(e) = sd::read_blocks(host, card, logical_block_address, scratch) {
         return WriteVerdict::Failed(4, e);
     }
     if let Some(s) = scratch
@@ -232,7 +235,7 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
         .zip(original.as_chunks::<BLOCK>().0)
         .position(|(a, b)| a != b)
     {
-        return WriteVerdict::RestoreMismatch(lba + s as u64);
+        return WriteVerdict::RestoreMismatch(logical_block_address + s as u64);
     }
     verdict.unwrap_or(WriteVerdict::Verified(first, count, blank))
 }
@@ -324,7 +327,8 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
 /// so a read that leaves the card mid-transfer cannot fail the next one. Read-only: `CMD18` from
-/// `lba` and identification, nothing else. `buf` holds at least the longest read.
+/// `logical_block_address` and identification, nothing else. `buf` holds at least the longest
+/// read.
 ///
 /// # Errors
 ///
@@ -334,7 +338,7 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 pub fn read_matrix<R: Registers>(
     host: &mut Host<Watch<R>>,
     bus_width: u8,
-    lba: u64,
+    logical_block_address: u64,
     buf: &mut [u8],
     mut row: impl FnMut(MatrixRow),
 ) -> Result<(), InitializationError> {
@@ -350,7 +354,7 @@ pub fn read_matrix<R: Registers>(
             };
             host.registers().clear();
             let start = host.registers().now_us();
-            let result = sd::read_blocks(host, &card, lba, dst);
+            let result = sd::read_blocks(host, &card, logical_block_address, dst);
             let us = host.registers().now_us().wrapping_sub(start);
             let watch = host.registers();
             let after = [

@@ -146,7 +146,7 @@ enum State {
 #[derive(Debug)]
 struct Transfer {
     write: bool,
-    first_lba: u64,
+    first_logical_block_address: u64,
     bytes: usize,
     moved: usize,
     auto_stop: bool,
@@ -406,7 +406,7 @@ impl Sim {
         r
     }
 
-    fn lba(&self, arg: u32) -> u64 {
+    fn logical_block_address(&self, arg: u32) -> u64 {
         if self.high_capacity() {
             u64::from(arg)
         } else {
@@ -533,7 +533,11 @@ impl Sim {
             let ext_csd = index == 8;
             let mut t = Transfer {
                 write,
-                first_lba: if ext_csd { 0 } else { self.lba(arg) },
+                first_logical_block_address: if ext_csd {
+                    0
+                } else {
+                    self.logical_block_address(arg)
+                },
                 bytes,
                 moved: 0,
                 auto_stop: word & registers::CMD_SEND_AUTO_STOP != 0,
@@ -548,9 +552,11 @@ impl Sim {
                     t.buffer = e;
                 } else {
                     for i in 0..bytes / 512 {
-                        let lba = t.first_lba as usize + i;
+                        let logical_block_address = t.first_logical_block_address as usize + i;
                         t.buffer.extend_from_slice(
-                            self.storage.get(lba).map_or(&[0xffu8; 512][..], |b| &b[..]),
+                            self.storage
+                                .get(logical_block_address)
+                                .map_or(&[0xffu8; 512][..], |b| &b[..]),
                         );
                     }
                 }
@@ -593,10 +599,10 @@ impl Sim {
                 let nth = self.write_commands;
                 self.write_commands += 1;
                 for (i, block) in t.buffer.as_chunks::<512>().0.iter().enumerate() {
-                    let lba = t.first_lba + i as u64;
-                    self.written.push(lba);
-                    let mangle = self.mangle_write == Some((nth, lba));
-                    if let Some(b) = self.storage.get_mut(lba as usize)
+                    let logical_block_address = t.first_logical_block_address + i as u64;
+                    self.written.push(logical_block_address);
+                    let mangle = self.mangle_write == Some((nth, logical_block_address));
+                    if let Some(b) = self.storage.get_mut(logical_block_address as usize)
                         && store
                     {
                         b.copy_from_slice(block);
