@@ -1,8 +1,8 @@
 # Stage 2: the sector interface, the boot sector, and the oracle's pin
 
 Appendix to [813. `file_allocation_table`](../0813-a-proven-fat-crate-released-on-its-own.md). It
-records what stage 2 built, the provenance of the names it minted, and the open question on the
-oracle's dev-dependency pin, which this stage did not need and stage 3 does.
+records what stage 2 built, the provenance of the names it minted, and where the oracle's
+dev-dependency pin, which this stage did not need, is recorded.
 
 ## What stage 2 built
 
@@ -56,33 +56,10 @@ The table gives the reason for each:
 | `ParseError`, `ReadError` | a refusal of the bytes, and a failure of the read that fetched them |
 | `boot_sector`, `sector` | the modules, named for the on-disk structure each one parses |
 
-## Open: the oracle's pin (needs calef, before stage 3)
+## The oracle's pin
 
-calef's #2580 ruling keeps rust-fatfs as the test oracle, outside the base graph, and 813 says the
-pin is a dependency ruling. Stage 2 needed no oracle: its tests check a boot sector against another
-tool's output, and `mkfs.fat` supplied it. Stage 3 reads FAT entries that rust-fatfs wrote, so it
-needs the pin first. In every option the oracle is a `[dev-dependencies]` line of this crate
-only. It never enters a binary that boots.
-
-- **A. `lamfat = "=0.4.3"` from crates.io (recommended).** It republishes rust-fatfs's main line
-  under MIT, by Lamco Development LLC. 0.4.3 shipped on 2026-10-15, and #1803 measured 0.4.2
-  clean under `fsck_msdos`. `Cargo.lock` pins its checksum, it needs no repository of ours, and the
-  standalone crate's own CI resolves it the same way. The risk is trusting a third party's copy of
-  upstream, which a test oracle can bear: a wrong oracle fails tests, it does not ship.
-- **B. A `nifeos/rust-fatfs` fork pinned by `rev`** to upstream's main-line commit `38b3a795`
-  (2026-10-16), as §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)
-  allows. Provenance runs
-  straight to upstream's own commit. It costs a repository someone with the organization's rights
-  must create and keep, and cargo drops a version-less dev-dependency when the crate publishes.
-- **C. No linked oracle.** Read back with tools run as processes: `fsck.fat` or `fsck_msdos`, and
-  mtools (`mdir`, `mcopy`) for names and bytes. No dependency at all. But mtools is not on a stock
-  macOS, and the round trip in the other direction (this crate reading what rust-fatfs wrote)
-  needs a second writer, which `mkfs.fat` and mtools can supply only in part.
-
-`fatfs = "=0.3.6"` is not offered: #1803 found its subdirectories rejected by `fsck_msdos`.
-
-Recommendation: A. It has the fewest moving parts and puts nothing of ours to maintain behind an
-oracle, and I would choose it at equal effort, because B's extra provenance buys little for code
-that only judges tests. B is right if calef will not trust a republisher with the oracle. If no
-ruling arrives, stage 3 builds its decode and chain walk against `mkfs.fat` and mtools images and
-adds the oracle tests when the pin lands.
+Stage 2 needed no oracle: its tests check a boot sector against `mkfs.fat`'s output. A ruling of
+2026-10-25 (UTC) set the pin for stage 3, which reads tables rust-fatfs wrote:
+`lamfat = "=0.4.3"`, a dev-dependency of this crate alone.
+[The stage 3 appendix](stage-3-the-table-and-the-chain.md) records the rule, the `fsck` check
+its condition asked for, and what holds it.

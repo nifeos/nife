@@ -1,0 +1,19 @@
+Falsifies `file_allocation_table::reader::verification::no_chain_walk_outlasts_the_volume`.
+
+The defect: the walk's bound is off by one, so a looping table yields one cluster more than the
+volume holds before the walk stops.
+
+Expected to fail: the harness's `assert!(yielded <= clusters)`.
+
+diff --git a/crates/file_allocation_table/src/reader.rs b/crates/file_allocation_table/src/reader.rs
+--- a/crates/file_allocation_table/src/reader.rs
++++ b/crates/file_allocation_table/src/reader.rs
+@@ -256,7 +256,7 @@
+             },
+             _ => return None,
+         };
+-        if self.yielded >= clusters {
++        if self.yielded > clusters {
+             return Some(Err(ChainError::TooLong));
+         }
+         self.yielded += 1;

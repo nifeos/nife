@@ -34,12 +34,6 @@ crates = [
 interfaces = ["jh7110_clock_and_reset", "spin_lock"]
 
 [[exception]]
-date = 2026-10-04
-member = "kernel"
-crate = "extensible_host_controller_interface"
-reason = "the kernel draws the xHCI driver's register window and hands it extensible_host_controller_interface::Handoff, a contract living in the USB keyboard's crate (milestone 242 (USB host and HID))"
-
-[[exception]]
 date = 2026-09-27
 member = "kernel"
 crate = "coremark"

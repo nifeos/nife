@@ -1,0 +1,20 @@
+Falsifies `file_allocation_table::directory::verification::every_slot_parses_as_its_bytes_say`.
+
+The defect: the long-name test masks only the four low attribute bits, so a short entry with the
+archive bit set beside read-only, hidden, system and volume label reads as a long-name piece and
+its file disappears from the listing.
+
+Expected to fail: the harness's `assert!(long)`.
+
+diff --git a/crates/file_allocation_table/src/directory.rs b/crates/file_allocation_table/src/directory.rs
+--- a/crates/file_allocation_table/src/directory.rs
++++ b/crates/file_allocation_table/src/directory.rs
+@@ -26,7 +26,7 @@
+ /// The low four attribute bits together, which mark a long-name slot.
+ const LONG_NAME: u8 = READ_ONLY | HIDDEN | SYSTEM | VOLUME_ID;
+ /// The attribute bits a long-name test looks at: the six the specification defines.
+-const LONG_NAME_MASK: u8 = 0x3F;
++const LONG_NAME_MASK: u8 = 0x0F;
+ /// The first name byte of a free slot.
+ const FREE: u8 = 0xE5;
+ /// The ordinal bit that marks a long name's last piece, which comes first on disk.

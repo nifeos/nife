@@ -1,0 +1,19 @@
+Falsifies `file_allocation_table::table::verification::an_entry_decodes_by_its_markers`.
+
+The defect: the comparison with the bad-cluster marker is inclusive, so a cluster marked bad reads
+as a link to the cluster whose number is the marker, and a walk follows it.
+
+Expected to fail: the harness's `assert_eq!(TableEntry::decode(fat_type, raw), expected)`.
+
+diff --git a/crates/file_allocation_table/src/table.rs b/crates/file_allocation_table/src/table.rs
+--- a/crates/file_allocation_table/src/table.rs
++++ b/crates/file_allocation_table/src/table.rs
+@@ -44,7 +44,7 @@
+             TableEntry::Free
+         } else if value == 1 {
+             TableEntry::Reserved
+-        } else if value < bad {
++        } else if value <= bad {
+             TableEntry::Next(value)
+         } else if value == bad {
+             TableEntry::Bad

@@ -66,8 +66,6 @@ pub const ERSTSZ: u64 = 0x08;
 pub const ERSTBA: u64 = 0x10;
 /// Interrupter register: `ERDP` (dequeue pointer).
 pub const ERDP: u64 = 0x18;
-/// How many bytes one interrupter register set is.
-pub(crate) const INTERRUPTER_BYTES: u64 = 0x20;
 
 /// `IMAN` Interrupt Pending, write one to clear.
 pub const IMAN_PENDING: u32 = 1 << 0;
@@ -152,20 +150,6 @@ impl Capabilities {
     /// Slot `slot`'s doorbell (0 for the command ring), as an offset into the file.
     pub const fn doorbell(&self, slot: u8) -> u64 {
         self.doorbells + 4 * slot as u64
-    }
-
-    /// **The byte ranges a driver must reach, inclusive**: the capability and operational
-    /// registers through the last port's status set, interrupter 0, and every slot's doorbell.
-    /// What [`crate::register_window`] checks the mapped pages against.
-    pub(crate) const fn needed_ranges(&self) -> [(u64, u64); 3] {
-        [
-            (0, self.portsc(self.max_ports) + 0x0f),
-            (
-                self.interrupter(0),
-                self.interrupter(0) + INTERRUPTER_BYTES - 1,
-            ),
-            (self.doorbell(0), self.doorbell(self.max_slots) + 3),
-        ]
     }
 }
 
@@ -252,17 +236,6 @@ mod tests {
         assert_eq!([LEGACY_BIOS_OWNED, LEGACY_OS_OWNED], [0x1_0000, 0x100_0000]);
         assert_eq!(LEGACY_SMI_ENABLES, 0xe011);
         assert_eq!(LEGACY_SMI_EVENTS, 0xe000_0000);
-    }
-
-    /// QEMU's needed ranges, inclusive at both ends: through port 4's status set, the 32 bytes of
-    /// interrupter 0, and the doorbells through slot 64's.
-    #[test]
-    fn the_needed_ranges_end_at_their_last_byte() {
-        let capabilities = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0, 0x2000, 0x1000);
-        assert_eq!(
-            capabilities.needed_ranges(),
-            [(0, 0x47f), (0x1020, 0x103f), (0x2000, 0x2103)]
-        );
     }
 
     /// The next pointer counts dwords, and an entry whose last byte is the limit's is still read.

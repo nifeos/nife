@@ -17,6 +17,8 @@ gives its count of names and how many it flags as something other than `clear` o
   each extraction runs.
 - [`contribute-proofs-instead-of-releasing.md`](contribute-proofs-instead-of-releasing.md): the
   open question for crates with an upstream to contribute to.
+- [`extensible-host-controller-interface-names.md`](extensible-host-controller-interface-names.md):
+  the record of every name in `extensible_host_controller_interface`, ratified 2026-10-25.
 - [`co-change-of-the-release-track-crates.md`](co-change-of-the-release-track-crates.md): how often
   a commit touching each release-track crate also touches code outside it, and the order that
   suggests.

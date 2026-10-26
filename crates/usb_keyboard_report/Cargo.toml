@@ -1,0 +1,16 @@
+[package]
+name = "usb_keyboard_report"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The USB keyboard driver's one bring-up report: three words the driver sends the kernel once, and
+# the kernel turns into a sentence. Two binaries agree on the format, so it is a crate (rule 7). It
+# left `extensible_host_controller_interface` on the 2026-10-25 names ruling, because it is nife's
+# report and not anything the xHCI specification defines. no_std, no dependencies, host-tested.
+
+[lints]
+workspace = true
+
+[dependencies]

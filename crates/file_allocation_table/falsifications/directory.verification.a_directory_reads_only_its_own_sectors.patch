@@ -1,0 +1,20 @@
+Falsifies `file_allocation_table::directory::verification::a_directory_reads_only_its_own_sectors`.
+
+The defect: a chain directory takes one sector more from each cluster than the cluster holds, so
+it reads the first sector of the next cluster on the volume, which belongs to some other file, or
+the sector past the data region.
+
+Expected to fail: the harness's `assert!(sector >= first_data && sector < first_data + data_sectors)`.
+
+diff --git a/crates/file_allocation_table/src/directory.rs b/crates/file_allocation_table/src/directory.rs
+--- a/crates/file_allocation_table/src/directory.rs
++++ b/crates/file_allocation_table/src/directory.rs
+@@ -242,7 +242,7 @@
+                     };
+                     // The walk yields only data clusters, which always have sectors.
+                     *next = boot.cluster_first_sector(cluster)?;
+-                    *remaining = boot.sectors_per_cluster();
++                    *remaining = boot.sectors_per_cluster() + 1;
+                 }
+                 *remaining -= 1;
+                 *next += 1;

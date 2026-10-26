@@ -158,6 +158,20 @@ else
     esac
 fi
 
+# dosfstools, for `fsck.fat`: the FAT crate's oracle test (crates/file_allocation_table/tests/
+# the_oracle_agrees.rs) runs `fsck.fat -n` on every image it makes and skips that check, saying so,
+# on a host that has none. Linux only: macOS ships `fsck_msdos`, which the test runs instead. One
+# apt package, so it sits beside ShellCheck and installs even under NIFE_SKIP_LINT_TOOLS.
+if [ "$os" = Linux ]; then
+    if command -v fsck.fat >/dev/null 2>&1 || [ -x /usr/sbin/fsck.fat ] || [ -x /sbin/fsck.fat ]; then
+        echo "==> dosfstools present"
+    else
+        echo "==> Installing dosfstools"
+        $SUDO apt-get update
+        $SUDO apt-get install -y dosfstools
+    fi
+fi
+
 # Ruby, for the YAML parser of two `script/lint` checks: every workflow file parses
 # (helpers/workflow_parses.py) and every issue form renders (helpers/issue_forms.py). Both run
 # `ruby -ryaml`, so the check is that command rather than `command -v`, and both fail rather than

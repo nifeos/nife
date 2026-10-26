@@ -3,15 +3,10 @@
 //! touches. A kernel finds and confines the register file and DMA memory and a
 //! user-space driver drives them; this is the arithmetic between.
 //!
-//! [`regs`] and [`Capabilities`] name the registers; [`register_window`] decides which register
-//! pages a confined driver is mapped; [`Handoff`] packs the spawn words; [`dma`] is the DMA
-//! region's layout; [`Trb`], [`Event`], [`ProducerRing`] and [`EventRing`] are the ring discipline
-//! (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and endpoint contexts; [`port`] is the port
-//! status register.
-//!
-//! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: xHCI expanded per §154
-//! (the acronym test is whether the phrase is spoken). Too long for a program name, so the program
-//! is `usb_keyboard_driver`.
+//! [`regs`] and [`Capabilities`] name the registers; [`dma`] is the DMA region's layout; a
+//! Transfer Request Block (TRB, [`TransferRequestBlock`]), [`Event`], [`ProducerRing`] and
+//! [`EventRing`] are the ring discipline (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and
+//! endpoint contexts; [`port`] is the port status register.
 
 //! # BUGS
 //!
@@ -23,21 +18,14 @@ pub mod context;
 pub mod dma;
 pub mod port;
 pub mod regs;
-pub mod report;
 
 pub use regs::Capabilities;
 
-/// **How many pages of the register file a driver can be mapped**: the bits of [`Handoff`]'s
-/// register mask. 64 KiB, which is the BAR of every Intel xHCI this project has read about; a
-/// larger BAR is mapped this far and no further, and [`register_window`] refuses a controller
-/// whose needed registers lie beyond it.
-pub const MAX_REGISTER_PAGES: u64 = 16;
-
 /// The page size every layout here is in.
-pub const PAGE: u64 = 4096;
+pub const PAGE_BYTES: u64 = 4096;
 
-/// TRB type codes (xHCI 1.2 Table 6-91).
-pub mod trb_type;
+/// Transfer Request Block (TRB) type codes (xHCI 1.2 Table 6-91).
+pub mod transfer_request_block_type;
 
 /// Completion codes (xHCI 1.2 Table 6-90), the ones a keyboard driver tells apart.
 pub mod completion;
@@ -46,17 +34,13 @@ pub mod completion;
 mod tests;
 
 mod event;
-mod handoff;
 mod ring;
-mod trb;
-mod window;
+mod transfer_request_block;
 
 pub use context::interrupt_interval;
 pub use event::Event;
-pub use handoff::Handoff;
-pub use ring::{EventRing, Placement, ProducerRing};
-pub use trb::Trb;
-pub use window::{WindowRefusal, register_window};
+pub use ring::{EventRing, ProducerRing, TransferRequestBlockPlacement};
+pub use transfer_request_block::TransferRequestBlock;
 
 #[cfg(kani)]
 mod verification;

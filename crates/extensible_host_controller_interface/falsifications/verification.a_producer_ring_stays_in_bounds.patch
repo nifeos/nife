@@ -8,15 +8,14 @@ Expected to fail: the harness's final `assert!(ring.enqueue < entries - 1)`: the
 the link slot after the last ordinary TRB.
 
 diff --git a/crates/extensible_host_controller_interface/src/ring.rs b/crates/extensible_host_controller_interface/src/ring.rs
-index e952ad29a..b5a884e29 100644
 --- a/crates/extensible_host_controller_interface/src/ring.rs
 +++ b/crates/extensible_host_controller_interface/src/ring.rs
-@@ -67,7 +67,7 @@ impl ProducerRing {
+@@ -89,7 +89,7 @@
          let placed = trb.with_cycle(self.cycle);
          self.enqueue += 1;
          let mut link = None;
 -        if self.enqueue == self.entries - 1 {
 +        if self.enqueue == self.entries {
-             link = Some((self.enqueue, Trb::link(self.base).with_cycle(self.cycle)));
-             self.enqueue = 0;
-             self.cycle = !self.cycle;
+             link = Some((
+                 self.enqueue,
+                 TransferRequestBlock::link(self.base).with_cycle(self.cycle),
