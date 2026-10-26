@@ -147,12 +147,12 @@ them should be read against each other without their dates.
 `design/roadmap/proposals/` was created on 2026-09-04 (UTC) by milestone 247 (follow-on work named by a
 finished milestone goes nowhere, and this is the third time).
 
-Since 2026-09-19 they are drawn on top of the milestones chart, as the eighth series. The column
-had been collected every week and drawn nowhere before that. The bar totals on that chart now include them. On 2026-09-18, mid-week, 2026W38 read
-431: 324 numbered milestones and 107 proposals. The finished week reads 515 and 2, after the
-promotions. The jump at 2026W36 is the pile appearing when the directory
-did, not a burst of milestones. They sit on top because they are work that has not entered the
-roadmap yet. A new slot is appended so that no existing series changes color.
+Since 2026-09-19 the milestones chart draws them on top, as the eighth series. The column had been
+collected every week and drawn nowhere before that. The bar totals on that chart now include them.
+On 2026-09-18, mid-week, 2026W38 read 431: 324 numbered milestones and 107 proposals. The finished
+week reads 515 and 2, after the promotions. The jump at 2026W36 is the pile appearing when the
+directory did, not a burst of milestones. They sit on top because they are work that has not entered
+the roadmap yet. A new slot is appended so that no existing series changes color.
 
 Nothing else in the deck could count these, which is why the column exists. The milestones chart
 keys on a milestone number. It reads the blocks in `design/roadmap/` for a revision that has no
@@ -170,10 +170,10 @@ nothing is waiting on it. An identified piece of work nobody has scheduled is a 
 something was found wrong or missing, and the finding is parked. That is closer to debt. But the
 count alone cannot tell you whether the pile is stalling, for two reasons.
 
-It is a net count, and the flow is gross. On 2026-09-11, five proposals had left the directory
-since it existed, so 86 had been written and 81 remained. They left in two ways. One was promoted to a number the
-ordinary way: milestone 256 (x86_64 places PCI BARs in a hardcoded window, and on xenon that window
-is RAM). The others were done by a lane that picked the file up and fixed the thing. Sometimes that
+It is a net count, and the flow is gross. On 2026-09-11, five proposals had left the directory since
+it existed, so 86 had been written and 81 remained. They left in two ways. One was promoted to a
+number the ordinary way: milestone 256 (x86_64 places PCI BARs in a hardcoded window, and on xenon
+that window is RAM). In the others, a lane picked the file up and fixed the thing. Sometimes that
 lane filed a narrower proposal in its place: `the-tcb-capability-that-outlives-start` became a fix
 plus `the-region-half-of-the-retention-declaration`. A flat line would fit a stalled pile and one
 draining as fast as it fills, and nothing here tells them apart.
@@ -181,11 +181,11 @@ draining as fast as it fills, and nothing here tells them apart.
 Age is the tell, and age is not in this column. `script/roadmap`'s own header says so. A gate on age
 ("no proposal older than N days") would be routed around by not writing proposals, which is worse.
 So it prints the count and the date of the oldest on every `script/lint` run. On 2026-09-11 the
-oldest was dated 2026-09-03 and the directory was a week old, so nothing had had time to go stale.
-The oldest predates the directory only by time zone: both are the commit of 2026-09-03 19:56
-Pacific, which is 2026-09-04 in UTC. **The number to
-watch is this one going up while the oldest date stops moving.** `script/roadmap --proposed` lists
-them oldest first and is the view that answers it.
+oldest carried the date 2026-09-03 and the directory was a week old, so nothing had had time to go
+stale. The oldest predates the directory only by time zone: both are the commit of 2026-09-03 19:56
+Pacific, which is 2026-09-04 in UTC. **The number to watch is this one going up while the oldest
+date stops moving.** `script/roadmap --proposed` lists them oldest first and is the view that
+answers it.
 
 A rising line is still better than what it replaced. Without it this work lives in lane reports, which
 are read once, by one person, on the day they are written. `AGENTS.md` records the cost.

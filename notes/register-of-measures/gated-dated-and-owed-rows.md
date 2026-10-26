@@ -14,8 +14,8 @@ The ceilings are rows 2 through 5 and 7 and 8. Their thresholds are six differen
 - The high-water limits are margins over an observed maximum.
 - The `unsafe impl Send`/`Sync` ceiling was set at 17, which was the tree exactly when it was
   written. The live gate in notes/unsafe-obligations.md is now 23 (corrected 2026-09-24).
-- The unsafe density ceiling is a claim about the tree that was false until shortly before it was
-  written.
+- The unsafe density ceiling is a claim about the tree that was false until shortly before the
+  ceiling's writing.
 
 The density ceiling is the only one that expresses a direction rather than a limit. That
 distinction is what `count-at-most` exists for. Milestone 139 (drive the unsafe count down, and
@@ -72,13 +72,14 @@ push. The honest promotion is a scheduled run rather than a gate, and it wants a
 
 ### The cross-OS row
 
-Its section, now in notes/benchmarks/cross-os-primitives.md, was titled "The first cross-OS numbers
-(nife vs Linux vs macOS)" and carried no date at all until 2026-09-24. PR #1200 then dated it from
-git: 2026-07-25, and 2026-07-26 for the spawn row. Those are the numbers a stranger is most likely to quote back at us, because they
-are the comparison against Linux and macOS. A dated measurement with no date is a `gated` row's
-opposite and a `dated` row's failure mode at once. Nothing in this tree would have flagged it.
-The git date says when the numbers were committed, not which run produced them. Re-taking them is
-still the honest fix: a small lane, named in milestone 134's handoff.
+Its section, now in notes/benchmarks/cross-os-primitives.md, carried the title "The first cross-OS
+numbers (nife vs Linux vs macOS)" and no date at all until 2026-09-24. PR #1200 then dated it from
+git: 2026-07-25, and 2026-07-26 for the spawn row. Those are the numbers a stranger is most likely
+to quote back at us, because they are the comparison against Linux and macOS. A dated measurement
+with no date is a `gated` row's opposite and a `dated` row's failure mode at once. Nothing in this
+tree would have flagged it. The git date says when the numbers entered a commit, not which run
+produced them. Re-taking them is still the honest fix: a small lane, named in milestone 134's
+handoff.
 
 ### The arch row
 

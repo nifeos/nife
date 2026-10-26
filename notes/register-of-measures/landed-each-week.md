@@ -51,9 +51,9 @@ Three numbers give two answers, and the larger one flatters the project. A denom
 2026W35 at about 1,021 million tokens per milestone; 6 prices it at about 1,362.
 
 All three are right, and the column is the one to trust. The two sixes are one measurement taken two
-ways: both ask what the roadmap *said* at two moments a week apart. The column asks what was *built*,
-from the dates the roadmap carries today. They differ by the lag between a milestone being finished
-and its row being flipped, and that lag is not small here:
+ways: both ask what the roadmap *said* at two moments a week apart. The column asks what was
+*built*, from the dates the roadmap carries today. They differ by the lag between finishing a
+milestone and flipping its row, and that lag is not small here:
 
 | week | built that week | `Built` stock | stock change | counted here, recorded later |
 | --- | --- | --- | --- | --- |
@@ -101,12 +101,12 @@ leave every other column in it empty or wrong. The drop prints a stderr warning,
 
 ### Nothing published changes
 
-The column was checked against the blocks and reproduces exactly. The stock column reproduces exactly
-at all eleven of its own commits. Every other column was checked for the gap that left
+The column was checked against the blocks and reproduces exactly. The stock column reproduces
+exactly at all eleven of its own commits. Every other column was checked for the gap that left
 `unsafe_trust_*` blank for ten weeks (a `--update` where a `--backfill` was needed). Only the cost
 columns and coverage are blank anywhere, on purpose, as [project cost](project-cost.md) explains.
-`milestones_built_this_week` cannot take that damage. It is written for every week in the file on both
-`--update` and `--backfill`, never only for the week being added.
+`milestones_built_this_week` cannot take that damage. `script/metrics` writes it for every week in
+the file on both `--update` and `--backfill`, never only for the added week.
 
 ### The trailing ten-week mean
 
@@ -114,14 +114,14 @@ calef asked for it on 2026-09-24, first here and then on the pull-request chart,
 reads 8, 49, 13, 64 in consecutive weeks cannot be read for direction by eye. Both charts use one
 helper, `trailing_mean` in `script/metrics`, so the two lines cannot be computed differently. It is
 the mean of the week and the nine before it, reaching back past the chart's left edge into the CSV.
-It is drawn rather than stored: a stored copy of arithmetic over a stored column is a second
-place to be wrong.
+`script/metrics` draws it rather than storing it: a stored copy of arithmetic over a stored column
+is a second place to be wrong.
 
-The series starts at 2026W29, so the first full window is 2026W38. The weeks before it are drawn
-**dashed, with their own legend entry**, rather than left off. Starting the line at the first full
-window would have given two points on a ten-bar chart, and the dashed part is honest about what it
-is: a mean over fewer weeks, which swings harder. It leaves the chart on its own as the window
-slides, and from 2026W47 every point shown is a full ten weeks.
+The series starts at 2026W29, so the first full window is 2026W38. The chart draws the weeks before
+it **dashed, with their own legend entry**, rather than leaving them off. Starting the line at the
+first full window would have given two points on a ten-bar chart, and the dashed part is honest
+about what it is: a mean over fewer weeks, which swings harder. It leaves the chart on its own as
+the window slides, and from 2026W47 every point shown is a full ten weeks.
 
 ## Pull requests merged each week
 
@@ -182,9 +182,9 @@ columns are in `debt-paydown.csv`; all three names are provisional.
 ### Counted from the GitHub API, unlike the series above
 
 A label is on GitHub and not in git, so `helpers/debt_paydown_share.py` fetches every pull request
-merged into `main` each day and rewrites `merged-pull-requests.csv`, one row each. The whole history
-is fetched because a label can be corrected long after the merge, and a corrected label should
-correct the past week. So a past week's share can move on any run.
+merged into `main` each day and rewrites `merged-pull-requests.csv`, one row each. The helper
+fetches the whole history because a label can be corrected long after the merge, and a corrected
+label should correct the past week. So a past week's share can move on any run.
 
 Numerator and denominator both come from that file. The denominator is therefore not
 `merged_pull_requests`, and the two differ by up to four in a week. Sixteen pull requests that

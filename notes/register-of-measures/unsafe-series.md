@@ -9,8 +9,8 @@ one number in this tree that is actually gated on a direction. The dashed line i
 
 227, 243, 138, 121, 111, 93, 77, 77. Over the same period the absolute count of unsafe blocks
 outside `arch/` went from 171 to 704, while the density fell by two thirds. Both are true, and only
-the density is about soundness; the count is a system being built. That is why the gate holds a
-ratio.
+the density is about soundness; the count is a system under construction. That is why the gate holds
+a ratio.
 
 The one rise is 2026W29 to 2026W30, the shape of an early kernel: the tree was 7,500 lines and one
 driver moved the number.
@@ -129,7 +129,7 @@ candidate:
   unsafe".
 - 120, against the userspace density, the confined population. A ceiling matters less there, because
   a bug there is a bug in one program, not in the base.
-- 77, the status quo, which answers neither question precisely because it is built from both.
+- 77, the status quo, which answers neither question precisely because it draws on both.
 
 Recommendation: the kernel density is the one worth a ceiling of its own, because the mixed number's
 blind spot lives there. But a ceiling set on it starts cold, with no history of it moving
@@ -248,9 +248,9 @@ lint: a counted claim disagrees with the tree:
 
 ## BUGS
 
-- **`patches/std-nife/overlay/` is outside the unsafe census, and it is our code.** Thirty-seven
-  `unsafe {}` blocks in the `std` platform layer are counted by nothing here. There are two reasons,
-  and only the first is a decision. A ceiling asserts a direction, and that code implements `std`'s
+- **`patches/std-nife/overlay/` is outside the unsafe census, and it is our code.** Nothing here
+  counts thirty-seven `unsafe {}` blocks in the `std` platform layer. There are two reasons, and
+  only the first is a decision. A ceiling asserts a direction, and that code implements `std`'s
   internal interfaces. It cannot be restructured to hold fewer unsafe blocks without diverging
   further from the crate we track.
 - The second reason is worse and is not a decision at all. That code is compiled into `std` by the
@@ -259,17 +259,18 @@ lint: a counted claim disagrees with the tree:
   in the form the lint wants, and nothing has ever said so. That is a coverage hole in the lint
   policy rather than a gap in the register, and it wants a lane.
 
-- Unsafe density can be diluted by writing more safe code, and nothing stops that. The denominator is
+- Writing more safe code can dilute unsafe density, and nothing stops that. The denominator is
   non-blank lines after comments and string literals are stripped, so prose cannot move it, but a
   verbose safe refactor can. The counter-argument is that the effect is small at 80,000 lines, and
   that the alternative, a raw count, was measured and is worse. Watch the numerator, which
   `script/lint` prints beside the ratio for exactly this reason.
 
-- The unsafe derivation is a text scanner, not a parser. It blanks comments and literals with a regex
-  before matching keywords, which keeps fourteen `unsafe {}` written inside doc examples out of the
-  count. Block comments are matched non-greedily, and Rust's nest. The tree has no nested ones, and a
-  nested one could only make the count too high, which fails loud. The same caveat applies to
-  `script/lint`'s `# Safety`, dead-code and `#[path]` checks, which are built the same way.
+- The unsafe derivation is a text scanner, not a parser. It blanks comments and literals with a
+  regex before matching keywords, which keeps fourteen `unsafe {}` written inside doc examples out
+  of the count. The regex matches block comments non-greedily, and Rust's nest. The tree has no
+  nested ones, and a nested one could only make the count too high, which fails loud. The same
+  caveat applies to `script/lint`'s `# Safety`, dead-code and `#[path]` checks, which are built the
+  same way.
 
 - Nothing here measures the verification argument, and nothing can. Unsafe density says how much code
   is outside the compiler's guarantees. It says nothing about whether the invariants written in the

@@ -57,10 +57,10 @@ fact. That is the argument for the snapshot described in
 
 ### What `lane_wall_clock_hours` is, and what it conflates
 
-It is the sum, over every record stream, of the gap between consecutive responses. Any gap longer
-than thirty minutes is dropped. A stream is one session or one subagent lane, so parallel lanes add.
-Four lanes working for an hour is four hours here, and a week can exceed 168. It is an effort figure,
-not an elapsed one.
+It is the sum, over every record stream, of the gap between consecutive responses. `script/effort`
+drops any gap longer than thirty minutes. A stream is one session or one subagent lane, so parallel
+lanes add. Four lanes working for an hour is four hours here, and a week can exceed 168. It is an
+effort figure, not an elapsed one.
 
 It conflates queueing with work. A lane waiting on the merge queue, a gate or a rate limit looks the
 same here as one thinking. The thirty-minute cut is a judgment, not a measurement. A longer gap is a
@@ -81,9 +81,9 @@ purchases live in [`notes/project-metrics/ledger.md`](../project-metrics/ledger.
 to by hand and never regenerated.
 
 The blended rate moves with the mix, not only with prices. It runs from $0.30 to $0.78 per million
-tokens across the captured weeks, while no published price changed. This tree's work is split
-roughly half and half between `claude-opus-5` and `claude-sonnet-5` by token. A cache read also lists
-at a tenth of an input token, so a week that cached well reads cheap.
+tokens across the captured weeks, while no published price changed. This tree's work divides roughly
+half and half between `claude-opus-5` and `claude-sonnet-5` by token. A cache read also lists at a
+tenth of an input token, so a week that cached well reads cheap.
 
 $200 of real spend is outside this series, and that is not rounding. calef dates the subscription
 2026-07-12, a Sunday, which is 2026W28. The first commit is 2026-07-13 UTC and the series starts at
@@ -135,10 +135,10 @@ a week that fell well short would show up as news.
 
 Median was refused because of the instrument, not taste. `script/effort` survives a pruned
 transcript by merging every column as a maximum against an older machine-local snapshot. That works
-because a sum and a peak both only go up as more of a week is seen. A median does not combine that
-way. Two honest partial views of a week cannot produce its median without the per-request numbers
-underneath, and those are what gets discarded. Storing a median would mean keeping a per-request
-history, a much larger promise than this measurement has earned.
+because a sum and a peak both only go up as `script/effort` sees more of a week. A median does not
+combine that way. Two honest partial views of a week cannot produce its median without the
+per-request numbers underneath, and those are what gets discarded. Storing a median would mean
+keeping a per-request history, a much larger promise than this measurement has earned.
 
 So the mean is the series. It is arithmetic over columns the file already carries: input plus cache
 write plus cache read, over `requests`. That is why it is derived at write time rather than stored
@@ -186,14 +186,14 @@ These moved here from `notes/project-metrics.md`'s `BUGS` on 2026-09-24, when th
 arrives.
 
 - **The cost columns can stop updating and the charts will not say so.** They will simply stop
-  gaining weeks, and an absent week is drawn as absent, which is correct and is also exactly what a
-  dead capture looks like. `script/cadence-check` is the thing that speaks, and it speaks on
+  gaining weeks, and the charts draw an absent week as absent, which is correct and is also exactly
+  what a dead capture looks like. `script/cadence-check` is the thing that speaks, and it speaks on
   patagonia through `helpers/trunk-health.sh`, which inherits that watcher's own recorded gap: a
   machine asleep is a watcher not watching.
 - **`lane_tokens` counts this project's whole session, not its lanes.** Every response in a record
-  stream filed under the nife project directory is counted, including a maintainer answering a
-  question, a review, and this page being written. It is the cost of the project, not the cost of
-  the code, and the name is narrower than the thing.
+  stream filed under the nife project directory counts, including a maintainer answering a question,
+  a review, and this page being written. It is the cost of the project, not the cost of the code,
+  and the name is narrower than the thing.
 - **Machine effort cannot be attributed to a milestone**, so the chart's ratio is a weekly average
   over everything that happened rather than a per-milestone cost. The raw material for the join is on
   disk (every record carries a `gitBranch`, and a lane's branch is named for its milestone).

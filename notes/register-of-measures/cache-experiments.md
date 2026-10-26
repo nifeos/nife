@@ -70,11 +70,11 @@ What was missing was a path to running there. It is now three things:
 
 The procedure and its outcome table are in notes/footprint-perturbation.md.
 
-This paragraph was written on 2026-09-04, before that evening's run, and the radon run of
-2026-09-04 replaces it. The register's date column said "never on a board" rather than leaving it
-to a reader's inference. That is the register's own complaint about the cross-OS row, applied to
-itself. Nothing had been measured on silicon then. The board was powered off, and there was no bench session
-on the day the instrument was made runnable.
+This paragraph was written on 2026-09-04, before that evening's run, and the radon run of 2026-09-04
+replaces it. The register's date column said "never on a board" rather than leaving it to a reader's
+inference. That is the register's own complaint about the cross-OS row, applied to itself. Nothing
+had been measured on silicon then. The board was powered off, and there was no bench session on the
+day the instrument became runnable.
 
 ## E3's padding moved underneath it
 
