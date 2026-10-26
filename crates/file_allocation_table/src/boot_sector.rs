@@ -191,6 +191,17 @@ fn get32(sector: &[u8], at: usize) -> u32 {
     u32::from_le_bytes([sector[at], sector[at + 1], sector[at + 2], sector[at + 3]])
 }
 
+/// Whether the BPB's layout agrees with the type the cluster count gives: FAT32 has no 16-bit
+/// table size and no fixed root region, and FAT12 and FAT16 have both.
+fn layout_agrees(kind: FileAllocationTableType, table_sectors_16: u16, root_entries: u16) -> bool {
+    match kind {
+        FileAllocationTableType::Fat32 => table_sectors_16 == 0 && root_entries == 0,
+        FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 => {
+            table_sectors_16 != 0 && root_entries != 0
+        }
+    }
+}
+
 /// A reserved-region sector number from FAT32's BPB, or `None` when it names no sector the
 /// reserved region holds: 0 and `0xFFFF` mean "none", and a number at or past the region is
 /// ignored rather than followed.
@@ -264,16 +275,8 @@ impl BootSector {
         }
 
         let file_allocation_table_type = FileAllocationTableType::from_clusters(clusters);
-        let layout_is_32 = table_sectors_16 == 0 && root_entries == 0;
-        let layout_is_16 = table_sectors_16 != 0 && root_entries != 0;
-        match file_allocation_table_type {
-            FileAllocationTableType::Fat32 if !layout_is_32 => {
-                return Err(ParseError::LayoutContradictsClusterCount);
-            }
-            FileAllocationTableType::Fat12 | FileAllocationTableType::Fat16 if !layout_is_16 => {
-                return Err(ParseError::LayoutContradictsClusterCount);
-            }
-            _ => {}
+        if !layout_agrees(file_allocation_table_type, table_sectors_16, root_entries) {
+            return Err(ParseError::LayoutContradictsClusterCount);
         }
         if clusters > FAT32_MAX_CLUSTERS {
             return Err(ParseError::TooManyClusters);
