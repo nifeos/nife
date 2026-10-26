@@ -4,32 +4,32 @@
 
 ## Every crate, since the first commit
 
-Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
+Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by all time. Co-change counts a commit once per contract crate it touches, so a column does not sum to the page's weekly share.
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_contract` | 253 | 15 | 290 | 462 | 131 | 115 (88%) |
-| `grant_plan` | 206 | 349 | 281 | 1113 | 222 | 168 (76%) |
-| `installed_programs` | 77 | 59 | 77 | 94 | 37 | 31 (84%) |
+| `filesystem_contract` | 248 | 12 | 290 | 462 | 131 | 115 (88%) |
+| `grant_plan` | 196 | 290 | 281 | 1113 | 222 | 168 (76%) |
+| `installed_programs` | 74 | 41 | 77 | 94 | 37 | 31 (84%) |
 | `globally_unique_identifier_partition_table` | 72 | 3 | 100 | 281 | 49 | 37 (76%) |
-| `login_contract` | 22 | 66 | 30 | 91 | 44 | 42 (95%) |
-| `package_archive` | 19 | 38 | 19 | 129 | 30 | 22 (73%) |
-| `socket_contract` | 17 | 37 | 20 | 80 | 41 | 36 (88%) |
-| `hot_swap_contract` | 16 | 13 | 24 | 126 | 61 | 56 (92%) |
-| `line_editor` | 16 | 39 | 17 | 142 | 55 | 44 (80%) |
+| `login_contract` | 21 | 13 | 30 | 91 | 44 | 42 (95%) |
+| `package_archive` | 18 | 29 | 19 | 129 | 30 | 22 (73%) |
+| `hot_swap_contract` | 13 | 10 | 24 | 126 | 61 | 56 (92%) |
 | `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
-| `abi` | 11 | 67 | 41 | 183 | 126 | 116 (92%) |
-| `graphics_contract` | 10 | 2 | 19 | 33 | 36 | 35 (97%) |
-| `compositor` | 9 | 4 | 19 | 99 | 41 | 33 (80%) |
-| `credential_contract` | 8 | 5 | 36 | 70 | 42 | 35 (83%) |
+| `compositor` | 8 | 1 | 19 | 99 | 41 | 33 (80%) |
+| `graphics_contract` | 8 | 0 | 19 | 33 | 36 | 35 (97%) |
+| `abi` | 7 | 55 | 41 | 183 | 126 | 116 (92%) |
+| `credential_contract` | 6 | 3 | 36 | 70 | 42 | 35 (83%) |
 | `current_cpu_contract` | 6 | 6 | 6 | 19 | 22 | 10 (45%) |
-| `byte_sink_contract` | 5 | 10 | 7 | 48 | 33 | 32 (97%) |
-| `capability_manifest_note` | 4 | 56 | 4 | 78 | 32 | 22 (69%) |
-| `clock_contract` | 3 | 2 | 6 | 54 | 34 | 30 (88%) |
-| `entropy_contract` | 3 | 3 | 4 | 18 | 27 | 24 (89%) |
+| `socket_contract` | 5 | 22 | 20 | 80 | 41 | 36 (88%) |
+| `line_editor` | 5 | 24 | 17 | 142 | 55 | 44 (80%) |
+| `capability_manifest_note` | 4 | 38 | 4 | 78 | 32 | 22 (69%) |
 | `std_runtime_contract` | 3 | 11 | 3 | 28 | 21 | 19 (90%) |
 | `nifefs` | 2 | 0 | 9 | 41 | 48 | 35 (73%) |
 | `measured_boot` | 2 | 24 | 2 | 65 | 32 | 23 (72%) |
+| `byte_sink_contract` | 1 | 0 | 7 | 48 | 33 | 32 (97%) |
+| `clock_contract` | 1 | 0 | 6 | 54 | 34 | 30 (88%) |
+| `entropy_contract` | 1 | 1 | 4 | 18 | 27 | 24 (89%) |
 | `counter_frequency_contract` | 1 | 0 | 2 | 15 | 20 | 16 (80%) |
 | `environment_contract` | 1 | 0 | 2 | 44 | 15 | 13 (87%) |
 | `capability_plan` | 1 | 0 | 1 | 0 | 5 | 4 (80%) |
@@ -42,148 +42,31 @@ Sorted by breaking changes in the last four weeks (2026W40 to 2026W43), then by 
 | `allocation_cache` | 0 | 20 | 0 | 20 | 0 | 0 |
 | `boot_slot` | 0 | 4 | 0 | 52 | 17 | 12 (71%) |
 
-## What broke in 2026W43
+## What broke in 2026W44
 
-Read at `782b842e29bb` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `daee084218fe` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
-> - `capability_manifest_note`: changed `carry`
-> - `capability_plan`: crate renamed `component_plan -> capability_plan`
-> - `compositor`: changed `MAX_SURFACE_BYTES`
-> - `compositor`: changed `SCENE`
-> - `compositor`: changed `SCREEN_H`
-> - `compositor`: changed `SCREEN_PIXELS`
-> - `compositor`: changed `SCREEN_W`
-> - `current_cpu_contract`: changed `PAGE_BYTES`
-> - `current_cpu_contract`: changed `build_page`
-> - `current_cpu_contract`: changed `build_page_allowing`
-> - `filesystem_contract`: changed `grant::MAX_NAME`
-> - `filesystem_contract`: changed `grant::pack_name`
-> - `filesystem_contract`: changed `nameset::BYTES`
-> - `filesystem_contract`: changed `nameset::IS_DIR`
-> - `filesystem_contract`: changed `nameset::iter`
-> - `filesystem_contract`: changed `verb::TABLE`
-> - `globally_unique_identifier_partition_table`: changed `guid::Uuid`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::APPLE_APFS`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::APPLE_HFS_PLUS`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::EFI_SYSTEM`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::LINUX_FILESYSTEM`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::MICROSOFT_BASIC_DATA`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::NIFE_BOOT`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::NIFE_DATA`
-> - `globally_unique_identifier_partition_table`: changed `guid::types::UNUSED`
-> - `grant_plan`: changed `ImageRefusal`
-> - `grant_plan`: changed `MAX_FILE_NAME`
-> - `grant_plan`: changed `Manifest`
-> - `grant_plan`: changed `UNVOUCHED_MANIFEST`
-> - `grant_plan`: changed `expand::MAX_NAME`
-> - `grant_plan`: changed `image::ImageRefusal`
-> - `grant_plan`: changed `image::image_manifest`
-> - `grant_plan`: changed `image_manifest`
-> - `grant_plan`: changed `nav::MAX_NAME`
-> - `grant_plan`: changed `nav::Refused`
-> - `graphics_contract`: changed `HEIGHT`
-> - `graphics_contract`: changed `NO_MISMATCH`
-> - `graphics_contract`: changed `PIXELS`
-> - `graphics_contract`: changed `STRIDE`
-> - `graphics_contract`: changed `SURFACE_BYTES`
-> - `graphics_contract`: changed `SURFACE_PAGE_FRAMES`
-> - `graphics_contract`: changed `WIDTH`
-> - `hot_swap_contract`: changed `BACKEND`
-> - `hot_swap_contract`: changed `BROKER`
-> - `hot_swap_contract`: changed `CLIENT`
-> - `hot_swap_contract`: changed `CONSOLE`
-> - `hot_swap_contract`: changed `STATEFUL_BACKEND`
-> - `installed_programs`: removed `CURRENT`
-> - `installed_programs`: removed `CURRENT_STAGED`
-> - `installed_programs`: removed `DIRECTORY`
-> - `installed_programs`: removed `Entry`
-> - `installed_programs`: removed `Entry: impl Clone`
-> - `installed_programs`: removed `Entry: impl Copy`
-> - `installed_programs`: removed `Entry: impl Debug`
-> - `installed_programs`: removed `Entry: impl Eq`
-> - `installed_programs`: removed `Entry: impl PartialEq`
-> - `installed_programs`: removed `Entry: impl StructuralPartialEq`
-> - `installed_programs`: removed `Entry::digest`
-> - `installed_programs`: removed `Entry::manager`
-> - `installed_programs`: removed `Entry::package`
-> - `installed_programs`: removed `Entry::program`
-> - `installed_programs`: removed `Entry::version`
-> - `installed_programs`: removed `Error`
-> - `installed_programs`: removed `Error: impl Clone`
-> - `installed_programs`: removed `Error: impl Copy`
-> - `installed_programs`: removed `Error: impl Debug`
-> - `installed_programs`: removed `Error: impl Eq`
-> - `installed_programs`: removed `Error: impl From{"angle_bracketed":{"args":[{"type":{"resolved_path":{"args":null,"path":"Error"}}}],"constraints":[]}}`
-> - `installed_programs`: removed `Error: impl PartialEq`
-> - `installed_programs`: removed `Error: impl StructuralPartialEq`
-> - `installed_programs`: removed `Error::BadName`
-> - `installed_programs`: removed `Error::ImageName`
-> - `installed_programs`: removed `Error::Malformed`
-> - `installed_programs`: removed `Error::NotInstalled`
-> - `installed_programs`: removed `Error::SeveralVersions`
-> - `installed_programs`: removed `Error::Taken`
-> - `installed_programs`: removed `Error::TooSmall`
-> - `installed_programs`: removed `NO_MANAGER`
-> - `installed_programs`: removed `NO_VERSION`
-> - `installed_programs`: removed `OWNER`
-> - `installed_programs`: removed `PACKAGES`
-> - `installed_programs`: removed `Pointer`
-> - `installed_programs`: removed `Pointer: impl Clone`
-> - `installed_programs`: removed `Pointer: impl Copy`
-> - `installed_programs`: removed `Pointer: impl Debug`
-> - `installed_programs`: removed `Pointer: impl Eq`
-> - `installed_programs`: removed `Pointer: impl PartialEq`
-> - `installed_programs`: removed `Pointer: impl StructuralPartialEq`
-> - `installed_programs`: removed `Pointer::digest`
-> - `installed_programs`: removed `Pointer::program`
-> - `installed_programs`: removed `Refused`
-> - `installed_programs`: removed `Refused: impl Clone`
-> - `installed_programs`: removed `Refused: impl Copy`
-> - `installed_programs`: removed `Refused: impl Debug`
-> - `installed_programs`: removed `Refused: impl Eq`
-> - `installed_programs`: removed `Refused: impl From{"angle_bracketed":{"args":[{"type":{"resolved_path":{"args":null,"path":"Error"}}}],"constraints":[]}}`
-> - `installed_programs`: removed `Refused: impl PartialEq`
-> - `installed_programs`: removed `Refused: impl StructuralPartialEq`
-> - `installed_programs`: removed `Refused::error`
-> - `installed_programs`: removed `Refused::holder`
-> - `installed_programs`: removed `Refused::program`
-> - `installed_programs`: removed `defaults`
-> - `installed_programs`: removed `entries`
-> - `installed_programs`: removed `foreign_change`
-> - `installed_programs`: removed `format_current`
-> - `installed_programs`: removed `generation_name`
-> - `installed_programs`: removed `lookup`
-> - `installed_programs`: removed `lookup_digest`
-> - `installed_programs`: removed `lookup_version`
-> - `installed_programs`: removed `may_edit`
-> - `installed_programs`: removed `parse_current`
-> - `installed_programs`: removed `versions_of`
-> - `installed_programs`: removed `with_entries`
-> - `installed_programs`: removed `with_entry`
-> - `installed_programs`: removed `without_package`
-> - `line_editor`: changed `component::CONSOLE`
-> - `line_editor`: changed `component::DISPLAY`
-> - `std_runtime_contract`: changed `SLOTS`
+Nothing.
 
 ## Co-change per package
 
-Every package in `packages/`, 2026W29 to 2026W43, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one, since a home is sized by what changes together.
+Every package in `packages/`, 2026W29 to 2026W44, by the method of the contracts' co-change: a commit touching the package crosses when it also touches code outside it, and touches another when that code is another package's. The partner is the package most often in the same commit outside a mass change. A package that crosses rarely could take a home of its own; packages that keep naming each other share one, since a home is sized by what changes together.
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 1839 | 966 (53%) | 776 (42%) | 49% | `contracts` (295) |
-| `contracts` | 1031 | 692 (67%) | 633 (61%) | 62% | `kernel` (295) |
-| `host-tools` | 817 | 571 (70%) | 476 (58%) | 65% | `kernel` (233) |
-| `system-tests` | 459 | 253 (55%) | 245 (53%) | 50% | `kernel` (110) |
-| `init` | 405 | 342 (84%) | 336 (83%) | 80% | `contracts` (118) |
-| `fixtures` | 346 | 273 (79%) | 263 (76%) | 71% | `kernel` (73) |
-| `runtime` | 267 | 221 (83%) | 199 (75%) | 76% | `kernel` (62) |
+| `kernel` | 1861 | 982 (53%) | 789 (42%) | 49% | `contracts` (299) |
+| `contracts` | 1055 | 704 (67%) | 642 (61%) | 61% | `kernel` (299) |
+| `host-tools` | 820 | 573 (70%) | 478 (58%) | 65% | `kernel` (234) |
+| `system-tests` | 463 | 257 (56%) | 249 (54%) | 50% | `kernel` (111) |
+| `init` | 410 | 347 (85%) | 341 (83%) | 80% | `contracts` (118) |
+| `fixtures` | 351 | 276 (79%) | 266 (76%) | 70% | `kernel` (73) |
+| `runtime` | 270 | 223 (83%) | 201 (74%) | 76% | `kernel` (62) |
 | `boot` | 209 | 145 (69%) | 132 (63%) | 60% | `host-tools` (49) |
-| `display` | 195 | 130 (67%) | 122 (63%) | 57% | `kernel` (39) |
-| `drivers` | 181 | 135 (75%) | 124 (69%) | 65% | `kernel` (45) |
+| `display` | 201 | 135 (67%) | 126 (63%) | 58% | `kernel` (40) |
+| `drivers` | 194 | 144 (74%) | 133 (69%) | 64% | `kernel` (50) |
 | `swish` | 147 | 133 (90%) | 128 (87%) | 87% | `contracts` (61) |
-| `network` | 112 | 91 (81%) | 88 (79%) | 75% | `init` (28) |
-| `redoxfs` | 111 | 78 (70%) | 74 (67%) | 51% | `contracts` (15) |
+| `network` | 113 | 92 (81%) | 89 (79%) | 75% | `init` (28) |
+| `redoxfs` | 112 | 79 (71%) | 75 (67%) | 51% | `contracts` (15) |
 | `terminal` | 106 | 88 (83%) | 86 (81%) | 76% | `init` (31) |
 | `login` | 98 | 81 (83%) | 79 (81%) | 68% | `contracts` (17) |
 | `timetable` | 95 | 67 (71%) | 63 (66%) | 55% | `init` (15) |
@@ -191,15 +74,15 @@ Every package in `packages/`, 2026W29 to 2026W43, by the method of the contracts
 | `time` | 60 | 56 (93%) | 54 (90%) | 86% | `init` (10) |
 | `filesystem` | 43 | 38 (88%) | 37 (86%) | 78% | `contracts` (9) |
 | `core-tools` | 42 | 38 (90%) | 38 (90%) | 75% | `process-tools` (4) |
-| `jig` | 28 | 23 (82%) | 23 (82%) | 64% | `fixtures` (6) |
+| `jig` | 30 | 25 (83%) | 25 (83%) | 64% | `fixtures` (6) |
 | `c-library` | 26 | 16 (62%) | 12 (46%) | 50% | `system-tests` (3) |
 | `entropy` | 26 | 25 (96%) | 25 (96%) | 91% | `display` (7) |
 | `disk-tools` | 23 | 23 (100%) | 23 (100%) | 100% | `contracts` (2) |
-| `cryptography` | 20 | 18 (90%) | 16 (80%) | 87% | `fixtures` (8) |
+| `cryptography` | 22 | 20 (91%) | 18 (82%) | 87% | `fixtures` (8) |
 | `rmle` | 19 | 16 (84%) | 16 (84%) | 50% | `contracts` (2) |
-| `system_installer` | 15 | 15 (100%) | 15 (100%) | 100% | `init` (4) |
+| `system_installer` | 16 | 16 (100%) | 16 (100%) | 100% | `init` (4) |
 | `demos` | 13 | 12 (92%) | 12 (92%) | 50% | `fixtures` (1) |
-| `mdr` | 4 | 4 (100%) | 4 (100%) | 100% | `contracts` (2) |
+| `mdr` | 5 | 5 (100%) | 5 (100%) | 100% | `contracts` (2) |
 
 ## Co-change per release-track crate
 
@@ -207,11 +90,11 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
-| `e1000e` | 19 | 10 (53%) | 9 (47%) | 36% |
-| `designware_mobile_storage` | 28 | 15 (54%) | 13 (46%) | 46% |
-| `extensible_host_controller_interface` | 17 | 10 (59%) | 10 (59%) | 46% |
-| `designware_ethernet` | 13 | 8 (62%) | 7 (54%) | 50% |
-| `file_allocation_table` | 22 | 14 (64%) | 11 (50%) | 53% |
-| `jh7110_entropy` | 37 | 30 (81%) | 29 (78%) | 65% |
-| `jh7110_clock_and_reset` | 32 | 25 (78%) | 24 (75%) | 68% |
-| `non_volatile_memory_express` | 44 | 39 (89%) | 36 (82%) | 83% |
+| `e1000e` | 25 | 15 (60%) | 14 (56%) | 44% |
+| `extensible_host_controller_interface` | 21 | 13 (62%) | 13 (62%) | 47% |
+| `file_allocation_table` | 32 | 19 (59%) | 14 (44%) | 48% |
+| `designware_mobile_storage` | 33 | 19 (58%) | 17 (52%) | 48% |
+| `designware_ethernet` | 19 | 13 (68%) | 12 (63%) | 54% |
+| `jh7110_entropy` | 42 | 35 (83%) | 34 (81%) | 71% |
+| `jh7110_clock_and_reset` | 37 | 30 (81%) | 29 (78%) | 72% |
+| `non_volatile_memory_express` | 48 | 42 (88%) | 39 (81%) | 81% |

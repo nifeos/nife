@@ -22,47 +22,51 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">7.5</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">10</text>
-<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<rect class="seg c0" x="191.2" y="297.4" width="38.7" height="26.6"><title>2026W36, green: 1</title></rect>
-<rect class="seg c1" x="191.2" y="270.8" width="38.7" height="26.6"><title>2026W36, amber: 1</title></rect>
-<path class="seg c2" d="M191.2,270.8 V88.6 Q191.2,84.6 195.2,84.6 H225.8 Q229.8,84.6 229.8,88.6 V270.8 Z"><title>2026W36, no verdict: 7</title></path>
-<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<rect class="seg c0" x="132.6" y="297.4" width="38.7" height="26.6"><title>2026W36, green: 1</title></rect>
+<rect class="seg c1" x="132.6" y="270.8" width="38.7" height="26.6"><title>2026W36, amber: 1</title></rect>
+<path class="seg c2" d="M132.6,270.8 V88.6 Q132.6,84.6 136.6,84.6 H167.2 Q171.2,84.6 171.2,88.6 V270.8 Z"><title>2026W36, no verdict: 7</title></path>
+<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="151.9" y="79.6" font-size="10" text-anchor="middle">9</text>
+<rect class="seg c0" x="191.2" y="297.4" width="38.7" height="26.6"><title>2026W37, green: 1</title></rect>
+<rect class="seg c1" x="191.2" y="270.8" width="38.7" height="26.6"><title>2026W37, amber: 1</title></rect>
+<path class="seg c2" d="M191.2,270.8 V88.6 Q191.2,84.6 195.2,84.6 H225.8 Q229.8,84.6 229.8,88.6 V270.8 Z"><title>2026W37, no verdict: 7</title></path>
+<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W37</text>
 <text class="fg val" x="210.5" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="249.8" y="297.4" width="38.7" height="26.6"><title>2026W37, green: 1</title></rect>
-<rect class="seg c1" x="249.8" y="270.8" width="38.7" height="26.6"><title>2026W37, amber: 1</title></rect>
-<path class="seg c2" d="M249.8,270.8 V88.6 Q249.8,84.6 253.8,84.6 H284.4 Q288.4,84.6 288.4,88.6 V270.8 Z"><title>2026W37, no verdict: 7</title></path>
-<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<rect class="seg c0" x="249.8" y="297.4" width="38.7" height="26.6"><title>2026W38, green: 1</title></rect>
+<rect class="seg c1" x="249.8" y="244.2" width="38.7" height="53.2"><title>2026W38, amber: 2</title></rect>
+<path class="seg c2" d="M249.8,244.2 V88.6 Q249.8,84.6 253.8,84.6 H284.4 Q288.4,84.6 288.4,88.6 V244.2 Z"><title>2026W38, no verdict: 6</title></path>
+<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W38</text>
 <text class="fg val" x="269.1" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="308.4" y="297.4" width="38.7" height="26.6"><title>2026W38, green: 1</title></rect>
-<rect class="seg c1" x="308.4" y="244.2" width="38.7" height="53.2"><title>2026W38, amber: 2</title></rect>
-<path class="seg c2" d="M308.4,244.2 V88.6 Q308.4,84.6 312.4,84.6 H343.0 Q347.0,84.6 347.0,88.6 V244.2 Z"><title>2026W38, no verdict: 6</title></path>
-<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<rect class="seg c0" x="308.4" y="270.8" width="38.7" height="53.2"><title>2026W39, green: 2</title></rect>
+<rect class="seg c1" x="308.4" y="217.6" width="38.7" height="53.2"><title>2026W39, amber: 2</title></rect>
+<path class="seg c2" d="M308.4,217.6 V88.6 Q308.4,84.6 312.4,84.6 H343.0 Q347.0,84.6 347.0,88.6 V217.6 Z"><title>2026W39, no verdict: 5</title></path>
+<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W39</text>
 <text class="fg val" x="327.7" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="367.0" y="270.8" width="38.7" height="53.2"><title>2026W39, green: 2</title></rect>
-<rect class="seg c1" x="367.0" y="217.6" width="38.7" height="53.2"><title>2026W39, amber: 2</title></rect>
-<path class="seg c2" d="M367.0,217.6 V88.6 Q367.0,84.6 371.0,84.6 H401.6 Q405.6,84.6 405.6,88.6 V217.6 Z"><title>2026W39, no verdict: 5</title></path>
-<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<rect class="seg c0" x="367.0" y="270.8" width="38.7" height="53.2"><title>2026W40, green: 2</title></rect>
+<rect class="seg c1" x="367.0" y="137.8" width="38.7" height="133.0"><title>2026W40, amber: 5</title></rect>
+<path class="seg c2" d="M367.0,137.8 V88.6 Q367.0,84.6 371.0,84.6 H401.6 Q405.6,84.6 405.6,88.6 V137.8 Z"><title>2026W40, no verdict: 2</title></path>
+<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W40</text>
 <text class="fg val" x="386.3" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="425.6" y="270.8" width="38.7" height="53.2"><title>2026W40, green: 2</title></rect>
-<rect class="seg c1" x="425.6" y="137.8" width="38.7" height="133.0"><title>2026W40, amber: 5</title></rect>
-<path class="seg c2" d="M425.6,137.8 V88.6 Q425.6,84.6 429.6,84.6 H460.2 Q464.2,84.6 464.2,88.6 V137.8 Z"><title>2026W40, no verdict: 2</title></path>
-<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<rect class="seg c0" x="425.6" y="270.8" width="38.7" height="53.2"><title>2026W41, green: 2</title></rect>
+<rect class="seg c1" x="425.6" y="137.8" width="38.7" height="133.0"><title>2026W41, amber: 5</title></rect>
+<path class="seg c2" d="M425.6,137.8 V88.6 Q425.6,84.6 429.6,84.6 H460.2 Q464.2,84.6 464.2,88.6 V137.8 Z"><title>2026W41, no verdict: 2</title></path>
+<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W41</text>
 <text class="fg val" x="444.9" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="484.2" y="270.8" width="38.7" height="53.2"><title>2026W41, green: 2</title></rect>
-<rect class="seg c1" x="484.2" y="137.8" width="38.7" height="133.0"><title>2026W41, amber: 5</title></rect>
-<path class="seg c2" d="M484.2,137.8 V88.6 Q484.2,84.6 488.2,84.6 H518.8 Q522.8,84.6 522.8,88.6 V137.8 Z"><title>2026W41, no verdict: 2</title></path>
-<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<rect class="seg c0" x="484.2" y="244.2" width="38.7" height="79.8"><title>2026W42, green: 3</title></rect>
+<rect class="seg c1" x="484.2" y="137.8" width="38.7" height="106.4"><title>2026W42, amber: 4</title></rect>
+<path class="seg c2" d="M484.2,137.8 V88.6 Q484.2,84.6 488.2,84.6 H518.8 Q522.8,84.6 522.8,88.6 V137.8 Z"><title>2026W42, no verdict: 2</title></path>
+<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="503.5" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="542.8" y="244.2" width="38.7" height="79.8"><title>2026W42, green: 3</title></rect>
-<rect class="seg c1" x="542.8" y="137.8" width="38.7" height="106.4"><title>2026W42, amber: 4</title></rect>
-<path class="seg c2" d="M542.8,137.8 V88.6 Q542.8,84.6 546.8,84.6 H577.4 Q581.4,84.6 581.4,88.6 V137.8 Z"><title>2026W42, no verdict: 2</title></path>
-<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<rect class="seg c0" x="542.8" y="244.2" width="38.7" height="79.8"><title>2026W43, green: 3</title></rect>
+<rect class="seg c1" x="542.8" y="137.8" width="38.7" height="106.4"><title>2026W43, amber: 4</title></rect>
+<path class="seg c2" d="M542.8,137.8 V88.6 Q542.8,84.6 546.8,84.6 H577.4 Q581.4,84.6 581.4,88.6 V137.8 Z"><title>2026W43, no verdict: 2</title></path>
+<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <text class="fg val" x="562.1" y="79.6" font-size="10" text-anchor="middle">9</text>
-<rect class="seg c0" x="601.4" y="244.2" width="38.7" height="79.8"><title>2026W43, green: 3</title></rect>
-<rect class="seg c1" x="601.4" y="137.8" width="38.7" height="106.4"><title>2026W43, amber: 4</title></rect>
-<path class="seg c2" d="M601.4,137.8 V88.6 Q601.4,84.6 605.4,84.6 H636.0 Q640.0,84.6 640.0,88.6 V137.8 Z"><title>2026W43, no verdict: 2</title></path>
-<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<rect class="seg c0" x="601.4" y="244.2" width="38.7" height="79.8"><title>2026W44, green: 3</title></rect>
+<rect class="seg c1" x="601.4" y="137.8" width="38.7" height="106.4"><title>2026W44, amber: 4</title></rect>
+<path class="seg c2" d="M601.4,137.8 V88.6 Q601.4,84.6 605.4,84.6 H636.0 Q640.0,84.6 640.0,88.6 V137.8 Z"><title>2026W44, no verdict: 2</title></path>
+<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <text class="fg val" x="620.7" y="79.6" font-size="10" text-anchor="middle">9</text>
 <rect class="c2" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">no verdict</tspan></text>
