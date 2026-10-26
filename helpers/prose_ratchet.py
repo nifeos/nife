@@ -7,9 +7,9 @@ checked it: a lane moved facts into notes already over the cap and each note gre
     python3 helpers/prose_ratchet.py --check          # what script/lint runs
     python3 helpers/prose_ratchet.py --report PATH..  # one document's measures, and why
     python3 helpers/prose_ratchet.py --bank           # lower the baseline to the tree; never raises
-    python3 helpers/prose_ratchet.py --initialize           # write the baseline from scratch (milestone 586 only)
+    python3 helpers/prose_ratchet.py --init           # write the baseline from scratch (milestone 586 only)
     python3 helpers/prose_ratchet.py --remeasure      # once, in the change that bumps MEASURE (see there)
-    python3 helpers/prose_ratchet.py --initialize-passive   # write the passive baseline (milestone 952 only)
+    python3 helpers/prose_ratchet.py --init-passive   # write the passive baseline (milestone 952 only)
     python3 helpers/prose_ratchet.py --remeasure-passive  # once, with a PASSIVE_MEASURE bump
 
 Name: provisional, minted by milestone 586's lane on 2026-09-24. A shared python module under
@@ -38,7 +38,7 @@ because §212's rule is "may not grow", not "may not exceed a number written dow
 A."). `helpers/passive_voice.py` counts passives over the prose the sentence limits read (blocks,
 quotes out, inline code one word). A document of at least 200 prose words over 2 per 1,000 fails,
 unless `design/passive-baseline.tsv` holds a row for it, and then its count may not rise above the
-row nor above its count at the merge base. That file is its own: `--initialize-passive` wrote it once,
+row nor above its count at the merge base. That file is its own: `--init-passive` wrote it once,
 `--bank` lowers it, and nothing raises it. No touch rule applies, unlike bold: ruling A holds an
 existing document to a count that only falls, and a document gains no allowance by being edited.
 
@@ -1017,7 +1017,7 @@ PASSIVE_FAMILY = 'writing-standards'
 PASSIVE_HEADER = """\
 # The passive-voice baseline: milestone 952 (a passive-voice ratchet in lint), for rule 6 of §213
 # (writing standards): at most 2 passive constructions per 1,000 prose words.
-# One row per document over that limit when `python3 helpers/prose_ratchet.py --initialize-passive`
+# One row per document over that limit when `python3 helpers/prose_ratchet.py --init-passive`
 # wrote this file. A count is a ceiling that only goes DOWN: `--bank` lowers it and drops a row
 # whose document has reached the limit. A row may be removed; a row may not be added and a count
 # may not rise (script/lint compares against the merge base). A document under 200 prose words is
@@ -1087,7 +1087,7 @@ def passive_baseline_problems(base, renames):
         return []
     old_text = at(base, PASSIVE_BASELINE)
     if old_text is None:
-        return []  # the change that writes the file once (`--initialize-passive`)
+        return []  # the change that writes the file once (`--init-passive`)
     now_text = open(PASSIVE_BASELINE).read()
     if baseline_measure(old_text) < PASSIVE_MEASURE == baseline_measure(now_text):
         return []  # a re-measurement, once, with the counter change that moved it
@@ -1673,14 +1673,17 @@ def main(argv):
         moved = remeasure()
         print(f'prose ratchet: re-measured {len(moved)} rows under measure {MEASURE}')
         return 0
-    if argv[0] in ('--bank', '--initialize', '--init'):
-        rows = bank(initialize=argv[0] in ('--initialize', '--init'))
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
+    if argv[0] in ('--bank', '--init'):
+        rows = bank(initialize=argv[0] == '--init')
         print(f'prose ratchet: {len(rows)} rows written to {BASELINE}')
         if argv[0] == '--bank' and os.path.exists(PASSIVE_BASELINE):
             rows = bank_passive()
             print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
         return 0
-    if argv[0] in ('--initialize-passive', '--init-passive'):
+    if argv[0] == '--init-passive':
         # Once, by milestone 952. A second run would reset every ceiling to today's count, which
         # is the raise the baseline exists to refuse.
         if os.path.exists(PASSIVE_BASELINE):

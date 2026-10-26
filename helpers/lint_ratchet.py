@@ -11,7 +11,7 @@ ratchet's.
     python3 helpers/lint_ratchet.py --check DIR          # judge clippy's JSON under DIR; what script/lint runs
     python3 helpers/lint_ratchet.py --bank               # lower rows to the tree; never raises or adds
     python3 helpers/lint_ratchet.py --selftest           # the rules, as fixtures
-    python3 helpers/lint_ratchet.py --initialize               # write the baseline from scratch (milestone 888 only)
+    python3 helpers/lint_ratchet.py --init               # write the baseline from scratch (milestone 888 only)
 
 Name: provisional, minted by milestone 888's lane on 2026-10-11 (UTC). A shared module under
 `helpers/`, which `script/names` puts out of its own scope, so its provenance is this paragraph.
@@ -435,7 +435,7 @@ def run_check(directory):
 
 def bank(initialize=False):
     if initialize and os.path.exists(BASELINE):
-        print(f'lint ratchet: {BASELINE} already exists; --initialize wrote it once, in milestone 888, '
+        print(f'lint ratchet: {BASELINE} already exists; --init wrote it once, in milestone 888, '
               f'and --bank is the verb that never raises', file=sys.stderr)
         return 2
     if not initialize and not os.path.exists(BASELINE):
@@ -601,8 +601,11 @@ def main(argv):
         return 0
     if argv[:1] == ['--check'] and len(argv) == 2:
         return run_check(argv[1])
-    if argv[:1] in (['--bank'], ['--initialize'], ['--init']):
-        return bank(initialize=argv[0] in ('--initialize', '--init'))
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
+    if argv[:1] in (['--bank'], ['--init']):
+        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 

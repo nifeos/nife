@@ -13,7 +13,7 @@ comparison against the merge base, and a selftest that runs before the check.
     python3 helpers/comment_block_ratchet.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/comment_block_ratchet.py --step kernel/ 10  # lower a directory's cap a step, listing what it reaches
     python3 helpers/comment_block_ratchet.py --selftest       # the rules, as fixtures
-    python3 helpers/comment_block_ratchet.py --initialize           # write the baseline from scratch (milestone 860 only)
+    python3 helpers/comment_block_ratchet.py --init           # write the baseline from scratch (milestone 860 only)
 
 Name: provisional, minted by milestone 860's lane on 2026-10-09 (UTC). A shared python module
 under `helpers/`, which `script/names` puts out of its own scope, so its provenance is this
@@ -890,7 +890,7 @@ def bank(initialize=False, step=None):
     or adding. `--step DIR CAP` is a bank that also lowers DIR's cap, lists every block over the
     new cap at its size, and starts DIR's in-body ceiling at its count if it has none."""
     if initialize and os.path.exists(BASELINE):
-        print(f'comment-block ratchet: {BASELINE} already exists. --initialize wrote it once, in '
+        print(f'comment-block ratchet: {BASELINE} already exists. --init wrote it once, in '
               f'milestone 860; it is refused now, and --bank is the verb that never raises',
               file=sys.stderr)
         return 2
@@ -1202,8 +1202,11 @@ def main(argv):
         return selftest()
     if not argv or argv[0] == '--check':
         return run_check()
-    if argv[0] in ('--bank', '--initialize', '--init'):
-        return bank(initialize=argv[0] in ('--initialize', '--init'))
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
+    if argv[0] in ('--bank', '--init'):
+        return bank(initialize=argv[0] == '--init')
     if argv[0] == '--step' and len(argv) == 3 and argv[2].isdigit():
         return bank(step=(argv[1], int(argv[2])))
     print(__doc__.split('\n\n')[1], file=sys.stderr)

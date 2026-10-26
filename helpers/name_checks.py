@@ -626,10 +626,11 @@ def main(argv):
         _selftest()
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
-    if mode == "--init":  # the old spelling stays as a hidden alias
-        mode = "--initialize"
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
-    if mode not in ("--list", "--check", "--bank", "--initialize"):
+    if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])
     records, unblocked, manifests, sources = load(root)
     reach = name_crossings.Reach(manifests, sources)
@@ -639,9 +640,9 @@ def main(argv):
     rows = survey(cands, sources, manifests, british, reach)
     if mode == "--check":
         return run_check(root, rows_of(rows), {f"{c[2]}::{c[1]}" for c in cands})
-    if mode in ("--bank", "--initialize"):
+    if mode in ("--bank", "--init"):
         path = os.path.join(root, BASELINE)
-        if mode == "--initialize" and os.path.exists(path):
+        if mode == "--init" and os.path.exists(path):
             sys.exit(f"name_checks: {BASELINE} exists; --bank lowers it")
         now = rows_of(rows)
         if mode == "--bank":

@@ -12,7 +12,7 @@ base, and a selftest that runs before the check.
     python3 helpers/parent_index.py --list           # every parent, and each item it holds
     python3 helpers/parent_index.py --bank           # lower the baseline to the tree; never raises
     python3 helpers/parent_index.py --selftest       # the rules, as fixtures
-    python3 helpers/parent_index.py --initialize           # write the baseline anew (§282's lane only)
+    python3 helpers/parent_index.py --init           # write the baseline anew (§282's lane only)
 
 Name: provisional, minted 2026-10-11 by lane/split-parent-is-an-index, as is the baseline's,
 `design/parent-index-baseline.tsv`, and the mark's wording. A shared python module under
@@ -643,7 +643,7 @@ def run_list():
 
 def bank(initialize=False):
     if initialize and os.path.exists(BASELINE):
-        print(f'parent-index check: {BASELINE} already exists. --initialize wrote it once, for §282; it '
+        print(f'parent-index check: {BASELINE} already exists. --init wrote it once, for §282; it '
               f'is refused now, and --bank is the verb that never raises', file=sys.stderr)
         return 2
     if not initialize and not os.path.exists(BASELINE):
@@ -833,8 +833,11 @@ def main(argv):
         return run_check()
     if argv[0] == '--list':
         return run_list()
-    if argv[0] in ('--bank', '--initialize', '--init'):
-        return bank(initialize=argv[0] in ('--initialize', '--init'))
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
+    if argv[0] in ('--bank', '--init'):
+        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 
