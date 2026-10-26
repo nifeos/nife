@@ -80,7 +80,7 @@ pub mod rank {
     /// and releases before printing.
     pub(crate) const ISA: u32 = 12;
 
-    /// The `x86_64` ACPI walk, written once by `memory::init`. A leaf above the console.
+    /// The `x86_64` ACPI walk, written once by `memory::initialize`. A leaf above the console.
     #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))] // ACPI is x86_64's description
     pub(crate) const ACPI: u32 = 13;
 

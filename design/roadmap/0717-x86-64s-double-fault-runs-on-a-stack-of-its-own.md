@@ -32,8 +32,8 @@ The double-fault safety net is documented, selected by the IDT, and never instal
 So a double fault today loads `rsp` from `TSS.ist[0] == 0`. The CPU cannot push its frame there,
 and the result is a triple fault. The runner passes `-no-reboot` (`helpers/qemu-runner-x86_64.sh:289`),
 so under QEMU that is a silent exit with no report; on a real machine it is a reboot. The comment on
-`exceptions::init` (`exceptions.rs:388` to `392`) states the intent exactly: a handler pushing onto
-the same broken stack "triple-faults". The code does not deliver it.
+`exceptions::initialize` (`exceptions.rs:388` to `392`) states the intent exactly: a handler pushing
+onto the same broken stack "triple-faults". The code does not deliver it.
 
 The commonest trigger is the one the IST exists for: a kernel stack overflow whose exception frame
 push lands in the guard page (the 48-byte frame needs room the stack no longer has).
@@ -60,7 +60,7 @@ Both ports eventually print. x86_64 resets. That is the parity gap this closes (
    below it. It must not be the interrupt stack (`interrupt_stack.rs`): `set_interrupt_stack`'s
    Safety contract (`segments.rs:295` to `297`) forbids two vectors sharing an IST stack, and a
    double fault taken while the interrupt-stack handler runs is exactly that case.
-2. Call `set_interrupt_stack(IST_DOUBLE_FAULT, top)` on every core, after `segments::init` has
+2. Call `set_interrupt_stack(IST_DOUBLE_FAULT, top)` on every core, after `segments::initialize` has
    loaded that core's TSS (`set_interrupt_stack` indexes by `cpu::id()`).
 3. Give vector 8 its own body that prints a fault report from that stack and halts. It prints the
    frame (`rip`, `rsp`, `cs`, `ss`, `rflags`; the error code is architecturally zero) and does not

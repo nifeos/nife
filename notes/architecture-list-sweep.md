@@ -185,11 +185,11 @@ Two things the milestone is explicit about, because both were decided here.
 
 **Do not do it as one commit.** Widening an architecture list newly gates that architecture, and a
 gate that has never run against x86_64 may have real offenders. It already does:
-`script/stack-frame-check --arch x86_64` surfaced `kernel::arch::x86_64::iommu::init` at 12,504
-bytes against a 4,096-byte guard page, found by the lane on pull request #567 the same night. Ten
-widenings in one commit turns `main` red for a reason unrelated to whoever pushed and leaves nobody
-able to tell which one did it. Milestone 96's loader commit is the precedent: separateness is the
-argument.
+`script/stack-frame-check --arch x86_64` surfaced `kernel::arch::x86_64::iommu::initialize` at
+12,504 bytes against a 4,096-byte guard page, found by the lane on pull request #567 the same night.
+Ten widenings in one commit turns `main` red for a reason unrelated to whoever pushed and leaves
+nobody able to tell which one did it. The loader commit of milestone 96 (one init: the spawn
+service written twice) is the precedent: separateness is the argument.
 
 **Finding 10 was not scheduled, it was fixed.** `components/src/pgrep.rs`'s panic handler was a live
 defect rather than a coverage gap: on x86_64 neither arm compiled, control reached the spin loop,

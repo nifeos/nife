@@ -153,14 +153,14 @@ static DESCRIBED: AtomicUsize = AtomicUsize::new(0);
 
 /// **Read the machine's core list out of its device tree.**
 ///
-/// Called once, on the boot core, before [`bring_up_secondaries`] and before `mmu::init` replaces
-/// the coarse boot map the tree is reached through. Seats each described core at the slot its
-/// hardware id names and prints the roster; it starts nothing. See notes/smp.md.
+/// Called once, on the boot core, before [`bring_up_secondaries`] and before `mmu::initialize`
+/// replaces the coarse boot map the tree is reached through. Seats each described core at the slot
+/// its hardware id names and prints the roster; it starts nothing. See notes/smp.md.
 ///
 /// # Panics
 ///
-/// If the blob is unreadable. `memory::init` has already parsed the same pointer, so that is a
-/// kernel bug, not a machine to tolerate.
+/// If the blob is unreadable. `memory::initialize` has already parsed the same pointer, so that is
+/// a kernel bug, not a machine to tolerate.
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn read_cpu_list() {
     let dt = crate::device_tree().expect("device tree is unreadable");
@@ -227,7 +227,7 @@ pub(crate) fn read_cpu_list() {
 }
 
 /// **Read the machine's core list out of the ACPI MADT**: `x86_64`'s [`read_cpu_list`], the same
-/// step at the same point in `bring_up_machine`, reading the walk `memory::init` kept
+/// step at the same point in `bring_up_machine`, reading the walk `memory::initialize` kept
 /// (`arch::discovery`) rather than a device tree.
 #[cfg(target_arch = "x86_64")]
 pub(crate) fn read_cpu_list() {
@@ -415,19 +415,19 @@ pub(crate) fn bring_up_secondaries() {
 pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
     // 1. Per-CPU pointer first, ahead of anything that could take a lock (the lock path reads this
     //    core's held-rank out of its PerCpu block). See cpu.rs.
-    cpu::init_this_cpu(cpu_id);
+    cpu::initialize_this_cpu(cpu_id);
 
     // 2. This core's exception vectors. VBAR_EL1 is per-core, so a secondary that never sets it
     //    jumps to a garbage vector on its first fault or timer tick and dies silently (and, if it
     //    died holding a lock, hangs the others). Set it before anything can trap. The vector table
     //    lives in kernel .text, mapped in both the coarse boot map and the fine map, so this is
     //    valid on either side of the switch below.
-    arch::init();
+    arch::initialize();
 
     // 3. Adopt the kernel's fine map. The coarse boot map reaches only the first 2 GiB of the high
     //    half, not the thread-stack area 64 GiB up, so without this the core could not run a spawned
-    //    thread. See arch::mmu::init_secondary.
-    arch::mmu::init_secondary();
+    //    thread. See arch::mmu::initialize_secondary.
+    arch::mmu::initialize_secondary();
 
     // 4. Become a scheduler participant: adopt the context we are on as this core's idle thread,
     //    and reserve this core's run queue.
@@ -435,8 +435,8 @@ pub(crate) extern "C" fn secondary_main(cpu_id: usize) -> ! {
 
     // 5. This core's interrupt hardware: its GIC CPU interface, then its timer (the PPI is banked,
     //    so this arms THIS core's tick, which is this core's source of preemption).
-    crate::arch::irq::init_this_cpu();
-    arch::timer::init();
+    crate::arch::irq::initialize_this_cpu();
+    arch::timer::initialize();
 
     // 6. (tests only) Prove this core schedules from its OWN queue. `spawn_on`, not `spawn`:
     //    `spawn` places on the lighter of two sampled cores (DECISIONS §28), so the probes would

@@ -114,7 +114,7 @@ Milestone 3 read exactly two things: the `/memory` nodes (where RAM is) and the 
 | `/psci`, and `cpu@`'s `reg` / `status` / `enable-method` | SMP bring-up | milestone 100 |
 | `/cpus/timebase-frequency` | the RISC-V timer | milestone 100 |
 | `/chosen`'s initrd range | the loader | milestone 12 |
-| the console UART node: register shape (`reg-shift`, `reg-io-width`, `clock-frequency`, `compatible`), and its interrupt line (`interrupts`, the inheritable `interrupt-parent`, the parent's `#interrupt-cells`) | `console::configure_from_dtb` (riscv, the shape); `memory::init` via `machine_discovery::interrupt_id` (both ISAs, the line) | the VisionFive 2 prep and its boot-13 fix, 2026-08-14/15 |
+| the console UART node: register shape (`reg-shift`, `reg-io-width`, `clock-frequency`, `compatible`), and its interrupt line (`interrupts`, the inheritable `interrupt-parent`, the parent's `#interrupt-cells`) | `console::configure_from_dtb` (riscv, the shape); `memory::initialize` via `machine_discovery::interrupt_id` (both ISAs, the line) | the VisionFive 2 prep and its boot-13 fix, 2026-08-14/15 |
 
 The UART's *address* is still hardcoded, and that is correct, for a nice chicken-and-egg
 reason: the parser is the thing most likely to have a bug, and `println!` is how you would debug

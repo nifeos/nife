@@ -63,9 +63,9 @@ Inside the merge, each milestone on its own base: milestone 754 (the table grows
 +140, milestone 761 (capability lookup off the global lock) +23. Together +917. A per-function profile of 64
 iterations (a QEMU plugin counting each translation block, the run at 128 iterations minus the run
 at 64) put +82,560 of the difference in `memcpy`. 761 moved the table out of the `Thread` and into
-`init_capability_table`'s `ptr::write` of a constant. At -O0 that write is a call, so the constant
-is built into a temporary and then copied again: two copies of 2 KiB on every thread's birth, and
-754 doubled both.
+`initialize_capability_table`'s `ptr::write` of a constant. At -O0 that write is a call, so the
+constant is built into a temporary and then copied again: two copies of 2 KiB on every thread's
+birth, and 754 doubled both.
 
 ## What was fixed
 

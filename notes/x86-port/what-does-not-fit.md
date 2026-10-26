@@ -88,12 +88,13 @@ Both are naming decisions, so both were calef's. He ratified the renames: the ca
 ## The bug worth knowing about
 
 Loading a segment register in long mode destroys that segment's base MSR. `gs`'s base is where
-this kernel keeps its per-CPU pointer, so `segments::init`'s reload of the data selectors silently
-zeroed it, and the next `println!` dereferenced null through the console lock's per-CPU rank check.
+this kernel keeps its per-CPU pointer, so `segments::initialize`'s reload of the data selectors
+silently zeroed it, and the next `println!` dereferenced null through the console lock's per-CPU
+rank check.
 
 It presented as an instruction fetch from the middle of a static several frames away, with a
 register dump showing a perfectly correct GDT, TSS and IDT. Nothing about the symptom pointed at the
-cause. The fix saves and restores the base around the reload, inside `segments::init`, so the
+cause. The fix saves and restores the base around the reload, inside `segments::initialize`, so the
 ordering constraint stops existing rather than being documented for callers to remember.
 
 ## The SMP bug that was a counting bug (2026-09-19)

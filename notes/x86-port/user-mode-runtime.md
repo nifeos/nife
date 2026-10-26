@@ -57,12 +57,12 @@ counter by index, and fixed counter 2 (`CPU_CLK_UNHALTED.REF_TSC`) runs at the T
 looked when milestone 228 was minted. That is why its block first named only two architectures as
 fixable; a research lane reading the ISA for a *coarse* clock found it.
 
-`arch::init` now establishes it clear, per core, beside the GDT and the IDT, which is the same defect
-fix the other two architectures got. It cost nothing, as forecast. Nothing in this tree reads a
-performance counter from ring 3, and nothing under `arch/x86_64/` programs a perf MSR at all. So with
-the counters unprogrammed an open `PCE` would have exposed zeros or firmware's leftovers rather than
-anything useful. Had it broken something, that would have been the finding, because it would have
-meant this tree already depended on a counter it never granted itself.
+`arch::initialize` now establishes it clear, per core, beside the GDT and the IDT, which is the same
+defect fix the other two architectures got. It cost nothing, as forecast. Nothing in this tree reads
+a performance counter from ring 3, and nothing under `arch/x86_64/` programs a perf MSR at all. So
+with the counters unprogrammed an open `PCE` would have exposed zeros or firmware's leftovers rather
+than anything useful. Had it broken something, that would have been the finding, because it would
+have meant this tree already depended on a counter it never granted itself.
 
 It reads `CR4` back rather than trusting the reset value, which is the habit this whole milestone
 exists to install, and doing so paid immediately. A temporary probe on 2026-09-02 printed 0x20 on
@@ -91,9 +91,9 @@ x86 has".
 `cntfrq()` is RISC-V's gap, one architecture worse, and it is a constant with a `BUGS` section
 rather than a number with a comment. There is no architected TSC rate at all: `CPUID` leaf 0x15
 gives a ratio to a crystal that leaf 0x16 may not report, and neither leaf exists on every part. So
-the kernel does not read the rate, it measures it against the PIT (`timer::init_frequency`) and
-stores it in `TSC_HZ`. A ring-3 program cannot repeat that measurement, and should not be able to.
-The PIT is at ports 0x40..0x43, `IOPL` is 0 and the TSS's permission bitmap is empty, so an `in`
+the kernel does not read the rate, it measures it against the PIT (`timer::initialize_frequency`)
+and stores it in `TSC_HZ`. A ring-3 program cannot repeat that measurement, and should not be able
+to. The PIT is at ports 0x40..0x43, `IOPL` is 0 and the TSS's permission bitmap is empty, so an `in`
 from a process is a #GP. That is §121 not being decided yet rather than an oversight to route
 around. The constant returned is QEMU's 1 GHz, which the kernel measures as 1001 MHz. On milestone
 87's real Dell it will be the CPU's base frequency and this will be wrong with no way for a caller

@@ -2,7 +2,7 @@
 //!
 //! A device directory keyed by requester id holds each device's context, whose `iosatp` names an
 //! Sv39 domain the portable seam built. A command queue carries invalidations and a fault queue
-//! records blocked transactions. `init` installs an all-invalid directory (DECISIONS §20
+//! records blocked transactions. `initialize` installs an all-invalid directory (DECISIONS §20
 //! (IOMMU-backed DMA isolation)).
 //!
 //! See notes/iommu.md and notes/riscv-port/iommu.md.
@@ -193,7 +193,10 @@ fn queue_enable(base: u64, csr: u64, what: &str) {
 
 /// Bring the IOMMU up: queues live, an all-invalid device directory installed. From here every
 /// device faults until `attach` writes its context.
-pub fn init(base: u64) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize(base: u64) {
     let mut g = IOMMU.lock();
     assert!(g.is_none(), "IOMMU initialized twice");
 
@@ -323,7 +326,7 @@ fn cmd_push(s: &mut Iommu, dword0: u64, dword1: u64) {
 /// Context: takes the `IOMMU` lock.
 pub fn attach(rid: u32, root: u64, pscid: u16) {
     let mut g = IOMMU.lock();
-    let s = g.as_mut().expect("IOMMU attach before init");
+    let s = g.as_mut().expect("IOMMU attach before initialize");
     let offset = context_offset(rid, s.dc_bytes);
     let words = device_context(root, pscid);
 

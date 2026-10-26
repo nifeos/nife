@@ -57,7 +57,7 @@ is worth recording because the split is instructive.
 
 `script/stack-frame-check` is now a recorded gap, and is the best example in the tree of the
 conversion this note keeps asking for. The lane widened it to accept `--arch x86_64`, ran it, and
-found a real offender the first time: `kernel::arch::x86_64::iommu::init` at 12,504 bytes
+found a real offender the first time: `kernel::arch::x86_64::iommu::initialize` at 12,504 bytes
 against a 4,096-byte ceiling, from an `Iommu { ctx: [Option<u64>; 256], .. }`, which is the same
 "`[T; MAX]` local sized to a table maximum" shape that gate's own first `BUGS` entry describes. So
 x86_64 is reachable but deliberately out of the default set, with a `BUGS` entry saying so, saying

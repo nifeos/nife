@@ -45,8 +45,8 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 /// budget's first retypes, under every later carve, which is what those carves' last-in first-out
 /// return needs (`MemoryRegionHeap::commit_all`). A budget too small to cover it leaves what did
 /// map usable, and an allocation past it refuses its line with [`Say::HeapFull`](crate::Say::HeapFull).
-pub(super) fn heap_init() {
-    HEAP.init(
+pub(super) fn initialize_heap() {
+    HEAP.initialize(
         BUDGET,
         memory_region_heap::DEFAULT_BASE,
         swish::HEAP_MAX_BYTES,

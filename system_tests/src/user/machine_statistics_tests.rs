@@ -95,7 +95,7 @@ fn a_budget_without_enumerate_is_refused_and_an_unknown_record_is_refused_first(
 #[test_case]
 fn the_machine_statistics_page_is_published_and_its_counters_move() {
     let phys = crate::machine_statistics::page_phys();
-    assert_ne!(phys, 0, "sched::init did not publish the page");
+    assert_ne!(phys, 0, "sched::initialize did not publish the page");
     let va = crate::arch::mmu::phys_to_virt(phys);
     // SAFETY: the frame `publish` allocated and never frees, reached through the direct map.
     let before = unsafe { machine_statistics_contract::Snapshot::read(va) }

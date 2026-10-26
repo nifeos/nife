@@ -15,7 +15,7 @@ one). It is chosen like aarch64's base, so `VA = PA | KERNEL_VA_BASE` is exact a
 shares its physical address's page-table indices. Kernel thread stacks live 64 GiB up, far above
 the direct map, so a stack address never collides with a physical address's virtual name.
 
-`boot.s` turns paging on with a coarse boot table and jumps to the high half. `mmu::init` then
+`boot.s` turns paging on with a coarse boot table and jumps to the high half. `mmu::initialize` then
 builds the fine W^X tables and switches `satp` to them. The fine tables map the same kernel
 addresses to the same frames, so the next fetch after the `csrw satp` resolves identically.
 
@@ -78,7 +78,7 @@ types, since firmware turns `XTheadMae` on and plain Sv39's zeros there are unde
 cacheable, bufferable and shareable, devices strongly ordered and shareable. These are Linux's
 `_PAGE_PMA_THEAD` and `_PAGE_IO_THEAD`, the same values `paging::Sv39Mae` writes. Every other
 build keeps those bits zero, because there they are reserved and a set one is a page fault. Entry
-511 maps the device window, high alias only, so a console there can print before `mmu::init`.
+511 maps the device window, high alias only, so a console there can print before `mmu::initialize`.
 
 ## What the fine tables map
 

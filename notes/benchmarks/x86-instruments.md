@@ -19,7 +19,7 @@ Two different questions were being conflated, and they have different answers.
 - Does `icount()` (the instrument of milestone 78 (the load-sensitive assertions), `kernel/src/icount.rs`) work on `x86_64`? No, and
   this has not changed. Its claims compare an interrupt's arrival, and a re-armed deadline, against
   the deadline the kernel last wrote (`CNTV_CVAL_EL0` on aarch64, the SBI `DEADLINE` word on
-  riscv64). `kernel/src/arch/x86_64/timer.rs::init` arms the local APIC timer in periodic mode
+  riscv64). `kernel/src/arch/x86_64/timer.rs::initialize` arms the local APIC timer in periodic mode
   (`irq::arm_periodic_timer`, a fixed reload count the hardware reloads on its own). There is no
   deadline word to read back, so claims 1 and 4 have no x86_64 referent as designed. Building one
   would mean moving the shipping x86_64 tick source to one-shot/TSC-deadline mode. That is an
@@ -108,7 +108,7 @@ write. `ipc_rtt_el0` is a round trip between two processes, two per iteration.
 ### icount: byte-identical, by construction
 
 Same tree, two builds differing only in setting `CR4.PGE` after the fine map is installed (in
-`mmu::init` and `mmu::init_secondary`), `-icount shift=0,sleep=off`, one boot each:
+`mmu::initialize` and `mmu::initialize_secondary`), `-icount shift=0,sleep=off`, one boot each:
 
 | bench | iters | ticks, PGE off | ticks, PGE on |
 |---|---|---|---|

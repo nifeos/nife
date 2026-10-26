@@ -102,20 +102,21 @@ const PIC1_DATA: u16 = 0x21;
 const PIC2_COMMAND: u16 = 0xa0;
 const PIC2_DATA: u16 = 0xa1;
 
-/// Where this CPU's local APIC is, as a virtual address. Zero until [`init_local_apic`] runs.
+/// Where this CPU's local APIC is, as a virtual address. Zero until [`initialize_local_apic`] runs.
 ///
 /// A static rather than a parameter because every accessor below needs it and the alternative is
 /// threading it through the whole interrupt path. It is written once during single-threaded boot.
 ///
-/// **It is a direct-map address and stays valid across `mmu::init`'s `CR3` switch**, which is why
-/// this can be computed once. That is not free: `boot.s` installs the direct map at the same base
-/// the fine map uses precisely so that `phys_to_virt` never changes meaning (`arch/x86_64/mmu.rs`).
-/// What the fine map *does* change is the memory type, from the boot map's cacheable to device.
+/// **It is a direct-map address and stays valid across `mmu::initialize`'s `CR3` switch**, which is
+/// why this can be computed once. That is not free: `boot.s` installs the direct map at the same
+/// base the fine map uses precisely so that `phys_to_virt` never changes meaning
+/// (`arch/x86_64/mmu.rs`). What the fine map *does* change is the memory type, from the boot map's
+/// cacheable to device.
 static LOCAL_APIC: AtomicU64 = AtomicU64::new(0);
 
 /// The **physical** address the local APIC was found at, kept beside the virtual one so that
-/// `mmu::init` can map exactly that page device-typed rather than mapping the architectural default
-/// and hoping firmware left it there. Zero until [`init_local_apic`] runs.
+/// `mmu::initialize` can map exactly that page device-typed rather than mapping the architectural
+/// default and hoping firmware left it there. Zero until [`initialize_local_apic`] runs.
 static LOCAL_APIC_PHYS: AtomicU64 = AtomicU64::new(0);
 
 /// Where this machine's local APIC is, physically, or `None` if ACPI has not said yet.
@@ -177,8 +178,8 @@ fn mask_the_8259s() {
 ///
 /// # Safety
 /// `base` must be this machine's real local APIC address. The direct map covers it from `boot.s`
-/// on, and `mmu::init` re-maps that page device-typed rather than moving it.
-pub(crate) unsafe fn init_local_apic(base: u64) {
+/// on, and `mmu::initialize` re-maps that page device-typed rather than moving it.
+pub(crate) unsafe fn initialize_local_apic(base: u64) {
     mask_the_8259s();
 
     LOCAL_APIC_PHYS.store(base, Ordering::Relaxed);
@@ -213,8 +214,8 @@ pub(crate) fn local_apic_version() -> u8 {
     read(reg::VERSION) as u8
 }
 
-/// Is the local APIC up? False until [`init_local_apic`] has run, which is what the timer checks
-/// before trying to arm anything.
+/// Is the local APIC up? False until [`initialize_local_apic`] has run, which is what the timer
+/// checks before trying to arm anything.
 pub(crate) fn is_local_apic_ready() -> bool {
     LOCAL_APIC.load(Ordering::Relaxed) != 0
 }
@@ -287,8 +288,8 @@ mod io_reg {
 }
 
 /// Redirection entry bit 16: masked. Every entry powers on masked, which is why arming one is a
-/// deliberate act and why [`init_io_apic`] masking them all again is belt and braces rather than
-/// necessity.
+/// deliberate act and why [`initialize_io_apic`] masking them all again is belt and braces rather
+/// than necessity.
 const REDIR_MASKED: u32 = 1 << 16;
 /// Redirection entry bit 15: level triggered rather than edge triggered.
 const REDIR_LEVEL: u32 = 1 << 15;
@@ -320,8 +321,8 @@ pub const MSI_VECTOR_BASE: u8 = 0xc0;
 
 /// The most redirection entries this kernel will use: what fits between [`GSI_VECTOR_BASE`] and
 /// [`MSI_VECTOR_BASE`]. Real parts have 24 (the 82093AA, q35, the ICH-era chipsets) and the field
-/// could report 256. It bounds [`is_device_vector`] and [`init_io_apic`]'s mask loop, and keeps
-/// [`gsi_vector`]'s base plus index inside the band, the claim
+/// could report 256. It bounds [`is_device_vector`] and [`initialize_io_apic`]'s mask loop, and
+/// keeps [`gsi_vector`]'s base plus index inside the band, the claim
 /// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` checks.
 const MAX_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as u32;
 
@@ -373,10 +374,10 @@ pub(crate) fn is_msi_vector(vector: u64) -> bool {
     vector >= base && vector < base + MSI_NEXT.load(Ordering::Relaxed).min(MSI_VECTORS) as u64
 }
 
-/// Where this machine's IO APIC is, as a virtual address. Zero until [`init_io_apic`] runs. The
-/// same direct-map reasoning as [`LOCAL_APIC`].
+/// Where this machine's IO APIC is, as a virtual address. Zero until [`initialize_io_apic`] runs.
+/// The same direct-map reasoning as [`LOCAL_APIC`].
 static IO_APIC: AtomicU64 = AtomicU64::new(0);
-/// The **physical** address the IO APIC was found at, kept for `mmu::init` for the reason
+/// The **physical** address the IO APIC was found at, kept for `mmu::initialize` for the reason
 /// [`LOCAL_APIC_PHYS`] is.
 static IO_APIC_PHYS: AtomicU64 = AtomicU64::new(0);
 /// The first global system interrupt this IO APIC owns. Usually 0, and a machine with several
@@ -453,7 +454,7 @@ fn io_apic_read(index: u32) -> u32 {
 ///
 /// # Safety
 /// `base` must be this machine's real IO APIC address, and the direct map must cover it.
-pub(crate) unsafe fn init_io_apic(base: u64, gsi_base: u32) {
+pub(crate) unsafe fn initialize_io_apic(base: u64, gsi_base: u32) {
     IO_APIC_PHYS.store(base, Ordering::Relaxed);
     IO_APIC.store(phys_to_virt(base), Ordering::Relaxed);
     IO_APIC_GSI_BASE.store(gsi_base, Ordering::Relaxed);
@@ -469,8 +470,9 @@ pub(crate) unsafe fn init_io_apic(base: u64, gsi_base: u32) {
     }
 }
 
-/// Where this machine's IO APIC is, physically, or `None` if [`init_io_apic`] has not run. Read by
-/// `mmu::init` so the fine map covers the address the machine reported rather than the constant.
+/// Where this machine's IO APIC is, physically, or `None` if [`initialize_io_apic`] has not run.
+/// Read by `mmu::initialize` so the fine map covers the address the machine reported rather than
+/// the constant.
 pub(crate) fn io_apic_phys() -> Option<u64> {
     match IO_APIC_PHYS.load(Ordering::Relaxed) {
         0 => None,
@@ -490,7 +492,7 @@ pub(crate) fn io_apic_version() -> u8 {
     io_apic_read(io_reg::VERSION) as u8
 }
 
-/// How many redirection entries it has. Zero until [`init_io_apic`] has run.
+/// How many redirection entries it has. Zero until [`initialize_io_apic`] has run.
 pub(crate) fn io_apic_entries() -> u32 {
     IO_APIC_ENTRIES.load(Ordering::Relaxed)
 }
@@ -507,8 +509,8 @@ pub(crate) fn io_apic_entries() -> u32 {
 /// calef names public items; this lane proposes rather than renames.
 pub fn gsi_vector(gsi: u32) -> Option<u8> {
     let index = redirection_index(gsi)?;
-    // `init_io_apic` clamps the entry count to the band's width and `redirection_index` admits
-    // only an index below it, so this addition neither wraps nor truncates.
+    // `initialize_io_apic` clamps the entry count to the band's width and `redirection_index`
+    // admits only an index below it, so this addition neither wraps nor truncates.
     debug_assert!(
         index < MAX_REDIRECTION_ENTRIES,
         "redirection index {index} is outside the vector band the entry-count cap reserves"
@@ -626,18 +628,19 @@ pub(crate) fn isa_routing(irq: u32) -> IsaIrqRouting {
 /// `x86_64` join the shared boot path)): this architecture's half of the step riscv64 fills with its
 /// PLIC contexts, in the same window of `bring_up_machine`.
 ///
-/// It runs before `timer::init_frequency`, which calibrates the local APIC's own counter and panics
-/// if the APIC is not up, and before `mmu::init`, through the boot map that reaches the low 4 GiB.
-/// The fine map then maps the same page device-typed (`mmu::claims`, from the same MADT). The
-/// pointer argument is the arch contract's; this one reads the walk `memory::init` kept.
-pub(crate) fn init_contexts(boot_info_pointer: usize) {
+/// It runs before `timer::initialize_frequency`, which calibrates the local APIC's own counter and
+/// panics if the APIC is not up, and before `mmu::initialize`, through the boot map that reaches
+/// the low 4 GiB. The fine map then maps the same page device-typed (`mmu::claims`, from the same
+/// MADT). The pointer argument is the arch contract's; this one reads the walk `memory::initialize`
+/// kept.
+pub(crate) fn initialize_contexts(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
     let Some(apic) = super::discovery::local_apic_phys() else {
         crate::println!("  apic        : skipped, the MADT did not say where the local apic is");
         return;
     };
     // SAFETY: the address came from the machine's own ACPI MADT, and the boot map still covers it.
-    unsafe { init_local_apic(apic) };
+    unsafe { initialize_local_apic(apic) };
     crate::println!(
         "  apic        : local apic {apic:#x} up, id {}, version {:#x}, 8259s masked",
         local_apic_id(),
@@ -646,21 +649,25 @@ pub(crate) fn init_contexts(boot_info_pointer: usize) {
 }
 
 /// Bring up the interrupt controller: the IO APIC the MADT names, its legacy routing, and one
-/// device interrupt through it, before the shared `interrupts_init` arms the tick and unmasks.
+/// device interrupt through it, before the shared `initialize_interrupts` arms the tick and
+/// unmasks.
 ///
 /// The PIT's line proves an interrupt from outside the CPU arrives, and its IRQ 0 arrives as GSI 2,
 /// which tests the override table (notes/x86-port/traps.md). It is here because every build reaches
 /// it and the window it needs, the scheduler up and the tick not yet armed, exists only here.
 /// `cargo xtask uefi-boot` reads the `device irq` line it prints.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     let (io_apic, isa_irqs) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_irqs));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {
         crate::println!("  io apic     : skipped, the MADT did not describe one");
         return;
     };
     // SAFETY: the address and global-interrupt base came from the machine's own ACPI MADT, and
-    // `mmu::init` mapped that page device-typed (`mmu::claims`, from the same table).
-    unsafe { init_io_apic(io_addr as u64, gsi_base) };
+    // `mmu::initialize` mapped that page device-typed (`mmu::claims`, from the same table).
+    unsafe { initialize_io_apic(io_addr as u64, gsi_base) };
     record_isa_routing(&isa_irqs);
     let chip_id = io_apic_id();
     crate::println!(
@@ -679,11 +686,12 @@ pub fn init() {
 }
 
 /// Route the PIT through the IO APIC, take its interrupts for about 0.2 s with nothing else
-/// unmasked, and print the count. See [`init`] for why this device.
+/// unmasked, and print the count. See [`initialize`] for why this device.
 fn prove_a_device_line() {
     use super::{exceptions, interrupts, timer};
 
-    // Masked so the count is the PIT's alone; `timer::init` rewrites the LVT unmasked right after.
+    // Masked so the count is the PIT's alone; `timer::initialize` rewrites the LVT unmasked right
+    // after.
     mask_timer();
     let pit = isa_routing(timer::PIT_IRQ);
     let hz = timer::start_pit_ticking(timer::TICK_HZ);
@@ -717,9 +725,9 @@ fn prove_a_device_line() {
 static DEVICE_LINE_INTERRUPTS: AtomicU64 = AtomicU64::new(u64::MAX);
 
 /// **How many interrupts a device line delivered at bring-up**: the PIT's, routed through the IO
-/// APIC by [`init`]. `None` when no line was proved, which on this port means the MADT named no
-/// IO APIC. `self_test`'s `deviceirq` check reads it, because the window the proof needs (the
-/// scheduler up, the tick not yet armed) exists only inside `init`.
+/// APIC by [`initialize`]. `None` when no line was proved, which on this port means the MADT named
+/// no IO APIC. `self_test`'s `deviceirq` check reads it, because the window the proof needs (the
+/// scheduler up, the tick not yet armed) exists only inside `initialize`.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)
@@ -731,17 +739,18 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
     }
 }
 
-/// Bring up this CPU's local interrupt interface: a secondary's own [`init_local_apic`], at the
-/// physical address the boot core found in the MADT. Every core's local APIC answers at that one
-/// address (`IA32_APIC_BASE` resets alike on every core), so re-masking the 8259s and rewriting
+/// Bring up this CPU's local interrupt interface: a secondary's own [`initialize_local_apic`], at
+/// the physical address the boot core found in the MADT. Every core's local APIC answers at that
+/// one address (`IA32_APIC_BASE` resets alike on every core), so re-masking the 8259s and rewriting
 /// [`LOCAL_APIC`] with the same value are idempotent, not a race. A no-op with no local APIC, which
 /// `arch::can_start_secondaries()` rules out before any secondary starts.
-pub(crate) fn init_this_cpu() {
+pub(crate) fn initialize_this_cpu() {
     if let Some(apic) = local_apic_phys() {
         // SAFETY: the same physical address the boot core already validated (it is where
-        // `read_acpi` found the MADT's local APIC entry) and mapped device-typed in `mmu::init`'s
-        // fine map, which every core shares (x86 has one kernel root; see `mmu::init_secondary`).
-        unsafe { init_local_apic(apic) };
+        // `read_acpi` found the MADT's local APIC entry) and mapped device-typed in
+        // `mmu::initialize`'s fine map, which every core shares (x86 has one kernel root; see
+        // `mmu::initialize_secondary`).
+        unsafe { initialize_local_apic(apic) };
     }
 }
 
@@ -1000,8 +1009,8 @@ mod proofs {
     /// the other way.
     #[kani::proof]
     fn no_vector_belongs_to_two_bands() {
-        // What `init_io_apic` stores: the version register's entry field is eight bits, plus one,
-        // then clamped. Anything the hardware can say, put through the real expression.
+        // What `initialize_io_apic` stores: the version register's entry field is eight bits, plus
+        // one, then clamped. Anything the hardware can say, put through the real expression.
         let reported: u32 = kani::any();
         kani::assume(reported <= 0xff);
         let entries = (reported + 1).min(MAX_REDIRECTION_ENTRIES);

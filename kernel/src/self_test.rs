@@ -269,7 +269,7 @@ fn mapping(tally: &mut Tally) {
         );
         return;
     };
-    // One gigabyte above the direct map's last byte: past everything `mmu::init` claimed, and
+    // One gigabyte above the direct map's last byte: past everything `mmu::initialize` claimed, and
     // inside the kernel half on all three.
     let va = arch::mmu::phys_to_virt(ram_top + (1 << 30));
     let Some(frame) = memory::alloc() else {
@@ -908,8 +908,8 @@ fn blockdev(tally: &mut Tally) {
 ///
 /// Different from [`fn@timer`]'s claim, which is about an interrupt the CPU's own timer raises:
 /// this one comes from a device outside the CPU, through the controller's routing. `x86_64` proves
-/// the PIT's line through the IO APIC at bring-up (`arch::irq::init`, the only window where the
-/// scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
+/// the PIT's line through the IO APIC at bring-up (`arch::irq::initialize`, the only window where
+/// the scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
 /// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
 /// disk; there the line is proved by the input driver at the hand-over and by [`blockdev`].
 fn deviceirq(tally: &mut Tally) {

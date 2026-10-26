@@ -2,8 +2,8 @@
 //!
 //! The arch side of the portable `arch::irq` surface, so no caller names `drivers::gic`. It holds
 //! both GIC versions: a GICv2 is `drivers/gic.rs`; a GICv3 is `drivers/gicv3.rs` plus
-//! `gic_cpu_interface.rs`. [`init`] takes the version from the device tree and confirms it with
-//! the hardware before any configuration write. The RISC-V twin is the PLIC. See
+//! `gic_cpu_interface.rs`. [`initialize`] takes the version from the device tree and confirms it
+//! with the hardware before any configuration write. The RISC-V twin is the PLIC. See
 //! notes/aarch64-port.md, "Which GIC, and where its lines go".
 
 use core::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
@@ -13,7 +13,7 @@ use machine_discovery::gic::Gic;
 use super::gic_cpu_interface;
 use crate::drivers::{gic, gicv3};
 
-/// Which GIC this machine has: 0 before [`init`], then 2 or 3.
+/// Which GIC this machine has: 0 before [`initialize`], then 2 or 3.
 static VERSION: AtomicU8 = AtomicU8::new(0);
 
 /// The GICv3 driver keeps one redistributor per slot, and the slot is the logical core id, so the
@@ -164,20 +164,23 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
 }
 
 /// Bring the interrupt controller up on the boot core. Called once, from the shared
-/// `interrupts_init`.
+/// `initialize_interrupts`.
 ///
 /// The device tree names the GIC (`memory::gic_regions`), the hardware confirms it
 /// (`Gic::confirm`), and only then is the matching driver brought up.
 ///
 /// # Panics
 /// With no GIC in the tree, or with one the hardware contradicts.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     let found = crate::memory::gic_regions().expect("no interrupt controller in the DTB");
     let gicd = crate::arch::mmu::phys_to_virt(found.distributor().start);
     let second = found.second_region();
     let second_virt = crate::arch::mmu::phys_to_virt(second.start);
 
-    // `mmu::init` mapped both blocks as device memory at their device-tree length.
+    // `mmu::initialize` mapped both blocks as device memory at their device-tree length.
     let identification = match found {
         // SAFETY: a mapped block at least as large as a GICv2 CPU interface, per the tree.
         Gic::V2 { .. } => unsafe { gic::identification(second_virt) },
@@ -198,14 +201,14 @@ pub fn init() {
             VERSION.store(2, Ordering::Relaxed);
             // SAFETY: the tree named a GICv2 here, the hardware confirmed it, and both blocks are
             // mapped device memory that nothing else drives.
-            unsafe { gic::init(gicd, second_virt) };
+            unsafe { gic::initialize(gicd, second_virt) };
         }
         Gic::V3 { .. } => {
             VERSION.store(3, Ordering::Relaxed);
             // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the distributor
             // and the whole redistributor region are mapped device memory that nothing else drives.
-            unsafe { gicv3::init(gicd, second_virt, second.size) };
-            init_this_cpu();
+            unsafe { gicv3::initialize(gicd, second_virt, second.size) };
+            initialize_this_cpu();
         }
     }
 }
@@ -213,15 +216,15 @@ pub fn init() {
 /// Per-core interrupt-controller setup, run by each core as it comes online. On a GICv2 the CPU
 /// interface is banked MMIO; on a GICv3 the core finds and wakes its own redistributor, then turns on
 /// its system-register CPU interface. Either way every core enables its own.
-pub(crate) fn init_this_cpu() {
+pub(crate) fn initialize_this_cpu() {
     if is_v3() {
-        gicv3::init_this_cpu(
+        gicv3::initialize_this_cpu(
             crate::cpu::id(),
             gic_cpu_interface::redistributor_affinity(),
         );
-        gic_cpu_interface::init_this_cpu();
+        gic_cpu_interface::initialize_this_cpu();
     } else {
-        gic::init_this_cpu();
+        gic::initialize_this_cpu();
     }
 }
 
@@ -234,7 +237,7 @@ pub(crate) fn send_reschedule(target_cpu: usize) {
 
 /// **This machine's interrupt controller, for the machine description** (milestone 268).
 ///
-/// The version is the one the tree named and `init` confirmed. A GICv3 has no CPU interface
+/// The version is the one the tree named and `initialize` confirmed. A GICv3 has no CPU interface
 /// address to print: it is system registers.
 // The machine description and the boot self-test are the only callers, and both are
 // `#[cfg(not(any(test, feature = "bench")))]`: a test boot exits through semihosting and a bench
@@ -305,7 +308,7 @@ mod tests {
     }
 
     /// **The driver this boot runs is the one the device tree names**, so a runner that asked for
-    /// a GICv3 is not quietly measured on a GICv2 (or the reverse). `init` refuses a tree the
+    /// a GICv3 is not quietly measured on a GICv2 (or the reverse). `initialize` refuses a tree the
     /// hardware contradicts; this holds the dispatch byte to the tree, which nothing else checks.
     #[test_case]
     fn the_driven_gic_is_the_one_the_tree_names() {
