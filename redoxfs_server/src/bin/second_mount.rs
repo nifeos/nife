@@ -271,15 +271,15 @@ fn main() {
 
     // Build the fixture the way the host tool does: an empty filesystem plus the two files.
     let mut fs = FileSystem::create(BlockDisk(StaticImage), None, 0, 0).expect("mkfs");
-    fs.tx(|tx| {
-        let motd = tx
+    fs.tx(|transaction| {
+        let motd = transaction
             .create_node(TreePtr::root(), "motd", Node::MODE_FILE | 0o644, 0, 0)?
             .ptr();
-        tx.write_node(motd, 0, b"motd\n", 0, 0)?;
-        let scratch = tx
+        transaction.write_node(motd, 0, b"motd\n", 0, 0)?;
+        let scratch = transaction
             .create_node(TreePtr::root(), "scratch", Node::MODE_FILE | 0o644, 0, 0)?
             .ptr();
-        tx.write_node(scratch, 0, b"(placeholder)", 0, 0)?;
+        transaction.write_node(scratch, 0, b"(placeholder)", 0, 0)?;
         Ok(())
     })
     .expect("populate");
