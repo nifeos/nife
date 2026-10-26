@@ -891,7 +891,6 @@ crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT
 crates/designware_ethernet/src/management_data_input_output.rs::RDA_SHIFT
 crates/designware_ethernet/src/management_data_input_output.rs::command
 crates/designware_ethernet/src/management_data_input_output.rs::link_is_up
-crates/designware_ethernet/src/management_data_input_output.rs::phy_id
 crates/designware_ethernet/src/management_data_input_output.rs::restart_autonegotiation
 crates/designware_ethernet/src/motorcomm.rs
 crates/designware_ethernet/src/motorcomm.rs::Applied

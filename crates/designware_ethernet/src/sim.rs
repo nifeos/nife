@@ -172,16 +172,16 @@ impl Tails for TailRegs<'_> {
 }
 
 /// A YT8531 on the MDIO bus: clause 22 registers, the extended-register window, and a link.
-pub(crate) struct Phy {
+pub(crate) struct PhysicalLayerDevice {
     regs: [u16; 32],
     extended: BTreeMap<u16, u16>,
     link: Option<Link>,
 }
 
-impl Phy {
+impl PhysicalLayerDevice {
     /// A YT8531 strapped to 1.8 V I/O, with every bit this driver clears set, so a test sees
     /// each one cleared.
-    pub(crate) fn yt8531_at_1v8() -> Phy {
+    pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut regs = [0; 32];
         regs[management_data_input_output::PHYSID1 as usize] = (motorcomm::YT8531_ID >> 16) as u16;
         regs[management_data_input_output::PHYSID2 as usize] = motorcomm::YT8531_ID as u16;
@@ -200,7 +200,7 @@ impl Phy {
             motorcomm::EXT_CLOCK_GATING_RX_CLK_EN,
         );
         extended.insert(motorcomm::EXT_PAD_DRIVE, 0xffff);
-        Phy {
+        PhysicalLayerDevice {
             regs,
             extended,
             link: None,
@@ -224,8 +224,12 @@ impl Phy {
     }
 }
 
-impl ManagementDataInputOutput for Phy {
-    fn read(&mut self, _phy: u8, reg: u8) -> Result<u16, management_data_input_output::Error> {
+impl ManagementDataInputOutput for PhysicalLayerDevice {
+    fn read(
+        &mut self,
+        _physical_layer_device: u8,
+        reg: u8,
+    ) -> Result<u16, management_data_input_output::Error> {
         let reg = reg & 0x1f;
         Ok(match reg {
             motorcomm::EXT_DATA => self.extended(self.regs[motorcomm::EXT_ADDR as usize]),
@@ -257,7 +261,7 @@ impl ManagementDataInputOutput for Phy {
     }
     fn write(
         &mut self,
-        _phy: u8,
+        _physical_layer_device: u8,
         reg: u8,
         v: u16,
     ) -> Result<(), management_data_input_output::Error> {
@@ -282,7 +286,7 @@ pub(crate) struct NetworkInterfaceController {
     regs: BTreeMap<u32, u32>,
     mem: Memory,
     /// The PHY behind the MDIO pair.
-    pub phy: Phy,
+    pub physical_layer_device: PhysicalLayerDevice,
     reset_polls: u32,
     reset_left: Option<u32>,
     receive_clock: bool,
@@ -305,7 +309,7 @@ impl NetworkInterfaceController {
         let mut nic = NetworkInterfaceController {
             regs: BTreeMap::new(),
             mem,
-            phy: Phy::yt8531_at_1v8(),
+            physical_layer_device: PhysicalLayerDevice::yt8531_at_1v8(),
             reset_polls: 1,
             reset_left: None,
             receive_clock: true,
@@ -560,14 +564,20 @@ impl Hardware for NetworkInterfaceController {
                 self.reset_left = Some(self.reset_polls);
             }
             regs::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
-                let phy = ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
+                let physical_layer_device =
+                    ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
                 let reg = ((v >> management_data_input_output::RDA_SHIFT) & 0x1f) as u8;
                 if v & (0x3 << 2) == management_data_input_output::GOC_READ {
-                    let r = self.phy.read(phy, reg).unwrap();
+                    let r = self
+                        .physical_layer_device
+                        .read(physical_layer_device, reg)
+                        .unwrap();
                     self.regs.insert(regs::MAC_MDIO_DATA, u32::from(r));
                 } else {
                     let data = self.reg(regs::MAC_MDIO_DATA) as u16;
-                    self.phy.write(phy, reg, data).unwrap();
+                    self.physical_layer_device
+                        .write(physical_layer_device, reg, data)
+                        .unwrap();
                 }
                 self.regs.insert(off, v & !management_data_input_output::GB);
             }
@@ -591,9 +601,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn management_data_input_output_through_the_controller_reaches_the_phy() {
+    fn management_data_input_output_through_the_controller_reaches_the_physical_layer_device() {
         let mut nic = NetworkInterfaceController::new(0, Memory::coherent(0));
-        let id = management_data_input_output::phy_id(
+        let id = management_data_input_output::physical_layer_device_id(
             &mut management_data_input_output::Bus(&mut nic),
             0,
         )

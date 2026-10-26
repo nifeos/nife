@@ -36,3 +36,9 @@ refuses its old spelling, and the crate's `Name:` line for it names the ruling.
   name (`ReceiveVerdict`, `TransmitError`, `receive_verdict`, `RECEIVE_ENTRIES`, the `layout`
   offsets, the `Tails` methods, `DataPlane::receive_cursor`, `Settings`' fields). Register and bit
   names copied from a source (`CHAN_RX_CONTROL`, `TXFIFOSIZE`, `RX_CLK_EN`) keep their spelling.
+- Ruled 2026-10-26 (UTC), tree-wide: `phy`, the chip, spells out as `physical_layer_device`, IEEE
+  802.3's phrase, wherever this crate authors the name (`mainline_physical_layer_device`,
+  `vendor_physical_layer_device`, `VENDOR_PHYSICAL_LAYER_DEVICE_NODE`, `physical_layer_device_id`,
+  `Discovered`'s fields, the `Timeout` field and every parameter), with `doc(alias = "phy")`. The
+  docs keep "PHY". Register names (`PHYSID1`, `PHY_ID_YT8531`) and device-tree strings keep their
+  spelling.

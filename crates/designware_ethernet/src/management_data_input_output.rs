@@ -64,7 +64,7 @@ pub enum Error {
     /// command never started.
     Timeout {
         /// The PHY addressed.
-        phy: u8,
+        physical_layer_device: u8,
         /// The register addressed.
         reg: u8,
     },
@@ -73,9 +73,9 @@ pub enum Error {
 /// **An MDIO command word**: the clock range, the PHY and register addresses, the operation, and
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
 /// rather than spilling into the neighbors.
-pub const fn command(phy: u8, reg: u8, write: bool) -> u32 {
+pub const fn command(physical_layer_device: u8, reg: u8, write: bool) -> u32 {
     (CR_500_800 << CR_SHIFT)
-        | (((phy & 0x1f) as u32) << PA_SHIFT)
+        | (((physical_layer_device & 0x1f) as u32) << PA_SHIFT)
         | (((reg & 0x1f) as u32) << RDA_SHIFT)
         | if write { GOC_WRITE } else { GOC_READ }
         | GB
@@ -88,24 +88,27 @@ pub const fn command(phy: u8, reg: u8, write: bool) -> u32 {
 /// `Mdio`.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
-    /// Read register `reg` of the PHY at `phy`.
-    fn read(&mut self, phy: u8, reg: u8) -> Result<u16, Error>;
-    /// Write `v` to register `reg` of the PHY at `phy`.
-    fn write(&mut self, phy: u8, reg: u8, v: u16) -> Result<(), Error>;
+    /// Read register `reg` of the PHY at `physical_layer_device`.
+    fn read(&mut self, physical_layer_device: u8, reg: u8) -> Result<u16, Error>;
+    /// Write `v` to register `reg` of the PHY at `physical_layer_device`.
+    fn write(&mut self, physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error>;
 }
 
 /// The MAC's MDIO registers, through whatever [`Hardware`] reaches the controller.
 pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
 impl<H: Hardware> Bus<'_, H> {
-    fn wait(&mut self, phy: u8, reg: u8) -> Result<(), Error> {
+    fn wait(&mut self, physical_layer_device: u8, reg: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
             if self.0.read(regs::MAC_MDIO_ADDR) & GB == 0 {
                 return Ok(());
             }
             if waited >= COMMAND_LIMIT_US {
-                return Err(Error::Timeout { phy, reg });
+                return Err(Error::Timeout {
+                    physical_layer_device,
+                    reg,
+                });
             }
             self.0.delay_us(POLL_US);
             waited += POLL_US;
@@ -114,44 +117,64 @@ impl<H: Hardware> Bus<'_, H> {
 }
 
 impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
-    fn read(&mut self, phy: u8, reg: u8) -> Result<u16, Error> {
+    fn read(&mut self, physical_layer_device: u8, reg: u8) -> Result<u16, Error> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
-        self.wait(phy, reg)?;
-        self.0.write(regs::MAC_MDIO_ADDR, command(phy, reg, false));
-        self.wait(phy, reg)?;
+        self.wait(physical_layer_device, reg)?;
+        self.0.write(
+            regs::MAC_MDIO_ADDR,
+            command(physical_layer_device, reg, false),
+        );
+        self.wait(physical_layer_device, reg)?;
         Ok(self.0.read(regs::MAC_MDIO_DATA) as u16)
     }
 
-    fn write(&mut self, phy: u8, reg: u8, v: u16) -> Result<(), Error> {
-        self.wait(phy, reg)?;
+    fn write(&mut self, physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
+        self.wait(physical_layer_device, reg)?;
         self.0.write(regs::MAC_MDIO_DATA, u32::from(v));
-        self.0.write(regs::MAC_MDIO_ADDR, command(phy, reg, true));
-        self.wait(phy, reg)
+        self.0.write(
+            regs::MAC_MDIO_ADDR,
+            command(physical_layer_device, reg, true),
+        );
+        self.wait(physical_layer_device, reg)
     }
 }
 
 /// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included.
-pub fn phy_id(bus: &mut impl ManagementDataInputOutput, phy: u8) -> Result<u32, Error> {
-    let hi = bus.read(phy, PHYSID1)?;
-    let lo = bus.read(phy, PHYSID2)?;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
+/// `physical_layer_device`, replacing `phy_id`.
+#[doc(alias = "phy")]
+pub fn physical_layer_device_id(
+    bus: &mut impl ManagementDataInputOutput,
+    physical_layer_device: u8,
+) -> Result<u32, Error> {
+    let hi = bus.read(physical_layer_device, PHYSID1)?;
+    let lo = bus.read(physical_layer_device, PHYSID2)?;
     Ok(u32::from(hi) << 16 | u32::from(lo))
 }
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
 /// look does not read as down forever and a link that is up now reads as up.
-pub fn link_is_up(bus: &mut impl ManagementDataInputOutput, phy: u8) -> Result<bool, Error> {
-    let _ = bus.read(phy, BMSR)?;
-    Ok(bus.read(phy, BMSR)? & BMSR_LINK != 0)
+pub fn link_is_up(
+    bus: &mut impl ManagementDataInputOutput,
+    physical_layer_device: u8,
+) -> Result<bool, Error> {
+    let _ = bus.read(physical_layer_device, BMSR)?;
+    Ok(bus.read(physical_layer_device, BMSR)? & BMSR_LINK != 0)
 }
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
 /// on a gigabit part).
 pub fn restart_autonegotiation(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
 ) -> Result<(), Error> {
-    let bmcr = bus.read(phy, BMCR)?;
-    bus.write(phy, BMCR, bmcr | BMCR_ANENABLE | BMCR_ANRESTART)
+    let bmcr = bus.read(physical_layer_device, BMCR)?;
+    bus.write(
+        physical_layer_device,
+        BMCR,
+        bmcr | BMCR_ANENABLE | BMCR_ANRESTART,
+    )
 }
 
 #[cfg(test)]
@@ -274,7 +297,10 @@ mod tests {
         hardware.addr = GB;
         assert_eq!(
             Bus(&mut hardware).read(3, BMSR),
-            Err(Error::Timeout { phy: 3, reg: BMSR })
+            Err(Error::Timeout {
+                physical_layer_device: 3,
+                reg: BMSR
+            })
         );
         assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
         assert!(
@@ -285,7 +311,10 @@ mod tests {
         hardware.stuck = true;
         assert_eq!(
             Bus(&mut hardware).write(2, BMCR, 1),
-            Err(Error::Timeout { phy: 2, reg: BMCR })
+            Err(Error::Timeout {
+                physical_layer_device: 2,
+                reg: BMCR
+            })
         );
         assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
     }
@@ -298,7 +327,7 @@ mod tests {
     }
 
     impl ManagementDataInputOutput for Latched {
-        fn read(&mut self, _phy: u8, reg: u8) -> Result<u16, Error> {
+        fn read(&mut self, _physical_layer_device: u8, reg: u8) -> Result<u16, Error> {
             if reg == BMSR {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
@@ -306,7 +335,7 @@ mod tests {
             }
             Ok(self.regs[reg as usize])
         }
-        fn write(&mut self, _phy: u8, reg: u8, v: u16) -> Result<(), Error> {
+        fn write(&mut self, _physical_layer_device: u8, reg: u8, v: u16) -> Result<(), Error> {
             self.regs[reg as usize] = v;
             Ok(())
         }
@@ -314,39 +343,42 @@ mod tests {
 
     #[test]
     fn a_link_that_dropped_and_came_back_reads_up_on_the_second_read() {
-        let mut phy = Latched {
+        let mut physical_layer_device = Latched {
             regs: [0; 32],
             link_now: true,
             dropped_since_read: true,
         };
-        assert!(link_is_up(&mut phy, 0).unwrap());
-        phy.link_now = false;
-        assert!(!link_is_up(&mut phy, 0).unwrap());
+        assert!(link_is_up(&mut physical_layer_device, 0).unwrap());
+        physical_layer_device.link_now = false;
+        assert!(!link_is_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
     fn the_identifier_is_the_high_register_then_the_low() {
-        let mut phy = Latched {
+        let mut physical_layer_device = Latched {
             regs: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        phy.regs[PHYSID1 as usize] = 0x4f51;
-        phy.regs[PHYSID2 as usize] = 0xe91b;
-        assert_eq!(phy_id(&mut phy, 0), Ok(0x4f51_e91b));
+        physical_layer_device.regs[PHYSID1 as usize] = 0x4f51;
+        physical_layer_device.regs[PHYSID2 as usize] = 0xe91b;
+        assert_eq!(
+            physical_layer_device_id(&mut physical_layer_device, 0),
+            Ok(0x4f51_e91b)
+        );
     }
 
     #[test]
     fn restarting_autonegotiation_keeps_the_other_control_bits() {
-        let mut phy = Latched {
+        let mut physical_layer_device = Latched {
             regs: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        phy.regs[BMCR as usize] = 0x0100; // full duplex, set by someone else
-        restart_autonegotiation(&mut phy, 0).unwrap();
+        physical_layer_device.regs[BMCR as usize] = 0x0100; // full duplex, set by someone else
+        restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
         assert_eq!(
-            phy.regs[BMCR as usize],
+            physical_layer_device.regs[BMCR as usize],
             0x0100 | BMCR_ANENABLE | BMCR_ANRESTART
         );
     }
@@ -362,14 +394,14 @@ mod tests {
     /// than toggling them off.
     #[test]
     fn restarting_a_negotiation_already_running_keeps_it_running() {
-        let mut phy = Latched {
+        let mut physical_layer_device = Latched {
             regs: [0; 32],
             link_now: false,
             dropped_since_read: false,
         };
-        phy.regs[BMCR as usize] = 0x1300;
-        restart_autonegotiation(&mut phy, 0).unwrap();
-        assert_eq!(phy.regs[BMCR as usize], 0x1300);
+        physical_layer_device.regs[BMCR as usize] = 0x1300;
+        restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
+        assert_eq!(physical_layer_device.regs[BMCR as usize], 0x1300);
     }
 
     /// Clause 22's bits as IEEE 802.3 numbers them (22.2.4.1 and 22.2.4.2), written out: the

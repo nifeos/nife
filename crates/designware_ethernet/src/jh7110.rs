@@ -10,8 +10,9 @@
 //!
 //! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
 //! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
-//! [`mainline_phy`], or the node [`VENDOR_PHY_NODE`] for [`vendor_phy`]. The AON syscon is
-//! mainline's [`COMPATIBLE_AON_SYSTEM_CONTROLLER`] node or the vendor's node named
+//! [`mainline_physical_layer_device`], or the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`] for
+//! [`vendor_physical_layer_device`]. The AON syscon is mainline's
+//! [`COMPATIBLE_AON_SYSTEM_CONTROLLER`] node or the vendor's node named
 //! [`AON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that names
 //! neither.
 
@@ -129,9 +130,11 @@ pub struct Discovered {
     #[doc(alias = "rgmii")]
     pub reduced_gigabit_media_independent_interface: bool,
     /// The PHY's MDIO address: its node's `reg`, else its unit address, else 0.
-    pub phy_address: u8,
+    #[doc(alias = "phy")]
+    pub physical_layer_device_address: u8,
     /// The PHY's board settings, and which spelling they were read from.
-    pub phy: Settings,
+    #[doc(alias = "phy")]
+    pub physical_layer_device: Settings,
 }
 
 /// The default RGMII internal delay when a mainline-style node gives one delay and not the
@@ -142,9 +145,10 @@ const DEFAULT_DELAY_PS: u32 = 1950;
 /// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s PHY is
 /// `ethernet-phy@1`, so the first `ethernet-phy@0` is `gmac0`'s.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
-pub const VENDOR_PHY_NODE: &[u8] = b"ethernet-phy@0";
+/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
+/// `physical_layer_device`, replacing `VENDOR_PHY_NODE`.
+#[doc(alias = "phy")]
+pub const VENDOR_PHYSICAL_LAYER_DEVICE_NODE: &[u8] = b"ethernet-phy@0";
 
 /// The first cell of a property, big-endian, as every device-tree cell is: `interrupts`'s first
 /// interrupt, `phy-handle`'s phandle, a `reg`'s first word.
@@ -158,9 +162,10 @@ pub fn first_cell(value: &[u8]) -> Option<u32> {
 
 impl Discovered {
     /// **The port, from its node.** `base` and `size` are its `reg`, `compatible` the
-    /// [`COMPATIBLES`] entry it matched, `prop(name)` the port node's property `name`, and `phy`
-    /// what [`mainline_phy`] or [`vendor_phy`] read: mainline's when the node has a `phy-handle`,
-    /// the vendor's otherwise.
+    /// [`COMPATIBLES`] entry it matched, `prop(name)` the port node's property `name`, and
+    /// `physical_layer_device` what [`mainline_physical_layer_device`] or
+    /// [`vendor_physical_layer_device`] read: mainline's when the node has a `phy-handle`, the
+    /// vendor's otherwise.
     ///
     /// # Errors
     ///
@@ -173,7 +178,7 @@ impl Discovered {
         size: u64,
         compatible: &'static [u8],
         mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
-        phy: (u8, Settings),
+        physical_layer_device: (u8, Settings),
     ) -> Result<Self, E> {
         let status_okay =
             prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
@@ -182,7 +187,7 @@ impl Discovered {
             .and_then(|b| <[u8; 6]>::try_from(b).ok());
         let reduced_gigabit_media_independent_interface =
             prop(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
-        let (phy_address, phy) = phy;
+        let (physical_layer_device_address, physical_layer_device) = physical_layer_device;
         Ok(Discovered {
             base,
             size,
@@ -191,8 +196,8 @@ impl Discovered {
             status_okay,
             station_address,
             reduced_gigabit_media_independent_interface,
-            phy_address,
-            phy,
+            physical_layer_device_address,
+            physical_layer_device,
         })
     }
 }
@@ -205,9 +210,10 @@ impl Discovered {
 ///
 /// Propagates the first error `prop` returns.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
-pub fn mainline_phy<'t, E>(
+/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
+/// `physical_layer_device`, replacing `mainline_phy`.
+#[doc(alias = "phy")]
+pub fn mainline_physical_layer_device<'t, E>(
     mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
     let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
@@ -241,16 +247,17 @@ pub fn mainline_phy<'t, E>(
 }
 
 /// **The PHY as the vendor tree describes it**, in register values: `prop(name)` is the property
-/// `name` of the node [`VENDOR_PHY_NODE`]. Any property it lacks keeps
+/// `name` of the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`]. Any property it lacks keeps
 /// [`Settings::FALLBACK_GMAC0`]'s value, and a node without `rx_delay_sel` is the fallback whole.
 ///
 /// # Errors
 ///
 /// Propagates the first error `prop` returns.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
-pub fn vendor_phy<'t, E>(
+/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
+/// `physical_layer_device`, replacing `vendor_phy`.
+#[doc(alias = "phy")]
+pub fn vendor_physical_layer_device<'t, E>(
     mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
     let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
@@ -333,9 +340,15 @@ mod tests {
             (b"phy-mode", b"rgmii-id\0"),
             (b"interrupts", &[0, 0, 0, 7, 0, 0, 0, 6]),
         ];
-        let phy = (0, Settings::FALLBACK_GMAC0);
-        let d = Discovered::from_node(GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR, node(table), phy)
-            .unwrap();
+        let physical_layer_device = (0, Settings::FALLBACK_GMAC0);
+        let d = Discovered::from_node(
+            GMAC0_BASE,
+            0x1_0000,
+            COMPATIBLE_VENDOR,
+            node(table),
+            physical_layer_device,
+        )
+        .unwrap();
         assert_eq!(
             (d.base, d.size, d.compatible),
             (GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR)
@@ -346,7 +359,10 @@ mod tests {
             Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
         );
         assert_eq!(d.interrupt, Some(7));
-        assert_eq!((d.phy_address, d.phy), phy);
+        assert_eq!(
+            (d.physical_layer_device_address, d.physical_layer_device),
+            physical_layer_device
+        );
     }
 
     #[test]
@@ -363,7 +379,11 @@ mod tests {
         assert!(d.status_okay);
         assert!(!d.reduced_gigabit_media_independent_interface);
         assert_eq!(
-            (d.station_address, d.interrupt, d.phy_address),
+            (
+                d.station_address,
+                d.interrupt,
+                d.physical_layer_device_address
+            ),
             (None, None, 3)
         );
         let table: &[(&[u8], &[u8])] = &[
@@ -396,7 +416,7 @@ mod tests {
     }
 
     #[test]
-    fn a_mainline_phy_reads_its_delays_drive_and_inversions() {
+    fn a_mainline_physical_layer_device_reads_its_delays_drive_and_inversions() {
         let table: &[(&[u8], &[u8])] = &[
             (b"reg", &[0, 0, 0, 0x23]),
             (b"rx-internal-delay-ps", &1500u32.to_be_bytes()),
@@ -407,7 +427,7 @@ mod tests {
             (b"motorcomm,tx-clk-100-inverted", b""),
             (b"motorcomm,tx-clk-1000-inverted", b""),
         ];
-        let (address, s) = mainline_phy(node(table)).unwrap();
+        let (address, s) = mainline_physical_layer_device(node(table)).unwrap();
         assert_eq!(address, 3, "the address is five bits");
         assert_eq!(
             s,
@@ -417,9 +437,9 @@ mod tests {
     }
 
     #[test]
-    fn a_mainline_phy_with_one_delay_takes_the_default_for_the_other() {
+    fn a_mainline_physical_layer_device_with_one_delay_takes_the_default_for_the_other() {
         let table: &[(&[u8], &[u8])] = &[(b"rx-internal-delay-ps", &1500u32.to_be_bytes())];
-        let (address, s) = mainline_phy(node(table)).unwrap();
+        let (address, s) = mainline_physical_layer_device(node(table)).unwrap();
         assert_eq!(address, 0);
         assert_eq!(
             s,
@@ -427,18 +447,18 @@ mod tests {
         );
         let table: &[(&[u8], &[u8])] = &[(b"tx-internal-delay-ps", &1500u32.to_be_bytes())];
         assert_eq!(
-            mainline_phy(node(table)).unwrap().1,
+            mainline_physical_layer_device(node(table)).unwrap().1,
             Settings::from_mainline(DEFAULT_DELAY_PS, 1500, 0, 0, None)
         );
         let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
         assert_eq!(
-            mainline_phy(node(table)).unwrap(),
+            mainline_physical_layer_device(node(table)).unwrap(),
             (1, Settings::FALLBACK_GMAC0)
         );
     }
 
     #[test]
-    fn a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest() {
+    fn a_vendor_physical_layer_device_reads_register_values_and_keeps_the_fallback_for_the_rest() {
         let table: &[(&[u8], &[u8])] = &[
             (b"reg", &[0, 0, 0, 0x23]),
             (b"rx_delay_sel", &[0, 0, 0, 0x1b]),
@@ -450,7 +470,7 @@ mod tests {
             (b"tx_inverted_100", ZERO),
         ];
         let f = Settings::FALLBACK_GMAC0;
-        let (address, s) = vendor_phy(node(table)).unwrap();
+        let (address, s) = vendor_physical_layer_device(node(table)).unwrap();
         assert_eq!(address, 3);
         assert_eq!(
             (s.receive_delay, s.transmit_delay),
@@ -468,7 +488,7 @@ mod tests {
         );
         assert_eq!(s.source, Source::VendorTree);
         let table: &[(&[u8], &[u8])] = &[(b"rx_delay_sel", ZERO), (b"rxc_dly_en", ZERO)];
-        let (address, s) = vendor_phy(node(table)).unwrap();
+        let (address, s) = vendor_physical_layer_device(node(table)).unwrap();
         assert_eq!(address, 0);
         assert!(!s.receive_fixed_delay);
         assert_eq!(
@@ -476,17 +496,17 @@ mod tests {
             (f.transmit_delay, f.receive_clock_drive)
         );
         let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
-        assert_eq!(vendor_phy(node(table)).unwrap(), (0, f));
+        assert_eq!(vendor_physical_layer_device(node(table)).unwrap(), (0, f));
     }
 
     #[test]
     fn a_reader_error_reaches_the_caller() {
         let failing = |_: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(9) };
-        assert_eq!(mainline_phy(failing), Err(9));
-        assert_eq!(vendor_phy(failing), Err(9));
-        let phy = (0, Settings::FALLBACK_GMAC0);
+        assert_eq!(mainline_physical_layer_device(failing), Err(9));
+        assert_eq!(vendor_physical_layer_device(failing), Err(9));
+        let physical_layer_device = (0, Settings::FALLBACK_GMAC0);
         assert_eq!(
-            Discovered::from_node(0, 0, COMPATIBLE_MAINLINE, failing, phy),
+            Discovered::from_node(0, 0, COMPATIBLE_MAINLINE, failing, physical_layer_device),
             Err(9)
         );
     }

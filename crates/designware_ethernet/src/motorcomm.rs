@@ -263,11 +263,11 @@ pub(crate) const fn voltage_mv(chip_config: u16) -> u32 {
 /// `read_ext`.
 pub fn read_extended(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
     extended: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    bus.write(phy, EXT_ADDR, extended)?;
-    bus.read(phy, EXT_DATA)
+    bus.write(physical_layer_device, EXT_ADDR, extended)?;
+    bus.read(physical_layer_device, EXT_DATA)
 }
 
 /// Write extended register `extended`.
@@ -276,24 +276,24 @@ pub fn read_extended(
 /// `write_ext`.
 pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
     extended: u16,
     v: u16,
 ) -> Result<(), management_data_input_output::Error> {
-    bus.write(phy, EXT_ADDR, extended)?;
-    bus.write(phy, EXT_DATA, v)
+    bus.write(physical_layer_device, EXT_ADDR, extended)?;
+    bus.write(physical_layer_device, EXT_DATA, v)
 }
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
 fn modify_extended(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
     extended: u16,
     clear: u16,
     set: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    let v = (read_extended(bus, phy, extended)? & !clear) | set;
-    write_extended(bus, phy, extended, v)?;
+    let v = (read_extended(bus, physical_layer_device, extended)? & !clear) | set;
+    write_extended(bus, physical_layer_device, extended, v)?;
     Ok(v)
 }
 
@@ -315,22 +315,28 @@ pub struct Applied {
 /// it where it left it.
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
     s: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
-    let saved = bus.read(phy, EXT_ADDR)?;
+    let saved = bus.read(physical_layer_device, EXT_ADDR)?;
     let delay_en = if s.receive_fixed_delay {
         CHIP_CONFIG_RXC_DLY_EN
     } else {
         0
     };
-    let chip = modify_extended(bus, phy, EXT_CHIP_CONFIG, CHIP_CONFIG_RXC_DLY_EN, delay_en)?;
+    let chip = modify_extended(
+        bus,
+        physical_layer_device,
+        EXT_CHIP_CONFIG,
+        CHIP_CONFIG_RXC_DLY_EN,
+        delay_en,
+    )?;
     let volt = voltage_mv(chip);
     let delays = u16::from(s.receive_delay & 0xf) << RGMII_CONFIG1_RX_DELAY_SHIFT
         | u16::from(s.transmit_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
     let rgmii_config1 = modify_extended(
         bus,
-        phy,
+        physical_layer_device,
         EXT_RGMII_CONFIG1,
         0xf << RGMII_CONFIG1_RX_DELAY_SHIFT | 0xf << RGMII_CONFIG1_TX_DELAY_SHIFT,
         delays,
@@ -339,15 +345,27 @@ pub fn configure(
     let rxd = u16::from(drive_code(volt, s.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
-        phy,
+        physical_layer_device,
         EXT_PAD_DRIVE,
         0x7 << PAD_DRIVE_RXC_SHIFT | PAD_DRIVE_RXD_MASK,
         rxc << PAD_DRIVE_RXC_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
     )?;
-    modify_extended(bus, phy, EXT_SYNCE_CFG, SYNCE_CFG_EN, 0)?;
-    modify_extended(bus, phy, EXT_CLOCK_GATING, EXT_CLOCK_GATING_RX_CLK_EN, 0)?;
-    modify_extended(bus, phy, EXT_SLEEP_CONTROL1, EXT_SLEEP_CONTROL1_SLEEP_SW, 0)?;
-    bus.write(phy, EXT_ADDR, saved)?;
+    modify_extended(bus, physical_layer_device, EXT_SYNCE_CFG, SYNCE_CFG_EN, 0)?;
+    modify_extended(
+        bus,
+        physical_layer_device,
+        EXT_CLOCK_GATING,
+        EXT_CLOCK_GATING_RX_CLK_EN,
+        0,
+    )?;
+    modify_extended(
+        bus,
+        physical_layer_device,
+        EXT_SLEEP_CONTROL1,
+        EXT_SLEEP_CONTROL1_SLEEP_SW,
+        0,
+    )?;
+    bus.write(physical_layer_device, EXT_ADDR, saved)?;
     Ok(Applied {
         voltage_mv: volt,
         rgmii_config1,
@@ -359,7 +377,7 @@ pub fn configure(
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
     s: &Settings,
     speed: Speed,
 ) -> Result<u16, management_data_input_output::Error> {
@@ -368,29 +386,37 @@ pub fn apply_speed(
         Speed::Hundred => s.transmit_clock_inverted[1],
         Speed::Thousand => s.transmit_clock_inverted[2],
     };
-    let saved = bus.read(phy, EXT_ADDR)?;
+    let saved = bus.read(physical_layer_device, EXT_ADDR)?;
     let set = if inverted {
         RGMII_CONFIG1_TX_CLK_SEL
     } else {
         0
     };
-    let v = modify_extended(bus, phy, EXT_RGMII_CONFIG1, RGMII_CONFIG1_TX_CLK_SEL, set)?;
-    bus.write(phy, EXT_ADDR, saved)?;
+    let v = modify_extended(
+        bus,
+        physical_layer_device,
+        EXT_RGMII_CONFIG1,
+        RGMII_CONFIG1_TX_CLK_SEL,
+        set,
+    )?;
+    bus.write(physical_layer_device, EXT_ADDR, saved)?;
     Ok(v)
 }
 
 /// **The link, if there is one**, from the vendor status register.
 pub fn link(
     bus: &mut impl ManagementDataInputOutput,
-    phy: u8,
+    physical_layer_device: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
-    Ok(link_from_status(bus.read(phy, SPECIFIC_STATUS)?))
+    Ok(link_from_status(
+        bus.read(physical_layer_device, SPECIFIC_STATUS)?,
+    ))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sim::Phy;
+    use crate::sim::PhysicalLayerDevice;
 
     #[test]
     fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
@@ -456,69 +482,81 @@ mod tests {
 
     #[test]
     fn configure_writes_radons_registers_and_restores_the_address_port() {
-        let mut phy = Phy::yt8531_at_1v8();
-        phy.write_raw(EXT_ADDR, 0x1234);
-        let a = configure(&mut phy, 0, &Settings::FALLBACK_GMAC0).unwrap();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        physical_layer_device.write_raw(EXT_ADDR, 0x1234);
+        let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
         assert_eq!(a.voltage_mv, 1800);
-        assert_eq!(phy.extended(EXT_RGMII_CONFIG1) & 0x3c0f, 0xa << 10 | 0xa);
-        assert_eq!(phy.extended(EXT_PAD_DRIVE) >> 13, 6);
-        assert_eq!(phy.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK, 3 << 4);
-        assert_eq!(phy.extended(EXT_CHIP_CONFIG) & CHIP_CONFIG_RXC_DLY_EN, 0);
-        assert_eq!(phy.extended(EXT_SYNCE_CFG) & SYNCE_CFG_EN, 0);
         assert_eq!(
-            phy.extended(EXT_SLEEP_CONTROL1) & EXT_SLEEP_CONTROL1_SLEEP_SW,
+            physical_layer_device.extended(EXT_RGMII_CONFIG1) & 0x3c0f,
+            0xa << 10 | 0xa
+        );
+        assert_eq!(physical_layer_device.extended(EXT_PAD_DRIVE) >> 13, 6);
+        assert_eq!(
+            physical_layer_device.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
+            3 << 4
+        );
+        assert_eq!(
+            physical_layer_device.extended(EXT_CHIP_CONFIG) & CHIP_CONFIG_RXC_DLY_EN,
             0
         );
         assert_eq!(
-            phy.extended(EXT_CLOCK_GATING) & EXT_CLOCK_GATING_RX_CLK_EN,
+            physical_layer_device.extended(EXT_SYNCE_CFG) & SYNCE_CFG_EN,
             0
         );
-        assert_eq!(phy.raw(EXT_ADDR), 0x1234);
+        assert_eq!(
+            physical_layer_device.extended(EXT_SLEEP_CONTROL1) & EXT_SLEEP_CONTROL1_SLEEP_SW,
+            0
+        );
+        assert_eq!(
+            physical_layer_device.extended(EXT_CLOCK_GATING) & EXT_CLOCK_GATING_RX_CLK_EN,
+            0
+        );
+        assert_eq!(physical_layer_device.raw(EXT_ADDR), 0x1234);
     }
 
     #[test]
     fn a_drive_code_with_its_high_bit_set_lands_in_bit_twelve() {
-        let mut phy = Phy::yt8531_at_1v8();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         let s = Settings {
             receive_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
-        configure(&mut phy, 0, &s).unwrap();
+        configure(&mut physical_layer_device, 0, &s).unwrap();
         assert_eq!(
-            phy.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
+            physical_layer_device.extended(EXT_PAD_DRIVE) & PAD_DRIVE_RXD_MASK,
             1 << 12 | 3 << 4
         );
     }
 
     #[test]
     fn the_link_reads_none_until_a_cable_resolves_it() {
-        let mut phy = Phy::yt8531_at_1v8();
-        assert_eq!(link(&mut phy, 0).unwrap(), None);
-        assert!(!management_data_input_output::link_is_up(&mut phy, 0).unwrap());
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), None);
+        assert!(!management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
         let gig = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
-        phy.set_link(Some(gig));
-        assert_eq!(link(&mut phy, 0).unwrap(), Some(gig));
-        assert!(management_data_input_output::link_is_up(&mut phy, 0).unwrap());
+        physical_layer_device.set_link(Some(gig));
+        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), Some(gig));
+        assert!(management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
     fn the_transmit_clock_inverts_per_speed() {
-        let mut phy = Phy::yt8531_at_1v8();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         let s = Settings {
             transmit_clock_inverted: [false, false, true],
             ..Settings::FALLBACK_GMAC0
         };
-        apply_speed(&mut phy, 0, &s, Speed::Thousand).unwrap();
+        apply_speed(&mut physical_layer_device, 0, &s, Speed::Thousand).unwrap();
         assert_ne!(
-            phy.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            physical_layer_device.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
             0
         );
-        apply_speed(&mut phy, 0, &s, Speed::Hundred).unwrap();
+        apply_speed(&mut physical_layer_device, 0, &s, Speed::Hundred).unwrap();
         assert_eq!(
-            phy.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
+            physical_layer_device.extended(EXT_RGMII_CONFIG1) & RGMII_CONFIG1_TX_CLK_SEL,
             0
         );
     }
@@ -575,18 +613,18 @@ mod tests {
     /// the drive codes into a pad word that held nothing, so a stray bit would show.
     #[test]
     fn configure_replaces_the_delay_and_drive_fields_and_nothing_else() {
-        let mut phy = Phy::yt8531_at_1v8();
-        write_extended(&mut phy, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
-        write_extended(&mut phy, 0, EXT_PAD_DRIVE, 0).unwrap();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        write_extended(&mut physical_layer_device, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
+        write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE, 0).unwrap();
         let s = Settings {
             receive_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
-        let a = configure(&mut phy, 0, &s).unwrap();
+        let a = configure(&mut physical_layer_device, 0, &s).unwrap();
         // 0xffff with bits 13:10 and 3:0 replaced by 0xa each.
         assert_eq!(a.rgmii_config1, 0xebfa);
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
-        assert_eq!(phy.extended(EXT_PAD_DRIVE), 0xd030);
+        assert_eq!(physical_layer_device.extended(EXT_PAD_DRIVE), 0xd030);
     }
 }

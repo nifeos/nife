@@ -9,7 +9,8 @@
 
 use designware_ethernet::jh7110::{
     AON_SYSTEM_CONTROLLER_NODE, COMPATIBLE_AON_SYSTEM_CONTROLLER, COMPATIBLES, Discovered,
-    SystemController, VENDOR_PHY_NODE, first_cell, mainline_phy, vendor_phy,
+    SystemController, VENDOR_PHYSICAL_LAYER_DEVICE_NODE, first_cell,
+    mainline_physical_layer_device, vendor_physical_layer_device,
 };
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -31,8 +32,10 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         }
         let prop = |name: &[u8]| tree.node_prop_compatible(compatible, name);
         let phy = match prop(b"phy-handle")?.and_then(first_cell) {
-            Some(handle) => mainline_phy(|name| tree.phandle_prop(handle, name))?,
-            None => vendor_phy(|name| tree.node_prop(VENDOR_PHY_NODE, name))?,
+            Some(handle) => mainline_physical_layer_device(|name| tree.phandle_prop(handle, name))?,
+            None => vendor_physical_layer_device(|name| {
+                tree.node_prop(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
+            })?,
         };
         return Discovered::from_node(regions[0].start, regions[0].size, compatible, prop, phy)
             .map(Some);

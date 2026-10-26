@@ -107,14 +107,14 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `GMAC0_SYSTEM_CONTROLLER_OFFSET` | item | `src/jh7110.rs` | provisional. Refused `GMAC0_SYSCON_OFFSET` (ruled 2026-10-26 UTC). | yes | clear |
 | `GMAC1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `SystemController` | item | `src/jh7110.rs` | provisional. Refused `Syscon` (ruled 2026-10-26 UTC). | yes | clear |
-| `VENDOR_PHY_NODE` | item | `src/jh7110.rs` | provisional. | yes | clear |
+| `VENDOR_PHYSICAL_LAYER_DEVICE_NODE` | item | `src/jh7110.rs` | provisional. Refused `VENDOR_PHY_NODE` (ruled 2026-10-26 UTC). | yes | clear |
 | `fallback` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `first_cell` | item | `src/jh7110.rs` | provisional. | yes | scope: a device-tree cell reader in a MAC crate |
 | `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `interface` | item | `src/jh7110.rs` | unrecorded. | yes | generic |
-| `mainline_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
+| `mainline_physical_layer_device` | item | `src/jh7110.rs` | provisional. Refused `mainline_phy` (ruled 2026-10-26 UTC). | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `select_reduced_gigabit_media_independent_interface` | item | `src/jh7110.rs` | provisional. Refused `select_rgmii` (ruled 2026-10-26 UTC). | yes | clear |
-| `vendor_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
+| `vendor_physical_layer_device` | item | `src/jh7110.rs` | provisional. Refused `vendor_phy` (ruled 2026-10-26 UTC). | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `receive_descriptor` | item | `src/layout.rs` | provisional. Refused `rx_descriptor` (ruled 2026-10-26 UTC). | yes | clear |
@@ -134,7 +134,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `RDA_SHIFT` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `command` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `link_is_up` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
-| `phy_id` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
+| `physical_layer_device_id` | item | `src/management_data_input_output.rs` | provisional. Refused `phy_id` (ruled 2026-10-26 UTC). | yes | clear |
 | `restart_autonegotiation` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `Applied` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |
 | `Drive` | item | `src/motorcomm.rs` | unrecorded. | yes | generic |

@@ -259,20 +259,22 @@ fn run(
     r.mac = Some(mac);
     let mac = mac.0;
 
-    let phy = e.port.phy_address;
-    r.phy_id =
-        management_data_input_output::phy_id(&mut management_data_input_output::Bus(&mut w), phy)
-            .map_err(Error::Mdio)?;
+    let phy = e.port.physical_layer_device_address;
+    r.phy_id = management_data_input_output::physical_layer_device_id(
+        &mut management_data_input_output::Bus(&mut w),
+        phy,
+    )
+    .map_err(Error::Mdio)?;
     if r.phy_id != motorcomm::YT8531_ID {
         return Err(Error::UnknownPhy { id: r.phy_id });
     }
     let applied = motorcomm::configure(
         &mut management_data_input_output::Bus(&mut w),
         phy,
-        &e.port.phy,
+        &e.port.physical_layer_device,
     )
     .map_err(Error::Mdio)?;
-    r.phy = Some((applied.voltage_mv, e.port.phy.source));
+    r.phy = Some((applied.voltage_mv, e.port.physical_layer_device.source));
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
@@ -309,7 +311,8 @@ fn run(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(&mut bus, phy, &e.port.phy, l.speed).map_err(Error::Mdio)?;
+        motorcomm::apply_speed(&mut bus, phy, &e.port.physical_layer_device, l.speed)
+            .map_err(Error::Mdio)?;
         controller::start(&mut w, l, false);
     }
     Ok((
