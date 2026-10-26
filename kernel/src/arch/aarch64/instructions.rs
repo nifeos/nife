@@ -4,11 +4,8 @@
 //! *Name provisional (a lane minted it 2026-09-25, matching the riscv64 file; names are calef's).*
 //!
 //! Names ratified 2026-10-26 (UTC), milestone 707 (aarch64 registers spelled the way riscv64 and
-//! x86_64 spell them): the `read_*` and `write_*` accessors, `_synchronized` variants included, the
-//! mnemonics `wfi`, `dsb_sy` and `isb`, and `arch::current_el`. `mask_interrupts` and
-//! `unmask_interrupts` are the interrupt ruling's spelling. Each accessor opens with its register's
-//! full name and carries `#[doc(alias)]` (design/naming.md, a name kept under the foreign-identifier
-//! exemption).
+//! x86_64 spell them): the accessors, `wfi`, `dsb_sy`, `isb` and `arch::current_el`. Each accessor
+//! opens with its register's full name and carries `#[doc(alias)]` (design/naming.md).
 //!
 //! Here is every `asm!` this tree wrote around logic, and one accessor for each system register
 //! that `timer`, `mmu`, `exceptions`, `isa`, `percpu` and `thread_pointer` read or write whole.
@@ -223,7 +220,7 @@ pub(super) fn write_cntkctl(value: u64) {
     unsafe { asm!("msr cntkctl_el1, {}", in(reg) value, options(nomem, nostack)) };
 }
 
-/// **Counter-timer Virtual Timer CompareValue Register** (`CNTV_CVAL_EL0`, Arm DDI 0487).
+/// **Counter-timer Virtual Timer `CompareValue` Register** (`CNTV_CVAL_EL0`, Arm DDI 0487).
 /// `mrs cntv_cval_el0`: this core's armed deadline.
 #[inline(always)]
 #[doc(alias = "timer deadline")]
@@ -234,7 +231,7 @@ pub(super) fn read_cntv_cval() -> u64 {
     value
 }
 
-/// **Counter-timer Virtual Timer CompareValue Register** (`CNTV_CVAL_EL0`, Arm DDI 0487).
+/// **Counter-timer Virtual Timer `CompareValue` Register** (`CNTV_CVAL_EL0`, Arm DDI 0487).
 /// `msr cntv_cval_el0`: arm this core's deadline.
 #[inline(always)]
 #[doc(alias = "timer deadline")]
