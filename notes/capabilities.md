@@ -164,7 +164,8 @@ loop {
 }
 ```
 
-Compare that to `handle_interrupt` in `arch/aarch64/exceptions.rs`, which runs in exception context with
+Compare that to `handle_interrupt` in `arch/aarch64/exceptions.rs`, which runs in exception context
+with
 interrupts masked and has to be extremely careful about what it touches. This is ordinary code,
 in a process, at EL0. If it deadlocks, it deadlocks by itself, and we restart it.
 

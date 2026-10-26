@@ -34,7 +34,7 @@ On aarch64 that means the `I` bit of `PSTATE.DAIF`:
 |---|---|---|
 | 9 | `D` | Debug exceptions |
 | 8 | `A` | SError |
-| **7** | **`I`** | **interrupt** |
+| **7** | **`I`** | **IRQ** |
 | 6 | `F` | FIQ |
 
 Set the bit to *mask*, clear it to *unmask*. Note the polarity: `1` means "masked," which
@@ -227,7 +227,8 @@ a panic path, which is only `CONSOLE`.
 
 ## Why the lock path carries inline hints
 
-`InterruptSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only in
+`InterruptSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only
+in
 the codegen unit that owns it. Which unit that is depends on a metadata hash Cargo derives partly
 from the host triple. One commit then built two aarch64 kernels 25 KiB of text apart, and
 `script/fastpath-footprint` reported a shrink that was only the hash. With the hint each call site

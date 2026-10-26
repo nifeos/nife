@@ -87,6 +87,7 @@ showed the shape in one line: a parked core's inbox holding a runnable thread.
 
 It was fixed on the critical path in commit `1329874` (`smp::online_cpus()` / `nth_online`, with
 placement and steal converted). The follow-up branch swept the remaining count-as-index sites: wake
-targeting, both ISAs' interrupt-affinity round-robins, the hang watchdog's liveness scan and the suite's
+targeting, both ISAs' interrupt-affinity round-robins, the hang watchdog's liveness scan and the
+suite's
 own per-core loops. The {1,2,3} shape is host-proven in `crates/cpu_set`, since QEMU cannot boot
 it.

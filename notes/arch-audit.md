@@ -160,7 +160,8 @@ Two MMIO accesses, no lock. `word` is one 32-bit register carrying the enable bi
 of one PLIC context. These are the only two MMIO read-modify-write sites in the driver and arch tree.
 
 (b) What can land in it. Another hart executing `enable` or `disable` for a *different* source in
-the same 32-source group on the same context. `arch::interrupt_controller::enable` is called from kernel-thread
+the same 32-source group on the same context. `arch::interrupt_controller::enable` is called from
+kernel-thread
 context with interrupts **enabled** (the driver-spawn paths in `user.rs`), while
 `plic::disable(source, ctx)` is called from another hart's external-interrupt handler. Nothing
 serializes them.
@@ -220,7 +221,8 @@ candidate:
 - `PAR_EL1` in `translate_as_el0` was already masked, with a comment naming this class: the
   discipline predates the bug.
 - GIC acknowledge/EOI and PLIC claim/complete cannot cross cores, the timers touch only per-core or
-  M-mode state, secondary bring-up runs masked, and the cross-core inbox is a real `InterruptSafeMutex`.
+  M-mode state, secondary bring-up runs masked, and the cross-core inbox is a real
+  `InterruptSafeMutex`.
 
 ## The honest summary
 

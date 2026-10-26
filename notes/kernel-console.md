@@ -13,7 +13,8 @@ The console is a UART and, where the machine has one, a screen. Both say the sam
 at the bench and the gate reading the wire look for the same line, and a console that chose one
 surface would be a console somebody has to configure.
 
-One `InterruptSafeMutex` at `rank::CONSOLE` holds both. The UART is written one byte at a time, so an
+One `InterruptSafeMutex` at `rank::CONSOLE` holds both. The UART is written one byte at a time, so
+an
 interrupt handler printing in the middle of another writer's `write_str` would splice into it
 mid-word. The screen lives inside the same struct rather than under its own lock. A second mutex
 would need a rank below `rank::CONSOLE`, would be taken on every `print!` for nothing, and would
@@ -96,7 +97,8 @@ starves QEMU's main loop, the thread that serves the monitor, and every `screend
 the hold came back half-written. Before the counter moves it spins and pays `HOLD_POLLS` down,
 because `wait_for_interrupt` on a machine whose timer is dead would never return.
 
-The wait runs outside the console lock. That lock is an `InterruptSafeMutex`, so holding it for seconds
+The wait runs outside the console lock. That lock is an `InterruptSafeMutex`, so holding it for
+seconds
 would hold interrupts off for seconds, and the announcement's own `println!` would deadlock on it.
 Nothing can paint in between, because the kernel is the only painter until `yield_screen` says
 otherwise.

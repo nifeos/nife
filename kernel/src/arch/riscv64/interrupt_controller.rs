@@ -1,6 +1,7 @@
 //! The interrupt controller, RISC-V: the PLIC.
 //!
-//! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC adapter, resolving
+//! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC
+//! adapter, resolving
 //! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
 //! monolithic, deferred)). See notes/riscv-port/traps.md.
 
@@ -140,7 +141,8 @@ pub(crate) fn boot_s_context() -> usize {
 }
 
 /// How many interrupts a device line delivered at bring-up: `None`, because no device here
-/// interrupts without input or a disk, so `self_test`'s `device_interrupt` check reports itself absent.
+/// interrupts without input or a disk, so `self_test`'s `device_interrupt` check reports itself
+/// absent.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)

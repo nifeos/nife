@@ -254,7 +254,8 @@ fn x86_64_banner(boot_info_pointer: usize) {
 /// keeps (`arch::discovery`). What riscv64 and `x86_64` need that aarch64 does not is a few calls
 /// into their own `arch/`, each `cfg`-gated beside the aarch64-only line: the interrupt contexts
 /// and the timer's rate before the MMU, the ISA line and the cycle counter after it, and their
-/// IOMMUs. Each port's `arch::interrupt_controller::initialize` is reached through [`initialize_interrupts`].
+/// IOMMUs. Each port's `arch::interrupt_controller::initialize` is reached through
+/// [`initialize_interrupts`].
 fn bring_up_machine(boot_info_pointer: usize) {
     arch::initialize();
     stack::initialize();

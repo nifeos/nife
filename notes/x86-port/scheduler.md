@@ -55,13 +55,16 @@ ICR, the IRR, the ISR, an EOI). `interrupt_controller::raise_self_interrupt` is 
 is `interrupt_controller::send_reschedule`, which stopped being `unimplemented!()`.
 
 The intid for such a source is its vector, and that is the naming rule this architecture needs
-because `interrupt_controller::enable` takes a *legacy interrupt number* instead. The two domains cannot collide: legacy
+because `interrupt_controller::enable` takes a *legacy interrupt number* instead. The two domains
+cannot collide: legacy
 Interrupts are 0..15 and the local APIC's own vectors are 0x20..0x2f.
 
 A device line still cannot become a message here, and the missing piece is an inversion rather
-than a mechanism. The flat vector map makes the GSI recoverable by subtraction, but a legacy interrupt is
+than a mechanism. The flat vector map makes the GSI recoverable by subtraction, but a legacy
+interrupt is
 not. GSI 0 is the 8259 cascade and has no legacy owner, so an inversion falling back to the
-GSI would answer 0 for both it and the PIT's interrupt 0. Nothing needs it until there is a userspace
+GSI would answer 0 for both it and the PIT's interrupt 0. Nothing needs it until there is a
+userspace
 driver here.
 
 ### Four things portable code got right for two architectures and wrong for three

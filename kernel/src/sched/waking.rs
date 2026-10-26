@@ -39,7 +39,8 @@ pub(super) fn wake(sched: &mut IpcTables, tid: ThreadId) {
                 };
                 trace::record(trace::Event::Wake, tid, 0);
                 // Onto this core's queue: a rendezvous wake stays local on purpose (§28.2), the
-                // message is in registers and the cache is warm. Every caller (ipc_*, interrupt_notify)
+                // message is in registers and the cache is warm. Every caller (ipc_*,
+                // interrupt_notify)
                 // holds IPC_TABLES, so interrupts are masked.
                 cpu::current().with_runq(|q| q.push_back(token));
             }

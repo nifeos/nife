@@ -235,7 +235,8 @@ place rather than an assertion that they are.
 
 - `kernel/src/arch/` is very nearly unproved, and the part that is proved is two files.
   Milestone 255 put two harnesses into `arch/aarch64/iommu.rs` and milestone 304 two into
-  `arch/x86_64/interrupt_controller.rs`; that is 1,279 of 16,225 lines. The corpus's own timer re-arm drift is still
+  `arch/x86_64/interrupt_controller.rs`; that is 1,279 of 16,225 lines. The corpus's own timer
+  re-arm drift is still
   on the far side of the `asm!` boundary and nothing here touches it. (This entry used to pair it
   with "the VisionFive 2 undelivered wake." That reading is retracted,
   `notes/visionfive2.md`'s fifth bench stop, 2026-08-15: it was a completed tour's terminal state,

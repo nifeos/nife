@@ -587,7 +587,8 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(hart) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             InterruptSafeMutex is not masking interrupts and the deadlock in notes/locking.md is live"
+             InterruptSafeMutex is not masking interrupts and the deadlock in notes/locking.md \
+             is live"
         );
     }
 
@@ -608,7 +609,8 @@ mod tests {
         );
     }
 
-    /// Holding an `InterruptSafeMutex` masks this hart's timer (`sstatus.SIE`), and releasing it delivers
+    /// Holding an `InterruptSafeMutex` masks this hart's timer (`sstatus.SIE`), and releasing it
+    /// delivers
     /// the held tick.
     ///
     /// Confirms ticks flow, spins three periods under a lock asserting none lands, waits for one to

@@ -30,7 +30,8 @@ use crate::sched;
 ///
 /// The driver at EL0 gets the device registers, a DMA page and an interrupt, reads `motd` off
 /// the nifefs image, and reports its first bytes: real disk data crossed DMA and the EL0 boundary.
-/// `ROUTED_INTERRUPTS` must rise, so the interrupt path (9a) carried the completion, and the scheduler
+/// `ROUTED_INTERRUPTS` must rise, so the interrupt path (9a) carried the completion, and the
+/// scheduler
 /// idles rather than declaring a deadlock while the driver waits with nothing else to run.
 // RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
@@ -60,7 +61,8 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
     assert!(
         interrupts_after > interrupts_before,
         "the read completed but no device interrupt was delivered as a message \
-         ({interrupts_before} routed before the device was wired, {interrupts_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 

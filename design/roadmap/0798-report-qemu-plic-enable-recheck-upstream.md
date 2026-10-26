@@ -35,7 +35,7 @@ nife hit it because `plic::enable`, which is also a userspace driver's `Interrup
 priority before the enable bit, so the ACK's only re-evaluation ran while the bit was clear. #1657
 reordered the two writes. That works around the defect in nife. Any other guest that masks a PLIC
 source in its handler and unmasks it with nothing but an enable write is still exposed. Whether
-Linux's `interrupt-sifive-plic.c` is such a guest was not checked.
+Linux's `irq-sifive-plic.c` is such a guest was not checked.
 
 ## The minimal reproducer
 

@@ -1,7 +1,8 @@
 #![no_std]
 //! A virtio driver, block and net, at EL0.
 //!
-//! The kernel hands the process a DMA page, an `Interrupt` capability (slot 1) and a `Virtio` transport
+//! The kernel hands the process a DMA page, an `Interrupt` capability (slot 1) and a `Virtio`
+//! transport
 //! capability (slot 2); the device registers are not mapped, so every access goes through the
 //! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
 //! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
@@ -904,7 +905,8 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 // ---------------------------------------------------------------------------------------------
 
 /// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPs` the
-/// request plus the one-shot Reply that names the caller. Interrupt (1) and VIRTIO (2) are as every role.
+/// request plus the one-shot Reply that names the caller. Interrupt (1) and VIRTIO (2) are as every
+/// role.
 const BLK_REQ: u64 = 0;
 
 /// Where the kernel maps the data region shared with the FS server (the block buffer). Distinct

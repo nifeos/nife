@@ -53,7 +53,8 @@ and still standing on its core. That is the one legal overlap, and it is why the
 discipline is load-bearing.
 
 A wake that raced the switch-out completes in `finish_switch`, and the caller queues the thread on
-that core. One wake without load-aware placement, in the rare case of an interrupt inside the window, is
+that core. One wake without load-aware placement, in the rare case of an interrupt inside the
+window, is
 the accepted cost. Teaching this path a placement policy was judged not worth it.
 
 `park` writes `wait_on` in the same statement as `state = Blocked`, and a wake that makes the

@@ -170,7 +170,8 @@ afterwards with the pinned engine. That check is in the gate (`redoxfs_check_aft
 `scratch` against the fixture, and `mkredoxfs` rewrites it to a placeholder before every run, so the
 check passing means this run's guest write landed).
 
-The likely reason is the fix/interrupt-delivery change of 2026-07-29, which put the block server back on
+The likely reason is the fix/interrupt-delivery change of 2026-07-29, which put the block server
+back on
 the completion interrupt instead of polling the used ring. That is the same correction that note had
 already made for the read path. Stated as likely rather than proven: what was measured is that the
 write completes, not why the poll path did not.

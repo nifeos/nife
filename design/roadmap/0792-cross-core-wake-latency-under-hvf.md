@@ -33,7 +33,8 @@ code without trapping.
 
 `sched::place_on` pushes a remote thread into the target's inbox and returns the core that owes a
 reschedule SGI. aarch64's `RESCHED_SGI` handler calls `drain_inbox`, which sets `need_resched`, and
-`preempt_if_needed` at the bottom of the interrupt path runs `schedule()`. So the kernel does not wait for
+`preempt_if_needed` at the bottom of the interrupt path runs `schedule()`. So the kernel does not
+wait for
 the 100 Hz tick (`arch::aarch64::timer::TICK_HZ`). The lane's first guess that it did was wrong.
 That makes the delay most likely the delivery of the SGI: under QEMU's HVF the GICv3 is emulated in
 userspace, and a vCPU in `wfi` or in a guest loop has to be kicked out of `hv_vcpu_run`.

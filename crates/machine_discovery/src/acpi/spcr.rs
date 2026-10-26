@@ -78,7 +78,8 @@ mod tests {
         every_short_prefix_is_refused(&body, SPCR_FIXED_LEN, parse_spcr);
     }
 
-    /// **A PC-AT interrupt is not a GSIV**, and a table that states only the former answers `None` rather
+    /// **A PC-AT interrupt is not a GSIV**, and a table that states only the former answers `None`
+    /// rather
     /// than handing back an ISA interrupt number as though it were a GIC INTID. That is the same
     /// class of mistake `interrupt_id`'s bank bases exist to prevent, one table over.
     #[test]

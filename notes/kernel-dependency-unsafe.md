@@ -63,7 +63,8 @@ blocks counted here.
 
 ## spin_lock, the in-tree lock
 
-`InterruptSafeMutex` in `kernel/src/sync.rs` wraps `spin_lock::SpinLock`, and a handful of statics in
+`InterruptSafeMutex` in `kernel/src/sync.rs` wraps `spin_lock::SpinLock`, and a handful of statics
+in
 `kernel/src/user/fs_service/two_dirs.rs` and `system_tests/` use it directly. It is not a registry
 crate, so the table and the helper do not list it; its sites are here because the claim below rests
 on them. The kernel calls `new`, `lock`, `try_lock` and `force_unlock`, and uses the guard's

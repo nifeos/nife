@@ -902,7 +902,8 @@ fn an_absence_the_board_forbids_is_a_failure() {
 fn absences_and_failures_are_read_apart() {
     let n = boot_ladder::SELF_TEST_CHECKS.len();
     let line = format!(
-        "nife self-test: {} of {n} passed, 2 absent: blockdev device_interrupt, 1 FAILED: entropy\n",
+        "nife self-test: {} of {n} passed, 2 absent: blockdev device_interrupt, 1 FAILED: \
+        entropy\n",
         n - 3
     );
     let progress = feed(&board::EMULATOR, &line);

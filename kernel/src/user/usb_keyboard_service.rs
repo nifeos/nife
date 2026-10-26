@@ -55,7 +55,8 @@ pub(crate) fn start(
 
     let interrupt_ep = crate::sched::create_rendezvous();
     crate::sched::bind_interrupt(found.intid, interrupt_ep);
-    // Through the arch layer, as the `Interrupt` capability's ACK is: on riscv64 a source enabled on
+    // Through the arch layer, as the `Interrupt` capability's ACK is: on riscv64 a source enabled
+    // on
     // the boot hart's context instead is moved by its first ACK, and no keystroke after the first
     // arrives (measured). See notes/usb.md, "What the driver holds".
     crate::arch::interrupt_controller::enable(found.intid);

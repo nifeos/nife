@@ -643,7 +643,8 @@ mod survey_record_tests;
 /// driver's, because the ruling is about what a program can do at the boundary.
 ///
 /// Cross-ISA, and it has to be: the refusal is `Rendezvous::send`'s and the error mapping is
-/// `syscall`'s, neither under `arch/`. The interrupt is delivered with `sched::interrupt_notify`, the
+/// `syscall`'s, neither under `arch/`. The interrupt is delivered with `sched::interrupt_notify`,
+/// the
 /// function every ISA's handler calls, which keeps the test off each machine's interrupt wiring.
 #[cfg(test)]
 mod interrupt_send_refusal_tests;

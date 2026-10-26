@@ -166,7 +166,8 @@ kernel has wired the device. That covers loading the image, feature negotiation,
 posting the event buffers, and the host plays no part in it.
 
 `keyboard_event` sums 16 key presses. Each runs from the kernel delivering the keyboard's interrupt
-(`sched::watched_interrupt_at`, a bench-only timestamp in `interrupt_notify`) to the driver's `COMMIT` reaching
+(`sched::watched_interrupt_at`, a bench-only timestamp in `interrupt_notify`) to the driver's
+`COMMIT` reaching
 the bench thread, which stands in for the compositor. The wait for the host is outside the window,
 and under icount an idle guest skips that wait anyway. The kernel prints a cue before each press,
 and `xtask` answers it with one `sendkey` after 200 ms of real time. By then the previous release has

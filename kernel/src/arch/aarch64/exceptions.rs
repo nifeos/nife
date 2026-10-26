@@ -63,7 +63,8 @@ impl TrapFrame {
     /// `x0`..`x2`, so portable `user.rs` never names `elr`, `spsr` or `sp_el0` (notes/riscv-port.md,
     /// leak #3).
     ///
-    /// `spsr = 0` returns to `EL0t`, AArch64, with interrupts unmasked, so a tight-loop user thread is
+    /// `spsr = 0` returns to `EL0t`, AArch64, with interrupts unmasked, so a tight-loop user thread
+    /// is
     /// still preemptible (DECISIONS §5 (preemptive threads with real stacks)). Zero looks like a
     /// bug and is not.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
@@ -265,7 +266,7 @@ pub fn initialize() {
     instructions::isb();
 }
 
-/// Vector slot 5: Current EL, `SP_ELx`, interrupt. **The kernel being interrupted.**
+/// Vector slot 5: Current EL, `SP_ELx`, IRQ. **The kernel being interrupted.**
 #[doc(alias = "irq")]
 const VECTOR_INTERRUPT_CURRENT: u64 = 5;
 /// Vector slot 9: Lower EL, AArch64, IRQ. Userspace being interrupted. Milestone 7.
@@ -461,7 +462,8 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
 
 /// Service one hardware interrupt.
 ///
-/// Context: interrupt context, interrupts masked by the vector. Records and defers, per §9 (locking):
+/// Context: interrupt context, interrupts masked by the vector. Records and defers, per §9
+/// (locking):
 /// allocates nothing and takes no lock above rank GIC.
 #[doc(alias = "irq")]
 fn handle_interrupt(_frame: &mut TrapFrame) {

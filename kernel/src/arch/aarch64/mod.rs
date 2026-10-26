@@ -13,7 +13,8 @@ pub mod exceptions;
 mod fastpath_pad;
 pub mod fp;
 mod instructions;
-// The GICv3 CPU interface, `ICC_*` system registers (milestone 227 (a GICv3 driver, because GICv2 boots and silently loses every interrupt)). Private: `interrupt_controller` is its only
+// The GICv3 CPU interface, `ICC_*` system registers (milestone 227 (a GICv3 driver, because GICv2
+// boots and silently loses every interrupt)). Private: `interrupt_controller` is its only
 // caller, and the one place that knows which GIC version this machine has.
 mod gic_cpu_interface;
 #[doc(alias = "irq")]

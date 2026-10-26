@@ -24,7 +24,7 @@ was reached is part of the record. Its measured cost on the call/reply path is i
 §101's "return-value distinction" says:
 
 > `RECEIVE` today returns `w0` (the message's first word, or `1` for a signal). We extend the
-> convention: `w0 = 0`: this was an IPC `SEND` rendezvous. `w0 = 1`: this was an interrupt signal.
+> convention: `w0 = 0`: this was an IPC `SEND` rendezvous. `w0 = 1`: this was an IRQ signal.
 > `w0 = 2`: this was a bound notification.
 
 `RECEIVE` does not return a tag in `w0`. It returns the sender's own first data word
@@ -32,7 +32,8 @@ was reached is part of the record. Its measured cost on the call/reply path is i
 passed as `a0` to `SEND`). So `w0 = 0` does not mean "a message arrived"; it means a sender chose to
 send 0. Any holder of a `WRITE` capability to the endpoint can `SEND(2, word, 0)` and be
 indistinguishable from the bound notification under §101's encoding. The existing `w0 = 1` for an
-Interrupt signal has the same weakness today, and is harmless only because no ordinary sender shares an
+Interrupt signal has the same weakness today, and is harmless only because no ordinary sender shares
+an
 interrupt's endpoint. A notification's whole purpose is to share a wait point with ordinary
 senders, so here the forgery is the common case rather than an edge.
 
@@ -96,7 +97,8 @@ were not in §101 and were made in the build, each for a stated reason:
   is in `RECEIVE`, `RECEIVE_CAP` or `Interrupt::WAIT`, and the kernel parks all three the same way. One rule covers
   "blocked receiving on an endpoint", which is §101's own phrase. It is also the rule milestone 106
   (a wait that ends on either the interrupt or the deadline) needs. `net_stack` blocks in
-  `Interrupt::WAIT`, and the case in §147 (a timer a userspace service cannot hold) is a timer ending that
+  `Interrupt::WAIT`, and the case in §147 (a timer a userspace service cannot hold) is a timer
+  ending that
   wait.
 - A zero-bit `SIGNAL` does nothing. So `WAIT` never returns zero, and zero from `POLL` means
   nothing was pending.
@@ -123,9 +125,11 @@ additively", must not put `2` in `w4` of a death message, or it must move the ta
 is written beside the constant (`abi::notification::BOUND`) so the author of §26.4 meets it.
 
 Is `SEND(1, ...)` a forged interrupt signal today? Not reachable today, and nothing stops it
-becoming reachable. An interrupt signal is `[1, 0, 0, 0, 0]` in the receiver's mailbox, the same `w0`
+becoming reachable. An interrupt signal is `[1, 0, 0, 0, 0]` in the receiver's mailbox, the same
+`w0`
 a sender controls, so the encoding is forgeable in principle. It is not forgeable in practice,
-because every endpoint the kernel routes an interrupt to (`bind_interrupt`, thirteen wiring call sites
+because every endpoint the kernel routes an interrupt to (`bind_interrupt`, thirteen wiring call
+sites
 today, the soak's loop beside them) is created for that purpose and never handed out as a
 `Rendezvous` capability. Fifteen was written here at birth; the 2026-09-29 documentation audit
 re-derived the count. The driver reaches it
@@ -136,11 +140,12 @@ in `script/lint` refuses a future service that binds an interrupt to an endpoint
 with `WRITE`. Second, `kernel/src/soak.rs`'s `bind_tick_routes` binds the timer tick to endpoints
 its caller supplies, in a `--features soak_test` build only; those are the soak's own endpoints and
 carry no senders today. Recorded as a `BUGS` entry in the block rather than fixed here, because the
-fix (make an interrupt endpoint unsendable, or move interrupt delivery onto notifications) is §101's
-"interrupt migration", which §101 explicitly left undecided.
+fix (make an interrupt endpoint unsendable, or move IRQ delivery onto notifications) is §101's
+"IRQ migration", which §101 explicitly left undecided.
 
 Closed on 2026-09-26. calef ruled the first fix (§101's second amendment), and milestone 603 (an
-interrupt's endpoint refuses every send) built it: `bind_interrupt` marks the endpoint, and a `SEND`,
+interrupt's endpoint refuses every send) built it: `bind_interrupt` marks the endpoint, and a
+`SEND`,
 `SEND_CAP` or `CALL` to it answers `NotPermitted`. Moving interrupts onto notifications is
 decided driver by driver.
 
@@ -171,7 +176,8 @@ FIFO. A server's endpoint usually holds one receiver, itself.
 where the woken thread is placed. A thread's signal wakes locally, because the pair is often a
 conversation and the signaling core is warm. A signal from interrupt context (the timer expiry walk)
 wakes load-aware (§28 (SMP placement) step 2), because an interrupt carries no locality. Everything
-in it is legal in interrupt context for `interrupt_notify`'s reason: `IPC_TABLES` masks interrupts while
+in it is legal in interrupt context for `interrupt_notify`'s reason: `IPC_TABLES` masks interrupts
+while
 held, a wake is an enqueue rather than a switch, and nothing allocates. The timer expiry walk calls
 it directly, under one hold, for several timers. `signal_notification_from_interrupt` is the
 one-at-a-time entry, exercised by a kernel test and otherwise uncalled.

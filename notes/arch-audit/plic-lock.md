@@ -25,7 +25,8 @@ never-nested.)
 
 The placement is a leaf with slack in both directions. The body is two MMIO accesses and no calls,
 so nothing is taken beneath it. It is always taken holding nothing. The handler holds nothing by
-§9's record-and-defer rule, and every `enable` caller has already dropped `SCHED` (`bind_interrupt` and
+§9's record-and-defer rule, and every `enable` caller has already dropped `SCHED` (`bind_interrupt`
+and
 `create_endpoint` take and release it first).
 
 The lock is scoped to the one register that needs it, verified register by register rather than

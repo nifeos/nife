@@ -24,7 +24,8 @@ pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAX_CPUS] =
 /// `script/fastpath-footprint` counts flat, so inlined bytes here would be charged to every
 /// syscall (notes/benchmarks/fastpath-footprint-gate.md).
 ///
-/// Context: interrupt context, from the timer interrupt. Takes `IPC_TABLES` only when a timer is due.
+/// Context: interrupt context, from the timer interrupt. Takes `IPC_TABLES` only when a timer is
+/// due.
 #[inline(never)]
 pub fn on_tick() {
     cpu::current().need_resched.store(true, Ordering::Relaxed);
@@ -50,7 +51,8 @@ pub fn on_tick() {
     }
 
     // A soak build signals a rendezvous from the tick, the one event a saturated workload cannot
-    // starve, so its waiters cross cores through `interrupt_notify` (§138 (how a saturated workload is
+    // starve, so its waiters cross cores through `interrupt_notify` (§138 (how a saturated workload
+    // is
     // made to hand threads across cores) option D; kernel/src/soak.rs).
     #[cfg(feature = "soak_test")]
     crate::soak::signal_waiters();

@@ -164,7 +164,8 @@ would.
   HANDLER_BOUND, calibration_loop, deadline, missed_ticks}`, and this port has none of the five.
   The cause is the timer. The instrument checks every tick against the deadline the kernel armed
   (notes/instruction-clock.md). Here the local APIC timer is a periodic hardware reload
-  (`interrupt_controller::arm_periodic_timer`), so there is no armed deadline to read and no missed tick to count.
+  (`interrupt_controller::arm_periodic_timer`), so there is no armed deadline to read and no missed
+  tick to count.
   Porting it means first changing how this port ticks, to the APIC's one-shot or TSC-deadline mode.
   That is a timer redesign rather than a port, and neither mode has been tried under TCG here. A
   partial port to the periodic tick would have to redefine claim 2, whose span starts at the armed

@@ -116,7 +116,7 @@ pub(super) fn read_daif() -> u64 {
 }
 
 /// **Interrupt Mask Bits** (`DAIF`, Arm DDI 0487).
-/// `msr daifset, #2`: mask interrupts.
+/// `msr daifset, #2`: mask interrupts. This writes `DAIFSet`, the immediate form, not `DAIF`.
 #[inline(always)]
 #[doc(alias = "irq")]
 #[doc(alias = "interrupt mask")]
@@ -126,7 +126,7 @@ pub(super) fn mask_interrupts() {
 }
 
 /// **Interrupt Mask Bits** (`DAIF`, Arm DDI 0487).
-/// `msr daifclr, #2`: unmask interrupts.
+/// `msr daifclr, #2`: unmask interrupts. This writes `DAIFClr`, the immediate form, not `DAIF`.
 #[inline(always)]
 #[doc(alias = "irq")]
 #[doc(alias = "interrupt mask")]

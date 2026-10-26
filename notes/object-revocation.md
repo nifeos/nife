@@ -272,6 +272,7 @@ timing exposed it.
 
   **What is still argued rather than checked**, because a caveat replaced is not a caveat removed.
   Loom models C11 rather than aarch64 or riscv64. The model assumes mutual exclusion and says
-  nothing about `InterruptSafeMutex` delivering it or about the rank order being right. And it searches
+  nothing about `InterruptSafeMutex` delivering it or about the rank order being right. And it
+  searches
   who wins the claim, not whether the winner then frees the right pages, which is `destroy_outcome`'s
   Kani proof and a separate argument.

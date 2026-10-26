@@ -53,7 +53,8 @@ the code behind each verdict are in [specifications.md](timer-capability/specifi
 
 ## The other route: an MMIO timer the kernel already knows how to delegate
 
-An MMIO timer block is a `DeviceFrame` plus an `Object::Interrupt`, which is how every userspace driver
+An MMIO timer block is a `DeviceFrame` plus an `Object::Interrupt`, which is how every userspace
+driver
 here already owns a device, so a machine with a spare one can give it to a userspace service today.
 argon has fourteen channels and radon four, each with its own interrupt line. xenon's HPET is
 presumed and not confirmed. QEMU's aarch64 `virt` has none, and its riscv64 `virt` has only the

@@ -71,8 +71,10 @@ Effort is session-sized: S = part of a session, M = one to two, L = several.
 ### P3. Interrupt routing (INTx via the PLIC): S-M, medium risk.
 
 - Read the device's Interrupt Pin (config 0x3D: 1 = INTA). Resolve INTA for this device through the
-  DTB `interrupt-map` / `interrupt-map-mask` (device number and pin select a PLIC interrupt in 32..35 on
-  riscv `virt`). Then reuse the existing path: `bind_interrupt` the PLIC interrupt to an endpoint, grant the
+  DTB `interrupt-map` / `interrupt-map-mask` (device number and pin select a PLIC interrupt in
+  32..35 on
+  riscv `virt`). Then reuse the existing path: `bind_interrupt` the PLIC interrupt to an endpoint,
+  grant the
   driver an `Interrupt` capability.
 - INTx first, not MSI-X. Legacy INTx is a wire that routes through the PLIC, which is exactly the
   interrupt model you already have (the userspace UART driver's `WAIT`/`ACK`). MSI-X (the device

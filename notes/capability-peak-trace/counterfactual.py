@@ -28,7 +28,8 @@ def lines(bt):
 for e in ev:
     e.append(lines(e[5]))
 
-# Device grants: the seven boot-endowment slots that are Virtio/Interrupt/PageFrame minted before seq 25
+# Device grants: the seven boot-endowment slots that are Virtio/Interrupt/PageFrame minted before
+# seq 25
 # by the kernel on a gpu boot (12, 17..22).
 DEVICE_SLOTS = {12, 17, 18, 19, 20, 21, 22}
 launch_start = next((e[0] for e in ev if any(4282 <= n <= 4565 or 3080 <= n <= 3100 for n in e[6])), None)

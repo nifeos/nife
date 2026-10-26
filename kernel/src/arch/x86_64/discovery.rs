@@ -67,7 +67,8 @@ pub(crate) fn initialize() {
     let acpi = machine::read_acpi(info.rsdp);
     machine::print_acpi_summary(&acpi);
 
-    // COM1's interrupt line, as the legacy number 4 and not its GSI: `arch::interrupt_controller::enable` resolves a
+    // COM1's interrupt line, as the legacy number 4 and not its GSI:
+    // `arch::interrupt_controller::enable` resolves a
     // legacy interrupt through the MADT's overrides, so recording the GSI would resolve it twice.
     crate::memory::record_uart_interrupt_number(crate::user::UART_RECEIVE_INTID);
 

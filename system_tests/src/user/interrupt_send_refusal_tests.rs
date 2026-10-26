@@ -1,5 +1,6 @@
 //! **An endpoint that carries an interrupt refuses every send** (milestone 603 (provisional),
-//! DECISIONS §101 (notification objects) ruling B, calef 2026-09-26). See `mod interrupt_send_refusal_tests` in `system_tests/src/user.rs` for why
+//! DECISIONS §101 (notification objects) ruling B, calef 2026-09-26). See `mod
+//! interrupt_send_refusal_tests` in `system_tests/src/user.rs` for why
 //! this is cross-ISA and what it drives.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -15,7 +16,8 @@ use crate::syscall::invoke;
 /// route. aarch64 and riscv64 deliver a routed interrupt only if something enabled it at the
 /// controller, and nothing enables this one; on `x86_64` it is near the top of the MSI band, which
 /// is allocated upward from `MSI_VECTOR_BASE` (0xc0) and would need fifty-eight devices to reach
-/// it. Not 251 (the quiet interrupt of milestone 151 (notification objects)) and not the soak's band, which counts down from
+/// it. Not 251 (the quiet interrupt of milestone 151 (notification objects)) and not the soak's
+/// band, which counts down from
 /// 255 and exists only in soak builds.
 const QUIET_INTID: u32 = 250;
 
@@ -29,7 +31,8 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> (Result<i64, Error
 /// A program holding `WRITE` on an interrupt's endpoint cannot put anything in front of the driver.
 ///
 /// `SEND`, `SEND_CAP` and `CALL` are refused with `NotPermitted`, and the driver parked in
-/// `Interrupt::WAIT` stays parked with nothing queued. The test grants itself `Rights::ALL`, §101's named
+/// `Interrupt::WAIT` stays parked with nothing queued. The test grants itself `Rights::ALL`, §101's
+/// named
 /// mis-wiring, so only the kernel's rule stands between send and driver. The positive control comes
 /// last: the real interrupt reaches the driver as `w0 = 1`, proving it was really parked.
 ///
@@ -130,7 +133,8 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
 
     let _ = sched::delete_current_cap(forger);
     assert!(super::wait_for(|| !sched::is_thread_present(driver)));
-    // The route to QUIET_INTID outlives this: `bind_interrupt` has no unbind. Reclaiming the region makes
+    // The route to QUIET_INTID outlives this: `bind_interrupt` has no unbind. Reclaiming the region
+    // makes
     // it a stale name, which `interrupt_notify` drops, and nothing raises this interrupt anyway.
     sched::reclaim_region(region).expect("the endpoint's region did not come back");
 }

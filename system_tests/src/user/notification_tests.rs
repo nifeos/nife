@@ -375,7 +375,8 @@ fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
 /// and a timer expiry must be able to end that wait. The signal comes through
 /// [`sched::signal_notification_from_interrupt`], the entry 106's tick will call; it is invoked from
 /// a kernel thread here, not from a real interrupt, so what this proves is the load-aware wake and
-/// the `Interrupt::WAIT` registers, not the interrupt-stack context (which `interrupt_notify` already shares).
+/// the `Interrupt::WAIT` registers, not the interrupt-stack context (which `interrupt_notify`
+/// already shares).
 ///
 /// The interrupt number is one no device on any of the three machines raises, chosen because a
 /// route is global and this test must not steal a real device's.

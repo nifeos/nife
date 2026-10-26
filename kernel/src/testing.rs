@@ -19,7 +19,8 @@ use crate::arch::semihosting;
 use crate::{print, println};
 
 // The hang watchdog: a no-progress heartbeat for a lost wakeup and a per-test wall-clock ceiling
-// for a livelock, both off the boot core's timer interrupt. notes/kernel-test-harness.md has what each
+// for a livelock, both off the boot core's timer interrupt. notes/kernel-test-harness.md has what
+// each
 // can and cannot see.
 /// **Which tests this binary runs**: a substring of the full test path, or empty for the whole
 /// suite. Baked in by `kernel/build.rs` from `NIFE_TEST_FILTER`, which `cargo xtask test --test`
@@ -505,7 +506,8 @@ fn any_cpu_running_real_work() -> bool {
     })
 }
 
-/// Called from the timer interrupt each tick (test builds only; see `timer::tick`). Only the boot core
+/// Called from the timer interrupt each tick (test builds only; see `timer::tick`). Only the boot
+/// core
 /// watches, so any dump happens once. The boot core is `arch::boot_cpu_id()` (0 on aarch64, but on
 /// RISC-V whichever hart QEMU booted), which is also the one hart that ticks in a single-hart test.
 pub(crate) fn watchdog_tick() {

@@ -53,7 +53,8 @@ a per-core address and the thread comes back on bytes the next interrupt on that
 spent. That corrupts a stack rather than faulting, which puts it in the worst class of bug this
 project has: invisible at the site, fatal somewhere else.
 
-So the four lines of preemption moved out of `handle_interrupt` into `sched::preempt_if_needed`. They also
+So the four lines of preemption moved out of `handle_interrupt` into `sched::preempt_if_needed`.
+They also
 moved out of its riscv64 twin, where they had been written twice and had already drifted in their
 comments. The new function is called by the dispatcher's outer half, which is provably back on the
 interrupted thread's own stack.

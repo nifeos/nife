@@ -122,10 +122,13 @@ Traps and interrupts:
 - `exceptions::{last_user_fault, USER_FAULTS, ROUTED_INTERRUPTS, SPURIOUS_INTERRUPTS}`: diagnostics.
 - `interrupts::{disable, restore, enable, is_enabled}`: `disable` returns the prior state
   and callers `restore` it; `enable` is for first enabling only.
-- `interrupt_controller::{initialize, initialize_this_cpu, print_summary}`: the interrupt controller, then each core.
-- `interrupt_controller::enable(id)`: unmask a source the handler masked, at an `Interrupt` capability's ACK.
+- `interrupt_controller::{initialize, initialize_this_cpu, print_summary}`: the interrupt
+  controller, then each core.
+- `interrupt_controller::enable(id)`: unmask a source the handler masked, at an `Interrupt`
+  capability's ACK.
 - `interrupt_controller::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
-- `interrupt_controller::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board uses INTx.
+- `interrupt_controller::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board
+  uses INTx.
 
 Time:
 - `timer::{initialize, frequency, interval, TICK_HZ}`: the periodic tick and its rate.

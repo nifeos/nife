@@ -75,7 +75,8 @@ pub(super) struct VirtioBootGrant {
     pub(super) vid: usize,
     /// The device's completion interrupt, **routed** (`crate::sched::bind_interrupt`) but not
     /// **enabled**: aarch64's GIC enables inline and riscv64 pins the PLIC source to the boot hart
-    /// (`notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside `uart_interrupt_number`.
+    /// (`notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside
+    /// `uart_interrupt_number`.
     pub(super) intid: u32,
     /// The DMA region's physical base. A driver writes physical addresses into virtio
     /// descriptors, no capability exposes one, and the progenitor's three `START` words are spent,

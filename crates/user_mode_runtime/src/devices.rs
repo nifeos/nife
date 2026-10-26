@@ -8,7 +8,8 @@
 
 use crate::syscall::invoke;
 
-/// `WAIT` on the `Interrupt` capability in `interrupt_slot`: block until the interrupt fires. The kernel masks
+/// `WAIT` on the `Interrupt` capability in `interrupt_slot`: block until the interrupt fires. The
+/// kernel masks
 /// it when it fires and hands it to us as a message; nothing device-specific happens in the kernel.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -16,18 +17,21 @@ use crate::syscall::invoke;
 /// three." Refused `irq_wait` (round 7's provisional name; a newcomer says interrupt, per §154 (the
 /// acronym test is whether the phrase is spoken)).
 pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it blocks the caller.
+    // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it blocks the
+    // caller.
     unsafe { invoke(interrupt_slot, abi::interrupt::WAIT, 0, 0, 0) }
 }
 
-/// `ACK` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the GIC once the device has
+/// `ACK` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the GIC once
+/// the device has
 /// been quieted. Until this is called, the interrupt stays masked and cannot storm.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`interrupt_wait`]. His words: "Ratify those three." Refused `irq_ack` (round
 /// 7's provisional name), `irq_acknowledge` (the alternative round 9 recommended).
 pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it re-enables anything.
+    // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it re-enables
+    // anything.
     unsafe { invoke(interrupt_slot, abi::interrupt::ACK, 0, 0, 0) }
 }
 

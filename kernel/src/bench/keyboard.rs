@@ -22,7 +22,8 @@ const PRESS_CUE: &str = "bench-keyboard: press";
 /// `keyboard_up` runs from the driver's spawn being queued to its `KEYBOARD_UP` report: loading
 /// the image, feature negotiation, queue setup and the first buffers, with the host not involved.
 /// `keyboard_event` runs, per press, from the kernel's delivery of the keyboard's interrupt
-/// (`sched::watched_interrupt_at`) to the driver's `COMMIT` reaching this thread, which stands in for
+/// (`sched::watched_interrupt_at`) to the driver's `COMMIT` reaching this thread, which stands in
+/// for
 /// the compositor; it excludes the wait for the host, which under icount is idle time the counter
 /// skips past. No `TickWindow`: the windows open on a device's interrupt, not on a tick, and the
 /// 1 Hz bench tick landing in one would move one press by a tick handler's cost, which

@@ -105,7 +105,8 @@ architect's call, and no section in `design/decisions/` records it yet.
 backend: a request endpoint it receives on, a readiness endpoint it sends on once, and one page of
 device memory. That page is the first `0x1000` of the binding's `0x4000` register window, mapped
 device-typed. `jh7110_entropy::regs` reaches only `0x68`, and a driver that cannot name a register
-cannot touch it. It gets no DMA page, because the device writes nothing to memory. It gets no `Interrupt`
+cannot touch it. It gets no DMA page, because the device writes nothing to memory. It gets no
+`Interrupt`
 capability, because the driver polls. And it gets no `Virtio` capability, because there is no
 transport. With no DMA there is nothing for an IOMMU to confine, which is a narrower attack surface
 rather than a weaker claim.

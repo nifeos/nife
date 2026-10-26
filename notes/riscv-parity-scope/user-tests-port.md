@@ -10,11 +10,13 @@ assertions broken on purpose, and what stays aarch64-only.
 Follow-on (§19 (architectural parity), 2026-07-31): the last two gated portable tests are gated no longer.
 `kernel::sched::tests::an_interrupt_becomes_a_message` and
 `an_interrupt_that_arrives_before_the_wait_is_not_lost` were the "two SGI interrupt tests" named
-above. Neither property is architectural (Interrupt-to-IPC delivery, and a lost-wakeup race); only the
+above. Neither property is architectural (Interrupt-to-IPC delivery, and a lost-wakeup race); only
+the
 *trigger* was, and it is now behind three per-arch functions in the test module. RISC-V raises the
 console UART's own transmit-empty line into the PLIC, because it has no SGI. Its two other
 candidates are worse. The SBI IPI lands on the software-interrupt arm, which never reaches
-`interrupt_route`. The PLIC's pending block is read-only, and QEMU ignores writes to it. The legs are
+`interrupt_route`. The PLIC's pending block is read-only, and QEMU ignores writes to it. The legs
+are
 not twins in what the trigger costs, and notes/interrupts.md says which way each one is wider.
 That leaves `kernel::sched::tests` fully portable, and the remaining aarch64-only tests are the ones
 that genuinely need aarch64 machine code or a GIC.

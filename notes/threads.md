@@ -85,7 +85,8 @@ restores it on the way in.
 
 ### The trampoline must unmask interrupts, but AFTER `finish_switch`, not before
 
-A brand-new thread must unmask interrupts by hand. We arrive from inside the timer interrupt handler (or a
+A brand-new thread must unmask interrupts by hand. We arrive from inside the timer interrupt handler
+(or a
 `schedule()` that ran there), interrupts masked. Unlike a *resumed* thread there is no `SPSR_EL1` to
 restore the interrupt state from: the thread was never interrupted, it has never run at all.
 Without unmasking, the first thread you spawn runs with interrupts masked forever, never preempted:
@@ -94,7 +95,8 @@ a cooperative scheduler with extra steps.
 The trap, and a real intermittent hang it caused (found by a watchdog dumping thread states, see
 notes/deadlock.md): the trampoline first called `thread_entry`, whose first act is `finish_switch`,
 and it unmasked interrupts before that call. `finish_switch` reaps the predecessor and completes
-any wake it deferred, by reading this core's `switched_from`. If a timer interrupt lands between an early
+any wake it deferred, by reading this core's `switched_from`. If a timer interrupt lands between an
+early
 unmask and `finish_switch`, it runs `schedule()`, which overwrites `switched_from` with the fresh
 thread: the predecessor is stranded. Its `on_cpu` never clears, so every future wake for it is
 deferred forever (`wake_pending` set, never completed). It blocks on some later IPC and never wakes.

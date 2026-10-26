@@ -16,5 +16,6 @@ compiled one architecture). Each file is named for the code it proves. calef nam
 
 - [`smmu-proofs.md`](smmu-proofs.md): the two SMMUv3 harnesses, their falsifications and what they
   do not cover.
-- [`x86-interrupt-controller-proofs.md`](x86-interrupt-controller-proofs.md): the two vector-band harnesses, the GSI wrap one of them
+- [`x86-interrupt-controller-proofs.md`](x86-interrupt-controller-proofs.md): the two vector-band
+  harnesses, the GSI wrap one of them
   found, and why both are `attested`.

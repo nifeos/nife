@@ -83,10 +83,10 @@ was applied to the fixture-dependent tests in `nvme.rs`, `pci.rs`, `disk_tests.r
 `display_tests.rs` and `entropy_tests.rs`. The run got 59 tests further before the next real
 failure:
 
-6. `kernel::sched::tests`'s two interrupt-delivery tests hardcoded `DELIVERY_INTERRUPT = 10` /
-   `PENDING_INTERRUPT = 10`, QEMU virt's PLIC source for the console UART. The board's real source is 32.
-   The boot banner's `uart interrupt : source 32 (device tree)` line has stated that since the UART-interrupt
-   work. It was fixed by reading `user::uart_interrupt_number_and_source().0`, the DTB-driven value the rest of
+6. `kernel::sched::tests`'s two interrupt-delivery tests hardcoded `DELIVERY_IRQ = 10` /
+   `PENDING_IRQ = 10`, QEMU virt's PLIC source for the console UART. The board's real source is 32.
+   The boot banner's `uart irq : source 32 (device tree)` line has stated that since the UART-IRQ
+   work. It was fixed by reading `user::uart_irq_and_source().0`, the DTB-driven value the rest of
    the kernel already uses, instead of a QEMU-only literal.
 7. `Ns16550::enable_tx_interrupt` (test builds only) raced the transmitter on real hardware. The
    mechanism's own doc comment states its precondition correctly: "a 16550 asserts its line the
@@ -104,13 +104,13 @@ failure:
 ## A third finding, still open
 
 `an_interrupt_that_arrives_before_the_wait_is_not_lost` still fails on the board after the THRE
-fix. It is the second of the two interrupt-delivery tests, and shares interrupt 32 with the first by
-design. `ROUTED_INTERRUPTS` never increments and `SPURIOUS_INTERRUPTS` stays at zero. So the interrupt never
+fix. It is the second of the two interrupt-delivery tests, and shares IRQ 32 with the first by
+design. `ROUTED_IRQS` never increments and `SPURIOUS_IRQS` stays at zero. So the interrupt never
 reaches the trap handler at all, rather than arriving unrouted.
 
-The bench confirmed the IER/LSR state right after `raise_test_interrupt` looks correct: `IER=0x2`, and
+The bench confirmed the IER/LSR state right after `raise_test_irq` looks correct: `IER=0x2`, and
 `LSR` showing THRE set. So the UART side of the mechanism is doing what it should. The next place to
-look is the PLIC/hart affinity path, not the UART driver. That means `arch::interrupt_controller::target_context`'s
+look is the PLIC/hart affinity path, not the UART driver. That means `arch::irq::target_context`'s
 "assign once, then reuse" cache, `s_context_of`, or which hart is actually executing the test when
 the second call runs.
 

@@ -7,7 +7,8 @@
 //!
 
 //! GICv2 only: a GICv3 is `gicv3.rs` plus `arch/aarch64/gic_cpu_interface.rs`, and
-//! `arch/aarch64/interrupt_controller.rs` picks one from the device tree and confirms it against the hardware.
+//! `arch/aarch64/interrupt_controller.rs` picks one from the device tree and confirms it against
+//! the hardware.
 //!
 //! # BUGS
 //!
@@ -107,7 +108,8 @@ impl Gic {
     }
 }
 
-/// `GICC_IIDR` at `gicc`, read before anything else is trusted: `arch::interrupt_controller` hands it to
+/// `GICC_IIDR` at `gicc`, read before anything else is trusted: `arch::interrupt_controller` hands
+/// it to
 /// `machine_discovery::gic::Gic::confirm`, so a tree naming the wrong block fails at boot instead
 /// of booting and taking nothing.
 ///
@@ -160,7 +162,8 @@ pub(crate) fn initialize_this_cpu() {
 ///
 /// `target_cpu` is the core the distributor should deliver this SPI to (bit N of `ITARGETSR`). The
 /// policy that chooses it (spreading device lines across cores so they do not all funnel through
-/// core 0) lives one level up in `arch::interrupt_controller::enable`; this driver only writes the register it is
+/// core 0) lives one level up in `arch::interrupt_controller::enable`; this driver only writes the
+/// register it is
 /// told to, keeping the choice out of the GIC (DECISIONS §4: a driver reaches into no kernel
 /// global, including the online-core count). PPIs and SGIs are per-core, so `target_cpu` is ignored
 /// for them.
@@ -183,7 +186,8 @@ pub fn enable(intid: u32, target_cpu: usize) {
 /// Disable one interrupt source, at the distributor.
 ///
 /// How a userspace driver's interrupt is masked the moment it fires, so a level-triggered line
-/// cannot storm before the driver services it; its `Interrupt` capability's `ACK` re-enables it. See
+/// cannot storm before the driver services it; its `Interrupt` capability's `ACK` re-enables it.
+/// See
 /// notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {
     let guard = GIC.lock();

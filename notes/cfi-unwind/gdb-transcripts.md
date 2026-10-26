@@ -74,14 +74,14 @@ This is the sharpest illustration in this whole milestone of why "no CFI" is not
 information": GDB's own fallback is willing to trust a frame-pointer-shaped hand-written assembly
 function that isn't one, and it does not know when to stop.
 
-After (a representative hit, of a kernel thread parked in `sched::ipc_receive` waiting on an interrupt
+After (a representative hit, of a kernel thread parked in `sched::ipc_receive` waiting on an IRQ
 endpoint, resumed and then re-scheduled by a timer preemption):
 ```
 Thread 4 hit Breakpoint 1, 0xffff0000400d9450 in switch_to ()
 #0  0xffff0000400d9450 in switch_to ()
 #1  0xffff000040090970 in kernel::sched::schedule () at kernel/src/sched.rs:2145
 #2  0xffff00004008fd70 in kernel::sched::ipc_receive (ep=2) at kernel/src/sched.rs:2704
-#3  0xffff0000400bfdac in kernel::syscall::interrupt_wait (intid=79) at kernel/src/syscall.rs:1103
+#3  0xffff0000400bfdac in kernel::syscall::irq_wait (intid=79) at kernel/src/syscall.rs:1103
 #4  0xffff0000400bf7fc in kernel::syscall::invoke (frame=..., slot=1, method=0, ...) at kernel/src/syscall.rs:452
 #5  0xffff0000400bfcf0 in kernel::syscall::dispatch (frame=...) at kernel/src/syscall.rs:91
 #6  0xffff0000400b15bc in kernel::arch::aarch64::exceptions::exception_body (frame=..., index=8) at kernel/src/arch/aarch64/exceptions.rs:432
@@ -98,7 +98,7 @@ misreading it as an ordinary call.
 And the stop after it, "frame did not save the PC", is the honest limit the parent's hard case
 describes. It is `.cfi_undefined x30` at the trap boundary, because GDB does not honor the
 spec-correct `ELR_mode` column that would let it go one frame further, into whatever kernel code took
-the interrupt.
+the IRQ.
 
 Other hits during the same run showed the same shape resuming through `sched::preempt_if_needed`,
 `sched::yield_now`/`run_idle`, and `sched::depart`/`exit`. Each unwound cleanly to its own real

@@ -12,7 +12,8 @@ it), the three shapes the stale claims took, and the stale sentences found outsi
 
 Milestone 16 (real hardware) listed three things as remaining, and two were finished. The on-board
 test-suite exit is the UART marker plus SBI SRST that every board run is judged by. The DTB-driven
-UART interrupt printed `source 32` on all nine boots of the 2026-09-03 series. The block said otherwise
+UART interrupt printed `source 32` on all nine boots of the 2026-09-03 series. The block said
+otherwise
 for weeks, and calef asking what was left is what caught it.
 
 ## How the 22 were read

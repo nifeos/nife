@@ -763,7 +763,8 @@ mod verification {
         assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000);
     }
 
-    /// **`intx_interrupt_number` is total and lands on one of the four lines.** For any base, device, and
+    /// **`intx_interrupt_number` is total and lands on one of the four lines.** For any base,
+    /// device, and
     /// pin, no underflow (the pin-0 case that used to panic in debug builds) and no overflow,
     /// and the result is within `base..=base+3` whenever that range exists.
     /// Falsification: replayable `crates/pci/falsifications/verification.intx_interrupt_number_is_total_and_bounded.patch`

@@ -11,7 +11,8 @@ sources, read on 2026-09-05.
 
 The parent's specification verdicts are about the *architected* timer on each ISA. There is a second
 route that needs no new mechanism at all, because this tree already has it. An MMIO timer block is a
-`DeviceFrame` plus an `Object::Interrupt`, which is exactly how every userspace driver in this system
+`DeviceFrame` plus an `Object::Interrupt`, which is exactly how every userspace driver in this
+system
 already owns a device. If a machine has a spare MMIO timer, a userspace timer service can hold it
 today.
 

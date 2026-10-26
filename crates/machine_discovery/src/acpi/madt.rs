@@ -52,7 +52,8 @@ pub enum MadtEntry {
     /// An IO APIC: where device interrupts arrive. `gsi_base` is the first global system interrupt
     /// this one owns, which is how a machine with several of them divides the space.
     IoApic { id: u8, address: u32, gsi_base: u32 },
-    /// **A legacy interrupt has been rewired.** The ISA interrupt `source` actually arrives as global
+    /// **A legacy interrupt has been rewired.** The ISA interrupt `source` actually arrives as
+    /// global
     /// system interrupt `gsi`, with `flags` giving polarity and trigger mode. This is the entry that
     /// makes "COM1 is interrupt 4" not mean "COM1 is IO APIC input 4": on almost every machine the timer's
     /// interrupt 0 is remapped, and reading this wrong arms the wrong line.
@@ -306,8 +307,10 @@ pub const ISA_INTERRUPT_COUNT: usize = 16;
 
 /// **How one ISA interrupt actually reaches an IO APIC.**
 ///
-/// The whole point of this type is that `gsi` is very often *not* the interrupt number it was looked up
-/// by. On essentially every PC the timer's interrupt 0 arrives as global system interrupt 2, because the
+/// The whole point of this type is that `gsi` is very often *not* the interrupt number it was
+/// looked up
+/// by. On essentially every PC the timer's interrupt 0 arrives as global system interrupt 2,
+/// because the
 /// PIT is wired to the IO APIC's pin 2 while pin 0 carries the 8259 cascade. A kernel that armed
 /// redirection entry 0 for "the timer" would arm a line nothing drives, and would see no
 /// interrupts and no error.
@@ -326,7 +329,8 @@ pub struct IsaInterruptRouting {
 }
 
 impl IsaInterruptRouting {
-    /// **What an ISA interrupt is when nothing overrides it**: identity-mapped onto the global interrupt
+    /// **What an ISA interrupt is when nothing overrides it**: identity-mapped onto the global
+    /// interrupt
     /// space, active high, edge triggered. That is the ISA bus's own convention, which is what the
     /// `00` ("conforms to the specifications of the bus") encoding in an override's flags means.
     pub const fn isa_default(interrupt_number: u8) -> Self {
@@ -351,14 +355,16 @@ impl IsaInterruptRouting {
     }
 }
 
-/// **Resolve all sixteen legacy ISA interrupts through the MADT's interrupt source overrides.** `body`
+/// **Resolve all sixteen legacy ISA interrupts through the MADT's interrupt source overrides.**
+/// `body`
 /// begins after the SDT header.
 ///
 /// Returned as a whole table rather than one lookup at a time because the overrides are a list that
 /// has to be walked to answer any single question, and the caller (an interrupt controller being
 /// brought up) wants the answers to outlive the table's bytes.
 ///
-/// An override naming a source outside 0..16 is ignored: the field is a legacy interrupt number and there
+/// An override naming a source outside 0..16 is ignored: the field is a legacy interrupt number and
+/// there
 /// are sixteen of those, so a larger one is a malformed table rather than a seventeenth interrupt.
 ///
 /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
@@ -433,7 +439,8 @@ mod verification {
 
     /// **No interrupt source override can write outside the sixteen legacy interrupts.**
     ///
-    /// [`isa_interrupt_table`] indexes a fixed sixteen-entry array with `source`, a byte straight out of
+    /// [`isa_interrupt_table`] indexes a fixed sixteen-entry array with `source`, a byte straight
+    /// out of
     /// the table, and the only thing between firmware writing `source = 200` and an out-of-bounds
     /// store is one `<` in a chained `if let`. This proves it holds for every body.
     ///
@@ -447,7 +454,8 @@ mod verification {
         let body: [u8; N] = kani::any();
         let table = isa_interrupt_table(&body);
         // The claim as an assertion, because an unsatisfied `cover!` leaves a Kani harness green
-        // (Kani 0.67.0, found by the printenv harness): an interrupt no ISA override names keeps the ISA
+        // (Kani 0.67.0, found by the printenv harness): an interrupt no ISA override names keeps
+        // the ISA
         // bus's own convention, so no override wrote anywhere it did not name. The out-of-bounds
         // store the doc names is the other half, and CBMC's bounds check on `table[source]` catches
         // it on its own.
@@ -654,8 +662,10 @@ mod tests {
         );
     }
 
-    /// **The entry list decodes, including the overrides that make legacy interrupt numbers a lie.** On
-    /// almost every machine the timer's interrupt 0 arrives as GSI 2, and a kernel that armed input 0
+    /// **The entry list decodes, including the overrides that make legacy interrupt numbers a
+    /// lie.** On
+    /// almost every machine the timer's interrupt 0 arrives as GSI 2, and a kernel that armed input
+    /// 0
     /// would arm nothing.
     #[test]
     fn the_madt_entries_decode_and_the_overrides_rewire_legacy_interrupts() {
@@ -736,7 +746,8 @@ mod tests {
         );
     }
 
-    /// **The trap, resolved.** interrupt 0 is the timer and it is not IO APIC input 0; the override says
+    /// **The trap, resolved.** interrupt 0 is the timer and it is not IO APIC input 0; the override
+    /// says
     /// it arrives as GSI 2. A kernel that armed redirection entry 0 would arm the 8259 cascade and
     /// see nothing at all, with no error anywhere to say why.
     #[test]
@@ -753,7 +764,8 @@ mod tests {
         );
     }
 
-    /// An interrupt with no override keeps its number and the ISA bus's own polarity and trigger mode.
+    /// An interrupt with no override keeps its number and the ISA bus's own polarity and trigger
+    /// mode.
     #[test]
     fn an_interrupt_with_no_override_is_identity_mapped_edge_triggered_and_active_high() {
         let table = isa_interrupt_table(&q35_madt_body());
@@ -813,7 +825,8 @@ mod tests {
         );
     }
 
-    /// An override naming a source outside the sixteen legacy interrupts is a malformed table, not a
+    /// An override naming a source outside the sixteen legacy interrupts is a malformed table, not
+    /// a
     /// seventeenth interrupt, and must not index past the end of the table.
     #[test]
     fn an_override_for_a_source_above_15_is_ignored() {
@@ -831,7 +844,8 @@ mod tests {
 
     /// **Only a type-2 entry rewires a legacy interrupt.** An IO APIC entry with id 0 has a zero at
     /// both of the offsets an override keeps its bus and source in, so read as an override it
-    /// would send interrupt 0 to the IO APIC's address. Id 0 is what a single-IO-APIC PC usually has.
+    /// would send interrupt 0 to the IO APIC's address. Id 0 is what a single-IO-APIC PC usually
+    /// has.
     #[test]
     fn an_io_apic_entry_is_never_read_as_an_override() {
         let mut body = [0u8; MADT_FIXED_LEN + 12];

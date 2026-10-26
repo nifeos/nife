@@ -86,7 +86,8 @@ found it, and why this extends `serial_console` rather than the other load instr
 
 calef approved option D of DECISIONS 138 for it on 2026-09-02. Under `--features soak_test` only, `sched::on_tick`
 signals one rendezvous per group, round-robin, and one tick waiter per group blocks on it through
-`Interrupt::WAIT`. A tick then runs the same chain a device interrupt runs, through `wake_load_aware` and
+`Interrupt::WAIT`. A tick then runs the same chain a device interrupt runs, through
+`wake_load_aware` and
 the reschedule IPI. It adds no syscall and nothing in a production build, and it is
 architecture-neutral, so radon is not left out.
 

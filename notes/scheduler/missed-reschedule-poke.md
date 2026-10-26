@@ -107,7 +107,8 @@ reasoning, it is an instrument that records the transition rather than only the 
 answers cannot disagree, because there is no second answer to disagree with. That is rung one of
 CLAUDE.md's ladder rather than a comment asking the next caller to be careful.
 
-`interrupt_notify` already worked this way and was the model: it takes `wake_load_aware`'s `Option<usize>`
+`interrupt_notify` already worked this way and was the model: it takes `wake_load_aware`'s
+`Option<usize>`
 out of the critical section and pokes whatever it names. `wake_load_aware` now calls `place_on` for
 both sides instead of open-coding the local push beside it, which deletes the last duplicate of the
 comparison.

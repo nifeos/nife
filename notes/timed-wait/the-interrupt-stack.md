@@ -13,8 +13,10 @@ the question most likely to be the real cost.
 
 ## The kernel already does this
 
-It is not the real cost, and the reason is that the kernel does exactly this already. `handle_interrupt`
-calls `sched::interrupt_notify` for every routed device interrupt. That happens in `exception_body`, on
+It is not the real cost, and the reason is that the kernel does exactly this already.
+`handle_interrupt`
+calls `sched::interrupt_notify` for every routed device interrupt. That happens in `exception_body`,
+on
 the interrupt stack (`arch/aarch64/exceptions.rs`). `interrupt_notify` takes `SCHED`, signals the
 endpoint, and calls `wake_load_aware`, which moves a `Blocked` thread to `Ready` and pushes it onto
 a run queue.
@@ -52,7 +54,8 @@ high-water is 1088 of 16384 bytes, 6%, on all four cores.
 This is the finding worth carrying to the fork. A deadline expiry has to take `SCHED`, and `SCHED`
 is the whole-machine lock.
 
-`interrupt_notify` establishes that this is *allowed* from interrupt context. `InterruptSafeMutex` masks
+`interrupt_notify` establishes that this is *allowed* from interrupt context. `InterruptSafeMutex`
+masks
 interrupts for as long as it is held, so the interrupted code on this core cannot have been
 holding it. But a device interrupt is rare and a timer tick is not. Four cores ticking at 100 Hz,
 all reaching for `SCHED`, is contention that nothing pays today.

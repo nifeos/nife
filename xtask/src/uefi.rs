@@ -956,7 +956,7 @@ fn exit_verdict_lines(code: Option<i32>, exited: Duration, transcript: &str) -> 
         // nothing on x86_64)): the masked fault-event interrupt (this kernel polls) and the
         // escape's translation failure. They invite a wrong theory about QEMU versions or firmware
         // in a red run's output.
-        "the qemu-system-x86_64 VT-d lines in this run's output (`Interrupt Mask set, interrupt is not \
+        "the qemu-system-x86_64 VT-d lines in this run's output (`Interrupt Mask set, irq is not \
          generated`, `vtd_iommu_translate: detected translation failure`) are the escape test's \
          own expected faults (milestone 215), not a cause"
             .to_string(),

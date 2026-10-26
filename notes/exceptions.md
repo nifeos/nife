@@ -242,7 +242,8 @@ it.
 
 ## The dispatcher's arms, and what each relies on
 
-`kernel/src/arch/aarch64/exceptions.rs` dispatches an interrupt by vector slot and everything else by
+`kernel/src/arch/aarch64/exceptions.rs` dispatches an interrupt by vector slot and everything else
+by
 `ESR_EL1`'s class. Slots 8 to 11 are "Lower EL, AArch64": the same class is a kernel bug that halts
 the machine at slot 4 and a user bug that kills one thread at slot 8.
 
@@ -287,7 +288,8 @@ pushed over the frame before it is read.
 `exception_dispatch` chooses the stack the handler runs on and, after it returns, runs any deferred
 `schedule()`. `exception_body` is the handler proper and may run on the per-core interrupt stack.
 `schedule()` parks the running `sp` in the outgoing thread, so it may run only on a stack the thread
-owns; `kernel/src/interrupt_stack.rs` holds the rule. The interrupt handler writes end-of-interrupt before
+owns; `kernel/src/interrupt_stack.rs` holds the rule. The interrupt handler writes end-of-interrupt
+before
 returning, so the GIC is not left refusing interrupts to the thread switched to.
 
 ### Costs the debug build pays
@@ -305,7 +307,8 @@ handlers:
 
 - Milestone 4: data aborts become page faults, and most become *recoverable* (the page
   was swapped out, or copy-on-write needs to duplicate it).
-- Milestone 5 (the GIC and the timer): interrupt stops being fatal and becomes the timer tick that drives preemption.
+- Milestone 5 (the GIC and the timer): interrupt stops being fatal and becomes the timer tick that
+  drives preemption.
 - Milestone 7: EC `0x15` (`svc`) stops being fatal and becomes the syscall dispatcher.
 
 The plumbing is already there. Those milestones are mostly a matter of adding arms to a

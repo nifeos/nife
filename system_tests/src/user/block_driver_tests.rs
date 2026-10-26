@@ -85,10 +85,12 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // **The baseline is sampled before the device is wired.** The trap handler bumps
-    // `ROUTED_INTERRUPTS` immediately *before* `sched::interrupt_notify`, and `Interrupt::WAIT` receives on the
+    // `ROUTED_INTERRUPTS` immediately *before* `sched::interrupt_notify`, and `Interrupt::WAIT`
+    // receives on the
     // endpoint notify signals, so a driver cannot report without this counter having moved, and
     // until `start_pci` runs there is nothing to count. The check guards that chain: a driver that
-    // polls the used ring, or a handler that counts after `interrupt_notify`, breaks it and this fires,
+    // polls the used ring, or a handler that counts after `interrupt_notify`, breaks it and this
+    // fires,
     // where the first assertion alone would pass a polled driver. See
     // notes/load-sensitive-assertions.md.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
@@ -108,7 +110,8 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     assert!(
         interrupts_after > interrupts_before,
         "the read completed but the device's interrupt was never delivered to this kernel \
-         ({interrupts_before} routed before the device was wired, {interrupts_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 

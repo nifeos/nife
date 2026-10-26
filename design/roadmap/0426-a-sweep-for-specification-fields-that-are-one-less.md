@@ -22,7 +22,8 @@ It is a `git grep` and a reading, not a mechanism.
 Milestone 319's own two sites account for four of them and are settled. The rest have not been read
 against the rule this block states, and at least three are the family. `crates/pci` reads an MSI-X
 table size the specification stores as the count minus one in eleven bits.
-`kernel/src/arch/x86_64/interrupt_controller.rs` reads the I/O APIC's LVT entry count minus one out of a version
+`kernel/src/arch/x86_64/interrupt_controller.rs` reads the I/O APIC's LVT entry count minus one out
+of a version
 register. `crates/dtb`'s hostile test names a depth-minus-one that underflows at zero. Nothing
 in the tree records that any of them was checked.
 

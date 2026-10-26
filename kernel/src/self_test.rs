@@ -920,7 +920,8 @@ fn blockdev(tally: &mut Tally) {
 ///
 /// Different from [`fn@timer`]'s claim, which is about an interrupt the CPU's own timer raises:
 /// this one comes from a device outside the CPU, through the controller's routing. `x86_64` proves
-/// the PIT's line through the IO APIC at bring-up (`arch::interrupt_controller::initialize`, the only window where
+/// the PIT's line through the IO APIC at bring-up (`arch::interrupt_controller::initialize`, the
+/// only window where
 /// the scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
 /// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
 /// disk; there the line is proved by the input driver at the hand-over and by [`blockdev`].

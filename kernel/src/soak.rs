@@ -121,7 +121,8 @@ pub fn run() -> ! {
 /// Spawn every group's workers, responder first.
 ///
 /// Returns the thread each worker got and the core it was placed on (`u8::MAX` if unknown), kept
-/// for the census. A waiter is granted only its `Interrupt` capability, a responder read and a caller
+/// for the census. A waiter is granted only its `Interrupt` capability, a responder read and a
+/// caller
 /// write on the group's rendezvous. Halts the boot if a spawn fails.
 fn spawn_workers(
     image: &'static [u8],
@@ -727,7 +728,8 @@ static TICK_CURSOR: AtomicUsize = AtomicUsize::new(0);
 /// shared rendezvous starves all but one waiter. See notes/soak/tick-route.md.
 ///
 /// Context: called from `sched::on_tick`, in interrupt context, on every core. Takes `IPC_TABLES`
-/// through `interrupt_notify`, an `InterruptSafeMutex` (§9 (locking: `IrqSafeMutex`, plus a discipline)), so
+/// through `interrupt_notify`, an `InterruptSafeMutex` (§9 (locking: `IrqSafeMutex`, plus a
+/// discipline)), so
 /// the interrupted code cannot hold it.
 ///
 /// Name: provisional (milestone 221): calef names public items.

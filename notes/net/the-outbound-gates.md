@@ -85,7 +85,8 @@ ACK is dropped, the peer goes quiet waiting for our retransmit. Our retransmit i
 that only fires on the next `poll`, which we are not doing because we are blocked on an interrupt the
 peer will never send. net_stack waits for the peer, the peer waits for net_stack, both idle. Instrumenting the
 PLIC at the hang showed the truth: no source pending, the net source still enabled. Not a masked
-line, not a lost interrupt; the device was simply idle, because both ends were waiting on the same stalled
+line, not a lost interrupt; the device was simply idle, because both ends were waiting on the same
+stalled
 timer. aarch64 happened never to drop a segment (different servicing latency), so it never armed the
 retransmit path. The riscv SMP scatter, which moves the driver and its wakes across harts, was slow
 enough to drop one and expose the hole. It was not the interrupt affinity: forcing every source back to the
@@ -102,7 +103,8 @@ service loop use it. `std_net` then completes on both ISAs at the 4-hart/4-core 
 The honest caveat: yielding across a retransmit window spins a hart until the timer is due (bounded by
 the exchange, and by a 15 s per-call backstop well under the 60 s watchdog). The clean version is a
 *timed* wait, a `WAIT` that returns on either the interrupt or a deadline, so the server sleeps
-through the backoff instead of spinning. That is a small kernel-surface addition (an `Interrupt::WAIT`
+through the backoff instead of spinning. That is a small kernel-surface addition (an
+`Interrupt::WAIT`
 timeout, or a timer notification) and is left as the follow-up. The yield-poll is correct and needs no
 new syscall.
 

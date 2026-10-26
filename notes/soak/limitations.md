@@ -47,7 +47,8 @@ entry as it was written, sentence-split for the prose limits.
   and 3,779 on the same aarch64 build, same command, same host. Whether a wake goes remote is
   `wake_load_aware`'s call, and it depends on where everything happened to be. Nothing here is wrong.
   It means a single run's crossing count is not a figure to compare two builds on.
-- A waiter whose `Interrupt::WAIT` is refused spins instead of saying so. It has no channel to report on,
+- A waiter whose `Interrupt::WAIT` is refused spins instead of saying so. It has no channel to
+  report on,
   so it stops counting, and the stall check speaks for it one beat later. The report then says
   "stalled" where "refused" would be more use.
 - The census is `last_cpu`, so it is where a thread last *ran*, not where it is queued. A thread

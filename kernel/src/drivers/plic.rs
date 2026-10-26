@@ -66,12 +66,14 @@ pub unsafe fn initialize(base: usize, context: usize) {
     PLIC_BASE.store(base, Ordering::Relaxed);
     // Threshold 0: an interrupt is taken when its priority is strictly greater, so priority >= 1
     // gets through. (Threshold at max would mask everything.) Opens the boot context; a secondary
-    // hart's context is opened lazily by `arch::interrupt_controller` the first time a source is routed to it.
+    // hart's context is opened lazily by `arch::interrupt_controller` the first time a source is
+    // routed to it.
     open_context(context);
 }
 
 /// Open `context`'s threshold so any source with a nonzero priority can interrupt it.
-/// [`initialize`] does this for the boot context; interrupt affinity (`arch::interrupt_controller`) calls this for a
+/// [`initialize`] does this for the boot context; interrupt affinity (`arch::interrupt_controller`)
+/// calls this for a
 /// secondary hart's context the first time it routes a device source there, so that hart can
 /// actually take the interrupt. A context whose threshold is never opened takes nothing, which is
 /// the safe default. Idempotent.
@@ -85,7 +87,8 @@ pub(crate) fn open_context(context: usize) {
 /// Serializes the per-context enable-bit words, the one read-modify-write in this driver: two
 /// interleaved updates lose one, and a lost enable masks a device forever.
 ///
-/// Context: an `InterruptSafeMutex` at [`rank::INTERRUPT_CONTROLLER`], a leaf taken holding nothing, never by
+/// Context: an `InterruptSafeMutex` at [`rank::INTERRUPT_CONTROLLER`], a leaf taken holding
+/// nothing, never by
 /// an interrupt handler. It guards `()`, not [`PLIC_BASE`], so claim/complete never takes it. See
 /// notes/interrupts/controller-drivers.md and notes/arch-audit.md finding 3.
 static ENABLE_BITS: InterruptSafeMutex<()> =
@@ -105,7 +108,8 @@ fn set_enable_bit(source: u32, context: usize, on: bool) {
 
 /// Enable `source` for `context` and give it a nonzero priority, so the PLIC will deliver it there.
 ///
-/// `context` is a hart's S-mode context, chosen by the affinity policy in `arch::interrupt_controller`.
+/// `context` is a hart's S-mode context, chosen by the affinity policy in
+/// `arch::interrupt_controller`.
 ///
 /// Context: takes [`ENABLE_BITS`].
 ///
@@ -244,7 +248,8 @@ mod tests {
         );
     }
 
-    /// The lock is interrupt-safe: the interrupt state around the call is restored, not merely enabled,
+    /// The lock is interrupt-safe: the interrupt state around the call is restored, not merely
+    /// enabled,
     /// in both directions (§9 (locking: `IrqSafeMutex`, plus a discipline)). This proves what would
     /// turn the lock into a hang, not the mutual exclusion.
     #[test_case]
@@ -270,7 +275,8 @@ mod tests {
         disable(PROBE, ctx);
         assert!(
             !interrupts::is_enabled(),
-            "the disable path unmasked interrupts inside an interrupt-disabled context, which is what it \
+            "the disable path unmasked interrupts inside an interrupt-disabled context, which \
+            is what it \
              would do to an interrupt handler"
         );
         interrupts::restore(outer);

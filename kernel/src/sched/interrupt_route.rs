@@ -59,7 +59,8 @@ pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
 /// never lost while the receiver is busy. A stale `ep` drops it.
 ///
 /// Context: interrupt context. Takes `IPC_TABLES`, which the interrupted code cannot hold, because
-/// `InterruptSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing it.
+/// `InterruptSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing
+/// it.
 ///
 /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
@@ -96,7 +97,8 @@ pub fn interrupt_notify(ep: RendezvousId) {
     }
 }
 
-/// The rendezvous whose interrupts [`interrupt_notify`] timestamps for a bench row, plus one (0 means
+/// The rendezvous whose interrupts [`interrupt_notify`] timestamps for a bench row, plus one (0
+/// means
 /// none). See [`watch_interrupt`].
 #[cfg(feature = "bench")]
 static WATCHED: AtomicU64 = AtomicU64::new(0);
@@ -115,7 +117,8 @@ pub fn watch_interrupt(ep: RendezvousId) {
     WATCHED.store(ep + 1, Ordering::Relaxed);
 }
 
-/// The counter reading at the last interrupt [`interrupt_notify`] delivered to the watched rendezvous.
+/// The counter reading at the last interrupt [`interrupt_notify`] delivered to the watched
+/// rendezvous.
 ///
 /// Relaxed on both sides: a reader learns that the interrupt happened through an IPC the driver
 /// sent after waking from it, and that IPC passes through `IPC_TABLES`, which orders this load

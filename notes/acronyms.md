@@ -9,7 +9,7 @@ linked.
 |---|---|---|
 | **IRQ** | **Interrupt ReQuest** | The tree spells it `interrupt` in names. The name is the wire. A device *requests* an interrupt by raising a signal line; the CPU notices between two instructions and diverts. One of the four exception kinds. |
 | **FIQ** | **Fast Interrupt ReQuest** | A second, higher-priority line. ARM gave it *banked* registers so the handler could start without saving as much. Now mostly the secure world's. We treat it as fatal. |
-| **GIC** | **Generic Interrupt Controller** | The CPU has **one** interrupt line; a machine has hundreds of sources. The GIC decides which is asserting, whether it's allowed through, which core gets it, and in what order. "Generic" because ARM standardized *one* controller for all ARM SoCs: before it, every board needed a different interrupt driver. See [interrupts.md](interrupts.md). |
+| **GIC** | **Generic Interrupt Controller** | The CPU has **one** interrupt line; a machine has hundreds of sources. The GIC decides which is asserting, whether it is allowed through, which core gets it, and in what order. "Generic" because ARM standardized *one* controller for all ARM SoCs: before it, every board needed a different interrupt driver. See [interrupts.md](interrupts.md). |
 | **GICD** | GIC **Distributor** | One per machine. Which core gets what, and what's enabled at all. |
 | **GICC** | GIC **CPU interface** | One per core, *banked* (every core sees its own at the same address). |
 | **PMR** | **Priority Mask Register** | A threshold: deliver only interrupts whose priority is **strictly less** than this. And lower value = higher priority, so `0xff` = everything, `0` = nothing. |

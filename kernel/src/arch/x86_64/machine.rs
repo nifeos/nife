@@ -255,7 +255,8 @@ pub(crate) struct Acpi {
     pub local_apic: Option<u64>,
     /// The first IO APIC's id, physical address and global-interrupt base.
     pub io_apic: Option<(u8, u32, u32)>,
-    /// **The sixteen legacy ISA interrupts, resolved through the MADT's interrupt source overrides.**
+    /// **The sixteen legacy ISA interrupts, resolved through the MADT's interrupt source
+    /// overrides.**
     ///
     /// Not an `Option`, unlike everything around it, and for a reason worth stating: a machine with
     /// no overrides at all is not a machine with no answer. The ISA bus's own convention (identity
@@ -480,7 +481,8 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
     into.local_apic = Some(madt.local_apic as u64);
     into.has_8259 = madt.flags & MADT_PCAT_COMPAT != 0;
     // The overrides in one pass of their own, in the crate, because resolving them is pure logic
-    // over bytes and belongs where a host test can prove it. See its `the_timers_interrupt_0_resolves_to
+    // over bytes and belongs where a host test can prove it. See its
+    // `the_timers_interrupt_0_resolves_to
     // _gsi_2` test for the case this whole table exists for.
     into.isa_interrupts = isa_interrupt_table(body);
 

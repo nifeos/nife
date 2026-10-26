@@ -92,7 +92,8 @@ instructions, which the host cannot move. The disposition and its measurements a
 | 6 | `F` | FIQ |
 
 A set bit masks. `msr daifset` and `msr daifclr` take a 4-bit immediate in which bit 1 is `I`, so
-masking interrupts is `msr daifset, #2`, one instruction that touches only the bits it names and so has
+masking interrupts is `msr daifset, #2`, one instruction that touches only the bits it names and so
+has
 no read-modify-write window. The kernel touches only `I`; FIQ and SError stay as the boot protocol
 left them.
 
@@ -134,7 +135,8 @@ does is in design/roadmap/0227-gicv3-driver.md.
 
 ### Which GIC, and where its lines go
 
-`interrupt_controller::initialize` decides the version once, on the boot core, from the device tree's `compatible`.
+`interrupt_controller::initialize` decides the version once, on the boot core, from the device
+tree's `compatible`.
 It then asks the hardware whether the tree is right (`Gic::confirm`, on the distributor's revision
 for a GICv3 and the CPU interface's for a GICv2) before any configuration write, and a mismatch
 panics naming both sides. A GICv3 driven as a GICv2 boots, prints `interrupts ON` and takes nothing;
@@ -142,7 +144,8 @@ the check turns that into a boot that stops and says why. The version is one byt
 any interrupt is unmasked, so the interrupt path reads it relaxed.
 
 Device lines (SPIs) are spread over the online cores round robin, and each line's target is
-assigned once and reused. The interrupt handler masks a routed line when it fires and the driver's ACK
+assigned once and reused. The interrupt handler masks a routed line when it fires and the driver's
+ACK
 re-enables it, so a target chosen on every enable would move the line on every completion. The
 cursor counts online cores, not indices, so a line never targets a parked core.
 
@@ -194,7 +197,8 @@ reads whichever core it is on.
 Reading the current thread is two steps, the pointer and then the field, and a kernel thread
 preempted between them resumes holding another core's block. riscv64 and `x86_64` close that with
 one load relative to the per-CPU register. aarch64 has no addressing mode relative to a system
-register, so `read_current_thread` masks interrupts across the two instructions and restores `DAIF` whole.
+register, so `read_current_thread` masks interrupts across the two instructions and restores `DAIF`
+whole.
 Linux keeps `current` in `SP_EL0` instead, which would mean swapping that register on every trap.
 
 It is one `asm!` block of five instructions rather than `interrupts::disable` and a load, because

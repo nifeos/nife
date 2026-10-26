@@ -1,6 +1,7 @@
 //! The interrupt controller, aarch64: the GIC.
 //!
-//! The arch side of the portable `arch::interrupt_controller` surface, so no caller names `drivers::gic`. It holds
+//! The arch side of the portable `arch::interrupt_controller` surface, so no caller names
+//! `drivers::gic`. It holds
 //! both GIC versions: a GICv2 is `drivers/gic.rs`; a GICv3 is `drivers/gicv3.rs` plus
 //! `gic_cpu_interface.rs`. [`initialize`] takes the version from the device tree and confirms it
 //! with the hardware before any configuration write. The RISC-V twin is the PLIC. See
@@ -39,7 +40,8 @@ fn affinity_of(cpu: usize) -> u64 {
 }
 
 /// Per-INTID target core, or [`UNASSIGNED`] until the first `enable` chooses one. A device line's
-/// target must be **stable** across re-enables: the interrupt handler masks the line when it fires, and
+/// target must be **stable** across re-enables: the interrupt handler masks the line when it fires,
+/// and
 /// the driver's ACK re-enables it (this file's `enable`), so if we re-rolled the target on every
 /// ACK the line would hop cores on every completion. Assign once, then reuse.
 const UNASSIGNED: u8 = 0xff;
@@ -79,7 +81,8 @@ fn target_cpu(intid: u32) -> usize {
 
 /// Re-enable (unmask) an interrupt source at the controller.
 ///
-/// Called by the `Interrupt` capability's ACK once a userspace driver has serviced its device (seL4's
+/// Called by the `Interrupt` capability's ACK once a userspace driver has serviced its device
+/// (seL4's
 /// `IRQHandler` protocol), and by the timer on each core. An SPI goes to its [`target_cpu`]; an SGI
 /// or a PPI (INTID below 32) is enabled on the calling core and takes no target.
 pub fn enable(intid: u32) {
@@ -95,8 +98,10 @@ pub fn enable(intid: u32) {
     }
 }
 
-/// Mask an interrupt source at the controller: the interrupt handler's first act for a line routed to a
-/// userspace driver, undone by [`enable`] when the driver ACKs. A PPI is masked on the calling core.
+/// Mask an interrupt source at the controller: the interrupt handler's first act for a line routed
+/// to a
+/// userspace driver, undone by [`enable`] when the driver ACKs. A PPI is masked on the calling
+/// core.
 pub(crate) fn disable(intid: u32) {
     if is_v3() {
         gicv3::disable(crate::cpu::id(), intid);
@@ -145,7 +150,8 @@ pub fn send_sgi(intid: u32, target_cpu: usize) {
 
 /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's
 /// milestone-215 name. `None`: a PCI function on QEMU's `virt` raises INTx through the swizzle
-/// (`pci::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs` falls back to that. A GICv3
+/// (`pci::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs`
+/// falls back to that. A GICv3
 /// ITS would implement MSI here on a board that needs it. See
 /// design/roadmap/0215-x86-64-pci-interrupt-routing.md.
 pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
@@ -154,7 +160,8 @@ pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
 
 /// **How many interrupts a device line delivered at bring-up**, which on this port is none: no
 /// device here can be made to interrupt without input or an attached disk, so bring-up proves no
-/// device line through the GIC, and `self_test`'s `device_interrupt` check reports itself absent. `x86_64`
+/// device line through the GIC, and `self_test`'s `device_interrupt` check reports itself absent.
+/// `x86_64`
 /// proves the PIT's. A device line on this port is proved where one exists: the user-level input
 /// driver at the hand-over, and the `blockdev` check's driver when a disk is attached.
 #[cfg_attr(
@@ -207,7 +214,8 @@ pub fn initialize() {
         }
         Gic::V3 { .. } => {
             VERSION.store(3, Ordering::Relaxed);
-            // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the distributor
+            // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the
+            // distributor
             // and the whole redistributor region are mapped device memory that nothing else drives.
             unsafe { gicv3::initialize(gicd, second_virt, second.size) };
             initialize_this_cpu();
@@ -216,7 +224,8 @@ pub fn initialize() {
 }
 
 /// Per-core interrupt-controller setup, run by each core as it comes online. On a GICv2 the CPU
-/// interface is banked MMIO; on a GICv3 the core finds and wakes its own redistributor, then turns on
+/// interface is banked MMIO; on a GICv3 the core finds and wakes its own redistributor, then turns
+/// on
 /// its system-register CPU interface. Either way every core enables its own.
 pub(crate) fn initialize_this_cpu() {
     if is_v3() {

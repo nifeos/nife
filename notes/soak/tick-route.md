@@ -27,7 +27,8 @@ Each group has its own route, and each tick signals one of them, round-robin acr
 Both halves of that are fixes rather than flourishes, and the section below says what they fix.
 
 That last chain is why this was worth building rather than the alternatives. `wake_load_aware` is
-where risk 5's one observed defect lived, on radon. It had exactly one caller (`sched::interrupt_notify`),
+where risk 5's one observed defect lived, on radon. It had exactly one caller
+(`sched::interrupt_notify`),
 which no user workload could reach.
 
 Four properties, each of which was a requirement rather than a bonus:
@@ -38,7 +39,8 @@ Four properties, each of which was a requirement rather than a bonus:
 - Nothing exists in a production build. That is proved in [qemu-2026-09.md](qemu-2026-09.md),
   not asserted.
 - It is architecture-neutral, and that is load-bearing. riscv64 has no software-raisable line that
-  reaches `interrupt_route` at all. So an aarch64 `send_sgi` or an x86 self-IPI would have left radon out.
+  reaches `interrupt_route` at all. So an aarch64 `send_sgi` or an x86 self-IPI would have left
+  radon out.
   (Radon was believed to be the machine that produced fatal risk 5's defect. That reading is
   retracted by `notes/visionfive2.md`'s fifth bench stop, 2026-08-15, and it never happened. Staying
   architecture-neutral is still the right call on its own merits.) The timer is the one source all
@@ -61,10 +63,12 @@ a summary gets quoted.
 `bind_tick_routes` binds group `g`'s route to intid `255 - g`. None of those names hardware or can
 be delivered on any of the three architectures. On aarch64 and riscv64 a routed interrupt arrives
 only if something enabled it at the controller, and nothing enables these. On x86_64 the top of the
-band is the local APIC's spurious vector, answered in its own arm before `interrupt_route` is asked. The
+band is the local APIC's spurious vector, answered in its own arm before `interrupt_route` is asked.
+The
 rest sit at the far end of an MSI band allocated upward from 0xc0.
 
-None of that is what makes it safe. `soak::bind_tick_routes` asks `sched::interrupt_route` about every
+None of that is what makes it safe. `soak::bind_tick_routes` asks `sched::interrupt_route` about
+every
 number before it takes any of them. It refuses to start a soak whose routes would steal somebody
 else's interrupt. A soak boot runs the whole tour first, so every device has already claimed what it
 is going to claim by the time that check runs.
@@ -87,7 +91,8 @@ appear at all.
 The kernel binds the routes before it spawns the first waiter, and switches the signaling on last.
 Arming last is correct for the *signaling*. A route signaled before anyone waits on it hands the
 first waiter a backlog, and makes the first beat measure setup. It is wrong for the *routing*. A
-waiter that reaches `Interrupt::WAIT` before its route exists gets `WrongObject`, and with no channel to
+waiter that reaches `Interrupt::WAIT` before its route exists gets `WrongObject`, and with no
+channel to
 report a refusal on, it stops counting. The run fails a beat later with workers apparently wedged.
 aarch64 tolerates the race and riscv64 does not, which is the ordinary shape of this class.
 

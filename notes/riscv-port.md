@@ -22,7 +22,8 @@ rest of the kernel calls through `crate::arch`:
   user-mapping surface (`map_current_user_page/frame`, `unmap_user_at`, `translate_at`,
   `map_page`/`unmap_page`, `activate_user`/`deactivate_user`, `switch_user_root`, `reserved_root`,
   `flush_asid`, `flush_tlb`, `user_can_read`/`write`, `current_user_root`,
-  `translate`/`translate_user`, `is_enabled`), and the `VIRTIO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
+  `translate`/`translate_user`, `is_enabled`), and the
+  `VIRTIO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
 - `timer`: `TIMER_INTID`, `TICK_HZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_ms`,
   `spin_for`, `interval`, `missed_ticks`.
@@ -148,7 +149,8 @@ one, and the bugs each surfaced, are in [riscv-port/bring-up-log.md](riscv-port/
 4. MMU: Sv39 kernel tables, W^X, high half, and the kernel mapping surface.
 5. Timer and interrupts: SBI TIME at 100 Hz, then the PLIC for device interrupts.
 6. The capability core: U-mode programs, capability invocation, preemption, a compiled ELF, an init
-   that builds its children from its own budget, and a userspace UART driver on an `Interrupt` capability.
+   that builds its children from its own budget, and a userspace UART driver on an `Interrupt`
+   capability.
 
 The port is complete. Boot, MMU, traps, timer, scheduler, preemption, U-mode user programs,
 capability invocation, userspace-built processes (init loads and builds children), and device

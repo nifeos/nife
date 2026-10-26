@@ -115,7 +115,8 @@ assembly in it, and none of it is proved) said "can be written and cannot be run
 context's address fields round-trip, and no device id reaches another's entry. Measured cost:
 five lines in `arch/mod.rs` and one harness. The probe run's wall time was not taken separately;
 the row it joins is 7.25 seconds.
-Extending to `interrupt_controller.rs` costs its 8 resolve errors, most likely by compiling the PLIC driver under
+Extending to `interrupt_controller.rs` costs its 8 resolve errors, most likely by compiling the PLIC
+driver under
 the same `cfg` (unmeasured). The ceiling was 736 lines, 12.5% of `arch/riscv64/`'s 5,879 Rust
 lines by `wc -l`. This said 6% of 11,746, a total that counted every file twice. Both predate
 milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs), which grew

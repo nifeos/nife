@@ -25,11 +25,11 @@ on xenon, page by page, in `notes/xenon-firmware.md`.
    because `Enable Legacy Option ROMs` is off. Already UEFI.
 3. Serial port: COM1. The C4PDJ module presents COM1 at I/O port `0x3f8`, which is where the kernel's
    console driver looks (`arch::x86_64::port`). This is the one that was worded differently. The old
-   wording said "Serial port: enabled", and guessed that the firmware might offer an address or interrupt
+   wording said "Serial port: enabled", and guessed that the firmware might offer an address or IRQ
    choice. It does not. *System Configuration → Serial Port* is a single five-way radio, `Disabled` /
    `COM1` / `COM2` / `COM3` / `COM4`, with no separate enable. The page's own help says
-   `COM1 = Port is configured at 3F8h with interrupt 4`. So there is nothing to enable and nothing to enter;
-   pick COM1, and the address and interrupt follow. Already COM1.
+   `COM1 = Port is configured at 3F8h with IRQ 4`. So there is nothing to enable and nothing to enter;
+   pick COM1, and the address and IRQ follow. Already COM1.
 4. Leave the rest alone on the first attempt. In particular, do not disable the integrated NIC or
    change the SATA mode. Nothing here needs them, and a changed setting is one more variable in a
    bring-up that already has enough. Right as written: both settings exist under

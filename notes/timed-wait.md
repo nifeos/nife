@@ -89,7 +89,8 @@ core. The static totals over-count, so the ratio is a lower bound and the delta 
 ## 4. The interrupt-stack proof holds, and the reason it holds was already in the tree
 
 Nothing on an interrupt stack may context-switch, and `script/stack-depth-check` proves it. A
-deadline expiry keeps that proof, because a wake is an enqueue, not a switch: `interrupt_notify` already
+deadline expiry keeps that proof, because a wake is an enqueue, not a switch: `interrupt_notify`
+already
 wakes threads from the interrupt stack, and the switch is deferred to `preempt_if_needed` one frame
 out. A prototype `expire_deadlines` was wired in and the gate still found no context switch
 reachable, on both ISAs. What it does cost is the whole-machine `SCHED` lock on every tick, which is

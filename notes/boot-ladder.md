@@ -99,7 +99,8 @@ A machine without the device reports the check `absent`, with its reason, and th
 it: `nife self-test: 12 of 15 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
 its own. Each `serial_console` board profile names the checks its board has the device for, and an
 absence of one of those is FAILED: radon may not be without `entropy`, `trng` or `clock`, and
-xenon not without `entropy` or `device_interrupt`. The emulator profile `boot-check` uses forbids none.
+xenon not without `entropy` or `device_interrupt`. The emulator profile `boot-check` uses forbids
+none.
 
 **A failure prints and the boot carries on.** calef, 2026-09-09: *"I could see building tools to
 diagnose what broke but we can only run them if there is a prompt"*. A machine you cannot log into
@@ -166,7 +167,8 @@ board-console: self-test: nife self-test: 5 of 5 passed
 ```
 
 That capture is of a kernel with five checks. Today's kernel on radon should report `blockdev` and
-`device_interrupt` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or `clock`
+`device_interrupt` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or
+`clock`
 is absent. No board has run it yet.
 
 Replay a capture through the same recognizer, which is how every marker in it is tested:

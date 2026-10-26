@@ -125,7 +125,8 @@ fn a_process_spends_memory_region_and_the_kernel_never_allocates() {
 
 /// A userspace builder delegates an interrupt to a driver it builds (milestone 19d.2b).
 ///
-/// `interrupt_child_builder` hands `interrupt_child` the Interrupt cap for a test SGI; the test raises
+/// `interrupt_child_builder` hands `interrupt_child` the Interrupt cap for a test SGI; the test
+/// raises
 /// it, and the child wakes on the message and reports. A hang means the interrupt never reached
 /// the built child. aarch64-only: RISC-V has no second line to raise, and the property is proved
 /// there by other tests (notes/riscv-parity-scope.md, "The aarch64-only user tests").

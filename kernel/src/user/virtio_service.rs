@@ -594,7 +594,7 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE),
-                    interrupt_cap(dev.intid), // slot 1 (unused by the attacker; keeps virtio at slot 2)
+                    interrupt_cap(dev.intid), // slot 1 (unused by the attacker)
                     virtio_cap(vid),          // slot 2
                 ],
                 maps: &[Mapping {

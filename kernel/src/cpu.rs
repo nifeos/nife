@@ -46,7 +46,8 @@ pub struct PerCpu {
     /// is empty. Each core gets its own, so an idle core parks in its *own* `wfi`.
     pub idle: AtomicU64,
 
-    /// Set by this core's timer tick, read on this core's return from the interrupt, so one core's tick
+    /// Set by this core's timer tick, read on this core's return from the interrupt, so one core's
+    /// tick
     /// cannot make another reschedule (DECISIONS §9 (locking)'s record-and-defer).
     pub need_resched: AtomicBool,
 

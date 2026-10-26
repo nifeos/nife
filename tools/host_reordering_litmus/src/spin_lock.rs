@@ -1,6 +1,7 @@
 //! LOCK: four cores increment one counter under a spinlock, in two builds. [`test`] uses a copy
 //! shaped like the kernel's lock, whose unlock ordering is a parameter; [`test_kernel_lock`] uses
-//! `crates/spin_lock` itself, the lock under the kernel's `InterruptSafeMutex`, with the counter inside
+//! `crates/spin_lock` itself, the lock under the kernel's `InterruptSafeMutex`, with the counter
+//! inside
 //! it as a kernel lock's data is.
 //!
 //! The lock takes with `compare_exchange_weak(false, true, Acquire, Relaxed)` and spins on a

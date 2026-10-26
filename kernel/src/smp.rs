@@ -291,7 +291,8 @@ fn seat_cpus_from_acpi(cpus: &[(u8, bool)]) {
 ///
 /// A filled slot holds its own index by construction, so a `Some` is always `Some(id)`; the `None`
 /// is what distinguishes a seat the machine filled. Used outside tests only on `x86_64`, where
-/// `arch::x86_64::interrupt_controller::send_reschedule` looks up a target's local APIC id; aarch64 and RISC-V send
+/// `arch::x86_64::interrupt_controller::send_reschedule` looks up a target's local APIC id; aarch64
+/// and RISC-V send
 /// their reschedule IPIs by logical id.
 #[cfg_attr(
     not(any(test, feature = "system_tests", target_arch = "x86_64")),

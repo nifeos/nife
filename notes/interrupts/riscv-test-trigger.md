@@ -21,11 +21,13 @@ it. No transfer, no external stimulus, nothing to read back. `console::raise_uar
 
 Two other options were considered and are worse, for reasons worth keeping:
 
-- The SBI's IPI (`sbi_send_ipi`, which `arch::interrupt_controller::send_reschedule` already uses). It is the
+- The SBI's IPI (`sbi_send_ipi`, which `arch::interrupt_controller::send_reschedule` already uses).
+  It is the
   obvious "software-generated interrupt" on RISC-V and it is the wrong one. It arrives as a
   *supervisor software* interrupt, `scause` = 1, which is a different arm of
   `riscv_trap_dispatch` from a device's `scause` = 9: that arm drains the scheduler inbox and serves
-  steal requests, and touches neither `interrupt_route` nor `interrupt_notify`. A test built on it would have
+  steal requests, and touches neither `interrupt_route` nor `interrupt_notify`. A test built on it
+  would have
   looked like parity with aarch64 and proved nothing about interrupt-to-message delivery.
 - Writing the PLIC's pending bits (base + 0x1000). Read-only by specification, and QEMU 11.0.2
   agrees: a probe that set source 20's pending bit and read the word back got `0x0` before and

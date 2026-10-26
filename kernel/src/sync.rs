@@ -70,7 +70,8 @@ pub mod rank {
     /// The ASID allocator, taken alone at address-space creation and teardown.
     pub(crate) const ASIDS: u32 = 15;
 
-    /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the interrupt handler,
+    /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the interrupt
+    /// handler,
     /// which may print while holding it. One rank for two drivers that never coexist; `x86_64`
     /// never takes it. See notes/locking.md.
     ///

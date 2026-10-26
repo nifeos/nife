@@ -198,7 +198,8 @@ pub(super) fn process_invoke(
     }
 }
 
-/// `Interrupt::WAIT`: block on the endpoint the kernel routed this interrupt to; the interrupt arrives
+/// `Interrupt::WAIT`: block on the endpoint the kernel routed this interrupt to; the interrupt
+/// arrives
 /// as a message (`sched::interrupt_notify`). `WrongObject` when the line has no route.
 #[inline(never)]
 #[doc(alias = "irq")]
@@ -212,7 +213,8 @@ pub(super) fn interrupt_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, E
     Ok(m[0] as i64)
 }
 
-/// `Interrupt::ACK`: unmask the interrupt at the controller, which masked it when it fired, once the
+/// `Interrupt::ACK`: unmask the interrupt at the controller, which masked it when it fired, once
+/// the
 /// driver has serviced the device.
 #[inline(never)]
 #[doc(alias = "irq")]

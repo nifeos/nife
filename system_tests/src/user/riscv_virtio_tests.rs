@@ -152,7 +152,8 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // Sampled before the device is wired, not after: `ROUTED_INTERRUPTS` is bumped ahead of the
-    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only way
+    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
+    // way
     // this assertion can fail is a baseline taken after the completion. See
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
@@ -173,7 +174,8 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
     assert!(
         interrupts_after > interrupts_before,
         "the read completed but no device interrupt was delivered as a message \
-         ({interrupts_before} routed before the device was wired, {interrupts_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 
@@ -753,7 +755,8 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // Sampled before the device is wired, not after: `ROUTED_INTERRUPTS` is bumped ahead of the
-    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only way
+    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
+    // way
     // this assertion can fail is a baseline taken after the completion. See
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
@@ -773,7 +776,8 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     assert!(
         interrupts_after > interrupts_before,
         "the read completed but no INTx interrupt was delivered through the PLIC \
-         ({interrupts_before} routed before the device was wired, {interrupts_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 

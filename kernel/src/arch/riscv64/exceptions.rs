@@ -198,7 +198,8 @@ const SPP: u64 = 1 << 8;
 /// The high bit of `scause`: set for an interrupt, clear for an exception.
 const INTERRUPT: u64 = 1 << 63;
 /// `scause` interrupt code for a supervisor external interrupt: a device raised a line into the
-/// PLIC, which routed it here. The RISC-V analog of an aarch64 interrupt exception carrying a GIC intid.
+/// PLIC, which routed it here. The RISC-V analog of an aarch64 interrupt exception carrying a GIC
+/// intid.
 const S_EXTERNAL: u32 = 9;
 /// `scause` interrupt code for a supervisor software interrupt: another hart's reschedule IPI, set
 /// through the SBI (which pends `sip.SSIP`). The RISC-V analog of aarch64's reschedule SGI.

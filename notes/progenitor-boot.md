@@ -148,7 +148,8 @@ source is armed.
 - riscv64 arms only after the progenitor starts, because the lottery forbids arming earlier
   ([harts and PEs](harts-and-pes.md)). The UART's PLIC source and each virtio device's source are
   enabled on the boot hart's own context (`boot_s_context`), not through the hart-spreading
-  `crate::arch::interrupt_controller::enable`, and then supervisor external interrupts. The input driver arms the
+  `crate::arch::interrupt_controller::enable`, and then supervisor external interrupts. The input
+  driver arms the
   NS16550's own receive interrupt when it starts, and re-arms the PLIC source through its Interrupt
   capability's `ACK`.
 

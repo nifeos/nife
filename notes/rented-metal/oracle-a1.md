@@ -95,7 +95,8 @@ What the text means:
 - Success is `uefi_loader: no device tree; describing this machine from ACPI`, a `nife self-test:`
   line with no `FAILED:` list, `nife: handing the system to the userspace progenitor.` and a `$`
   prompt. Then item 7 is done, and 578 can go BUILT. Under QEMU with the same description the verdict
-  is `8 of 13 passed, 5 absent: blockdev device_interrupt clock trng entropy`. An A1 is expected to show
+  is `8 of 13 passed, 5 absent: blockdev device_interrupt clock trng entropy`. An A1 is expected to
+  show
   the same absences, and `entropy : NONE ... there is no login` after the handover. The loader
   writes no PCI node (`uefi_loader/src/device_tree_from_acpi.rs`'s BUGS) and an Altra core
   has no seed instruction. Those are known, not findings.

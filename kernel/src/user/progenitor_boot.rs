@@ -74,7 +74,8 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
 
     let aspace_name = progenitor_address_space(&elf, ramdisk_start, ramdisk_pages)?;
 
-    // Route the UART receive interrupt to an endpoint; the input driver's Interrupt cap will WAIT on it.
+    // Route the UART receive interrupt to an endpoint; the input driver's Interrupt cap will WAIT
+    // on it.
     let interrupt_ep = crate::sched::create_rendezvous();
     crate::sched::bind_interrupt(uart_interrupt_number, interrupt_ep);
     // aarch64's GIC has no boot-hart lottery, so its line is armed here; riscv64's waits until the

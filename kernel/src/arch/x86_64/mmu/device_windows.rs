@@ -50,7 +50,8 @@ pub const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The first interrupt a PCI function raises: zero, and nothing on this architecture reads it.
 ///
-/// A function's interrupt is bound by `arch::x86_64::interrupt_controller::alloc_msi_vector`, which hands
+/// A function's interrupt is bound by `arch::x86_64::interrupt_controller::alloc_msi_vector`, which
+/// hands
 /// `kernel/src/pci.rs` the address and data for the function's MSI-X table, so there is no
 /// board-specific routing to encode. q35's legacy INTx reaches an IO APIC input named only in AML,
 /// which this tree cannot interpret. The constant survives because portable code names it; `pci.rs`

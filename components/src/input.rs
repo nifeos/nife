@@ -4,7 +4,8 @@
 //! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
 //! interpreting nothing. Bytes travel up to 8 per `OPERATION_BYTES` `CALL`
 //! (notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
-//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`INTERRUPT`]) and the device: the
+//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`INTERRUPT`]) and the
+//! device: the
 //! UART registers mapped device-typed on aarch64 and riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
 //! capability: the serial console becomes a userspace driver)). See notes/uart.md.
 //!
@@ -193,8 +194,10 @@ mod uart {
 /// progenitor delegated it, so the kernel's TSS I/O bitmap permits these eight ports and no others.
 ///
 /// **Interrupt-driven since milestone 505 (an x86_64 input driver that never lets the core
-/// idle).** COM1's receive line is legacy interrupt 4, which the kernel routes through the IO APIC to the
-/// `Interrupt` capability in slot 1, so this arm needs only what the riscv64 NS16550 arm has: a receive
+/// idle).** COM1's receive line is legacy interrupt 4, which the kernel routes through the IO APIC
+/// to the
+/// `Interrupt` capability in slot 1, so this arm needs only what the riscv64 NS16550 arm has: a
+/// receive
 /// enable to set and nothing to clear, since reading RBR clears the condition.
 #[cfg(target_arch = "x86_64")]
 mod uart {

@@ -209,8 +209,10 @@ impl Pool {
 
         // **The completion is the used ring advancing, not the wakeup**, so look before blocking.
         // QEMU completes a request inside `NOTIFY`, and PCI INTx lines are shared four ways on both
-        // `virt` boards (`pci::intx_interrupt_number` swizzles modulo 4) while the kernel routes an intid to one
-        // endpoint (`sched::bind_interrupt`): with five PCI functions no unshared line is left. A wakeup
+        // `virt` boards (`pci::intx_interrupt_number` swizzles modulo 4) while the kernel routes an
+        // intid to one
+        // endpoint (`sched::bind_interrupt`): with five PCI functions no unshared line is left. A
+        // wakeup
         // can be stale, coalesced or a previous operator's, so the loop re-checks the ring, and it
         // is bounded so a silent device is an honest "no entropy" rather than a hang.
         let mut len = 0;
@@ -230,7 +232,8 @@ impl Pool {
         // Quiet the device and re-enable the line even on the path that never waited: the device
         // raised its line when it completed and the kernel masked it, and a line left masked is one
         // the *next* holder of a shared intid never hears from. `interrupt::ACK` is
-        // `arch::interrupt_controller::enable`, which is idempotent, so this is safe when nothing fired.
+        // `arch::interrupt_controller::enable`, which is idempotent, so this is safe when nothing
+        // fired.
         self.quiet();
         len
     }

@@ -1,7 +1,8 @@
 //! GICv3: the memory-mapped half, the distributor and one redistributor per core.
 //!
 //! The CPU interface (`ICC_*` system registers) is `arch/aarch64/gic_cpu_interface.rs`, because
-//! `msr`/`mrs` are architecture code; `arch::interrupt_controller` holds both halves and picks the GIC version. Each
+//! `msr`/`mrs` are architecture code; `arch::interrupt_controller` holds both halves and picks the
+//! GIC version. Each
 //! core finds its redistributor by walking the frames for its own affinity, every interrupt is
 //! Group 1, and writes wait on `RWP` where Linux waits. See notes/interrupts/controller-drivers.md.
 //!
@@ -300,7 +301,8 @@ pub(crate) fn initialize_this_cpu(slot: usize, affinity: u32) {
     );
 
     // The private INTIDs: all Group 1, all inactive, PPIs disabled, SGIs enabled and never
-    // disabled, as GICv2 forces them (`hw/intc/arm_gic.c`, the GIC-400); the Interrupt capability's SGI
+    // disabled, as GICv2 forces them (`hw/intc/arm_gic.c`, the GIC-400); the Interrupt capability's
+    // SGI
     // tests mask and unmask on different cores.
     private.write(GICR_IGROUPR0, !0u32);
     private.write(GICR_ICACTIVER0, !0u32);

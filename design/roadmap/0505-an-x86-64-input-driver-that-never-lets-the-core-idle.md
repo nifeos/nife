@@ -99,13 +99,15 @@ x86_64 shell image, and the two gauges are the direct evidence that the core now
 
 ## BUGS
 
-- Revoking the input driver's `Irq` does not mask IRQ 4. `arch/x86_64/irq.rs`'s BUGS has it.
+- Revoking the input driver's `Irq` does not mask IRQ 4. `arch/x86_64/interrupt_controller.rs`'s
+  BUGS has it.
 - COM1's line goes to whichever core last ACKed, because `irq::enable` writes the calling
   core's local APIC id. Harmless (any core's handler routes it), and not distribution policy.
 
 ## Follow-on
 
-- **Recorded.** Both BUGS above, in this block and in `kernel/src/arch/x86_64/interrupt_controller.rs`.
+- **Recorded.** Both BUGS above, in this block and in
+  `kernel/src/arch/x86_64/interrupt_controller.rs`.
 
 ## Index row
 

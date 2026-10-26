@@ -10,7 +10,7 @@ The evidence behind this note is in [interrupts/](interrupts/README.md).
 
 ## The GIC: the multiplexer in front of the CPU
 
-The CPU has one interrupt input line. That's all. Priorities, masking individual sources and routing to a particular core all live in the interrupt
+The CPU has one interrupt input line. That is all. Priorities, masking individual sources and routing to a particular core all live in the interrupt
 controller, not in the CPU.
 
 Two halves, and the split *is* the design:
@@ -208,7 +208,8 @@ until the driver does something to quiet it (for virtio, reads `InterruptStatus`
 `InterruptACK`). If the kernel left the line enabled and just EOI'd, the GIC would re-deliver it forever: a storm
 the machine never climbs out of, because only the driver can quiet the device and it never runs.
 
-So `handle_interrupt` masks the INTID at the distributor (`gic::disable`) the moment it fires. The driver
+So `handle_interrupt` masks the INTID at the distributor (`gic::disable`) the moment it fires. The
+driver
 services the device, then calls `ACK` on its `Interrupt` capability, and only then does the kernel
 re-enable the line (`gic::enable`). Until then the interrupt is held off. This is exactly seL4's
 IRQHandler protocol, and it is what lets a process that holds no privilege safely own an
@@ -248,8 +249,10 @@ driver (9b) uses the same path with a real device interrupt.
 The two tests (`kernel::sched::tests::an_interrupt_becomes_a_message` and
 `an_interrupt_that_arrives_before_the_wait_is_not_lost`) trigger with an SGI on aarch64. On RISC-V
 the trigger is the console UART's own
-transmit-empty interrupt, behind `arm_test_interrupt`, `raise_test_interrupt` and `quiet_test_interrupt`. The SBI IPI
-was refused because it never reaches `interrupt_route`, and writing the PLIC's pending bits does nothing.
+transmit-empty interrupt, behind `arm_test_interrupt`, `raise_test_interrupt` and
+`quiet_test_interrupt`. The SBI IPI
+was refused because it never reaches `interrupt_route`, and writing the PLIC's pending bits does
+nothing.
 The two legs are not twins: aarch64's needs no device, and RISC-V's covers more of the controller.
 Why each option lost, and the unbacked claim the old doc comment made, are in
 [interrupts/riscv-test-trigger.md](interrupts/riscv-test-trigger.md).
@@ -258,14 +261,18 @@ Why each option lost, and the unbacked claim the old doc comment made, are in
 
 # Interrupt affinity: spreading device lines off core 0 (fix/interrupt-delivery, 2026-07-29)
 
-Device lines no longer all target core 0. `arch::interrupt_controller::enable` gives each SPI a target core the
-first time it is enabled, round-robin over the online cores, and keeps it (`INTERRUPT_TARGET`), because
-the `Interrupt` capability's ACK re-enables the line on every completion. The GIC driver is told which
+Device lines no longer all target core 0. `arch::interrupt_controller::enable` gives each SPI a
+target core the
+first time it is enabled, round-robin over the online cores, and keeps it (`INTERRUPT_TARGET`),
+because
+the `Interrupt` capability's ACK re-enables the line on every completion. The GIC driver is told
+which
 core and does not decide (rule #2). The PLIC does the same per hart (`SOURCE_CTX`), with each hart
 claiming and completing against its own context.
 
 The PLIC's enable bits share one word per 32 sources, so setting one is a read-modify-write two
-harts can interleave, losing an enable. One `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER` serializes it
+harts can interleave, losing an enable. One `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`
+serializes it
 ([arch-audit.md](arch-audit.md), finding 3).
 
 The PLIC's claim is the mask and the ACK is the completion (`drivers/plic.rs`, milestone 890
@@ -297,10 +304,13 @@ emulates one.
 | SGI | an `GICD_SGIR` store | an `ICC_SGI1R_EL1` write, `dsb ishst` before it |
 | confirmed at boot by | `GICC_IIDR.ArchitectureVersion` from the block the tree calls the CPU interface | `GICD_PIDR2.ArchRev`, then `ICC_SRE_EL1.SRE` sticking |
 
-One place holds both. `arch/aarch64/interrupt_controller.rs` reads the version (`machine_discovery::gic`,
+One place holds both. `arch/aarch64/interrupt_controller.rs` reads the version
+(`machine_discovery::gic`,
 host-tested against QEMU's own GICv2, GICv3 and HVF trees), asks the hardware whether the tree is
-right, and only then initializes a driver. Every other caller in the kernel (the interrupt handler, the
-timer, the scheduler's reschedule SGI, the tests) names `arch::interrupt_controller` and never a driver, so the
+right, and only then initializes a driver. Every other caller in the kernel (the interrupt handler,
+the
+timer, the scheduler's reschedule SGI, the tests) names `arch::interrupt_controller` and never a
+driver, so the
 choice is made once. The split between `drivers/` and `arch/` is DECISIONS §4 rule 1: the ICC
 registers are `msr`/`mrs`, so they are architecture code, while everything behind a pointer stays a
 driver that is handed its addresses. `design/roadmap/0227-gicv3-driver.md` has the placement and what

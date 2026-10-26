@@ -349,7 +349,8 @@ pub(crate) struct PciVirtioDevice {
     pub isr: u64,
     /// The interrupt a driver binds and waits on: the PLIC/GIC input the INTx pin swizzles to (see
     /// `pci::intx_interrupt_number`) on the two device-tree boards, the MSI-X vector
-    /// `arch::interrupt_controller::alloc_msi_vector` reserved on `x86_64`. An `Interrupt` capability names it and the
+    /// `arch::interrupt_controller::alloc_msi_vector` reserved on `x86_64`. An `Interrupt`
+    /// capability names it and the
     /// arch layer resolves it.
     pub intid: u32,
     /// Which MSI-X table entry [`intid`](Self::intid) was programmed into, or
@@ -619,7 +620,8 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
 }
 
 /// How this function's interrupt reaches a driver: `(intid, msix_vector)`. MSI-X where
-/// `arch::interrupt_controller::alloc_msi_vector` answers `Some`, the INTx swizzle where it answers `None`.
+/// `arch::interrupt_controller::alloc_msi_vector` answers `Some`, the INTx swizzle where it answers
+/// `None`.
 ///
 /// `msi_fallback` lets a function with MSI and no MSI-X (the xHCI on an Intel PCH) take plain MSI;
 /// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
@@ -628,7 +630,8 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
 fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
     match crate::arch::interrupt_controller::alloc_msi_vector() {
         Some((intid, target)) => {
-            // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE` is 0 and the
+            // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE`
+            // is 0 and the
             // swizzle would resolve to the PIT's line, arming the driver on the timer.
             if msi_fallback
                 && pci::msix_cap(bdf, &mut |b, o| cfg_read32(b, o)).is_none()

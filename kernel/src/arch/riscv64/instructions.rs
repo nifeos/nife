@@ -21,7 +21,8 @@ use core::arch::asm;
 
 // ---- satp and the TLB ----
 
-/// **Supervisor Address Translation and Protection Register** (`satp`, RISC-V Privileged Architecture).
+/// **Supervisor Address Translation and Protection Register** (`satp`, RISC-V Privileged
+/// Architecture).
 /// `csrr satp`. A model returns whatever the model's register holds; the hardware's `satp` is WARL,
 /// so a model that honours writes exactly is claiming every field is implemented.
 #[inline(always)]
@@ -33,7 +34,8 @@ pub(super) fn read_satp() -> u64 {
     satp
 }
 
-/// **T-Head Supervisor Extension Status Register** (`th.sxstatus`, RISC-V Privileged Architecture).
+/// **T-Head Supervisor Extension Status Register** (`th.sxstatus`, T-Head XuanTie C906
+/// documentation).
 /// `csrr th.sxstatus` (CSR `0x5c0`): T-Head's supervisor-visible extension status, whose bit 21 is
 /// `MAEE`, whether the hart reads memory types out of PTE bits 63:59 (milestone 89 (Scaleway EM-RV1)).
 ///
@@ -48,7 +50,8 @@ pub(super) fn read_th_sxstatus() -> u64 {
     v
 }
 
-/// **Supervisor Address Translation and Protection Register** (`satp`, RISC-V Privileged Architecture).
+/// **Supervisor Address Translation and Protection Register** (`satp`, RISC-V Privileged
+/// Architecture).
 /// `csrw satp`: install an address space. **No `nomem`**: every load and store after this one
 /// translates through the new root, so the compiler must not move one across it.
 ///
@@ -62,7 +65,8 @@ pub(super) unsafe fn write_satp(satp: u64) {
     unsafe { asm!("csrw satp, {}", in(reg) satp, options(nostack)) };
 }
 
-/// **Supervisor Memory-Management Fence, all translations** (`sfence.vma`, RISC-V Privileged Architecture).
+/// **Supervisor Memory-Management Fence, all translations** (`sfence.vma`, RISC-V Privileged
+/// Architecture).
 /// `sfence.vma` with no operands: every translation this hart caches, every ASID, global ones too.
 #[inline(always)]
 #[doc(alias = "translation flush")]
@@ -71,7 +75,8 @@ pub(super) fn sfence_vma_all() {
     unsafe { asm!("sfence.vma", options(nostack)) };
 }
 
-/// **Supervisor Memory-Management Fence, one address-space identifier** (`sfence.vma`, RISC-V Privileged Architecture).
+/// **Supervisor Memory-Management Fence, one address-space identifier** (`sfence.vma`, RISC-V
+/// Privileged Architecture).
 /// `sfence.vma zero, asid`: every non-global translation tagged `asid`, on this hart only.
 #[inline(always)]
 #[doc(alias = "translation flush")]
@@ -267,7 +272,7 @@ pub(super) unsafe fn write_sscratch(value: usize) {
     unsafe { asm!("csrw sscratch, {}", in(reg) value, options(nomem, nostack, preserves_flags)) };
 }
 
-/// **Thread Pointer register (x4)** (`tp`, RISC-V Privileged Architecture).
+/// **Thread Pointer register (x4)** (`tp`, RISC-V Unprivileged ISA and psABI).
 /// `mv {}, tp`: the per-CPU pointer.
 #[inline(always)]
 #[doc(alias = "per-hart pointer")]
@@ -278,7 +283,7 @@ pub(super) fn read_tp() -> usize {
     tp
 }
 
-/// **Thread Pointer register (x4)** (`tp`, RISC-V Privileged Architecture).
+/// **Thread Pointer register (x4)** (`tp`, RISC-V Unprivileged ISA and psABI).
 /// `mv tp, {}`.
 ///
 /// # Safety
@@ -291,7 +296,7 @@ pub(super) unsafe fn write_tp(value: usize) {
     unsafe { asm!("mv tp, {}", in(reg) value, options(nomem, nostack, preserves_flags)) };
 }
 
-/// **Stack Pointer register (x2)** (`sp`, RISC-V Privileged Architecture).
+/// **Stack Pointer register (x2)** (`sp`, RISC-V Unprivileged ISA and psABI).
 /// `mv {}, sp`.
 #[inline(always)]
 #[doc(alias = "stack pointer")]
@@ -304,7 +309,7 @@ pub(super) fn read_sp() -> u64 {
 
 // ---- counters ----
 
-/// **Time register (read by rdtime)** (`time`, RISC-V Privileged Architecture).
+/// **Timer for RDTIME** (`time`, RISC-V Unprivileged ISA, Zicntr).
 /// `rdtime`.
 #[inline(always)]
 #[doc(alias = "timer count")]
@@ -350,7 +355,7 @@ pub(super) fn wfi() {
     unsafe { asm!("wfi", options(nomem, nostack)) };
 }
 
-/// **Fence, all memory and I/O** (`fence`, RISC-V Privileged Architecture).
+/// **Fence, all memory and I/O** (`fence`, RISC-V Unprivileged ISA).
 /// `fence` with no operands (`fence iorw, iorw`): the full barrier. No `nomem`, because ordering
 /// memory is its entire purpose.
 #[inline(always)]
@@ -360,7 +365,7 @@ pub(super) fn full_fence() {
     unsafe { asm!("fence", options(nostack, preserves_flags)) };
 }
 
-/// **Instruction-Fetch Fence** (`fence.i`, RISC-V Privileged Architecture).
+/// **Instruction-Fetch Fence** (`fence.i`, RISC-V Unprivileged ISA, Zifencei).
 /// `fence.i`: order this hart's instruction fetch after its own prior stores.
 #[inline(always)]
 #[doc(alias = "instruction barrier")]
@@ -369,7 +374,7 @@ pub(super) fn fence_i() {
     unsafe { asm!("fence.i", options(nostack, preserves_flags)) };
 }
 
-/// **Environment Breakpoint** (`ebreak`, RISC-V Privileged Architecture).
+/// **Environment Breakpoint** (`ebreak`, RISC-V Unprivileged ISA).
 /// `ebreak`: raise a breakpoint, which `exceptions.rs` counts and steps over.
 #[inline(always)]
 #[doc(alias = "breakpoint")]

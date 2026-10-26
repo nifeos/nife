@@ -33,7 +33,8 @@ make.
 
 ## What it costs
 
-An acquisition that finds the lock free costs what it always did. `InterruptSafeMutex::lock` opens with
+An acquisition that finds the lock free costs what it always did. `InterruptSafeMutex::lock` opens
+with
 `try_lock`, the same compare-and-swap `spin_lock`'s `lock` opens with. `current_cap` pays a flag store, a
 counter increment and a flag clear, all on its own core's line. The clock is read only on the
 contended path, twice per wait. On radon a `rdtime` may be emulated by firmware (a recollection about

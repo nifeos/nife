@@ -100,7 +100,8 @@ fn pending_interrupt_number() -> u32 {
 }
 
 /// The console UART's PLIC source, read from the device tree as the rest of the kernel reads it
-/// (`user::uart_interrupt_number_and_source`): 10 on QEMU `virt` (the `UART_RECEIVE_INTID` fallback), 32 on the
+/// (`user::uart_interrupt_number_and_source`): 10 on QEMU `virt` (the `UART_RECEIVE_INTID`
+/// fallback), 32 on the
 /// VisionFive 2.
 #[cfg(target_arch = "riscv64")]
 #[doc(alias = "irq")]
@@ -149,7 +150,8 @@ fn arm_test_interrupt(intid: u32) {
 }
 
 /// **Nothing to arm.** An IPI is not a line: it has no mask bit at any controller, because
-/// nothing outside the CPU asserts it. `interrupt_controller::enable` here takes a *legacy interrupt* and writes an IO
+/// nothing outside the CPU asserts it. `interrupt_controller::enable` here takes a *legacy
+/// interrupt* and writes an IO
 /// APIC redirection entry, which is the wrong device entirely for this source.
 #[cfg(target_arch = "x86_64")]
 #[doc(alias = "irq")]
@@ -959,7 +961,8 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
         first,
         "the first interrupt was never routed, so this test could not reach its question",
     );
-    // **Let the first handler finish.** `ROUTED_INTERRUPTS` moves before the handler is done with the
+    // **Let the first handler finish.** `ROUTED_INTERRUPTS` moves before the handler is done with
+    // the
     // interrupt (the GIC's end-of-interrupt, for one). If that hart's last write landed after the
     // ACK below, it could deliver the second interrupt itself and the test would pass for a reason
     // that is not the ACK. The handler is a few instructions behind the count; 20 ms is margin,
@@ -970,7 +973,8 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     }
 
     // The second raise lands while the line is masked: the device spoke while its driver was
-    // busy. Then the driver's ACK, which is `arch::interrupt_controller::enable`, the same call `Interrupt::ACK` makes.
+    // busy. Then the driver's ACK, which is `arch::interrupt_controller::enable`, the same call
+    // `Interrupt::ACK` makes.
     let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     raise_test_interrupt(pending_interrupt_number());
     arm_test_interrupt(pending_interrupt_number());

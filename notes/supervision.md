@@ -29,8 +29,10 @@ Three pieces, and the surface cost is zero new syscalls and zero new methods.
    If a supervisor is already blocked in `RECEIVE`, hand it the message and wake it. If none is, the
    corpse itself parks on the endpoint's sender queue with the message in its mailbox, so the
    notification waits there rather than being lost. This is the same guarantee an ordinary blocked
-   sender gets. It is why a data-carrying death rides the sender queue rather than the data-less interrupt
-   signal count (`interrupt_notify`): a signal count could say "something died" but not carry the tid,
+   sender gets. It is why a data-carrying death rides the sender queue rather than the data-less
+   interrupt
+   signal count (`interrupt_notify`): a signal count could say "something died" but not carry the
+   tid,
    pc, and address. The corpse is never woken: `ipc_receive` recognizes a `Dead` sender, takes its
    message, and leaves it dead, exactly the way it already leaves a `CALL` caller blocked.
 

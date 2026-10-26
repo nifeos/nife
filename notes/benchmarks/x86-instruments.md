@@ -20,7 +20,8 @@ Two different questions were being conflated, and they have different answers.
   this has not changed. Its claims compare an interrupt's arrival, and a re-armed deadline, against
   the deadline the kernel last wrote (`CNTV_CVAL_EL0` on aarch64, the SBI `DEADLINE` word on
   riscv64). `kernel/src/arch/x86_64/timer.rs::initialize` arms the local APIC timer in periodic mode
-  (`interrupt_controller::arm_periodic_timer`, a fixed reload count the hardware reloads on its own). There is no
+  (`interrupt_controller::arm_periodic_timer`, a fixed reload count the hardware reloads on its
+  own). There is no
   deadline word to read back, so claims 1 and 4 have no x86_64 referent as designed. Building one
   would mean moving the shipping x86_64 tick source to one-shot/TSC-deadline mode. That is an
   architecture change to a production path, not a small addition to an instrument, and it stays

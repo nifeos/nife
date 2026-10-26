@@ -262,7 +262,8 @@ pub(super) fn wake_load_aware(sched: &mut IpcTables, tid: ThreadId) -> Option<us
                 missing_token()
             };
             trace::record(trace::Event::Wake, tid, 0);
-            // `place_on`'s answer is the only thing that may tell `interrupt_notify` to poke the target.
+            // `place_on`'s answer is the only thing that may tell `interrupt_notify` to poke the
+            // target.
             place_on(pick_wake_target(), token)
         }
     }

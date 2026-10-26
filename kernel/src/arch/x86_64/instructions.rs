@@ -110,7 +110,7 @@ pub(super) unsafe fn write_cr4(value: u64) {
 
 // ---- the TLB, waiting, ordering, the stack ----
 
-/// **Invalidate TLB Entries for Page** (`INVLPG`, Intel SDM).
+/// **INVLPG, Invalidate TLB Entries** (`INVLPG`, Intel SDM).
 /// `invlpg [va]`: this CPU's translation for one page. Local only; `mmu::shoot_down_others` is the
 /// remote half.
 #[inline(always)]

@@ -46,9 +46,11 @@ pub struct Spawn<'a> {
 ///
 /// aarch64: SGI 3, distinct from the scheduler's RESCHED (0) and the endpoint SGIs (1, 2). RISC-V
 /// has no software-generated interrupt a test can raise on itself (the SBI IPI arrives down the
-/// software-interrupt arm, never touching `interrupt_route`), so it names the console UART's own line,
+/// software-interrupt arm, never touching `interrupt_route`), so it names the console UART's own
+/// line,
 /// the same number as [`UART_RECEIVE_INTID`] there; [`spawn_elf_child_builder`] binds that route
-/// once and grants two capabilities naming it. `sched::tests`' `DELIVERY_INTERRUPT` reaches the same
+/// once and grants two capabilities naming it. `sched::tests`' `delivery_interrupt_number` reaches
+/// the same
 /// answer.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names. It is
@@ -61,7 +63,8 @@ pub const DELEGATED_TEST_INTERRUPT: u32 = 3;
 pub const DELEGATED_TEST_INTERRUPT: u32 = 10;
 /// `x86_64` (milestone 161 (the x86_64 kernel port)): **the local APIC's self-IPI test vector**.
 /// The local APIC delivers a vector to its own CPU on demand through the ICR
-/// (`arch::x86_64::interrupt_controller::raise_self_interrupt`), so this ISA is on aarch64's side of the split. The
+/// (`arch::x86_64::interrupt_controller::raise_self_interrupt`), so this ISA is on aarch64's side
+/// of the split. The
 /// intid for such a source is its vector, hence 0x22; see
 /// `arch::x86_64::exceptions::x86_trap_body`'s self-IPI arm.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]

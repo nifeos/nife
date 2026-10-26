@@ -214,7 +214,8 @@ unsafe extern "C" {
 }
 
 /// How many interrupts became a message to a userspace endpoint: the trap handler took one,
-/// `sched::interrupt_route` found an endpoint bound to it, and `sched::interrupt_notify` was called. The
+/// `sched::interrupt_route` found an endpoint bound to it, and `sched::interrupt_notify` was
+/// called. The
 /// portable counter every architecture's interrupt tests read.
 ///
 /// The timer, the reschedule IPI and unclaimed device vectors are not counted, so a tick cannot
@@ -361,7 +362,8 @@ fn entered_user_with_no_entry_point(user_sp: u64) -> ! {
 
 /// Unmask external interrupts at the controller, which on x86 is nothing: its one gate is
 /// `RFLAGS.IF` (`arch::interrupts::enable`), where RISC-V also has `sie.SEIE`. The per-source masks
-/// are the IO APIC's (`interrupt_controller::enable`) and the TPR, which `interrupt_controller::initialize_local_apic` zeroes.
+/// are the IO APIC's (`interrupt_controller::enable`) and the TPR, which
+/// `interrupt_controller::initialize_local_apic` zeroes.
 ///
 /// # Panics
 /// If the local APIC is not up, so no caller believes interrupts unmasked when nothing can deliver.
@@ -665,7 +667,8 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::interrupt_controller::end_of_interrupt();
             true
         }
-        // A reschedule IPI (`interrupt_controller::send_reschedule`): the sender may have put a thread in our inbox,
+        // A reschedule IPI (`interrupt_controller::send_reschedule`): the sender may have put a
+        // thread in our inbox,
         // or an idle CPU may want work. Both are served, and the deferred `schedule()` runs
         // whatever arrived. Not a routed interrupt, and not spurious.
         v if v == super::interrupt_controller::RESCHEDULE_VECTOR as u64 => {
@@ -675,7 +678,8 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             true
         }
         // A self-directed interrupt, which becomes a message; the local APIC delivers it through
-        // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy interrupt
+        // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy
+        // interrupt
         // (0..15), so the two cannot collide. See notes/x86-port/traps.md.
         v if v == super::interrupt_controller::SELF_TEST_VECTOR as u64
             || v == super::interrupt_controller::SELF_TEST_VECTOR_B as u64 =>
@@ -695,7 +699,8 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
         }
         // A PCI function's MSI-X message, which becomes a driver's wakeup (milestone 215 (a PCI
         // function's interrupt reaches nothing on x86_64)). An MSI vector is its intid
-        // (`interrupt_controller::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted write that already
+        // (`interrupt_controller::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted
+        // write that already
         // happened, so the driver's `Interrupt::ACK` is a no-op.
         v if super::interrupt_controller::is_msi_vector(v) => {
             match crate::sched::interrupt_route(v as u32) {
@@ -711,9 +716,11 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
             super::interrupt_controller::end_of_interrupt();
             true
         }
-        // A device line on `interrupt_controller::GSI_VECTOR_BASE` plus its redirection index, which becomes a
+        // A device line on `interrupt_controller::GSI_VECTOR_BASE` plus its redirection index,
+        // which becomes a
         // driver's message (milestone 505 (an x86_64 input driver that never lets the core idle)).
-        // `interrupt_controller::intid_of_vector` recovers the intid a driver bound. `interrupt_controller::disable` holds off only a
+        // `interrupt_controller::intid_of_vector` recovers the intid a driver bound.
+        // `interrupt_controller::disable` holds off only a
         // level-triggered line: an IO APIC drops an edge that arrives while its entry is masked. A
         // line nothing bound is counted and acknowledged.
         v if super::interrupt_controller::is_device_vector(v) => {

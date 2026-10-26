@@ -127,7 +127,8 @@ fn initialize_from_device_tree() {
 fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // aarch64's GIC, found by its binding (`machine_discovery::gic`), not by node name: a GICv3's
     // `reg[1]` is the redistributor array, not a CPU interface. An unknown binding is refused by
-    // name, and `arch::interrupt_controller::initialize` then checks the hardware agrees with the tree.
+    // name, and `arch::interrupt_controller::initialize` then checks the hardware agrees with the
+    // tree.
     #[cfg(target_arch = "aarch64")]
     match machine_discovery::gic::discover(dtb) {
         Ok(found) => *GIC_REGIONS.lock() = found,
@@ -828,8 +829,10 @@ pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
 
 /// The console UART's interrupt line, as the machine states it: PLIC source 10 on QEMU's
 /// riscv64 `virt`, 32 on the JH7110, GIC INTID 33 on QEMU's aarch64 `virt`, and on `x86_64` the
-/// global system interrupt COM1's legacy ISA interrupt 4 resolves to (milestone 176 (the x86_64 discovery seam's wide half: COM1's IRQ and a CMOS RTC)), filled by
-/// [`record_uart_interrupt_number`] rather than by [`initialize`] since there is no tree to read. `None` before
+/// global system interrupt COM1's legacy ISA interrupt 4 resolves to (milestone 176 (the x86_64
+/// discovery seam's wide half: COM1's IRQ and a CMOS RTC)), filled by
+/// [`record_uart_interrupt_number`] rather than by [`initialize`] since there is no tree to read.
+/// `None` before
 /// either has run, and on a device-tree machine whose tree does not say (no `interrupts`, no
 /// resolvable parent, or an entry shape the decoder refuses; see
 /// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RECEIVE_INTID`,
@@ -841,10 +844,13 @@ pub(crate) fn uart_interrupt_number() -> Option<u32> {
 
 /// **Record the console UART's interrupt line directly**, for a machine with no device tree to
 /// read it from. `x86_64`'s counterpart of `initialize`'s
-/// [`machine_discovery::interrupt_id::of_node`] call. It takes COM1's **legacy** line, ISA interrupt 4,
-/// because that is what an intid is on `x86_64`; `arch::interrupt_controller::enable` resolves it through any MADT
+/// [`machine_discovery::interrupt_id::of_node`] call. It takes COM1's **legacy** line, ISA
+/// interrupt 4,
+/// because that is what an intid is on `x86_64`; `arch::interrupt_controller::enable` resolves it
+/// through any MADT
 /// override when the line is armed. It fills the same static every consumer already reads
-/// (`user::uart_interrupt_number_and_source`), which the input driver's `Interrupt` capability is minted from since
+/// (`user::uart_interrupt_number_and_source`), which the input driver's `Interrupt` capability is
+/// minted from since
 /// milestone 505 (an x86_64 input driver that never lets the core idle).
 ///
 /// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from

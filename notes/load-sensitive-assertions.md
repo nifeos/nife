@@ -184,7 +184,8 @@ been read against these questions.
   instrument would notice.
 - `work_can_be_placed_on_every_cpu` no longer proves that a specific core ran a specific thread.
   Nothing does, because placement is a hint and §28 deferred pins.
-- `ROUTED_INTERRUPTS` is a global count. The PCIe test proves some interrupt became some driver's message,
+- `ROUTED_INTERRUPTS` is a global count. The PCIe test proves some interrupt became some driver's
+  message,
   and it is sound only while no second driver runs in the window. A per-intid delivery count wants
   the three arch handlers to route through one portable call.
 - `testing::RegionRun` works only for a root region, and nothing in the type stops a caller using

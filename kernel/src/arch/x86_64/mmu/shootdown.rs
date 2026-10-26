@@ -3,7 +3,8 @@
 //!
 //! Cut out of `mmu.rs` unchanged by lane `maintainer/last-three-over-2000`, which left the
 //! parent an index (§282 (when a file is split, the parent becomes an index)) and under §266 (a
-//! Rust source file stays under 2,000 lines). `super::instructions`, `super::interrupt_controller` and
+//! Rust source file stays under 2,000 lines). `super::instructions`, `super::interrupt_controller`
+//! and
 //! `super::segments` name the `x86_64` items the index imports, as in `mmu.rs`.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
@@ -17,7 +18,8 @@ pub(super) const SHOOTDOWN_ALL: u64 = u64::MAX;
 
 /// **The one shootdown in flight**, and the lock that makes it one.
 ///
-/// A raw `AtomicBool` rather than an [`crate::sync::InterruptSafeMutex`], deliberately, and the reason is
+/// A raw `AtomicBool` rather than an [`crate::sync::InterruptSafeMutex`], deliberately, and the
+/// reason is
 /// the whole design below: a core spinning here is still reachable, because the message that ends
 /// the spin is an NMI. [`broadcast`] masks interrupts itself for as long as it holds this, because
 /// not every caller arrives masked (see its own comment for the hang that taught that).

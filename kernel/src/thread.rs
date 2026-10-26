@@ -1022,7 +1022,8 @@ extern "C" fn call_closure<F: FnOnce()>(closure: *mut ()) {
 #[unsafe(no_mangle)]
 extern "C" fn thread_entry(closure: *mut (), call: extern "C" fn(*mut ())) -> ! {
     // A new thread skips `schedule()`'s post-switch point, so it reaps its predecessor here. It
-    // arrives with interrupts masked, and `finish_switch` must run masked: a timer interrupt before it could
+    // arrives with interrupts masked, and `finish_switch` must run masked: a timer interrupt before
+    // it could
     // overwrite `switched_from` and strand the predecessor (context.s). Only then is the closure
     // made preemptible.
     crate::sched::finish_switch();

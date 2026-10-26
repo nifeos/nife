@@ -91,7 +91,7 @@ Sources:
 - `rk3588-base.dtsi`: CPUs lines 94 to 229, PMU lines 390 to 399, PSCI line 402, GIC lines 2587 to 2616, UARTs lines 783 to 790 and 2796 to 2916
 - `rk3588-base.dtsi`: SMMUv3 lines 554 and 565, media IOMMUs lines 1168 to 1691, pcie2x1l1/l2 lines 2188 to 2266, USB/GMAC/SATA/SD lines 467 to 534 and 2292 to 2428
 - `rk3588-extra.dtsi`: pcie3x4 lines 344 to 372, pcie3x2 lines 431 to 459, pcie2x1l0 lines 483 to 509, lines 51 and 535
-- `L:/drivers/irqchip/interrupt-gic-v3-its.c` lines 4867 to 4986; `L:/Documentation/arch/arm64/silicon-errata.rst`
+- `L:/drivers/irqchip/irq-gic-v3-its.c` lines 4867 to 4986; `L:/Documentation/arch/arm64/silicon-errata.rst`
 - https://trustedfirmware-a.readthedocs.io/en/latest/plat/rockchip.html ; https://github.com/ARM-software/arm-trusted-firmware/tree/master/plat/rockchip/rk3588
 - https://docs.u-boot.org/en/latest/board/rockchip/rockchip.html ; https://github.com/u-boot/u-boot/blob/master/doc/board/rockchip/rockchip.rst lines 151 to 181
 - https://github.com/edk2-porting/edk2-rk3588

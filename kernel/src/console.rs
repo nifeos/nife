@@ -302,7 +302,8 @@ pub fn hold_screen_at_handover() {
 ///
 /// Bounded twice, and either bound ends the wait: `HOLD_TICKS` (ten seconds of ticks) and
 /// `HOLD_POLLS` (register reads, for a machine whose timer is not ticking). Runs outside the
-/// console lock, an `InterruptSafeMutex`, which it takes per poll: holding it for seconds would hold
+/// console lock, an `InterruptSafeMutex`, which it takes per poll: holding it for seconds would
+/// hold
 /// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
 /// screen hold".
 fn hold_screen_for_host() {

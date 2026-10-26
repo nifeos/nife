@@ -91,7 +91,8 @@ before blaming a diff. Each is in [riscv-parity-scope/suite-gaps.md](riscv-parit
 
 Booting the riscv kernel with the runner's exact flags (QEMU 11.0.2, `-global
 virtio-mmio.force-legacy=false -device virtio-blk-device`) finds a modern virtio-mmio block device
-at slot 7 (0x10008000, PLIC interrupt 8); `find_block_device` reports it and the kernel registers the
+at slot 7 (0x10008000, PLIC interrupt 8); `find_block_device` reports it and the kernel registers
+the
 transport. Both runners fail loudly on a missing disk file. A runner that silently drops the disk
 when `NIFE_DISK` names a file that does not exist boots disklessly, every slot honestly reads
 device-id 0 ("empty"), and it looks like QEMU preferring PCIe for riscv, which it does not. The
@@ -113,7 +114,8 @@ aarch64 and riscv64 are at feature parity, DMA confinement included.
 The interactive shell runs on RISC-V, over the serial: `echo` echoes, `run 9` spawns a worker that
 computes 81. A new portable `system_initializer` (the counterpart of hello's aarch64-tied
 `init_boot`) is loaded as the boot process. From an untyped budget plus the NS16550 device cap and
-the UART Interrupt cap, it builds the console server, input driver, and shell out of its own budget and
+the UART Interrupt cap, it builds the console server, input driver, and shell out of its own budget
+and
 wires them. The kernel parks. The three shell programs became arch-neutral -- the UART register
 layout is gated per arch
 (PL011 vs NS16550, including that the NS16550 clears its RX interrupt on read, with no ICR). The
@@ -172,7 +174,8 @@ section, and each property they cover is proved on RISC-V by a different test.
 
 The interrupt-delegation test (`interrupt_child_builder`) needs an interrupt the test can raise by
 hand. RISC-V has no software-generated interrupt a test can assert on itself: the SBI IPI arrives
-down the software-interrupt arm and never reaches `interrupt_route`. The only line it can raise by hand is
+down the software-interrupt arm and never reaches `interrupt_route`. The only line it can raise by
+hand is
 the console UART's own, and `spawn_elf_child_builder` already routes that as the UART receive
 interrupt. A twin would share that one source between the builder's UART capability and the test's
 delegated one. It would then prove delivery through whichever route was bound last, not through the

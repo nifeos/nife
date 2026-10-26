@@ -52,7 +52,8 @@ and fetch-op outside test code:
 - `kernel/src/smp.rs`: the boot roster. `HWID`/`STARTABLE` written relaxed, then `ROSTER` stored
   with a release; readers acquire `ROSTER` and then read the arrays. A textbook array publication,
   correct as written, and single-shot at boot.
-- `kernel/src/arch/*/interrupt_controller.rs`: the interrupt-routing lottery, a compare-exchange per interrupt line.
+- `kernel/src/arch/*/interrupt_controller.rs`: the interrupt-routing lottery, a compare-exchange per
+  interrupt line.
   Rule 1 keeps it under `arch/`, so lifting it is a bigger question than this milestone.
 - `crates/user_mode_runtime/src/heap.rs`: a hand-rolled userspace spin lock. `user_mode_runtime` is aarch64 inline
   `asm!` and does not compile for the host at all, so reaching it needs the lock lifted out first.
@@ -248,7 +249,8 @@ model that searches code the kernel no longer runs reports success forever, with
 Milestone 136 (one decision path, and a gate that keeps it that way) gated this for `crates/memory_regions`, where #316's double free could be rebuilt
 from the public API alone. `script/lint`'s "the region claim protocol has one decision path" check
 pins the crate's public surface and requires each free loop to make its entitling call first. The
-other loom crates have the same exposure and are not gated, except that `InterruptSafeMutex`'s field type
+other loom crates have the same exposure and are not gated, except that `InterruptSafeMutex`'s field
+type
 is `spin_lock::SpinLock`, so the compiler holds that caller. The rebuilt gap, the two halves of
 the check and the `compile_fail` doctests are in
 [interleaving/lift-is-only-worth-what-its-caller-does.md](interleaving/lift-is-only-worth-what-its-caller-does.md).

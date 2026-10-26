@@ -484,7 +484,8 @@ fn the_server_answered_and_kept_nothing(round: &CallServerRound, server_first: b
 }
 
 /// An interrupt number no device on any of the three machines raises, so binding it steals no real
-/// route (the reasoning, and the value, are `interrupt_send_refusal_tests`'). `bind_interrupt` has no unbind,
+/// route (the reasoning, and the value, are `interrupt_send_refusal_tests`'). `bind_interrupt` has
+/// no unbind,
 /// so a neighbour that rebinds it simply replaces this test's route.
 const QUIET_INTID: u32 = 250;
 
