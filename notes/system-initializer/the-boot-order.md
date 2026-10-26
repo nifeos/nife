@@ -169,8 +169,8 @@ built as arrays with a count. The screen is a runtime fact and the port range a 
 one literal per case would be one more place to get the slot order wrong.
 
 `system_log` is built right after the console, because until it attaches the kernel prints for
-itself and can splice with the console's bytes. The progenitor deletes the ring grants of
-`system_log` whether or not it was built, so none is carried across the login block.
+itself and can splice with the console's bytes. The progenitor deletes the system log's ring grants
+whether or not it was built, so none is carried across the login block.
 
 The shell's slot 4 is the file service when the boot has one, `WRITE` without `GRANT`, which is all
 `>` and `<` need. Its clock is last whatever else is granted, so the progenitor tells the shell the
