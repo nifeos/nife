@@ -75,7 +75,7 @@ pub const CORE_CLOCK_HZ: u64 = 24_000_000;
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-wdt";
 /// The binding `StarFive`'s U-Boot uses, `wdog@13070000`, which is the tree radon's firmware hands
-/// the kernel. Tried second, for the reason `jh7110_clock_and_reset::Window` gives.
+/// the kernel. Tried second, for the reason `jh7110_clock_and_reset::RegisterWindow` gives.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,dskit-wdt";

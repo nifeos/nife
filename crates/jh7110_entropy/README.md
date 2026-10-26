@@ -9,7 +9,7 @@ decides what they mean. It is `no_std` and tested on the host. It was written fo
 
 ## What is proven
 
-Four Kani harnesses exhaust `interpret`, the function that turns one `(STAT, ISTAT)` snapshot and
+Four Kani harnesses exhaust `generation_outcome`, the function that turns one `(STAT, ISTAT)` snapshot and
 the eight `RAND` words into an answer:
 
 - `verification::a_lockup_bit_is_never_overridden`: whenever `ISTAT.LFSR_LOCKUP` is set, the answer
@@ -26,7 +26,7 @@ Rerun them with `cargo kani`. Each harness has a falsification record at
 makes that harness fail at its own assertion, which shows the proof checks something.
 
 Not proven: the quality of the randomness, which is a property of the silicon; `Pool` and
-`assemble`, which copy words and are tested; and the device-tree decoders, which are tested.
+`output_bytes`, which copy words and are tested; and the device-tree decoders, which are tested.
 
 ## The two device trees
 
@@ -34,29 +34,29 @@ Mainline Linux names the block `starfive,jh7110-trng`. The vendor U-Boot's contr
 VisionFive 2 boots with, names the same block `starfive,trng`, at the same window (`0x1600_C000`,
 `0x4000` bytes) and interrupt (30), and marks it `status = "disabled"` because U-Boot has no driver
 for it. `COMPATIBLES` lists both, mainline's first. Walk your tree for a node carrying one, read
-its `reg`, decode `interrupts` with `interrupt` and `status` with `status_okay`, and keep the
+its `reg`, decode `interrupts` with `interrupt_line` and `status` with `is_status_okay`, and keep the
 result in a `Discovered`. A disabled node is the first suspect when the window reads all zeros.
 
 ## Usage
 
 ```rust
-use jh7110_entropy::{Outcome, interpret, status_okay, ISTAT_RAND_RDY, STAT_SEEDED};
+use jh7110_entropy::{GenerationOutcome, generation_outcome, is_status_okay, ISTAT_RAND_RDY, STAT_SEEDED};
 
 // Firmware that says nothing about `status` means "okay".
-assert!(status_okay(None));
-assert!(!status_okay(Some(b"disabled\0")));
+assert!(is_status_okay(None));
+assert!(!is_status_okay(Some(b"disabled\0")));
 
 // A seeded core with RAND_RDY set: the eight words, little-endian, word 0 first.
 let rand = [0x0403_0201, 0, 0, 0, 0, 0, 0, 0];
-match interpret(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
-    Outcome::Ready(bytes) => assert_eq!(&bytes[..4], &[1, 2, 3, 4]),
+match generation_outcome(STAT_SEEDED, ISTAT_RAND_RDY, rand) {
+    GenerationOutcome::Ready(bytes) => assert_eq!(&bytes[..4], &[1, 2, 3, 4]),
     other => panic!("expected Ready, got {other:?}"),
 }
 ```
 
 A driver writes `MODE_R256` during bring-up (otherwise only four words carry the answer), clears
 `ISTAT` with `ISTAT_ALL`, asks for a reseed with `CTRL_EXEC_RANDRESEED`, then for each request
-writes `CTRL_GENE_RANDNUM`, polls `STAT` and `ISTAT`, and hands them to `interpret`. On `Lockup` or
+writes `CTRL_GENE_RANDNUM`, polls `STAT` and `ISTAT`, and hands them to `generation_outcome`. On `Lockup` or
 `Unseeded` it reseeds and retries, bounded.
 
 ## Limitations

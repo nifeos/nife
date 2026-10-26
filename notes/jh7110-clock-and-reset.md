@@ -139,7 +139,7 @@ from a comment:
 ### How a window is found
 
 `discover`, `discover_aon` and `discover_sys` (in `machine_discovery::jh7110::clock_and_reset`)
-try the three spellings of a `jh7110_clock_and_reset::Window`, mainline's first, as the TRNG's
+try the three spellings of a `jh7110_clock_and_reset::RegisterWindow`, mainline's first, as the TRNG's
 discovery does. A tree that carries the standardized binding is describing itself
 in that binding's language, so it is the one to believe. The two vendor nodes carry several windows
 and are indexed by `reg-names` rather than by position, because a position that happens to be right
@@ -245,7 +245,7 @@ this milestone exists to produce is a *measurement*, and a measurement nobody ca
   this tree has a reason to. It also means there is no teardown: a service that dies leaves its
   device clocked. That is the right trade today (nothing reclaims device power) and it is the piece
   a power-management milestone would have to add.
-- **`Report` records only the first four clock steps.** A longer plan still performs every step;
+- **`BringUpReport` records only the first four clock steps.** A longer plan still performs every step;
   the recording stops and `truncated` says so. Nothing in the tree has a plan that long.
 - **The vendor `rstgen` node is tried and has never been exercised by a fixture.** Its
   `reg-names` spelling (`"stgcrg"`, not `"stg"`) is transcribed from the vendor tree and is only

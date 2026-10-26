@@ -305,7 +305,7 @@ http_response,Response::content_length,replace Response::content_length -> Optio
 http_response,Response::content_length,replace Response::content_length -> Option<u64> with Some(0),killed,"killed; the_content_length_appears_with_the_head_and_not_before in crates/http_response/src/lib.rs, re-run with cargo mutants"
 http_response,Response::content_length,replace Response::content_length -> Option<u64> with Some(1),killed,"killed; the_content_length_appears_with_the_head_and_not_before in crates/http_response/src/lib.rs, re-run with cargo mutants"
 http_response,strip_crlf,replace && with ||,killed,"killed; a_bare_carriage_return_inside_a_line_is_refused in crates/http_response/src/lib.rs, re-run with cargo mutants"
-jh7110_clock_and_reset,PmicBus::from_bus,replace && with ||,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (clocks and no resets: the bus is still read)"
+jh7110_clock_and_reset,PmicBus::from_nodes,replace && with ||,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (clocks and no resets: the bus is still read)"
 jh7110_clock_and_reset,collect_sys_steps,replace < with <=,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
 jh7110_clock_and_reset,collect_sys_steps,replace match guard out.len < steps.len() with true,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
 non_volatile_memory_express,lba_format_shift,replace * with /,killed,"killed; the_reported_shift_is_the_one_in_the_flbas_slot_for_every_format in crates/non_volatile_memory_express/src/lib.rs, re-run with cargo mutants"
@@ -900,9 +900,9 @@ intrusive_fifo,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool
 intrusive_fifo,,replace <impl PartialEq<NonNull<T>> for Unqueued<T>>::eq -> bool with true,killed,killed by a_token_is_its_nodes_pointer
 intrusive_fifo,,replace <impl core::fmt::Debug for Unqueued<T>>::fmt -> core::fmt::Result with Ok(Default::default()),killed,killed by a_token_is_its_nodes_pointer
 intrusive_fifo,<impl PartialEq<NonNull<T>> for Unqueued<T>>::eq,replace == with !=,killed,killed by a_token_is_its_nodes_pointer
-jh7110_clock_and_reset,Report::every_reset_released,replace == with !=,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
-jh7110_clock_and_reset,Report::every_reset_released,replace Report::every_reset_released -> bool with false,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
-jh7110_clock_and_reset,Report::every_reset_released,replace Report::every_reset_released -> bool with true,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
+jh7110_clock_and_reset,BringUpReport::every_reset_released,replace == with !=,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
+jh7110_clock_and_reset,BringUpReport::every_reset_released,replace Report::every_reset_released -> bool with false,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
+jh7110_clock_and_reset,BringUpReport::every_reset_released,replace Report::every_reset_released -> bool with true,killed,killed by tests::every_reset_released_counts_the_released_against_the_planned
 jh7110_clock_and_reset,i2c5_ic_clk,replace && with ||,killed,"killed by tests::the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider (dacpd alone, and integer mode with fbdiv 0)"
 jh7110_clock_and_reset,i2c5_ic_clk,replace * with /,killed,"killed by tests::the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider (postdiv1 field 1, so prediv * 2 differs from prediv / 2)"
 jh7110_clock_and_reset,i2c5_ic_clk,replace << with >>,killed,"killed by tests::the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider (postdiv1 field 1; every vendor row had it at 0, where 1 << 0 == 1 >> 0)"
