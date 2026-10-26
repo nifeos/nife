@@ -31,8 +31,8 @@ Two earlier decisions paid forward, and the starting point is cleaner for it:
 - `IrqSafeMutex` is already a real cross-core spinlock. Its inner primitive is
   `spin_lock::SpinLock` (`crates/spin_lock`), which provides mutual exclusion and the
   acquire/release fences on lock and unlock. Anything touched under a lock is already correct
-  across cores. §9's "every kernel lock is an `IrqSafeMutex`" was SMP groundwork we didn't label
-  as such.
+  across cores. §9 (locking)'s "every kernel lock is an `IrqSafeMutex`" was SMP groundwork we
+  didn't label as such.
 - TLB invalidation is already broadcast. Every `tlbi` we emit is the inner-shareable form
   (`vmalle1is`, `vaae1is`); `flush_tlb`'s own comment says "wait for every core." aarch64's DVM
   broadcasts invalidation in hardware, so cross-core TLB shootdown needs no IPI for the cases DVM
