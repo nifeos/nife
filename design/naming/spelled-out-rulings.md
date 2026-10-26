@@ -102,6 +102,13 @@ The ABI capability takes `Interrupt` or `InterruptLine` by what it names, and it
 (`bind_interrupt`, `interrupt_wait`, or the `_line` form). Refused `interrupt_request`: `ipi` and
 `nmi` expanded to "... interrupt" on 2026-10-18 (UTC), and `irq` matches them.
 
+## The tree spells `queue`, never `fifo`
+
+Ruled 2026-10-26 (UTC), tree-wide: where a name this tree authors says `fifo`, it says `queue`
+(`receive_queue_bytes`, `transmit_queue_bytes` and `queue_bytes`, after the databook's RQS and
+TQS), and the renamed item carries `#[doc(alias = "fifo")]`. Register names copied from a
+datasheet (`FIFOTH`) keep their spelling.
+
 ## Abbreviation sweeps owed under §154
 
 calef ruled on 2026-10-18 (UTC) that `config`, `spec`, `arg`, `mem`, `dir`, `va`, `pa`, `ipi`, `nmi`, `ist` and `msr` expand under §154 (the acronym test is whether the phrase is spoken); the table there holds his words. The rulings are in force; the identifiers are not yet spelled out. Measured on 2026-10-18 in tracked Rust outside `vendor/` and `patches/`, by a broad pattern that over-counts:

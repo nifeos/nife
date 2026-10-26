@@ -22,7 +22,7 @@ acronyms. The same question settles every abbreviation: does a person say the ex
 - Earned, so they stay: `usb`, `syscall`, `cpu`, `xor` and QEMU.
 - `ipc` was already ruled by §154. The sweep that applies it is owed.
 - Ruled 2026-10-26 (UTC): `ms`, `us`, `id`, `io` and `bios` earn their place and stay; `min`
-  expands to `minimum` and `os` to `operating_system`.
+  expands to `minimum`, `max` to `maximum` and `os` to `operating_system`.
 
 ### The rules cover function parameters
 

@@ -145,9 +145,9 @@ Each sets a test that reaches past the word. The arguments are in
 
 ### Precedents set by example
 
-The 2026-10-18 and 2026-10-26 (UTC) rulings as rules, function parameters included:
-[precedents-set-by-example.md](naming/precedents-set-by-example.md). `rx`, `tx`, `phy`, `init` and
-`irq` spell out: [spelled-out-rulings.md](naming/spelled-out-rulings.md).
+The 2026-10-18 and 2026-10-26 (UTC) rulings, `max` and parameters included:
+[precedents-set-by-example.md](naming/precedents-set-by-example.md). `rx`, `tx`, `phy`, `init`,
+`irq` and `fifo` spell out: [spelled-out-rulings.md](naming/spelled-out-rulings.md).
 
 ## Where a name's provenance lives
 
