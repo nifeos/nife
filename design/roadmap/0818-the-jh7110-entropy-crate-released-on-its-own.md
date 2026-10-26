@@ -43,8 +43,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - Its consumers: `kernel/src/user/entropy_service.rs`, `kernel/src/memory.rs`, `kernel/src/lib.rs`
   and `components/src/jh7110_entropy.rs`.
 - crates.io answers 404 for the name (checked 2026-10-07).
-- The crate's names are ratified (2026-10-26 UTC), six of them renamed first; [the names
-  record](0857-crates-released-on-their-own/jh7110-entropy-names.md) holds them.
+- A ruling of 2026-10-26 (UTC) ratified the crate's names and renamed six of them first. [The
+  names record](0857-crates-released-on-their-own/jh7110-entropy-names.md) holds them.
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". The only Rust JH7110 crates found,
