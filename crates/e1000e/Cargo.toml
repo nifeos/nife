@@ -12,9 +12,9 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 
 # no_std for a kernel and a network stack, std for host tests. It owns what the two halves of an
 # Intel e1000e-family driver agree on: register offsets and bits, the descriptor formats, the DMA
-# region's layout, the spawn handoff, and the whole receive and transmit ring logic behind two small
-# traits. The caller supplies the volatile register accesses; everything they compute is here,
-# host-tested against a simulated device and reachable by the model checker.
+# region's layout, and the whole receive and transmit ring logic behind two small traits. The
+# caller supplies the volatile register accesses; everything they compute is here, host-tested
+# against a simulated device and reachable by the model checker.
 
 # No dependencies: the device-tree walk and the process layout around this driver are the
 # caller's.
