@@ -1,9 +1,10 @@
 # The host programs under bench/host
 
 *Name: provisional (lane comments/929-rest-01, 2026-10-24 UTC). An appendix to
-[`notes/benchmarks.md`](../benchmarks.md). It holds why each program in `bench/host/` is shaped the way
-it is. The numbers they produce, with their dates and tiers, are in
-[cross-os-primitives.md](cross-os-primitives.md) and [filesystem-throughput.md](filesystem-throughput.md).*
+[`notes/benchmarks.md`](../benchmarks.md). It holds why each program in `bench/host/` has the shape
+it has. The numbers they produce, with their dates and tiers, are in
+[cross-os-primitives.md](cross-os-primitives.md) and
+[filesystem-throughput.md](filesystem-throughput.md).*
 
 Every native program here builds with a bare `rustc -O`, not Cargo, so it does not fight the aarch64
 target the workspace sets. Native numbers are statistical, because a shared desktop runs underneath
@@ -83,8 +84,8 @@ milestone 138 (close the read gap) step 4 but never answered from memory. Every 
 commits before the reply. It does hold a small metadata cache since step 2 (`CachedDisk`, 64 blocks,
 about 257 KiB, as of 2026-08-22). That answers a repeated read of one file's tree spine from memory, so `fs_read`, a
 repeated read of one small inline file, is not comparable to a cold read. The four phases are
-dominated by record bodies, which the metadata cache never touches, so the comparison holds for them.
-It would not hold for a workload that mostly reopens hot metadata.
+dominated by record bodies, which the metadata cache never touches, so the comparison holds for
+them. It would not hold for a workload that mostly reopens hot metadata.
 
 Linux by default is the opposite on both counts. The page cache absorbs reads, writeback absorbs
 writes, and a 1 MiB file fits in the cache whole. A single ext4 number would answer a question nobody
@@ -103,9 +104,9 @@ asked, so each phase runs in several variants:
 - The raw device row runs the same phases with no filesystem, the floor both filesystems stand on.
   It says how much of either one's cost is the filesystem and how much is virtio under HVF.
 
-Both Linux variants still enjoy the host's page cache under QEMU, because the drive is attached
-`cache=writeback`, QEMU's default and what the nife runner uses. That is matched rather than removed,
-which is the point of running at the same tier.
+Both Linux variants still enjoy the host's page cache under QEMU, because the drive uses
+`cache=writeback`, QEMU's default and what the nife runner uses. That is matched rather than
+removed, which is the point of running at the same tier.
 
 After the write phase, the program calls `sync` and sleeps 250 ms before the read phases. Linux has
 background work after a write returns, even under `O_DSYNC`, and a read phase that ran into it would

@@ -1,6 +1,9 @@
 # The `rfence_self` baseline row
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 2026-09-21 and 2026-09-23 readings of one oscillating riscv64 row, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 2026-09-21 and 2026-09-23 readings
+of one oscillating riscv64 row, with the dates, tables and corrections behind them. Name: ratified
+2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 The current value, checked 2026-09-24: `bench/baseline-riscv64.txt` reads `rfence_self 5991 512`
 under `# toolchain: nightly-2026-09-23`, re-recorded by `a66e8c5f9` (2026-09-23). Which cause moved
@@ -10,7 +13,7 @@ the row between 5991 and 6476 is still open; the 2026-09-23 section below says w
 
 *Contested since, and the 2026-09-23 section is the current state.* The row went back to 6476 on
 2026-09-22 and measured 5991 again on 2026-09-23. There a second lane read the same movement as
-compiler drift, not as a wrong hart count. This section records what was checked.
+compiler drift, not as a wrong hart count. This section records the checks.
 
 calef asked for the fast benchmark to be chased the way a regression would be. On 2026-09-21
 riscv64's `rfence_self` measured 7.49% under its committed baseline while every other row on every
@@ -18,7 +21,7 @@ architecture sat inside noise. The icount tripwire is one-sided by design, so no
 raised it.
 
 The tree did not get faster, and the benchmark did not stop measuring what it measures. The
-committed number was wrong on the day it was committed.
+committed number was wrong on the day of its commit.
 
 ### The measurement
 
@@ -115,13 +118,14 @@ row was 6476 again. The lane clearing PR #1112 (the `nightly-2026-09-23` bump) m
 tick in three reproducible runs and read the same movement as compiler drift. *(Correction,
 2026-09-24: this section first said "four days later"; 2026-09-21 to 2026-09-23 is two.)*
 
-Both readings are argued from outside the file. `bench/baseline-riscv64.txt` records a number, a
-pinned nightly and a QEMU version. It does not record why the number holds that value, so neither
-lane could check the other's cause without re-deriving it from commit messages and git history.
+Both readings rest on arguments from outside the file. `bench/baseline-riscv64.txt` records a
+number, a pinned nightly and a QEMU version. It does not record why the number holds that value, so
+neither lane could check the other's cause without re-deriving it from commit messages and git
+history.
 
 ### The oscillation, from committed text alone
 
-No emulator was booted for this table. It is `git show <commit>:bench/baseline-riscv64.txt` seven
+No emulator ran for this table. It is `git show <commit>:bench/baseline-riscv64.txt` seven
 times:
 
 | commit | date | `# toolchain:` | `rfence_self` |

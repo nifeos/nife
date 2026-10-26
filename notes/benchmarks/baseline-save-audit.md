@@ -1,6 +1,9 @@
 # Every baseline save, audited
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the 2026-09-15 walk of every save for drift that accumulated under the tripwire, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the 2026-09-15 walk of every save for
+drift that accumulated under the tripwire, with the dates, tables and corrections behind them. Name:
+ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## 2026-09-15: every baseline save since the first, audited for what accumulated under the tripwire
 
@@ -19,19 +22,19 @@ manufacture findings:
 - Per-iteration, not per-total. A save that changes a benchmark's iteration count changes its tick
   total without changing its cost. Every step below is `ticks / iters` against `ticks / iters`, so
   an iteration-count change reads as zero.
-- `git log --follow` crosses the rename into the wrong file. `bench/baseline-x86_64.txt` was added
-  whole on 2026-08-25, and `--follow` walks back from it into `baseline-riscv64.txt`'s history,
-  because the two were similar at the rename boundary. Taken literally that yields eight x86_64
-  "steps" of around +9800%, which are riscv64's numbers compared against x86_64's. The x86_64 table
-  therefore starts at its real birth, `d31aa77c`, verified with `git log --diff-filter=A`.
+- `git log --follow` crosses the rename into the wrong file. `bench/baseline-x86_64.txt` first
+  appeared whole on 2026-08-25, and `--follow` walks back from it into `baseline-riscv64.txt`'s
+  history, because the two were similar at the rename boundary. Taken literally that yields eight
+  x86_64 "steps" of around +9800%, which are riscv64's numbers compared against x86_64's. The x86_64
+  table therefore starts at its real birth, `d31aa77c`, verified with `git log --diff-filter=A`.
 
-One more boundary. The aarch64 file's first seven saves are the harness being built: the benchmark
-set changes under it. `60e75545` (2026-07-28) pinned the bench to one hart after finding the
-`-smp 4` counter was fiction, which changes the meaning of every earlier number (see
+One more boundary. The aarch64 file's first seven saves are the harness under construction: the
+benchmark set changes under it. `60e75545` (2026-07-28) pinned the bench to one hart after finding
+the `-smp 4` counter was fiction, which changes the meaning of every earlier number (see
 [the icount-drift appendix](icount-drift-and-provenance.md)). A cumulative figure from 2026-07-23
 would measure the instrument's construction. So the cumulative table anchors aarch64 at `74431429`
-(2026-07-30), the first save after both the one-hart fix and the QEMU pin. The other two are anchored
-at their birth.
+(2026-07-30), the first save after both the one-hart fix and the QEMU pin. The table anchors the
+other two at their birth.
 
 ### Every save, per architecture
 
@@ -211,7 +214,7 @@ recovered by #886, merged 2026-09-16.)*
   bound and a genuine win (see [the `spawn_el0` appendix](spawn-el0.md)). Cumulative drift is not a
   one-directional story, and a mechanism that assumed it was would be wrong about these.
 
-The mechanism this argues for is written up separately, since it is an architect's call:
+The mechanism this argues for has its own write-up, since it is an architect's call:
 `design/roadmap/0415-sub-tripwire-drift-accumulates-across-baseline-saves.md`.
 
 *(Since then, 2026-09-24: part of that mechanism has landed. Milestone 302 (a baseline records what

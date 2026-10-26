@@ -54,7 +54,8 @@ updates:
   #
   # Each directory below is its own workspace with its own lockfile, so the root entry above never
   # sees it. The test of §81 (a dependency stays upgradable) is "if a newer version exists, does
-  # anything here ever tell us?", and for these thirteen graphs this entry is what tells us.
+  # anything here ever tell us?", and for these ten graphs this entry is what tells us (the three
+  # that build vendored RedoxFS have the entry after this one).
   # `script/lint` keeps this list complete: every committed Cargo.lock that `script/supply-chain`
   # checks must appear here or in the root entry, so a new workspace cannot join the tree unwatched.
   #
@@ -63,7 +64,7 @@ updates:
   #   - vendor/redoxfs and vendor/talc carry upstream's own Cargo.lock byte for byte, and
   #     `script/vendor-verify` fails on any change to it. `script/vendor-watch` watches those
   #     upstreams instead, and the workspaces that build them (redoxfs_server, tools/redoxfs_host
-  #     and the rest) resolve their own graphs, which are watched here.
+  #     and the rest) resolve their own graphs, which are watched here and in the entry below.
   #   - notes/packages/container-format-measurements/fuzz is a measuring harness kept as
   #     `Cargo.toml.in`, so nothing can parse it, and it pins exact versions because they are what
   #     its note measured.
@@ -75,23 +76,20 @@ updates:
       - "/c_library"
       - "/cryptography_exerciser"
       - "/cryptography_provider"
-      - "/fuzz"
       - "/jig"
       - "/mdr"
       - "/pinned_tls_client"
       - "/pinned_tls_exerciser"
-      - "/redoxfs_server"
       - "/std_exerciser"
       - "/tools/glyph_atlas_generator"
       - "/tools/host_reordering_litmus"
-      - "/tools/redoxfs_host"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
     groups:
-      # Minor and patch bumps across all thirteen workspaces, one pull request a week.
+      # Minor and patch bumps across all ten workspaces, one pull request a week.
       workspaces-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
@@ -104,6 +102,97 @@ updates:
         patterns: ["*"]
         update-types: ["major"]
         group-by: dependency-name
+
+  # --- The three workspaces that build vendored RedoxFS -----------------------------------------
+  #
+  # fuzz, redoxfs_server and tools/redoxfs_host each take vendor/redoxfs as a path dependency, and
+  # Dependabot follows a path dependency into its manifest. A bump past the range that manifest asks
+  # for therefore rewrites vendor/redoxfs/Cargo.toml, which is upstream's published file, and
+  # `script/vendor-verify` fails it by construction. That is what happened to #2756-#2759
+  # (getrandom 0.4, aes 0.9, argon2 0.6, endian-num 0.2), declined and closed under Decision 39
+  # (ruled 2026-10-26 UTC). A bump inside the range only refreshes the lockfiles (#2725 and #2755
+  # touched nothing else), so only the out-of-range one is ignored below: for Cargo, Dependabot's
+  # `semver-major` is the caret boundary, so a 0.y crate's next minor counts as major.
+  #
+  # EXCEPTION (§81): the semver-major updates of every direct dependency vendor/redoxfs/Cargo.toml
+  # declares (normal, dev and per-target) are ignored in these three directories. The upgrade stays
+  # reachable: these crates reach the three workspaces only through the vendored engine, so moving
+  # them past its range means moving the redoxfs pin, and `script/vendor-watch` is what reports a
+  # newer upstream for that (vendor/README.md, "Bumping a pin"). The ignores lift when the redoxfs
+  # pin moves: re-read the new vendor/redoxfs/Cargo.toml and make this list match it, dropping a
+  # crate it no longer declares. A name here also covers that crate in these three directories when
+  # another of their dependencies holds it (redox_syscall, uuid and libc are also direct
+  # dependencies of redoxfs_server or tools/redoxfs_host, which must agree with the engine on them
+  # anyway); the root entry still proposes majors for the kernel crates' own copies.
+  #
+  # Its own entry rather than three more directories on the one above, because an `ignore` applies
+  # to every directory of its entry and these holds are true only of these three.
+  - package-ecosystem: cargo
+    directories:
+      - "/fuzz"
+      - "/redoxfs_server"
+      - "/tools/redoxfs_host"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    groups:
+      # The same two groups as the entry above, for the same reasons.
+      redoxfs-workspaces-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      redoxfs-workspaces-major:
+        patterns: ["*"]
+        update-types: ["major"]
+        group-by: dependency-name
+    ignore:
+      - dependency-name: "aes"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "argon2"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "base64ct"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "bitflags"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "endian-num"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "env_logger"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "getrandom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "humansize"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "libc"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "log"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "lz4_flex"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "parse-size"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "range-tree"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redox_syscall"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "seahash"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "termion"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "uuid"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "xts-mode"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "assert_cmd"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fuser"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "libredox"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redox-path"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redox-scheme"
+        update-types: ["version-update:semver-major"]
 
   # --- GitHub Actions used by .github/workflows/ci.yml ----------------------------------------
   - package-ecosystem: github-actions

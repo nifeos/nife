@@ -1,6 +1,10 @@
 # icount tick scales: a tick is not an instruction
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds the per-architecture tick scales under `-icount`, the in-kernel ground-truth measurement that fixed them, and the correction of the x86_64 "17x". Name: provisional (the icount-attribution lane, 2026-09-30); [the naming record](README.md) holds the ratified ones.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds the per-architecture tick scales under
+`-icount`, the in-kernel ground-truth measurement that fixed them, and the correction of the x86_64
+"17x". Name: provisional (the icount-attribution lane, 2026-09-30); [the naming record](README.md)
+holds the ratified ones.*
 
 ## 2026-09-30: the x86_64 "17x" was units; the kernel paths are within 7 percent
 
@@ -68,7 +72,7 @@ within a few percent, which is what sharing the source should produce. **There i
 the kernel paths.** Rows from this lane's own boots (same evening, one tree) give the same ratios:
 `yield_switch` 9,296 against 9,930, ratio 1.068.
 
-The residual, attributed as far as it is measured. x86_64 runs 4 to 7 percent more instructions on
+The residual, attributed as far as measurement goes. x86_64 runs 4 to 7 percent more instructions on
 the switch and IPC rows. One measured component is the port-grant install: the x86_64 switch installs
 the incoming thread's port grant on every switch-in (`install_port_grant`, `kernel/src/sched.rs`;
 §152 (the port-range capability: object and method semantics on the syscall surface) is the
@@ -152,7 +156,7 @@ design).
   the unit label was wrong. Corrected in place.
 - The three baseline files' headers and the template that writes them (`xtask/src/bench.rs`) said
   "icount counts guest instructions" where a reader compares files. They now say ticks are per-arch
-  units and raw ticks must not be compared across architectures.
+  units and warn against comparing raw ticks across architectures.
 
 ### Method: the probe, so it can be replayed
 
@@ -172,7 +176,7 @@ would re-save every floor to buy a number each `bench: cntfrq` line already impl
 - The eight-bytes-per-store reading of the TSS write is arithmetic from ticks (two 8,192-byte writes
   per iteration, ~2,120 instructions together), not disassembly.
 - 62.5 MHz, 10 MHz and ~1 GHz are this QEMU's (11.1.1, `virt`/`q35`) rates. A machine property can
-  change any of them, which is why the method is recorded rather than the constants alone.
-- The swish leg's own wall numbers are quoted from `xtask/src/swish_check.rs`'s 2026-09-19 table, not
+  change any of them, which is why the method, not the constants alone, goes on record.
+- The swish leg's own wall numbers come from `xtask/src/swish_check.rs`'s 2026-09-19 table, not
   re-measured here; re-running that leg is half an hour of CI-shaped wall clock and the recorded
   attribution already answers this lane's question.

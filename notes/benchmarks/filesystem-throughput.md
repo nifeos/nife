@@ -1,6 +1,9 @@
 # Filesystem throughput against ext4 and APFS
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds milestone 38's measurement, the three systems, and what is not apples to apples, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds milestone 38's measurement, the three
+systems, and what is not apples to apples, with the dates, tables and corrections behind them. Name:
+ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## Filesystem throughput, and what is honestly comparable (milestone 38 (filesystem throughput), 2026-08-18)
 
@@ -12,7 +15,7 @@ measurement.
 The answer is no, and it is not close. The confined-server tax is about a microsecond per request
 (`relay_rtt`, in [the service-path appendix](service-path.md)). A 4 KiB file operation through this
 stack costs one and a half to three and a half milliseconds. The architecture is three and a half
-orders of magnitude below the thing being measured.
+orders of magnitude below the thing under measurement.
 
 A sharper answer replaces it, and it decomposes onto one constant. Every 4 KiB read of an ordinary
 file costs 32 block reads, because RedoxFS stores a file in 128 KiB records and reads the record
@@ -52,8 +55,8 @@ draft of the bench fell into both:
   nothing. An incompressible page is not enough; each page has to differ from the last.
 
 So every write carries a freshly generated, incompressible page. That costs 512 stores inside the
-timed window, because a client that writes data has to produce it. It is measured on its own
-(`fs_payload_fill`) so a reader can take it back out: 820 ns per page, 0.03% of a write. Both host
+timed window, because a client that writes data has to produce it. It has its own row,
+`fs_payload_fill`, so a reader can take it back out: 820 ns per page, 0.03% of a write. Both host
 benchmarks generate their payload the same way.
 
 ### The three systems, and which two are at the same tier
@@ -102,7 +105,7 @@ else falls out of it and nothing was fitted:
   at the start of a record fetches one block where a read at the end fetches 32, since
   `read_node_inner` asks for `BlockLevel::for_bytes(offset_in_record + len)`. It measures the same as
   the others because `read_record` reads the block the pointer stores and only then checks the
-  requested level. A fully written record is stored at level 5, so every read fetches all 128 KiB.
+  requested level. A fully written record sits at level 5, so every read fetches all 128 KiB.
 - An inline read is 4.5 blocks: the tree walk with no record at the end. `motd` is 69 bytes and lives
   inside its node.
 - A sequential write is 55 blocks and a random write is 74. A write is a read-modify-write of a
@@ -195,9 +198,10 @@ figure quoted without its caveats is worth less than no figure.
    cache; see [steps 4 and 2](read-path-block-contract-and-metadata-cache.md).)*
 3. Our write is between Linux's two. Every `filesystem_contract` write goes through a RedoxFS
    transaction that commits to the header ring before the reply. So the filesystem's own state is
-   durable per request, the way `O_DSYNC` makes ext4's. But no `VIRTIO_BLK_T_FLUSH` is issued unless
-   a client asks (`filesystem_contract::fs::SYNC`, milestone 55 (Time Machine)), so the bytes sit where `O_DIRECT`
-   alone leaves them. Both rows are printed and neither is the comparison.
+   durable per request, the way `O_DSYNC` makes ext4's. But nothing issues a `VIRTIO_BLK_T_FLUSH`
+   unless a client asks (`filesystem_contract::fs::SYNC`, milestone 55 (Time Machine)), so the bytes
+   sit where `O_DIRECT` alone leaves them. Both rows appear in the output and neither is the
+   comparison.
 4. The copy counts differ, in our favor. A completed read lands in the page the client already
    shares with the server, so the bytes can be used in place; buffered Linux copies into the caller's
    buffer. `O_DIRECT` closes most of that gap by DMA-ing into the user buffer, one more reason it is
@@ -209,7 +213,7 @@ figure quoted without its caveats is worth less than no figure.
 
 ### The noise floor, and how a round earns its place
 
-This machine is shared with other agent lanes and was not quiet for most of the day. Load averages
+Other agent lanes share this machine, and it was not quiet for most of the day. Load averages
 ran between 15 and 70, including a lane deliberately running eight stress processes for its own
 measurement. So each system carries a control:
 
@@ -232,8 +236,8 @@ reproduce.
 ### One tooling bug found on the way
 
 `helpers/qemu-bounded.sh` killed its watchdog subshell when the guest finished on its own and left the
-`sleep` inside it running. An orphaned `sleep` holds the write end of the pipe it inherited. So every
-bounded run whose output is piped blocked for the full bound, however quickly the guest exited. The
-Linux comparison boots a guest that powers itself off in about fifteen seconds, and each round took
-five minutes. Fixed by killing the watchdog's children first (`pkill -P`). Every caller that pipes a
-bounded run was paying this.
+`sleep` inside it running. An orphaned `sleep` holds the write end of the pipe it inherited. So
+every bounded run whose output goes through a pipe blocked for the full bound, however quickly the
+guest exited. The Linux comparison boots a guest that powers itself off in about fifteen seconds,
+and each round took five minutes. Fixed by killing the watchdog's children first (`pkill -P`). Every
+caller that pipes a bounded run was paying this.

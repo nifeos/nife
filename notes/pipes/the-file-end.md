@@ -2,10 +2,10 @@
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds why the
 file end of a redirection cannot be a separate process, what that costs, and why it made `>>` one
-bit. It was moved here verbatim from the main page on 2026-09-25 (UTC), under [§212 (a prose
-budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
-`notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
-the file. Naming is calef's.*
+bit. The lane that split the file moved it here verbatim from the main page on 2026-09-25 (UTC),
+under [§212 (a prose budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The
+directory `notes/pipes/` and this file's stem are provisional names, minted that day by the lane
+that split the file. Naming is calef's.*
 
 ## The file behind a `>` is this shell, and that was not the plan
 
@@ -22,7 +22,7 @@ a rendezvous on the FS endpoint cannot span a put-then-call pair.
 
 That is survivable for `date > out.txt`, where the shell touches no file while the adapter writes.
 It is not survivable for `ls > out.txt`, which is exactly a line where the shell must read the
-filesystem while the redirection is being written. `ls` reads a page of directory entries, hands
+filesystem while the adapter writes the redirection. `ls` reads a page of directory entries, hands
 a name to the writer, and comes back for the next round. Interleave an adapter's `put` with that and
 the listing and the file are both corrupt, silently.
 
@@ -95,6 +95,7 @@ command runs, which is what makes `ls > out.txt` report one more name than the `
 
 Two rules fall out and neither needed code. `>>` inherits every rule `>` has, because it is the same
 operator: the tail of the pipeline only, one per stage, one name, and a name that is not a pattern.
-And there is no here-document: `<<` is refused, because the second `<` is read as the operator it is
-and there is then no name after it. The message is about the missing name where the mistake was a
-missing feature, which is a wording gap and is in [this note's BUGS](../pipes.md#bugs).
+And there is no here-document: the grammar refuses `<<`, because it reads the second `<` as the
+operator it is and then finds no name after it. The message is about the missing name where the
+mistake was a missing feature, which is a wording gap and is in [this note's
+BUGS](../pipes.md#bugs).
