@@ -2,8 +2,8 @@
 
 *An appendix to [`notes/pipes.md`](../pipes.md), which is the page to read. This file holds what
 DECISIONS §67 built: its five moving parts, the transcripts, the bugs building it found, the default
-destination and the ordering rule. It was moved here verbatim from the main page on 2026-09-25
-(UTC), under [§212 (a prose
+destination and the ordering rule. The lane that split the file moved it here verbatim from the main
+page on 2026-09-25 (UTC), under [§212 (a prose
 budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md). The directory
 `notes/pipes/` and this file's stem are provisional names, minted that day by the lane that split
 the file. Naming is calef's.*
@@ -24,7 +24,7 @@ those bytes go. And aimed at a program that declares none it is a refusal at the
 voice as every other refusal here. `date` is the first and so far only declarer, because `date` is
 the program the loss was measured on.
 
-The analysis of the fork as it stood open is kept in [its own appendix](second-stream-fork.md),
+[Its own appendix](second-stream-fork.md) keeps the analysis of the fork as it stood open,
 because the reasoning is the reusable part and because reading it explains why the built thing has
 the shape it does. What follows first is what exists.
 
@@ -74,8 +74,8 @@ That is the whole claim in four lines. The answer went to the terminal, the seco
 one stream, so `err.txt` could not have existed and the timestamp would have been the only thing
 either destination could have held.
 
-And the case it was built for, which needs a `date` that was granted no clock (the interactive
-prompt has one, so this is `kernel::user::date_tests`, asserted by value rather than read off a
+And the case it was built for, which needs a `date` that holds no clock (the interactive
+prompt has one, so this is `kernel::user::date_tests`, which asserts by value rather than reading off a
 transcript):
 
 ```text
@@ -128,18 +128,18 @@ $ wc gate.txt 2> err.txt
   wc: declares no second output, so there is nothing for 2> to name (its diagnostics ride its output)
 ```
 
-Nothing was denied. `wc` writes one stream, its diagnostics ride it, and the operator has nothing to
-bind to. That is `Refusal::NoSuchProgram`'s shape applied to a stream, and it is the sentence §67
-asked for.
+The refusal denied nothing. `wc` writes one stream, its diagnostics ride it, and the operator has
+nothing to bind to. That is `Refusal::NoSuchProgram`'s shape applied to a stream, and it is the
+sentence §67 asked for.
 
 ### A third bug of the same shape, and the pattern is now three deep
 
 Building the terminal's sink adapter made the boot print nothing at all on aarch64, and it was the
-progenitor's sixteen-slot capability table for the third time. The adapter was built between the
-input driver and the shell, which looked like the natural place. At that moment the progenitor still
-holds the terminal endpoint, two shared frames, the file service and its page, so one more endpoint
-put `build_child` one slot short while it was retyping the *shell's* address space. The shell was
-never built, so nothing ever printed.
+progenitor's sixteen-slot capability table for the third time. The progenitor built the adapter
+between the input driver and the shell, which looked like the natural place. At that moment the
+progenitor still holds the terminal endpoint, two shared frames, the file service and its page, so
+one more endpoint put `build_child` one slot short while it was retyping the *shell's* address
+space. The shell was never built, so nothing ever printed.
 
 The fix is where rather than what: build it after the shell, once every boot capability the
 adapter does not need has gone back.
@@ -151,28 +151,28 @@ adapter is now the fifth of six boot components, and the boot is fine. The const
 ordinal; it was that the adapter must not be holding a slot while `build_child` retypes the shell's
 address space.
 
-What the merge did pin down is the other end. The adapter has to be built before the progenitor
-gives the construction budget away, because it is a system component and the root untyped is what
-the system is built from. Afterwards the only budget left is the progenitor's own scratch pool,
-sized for page tables, and spending a whole program out of it would surface much later as some child
-failing to map a scratch page. So `term_ep` no longer goes back "immediately after" the adapter: it
-stays until the progenitor has printed its dropped-authority sentence through it, which is the last
-thing either the progenitor does with the terminal.
+What the merge did pin down is the other end. The progenitor has to build the adapter before it
+gives the construction budget away, because the adapter is a system component and the system draws
+on the root untyped. Afterwards the only budget left is the progenitor's own scratch pool, sized for
+page tables, and spending a whole program out of it would surface much later as some child failing
+to map a scratch page. So `term_ep` no longer goes back "immediately after" the adapter: it stays
+until the progenitor has printed its dropped-authority sentence through it, which is the last thing
+either the progenitor does with the terminal.
 
 The pattern worth keeping is that all three instances of this presented identically, as a boot that
 reaches userspace and then says nothing, and all three were a capability slot rather than memory. A
-capability table that is sized in a constant and consumed in an order is a resource with no error
+capability table sized in a constant and consumed in an order is a resource with no error
 message. `build_child` returns `Err(())` and the progenitor halts, which is correct and silent.
 
 ### A correction: there are two inits, and this note said there was one
 
 *(This section records milestone 96's state. Milestone 266 made it one program on all three
 architectures, `components/src/progenitor.rs`, so "two inits" and the archive entry `init`
-below are both history now. The section is left as it was written, because what it records is
+below are both history now. The section stays as written, because what it records is
 the correction and not the arrangement.)*
 
-*Written 2026-08-03; the duplication it describes was removed by milestone 96 the next day. The
-finding is kept because it is the reason the crate exists.*
+*Written 2026-08-03; milestone 96 removed the duplication it describes the next day. This
+note keeps the finding because it is the reason the crate exists.*
 
 [The section on
 `script/swish-check`](tests-and-the-boot-gate.md#the-gate-for-the-boot-itself-which-is-what-runs-the-real-progenitor)
@@ -181,9 +181,9 @@ about which program it runs on aarch64. Building `2>` found it the hard way: the
 diagnostic endpoint, nobody received it, and the prompt hung on the first `date` with no fault and
 no message.
 
-`kernel/src/main.rs` hands off to `user::initial_ramdisk()`, which loads the program named `init`, and on
-aarch64 that is `fixtures/src/hello.rs`'s `init_boot` role. `components/src/progenitor.rs` is
-riscv64's. Both serve `grant_plan::spawnproto`, and the serving loop was written twice, once in each
+`kernel/src/main.rs` hands off to `user::initial_ramdisk()`, which loads the program named `init`,
+and on aarch64 that is `fixtures/src/hello.rs`'s `init_boot` role. `components/src/progenitor.rs` is
+riscv64's. Both serve `grant_plan::spawnproto`, and the serving loop existed twice, once in each
 file, about a hundred and forty near-identical lines: the same delegation order, the same slot
 ordering, the same clock rule, the same `build_child_at`.
 
@@ -241,8 +241,8 @@ cost and it is in [this note's BUGS](../pipes.md#bugs).
 
 ### What it deliberately does not do
 
-- There is no `Diagnostics::Pipe`. A diagnostic that flowed down a `|` into a `wc` would be
-  counted as output, which is the conflation the second stream exists to end. `2>` names a file or
+- There is no `Diagnostics::Pipe`. A diagnostic that flowed down a `|` into a `wc` would
+  count as output, which is the conflation the second stream exists to end. `2>` names a file or
   nothing.
 - One diagnostic stream per line, not per stage. The shell mints one endpoint and hands it to
   every declaring stage, so `2>` at the tail names where *the line's* diagnostics go. Two declaring

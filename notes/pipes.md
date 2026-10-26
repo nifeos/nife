@@ -19,10 +19,10 @@ by declaration (DECISIONS §67 (A program's second stream is a declaration, not)
 number everybody has to agree on. See ["`2>`: built as a
 declaration"](pipes/second-stream.md).
 
-**The draining lane came after all of them, on 2026-08-04**, and it is the only one that was raised
-by somebody trying to *use* this. Milestone 40 built a documentation viewer, could not show a page
+**The draining lane came after all of them, on 2026-08-04**, and it is the only one that somebody
+trying to *use* this raised. Milestone 40 built a documentation viewer, could not show a page
 at the prompt, and spent three boot-gate failures finding out that all three reasons were here. Two
-were bugs and are fixed; the third is not a bug at all, and naming it correctly is the reusable
+were bugs, now fixed; the third is not a bug at all, and naming it correctly is the reusable
 part. See ["One wait point, and what it decides about a
 line"](pipes/one-wait-point.md).
 
@@ -67,20 +67,20 @@ Three refusals that bash does not make, each because a line should mean what it 
 - **A redirection goes last in its stage.** `wc < report.txt`, never `< report.txt wc`. Bash accepts
   the second; refusing it is what lets a stage's command text be a *slice* of the line rather than
   something reassembled, which matters in a shell with no allocator.
-- **Only the first stage takes input and only the last is redirected.** `date > f | wc` says where
-  `date`'s bytes go and then pipes them somewhere else. That is two answers to one question, so it
-  is refused rather than resolved by a precedence rule nobody should have to remember.
-- **A redirection names one file.** `date > *.txt` is refused where the token is read, not expanded
-  and then counted. Even a pattern that matched exactly one name would make what the line writes to
-  depend on what is in the directory.
+- **Only the first stage takes input and only the last redirects output.** `date > f | wc` says where
+  `date`'s bytes go and then pipes them somewhere else. That is two answers to one question, so the
+  grammar refuses it rather than resolving it by a precedence rule nobody should have to remember.
+- **A redirection names one file.** The grammar refuses `date > *.txt` where it reads the token, not
+  by expanding it and then counting. Even a pattern that matched exactly one name would make what
+  the line writes to depend on what is in the directory.
 
 ## What the shell checks before it spawns anything
 
 A program's manifest says what it reads and writes, so the prompt can refuse a line that would
-misbehave. `OutputDeclaration` says whether a program writes a byte stream: `least_authority_demo 9 >
-out.txt` is `NotAByteStream`, because that program answers in a register. `InputDeclaration` says whether
-it reads one. A `wc` with neither a `<` nor a pipe is refused rather than left blocked forever, and
-`date < report.txt` is `InputForbidden`.
+misbehave. `OutputDeclaration` says whether a program writes a byte stream:
+`least_authority_demo 9 > out.txt` is `NotAByteStream`, because that program answers in a register.
+`InputDeclaration` says whether it reads one. The prompt refuses a `wc` with neither a `<` nor a
+pipe rather than leaving it blocked forever, and `date < report.txt` is `InputForbidden`.
 
 A source is the sink contract received rather than sent, so `<` and the right side of `|` are one
 convention. A pipe's ends travel as `WRITE` and `READ`, so the program on the right of a `|` cannot
@@ -103,13 +103,13 @@ the `>>` design are in [the file-end appendix](pipes/the-file-end.md).
 ## `2>`: built as a declaration (DECISIONS §67)
 
 A program with diagnostics declares a second output in its manifest (built 2026-08-03). `2>` names
-where those bytes go, and aimed at a program that declares none it is refused at the prompt. `date`
+where those bytes go, and the prompt refuses it when aimed at a program that declares none. `date`
 is the only declarer. With no `2>`, the second stream goes to `terminal_sink_caretaker`, so a
 complaint reaches the screen without passing through the shell. `date > when.txt` therefore never
 writes a complaint into the file. The progenitor inserts the stream at the slot the manifest names,
 not at the next free one.
 
-What was built and what building it found are in [the second-stream appendix](pipes/second-stream.md).
+[The second-stream appendix](pipes/second-stream.md) covers the build and what building it found.
 The analysis written while the fork was open is in [the fork appendix](pipes/second-stream-fork.md).
 
 ## One wait point, and what it decides about a line
@@ -127,7 +127,7 @@ appendix](pipes/one-wait-point.md).
 
 Measured on 2026-08-03 under HVF, `a | b` costs 1146 ns per sixteen bytes (13.3 MiB/s). A macOS
 pipe at the same write size costs 348 ns. The gap that matters is the sixteen-byte message, not the
-lockstep, and a buffering process would add a second rendezvous per message. So nothing was built.
+lockstep, and a buffering process would add a second rendezvous per message. So this lane built nothing.
 The table and its caveats are in [the buffering appendix](pipes/buffering.md).
 
 ## SIGPIPE, and why the pipeline gets its own region
@@ -138,8 +138,8 @@ has finished while its writer is still blocked in a `SEND` would leave that writ
 
 Each pipeline therefore takes its own region, split off the shell's budget, and the shell `DESTROY`s
 it when the line is over. That is what turns a producer's next `SEND` into `abi::Error::Gone`, which
-is `SIGPIPE` as a return value. The classification itself is asserted by value in
-`kernel::user::sink_tests`.
+is `SIGPIPE` as a return value. `kernel::user::sink_tests` asserts the classification itself by
+value.
 
 
 ## The boot, the tests and the gate
@@ -196,8 +196,8 @@ $ ls
 
 Read the numbers rather than the fact that it ran. `wc < out.txt` says eight lines where the
 listing above it had seven, because `>` creates and truncates its file before the command runs,
-so `ls` sees `out.txt` in the directory it is listing. That is Unix's order and it is worth seeing
-rather than being told. The 57 bytes are those eight names plus a newline each; the terminal's
+so `ls` sees `out.txt` in the directory it is listing. That is Unix's order and it is worth seeing,
+not hearing about. The 57 bytes are those eight names plus a newline each; the terminal's
 two-space indent is the terminal's manners and is not in the file.
 
 The riscv64 prompt is the same session with different numbers, because that leg's image had two more
@@ -227,8 +227,8 @@ $ wc < when.txt
 Read the `caps` output rather than the counts. **The last line of the `output` row is the only thing
 `>>` changes**, and it is a sentence about *this shell*, not about `date`. The `cap 0` row above it
 is identical to the one `date > when.txt` prints, and so is everything else, because the two
-spellings hand the child the same endpoint with the same right. That is the property `>>` was built
-to be a test of, printed where a person meets it.
+spellings hand the child the same endpoint with the same right. That is the property `>>` exists to
+test, printed where a person meets it.
 
 And the same at a prompt with no filesystem, which is the same binary:
 
@@ -290,7 +290,7 @@ $ wc gate.txt | wc
 ```
 
 The failure it replaces is the one worth recognizing, because it does not look like a failure. The
-head stage was spawned with an empty input slot, a `receive` there answers `NoSuchSlot` instead of
+shell spawned the head stage with an empty input slot, a `receive` there answers `NoSuchSlot` instead of
 blocking, and that reads as end of document, so this line used to print `0 0 0` and mean it. **A
 pipeline that reports zero of everything is a pipeline in which nothing was ever fed**, and it is
 the only symptom an empty input slot has.
@@ -317,14 +317,14 @@ One line each.
 - `OPERATION_PRINT` carries eight bytes, so each sixteen-byte sink message is two calls to the terminal.
 - `script/swish-check` is not in `script/test` or CI, and it is the only gate on the real
   progenitor.
-- `fixtures/src/file_sink.rs` and `file_source.rs` are proven by `sink_tests` but not on the
+- `sink_tests` proves `fixtures/src/file_sink.rs` and `file_source.rs`, though not on the
   shell's path.
 - The interactive prompt holds the image root, unnarrowed. That is a default, not a recorded
   decision.
 - `rm` and per-file capabilities are not reachable from the prompt. The progenitor would have to
   build a caretaker per invocation.
 - Slot 1 is the clock, the input source or the `--mem` untyped, and slot 0 moves behind a directory
-  grant. That is safe only while no manifest declares two; a numbered slot convention is owed.
+  grant. That is safe only while no manifest declares two; it still needs a numbered slot convention.
 - A pipeline is full lockstep: every sixteen bytes is a rendezvous, with no buffer.
 - A line whose bytes all come from this shell needs a barrier stage unless its tail goes to the
   screen. A redirected filter (`doc page.md > out.txt`) is still refused.
@@ -332,14 +332,15 @@ One line each.
 - `2>` works only on a program that declares a second stream, and only `date` does.
 - Under a `2>`, a declaring program must finish its diagnostics before any output, or the line
   deadlocks. At the default destination the rule does not apply.
-- A `2>` on a builtin is refused as "declares no second output", an odd sentence about `ls`.
+- The prompt refuses a `2>` on a builtin as
+  "declares no second output", an odd sentence about `ls`.
 - The shell's diagnostic endpoint is never destroyed, so a writer parked on it would stay parked.
   It cannot happen today.
-- There is no here-document, and `<<` is refused as "a redirection needs a name".
+- There is no here-document, and the grammar refuses `<<` as "a redirection needs a name".
 - Quoting delimits and never rewrites, since milestone 67 (`swish` the language): there is no
-  backslash escape, and `a"b"` is refused.
+  backslash escape, and the grammar refuses `a"b"`.
 - `wc` has no `-l`, `-w` or `-c`.
-- A `date` whose reader stopped early stays parked until its region is reclaimed.
+- A `date` whose reader stopped early stays parked until the shell reclaims its region.
 
 ## Appendices
 
