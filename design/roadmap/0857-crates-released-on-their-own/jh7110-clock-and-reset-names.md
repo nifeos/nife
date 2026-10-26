@@ -5,7 +5,7 @@ for the crate of milestone 819 (JH7110 clock and reset logic, proven, then relea
 file is the record of every name in the crate, which `helpers/name_release.py` reads in place of
 `Name:` blocks: the crate's shipped files carry none.
 
-Ratified: 2026-10-26 (UTC).
+Ratified: 2026-10-26 (UTC), on #2747.
 
 Ruled 2026-10-26 (UTC): the 59 names not listed below are ratified as they stand. Eight are renamed
 before the first publish: Window becomes RegisterWindow, Spelling becomes WindowSpelling, Found

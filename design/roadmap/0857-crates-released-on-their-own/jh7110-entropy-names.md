@@ -5,7 +5,7 @@ for the crate of milestone 818 (proven JH7110 TRNG logic, released on its own). 
 record of every name in the crate, which `helpers/name_release.py` reads in place of `Name:` blocks:
 the crate's shipped files carry none.
 
-Ratified: 2026-10-26 (UTC).
+Ratified: 2026-10-26 (UTC), on #2747.
 
 Ruled 2026-10-26 (UTC): the 53 names not listed below are ratified as they stand. Six are renamed
 before the first publish: COMPATIBLE becomes COMPATIBLE_MAINLINE, interrupt becomes interrupt_line,
