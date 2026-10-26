@@ -401,6 +401,11 @@ struct JobLeftovers {
 
 impl Service<'_> {
     /// Serve one request on the spawn endpoint, whatever its shape, to its answer.
+    ///
+    /// # BUGS
+    ///
+    /// - No test sends a malformed request: only the boot shell holds this endpoint, and it sends
+    ///   none.
     fn serve(&mut self) {
         let Channels {
             result_ep,
