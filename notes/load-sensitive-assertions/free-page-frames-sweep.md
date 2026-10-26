@@ -63,9 +63,9 @@ parent, and a lent region is not the borrower's to free.
 
 - The failure names an object: `frame 0x4023a000 (page 3 of the 16-page run at 0x40230000)` instead
   of `left: 49899, right: 49879`. A global delta names a quantity; a bit names a page.
-- A leak cannot be netted out. The old form could be satisfied by somebody else freeing the same
-  number of frames in the same window. A frame a reclaim never returned stays marked used forever,
-  so the defect fails on every run.
+- A leak cannot be netted out. Somebody else freeing the same number of frames in the same window
+  could satisfy the old form. A frame a reclaim never returned stays marked used forever, so the
+  defect fails on every run.
 - Three tests lost machinery they had only because the counter was global.
   `force_kill_tests::an_address_space_never_frees_a_region_it_was_lent` opened with a loop that
   sampled the free count until two reads a yield apart agreed, to tell its own arithmetic from a

@@ -30,8 +30,8 @@ yet, so it can only make a count lower than the test expected.
   outside the measured window tripped it. The usual source is a neighboring test's teardown
   landing late.
 
-A negative failure cannot be fixed by a margin: widening the bound only hides the defect. That is
-§61 (a lint is adopted on evidence), applied to assertions.
+A margin cannot fix a negative failure: widening the bound only hides the defect. That is §61 (a
+lint is adopted on evidence), applied to assertions.
 
 ### 2. Is a yield count standing in for a duration?
 

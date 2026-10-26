@@ -20,9 +20,9 @@ had deliberately left alone.
 The diagnostic that sorts this round is the window, not the direction. The first round sorted the
 family by the sign of the discrepancy, which found three assertions written against something wider
 than the property. These three are all positive failures, and the sign says nothing useful about
-them. Each measures across instructions that are not part of the thing being measured. One counts a tick
-between the read and the mask. One asserts a probe's execution that placement never promised. One
-samples a spinner before it was ever given a turn. Host contention causes none of them. It
+them. Each measures across instructions that are not part of the thing it measures. One counts a
+tick between the read and the mask. One asserts a probe's execution that placement never promised.
+One samples a spinner before it was ever given a turn. Host contention causes none of them. It
 stretches the window in wall-clock terms, and that turns a race that never lost on a quiet machine
 into one that loses on a shared runner.
 
@@ -84,9 +84,9 @@ round read the same file and reached the opposite conclusion about the test next
 So the test now asserts what `spawn_on` actually promises: arrival at the named core. A new per-core
 counter, `PerCpu::adopted`, counts threads this core has taken out of its own inbox. That is the one
 point where a thread crosses from a remote core's hands into this core's queue. `inbox_len` cannot
-serve, because it is a depth: a push and a drain between two reads leave it where it was. Placements
-are made one at a time and each is followed to a reap. So the adoption the counter shows can only be
-the thread the test just placed.
+serve, because it is a depth: a push and a drain between two reads leave it where it was. The test
+makes placements one at a time and follows each to a reap. So the adoption the counter shows can
+only be the thread the test just placed.
 
 The test deliberately no longer asserts that the target then ran it. That is not a property
 `spawn_on` has: it is a placement hint, not a pin, and a steal moving the thread first is correct
@@ -109,11 +109,11 @@ check that the spinner had run. If the polite thread got its turn first, `STOP` 
 the spinner was finally scheduled. It left its loop without incrementing anything, and the run went
 red while the kernel did nothing wrong.
 
-The spinner running is a precondition of the claim, not the claim, so it is waited on rather than
-sampled. Waiting for it before the polite thread exists also makes the rest stronger. The polite
-thread's turn can then only have come from preempting a thread that was genuinely running. And
-`preemptions()` is baselined after that point, so the preemptions the test claims are the ones that
-gave the polite thread its turn.
+The spinner running is a precondition of the claim, not the claim, so the test waits for it rather
+than sampling it. Waiting for it before the polite thread exists also makes the rest stronger. The
+polite thread's turn can then only have come from preempting a thread that was genuinely running.
+And the test baselines `preemptions()` after that point, so the preemptions the test claims are the
+ones that gave the polite thread its turn.
 
 The one-second deadline went with it. The budget is now 200 delivered ticks on this core, not a
 wall-clock interval. A tick is when a preemption can happen, so preemption opportunities are the unit
