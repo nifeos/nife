@@ -5,12 +5,12 @@
 An appendix to [notes/scheduler.md](../scheduler.md), moved there on 2026-10-11 (UTC) under §212
 (a prose budget). It is the full record of the missed-SGI bug of 2026-08-28: the dump, the fix and the proof.
 
-**`spawn_on` asked "is this target my own core?" twice, on either side of a window in which the
-asking thread can be stolen onto a different core.** When the two answers disagreed the placement
-went into a remote core's inbox and the reschedule SGI that makes an inbox get drained was skipped,
-so the thread sat `Ready` forever beside four idle cores. Found 2026-08-28 on the generic `rv64`
-CPU-matrix leg of PR #574's run 33147291785, whose diff is a shell script, a baseline file and a
-note, and so could not have caused it.
+**`spawn_on` asked "is this target my own core?" twice, on either side of a window in which a steal
+can move the asking thread onto a different core.** When the two answers disagreed the placement
+went into a remote core's inbox and the spawn skipped the reschedule SGI that makes an inbox get
+drained, so the thread sat `Ready` forever beside four idle cores. Found 2026-08-28 on the generic
+`rv64` CPU-matrix leg of PR #574's run 33147291785, whose diff is a shell script, a baseline file
+and a note, and so could not have caused it.
 
 ## It shares a watchdog message with the section above and is a different bug
 
@@ -43,8 +43,8 @@ whether to send the SGI, and both made it with interrupts enabled:
 - `start_thread_control_block` re-read `target != cpu::id()` after `drop(guard)`, which unmasks
   interrupts before the comparison runs.
 
-Between the two reads the calling thread can be preempted, land back on its own core's run queue,
-and be handed to an idle core by a work steal (§28.3). It resumes somewhere else holding a stale
+Between the two reads a preemption can land the calling thread back on its own core's run queue,
+and a work steal (§28.3) can then hand it to an idle core. It resumes somewhere else holding a stale
 answer. In the direction that hurts, the first read said "local" and the placement went remote: the
 thread lands in a core's inbox and nothing pokes that core.
 
@@ -114,13 +114,14 @@ comparison.
 
 ## Why a stranded thread usually gets away with it, which is the whole story of the rate
 
-A strand is not immediately fatal, and that is why this took six weeks to surface. The inbox is
-drained wholesale: the *next* SGI anyone sends to that core, for any reason, sweeps up whatever is
-sitting there. So a missed poke is normally repaired within milliseconds by the next unrelated
-placement, steal or device wake aimed at the same core, and nothing is ever seen.
+A strand is not immediately fatal, and that is why this took six weeks to surface. The
+reschedule-SGI handler drains the inbox wholesale: the *next* SGI anyone sends to that core, for any
+reason, sweeps up whatever is sitting there. So a missed poke is normally repaired within
+milliseconds by the next unrelated placement, steal or device wake aimed at the same core, and
+nothing is ever seen.
 
 It wedges only when the strand is the last thing that happens. The stranding placement is the
-work the rest of the machine was about to wait on, so no further SGI is generated. The system
+work the rest of the machine was about to wait on, so nothing sends a further SGI. The system
 goes quiet holding one runnable thread nobody will look at. That is exactly the CI dump. Main
 spawned the consumer, blocked on its verdict, the producer blocked sending to a consumer that never
 ran, and there was no other traffic left to poke core 2.
@@ -136,9 +137,9 @@ yielding thread goes back on its own core's run queue and `schedule()` hands it 
 steal needs the thread to be *queued while something else runs*. A plain spin does that and the
 first attempt at the plain spin worked.
 
-With a 300,000-iteration spin between `spawn_on`'s two reads, on riscv64 under `-cpu rv64`, the
-window is crossed roughly 8 times in 100 `spawn_on` calls rather than never, and both directions
-show up in the log:
+With a 300,000-iteration spin between `spawn_on`'s two reads, on riscv64 under `-cpu rv64`,
+`spawn_on` calls cross the window roughly 8 times in 100 rather than never, and both directions show
+up in the log:
 
 ```text
 [WINDOW] spawn_on tid=0x300000007  migrated cpu 0 -> 3 target=2: benign  (crossing 3 of 70 calls)
@@ -186,7 +187,7 @@ a value. `Option<usize>` and `#[must_use]` cost nothing and make the stale re-re
 ## BUGS
 
 - The `#[must_use]` that makes the stale re-read unspellable is on `spawning::spawn_on`, not on
-  `placement::place_on`, whose `Option<usize>` is the answer that must not be dropped. Its message
+  `placement::place_on`, whose `Option<usize>` is the answer every caller must keep. Its message
   is about the returned SGI, which `spawn_on` does not return. The attribute stayed in
   `spawning.rs` when `place_on` moved to `placement.rs`, so a new caller of `place_on` that drops
   the answer compiles silently. Moving the attribute is a one-line code change.

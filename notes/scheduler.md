@@ -21,10 +21,10 @@ beat out of date (the gossip lesson).
 ## Placement: the power of two choices
 
 `spawn` -> `pick_spawn_target`: a per-core xorshift PRNG picks two online cores, the lighter by
-`runnable()` wins, the thread is carried there by `spawn_on` (local push, or remote via the inbox +
-SGI). Near-optimal balancing that reads at most two remote counters no matter the core count. The
-PRNG is seeded per core from a fixed constant, so a given boot makes the same choices and the
-icount benches stay reproducible. One online core: a no-op.
+`runnable()` wins, `spawn_on` carries the thread there (local push, or remote via the inbox + SGI).
+Near-optimal balancing that reads at most two remote counters no matter the core count. Each core
+seeds its own PRNG from a fixed constant, so a given boot makes the same choices and the icount
+benches stay reproducible. One online core: a no-op.
 
 ## Stealing: pull, by message
 
@@ -55,7 +55,7 @@ section that gave the parked operation something to return. A rendezvous stages 
 interrupt counts a signal, a reply fills the reply words, revocation flags the abort. Each of
 those sites sets the handshake's `ipc_served` (or `ipc_aborted`; both on
 `thread_wake_handshake::Handshake`, embedded in `Thread`) before calling `wake`. `wake` /
-`wake_load_aware` refuse to make a waiting thread Ready when neither flag is set, recording
+`wake_load_aware` refuse to make a waiting thread Ready when both flags are clear, recording
 `refuse:tid` on the per-core event ring. The parked thread stays parked and still linked on its
 endpoint's wait queue, and the real counterparty completes the rendezvous normally later.
 
@@ -64,8 +64,8 @@ receive tails carry a `debug_assert` tripwire ("resumed with nothing delivered")
 gate makes unreachable. Every `ipc_served` setter records a `serve:tid/site` ring event so a
 bench dump names who completed a rendezvous instead of leaving it to inference.
 
-The failure it was built against was misread, and that correction is the important part. It was
-built from the VisionFive 2's boot 8, read at the time as a wake with no sender. The fifth bench stop
+The failure it was built against was misread, and that correction is the important part. Its
+source was the VisionFive 2's boot 8, read at the time as a wake with no sender. The fifth bench stop
 (2026-08-15) overturned that reading: the wake was a real send. So the gate has never fired on a
 field failure, and `refuse:` has never appeared on a board ring. It stays because the transition it
 forbids is reachable, which a loom harness proves. It is hardening against a reachable state, not a
@@ -78,7 +78,7 @@ notes/interleaving.md.
 BUGS. The gate protects threads whose `wait_on` is set, which is every IPC block site today; a
 future block path that forgets to set `wait_on` opts itself out silently. A kernel-thread caller
 of `ipc_receive` still cannot tell an abort from a message unless it checks `take_ipc_aborted`
-itself; the gate guarantees *something* was delivered, not which thing. And the blocking `ipc_send`
+itself; the gate guarantees a site delivered *something*, not which thing. And the blocking `ipc_send`
 resume path carries no tripwire assert, deliberately. It takes no lock after `schedule()` today, and
 adding one on the IPC hot path to double-check an invariant the gate
 already holds was judged not worth the cycles the bench tripwire watches.
@@ -86,7 +86,7 @@ already holds was judged not worth the cycles the bench tripwire watches.
 ## The costs migration made real
 
 Turning on any migration at all strips the accidental cover off same-core assumptions. Each of these
-bit us, and each is fixed and tested:
+bit us, and each has a fix and a test:
 
 - RISC-V `tp` (the per-hart pointer) is thread-frame state. A kernel thread preempted on one
   hart and resumed on another used to come back reading the wrong hart's per-CPU block. Fixed in
@@ -127,7 +127,7 @@ are two ways a test never finishes, and no single instrument sees both.
 | Blind to | Any loop that keeps doing IPC | Nothing that fails to terminate, but slow to react |
 | Scope | Anywhere, including before tests start | Only while a test is running |
 
-Why the ceiling had to be added. The heartbeat credits a completed rendezvous as progress. The
+Why the ceiling had to join the heartbeat. The heartbeat credits a completed rendezvous as progress. The
 RedoxFS repeat-write livelock spins in an allocator commit *while still serving blk IPC*, so every
 rendezvous reset the heartbeat. A failure that had been a loud 60 s trip became an infinite silent
 hang at about 400% CPU with no watchdog fire. A livelock that makes progress is indistinguishable from
@@ -136,7 +136,7 @@ flake the heartbeat fixed, so both mechanisms are live now.
 
 Why budgets are per test. std_net once honestly ran 300 to 344 s, so one global ceiling would have
 sat near 700 s and let a two-second unit test spin for eleven minutes before failing. By 2026-10-11
-it took 1.3 to 2.5 s and its entry was removed, leaving the table empty. The default is a tight
+it took 1.3 to 2.5 s and the table lost its entry, which left it empty. The default is a tight
 90 s; a test that is honestly slower declares its cost in `SLOW_TESTS` in `crates/test_times`, with
 the reason. Keep entries near 2x measured, so host load does not make them flaky.
 
@@ -145,8 +145,8 @@ running. Only the budget, a human declaration of expected cost, separates them. 
 `SLOW_TESTS` entry deserves a sentence about *why* the test is slow, not a number.
 
 Proving it. The `watchdog_probe` feature adds a test that loops forever doing a full rendezvous
-each pass, so the heartbeat sees a healthy kernel and only the ceiling stops it. It is expected to
-fail, so it is not in the normal suite:
+each pass, so the heartbeat sees a healthy kernel and only the ceiling stops it. It fails by
+design, so it is not in the normal suite:
 
 ```text
 helpers/qemu-bounded.sh 200 cargo test -p kernel \
@@ -191,9 +191,9 @@ proof, the occurrences table and the thread-table follow-up are in
 
 ## CLOSED: a second lost wakeup, and the fingerprint is what told the two apart
 
-`spawn_on` asked "is this target my own core?" twice, on either side of a window in which the
-asking thread can be stolen onto a different core. When the two answers disagreed the placement
-went into a remote core's inbox and the reschedule SGI was skipped. The thread sat `Ready` forever
+`spawn_on` asked "is this target my own core?" twice, on either side of a window in which a
+steal can move the asking thread onto a different core. When the two answers disagreed the placement
+went into a remote core's inbox and the spawn skipped the reschedule SGI. The thread sat `Ready` forever
 beside four idle cores. Found 2026-08-28 on the `rv64` CPU-matrix leg of PR #574.
 
 It shares the watchdog's message with milestone 72 (a lost wakeup)'s bug and is a different one: the dump showed
@@ -210,8 +210,8 @@ trace-ring diagnosis, the fix, why a strand usually goes unnoticed and the proof
 ## The switch and the rendezvous paths
 
 `schedule`, its locked pick and the reaper's far side are in
-[scheduler/switch.md](scheduler/switch.md). Send, receive, call and reply, and how a caller its
-server can no longer answer is freed, are in [scheduler/rendezvous.md](scheduler/rendezvous.md).
+[scheduler/switch.md](scheduler/switch.md). Send, receive, call and reply, and how the kernel frees
+a caller its server can no longer answer, are in [scheduler/rendezvous.md](scheduler/rendezvous.md).
 
 ## Tests that guard this
 
@@ -236,10 +236,10 @@ which is why `place_on`'s doc comment says out loud what that costs.
 
 ### Two flakes that were the tests' fault
 
-`cpu::tests::percpu_is_self_consistent_on_whatever_core_we_run` replaced a test that asserted it
-ran on the boot core, an affinity §28's stealing never promised. And several `sched::tests` cases
-that wait with a fixed number of `yield_now()` calls fail under host CPU contention, about 15% under
-four burners and 0% quiet. They fail in about 23 s with a named assertion, where a lost wakeup fails
-at 60 s with a thread dump. A run that fails one is not evidence about a branch until a quiet
-machine or a control run says so. These bounds should be progress-based, not a yield count. Both
-are recorded in [scheduler/test-flakes.md](scheduler/test-flakes.md).
+`cpu::tests::percpu_is_self_consistent_on_whatever_core_we_run` replaced a test that asserted it ran
+on the boot core, an affinity §28's stealing never promised. And several `sched::tests` cases that
+wait with a fixed number of `yield_now()` calls fail under host CPU contention, about 15% under four
+burners and 0% quiet. They fail in about 23 s with a named assertion, where a lost wakeup fails at
+60 s with a thread dump. A run that fails one is not evidence about a branch until a quiet machine
+or a control run says so. These bounds should be progress-based, not a yield count.
+[scheduler/test-flakes.md](scheduler/test-flakes.md) records both.

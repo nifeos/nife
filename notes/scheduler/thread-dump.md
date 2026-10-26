@@ -16,7 +16,7 @@ It takes `IPC_TABLES`, which is free when the hang is a blocked thread rather th
   `IPC_TABLES`. For a thread off its core it is trustworthy: the frame write happened before the
   state write on that core, and the dump's lock acquire synchronizes with that core's release. For a
   thread on a core it is a racing read of live state, and the dump marks it `pc*`.
-- The per-core lines read other cores' atomics relaxed. `current` is written under `IPC_TABLES`, so
+- The per-core lines read other cores' atomics relaxed. Every writer of `current` holds `IPC_TABLES`, so
   it holds still while the dump holds the lock, except on a core mid-switch, between its release of
   `IPC_TABLES` and its `finish_switch`. There `current` names the incoming thread while the outgoing
   one still runs a few instructions.
@@ -24,10 +24,10 @@ It takes `IPC_TABLES`, which is free when the hang is a blocked thread rather th
 ## What each column is for
 
 - `address_space` is the root of the thread's space, and it is what tells threads of different
-  processes apart. Every user program is linked at `address_space_map::IMAGE_BASE`, so a bare `pc`
+  processes apart. Every user program's link address is `address_space_map::IMAGE_BASE`, so a bare `pc`
   resolves plausibly against several binaries. Threads sharing a root are one process; 0 is a
   kernel thread.
-- `wait` is written by the same statement that writes `Blocked`. A `Blocked` thread with `wait=-`
+- The same statement that writes `Blocked` writes `wait`. A `Blocked` thread with `wait=-`
   means a state byte was written outside the block paths (corruption, or a block applied to the
   wrong TCB), because every legal block records what it waits on. notes/visionfive2.md has the bench
   stop where this mattered.

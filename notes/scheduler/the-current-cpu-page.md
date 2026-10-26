@@ -28,12 +28,12 @@ by, the one number the two binaries must agree on, which a host test cannot comp
 
 ## Unknown is not zero
 
-A thread cannot run an instruction before it is switched in, so from inside a thread the page has
-always been written. The unset state is visible only from the kernel's side of the frame, before
-anything has run in the space, and the second test reads it there. Zero would be a plausible answer
-and a wrong one. That is why the page carries a magic and a sentinel rather than relying on a zeroed
-frame. calef ruled the same day, about the counter frequency, that a wrong number is worse than no
-number.
+A thread cannot run an instruction before the scheduler switches it in, so from inside a thread the
+scheduler has always written the page. The unset state is visible only from the kernel's side of the
+frame, before anything has run in the space, and the second test reads it there. Zero would be a
+plausible answer and a wrong one. That is why the page carries a magic and a sentinel rather than
+relying on a zeroed frame. calef ruled the same day, about the counter frequency, that a wrong
+number is worse than no number.
 
 ## The frame comes back
 
