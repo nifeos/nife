@@ -33,7 +33,10 @@ fn every_slot_parses_as_its_bytes_say() {
                 DirectoryEntry::LongName(piece) => {
                     assert!(long);
                     assert_eq!(piece.checksum(), slot[13]);
-                    assert_eq!(piece.units()[12], u16::from_le_bytes([slot[30], slot[31]]));
+                    assert_eq!(
+                        piece.code_units()[12],
+                        u16::from_le_bytes([slot[30], slot[31]])
+                    );
                 }
                 DirectoryEntry::Short(short) => {
                     assert!(!long);

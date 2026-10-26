@@ -119,7 +119,7 @@ fn walk(bytes: &[u8], size: SectorSize) {
     let last = clusters + 1;
     for cluster in [0, 1, 2, last, last + 1, u32::MAX] {
         let is_data = (2..=last).contains(&cluster);
-        match volume.entry(cluster) {
+        match volume.table_entry(cluster) {
             Err(ChainError::NotADataCluster(c)) => assert!(!is_data && c == cluster),
             Ok(_) | Err(ChainError::Device(())) => assert!(is_data),
             Err(other) => panic!("an entry read failed with {other:?}"),
@@ -145,7 +145,7 @@ fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mu
                     piece.ordinal(),
                     piece.is_last(),
                     piece.checksum(),
-                    piece.units(),
+                    piece.code_units(),
                 );
             }
             Some(Err(_)) => {

@@ -7,6 +7,12 @@ shipped files carry none.
 
 Ratified: 2026-10-25 (#2720).
 
+Ruled 2026-10-26 (UTC), on #2760: the names stage 3 minted (the `directory`, `reader` and `table`
+modules and what they hold) are ratified as minted, except three. `Volume::entry` becomes
+`Volume::table_entry`, since it reads a file allocation table entry and the crate has three other
+kinds of entry. `LongNameEntry::units` becomes `LongNameEntry::code_units`, Unicode's term for what
+it holds. `ShortEntry::size` becomes `ShortEntry::size_bytes`, which puts the unit in the name.
+
 The ruling of that date ratified every name below whose row says `ratified`. Each row with a refusal names the spelling the
 ruling turned down and why. The writer's three directory clusters sit in `efi_system_partition`, the
 module named for the one volume shape the writer lays out. A new name in the crate takes a row here,
@@ -118,55 +124,55 @@ stranger meets have no row because `script/names` does not count them: the field
 | `file_first_sector` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |
 | `file_sectors` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |
 | `fill_sector` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). Refused `sector` (it fills a buffer and reads as a getter). | yes |
-| `directory` | module | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's word for the structure the module parses. | no |
-| `tests` | module | `src/directory/tests.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. | no |
-| `SLOT_BYTES` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The size of one slot, spelled like `SECTOR_BYTES`. | yes |
-| `Slot` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. One 32-byte position in a directory, used or not; the specification calls only a used one an entry. | yes |
-| `End` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The first-byte-zero marker the specification describes as the end of the directory. | yes |
-| `Free` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's term for a slot whose first byte is `0xE5`. | yes |
-| `Used` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The opposite of `Free`. | yes |
-| `parse` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The verb `BootSector::parse` already uses for hostile bytes. | yes |
-| `DirectoryEntry` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's name for a used 32-byte slot. | yes |
-| `Short` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "short directory entry". | yes |
-| `LongName` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "long name directory entry". | yes |
-| `ShortEntry` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same, as a type. | yes |
-| `name` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_Name`. | yes |
-| `attributes` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_Attr`. | yes |
-| `is_directory` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `ATTR_DIRECTORY`. | yes |
-| `is_volume_label` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `ATTR_VOLUME_ID`, named for what it marks rather than for the bit. | yes |
-| `first_cluster` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_FstClusHI` and `DIR_FstClusLO` joined. | yes |
-| `size` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `DIR_FileSize`. | yes |
-| `LongNameEntry` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. One piece of a long name, as the specification's section 7 names it. | yes |
-| `ordinal` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LDIR_Ord` with the last-piece bit cleared. | yes |
-| `is_last` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LAST_LONG_ENTRY`, the bit it reads. | yes |
-| `checksum` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. `LDIR_Chksum`. | yes |
-| `units` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The UTF-16 code units it holds, which are not characters. | yes |
-| `Directory` | item | `src/directory.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A directory being read; it reads, so it is named for what it reads. | yes |
-| `reader` | module | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The module that reads through a device, beside `volume`, which lays one out. | no |
-| `tests` | module | `src/reader/tests.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. | no |
-| `Volume` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. An open volume to read. The ruling of 2026-10-25 refused it for the writer as "a volume to be written, not one read", which leaves it to the reader. | yes |
-| `open` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. What a caller does to a volume before reading it. | yes |
-| `boot_sector` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Returns the `BootSector` the volume holds. | yes |
-| `into_device` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The `into_` convention for giving back what a value owns. | yes |
-| `entry` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Reads one `TableEntry`. | yes |
-| `chain` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "cluster chain". | yes |
-| `root_directory` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same word as `BootSector::root_directory`, which says where it lives. | yes |
-| `directory` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A directory by its first cluster. | yes |
-| `Chain` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The iterator `chain` returns. | yes |
-| `ChainError` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Why a chain walk stopped, beside `ParseError` and `ReadError`. | yes |
-| `Device` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The same variant `ReadError` has. | yes |
-| `NotADataCluster` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The condition, in the words of `cluster_first_sector`'s doc. | yes |
-| `Broken` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. A chain that cannot continue. | yes |
-| `TooLong` | item | `src/reader.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. What the bound detects: more clusters than the volume holds. Not `Loop`, since the walk never compares clusters. | yes |
-| `table` | module | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The file allocation table, spelled out as the crate spells FAT (`table_sectors`, `TABLE_COUNT`). | no |
-| `tests` | module | `src/table/tests.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. | no |
-| `TableEntry` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "FAT entry", spelled out the same way. | yes |
-| `Free` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Entry value 0, which the specification calls free. | yes |
-| `Reserved` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Entry value 1, which the specification reserves. | yes |
-| `Next` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The next cluster of the chain. | yes |
-| `Bad` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "bad cluster" marker. | yes |
-| `EndOfChain` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The specification's "end of clusterchain" marker. | yes |
-| `decode` | item | `src/table.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. Turns a raw entry into a `TableEntry`. | yes |
-| `verification` | module | `src/directory/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
-| `verification` | module | `src/reader/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
-| `verification` | module | `src/table/verification.rs` | provisional, minted 2026-10-26 (UTC) by `813-stage-3-chains`. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
+| `directory` | module | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's word for the structure the module parses. | no |
+| `tests` | module | `src/directory/tests.rs` | ratified 2026-10-26 (UTC), on #2760. | no |
+| `SLOT_BYTES` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The size of one slot, spelled like `SECTOR_BYTES`. | yes |
+| `Slot` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. One 32-byte position in a directory, used or not; the specification calls only a used one an entry. | yes |
+| `End` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The first-byte-zero marker the specification describes as the end of the directory. | yes |
+| `Free` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's term for a slot whose first byte is `0xE5`. | yes |
+| `Used` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The opposite of `Free`. | yes |
+| `parse` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The verb `BootSector::parse` already uses for hostile bytes. | yes |
+| `DirectoryEntry` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's name for a used 32-byte slot. | yes |
+| `Short` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "short directory entry". | yes |
+| `LongName` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "long name directory entry". | yes |
+| `ShortEntry` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. The same, as a type. | yes |
+| `name` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `DIR_Name`. | yes |
+| `attributes` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `DIR_Attr`. | yes |
+| `is_directory` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `ATTR_DIRECTORY`. | yes |
+| `is_volume_label` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `ATTR_VOLUME_ID`, named for what it marks rather than for the bit. | yes |
+| `first_cluster` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `DIR_FstClusHI` and `DIR_FstClusLO` joined. | yes |
+| `size_bytes` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `size` (the unit goes in the name, as in `SECTOR_BYTES` and `SLOT_BYTES`). `DIR_FileSize`. | yes |
+| `LongNameEntry` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. One piece of a long name, as the specification's section 7 names it. | yes |
+| `ordinal` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `LDIR_Ord` with the last-piece bit cleared. | yes |
+| `is_last` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `LAST_LONG_ENTRY`, the bit it reads. | yes |
+| `checksum` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. `LDIR_Chksum`. | yes |
+| `code_units` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `units` (UTF-16 code units, Unicode's term). The UTF-16 code units it holds, which are not characters. | yes |
+| `Directory` | item | `src/directory.rs` | ratified 2026-10-26 (UTC), on #2760. A directory being read; it reads, so it is named for what it reads. | yes |
+| `reader` | module | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The module that reads through a device, beside `volume`, which lays one out. | no |
+| `tests` | module | `src/reader/tests.rs` | ratified 2026-10-26 (UTC), on #2760. | no |
+| `Volume` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. An open volume to read. The ruling of 2026-10-25 refused it for the writer as "a volume to be written, not one read", which leaves it to the reader. | yes |
+| `open` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. What a caller does to a volume before reading it. | yes |
+| `boot_sector` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. Returns the `BootSector` the volume holds. | yes |
+| `into_device` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The `into_` convention for giving back what a value owns. | yes |
+| `table_entry` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `entry` (it reads a file allocation table entry, and the crate has three other kinds of entry). Reads one `TableEntry`. | yes |
+| `chain` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "cluster chain". | yes |
+| `root_directory` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The same word as `BootSector::root_directory`, which says where it lives. | yes |
+| `directory` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. A directory by its first cluster. | yes |
+| `Chain` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The iterator `chain` returns. | yes |
+| `ChainError` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. Why a chain walk stopped, beside `ParseError` and `ReadError`. | yes |
+| `Device` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The same variant `ReadError` has. | yes |
+| `NotADataCluster` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. The condition, in the words of `cluster_first_sector`'s doc. | yes |
+| `Broken` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. A chain that cannot continue. | yes |
+| `TooLong` | item | `src/reader.rs` | ratified 2026-10-26 (UTC), on #2760. What the bound detects: more clusters than the volume holds. Not `Loop`, since the walk never compares clusters. | yes |
+| `table` | module | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. The file allocation table, spelled out as the crate spells FAT (`table_sectors`, `TABLE_COUNT`). | no |
+| `tests` | module | `src/table/tests.rs` | ratified 2026-10-26 (UTC), on #2760. | no |
+| `TableEntry` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "FAT entry", spelled out the same way. | yes |
+| `Free` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. Entry value 0, which the specification calls free. | yes |
+| `Reserved` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. Entry value 1, which the specification reserves. | yes |
+| `Next` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. The next cluster of the chain. | yes |
+| `Bad` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "bad cluster" marker. | yes |
+| `EndOfChain` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. The specification's "end of clusterchain" marker. | yes |
+| `decode` | item | `src/table.rs` | ratified 2026-10-26 (UTC), on #2760. Turns a raw entry into a `TableEntry`. | yes |
+| `verification` | module | `src/directory/verification.rs` | ratified 2026-10-26 (UTC), on #2760. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
+| `verification` | module | `src/reader/verification.rs` | ratified 2026-10-26 (UTC), on #2760. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |
+| `verification` | module | `src/table/verification.rs` | ratified 2026-10-26 (UTC), on #2760. The Kani proofs, named as `boot_sector` and `long_name` name theirs. | no |

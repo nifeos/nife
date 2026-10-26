@@ -11,7 +11,7 @@ use super::*;
 
 /// **Every data cluster's entry lies inside the table read, and nothing else has an entry.** The
 /// entry starts inside its sector, and an entry that runs past the sector's end is a FAT12 entry
-/// whose second byte is still a sector of the same table. So [`crate::Volume::entry`] reads
+/// whose second byte is still a sector of the same table. So [`crate::Volume::table_entry`] reads
 /// only the table.
 /// Falsification: replayable `crates/file_allocation_table/falsifications/table.verification.every_entry_lies_inside_the_table.patch`
 #[kani::proof]

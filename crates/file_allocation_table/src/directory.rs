@@ -150,7 +150,7 @@ impl ShortEntry {
     }
 
     /// The file's length in bytes; 0 for a directory.
-    pub const fn size(&self) -> u32 {
+    pub const fn size_bytes(&self) -> u32 {
         self.size
     }
 }
@@ -172,9 +172,9 @@ impl LongNameEntry {
         self.checksum
     }
 
-    /// The piece's thirteen UTF-16 units, as stored: the name ends at a `0x0000` unit, and
+    /// The piece's thirteen UTF-16 code units, as stored: the name ends at a `0x0000` unit, and
     /// `0xFFFF` pads the rest.
-    pub const fn units(&self) -> [u16; 13] {
+    pub const fn code_units(&self) -> [u16; 13] {
         self.units
     }
 }

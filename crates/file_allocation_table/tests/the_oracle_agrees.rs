@@ -219,7 +219,7 @@ fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec
     for entry in entries {
         let short = match entry {
             DirectoryEntry::LongName(piece) => {
-                pieces.push(piece.units());
+                pieces.push(piece.code_units());
                 continue;
             }
             DirectoryEntry::Short(short) => short,
@@ -239,7 +239,7 @@ fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec
             short: name,
             long,
             directory: short.is_directory(),
-            size: u64::from(short.size()),
+            size: u64::from(short.size_bytes()),
             bytes: Vec::new(),
             children: Vec::new(),
         };
@@ -324,7 +324,7 @@ fn agree(label: &str, mebibytes: usize, fat_type: lamfat::FatType, sector: u16) 
 
     let clusters = volume.boot_sector().clusters();
     let our_free = (2..clusters + 2)
-        .filter(|&c| volume.entry(c).unwrap() == TableEntry::Free)
+        .filter(|&c| volume.table_entry(c).unwrap() == TableEntry::Free)
         .count();
     assert_eq!(our_free as u32, free, "{label}: the free counts differ");
 }
@@ -397,7 +397,7 @@ fn rust_fatfs_reads_what_this_crate_wrote() {
     assert_eq!(file.bytes, body);
     let clusters = volume.boot_sector().clusters();
     let our_free = (2..clusters + 2)
-        .filter(|&c| volume.entry(c).unwrap() == TableEntry::Free)
+        .filter(|&c| volume.table_entry(c).unwrap() == TableEntry::Free)
         .count();
     assert_eq!(our_free as u32, free);
 }

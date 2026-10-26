@@ -71,7 +71,7 @@ fn a_short_entry_reads_its_fields() {
     assert_eq!(entry.attributes(), 0x21);
     assert!(!entry.is_directory() && !entry.is_volume_label());
     assert_eq!(entry.first_cluster(), 5);
-    assert_eq!(entry.size(), 1234);
+    assert_eq!(entry.size_bytes(), 1234);
 
     let dir = short_of(Slot::parse(
         &short(b"SUB        ", 0x10, 0, 9, 0),
@@ -121,7 +121,10 @@ fn a_long_name_piece_reads_its_units_in_order() {
     assert_eq!(piece.ordinal(), 2);
     assert!(piece.is_last());
     assert_eq!(piece.checksum(), 0xAB);
-    assert_eq!(piece.units(), core::array::from_fn(|i| 0x41 + i as u16));
+    assert_eq!(
+        piece.code_units(),
+        core::array::from_fn(|i| 0x41 + i as u16)
+    );
     let Slot::Used(DirectoryEntry::LongName(piece)) =
         Slot::parse(&long(0x01, 0, 0), FileAllocationTableType::Fat32)
     else {

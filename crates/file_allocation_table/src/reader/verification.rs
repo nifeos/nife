@@ -22,7 +22,7 @@ impl Links for HostileTable {
         self.clusters
     }
 
-    fn entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<()>> {
+    fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<()>> {
         assert!(
             is_data(self.clusters, cluster),
             "the walk read a cluster it does not have"
