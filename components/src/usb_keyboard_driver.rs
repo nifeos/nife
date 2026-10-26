@@ -43,7 +43,9 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use driver_process_contract::extensible_host_controller_interface::Handoff;
+use driver_process_contract::extensible_host_controller_interface::{
+    self as report, BringUpStep, Handoff,
+};
 use extensible_host_controller_interface::{
     Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
     TransferRequestBlockPlacement, completion, context, dma, port, regs,
@@ -52,7 +54,6 @@ use line_editor::proto;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
-use usb_keyboard_report::{self as report, BringUpStep};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
     call, exit, interrupt_acknowledge, interrupt_wait, monotonic_nanos, receive_cap, send,
