@@ -6,7 +6,7 @@
 //! - One IO APIC: [`route_gsi`] refuses a GSI a second owns (proved, unit-tested, never booted).
 //! - Every line and MSI targets the core that armed it, in physical mode; nothing is distributed.
 //! - Revoking a driver's `Interrupt` does not [`mask_gsi`], so a dead driver's COM1 line stays
-//! armed.
+//!   armed.
 //! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps), out of a band of 63.
 //! - Interrupt remapping is assumed off; a VT-d unit with it on rejects these MSI messages.
 
@@ -1091,11 +1091,10 @@ mod proofs {
     /// kernel test it names red. Here it fires **both** assertions in the `if let` below, the one
     /// whose message begins "a GSI the IO APIC owns" and the one beginning "a vector this kernel
     /// routed". Named rather than numbered because the lines move: they were
-    /// `interrupt_controller.rs:1164` and
-    /// `interrupt_controller.rs:1168` when this was measured. The second red is that assertion
-    /// earning its place:
-    /// the two functions really did disagree, rather than merely looking as though they might.
-    /// It is filed against the test rather than against this, because a
+    /// `interrupt_controller.rs:1164` and `interrupt_controller.rs:1168` when this was measured.
+    /// The second red is that assertion earning its place: the two functions really did disagree,
+    /// rather than merely looking as though they might. It is filed against the test rather than
+    /// against this, because a
     /// `#[kani::proof]` compiles for the HOST and `kernel/src/arch/mod.rs` selects its subtree by
     /// `#[cfg(target_arch)]`: a `replayable` record here would turn `script/falsifications --sweep
     /// kernel` red on every machine in this project but cordoba, while a kernel test names its

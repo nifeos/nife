@@ -51,9 +51,8 @@ pub fn on_tick() {
     }
 
     // A soak build signals a rendezvous from the tick, the one event a saturated workload cannot
-    // starve, so its waiters cross cores through `interrupt_notify` (§138 (how a saturated workload
-    // is
-    // made to hand threads across cores) option D; kernel/src/soak.rs).
+    // starve, so its waiters cross cores through `interrupt_notify` (§138 (how a saturated
+    // workload is made to hand threads across cores) option D; kernel/src/soak.rs).
     #[cfg(feature = "soak_test")]
     crate::soak::signal_waiters();
 
