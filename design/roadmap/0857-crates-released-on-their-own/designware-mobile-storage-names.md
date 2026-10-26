@@ -2,13 +2,13 @@
 
 An appendix of [milestone 857 (crates released on their own)](../0857-crates-released-on-their-own.md), for the crate of milestone 817 (a proven DesignWare SD and eMMC host, released on its own). A release-track crate's names take their ratification before it leaves this tree (ruled 2026-10-25 UTC). This file lists every name a stranger meets in it, in the record format `helpers/name_release.py` reads.
 
-This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-25 (UTC). `python3 helpers/name_release.py --draft designware_mobile_storage` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
+This file ratifies nothing. Until the line below carries a date, the crate's own `Name:` blocks stay the record, and the status column copies them as of 2026-10-26 (UTC). `python3 helpers/name_release.py --draft designware_mobile_storage` prints a fresh copy. At ratification each row's status takes the ruling and any refusal its block holds, and the blocks leave the crate.
 
 Ratified: not yet.
 
-128 names: 108 no block, 19 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 96 no block, 21 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 39 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 30 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -30,7 +30,6 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
 | `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
 | `sd` | module | `src/sd.rs` | unrecorded. | yes | term |
-| `serve` | module | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `sim` | module | `src/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
 | `IdmacReport` | item | `src/bench.rs` | provisional. | yes | scope: a bench |
@@ -91,11 +90,12 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `COMPATIBLE_VENDOR` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `FIFO_DEPTH` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `INTERRUPTS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
+| `NODE_NAMES` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `SDIO0_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `SDIO1_BASE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `Slot` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
 | `WINDOW_SIZE` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
-| `discover` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
+| `from_node` | item | `src/jh7110.rs` | provisional. | yes | clear |
 | `role` | item | `src/jh7110.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `Entry` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
 | `Mbr` | item | `src/partition.rs` | unrecorded. | yes | unclear: master boot record is a phrase people say (the acronym test); scope as above |
@@ -132,18 +132,14 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `in_range` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `read_blocks` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `write_blocks` | item | `src/sd.rs` | unrecorded. | yes | clear |
-| `Handoff` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `REGISTER_VA` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `ROLE` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `SECTORS_PER_BLOCK` | item | `src/serve.rs` | unrecorded. | yes | clear |
-| `TRANSFER_VA` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `Window` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `blocks` | item | `src/serve.rs` | unrecorded. | yes | clear |
-| `pack` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `translate` | item | `src/serve.rs` | unrecorded. | yes | generic |
-| `unpack` | item | `src/serve.rs` | unrecorded. | yes | nife: nife's own process plan |
 | `Fault` | item | `src/sim.rs` | unrecorded. | no | clear |
 | `Sim` | item | `src/sim.rs` | unrecorded. | no | clear |
 | `depth` | item | `src/sim.rs` | unrecorded. | no | clear |
 | `new` | item | `src/sim.rs` | unrecorded. | no | clear |
 | `peek` | item | `src/sim.rs` | unrecorded. | no | clear |
+
+Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
+
+- the fields of `ReadReport` (7), `IdmacReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
+- the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitError` (9), `IoError` (4) and the private `Fault` (4);
+- the methods of the traits `Registers` (3) and `DirectMemoryAccessRegion` (7).

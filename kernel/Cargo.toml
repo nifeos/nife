@@ -26,8 +26,10 @@ bench = false
 workspace = true
 
 [dependencies]
-# NOTE: `aarch64-cpu` is NOT here. It is target-gated at the bottom of this file, and the reason is
-# recorded there rather than by its absence.
+# No register crate on any target: aarch64's system registers are `arch/aarch64/instructions.rs`
+# and its device registers are named offsets in `drivers/`, as on riscv64 and x86_64, so a proof can
+# stub every access (milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
+# spell them), §46).
 abi = { version = "0.1.0", path = "../crates/abi" }
 address_space_identifier = { version = "0.1.0", path = "../crates/address_space_identifier" }
 # The corruption canary's arm/check/disarm serialization (2026-08-15), lifted out of `sched.rs`
@@ -509,19 +511,6 @@ ipc_stack_depth = ["dep:soak_page"]
 # `elf` and `pci` unrenamed. The feature is not riscv64-only and the name is, which is the cost taken.
 single_hart = []
 
-# Typed wrappers over aarch64 system registers, so we write
-# `SCTLR_EL1.modify(SCTLR_EL1::M::Enable)` instead of hand-rolling `msr` and getting a bit position
-# wrong. DECISIONS §3.
-#
-# **Target-gated since 2026-08-31, and it was unconditional before by accident rather than by
-# design.** The crate compiles for any target, so nothing ever complained, and the cost was invisible
-# until milestone 193 put `kernel/src` within reach of Kani: `cargo kani` compiles the crate for the
-# HOST, so an unconditional aarch64 register crate pinned the prover, and therefore CI, to an aarch64
-# runner. Milestone 193's lane recorded that constraint and named this as the fix.
-#
-# riscv64 and x86_64 never took an equivalent crate. They use `core::arch::asm!` and `crates/paging`
-# directly, so the asymmetry was history rather than a decision: aarch64 was the first architecture
-# and §3 chose typed registers for it before the in-tree pattern existed.
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 # The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional): its sequences,
 # arithmetic and discovery, for `drivers::jh7110_watchdog` and `memory::init`. Pure logic; only a
@@ -529,17 +518,6 @@ single_hart = []
 # `unwatched_soak_test` one. Not optional, because a cargo feature cannot add a dependency for one
 # target only, and the default is decided per target in `build.rs`.
 jh7110_watchdog = { version = "0.1.0", path = "../crates/jh7110_watchdog" }
-
-[target.'cfg(target_arch = "aarch64")'.dependencies]
-aarch64-cpu = "11"
-# Typed, compile-time-checked MMIO register blocks for aarch64's devices (`pl011`, `gic`, `gicv3`)
-# and aarch64's arch code. An off-by-four in a device's register layout becomes a build error
-# instead of a mystery at runtime. **Target-gated since 2026-10-03** (calef's ruling on PR #1477):
-# only aarch64 code names it, so in the unconditional table it was compiled for riscv64 and x86_64
-# for nothing, and nightly-2026-10-02's `unused_dependencies` lint said so on both. The 16550, the
-# one shared UART, never used it; `drivers/ns16550.rs` says why (its register stride is a runtime
-# value no static layout can express). Same asymmetry as `aarch64-cpu` above, and same history.
-tock-registers = "0.10"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 # **The two-slot boot state, and the one token of it that crosses the handoff** (rung 2b of

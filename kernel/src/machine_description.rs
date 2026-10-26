@@ -18,15 +18,13 @@ use super::*;
 pub(super) fn print_machine_description(boot_info_pointer: usize) {
     println!();
     println!("nife");
-    // aarch64 only, which also keeps `aarch64-cpu` out of the other ISAs' dependency graphs.
+    // aarch64 only: `arch::entry_el` and `arch::current_el` exist nowhere else.
     #[cfg(target_arch = "aarch64")]
     {
-        use aarch64_cpu::registers::CurrentEL;
-        use tock_registers::interfaces::Readable;
         // Where the kernel is and where firmware put it: U-Boot enters at EL2 and `boot.s`
         // drops itself, and a new board's first boot shows which happened.
         let entered = arch::entry_el();
-        let now = CurrentEL.read(CurrentEL::EL);
+        let now = arch::current_el();
         if entered == now {
             println!("  exception level : EL{now}  (entered here)");
         } else {
