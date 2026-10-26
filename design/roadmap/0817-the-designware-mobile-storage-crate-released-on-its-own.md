@@ -161,11 +161,11 @@ blocks, which the ratification pass settles.
 
 ## Names a stranger may misread, open before release
 
-The crate's names are read against design/naming.md's tests and Fork 5 of milestone 857,
-which asks for names that stand on their own. The lines below are the names read as something other
-than clear or a term, as of 2026-10-26 (UTC), copied as they stand. Each stays open until a ruling
-keeps or changes it. No record of a release-track crate's names is kept in the tree (ruled
-2026-10-26 UTC), so this list is the open work, and the lane that renames a name drops its line.
+design/naming.md's tests and Fork 5 of milestone 857 (names that stand on their own) judge
+each name. The lines below list the names that read as something other than clear or a term, as of
+2026-10-26 (UTC), copied as they stand. Each stays open until a ruling keeps or changes it. The tree
+keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
+work, and the lane that renames a name drops its line.
 
 ### Nife's own plan
 

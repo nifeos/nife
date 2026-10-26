@@ -11,8 +11,7 @@ released on its own), and every later extraction runs the same list.
 - The tree-wide citation lint accepts a citation into a crate repository at a tag, by symbol, in
   the form §277 (cite a heading or a symbol, never a line number) allows. Until it does, repointing
   the citations below fails `script/lint`.
-- The crate's name is ratified (Fork 5), and so is every name a stranger meets in it (ruled
-  2026-10-25 UTC). A third-party crate's names are not kept in this tree (ruled
+- Ratify the crate's name (Fork 5) and every name a stranger meets in it (ruled 2026-10-25 UTC). This tree keeps no record of a third-party crate's names (ruled
   2026-10-26 UTC), so the `Name:` blocks in the crate's source are the record until it breaks
   out. Ratification is a pull request: its body carries the table `python3 helpers/name_release.py
   --draft <crate>` prints, and it sets each block to `ratified <date> (#PR)`. Then

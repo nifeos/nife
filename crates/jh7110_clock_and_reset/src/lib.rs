@@ -431,7 +431,7 @@ pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE: &[u8] = b"x-powers,axp15060
 /// first.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_COMPATIBLES` (PMIC spelled out; `chip`
-/// for integrated circuit, and not `power_management_bus`, which is the PMBus standard's name).
+/// for integrated circuit, and not `power_management_bus`, which is the `PMBus` standard's name).
 #[doc(alias = "pmic")]
 pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
     COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
@@ -446,7 +446,7 @@ pub(crate) const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 /// circuit) is radon's AXP15060, on I2C5.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and
-/// `PowerManagementBus` (it collides with the PMBus standard's name).
+/// `PowerManagementBus` (it collides with the `PMBus` standard's name).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "pmic")]
 pub struct PowerManagementChipBus {
@@ -802,7 +802,7 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 /// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `i2c5_ic_clk` (`ic_clk` is the DesignWare
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
 /// databook's signal name, which the doc and `doc(alias)` carry; the function returns the clock's
 /// frequency), as `IcClkWords` was refused for `I2cClockWords`.
 #[must_use]
