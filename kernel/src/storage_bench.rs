@@ -14,7 +14,9 @@
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
-use designware_mobile_storage::idmac::{DirectMemoryAccessRegion, Idmac, Refusal};
+use designware_mobile_storage::internal_direct_memory_access::{
+    DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
+};
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::registers;
 use designware_mobile_storage::sd::{self, BLOCK, InitializationError, IoError, Kind};
@@ -222,9 +224,9 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         say!(
             slot,
             "card clock: no SYS syscon mapped, so its rate is the tree's {} Hz, unchecked",
-            slot.ciu_hz
+            slot.card_interface_unit_hz
         );
-        return slot.ciu_hz;
+        return slot.card_interface_unit_hz;
     }
     // SAFETY: `mmu::init` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
     // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
@@ -233,7 +235,7 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
             crate::arch::mmu::phys_to_virt(crg_phys) as usize,
             crate::arch::mmu::phys_to_virt(jh7110_clock_and_reset::SYS_SYSCON_BASE) as usize,
             usize::from(slot.index),
-            slot.ciu_hz,
+            slot.card_interface_unit_hz,
         )
     };
     say!(
@@ -243,7 +245,7 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         c.after,
         c.hz,
         c.parent_hz,
-        slot.ciu_hz
+        slot.card_interface_unit_hz
     );
     c.hz
 }
@@ -258,7 +260,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         if slot.status_okay { "okay" } else { "disabled" },
         slot.bus_width,
         slot.queue_depth,
-        slot.ciu_hz,
+        slot.card_interface_unit_hz,
         slot.interrupt,
     );
 
@@ -489,7 +491,7 @@ fn el0_window(
 fn read_only_checks(call: &impl Fn(u64, u64) -> i64, shared: &[u8], r: &ReadReport) -> El0 {
     use filesystem_contract::blk;
 
-    if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.fs_type {
+    if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.file_system_type {
         return El0::Wrong("block 0 is the boot sector the kernel read", 0);
     }
     let got = call(blk::WRITE, 0);
@@ -614,7 +616,7 @@ fn print_read(slot: &Slot, r: &ReadReport) {
                 } else {
                     "absent"
                 },
-                core::str::from_utf8(&r.fs_type).unwrap_or("?"),
+                core::str::from_utf8(&r.file_system_type).unwrap_or("?"),
             );
             say!(
                 slot,
@@ -641,9 +643,9 @@ fn kib_per_s(blocks: u64, us: u64) -> u64 {
 }
 
 /// The same card through the IDMAC: the polled host reads the partition's first 64 KiB as the
-/// reference, then `bench::idmac_read` reads those blocks and the same 8 MiB, and a write build
-/// runs the scratch write test. One descriptor page and `READ_PAGES` data pages, as the polled
-/// read.
+/// reference, then `bench::internal_direct_memory_access_read` reads those blocks and the same 8
+/// MiB, and a write build runs the scratch write test. One descriptor page and `READ_PAGES` data
+/// pages, as the polled read.
 fn through_idmac(
     slot: &Slot,
     mut host: Host<Window>,
@@ -667,12 +669,18 @@ fn through_idmac(
         region.bus_address(),
         region.bytes(),
     );
-    let idmac = match Idmac::new(region, id) {
+    let idmac = match InternalDirectMemoryAccess::new(region, id) {
         Ok(i) => i,
         Err(e) => return Dma::Refused(e),
     };
-    let mut host = host.with_idmac(idmac);
-    let report = match bench::idmac_read(&mut host, r, reference, buf, TIMED_BLOCKS) {
+    let mut host = host.with_internal_direct_memory_access(idmac);
+    let report = match bench::internal_direct_memory_access_read(
+        &mut host,
+        r,
+        reference,
+        buf,
+        TIMED_BLOCKS,
+    ) {
         Ok(report) => report,
         Err(e) => {
             let w = host.registers();

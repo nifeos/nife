@@ -13,7 +13,7 @@ use crate::card::{
 };
 use crate::command::{self as c, Command, Data, Response};
 use crate::host::{Error, Host, Registers};
-use crate::idmac::DirectMemoryAccessRegion;
+use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// The identification clock, the spec's ceiling for it.
 pub(crate) const IDENTIFY_HZ: u32 = 400_000;
@@ -344,7 +344,7 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     v2: bool,
 ) -> Result<u32, InitializationError> {
-    let arg = if v2 {
+    let argument = if v2 {
         SD_OP_COND_ARG
     } else {
         SD_OP_COND_ARG & !OCR_HIGH_CAPACITY
@@ -354,7 +354,7 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
         host.command(&Command::new(c::APP_CMD, 0, Response::R1))
             .map_err(InitializationError::NoCard)?;
         let ocr = host
-            .command(&Command::new(c::SD_SEND_OP_COND, arg, Response::R3))
+            .command(&Command::new(c::SD_SEND_OP_COND, argument, Response::R3))
             .map_err(InitializationError::NoCard)?[0];
         if ocr & OCR_BUSY_DONE != 0 {
             return Ok(ocr);
@@ -458,7 +458,7 @@ fn check(len: usize, card: &Card, logical_block_address: u64) -> Result<u32, IoE
     Ok(blocks as u32)
 }
 
-/// **Read whole blocks from `logical_block_address` into `buf`**, one command: `CMD17` for one
+/// **Read whole blocks from `logical_block_address` into `buffer`**, one command: `CMD17` for one
 /// block, `CMD18` with the automatic stop for more.
 ///
 /// # Errors
@@ -469,13 +469,13 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     logical_block_address: u64,
-    buf: &mut [u8],
+    buffer: &mut [u8],
 ) -> Result<(), IoError> {
-    let blocks = check(buf.len(), card, logical_block_address)?;
+    let blocks = check(buffer.len(), card, logical_block_address)?;
     let r1 = host
         .read(
             &data_command(card, logical_block_address, blocks, false),
-            buf,
+            buffer,
         )
         .map_err(IoError::Host)?;
     if r1[0] & R1_ERRORS != 0 {
@@ -484,8 +484,8 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     Ok(())
 }
 
-/// **Write whole blocks from `buf` at `logical_block_address`**, one command: `CMD24` or `CMD25`,
-/// then wait for the card to finish programming.
+/// **Write whole blocks from `buffer` at `logical_block_address`**, one command: `CMD24` or
+/// `CMD25`, then wait for the card to finish programming.
 ///
 /// # Errors
 ///
@@ -494,13 +494,13 @@ pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     logical_block_address: u64,
-    buf: &[u8],
+    buffer: &[u8],
 ) -> Result<(), IoError> {
-    let blocks = check(buf.len(), card, logical_block_address)?;
+    let blocks = check(buffer.len(), card, logical_block_address)?;
     let r1 = host
         .write(
             &data_command(card, logical_block_address, blocks, true),
-            buf,
+            buffer,
         )
         .map_err(IoError::Host)?;
     if r1[0] & R1_ERRORS != 0 {

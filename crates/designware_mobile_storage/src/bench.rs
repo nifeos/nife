@@ -8,7 +8,7 @@
 //! written.
 
 use crate::host::{Host, Registers};
-use crate::idmac::DirectMemoryAccessRegion;
+use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 use crate::partition::Mbr;
 use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
 
@@ -26,7 +26,7 @@ pub struct ReadReport {
     pub partition_boot_signature: bool,
     /// The first partition's first sector's bytes 82..90 (FAT32's `"FAT32   "` file system
     /// type), for the transcript.
-    pub fs_type: [u8; 8],
+    pub file_system_type: [u8; 8],
     /// The block the timed read started at: the first partition's, or 0 without one.
     pub timed_from: u64,
     /// Blocks read in the timed sequential read.
@@ -44,8 +44,8 @@ pub enum ReadFailure {
     Read(u64, IoError),
 }
 
-/// **The read-only probe.** `buf` is the transfer buffer (a whole number of blocks; the timed read
-/// moves `buf.len()` bytes per command), `timed_blocks` how many blocks to time.
+/// **The read-only probe.** `buffer` is the transfer buffer (a whole number of blocks; the timed
+/// read moves `buffer.len()` bytes per command), `timed_blocks` how many blocks to time.
 ///
 /// # Errors
 ///
@@ -53,7 +53,7 @@ pub enum ReadFailure {
 pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     bus_width: u8,
-    buf: &mut [u8],
+    buffer: &mut [u8],
     timed_blocks: u64,
 ) -> Result<ReadReport, ReadFailure> {
     let card = sd::identify(host, bus_width).map_err(ReadFailure::Initialization)?;
@@ -62,40 +62,40 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     let mbr = Mbr::parse(&sector);
     let first = mbr.and_then(|m| m.first_start()).map_or(0, u64::from);
     let mut partition_boot_signature = false;
-    let mut fs_type = [0u8; 8];
+    let mut file_system_type = [0u8; 8];
     if first != 0 {
         sd::read_blocks(host, &card, first, &mut sector)
             .map_err(|e| ReadFailure::Read(first, e))?;
         partition_boot_signature = sector[510..512] == [0x55, 0xaa];
-        fs_type.copy_from_slice(&sector[82..90]);
+        file_system_type.copy_from_slice(&sector[82..90]);
     }
-    let (timed, timed_us) = timed_read(host, &card, first, buf, timed_blocks)?;
+    let (timed, timed_us) = timed_read(host, &card, first, buffer, timed_blocks)?;
     Ok(ReadReport {
         card,
         mbr,
         partition_boot_signature,
-        fs_type,
+        file_system_type,
         timed_from: first,
         timed_blocks: timed,
         timed_us,
     })
 }
 
-/// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buf.len()` bytes a
+/// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buffer.len()` bytes a
 /// command, stopping before the card's end. Returns the blocks read and the microseconds taken.
 fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
     first: u64,
-    buf: &mut [u8],
+    buffer: &mut [u8],
     timed_blocks: u64,
 ) -> Result<(u64, u64), ReadFailure> {
-    let per = (buf.len() / BLOCK) as u64;
+    let per = (buffer.len() / BLOCK) as u64;
     let mut timed = 0u64;
     let start = host.registers().now_us();
     if per > 0 {
         while timed < timed_blocks && first + timed + per <= card.blocks {
-            sd::read_blocks(host, card, first + timed, buf)
+            sd::read_blocks(host, card, first + timed, buffer)
                 .map_err(|e| ReadFailure::Read(first + timed, e))?;
             timed += per;
         }
@@ -105,9 +105,11 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// What the IDMAC's half of the read-only probe found.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `IdmacReport`.
+#[doc(alias = "idmac")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct IdmacReport {
+pub struct InternalDirectMemoryAccessReport {
     /// The first transfer's bytes are the polled host's for the same blocks.
     pub matches: bool,
     /// Blocks read in the timed sequential read.
@@ -116,31 +118,34 @@ pub struct IdmacReport {
     pub timed_us: u64,
 }
 
-/// **The IDMAC's half of the read-only probe**, on a host [`Host::with_idmac`] made from the one
-/// [`read_only`] ran on and reported `r`. `reference` is the polled host's read of
-/// `reference.len()` bytes from `r.timed_from`; the same blocks are read through the IDMAC and
-/// compared, then [`read_only`]'s timed read runs again from there in `buf.len()`-byte commands,
-/// so the two rates differ only in the data path.
+/// **The IDMAC's half of the read-only probe**, on a host
+/// [`Host::with_internal_direct_memory_access`] made from the one [`read_only`] ran on and reported
+/// `r`. `reference` is the polled host's read of `reference.len()` bytes from `r.timed_from`; the
+/// same blocks are read through the IDMAC and compared, then [`read_only`]'s timed read runs again
+/// from there in `buffer.len()`-byte commands, so the two rates differ only in the data path.
 ///
 /// # Errors
 ///
 /// The read that failed.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
-pub fn idmac_read<R: Registers, D: DirectMemoryAccessRegion>(
+/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac_read`.
+#[doc(alias = "idmac")]
+pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     r: &ReadReport,
     reference: &[u8],
-    buf: &mut [u8],
+    buffer: &mut [u8],
     timed_blocks: u64,
-) -> Result<IdmacReport, ReadFailure> {
+) -> Result<InternalDirectMemoryAccessReport, ReadFailure> {
     let (card, first) = (&r.card, r.timed_from);
-    let n = reference.len().min(buf.len());
-    sd::read_blocks(host, card, first, &mut buf[..n]).map_err(|e| ReadFailure::Read(first, e))?;
+    let n = reference.len().min(buffer.len());
+    sd::read_blocks(host, card, first, &mut buffer[..n])
+        .map_err(|e| ReadFailure::Read(first, e))?;
     // An empty reference never gets here: a read of no blocks is refused as `Length`.
-    let matches = buf[..n] == reference[..n];
-    let (timed_blocks, timed_us) = timed_read(host, card, first, buf, timed_blocks)?;
-    Ok(IdmacReport {
+    let matches = buffer[..n] == reference[..n];
+    let (timed_blocks, timed_us) = timed_read(host, card, first, buffer, timed_blocks)?;
+    Ok(InternalDirectMemoryAccessReport {
         matches,
         timed_blocks,
         timed_us,
@@ -327,7 +332,7 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
 /// so a read that leaves the card mid-transfer cannot fail the next one. Read-only: `CMD18` from
-/// `logical_block_address` and identification, nothing else. `buf` holds at least the longest
+/// `logical_block_address` and identification, nothing else. `buffer` holds at least the longest
 /// read.
 ///
 /// # Errors
@@ -339,7 +344,7 @@ pub fn read_matrix<R: Registers>(
     host: &mut Host<Watch<R>>,
     bus_width: u8,
     logical_block_address: u64,
-    buf: &mut [u8],
+    buffer: &mut [u8],
     mut row: impl FnMut(MatrixRow),
 ) -> Result<(), InitializationError> {
     for &hz in &MATRIX_HZ {
@@ -349,7 +354,7 @@ pub fn read_matrix<R: Registers>(
                 .set_clock(hz)
                 .map_err(InitializationError::Controller)?;
             let len = blocks as usize * BLOCK;
-            let Some(dst) = buf.get_mut(..len) else {
+            let Some(dst) = buffer.get_mut(..len) else {
                 continue;
             };
             host.registers().clear();
