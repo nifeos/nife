@@ -152,6 +152,7 @@ soak_page	shared	fixtures,kernel
 socket_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
+spin_lock	kernel	kernel
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
 std_runtime_protocol	shared	retired
 steal_request	kernel	retired
