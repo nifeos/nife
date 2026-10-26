@@ -1,14 +1,19 @@
 //! **Reaching the PHY: MDIO through `MDIC`, under the software/firmware semaphore.**
 //!
-//! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares, so QEMU proves this
-//! layer too. [`read()`] and [`write()`] are the paged access every PCH PHY register above page 0
-//! needs, and each takes a [`Swflag`], which only [`Swflag::acquire`] makes. A page this port does
-//! not carry (800, or 1 to 767) is [`Error::PageNotPorted`]. The FreeBSD sources are `e1000_phy.c`
-//! (the MDIC and paged access) and `e1000_ich8lan.c` (the semaphore and the reset block). Two
-//! divergences are deliberate. There is no MDIC retry, since FreeBSD retries only from Meteor Lake
-//! on and every part this crate claims is Sunrise Point. Page 800 (host wakeup, with its own
-//! protocol) and pages 1 to 767 (82577 and 82578 debug registers) are refused rather than ported;
-//! only an NVM-supplied LCD configuration word could address them.
+//! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares. Of the rest, only
+//! [`id_at`] applies to an 82574L, which has no pages and no semaphore. [`read()`] and [`write()`]
+//! are the paged access every PCH PHY register above page 0 needs, and each takes a [`Swflag`],
+//! which only [`Swflag::acquire`] makes. That type stands where FreeBSD writes "assumes the
+//! semaphore is already acquired" comments. The FreeBSD sources are `e1000_phy.c` (the MDIC and
+//! paged access) and `e1000_ich8lan.c` (the semaphore and the reset block).
+//!
+//! Two divergences are deliberate. There is no MDIC retry: FreeBSD retries only from Meteor Lake
+//! on (`current_retry_counter` is 2 from `e1000_pch_mtp`, 0 below it), and every part this crate
+//! claims is Sunrise Point, so one attempt is FreeBSD's behavior exactly. And two page ranges are
+//! refused rather than ported, as [`Error::PageNotPorted`]: page 800, the host wakeup page with its
+//! own address and data opcode protocol (`e1000_access_phy_wakeup_reg_bm`), and pages 1 to 767,
+//! the 82577 and 82578 debug registers (`e1000_access_phy_debug_regs_hv`). Nothing in
+//! [`super::sequence`] addresses either; only an NVM-supplied LCD configuration word could.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause

@@ -222,7 +222,15 @@ fn has_me(hw: &mut impl Hw) -> bool {
 // Pass 1: at attach.
 // ---------------------------------------------------------------------------------------------
 
-/// **`e1000_init_phy_workarounds_pchlan`**, the SPT path. Returns the PHY's identifier.
+/// **`e1000_init_phy_workarounds_pchlan`**, the SPT path, at attach. Returns the PHY's identifier.
+///
+/// It gates the hardware's automatic PHY configuration and forces the PHY out of ultra-low-power:
+/// through the Management Engine if there is one, through PHY registers if not. It makes sure the
+/// MAC-PHY interconnect is PCIe rather than `SMBus`. If the PHY does not answer, it forces `SMBus`,
+/// and if the PHY still does not answer, it power-cycles the PHY with `LANPHYPC`. Then it resets
+/// the PHY so it starts from a known state. Refuses with [`Error::LanphypcBlocked`] when firmware
+/// blocks that power cycle, [`Error::PhyInaccessible`] when the PHY never answers, and
+/// [`Error::BlockedAfterPhyReset`] when firmware takes the PHY after its reset.
 pub fn init_phy_workarounds(hw: &mut impl Hw) -> Result<u32, Error> {
     // Gate automatic PHY configuration by hardware; this driver configures it in `global_reset`.
     set(hw, regs::EXTCNF_CTRL, EXTCNF_CTRL_GATE_PHY_CFG);

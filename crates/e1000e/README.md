@@ -61,6 +61,29 @@ drive a `DataPlane` with `start`, `receive` and `transmit`.
 
 The minimum supported Rust version is 1.88.
 
+## Sources
+
+Offsets, bits, descriptor layouts and device ids were read, not recalled, on 2026-10-04 (UTC). The
+sources were Linux's `drivers/net/ethernet/intel/e1000e/regs.h`, `defines.h` and `hw.h`. They were
+cross-checked the same day against FreeBSD's BSD-licensed `sys/dev/e1000/`: `e1000_regs.h`, and
+`e1000_api.c`'s SPT class, which is exactly the I219 rows of `DEVICE_IDS`. No Linux code was
+copied.
+
+QEMU's `hw/net/e1000e_core.c` says what the emulated 82574L does with them. It uses legacy
+descriptors unless `RFCTL.EXTEN` is set, and it receives only with `RCTL.EN`, link up and bus
+mastering.
+
+Intel's own I219 datasheet was not read. Where the I219 is believed to differ from the 82574L, the
+item says so.
+
+The I219 needs a port rather than a reading of registers. It is a MAC inside the platform
+controller hub, talking to a separate PHY that it shares with the Management Engine, and it
+carries workarounds that only field exposure finds. FreeBSD's Intel shared code (BSD-3-Clause) is
+the only source read for `pch`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
+item in `pch` names the FreeBSD function it follows. Everything was read from `sys/dev/e1000/` on
+FreeBSD's `main`: `ulp`, `flush` and `reset` on 2026-10-04, the rest on 2026-10-05. The last
+commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30).
+
 ## License
 
 Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option. The
