@@ -61,7 +61,7 @@ and fetch-op outside test code:
 
 ## What was modeled
 
-25 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
+30 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
 `script/interleaving-check`.
 
 The harness number is written in digits because `script/lint`'s marker reads small cardinals and no

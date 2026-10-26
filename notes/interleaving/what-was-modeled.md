@@ -213,17 +213,17 @@ Five harnesses:
 
 | Harness | What it holds | Search |
 |---|---|---|
-| `two_takers_are_exclusive_and_ordered` | two threads each increment under the lock; none is lost, and each order is reached | exhaustive, 105 executions |
-| `three_takers_are_exclusive_and_ordered` | the same for three, each of the three counts reached | preemption bound 1, 66 executions |
-| `try_lock_refuses_while_another_guard_holds` | a held lock refuses `try_lock`, a refusal leaves the holder holding, and both outcomes are reached | exhaustive |
+| `two_takers_are_exclusive_and_ordered` | two threads each increment under the lock; none goes missing, and the search reaches each order | exhaustive, 105 executions |
+| `three_takers_are_exclusive_and_ordered` | the same for three, and the search reaches each of the three counts | preemption bound 1, 66 executions |
+| `try_lock_refuses_while_another_guard_holds` | a held lock refuses `try_lock`, a refusal leaves the holder holding, and the search reaches both outcomes | exhaustive |
 | `a_release_publishes_what_the_holder_wrote_before_it` | a write outside the lock, made before the release, is visible to the next holder: the IPC rendezvous's edge | exhaustive |
 | `a_relaxed_release_publishes_nothing` | the previous model with the crate's own unlock passed `Relaxed`; passes only on loom's causality violation | exhaustive |
 
-Falsified by hand: the guard's release store weakened to `Relaxed` fails the four positive models,
+Falsifying by hand: the guard's release store weakened to `Relaxed` fails the four positive models,
 and so does the lock's compare-exchange weakened to `Relaxed` on success. The fifth harness keeps
 the first of those falsifications standing without anyone breaking the code.
 
-The three-taker bound is loom's, not the lock's. Each waiter yields while the flag is set, and with
+The three-taker bound is loom's, not the lock's. Each waiter yields while the flag holds, and with
 two waiters loom's scheduler can hand the processor from one to the other without end while the
 holder never runs. At a bound of two it reaches such an execution and stops past 20,000 scheduling
 branches with "Model exceeded maximum number of branches", the limit its message names for spin

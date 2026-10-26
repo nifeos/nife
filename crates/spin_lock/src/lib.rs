@@ -42,6 +42,8 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 
 /// A spinlock holding a `T`. [`lock`](Self::lock) spins until it holds the flag;
 /// [`try_lock`](Self::try_lock) tries once.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
 pub struct SpinLock<T> {
     locked: AtomicBool,
     data: UnsafeCell<T>,
@@ -56,6 +58,8 @@ unsafe impl<T: Send> Sync for SpinLock<T> {}
 ///
 /// The `PhantomData` makes the guard `Sync` only when `T` is, since a shared guard shares the `T`,
 /// and `Send` only when `T` is.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
 #[must_use = "dropping the guard releases the lock at once"]
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
@@ -102,6 +106,8 @@ impl<T> SpinLock<T> {
     ///
     /// `const` off the loom path so a kernel static can hold one. Loom's atomics and cells have no
     /// const constructor, which is why this is written twice; the kernel only compiles this one.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
     #[cfg(not(loom))]
     pub const fn new(value: T) -> Self {
         Self {
@@ -111,6 +117,8 @@ impl<T> SpinLock<T> {
     }
 
     /// An unlocked lock holding `value`. See the `const` twin above for why there are two.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
     #[cfg(loom)]
     pub fn new(value: T) -> Self {
         Self {
@@ -123,6 +131,8 @@ impl<T> SpinLock<T> {
     ///
     /// The weak compare-exchange may fail spuriously, which the loop absorbs; while the flag is
     /// set it spins on a Relaxed load, so waiters read a shared line rather than fight for it.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
     #[inline]
     pub fn lock(&self) -> SpinLockGuard<'_, T> {
         loop {
@@ -143,6 +153,8 @@ impl<T> SpinLock<T> {
     /// **Try once to take the lock.** [`None`] means another guard holds it.
     ///
     /// Strong, not weak: a [`None`] is always a refusal, never a spurious failure.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
     #[inline]
     pub fn try_lock(&self) -> Option<SpinLockGuard<'_, T>> {
         self.locked
@@ -159,6 +171,8 @@ impl<T> SpinLock<T> {
     ///
     /// For a panic or fault path only. Whatever the holder was doing is half-finished, and if the
     /// holder's guard is still live, two guards can now reach the data at once.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
     pub unsafe fn force_unlock(&self) {
         self.unlock(Ordering::Release);
     }
@@ -326,37 +340,38 @@ mod interleavings {
         }
     }
 
-    /// `takers` threads each take the lock once and increment the count inside it, and `seen`
-    /// marks the count each taker found. `preemptions` bounds the search as loom's
-    /// `preemption_bound` does; [`None`] explores every interleaving.
-    fn contend(takers: usize, preemptions: Option<usize>, seen: &'static [Reached]) {
-        let mut model = loom::model::Builder::new();
-        model.preemption_bound = preemptions;
-        model.check(move || {
+    /// The body of a contention model: `takers` threads each take the lock once and increment the
+    /// count inside it, and `seen` marks the count each taker found. The model's own thread is one
+    /// of the takers, so loom searches `takers` threads and no more.
+    fn contend(takers: usize, seen: &'static [Reached]) -> impl Fn() + Sync + Send + 'static {
+        fn take(lock: &SpinLock<usize>) -> usize {
+            let mut guard = lock.lock();
+            let found = *guard;
+            *guard = found + 1;
+            found
+        }
+
+        move || {
             let lock = Arc::new(SpinLock::new(0usize));
-            let handles: Vec<_> = (0..takers)
+            let others: Vec<_> = (1..takers)
                 .map(|_| {
                     let lock = Arc::clone(&lock);
-                    thread::spawn(move || {
-                        let mut guard = lock.lock();
-                        let found = *guard;
-                        *guard = found + 1;
-                        found
-                    })
+                    thread::spawn(move || take(&lock))
                 })
                 .collect();
-            for h in handles {
+            seen[take(&lock)].mark();
+            for h in others {
                 seen[h.join().unwrap()].mark();
             }
             assert_eq!(*lock.lock(), takers, "an update was lost");
-        });
+        }
     }
 
     /// **Two takers never hold the lock at once**, and the second sees the first's write.
     #[test]
     fn two_takers_are_exclusive_and_ordered() {
         static SEEN: [Reached; 2] = [Reached::new(), Reached::new()];
-        contend(2, None, &SEEN);
+        loom::model(contend(2, &SEEN));
         SEEN[0].assert("a taker that went first");
         SEEN[1].assert("a taker that went second, after the first's release");
     }
@@ -375,7 +390,9 @@ mod interleavings {
     #[test]
     fn three_takers_are_exclusive_and_ordered() {
         static SEEN: [Reached; 3] = [Reached::new(), Reached::new(), Reached::new()];
-        contend(3, Some(PREEMPTIONS), &SEEN);
+        let mut model = loom::model::Builder::new();
+        model.preemption_bound = Some(PREEMPTIONS);
+        model.check(contend(3, &SEEN));
         SEEN[0].assert("a taker that went first");
         SEEN[1].assert("a taker that went second");
         SEEN[2].assert("a taker that went third, after two releases");
@@ -447,7 +464,7 @@ mod interleavings {
 
     /// **The falsification.** The same model with the crate's release store Relaxed must fail.
     ///
-    /// If this test ever stops panicking, either loom has stopped modelling the C11 relaxed
+    /// If this test ever stops panicking, either loom has stopped modeling the C11 relaxed
     /// ordering or the harness above has stopped depending on the release. Both are things we
     /// would want to hear about, and neither would be visible from the passing test alone.
     #[test]

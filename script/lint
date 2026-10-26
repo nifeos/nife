@@ -849,8 +849,8 @@ M267EOF
 # two fences is a dataflow problem across functions, across binaries and sometimes across address
 # spaces; in this tree the other half is frequently not a fence at all but a blocking IPC rendezvous
 # whose happens-before edge lives inside the kernel's lock (`crates/spin_lock`). Nothing an AST can
-# see. So this takes milestone 112's posture instead: a narrow check that is true beats a broad one
-# that is aspirational. What it buys is the forcing function, because an author made to write down
+# see. So this takes the posture of milestone 112 (the SAFETY comments that bind nobody) instead: a
+# narrow check that is true beats a broad one that is aspirational. What it buys is the forcing function, because an author made to write down
 # where the partner lives has to go and look for it, and that is exactly the step neither 43's nor
 # 80's author took. See notes/memory-ordering.md, which measures the broad check and shows why it fails.
 #
@@ -2197,8 +2197,9 @@ def _rights_bits():
 def _loom_hits():
     """(crate directory name, loom harnesses) for every crate under crates/ that runs a loom model.
 
-    A loom harness is a test that calls `loom::model`, which is the shape every one of them has and
-    the thing that makes it a harness rather than an ordinary test: the model is the search. Counted
+    A loom harness is a test that calls `loom::model`, or builds a `loom::model::Builder` to bound
+    the search, which is the thing that makes it a harness rather than an ordinary test: the model
+    is the search. Counted
     that way rather than by `#[test]` inside a `#[cfg(all(test, loom))]` module, because the cfg
     spelling is incidental and the call is the definition. The two agreed at 19 when this was
     written, which is how the shape was checked.
@@ -2210,7 +2211,8 @@ def _loom_hits():
     """
     hits = {}
     for path in pathlib.Path('crates').rglob('*.rs'):
-        n = len(re.findall(r'\bloom::model\(', path.read_text(errors='replace')))
+        n = len(re.findall(r'\bloom::model(?:\(|::Builder::new\(\))',
+                           path.read_text(errors='replace')))
         if n:
             hits[path.parts[1]] = hits.get(path.parts[1], 0) + n
     return hits
