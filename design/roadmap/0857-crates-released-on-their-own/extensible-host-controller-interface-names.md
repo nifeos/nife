@@ -26,7 +26,7 @@ spelling, and the `USBCMD`, `USBSTS` and `USBLEGCTLSTS` bits spell out what this
 | `extensible_host_controller_interface` | crate | `src/lib.rs` | ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once published. Too long for a program name, so the program is `usb_keyboard_driver`. | yes |
 | `completion` | module | `src/completion.rs` | ratified 2026-10-25 (#2720). | yes |
 | `context` | module | `src/context.rs` | ratified 2026-10-25 (#2720). | yes |
-| `direct_memory_access` | module | `src/direct_memory_access.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `dma` (the acronym test spells it out, as §154 records). | yes |
+| `direct_memory_access` | module | `src/direct_memory_access.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `dma` (spelled out, as the acronym test asks). | yes |
 | `event` | module | `src/event.rs` | ratified 2026-10-25 (#2720). | no |
 | `port` | module | `src/port.rs` | ratified 2026-10-25 (#2720). | yes |
 | `registers` | module | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `regs` (an abbreviation; the constants inside keep the specification's names). | yes |

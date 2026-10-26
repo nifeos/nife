@@ -20,7 +20,7 @@ The column `outside` says whether a caller outside the crate reaches the name. S
 row because `script/names` does not count them: the inline module `registers`, whose constants have rows;
 the fields of `Discovered` (`reg_base`, `reg_size`, `interrupt`, `compatible`, `status_okay`); and
 the variants of `GenerationOutcome` (`Ready`, `Lockup`, `NotReady`, `Unseeded`). The same ruling
-covers them, and the module's name is ruled 2026-10-26 (UTC), on #2760 (refused `regs`).
+covers them. The module took its name on #2760, refusing `regs`.
 
 | name | kind | path | status | outside |
 |---|---|---|---|---|
