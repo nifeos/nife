@@ -8,7 +8,7 @@ bounds what one mutant may allocate, the measured ceiling, and a demonstration t
 This is milestone 277 (bound what one mutant may allocate, so a runaway kills the mutant and not the
 machine). Every scheduled run of the `mutation testing` workflow had died. Milestone 238 (two
 scheduled checks have never once succeeded) fixed the off-by-one in the shard indices, and exactly
-one cause was left. **One mutant went 1.4 GB to 15.8 GB in twenty seconds and took the runner agent
+one cause remained. **One mutant went 1.4 GB to 15.8 GB in twenty seconds and took the runner agent
 down with the machine.** The workflow's own BUGS header has the ten-second samples that caught it.
 It also explains why a sixty-second sampler had reported innocence an hour earlier.
 

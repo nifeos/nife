@@ -48,10 +48,10 @@ the boot prompt is the owner's console and keeps it (§221 (the boot prompt is t
 console)). Deleting that call makes the gate refuse as before, and that was run (below). A `login`
 session gets it only when the owner lists its identity ([vouching.md](vouching.md)).
 
-It is retyped after `login`'s build, not before, because that build is where the progenitor's table
-peaks. Held across the peak it would have taken the last free slot. Measured by `script/swish-check`
-on aarch64 and riscv64: 23 of 24 before and after. The x86_64 leg's gauge reads the hand-over,
-not the peak, so it says nothing here.
+The progenitor retypes the run-unvouched endpoint after `login`'s build, not before, because that
+build is where the progenitor's table peaks. Held across the peak, the endpoint would have taken the
+last free slot. Measured by `script/swish-check` on aarch64 and riscv64: 23 of 24 before and after.
+The x86_64 leg's gauge reads the hand-over, not the peak, so it says nothing here.
 
 ## What an unvouched child holds
 
