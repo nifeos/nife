@@ -1261,19 +1261,19 @@ designware_mobile_storage,"Host<R, D>::finish","replace Host<R, D>::finish -> Re
 designware_mobile_storage,"Host<R, D>::finish",replace match guard d.blocks > 1 with false,killed,killed by a_multi_block_transfer_waits_for_the_automatic_stop
 designware_mobile_storage,"Host<R, D>::finish",replace | with &,killed,killed by a_data_error_at_the_end_of_a_write_is_reported_promptly and a_multi_block_transfer_waits_for_the_automatic_stop
 designware_mobile_storage,"Host<R, D>::finish",replace | with ^,equivalent,"every survivor ORs disjoint interrupt bits (RINTSTS_DTO with RINTSTS_ACD, RINTSTS_DATA_ERR with RINTSTS_DATA_TO), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_mobile_storage,"Host<R, D>::issue",delete !,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
-designware_mobile_storage,"Host<R, D>::issue",replace & with ^,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
+designware_mobile_storage,"Host<R, D>::issue",delete !,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
+designware_mobile_storage,"Host<R, D>::issue",replace & with ^,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
 designware_mobile_storage,"Host<R, D>::issue",replace & with |,killed,killed by the_response_is_read_only_once_the_command_is_done
-designware_mobile_storage,"Host<R, D>::issue",replace << with >>,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
-designware_mobile_storage,"Host<R, D>::issue",replace == with !=,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
-designware_mobile_storage,"Host<R, D>::issue",replace | with &,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold and a_response_crc_error_is_a_bad_response
+designware_mobile_storage,"Host<R, D>::issue",replace << with >>,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
+designware_mobile_storage,"Host<R, D>::issue",replace == with !=,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
+designware_mobile_storage,"Host<R, D>::issue",replace | with &,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off and a_response_crc_error_is_a_bad_response
 designware_mobile_storage,"Host<R, D>::issue",replace | with ^,equivalent,"block_size << 16 with CARDTHRCTL_RDTHREN (bit 0) and RINTSTS_RCRC with RINTSTS_RE are disjoint; ctrl | CTRL_FIFO_RESET equals ctrl ^ CTRL_FIFO_RESET because the bit is clear in ctrl whenever issue runs (reset or the previous issue waited for it to clear, and it self-clears); the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,"Host<R, D>::power_on","replace Host<R, D>::power_on with ()",killed,killed by power_and_bus_width_land_in_their_registers
 designware_mobile_storage,"Host<R, D>::read",replace - with +,killed,killed by a_read_the_card_ends_early_times_out_rather_than_spinning and the_last_queue_step_moves_only_what_is_owed
 designware_mobile_storage,"Host<R, D>::read",replace || with &&,killed,killed by a_buffer_or_direction_that_does_not_match_the_command_is_refused_unsent
-designware_mobile_storage,"Host<R, D>::reset",delete !,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
-designware_mobile_storage,"Host<R, D>::reset",replace & with ^,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
-designware_mobile_storage,"Host<R, D>::reset",replace & with |,killed,killed by a_data_command_resets_the_fifo_and_only_a_read_sets_the_threshold
+designware_mobile_storage,"Host<R, D>::reset",delete !,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
+designware_mobile_storage,"Host<R, D>::reset",replace & with ^,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
+designware_mobile_storage,"Host<R, D>::reset",replace & with |,killed,killed by a_data_command_resets_the_queue_and_leaves_the_threshold_off
 designware_mobile_storage,"Host<R, D>::reset",replace == with !=,killed,killed by a_reset_that_never_clears_is_reported_with_the_word_read
 designware_mobile_storage,"Host<R, D>::reset","replace Host<R, D>::reset -> Result<(), Error> with Ok(())",killed,killed by a_reset_that_never_clears_is_reported_with_the_word_read
 designware_mobile_storage,"Host<R, D>::reset",replace | with &,killed,killed by reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets
