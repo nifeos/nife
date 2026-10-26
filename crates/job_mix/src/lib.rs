@@ -237,7 +237,7 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 /// The largest task pool the supervisor builds, and therefore the length of its go-endpoint array.
 ///
 /// 32, against `sched::MAXIMUM_THREADS`'s 256 and against the 64 user threads the soak already
-/// builds on this machine. The sweep tops out here rather than at milestone 134's E1 ceiling of 96
+/// builds on this machine. The sweep tops out here rather than at milestone 134 (the register of measures)'s E1 ceiling of 96
 /// because every task in this pool is a **process**, with an address space and a loaded image
 /// behind it, where E1's were kernel threads; the memory, not the thread table, is what binds.
 ///

@@ -61,7 +61,7 @@
 #   guest's fixed layout (`documentation::index::PATH_MAXIMUM`). Six roadmap and decision filenames
 #   are past it. The search exits 1 only when one of those is in the results it printed, and names
 #   it; until 2026-09-19 any long path anywhere in the corpus failed every search, with six
-#   warnings, whatever the word, which is how milestone 117's sixth run found it: the tool it was
+#   warnings, whatever the word, which is how milestone 117 (the stranger test)'s sixth run found it: the tool it was
 #   about to put in front of a newcomer failed on the example chosen for the README.
 # - **Sixteen results, always**, because that is the guest reader's fixed table
 #   (`documentation::index::RESULTS_MAXIMUM`) and this uses the guest reader. The line under the

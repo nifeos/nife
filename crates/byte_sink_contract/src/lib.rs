@@ -71,10 +71,9 @@ pub const fn eof() -> u64 {
     req(OPERATION_EOF, 0)
 }
 
-/// Pack up to [`INLINE_MAXIMUM`] bytes into the three words of a `SEND`. Bytes past the sixteenth
-/// are **not** silently dropped: the caller chunks, and the returned count says how many were
-/// taken, so a caller that ignores it writes a short message rather than losing a tail without
-/// knowing.
+/// Pack up to [`INLINE_MAXIMUM`] bytes into the three words of a `SEND`. Bytes past the
+/// sixteenth are **not** silently dropped: the caller chunks, and the returned count says how many
+/// were taken, so a caller that ignores it writes a short message, not a silently lost tail.
 ///
 /// # Examples
 ///
