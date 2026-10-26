@@ -172,7 +172,7 @@ _start:
     # memory. The kernel image therefore keeps that base and the direct map gets its own,
     # DIRECT_MAP_BASE = 0xffff888000000000, which is Linux's and which decomposes as PML4[273].
     #
-    # Establishing it HERE rather than when mmu::init builds the fine tables is what removes the
+    # Establishing it HERE rather than when mmu::initialize builds the fine tables is what removes the
     # sequencing hazard the roadmap warned about: the frame allocator's bitmap, the PVH structure
     # and the ACPI tables are all read through phys_to_virt before the fine map exists, and if that
     # arithmetic changed meaning at the `mov cr3` those pointers would silently start naming
@@ -186,7 +186,7 @@ _start:
     # --- 2f. NX, checked HERE because the next step is what would fault ---
     #
     # The first of three boot gates (design/roadmap/0524-the-three-x86-64-boot-gates.md). The other
-    # two are checked in Rust by arch::x86_64::isa::init, where the console exists and a refusal
+    # two are checked in Rust by arch::x86_64::isa::initialize, where the console exists and a refusal
     # can be read. This one cannot wait for that: step 3 below sets EFER.NXE, and on a part without
     # NX that bit is reserved, so `wrmsr` raises #GP with no IDT installed, which escalates to a
     # double fault with no IDT and then triple-faults. On QEMU that is a machine reset with no
@@ -252,7 +252,7 @@ _start:
 # available at this point: bytes out of a 16550's transmit register at the fixed legacy COM1 base,
 # which is the same UART `kernel/src/arch/x86_64/mod.rs`'s console driver later uses. Nothing has
 # configured it, so this does the five writes that make it send (8N1 at 115200, interrupts off) and
-# then polls the line-status register for each byte. `console::init` is never reached from here, so
+# then polls the line-status register for each byte. `console::initialize` is never reached from here, so
 # there is no state to hand back and nothing to conflict with.
 #
 # BUGS, and it is the same one the comment at the check states: on a machine with no COM1 at all

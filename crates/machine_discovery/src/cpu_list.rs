@@ -119,9 +119,9 @@ pub struct CpuList {
     /// `/cpus/timebase-frequency`, the rate of RISC-V's `time` CSR, in Hz.
     ///
     /// It lives here rather than in [`crate::riscv64::Isa`] because it is a property of the `/cpus`
-    /// node, and because the RISC-V timer needs it *before* the ISA record exists: `timer::init`
-    /// runs several steps ahead of `isa::init` in that boot. `None` on aarch64, whose counter
-    /// frequency is architected in `CNTFRQ_EL0` and needs no tree.
+    /// node, and because the RISC-V timer needs it *before* the ISA record exists:
+    /// `timer::initialize` runs several steps ahead of `isa::initialize` in that boot. `None` on
+    /// aarch64, whose counter frequency is architected in `CNTFRQ_EL0` and needs no tree.
     pub timebase_hz: Option<u64>,
 }
 

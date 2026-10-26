@@ -27,10 +27,10 @@ Drive the JH7110's PCIe root complex, a PLDA XpressRICH controller
 (`design/roadmap/0016-real-hardware-iommu.md`'s own framing of the two IOMMUs as "structural
 siblings" only holds for the emulated case; the PLDA controller has no such sibling in this tree
 today.) `notes/visionfive2.md` records the honest current state: the kernel already reads PCIe
-windows from a generic-ECAM device-tree node when one exists (`memory::init`, `mmu::map_everything`,
-every probe in `kernel/src/pci.rs`). But on this board there is no such node, so nothing PCIe is
-mapped or touched. A real driver for the PLDA controller is what would give that existing,
-already-portable `kernel/src/pci.rs` probe path something real to find.
+windows from a generic-ECAM device-tree node when one exists (`memory::initialize`,
+`mmu::map_everything`, every probe in `kernel/src/pci.rs`). But on this board there is no such node,
+so nothing PCIe is mapped or touched. A real driver for the PLDA controller is what would give that
+existing, already-portable `kernel/src/pci.rs` probe path something real to find.
 
 Getting this working is what would let §18 (the PCIe transport)'s already-built transport layer
 reach real devices behind it on this board. Concretely: the real M.2 NVMe slot

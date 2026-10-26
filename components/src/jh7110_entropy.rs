@@ -140,7 +140,7 @@ fn ack(bits: u32) {
 ///
 /// Returns `STAT` as read afterwards, the bench diagnostic: `STAT.R256` says whether `MODE.R256`
 /// took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.
-fn init() -> u32 {
+fn initialize() -> u32 {
     let r = regs();
     r.AUTO_AGE.set(0);
     r.AUTO_RQSTS.set(0);
@@ -202,10 +202,10 @@ fn generate() -> Option<[u8; 32]> {
 user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
-    // Put the block in a known state before asking it for anything, then seed it. `init` returns
-    // what `STAT` read back, which is the one snapshot taken before any generation has happened
-    // and so the only one that can say whether `MODE.R256` took.
-    let stat_after_init = init();
+    // Put the block in a known state before asking it for anything, then seed it. `initialize`
+    // returns what `STAT` read back, which is the one snapshot taken before any generation has
+    // happened and so the only one that can say whether `MODE.R256` took.
+    let stat_after_initialize = initialize();
     reseed_and_wait();
 
     // Draw the first 32 bytes before reporting, as `entropy.rs` does, so "up" means a client that
@@ -222,13 +222,14 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // clock, an undeasserted reset, or a base that is not the TRNG); a nonzero `STAT` with `SEEDED`
     // clear says the device is alive and the seeding sequence did not finish.
     let diagnostic = (u64::from(regs().STAT.get()) << 32) | u64::from(regs().ISTAT.get());
-    // Word 1 carries the byte count and, in its high half, the `STAT` seen right after `init`,
-    // whose `R256` says whether the 32 bytes are all device output or only 16 of them.
+    // Word 1 carries the byte count and, in its high half, the `STAT` seen right after
+    // `initialize`, whose `R256` says whether the 32 bytes are all device output or only 16 of
+    // them.
     let bytes_in_hand = pool.remaining() as u64;
     send(
         READY,
         report,
-        (u64::from(stat_after_init) << 32) | bytes_in_hand,
+        (u64::from(stat_after_initialize) << 32) | bytes_in_hand,
         diagnostic,
     );
 

@@ -41,9 +41,9 @@ lock (DECISIONS §11 (SMP: per-CPU run queues)).
 ## The counter rate comes from the device tree
 
 RISC-V has no `CNTFRQ_EL0`. The architected answer is the device tree's
-`/cpus/timebase-frequency`, which the binding requires. `init_frequency` reads it once, on the boot
-hart, before `init` arms the first deadline. `crates/machine_discovery`'s `cpu_list` reads `/cpus`
-first and falls back to the first hart's own property.
+`/cpus/timebase-frequency`, which the binding requires. `initialize_frequency` reads it once, on the
+boot hart, before `init` arms the first deadline. `crates/machine_discovery`'s `cpu_list` reads
+`/cpus` first and falls back to the first hart's own property.
 
 It is a separate call from `init` because `init` also runs on every secondary, which has no device
 tree pointer. The counter is machine-wide, so the boot hart's reading serves every hart.

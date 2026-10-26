@@ -38,8 +38,8 @@ each, so it would mean widening `invoke` itself.
 
 | ISA | What the grant opens | Closed by default | Cost when nothing is granted |
 |---|---|---|---|
-| aarch64 | `PMUSERENR_EL0.CR`, so EL0 may read `PMCCNTR_EL0` | yes, `timer::init` writes zero per core | a per-core load and a compare |
-| riscv64 | `scounteren.CY`, so U-mode may read `cycle` | yes, `timer::init` writes `TM` alone per hart | a `csrr` and a compare |
+| aarch64 | `PMUSERENR_EL0.CR`, so EL0 may read `PMCCNTR_EL0` | yes, `timer::initialize` writes zero per core | a per-core load and a compare |
+| riscv64 | `scounteren.CY`, so U-mode may read `cycle` | yes, `timer::initialize` writes `TM` alone per hart | a `csrr` and a compare |
 | `x86_64` | nothing: `rdtsc` is already ambient | **no**, and that is a stated position | nothing; the call compiles away |
 
 The `x86_64` row is an exception §19 (architectural parity is a tenet) should read as stated

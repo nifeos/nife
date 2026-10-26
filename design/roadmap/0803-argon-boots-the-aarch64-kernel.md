@@ -40,10 +40,11 @@ has built it. As the tree stands at `eb037d373`, the aarch64 kernel can only run
 | virtio-mmio window | `mmu.rs` `VIRTIO_MMIO_BASE` 0x0a00_0000, mapped and probed unconditionally | 32 slots | unknown; riscv64 found QEMU's constants colliding with the JH7110's map on radon's first boot |
 
 So a TX1 `booti` today jumps into an image linked 1 GiB below where it sits. The MMU-on jump
-lands on unmapped memory before `console::init`, and the board prints nothing. That silence would be
-read at the bench as a cabling or firmware problem, which is the expensive misreading this proposal
-exists to prevent. What is already right, read rather than assumed: the GIC's addresses come from the
-device tree (`mmu.rs`, step 6), as does the PSCI conduit, the PCIe windows and the DRAM extent.
+lands on unmapped memory before `console::initialize`, and the board prints nothing. That silence
+would be read at the bench as a cabling or firmware problem, which is the expensive misreading this
+proposal exists to prevent. What is already right, read rather than assumed: the GIC's addresses
+come from the device tree (`mmu.rs`, step 6), as does the PSCI conduit, the PCIe windows and the
+DRAM extent.
 
 ## What to build
 

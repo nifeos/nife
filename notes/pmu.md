@@ -123,8 +123,8 @@ The cycle counter does not run until the kernel starts it. Without `PMCR_EL0.E` 
 `PMCNTENSET_EL0.C`, `PMCCNTR_EL0` is a stopped counter that a thread holding milestone 229's grant
 can read legally and get the same number from every time (milestone 229 (build the
 cycle-counter grant DECISIONS 139 decided)). `kernel/src/arch/aarch64/pmu.rs` starts it
-on every core, from `timer::init`, gated on `ID_AA64DFR0_EL1.PMUVer` the way the `PMUSERENR_EL0`
-write beside it is:
+on every core, from `timer::initialize`, gated on `ID_AA64DFR0_EL1.PMUVer` the way the
+`PMUSERENR_EL0` write beside it is:
 
 1. `PMCCFILTR_EL0 = 0`: EL0 and EL1 counted, EL2 not, on every board. calef ruled it on
    2026-10-07 (UTC), option A1 in design/roadmap/0353-the-aarch64-half-of-74.md, because it decides
@@ -191,15 +191,15 @@ nife a second time with the filter matched to seL4's and labels that run.
 
 `CNTKCTL_EL1.EL0VCTEN` lets EL0 read the coarse virtual counter; `PMUSERENR_EL0` decides whether it
 may also read `PMCCNTR_EL0` and the event counters. The two writes are one decision split across two
-registers by the ISA, so both sit in `timer::init`; on riscv64 the same pair is the `TM` and `CY`
-bits of `scounteren`. `arch::pmu` starts the counter and does not write `PMUSERENR_EL0`, so one file
-owns every write of that register.
+registers by the ISA, so both sit in `timer::initialize`; on riscv64 the same pair is the `TM` and
+`CY` bits of `scounteren`. `arch::pmu` starts the counter and does not write `PMUSERENR_EL0`, so one
+file owns every write of that register.
 
-`timer::init` writes zero on every core. Every field of the register is an EL0 enable, Arm says
-each resets to an UNKNOWN value, and it is banked per core, so a core that skipped the write would
-run on whatever its firmware left. Linux writes the same zero for the same reason (`arm64: kernel:
-enforce pmuserenr_el0 initialization and restore`). Nothing in the tree reads `PMCCNTR_EL0` from EL0
-unless granted, so zero changes nothing a program was using.
+`timer::initialize` writes zero on every core. Every field of the register is an EL0 enable, Arm
+says each resets to an UNKNOWN value, and it is banked per core, so a core that skipped the write
+would run on whatever its firmware left. Linux writes the same zero for the same reason (`arm64:
+kernel: enforce pmuserenr_el0 initialization and restore`). Nothing in the tree reads `PMCCNTR_EL0`
+from EL0 unless granted, so zero changes nothing a program was using.
 
 A granted thread (DECISIONS 139 option 4) runs with exactly `CR`, bit 2, set: the field for an EL0
 read of `PMCCNTR_EL0` alone. `EN` would open every PMU register and `ER` the event counters. The

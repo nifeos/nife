@@ -170,11 +170,12 @@ impl ClockPage {
     /// # Safety
     ///
     /// `va` must be a mapped, 8-byte-aligned frame that is the clock page (or, for a writer about
-    /// to call [`init`](Self::init), a zeroed frame that is about to become one), and it must stay
-    /// mapped for as long as this value is used. Read-only is enough for [`read`](Self::read);
-    /// [`publish`](Self::publish) and [`init`](Self::init) need it mapped read/write, and calling
-    /// them on a read-only mapping faults the caller, which is the correct outcome: a process
-    /// without the set authority cannot set the clock, and finds out immediately.
+    /// to call [`initialize`](Self::initialize), a zeroed frame that is about to become one), and
+    /// it must stay mapped for as long as this value is used. Read-only is enough for
+    /// [`read`](Self::read); [`publish`](Self::publish) and [`initialize`](Self::initialize) need
+    /// it mapped read/write, and calling them on a read-only mapping faults the caller, which is
+    /// the correct outcome: a process without the set authority cannot set the clock, and finds out
+    /// immediately.
     pub const unsafe fn new(va: u64) -> Self {
         ClockPage {
             base: va as *const AtomicU64,
@@ -193,7 +194,10 @@ impl ClockPage {
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
     /// either a page it does not recognise (and reports unknown) or a fully initialised one. Never
     /// a recognised page with garbage in it.
-    pub fn init(&self) {
+    ///
+    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+    /// design/naming/spelled-out-rulings.md.
+    pub fn initialize(&self) {
         self.word(W_SEQ).store(0, Ordering::Relaxed);
         self.word(W_STATE).store(state::UNKNOWN, Ordering::Relaxed);
         self.word(W_OFFSET).store(0, Ordering::Relaxed);
@@ -622,7 +626,7 @@ mod tests {
     fn a_published_page_reads_back_and_counts_generations() {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
-            page.init();
+            page.initialize();
             assert_eq!(
                 page.read().state,
                 state::UNKNOWN,
@@ -654,7 +658,7 @@ mod tests {
     fn a_reader_never_returns_data_from_a_half_written_page() {
         let frame = [const { AtomicU64::new(0) }; WORDS];
         with_page(&frame, |page| {
-            page.init();
+            page.initialize();
             page.publish(state::RTC, 7);
             // Stand where a writer stands mid-publish: sequence odd, data torn (a new state with the
             // old offset). A single-threaded test cannot let `read` spin, so this checks the guard
@@ -731,8 +735,8 @@ mod interleavings {
     /// something two address spaces map and exactly wrong for a model checker, whose atomics carry
     /// per-execution state and cannot be conjured from an address. Leaking a real array of loom
     /// atomics and pointing the ordinary `ClockPage` at it means **the algorithm under test is the
-    /// algorithm that ships**: `read`, `publish` and `init` are not reimplemented here, only the
-    /// addressing is. The leak is per model execution and is four words wide.
+    /// algorithm that ships**: `read`, `publish` and `initialize` are not reimplemented here, only
+    /// the addressing is. The leak is per model execution and is four words wide.
     fn page() -> ClockPage {
         let words: &'static [AtomicU64; WORDS] = Box::leak(Box::new([
             AtomicU64::new(0),
@@ -777,7 +781,7 @@ mod interleavings {
 
         loom::model(|| {
             let page = page();
-            page.init();
+            page.initialize();
             page.publish(state::RTC, 1_000);
 
             let writer = {
@@ -808,7 +812,7 @@ mod interleavings {
     fn the_generation_a_reader_sees_matches_the_pair_it_read() {
         loom::model(|| {
             let page = page();
-            page.init();
+            page.initialize();
 
             let writer = {
                 let p = page;
@@ -840,7 +844,7 @@ mod interleavings {
 
         loom::model(|| {
             let page = page();
-            page.init();
+            page.initialize();
 
             let first = {
                 let p = page;
@@ -875,10 +879,10 @@ mod interleavings {
 
     /// **A page is recognisable only once it is whole.**
     ///
-    /// `init` writes the magic last, with a release, precisely so a reader racing the first publish
-    /// sees either a page it does not recognise (and reports `UNKNOWN`, which is the truth about a
-    /// frame nobody has published to) or a fully initialised one. Never a recognised page with
-    /// garbage in it. The release is the whole mechanism, and until now nothing checked it.
+    /// `initialize` writes the magic last, with a release, precisely so a reader racing the first
+    /// publish sees either a page it does not recognise (and reports `UNKNOWN`, which is the truth
+    /// about a frame nobody has published to) or a fully initialised one. Never a recognised page
+    /// with garbage in it. The release is the whole mechanism, and until now nothing checked it.
     #[test]
     fn a_racing_reader_sees_an_unrecognised_page_or_a_whole_one() {
         static SAW_UNRECOGNISED: Reached = Reached::new();
@@ -890,7 +894,7 @@ mod interleavings {
             let writer = {
                 let p = page;
                 thread::spawn(move || {
-                    p.init();
+                    p.initialize();
                     p.publish(state::RTC, 1_000);
                 })
             };

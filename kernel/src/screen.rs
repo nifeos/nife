@@ -69,9 +69,9 @@ static SCRATCH: SyncUnsafeCell<Scratch> = SyncUnsafeCell::new(Scratch([0; SCRATC
 pub(crate) type Why = &'static str;
 
 /// Bring up a `ramfb` and give it to the console. Returns the framebuffer and its character grid,
-/// for the caller's boot line. Must run before `arch::mmu::init`: only the coarse boot map reaches
-/// `fw_cfg`. The pixels are `.bss`, mapped at the same address by both maps, so the console keeps
-/// its pointer.
+/// for the caller's boot line. Must run before `arch::mmu::initialize`: only the coarse boot map
+/// reaches `fw_cfg`. The pixels are `.bss`, mapped at the same address by both maps, so the console
+/// keeps its pointer.
 ///
 /// # Errors
 ///
@@ -101,10 +101,10 @@ pub fn attach() -> Result<(Framebuffer, u32, u32), Why> {
     };
 
     // SAFETY: `node[0].start` is the register block the machine's own device tree describes,
-    // reached through the coarse boot map that covers it (this runs before `arch::mmu::init`).
-    // `scratch` is this module's `SCRATCH_LEN`-byte, eight-aligned static, and the physical address
-    // handed alongside it is that same static's, by the same translation `arch::mmu::map_everything`
-    // uses on the kernel image.
+    // reached through the coarse boot map that covers it (this runs before
+    // `arch::mmu::initialize`). `scratch` is this module's `SCRATCH_LEN`-byte, eight-aligned
+    // static, and the physical address handed alongside it is that same static's, by the same
+    // translation `arch::mmu::map_everything` uses on the kernel image.
     let mut config = unsafe {
         FirmwareConfiguration::new(
             crate::arch::mmu::phys_to_virt(node[0].start),
@@ -121,9 +121,9 @@ pub fn attach() -> Result<(Framebuffer, u32, u32), Why> {
     })?;
 
     // SAFETY: `PIXELS` is this module's own `.bss`, `SPAN` bytes of it, mapped writable by the boot
-    // map now and by the fine map after `arch::mmu::init` (it is inside the kernel image, which
-    // `map_everything` maps at its linked addresses). It is exactly the region the emulator was
-    // just told to scan out, and from here on the console's lock is the only writer.
+    // map now and by the fine map after `arch::mmu::initialize` (it is inside the kernel image,
+    // which `map_everything` maps at its linked addresses). It is exactly the region the emulator
+    // was just told to scan out, and from here on the console's lock is the only writer.
     let (cols, rows) = unsafe { crate::console::attach_screen(screen, pixels as u64) }
         .ok_or("the screen is too small for one character cell")?;
     Ok((screen, cols, rows))

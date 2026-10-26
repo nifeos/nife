@@ -72,7 +72,7 @@ fn the_sixteen_kib_granule_field_is_inverted() {
 }
 
 /// **A machine with no 4 KiB granule cannot run this kernel**, and the record has to say so rather
-/// than let `mmu::init` build tables the hardware will not walk.
+/// than let `mmu::initialize` build tables the hardware will not walk.
 ///
 /// No shipping `ARMv8` part is like this; it is architecturally permitted, and the check costs one
 /// comparison at boot. The same argument as the RISC-V ASID probe: the cheap check is worth having

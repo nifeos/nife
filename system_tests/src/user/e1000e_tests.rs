@@ -53,9 +53,9 @@ fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
     // `E1000_PHY_ID2_82574x`). Reading it proves the MDIO primitive the I219 bring-up stands on
     // (`crates/e1000e/src/pch/phy.rs`'s `read_mdic`) against a device rather than a simulation.
     assert_eq!(
-        w.phy_id, 0x0141_0cb0,
+        w.physical_layer_device_id, 0x0141_0cb0,
         "the PHY identifier read over MDIO was {:#010x}",
-        w.phy_id
+        w.physical_layer_device_id
     );
     let addr = crate::sched::ipc_receive(w.report)[0] as u32;
     assert_eq!(

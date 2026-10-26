@@ -21,7 +21,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  script/mutation-census | `--add` and `--add-run` do not refuse a census built from a partial set of shards | Refuse partial censuses in mutation-census --add | S  |
 |  script/preflight-queue (--act) | `--act` works from a stale queue snapshot and can comment on or dequeue a PR already handled | preflight-queue --act re-checks each entry before acting | S  |
 |  script/stack-frame-check (exceptions) | hand-kept exception table; a function that moves from boot to thread stack keeps its exemption unnoticed | Check the stack-frame exception table against where each function runs | S  |
-|  script/stack-frame-check (x86_64) | x86_64 left out of the default arch list because `iommu::init` is 12504 bytes; no decision on fix or exception (text may be stale next to stack-depth-check) | Decide the x86_64 iommu::init frame and put x86_64 in the default list | S  |
+|  script/stack-frame-check (x86_64) | x86_64 left out of the default arch list because `iommu::initialize` is 12504 bytes; no decision on fix or exception (text may be stale next to stack-depth-check) | Decide the x86_64 iommu::initialize frame and put x86_64 in the default list | S  |
 |  script/swish-check | a killed user thread is not a failure; the ratchet that fails on it is the "obvious next" one | swish-check fails on an unexpected killed user thread | S  |
 |  system_tests/src/main.rs | rule that tests use only the test-access facade is prose; the facade re-exports whole modules | Gate system_tests to the test-access surface | M  |
 |  xtask/src/boot_check.rs | emulator once found orphaned after many x86_64 boots, cause unknown | Find why boot-check leaves an orphaned QEMU | S  |

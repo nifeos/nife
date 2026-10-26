@@ -241,12 +241,12 @@ mod tests {
     /// failures are told apart. See the `## 2026-09-20` section of
     /// notes/mutation-testing/new-crate-backlog.md.
     fn bounded(what: &str, body: impl FnOnce() + Send + 'static) {
-        let (tx, rx) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
         thread::spawn(move || {
             body();
-            let _ = tx.send(());
+            let _ = sender.send(());
         });
-        match rx.recv_timeout(Duration::from_secs(5)) {
+        match receiver.recv_timeout(Duration::from_secs(5)) {
             Ok(()) => {}
             Err(RecvTimeoutError::Disconnected) => {
                 panic!("{what}: the body panicked; its own message is above")

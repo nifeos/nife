@@ -19,7 +19,7 @@ pub(crate) const CONSOLE_UART_PHYS: u64 = 0x1000_0000;
 pub(crate) const CONSOLE_UART_PHYS: u64 = 0xff_e701_4000;
 
 /// The console UART's node name in the device tree, carrying the address in its unit suffix.
-/// `console::configure_from_dtb` reads the register shape from it and `memory::init` the
+/// `console::configure_from_dtb` reads the register shape from it and `memory::initialize` the
 /// interrupt line. Witnessed by the fixture tests in `crates/machine_discovery/tests/`.
 #[cfg(not(feature = "board_th1520"))]
 pub(crate) const CONSOLE_UART_NODE: &[u8] = b"serial@10000000";

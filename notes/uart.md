@@ -42,7 +42,7 @@ You pay 10 bits to send 8. Start + 8 data + stop. So 115200 baud is ~11,520 byte
 not 14,400.
 
 8N1 (8 data bits, No parity, 1 stop bit) is the near-universal configuration, and it's
-what our `init()` sets up.
+what our `initialize()` sets up.
 
 ## Our code, line by line
 
@@ -118,7 +118,7 @@ LSR's Data Ready bit is cleared only by reading the byte out of the receive buff
 write-one-to-clear and does not time out, so it works as a mailbox rather than an event. A poll
 every five seconds cannot miss a keypress, and it needs no interrupt, no PLIC route and no
 userspace driver. Two readers use it: the self-rebooting soak, where any byte is the stop button,
-and the screen hold. `discard_rx` clears U-Boot's leftovers when a soak arms, because the
+and the screen hold. `discard_waiting_bytes` clears U-Boot's leftovers when a soak arms, because the
 firmware's autoboot countdown invites a stray keystroke, and a stop on boot 1 of 50 yields no
 distribution at all.
 
@@ -126,8 +126,9 @@ The RISC-V interrupt-delivery tests raise this UART's line in place of an SGI: s
 `IER.ETBEI` while `LSR.THRE` is set asserts at once. On real silicon the THRE interrupt is
 edge-triggered inside the chip. Setting `ETBEI` while THRE is still 0, as it is while the boot
 banner shifts out, only arms the interrupt for the next 0-to-1 edge, which a polling console with
-nothing queued may never make. So `enable_tx_interrupt` waits for THRE first. QEMU has no transmit
-latency, and THRE reads 1 the moment the previous write retires, so QEMU never shows the race.
+nothing queued may never make. So `enable_transmit_interrupt` waits for THRE first. QEMU has no
+transmit latency, and THRE reads 1 the moment the previous write retires, so QEMU never shows the
+race.
 
 ## Why the UART is every kernel's first device
 

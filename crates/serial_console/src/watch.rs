@@ -240,11 +240,11 @@ pub fn watch_with<R>(
 where
     R: Read + Send + 'static,
 {
-    let (tx, rx) = mpsc::channel();
+    let (sender, receiver) = mpsc::channel();
     // Detached on purpose: it is never joined. It may be parked in `read` when this function
     // returns, and the only thing that unparks it is the process exiting, which closes the
     // descriptor. Joining it would reintroduce exactly the hang this design removes.
-    thread::spawn(move || reader(source, &tx, stream_never_ends));
+    thread::spawn(move || reader(source, &sender, stream_never_ends));
 
     let started = Instant::now();
     let mut feeder = LineFeeder::new();
@@ -266,7 +266,7 @@ where
         // the loop responsive without busy-waiting; nothing here depends on it being that number.
         let wait = left.min(Duration::from_millis(250));
 
-        match rx.recv_timeout(wait) {
+        match receiver.recv_timeout(wait) {
             Ok(Read1::Bytes(chunk)) => {
                 bytes += chunk.len() as u64;
                 spoke_at = Some(Instant::now());
@@ -435,7 +435,7 @@ fn judge_the_tail(feeder: &LineFeeder, progress: &mut BootProgress, outcome: Out
     outcome
 }
 
-fn reader<R: Read>(mut source: R, tx: &mpsc::Sender<Read1>, stream_never_ends: bool) {
+fn reader<R: Read>(mut source: R, sender: &mpsc::Sender<Read1>, stream_never_ends: bool) {
     let mut buffer = [0u8; 4096];
     loop {
         match source.read(&mut buffer) {
@@ -447,17 +447,17 @@ fn reader<R: Read>(mut source: R, tx: &mpsc::Sender<Read1>, stream_never_ends: b
                     thread::sleep(Duration::from_millis(20));
                     continue;
                 }
-                let _ = tx.send(Read1::Ended);
+                let _ = sender.send(Read1::Ended);
                 return;
             }
             Ok(n) => {
-                if tx.send(Read1::Bytes(buffer[..n].to_vec())).is_err() {
+                if sender.send(Read1::Bytes(buffer[..n].to_vec())).is_err() {
                     return;
                 }
             }
             Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
             Err(e) => {
-                let _ = tx.send(Read1::Failed(e));
+                let _ = sender.send(Read1::Failed(e));
                 return;
             }
         }

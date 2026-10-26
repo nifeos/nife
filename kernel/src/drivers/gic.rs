@@ -69,7 +69,7 @@ const TIMER_PRIORITY: u8 = 0x80;
 /// The GIC reported a spurious interrupt: do nothing, and do NOT signal EOI.
 pub(crate) const SPURIOUS: u32 = 1023;
 
-/// The two register blocks' virtual addresses, as `init`'s caller named them.
+/// The two register blocks' virtual addresses, as `initialize`'s caller named them.
 pub(crate) struct Gic {
     gicd: u64,
     gicc: u64,
@@ -80,8 +80,8 @@ static GIC: IrqSafeMutex<Option<Gic>> = IrqSafeMutex::new(rank::IRQ_CONTROLLER, 
 impl Gic {
     /// Write the distributor's 32-bit register at `offset`.
     fn distributor_write32(&self, offset: usize, value: u32) {
-        // SAFETY: `init`'s caller promised a mapped GICv2 distributor (4 KiB) at `gicd`, and every
-        // offset passed here is a register above, 4-byte aligned and inside the block.
+        // SAFETY: `initialize`'s caller promised a mapped GICv2 distributor (4 KiB) at `gicd`, and
+        // every offset passed here is a register above, 4-byte aligned and inside the block.
         unsafe { core::ptr::write_volatile((self.gicd as usize + offset) as *mut u32, value) }
     }
 
@@ -94,7 +94,7 @@ impl Gic {
 
     /// Read this core's CPU interface's 32-bit register at `offset`.
     fn cpu_read32(&self, offset: usize) -> u32 {
-        // SAFETY: `init`'s caller promised a mapped GICv2 CPU interface at `gicc`, and every
+        // SAFETY: `initialize`'s caller promised a mapped GICv2 CPU interface at `gicc`, and every
         // offset passed here is a register above, 4-byte aligned and inside the block.
         unsafe { core::ptr::read_volatile((self.gicc as usize + offset) as *const u32) }
     }
@@ -123,7 +123,10 @@ pub(crate) unsafe fn identification(gicc: u64) -> u32 {
 ///
 /// # Safety
 /// The two addresses must name a real GICv2, mapped and exclusively ours.
-pub unsafe fn init(gicd: u64, gicc: u64) {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub unsafe fn initialize(gicd: u64, gicc: u64) {
     let gic = Gic { gicd, gicc };
 
     // Distributor: on. This is machine-wide, so **only the boot core does it** (this function).
@@ -131,17 +134,20 @@ pub unsafe fn init(gicd: u64, gicc: u64) {
 
     *GIC.lock() = Some(gic);
 
-    // The boot core's own CPU interface. Every other core brings up its own via `init_this_cpu`.
-    init_this_cpu();
+    // The boot core's own CPU interface. Every other core brings up its own via
+    // `initialize_this_cpu`.
+    initialize_this_cpu();
 }
 
-/// Bring up **this core's** GIC CPU interface. The distributor ([`init`]) is machine-wide and done
-/// once; the CPU interface is banked per core (same MMIO address, different hardware behind it), so
-/// each core must enable its own. Called by the boot core inside [`init`] and by every secondary as
-/// it comes online (DECISIONS §11).
-pub(crate) fn init_this_cpu() {
+/// Bring up **this core's** GIC CPU interface. The distributor ([`initialize`]) is machine-wide and
+/// done once; the CPU interface is banked per core (same MMIO address, different hardware behind
+/// it), so each core must enable its own. Called by the boot core inside [`initialize`] and by
+/// every secondary as it comes online (DECISIONS §11 (SMP: per-CPU run queues)).
+pub(crate) fn initialize_this_cpu() {
     let guard = GIC.lock();
-    let gic = guard.as_ref().expect("gic::init_this_cpu before gic::init");
+    let gic = guard
+        .as_ref()
+        .expect("gic::initialize_this_cpu before gic::initialize");
 
     // ORDER: the mask before the enable, or the interface goes live with the firmware's PMR,
     // often 0 ("deliver nothing") on a cold boot.
@@ -159,7 +165,7 @@ pub(crate) fn init_this_cpu() {
 /// for them.
 pub fn enable(intid: u32, target_cpu: usize) {
     let guard = GIC.lock();
-    let gic = guard.as_ref().expect("gic::enable before gic::init");
+    let gic = guard.as_ref().expect("gic::enable before gic::initialize");
 
     let reg = (intid / 32) as usize;
     let bit = intid % 32;
@@ -180,7 +186,7 @@ pub fn enable(intid: u32, target_cpu: usize) {
 /// notes/interrupts.md.
 pub(crate) fn disable(intid: u32) {
     let guard = GIC.lock();
-    let gic = guard.as_ref().expect("gic::disable before gic::init");
+    let gic = guard.as_ref().expect("gic::disable before gic::initialize");
 
     // Write-1-to-clear; zero bits leave their neighbours alone.
     let reg = (intid / 32) as usize;
@@ -196,7 +202,9 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
     debug_assert!(intid < 16, "SGIs are INTID 0-15");
     debug_assert!(target_cpu < 8, "GICv2 SGIR targets at most 8 cores");
     let guard = GIC.lock();
-    let gic = guard.as_ref().expect("gic::send_sgi before gic::init");
+    let gic = guard
+        .as_ref()
+        .expect("gic::send_sgi before gic::initialize");
 
     gic.distributor_write32(
         GICD_SGIR,
@@ -212,7 +220,9 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
 /// never took corrupts the GIC's priority stack.
 pub(crate) fn acknowledge() -> u32 {
     let guard = GIC.lock();
-    let gic = guard.as_ref().expect("gic::acknowledge before gic::init");
+    let gic = guard
+        .as_ref()
+        .expect("gic::acknowledge before gic::initialize");
     gic.cpu_read32(GICC_IAR) & GICC_IAR_INTID
 }
 
@@ -225,6 +235,6 @@ pub(crate) fn end_of_interrupt(intid: u32) {
     let guard = GIC.lock();
     let gic = guard
         .as_ref()
-        .expect("gic::end_of_interrupt before gic::init");
+        .expect("gic::end_of_interrupt before gic::initialize");
     gic.cpu_write32(GICC_EOIR, intid);
 }

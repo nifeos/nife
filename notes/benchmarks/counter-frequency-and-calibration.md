@@ -98,10 +98,11 @@ only. Ticks are raw `rdtsc` counts and are untouched.
 
 ### What was wrong, and by how much
 
-`init_frequency` timed one 10 ms PIT window by polling. The poll can only notice the terminal count
-late, never early, and the whole TSC delta was divided by exactly 10 ms. So a single descheduling of
-the QEMU thread inside that window inflated the stored rate without bound. Two hundred boots against
-a counter known to tick at 1000.000 MHz, on a host deliberately saturated to load 30 on eight cores:
+`initialize_frequency` timed one 10 ms PIT window by polling. The poll can only notice the terminal
+count late, never early, and the whole TSC delta was divided by exactly 10 ms. So a single
+descheduling of the QEMU thread inside that window inflated the stored rate without bound. Two
+hundred boots against a counter known to tick at 1000.000 MHz, on a host deliberately saturated to
+load 30 on eight cores:
 
 | Windows taken | Median error | 99th percentile | Worst of 200 | Boots wrong by >1% |
 |---|---|---|---|---|

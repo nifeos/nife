@@ -450,10 +450,10 @@ pub struct Thread {
     pub(crate) process: Option<crate::sched::ProcessId>,
 
     /// **Where this thread's capabilities are**: its own table, in its own TCB page, or its
-    /// process's, in the process's page (milestone 812). Written by `init_capability_table` and by
-    /// the join, both under `IPC_TABLES`, and read only through [`capability_table_of`] under the
-    /// same lock or by the core this thread runs on. A process page is never reclaimed while a
-    /// member points here (`sched::process`), so the pointer cannot outlive what it names.
+    /// process's, in the process's page (milestone 812). Written by `initialize_capability_table`
+    /// and by the join, both under `IPC_TABLES`, and read only through [`capability_table_of`]
+    /// under the same lock or by the core this thread runs on. A process page is never reclaimed
+    /// while a member points here (`sched::process`), so the pointer cannot outlive what it names.
     /// *(Field name provisional.)*
     pub(crate) capability_table: *const CapabilityTableLock,
 
@@ -582,7 +582,7 @@ pub(crate) unsafe fn fp_state_of(thread: *mut Thread) -> *mut crate::arch::fp::F
 ///
 /// # Safety
 /// As [`fp_state_of`], and the register file must not already hold anything worth keeping.
-pub(crate) unsafe fn init_fp_state(thread: *mut Thread) {
+pub(crate) unsafe fn initialize_fp_state(thread: *mut Thread) {
     // SAFETY: the caller's contract; one aligned write of a `Copy` value inside the page.
     unsafe { fp_state_of(thread).write(crate::arch::fp::FpState::INITIAL) };
 }
@@ -654,7 +654,8 @@ pub(crate) unsafe fn capability_table_of(thread: *mut Thread) -> *const Capabili
     // SAFETY: the caller's contract; one field read through the page pointer, no reference to the
     // `Thread` formed. Since milestone 812 (`std::thread::spawn` runs real threads in one address
     // space) the table may be its process's rather than its own, so the address is stored rather
-    // than computed; `init_capability_table` writes it before the thread's name is handed out.
+    // than computed; `initialize_capability_table` writes it before the thread's name is handed
+    // out.
     unsafe { (*thread).capability_table }
 }
 
@@ -670,17 +671,17 @@ pub(crate) unsafe fn own_capability_table_of(thread: *mut Thread) -> *const Capa
     unsafe { thread.cast::<u8>().add(CAPABILITY_TABLE_OFFSET).cast() }
 }
 
-/// Give a freshly-born thread its empty capability table. Called beside [`init_fp_state`] by both
-/// `Threads` inserts, for its reason: a `kmem` page is not zeroed.
+/// Give a freshly-born thread its empty capability table. Called beside [`initialize_fp_state`] by
+/// both `Threads` inserts, for its reason: a `kmem` page is not zeroed.
 ///
 /// # BUGS
-/// Stale, as [`init_fp_state`]'s: both page sources zero the page.
+/// Stale, as [`initialize_fp_state`]'s: both page sources zero the page.
 ///
 /// # Safety
 ///
 /// As [`capability_table_of`], and no other core may yet be able to reach the table: the thread is
 /// being born, so its name has not been handed to anyone.
-pub(crate) unsafe fn init_capability_table(thread: *mut Thread) {
+pub(crate) unsafe fn initialize_capability_table(thread: *mut Thread) {
     // SAFETY: the caller's contract; one aligned write inside the page, over bytes nothing reads.
     unsafe {
         let own = own_capability_table_of(thread);
@@ -703,7 +704,7 @@ unsafe impl intrusive_fifo::Node for Thread {
 unsafe impl Send for Thread {}
 
 impl Thread {
-    /// The thread we are already running on, at `sched::init`.
+    /// The thread we are already running on, at `sched::initialize`.
     ///
     /// It has no stack of its own (it uses the boot stack) and no saved context yet: the first
     /// `switch_to` *away* from it is what fills that in. Which is the neat part: a thread's

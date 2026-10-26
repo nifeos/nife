@@ -41,9 +41,9 @@ SMP tests (workstream A), and the two SGI interrupt tests. Three real things sur
 `sifive_test` finisher (`0x10_0000`) had to be mapped device-typed and reached through the direct
 map (the boot tour halts via `wfi` and never exercised `semihosting::exit` under paging). The timer
 watchdog needed wiring into riscv `timer::tick`. And a genuine race: a timer tick landing inside
-`sched::init` ran the deferred `schedule()` before the idle thread was registered ("nothing runnable
-and no idle thread"). It was fixed by masking interrupts across init, which aarch64 gets for free by bringing
-the scheduler up before enabling interrupts.
+`sched::initialize` ran the deferred `schedule()` before the idle thread was registered ("nothing
+runnable and no idle thread"). It was fixed by masking interrupts across init, which aarch64 gets
+for free by bringing the scheduler up before enabling interrupts.
 
 Follow-on (§19 (architectural parity)): the suite was at parity on the portable tests and not on the arch ones.
 `arch/aarch64` carried 21 unit tests and `arch/riscv64` carried zero, across the same three files, so

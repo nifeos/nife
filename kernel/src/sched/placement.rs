@@ -8,19 +8,19 @@ use super::*;
 
 /// Make this secondary core a scheduler participant, once, as it comes online.
 ///
-/// It adopts the context it is running on as this core's idle thread, as [`init`] does for the
-/// boot core. The core's run queue is then empty, so it runs its idle thread until work lands.
+/// It adopts the context it is running on as this core's idle thread, as [`initialize`] does for
+/// the boot core. The core's run queue is then empty, so it runs its idle thread until work lands.
 ///
 /// Context: interrupts masked (the caller has not enabled them yet); takes `IPC_TABLES`.
 pub fn adopt_secondary_idle() {
-    // This core is about to own threads, so its FP state is set up first, as `init` does.
-    crate::arch::fp::init();
+    // This core is about to own threads, so its FP state is set up first, as `initialize` does.
+    crate::arch::fp::initialize();
 
     let id = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard
             .as_mut()
-            .expect("adopt_secondary_idle before sched::init");
+            .expect("adopt_secondary_idle before sched::initialize");
         let id = sched
             .threads
             .insert_in_place(|tid, dst| {

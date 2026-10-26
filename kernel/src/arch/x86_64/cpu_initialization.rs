@@ -1,26 +1,31 @@
 //! **Bringing this CPU's architecture state up**: the GDT, TSS and IDT, and the control-register
 //! and PAT settings that close ring 3 off from what it must not reach.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+//! design/naming/spelled-out-rulings.md; a module is a thing, so it takes the noun
+//! `cpu_initialization` rather than the verb.
 
 use super::*;
 
 /// Bring this CPU's architecture state up: the GDT and TSS, then the IDT. The order is forced: an
 /// IDT entry names a code selector, so the GDT that selector indexes must be installed before any
 /// trap can be delivered through it.
-pub fn init() {
+///
+/// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
+/// design/naming/spelled-out-rulings.md.
+pub fn initialize() {
     // First, before this core prints anything or adopts the fine map: the fine map's framebuffer
     // pages select PAT entry 1, and on a core that has not run this, entry 1 is write-through.
     give_write_combining_a_page_attribute_entry();
     // SAFETY: called once per CPU during boot, with a valid stack, before interrupts are unmasked.
-    unsafe { segments::init() };
-    exceptions::init();
+    unsafe { segments::initialize() };
+    exceptions::initialize();
     // Per-CPU like the GDT and IDT, and before anything can `syscall`: until this runs, a
     // `syscall` jumps to whatever `IA32_LSTAR` holds, which on a cold machine is zero.
     //
-    // SAFETY: `segments::init` above installed the GDT these selectors index, and nothing has
+    // SAFETY: `segments::initialize` above installed the GDT these selectors index, and nothing has
     // entered ring 3 (nothing can: this is the boot CPU's own bring-up).
-    unsafe { exceptions::init_syscall() };
+    unsafe { exceptions::initialize_syscall() };
 
     close_performance_counters_to_ring3();
     close_ring3_pages_to_ring0_execution();
@@ -31,8 +36,8 @@ pub fn init() {
 /// (`mmu::direct_map_claims`).
 ///
 /// Entry 1 is rewritten without the cache flush the SDM asks for, because no mapping uses it yet:
-/// this runs before `mmu::init` builds the fine map, or on a secondary before
-/// `mmu::init_secondary` adopts it, and runs on every core so they agree. Without the PAT
+/// this runs before `mmu::initialize` builds the fine map, or on a secondary before
+/// `mmu::initialize_secondary` adopts it, and runs on every core so they agree. Without the PAT
 /// (`CPUID.1:EDX[16]`), `PWT` alone is write-through and the boot line says so. See
 /// notes/x86-port/cpu-state.md.
 ///
@@ -75,8 +80,8 @@ pub(super) fn close_ring3_pages_to_ring0_execution() {
     /// `CPUID.(7,0):EBX` bit 7 advertises SMEP.
     const CPUID_7_EBX_SMEP: u32 = 1 << 7;
 
-    // Leaf 7 exists only when leaf 0 says the maximum basic leaf reaches it; `isa::init` makes
-    // the same check before reading RDSEED out of the same word.
+    // Leaf 7 exists only when leaf 0 says the maximum basic leaf reaches it; `isa::initialize`
+    // makes the same check before reading RDSEED out of the same word.
     let offered = isa::cpuid(0).eax >= 7 && isa::cpuid_count(7, 0).ebx & CPUID_7_EBX_SMEP != 0;
     if !offered {
         crate::println!(

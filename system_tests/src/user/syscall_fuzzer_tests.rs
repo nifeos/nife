@@ -425,8 +425,8 @@ impl Model {
                 }
                 let msg = [a0, a1, a2, capability.badge, 0];
                 match self.receivers[ep].pop() {
-                    Some(rx) => {
-                        woken[rx] = Some(self.deliver_plain(rx, msg));
+                    Some(receiver) => {
+                        woken[receiver] = Some(self.deliver_plain(receiver, msg));
                         Some(Answer::ok(0))
                     }
                     None => {
@@ -445,12 +445,12 @@ impl Model {
                     return refuse(Error::NotPermitted);
                 }
                 let with_cap = method == r::RECEIVE_CAP;
-                let Some(tx) = self.senders[ep].pop() else {
+                let Some(sender) = self.senders[ep].pop() else {
                     self.receivers[ep].push(a);
                     self.park[a] = Park::Recv { ep, cap: with_cap };
                     return None;
                 };
-                Some(self.collect(a, tx, with_cap, woken))
+                Some(self.collect(a, sender, with_cap, woken))
             }
             r::SEND_CAP => self.send_capability(a, ep, capability, [a0, a1, a2], woken),
             r::CALL => self.call(a, ep, capability, [a0, a1], woken),
@@ -503,13 +503,13 @@ impl Model {
         match self.receivers[ep].pop() {
             // Receiver-first: only a RECEIVE_CAP takes the capability (§246, see
             // `plain_receive`).
-            Some(rx) => {
-                let s = match self.plain_receive(rx) {
-                    false => self.insert(rx, delegated),
+            Some(receiver) => {
+                let s = match self.plain_receive(receiver) {
+                    false => self.insert(receiver, delegated),
                     true => 0,
                 };
-                self.park[rx] = Park::Idle;
-                woken[rx] = Some(Answer::msg([a2, s, 0, capability.badge, 0]));
+                self.park[receiver] = Park::Idle;
+                woken[receiver] = Some(Answer::msg([a2, s, 0, capability.badge, 0]));
                 Some(Answer::ok(0))
             }
             None => {
@@ -538,16 +538,16 @@ impl Model {
             return refuse(Error::NotPermitted);
         }
         match self.receivers[ep].pop() {
-            Some(rx) if self.plain_receive(rx) => {
+            Some(receiver) if self.plain_receive(receiver) => {
                 // §246: the words arrive and the caller is answered Gone.
-                self.park[rx] = Park::Idle;
-                woken[rx] = Some(Answer::msg([a0, a1, 0, capability.badge, 0]));
+                self.park[receiver] = Park::Idle;
+                woken[receiver] = Some(Answer::msg([a0, a1, 0, capability.badge, 0]));
                 return refuse(Error::Gone);
             }
-            Some(rx) => {
-                let s = self.insert(rx, reply_of(a));
-                self.park[rx] = Park::Idle;
-                woken[rx] = Some(Answer::msg([a0, s, a1, capability.badge, reply_tag(s)]));
+            Some(receiver) => {
+                let s = self.insert(receiver, reply_of(a));
+                self.park[receiver] = Park::Idle;
+                woken[receiver] = Some(Answer::msg([a0, s, a1, capability.badge, reply_tag(s)]));
                 self.park[a] = Park::AwaitReply;
             }
             None => {
@@ -652,22 +652,23 @@ impl Model {
         }
     }
 
-    /// **Is parked receiver `rx` in a plain `RECEIVE`?** The model's one statement of §246 (a plain
-    /// `RECEIVE` never takes a capability), PROVISIONAL number, calef's ruling A of 2026-10-04 UTC:
-    /// a `SEND_CAP` or `CALL` that meets a plain `RECEIVE` installs nothing, whichever side parked
-    /// first. The sender-first half is in `collect`. Counted, so a green run says it was reached.
-    fn plain_receive(&mut self, rx: usize) -> bool {
-        let plain = matches!(self.park[rx], Park::Recv { cap: false, .. });
+    /// **Is the parked `receiver` in a plain `RECEIVE`?** The model's one statement of §246 (a
+    /// plain `RECEIVE` never takes a capability), PROVISIONAL number, calef's ruling A of
+    /// 2026-10-04 UTC: a `SEND_CAP` or `CALL` that meets a plain `RECEIVE` installs nothing,
+    /// whichever side parked first. The sender-first half is in `collect`. Counted, so a green run
+    /// says it was reached.
+    fn plain_receive(&mut self, receiver: usize) -> bool {
+        let plain = matches!(self.park[receiver], Park::Recv { cap: false, .. });
         self.census.cap_to_plain_receive += u64::from(plain);
         plain
     }
 
     /// A plain `SEND` reaching a parked receiver of either kind.
-    fn deliver_plain(&mut self, rx: usize, m: [u64; 5]) -> Answer {
-        let Park::Recv { cap, .. } = self.park[rx] else {
+    fn deliver_plain(&mut self, receiver: usize, m: [u64; 5]) -> Answer {
+        let Park::Recv { cap, .. } = self.park[receiver] else {
             unreachable!("a queued receiver is parked receiving")
         };
-        self.park[rx] = Park::Idle;
+        self.park[receiver] = Park::Idle;
         if cap {
             // Milestone 634: x1 is NO_CAP unless a capability was installed.
             Answer::msg([m[0], NO_CAP, m[1], m[3], 0])
@@ -676,18 +677,18 @@ impl Model {
         }
     }
 
-    /// Receiver `a` collects the parked sender `tx`.
+    /// Receiver `a` collects the parked `sender`.
     fn collect(
         &mut self,
         a: usize,
-        tx: usize,
+        sender: usize,
         with_cap: bool,
         woken: &mut [Option<Answer>; ACTORS],
     ) -> Answer {
-        match self.park[tx] {
+        match self.park[sender] {
             Park::Send { msg, badge, .. } => {
-                self.park[tx] = Park::Idle;
-                woken[tx] = Some(Answer::ok(0));
+                self.park[sender] = Park::Idle;
+                woken[sender] = Some(Answer::ok(0));
                 if with_cap {
                     Answer::msg([msg[0], NO_CAP, msg[1], badge, 0])
                 } else {
@@ -697,8 +698,8 @@ impl Model {
             Park::SendCap {
                 data, cap, badge, ..
             } => {
-                self.park[tx] = Park::Idle;
-                woken[tx] = Some(Answer::ok(0));
+                self.park[sender] = Park::Idle;
+                woken[sender] = Some(Answer::ok(0));
                 if with_cap {
                     let s = match cap {
                         Some(c) => self.insert(a, c),
@@ -712,15 +713,15 @@ impl Model {
                 }
             }
             Park::Call { msg, badge, .. } => {
-                self.park[tx] = Park::AwaitReply;
+                self.park[sender] = Park::AwaitReply;
                 if with_cap {
-                    let s = self.insert(a, reply_of(tx));
+                    let s = self.insert(a, reply_of(sender));
                     Answer::msg([msg[0], s, msg[1], badge, reply_tag(s)])
                 } else {
                     // §246: a plain RECEIVE answers the caller Gone (see `plain_receive`).
                     self.census.cap_to_plain_receive += 1;
-                    self.park[tx] = Park::Idle;
-                    woken[tx] = Some(Answer::err(Error::Gone));
+                    self.park[sender] = Park::Idle;
+                    woken[sender] = Some(Answer::err(Error::Gone));
                     Answer::msg([msg[0], msg[1], 0, badge, 0])
                 }
             }

@@ -142,7 +142,7 @@ SECTIONS
      * `mmu::phys_to_virt`/`virt_to_phys` are. */
     . = __boot_end + KERNEL_VA_BASE;
 
-    /* The image bounds `memory::init` reads, as HIGH virtual addresses (it passes them straight to
+    /* The image bounds `memory::initialize` reads, as HIGH virtual addresses (it passes them straight to
      * virt_to_phys). The image really begins at PHYS_START, in `.boot`, so this names that page's
      * high alias even though nothing executes there. */
     __image_start = KERNEL_VA_BASE + PHYS_START;
