@@ -491,7 +491,7 @@ impl Sim {
         let index = (word & 0x3f) as u8;
         let argument = *self.register(registers::CMDARG);
         self.commands.push((index, argument));
-        if *self.register(registers::CLKENA) & registers::CLKENA_ENABLE == 0 {
+        if *self.register(registers::CLKENA) & registers::CLKENA_CCLK_ENABLE == 0 {
             self.clockless_command = true;
         }
         let nth = self.seen[usize::from(index)];
@@ -513,11 +513,11 @@ impl Sim {
                 _ => {}
             }
         }
-        let mut rint = registers::INT_CD;
+        let mut rint = registers::RINTSTS_CD;
         match answer {
-            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::INT_RTO,
+            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::RINTSTS_RTO,
             None => {}
-            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::INT_RCRC,
+            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::RINTSTS_RCRC,
             Some(_) => {}
         }
         if self.late_answer > 0 {
@@ -527,7 +527,7 @@ impl Sim {
         }
         if answer.is_some() && word & registers::CMD_DATA_EXPECTED != 0 {
             let bytes = *self.register(registers::BYTCNT) as usize;
-            let write = word & registers::CMD_WRITE != 0;
+            let write = word & registers::CMD_WR != 0;
             self.direct_memory_access_write = write;
             if self.internal_direct_memory_access_active()
                 && let Some(m) = &self.memory
@@ -622,16 +622,18 @@ impl Sim {
                 self.end(&t);
                 return;
             }
-            *self.register(registers::RINTSTS) |= registers::INT_TXDR;
+            *self.register(registers::RINTSTS) |= registers::RINTSTS_TXDR;
         } else {
             if self.threshold_beyond_queue() {
                 // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
-                *self.register(registers::RINTSTS) |= registers::INT_FRUN | registers::INT_DTO;
+                *self.register(registers::RINTSTS) |=
+                    registers::RINTSTS_FRUN | registers::RINTSTS_DTO;
                 return;
             }
             if self.fail_next_read_crc && !t.extended_card_specific_data {
                 self.fail_next_read_crc = false;
-                *self.register(registers::RINTSTS) |= registers::INT_DCRC | registers::INT_DTO;
+                *self.register(registers::RINTSTS) |=
+                    registers::RINTSTS_DCRC | registers::RINTSTS_DTO;
                 return;
             }
             let limit = self.stall_after.unwrap_or(usize::MAX);
@@ -647,7 +649,7 @@ impl Sim {
                 0
             };
             if self.queue.len() > watermark {
-                *self.register(registers::RINTSTS) |= registers::INT_RXDR;
+                *self.register(registers::RINTSTS) |= registers::RINTSTS_RXDR;
             }
             if t.moved >= t.bytes || (self.end_early && t.moved >= limit) {
                 self.end(&t);
@@ -660,7 +662,7 @@ impl Sim {
     fn internal_direct_memory_access_active(&self) -> bool {
         let both = registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
         self.peek(registers::CTRL) & both == both
-            && self.peek(registers::BMOD) & registers::BMOD_DMA_ENABLE != 0
+            && self.peek(registers::BMOD) & registers::BMOD_DE != 0
             && self.memory.is_some()
     }
 
@@ -783,21 +785,21 @@ impl Sim {
             return false;
         }
         let t = self.peek(registers::CARDTHRCTL);
-        t & registers::CARDTHRCTL_READ_ENABLE != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
+        t & registers::CARDTHRCTL_RDTHREN != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
     }
 
     fn end(&mut self, t: &Transfer) {
         if t.write && self.crc_error_at_end {
-            *self.register(registers::RINTSTS) |= registers::INT_DCRC;
+            *self.register(registers::RINTSTS) |= registers::RINTSTS_DCRC;
             return;
         }
-        let mut rint = registers::INT_DTO;
+        let mut rint = registers::RINTSTS_DTO;
         if t.auto_stop {
             self.commands.push((12, 0));
             if self.late_acd > 0 {
                 self.acd_pending = self.late_acd;
             } else {
-                rint |= registers::INT_ACD;
+                rint |= registers::RINTSTS_ACD;
             }
         }
         *self.register(registers::RINTSTS) |= rint;
@@ -820,10 +822,10 @@ impl Registers for Sim {
                 *self.register(registers::CTRL) &= !registers::CTRL_ALL_RESET;
                 v
             }
-            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SOFTWARE_RESET != 0 => {
+            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SWR != 0 => {
                 let v = self.peek(registers::BMOD);
                 if !self.reset_stuck && !Self::holds(&mut self.bus_mode_resets_cleared) {
-                    *self.register(registers::BMOD) &= !registers::BMOD_SOFTWARE_RESET;
+                    *self.register(registers::BMOD) &= !registers::BMOD_SWR;
                 }
                 v
             }
@@ -855,7 +857,7 @@ impl Registers for Sim {
                 if self.acd_pending > 0 {
                     self.acd_pending -= 1;
                     if self.acd_pending == 0 {
-                        *self.register(registers::RINTSTS) |= registers::INT_ACD;
+                        *self.register(registers::RINTSTS) |= registers::RINTSTS_ACD;
                     }
                 }
                 self.pump();
@@ -883,8 +885,8 @@ impl Registers for Sim {
             registers::RINTSTS => *self.register(registers::RINTSTS) &= !value,
             registers::IDSTS => *self.register(registers::IDSTS) &= !value,
             registers::BMOD => {
-                if value & registers::BMOD_SOFTWARE_RESET != 0
-                    || value & registers::BMOD_DMA_ENABLE & !self.peek(registers::BMOD) != 0
+                if value & registers::BMOD_SWR != 0
+                    || value & registers::BMOD_DE & !self.peek(registers::BMOD) != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
@@ -918,16 +920,17 @@ impl Registers for Sim {
                 *self.register(registers::CTRL) = value;
             }
             registers::CMD => {
-                if value & registers::CMD_START != 0
-                    && value & registers::CMD_UPDATE_CLOCK_ONLY == 0
+                if value & registers::CMD_START_CMD != 0
+                    && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY == 0
                 {
                     self.command(value);
                 }
-                let stuck = self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_ONLY != 0;
+                let stuck =
+                    self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY != 0;
                 *self.register(registers::CMD) = if stuck {
                     value
                 } else {
-                    value & !registers::CMD_START
+                    value & !registers::CMD_START_CMD
                 };
             }
             registers::VERID | registers::HCON | registers::STATUS => {}

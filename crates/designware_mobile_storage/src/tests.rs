@@ -158,7 +158,7 @@ fn a_data_crc_error_is_reported_with_its_command() {
     let mut buffer = [0u8; BLOCK];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut buffer),
-        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::registers::INT_DCRC != 0
+        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::registers::RINTSTS_DCRC != 0
     ));
 }
 

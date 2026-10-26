@@ -6,7 +6,7 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-118 names: 84 no block, 33 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 82 no block, 35 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
 The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 29 rows say something other than `clear` or `term`. This file renames nothing.
 
@@ -107,8 +107,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `BMOD` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `BUFADDR` | item | `src/registers.rs` | provisional. | yes | term |
 | `CMD_RESPONSE_EXPECT` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CMD_SEND_INIT` | item | `src/registers.rs` | unrecorded. | yes | term |
-| `CMD_START` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CMD_SEND_INITIALIZATION` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was `CMD_SEND_INIT`. | yes | term |
+| `CMD_START_CMD` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was `CMD_START`. | yes | term |
 | `CTRL` | item | `src/registers.rs` | unrecorded. | yes | term |
 | `DSCADDR` | item | `src/registers.rs` | provisional. | yes | term |
 | `IDSTS` | item | `src/registers.rs` | provisional. | yes | term |
@@ -194,7 +194,15 @@ Each renamed row's status says which ruling renamed it and what it was.
   become `CardSpecificData` and `card_specific_data_raw`. `ext_csd` becomes
   `extended_card_specific_data` and `ocr` becomes `operation_conditions`. `rca` and `rca_arg`
   become `relative_card_address` and `relative_card_address_argument`, `IF_COND_ARG` becomes
-  `INTERFACE_CONDITION_ARGUMENT` and `UHS` becomes `ULTRA_HIGH_SPEED`. `raw` stays. The partition table's `Mbr` becomes `MasterBootRecord`
-  and `TYPE_PROTECTIVE_GPT` becomes
+  `INTERFACE_CONDITION_ARGUMENT` and `UHS` becomes `ULTRA_HIGH_SPEED`. `raw` stays. The partition
+  table's `Mbr` becomes `MasterBootRecord` and `TYPE_PROTECTIVE_GPT` becomes
   `TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE`. The device tree's `mmc@` node
   names and `starfive,jh7110-mmc` keep their spelling.
+- Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source keeps that source's
+  spelling strictly, and a name that only resembles it is corrected to it. Checked against
+  OpenBSD's `dwmmc.c`, the bits that drifted take its spelling: `CMD_START` becomes
+  `CMD_START_CMD`, `CMD_SEND_INIT` becomes `CMD_SEND_INITIALIZATION`, the other command bits,
+  the `CLKENA`, `BMOD` and `CARDTHRCTL` bits follow, and the `INT_*` bits become `RINTSTS_*`.
+  `VERID_240A` becomes Linux's `DW_MMC_240A`. Of the commands, `MMC_SEND_OP_COND` and
+  `SD_SET_BUS_WIDTH` become the specifications' `SEND_OP_COND` and `SET_BUS_WIDTH`. The `OCR_*`
+  constants copy no source's name, so they follow the normal rules as `OPERATION_CONDITIONS_*`.

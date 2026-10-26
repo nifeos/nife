@@ -35,10 +35,10 @@ pub(crate) const CLKSRC: u32 = 0x00c;
 /// Card clock enable (bit 0) and low-power gating (bit 16), per slot.
 pub(crate) const CLKENA: u32 = 0x010;
 /// Card clock on, slot 0.
-pub(crate) const CLKENA_ENABLE: u32 = 1 << 0;
+pub(crate) const CLKENA_CCLK_ENABLE: u32 = 1 << 0;
 /// Stop the card clock while the bus is idle. Memory cards only; an SDIO card needs the clock to
 /// signal its interrupt.
-pub(crate) const CLKENA_LOW_POWER: u32 = 1 << 16;
+pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
 /// Response timeout in bits 7:0 (card clocks), data read timeout in bits 31:8.
 pub(crate) const TMOUT: u32 = 0x014;
 /// Bus width per slot: bit 0 for 4-bit, bit 16 for 8-bit, neither for 1-bit.
@@ -55,31 +55,39 @@ pub(crate) const BYTCNT: u32 = 0x020;
 pub(crate) const INTMASK: u32 = 0x024;
 /// The next command's argument.
 pub(crate) const CMDARG: u32 = 0x028;
-/// The command register; writing it with [`CMD_START`] hands the command to the card interface.
+/// The command register; writing it with [`CMD_START_CMD`] hands the command to the card interface.
 pub(crate) const CMD: u32 = 0x02c;
 /// Set by software to issue; the controller clears it when it has taken the command.
-pub const CMD_START: u32 = 1 << 31;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source
+/// keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was
+/// `CMD_START` (OpenBSD's `dwmmc.c` writes `SDMMC_CMD_START_CMD`).
+pub const CMD_START_CMD: u32 = 1 << 31;
 /// Drive the command and data lines from the hold register (half a clock later). OpenBSD sets it
 /// on every command, on every `SoC` it supports, the JH7110 among them.
 pub(crate) const CMD_USE_HOLD_REG: u32 = 1 << 29;
 /// Load `CLKDIV`, `CLKSRC` and `CLKENA` into the card clock domain without sending anything.
-pub(crate) const CMD_UPDATE_CLOCK_ONLY: u32 = 1 << 21;
+pub(crate) const CMD_UPDATE_CLOCK_REGISTERS_ONLY: u32 = 1 << 21;
 /// Send 80 clocks of initialization sequence before this command. CMD0 only.
-pub const CMD_SEND_INIT: u32 = 1 << 15;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source
+/// keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was
+/// `CMD_SEND_INIT` (OpenBSD's `dwmmc.c` writes `SDMMC_CMD_SEND_INITIALIZATION`).
+pub const CMD_SEND_INITIALIZATION: u32 = 1 << 15;
 /// This command stops a data transfer in progress (CMD12).
-pub(crate) const CMD_STOP_ABORT: u32 = 1 << 14;
+pub(crate) const CMD_STOP_ABORT_CMD: u32 = 1 << 14;
 /// Wait for a previous data transfer to finish before sending.
-pub(crate) const CMD_WAIT_PREVIOUS_DATA: u32 = 1 << 13;
+pub(crate) const CMD_WAIT_PRVDATA_COMPLETE: u32 = 1 << 13;
 /// Send CMD12 automatically when the byte count is reached.
 pub(crate) const CMD_SEND_AUTO_STOP: u32 = 1 << 12;
 /// The data phase is a write to the card.
-pub(crate) const CMD_WRITE: u32 = 1 << 10;
+pub(crate) const CMD_WR: u32 = 1 << 10;
 /// The command has a data phase.
 pub(crate) const CMD_DATA_EXPECTED: u32 = 1 << 9;
 /// Check the response's CRC7.
 pub(crate) const CMD_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 /// The response is 136 bits (R2).
-pub(crate) const CMD_LONG_RESPONSE: u32 = 1 << 7;
+pub(crate) const CMD_RESPONSE_LENGTH: u32 = 1 << 7;
 /// The command has a response.
 pub const CMD_RESPONSE_EXPECT: u32 = 1 << 6;
 
@@ -94,41 +102,42 @@ pub(crate) const RESP3: u32 = 0x03c;
 /// Raw interrupt status, write one to clear. The driver's only completion signal.
 pub(crate) const RINTSTS: u32 = 0x044;
 /// Response error.
-pub(crate) const INT_RE: u32 = 1 << 1;
+pub(crate) const RINTSTS_RE: u32 = 1 << 1;
 /// Command done: the controller sent the command and, if one was expected, took the response.
-pub(crate) const INT_CD: u32 = 1 << 2;
+pub(crate) const RINTSTS_CD: u32 = 1 << 2;
 /// Data transfer over.
-pub(crate) const INT_DTO: u32 = 1 << 3;
+pub(crate) const RINTSTS_DTO: u32 = 1 << 3;
 /// Transmit FIFO data request: room at or below the transmit watermark.
-pub(crate) const INT_TXDR: u32 = 1 << 4;
+pub(crate) const RINTSTS_TXDR: u32 = 1 << 4;
 /// Receive FIFO data request: data above the receive watermark.
-pub(crate) const INT_RXDR: u32 = 1 << 5;
+pub(crate) const RINTSTS_RXDR: u32 = 1 << 5;
 /// Response CRC error.
-pub(crate) const INT_RCRC: u32 = 1 << 6;
+pub(crate) const RINTSTS_RCRC: u32 = 1 << 6;
 /// Data CRC error.
-pub(crate) const INT_DCRC: u32 = 1 << 7;
+pub(crate) const RINTSTS_DCRC: u32 = 1 << 7;
 /// Response timeout: no card answered.
-pub(crate) const INT_RTO: u32 = 1 << 8;
+pub(crate) const RINTSTS_RTO: u32 = 1 << 8;
 /// Data read timeout.
-pub(crate) const INT_DRTO: u32 = 1 << 9;
+pub(crate) const RINTSTS_DRTO: u32 = 1 << 9;
 /// Data starvation by host timeout: the FIFO was not serviced in time.
-pub(crate) const INT_HTO: u32 = 1 << 10;
+pub(crate) const RINTSTS_HTO: u32 = 1 << 10;
 /// FIFO underrun or overrun.
-pub(crate) const INT_FRUN: u32 = 1 << 11;
+pub(crate) const RINTSTS_FRUN: u32 = 1 << 11;
 /// Hardware locked write: a write to `CMD` while a command was still loading.
-pub(crate) const INT_HLE: u32 = 1 << 12;
+pub(crate) const RINTSTS_HLE: u32 = 1 << 12;
 /// Start bit error.
-pub(crate) const INT_SBE: u32 = 1 << 13;
+pub(crate) const RINTSTS_SBE: u32 = 1 << 13;
 /// Auto command done: the automatic CMD12 finished.
-pub(crate) const INT_ACD: u32 = 1 << 14;
+pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
 /// End bit error (read) or no CRC status (write).
-pub(crate) const INT_EBE: u32 = 1 << 15;
+pub(crate) const RINTSTS_EBE: u32 = 1 << 15;
 /// Every bit that means a data phase went wrong, as OpenBSD groups them.
-pub(crate) const INT_DATA_ERRORS: u32 = INT_EBE | INT_SBE | INT_HLE | INT_FRUN | INT_DCRC;
+pub(crate) const RINTSTS_DATA_ERR: u32 =
+    RINTSTS_EBE | RINTSTS_SBE | RINTSTS_HLE | RINTSTS_FRUN | RINTSTS_DCRC;
 /// Every bit that means a data phase timed out.
-pub(crate) const INT_DATA_TIMEOUTS: u32 = INT_HTO | INT_DRTO;
+pub(crate) const RINTSTS_DATA_TO: u32 = RINTSTS_HTO | RINTSTS_DRTO;
 /// Every bit below the SDIO interrupts, which is what a clear writes.
-pub(crate) const INT_ALL: u32 = 0xffff;
+pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 
 /// Status: FIFO count, busy, command state.
 pub const STATUS: u32 = 0x048;
@@ -209,11 +218,11 @@ pub const RST_N: u32 = 0x078;
 /// Internal DMA bus mode.
 pub const BMOD: u32 = 0x080;
 /// Reset the IDMAC's registers and state. Self-clearing.
-pub(crate) const BMOD_SOFTWARE_RESET: u32 = 1 << 0;
+pub(crate) const BMOD_SWR: u32 = 1 << 0;
 /// Fixed-length bursts on the bus, of the size `FIFOTH`'s burst field names.
-pub(crate) const BMOD_FIXED_BURST: u32 = 1 << 1;
+pub(crate) const BMOD_FB: u32 = 1 << 1;
 /// The IDMAC walks descriptors.
-pub(crate) const BMOD_DMA_ENABLE: u32 = 1 << 7;
+pub(crate) const BMOD_DE: u32 = 1 << 7;
 /// Poll demand: any write wakes an IDMAC suspended on a descriptor it did not own.
 pub(crate) const PLDMND: u32 = 0x084;
 /// The bus address of the first descriptor (32-bit addressing; `HCON` bit 27 clear).
@@ -259,11 +268,11 @@ pub const BUFADDR: u32 = 0x098;
 pub(crate) const CARDTHRCTL: u32 = 0x100;
 /// Enable the card read threshold, which the driver never does; the sim and tests name it.
 #[cfg(test)]
-pub(crate) const CARDTHRCTL_READ_ENABLE: u32 = 1 << 0;
+pub(crate) const CARDTHRCTL_RDTHREN: u32 = 1 << 0;
 
 /// The release `VERID` is compared at, Linux's `DW_MMC_240A`. Controllers before it put the data
 /// FIFO at `0x100`, from it on at `0x200`.
-pub(crate) const VERID_240A: u32 = 0x240a;
+pub(crate) const DW_MMC_240A: u32 = 0x240a;
 
 /// **Where the data FIFO is**, given `VERID`: `0x200` from release 2.40a, `0x100` before. Linux's
 /// `dw_mci_probe` makes the same test; OpenBSD assumes `0x200` and so supports only the later
@@ -275,7 +284,7 @@ pub(crate) const VERID_240A: u32 = 0x240a;
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_offset(verid: u32) -> u32 {
-    if verid & 0xffff < VERID_240A {
+    if verid & 0xffff < DW_MMC_240A {
         0x100
     } else {
         0x200
@@ -397,42 +406,42 @@ mod tests {
             (CTRL_INT_ENABLE, 0x10),
             (CTRL_DMA_ENABLE, 0x20),
             (CTRL_USE_INTERNAL_DMAC, 0x2000000),
-            (CLKENA_ENABLE, 0x1),
-            (CLKENA_LOW_POWER, 0x10000),
+            (CLKENA_CCLK_ENABLE, 0x1),
+            (CLKENA_CCLK_LOW_POWER, 0x10000),
             (CTYPE_4BIT, 0x1),
             (CTYPE_8BIT, 0x10000),
-            (CMD_START, 0x80000000),
+            (CMD_START_CMD, 0x80000000),
             (CMD_USE_HOLD_REG, 0x20000000),
-            (CMD_UPDATE_CLOCK_ONLY, 0x200000),
-            (CMD_SEND_INIT, 0x8000),
-            (CMD_STOP_ABORT, 0x4000),
-            (CMD_WAIT_PREVIOUS_DATA, 0x2000),
+            (CMD_UPDATE_CLOCK_REGISTERS_ONLY, 0x200000),
+            (CMD_SEND_INITIALIZATION, 0x8000),
+            (CMD_STOP_ABORT_CMD, 0x4000),
+            (CMD_WAIT_PRVDATA_COMPLETE, 0x2000),
             (CMD_SEND_AUTO_STOP, 0x1000),
-            (CMD_WRITE, 0x400),
+            (CMD_WR, 0x400),
             (CMD_DATA_EXPECTED, 0x200),
             (CMD_CHECK_RESPONSE_CRC, 0x100),
-            (CMD_LONG_RESPONSE, 0x80),
+            (CMD_RESPONSE_LENGTH, 0x80),
             (CMD_RESPONSE_EXPECT, 0x40),
-            (INT_RE, 0x2),
-            (INT_CD, 0x4),
-            (INT_DTO, 0x8),
-            (INT_TXDR, 0x10),
-            (INT_RXDR, 0x20),
-            (INT_RCRC, 0x40),
-            (INT_DCRC, 0x80),
-            (INT_RTO, 0x100),
-            (INT_DRTO, 0x200),
-            (INT_HTO, 0x400),
-            (INT_FRUN, 0x800),
-            (INT_HLE, 0x1000),
-            (INT_SBE, 0x2000),
-            (INT_ACD, 0x4000),
-            (INT_EBE, 0x8000),
+            (RINTSTS_RE, 0x2),
+            (RINTSTS_CD, 0x4),
+            (RINTSTS_DTO, 0x8),
+            (RINTSTS_TXDR, 0x10),
+            (RINTSTS_RXDR, 0x20),
+            (RINTSTS_RCRC, 0x40),
+            (RINTSTS_DCRC, 0x80),
+            (RINTSTS_RTO, 0x100),
+            (RINTSTS_DRTO, 0x200),
+            (RINTSTS_HTO, 0x400),
+            (RINTSTS_FRUN, 0x800),
+            (RINTSTS_HLE, 0x1000),
+            (RINTSTS_SBE, 0x2000),
+            (RINTSTS_ACD, 0x4000),
+            (RINTSTS_EBE, 0x8000),
             (STATUS_DATA_BUSY, 0x200),
-            (CARDTHRCTL_READ_ENABLE, 0x1),
-            (BMOD_SOFTWARE_RESET, 0x1),
-            (BMOD_FIXED_BURST, 0x2),
-            (BMOD_DMA_ENABLE, 0x80),
+            (CARDTHRCTL_RDTHREN, 0x1),
+            (BMOD_SWR, 0x1),
+            (BMOD_FB, 0x2),
+            (BMOD_DE, 0x80),
             (IDSTS_TI, 0x1),
             (IDSTS_RI, 0x2),
             (IDSTS_FBE, 0x4),
@@ -450,7 +459,7 @@ mod tests {
             assert_eq!(bit, value);
         }
         assert_eq!(CTRL_ALL_RESET, 0x7);
-        assert_eq!(INT_DATA_ERRORS, 0xb880);
-        assert_eq!(INT_DATA_TIMEOUTS, 0x600);
+        assert_eq!(RINTSTS_DATA_ERR, 0xb880);
+        assert_eq!(RINTSTS_DATA_TO, 0x600);
     }
 }
