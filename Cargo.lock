@@ -478,6 +478,9 @@ version = "0.1.0"
 [[package]]
 name = "file_allocation_table"
 version = "0.1.0"
+dependencies = [
+ "lamfat",
+]
 
 [[package]]
 name = "filesystem_contract"
@@ -785,6 +788,16 @@ dependencies = [
  "tock-registers",
  "video_terminal",
  "work_steal_slot",
+]
+
+[[package]]
+name = "lamfat"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7d4340238d6ebca31df00ac672df6615e3250247da0b31dfb8e2851e388fbf1"
+dependencies = [
+ "bitflags 2.13.2",
+ "log",
 ]
 
 [[package]]
