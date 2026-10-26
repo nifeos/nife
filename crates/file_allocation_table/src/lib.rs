@@ -28,6 +28,8 @@
 //!   check a piece's checksum, and it reads no file's bytes.
 //! - A directory read follows only the table the reader picks (FAT32's live table, or the first),
 //!   and never compares the mirrors.
+//! - A loop in a hostile table stops a chain walk only at the volume's cluster count: on a FAT32
+//!   volume claiming 268 million clusters, that many table reads, nearly all from the cached sector.
 //! - A boot sector is checked against itself, never against the device's length, which the
 //!   [`SectorDevice`] trait does not report; a read past the end is the device's error to return.
 //! - A FAT32 layout under 65525 clusters (which `mkfs.fat -F 32` makes with a warning) is refused,

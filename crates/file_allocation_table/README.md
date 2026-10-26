@@ -1,18 +1,36 @@
 # file_allocation_table
 
-Enough of FAT32 to create an EFI system partition holding one boot file, as pure computation. You
-give it a partition size, a file length and a file name; it tells you what every metadata sector
-must contain, and you write those sectors and then the file's bytes. It does no I/O, needs no
-allocator (`no_std`), and writes VFAT long-name entries for a name that is not 8.3, such as
-`BOOTRISCV64.EFI`.
+A FAT12, FAT16 and FAT32 filesystem as pure computation, growing in stages. It does no I/O and
+needs no allocator (`no_std`). Two halves exist.
 
-It is a `mkfs`, not a filesystem: one volume, one file at `\EFI\BOOT\<name>`, then finished. It
-cannot read, open, extend, delete or rename anything yet. Read support, FAT12 and FAT16, and a
-general format are planned.
+The reader opens a volume through `SectorDevice`, a trait you implement over anything that reads
+whole sectors. It checks the boot sector, decodes the file allocation table, walks cluster chains
+and reads directories slot by slot. Every byte it reads is hostile: it never panics, never reads
+outside the volume, and no table contents can make a chain walk loop. It does not yet assemble long
+names or read a file's bytes.
+
+The writer creates an EFI system partition holding one boot file. You give it a partition size, a
+file length and a file name; it tells you what every metadata sector must contain, and you write
+those sectors and then the file's bytes. It writes VFAT long-name entries for a name that is not
+8.3, such as `BOOTRISCV64.EFI`. Extending, deleting, renaming and a general format are planned.
 
 ## What is proven
 
-Three Kani harnesses cover the long-name writer:
+Nine Kani harnesses cover the reader. The four on the boot sector cover every 512-byte sector:
+what the parse accepts lies inside the volume, the FAT type is the cluster count's, the table has
+an entry for every cluster, and only a data cluster has sectors. Five more cover the rest:
+
+- `every_entry_lies_inside_the_table` and `an_entry_decodes_by_its_markers`: for every boot
+  sector and cluster number, a table entry lies inside the table, and every raw value decodes by
+  the specification's markers.
+- `no_chain_walk_outlasts_the_volume`: over a table whose entries change on every read, a walk
+  yields only data clusters, at most as many as the volume holds, then ends. Volumes of one to
+  eight clusters.
+- `every_slot_parses_as_its_bytes_say` and `a_directory_reads_only_its_own_sectors`: every
+  32-byte slot parses as its first byte and attributes say, and a directory read visits only its
+  region's or its clusters' sectors.
+
+Three cover the long-name writer:
 
 - `the_checksum_is_the_specifications_loop`: the checksum that binds a long name to its short
   alias equals the specification's shift-and-add loop for every one of the 2^88 short names.
@@ -26,9 +44,14 @@ Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.
 
-The volume layout itself (boot sector, `FSInfo`, both FATs, directory entries, cluster alignment)
-is covered by unit tests, and an ignored test has the host's own FAT driver check and read an image
+Unit tests cover the volume layout (boot sector, `FSInfo`, both FATs, directory entries, cluster
+alignment), and an ignored test has the host's own FAT driver check and read an image
 (`cargo test -- --ignored`, on macOS).
+
+`tests/the_oracle_agrees.rs` checks the crate against rust-fatfs (the `lamfat` dev-dependency):
+rust-fatfs writes a tree on FAT12, FAT16 and FAT32 and this crate must read the same names, sizes,
+bytes and free clusters, and rust-fatfs must read the writer's volume. Where `fsck.fat` or
+`fsck_msdos` is installed, every image must pass it too.
 
 ## Usage
 
@@ -61,7 +84,9 @@ that does not fit.
 - Every timestamp is zero.
 - The `FSInfo` free-cluster count is written once.
 - Not crash-atomic, and there is no journal, since FAT has none.
-- Nothing in the crate reads back what it writes.
+- The reader stops at directory slots: it reports long-name pieces as stored, without assembling
+  them or checking their checksum, and reads no file's bytes.
+- A loop in a hostile table stops a chain walk only at the volume's cluster count.
 
 ## Minimum Rust version
 
