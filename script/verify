@@ -384,7 +384,8 @@ non_volatile_memory_express	6	the queue rings never index out, and the doorbell/
 e1000e	2	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 usb	170	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
-extensible_host_controller_interface	24	the xHCI driver is never mapped its MSI-X page, and the ring cycle arithmetic stays in bounds
+extensible_host_controller_interface	8	the ring cycle arithmetic stays in bounds
+extensible_host_controller_interface_contract	16	the xHCI driver is never mapped its MSI-X page, and the spawn handoff round-trips
 direct_memory_access_validator	148	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	22	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	47	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer

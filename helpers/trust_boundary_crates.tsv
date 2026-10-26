@@ -70,6 +70,7 @@ environment_contract	shared	components,kernel,std
 environment_proto	shared	retired
 environment_protocol	shared	retired
 extensible_host_controller_interface	shared	components,kernel
+extensible_host_controller_interface_contract	shared	components,kernel
 file_allocation_table	userspace	components
 filesystem_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 filesystem_fixture	shared	components,fixtures,kernel,redoxfs_server,std_exerciser
@@ -175,6 +176,7 @@ top	userspace	components
 universally_unique_identifier	shared	retired
 uptime	userspace	components
 usb	userspace	components
+usb_keyboard_report	shared	components,kernel
 user_heap	userspace	retired
 user_mode_heap	userspace	retired
 user_mode_runtime	userspace	components,fixtures,jig,redoxfs_server

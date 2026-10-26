@@ -16,7 +16,8 @@
 //! Name: provisional (milestone 242 (USB host and HID)). The crate's name, as
 //! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
 
-use extensible_host_controller_interface::{Capabilities, Handoff, WindowRefusal, dma, regs};
+use extensible_host_controller_interface::{Capabilities, dma, regs};
+use extensible_host_controller_interface_contract::{Handoff, WindowRefusal};
 
 use crate::arch::mmu;
 
@@ -75,13 +76,16 @@ pub fn bring_up() -> Result<Found, Absent> {
     crate::xhci_port_probe::before_handoff(regs_va, dev.bar_bytes);
     take_from_firmware(regs_va, &caps, dev.bar_bytes);
 
-    let registers =
-        extensible_host_controller_interface::register_window(&caps, dev.bar_bytes, &dev.withheld)
-            .map_err(Absent::Window)?;
+    let registers = extensible_host_controller_interface_contract::register_window(
+        &caps,
+        dev.bar_bytes,
+        &dev.withheld,
+    )
+    .map_err(Absent::Window)?;
     if caps.scratchpads > dma::MAX_SCRATCHPADS {
         return Err(Absent::TooManyScratchpads(caps.scratchpads));
     }
-    let pages = dma::region_pages(caps.scratchpads);
+    let pages = extensible_host_controller_interface_contract::region_pages(caps.scratchpads);
 
     // Confinement is checked before anything is allocated for it, because the answer does not
     // depend on the region: whether the IOMMU unit this kernel runs owns this requester id.

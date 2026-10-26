@@ -224,6 +224,7 @@ dependencies = [
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
+ "extensible_host_controller_interface_contract",
  "file_allocation_table",
  "filesystem_contract",
  "filesystem_fixture",
@@ -261,6 +262,7 @@ dependencies = [
  "top",
  "uptime",
  "usb",
+ "usb_keyboard_report",
  "user_mode_runtime",
  "uuid",
  "video_terminal",
@@ -474,6 +476,13 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0"
+
+[[package]]
+name = "extensible_host_controller_interface_contract"
+version = "0.1.0"
+dependencies = [
+ "extensible_host_controller_interface",
+]
 
 [[package]]
 name = "file_allocation_table"
@@ -749,6 +758,7 @@ dependencies = [
  "entropy_contract",
  "environment_contract",
  "extensible_host_controller_interface",
+ "extensible_host_controller_interface_contract",
  "filesystem_contract",
  "filesystem_fixture",
  "firmware_configuration",
@@ -783,6 +793,7 @@ dependencies = [
  "test_times",
  "thread_wake_handshake",
  "tock-registers",
+ "usb_keyboard_report",
  "video_terminal",
  "work_steal_slot",
 ]
@@ -1592,6 +1603,10 @@ version = "0.1.0"
 
 [[package]]
 name = "usb"
+version = "0.1.0"
+
+[[package]]
+name = "usb_keyboard_report"
 version = "0.1.0"
 
 [[package]]

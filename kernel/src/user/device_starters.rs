@@ -31,7 +31,7 @@ pub(super) fn boot_usb_keyboard() -> Option<usb_keyboard_service::Wiring> {
             usb_keyboard_service::describe(&w.report);
             #[cfg(feature = "xhci_port_probe")]
             crate::xhci_port_probe::after_report();
-            (w.report[0] != extensible_host_controller_interface::report::FAILED).then_some(w)
+            (w.report[0] != usb_keyboard_report::BRING_UP_FAILED).then_some(w)
         }
         Err(why) => {
             usb_keyboard_service::describe_refusal(why);

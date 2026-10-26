@@ -164,8 +164,11 @@ e1000e = { version = "0.1.0", path = "../crates/e1000e" }
 designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
-# module is its volatile half, the same split as `non_volatile_memory_express` above.
+# module is its volatile half, the same split as `non_volatile_memory_express` above. The window and
+# the handoff are the contract crate's, and the driver's bring-up report is `usb_keyboard_report`'s.
 extensible_host_controller_interface = { version = "0.1.0", path = "../crates/extensible_host_controller_interface" }
+extensible_host_controller_interface_contract = { version = "0.1.0", path = "../crates/extensible_host_controller_interface_contract" }
+usb_keyboard_report = { version = "0.1.0", path = "../crates/usb_keyboard_report" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_fifo = { version = "0.1.0", path = "../crates/intrusive_fifo" }

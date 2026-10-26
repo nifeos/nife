@@ -1,6 +1,4 @@
 //! **The rings**: the producer rings the driver fills and the event ring it drains.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
@@ -13,18 +11,18 @@ use super::*;
 /// the cycle flips for the next lap:
 ///
 /// ```
-/// use extensible_host_controller_interface::{ProducerRing, Trb};
+/// use extensible_host_controller_interface::{ProducerRing, TransferRequestBlock};
 ///
 /// let mut ring = ProducerRing::new(0x1000, 4);
-/// let a = ring.enqueue(Trb::enable_slot());
+/// let a = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!((a.index, a.trb.cycle(), a.link), (0, true, None));
-/// ring.enqueue(Trb::enable_slot());
-/// let c = ring.enqueue(Trb::enable_slot());
+/// ring.enqueue(TransferRequestBlock::enable_slot());
+/// let c = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!(c.index, 2);
 /// let (at, link) = c.link.unwrap(); // the third TRB fills the lap, so the link is written too
 /// assert_eq!(at, 3);
 /// assert!(link.cycle()); // stamped with the lap it ends, so the controller follows it
-/// let d = ring.enqueue(Trb::enable_slot());
+/// let d = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!((d.index, d.trb.cycle()), (0, false)); // second lap, cycle flipped
 /// assert_eq!(ring.address_of(d.index), 0x1000);
 /// ```
@@ -43,13 +41,13 @@ pub struct ProducerRing {
 /// matches, the controller treats it as not yet produced, so the dword that carries it goes in
 /// after the rest.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Placement {
+pub struct TransferRequestBlockPlacement {
     /// Where the TRB goes.
     pub index: u16,
     /// The TRB, cycle stamped.
-    pub trb: Trb,
+    pub trb: TransferRequestBlock,
     /// The link TRB and where it goes, when this enqueue filled the lap.
-    pub link: Option<(u16, Trb)>,
+    pub link: Option<(u16, TransferRequestBlock)>,
 }
 
 impl ProducerRing {
@@ -84,17 +82,20 @@ impl ProducerRing {
     }
 
     /// **Place one TRB**, and the link if this fills the lap.
-    pub fn enqueue(&mut self, trb: Trb) -> Placement {
+    pub fn enqueue(&mut self, trb: TransferRequestBlock) -> TransferRequestBlockPlacement {
         let index = self.enqueue;
         let placed = trb.with_cycle(self.cycle);
         self.enqueue += 1;
         let mut link = None;
         if self.enqueue == self.entries - 1 {
-            link = Some((self.enqueue, Trb::link(self.base).with_cycle(self.cycle)));
+            link = Some((
+                self.enqueue,
+                TransferRequestBlock::link(self.base).with_cycle(self.cycle),
+            ));
             self.enqueue = 0;
             self.cycle = !self.cycle;
         }
-        Placement {
+        TransferRequestBlockPlacement {
             index,
             trb: placed,
             link,
@@ -133,7 +134,7 @@ impl EventRing {
 
     /// Whether `trb`, read at [`index`](Self::index), is an event the controller has written
     /// this lap.
-    pub const fn is_ready(&self, trb: &Trb) -> bool {
+    pub const fn is_ready(&self, trb: &TransferRequestBlock) -> bool {
         trb.cycle() == self.cycle
     }
 

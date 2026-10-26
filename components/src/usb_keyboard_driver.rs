@@ -43,15 +43,16 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use extensible_host_controller_interface::report::{self, Step};
 use extensible_host_controller_interface::{
-    Capabilities, Event, EventRing, Handoff, PAGE, Placement, ProducerRing, Trb, completion,
-    context, dma, port, regs,
+    Capabilities, Event, EventRing, PAGE_BYTES, ProducerRing, TransferRequestBlock,
+    TransferRequestBlockPlacement, completion, context, dma, port, regs,
 };
+use extensible_host_controller_interface_contract::Handoff;
 use line_editor::proto;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
+use usb_keyboard_report::{self as report, BringUpStep};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
     call, exit, interrupt_acknowledge, interrupt_wait, monotonic_nanos, receive_cap, send,
@@ -74,14 +75,19 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const REGS: MappedWindow = unsafe {
     MappedWindow::new(
         REGS_VA,
-        extensible_host_controller_interface::MAX_REGISTER_PAGES * PAGE,
+        extensible_host_controller_interface_contract::MAX_REGISTER_PAGES * PAGE_BYTES,
     )
 };
 // SAFETY: the kernel maps the WORK_PAGES pages read/write at DMA_VA before `_start` runs.
-const DMA: MappedWindow = unsafe { MappedWindow::new(DMA_VA, dma::WORK_PAGES * PAGE) };
+const DMA: MappedWindow = unsafe {
+    MappedWindow::new(
+        DMA_VA,
+        extensible_host_controller_interface_contract::WORK_PAGES * PAGE_BYTES,
+    )
+};
 // SAFETY: the control buffer page, inside the DMA window above.
 const CONTROL_BUFFER: MappedWindow =
-    unsafe { MappedWindow::new(DMA_VA + dma::CONTROL_BUFFER * PAGE, PAGE) };
+    unsafe { MappedWindow::new(DMA_VA + dma::CONTROL_BUFFER * PAGE_BYTES, PAGE_BYTES) };
 
 /// One millisecond, in the units [`monotonic_nanos`] counts.
 const MS: u64 = 1_000_000;
@@ -114,7 +120,7 @@ fn barrier() {
 }
 
 /// A failure: where, and one word of detail.
-type Fail = (Step, u32);
+type Fail = (BringUpStep, u32);
 
 /// The keyboard being served.
 #[derive(Clone, Copy)]
@@ -150,8 +156,8 @@ fn past(deadline: u64) -> bool {
 }
 
 fn zero_page(page: u64) {
-    for off in (0..PAGE).step_by(8) {
-        DMA.w64(page * PAGE + off, 0);
+    for off in (0..PAGE_BYTES).step_by(8) {
+        DMA.w64(page * PAGE_BYTES + off, 0);
     }
 }
 
@@ -175,7 +181,7 @@ impl Host {
     }
 
     fn phys(&self, page: u64) -> u64 {
-        self.dma_phys + page * PAGE
+        self.dma_phys + page * PAGE_BYTES
     }
 
     fn ring_doorbell(&self, slot: u8, target: u32) {
@@ -184,8 +190,8 @@ impl Host {
     }
 
     /// Write one TRB, the cycle dword last.
-    fn write_trb(page: u64, index: u16, t: Trb) {
-        let at = page * PAGE + u64::from(index) * 16;
+    fn write_trb(page: u64, index: u16, t: TransferRequestBlock) {
+        let at = page * PAGE_BYTES + u64::from(index) * 16;
         DMA.w32(at, t.0[0]);
         DMA.w32(at + 4, t.0[1]);
         DMA.w32(at + 8, t.0[2]);
@@ -193,14 +199,14 @@ impl Host {
         DMA.w32(at + 12, t.0[3]);
     }
 
-    fn read_trb(page: u64, index: u16) -> Trb {
-        let at = page * PAGE + u64::from(index) * 16;
+    fn read_trb(page: u64, index: u16) -> TransferRequestBlock {
+        let at = page * PAGE_BYTES + u64::from(index) * 16;
         let d3 = DMA.r32(at + 12);
         barrier();
-        Trb([DMA.r32(at), DMA.r32(at + 4), DMA.r32(at + 8), d3])
+        TransferRequestBlock([DMA.r32(at), DMA.r32(at + 4), DMA.r32(at + 8), d3])
     }
 
-    fn put(page: u64, p: Placement) {
+    fn put(page: u64, p: TransferRequestBlockPlacement) {
         Host::write_trb(page, p.index, p.trb);
         if let Some((at, link)) = p.link {
             Host::write_trb(page, at, link);
@@ -242,7 +248,7 @@ impl Host {
     }
 
     /// **One command, to its completion.** The slot the completion names, on success.
-    fn command(&mut self, trb: Trb) -> Result<u8, Fail> {
+    fn command(&mut self, trb: TransferRequestBlock) -> Result<u8, Fail> {
         let p = self.commands.enqueue(trb);
         let at = self.commands.address_of(p.index);
         Host::put(dma::COMMAND_RING, p);
@@ -252,27 +258,33 @@ impl Host {
             &|e| matches!(e, Event::Command { trb, .. } if *trb == at),
         ) {
             Some(Event::Command { code, slot, .. }) if code == completion::SUCCESS => Ok(slot),
-            Some(Event::Command { code, .. }) => Err((Step::CommandFailed, u32::from(code))),
-            _ => Err((Step::CommandTimeout, trb.kind() as u32)),
+            Some(Event::Command { code, .. }) => Err((BringUpStep::CommandFailed, u32::from(code))),
+            _ => Err((BringUpStep::CommandTimeout, trb.kind() as u32)),
         }
     }
 
     /// **One control transfer on endpoint 0 of `slot`**, data into the control buffer. The number
     /// of bytes the data stage moved, on success.
     fn transfer(&mut self, slot: u8, setup: SetupPacket) -> Result<usize, Fail> {
-        let len = setup.length.min(PAGE as u16);
+        let len = setup.length.min(PAGE_BYTES as u16);
         let inbound = setup.is_device_to_host();
         let data_in = (len > 0).then_some(inbound);
-        let p = self.control.enqueue(Trb::setup(setup.to_u64(), data_in));
+        let p = self
+            .control
+            .enqueue(TransferRequestBlock::setup(setup.to_u64(), data_in));
         Host::put(dma::CONTROL_RING, p);
         let mut data_at = None;
         if len > 0 {
             let buffer = self.phys(dma::CONTROL_BUFFER);
-            let p = self.control.enqueue(Trb::data(buffer, len, inbound));
+            let p = self
+                .control
+                .enqueue(TransferRequestBlock::data(buffer, len, inbound));
             data_at = Some(self.control.address_of(p.index));
             Host::put(dma::CONTROL_RING, p);
         }
-        let p = self.control.enqueue(Trb::status(len > 0 && inbound));
+        let p = self
+            .control
+            .enqueue(TransferRequestBlock::status(len > 0 && inbound));
         let status_at = self.control.address_of(p.index);
         Host::put(dma::CONTROL_RING, p);
         self.ring_doorbell(slot, 1);
@@ -290,7 +302,7 @@ impl Host {
                 ..
             }) = e
             else {
-                return Err((Step::TransferTimeout, u32::from(setup.request)));
+                return Err((BringUpStep::TransferTimeout, u32::from(setup.request)));
             };
             match code {
                 completion::SUCCESS | completion::SHORT_PACKET if trb == status_at => {
@@ -305,7 +317,7 @@ impl Host {
                     // A stall halts the endpoint; until it is reset and its ring moved past what
                     // the failed transfer left, nothing else on endpoint 0 runs.
                     self.recover(slot, 1, true)?;
-                    return Err((Step::TransferFailed, u32::from(code)));
+                    return Err((BringUpStep::TransferFailed, u32::from(code)));
                 }
             }
         }
@@ -313,18 +325,18 @@ impl Host {
 
     /// Reset a halted endpoint and point it at the ring's next free entry.
     fn recover(&mut self, slot: u8, dci: u8, control: bool) -> Result<(), Fail> {
-        self.command(Trb::reset_endpoint(slot, dci))?;
+        self.command(TransferRequestBlock::reset_endpoint(slot, dci))?;
         let pointer = if control {
             self.control.dequeue_pointer()
         } else {
             self.interrupt.dequeue_pointer()
         };
-        self.command(Trb::set_dequeue(pointer, slot, dci))?;
+        self.command(TransferRequestBlock::set_dequeue(pointer, slot, dci))?;
         Ok(())
     }
 
     fn input_context(&self, index: u8, words: [u32; 8]) {
-        let at = dma::INPUT_CONTEXT * PAGE
+        let at = dma::INPUT_CONTEXT * PAGE_BYTES
             + context::input_offset(index, self.capabilities.context_bytes);
         for (i, w) in words.iter().enumerate() {
             DMA.w32(at + 4 * i as u64, *w);
@@ -342,25 +354,25 @@ impl Host {
             let end = deadline(500);
             while self.reg(portsc) & port::RESET_CHANGE == 0 {
                 if past(end) {
-                    return Err((Step::PortResetTimeout, port_number.into()));
+                    return Err((BringUpStep::PortResetTimeout, port_number.into()));
                 }
                 core::hint::spin_loop();
             }
             let sc = self.reg(portsc);
             self.set_reg(portsc, port::write_value(sc, port::RESET_CHANGE));
             if sc & port::ENABLED == 0 {
-                return Err((Step::PortNotEnabled, sc));
+                return Err((BringUpStep::PortNotEnabled, sc));
             }
         }
         let speed = port::speed_of(self.reg(portsc));
         let Some(packet0) = port::default_control_packet(speed) else {
-            return Err((Step::UnknownSpeed, speed.into()));
+            return Err((BringUpStep::UnknownSpeed, speed.into()));
         };
-        let slot = self.command(Trb::enable_slot())?;
+        let slot = self.command(TransferRequestBlock::enable_slot())?;
         match self.configure(slot, port_number, speed, packet0) {
             Ok(a) => Ok(a),
             Err(f) => {
-                let _ = self.command(Trb::disable_slot(slot));
+                let _ = self.command(TransferRequestBlock::disable_slot(slot));
                 Err(f)
             }
         }
@@ -386,7 +398,7 @@ impl Host {
         self.control = ProducerRing::new(self.phys(dma::CONTROL_RING), dma::RING_ENTRIES);
         self.interrupt = ProducerRing::new(self.phys(dma::INTERRUPT_RING), dma::RING_ENTRIES);
         DMA.w64(
-            dma::DEVICE_CONTEXT_ARRAY * PAGE + 8 * u64::from(slot),
+            dma::DEVICE_CONTEXT_ARRAY * PAGE_BYTES + 8 * u64::from(slot),
             self.phys(dma::DEVICE_CONTEXT),
         );
 
@@ -397,17 +409,20 @@ impl Host {
             2,
             context::control_endpoint(packet0, self.control.dequeue_pointer()),
         );
-        self.command(Trb::address_device(self.phys(dma::INPUT_CONTEXT), slot))?;
+        self.command(TransferRequestBlock::address_device(
+            self.phys(dma::INPUT_CONTEXT),
+            slot,
+        ))?;
 
         // The first eight bytes say endpoint 0's real packet size.
         let n = self.transfer(slot, SetupPacket::get_descriptor(descriptor::DEVICE, 0, 8))?;
         if n < 8 {
-            return Err((Step::BadDeviceDescriptor, n as u32));
+            return Err((BringUpStep::BadDeviceDescriptor, n as u32));
         }
         let b0 = CONTROL_BUFFER.r8(7);
         let Some(packet) = usb::descriptor::control_max_packet(b0, context::is_superspeed(speed))
         else {
-            return Err((Step::BadControlPacket, b0.into()));
+            return Err((BringUpStep::BadControlPacket, b0.into()));
         };
         if packet != packet0 {
             zero_page(dma::INPUT_CONTEXT);
@@ -416,7 +431,10 @@ impl Host {
                 2,
                 context::control_endpoint(packet, self.control.dequeue_pointer()),
             );
-            self.command(Trb::evaluate_context(self.phys(dma::INPUT_CONTEXT), slot))?;
+            self.command(TransferRequestBlock::evaluate_context(
+                self.phys(dma::INPUT_CONTEXT),
+                slot,
+            ))?;
         }
 
         let n = self.transfer(
@@ -426,7 +444,7 @@ impl Host {
         // SAFETY: the controller finished writing the buffer before the status stage's completion,
         // which `transfer` waited for and fenced; nothing writes it until the next transfer.
         let device = DeviceDescriptor::parse(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
-            .ok_or((Step::BadDeviceDescriptor, n as u32))?;
+            .ok_or((BringUpStep::BadDeviceDescriptor, n as u32))?;
 
         let n = self.transfer(
             slot,
@@ -438,8 +456,8 @@ impl Host {
         )?;
         // SAFETY: as above.
         let header = ConfigurationHeader::parse(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
-            .map_err(|r| (Step::NotABootKeyboard, refusal_code(r)))?;
-        let total = header.total_length.min(PAGE as u16);
+            .map_err(|r| (BringUpStep::NotABootKeyboard, refusal_code(r)))?;
+        let total = header.total_length.min(PAGE_BYTES as u16);
         let n = self.transfer(
             slot,
             SetupPacket::get_descriptor(descriptor::CONFIGURATION, 0, total),
@@ -447,7 +465,7 @@ impl Host {
         // SAFETY: as above.
         let keyboard =
             usb::descriptor::find_boot_keyboard(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
-                .map_err(|r| (Step::NotABootKeyboard, refusal_code(r)))?;
+                .map_err(|r| (BringUpStep::NotABootKeyboard, refusal_code(r)))?;
 
         self.transfer(slot, SetupPacket::set_configuration(keyboard.configuration))?;
         // Both tolerated when stalled: some keyboards refuse SET_PROTOCOL and report boot anyway,
@@ -470,7 +488,10 @@ impl Host {
                 REPORT_LEN as u16,
             ),
         );
-        self.command(Trb::configure_endpoint(self.phys(dma::INPUT_CONTEXT), slot))?;
+        self.command(TransferRequestBlock::configure_endpoint(
+            self.phys(dma::INPUT_CONTEXT),
+            slot,
+        ))?;
 
         let attached = Attached {
             slot,
@@ -491,7 +512,7 @@ impl Host {
     fn queue_report(&mut self, k: Attached, buffer: u64) {
         let p = self
             .interrupt
-            .enqueue(Trb::normal(buffer, REPORT_LEN as u16));
+            .enqueue(TransferRequestBlock::normal(buffer, REPORT_LEN as u16));
         Host::put(dma::INTERRUPT_RING, p);
         self.ring_doorbell(k.slot, u32::from(k.dci));
     }
@@ -521,7 +542,7 @@ impl Host {
             REGS.r32(regs::DBOFF),
             REGS.r32(regs::RTSOFF),
         );
-        let phys = |page: u64| h.dma_phys + page * PAGE;
+        let phys = |page: u64| h.dma_phys + page * PAGE_BYTES;
         let host = Host {
             capabilities,
             dma_phys: h.dma_phys,
@@ -553,7 +574,7 @@ impl Host {
         let end = deadline(100);
         while self.reg(usbsts) & regs::STS_HALTED == 0 {
             if past(end) {
-                return Err((Step::HaltTimeout, self.reg(usbsts)));
+                return Err((BringUpStep::HaltTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
@@ -562,22 +583,32 @@ impl Host {
         while self.reg(usbcmd) & regs::CMD_RESET != 0 || self.reg(usbsts) & regs::STS_NOT_READY != 0
         {
             if past(end) {
-                return Err((Step::ResetTimeout, self.reg(usbsts)));
+                return Err((BringUpStep::ResetTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
         if self.reg(self.op(regs::PAGESIZE)) & 1 == 0 {
-            return Err((Step::NoFourKibibytePages, self.reg(self.op(regs::PAGESIZE))));
+            return Err((
+                BringUpStep::NoFourKibibytePages,
+                self.reg(self.op(regs::PAGESIZE)),
+            ));
         }
-        if u64::from(dma_pages) < dma::region_pages(self.capabilities.scratchpads) {
-            return Err((Step::RegionTooSmall, self.capabilities.scratchpads.into()));
+        if u64::from(dma_pages)
+            < extensible_host_controller_interface_contract::region_pages(
+                self.capabilities.scratchpads,
+            )
+        {
+            return Err((
+                BringUpStep::RegionTooSmall,
+                self.capabilities.scratchpads.into(),
+            ));
         }
         Ok(())
     }
 
     /// Lay out the slot array, the command ring and the event ring, and enable interrupter 0.
     fn lay_out(&self) {
-        let phys = |page: u64| self.dma_phys + page * PAGE;
+        let phys = |page: u64| self.dma_phys + page * PAGE_BYTES;
         // One slot: this driver serves one device at a time, and gives a slot back before it
         // asks for another.
         let config = self.op(regs::CONFIG);
@@ -587,12 +618,12 @@ impl Host {
         if self.capabilities.scratchpads > 0 {
             for i in 0..u64::from(self.capabilities.scratchpads) {
                 DMA.w64(
-                    dma::SCRATCHPAD_ARRAY * PAGE + 8 * i,
-                    phys(dma::WORK_PAGES + i),
+                    dma::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
+                    phys(extensible_host_controller_interface_contract::WORK_PAGES + i),
                 );
             }
             DMA.w64(
-                dma::DEVICE_CONTEXT_ARRAY * PAGE,
+                dma::DEVICE_CONTEXT_ARRAY * PAGE_BYTES,
                 phys(dma::SCRATCHPAD_ARRAY),
             );
         }
@@ -603,7 +634,7 @@ impl Host {
         // The event ring: its one segment table entry, then interrupter 0, base last.
         let entry = self.events.segment_table_entry();
         for (i, w) in entry.iter().enumerate() {
-            DMA.w32(dma::EVENT_SEGMENT_TABLE * PAGE + 4 * i as u64, *w);
+            DMA.w32(dma::EVENT_SEGMENT_TABLE * PAGE_BYTES + 4 * i as u64, *w);
         }
         barrier();
         self.set_reg(self.capabilities.interrupter(regs::ERSTSZ), 1);
@@ -629,7 +660,7 @@ impl Host {
         let end = deadline(100);
         while self.reg(usbsts) & regs::STS_HALTED != 0 {
             if past(end) {
-                return Err((Step::RunTimeout, self.reg(usbsts)));
+                return Err((BringUpStep::RunTimeout, self.reg(usbsts)));
             }
             core::hint::spin_loop();
         }
@@ -649,7 +680,7 @@ impl Host {
         }
     }
 
-    /// **Wait until every root port's connection has held still** ([`port::Settle`]), so the
+    /// **Wait until every root port's connection has held still** ([`port::PortDebounce`]), so the
     /// boot-time scan reads what is plugged in rather than what the controller has re-detected
     /// so far. `false` when the ports were still changing at the timeout. Nothing here is the
     /// answer: a device that arrives later is attached from its connect change, in
@@ -672,16 +703,16 @@ impl Host {
         self.hold_still(&only) && self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0
     }
 
-    /// Read `read` every [`port::DEBOUNCE_STEP_MS`] until [`port::Settle`] says it held still
+    /// Read `read` every [`port::DEBOUNCE_STEP_MS`] until [`port::PortDebounce`] says it held still
     /// (`true`) or gave up (`false`).
     fn hold_still(&self, read: &dyn Fn(&Host) -> port::Connections) -> bool {
-        let mut settle = port::Settle::new(monotonic_nanos() / MS, read(self));
+        let mut settle = port::PortDebounce::new(monotonic_nanos() / MS, read(self));
         loop {
             let end = deadline(port::DEBOUNCE_STEP_MS);
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.observe(monotonic_nanos() / MS, read(self)) {
+            if let Some(settled) = settle.sample(monotonic_nanos() / MS, read(self)) {
                 return settled;
             }
         }
@@ -712,7 +743,7 @@ impl Host {
             }
             match self.attach(n) {
                 Ok(k) => self.keyboard = Some(k),
-                Err((step, detail)) => refused = report::refusal(step, n, detail),
+                Err((step, detail)) => refused = report::failure_report(step, n, detail),
             }
         }
         (connected, refused)
@@ -730,7 +761,7 @@ impl Host {
             }
             match self.keyboard {
                 Some(k) if k.port == n && sc & port::CONNECTED == 0 => {
-                    let _ = self.command(Trb::disable_slot(k.slot));
+                    let _ = self.command(TransferRequestBlock::disable_slot(k.slot));
                     self.keyboard = None;
                     self.found = None;
                 }
@@ -776,14 +807,14 @@ impl Host {
         let Some(offset) = buffer.checked_sub(self.phys(dma::REPORT_BUFFERS)) else {
             return;
         };
-        if offset + dma::REPORT_SLOT > PAGE {
+        if offset + dma::REPORT_SLOT > PAGE_BYTES {
             return;
         }
         barrier();
         let mut bytes = [0u8; REPORT_LEN];
         let got = REPORT_LEN.saturating_sub(residual as usize);
         for (i, b) in bytes.iter_mut().enumerate().take(got) {
-            *b = DMA.r8(dma::REPORT_BUFFERS * PAGE + offset + i as u64);
+            *b = DMA.r8(dma::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
         }
         if let Some(now) = BootReport::parse(&bytes[..got]) {
             let mut typed = Typed::new(out);
@@ -850,8 +881,8 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let Some(h) = Handoff::unpack([arg0, arg1, arg2]) else {
         send(
             REPORT,
-            report::FAILED,
-            report::refusal(Step::BadHandoff, 0, 0),
+            report::BRING_UP_FAILED,
+            report::failure_report(BringUpStep::BadHandoff, 0, 0),
             arg1,
         );
         exit();
@@ -859,7 +890,12 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let mut host = match Host::bring_up(h) {
         Ok(host) => host,
         Err((step, detail)) => {
-            send(REPORT, report::FAILED, report::refusal(step, 0, detail), 0);
+            send(
+                REPORT,
+                report::BRING_UP_FAILED,
+                report::failure_report(step, 0, detail),
+                0,
+            );
             exit();
         }
     };
@@ -868,14 +904,14 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     match (host.keyboard, host.found) {
         (Some(k), Some((vendor, product, speed))) => send(
             REPORT,
-            report::KEYBOARD,
-            report::keyboard(k.port, speed, vendor, product),
+            report::KEYBOARD_FOUND,
+            report::keyboard_report(k.port, speed, vendor, product),
             u64::from(k.dci),
         ),
         _ => send(
             REPORT,
-            report::NO_KEYBOARD,
-            report::ports(host.capabilities.max_ports, connected, settled),
+            report::NO_KEYBOARD_FOUND,
+            report::ports_report(host.capabilities.max_ports, connected, settled),
             refused,
         ),
     };

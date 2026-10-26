@@ -711,9 +711,12 @@ e1000e = { version = "0.1.0", path = "../crates/e1000e" }
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
 designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
-# descriptors and boot reports, and the xHCI ring and context arithmetic.
+# descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
+# kernel (the handoff, the register window, the bring-up report) is in the two crates after them.
 usb = { version = "0.1.0", path = "../crates/usb" }
 extensible_host_controller_interface = { version = "0.1.0", path = "../crates/extensible_host_controller_interface" }
+extensible_host_controller_interface_contract = { version = "0.1.0", path = "../crates/extensible_host_controller_interface_contract" }
+usb_keyboard_report = { version = "0.1.0", path = "../crates/usb_keyboard_report" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

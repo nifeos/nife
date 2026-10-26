@@ -43,6 +43,13 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   `components/src/usb_keyboard_driver.rs` (the EL0 driver).
 - The `Handoff` types encode nife's spawn ABI rather than xHCI. Whether they stay in the published
   crate or move to the driver is the lane's call, recorded in its pull request.
+- Ruled 2026-10-25 (UTC), on #2720: nife's process plan and the bring-up report leave the crate.
+  Pull request #2737 moved `Handoff`, `register_window`, `WindowRefusal`, `MAX_REGISTER_PAGES`,
+  `WORK_PAGES`, `region_pages` and two harnesses into the nife-internal crate
+  `extensible_host_controller_interface_contract` (a provisional name). The `report` module became
+  the nife crate `usb_keyboard_report` (provisional too). [The names
+  record](0857-crates-released-on-their-own/extensible-host-controller-interface-names.md) holds
+  the crate's remaining names, all ratified.
 - crates.io answers 404 for the name (checked 2026-10-07).
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
@@ -58,19 +65,19 @@ Each row is a property this crate must prove before it publishes. The harness ce
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
 `crates/extensible_host_controller_interface/falsifications/`. Measured 2026-10-11 (UTC): 3 of 5
-proven.
+proven. Since #2737 the crate carries one harness. The window and handoff rows left with their code
+for `extensible_host_controller_interface_contract`, which does not publish, so the crate proves 1
+of 3.
 
 | property | harness |
 |---|---|
-| The register window never maps a withheld page | `verification::the_window_never_maps_a_withheld_page` |
 | A producer ring stays in bounds | `verification::a_producer_ring_stays_in_bounds` |
-| The handoff round-trips | `verification::the_handoff_round_trips` |
 | The event ring stays in bounds and flips its cycle bit only at the wrap (`EventRing::advance`) | none yet |
 | The extended-capability walk (`regs::find_extended`) ends within its hop bound and inside `limit` for any register contents | none yet |
 
 The two new rows are this lane's reading of the hostile surface: the controller writes the event
 ring and the capability list. Not proven: event decoding (`Event::decode`), the context builders
-and port decoders (`context`, `port`), and the report words (`report`).
+and port decoders (`context`, `port`). The report words left with `usb_keyboard_report`.
 
 ## Release, by #1806's rulings
 
@@ -137,7 +144,8 @@ ratification pass. With Kani, every harness proves and every falsification patch
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn
   handoff or nife error enum in a public signature. A reviewer judges this; no script can.
-  Known today: `Handoff` and the `report` words are nife's spawn ABI and spawn report, not xHCI.
+  `Handoff` and the `report` words, nife's spawn ABI and spawn report, left the crate on
+  2026-10-26 (#2737).
 
 ## Exit
 
@@ -162,8 +170,9 @@ The crate's source cites nothing of this tree beyond its `Name:` blocks, which s
 names until the ratification pass, so this section keeps the links it carried.
 
 - `src/lib.rs`, the crate doc: the ring design is in notes/usb.md, "The rings and the cycle bit".
-- `src/window.rs`, `register_window`: notes/usb.md, "The register window".
-- `src/port.rs`, `Settle`: the settle rule and its numbers are in notes/usb.md, "The ports settle
+- `src/window.rs`, `register_window`: notes/usb.md, "The register window". The function left the
+  crate on 2026-10-26 (#2737), with the test below that names xenon.
+- `src/port.rs`, `PortDebounce` (`Settle` until 2026-10-26): the settle rule and its numbers are in notes/usb.md, "The ports settle
   before the scan".
 - `src/tests.rs`, the module doc: lane maintainer/mutation-triage-2026w42 moved the tests out of
   `lib.rs` on 2026-10-12 (UTC), so the crate root stays an index under §282 (when a file is split,
@@ -182,14 +191,13 @@ names until the ratification pass, so this section keeps the links it carried.
   and on milestone 610's per-package co-change column.
 - Milestone 242 is PARTIAL, and the crate's own `BUGS` says a device behind a hub cannot be
   addressed. A stranger meets that limit first, so the published README states it.
-- Three harnesses cover the window, one ring and the handoff. *What is proven* now requires two
-  more, on the event ring and the capability walk; whether the context and port decoders want
+- One harness covers the producer ring. *What is proven* requires two more, on the event ring and the capability walk; whether the context and port decoders want
   proofs before 0.1 is still the lane's question, answered in its pull request.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 6 can start now.
 
 ## Index row
 
-nife's xHCI host controller logic, three Kani proofs and their falsification patches, published on
+nife's xHCI host controller logic, its Kani proofs and their falsification patches, published on
 crates.io as `extensible_host_controller_interface` 0.1 from its own `nifeos` repository instead
 of being offered to rust-osdev's dormant `xhci`, then consumed back by nife from that release.
