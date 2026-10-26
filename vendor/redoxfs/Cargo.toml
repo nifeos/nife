@@ -109,7 +109,7 @@ default-features = false
 version = "2"
 
 [dependencies.endian-num]
-version = "0.1"
+version = "0.2"
 
 [dependencies.env_logger]
 version = "0.11"
