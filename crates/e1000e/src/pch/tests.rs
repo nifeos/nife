@@ -18,19 +18,19 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
     assert_eq!(h & 1, 1, "other bits survive");
     assert_eq!(ulp::release(h) & ulp::H2ME_ENFORCE_SETTINGS, 0);
     assert!(!ulp::done(ulp::FWSM_ULP_CFG_DONE));
-    assert!(ulp::has_me(ulp::FWSM_FW_VALID));
+    assert!(ulp::has_management_engine(ulp::ICH_FWSM_FW_VALID));
 }
 
 #[test]
 fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
-    assert!(flush::required(flush::REQUIRED, 256));
-    assert!(!flush::required(flush::REQUIRED, 0));
+    assert!(flush::required(flush::FLUSH_DESC_REQUIRED, 256));
+    assert!(!flush::required(flush::FLUSH_DESC_REQUIRED, 0));
     assert!(!flush::required(0, 256));
     assert_eq!(flush::tail_after(15, 16), 0);
     assert_eq!(flush::rxdctl(0xffff_ffff) & 0x3fff, 0x1f | 1 << 8);
     assert_ne!(flush::rxdctl(0) & 0x0100_0000, 0);
     // No end of packet, no report status: the dummy is never a frame anyone waits on.
-    assert_eq!((flush::tx_word() >> 24) as u8 & (0x01 | 0x08), 0);
+    assert_eq!((flush::transmit_word() >> 24) as u8 & (0x01 | 0x08), 0);
 }
 
 /// The flush's register values exactly as FreeBSD writes them: the dummy descriptor is 512
@@ -38,7 +38,7 @@ fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
 /// every bit above the two thresholds, including the granularity bit when it was already set.
 #[test]
 fn the_flush_values_are_freebsds() {
-    assert_eq!(flush::tx_word(), 0x0200_0200);
+    assert_eq!(flush::transmit_word(), 0x0200_0200);
     assert_eq!(flush::tail_after(3, 16), 4);
     assert_eq!(flush::tail_after(15, 16), 0);
     assert_eq!(flush::rxdctl(0xffff_ffff), 0xffff_c11f);
@@ -66,5 +66,5 @@ fn a_delay_is_in_milliseconds_and_a_flush_reads_status() {
     delay_ms(&mut s, 3);
     assert_eq!(s.elapsed_us, 3000);
     flush_writes(&mut s);
-    assert_eq!(s.reads, [crate::regs::STATUS]);
+    assert_eq!(s.reads, [crate::registers::STATUS]);
 }
