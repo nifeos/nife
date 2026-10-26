@@ -30,7 +30,7 @@ them, and which claims rest on them.
 |---|---|
 | `aarch64-unknown-none-softfloat` | none |
 | `riscv64imac-unknown-none-elf` | none |
-| `x86_64-unknown-none` | `uuid` 1.28.0 |
+| `x86_64-unknown-none` | `uuid` 1.29.0 |
 
 `--all-features` gives the same set. `uuid` arrives on x86_64 through `boot_slot` and
 `globally_unique_identifier_partition_table`, and pulls no procedural macro or build script into
@@ -53,12 +53,13 @@ build compiles it.
 
 | Crate | Hand-written sites outside tests | Compiled into the kernel | Reached by the kernel | Expansions (reached) | In test modules |
 |---|---|---|---|---|---|
-| `uuid` 1.28.0 | 13: 9 blocks, 2 in macro bodies, 2 `unsafe fn` | 13 | 0 | 6 (0) | 2 |
+| `uuid` 1.29.0 | 23: 19 blocks, 2 in macro bodies, 2 `unsafe fn` | 13 | 0 | 6 (0) | 2 |
 
 `python3 helpers/kernel_dependency_unsafe.py --summary` prints the first, fifth and sixth columns
-from the table. The block counts agree with the census in
-[dependency-standards-census.md](dependency-standards-census.md), which measured the same source
-with a different tool (it read `uuid` at 1.24.0, the version `redoxfs_server` pins).
+from the table. The census in
+[dependency-standards-census.md](dependency-standards-census.md) measured `uuid` with a different
+tool at 1.24.0, the version `redoxfs_server` pins, which predates the ten `NonNilUuid` constructor
+blocks counted here.
 
 ## spin_lock, the in-tree lock
 
@@ -107,12 +108,13 @@ The guard's `deref` and `deref_mut` blocks turn that ordering into a `&mut T` wi
 Loom proves it in the C11 model; it is not a proof about aarch64 or riscv64 silicon
 ([interleaving.md](interleaving.md)).
 
-## uuid 1.28.0
+## uuid 1.29.0
 
-x86_64 only, with default features off (`crates/globally_unique_identifier_partition_table/Cargo.toml`).
+x86_64 only, with default features off and none enabled
+(`crates/globally_unique_identifier_partition_table/Cargo.toml`).
 The kernel calls `boot_slot::cmdline::parse` and `boot_slot::medium::is_nvme`, and `boot_slot`
 calls the partition table crate's `crc` module. No call from the kernel reaches a `Uuid` method,
-so the kernel reaches none of the 13 sites.
+so the kernel reaches none of the 23 sites.
 
 The partition table crate's shipped code calls only the `const` constructors and accessors
 (`from_bytes`, `from_fields`, `nil`, `into_bytes`), which hold no `unsafe`. Its derived `Debug` on
@@ -120,16 +122,20 @@ The partition table crate's shipped code calls only the `const` constructors and
 expansion) and `encode_hyphenated_uninit`, with `write_bytes` and `assume_init_ascii_mut`. The
 kernel never formats one.
 
-The sites fall in three groups. The text encoders in `src/fmt.rs`: `encode_simple_uninit`,
+The sites fall in four groups. The text encoders in `src/fmt.rs`: `encode_simple_uninit`,
 `encode_hyphenated_uninit`, `encode_braced_uninit` and `encode_urn_uninit` each call the
 `unsafe fn assume_init_ascii_mut`, whose body holds two blocks; `write_bytes` is a
 `copy_nonoverlapping`, and `slice_as_uninit_mut` casts a byte slice to `MaybeUninit`. Two
 transmute macros in `src/macros.rs`, `unsafe_transmute_ref!` and `unsafe_transmute!`, which the
 crate invokes in `Builder::from_bytes_ref`, in `Uuid`'s `as_hyphenated`, `as_simple`, `as_urn` and
-`as_braced`, and in `encode_braced_uninit`. And `NonNilUuid::new_unchecked` in `src/non_nil.rs`. The
-text parser holds no `unsafe`.
+`as_braced`, and in `encode_braced_uninit`. `NonNilUuid::new_unchecked` in `src/non_nil.rs`.
+And the ten `NonNilUuid` constructors beside it (`new_v1`, `now_v1`, `new_v3`, `new_v4`, `new_v5`,
+`new_v6`, `now_v6`, `new_v7`, `now_v7`, `new_v8`), one block each calling `new_unchecked` on a
+`Uuid` whose version bits are set. Each sits behind its version's feature (`v1` to `v8`, some also
+`std` and `rng`), none of which the kernel enables, so the kernel build compiles none of the ten.
+The text parser holds no `unsafe`.
 
-What checks it upstream: The release commit `276c2362` carries `.github/workflows/ci.yml`. Its
+What checks it upstream: The release commit `4643e607` carries `.github/workflows/ci.yml`. Its
 `miri` job runs `cargo miri test --lib --all-features` on x86_64 and on big-endian s390x, with no
 `uuid_unstable` flag, so Miri exercises the plain-transmute macros the kernel build compiles. The OS
 test matrix sets `--cfg uuid_unstable`, under which `zerocopy` checks the same transmutes' layouts at
@@ -165,14 +171,14 @@ the message.
 
 ```
 $ python3 helpers/kernel_dependency_unsafe.py --summary
-uuid 1.28.0: 21 rows; 13 hand-written outside tests (block 9, block in a macro body 2, fn 2); 6 macro expansions; 2 in test modules
+uuid 1.29.0: 31 rows; 23 hand-written outside tests (block 19, block in a macro body 2, fn 2); 6 macro expansions; 2 in test modules
 ```
 
 ## BUGS
 
 - A person reads the "compiled" and "reached" columns by hand. A kernel change that starts calling
   a `Uuid` formatter fails nothing; the next bump's reread is the only thing that catches it.
-- This note read the upstream checks at each release commit on 2026-10-25 (UTC). A project can drop its
+- This note read the upstream checks at each release commit on 2026-10-26 (UTC). A project can drop its
   Miri job without a release, and nothing here would notice.
 - Expansions count where a crate invokes its own macro. The kernel invokes none of `uuid`'s macros that
   hold `unsafe`; a future caller of one would add sites the table does not list.
